@@ -3,25 +3,37 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "bootstrap": "npm run generate-css-types",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-css-types": "tailwindcss-classnames -i tailwind.config.ts -o tailwindcss.classnames.ts -x tailwind.customtypes.ts"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "next": "15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.1.6"
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4.0.1",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@types/jest": "^29.5.14",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.1.6",
-    "@eslint/eslintrc": "^3"
+    "eslint-config-prettier": "^10.0.1",
+    "jest": "^29.7.0",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^4.0.3",
+    "tailwindcss-classnames": "^3.1.0",
+    "ts-jest": "^29.2.5"
   }
 }
