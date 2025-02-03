@@ -1,0 +1,124 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`EmailForm should render the form with initial values 1`] = `
+<DocumentFragment>
+  <div
+    class="max-w-lg mx-auto p-6 bg-white rounded-lg shadow-md"
+  >
+    <h2
+      class="mb-4 text-xl font-semibold"
+    >
+      Create Email
+    </h2>
+    <form
+      class="space-y-4"
+    >
+      <div>
+        <label
+          class="block font-medium mb-1"
+          for="senderId-unique-id-1"
+          id="senderIdLabel-unique-id-1"
+        >
+          Sender ID
+        </label>
+        <input
+          aria-labelledby="senderIdLabel-unique-id-1"
+          class="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-300"
+          id="senderId-unique-id-1"
+          required=""
+          type="number"
+          value=""
+        />
+      </div>
+      <div>
+        <label
+          class="block font-medium mb-1"
+          for="subject-unique-id-1"
+          id="subjectLabel-unique-id-1"
+        >
+          Subject
+        </label>
+        <input
+          aria-labelledby="subjectLabel-unique-id-1"
+          class="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-300"
+          id="subject-unique-id-1"
+          required=""
+          type="text"
+          value=""
+        />
+      </div>
+      <div>
+        <label
+          class="block font-medium mb-1"
+          for="emailContents-unique-id-1"
+          id="emailContentsLabel-unique-id-1"
+        >
+          Email Contents
+        </label>
+        <textarea
+          aria-labelledby="emailContentsLabel-unique-id-1"
+          class="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-300"
+          id="emailContents-unique-id-1"
+          required=""
+        />
+      </div>
+      <div>
+        <label
+          class="block font-medium mb-1"
+          for="sentTimestamp-unique-id-1"
+          id="sentTimestampLabel-unique-id-1"
+        >
+          Sent Timestamp
+        </label>
+        <input
+          aria-labelledby="sentTimestampLabel-unique-id-1"
+          class="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-300"
+          id="sentTimestamp-unique-id-1"
+          required=""
+          type="datetime-local"
+          value=""
+        />
+      </div>
+      <div>
+        <label
+          class="block font-medium mb-1"
+          for="threadId-unique-id-1"
+          id="threadIdLabel-unique-id-1"
+        >
+          Thread ID (optional)
+        </label>
+        <input
+          aria-labelledby="threadIdLabel-unique-id-1"
+          class="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-300"
+          id="threadId-unique-id-1"
+          type="number"
+          value=""
+        />
+      </div>
+      <div>
+        <label
+          class="block font-medium mb-1"
+          for="parentEmailId-unique-id-1"
+          id="parentEmailIdLabel-unique-id-1"
+        >
+          Parent Email ID (optional)
+        </label>
+        <input
+          aria-labelledby="parentEmailIdLabel-unique-id-1"
+          class="w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-300"
+          id="parentEmailId-unique-id-1"
+          type="number"
+          value=""
+        />
+      </div>
+      <button
+        aria-roledescription="Submit Form"
+        class="w-full p-2 rounded text-white hover:opacity-80 transition bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400"
+        type="submit"
+      >
+        Create Email
+      </button>
+    </form>
+  </div>
+</DocumentFragment>
+`;

@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from 'app/api/email/route';
 import { query, queryExt } from 'lib/neondb';
@@ -16,7 +20,15 @@ describe('Email API', () => {
         }),
       } as unknown as NextRequest;
 
-      const mockResult = [{ email_id: 1, sender_id: 1, subject: 'Test Subject', email_contents: 'Test Body', sent_timestamp: '2023-01-01T00:00:00Z' }];
+      const mockResult = [
+        {
+          email_id: 1,
+          sender_id: 1,
+          subject: 'Test Subject',
+          email_contents: 'Test Body',
+          sent_timestamp: '2023-01-01T00:00:00Z',
+        },
+      ];
       (query as jest.Mock).mockResolvedValue(mockResult);
 
       const res = await POST(req);
@@ -60,7 +72,10 @@ describe('Email API', () => {
         }),
       } as unknown as NextRequest;
 
-      const mockResult = { rowCount: 1, rows: [{ email_id: 1, subject: 'Updated Subject' }] };
+      const mockResult = {
+        rowCount: 1,
+        rows: [{ email_id: 1, subject: 'Updated Subject' }],
+      };
       (queryExt as jest.Mock).mockResolvedValue(mockResult);
 
       const res = await PUT(req);
@@ -113,18 +128,20 @@ describe('Email API', () => {
         url: 'http://localhost/api/email?email_id=1',
       } as unknown as NextRequest;
 
-      const mockResult = [{
-        email_id: 1,
-        subject: 'Test Subject',
-        body: 'Test Body',
-        sent_timestamp: '2023-01-01T00:00:00Z',
-        thread_id: 1,
-        parent_email_id: null,
-        sender_id: 1,
-        sender_name: 'Sender Name',
-        sender_email: 'sender@example.com',
-        recipients: [],
-      }];
+      const mockResult = [
+        {
+          email_id: 1,
+          subject: 'Test Subject',
+          body: 'Test Body',
+          sent_timestamp: '2023-01-01T00:00:00Z',
+          thread_id: 1,
+          parent_email_id: null,
+          sender_id: 1,
+          sender_name: 'Sender Name',
+          sender_email: 'sender@example.com',
+          recipients: [],
+        },
+      ];
       (query as jest.Mock).mockResolvedValue(mockResult);
 
       const res = await GET(req);
@@ -153,14 +170,16 @@ describe('Email API', () => {
         url: 'http://localhost/api/email',
       } as unknown as NextRequest;
 
-      const mockResult = [{
-        email_id: 1,
-        subject: 'Test Subject',
-        sent_timestamp: '2023-01-01T00:00:00Z',
-        sender_id: 1,
-        sender_name: 'Sender Name',
-        sender_email: 'sender@example.com',
-      }];
+      const mockResult = [
+        {
+          email_id: 1,
+          subject: 'Test Subject',
+          sent_timestamp: '2023-01-01T00:00:00Z',
+          sender_id: 1,
+          sender_name: 'Sender Name',
+          sender_email: 'sender@example.com',
+        },
+      ];
       (query as jest.Mock).mockResolvedValue(mockResult);
 
       const res = await GET(req);
