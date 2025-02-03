@@ -16,7 +16,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx", // Ensure JSX is supported
+    "jsx": "preserve", // Ensure JSX is supported
     "incremental": true,
     "plugins": [
       {

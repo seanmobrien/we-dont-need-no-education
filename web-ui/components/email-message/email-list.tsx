@@ -15,6 +15,7 @@ import {
   boxShadow,
   display,
 } from 'tailwindcss-classnames';
+import type { EmailMessageSummary } from 'data-models/api/email-message';
 
 import EmailForm from './email-form';
 
@@ -49,7 +50,7 @@ const subjectClass = textGray600; // Reused text color class
 const timestampClass = classnames(typography('text-sm'), textGray600); // Applied shared text color
 
 const EmailList: React.FC = () => {
-  const [emails, setEmails] = useState<any[]>([]);
+  const [emails, setEmails] = useState<EmailMessageSummary[]>([]);
   const [selectedEmailId, setSelectedEmailId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -78,7 +79,10 @@ const EmailList: React.FC = () => {
         Email List
       </h2>
       {error && (
-        <p className={classnames(typography('text-red-500'), marginBottom2)}>
+        <p
+          className={classnames(typography('text-red-500'), marginBottom2)}
+          data-testid="email-list-error"
+        >
           {error}
         </p>
       )}
@@ -87,20 +91,37 @@ const EmailList: React.FC = () => {
       ) : (
         <div>
           {emails.length === 0 ? (
-            <p className={textGray600}>No emails found.</p>
+            <p className={textGray600} data-testid="email-list-none-found">
+              No emails found.
+            </p>
           ) : (
             emails.map((email) => (
-              <div
-                key={email.email_id}
-                className={listItemClass}
-                onClick={() => setSelectedEmailId(email.email_id)}
-              >
+              <div key={email.emailId} className={listItemClass}>
                 <div>
-                  <p className={senderClass}>{email.sender_name}</p>
-                  <p className={subjectClass}>{email.subject}</p>
+                  <p className={senderClass}>
+                    <a
+                      href="#"
+                      data-testid={`email-list-sender-${email.emailId}`}
+                      onClick={() => setSelectedEmailId(email.emailId)}
+                    >
+                      {email.sender?.name}
+                    </a>
+                  </p>
+                  <p className={subjectClass}>
+                    <a
+                      href="#"
+                      data-testid={`email-list-subject-${email.emailId}`}
+                      onClick={() => setSelectedEmailId(email.emailId)}
+                    >
+                      {email.subject}
+                    </a>
+                  </p>
                 </div>
-                <p className={timestampClass}>
-                  {new Date(email.sent_timestamp).toLocaleString()}
+                <p
+                  className={timestampClass}
+                  data-testid={`email-list-timestamp-${email.emailId}`}
+                >
+                  {new Date(email.sentOn).toLocaleString()}
                 </p>
               </div>
             ))
@@ -110,6 +131,7 @@ const EmailList: React.FC = () => {
       {selectedEmailId && (
         <div className={margin('mt-6')}>
           <h2
+            data-testid="email-list-edit-header"
             className={classnames(
               typography('text-lg', 'font-semibold'),
               marginBottom2

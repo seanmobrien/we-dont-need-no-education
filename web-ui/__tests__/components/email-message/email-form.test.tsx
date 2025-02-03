@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import EmailForm from 'components/email-message/email-form';
+import { mockEmail } from '../email.mock-data';
 import { logger } from 'lib/logger';
 import { generateUniqueId } from 'lib/react-util';
 
@@ -116,14 +116,7 @@ describe('EmailForm', () => {
   });
 
   it('should fetch and populate email details when editing', async () => {
-    const mockEmailData = {
-      sender_id: 1,
-      subject: 'Test Subject',
-      body: 'Test Body',
-      sent_timestamp: '2023-01-01T00:00:00Z',
-      thread_id: 2,
-      parent_email_id: 3,
-    };
+    const mockEmailData = mockEmail();
 
     mockFetch.mockResolvedValueOnce({
       ok: true,
@@ -135,7 +128,7 @@ describe('EmailForm', () => {
     await waitFor(() => {
       expect(document.getElementById('senderId-unique-id-1')).toHaveValue(1);
       expect(document.getElementById('subject-unique-id-1')).toHaveValue(
-        'Test Subject'
+        'Test Subject 1'
       );
       expect(document.getElementById('emailContents-unique-id-1')).toHaveValue(
         'Test Body'

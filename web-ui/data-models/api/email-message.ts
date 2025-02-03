@@ -1,15 +1,15 @@
-import { Contact, ContactSummary } from './contact';
+import { ContactSummary } from './contact';
 
 export type EmailMessageSummary = {
   emailId: number;
-  senderId: number;
+  sender: ContactSummary;
   subject: string;
-  sentOn: Date;
+  sentOn: Date | string;
   threadId?: number;
-  contacts?: Array<ContactSummary>;
 };
 
 export type EmailMessage = EmailMessageSummary & {
   body: string;
-  parentEmailId?: string;
+  parentEmailId?: number;
+  // TODO: Recipients
 };

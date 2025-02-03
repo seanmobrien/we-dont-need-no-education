@@ -20,6 +20,7 @@ import classnames, {
   opacity,
   borderWidth,
 } from 'tailwindcss-classnames';
+import { EmailMessage } from 'data-models/api/email-message';
 
 interface EmailFormProps {
   emailId?: number; // Pass an email ID to edit an existing email
@@ -89,13 +90,17 @@ const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
           }
           return data;
         })
-        .then((data) => {
-          setSenderId(data.sender_id);
+        .then((data: EmailMessage) => {
+          setSenderId(data.sender?.contactId);
           setSubject(data.subject);
           setEmailContents(data.body);
-          setSentTimestamp(data.sent_timestamp);
-          setThreadId(data.thread_id);
-          setParentEmailId(data.parent_email_id);
+          setSentTimestamp(
+            typeof data.sentOn === 'string'
+              ? data.sentOn
+              : data.sentOn.toISOString()
+          );
+          setThreadId(data.threadId ?? null);
+          setParentEmailId(data.parentEmailId ?? null);
         })
         .catch((error) => {
           logger().error('Unable to fetch email details', error, {

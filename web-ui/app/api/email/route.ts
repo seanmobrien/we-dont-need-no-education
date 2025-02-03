@@ -1,21 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryExt } from 'lib/neondb';
 
-
 const aliasEmailContents = (input: Record<string, unknown> | unknown) => {
-  if (typeof input !== 'object' || input === null || !('email_contents' in input)) {  
+  if (
+    typeof input !== 'object' ||
+    input === null ||
+    !('email_contents' in input)
+  ) {
     return input;
   }
-  const output = { body: input.email_contents, ...input };  
+  const output = { body: input.email_contents, ...input };
   delete output.email_contents;
   return output;
+};
+
+const copySenderToContact = (input: Record<string, unknown> | unknown) => {
+  if (
+    typeof input !== 'object' ||
+    input === null ||
+    !('senderId' in input && 'senderName' in input && 'senderEmail' in input)
+  ) {
+    return input;
+  }
+  return {
+    ...input,
+    sender: {
+      contactId: input.senderId,
+      name: input.senderName,
+      email: input.senderEmail,
+    },
+    senderId: undefined,
+    senderName: undefined,
+    senderEmail: undefined,
+  };
 };
 
 export async function POST(req: NextRequest) {
   try {
     // Parse request email_contents
-    const { sender_id, subject, body, sent_timestamp } =
-      await req.json();
+    const { sender_id, subject, body, sent_timestamp } = await req.json();
 
     // Validate required fields
     if (!sender_id || !subject || !body || !sent_timestamp) {
@@ -33,7 +56,10 @@ export async function POST(req: NextRequest) {
        VALUES (${sender_id}, ${subject}, ${body}, ${sent_timestamp}) RETURNING *`
     );
     return NextResponse.json(
-      { message: 'Email created successfully', email: aliasEmailContents(result[0]) },
+      {
+        message: 'Email created successfully',
+        email: aliasEmailContents(result[0]),
+      },
       { status: 201 }
     );
   } catch (error) {
@@ -92,12 +118,14 @@ export async function PUT(req: NextRequest) {
     values.push(email_id); // Add email_id as the last parameter
 
     // Execute update query
-    const result = await queryExt(sql => sql<false, true>(
-      `UPDATE email SET ${updateFields.join(
-        ', '
-      )} WHERE email_id = $${paramIndex} RETURNING *`,
-      values
-    ));
+    const result = await queryExt((sql) =>
+      sql<false, true>(
+        `UPDATE email SET ${updateFields.join(
+          ', '
+        )} WHERE email_id = $${paramIndex} RETURNING *`,
+        values
+      )
+    );
 
     if (result.rowCount === 0) {
       return NextResponse.json(
@@ -128,15 +156,15 @@ export async function GET(req: NextRequest) {
       const result = await query(
         (sql) => sql`
         SELECT 
-          e.email_id,
+          e.email_id AS emailId,
           e.subject,
           e.email_contents AS body,
-          e.sent_timestamp,
-          e.thread_id,
-          e.parent_email_id,
-          sender.contact_id AS sender_id,
-          sender.name AS sender_name,
-          sender.email AS sender_email,
+          e.sent_timestamp AS sentOn,
+          e.thread_id AS threadId,
+          e.parent_email_id AS parentEmailId,
+          sender.contact_id AS senderId,
+          sender.name AS senderName,
+          sender.email AS senderEmail,
           COALESCE(json_agg(
             json_build_object(
               'recipient_id', recipient.contact_id,
@@ -156,18 +184,18 @@ export async function GET(req: NextRequest) {
       if (result.length === 0) {
         return NextResponse.json({ error: 'Email not found' }, { status: 404 });
       }
-      return NextResponse.json(result[0], { status: 200 });
+      return NextResponse.json(copySenderToContact(result[0]), { status: 200 });
     } else {
       // Fetch list of emails with sender info
       const result = await query(
         (sql) => sql`
         SELECT 
-          e.email_id,
+          e.email_id AS emailId,
           e.subject,
-          e.sent_timestamp,
-          sender.contact_id AS sender_id,
-          sender.name AS sender_name,
-          sender.email AS sender_email
+          e.sent_timestamp AS sentOn,
+          sender.contact_id AS senderId,
+          sender.name AS senderName,
+          sender.email AS senderEmail
         FROM emails e
         JOIN contacts sender ON e.sender_id = sender.contact_id
         ORDER BY e.sent_timestamp DESC;
