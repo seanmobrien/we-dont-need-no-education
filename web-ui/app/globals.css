@@ -9,6 +9,19 @@
   --foreground: #171717;
 }
 
+
+select,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="number"],
+textarea {
+  @apply px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
@@ -16,8 +29,50 @@
   }
 }
 
+select,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="datetime"],
+input[type="datetime-local"],
+input[type="number"],
+textarea {
+  @apply bg-gray-800 text-gray-200 border-gray-600 focus:ring-blue-300 focus:border-blue-300;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.bg-white {
+  color: var(--background)
+}
+
+@layer components {
+
+  input[type="datetime-local"]
+  {
+    max-width: 240px;
+  }
+
+
+
+  .btn {
+    @apply px-4 py-2 mt-4 rounded-md mx-2;
+  }
+
+  .btn-primary {
+    @apply bg-blue-500 text-white hover:bg-blue-600;
+  }
+
+  .btn-secondary {
+    @apply bg-green-500 hover:bg-green-600 text-white;
+  }
+
+  .btn-angry {
+    @apply bg-red-500 hover:bg-red-600 text-white;
+  }
 }

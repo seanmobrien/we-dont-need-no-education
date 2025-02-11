@@ -23,8 +23,9 @@ const config: Config.InitialOptions = {
   transformIgnorePatterns: ['<rootDir>/node_modules/'], // Ignore node_modules
   collectCoverage: true, // Enable coverage collection
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
-    '!src/**/*.d.ts', // Exclude type declaration files
+    '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
+    '!**/*.d.ts', // Exclude type declaration files
+    '!__(tests|mocks)__/**/*.*', // Exclude type declaration files
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats

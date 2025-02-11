@@ -21,3 +21,4 @@ export const logger = () => ({
   verbose: jest.fn(makeMockImplementation('verbose')),
   log: jest.fn(makeMockImplementation('log')),
 });
+export const log = (cb: (l: ReturnType<typeof logger>) => void) => cb(logger());

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import EmailForm from 'components/email-message/email-form';
 import { mockEmail } from '../email.mock-data';
@@ -17,6 +18,11 @@ describe('EmailForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('renders the email form', () => {
+    render(<EmailForm />);
+    expect(screen.getByTestId('email-form')).toBeInTheDocument();
   });
 
   it('should render the form with initial values', () => {

@@ -1,80 +1,32 @@
-import winston from 'winston';
+import pino from 'pino';
+import type { ILogger } from './logger.d.ts';
 
-const ServerLoggerId = 'nextjs-server';
-const ClientLoggerId = 'nextjs-client';
+const _logger = pino<'verbose' | 'silly', false>({
+  level: process.env.TraceLevel ?? 'info',
+  name: 'app',
+  timestamp: pino.stdTimeFunctions.isoTime,
+  customLevels: { verbose: 10000, silly: Number.MAX_SAFE_INTEGER },
+  useOnlyCustomLevels: false,
+});
 
-const getServerSideLogger = () => {
-  let ret = winston.loggers.get(ServerLoggerId);
-  if (ret) {
-    return ret;
-  }
-  ret = winston.loggers.add(ServerLoggerId, {
-    level: process.env.LOG_LEVEL_SERVER || 'error',
-    format: winston.format.combine(
-      winston.format.errors({ stack: true }),
-      winston.format.timestamp(),
-      winston.format.json()
-    ),
-    defaultMeta: { service: ServerLoggerId },
-    transports: [
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.errors({ stack: true }),
-          winston.format.timestamp(),
-          winston.format.colorize(),
-          winston.format.simple()
-        ),
-      }),
-    ],
-    exceptionHandlers: [
-      new winston.transports.File({ filename: 'exception.log' }),
-    ],
-    rejectionHandlers: [
-      new winston.transports.File({ filename: 'rejections.log' }),
-    ],
-  });
-  ret.verbose('Server logger created for process %s', process.pid);
-  return ret;
-};
-const getClientSideLogger = () => {
-  let ret = winston.loggers.get(ClientLoggerId);
-  if (ret) {
-    return ret;
-  }
-  ret = winston.loggers.add(ClientLoggerId, {
-    level: process.env.LOG_LEVEL_CLIENT || 'error',
-    format: winston.format.combine(
-      winston.format.errors({ stack: true }),
-      winston.format.timestamp(),
-      winston.format.json()
-    ),
-    defaultMeta: { service: ClientLoggerId },
-    transports: [
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.errors({ stack: true }),
-          winston.format.timestamp(),
-          winston.format.colorize(),
-          winston.format.simple()
-        ),
-      }),
-    ],
-    exceptionHandlers: [
-      new winston.transports.File({ filename: 'exception.log' }),
-    ],
-    rejectionHandlers: [
-      new winston.transports.File({ filename: 'rejections.log' }),
-    ],
-  });
-  ret.verbose('Client logger created for process %s', process.pid);
-  return ret;
-};
+process.on('warning', (e) =>
+  _logger.warn({ message: e.message, stack: e.stack })
+);
 
-export const logger = (id?: string) => {
-  if (id) {
-    return winston.loggers.get(id);
-  }
-  return typeof window === 'undefined'
-    ? getServerSideLogger()
-    : getClientSideLogger();
-};
+export type { ILogger };
+
+/**
+ * Returns a promise that resolves to an instance of ILogger.
+ *
+ * @returns {Promise<ILogger>} A promise that resolves to an ILogger instance.
+ */
+export const logger = (): Promise<ILogger> => Promise.resolve(_logger);
+
+/**
+ * Executes a callback function with the provided logger instance.
+ *
+ * @param cb - A callback function that takes a logger instance as an argument.
+ */
+export const log = (cb: (l: ILogger) => void) => cb(_logger);
+
+export { errorLogFactory } from './_utilities';

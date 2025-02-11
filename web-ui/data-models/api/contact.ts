@@ -5,7 +5,7 @@ export type ContactSummary = {
 };
 
 export type Contact = ContactSummary & {
-  JobDescription: string;
-  PhoneNumber: string;
-  IsDistictStaff: boolean;
+  jobDescription: string;
+  phoneNumber: string;
+  isDistrictStaff: boolean;
 };

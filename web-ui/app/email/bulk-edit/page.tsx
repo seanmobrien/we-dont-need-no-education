@@ -1,4 +1,4 @@
-import EmailList from 'components/email-message/email-list';
+import BulkEmailForm from '@/components/email-message/bulk-email-form';
 import Image from 'next/image';
 import {
   classnames,
@@ -8,19 +8,8 @@ import {
   padding,
   gap,
   flexDirection,
-  fontSize,
-  backgroundColor,
-  borderRadius,
-  transitionProperty,
-  height,
   alignItems,
-  justifyContent,
   flexBox,
-  invert,
-  textColor,
-  borderStyle,
-  borderColor,
-  borderWidth,
   textDecoration,
   textUnderlineOffset,
   gridColumn,
@@ -55,7 +44,7 @@ export default function Home() {
             gridColumn('col-span-12')
           )}
         >
-          <EmailList />
+          <BulkEmailForm />
         </div>
 
         <div
@@ -65,59 +54,7 @@ export default function Home() {
             alignItems('items-center'),
             flexBox('flex-col', 'sm:flex-row')
           )}
-        >
-          <a
-            className={classnames(
-              borderRadius('rounded-full'),
-              borderWidth('border'),
-              borderStyle('border-solid'),
-              transitionProperty('transition-colors'),
-              display('flex'),
-              alignItems('items-center'),
-              justifyContent('justify-center'),
-              'bg-foreground',
-              'text-background',
-              gap('gap-2'),
-              textColor('hover:text-blue-500'),
-              fontSize('text-sm', 'sm:text-base'),
-              height('h-10', 'sm:h-12'),
-              padding('px-4', 'sm:px-5')
-            )}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={invert('hover:invert')}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className={classnames(
-              borderRadius('rounded-full'),
-              borderWidth('border'),
-              borderStyle('border-solid'),
-              borderColor('border-black', 'border-white'),
-              transitionProperty('transition-colors'),
-              display('flex'),
-              alignItems('items-center'),
-              justifyContent('justify-center'),
-              backgroundColor('hover:bg-white'),
-              fontSize('text-sm', 'sm:text-base'),
-              height('h-10', 'sm:h-12'),
-              padding('px-4', 'sm:px-5')
-            )}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+        ></div>
       </main>
       <footer
         className={classnames(
@@ -150,7 +87,7 @@ export default function Home() {
         </a>
         <a
           className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          href="https://education.mn.gov/MDE/index.htm"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -161,7 +98,7 @@ export default function Home() {
             width={16}
             height={16}
           />
-          Go to nextjs.org →
+          Go to MN Dept of Ed →
         </a>
       </footer>
     </div>

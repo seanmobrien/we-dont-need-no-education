@@ -24,6 +24,9 @@
       }
     ],
     "paths": {
+      "@/*": [
+        "./*"
+      ],
       "app/*": [
         "./app/*"
       ],
@@ -45,7 +48,8 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
+    ".next/types/**/*.ts",
+    "components/email-message/bulk-email-form"
   ],
   "exclude": [
     "node_modules"

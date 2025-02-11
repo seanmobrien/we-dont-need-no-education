@@ -6,3 +6,7 @@ type TailwindCustomTypes =
   // --forground variable
   | 'text-background'
   | 'bg-foreground'
+  | 'btn'
+  | 'btn-angry'
+  | 'btn-primary'
+  | 'btn-secondary';

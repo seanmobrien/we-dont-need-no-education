@@ -1,0 +1,109 @@
+import React, { useCallback, useState } from 'react';
+import ContactDropdown from './contact-dropdown';
+import { ContactSummary } from 'data-models/api/contact';
+import classnames, {
+  display,
+  alignItems,
+  justifyContent,
+  padding,
+} from 'tailwindcss-classnames';
+import Modal from '../general/Modal';
+
+type ContactRecipientsProps = {
+  id?: string;
+  contacts: ContactSummary[];
+  onContactsUpdate: (updatedContacts: ContactSummary[]) => void;
+};
+
+const ContactRecipients: React.FC<ContactRecipientsProps> = ({
+  contacts,
+  onContactsUpdate,
+  id: ariaTargetId,
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentContacts, setCurrentContacts] = useState<ContactSummary[]>(
+    contacts ?? []
+  );
+  const enableEditMode = useCallback(() => setIsEditing(true), [setIsEditing]);
+  const disableEditMode = useCallback(() => setIsEditing(true), [setIsEditing]);
+  const filterContacts = useCallback(
+    (contact: ContactSummary) =>
+      currentContacts.findIndex((c) => c.contactId === contact.contactId) ===
+      -1,
+    [currentContacts]
+  );
+  const handleAddContact = useCallback(
+    (newContact: ContactSummary) =>
+      setCurrentContacts([...currentContacts, newContact]),
+    [currentContacts]
+  );
+
+  const handleRemoveContact = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      const contactId = parseInt(event.currentTarget.dataset.target ?? '');
+      setCurrentContacts(
+        currentContacts.filter((contact) => contact.contactId !== contactId)
+      );
+    },
+    [currentContacts]
+  );
+
+  const handleSave = useCallback(() => {
+    onContactsUpdate(currentContacts);
+    setIsEditing(false);
+  }, [currentContacts, onContactsUpdate]);
+
+  return (
+    <div>
+      <div>
+        {currentContacts
+          .map((contact) => `${contact.name} (${contact.email})`)
+          .join('; ')}
+        <button
+          aria-haspopup="dialog"
+          className={classnames('btn', 'btn-primary')}
+          onClick={enableEditMode}
+          id={ariaTargetId}
+        >
+          Edit
+        </button>
+      </div>
+      <Modal
+        isOpen={isEditing}
+        onSave={handleSave}
+        onClose={disableEditMode}
+        title="Edit Recipients"
+      >
+        {currentContacts.map((contact) => (
+          <div
+            key={contact.contactId}
+            className={classnames(
+              display('flex'),
+              justifyContent('justify-between'),
+              alignItems('items-center'),
+              padding('py-2')
+            )}
+          >
+            <span>
+              {contact.name} ({contact.email})
+            </span>
+            <button
+              className={classnames('btn', 'btn-angry')}
+              data-target={contact.contactId.toString()}
+              onClick={handleRemoveContact}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <ContactDropdown
+          contact={-1}
+          setValue={handleAddContact}
+          filter={filterContacts}
+        />
+      </Modal>
+    </div>
+  );
+};
+
+export default ContactRecipients;

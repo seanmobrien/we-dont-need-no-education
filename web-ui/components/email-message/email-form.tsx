@@ -1,8 +1,18 @@
 'use client';
 
-import { logger } from 'lib/logger';
+import { errorLogFactory, log } from 'lib/logger';
 import { generateUniqueId } from 'lib/react-util';
-import { useState, useEffect, useMemo } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  Dispatch,
+  ChangeEvent,
+  forwardRef,
+  useImperativeHandle,
+  ForwardRefRenderFunction,
+} from 'react';
 import classnames, {
   spacing,
   typography,
@@ -21,9 +31,29 @@ import classnames, {
   borderWidth,
 } from 'tailwindcss-classnames';
 import { EmailMessage } from 'data-models/api/email-message';
+import ContactDropdown from 'components/contact/contact-dropdown';
+import {
+  ContactSummary,
+  createContactSummary,
+  normalizeDateAndTime,
+} from '@/data-models';
+import ContactRecipients from '../contact/contact-recipients';
+import EmailSelect from './email-select';
+import { SubmitRefCallbackInstance } from './_types';
 
+/**
+ * Props for the EmailForm component.
+ *
+ * @interface EmailFormProps
+ *
+ * @property {number} [emailId] - Optional ID of the email.
+ * @property {(email: Partial<EmailMessage>) => void} [onSaved] - Optional callback function that is called when the email is saved.
+ *                                                                It receives a partial EmailMessage object as an argument.
+ */
 interface EmailFormProps {
-  emailId?: number; // Pass an email ID to edit an existing email
+  emailId: number | null;
+  onSaved?: (email: Partial<EmailMessage>) => void;
+  withButtons: boolean;
 }
 
 // Define reusable class names using category-based functions
@@ -57,13 +87,31 @@ const containerClass = classnames(
   maxWidth('max-w-lg'),
   margin('mx-auto'),
   spacing('p-6'),
-  backgroundColor('bg-white'),
   borderRadius('rounded-lg'),
   boxShadow('shadow-md')
 );
 
-const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
-  const [senderId, setSenderId] = useState<number | ''>('');
+const useElementUpdateDispatchCallback = <
+  TElementType extends HTMLElement = HTMLElement,
+  TDispatchType = string
+>(
+  dispatch: Dispatch<TDispatchType>
+) =>
+  useCallback(
+    (e: ChangeEvent<TElementType>) => {
+      if ('target' in e && 'value' in e.target) {
+        dispatch(e.target.value as TDispatchType);
+      }
+    },
+    [dispatch]
+  );
+
+const EmailForm: ForwardRefRenderFunction<
+  SubmitRefCallbackInstance,
+  EmailFormProps
+> = ({ emailId = null, withButtons = true, onSaved }, ref) => {
+  const [sender, setSender] = useState<ContactSummary>(createContactSummary());
+  const [recipients, setRecipients] = useState<ContactSummary[]>([]);
   const [subject, setSubject] = useState('');
   const [emailContents, setEmailContents] = useState('');
   const [sentTimestamp, setSentTimestamp] = useState('');
@@ -80,20 +128,24 @@ const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
 
   // Fetch existing email details if editing
   useEffect(() => {
+    log((l) => l.debug('rebind load effect...'));
+    const controller = new AbortController();
+    const signal = controller.signal;
     if (emailId) {
       setLoading(true);
-      fetch(`/api/email?email_id=${emailId}`)
+      fetch(`/api/email/${emailId}`, { signal })
         .then(async (res) => {
           const data = await res.json();
           if (!res.ok) {
             throw new Error(data.error || 'Error fetching email details.');
           }
-          return data;
+          return data as EmailMessage;
         })
         .then((data: EmailMessage) => {
-          setSenderId(data.sender?.contactId);
+          setSender(data.sender ?? createContactSummary());
           setSubject(data.subject);
           setEmailContents(data.body);
+          setRecipients(data.recipients ?? []);
           setSentTimestamp(
             typeof data.sentOn === 'string'
               ? data.sentOn
@@ -103,42 +155,68 @@ const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
           setParentEmailId(data.parentEmailId ?? null);
         })
         .catch((error) => {
-          logger().error('Unable to fetch email details', error, {
-            source: 'email-form',
-          });
-          if (
-            typeof error === 'object' &&
-            'message' in error &&
-            error.message
-          ) {
-            setMessage(error.message);
+          if (error.name === 'AbortError') {
+            log((l) => l.info('Fetch aborted', { source: 'email-form' }));
+            return;
           } else {
-            setMessage('Error fetching email details.');
+            log((l) =>
+              l.error('Unable to fetch email details', error, {
+                source: 'email-form',
+              })
+            );
+            if (
+              typeof error === 'object' &&
+              'message' in error &&
+              error.message
+            ) {
+              setMessage(error.message);
+            } else {
+              setMessage('Error fetching email details.');
+            }
           }
         })
         .finally(() => {
+          if (signal.aborted) {
+            return;
+          }
           setLoading(false);
         });
+
+      return () => {
+        controller.abort();
+      };
     }
   }, [emailId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const setSubjectCallback = useElementUpdateDispatchCallback(setSubject);
+  const setEmailContentsCallback =
+    useElementUpdateDispatchCallback<HTMLTextAreaElement>(setEmailContents);
+  const setSentTimestampCallback =
+    useElementUpdateDispatchCallback(setSentTimestamp);
+  const debugRecipients = (x: ContactSummary[]) => {
+    console.log('in set recipients');
+    setRecipients((current) => {
+      console.log('updateing from old to new', current, x);
+      return x;
+    });
+  };
+  const saveEmailCallback = useCallback(async () => {
+    console.log('save recipients');
+    log((l) => l.debug('Saving email...'));
     setLoading(true);
     setMessage('');
-
-    const emailData = {
-      sender_id: senderId,
-      subject,
-      body: emailContents,
-      sent_timestamp: sentTimestamp,
-      thread_id: threadId,
-      parent_email_id: parentEmailId,
-    };
-
     const method = emailId ? 'PUT' : 'POST';
     const apiUrl = '/api/email';
-
+    const emailData = {
+      emailId,
+      senderId: sender?.contactId,
+      recipients,
+      subject,
+      body: emailContents,
+      sentOn: sentTimestamp,
+      threadId,
+      parentEmailId,
+    };
     try {
       const res = await fetch(apiUrl, {
         method,
@@ -156,19 +234,73 @@ const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
             ? 'Email updated successfully!'
             : 'Email created successfully!'
         );
+        if (onSaved) {
+          onSaved({ ...result.email });
+        }
+        return result.email as Partial<EmailMessage>;
       } else {
         setMessage(result.error || 'Something went wrong.');
-        logger().warn('Unable to save email', result, {
-          source: 'email-form',
-        });
+        log((l) =>
+          l.warn({
+            message: 'Unable to save email',
+            result,
+            source: 'email-form',
+          })
+        );
       }
     } catch (error) {
-      logger().error('Network error detected', error, { source: 'email-form' });
-      setMessage('Network error. Please try again.');
+      log((l) =>
+        l.error(
+          errorLogFactory({
+            error,
+            source: 'email-form: submit',
+            include: { details: 'Network error detected' },
+          })
+        )
+      );
+      setMessage(
+        String(
+          !!error &&
+            typeof error == 'object' &&
+            'message' in error &&
+            error.message
+            ? error.message
+            : null
+        ) ?? 'Network error. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
-  };
+    return null;
+  }, [
+    emailId,
+    sender,
+    recipients,
+    subject,
+    emailContents,
+    sentTimestamp,
+    threadId,
+    parentEmailId,
+    onSaved,
+    setLoading,
+    setMessage,
+  ]);
+
+  const handleSubmit = useCallback(
+    async (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      await saveEmailCallback();
+    },
+    [saveEmailCallback]
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      saveEmailCallback,
+    }),
+    [saveEmailCallback]
+  );
 
   return (
     <div className={containerClass}>
@@ -185,23 +317,29 @@ const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
           {message}
         </p>
       )}
-      <form onSubmit={handleSubmit} className={spacing('space-y-4')}>
+      <div className={spacing('space-y-4')}>
         <div>
           <label
             id={generateCombinedId('senderIdLabel')}
             htmlFor={generateCombinedId('senderId')}
             className={labelClass}
           >
-            Sender ID
+            Sent By
           </label>
-          <input
-            id={generateCombinedId('senderId')}
-            type="number"
-            value={senderId ?? ''}
-            onChange={(e) => setSenderId(Number(e.target.value))}
-            className={inputClass}
-            aria-labelledby={generateCombinedId('senderIdLabel')}
-            required
+          <ContactDropdown contact={sender} setValue={setSender} />
+        </div>
+        <div>
+          <label
+            id={generateCombinedId('recipientsIdLabel')}
+            htmlFor={generateCombinedId('recipientsId')}
+            className={labelClass}
+          >
+            Recipients
+          </label>
+          <ContactRecipients
+            id={generateCombinedId('recipientsId')}
+            contacts={recipients}
+            onContactsUpdate={debugRecipients}
           />
         </div>
         <div>
@@ -216,26 +354,9 @@ const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
             id={generateCombinedId('subject')}
             type="text"
             value={subject ?? ''}
-            onChange={(e) => setSubject(e.target.value)}
+            onChange={setSubjectCallback}
             className={inputClass}
             aria-labelledby={generateCombinedId('subjectLabel')}
-            required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor={generateCombinedId('emailContents')}
-            id={generateCombinedId('emailContentsLabel')}
-            className={labelClass}
-          >
-            Email Contents
-          </label>
-          <textarea
-            id={generateCombinedId('emailContents')}
-            value={emailContents ?? ''}
-            onChange={(e) => setEmailContents(e.target.value)}
-            className={inputClass}
-            aria-labelledby={generateCombinedId('emailContentsLabel')}
             required
           />
         </div>
@@ -250,30 +371,11 @@ const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
           <input
             id={generateCombinedId('sentTimestamp')}
             type="datetime-local"
-            value={sentTimestamp ?? ''}
-            onChange={(e) => setSentTimestamp(e.target.value)}
+            value={normalizeDateAndTime(sentTimestamp)}
+            onChange={setSentTimestampCallback}
             className={inputClass}
             aria-labelledby={generateCombinedId('sentTimestampLabel')}
             required
-          />
-        </div>
-        <div>
-          <label
-            htmlFor={generateCombinedId('threadId')}
-            id={generateCombinedId('threadIdLabel')}
-            className={labelClass}
-          >
-            Thread ID (optional)
-          </label>
-          <input
-            id={generateCombinedId('threadId')}
-            type="number"
-            value={threadId ?? ''}
-            onChange={(e) =>
-              setThreadId(e.target.value ? Number(e.target.value) : null)
-            }
-            className={inputClass}
-            aria-labelledby={generateCombinedId('threadIdLabel')}
           />
         </div>
         <div>
@@ -284,32 +386,73 @@ const EmailForm: React.FC<EmailFormProps> = ({ emailId }) => {
           >
             Parent Email ID (optional)
           </label>
-          <input
+          <EmailSelect
             id={generateCombinedId('parentEmailId')}
-            type="number"
-            value={parentEmailId ?? ''}
-            onChange={(e) =>
-              setParentEmailId(e.target.value ? Number(e.target.value) : null)
-            }
-            className={inputClass}
-            aria-labelledby={generateCombinedId('parentEmailIdLabel')}
+            selectedEmail={parentEmailId}
+            onEmailSelect={setParentEmailId}
           />
         </div>
-        <button
-          type="submit"
-          className={primaryButton}
-          disabled={loading}
-          aria-roledescription="Submit Form"
-        >
-          {loading
-            ? 'Submitting...'
-            : emailId
-            ? 'Update Email'
-            : 'Create Email'}
-        </button>
-      </form>
+        <div>
+          <label
+            htmlFor={generateCombinedId('threadId')}
+            id={generateCombinedId('threadIdLabel')}
+            className={labelClass}
+          >
+            Thread ID (updated by parent email)
+          </label>
+          <input
+            id={generateCombinedId('threadId')}
+            type="number"
+            readOnly={true}
+            disabled={true}
+            value={threadId ?? ''}
+            className={inputClass}
+            aria-labelledby={generateCombinedId('threadIdLabel')}
+            aria-readonly="true"
+            aria-disabled="true"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor={generateCombinedId('emailContents')}
+            id={generateCombinedId('emailContentsLabel')}
+            className={labelClass}
+          >
+            Email Contents
+          </label>
+          <textarea
+            id={generateCombinedId('emailContents')}
+            value={emailContents ?? ''}
+            onChange={setEmailContentsCallback}
+            className={inputClass}
+            aria-labelledby={generateCombinedId('emailContentsLabel')}
+            required
+          />
+        </div>
+        {withButtons ? (
+          <button
+            type="button"
+            className={primaryButton}
+            disabled={loading}
+            aria-roledescription="Submit Form"
+            onClick={handleSubmit}
+          >
+            {loading
+              ? 'Submitting...'
+              : emailId
+              ? 'Update Email'
+              : 'Create Email'}
+          </button>
+        ) : loading ? (
+          'Submitting...'
+        ) : emailId ? (
+          'Update Email'
+        ) : (
+          'Create Email'
+        )}
+      </div>
     </div>
   );
 };
 
-export default EmailForm;
+export default forwardRef(EmailForm);

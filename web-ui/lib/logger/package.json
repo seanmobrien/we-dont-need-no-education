@@ -1,0 +1,12 @@
+{
+  "name": "logger",
+  "version": "1.0.0",
+  "description": "A  submodule that provides logging capabilities for the sue the schools application.",
+  "main": "index.ts",
+  "types": "logger.d.ts",
+  "author": "Sean O'Brien",
+  "license": "MIT",
+  "dependencies": {
+    "pino": "^7.0.0"
+  }
+}

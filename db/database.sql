@@ -1,28 +1,10 @@
-DROP TABLE IF EXISTS violations_detected;
-DROP TABLE IF EXISTS call_to_action_responses;
-DROP INDEX IF EXISTS idx_attachment_search;
-DROP TABLE IF EXISTS call_to_action_response;
-DROP TABLE IF EXISTS call_to_action;
-DROP TABLE IF EXISTS email_recipients;
-DROP TABLE IF EXISTS key_points;
-DROP TABLE IF EXISTS email_attachments;
-DROP TABLE IF EXISTS email_reads;
-DROP TABLE IF EXISTS email_recipients;
-DROP TABLE IF EXISTS  legal_references;
-DROP TABLE IF EXISTS  policies_statutes;
-DROP TABLE IF EXISTS policy_types;
-DROP TABLE IF EXISTS emails;
-DROP TABLE IF EXISTS threads;
-DROP TABLE IF EXISTS contacts;
-DROP TABLE IF EXISTS email_sentiment_analysis;
-DROP TABLE IF EXISTS compliance_scores;
-
 CREATE TABLE contacts (
     contact_id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     role_dscr VARCHAR(100),  
-    is_district_staff BOOLEAN DEFAULT FALSE
+    is_district_staff BOOLEAN DEFAULT FALSE,
+    phone VARCHAR(20),
 );
 
 CREATE TABLE threads (
@@ -37,7 +19,7 @@ CREATE TABLE emails (
     sender_id INT NOT NULL REFERENCES contacts(contact_id) ON DELETE CASCADE,
     thread_id INT NULL REFERENCES threads(thread_id) ON DELETE SET NULL,
     parent_email_id INT NULL REFERENCES emails(email_id) ON DELETE SET NULL,  
-    subject TEXT NOT NULL,
+    [subject] TEXT NOT NULL,
     email_contents TEXT NOT NULL,
     sent_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

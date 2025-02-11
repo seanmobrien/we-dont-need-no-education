@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   classnames,
   spacing,
@@ -8,16 +8,23 @@ import {
   typography,
   backgrounds,
   margin,
-  maxWidth,
   flexBox,
   interactivity,
   transitionProperty,
   boxShadow,
   display,
+  position,
 } from 'tailwindcss-classnames';
-import type { EmailMessageSummary } from 'data-models/api/email-message';
-
+import type {
+  EmailMessage,
+  EmailMessageSummary,
+  PaginationStats,
+} from 'data-models/api';
+import BulkEmailForm from './bulk-email-form';
 import EmailForm from './email-form';
+import Modal from '../general/Modal';
+import { SubmitRefCallbackInstance } from './_types';
+import { log } from '@/lib/logger';
 
 // Shared class for text color used multiple times
 const textGray600 = typography('text-gray-600');
@@ -25,10 +32,8 @@ const marginBottom2 = margin('mb-2');
 
 // Define reusable class names using `classnames`
 const containerClass = classnames(
-  maxWidth('max-w-3xl'),
   margin('mx-auto'),
   spacing('p-6'),
-  backgrounds('bg-white'),
   borders('rounded-lg'),
   boxShadow('shadow-md')
 );
@@ -54,30 +59,98 @@ const EmailList: React.FC = () => {
   const [selectedEmailId, setSelectedEmailId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
+  const [showBulkForm, setShowBulkForm] = useState(false);
+  const [pageStats, setPageStats] = useState<PaginationStats>({
+    page: 1,
+    num: 10,
+    total: 0,
+  });
+  const emailFormRef = useRef<SubmitRefCallbackInstance>(null);
+
+  const fetchPageStats = useCallback(
+    (page: number) => {
+      setLoading(true);
+      fetch(`/api/email?page=${page}&num=${pageStats.num}`)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error('Error fetching emails.');
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setPageStats(data.pageStats);
+          setEmails(data.results);
+          setLoading(false);
+        })
+        .catch(() => {
+          setError('Error fetching emails.');
+          setLoading(false);
+        });
+    },
+    [pageStats.num, setEmails, setPageStats, setLoading, setError]
+  );
+  const onSelectedEmailSave = useCallback(
+    (newValue: Partial<EmailMessage>) => {
+      setEmails((currentValue) =>
+        currentValue.map((email) =>
+          email.emailId === selectedEmailId
+            ? {
+                ...email,
+                ...newValue,
+              }
+            : email
+        )
+      );
+      setSelectedEmailId(null);
+    },
+    [setEmails, selectedEmailId]
+  );
+
+  const onModalSave = useCallback(async () => {
+    if (emailFormRef.current) {
+      try {
+        emailFormRef.current.saveEmailCallback();
+      } catch (error) {
+        log((l) => l.error({ error, source: 'email-list' }));
+      }
+    }
+  }, [emailFormRef]);
 
   useEffect(() => {
-    fetch('/api/email')
-      .then((res) => res.json())
-      .then((data) => {
-        setEmails(data);
-        setLoading(false);
-      })
-      .catch(() => {
-        setError('Error fetching emails.');
-        setLoading(false);
-      });
-  }, []);
+    fetchPageStats(1);
+  }, [fetchPageStats]);
+  const handlePageChange = (newPage: number) => {
+    fetchPageStats(newPage);
+  };
+
+  const handleMenuClick = () => {
+    setShowMenu(!showMenu);
+  };
+
+  const handleAddEmail = () => {
+    setSelectedEmailId(null);
+    setShowBulkForm(false);
+    setShowMenu(false);
+  };
+
+  const handleBulkAddEmail = () => {
+    setShowBulkForm(true);
+    setShowMenu(false);
+  };
 
   return (
     <div className={containerClass}>
-      <h2
-        className={classnames(
-          typography('text-xl', 'font-semibold'),
-          margin('mb-4')
-        )}
-      >
-        Email List
-      </h2>
+      {!showBulkForm && (
+        <h2
+          className={classnames(
+            typography('text-xl', 'font-semibold'),
+            margin('mb-4')
+          )}
+        >
+          Email List
+        </h2>
+      )}
       {error && (
         <p
           className={classnames(typography('text-red-500'), marginBottom2)}
@@ -88,6 +161,8 @@ const EmailList: React.FC = () => {
       )}
       {loading ? (
         <p className={textGray600}>Loading emails...</p>
+      ) : showBulkForm ? (
+        <></>
       ) : (
         <div>
           {emails.length === 0 ? (
@@ -128,20 +203,98 @@ const EmailList: React.FC = () => {
           )}
         </div>
       )}
-      {selectedEmailId && (
-        <div className={margin('mt-6')}>
-          <h2
-            data-testid="email-list-edit-header"
+      {!showBulkForm && (
+        <div className={classnames(position('relative'))}>
+          <button
+            onClick={handleMenuClick}
             className={classnames(
-              typography('text-lg', 'font-semibold'),
-              marginBottom2
+              spacing('p-2'),
+              backgrounds('bg-blue-500', 'hover:bg-blue-600'),
+              typography('text-white'),
+              borders('rounded')
             )}
           >
-            Edit Email
-          </h2>
-          <EmailForm emailId={selectedEmailId} />
+            Add Email
+          </button>
+          {showMenu && (
+            <div
+              className={classnames(
+                backgrounds('bg-white'),
+                borders('border', 'rounded'),
+                boxShadow('shadow-md'),
+                spacing('mt-2'),
+                position('absolute')
+              )}
+            >
+              <button
+                onClick={handleAddEmail}
+                className={classnames(
+                  spacing('p-2'),
+                  display('block'),
+                  backgrounds('hover:bg-gray-100')
+                )}
+              >
+                Add Email
+              </button>
+              <button
+                onClick={handleBulkAddEmail}
+                className={classnames(
+                  spacing('p-2'),
+                  display('block'),
+                  backgrounds('hover:bg-gray-100')
+                )}
+              >
+                Bulk Add Email
+              </button>
+            </div>
+          )}
         </div>
       )}
+      {showBulkForm ? (
+        <BulkEmailForm />
+      ) : (
+        <Modal
+          title="Edit Email"
+          closeButtonText="Cancel"
+          onClose={() => setSelectedEmailId(null)}
+          isOpen={!!selectedEmailId}
+          onSave={onModalSave}
+        >
+          <EmailForm
+            ref={emailFormRef}
+            emailId={selectedEmailId}
+            onSaved={onSelectedEmailSave}
+            withButtons={false}
+          />
+        </Modal>
+      )}
+      <div className={classnames(display('flex'), margin('mt-4'))}>
+        <button
+          onClick={() => handlePageChange(pageStats.page - 1)}
+          disabled={pageStats.page === 1}
+          className={classnames(
+            spacing('p-2'),
+            backgrounds('bg-blue-500', 'hover:bg-blue-600'),
+            typography('text-white'),
+            borders('rounded'),
+            margin('mr-2')
+          )}
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => handlePageChange(pageStats.page + 1)}
+          disabled={pageStats.page * pageStats.num >= pageStats.total}
+          className={classnames(
+            spacing('p-2'),
+            backgrounds('bg-blue-500', 'hover:bg-blue-600'),
+            typography('text-white'),
+            borders('rounded')
+          )}
+        >
+          Next
+        </button>
+      </div>
     </div>
   );
 };

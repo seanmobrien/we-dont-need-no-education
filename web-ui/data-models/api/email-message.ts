@@ -5,11 +5,12 @@ export type EmailMessageSummary = {
   sender: ContactSummary;
   subject: string;
   sentOn: Date | string;
-  threadId?: number;
+  threadId?: number | null;
+  parentEmailId?: number | null;
+  recipients: ContactSummary[];
 };
 
 export type EmailMessage = EmailMessageSummary & {
   body: string;
-  parentEmailId?: number;
   // TODO: Recipients
 };
