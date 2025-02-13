@@ -20,11 +20,12 @@ import type {
   EmailMessageSummary,
   PaginationStats,
 } from 'data-models/api';
-import BulkEmailForm from './bulk-email-form';
 import EmailForm from './email-form';
 import Modal from '../general/Modal';
 import { SubmitRefCallbackInstance } from './_types';
 import { log } from '@/lib/logger';
+import Link from 'next/link';
+import siteMap from 'lib/site-util/url-builder';
 
 // Shared class for text color used multiple times
 const textGray600 = typography('text-gray-600');
@@ -134,11 +135,6 @@ const EmailList: React.FC = () => {
     setShowMenu(false);
   };
 
-  const handleBulkAddEmail = () => {
-    setShowBulkForm(true);
-    setShowMenu(false);
-  };
-
   return (
     <div className={containerClass}>
       {!showBulkForm && (
@@ -203,71 +199,54 @@ const EmailList: React.FC = () => {
           )}
         </div>
       )}
-      {!showBulkForm && (
-        <div className={classnames(position('relative'))}>
-          <button
-            onClick={handleMenuClick}
+      <div className={classnames(position('relative'))}>
+        <button
+          onClick={handleMenuClick}
+          className={classnames(
+            spacing('p-2'),
+            backgrounds('bg-blue-500', 'hover:bg-blue-600'),
+            typography('text-white'),
+            borders('rounded')
+          )}
+        >
+          Add Email
+        </button>
+        {showMenu && (
+          <div
             className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-              typography('text-white'),
-              borders('rounded')
+              backgrounds('bg-white'),
+              borders('border', 'rounded'),
+              boxShadow('shadow-md'),
+              spacing('mt-2'),
+              position('absolute')
             )}
           >
-            Add Email
-          </button>
-          {showMenu && (
-            <div
+            <Link
+              href={siteMap.email.page(-1)}
               className={classnames(
-                backgrounds('bg-white'),
-                borders('border', 'rounded'),
-                boxShadow('shadow-md'),
-                spacing('mt-2'),
-                position('absolute')
+                spacing('p-2'),
+                display('block'),
+                backgrounds('hover:bg-gray-100')
               )}
+              title="Add Email"
             >
-              <button
-                onClick={handleAddEmail}
-                className={classnames(
-                  spacing('p-2'),
-                  display('block'),
-                  backgrounds('hover:bg-gray-100')
-                )}
-              >
-                Add Email
-              </button>
-              <button
-                onClick={handleBulkAddEmail}
-                className={classnames(
-                  spacing('p-2'),
-                  display('block'),
-                  backgrounds('hover:bg-gray-100')
-                )}
-              >
-                Bulk Add Email
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-      {showBulkForm ? (
-        <BulkEmailForm />
-      ) : (
-        <Modal
-          title="Edit Email"
-          closeButtonText="Cancel"
-          onClose={() => setSelectedEmailId(null)}
-          isOpen={!!selectedEmailId}
-          onSave={onModalSave}
-        >
-          <EmailForm
-            ref={emailFormRef}
-            emailId={selectedEmailId}
-            onSaved={onSelectedEmailSave}
-            withButtons={false}
-          />
-        </Modal>
-      )}
+              Add Email
+            </Link>
+            <Link
+              href={siteMap.email.bulkEdit()}
+              className={classnames(
+                spacing('p-2'),
+                display('block'),
+                backgrounds('hover:bg-gray-100')
+              )}
+              title="Bulk Add Email"
+            >
+              Bulk Add Email
+            </Link>
+          </div>
+        )}
+      </div>
+
       <div className={classnames(display('flex'), margin('mt-4'))}>
         <button
           onClick={() => handlePageChange(pageStats.page - 1)}
@@ -295,6 +274,20 @@ const EmailList: React.FC = () => {
           Next
         </button>
       </div>
+      <Modal
+        title="Edit Email"
+        closeButtonText="Cancel"
+        onClose={() => setSelectedEmailId(null)}
+        isOpen={!!selectedEmailId}
+        onSave={onModalSave}
+      >
+        <EmailForm
+          ref={emailFormRef}
+          emailId={selectedEmailId}
+          onSaved={onSelectedEmailSave}
+          withButtons={false}
+        />
+      </Modal>
     </div>
   );
 };

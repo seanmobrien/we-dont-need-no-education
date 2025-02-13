@@ -13,11 +13,6 @@
  * type Tuple = UnionToTuple<Union>; // ['a', 'b', 'c']
  * ```
  */
-export type UnionToTuple<T> = (
-  (T extends any ? (t: T) => T : never) extends (t: infer U) => any ? U : never
-) extends { [K in any]: infer E }
-  ? E[]
-  : never;
 
 /**
  * Converts a tuple type to a union type.
@@ -34,7 +29,6 @@ export type UnionToTuple<T> = (
  * type MyUnion = TupleToUnion<MyTuple>; // string | number | boolean
  * ```
  */
-export type TupleToUnion<T extends any[]> = T[number];
 
 /**
  * Converts a union type to an object type with keys from the union and values of type `any`.
@@ -46,9 +40,6 @@ export type TupleToUnion<T extends any[]> = T[number];
  * type MyObject = UnionToObject<MyUnion>; // { 'a': any; 'b': any; 'c': any }
  * ```
  */
-export type UnionToObject<T extends string | number | symbol> = {
-  [K in T]: any;
-};
 
 /**
  * Infers the element type of an array.
@@ -65,5 +56,35 @@ export type UnionToObject<T extends string | number | symbol> = {
  * type ElementType = ArrayElement<MyArray>; // string | number
  * ```
  */
-export type ArrayElement<T extends readonly any[]> =
-  T extends readonly (infer U)[] ? U : never;
+
+/**
+ * Picks a specific field type from an object type `T` by key `K`.
+ *
+ * @template T - The object type.
+ * @template K - The key of the field to pick.
+ * @example
+ * ```typescript
+ * type MyObject = { a: string; b: number; c: boolean };
+ * type FieldType = PickField<MyObject, 'b'>; // number
+ * ```
+ */
+export type PickField<T, K extends keyof T> = Pick<T, K>[K];
+
+/**
+ * Converts a kebab-case string to camelCase.
+ *
+ * This utility type recursively transforms a kebab-case string literal type
+ * into a camelCase string literal type. Each hyphen (`-`) in the input string
+ * is removed, and the character immediately following the hyphen is
+ * capitalized.
+ *
+ * @template S - The kebab-case string to be transformed.
+ * @example
+ * ```typescript
+ * type CamelCase = KebabToCamelCase<'kebab-case-string'>; // 'kebabCaseString'
+ * ```
+ */
+export type KebabToCamelCase<S extends string> =
+  S extends `${infer T}-${infer U}`
+    ? `${T}${Capitalize<KebabToCamelCase<U>>}`
+    : S;
