@@ -1,4 +1,4 @@
-import EmailList from 'components/email-message/email-list';
+import EmailList from '@/components/email-message/list';
 import Image from 'next/image';
 import {
   classnames,

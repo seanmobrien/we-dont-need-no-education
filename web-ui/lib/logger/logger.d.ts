@@ -87,4 +87,4 @@ export const errorLogFactory: ({
   error: unknown;
   source: string;
   include?: object;
-}) => Record<string, unknown>;
+} & Record<string, unknown>) => Record<string, unknown>;

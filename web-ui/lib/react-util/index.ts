@@ -5,3 +5,4 @@
  * across the React application.
  */
 export * from './_utility-methods';
+export * from './errors';

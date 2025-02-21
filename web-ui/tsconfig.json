@@ -45,11 +45,12 @@
     }
   },
   "include": [
+    "./*.ts",
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "components/email-message/bulk-email-form"
+    "components/email-message/bulk-form"
   ],
   "exclude": [
     "node_modules"

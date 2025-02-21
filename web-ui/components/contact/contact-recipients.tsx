@@ -7,7 +7,8 @@ import classnames, {
   justifyContent,
   padding,
 } from 'tailwindcss-classnames';
-import Modal from '../general/Modal';
+import fastEqual from 'fast-deep-equal';
+import Modal from '../general/modal';
 
 type ContactRecipientsProps = {
   id?: string;
@@ -21,9 +22,10 @@ const ContactRecipients: React.FC<ContactRecipientsProps> = ({
   id: ariaTargetId,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [currentContacts, setCurrentContacts] = useState<ContactSummary[]>(
-    contacts ?? []
-  );
+  const [contactsFromProps, setContactsFromProps] =
+    useState<ContactSummary[]>(contacts);
+  const [currentContacts, setCurrentContacts] =
+    useState<ContactSummary[]>(contacts);
   const enableEditMode = useCallback(() => setIsEditing(true), [setIsEditing]);
   const disableEditMode = useCallback(() => setIsEditing(true), [setIsEditing]);
   const filterContacts = useCallback(
@@ -37,7 +39,6 @@ const ContactRecipients: React.FC<ContactRecipientsProps> = ({
       setCurrentContacts([...currentContacts, newContact]),
     [currentContacts]
   );
-
   const handleRemoveContact = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       const contactId = parseInt(event.currentTarget.dataset.target ?? '');
@@ -47,12 +48,18 @@ const ContactRecipients: React.FC<ContactRecipientsProps> = ({
     },
     [currentContacts]
   );
-
   const handleSave = useCallback(() => {
     onContactsUpdate(currentContacts);
     setIsEditing(false);
   }, [currentContacts, onContactsUpdate]);
 
+  // Check to see if our parent component has updated contacts - if so, update our state
+  if (!fastEqual(contactsFromProps, contacts)) {
+    setContactsFromProps(contacts);
+    if (!fastEqual(currentContacts, contacts)) {
+      setCurrentContacts(contacts);
+    }
+  }
   return (
     <div>
       <div>

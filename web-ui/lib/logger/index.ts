@@ -20,7 +20,7 @@ export const logger = (): Promise<ILogger> =>
           level: env('LOG_LEVEL_SERVER'),
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
-          customLevels: { verbose: 10000, silly: Number.MAX_SAFE_INTEGER },
+          customLevels: { verbose: 5, silly: 1 },
           useOnlyCustomLevels: false,
         });
       } else {
@@ -28,7 +28,7 @@ export const logger = (): Promise<ILogger> =>
           level: env('NEXT_PUBLIC_LOG_LEVEL_CLIENT'),
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
-          customLevels: { verbose: 10000, silly: Number.MAX_SAFE_INTEGER },
+          customLevels: { verbose: 5, silly: 1 },
           useOnlyCustomLevels: false,
         });
       }

@@ -18,7 +18,7 @@ describe('AbortablePromise', () => {
   });
 
   it('should cancel the promise', async () => {
-    const promise = new AbortablePromise<string>((resolve, reject, signal) => {
+    const promise = new AbortablePromise<string>((resolve) => {
       setTimeout(() => resolve('resolved'), 100);
     });
 
@@ -28,13 +28,13 @@ describe('AbortablePromise', () => {
   });
 
   it('should call onrejected when cancelled', async () => {
-    const promise = new AbortablePromise<string>((resolve, reject, signal) => {
+    const promise = new AbortablePromise<string>((resolve) => {
       setTimeout(() => resolve('resolved'), 100);
     });
 
     const cancelledPromise = promise.cancelled((reason) => {
       expect(reason).toEqual(new Error('Promise was cancelled'));
-      return 'cancelled';
+      throw 'cancelled';
     });
 
     promise.cancel();
@@ -51,6 +51,25 @@ describe('AbortablePromise', () => {
       expect(value).toBe('resolved');
       return 'completed';
     });
+
+    await expect(completedPromise).resolves.toBe('completed');
+  });
+  it('should call onfulfilled when handled in chain', async () => {
+    const promise = new AbortablePromise<string>((resolve) => {
+      setTimeout(() => resolve('resolved'), 100);
+    });
+
+    const completedPromise = promise
+      .cancelled((e) => {
+        expect(e).toEqual(new Error('Promise was cancelled'));
+        return 'cancelled';
+      })
+      .then((value) => {
+        expect(value).toBe('cancelled');
+        return 'completed';
+      });
+
+    promise.cancel();
 
     await expect(completedPromise).resolves.toBe('completed');
   });

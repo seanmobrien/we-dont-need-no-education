@@ -1,4 +1,4 @@
-import EmailForm from '@/components/email-message/email-form';
+import EmailForm from '@/components/email-message/form';
 import Image from 'next/image';
 import {
   classnames,
@@ -15,8 +15,16 @@ import {
   gridColumn,
 } from 'tailwindcss-classnames';
 
-export default function Home({ params }: { params: { emailId: string } }) {
-  const emailId = params.emailId;
+const Home = async ({
+  params: { emailId: emailIdFromParams },
+}: {
+  params: { emailId: number };
+}) => {
+  const unsafeEmailId: number = await emailIdFromParams;
+  const emailId = parseInt(String(unsafeEmailId), 10);
+  if (isNaN(emailId)) {
+    throw new Error('Invalid email ID');
+  }
   return (
     <div
       className={classnames(
@@ -45,7 +53,11 @@ export default function Home({ params }: { params: { emailId: string } }) {
             gridColumn('col-span-12')
           )}
         >
-          <EmailForm emailId={emailId} withButtons={false} />
+          <EmailForm
+            emailId={emailId}
+            withButtons={true}
+            afterSaveBehavior="redirect"
+          />
         </div>
 
         <div
@@ -104,4 +116,6 @@ export default function Home({ params }: { params: { emailId: string } }) {
       </footer>
     </div>
   );
-}
+};
+
+export default Home;

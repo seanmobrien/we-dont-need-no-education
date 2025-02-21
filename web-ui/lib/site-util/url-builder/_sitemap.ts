@@ -4,6 +4,7 @@ export const siteMap = {
     email: {
       search: '',
       thread: '',
+      stats: '',
     },
   },
   email: {

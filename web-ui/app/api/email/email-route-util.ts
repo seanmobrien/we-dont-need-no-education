@@ -10,6 +10,7 @@
 
 import { ContactSummary } from '@/data-models';
 import { query, queryExt } from '@/lib/neondb';
+import { ValidationError } from '@/lib/react-util';
 
 /**
  * Maps a record to a summary object containing email details.
@@ -51,23 +52,37 @@ export const mapRecordToObject = (record: Record<string, unknown>) => ({
 export const insertRecipients = async (
   emailId: number,
   recipients: ContactSummary[],
-  clear: boolean = true
+  clear: boolean = true,
+  allowEmpty: boolean = false
 ) => {
+  if (!allowEmpty && !recipients?.length) {
+    throw new ValidationError({
+      field: 'recipients',
+      value: !recipients ? '[null]' : '[empty]',
+      reason: 'At least one recipient is required',
+      source: 'insertRecipients',
+    });
+  }
+
   // Delete existing recipients if clear is true
   if (clear) {
     await query(
       (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`
     );
   }
+  if (!recipients.length) {
+    return 0;
+  }
   // Build bulk insert statement
   const insertSql = `INSERT INTO email_recipients (email_id, recipient_id)
-            VALUES ${recipients
-              .map((r: ContactSummary) => `(${emailId}, ${r.contactId})`)
-              .join(', ')}
-          `;
-  const res = await queryExt((sql) => sql<false, true>(insertSql));
-  if (res.rowCount !== recipients.length) {
+    VALUES ${recipients
+      .map((r: ContactSummary) => `(${emailId}, ${r.contactId})`)
+      .join(', ')}
+    RETURNING email_id, recipient_id
+  `.toString();
+  const res = await query((sql) => sql<false, false>(insertSql));
+  if (res.length !== recipients.length) {
     throw new Error('Failed to insert all recipients');
   }
-  return res.rowCount;
+  return res.length;
 };

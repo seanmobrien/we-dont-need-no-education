@@ -3,7 +3,7 @@
  *
  * This module serves as a collection of utility functions and types for the application.
  * It contains typeguars, type predicates, and other utility functions that are essential
- * for ensuruig code reusability and consistency.
+ * for ensuruing code reusability and consistency.
  *
  * @remarks
  * Funtionality is divided into the following categories:
@@ -14,3 +14,4 @@
 export * from './_guards';
 export type * from './_types';
 export * from './_record-decorators';
+export * from './_generics';

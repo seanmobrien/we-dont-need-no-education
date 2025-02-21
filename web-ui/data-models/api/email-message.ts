@@ -12,5 +12,9 @@ export type EmailMessageSummary = {
 
 export type EmailMessage = EmailMessageSummary & {
   body: string;
-  // TODO: Recipients
+};
+
+export type EmailMessageStats = {
+  total: number;
+  lastUpdated: Date;
 };

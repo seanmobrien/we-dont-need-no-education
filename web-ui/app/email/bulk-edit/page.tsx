@@ -1,4 +1,4 @@
-import BulkEmailForm from '@/components/email-message/bulk-email-form';
+import BulkEmailForm from '@/components/email-message/bulk-form';
 import Image from 'next/image';
 import {
   classnames,

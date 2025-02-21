@@ -31,7 +31,7 @@ import ContactDropdown from 'components/contact/contact-dropdown';
 import { errorLogFactory, log } from 'lib/logger';
 import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
-import EmailSelect from '../email-select';
+import EmailSelect from '../select';
 
 type BulkUpdateOperationRecord = {
   record: RecordWithDirtyState<EmailMessage>;

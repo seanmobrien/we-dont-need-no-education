@@ -16,14 +16,17 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
+    "autoprefixer": "^10.4.20",
+    "fast-deep-equal": "^3.1.3",
     "lodash": "^4.17.21",
     "next": "15.1.6",
     "pino": "^9.6.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tailwindcss": "^4.0.6",
+    "tailwindcss-classnames": "^3.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5",
-    "winston": "^3.17.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -36,7 +39,6 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "autoprefixer": "^10.4.20",
     "eslint": "^9",
     "eslint-config-next": "15.1.6",
     "eslint-config-prettier": "^10.0.1",
@@ -44,8 +46,6 @@
     "jest-environment-jsdom": "^29.7.0",
     "jsdom": "^26.0.0",
     "postcss": "^8.5.1",
-    "tailwindcss": "^4.0.3",
-    "tailwindcss-classnames": "^3.1.0",
     "ts-jest": "^29.2.5"
   }
 }

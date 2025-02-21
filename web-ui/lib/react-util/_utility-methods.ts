@@ -4,6 +4,9 @@
  * A collection of utility methods for use in React applications.
  */
 
+import { OperationCanceledException } from 'typescript';
+import { isOperationCancelledError } from '../typescript';
+
 /**
  * Generates a unique identifier string.
  *
@@ -19,7 +22,7 @@ export const generateUniqueId = () =>
  * @returns True if the value is an Error object, otherwise false.
  */
 export const isError = (value: unknown): value is Error =>
-  typeof value === 'object' && value !== null && 'message' in value;
+  typeof value === 'object' && !!value && 'message' in value;
 
 /**
  * Checks if the given value is a DOMException with the name 'AbortError'.
@@ -27,5 +30,9 @@ export const isError = (value: unknown): value is Error =>
  * @param value - The value to check.
  * @returns True if the value is a DOMException with the name 'AbortError', otherwise false.
  */
-export const isAbortError = (value: unknown): value is DOMException =>
-  isError(value) && value.name === 'AbortError';
+export const isAbortError = (
+  value: unknown
+): value is DOMException | OperationCanceledException =>
+  (isError(value) && value.name === 'AbortError') ||
+  value instanceof DOMException ||
+  isOperationCancelledError(value);

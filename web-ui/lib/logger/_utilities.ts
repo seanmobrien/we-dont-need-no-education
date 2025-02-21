@@ -17,10 +17,16 @@ export const errorLogFactory: ({
   error: unknown;
   source: string;
   include?: object;
-}) => Record<string, unknown> = ({ error, source, include }) => {
+} & Record<string, unknown>) => Record<string, unknown> = ({
+  error,
+  source,
+  include,
+  ...params
+}) => {
   const ret: Record<string, unknown> = {
     source,
     ...(include ?? {}),
+    ...(params ?? {}),
   };
   // if it has a message and a stack, it's error-like enough for us
   if (

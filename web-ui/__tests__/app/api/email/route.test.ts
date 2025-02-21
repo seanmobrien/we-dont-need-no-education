@@ -3,8 +3,8 @@
  */
 
 import { NextRequest } from 'next/server';
-import { POST, PUT, GET, DELETE } from 'app/api/email/route';
-import { GET as GetWithId } from 'app/api/email/[emailId]/route';
+import { POST, PUT, GET } from 'app/api/email/route';
+import { GET as GetWithId, DELETE } from 'app/api/email/[emailId]/route';
 import { query, queryExt } from 'lib/neondb';
 
 jest.mock('lib/neondb');
@@ -19,6 +19,7 @@ describe('Email API', () => {
           body: 'Test Body',
           sentOn: '2023-01-01T00:00:00Z',
           threadId: 1,
+          recipients: [{ contactId: 1, email: 'test.com', name: 'Test Name' }],
         }),
       } as unknown as NextRequest;
 
@@ -30,7 +31,8 @@ describe('Email API', () => {
           body: 'Test Body',
           sentOn: '2023-01-01T00:00:00Z',
           threadId: 1,
-          req,
+          recipients: [{ contactId: 1, email: 'test.com', name: 'Test Name' }],
+          // req,
         },
       ];
       (query as jest.Mock).mockResolvedValue(mockResult);
@@ -41,12 +43,7 @@ describe('Email API', () => {
       expect(await res.json()).toEqual({
         message: 'Email created successfully',
         email: {
-          emailId: 1,
-          senderId: 1,
-          subject: 'Test Subject',
-          body: 'Test Body',
-          sentOn: '2023-01-01T00:00:00Z',
-          threadId: 1,
+          ...mockResult[0],
         },
       });
     });
@@ -58,9 +55,6 @@ describe('Email API', () => {
           body: 'Test Body',
           sentOn: '2023-01-01T00:00:00Z',
           threadId: 1,
-          recipients: [
-            { contactId: 1, email: 'test@test.com', name: 'Test Name' },
-          ],
         }),
       } as unknown as NextRequest;
 
@@ -78,17 +72,9 @@ describe('Email API', () => {
 
       const res = await POST(req);
 
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
-        message: 'Email created successfully',
-        email: {
-          emailId: 1,
-          senderId: 1,
-          subject: 'Test Subject',
-          body: 'Test Body',
-          sentOn: '2023-01-01T00:00:00Z',
-          threadId: 1,
-        },
+        error: 'Missing required fields',
       });
     });
 
@@ -278,12 +264,6 @@ describe('Email API', () => {
 
   describe('DELETE /api/email', () => {
     it('should delete an email and return 200 status', async () => {
-      const req = {
-        json: jest.fn().mockResolvedValue({
-          emailId: 1,
-        }),
-      } as unknown as NextRequest;
-
       const mockResult = [
         {
           emailId: 1,
@@ -294,7 +274,7 @@ describe('Email API', () => {
       ];
       (query as jest.Mock).mockResolvedValue(mockResult);
 
-      const res = await DELETE(req);
+      const res = await DELETE({ params: { emailId: '1' } });
 
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
@@ -304,15 +284,9 @@ describe('Email API', () => {
     });
 
     it('should return 404 status if email is not found', async () => {
-      const req = {
-        json: jest.fn().mockResolvedValue({
-          emailId: 1,
-        }),
-      } as unknown as NextRequest;
-
       (query as jest.Mock).mockResolvedValue([]);
 
-      const res = await DELETE(req);
+      const res = await DELETE({ params: { emailId: '1' } });
 
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({
@@ -321,11 +295,7 @@ describe('Email API', () => {
     });
 
     it('should return 400 status if emailId is missing', async () => {
-      const req = {
-        json: jest.fn().mockResolvedValue({}),
-      } as unknown as NextRequest;
-
-      const res = await DELETE(req);
+      const res = await DELETE({ params: { emailId: '' } });
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({

@@ -31,6 +31,7 @@ describe('neondb', () => {
     jest.clearAllMocks();
     (neon as jest.Mock).mockReturnValue(mockQueryFunction);
     mockQueryFunction.mockReturnValue(mockQueryPromise);
+    process.env.DATABASE_URL = mockConnection;
   });
 
   describe('query', () => {
@@ -125,8 +126,13 @@ describe('neondb', () => {
         fullResults: true,
       });
       expect(callback).toHaveBeenCalledWith(mockQueryFunction);
-      expect(transform).toHaveBeenCalledTimes(1);
-      expect(result.rows).toEqual([{ field: 'val', transformed: true }]);
+      expect(transform).toHaveBeenCalledTimes(mockWithRecordData.length);
+      expect(result.rows).toEqual(
+        mockWithRecordData.map((row) => ({
+          ...row,
+          transformed: true,
+        }))
+      );
     });
 
     it('should handle transform function throwing an error', async () => {
