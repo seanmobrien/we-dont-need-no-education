@@ -15,11 +15,16 @@
     "vercel-build": "npm run bootstrap && next build"
   },
   "dependencies": {
+    "@auth/pg-adapter": "^1.7.4",
+    "@googleapis/gmail": "^12.0.0",
     "@neondatabase/serverless": "^0.10.4",
     "autoprefixer": "^10.4.20",
     "fast-deep-equal": "^3.1.3",
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^144.0.0",
     "lodash": "^4.17.21",
     "next": "15.1.6",
+    "next-auth": "^5.0.0-beta.25",
     "pino": "^9.6.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -27,6 +32,7 @@
     "tailwindcss-classnames": "^3.1.0",
     "ts-node": "^10.9.2",
     "typescript": "^5",
+    "uuid": "^11.1.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

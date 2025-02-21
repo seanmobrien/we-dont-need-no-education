@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { googleProviderFactory } from '../_googleProviderFactory';
+import { parsePaginationStats, MailQueryBuilder } from '../_utilitites';
+import { PaginatedResultset } from '@/data-models';
+
+export const GET = async (
+  req: NextRequest,
+  { params }: { params: { provider: string } }
+) => {
+  const { provider } = await params;
+  const factoryResponse = await googleProviderFactory(provider);
+  if (factoryResponse instanceof Response) {
+    return factoryResponse;
+  }
+  const { searchParams } = new URL(req.url);
+  const query = new MailQueryBuilder()
+    .appendQueryParam('from', searchParams.getAll('from'))
+    .appendQueryParam('to', searchParams.getAll('to'));
+
+  const { page, num } = parsePaginationStats(searchParams);
+
+  const labels = searchParams.getAll('label') ?? [];
+
+  const { mail } = factoryResponse;
+  const queryResult = await mail.list({
+    userId: 'me',
+    q: query.build(),
+    labelIds: labels.length > 0 ? labels : undefined,
+    pageToken: page.length > 0 ? page : undefined,
+    maxResults: num,
+  });
+
+  const ret: PaginatedResultset<
+    { id: string; threadId?: string },
+    string | undefined
+  > = {
+    results:
+      queryResult.data?.messages
+        ?.filter((x) => !!x.id)
+        .map((x) => ({
+          id: String(x.id),
+          threadId: x.threadId ?? undefined,
+        })) ?? [],
+    pageStats: {
+      page: queryResult.data.nextPageToken ?? undefined,
+      num,
+      total: queryResult.data.resultSizeEstimate ?? 0,
+    },
+  };
+
+  return NextResponse.json(ret, { status: 200 });
+};

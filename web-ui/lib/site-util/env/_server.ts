@@ -11,6 +11,9 @@ const serverEnvSchema = z.object({
   LOG_LEVEL_SERVER: ZodProcessors.logLevel(),
   DATABASE_URL: ZodProcessors.url(),
   DATABASE_URL_UNPOOLED: ZodProcessors.url(),
+  AUTH_GOOGLE_ID: z.string(),
+  AUTH_GOOGLE_SECRET: z.string(),
+  AUTH_GOOGLE_APIKEY: z.string(),
 });
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;

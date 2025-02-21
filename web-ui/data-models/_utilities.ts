@@ -4,6 +4,7 @@
  * This module provides utility functions for data normalization.
  */
 
+import { URLSearchParams } from 'url';
 import { PaginationStats } from './_types';
 
 /**
@@ -22,12 +23,13 @@ export const normalizeNullableNumeric = (
 ): number | null => ((value ?? 0) > minValue - 1 ? value : defaultValue);
 
 export const parsePaginationStats = (
-  req: URL
+  req: URL | URLSearchParams
 ): PaginationStats & { offset: number } => {
-  const page =
-    normalizeNullableNumeric(Number(req.searchParams.get('page')), 1) ?? 1;
-  const num =
-    normalizeNullableNumeric(Number(req.searchParams.get('num')), 10) ?? 10;
+  if ('searchParams' in req) {
+    req = req.searchParams;
+  }
+  const page = normalizeNullableNumeric(Number(req.get('page')), 1) ?? 1;
+  const num = normalizeNullableNumeric(Number(req.get('num')), 10) ?? 10;
 
   return {
     page,

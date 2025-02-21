@@ -52,6 +52,7 @@ export const createEmailMessage: Factory<EmailMessage> = (overrides) => ({
   sentOn: new Date().toISOString(),
   threadId: null,
   parentEmailId: null,
+  recipients: [],
   ...overrides,
   sender: createContact(overrides?.sender),
 });

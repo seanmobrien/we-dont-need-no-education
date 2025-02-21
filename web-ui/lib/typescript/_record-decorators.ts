@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from 'uuid';
+
 /**
  * A unique symbol used to mark a record as dirty.
  *
@@ -125,10 +127,7 @@ export const getUuid = (record: unknown): string | null | undefined =>
  *
  * @returns {string} A new UUID string.
  */
-const newUuid = () =>
-  typeof window === 'undefined'
-    ? Math.random().toString(36).slice(2)
-    : globalThis.crypto.randomUUID();
+export const newUuid = () => uuidv4();
 
 /**
  * Sets a UUID on the given record.
