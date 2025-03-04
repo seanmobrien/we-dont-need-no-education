@@ -5,8 +5,8 @@ import {
   IServerSessionTokens,
   SessionExt,
 } from './_types';
-import { query, queryExt } from 'lib/neondb';
-import { log } from 'lib/logger';
+import { query, queryExt } from '@/lib/neondb';
+import { log } from '@/lib/logger';
 
 type ServerSessionRecord = {
   gmail: string | null;

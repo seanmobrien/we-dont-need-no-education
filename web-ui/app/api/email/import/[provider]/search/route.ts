@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from '../_googleProviderFactory';
 import { parsePaginationStats, MailQueryBuilder } from '../_utilitites';
 import { PaginatedResultset } from '@/data-models';
+import { EmailSearchResult } from '@/data-models/api/import/email-message';
 
 export const GET = async (
   req: NextRequest,
@@ -30,10 +31,7 @@ export const GET = async (
     maxResults: num,
   });
 
-  const ret: PaginatedResultset<
-    { id: string; threadId?: string },
-    string | undefined
-  > = {
+  const ret: PaginatedResultset<EmailSearchResult, string | undefined> = {
     results:
       queryResult.data?.messages
         ?.filter((x) => !!x.id)

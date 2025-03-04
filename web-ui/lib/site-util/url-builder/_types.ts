@@ -1,4 +1,4 @@
-import { PickField } from 'lib/typescript';
+import { PickField } from '@/lib/typescript';
 
 /**
  * Builds a URL relative to this instance given a page segment, slug value, and query paramters.

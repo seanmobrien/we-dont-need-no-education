@@ -1,0 +1,311 @@
+import { Contact, ContactSummary } from '@/data-models/api/contact';
+import { errorLogFactory, log } from '@/lib/logger';
+import { query, queryExt } from '@/lib/neondb';
+import { ValidationError } from '@/lib/react-util/errors';
+import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { PartialExceptFor } from '@/lib/typescript';
+import { isError } from '@/lib/react-util';
+import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
+import { parsePaginationStats } from '@/data-models';
+
+const mapRecordToSummary = (record: Record<string, unknown>) => ({
+  contactId: Number(record.contact_id),
+  name: record.name as string,
+  email: record.email as string,
+});
+const mapRecordToObject = (record: Record<string, unknown>) => ({
+  ...mapRecordToSummary(record),
+  phoneNumber: record.phone as string,
+  jobDescription: record.role_dscr as string,
+  isDistrictStaff: record.is_district_staff as boolean,
+});
+
+export type ObjectRepository<T, K extends keyof T> = {
+  list: (
+    pagination?: PaginationStats
+  ) => Promise<PaginatedResultset<ContactSummary>>;
+
+  get: (contactId: number) => Promise<Contact | null>;
+
+  create: (model: Omit<Contact, K>) => Promise<Contact>;
+
+  update: (model: PartialExceptFor<T, K>) => Promise<T>;
+
+  delete: (contactId: T[K]) => Promise<boolean>;
+};
+
+export class ContactRepository
+  implements ObjectRepository<Contact, 'contactId'>
+{
+  constructor() {}
+  static MapRecordToSummary = mapRecordToSummary;
+  static MapRecordToObject = mapRecordToObject;
+
+  static logError(error: unknown): never {
+    if (typeof error !== 'object' || error === null) {
+      log((l) =>
+        l.error(
+          errorLogFactory({
+            message: String(error),
+            source: 'ContactRepository',
+            error: error,
+          })
+        )
+      );
+      throw new LoggedError({
+        error: new Error(String(error)),
+        critical: true,
+      });
+    }
+    if (DataIntegrityError.isDataIntegrityError(error)) {
+      log((l) =>
+        l.error(
+          errorLogFactory({
+            message: 'Database Integrity failure',
+            source: 'ContactRepository',
+            error,
+          })
+        )
+      );
+      throw new LoggedError({ error, critical: false });
+    }
+    if (ValidationError.isValidationError(error)) {
+      log((l) =>
+        l.error(
+          errorLogFactory({
+            message: 'Validation error',
+            source: 'ContactRepository',
+            error,
+          })
+        )
+      );
+      throw new LoggedError({ error, critical: false });
+    }
+    log((l) =>
+      l.error(
+        errorLogFactory({
+          message: '[AUDIT] A database operation failed',
+          source: 'ContactRepository',
+          error,
+        })
+      )
+    );
+    throw new LoggedError({
+      error: isError(error) ? error : new Error(String(error)),
+      critical: true,
+    });
+  }
+
+  async list(
+    pagination?: PaginationStats
+  ): Promise<PaginatedResultset<ContactSummary>> {
+    const { num, page, offset } = parsePaginationStats(pagination);
+    try {
+      const results = await query(
+        (sql) =>
+          sql`SELECT * FROM contacts ORDER BY contact_id LIMIT ${num} OFFSET ${offset}`,
+        { transform: ContactRepository.MapRecordToSummary }
+      );
+      if (results.length === page) {
+        const total = await query(
+          (sql) => sql`SELECT COUNT(*) as records FROM contacts`
+        );
+        return {
+          results,
+          pageStats: {
+            num,
+            page,
+            total: total[0].records as number,
+          },
+        };
+      } else {
+        return {
+          results,
+          pageStats: {
+            num,
+            page,
+            total: offset + results.length,
+          },
+        };
+      }
+    } catch (error) {
+      ContactRepository.logError(error);
+    }
+  }
+
+  async get(contactId: number): Promise<Contact | null> {
+    try {
+      const result = await query(
+        (sql) => sql`SELECT * FROM contacts WHERE contact_id = ${contactId}`,
+        { transform: ContactRepository.MapRecordToObject }
+      );
+      return result.length === 1 ? result[0] : null;
+    } catch (error) {
+      ContactRepository.logError(error);
+      throw error;
+    }
+  }
+
+  async create({
+    name,
+    email,
+    phoneNumber,
+    jobDescription,
+    isDistrictStaff,
+  }: Omit<Partial<Contact>, 'contactId'>): Promise<Contact> {
+    try {
+      if (!name || !email) {
+        throw new ValidationError({
+          field: 'name||email',
+          source: 'ContactRepository',
+        });
+      }
+      const result = await query(
+        (sql) =>
+          sql`INSERT INTO contacts (name, email, phone, role_dscr, is_district_staff) VALUES (${name}, ${email}, ${phoneNumber}, ${jobDescription}, ${isDistrictStaff})\
+            RETURNING *`,
+        { transform: ContactRepository.MapRecordToObject }
+      );
+      log((l) => l.verbose('[ [AUDIT]] -  Contact created:', result[0]));
+      if (result.length !== 1) {
+        throw new DataIntegrityError('Failed to create contact', {
+          table: 'contacts',
+        });
+      }
+      return result[0];
+    } catch (error) {
+      ContactRepository.logError(error);
+      throw error;
+    }
+  }
+
+  async update({
+    contactId,
+    name,
+    email,
+    jobDescription,
+    phoneNumber,
+    isDistrictStaff,
+  }: PartialExceptFor<Contact, 'contactId'>): Promise<Contact> {
+    if (!contactId) {
+      throw new ValidationError({
+        field: 'contactId',
+        source: 'ContactRepository',
+      });
+    }
+    if (
+      !name &&
+      !email &&
+      !jobDescription &&
+      !phoneNumber &&
+      !isDistrictStaff
+    ) {
+      throw new ValidationError({
+        field: 'At least one field is required for update',
+        source: 'ContactRepository',
+      });
+    }
+    const updateFields: string[] = [];
+    const values: unknown[] = [];
+    const fieldMap = {
+      name,
+      email,
+      role_dscr: jobDescription,
+      phone: phoneNumber,
+      is_district_staff: isDistrictStaff,
+    };
+    let paramIndex = 1;
+    Object.entries(fieldMap).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateFields.push(`${key} = $${paramIndex++}`);
+        values.push(value);
+      }
+    });
+    values.push(contactId);
+
+    try {
+      const result = await queryExt(
+        (sql) =>
+          sql<false, true>(
+            `UPDATE contacts SET ${updateFields.join(
+              ', '
+            )} WHERE contact_id = $${paramIndex} RETURNING *`,
+            values
+          ),
+        { transform: ContactRepository.MapRecordToObject }
+      );
+
+      if (result.rowCount === 0) {
+        throw new DataIntegrityError('Failed to update contact');
+      }
+      log((l) => l.verbose('[[AUDIT]] -  Contact updated:', result.rows[0]));
+      return result.rows[0];
+    } catch (error) {
+      ContactRepository.logError(error);
+      throw error;
+    }
+  }
+
+  async delete(contactId: number): Promise<boolean> {
+    if (!contactId) {
+      throw new TypeError('contactId is required for delete');
+    }
+    try {
+      const results = await query(
+        (sql) => sql`
+            DELETE FROM contacts
+            WHERE contact_id = ${contactId}
+            RETURNING contact_id`
+      );
+      if (results.length === 0) {
+        throw new DataIntegrityError('Failed to delete contact');
+      }
+      return true;
+    } catch (error) {
+      if (!ContactRepository.logError(error)) {
+        throw error;
+      }
+    }
+    return false;
+  }
+
+  async addEmailRecipient(contactId: number, emailId: string): Promise<void> {
+    if (!contactId || !emailId) {
+      throw new ValidationError({
+        field: 'contactId||emailId',
+        source: 'ContactRepository',
+      });
+    }
+    try {
+      await query(
+        (sql) => sql`
+          INSERT INTO email_recipients (contact_id, email_id)
+          VALUES (${contactId}, ${emailId})`
+      );
+      log((l) =>
+        l.verbose('[ [AUDIT]] - Email recipient added:', { contactId, emailId })
+      );
+    } catch (error) {
+      ContactRepository.logError(error);
+      throw error;
+    }
+  }
+
+  async getContactsByEmails(emails: string[] | string): Promise<Contact[]> {
+    const emailList = Array.isArray(emails) ? emails : [emails];
+    try {
+      const results = await query(
+        (sql) => sql`
+          SELECT * FROM contacts
+          WHERE email = ANY(${emailList})
+        `,
+        { transform: ContactRepository.MapRecordToObject }
+      );
+      return results;
+    } catch (error) {
+      ContactRepository.logError(error);
+      throw error;
+    }
+  }
+}

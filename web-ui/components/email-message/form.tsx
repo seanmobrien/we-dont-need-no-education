@@ -1,7 +1,7 @@
 'use client';
 
-import { errorLogFactory, log } from 'lib/logger';
-import { isError } from 'lib/react-util';
+import { errorLogFactory, log } from '@/lib/logger';
+import { isError } from '@/lib/react-util';
 import {
   useState,
   useEffect,
@@ -30,8 +30,8 @@ import classnames, {
   opacity,
   borderWidth,
 } from 'tailwindcss-classnames';
-import { EmailMessage } from 'data-models/api/email-message';
-import ContactDropdown from 'components/contact/contact-dropdown';
+import { EmailMessage } from '@/data-models/api/email-message';
+import ContactDropdown from '@/components/contact/contact-dropdown';
 import {
   ContactSummary,
   createContactSummary,
@@ -42,7 +42,7 @@ import EmailSelect from './select';
 import { SubmitRefCallbackInstance } from './_types';
 import { getEmail, writeEmailRecord } from '@/lib/api/email';
 import { AbortablePromise, ICancellablePromiseExt } from '@/lib/typescript';
-import siteMap from 'lib/site-util/url-builder';
+import siteMap from '@/lib/site-util/url-builder';
 import { useRouter } from 'next/navigation';
 
 type EmailFormAfterSaveBehavior = 'none' | 'redirect';
@@ -57,7 +57,7 @@ type EmailFormAfterSaveBehavior = 'none' | 'redirect';
  *                                                                It receives a partial EmailMessage object as an argument.
  */
 interface EmailFormProps {
-  emailId: number | null;
+  emailId: string | null;
   // Note this will have to go if we stick with this architecture
   onSaved?: (email: Partial<EmailMessage>) => void;
   afterSaveBehavior?: EmailFormAfterSaveBehavior;
@@ -127,7 +127,7 @@ const EmailForm: ForwardRefRenderFunction<
   const [emailContents, setEmailContents] = useState('');
   const [sentTimestamp, setSentTimestamp] = useState('');
   const [threadId, setThreadId] = useState<number | null>(null);
-  const [parentEmailId, setParentEmailId] = useState<number | null>(null);
+  const [parentEmailId, setParentEmailId] = useState<string | null>(null);
   const [loading, setLoading] = useState<null | 'loading' | 'saving'>(null);
   const [message, setMessage] = useState('');
   const { replace: routerReplace, back: routerBack } = useRouter();

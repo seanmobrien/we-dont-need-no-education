@@ -1,4 +1,4 @@
-import { AbortablePromise } from 'lib/typescript/_generics';
+import { AbortablePromise } from '@/lib/typescript/_generics';
 
 describe('AbortablePromise', () => {
   it('should resolve the promise', async () => {

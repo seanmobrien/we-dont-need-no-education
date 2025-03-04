@@ -3,13 +3,11 @@ import Google from 'next-auth/providers/google';
 import { Pool } from '@neondatabase/serverless';
 import PostgresAdapter from '@auth/pg-adapter';
 
-// *DO NOT* create a `Pool` here, outside the request handler.
-
 export const { handlers, auth, signIn, signOut } = NextAuth(() => {
   // Create a `Pool` inside the request handler.
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   return {
-    debug: true,
+    // debug: true,
     adapter: PostgresAdapter(pool),
     providers: [
       Google({

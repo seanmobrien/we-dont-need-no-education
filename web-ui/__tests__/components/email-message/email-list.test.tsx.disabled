@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import EmailList from 'components/email-message/email-list';
+import EmailList from '@/components/email-message/email-list';
 import { mockEmail, mockEmailSummary } from '../email.mock-data';
 
 const testIds = {

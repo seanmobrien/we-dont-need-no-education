@@ -27,18 +27,6 @@
       "@/*": [
         "./*"
       ],
-      "app/*": [
-        "./app/*"
-      ],
-      "lib/*": [
-        "./lib/*"
-      ],
-      "components/*": [
-        "./components/*"
-      ],
-      "data-models/*": [
-        "./data-models/*"
-      ],
       "tailwindcss-classnames": [
         "./tailwindcss.classnames"
       ]
@@ -50,7 +38,6 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "components/email-message/bulk-form"
   ],
   "exclude": [
     "node_modules"

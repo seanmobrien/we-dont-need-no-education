@@ -1,5 +1,5 @@
 import pino from 'pino';
-import { env, isRunningOnServer } from 'lib/site-util/env';
+import { env, isRunningOnServer } from '@/lib/site-util/env';
 
 import type { ILogger } from './logger.d.ts';
 

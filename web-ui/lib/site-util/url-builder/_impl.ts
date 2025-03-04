@@ -1,5 +1,5 @@
 import { IUrlBuilder, UrlBuilderInfo } from './_types';
-import { env } from 'lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 
 const appendParams = (url: URL, params: object | undefined) => {
   if (!params) {

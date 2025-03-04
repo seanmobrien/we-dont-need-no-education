@@ -1,7 +1,7 @@
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
-import type { Contact } from 'data-models/api';
-import { createContact, isContact, isContactSummary } from 'data-models/api';
-import { errorLogFactory, log } from 'lib/logger';
+import type { Contact } from '@/data-models/api';
+import { createContact, isContact, isContactSummary } from '@/data-models/api';
+import { errorLogFactory, log } from '@/lib/logger';
 import { isAbortError } from '@/lib/react-util';
 
 type ContactFormProps = {

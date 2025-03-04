@@ -8,6 +8,7 @@ import { query } from '@/lib/neondb';
 import { NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { errorLogFactory, log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 
 /**
  * A class to build mail query strings for a specific provider.
@@ -93,24 +94,31 @@ export const getImportMessageSource = async ({
   provider,
   emailId,
   refresh = false,
+  returnResponse = true,
 }: {
   provider?: string;
   emailId?: string;
   refresh?: boolean;
-}): Promise<NextResponse | ImportSourceMessage> => {
+  returnResponse?: boolean;
+}): Promise<ImportSourceMessage | null | NextResponse> => {
+  const getReturnValue = (response: NextResponse): null | NextResponse =>
+    returnResponse === false ? null : response;
   try {
     let source: GmailEmailImportSource | undefined;
     let currentState: {
       stage: ImportStage;
-      id: number;
-      targetId: number;
+      id: string;
+      providerid: string;
+      targetid: string;
       message?: string;
     }[] = [];
     if (refresh) {
       if (![provider, emailId].every(Boolean)) {
-        return NextResponse.json(
-          { error: 'missing provider or emailId' },
-          { status: 400 }
+        return getReturnValue(
+          NextResponse.json(
+            { error: 'missing provider or emailId' },
+            { status: 400 }
+          )
         );
       }
       const factoryResponse = await googleProviderFactory(provider as string);
@@ -125,7 +133,9 @@ export const getImportMessageSource = async ({
       });
       source = googleResponse.data;
       currentState = await query(
-        (sql) => sql`select s.stage, s.id, m.email_id AS targetId from emails m 
+        (
+          sql
+        ) => sql`select s.external_id AS providerId, s.stage, s.id, m.email_id AS targetId from emails m 
         right join staging_message s on s.external_id = m.imported_from_id
         where s.external_id = ${emailId}`
       );
@@ -133,28 +143,32 @@ export const getImportMessageSource = async ({
       currentState = await query(
         (
           sql
-        ) => sql`select s.stage, s.id, s.message, m.email_id AS targetId from staging_message s 
+        ) => sql`select s.external_id AS providerId, s.stage, s.id, to_json(s.message) AS message, m.email_id AS targetId from emails m 
             right join staging_message s on s.external_id = m.imported_from_id
             where s.external_id = ${emailId}`
       );
       source =
         currentState.length && currentState[0].message
-          ? (JSON.parse(currentState[0].message) as GmailEmailImportSource)
+          ? (currentState[0].message as GmailEmailImportSource)
           : undefined;
     }
     if (!currentState.length) {
       return source
-        ? { raw: source, stage: 'new' }
-        : NextResponse.json({ error: 'email not found' }, { status: 404 });
+        ? { raw: source, stage: 'new', providerId: emailId! }
+        : getReturnValue(
+            NextResponse.json({ error: 'email not found' }, { status: 404 })
+          );
     }
     if (!source) {
-      return NextResponse.json({ error: 'email not found' }, { status: 404 });
+      return getReturnValue(
+        NextResponse.json({ error: 'email not found' }, { status: 404 })
+      );
     }
     return {
-      ...{
-        ...currentState[0],
-        message: undefined,
-      },
+      stage: currentState[0].stage as ImportStage,
+      id: currentState[0].id,
+      providerId: currentState[0].providerid,
+      targetId: currentState[0].targetid,
       raw: source,
     };
   } catch (error) {
@@ -168,6 +182,9 @@ export const getImportMessageSource = async ({
         })
       )
     );
+    if (returnResponse === false) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error);
+    }
   }
   return NextResponse.json({ error: 'error' }, { status: 500 });
 };

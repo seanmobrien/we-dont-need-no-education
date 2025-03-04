@@ -12,14 +12,14 @@ import {
   display,
   position,
 } from 'tailwindcss-classnames';
-import type { EmailMessageStats } from 'data-models/api';
-import { getEmailStats } from 'lib/api/email';
+import type { EmailMessageStats } from '@/data-models/api';
+import { getEmailStats } from '@/lib/api/email';
 import Link from 'next/link';
 import {
   ICancellablePromiseExt,
   isOperationCancelledError,
-} from 'lib/typescript';
-import siteMap from 'lib/site-util/url-builder';
+} from '@/lib/typescript';
+import siteMap from '@/lib/site-util/url-builder';
 import EmailListServer from './_list-server';
 // Shared class for text color used multiple times
 const marginBottom2 = margin('mb-2');

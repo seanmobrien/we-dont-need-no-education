@@ -1,6 +1,33 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import NextAuth from 'next-auth';
+import { auth } from '@/auth';
+import { OAuth2Client } from 'google-auth-library';
+import { google } from 'googleapis';
+import { sendApiRequest } from '@/lib/send-api-request';
+
 // jest.setup.ts
 import '@testing-library/jest-dom';
 import 'jest';
+
+jest.mock('google-auth-library');
+jest.mock('googleapis');
+jest.mock('');
+
+jest.mock('next-auth', () => {
+  return jest.fn();
+});
+jest.mock('@/auth', () => {
+  return {
+    auth: jest.fn(() => ({
+      id: 'fdsdfs',
+    })),
+  };
+});
+
+(NextAuth as jest.Mock).mockImplementation(() => jest.fn);
+(auth as jest.Mock).mockImplementation(() => {
+  return jest.fn(() => Promise.resolve({ id: 'test-id' }));
+});
 
 const DefaultEnvVariables = {
   NEXT_PUBLIC_HOSTNAME: `http://test-run.localhost`,
@@ -8,6 +35,9 @@ const DefaultEnvVariables = {
   LOG_LEVEL_SERVER: `silly`,
   DATABASE_URL: `http://pooldatabase_server.localhost`,
   DATABASE_URL_UNPOOLED: `http://nopool_database_server.localhost`,
+  AUTH_GOOGLE_ID: 'auth-google-id',
+  AUTH_GOOGLE_SECRET: 'auth-google-secret',
+  AUTH_GOOGLE_APIKEY: 'auth-google-apikey',
 };
 
 const resetEnvVariables = () => {

@@ -1,11 +1,31 @@
-import { parsePaginationStats } from '@/data-models';
+import { NextResponse, NextRequest } from 'next/server';
 import { errorLogFactory, log } from '@/lib/logger';
 import { query } from '@/lib/neondb';
-import { NextResponse } from 'next/server';
+import { parsePaginationStats } from '@/data-models/api';
+import {
+  ImportStage,
+  StagedMessageSummary,
+} from '@/data-models/api/import/email-message';
 
+/**
+ * Handles GET requests to fetch a paginated list of emails with sender and recipient information.
+ *
+ * @param {NextRequest} req - The incoming request object.
+ * @returns {Promise<NextResponse>} - A promise that resolves to a NextResponse object containing the paginated list of emails.
+ *
+ * The function performs the following steps:
+ * 1. Parses pagination parameters (num, offset, page) from the request URL.
+ * 2. Executes a SQL query to fetch a list of emails with sender and recipient information.
+ * 3. Transforms the query result to a structured format.
+ * 4. Executes a SQL query to count the total number of records.
+ * 5. Logs the results and pagination information.
+ * 6. Returns a JSON response with the paginated list of emails and pagination statistics.
+ *
+ * If an error occurs during the process, it logs the error and returns a 500 Internal Server Error response.
+ */
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
-    const { num, offset } = parsePaginationStats(new URL(req.url));
+    const { num, offset, page } = parsePaginationStats(new URL(req.url));
 
     // Fetch list of emails with sender info
     const result = await query(
@@ -24,12 +44,58 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         ) AS Recipients
       FROM emails m 
       RIGHT JOIN staging_message s ON s.external_id = m.imported_from_id
-      LIMIT ${num} OFFSET ${offset};`
+      LIMIT ${num} OFFSET ${offset};`,
+      {
+        transform: (result) => {
+          let recipients: Array<string> | string | null;
+          if (result.recipients === null || result.recipients === undefined) {
+            recipients = null;
+          } else if (typeof result.recipients === 'string') {
+            recipients = result.recipients
+              .split(',')
+              .map((r: string) => r.trim());
+            if (recipients.length === 1) {
+              recipients = recipients[0];
+            }
+          } else {
+            log((l) =>
+              l.warn({
+                msg: '[[WARNING]] - Unexpected recipient type detected:',
+                recipients,
+              })
+            );
+            recipients = null;
+          }
+          const ret: StagedMessageSummary = {
+            stage: result.stage as ImportStage,
+            id: result.id as string,
+            targetId: result.targetid as string,
+            timestamp: result.timestamp as Date,
+            sender: result.sender as string,
+            recipients,
+          };
+          return ret;
+        },
+      }
+    );
+
+    const total = await query(
+      (q) => q`SELECT COUNT(*) AS records FROM staging_message;`
     );
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Import list:', result, num, offset })
+      l.verbose({
+        msg: '[[AUDIT]] -  Import list:',
+        result,
+        num,
+        offset,
+        cbTotal: total,
+      })
     );
-    return NextResponse.json(result, { status: 200 });
+
+    return NextResponse.json(
+      { pageStats: { page, num, total: total[0].records }, results: result },
+      { status: 200 }
+    );
   } catch (error) {
     log((l) => l.error(errorLogFactory({ source: 'GET email', error })));
     return NextResponse.json(

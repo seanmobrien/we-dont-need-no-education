@@ -2,7 +2,7 @@ import {
   isKeyOf,
   isMemberOfUnion,
   isOperationCancelledError,
-} from 'lib/typescript/_guards';
+} from '@/lib/typescript/_guards';
 
 describe('isKeyOf', () => {
   it('should return true if the key is a key of the given object', () => {

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mapRecordToSummary } from '../../email-route-util';
-import { query, queryExt } from 'lib/neondb';
-import { errorLogFactory, log } from 'lib/logger';
+import { query, queryExt } from '@/lib/neondb';
+import { errorLogFactory, log } from '@/lib/logger';
 
 export const mapRecordToThreadSummary = (record: Record<string, unknown>) => ({
   threadId: record.thread_id,

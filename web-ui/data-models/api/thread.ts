@@ -11,6 +11,7 @@ export type ThreadSummary = {
   threadId: number;
   subject: string;
   createdOn: Date;
+  externalId: string;
 };
 
 /**

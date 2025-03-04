@@ -19,7 +19,7 @@ const getGoogleAuthCredential = async ({
     redirectUrl.toString()
   );
   ret.setCredentials({
-    access_token: access,
+    // access_token: access,
     refresh_token: refresh,
   });
   return { gmail, refresh_token: refresh, access_token: access, client: ret };

@@ -5,8 +5,8 @@ import classnames, { margin } from '@/tailwindcss.classnames';
 
 const EmailSelect: React.FC<{
   id?: string;
-  selectedEmail?: number | EmailMessageSummary | null;
-  onEmailSelect: (emailId: number | null) => void;
+  selectedEmail?: string | EmailMessageSummary | null;
+  onEmailSelect: (emailId: string | null) => void;
 }> = ({ selectedEmail, onEmailSelect, id: ariaTargetId }) => {
   const [query, setQuery] = useState('');
   const [emails, setEmails] = useState<EmailMessageSummary[]>([]);
@@ -45,7 +45,7 @@ const EmailSelect: React.FC<{
   }, [query]);
 
   useEffect(() => {
-    if (typeof selectedEmail === 'number') {
+    if (typeof selectedEmail === 'string') {
       const fetchEmailDetails = async () => {
         setLoading(true);
         try {
@@ -69,8 +69,8 @@ const EmailSelect: React.FC<{
   }, [selectedEmail]);
 
   const handleSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedEmailId = parseInt(event.target.value, 10);
-    if (!isNaN(selectedEmailId)) {
+    const selectedEmailId = event.target.value?.trim();
+    if (!!selectedEmailId) {
       onEmailSelect(selectedEmailId);
       setInEditMode(false);
     }

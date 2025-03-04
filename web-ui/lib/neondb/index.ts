@@ -59,9 +59,13 @@ const applyTransform = <ResultType extends object>(
     return promise as Promise<Array<ResultType>>;
   }
   const { transform } = props;
-  return promise.then((result) =>
-    result.map((result) => transform(asRecord(result)))
-  );
+  return promise.then((result) => {
+    console.log('in transform promise resolve', result);
+    if (isNeonDbError(result)) {
+      throw result;
+    }
+    return result.map((r) => transform(asRecord(r)));
+  });
 };
 
 const applyResultsetTransform = <ResultType extends object>(

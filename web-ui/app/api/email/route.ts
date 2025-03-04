@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query, queryExt } from 'lib/neondb';
-import { errorLogFactory, log } from 'lib/logger';
+import { query, queryExt } from '@/lib/neondb';
+import { errorLogFactory, log } from '@/lib/logger';
 import {
   normalizeNullableNumeric,
   parsePaginationStats,
-} from 'data-models/_utilities';
+} from '@/data-models/_utilities';
 import {
   insertRecipients,
   mapRecordToObject,

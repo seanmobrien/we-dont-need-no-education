@@ -4,10 +4,10 @@
 
 import { NextRequest } from 'next/server';
 import { POST, PUT, GET, DELETE } from '../../../../app/api/contact/route';
-import { query, queryExt } from 'lib/neondb';
+import { query, queryExt } from '@/lib/neondb';
 
-jest.mock('lib/neondb');
-jest.mock('lib/logger');
+jest.mock('@/lib/neondb');
+jest.mock('@/lib/logger');
 
 describe('Contact API Routes', () => {
   afterEach(() => {

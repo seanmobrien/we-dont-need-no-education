@@ -5,10 +5,12 @@ import type {
   PaginatedResultset,
   PaginationStats,
 } from '@/data-models';
-import { apiRequestHelperFactory } from '../_utils';
 import type { EmailSearchApiParams } from './_types';
-import siteMap from 'lib/site-util/url-builder';
-import { ApiRequestHelper } from '../_types';
+import siteMap from '@/lib/site-util/url-builder';
+import {
+  apiRequestHelperFactory,
+  ApiRequestHelper,
+} from '@/lib/send-api-request';
 import { ICancellablePromiseExt } from '@/lib/typescript';
 
 const apiRequest = <TResult>(
@@ -43,7 +45,7 @@ export const getEmailList = ({
  * @param {number} id - The ID of the email message to fetch.
  * @returns {ICancellablePromiseExt<ReadonlyArray<EmailMessage>>} A ICancellablePromiseExt that resolves to the email message.
  */
-export const getEmail = (id: number): ICancellablePromiseExt<EmailMessage> =>
+export const getEmail = (id: string): ICancellablePromiseExt<EmailMessage> =>
   apiRequest((apiHelper, builder) =>
     apiHelper.get<EmailMessage>({
       url: builder.page(id),

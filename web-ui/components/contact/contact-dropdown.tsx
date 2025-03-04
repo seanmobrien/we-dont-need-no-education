@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ContactForm from './contact-form';
-import { Contact, ContactSummary } from 'data-models/api/contact';
-import { createContactSummary } from 'data-models/api';
-import { log } from 'lib/logger';
+import { Contact, ContactSummary } from '@/data-models/api/contact';
+import { createContactSummary } from '@/data-models/api';
+import { log } from '@/lib/logger';
 import classnames, {
   TArg as TTailwindArg,
   width,

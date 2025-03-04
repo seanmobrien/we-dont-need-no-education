@@ -11,10 +11,6 @@ const config: Config.InitialOptions = {
   ], // Test file patterns
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
-    '^app/(.*)$': '<rootDir>/app/$1', // Alias for module imports
-    '^components/(.*)$': '<rootDir>/components/$1', // Alias for module imports
-    '^data-models/(.*)$': '<rootDir>/data-models/$1', // Alias for module imports
-    '^lib/(.*)$': '<rootDir>/lib/$1', // Alias for module imports
   },
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest', // Transform TypeScript files using ts-jest

@@ -1,4 +1,4 @@
-import { generateUniqueId } from 'lib/react-util/_utility-methods';
+import { generateUniqueId } from '@/lib/react-util/_utility-methods';
 
 describe('generateUniqueId', () => {
   it('should generate a unique identifier of 9 characters', () => {

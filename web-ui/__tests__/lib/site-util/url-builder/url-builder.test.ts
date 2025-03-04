@@ -1,9 +1,9 @@
-import { UrlBuilder } from 'lib/site-util/url-builder/_impl';
-import { siteMap } from 'lib/site-util/url-builder/_sitemap';
-import { mappedUrlBuilderFactory } from 'lib/site-util/url-builder/_from-map';
-import { env } from 'lib/site-util/env';
+import { UrlBuilder } from '@/lib/site-util/url-builder/_impl';
+import { siteMap } from '@/lib/site-util/url-builder/_sitemap';
+import { mappedUrlBuilderFactory } from '@/lib/site-util/url-builder/_from-map';
+import { env } from '@/lib/site-util/env';
 
-jest.mock('lib/site-util/env');
+jest.mock('@/lib/site-util/env');
 
 describe('UrlBuilder', () => {
   const hostname = 'http://test-run.localhost';

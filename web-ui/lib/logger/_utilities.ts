@@ -1,4 +1,4 @@
-import { isNeonDbError } from 'lib/neondb/_guards';
+import { isNeonDbError } from '@/lib/neondb/_guards';
 
 /**
  * Creates an error log object with the provided error, source, and additional information.

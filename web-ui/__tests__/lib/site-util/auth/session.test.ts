@@ -1,14 +1,14 @@
 import {
   ServerSession,
   serverSessionFactory,
-} from 'lib/site-util/auth/_session';
-import { query, queryExt } from 'lib/neondb';
+} from '@/lib/site-util/auth/_session';
+import { query, queryExt } from '@/lib/neondb';
 import { log } from '@/lib/logger';
 import { Session } from 'next-auth';
-import { SessionExt } from 'lib/site-util/auth/_types';
+import { SessionExt } from '@/lib/site-util/auth/_types';
 
-jest.mock('lib/neondb');
-jest.mock('lib/logger');
+jest.mock('@/lib/neondb');
+jest.mock('@/lib/logger');
 
 describe('ServerSession', () => {
   const sessionId = 1;

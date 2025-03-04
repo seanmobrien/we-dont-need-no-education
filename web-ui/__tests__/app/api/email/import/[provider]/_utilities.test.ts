@@ -1,7 +1,11 @@
+/**
+ * @jest-environment node
+ */
+
 import {
   MailQueryBuilder,
   parsePaginationStats,
-} from 'app/api/email/import/[provider]/_utilitites';
+} from '@/app/api/email/import/[provider]/_utilitites';
 import { PaginationStats } from '@/data-models';
 
 describe('MailQueryBuilder', () => {

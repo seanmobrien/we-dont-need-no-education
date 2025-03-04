@@ -3,11 +3,11 @@
  */
 
 import { NextRequest } from 'next/server';
-import { POST, PUT, GET } from 'app/api/email/route';
-import { GET as GetWithId, DELETE } from 'app/api/email/[emailId]/route';
-import { query, queryExt } from 'lib/neondb';
+import { POST, PUT, GET } from '@/app/api/email/route';
+import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
+import { query, queryExt } from '@/lib/neondb';
 
-jest.mock('lib/neondb');
+jest.mock('@/lib/neondb');
 
 describe('Email API', () => {
   describe('POST /api/email', () => {

@@ -12,7 +12,7 @@ import {
   setRecordDirty,
   isRecordDirty,
   RecordWithDirtyState,
-} from 'lib/typescript';
+} from '@/lib/typescript';
 import {
   classnames,
   spacing,
@@ -27,8 +27,8 @@ import {
   minWidth,
   verticalAlign,
 } from 'tailwindcss-classnames';
-import ContactDropdown from 'components/contact/contact-dropdown';
-import { errorLogFactory, log } from 'lib/logger';
+import ContactDropdown from '@/components/contact/contact-dropdown';
+import { errorLogFactory, log } from '@/lib/logger';
 import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';
@@ -87,7 +87,7 @@ const BulkEmailForm: React.FC = () => {
 
   const handleAddRow = () => {
     const newEmail = setUuid({
-      emailId: -1,
+      emailId: '',
       sender: { contactId: -1, email: '', name: '' },
       subject: '',
       body: '',
@@ -112,7 +112,7 @@ const BulkEmailForm: React.FC = () => {
       updates: dirtyEmails.map((email) => ({
         record: email,
         operation: fetch('/api/email', {
-          method: email.emailId === -1 ? 'POST' : 'PUT',
+          method: !email.emailId ? 'POST' : 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
@@ -152,7 +152,7 @@ const BulkEmailForm: React.FC = () => {
               (res) =>
                 res &&
                 (res.emailId === email.emailId ||
-                  (email.emailId === -1 && isSameEmail(email, res)))
+                  (!email.emailId && isSameEmail(email, res)))
             );
             if (result) {
               setRecordDirty(result, false);
@@ -271,7 +271,7 @@ const BulkEmailForm: React.FC = () => {
             <tbody>
               {emails.map((email, index) => (
                 <React.Fragment
-                  key={email.emailId !== -1 ? email.emailId : getUuid(email)}
+                  key={email.emailId !== '' ? email.emailId : getUuid(email)}
                 >
                   <tr data-row-index={index}>
                     <td
@@ -333,7 +333,7 @@ const BulkEmailForm: React.FC = () => {
                       <button
                         onClick={() => {
                           const emailToDelete = emails[index];
-                          if (emailToDelete.emailId !== -1) {
+                          if (emailToDelete.emailId) {
                             fetch(`/api/email/${emailToDelete.emailId}`, {
                               method: 'DELETE',
                             })
@@ -384,7 +384,7 @@ const BulkEmailForm: React.FC = () => {
                     <td colSpan={2} className={classnames(spacing('p-2'))}>
                       <EmailSelect
                         selectedEmail={email.parentEmailId}
-                        onEmailSelect={(newParentId: number | null) => {
+                        onEmailSelect={(newParentId: string | null) => {
                           setEmails((prevEmails) => {
                             const updatedEmails = [...prevEmails];
                             updatedEmails[index].parentEmailId = newParentId;

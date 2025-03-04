@@ -18,13 +18,9 @@ import {
 const Home = async ({
   params: { emailId: emailIdFromParams },
 }: {
-  params: { emailId: number };
+  params: { emailId: string };
 }) => {
-  const unsafeEmailId: number = await emailIdFromParams;
-  const emailId = parseInt(String(unsafeEmailId), 10);
-  if (isNaN(emailId)) {
-    throw new Error('Invalid email ID');
-  }
+  const emailId: string = await emailIdFromParams;
   return (
     <div
       className={classnames(

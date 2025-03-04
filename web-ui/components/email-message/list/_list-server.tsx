@@ -1,5 +1,5 @@
-import { EmailMessageSummary } from 'data-models/api/email-message';
-import { getEmailList } from 'lib/api/email';
+import { EmailMessageSummary } from '@/data-models/api/email-message';
+import { getEmailList } from '@/lib/api/email';
 import Link from 'next/link';
 import { Dispatch, useState, useEffect } from 'react';
 import classnames, {
@@ -13,7 +13,7 @@ import classnames, {
   transitionProperty,
   typography,
 } from 'tailwindcss-classnames';
-import siteMap from 'lib/site-util/url-builder';
+import siteMap from '@/lib/site-util/url-builder';
 import {
   ICancellablePromiseExt,
   isOperationCancelledError,

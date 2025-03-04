@@ -36,3 +36,16 @@ export const isAbortError = (
   (isError(value) && value.name === 'AbortError') ||
   value instanceof DOMException ||
   isOperationCancelledError(value);
+
+/**
+ * Type guard to check if a value is a TemplateStringsArray.
+ *
+ * @param value - The value to check.
+ * @returns True if the value is a TemplateStringsArray, false otherwise.
+ */
+export const isTemplateStringsArray = (
+  value: unknown
+): value is TemplateStringsArray =>
+  Array.isArray(value) &&
+  'raw' in value &&
+  Array.isArray((value as TemplateStringsArray).raw);

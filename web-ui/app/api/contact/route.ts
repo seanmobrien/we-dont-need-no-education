@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query, queryExt } from 'lib/neondb';
-import { log } from 'lib/logger';
+import { query, queryExt } from '@/lib/neondb';
+import { log } from '@/lib/logger';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
   contactId: record.contact_id,

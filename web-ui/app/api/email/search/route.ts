@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mapRecordToSummary } from '../email-route-util';
-import { query } from 'lib/neondb';
-import { errorLogFactory, log } from 'lib/logger';
+import { query } from '@/lib/neondb';
+import { errorLogFactory, log } from '@/lib/logger';
 import { parsePaginationStats } from '@/data-models';
 
 export async function GET(req: NextRequest) {

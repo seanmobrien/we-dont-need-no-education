@@ -6,13 +6,13 @@ import {
   deleteEmailRecord,
   getEmailStats,
   getEmailSearchResults,
-} from 'lib/api/email';
-import { apiRequestHelperFactory } from 'lib/api/_utils';
-import siteMap from 'lib/site-util/url-builder';
+} from '@/lib/api/email';
+import { apiRequestHelperFactory } from '@/lib/send-api-request';
+import siteMap from '@/lib/site-util/url-builder';
 import { ContactSummary } from '@/data-models';
 
-jest.mock('lib/api/_utils');
-jest.mock('lib/site-util/url-builder');
+jest.mock('@/lib/send-api-request');
+jest.mock('@/lib/site-util/url-builder');
 
 const apiHelper = {
   get: jest.fn(),
@@ -40,7 +40,7 @@ describe('Email API', () => {
 
   describe('getEmailList', () => {
     it('should fetch a list of email messages', async () => {
-      const mockResponse = [{ emailId: 1, subject: 'Test Email' }];
+      const mockResponse = [{ emailId: '1', subject: 'Test Email' }];
       apiHelper.get.mockResolvedValue(mockResponse);
 
       const result = await getEmailList({ page: 1, num: 10 });
@@ -57,7 +57,7 @@ describe('Email API', () => {
     it('should fetch a specific email message by its ID', async () => {
       const mockResponse = [
         {
-          emailId: 1,
+          emailId: '1',
           subject: 'Test Email',
           sender: makeMockSender(),
           sentOn: new Date().toISOString(),
@@ -66,7 +66,7 @@ describe('Email API', () => {
       ];
       apiHelper.get.mockResolvedValue(mockResponse);
 
-      const result = await getEmail(1);
+      const result = await getEmail('1');
 
       expect(apiHelper.get).toHaveBeenCalledWith({
         url: builder.page('', 1),
@@ -102,7 +102,7 @@ describe('Email API', () => {
   describe('updateEmailRecord', () => {
     it('should update an existing email record', async () => {
       const mockEmail = {
-        emailId: 1,
+        emailId: '1',
         subject: 'Updated Email',
         body: 'Updated Body',
         sender: makeMockSender(),

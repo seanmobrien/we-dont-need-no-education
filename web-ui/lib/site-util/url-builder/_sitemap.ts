@@ -5,6 +5,13 @@ export const siteMap = {
       search: '',
       thread: '',
       stats: '',
+      import: {
+        google: {
+          message: '',
+          search: '',
+        },
+        list: '',
+      },
     },
   },
   email: {

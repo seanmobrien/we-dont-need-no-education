@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from 'lib/neondb';
-import { errorLogFactory, log } from 'lib/logger';
+import { query } from '@/lib/neondb';
+import { errorLogFactory, log } from '@/lib/logger';
 import { mapRecordToObject } from '../email-route-util';
 
 export async function GET(

@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getImportMessageSource } from '../../_utilitites';
 import { query, queryExt } from '@/lib/neondb';
 import { newUuid } from '@/lib/typescript';
+import { DefaultImportManager } from '@/lib/email/import/importmanager';
+import { gmail_v1 } from 'googleapis';
+import { LoggedError } from '@/lib/react-util';
+import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
+import { errorLogFactory, log } from '@/lib/logger';
 // import { ImportStage } from '@/data-models/api/import/email-message';
 
 export const GET = async (
@@ -14,7 +19,7 @@ export const GET = async (
     emailId,
     refresh: true,
   });
-  return 'status' in result
+  return 'status' in result!
     ? result
     : NextResponse.json(result, { status: 200 });
 };
@@ -24,14 +29,102 @@ export const POST = async (
   { params }: { params: { provider: string; emailId: string } }
 ) => {
   const { provider, emailId } = await params;
+  const importInstance = new DefaultImportManager(provider);
+  const result = await importInstance.importEmail(emailId, { req });
+  return NextResponse.json(result, { status: 200 });
+};
+
+type StageAttachmentProps = {
+  stagedMessageId: string;
+  part: gmail_v1.Schema$MessagePart;
+};
+type AttachmentStagedResult = {
+  status: 'success' | 'error';
+  error?: string;
+  partId: string;
+};
+
+export const stageAttachment = async ({
+  stagedMessageId,
+  part,
+}: StageAttachmentProps): Promise<AttachmentStagedResult> => {
+  const {
+    partId = 'unknown',
+    filename,
+    mimeType,
+  } = part as gmail_v1.Schema$MessagePart;
+  try {
+    if (partId === 'unknown') {
+      throw new Error('partId is required');
+    }
+    const repository = new StagedAttachmentRepository();
+    await repository.create({
+      stagedMessageId,
+      partId: Number(partId),
+      filename: filename ?? null,
+      mimeType: mimeType ?? null,
+      storageId: null,
+      imported: false,
+      size: part.body?.size ?? 0,
+      fileOid: null,
+      attachmentId: part.body?.attachmentId ?? null,
+    });
+    return {
+      status: 'success',
+      partId: partId!,
+    };
+  } catch (error) {
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      message: 'Error staging attachment',
+      data: {
+        stagedMessageId,
+        partId: part.partId,
+      },
+      source: 'email-import',
+    });
+    return {
+      status: 'error',
+      error: 'Error staging attachment',
+      partId: partId ?? '[null]',
+    };
+  }
+};
+export const queueStagedAttachments = ({
+  stagedMessageId,
+  part: partFromProps,
+}: StageAttachmentProps): Array<Promise<AttachmentStagedResult>> => {
+  const partItems = [];
+  if (partFromProps.filename) {
+    partItems.push(stageAttachment({ stagedMessageId, part: partFromProps }));
+  }
+  return partFromProps.parts
+    ? [
+        ...partItems,
+        ...partFromProps.parts.flatMap((part) =>
+          queueStagedAttachments({ stagedMessageId, part })
+        ),
+      ]
+    : partItems;
+};
+
+export const PUT = async (
+  req: NextRequest,
+  { params }: { params: { provider: string; emailId: string } }
+) => {
+  const { provider, emailId } = await params;
   const result = await getImportMessageSource({
     provider,
     emailId,
     refresh: true,
   });
+  if (!result) {
+    return NextResponse.json({ error: 'message not found' }, { status: 404 });
+  }
   if ('status' in result) {
     return result;
   }
+
   if (result.stage !== 'new') {
     if (req.nextUrl.searchParams.get('refresh')) {
       await query(
@@ -45,21 +138,21 @@ export const POST = async (
       );
     }
   }
+  const id = newUuid();
   const payload = JSON.stringify({
-    id: newUuid(),
     external_id: emailId,
     message: result.raw,
     stage: 'staged',
+    id,
   });
   const records = await queryExt(
-    (sql) =>
-      sql`
+    (sql) => sql`
   INSERT INTO staging_message 
   SELECT * FROM jsonb_populate_record(
     NULL::staging_message,
   ${payload}::jsonb
   ) 
-    RETURNING external_id`
+    RETURNING id`
   );
   if (records.rowCount !== 1) {
     return NextResponse.json(
@@ -67,9 +160,47 @@ export const POST = async (
       { status: 500 }
     );
   }
-  /*
-  result.id = Number(records[0].id);
-  result.stage = records[0].stage as ImportStage;
-  */
-  return NextResponse.json(result, { status: 201 });
+  // Stage attachments
+  try {
+    const attachments = await Promise.all(
+      (result.raw.payload?.parts ?? []).flatMap((part) =>
+        queueStagedAttachments({ stagedMessageId: id, part })
+      )
+    );
+    if (!attachments.every((attachment) => attachment.status === 'success')) {
+      throw new Error('Failed to stage attachments', { cause: attachments });
+    }
+  } catch (error) {
+    log((l) =>
+      l.error(
+        errorLogFactory({
+          message: 'Unexpected error processing attachments',
+          data: { emailId, attachments: result.raw.payload?.parts },
+          error,
+          source: 'email-import',
+        })
+      )
+    );
+    try {
+      await query((sql) => sql`delete from staging_message where id = ${id}`);
+    } catch (suppress) {
+      LoggedError.isTurtlesAllTheWayDownBaby(suppress, {
+        log: true,
+        source: 'email-import',
+      });
+    }
+    console.error('Unexpected error processing attachments:', error);
+    return NextResponse.json(
+      { error: 'Failed to process attachments' },
+      { status: 500 }
+    );
+  }
+  return NextResponse.json(
+    {
+      ...result,
+      id,
+      stage: 'staged',
+    },
+    { status: 201 }
+  );
 };

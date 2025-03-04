@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import ContactDropdown from './contact-dropdown';
-import { ContactSummary } from 'data-models/api/contact';
+import { ContactSummary } from '@/data-models/api/contact';
 import classnames, {
   display,
   alignItems,

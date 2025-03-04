@@ -1,96 +1,5 @@
-import { ICancellablePromiseExt } from '../typescript';
-
-/**
- * Represents the parameters required for making an API request.
- *
- * @property {URL} url - The URL to which the request is made.
- * @property {string} area - The area or domain of the API being accessed.
- * @property {string} action - The specific action or endpoint being called.
- * @property {'GET' | 'POST' | 'PUT' | 'DELETE'} method - The HTTP method used for the request.
- * @property {string | Record<string, unknown>} [input] - Optional input data to be sent with the request, can be a string or an object.
- */
-export type ApiRequestParams = {
-  url: URL;
-  area: string;
-  action: string;
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  input?: string | Record<string, unknown>;
-};
-
-/**
- * Represents the parameters for a read API request.
- *
- * This type is derived from `ApiRequestParams` by omitting the `method` and `input` properties.
- * It is used to define the parameters required for making a read request to the API.
- */
-export type ReadApiRequestParams = Omit<ApiRequestParams, 'method' | 'input'>;
-
-/**
- * Type alias for `DeleteApiRequestParams` which is equivalent to `ReadApiRequestParams`.
- * This type is used to define the parameters required for a delete API request.
- */
-export type DeleteApiRequestParams = ReadApiRequestParams;
-
-/**
- * Type definition for the parameters of a write API request.
- *
- * This type is derived from `ApiRequestParams` by omitting the `method` and `input` properties,
- * and then adding a new `input` property that can be either a string or a record with string keys and unknown values.
- *
- * @typeParam ApiRequestParams - The base type for API request parameters.
- * @property input - The input data for the API request, which can be a string or a record with string keys and unknown values.
- */
-export type WriteApiRequestParams = Omit<
-  ApiRequestParams,
-  'method' | 'input'
-> & { input: string | Record<string, unknown> };
-
-/**
- * Helper type for making API requests.
- *
- * @template T - The type of the response data.
- */
-export type ApiRequestHelper = {
-  /**
-   * Makes a GET request.
-   *
-   * @param params - The parameters for the GET request, excluding the 'area' field.
-   * @returns A promise that resolves to the response data of type T.
-   */
-  get: <T>(
-    params: Omit<ReadApiRequestParams, 'area'>
-  ) => ICancellablePromiseExt<T>;
-
-  /**
-   * Makes a POST request.
-   *
-   * @param params - The parameters for the POST request, excluding the 'area' field.
-   * @returns A promise that resolves to the response data of type T.
-   */
-  post: <T>(
-    params: Omit<WriteApiRequestParams, 'area'>
-  ) => ICancellablePromiseExt<T>;
-
-  /**
-   * Makes a PUT request.
-   *
-   * @param params - The parameters for the PUT request, excluding the 'area' field.
-   * @returns A promise that resolves to the response data of type T.
-   */
-  put: <T>(
-    params: Omit<WriteApiRequestParams, 'area'>
-  ) => ICancellablePromiseExt<T>;
-
-  /**
-   * Makes a DELETE request.
-   *
-   * @param params - The parameters for the DELETE request, excluding the 'area' field.
-   * @returns A promise that resolves to the response data of type T.
-   */
-  delete: <T>(
-    params: Omit<DeleteApiRequestParams, 'area'>
-  ) => ICancellablePromiseExt<T>;
-};
+import { PaginatedResultset, PaginationStats } from '@/data-models';
+import { PartialExceptFor } from '../typescript';
 
 /**
  * Parameters for making a paginated request to the API.
@@ -102,3 +11,75 @@ export type PaginatedRequestApiParams = {
   num?: number;
   page?: number;
 };
+
+/**
+ * A generic repository interface for managing objects of type `T`.
+ *
+ * @template T - The type of the objects managed by the repository.
+ * @template K - The key of the unique identifier property in type `T`.
+ */
+export type ObjectRepository<T, K extends keyof T> = {
+  /**
+   * Retrieves a list of objects with optional pagination.
+   *
+   * @param pagination - Optional pagination parameters.
+   * @returns A promise that resolves to a paginated result set of partial objects of type `T`.
+   */
+  list: (
+    pagination?: PaginationStats
+  ) => Promise<PaginatedResultset<Partial<T>>>;
+
+  /**
+   * Retrieves a single object by its unique identifier.
+   *
+   * @param recordId - The unique identifier of the object to retrieve.
+   * @returns A promise that resolves to the object of type `T` or `null` if not found.
+   */
+  get: (recordId: T[K]) => Promise<T | null>;
+
+  /**
+   * Creates a new object.
+   *
+   * @param model - The object to create, excluding the unique identifier property.
+   * @returns A promise that resolves to the created object of type `T`.
+   */
+  create: (model: Omit<T, K>) => Promise<T>;
+
+  /**
+   * Updates an existing object.
+   *
+   * @param model - The object to update, with all properties optional except for the unique identifier property.
+   * @returns A promise that resolves to the updated object of type `T`.
+   */
+  update: (model: PartialExceptFor<T, K>) => Promise<T>;
+
+  /**
+   * Deletes an object by its unique identifier.
+   *
+   * @param recordId - The unique identifier of the object to delete.
+   * @returns A promise that resolves to `true` if the object was successfully deleted, or `false` otherwise.
+   */
+  delete: (recordId: T[K]) => Promise<boolean>;
+};
+/**
+ * A function type that transforms a record of unknown values into a partial object of type `T`.
+ *
+ * @template T - The type of the object to be returned.
+ * @param record - A record with string keys and unknown values.
+ * @returns A partial object of type `T`.
+ */
+export type RecordToSummaryImpl<T extends object> = (
+  record: Record<string, unknown>
+) => Partial<T>;
+
+/**
+ * A type alias for a function that converts a record with string keys and unknown values
+ * to an object of type T.
+ *
+ * @template T - The type of the object to be returned.
+ * @param record - The record with string keys and unknown values to be converted.
+ * @returns An object of type T.
+ */
+export type RecordToObjectImpl<T extends object> = (
+  record: Record<string, unknown>
+) => T;

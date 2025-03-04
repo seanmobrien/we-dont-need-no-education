@@ -1,4 +1,4 @@
-import { query, queryExt } from 'lib/neondb';
+import { query, queryExt } from '@/lib/neondb';
 import { neon } from '@neondatabase/serverless';
 
 jest.mock('@neondatabase/serverless', () => ({

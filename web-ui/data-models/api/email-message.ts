@@ -1,12 +1,14 @@
 import { ContactSummary } from './contact';
 
 export type EmailMessageSummary = {
-  emailId: number;
+  emailId: string;
   sender: ContactSummary;
   subject: string;
   sentOn: Date | string;
   threadId?: number | null;
-  parentEmailId?: number | null;
+  parentEmailId?: string | null;
+  importedFromId?: string | null;
+  globalMessageId?: string | null;
   recipients: ContactSummary[];
 };
 

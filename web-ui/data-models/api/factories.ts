@@ -46,7 +46,7 @@ export const createContact: Factory<Contact> = (overrides) => ({
  * @returns {EmailMessage} - A new EmailMessage object with the specified overrides.
  */
 export const createEmailMessage: Factory<EmailMessage> = (overrides) => ({
-  emailId: -1,
+  emailId: '',
   subject: '',
   body: '',
   sentOn: new Date().toISOString(),
