@@ -14,6 +14,8 @@ const serverEnvSchema = z.object({
   AUTH_GOOGLE_ID: z.string(),
   AUTH_GOOGLE_SECRET: z.string(),
   AUTH_GOOGLE_APIKEY: z.string(),
+  AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: z.string().optional(),
+  AZURE_STORAGE_CONNECTION_STRING: z.string().min(1),
   REDIS_URL: z.string().min(1),
   REDIS_PASSWORD: z.string().min(1),
 });

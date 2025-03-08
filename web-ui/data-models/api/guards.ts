@@ -12,9 +12,10 @@ export const isContactSummary = (check: unknown): check is ContactSummary => {
 export const isContact = (check: unknown): check is Contact => {
   const candidate = check as Contact;
   return (
-    (isContactSummary(check) &&
-      typeof candidate?.jobDescription === 'string') ||
-    typeof candidate?.isDistrictStaff === 'boolean'
+    isContactSummary(check) &&
+    ((typeof candidate?.jobDescription === 'string' &&
+      candidate.jobDescription.length > 0) ||
+      typeof candidate?.isDistrictStaff === 'boolean')
   );
 };
 

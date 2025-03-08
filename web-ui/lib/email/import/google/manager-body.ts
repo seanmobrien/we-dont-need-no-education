@@ -13,6 +13,7 @@ import { TransactionalStateManagerBase } from '../default/transactional-stateman
 import { ThreadRepository } from '@/lib/api/thread/database';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
 import { ParsedHeaderMap } from './parsedHeaderMap';
+import { query } from '@/lib/neondb';
 
 class EmailStageManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {
@@ -84,6 +85,33 @@ class EmailStageManager extends TransactionalStateManagerBase {
     if (context.target) {
       context.target.targetId = emailId;
     }
+    const globalMessageIdWithBrackets = `<${globalMessageId}>`;
+    const records = await query(
+      (sql) => sql`
+      UPDATE emails SET parent_id=${emailId} WHERE emails.parent_id IS NULL AND
+      emails.email_id IN (
+        SELECT E.email_id 
+        FROM emails E
+        JOIN email_property EP ON EP.email_id=E.email_id
+        JOIN email_property_type ET ON EP.email_property_type_id=ET.email_property_type_id
+        WHERE ET.property_name='In-Reply-To' AND (EP.property_value=${emailId} OR EP.property_value=${globalMessageIdWithBrackets})
+      ) RETURNING emails.email_id`
+    );
+    if (records.length) {
+      log((l) =>
+        l.info({
+          message: `Updated parent id for ${records.length} emails`,
+          parentEmailId,
+          childEmailIds: records.map((r) => r.email_id),
+        })
+      );
+    }
+    log((l) =>
+      l.info(
+        `Processed email with ID: ${emailId}, thread ID: ${threadId}, subject: ${subject}`
+      )
+    );
+
     return context;
   }
 

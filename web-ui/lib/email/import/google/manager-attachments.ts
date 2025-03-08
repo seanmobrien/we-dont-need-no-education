@@ -60,6 +60,8 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
                 emailId: context.target!.targetId!,
                 fileName: record.filename,
                 filePath: job.result.storageId!,
+                size: record.size,
+                mimeType: record.mimeType ?? 'application/octet-stream',
                 extractedText: null,
                 extractedTextVector: null,
                 policyId: null,

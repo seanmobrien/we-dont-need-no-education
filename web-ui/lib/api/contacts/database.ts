@@ -8,6 +8,7 @@ import { PartialExceptFor } from '@/lib/typescript';
 import { isError } from '@/lib/react-util';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { parsePaginationStats } from '@/data-models';
+import { ObjectRepository } from '@/data-models/api/object-repository';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
   contactId: Number(record.contact_id),
@@ -20,20 +21,6 @@ const mapRecordToObject = (record: Record<string, unknown>) => ({
   jobDescription: record.role_dscr as string,
   isDistrictStaff: record.is_district_staff as boolean,
 });
-
-export type ObjectRepository<T, K extends keyof T> = {
-  list: (
-    pagination?: PaginationStats
-  ) => Promise<PaginatedResultset<ContactSummary>>;
-
-  get: (contactId: number) => Promise<Contact | null>;
-
-  create: (model: Omit<Contact, K>) => Promise<Contact>;
-
-  update: (model: PartialExceptFor<T, K>) => Promise<T>;
-
-  delete: (contactId: T[K]) => Promise<boolean>;
-};
 
 export class ContactRepository
   implements ObjectRepository<Contact, 'contactId'>

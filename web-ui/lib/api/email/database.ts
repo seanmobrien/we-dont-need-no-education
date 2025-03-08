@@ -177,6 +177,8 @@ const mapAttachmentRecordToSummary = (
   emailId: record.email_id as string,
   fileName: record.file_name as string,
   filePath: record.file_path as string,
+  size: record.size as number,
+  mimeType: record.mime_type as string,
 });
 
 const mapAttachmentRecordToObject = (
@@ -241,6 +243,8 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
             !asModel.emailId &&
             !asModel.extractedText &&
             !asModel.extractedTextVector &&
+            !asModel.size &&
+            !asModel.mimeType &&
             !asModel.policyId &&
             !asModel.summary)
         ) {
@@ -271,11 +275,13 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
       string | null,
       number | null,
       string | null,
+      string,
+      number,
       string
     ]
   ] {
     return [
-      'INSERT INTO email_attachments (file_name, file_path, extracted_text, extracted_text_tsv, policy_id, summary, email_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING email_id',
+      'INSERT INTO email_attachments (file_name, file_path, extracted_text, extracted_text_tsv, policy_id, summary, email_id, size, mime_type) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING email_id',
       [
         obj.fileName,
         obj.filePath,
@@ -284,6 +290,8 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
         obj.policyId,
         obj.summary,
         obj.emailId,
+        obj.size,
+        obj.mimeType,
       ],
     ];
   }
@@ -299,6 +307,8 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
         policy_id: obj.policyId,
         summary: obj.summary,
         email_id: obj.emailId,
+        size: obj.size,
+        mime_type: obj.mimeType,
       },
     ];
   }
