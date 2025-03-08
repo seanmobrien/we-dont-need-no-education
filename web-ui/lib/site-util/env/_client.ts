@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { ZodProcessors } from './_common';
-
 export type ClientEnvType = ReturnType<typeof clientEnvSchema.parse>;
 
 // Define the schema for client-side environment variables
@@ -11,4 +10,7 @@ const clientEnvSchema = z.object({
 
 // Conditionally parse and validate the environment variables
 export const clientEnvFactory = (): ClientEnvType =>
-  clientEnvSchema.parse(process.env);
+  clientEnvSchema.parse({
+    NEXT_PUBLIC_HOSTNAME: process.env.NEXT_PUBLIC_HOSTNAME,
+    NEXT_PUBLIC_LOG_LEVEL_CLIENT: process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT,
+  });

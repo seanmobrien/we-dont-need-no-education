@@ -31,7 +31,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     const result = await query(
       (sql) =>
         sql`SELECT 
-      s.stage, s.id, m.email_id AS targetId, 
+      s.stage, s.id, m.email_id AS targetId, s."userId",
       (SELECT h.value 
         FROM staging_message, 
         LATERAL unnest((message).payload.headers) AS h(name, value) 
@@ -72,6 +72,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
             targetId: result.targetid as string,
             timestamp: result.timestamp as Date,
             sender: result.sender as string,
+            userId: result.userId as number,
             recipients,
           };
           return ret;

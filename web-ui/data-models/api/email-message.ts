@@ -20,3 +20,17 @@ export type EmailMessageStats = {
   total: number;
   lastUpdated: Date;
 };
+
+export type EmailMessageAttachmentSummary = {
+  attachmentId: number;
+  emailId: string;
+  fileName: string;
+  filePath: string;
+};
+
+export type EmailMessageAttachment = EmailMessageAttachmentSummary & {
+  extractedText: string | null;
+  extractedTextVector: string | null;
+  policyId: number | null;
+  summary: string | null;
+};

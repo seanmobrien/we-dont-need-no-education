@@ -182,12 +182,22 @@ export class TransactionalStateManagerBase
         log((l) => l.error(new Error('Transaction ID is null')));
       }
     } else if (!this.#skipStageBump) {
-      const result = await queryExt(
-        (sql) =>
-          sql`UPDATE staging_message SET stage = ${ctx.currentStage} WHERE id = ${id}`
-      );
-      if (!result.rowCount) {
-        throw new Error('Failed to update staging message');
+      if (ctx.currentStage === 'completed') {
+        const result = await query(
+          (sql) =>
+            sql`DELETE FROM staging_message WHERE id = ${id} RETURNING id`
+        );
+        if (!result.length) {
+          throw new Error('Failed to delete staging message');
+        }
+      } else {
+        const result = await queryExt(
+          (sql) =>
+            sql`UPDATE staging_message SET stage = ${ctx.currentStage} WHERE id = ${id}`
+        );
+        if (!result.rowCount) {
+          throw new Error('Failed to update staging message');
+        }
       }
       log((l) =>
         l.info({

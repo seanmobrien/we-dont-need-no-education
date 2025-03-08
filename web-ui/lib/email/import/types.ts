@@ -4,6 +4,7 @@ import {
 } from '@/data-models/api/import/email-message';
 import { ContactRepository } from '@/lib/api/contacts/database';
 import { EmailRepository } from '@/lib/api/email/database';
+import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
 import { ThreadRepository } from '@/lib/api/thread/database';
 import { NextRequest } from 'next/server';
 
@@ -81,6 +82,7 @@ export type AdditionalStageOptions = {
   threadRepository?: ThreadRepository;
   emailRepository?: EmailRepository;
   contactRepository?: ContactRepository;
+  stagedAttachmentRepository?: StagedAttachmentRepository;
 };
 
 /**

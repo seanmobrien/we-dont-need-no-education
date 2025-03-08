@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { errorLogFactory, log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
+import { auth } from '@/auth';
 
 /**
  * A class to build mail query strings for a specific provider.
@@ -111,7 +112,13 @@ export const getImportMessageSource = async ({
       providerid: string;
       targetid: string;
       message?: string;
+      userId: number;
     }[] = [];
+    const session = await auth();
+    if (!session || !session.user || !session.user.id) {
+      throw new Error('Must be authenticated to call this API');
+    }
+    const userId = Number(session.user.id);
     if (refresh) {
       if (![provider, emailId].every(Boolean)) {
         return getReturnValue(
@@ -135,7 +142,7 @@ export const getImportMessageSource = async ({
       currentState = await query(
         (
           sql
-        ) => sql`select s.external_id AS providerId, s.stage, s.id, m.email_id AS targetId from emails m 
+        ) => sql`select s.external_id AS providerId, s.stage, s.id, s."userId", m.email_id AS targetId from emails m 
         right join staging_message s on s.external_id = m.imported_from_id
         where s.external_id = ${emailId}`
       );
@@ -143,18 +150,22 @@ export const getImportMessageSource = async ({
       currentState = await query(
         (
           sql
-        ) => sql`select s.external_id AS providerId, s.stage, s.id, to_json(s.message) AS message, m.email_id AS targetId from emails m 
+        ) => sql`select s.external_id AS providerId, s.stage, s.id, to_json(s.message) AS message, s."userId", m.email_id AS targetId from emails m 
             right join staging_message s on s.external_id = m.imported_from_id
             where s.external_id = ${emailId}`
       );
-      source =
-        currentState.length && currentState[0].message
-          ? (currentState[0].message as GmailEmailImportSource)
-          : undefined;
+      if (currentState.length && currentState[0].message) {
+        if (userId !== currentState[0].userId) {
+          return NextResponse.json({ error: 'unauthorized' }, { status: 403 });
+        }
+        source = currentState[0].message as GmailEmailImportSource;
+      } else {
+        source = undefined;
+      }
     }
     if (!currentState.length) {
       return source
-        ? { raw: source, stage: 'new', providerId: emailId! }
+        ? { raw: source, stage: 'new', providerId: emailId!, userId: userId! }
         : getReturnValue(
             NextResponse.json({ error: 'email not found' }, { status: 404 })
           );
@@ -169,6 +180,7 @@ export const getImportMessageSource = async ({
       id: currentState[0].id,
       providerId: currentState[0].providerid,
       targetId: currentState[0].targetid,
+      userId: userId!,
       raw: source,
     };
   } catch (error) {

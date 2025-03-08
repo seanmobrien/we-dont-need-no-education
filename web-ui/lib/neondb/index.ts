@@ -60,7 +60,6 @@ const applyTransform = <ResultType extends object>(
   }
   const { transform } = props;
   return promise.then((result) => {
-    console.log('in transform promise resolve', result);
     if (isNeonDbError(result)) {
       throw result;
     }

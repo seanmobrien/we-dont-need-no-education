@@ -7,7 +7,7 @@ import { gmail_v1 } from 'googleapis';
 import { LoggedError } from '@/lib/react-util';
 import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
 import { errorLogFactory, log } from '@/lib/logger';
-// import { ImportStage } from '@/data-models/api/import/email-message';
+import { queueAttachment } from '@/lib/email/import/google/attachment-download';
 
 export const GET = async (
   req: NextRequest,
@@ -58,44 +58,50 @@ export const stageAttachment = async ({
       throw new Error('partId is required');
     }
     const repository = new StagedAttachmentRepository();
-    await repository.create({
+    const model = await repository.create({
       stagedMessageId,
       partId: Number(partId),
-      filename: filename ?? null,
-      mimeType: mimeType ?? null,
+      filename: filename ?? `attachment-${partId}`,
+      mimeType:
+        mimeType ??
+        part.headers?.find((h) => h.name === 'Content-Type')?.value ??
+        null,
       storageId: null,
       imported: false,
-      size: part.body?.size ?? 0,
+      size: part.body!.size ?? 0,
       fileOid: null,
-      attachmentId: part.body?.attachmentId ?? null,
+      attachmentId: part.body!.attachmentId!,
     });
+
+    await queueAttachment({
+      id: `${stagedMessageId}:${model.partId}`,
+      job: { model: { ...model, stagedMessageId: stagedMessageId } },
+    });
+
     return {
       status: 'success',
       partId: partId!,
     };
   } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+    const e = LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
-      message: 'Error staging attachment',
-      data: {
-        stagedMessageId,
-        partId: part.partId,
-      },
       source: 'email-import',
+      data: { stagedMessageId, partId, filename, mimeType },
     });
     return {
       status: 'error',
-      error: 'Error staging attachment',
-      partId: partId ?? '[null]',
+      error: e.message,
+      partId: partId ?? 'unknown',
     };
   }
 };
+
 export const queueStagedAttachments = ({
   stagedMessageId,
   part: partFromProps,
 }: StageAttachmentProps): Array<Promise<AttachmentStagedResult>> => {
   const partItems = [];
-  if (partFromProps.filename) {
+  if (partFromProps.filename && partFromProps.body?.attachmentId) {
     partItems.push(stageAttachment({ stagedMessageId, part: partFromProps }));
   }
   return partFromProps.parts
@@ -144,6 +150,7 @@ export const PUT = async (
     message: result.raw,
     stage: 'staged',
     id,
+    userId: result.userId,
   });
   const records = await queryExt(
     (sql) => sql`

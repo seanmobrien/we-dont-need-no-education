@@ -1,10 +1,13 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @jest-environment node
  */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { DefaultImportManager } from '@/lib/email/import/importmanager';
-import { ImportSourceMessage } from '@/data-models/api/import/email-message';
+import {
+  ImportSourceMessage,
+  ImportStageValues,
+} from '@/data-models/api/import/email-message';
 import { NextRequest } from 'next/server';
 import { loadEmail } from '@/lib/api/email/import/google';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -13,6 +16,9 @@ import { google } from 'googleapis';
 import { query, queryExt } from '@/lib/neondb';
 import { sendApiRequest } from '@/lib/send-api-request';
 import { ICancellablePromise, ICancellablePromiseExt } from '@/lib/typescript';
+import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
+import { ImportManagerMap } from '@/lib/email/import/types';
+import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';
 
 jest.mock('@/lib/neondb');
 jest.mock('google-auth-library');
@@ -23,13 +29,38 @@ jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
   errorLogFactory: jest.fn(),
 }));
+jest.mock('@/lib/email/import/google/managermapfactory');
 
+const mockManagerMapFactory = managerMapFactory as jest.MockedFunction<
+  typeof managerMapFactory
+>;
 const mockLoadEmail = loadEmail as jest.MockedFunction<typeof loadEmail>;
-
+const mockStateManager = {
+  begin: jest.fn((ctx) => Promise.resolve(ctx)),
+  run: jest.fn((ctx) => {
+    return loadEmail(ctx.id, { req: ctx.req });
+  }),
+  commit: jest.fn((ctx) => {
+    return Promise.resolve({
+      ...ctx,
+      stage: 'completed',
+    });
+  }),
+  rollback: jest.fn(),
+};
 describe('DefaultImportManager', () => {
+  beforeEach(() => {
+    const map = ImportStageValues.reduce((acc, stage) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      acc[stage] = jest.fn(() => mockStateManager) as any;
+      return acc;
+    }, {} as ImportManagerMap);
+    mockManagerMapFactory.mockReturnValue(map);
+  });
   const defaultApiResponse: ImportSourceMessage = {
     id: 'testEmailId',
     providerId: 'incoming-email-id',
+    userId: 1,
     stage: 'completed',
     raw: {},
   };
@@ -64,6 +95,7 @@ describe('DefaultImportManager', () => {
         id: 'testEmailId',
         stage: 'new',
         providerId: emailId,
+        userId: 1,
         raw: {},
       };
       mockLoadEmail.mockResolvedValue(importSourceMessage);
@@ -79,6 +111,7 @@ describe('DefaultImportManager', () => {
         id: 'testEmailId',
         stage: 'new',
         providerId: emailId,
+        userId: 1,
         raw: {},
       };
       const error = new Error('Test error');
@@ -97,6 +130,7 @@ describe('DefaultImportManager', () => {
         id: 'testEmailId',
         providerId: emailId,
         stage: 'completed',
+        userId: 1,
         raw: {},
       };
       mockLoadEmail.mockResolvedValue(importSourceMessage);

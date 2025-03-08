@@ -19,6 +19,7 @@ describe('Email API', () => {
           body: 'Test Body',
           sentOn: '2023-01-01T00:00:00Z',
           threadId: 1,
+          userId: 1,
           recipients: [{ contactId: 1, email: 'test.com', name: 'Test Name' }],
         }),
       } as unknown as NextRequest;

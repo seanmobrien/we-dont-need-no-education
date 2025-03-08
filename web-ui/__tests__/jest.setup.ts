@@ -4,14 +4,14 @@ import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
-
+import { queueManagerFactory } from '@/lib/site-util/queue';
 // jest.setup.ts
 import '@testing-library/jest-dom';
 import 'jest';
 
 jest.mock('google-auth-library');
 jest.mock('googleapis');
-jest.mock('');
+jest.mock('@/lib/site-util/queue');
 
 jest.mock('next-auth', () => {
   return jest.fn();
@@ -38,6 +38,8 @@ const DefaultEnvVariables = {
   AUTH_GOOGLE_ID: 'auth-google-id',
   AUTH_GOOGLE_SECRET: 'auth-google-secret',
   AUTH_GOOGLE_APIKEY: 'auth-google-apikey',
+  REDIS_URL: 'redis://neverurl',
+  REDIS_PASSWORD: 'redis-password',
 };
 
 const resetEnvVariables = () => {

@@ -107,6 +107,7 @@ export class DefaultImportManager {
         throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
           source: 'DefaultImportManager',
+          data: { stage, providerEmailId },
           critical: true,
         });
       }
@@ -131,7 +132,9 @@ export class DefaultImportManager {
       let result: ImportSourceMessage = {
         providerId: emailId ?? TransactionalStateManagerBase.NullId,
         stage: 'new',
+        // Note these
         raw: null as unknown as GmailEmailImportSource,
+        userId: undefined as unknown as number,
       };
       let tries = 0;
       let lastStage: ImportStage | null = null;

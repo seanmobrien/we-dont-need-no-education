@@ -42,6 +42,10 @@ export type ImportSourceMessage = {
    * The current stage of the import process.
    */
   stage: ImportStage;
+  /**
+   * The user id of the user who owns the email.
+   */
+  userId: number;
 };
 
 /**
@@ -62,6 +66,7 @@ export type StagedMessageSummary = {
   targetId?: string;
   timestamp: Date;
   sender: string;
+  userId: number;
   recipients: Array<string> | string | null;
 };
 

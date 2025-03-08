@@ -14,6 +14,8 @@ const serverEnvSchema = z.object({
   AUTH_GOOGLE_ID: z.string(),
   AUTH_GOOGLE_SECRET: z.string(),
   AUTH_GOOGLE_APIKEY: z.string(),
+  REDIS_URL: z.string().min(1),
+  REDIS_PASSWORD: z.string().min(1),
 });
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;

@@ -33,11 +33,17 @@ export type ICredential = {
 export const ServiceValues = ['email'] as const;
 export type Service = (typeof ServiceValues)[number];
 
-export type CredentialOptions = {
-  provider: string;
-  service: Service;
-  session: Session;
-};
+export type CredentialOptions =
+  | {
+      provider: string;
+      service: Service;
+      session: Session;
+    }
+  | {
+      provider: string;
+      service: Service;
+      userId: number;
+    };
 
 export type ICredentialProvider = {
   getCredential(options: CredentialOptions): Promise<ICredential>;

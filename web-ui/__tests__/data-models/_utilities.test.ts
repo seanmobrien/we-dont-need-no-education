@@ -53,7 +53,7 @@ describe('normalizeDateAndTime', () => {
 describe('lookupEmailPropertyType', () => {
   it('should return the correct ID for a known property type', () => {
     expect(lookupEmailPropertyType('Cc')).toBe(
-      EmailPropertyTypeTypeValues.indexOf('Cc')
+      EmailPropertyTypeTypeValues.indexOf('Cc') + 1
     );
   });
 
@@ -75,7 +75,7 @@ describe('isEmailPropertyType', () => {
 describe('lookupEmailPropertyCategory', () => {
   it('should return the correct ID for a known property category', () => {
     expect(lookupEmailPropertyCategory('Key Point')).toBe(
-      EmailPropertyCategoryTypeValues.indexOf('Key Point')
+      EmailPropertyCategoryTypeValues.indexOf('Key Point') + 1
     );
   });
 

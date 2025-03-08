@@ -1,12 +1,13 @@
 import { BaseObjectRepository } from '@/lib/api/_baseObjectRepository';
 import { ObjectRepository } from '@/lib/api/_types';
+import { query } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util';
 import { FirstParameter } from '@/lib/typescript';
 
 export type StagedAttachment = {
   stagedMessageId: string;
   partId: number;
-  filename: string | null;
+  filename: string;
   mimeType: string | null;
   storageId: string | null;
   imported: boolean;
@@ -18,7 +19,7 @@ export type StagedAttachment = {
 const mapRecordToObject = (
   record: Record<string, unknown>
 ): StagedAttachment => ({
-  stagedMessageId: record.staged_message_id as string,
+  stagedMessageId: record.staging_message_id as string,
   partId: record.partId as number,
   filename: record.filename as string,
   mimeType: record.mimeType as string,
@@ -49,6 +50,19 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
     return super.create(props);
   }
 
+  async getForMessage(
+    stagedMessageId: string
+  ): Promise<ReadonlyArray<StagedAttachment>> {
+    const runQuery = () =>
+      query(
+        (sql) => sql`
+      SELECT * FROM staging_attachment WHERE staging_message_id = ${stagedMessageId} ORDER BY "partId"`
+      );
+    return this.innerList(runQuery, runQuery).then(
+      (x) => x.results as ReadonlyArray<StagedAttachment>
+    );
+  }
+
   /**
    * Validates the input for a specific method.
    *
@@ -77,14 +91,14 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected getListQueryProperties(): [string, Array<any>, string] {
     return [
-      `SELECT * FROM staging_attachment ORDER BY staging_message_id, part_id`,
+      `SELECT * FROM staging_attachment ORDER BY staging_message_id, partId`,
       [],
       `SELECT COUNT(*) as records FROM staging_attachment`,
     ];
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected getQueryProperties(recordId: number): [string, Array<any>] {
-    return ['SELECT * FROM staging_attachment WHERE part_id = $1', [recordId]];
+    return ['SELECT * FROM staging_attachment WHERE partId = $1', [recordId]];
   }
   protected getCreateQueryProperties({
     stagedMessageId,
