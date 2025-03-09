@@ -15,12 +15,9 @@ import {
   gridColumn,
 } from 'tailwindcss-classnames';
 
-const Home = async ({
-  params: { emailId: emailIdFromParams },
-}: {
-  params: { emailId: string };
-}) => {
-  const emailId: string = await emailIdFromParams;
+const Home = async ({ params }: { params: { emailId: string } }) => {
+  const { emailId } = await params;
+
   return (
     <div
       className={classnames(

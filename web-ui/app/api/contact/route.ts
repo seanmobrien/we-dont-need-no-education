@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryExt } from '@/lib/neondb';
 import { log } from '@/lib/logger';
+import { globalContactCache } from '@/data-models/api/contact-cache';
+import { isTruthy } from '@/lib/react-util';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
-  contactId: record.contact_id,
-  name: record.name,
-  email: record.email,
+  contactId: record.contact_id as number,
+  name: record.name as string,
+  email: record.email as string,
 });
 const mapRecordToObject = (record: Record<string, unknown>) => ({
   ...mapRecordToSummary(record),
-  phoneNumber: record.phone,
-  jobDescription: record.role_dscr,
-  isDistrictStaff: record.is_district_staff,
+  phoneNumber: record.phone as string,
+  jobDescription: record.role_dscr as string,
+  isDistrictStaff: record.is_district_staff as boolean,
 });
 
 export async function POST(req: NextRequest) {
@@ -34,6 +36,7 @@ export async function POST(req: NextRequest) {
     );
     log((l) => l.verbose('[ [AUDIT]] -  Contact created:', result[0]));
 
+    globalContactCache().add(result);
     return NextResponse.json(
       {
         message: 'Contact created successfully',
@@ -118,6 +121,7 @@ export async function PUT(req: NextRequest) {
       );
     }
     log((l) => l.verbose('[[AUDIT]] -  Contact updated:', result.rows[0]));
+    globalContactCache().add(result.rows);
     return NextResponse.json(
       {
         message: 'Contact updated successfully',
@@ -138,8 +142,15 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const contactId = searchParams.get('contact_id');
+    const refresh = isTruthy(searchParams.get('refresh'));
 
     if (contactId) {
+      if (!refresh) {
+        const cachedContact = globalContactCache().get(Number(contactId));
+        if (cachedContact) {
+          return NextResponse.json(cachedContact, { status: 200 });
+        }
+      }
       const result = await query(
         (sql) =>
           sql`SELECT contact_id, name, email, phone, role_dscr, is_district_staff FROM contacts WHERE contact_id = ${contactId}`,
@@ -152,6 +163,7 @@ export async function GET(req: NextRequest) {
           { status: 404 }
         );
       }
+      globalContactCache().add(result[0]);
       return NextResponse.json(result[0], { status: 200 });
     } else {
       const result = await query(
@@ -159,7 +171,7 @@ export async function GET(req: NextRequest) {
           sql`SELECT contact_id, name, email FROM contacts ORDER BY name ASC`,
         { transform: mapRecordToSummary }
       );
-
+      globalContactCache().add(result);
       return NextResponse.json(result, { status: 200 });
     }
   } catch (error) {

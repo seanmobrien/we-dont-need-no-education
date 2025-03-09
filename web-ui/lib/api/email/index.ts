@@ -1,2 +1,2 @@
-export type * from './_types';
+export type * from './types';
 export * from './area';

@@ -30,6 +30,12 @@ export const logger = (): Promise<ILogger> =>
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },
           useOnlyCustomLevels: false,
+          transport: {
+            target: 'pino-pretty',
+            options: {
+              colorize: true,
+            },
+          },
         });
       }
       // NOTE: This is to assist with debugging, and should not be left in production

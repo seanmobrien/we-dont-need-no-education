@@ -7,13 +7,8 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { emailId: string } }
 ) {
-  const { emailId: emailIdFromParams } = await params;
+  const { emailId } = await params;
   try {
-    const emailId = parseInt(emailIdFromParams, 10);
-    if (isNaN(emailId)) {
-      return NextResponse.json({ error: 'Invalid email ID' }, { status: 400 });
-    }
-
     // Fetch detailed email data
     const result = await query(
       (sql) => sql`
@@ -23,7 +18,7 @@ export async function GET(
           e.email_contents,
           e.sent_timestamp,
           e.thread_id,
-          e.parent_email_id,
+          e.parent_id,
           sender.contact_id AS senderId,
           sender.name AS senderName,
           sender.email AS senderEmail,
@@ -52,7 +47,7 @@ export async function GET(
         errorLogFactory({
           error,
           source: 'GET email/emailId',
-          include: { emailId: emailIdFromParams },
+          include: { emailId: emailId },
         })
       )
     );
@@ -84,16 +79,8 @@ export async function DELETE({
 }: {
   params: { emailId: string };
 }): Promise<NextResponse> {
-  const { emailId: emailIdFromParams } = await params;
+  const { emailId: emailId } = await params;
   try {
-    const emailId = parseInt(emailIdFromParams, 10);
-    if (!emailId) {
-      return NextResponse.json(
-        { error: 'Email ID is required' },
-        { status: 400 }
-      );
-    }
-
     // Delete associated recipients first
     await query(
       (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`

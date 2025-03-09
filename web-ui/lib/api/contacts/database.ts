@@ -7,20 +7,36 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { PartialExceptFor } from '@/lib/typescript';
 import { isError } from '@/lib/react-util';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
-import { parsePaginationStats } from '@/data-models';
+import { isContact, parsePaginationStats } from '@/data-models';
 import { ObjectRepository } from '@/data-models/api/object-repository';
+import { globalContactCache } from '@/data-models/api/contact-cache';
+import { RecipientType } from '@/lib/email/import/types';
 
-const mapRecordToSummary = (record: Record<string, unknown>) => ({
-  contactId: Number(record.contact_id),
-  name: record.name as string,
-  email: record.email as string,
-});
-const mapRecordToObject = (record: Record<string, unknown>) => ({
-  ...mapRecordToSummary(record),
-  phoneNumber: record.phone as string,
-  jobDescription: record.role_dscr as string,
-  isDistrictStaff: record.is_district_staff as boolean,
-});
+const mapRecordToSummary = (
+  record: Record<string, unknown>,
+  updateContact: boolean = true
+) => {
+  const ret = {
+    contactId: Number(record.contact_id),
+    name: record.name as string,
+    email: record.email as string,
+  };
+  if (updateContact) {
+    globalContactCache().add(ret);
+  }
+  return ret;
+};
+
+const mapRecordToObject = (record: Record<string, unknown>) => {
+  const ret = {
+    ...mapRecordToSummary(record, false),
+    phoneNumber: record.phone as string,
+    jobDescription: record.role_dscr as string,
+    isDistrictStaff: record.is_district_staff as boolean,
+  };
+  globalContactCache().add(ret);
+  return ret;
+};
 
 export class ContactRepository
   implements ObjectRepository<Contact, 'contactId'>
@@ -121,7 +137,16 @@ export class ContactRepository
     }
   }
 
-  async get(contactId: number): Promise<Contact | null> {
+  async get(
+    contactId: number,
+    reload: boolean = false
+  ): Promise<Contact | null> {
+    if (!reload) {
+      const cachedContact = globalContactCache().get(contactId);
+      if (isContact(cachedContact)) {
+        return cachedContact;
+      }
+    }
     try {
       const result = await query(
         (sql) => sql`SELECT * FROM contacts WHERE contact_id = ${contactId}`,
@@ -160,6 +185,7 @@ export class ContactRepository
           table: 'contacts',
         });
       }
+      globalContactCache().add(result[0]);
       return result[0];
     } catch (error) {
       ContactRepository.logError(error);
@@ -257,7 +283,11 @@ export class ContactRepository
     return false;
   }
 
-  async addEmailRecipient(contactId: number, emailId: string): Promise<void> {
+  async addEmailRecipient(
+    contactId: number,
+    emailId: string,
+    type?: RecipientType
+  ): Promise<void> {
     if (!contactId || !emailId) {
       throw new ValidationError({
         field: 'contactId||emailId',
@@ -267,8 +297,8 @@ export class ContactRepository
     try {
       await query(
         (sql) => sql`
-          INSERT INTO email_recipients (contact_id, email_id)
-          VALUES (${contactId}, ${emailId})`
+          INSERT INTO email_recipients (recipient_id, email_id, recipient_type)
+          VALUES (${contactId}, ${emailId}, ${type})`
       );
       log((l) =>
         l.verbose('[ [AUDIT]] - Email recipient added:', { contactId, emailId })
@@ -279,8 +309,25 @@ export class ContactRepository
     }
   }
 
-  async getContactsByEmails(emails: string[] | string): Promise<Contact[]> {
-    const emailList = Array.isArray(emails) ? emails : [emails];
+  async getContactsByEmails(
+    emails: string[] | string,
+    refresh: boolean = false
+  ): Promise<Array<ContactSummary>> {
+    let emailList = Array.isArray(emails) ? emails : [emails];
+    const returned = Array<ContactSummary>();
+    // `re
+    if (!refresh) {
+      globalContactCache()
+        .getByEmail(emailList)
+        .filter((x) => !!x)
+        .forEach((contact) => returned.push(contact));
+      if (returned.length === emailList.length) {
+        return returned;
+      }
+      emailList = emailList.filter(
+        (x) => !returned.find((y) => y.email.toLowerCase() === x.toLowerCase())
+      );
+    }
     try {
       const results = await query(
         (sql) => sql`

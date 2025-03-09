@@ -10,7 +10,17 @@ import { PaginatedRequestApiParams } from '../_types';
  * @property {string} [q] - An optional search query.
  */
 export type EmailSearchApiParams = PaginatedRequestApiParams & {
+  /**
+   * An optional contact ID or array of contact IDs to filter the search.
+   */
   contactId?: number[] | number;
+  /**
+   * **(Obsolete)** An optional search query. Use `q` instead.
+   * @deprecated
+   */
   query?: string;
+  /**
+   * An optional search query.
+   */
   q?: string;
 };

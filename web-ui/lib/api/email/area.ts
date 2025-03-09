@@ -5,7 +5,7 @@ import type {
   PaginatedResultset,
   PaginationStats,
 } from '@/data-models';
-import type { EmailSearchApiParams } from './_types';
+import type { EmailSearchApiParams } from './types';
 import siteMap from '@/lib/site-util/url-builder';
 import {
   apiRequestHelperFactory,

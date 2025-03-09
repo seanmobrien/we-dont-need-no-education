@@ -5,12 +5,14 @@ import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
 import { queueManagerFactory } from '@/lib/site-util/queue';
+import { neon } from '@neondatabase/serverless';
 // jest.setup.ts
 import '@testing-library/jest-dom';
 import 'jest';
 
 jest.mock('google-auth-library');
 jest.mock('googleapis');
+jest.mock('@neondatabase/serverless');
 jest.mock('@/lib/site-util/queue');
 
 jest.mock('next-auth', () => {
@@ -30,6 +32,9 @@ jest.mock('@/auth', () => {
 });
 
 const DefaultEnvVariables = {
+  AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
+  AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
+    'azure-applicationinsights-connection-string',
   NEXT_PUBLIC_HOSTNAME: `http://test-run.localhost`,
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: `silly`,
   LOG_LEVEL_SERVER: `silly`,

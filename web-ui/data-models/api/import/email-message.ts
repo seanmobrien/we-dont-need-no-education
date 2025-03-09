@@ -174,3 +174,40 @@ export type EmailPropertyCategory = {
   description: string;
   createdOn: Date;
 };
+
+export const ImportStatusTypeValues = [
+  'imported',
+  'pending',
+  'not-found',
+  'in-progress',
+] as const;
+export type ImportStatusType = (typeof ImportStatusTypeValues)[number];
+
+/**
+ * Describes the import status of an email message, including its provider ID, email ID,
+ * and the status of the import process. Additionally, it contains reference information
+ * for all emails that this email references.
+ *
+ * @property {string} providerId - The unique identifier for the email provider.
+ * @property {string} emailId - The unique identifier for the email.
+ * @property {ImportStatusType} status - The current import status of the email.
+ * @property {Array<ImportMessageStatus>} ref - An array of import statuses for all referenced emails.
+ */
+export type ImportMessageStatus = {
+  /**
+   * The unique identifier for the email provider.
+   */
+  providerId: string;
+  /**
+   * The unique identifier for the email.
+   */
+  emailId: string | null;
+  /**
+   * The current import status of the email.
+   */
+  status: ImportStatusType;
+  /**
+   * An array of import statuses for all referenced emails.
+   */
+  ref: Array<ImportMessageStatus>;
+};

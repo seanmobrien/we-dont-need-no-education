@@ -16,7 +16,8 @@ export const GET = async (
   const { searchParams } = new URL(req.url);
   const query = new MailQueryBuilder()
     .appendQueryParam('from', searchParams.getAll('from'))
-    .appendQueryParam('to', searchParams.getAll('to'));
+    .appendQueryParam('to', searchParams.getAll('to'))
+    .appendQueryParam('rfc822msgid', searchParams.getAll('msg-id'));
 
   const { page, num } = parsePaginationStats(searchParams);
 

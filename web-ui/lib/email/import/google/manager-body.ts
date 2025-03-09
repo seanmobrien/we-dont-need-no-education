@@ -1,9 +1,14 @@
+import HTMLParser from 'node-html-parser';
 import {
   AdditionalStageOptions,
   ImportStageManagerFactory,
+  ParsedContact,
   StageProcessorContext,
 } from '../types';
-import { ImportStage } from '@/data-models/api/import/email-message';
+import {
+  ImportSourceMessage,
+  ImportStage,
+} from '@/data-models/api/import/email-message';
 import { log } from '@/lib/logger';
 import { gmail_v1 } from 'googleapis';
 import { mapContacts } from './utilities';
@@ -14,6 +19,18 @@ import { ThreadRepository } from '@/lib/api/thread/database';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
 import { ParsedHeaderMap } from './parsedHeaderMap';
 import { query } from '@/lib/neondb';
+import { ContactSummary } from '@/data-models';
+import { LoggedError } from '@/lib/react-util';
+
+type ParsedEmailProps = {
+  savedSender: ContactSummary;
+  recipients: Array<ContactSummary>;
+  subject: string;
+  globalMessageId: string | null;
+  dateInHeader: string | null;
+  threadId: number | null;
+  parentEmailId: string | null;
+};
 
 class EmailStageManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {
@@ -37,41 +54,24 @@ class EmailStageManager extends TransactionalStateManagerBase {
     if (!target.raw?.payload) {
       throw new Error(`No valid payload found in the message: ${currentStage}`);
     }
-    const emailContents = this.#extractEmailContent(target.raw.payload.parts);
+    const emailContents = this.#extractEmailContent(target.raw.payload);
     if (!emailContents) {
       throw new Error(
         `No valid email content found in the message: ${currentStage}`
       );
     }
-    const parsedHeaders = ParsedHeaderMap.fromHeaders(
-      target.raw.payload.headers
-    );
-    const rawSender = mapContacts(parsedHeaders, ['From']);
-    const sender = Array.isArray(rawSender) ? rawSender[0] : rawSender;
-    if (!sender || !sender.email) {
-      throw new Error(`No valid sender found in the message: ${currentStage}`);
-    }
-    const savedSender = await this.#contactRepository.getContactsByEmails(
-      sender.email
-    );
-    if (savedSender === null || !savedSender.length) {
-      throw new Error(`Sender ID not found for the email: ${sender.email}`);
-    }
-    const subject = parsedHeaders.getFirstValue('Subject') ?? 'No Subject';
-    let globalMessageId = parsedHeaders.getFirstValue('Message-ID') ?? null;
-    if (globalMessageId) {
-      globalMessageId = globalMessageId.replace(/^<|>$/g, '');
-    }
-    const dateInHeader = parsedHeaders.getFirstValue('Date') ?? null;
-
-    const threadId = await this.getThreadIdFromDatabase(
-      target.raw.threadId,
-      subject
-    );
-    const parentEmailId = await this.getParentIdFromDatabase(globalMessageId);
+    const {
+      savedSender,
+      subject,
+      globalMessageId,
+      dateInHeader,
+      threadId,
+      parentEmailId,
+      recipients,
+    } = await this.#parseEmailProperties({ target });
 
     const emailData = {
-      senderId: savedSender[0].contactId,
+      senderId: savedSender.contactId,
       threadId,
       parentEmailId,
       subject,
@@ -85,27 +85,25 @@ class EmailStageManager extends TransactionalStateManagerBase {
     if (context.target) {
       context.target.targetId = emailId;
     }
-    const globalMessageIdWithBrackets = `<${globalMessageId}>`;
-    const records = await query(
-      (sql) => sql`
-      UPDATE emails SET parent_id=${emailId} WHERE emails.parent_id IS NULL AND
-      emails.email_id IN (
-        SELECT E.email_id 
-        FROM emails E
-        JOIN email_property EP ON EP.email_id=E.email_id
-        JOIN email_property_type ET ON EP.email_property_type_id=ET.email_property_type_id
-        WHERE ET.property_name='In-Reply-To' AND (EP.property_value=${emailId} OR EP.property_value=${globalMessageIdWithBrackets})
-      ) RETURNING emails.email_id`
-    );
-    if (records.length) {
-      log((l) =>
-        l.info({
-          message: `Updated parent id for ${records.length} emails`,
-          parentEmailId,
-          childEmailIds: records.map((r) => r.email_id),
-        })
-      );
+    try {
+      await this.#addRecipientsToEmail({ emailId, recipients });
+      await this.#updateChildEmailParentIds({ globalMessageId, emailId });
+    } catch (e) {
+      const error = LoggedError.isTurtlesAllTheWayDownBaby(e, {
+        log: true,
+        source: 'email-import',
+      });
+      try {
+        await query((sql) => sql`DELETE FROM emails WHERE email_id=${emailId}`);
+      } catch (suppress) {
+        LoggedError.isTurtlesAllTheWayDownBaby(suppress, {
+          log: true,
+          source: 'email-import-cleanup',
+        });
+      }
+      throw error;
     }
+
     log((l) =>
       l.info(
         `Processed email with ID: ${emailId}, thread ID: ${threadId}, subject: ${subject}`
@@ -145,7 +143,73 @@ class EmailStageManager extends TransactionalStateManagerBase {
 
     return Promise.resolve(null);
   }
+  async #parseEmailProperties({
+    target,
+  }: {
+    target: ImportSourceMessage;
+  }): Promise<ParsedEmailProps> {
+    const parsedHeaders = ParsedHeaderMap.fromHeaders(
+      target!.raw!.payload!.headers
+    );
+    const { sender, recipients } = mapContacts(parsedHeaders).reduce(
+      (acc, cur) => {
+        if (cur.recipientType === 'from') {
+          if (!acc.sender) {
+            acc.sender = cur;
+          }
+        } else {
+          acc.recipients.push(cur);
+        }
+        return acc;
+      },
+      {
+        recipients: [] as Array<ParsedContact>,
+        sender: undefined as ParsedContact | undefined,
+      }
+    );
 
+    if (!sender || !sender.email) {
+      throw new Error(`No valid sender found in the message: ${target.stage}`);
+    }
+    const savedSender = await this.#contactRepository.getContactsByEmails(
+      sender.email
+    );
+    if (savedSender === null || !savedSender.length) {
+      throw new Error(`Sender ID not found for the email: ${sender.email}`);
+    }
+
+    const savedRecipients = await this.#contactRepository.getContactsByEmails(
+      recipients.map((r) => r.email)
+    );
+    if (savedRecipients.length !== recipients.length) {
+      throw new DataIntegrityError(
+        'Not all recipients were found in the database'
+      );
+    }
+
+    const subject = parsedHeaders.getFirstValue('Subject') ?? 'No Subject';
+    let globalMessageId = parsedHeaders.getFirstValue('Message-ID') ?? null;
+    if (globalMessageId) {
+      globalMessageId = globalMessageId.replace(/^<|>$/g, '');
+    }
+    const dateInHeader = parsedHeaders.getFirstValue('Date') ?? null;
+
+    const threadId = await this.getThreadIdFromDatabase(
+      target.raw.threadId,
+      subject
+    );
+    const parentEmailId = await this.getParentIdFromDatabase(globalMessageId);
+
+    return {
+      savedSender: savedSender[0],
+      recipients: savedRecipients,
+      subject,
+      globalMessageId,
+      dateInHeader,
+      threadId,
+      parentEmailId,
+    };
+  }
   #getContentParts({
     part,
     expectedMimeType = 'text/plain',
@@ -172,7 +236,14 @@ class EmailStageManager extends TransactionalStateManagerBase {
       ),
     ];
   }
-  #decodeAndNormalize(part: gmail_v1.Schema$MessagePart): string {
+  #decodeAndNormalize(
+    part:
+      | gmail_v1.Schema$MessagePart
+      | { body?: gmail_v1.Schema$MessagePartBody }
+  ): string {
+    if (!part.body?.data) {
+      return '';
+    }
     let foundReplyHeader = false; // Flag to stop processing when we hit a reply header
     // Decode
     return (
@@ -203,21 +274,90 @@ class EmailStageManager extends TransactionalStateManagerBase {
         .trim()
     );
   }
-
+  async #addRecipientsToEmail({
+    emailId,
+    recipients,
+  }: {
+    emailId: string;
+    recipients: Array<ContactSummary>;
+  }) {
+    const operations = recipients.map((recipient) =>
+      this.#contactRepository
+        .addEmailRecipient(recipient.contactId, emailId, 'to')
+        .then(
+          () => ({ status: 'success' }),
+          () => ({ status: 'error' })
+        )
+    );
+    const results = await Promise.all(operations);
+    if (results.some((r) => r.status === 'error')) {
+      throw new Error('Failure adding recipients to the email.');
+    }
+  }
   #extractEmailContent(
-    parts: gmail_v1.Schema$MessagePart[] | undefined
+    payload: gmail_v1.Schema$Message['payload'] | null
   ): string {
-    const bodyText = (parts ?? [])
+    const parts = payload!.parts ?? [];
+    const bodyText = parts
       .flatMap((part) => this.#getContentParts({ part }))
       .map((part) => this.#decodeAndNormalize(part))
       .join('\n')
       .trim();
     if (bodyText.length === 0) {
+      if (payload!.body?.data) {
+        const result = this.#decodeAndNormalize(payload!);
+        if (result.length > 0) {
+          if (payload?.mimeType === 'text/html') {
+            try {
+              const root = HTMLParser.parse(result);
+              const textContent = root.text;
+              if (textContent) {
+                return textContent;
+              }
+              // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            } catch (supress) {
+              // Line intentionally left blank
+            }
+          }
+          return result;
+        }
+      }
       throw new Error('Failure extracting and normalizing email content');
     }
     return bodyText;
   }
-
+  async #updateChildEmailParentIds({
+    globalMessageId,
+    emailId,
+  }: {
+    emailId: string;
+    globalMessageId: string | null;
+  }) {
+    if (!globalMessageId) {
+      return;
+    }
+    const globalMessageIdWithBrackets = `<${globalMessageId}>`;
+    const records = await query(
+      (sql) => sql`
+  UPDATE emails SET parent_id=${emailId} WHERE emails.parent_id IS NULL AND
+  emails.email_id IN (
+    SELECT E.email_id 
+    FROM emails E
+    JOIN email_property EP ON EP.email_id=E.email_id
+    JOIN email_property_type ET ON EP.email_property_type_id=ET.email_property_type_id
+    WHERE ET.property_name='In-Reply-To' AND (EP.property_value=${emailId} OR EP.property_value=${globalMessageIdWithBrackets})
+  ) RETURNING emails.email_id`
+    );
+    if (records.length) {
+      log((l) =>
+        l.info({
+          message: `Updated parent id for ${records.length} emails`,
+          emailId,
+          childEmailIds: records.map((r) => r.email_id),
+        })
+      );
+    }
+  }
   async #insertEmailRecord({
     importedFrom,
     ...props

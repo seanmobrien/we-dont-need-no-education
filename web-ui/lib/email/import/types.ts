@@ -121,3 +121,44 @@ export type ImportStageManagerFactory = (
 export type ImportManagerMap = {
   [K in ImportStage]: ImportStageManagerFactory;
 };
+
+/**
+ * Values array representing the types of recipients for an email message.
+ */
+export const RecipientTypeValues = ['to', 'cc', 'bcc', 'from'] as const;
+
+/**
+ * Represents the types of recipients for an email message.
+ */
+export type RecipientType = (typeof RecipientTypeValues)[number];
+
+/**
+ * Represents a parsed contact with full name, first name, last name, and email address.
+ *
+ * @property {string} fullName - The full name of the contact.
+ * @property {string} firstName - The first name of the contact.
+ * @property {string} lastName - The last name of the contact.
+ * @property {string} email - The email address of the contact.
+ */
+export type ParsedContact = {
+  /**
+   * The full name of the contact.
+   */
+  fullName: string;
+  /**
+   * The first name of the contact.
+   */
+  firstName: string;
+  /**
+   * The last name of the contact.
+   */
+  lastName: string;
+  /**
+   * The email address of the contact.
+   */
+  email: string;
+  /**
+   * The type of recipient this contact was parsed from.
+   */
+  recipientType: RecipientType;
+};

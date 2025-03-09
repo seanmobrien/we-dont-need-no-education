@@ -2,13 +2,7 @@ import { log } from '@/lib/logger';
 import { gmail_v1 } from 'googleapis';
 import { ArrayElement } from '@/lib/typescript';
 import { isParsedHeaderMap, ParsedHeaderMap } from './parsedHeaderMap';
-
-type ParsedContact = {
-  fullName: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-};
+import { ParsedContact, RecipientType } from '../types';
 
 export const mapContacts = (
   headers: gmail_v1.Schema$MessagePart['headers'] | ParsedHeaderMap | undefined,
@@ -22,7 +16,12 @@ export const mapContacts = (
       .flatMap((headerName) =>
         workingHeaders
           .getAllValues(headerName)
-          .flatMap((v) => mapContact({ value: v }))
+          .flatMap((v) =>
+            mapContact(
+              { value: v },
+              headerName.toLocaleLowerCase() as RecipientType
+            )
+          )
       )
       .filter((x) => !!x);
   }
@@ -33,7 +32,10 @@ export const mapContacts = (
         if (!headersToMatch.includes(header.name ?? 'never-match')) {
           return null;
         }
-        return mapContact(header);
+        return mapContact(
+          header,
+          header.name?.toLocaleLowerCase() as RecipientType
+        );
       })
       ?.filter((x) => !!x) ?? []
   );
@@ -48,19 +50,19 @@ type TContactRet<
 export const mapContact = <
   TSource extends ArrayElement<gmail_v1.Schema$MessagePart['headers']> | string
 >(
-  source: TSource
+  source: TSource,
+  recipientType?: RecipientType
 ): TContactRet<TSource> => {
   if (typeof source === 'object') {
     return (source?.value ?? '')
       .split(/[,;]\s+?/)
-      .map((v) => mapContact(v))
+      .map((v) => mapContact(v, recipientType))
       .filter(Boolean) as TContactRet<TSource>;
   }
   if (typeof source !== 'string') {
     return null as TContactRet<TSource>;
   }
   const matches = /^"?(.*)"?(?=\s<)\s<([^>]+)/g.exec(source ?? '');
-  //const matches = (source ?? '').match(/^"?(.*)"?(?=\s<)\s<([^>]+)/g);
   if (!matches) {
     log((l) =>
       l.warn({
@@ -78,5 +80,6 @@ export const mapContact = <
       .filter((_, i) => i > 0)
       .join(' '),
     email: matches[2],
+    recipientType,
   } as TContactRet<TSource>;
 };
