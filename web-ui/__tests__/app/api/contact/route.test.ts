@@ -5,15 +5,23 @@
 import { NextRequest } from 'next/server';
 import { POST, PUT, GET, DELETE } from '../../../../app/api/contact/route';
 import { query, queryExt } from '@/lib/neondb';
+import { globalContactCache } from '@/data-models/api';
 
 jest.mock('@/lib/neondb');
 jest.mock('@/lib/logger');
+jest.mock('@/data-models/api');
 
 describe('Contact API Routes', () => {
   afterEach(() => {
     jest.clearAllMocks();
+    (globalContactCache as jest.Mock).mockClear();
   });
-
+  beforeEach(() => {
+    (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
+    (queryExt as jest.Mock).mockImplementation(() =>
+      Promise.resolve({ rowCount: 0, rows: [] })
+    );
+  });
   describe('POST /contact', () => {
     it('should create a new contact and return 201', async () => {
       const req = new NextRequest('http://localhost', {

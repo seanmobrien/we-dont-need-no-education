@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_HOSTNAME: process.env.NEXT_PUBLIC_HOSTNAME,
     NEXT_PUBLIC_LOG_LEVEL_CLIENT: process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT,
   },
+  optimizePackageImports: true,
   publicRuntimeConfig: {
     hostname: process.env.NEXT_PUBLIC_HOSTNAME,
   },

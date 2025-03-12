@@ -14,10 +14,46 @@ import {
   AdditionalStageOptions,
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
-import { LoggedError } from '@/lib/react-util';
+import { AggregateError, isError, LoggedError } from '@/lib/react-util';
 import { log } from '@/lib/logger';
 import { newUuid } from '@/lib/typescript';
 const EmailPropertyTypeMap: Map<string, number> = new Map();
+const parseEmailId = (x: string) => {
+  const match = x.match(/<([^>]+)>/);
+  return match ? match[1] : x;
+};
+type ParseHeaderArrayProps = {
+  split?: string;
+  parse?: (arg0: string) => string;
+};
+const HeadersWithArrayValueMap: Record<string, ParseHeaderArrayProps> = {
+  To: { split: ',' },
+  Cc: { split: ',' },
+  Bcc: { split: ',' },
+  'In-Reply-To': { split: ' ', parse: parseEmailId },
+  References: { split: ' ', parse: parseEmailId },
+  'Return-Path': { parse: parseEmailId },
+  'Message-ID': { parse: parseEmailId },
+} as const;
+const HeadersWithArrayValueKeys: ReadonlyArray<
+  keyof typeof HeadersWithArrayValueMap
+> = Object.keys(HeadersWithArrayValueMap);
+const indexOfHeaderWithArrayKey = (headerName: string): number =>
+  HeadersWithArrayValueKeys.findIndex(
+    (x: string) => x.toLowerCase() === headerName.toLowerCase()
+  );
+const getHeaderWithArraySplitBy = (
+  headerName: string
+): ParseHeaderArrayProps | undefined => {
+  const indexOf = indexOfHeaderWithArrayKey(headerName);
+  return indexOf === -1
+    ? undefined
+    : HeadersWithArrayValueMap[HeadersWithArrayValueKeys[indexOf]];
+};
+
+type HeaderFailedResult = { status: 'failure'; error: Error };
+type HeaderSuccessResult = { status: 'success'; result: EmailProperty };
+type HeaderSaveResult = HeaderSuccessResult | HeaderFailedResult;
 
 class HeaderStateManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {
@@ -85,28 +121,86 @@ class HeaderStateManager extends TransactionalStateManagerBase {
             typeId = newPropertyType.typeId as number;
             EmailPropertyTypeMap.set(headerName, typeId);
           }
-          const newProperty: EmailProperty = {
-            emailId: target.targetId!,
-            value: headerValue,
-            propertyId: newUuid(),
-            createdOn: new Date(),
-            typeId,
-          };
-          const result = await emailPropertyRepository.create(newProperty);
-          if (!result || !result.propertyId) {
-            throw new Error(
-              'An unexpected failure occurred while creating a new email property.'
+
+          const headerParseOptions = getHeaderWithArraySplitBy(headerName);
+          if (headerParseOptions) {
+            const parts = headerParseOptions.split
+              ? headerValue.split(headerParseOptions.split)
+              : [headerValue];
+            const valueParser = headerParseOptions.parse ?? ((x: string) => x);
+            const operations = await Promise.all(
+              parts.map((part) => {
+                const newProperty: EmailProperty = {
+                  emailId: target.targetId!,
+                  value: valueParser(part).trim(),
+                  propertyId: newUuid(),
+                  createdOn: new Date(),
+                  typeId,
+                };
+                return emailPropertyRepository.create(newProperty).then(
+                  (result) => {
+                    if (!result || !result.propertyId) {
+                      return {
+                        status: 'failure',
+                        error: new Error(
+                          'An unexpected failure occurred while creating a new email property.'
+                        ),
+                      } as HeaderSaveResult;
+                    }
+                    return { status: 'success', result } as HeaderSaveResult;
+                  },
+                  (error) => ({
+                    status: 'failure',
+                    error: isError(error) ? error : new Error(error),
+                  })
+                );
+              })
+            );
+            const allErrors = operations.filter(
+              (x) => x.status === 'failure'
+            ) as HeaderFailedResult[];
+            if (allErrors.length > 0) {
+              throw new AggregateError(
+                'An unexpected failure occurred while importing message headers.',
+                ...allErrors.map((x) => x.error)
+              );
+            }
+            const successfulOps = operations as HeaderSuccessResult[];
+            const { emailId, propertyId } = successfulOps[0].result;
+            log((l) =>
+              l.verbose({
+                message: `Created array of email property for email header ${headerName}: ${operations.length} items created.`,
+                headerName,
+                emailId,
+                propertyId,
+                typeId,
+                count: operations.length,
+              })
+            );
+          } else {
+            const newProperty: EmailProperty = {
+              emailId: target.targetId!,
+              value: headerValue,
+              propertyId: newUuid(),
+              createdOn: new Date(),
+              typeId,
+            };
+            const result = await emailPropertyRepository.create(newProperty);
+            if (!result || !result.propertyId) {
+              throw new Error(
+                'An unexpected failure occurred while creating a new email property.'
+              );
+            }
+            log((l) =>
+              l.verbose({
+                message: `Created email property for email header `,
+                headerName,
+                emailId: result.emailId,
+                propertyId: result.propertyId,
+                typeId: result.typeId,
+              })
             );
           }
-          log((l) =>
-            l.verbose({
-              message: `Created email property for email header `,
-              headerName,
-              emailId: result.emailId,
-              propertyId: result.propertyId,
-              typeId: result.typeId,
-            })
-          );
           resolve({ name: headerName, status: 'success', typeId });
         } catch (error) {
           const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {

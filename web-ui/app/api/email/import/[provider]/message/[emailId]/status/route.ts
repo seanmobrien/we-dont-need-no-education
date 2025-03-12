@@ -4,7 +4,7 @@ import { LoggedError } from '@/lib/react-util';
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { provider: string; emailId: string } }
+  { params }: { params: Promise<{ provider: string; emailId: string }> }
 ) => {
   const { provider, emailId } = await params;
   try {

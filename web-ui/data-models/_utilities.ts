@@ -5,14 +5,16 @@
  */
 
 import { URLSearchParams } from 'url';
-import { PaginationStats } from './_types';
-import {
+import type { PaginationStats } from './_types';
+import type {
   EmailPropertyCategoryType,
   EmailPropertyCategoryTypeId,
-  EmailPropertyCategoryTypeIdValues,
-  EmailPropertyCategoryTypeValues,
   EmailPropertyTypeType,
   EmailPropertyTypeTypeId,
+} from './api/import/email-message';
+import {
+  EmailPropertyCategoryTypeIdValues,
+  EmailPropertyCategoryTypeValues,
   EmailPropertyTypeTypeIdValues,
   EmailPropertyTypeTypeValues,
 } from './api/import/email-message';

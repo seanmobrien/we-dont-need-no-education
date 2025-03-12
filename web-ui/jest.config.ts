@@ -22,9 +22,12 @@ const config: Config.InitialOptions = {
     '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
     '!**/*.d.ts', // Exclude type declaration files
     '!__(tests|mocks)__/**/*.*', // Exclude type declaration files
+    '!**/*.{jsx,tsx}', // Exclude JSX-based
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
+  detectLeaks: true,
+  detectOpenHandles: true,
 };
 
 export default config;

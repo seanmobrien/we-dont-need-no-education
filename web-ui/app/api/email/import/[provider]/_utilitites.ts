@@ -3,69 +3,22 @@ import {
   GmailEmailImportSource,
   ImportSourceMessage,
   ImportStage,
-  ImportMessageStatus,
+  MessageImportStatusWithChildren,
+  ImportStatusType,
+  MessageImportStatus,
 } from '@/data-models/api/import/email-message';
 import { query } from '@/lib/neondb';
 import { NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
-import { errorLogFactory, log } from '@/lib/logger';
 import { isError, LoggedError } from '@/lib/react-util';
 import { auth } from '@/auth';
-
-/**
- * A class to build mail query strings for a specific provider.
- *
- * @class
- * @example
- * const builder = new MailQueryBuilder();
- * builder.appendQueryParam('from', 'example@example.com');
- * const query = builder.build(); // 'from:example@example.com'
- */
-export class MailQueryBuilder {
-  #query: string;
-
-  constructor() {
-    this.#query = '';
-  }
-
-  /**
-   * Checks if the query has any elements.
-   *
-   * @returns {boolean} `true` if the query has one or more elements, otherwise `false`.
-   */
-  get hasQuery(): boolean {
-    return this.#query.length > 0;
-  }
-
-  /**
-   * Appends a query parameter to the existing query string.
-   *
-   * @param queryKey - The key of the query parameter to append.
-   * @param input - The value(s) of the query parameter. Can be a string or an array of strings.
-   * @returns The current instance of `MailQueryBuilder` for method chaining.
-   */
-  appendQueryParam(
-    queryKey: string,
-    input: string | string[]
-  ): MailQueryBuilder {
-    const data = (Array.isArray(input) ? input : [input])
-      .map((item) => item?.trim() ?? '')
-      .filter(Boolean);
-    if (data.length > 0) {
-      this.#query += `${queryKey}:${data.join(` ${queryKey}:`)} `;
-    }
-    return this;
-  }
-
-  /**
-   * Builds and returns the query string if it exists.
-   *
-   * @returns {string | undefined} The trimmed query string if it exists, otherwise undefined.
-   */
-  build(): string | undefined {
-    return this.hasQuery ? this.#query.trim() : undefined;
-  }
-}
+import {
+  GmailEmailMessageHeader,
+  GmailEmailMessagePart,
+  GmailEmailMessagePayload,
+  GmailMessagdApi,
+} from '@/data-models/api/import/provider-google';
+import { MailQueryBuilder } from './_mailQueryBuilder';
 
 /**
  * Parses pagination statistics from a URL or URLSearchParams object.
@@ -90,6 +43,238 @@ export const parsePaginationStats = (
     num,
     total: 0,
   };
+};
+
+/**
+ * An array of known error cause values for Gmail integration.
+ *
+ * The possible values are:
+ * - 'unauthorized': The request is not authorized.
+ * - 'invalid-args': The arguments provided are invalid.
+ * - 'gmail-failure': A failure occurred on the Gmail side.
+ * - 'email-not-found': The specified email was not found.
+ * - 'email-exists': The email already exists.
+ * - 'unknown-error': An unknown error occurred.
+ *
+ * @constant
+ * @type {readonly string[]}
+ */
+const KnownGmailErrorCauseValues = [
+  'unauthorized',
+  'invalid-args',
+  'gmail-failure',
+  'email-not-found',
+  'source-not-found',
+  'email-exists',
+  'unknown-error',
+] as const;
+
+/**
+ * Represents the type of known Gmail error causes.
+ *
+ * This type is derived from the values of the `KnownGmailErrorCauseValues` array.
+ * It allows for type-safe usage of Gmail error causes by restricting the values
+ * to those defined in the `KnownGmailErrorCauseValues` array.
+ */
+export type KnownGmailErrorCauseType =
+  (typeof KnownGmailErrorCauseValues)[number];
+
+/**
+ * Checks if the provided value is a known Gmail error cause.
+ *
+ * @param check - The value to check.
+ * @returns A boolean indicating whether the value is a known Gmail error cause.
+ */
+export const isKnownGmailErrorCause = (
+  check: unknown
+): check is KnownGmailErrorCauseType =>
+  KnownGmailErrorCauseValues.includes(check as KnownGmailErrorCauseType);
+
+/**
+ * Checks if the provided value is a known Gmail error.
+ *
+ * @param check - The value to check.
+ * @returns A boolean indicating whether the value is a known Gmail error.
+ */
+export const isKnownGmailError = (
+  check: unknown
+): check is Error & { cause: KnownGmailErrorCauseType } =>
+  isError(check) && isKnownGmailErrorCause(check.cause);
+
+/**
+ * A callback type used to push error handling of expected types up to the called method.
+ *
+ * @callback ErrorFilter
+ * @param {Error} error - The error object that needs to be filtered.
+ * @returns {NextResponse | null | undefined} - Returns a NextResponse if the error is handled,
+ *                                              otherwise returns null or undefined.
+ */
+export type ErrorFilter = (error: unknown) => NextResponse | null | undefined;
+
+/**
+ * Provides a default error filter implementation for Gmail-related calls.
+ * This function takes an error object and returns a NextResponse object
+ * with an appropriate HTTP status code and error message based on the
+ * specific cause of the error.
+ *
+ * @param {Error} error - The error object to be filtered.
+ * @returns {NextResponse | null | undefined} - A NextResponse object with
+ * the appropriate HTTP status code and error message, or null/undefined if
+ * the error is not recognized.
+ *
+ * The function handles the following error causes:
+ * - 'unauthorized': Returns a 401 Unauthorized response.
+ * - 'email-exists': Returns a 409 Conflict response indicating the email already exists.
+ * - 'email-not-found': Returns a 404 Not Found response indicating the email was not found.
+ * - 'unknown-error': Returns a 500 Internal Server Error response for unknown errors.
+ * - 'invalid-args': Returns a 400 Bad Request response for invalid arguments.
+ * - 'gmail-failure': Returns a 500 Internal Server Error response for Gmail-specific failures.
+ *
+ * If the error cause is not recognized, the function returns null.
+ */
+export const defaultGmailErrorFilter = (
+  error: unknown
+): NextResponse | null | undefined => {
+  if (!isKnownGmailError(error)) {
+    return undefined;
+  }
+  switch (error.cause) {
+    case 'unauthorized':
+      return NextResponse.json(
+        { error: error.message ?? 'Unauthorized' },
+        { status: 401 }
+      );
+    case 'email-exists':
+      return NextResponse.json(
+        { error: error.message ?? 'Email already exists' },
+        { status: 409 }
+      );
+    case 'email-not-found':
+    case 'source-not-found':
+      return NextResponse.json(
+        { error: error.message ?? 'Email not found' },
+        { status: 404 }
+      );
+    case 'unknown-error':
+      return NextResponse.json(
+        { error: error.message ?? 'Unknown error' },
+        { status: 500 }
+      );
+    case 'invalid-args':
+      return NextResponse.json(
+        { error: error.message ?? 'Invalid arguments' },
+        { status: 400 }
+      );
+    case 'gmail-failure':
+      return NextResponse.json(
+        { error: error.message ?? 'Gmail error' },
+        { status: 500 }
+      );
+    default:
+      break;
+  }
+  // If we make it this far we do not recognize the error
+  return undefined;
+};
+
+type EmailAndUserId = {
+  userId: number;
+  email: GmailEmailImportSource;
+  mail: GmailMessagdApi;
+};
+
+/**
+ * Retrieves a Gmail message using the provided provider and email ID.
+ *
+ * @param {Object} params - The parameters for the function.
+ * @param {string} params.provider - The email provider name.
+ * @param {string} params.emailId - The email ID to retrieve.
+ * @returns {Promise<{ userId: number; email: any }>} The user ID and email data.
+ * @throws {Error} If the user is not authenticated, if the provider or email ID is missing, if there is an error in the factory response, or if there is an error retrieving the email.
+ */
+const getGmailMessage = async ({
+  provider,
+  emailId,
+}: {
+  emailId: string;
+  provider: string;
+}): Promise<EmailAndUserId> => {
+  try {
+    const session = await auth();
+    if (!session || !session.user || !session.user.id) {
+      throw new Error('Must be authenticated to call this API', {
+        cause: 'unauthorized',
+      });
+    }
+    const userId = Number(session.user.id);
+
+    if (![provider, emailId].every(Boolean)) {
+      throw new TypeError('Missing provider name or provider email id', {
+        cause: 'invalid-args',
+      });
+    }
+
+    const factoryResponse = await googleProviderFactory(provider);
+    if ('status' in factoryResponse) {
+      throw new Error('Error in factory response', { cause: 'gmail-failure' });
+    }
+
+    const { mail } = factoryResponse;
+    let googleMessageId = emailId;
+
+    if (emailId.includes('@')) {
+      const query = new MailQueryBuilder();
+      query.appendQueryParam('rfc822msgid', emailId);
+      const queryString = query.build();
+      const googleResponse = await mail.list({
+        userId: 'me',
+        q: queryString,
+      });
+
+      if (googleResponse.data.messages?.length) {
+        googleMessageId = googleResponse.data.messages[0].id!;
+      } else {
+        throw new Error('Email not found', { cause: 'email-not-found' });
+      }
+    }
+
+    const googleResponse = await mail.get({
+      userId: 'me',
+      id: googleMessageId,
+    });
+
+    if (googleResponse.status !== 200) {
+      if (googleResponse.status === 404) {
+        throw new Error('Email not found', { cause: 'email-not-found' });
+      }
+      throw new Error('Error retrieving email', { cause: 'unknown-error' });
+    }
+
+    if (!googleResponse?.data) {
+      throw new Error('No email data returned', { cause: 'email-not-found' });
+    }
+
+    return {
+      userId,
+      email: googleResponse.data,
+      mail,
+    };
+  } catch (error) {
+    if (isError(error)) {
+      if (isKnownGmailErrorCause(error.cause)) {
+        // rethrow known error types for caller to handle
+        throw error;
+      }
+    }
+    // For everything else, log the error and rethrow`
+    const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'getGmailMessage',
+      provider,
+      emailId,
+    });
+    throw le;
+  }
 };
 
 /**
@@ -165,6 +350,21 @@ const getCurrentState = async ({
   };
 };
 
+interface GetImportMessageSourceOverloads {
+  (params: {
+    provider?: string;
+    emailId?: string;
+    refresh?: boolean;
+    errorFilter: ErrorFilter;
+  }): Promise<NextResponse | ImportSourceMessage | null>;
+  (params: {
+    provider?: string;
+    emailId?: string;
+    refresh?: boolean;
+    errorFilter?: undefined;
+  }): Promise<ImportSourceMessage | null>;
+}
+
 /**
  * Retrieves the import message source for a given provider and email ID.
  *
@@ -180,24 +380,28 @@ const getCurrentState = async ({
  * @throws {Error} If the user is unauthorized to access the email.
  * @throws {Error} If an error occurs during the process.
  */
-export const getImportMessageSource = async ({
+export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
   provider,
   emailId,
   refresh = false,
-  returnResponse = true,
+  errorFilter,
 }: {
   provider?: string;
   emailId?: string;
   refresh?: boolean;
-  returnResponse?: boolean;
-}): Promise<ImportSourceMessage | null | NextResponse> => {
-  const getReturnValue = (response: NextResponse): null | NextResponse =>
-    returnResponse === false ? null : response;
+  errorFilter?: undefined | ErrorFilter;
+}): Promise<(NextResponse & ImportSourceMessage) | null> => {
+  const getReturnValue = (
+    response: NextResponse | null
+  ): NextResponse & ImportSourceMessage =>
+    (!!errorFilter ? response : null) as NextResponse & ImportSourceMessage;
   try {
     let source: GmailEmailImportSource | undefined = undefined;
     const session = await auth();
     if (!session || !session.user || !session.user.id) {
-      throw new Error('Must be authenticated to call this API');
+      throw new Error('Must be authenticated to call this API', {
+        cause: 'unauthorized',
+      });
     }
     const userId = Number(session.user.id);
     if (refresh) {
@@ -211,7 +415,7 @@ export const getImportMessageSource = async ({
       }
       const factoryResponse = await googleProviderFactory(provider as string);
       if ('status' in factoryResponse) {
-        return factoryResponse;
+        return getReturnValue(factoryResponse);
       }
       // read from sql
       const { mail } = factoryResponse;
@@ -227,7 +431,7 @@ export const getImportMessageSource = async ({
       userId,
     });
     if (!theCurrentState) {
-      throw new Error('No current state found', { cause: 'source-not-found' });
+      throw new Error('No current state found', { cause: 'email-not-found' });
     }
     return {
       stage: theCurrentState.stage as ImportStage,
@@ -236,57 +440,228 @@ export const getImportMessageSource = async ({
       targetId: theCurrentState.targetId,
       userId: theCurrentState.userId,
       raw: theCurrentState.raw,
-    };
+    } as NextResponse & ImportSourceMessage;
   } catch (error) {
     // Check to see if this was thrown by us, and if so, handle it.
-    if (isError(error)) {
-      switch (error.cause) {
-        case 'unauthorized':
-          return getReturnValue(
-            NextResponse.json({ error: 'unauthorized' }, { status: 401 })
-          );
-        case 'email-exists':
-          return getReturnValue(
-            NextResponse.json({ error: 'email-exists' }, { status: 409 })
-          );
-        case 'source-not-found':
-          return getReturnValue(
-            NextResponse.json({ error: 'source-not-found' }, { status: 404 })
-          );
-        default:
-          // Otherwise this is an error-error.  Write to log
-          break;
+    if (errorFilter) {
+      const checkFilter = errorFilter(error);
+      if (checkFilter !== undefined) {
+        return getReturnValue(checkFilter);
       }
     }
-    log((l) =>
-      l.error(
-        errorLogFactory({
-          error,
-          source: 'google-email-import',
-          provider,
-          emailId,
-        })
+    // If this is a known gmail error rethrow for caller to process
+    if (isKnownGmailError(error)) {
+      throw error;
+    }
+    // Otherwise log the error
+    const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'getImportMessageSource',
+    });
+    /// And rethrow or convert to a response
+    if (errorFilter) {
+      return getReturnValue(
+        NextResponse.json({ error: le.message }, { status: 500 })
+      );
+    }
+    throw le;
+  }
+};
+
+const getImportStatusForExternalId = async (
+  providerId: string
+): Promise<{ status: ImportStatusType; emailId: string | null }> => {
+  let emailId: string | null;
+  let status: ImportStatusType;
+  const statusRecords = await query(
+    (sql) => sql`
+          SELECT e.email_id, s.id AS staged_id 
+          FROM emails e 
+            FULL OUTER JOIN staging_message s 
+              ON e.imported_from_id = s.external_id
+          WHERE e.imported_from_id=${providerId} OR s.external_id=${providerId};`
+  );
+  if (statusRecords.length) {
+    const { email_id: recordEmailId, staged_id: recordStagedId } =
+      statusRecords[0];
+    // Are we currently staged for processing?
+    if (recordStagedId) {
+      status = 'in-progress';
+      emailId = recordEmailId as string | null;
+    } else if (recordEmailId) {
+      emailId = String(recordEmailId);
+      status = 'imported';
+    } else {
+      // Logically it should not be possible to get here, but just in case...
+      emailId = null;
+      status = 'pending';
+    }
+  } else {
+    // no match - email is pending import processing
+    emailId = null;
+    status = 'pending';
+  }
+  return { status, emailId };
+};
+
+const checkReferencedEmailStatus = async ({
+  email,
+  mail,
+}: {
+  email: GmailEmailImportSource;
+  mail: GmailMessagdApi;
+}) => {
+  // First search headers for any references to other email id's
+  const extractHeaders = (
+    payload: GmailEmailMessagePayload | undefined
+  ): string[] => {
+    const headers: Array<GmailEmailMessageHeader> = [];
+    const lookFor = ['references', 'in-reply-to'];
+    const extractHeadersFromPart = (part: GmailEmailMessagePart): void => {
+      if (part.headers) {
+        headers.push(
+          ...part.headers.filter((h) =>
+            lookFor.includes(h.name?.toLocaleLowerCase() ?? 'never-match')
+          )
+        );
+      }
+      if (part.parts) {
+        part.parts.forEach(extractHeadersFromPart);
+      }
+    };
+
+    if (payload) {
+      extractHeadersFromPart(payload);
+    }
+
+    return Array.from(
+      new Set(
+        headers
+          .flatMap((h) => {
+            return h.value?.split(' ').map((v) => {
+              const match = v.match(/<([^>]+)>/);
+              return match ? match[1] : v;
+            });
+          })
+          .filter((x) => !!x)
+          .map((x) => String(x))
       )
     );
-    if (returnResponse === false) {
-      throw LoggedError.isTurtlesAllTheWayDownBaby(error);
+  };
+  // Extract every known message id from headers
+  const referencedEmailIds = extractHeaders(email.payload);
+  // Lookup any existing emails matching these ids
+  const importedRecordset = new Map<string, string>(
+    (
+      await query(
+        (sql) =>
+          sql`select email_id, global_message_id from emails where global_message_id = any(${referencedEmailIds});`
+      )
+    ).map((x) => [x.global_message_id as string, x.email_id as string])
+  );
+  let parseImported = referencedEmailIds.reduce(
+    (acc, id) => {
+      const emailId = importedRecordset.get(id);
+      if (emailId) {
+        acc.processed.push({ emailId, providerId: id, status: 'imported' });
+      } else {
+        acc.unsorted.push(id);
+      }
+      return acc;
+    },
+    { processed: [], unsorted: [] } as {
+      processed: Array<MessageImportStatus>;
+      unsorted: Array<string>;
     }
-  }
-  return NextResponse.json({ error: 'error' }, { status: 500 });
+  );
+  const operations = await Promise.all(
+    parseImported.unsorted.map((id) => {
+      const queryBuilder = new MailQueryBuilder();
+      queryBuilder.appendMessageId(id);
+      return mail
+        .list({ q: queryBuilder.build(), userId: 'me' })
+        .then((matches) => ({
+          status: 'succeeded',
+          id: id,
+          data: matches?.data?.messages?.at(0),
+        }))
+        .catch((error) => ({ status: 'failed', id: id, error }));
+    })
+  );
+  // If we still have unsorted id's, lets try to look them up with the provider
+  parseImported = parseImported.unsorted.reduce(
+    (acc, id) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const match = operations.find((o) => o.id === id) as any;
+      if (match && match.status === 'succeeded' && match.data) {
+        acc.processed.push({
+          emailId: id,
+          providerId: match!.data!.id!,
+          status: 'pending',
+        });
+      } else {
+        acc.unsorted.push(id);
+      }
+      return acc;
+    },
+    { processed: parseImported.processed, unsorted: [] } as {
+      processed: Array<MessageImportStatus>;
+      unsorted: Array<string>;
+    }
+  );
+  // Return final result
+  return parseImported.processed;
 };
 
 export const getImportMessageStatus = async ({
   provider,
-  emailId,
+  emailId: emailIdFromProps,
 }: {
   provider: string;
   emailId: string;
-}): Promise<ImportMessageStatus> => {
-  return Promise.resolve({
-    emailId: null,
-    providerId: emailId,
-    provider,
-    status: 'not-found',
-    ref: [],
-  });
+}): Promise<MessageImportStatusWithChildren> => {
+  try {
+    // First off load the email from the provider
+    const { email, mail } = await getGmailMessage({
+      provider,
+      emailId: emailIdFromProps,
+    });
+    // Extract the provider id...
+    const providerId = email.id!;
+    // and use it to query for import state and our system's email id
+    const { emailId, status } = await getImportStatusForExternalId(providerId);
+    // Finally, scan referenced emails to locate any additional items pending imoprt
+    const ref = await checkReferencedEmailStatus({ email, mail });
+    return {
+      emailId,
+      providerId,
+      provider,
+      status,
+      references: ref,
+    };
+  } catch (error) {
+    if (isError(error)) {
+      if (isKnownGmailErrorCause(error.cause)) {
+        // We handle email not found
+        if (error.cause === 'email-not-found') {
+          return {
+            emailId: null,
+            providerId: emailIdFromProps,
+            provider,
+            status: 'not-found',
+            references: [],
+          };
+        }
+        // rethrow all other known error types for caller to handle
+        throw error;
+      }
+    }
+    // For everything else, log the error and rethrow
+    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'getImportMessageStatus',
+      provider,
+      emailId: emailIdFromProps,
+    });
+  }
 };

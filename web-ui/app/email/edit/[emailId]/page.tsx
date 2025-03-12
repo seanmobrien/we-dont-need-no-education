@@ -15,7 +15,7 @@ import {
   gridColumn,
 } from 'tailwindcss-classnames';
 
-const Home = async ({ params }: { params: { emailId: string } }) => {
+const Home = async ({ params }: { params: Promise<{ emailId: string }> }) => {
   const { emailId } = await params;
 
   return (

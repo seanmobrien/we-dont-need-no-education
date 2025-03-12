@@ -175,39 +175,75 @@ export type EmailPropertyCategory = {
   createdOn: Date;
 };
 
+/**
+ * An array of possible import status types for email messages.
+ *
+ * The possible values are:
+ * - 'imported': The email message has been successfully imported.
+ * - 'pending': The email message is pending import.
+ * - 'not-found': The email message could not be found.
+ * - 'in-progress': The email message import is currently in progress.
+ *
+ * This array is defined as a constant tuple to ensure type safety.
+ */
 export const ImportStatusTypeValues = [
   'imported',
   'pending',
   'not-found',
   'in-progress',
 ] as const;
+
+/**
+ * Represents the import status type of an email message.  Possible values are:
+ * - 'imported': The email message has been successfully imported.
+ * - 'pending': The email message is pending import.
+ * - 'not-found': The email message could not be found.
+ * - 'in-progress': The email message import is currently in progress.
+ *
+ * This type is defined as a union of the possible values to ensure type safety.
+ */
 export type ImportStatusType = (typeof ImportStatusTypeValues)[number];
+
+/**
+ * Represents the import status of a child email message.
+ *
+ * @property {string | null} emailId - The unique identifier for the email.
+ * @property {string} providerId - The unique identifier for the email provider.
+ * @property {ImportStatusType} status - The current import status of the email.
+ */
+export type MessageImportStatus = {
+  /**
+   * The unique identifier for the email.
+   */
+  emailId: string | null;
+  /**
+   * The unique identifier for the email provider.
+   */
+  providerId: string;
+  /**
+   * The current import status of the email.
+   */
+  status: ImportStatusType;
+  /**
+   * Name of the email provider.
+   */
+  provider: string;
+};
 
 /**
  * Describes the import status of an email message, including its provider ID, email ID,
  * and the status of the import process. Additionally, it contains reference information
  * for all emails that this email references.
  *
- * @property {string} providerId - The unique identifier for the email provider.
+ * @property {string} providerId - The unique identifier for the email provider.  Note this
+ *  may be a provider-specific identifier or a Message-ID header value.
  * @property {string} emailId - The unique identifier for the email.
  * @property {ImportStatusType} status - The current import status of the email.
  * @property {Array<ImportMessageStatus>} ref - An array of import statuses for all referenced emails.
  */
-export type ImportMessageStatus = {
-  /**
-   * The unique identifier for the email provider.
-   */
-  providerId: string;
-  /**
-   * The unique identifier for the email.
-   */
-  emailId: string | null;
-  /**
-   * The current import status of the email.
-   */
-  status: ImportStatusType;
+export type MessageImportStatusWithChildren = MessageImportStatus & {
   /**
    * An array of import statuses for all referenced emails.
    */
-  ref: Array<ImportMessageStatus>;
+  references: Array<MessageImportStatus>;
 };

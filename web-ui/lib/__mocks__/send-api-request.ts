@@ -50,6 +50,9 @@ beforeEach(() => {
   sendApiRequest.mockClear();
   sendApiRequest.mockResolvedValue({});
   allApiHelpers = [];
+  sendApiRequest.mockImplementation(() => {
+    return Promise.resolve({});
+  });
 });
 
 export {

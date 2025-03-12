@@ -9,7 +9,17 @@ import { query, queryExt } from '@/lib/neondb';
 
 jest.mock('@/lib/neondb');
 
+const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
+
 describe('Email API', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
+    (queryExt as jest.Mock).mockImplementation(() =>
+      Promise.resolve({ rowCount: 0, rows: [] })
+    );
+  });
+
   describe('POST /api/email', () => {
     it('should create a new email and return 201 status', async () => {
       const req = {
@@ -26,7 +36,7 @@ describe('Email API', () => {
 
       const mockResult = [
         {
-          emailId: 1,
+          emailId: ValidEmailId,
           senderId: 1,
           subject: 'Test Subject',
           body: 'Test Body',
@@ -61,7 +71,7 @@ describe('Email API', () => {
 
       const mockResult = [
         {
-          emailId: 1,
+          emailId: ValidEmailId,
           senderId: 1,
           subject: 'Test Subject',
           body: 'Test Body',
@@ -100,7 +110,7 @@ describe('Email API', () => {
     it('should update an email and return 200 status', async () => {
       const req = {
         json: jest.fn().mockResolvedValue({
-          emailId: 1,
+          emailId: ValidEmailId,
           subject: 'Updated Subject',
           threadId: 2,
         }),
@@ -108,7 +118,9 @@ describe('Email API', () => {
 
       const mockResult = {
         rowCount: 1,
-        rows: [{ emailId: 1, subject: 'Updated Subject', threadId: 2 }],
+        rows: [
+          { emailId: ValidEmailId, subject: 'Updated Subject', threadId: 2 },
+        ],
       };
       (queryExt as jest.Mock).mockResolvedValue(mockResult);
 
@@ -117,14 +129,18 @@ describe('Email API', () => {
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
         message: 'Email updated successfully',
-        email: { emailId: 1, subject: 'Updated Subject', threadId: 2 },
+        email: {
+          emailId: ValidEmailId,
+          subject: 'Updated Subject',
+          threadId: 2,
+        },
       });
     });
 
     it('should return 404 status if email is not found', async () => {
       const req = {
         json: jest.fn().mockResolvedValue({
-          emailId: 1,
+          emailId: ValidEmailId,
           subject: 'Updated Subject',
         }),
       } as unknown as NextRequest;
@@ -159,12 +175,12 @@ describe('Email API', () => {
   describe('GET /api/email/id', () => {
     it('should return email details if emailId is provided', async () => {
       const req = {
-        url: 'http://localhost/api/email/1',
+        url: `http://localhost/api/email/${ValidEmailId}`,
       } as unknown as NextRequest;
 
       const mockResult = [
         {
-          emailId: 1,
+          emailId: ValidEmailId,
           subject: 'Test Subject',
           body: 'Test Body',
           sentOn: '2023-01-01T00:00:00Z',
@@ -180,7 +196,9 @@ describe('Email API', () => {
       ];
       (query as jest.Mock).mockResolvedValue(mockResult);
 
-      const res = await GetWithId(req, { params: { emailId: '1' } });
+      const res = await GetWithId(req, {
+        params: Promise.resolve({ emailId: ValidEmailId }),
+      });
 
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
@@ -203,7 +221,9 @@ describe('Email API', () => {
 
       (query as jest.Mock).mockResolvedValue([]);
 
-      const res = await GetWithId(req, { params: { emailId: '1' } });
+      const res = await GetWithId(req, {
+        params: Promise.resolve({ emailId: ValidEmailId }),
+      });
 
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({
@@ -218,7 +238,7 @@ describe('Email API', () => {
 
       const mockResult = [
         {
-          emailId: 1,
+          emailId: ValidEmailId,
           subject: 'Test Subject',
           sentOn: '2023-01-01T00:00:00Z',
           sender_id: 1,
@@ -235,21 +255,24 @@ describe('Email API', () => {
     });
 
     it('should return 400 status if emailId is invalid', async () => {
+      (query as jest.Mock).mockResolvedValue([]);
       const req = {
         url: 'http://localhost/api/email?emailId=invalid',
       } as unknown as NextRequest;
 
-      const res = await GetWithId(req, { params: { emailId: 'invalid' } });
+      const res = await GetWithId(req, {
+        params: Promise.resolve({ emailId: 'invalid' }),
+      });
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
-        error: 'Invalid email ID',
+        error: 'Email ID is required',
       });
     });
 
     it('should handle database errors gracefully', async () => {
       const req = {
-        url: 'http://localhost/api/email?emailId=1',
+        url: `http://localhost/api/email?emailId=${ValidEmailId}`,
       } as unknown as NextRequest;
 
       (query as jest.Mock).mockRejectedValue(new Error('Database error'));
@@ -267,7 +290,7 @@ describe('Email API', () => {
     it('should delete an email and return 200 status', async () => {
       const mockResult = [
         {
-          emailId: 1,
+          emailId: ValidEmailId,
           subject: 'Test Subject',
           body: 'Test Body',
           sentOn: '2023-01-01T00:00:00Z',
@@ -275,7 +298,9 @@ describe('Email API', () => {
       ];
       (query as jest.Mock).mockResolvedValue(mockResult);
 
-      const res = await DELETE({ params: { emailId: '1' } });
+      const res = await DELETE({
+        params: Promise.resolve({ emailId: ValidEmailId }),
+      });
 
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
@@ -287,7 +312,9 @@ describe('Email API', () => {
     it('should return 404 status if email is not found', async () => {
       (query as jest.Mock).mockResolvedValue([]);
 
-      const res = await DELETE({ params: { emailId: '1' } });
+      const res = await DELETE({
+        params: Promise.resolve({ emailId: ValidEmailId }),
+      });
 
       expect(res.status).toBe(404);
       expect(await res.json()).toEqual({
@@ -296,7 +323,7 @@ describe('Email API', () => {
     });
 
     it('should return 400 status if emailId is missing', async () => {
-      const res = await DELETE({ params: { emailId: '' } });
+      const res = await DELETE({ params: Promise.resolve({ emailId: '' }) });
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({

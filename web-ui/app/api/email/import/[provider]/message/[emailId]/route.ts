@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getImportMessageSource } from '../../_utilitites';
+import {
+  defaultGmailErrorFilter,
+  getImportMessageSource,
+} from '../../_utilitites';
 import { query, queryExt } from '@/lib/neondb';
 import { newUuid } from '@/lib/typescript';
 import { DefaultImportManager } from '@/lib/email/import/importmanager';
@@ -11,13 +14,14 @@ import { queueAttachment } from '@/lib/email/import/google/attachment-download';
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { provider: string; emailId: string } }
+  { params }: { params: Promise<{ provider: string; emailId: string }> }
 ) => {
   const { provider, emailId } = await params;
   const result = await getImportMessageSource({
     provider,
     emailId,
     refresh: true,
+    errorFilter: defaultGmailErrorFilter,
   });
   return 'status' in result!
     ? result
@@ -26,7 +30,7 @@ export const GET = async (
 
 export const POST = async (
   req: NextRequest,
-  { params }: { params: { provider: string; emailId: string } }
+  { params }: { params: Promise<{ provider: string; emailId: string }> }
 ) => {
   const { provider, emailId } = await params;
   const importInstance = new DefaultImportManager(provider);
@@ -116,13 +120,14 @@ export const queueStagedAttachments = ({
 
 export const PUT = async (
   req: NextRequest,
-  { params }: { params: { provider: string; emailId: string } }
+  { params }: { params: Promise<{ provider: string; emailId: string }> }
 ) => {
   const { provider, emailId } = await params;
   const result = await getImportMessageSource({
     provider,
     emailId,
     refresh: true,
+    errorFilter: defaultGmailErrorFilter,
   });
   if (!result) {
     return NextResponse.json({ error: 'message not found' }, { status: 404 });

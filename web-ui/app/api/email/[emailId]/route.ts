@@ -5,9 +5,17 @@ import { mapRecordToObject } from '../email-route-util';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { emailId: string } }
+  { params }: { params: Promise<{ emailId: string }> }
 ) {
   const { emailId } = await params;
+  const guidRegex =
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  if (!emailId || !guidRegex.test(emailId)) {
+    return NextResponse.json(
+      { error: 'Email ID is required' },
+      { status: 400 }
+    );
+  }
   try {
     // Fetch detailed email data
     const result = await query(
@@ -77,9 +85,15 @@ export async function GET(
 export async function DELETE({
   params,
 }: {
-  params: { emailId: string };
+  params: Promise<{ emailId: string }>;
 }): Promise<NextResponse> {
   const { emailId: emailId } = await params;
+  if (!emailId) {
+    return NextResponse.json(
+      { error: 'Email ID is required' },
+      { status: 400 }
+    );
+  }
   try {
     // Delete associated recipients first
     await query(

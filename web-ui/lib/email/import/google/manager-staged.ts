@@ -31,7 +31,7 @@ class StagedManager extends TransactionalStateManagerBase {
     const req = this.requireRequest;
     const responseMessage = await stageEmailImport(providerEmailId, {
       req,
-    });
+    }).native;
     if (!responseMessage) {
       throw new Error(
         `An unexpected failure occurred queuing email ${providerEmailId}.`

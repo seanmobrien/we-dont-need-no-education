@@ -38,7 +38,9 @@ const mockLoadEmail = loadEmail as jest.MockedFunction<typeof loadEmail>;
 const mockStateManager = {
   begin: jest.fn((ctx) => Promise.resolve(ctx)),
   run: jest.fn((ctx) => {
-    return loadEmail(ctx.id, { req: ctx.req });
+    return {
+      target: loadEmail(ctx.id, { req: ctx.req }),
+    };
   }),
   commit: jest.fn((ctx) => {
     return Promise.resolve({
@@ -57,13 +59,6 @@ describe('DefaultImportManager', () => {
     }, {} as ImportManagerMap);
     mockManagerMapFactory.mockReturnValue(map);
   });
-  const defaultApiResponse: ImportSourceMessage = {
-    id: 'testEmailId',
-    providerId: 'incoming-email-id',
-    userId: 1,
-    stage: 'completed',
-    raw: {},
-  };
   const provider = 'google';
   const req = {
     headers: {
@@ -76,14 +71,9 @@ describe('DefaultImportManager', () => {
   let manager: DefaultImportManager;
 
   beforeEach(() => {
-    (
-      sendApiRequest as jest.MockedFunction<typeof sendApiRequest>
-    ).mockReturnValue(
-      Promise.resolve({
-        success: true,
-        message: 'Import successful',
-        data: defaultApiResponse,
-      }) as ICancellablePromiseExt<unknown>
+    (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
+    (queryExt as jest.Mock).mockImplementation(() =>
+      Promise.resolve({ rowCount: 0, rows: [] })
     );
     manager = new DefaultImportManager(provider);
   });
@@ -114,8 +104,9 @@ describe('DefaultImportManager', () => {
         userId: 1,
         raw: {},
       };
-      const error = new Error('Test error');
-      mockLoadEmail.mockRejectedValue(error);
+      mockLoadEmail.mockImplementation(() => {
+        throw new Error('Test error');
+      });
 
       await expect(
         manager.runImportStage(importSourceMessage, { req })

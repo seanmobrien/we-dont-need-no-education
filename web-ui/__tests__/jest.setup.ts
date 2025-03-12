@@ -4,16 +4,17 @@ import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
-import { queueManagerFactory } from '@/lib/site-util/queue';
 import { neon } from '@neondatabase/serverless';
+import { globalContactCache } from '@/data-models/api/contact-cache';
 // jest.setup.ts
 import '@testing-library/jest-dom';
 import 'jest';
+import { ContactCache } from '@/data-models/api/contact-cache';
 
 jest.mock('google-auth-library');
 jest.mock('googleapis');
 jest.mock('@neondatabase/serverless');
-jest.mock('@/lib/site-util/queue');
+// Automocks
 
 jest.mock('next-auth', () => {
   return jest.fn();
@@ -25,7 +26,12 @@ jest.mock('@/auth', () => {
     })),
   };
 });
-
+(neon as jest.Mock).mockImplementation((conn, ops) => {
+  const fullResultset = ops?.fullResultset ?? false;
+  return fullResultset
+    ? jest.fn(() => Promise.resolve({ rows: [] }))
+    : jest.fn(() => Promise.resolve([]));
+});
 (NextAuth as jest.Mock).mockImplementation(() => jest.fn);
 (auth as jest.Mock).mockImplementation(() => {
   return jest.fn(() => Promise.resolve({ id: 'test-id' }));
@@ -56,6 +62,7 @@ const resetEnvVariables = () => {
 
 beforeEach(() => {
   resetEnvVariables();
+  globalContactCache((cache) => cache.clear());
 });
 
 afterEach(() => {

@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from '../_googleProviderFactory';
-import { parsePaginationStats, MailQueryBuilder } from '../_utilitites';
+import { parsePaginationStats } from '../_utilitites';
+import { MailQueryBuilder } from '../_mailQueryBuilder';
 import { PaginatedResultset } from '@/data-models';
 import { EmailSearchResult } from '@/data-models/api/import/email-message';
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { provider: string } }
+  { params }: { params: Promise<{ provider: string }> }
 ) => {
   const { provider } = await params;
   const factoryResponse = await googleProviderFactory(provider);
@@ -17,7 +18,7 @@ export const GET = async (
   const query = new MailQueryBuilder()
     .appendQueryParam('from', searchParams.getAll('from'))
     .appendQueryParam('to', searchParams.getAll('to'))
-    .appendQueryParam('rfc822msgid', searchParams.getAll('msg-id'));
+    .appendMessageId(searchParams.getAll('msg-id'));
 
   const { page, num } = parsePaginationStats(searchParams);
 

@@ -15,6 +15,10 @@ describe('ServerSession', () => {
   let serverSession: ServerSession;
 
   beforeEach(() => {
+    (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
+    (queryExt as jest.Mock).mockImplementation(() =>
+      Promise.resolve({ rowCount: 0, rows: [] })
+    );
     serverSession = new ServerSession(sessionId);
   });
 

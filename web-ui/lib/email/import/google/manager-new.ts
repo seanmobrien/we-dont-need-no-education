@@ -4,9 +4,15 @@ import {
   StageProcessorContext,
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
-import { ImportStage } from '@/data-models/api/import/email-message';
+import {
+  ImportSourceMessage,
+  ImportStage,
+} from '@/data-models/api/import/email-message';
 import { log } from '@/lib/logger';
-import { getImportMessageSource } from '@/app/api/email/import/[provider]/_utilitites';
+import {
+  getImportMessageSource,
+  isKnownGmailError,
+} from '@/app/api/email/import/[provider]/_utilitites';
 
 class NewStateManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {
@@ -18,13 +24,24 @@ class NewStateManager extends TransactionalStateManagerBase {
     if (typeof emailId !== 'string' || !emailId) {
       throw new Error(`Invalid stage for completion: ${currentStage}`);
     }
-    const target = await getImportMessageSource({
-      provider: 'google',
-      emailId,
-      refresh: false,
-      returnResponse: false,
-    });
-    if (!target || 'status' in target) {
+    let target: ImportSourceMessage | null = null;
+    try {
+      target = await getImportMessageSource({
+        provider: 'google',
+        emailId,
+        refresh: false,
+      });
+    } catch (error) {
+      // If this is not an email or source not found erropr, then rethrow
+      if (
+        !isKnownGmailError(error) ||
+        (error.cause !== 'email-not-found' &&
+          error.cause !== 'source-not-found')
+      ) {
+        throw error;
+      }
+    }
+    if (!target) {
       return context;
     }
     this.setTransaction(target, true);

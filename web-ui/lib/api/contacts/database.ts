@@ -9,7 +9,7 @@ import { isError } from '@/lib/react-util';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { isContact, parsePaginationStats } from '@/data-models';
 import { ObjectRepository } from '@/data-models/api/object-repository';
-import { globalContactCache } from '@/data-models/api/contact-cache';
+import { globalContactCache } from '@/data-models/api';
 import { RecipientType } from '@/lib/email/import/types';
 
 const mapRecordToSummary = (
@@ -22,7 +22,7 @@ const mapRecordToSummary = (
     email: record.email as string,
   };
   if (updateContact) {
-    globalContactCache().add(ret);
+    globalContactCache((cache) => cache.add(ret));
   }
   return ret;
 };
@@ -34,7 +34,7 @@ const mapRecordToObject = (record: Record<string, unknown>) => {
     jobDescription: record.role_dscr as string,
     isDistrictStaff: record.is_district_staff as boolean,
   };
-  globalContactCache().add(ret);
+  globalContactCache((cache) => cache.add(ret));
   return ret;
 };
 
@@ -142,7 +142,7 @@ export class ContactRepository
     reload: boolean = false
   ): Promise<Contact | null> {
     if (!reload) {
-      const cachedContact = globalContactCache().get(contactId);
+      const cachedContact = globalContactCache((cache) => cache.get(contactId));
       if (isContact(cachedContact)) {
         return cachedContact;
       }
@@ -185,7 +185,6 @@ export class ContactRepository
           table: 'contacts',
         });
       }
-      globalContactCache().add(result[0]);
       return result[0];
     } catch (error) {
       ContactRepository.logError(error);
@@ -274,6 +273,7 @@ export class ContactRepository
       if (results.length === 0) {
         throw new DataIntegrityError('Failed to delete contact');
       }
+      globalContactCache((cache) => cache.remove(contactId));
       return true;
     } catch (error) {
       if (!ContactRepository.logError(error)) {
@@ -317,8 +317,7 @@ export class ContactRepository
     const returned = Array<ContactSummary>();
     // `re
     if (!refresh) {
-      globalContactCache()
-        .getByEmail(emailList)
+      globalContactCache((cache) => cache.getByEmail(emailList))
         .filter((x) => !!x)
         .forEach((contact) => returned.push(contact));
       if (returned.length === emailList.length) {

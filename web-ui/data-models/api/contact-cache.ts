@@ -52,7 +52,6 @@ class ContactCacheImpl implements ContactCache {
       const cacheEntry = { ...x };
       this.cache.set(x.contactId, cacheEntry);
       this.cacheByEmail.set(x.email.toLocaleLowerCase(), cacheEntry);
-      9;
       return true;
     }, contact);
   }
@@ -108,6 +107,13 @@ class ContactCacheImpl implements ContactCache {
   }
 }
 
-export const globalContactCache = (): ContactCache =>
-  ContactCacheImpl.globalCache;
-export const contactCacheFactory = (): ContactCache => new ContactCacheImpl();
+/**
+ * Executes a callback function with the global contact cache.
+ *
+ * @template TRet - The return type of the callback function.
+ * @param cb - The callback function to execute with the global contact cache.
+ * @returns The result of the callback function.
+ */
+export const globalContactCache = <TRet>(
+  cb: (cache: ContactCache) => TRet
+): TRet => cb(ContactCacheImpl.globalCache);

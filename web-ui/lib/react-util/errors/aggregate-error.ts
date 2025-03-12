@@ -62,7 +62,7 @@ export class AggregateError extends Error {
    * @returns An instance of `AggregateError` containing the provided errors.
    */
   public static fromErrors(errors: Error[]): AggregateError {
-    return new AggregateError([errors[0], ...(errors.slice(1) ?? [])]);
+    return new AggregateError(...[errors[0], ...(errors.slice(1) ?? [])]);
   }
 
   /**
@@ -71,7 +71,7 @@ export class AggregateError extends Error {
    * @param messageOrError - The main error message or an Error object.
    * @param errors - Additional Error objects.
    */
-  constructor([messageOrError, ...errors]: [string | Error, ...Error[]]) {
+  constructor(...[messageOrError, ...errors]: [string | Error, ...Error[]]) {
     super(AggregateError.buildMessage(messageOrError, errors));
     this.name = 'AggregateError';
     this.#errors =

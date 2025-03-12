@@ -16,18 +16,21 @@ describe('mapContacts', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
+        recipientType: 'to',
       },
       {
         fullName: 'Jane Doe',
         firstName: 'Jane',
         lastName: 'Doe',
         email: 'jane@example.com',
+        recipientType: 'cc',
       },
       {
         fullName: 'Sender',
         firstName: 'Sender',
         lastName: '',
         email: 'sender@example.com',
+        recipientType: 'from',
       },
     ]);
   });
@@ -45,18 +48,21 @@ describe('mapContacts', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
+        recipientType: 'to',
       },
       {
         fullName: 'Jane Doe',
         firstName: 'Jane',
         lastName: 'Doe',
         email: 'jane@example.com',
+        recipientType: 'cc',
       },
       {
         fullName: 'Sender',
         firstName: 'Sender',
         lastName: '',
         email: 'sender@example.com',
+        recipientType: 'from',
       },
     ]);
   });
@@ -79,6 +85,7 @@ describe('mapContacts', () => {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@example.com',
+        recipientType: 'to',
       },
     ]);
   });

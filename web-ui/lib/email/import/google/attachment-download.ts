@@ -1,12 +1,19 @@
 import { BlobServiceClient } from '@azure/storage-blob';
 import { log } from '@/lib/logger';
 import { errorLogFactory } from '@/lib/logger';
-import {
-  AttachmentDownloadJob,
-  AttachmentDownloadResult,
-} from '@/lib/site-util/queue/types';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@/lib/neondb';
+import { StagedAttachment } from '@/lib/api/email/import/staged-attachment';
+
+export type AttachmentDownloadJob = {
+  model: StagedAttachment;
+};
+
+export type AttachmentDownloadResult = {
+  result: StagedAttachment;
+  success: boolean;
+  error?: string;
+};
 
 const downloadAttachment = async ({
   messageId,

@@ -1,20 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryExt } from '@/lib/neondb';
 import { log } from '@/lib/logger';
-import { globalContactCache } from '@/data-models/api/contact-cache';
-import { isTruthy } from '@/lib/react-util';
+import { globalContactCache } from '@/data-models/api';
+import { isTruthy, LoggedError } from '@/lib/react-util';
 
-const mapRecordToSummary = (record: Record<string, unknown>) => ({
-  contactId: record.contact_id as number,
-  name: record.name as string,
-  email: record.email as string,
-});
-const mapRecordToObject = (record: Record<string, unknown>) => ({
-  ...mapRecordToSummary(record),
-  phoneNumber: record.phone as string,
-  jobDescription: record.role_dscr as string,
-  isDistrictStaff: record.is_district_staff as boolean,
-});
+const mapRecordToSummary = (
+  record: Record<string, unknown>,
+  cache: boolean = true
+) => {
+  const ret = {
+    contactId: record.contact_id as number,
+    name: record.name as string,
+    email: record.email as string,
+  };
+  if (cache) {
+    globalContactCache((cb) => cb.add(ret));
+  }
+  return ret;
+};
+const mapRecordToObject = (
+  record: Record<string, unknown>,
+  cache: boolean = true
+) => {
+  const ret = {
+    ...mapRecordToSummary(record, false),
+    phoneNumber: record.phone as string,
+    jobDescription: record.role_dscr as string,
+    isDistrictStaff: record.is_district_staff as boolean,
+  };
+  if (cache) {
+    globalContactCache((cb) => cb.add(ret));
+  }
+  return ret;
+};
 
 export async function POST(req: NextRequest) {
   try {
@@ -35,8 +53,6 @@ export async function POST(req: NextRequest) {
       { transform: mapRecordToObject }
     );
     log((l) => l.verbose('[ [AUDIT]] -  Contact created:', result[0]));
-
-    globalContactCache().add(result);
     return NextResponse.json(
       {
         message: 'Contact created successfully',
@@ -45,9 +61,12 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    log((l) => l.error('Database error:', error));
+    const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'api::contact-post',
+    });
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: `Internal Server Error - ${le.message}` },
       { status: 500 }
     );
   }
@@ -121,7 +140,6 @@ export async function PUT(req: NextRequest) {
       );
     }
     log((l) => l.verbose('[[AUDIT]] -  Contact updated:', result.rows[0]));
-    globalContactCache().add(result.rows);
     return NextResponse.json(
       {
         message: 'Contact updated successfully',
@@ -130,9 +148,12 @@ export async function PUT(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    log((l) => l.error('Database error:', error));
+    const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'api::contact-put',
+    });
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: `Internal Server Error - ${le.message}` },
       { status: 500 }
     );
   }
@@ -146,7 +167,9 @@ export async function GET(req: NextRequest) {
 
     if (contactId) {
       if (!refresh) {
-        const cachedContact = globalContactCache().get(Number(contactId));
+        const cachedContact = globalContactCache((cache) =>
+          cache.get(Number(contactId))
+        );
         if (cachedContact) {
           return NextResponse.json(cachedContact, { status: 200 });
         }
@@ -163,7 +186,6 @@ export async function GET(req: NextRequest) {
           { status: 404 }
         );
       }
-      globalContactCache().add(result[0]);
       return NextResponse.json(result[0], { status: 200 });
     } else {
       const result = await query(
@@ -171,13 +193,15 @@ export async function GET(req: NextRequest) {
           sql`SELECT contact_id, name, email FROM contacts ORDER BY name ASC`,
         { transform: mapRecordToSummary }
       );
-      globalContactCache().add(result);
       return NextResponse.json(result, { status: 200 });
     }
   } catch (error) {
-    log((l) => l.error('Database error:', error));
+    const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'api::contact-get',
+    });
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: `Internal Server Error - ${le.message}` },
       { status: 500 }
     );
   }
@@ -197,13 +221,14 @@ export async function DELETE(req: NextRequest) {
     const result = await query(
       (sql) =>
         sql`DELETE FROM contacts WHERE contact_id = ${contactId} RETURNING *`,
-      { transform: mapRecordToObject }
+      { transform: (x) => mapRecordToObject(x, false) }
     );
 
     if (result.length === 0) {
       return NextResponse.json({ error: 'Contact not found' }, { status: 404 });
     }
     log((l) => l.verbose('[[AUDIT]] -  Contact deleted:', result[0]));
+    globalContactCache((cache) => cache.remove(contactId));
     return NextResponse.json(
       {
         message: 'Contact deleted successfully',
@@ -212,9 +237,12 @@ export async function DELETE(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    log((l) => l.error('Database error:', error));
+    const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'api::contact-delete',
+    });
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: `Internal Server Error - ${le.message}` },
       { status: 500 }
     );
   }

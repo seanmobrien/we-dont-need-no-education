@@ -11,11 +11,11 @@ export const mapRecordToThreadSummary = (record: Record<string, unknown>) => ({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { threadId: string } }
+  { params }: { params: Promise<{ threadId: string }> }
 ) {
   try {
     // Extract the slug from params
-    const { threadId } = params;
+    const { threadId } = await params;
     const threadIdNumber = parseInt(threadId, 10);
     if (isNaN(threadIdNumber)) {
       return NextResponse.json({ error: 'Invalid thread ID' }, { status: 400 });
