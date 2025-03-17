@@ -1,6 +1,6 @@
 import pino from 'pino';
 import { env, isRunningOnServer } from '@/lib/site-util/env';
-
+import { WrappedLogger } from './wrapped-logger';
 import type { ILogger } from './logger.d.ts';
 
 let _logger: ILogger;
@@ -40,10 +40,10 @@ export const logger = (): Promise<ILogger> =>
       }
       // NOTE: This is to assist with debugging, and should not be left in production
       process.on('warning', (e) =>
-        _logger.warn({ message: e.message, stack: e.stack })
+        _logger.warn({ Message: e.message, stack: e.stack }),
       );
     }
-    resolve(_logger);
+    resolve(new WrappedLogger(_logger));
   });
 
 /**

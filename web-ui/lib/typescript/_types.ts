@@ -147,9 +147,16 @@ export type KeyOf<T> = keyof T;
  *
  * @property {Promise<T>} native - A wrapping native promise object
  */
-export type ICancellablePromise<T> = Promise<T> & {
+export type ICancellablePromise<T> = Pick<
+  Promise<T>,
+  'then' | 'catch' | 'finally'
+> & {
   cancel: () => void;
-  readonly native: Promise<T>;
+
+  /**
+   * The native awaitable promise object.
+   */
+  readonly awaitable: Promise<T>;
 };
 
 /**
@@ -208,7 +215,7 @@ export type ICancellablePromiseExt<T> = Omit<
     onrejected?:
       | ((reason: any) => TResult | PromiseLike<TResult>)
       | null
-      | undefined
+      | undefined,
   ): ICancellablePromiseExt<T | TResult>;
 
   then<TResult1 = T, TResult2 = never>(
@@ -219,18 +226,19 @@ export type ICancellablePromiseExt<T> = Omit<
     onrejected?:
       | ((reason: any) => TResult2 | PromiseLike<TResult2>)
       | null
-      | undefined
+      | undefined,
   ): ICancellablePromiseExt<TResult1 | TResult2>;
   catch<TResult = never>(
     onrejected?:
       | ((reason: any) => TResult | PromiseLike<TResult>)
       | null
-      | undefined
+      | undefined,
   ): ICancellablePromiseExt<T | TResult>;
   finally(
-    onfinally?: (() => void) | null | undefined
+    onfinally?: (() => void) | null | undefined,
   ): ICancellablePromiseExt<T>;
 };
+
 /**
  * Infers the type of the first parameter passed to a function.
  *

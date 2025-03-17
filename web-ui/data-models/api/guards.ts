@@ -24,7 +24,7 @@ export const isContact = (check: unknown): check is Contact => {
 };
 
 export const isEmailPropertyDataModel = (
-  check: unknown
+  check: unknown,
 ): check is EmailPropertyType => {
   if (!check || typeof check !== 'object') {
     return false;
@@ -52,7 +52,7 @@ export const isEmailPropertyDataModel = (
  * - `status`: a string
  */
 export const isMessageImportStatus = (
-  check: unknown
+  check: unknown,
 ): check is MessageImportStatus =>
   typeof check === 'object' &&
   !!check &&
@@ -73,6 +73,6 @@ export const isMessageImportStatus = (
  * @returns `true` if the object is an `ImportMessageStatus`, otherwise `false`.
  */
 export const isMessageImportWithChildrenStatus = (
-  check: unknown
+  check: unknown,
 ): check is MessageImportStatusWithChildren =>
-  isMessageImportStatus(check) && 'ref' in check;
+  isMessageImportStatus(check) && 'references' in check && 'subject' in check;

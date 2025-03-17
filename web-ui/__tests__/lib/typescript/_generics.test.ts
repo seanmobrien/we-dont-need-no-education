@@ -1,4 +1,4 @@
-import { AbortablePromise } from '@/lib/typescript/_generics';
+import { AbortablePromise } from '@/lib/typescript/abortable-promise';
 
 describe('AbortablePromise', () => {
   it('should resolve the promise', async () => {
@@ -6,7 +6,7 @@ describe('AbortablePromise', () => {
       setTimeout(() => resolve('resolved'), 100);
     });
 
-    await expect(promise.native).resolves.toBe('resolved');
+    await expect(promise.awaitable).resolves.toBe('resolved');
   });
 
   it('should reject the promise', async () => {
@@ -14,7 +14,7 @@ describe('AbortablePromise', () => {
       setTimeout(() => reject('rejected'), 100);
     });
 
-    await expect(promise.native).rejects.toBe('rejected');
+    await expect(promise.awaitable).rejects.toBe('rejected');
   });
 
   it('should cancel the promise', async () => {
@@ -24,7 +24,7 @@ describe('AbortablePromise', () => {
 
     promise.cancel();
 
-    await expect(promise.native).rejects.toThrow('Promise was cancelled');
+    await expect(promise.awaitable).rejects.toThrow('Promise was cancelled');
   });
 
   it('should call onrejected when cancelled', async () => {
@@ -39,7 +39,7 @@ describe('AbortablePromise', () => {
 
     promise.cancel();
 
-    await expect(cancelledPromise.native).rejects.toBe('cancelled');
+    await expect(cancelledPromise.awaitable).rejects.toBe('cancelled');
   });
 
   it('should call onfulfilled when completed', async () => {
@@ -52,8 +52,9 @@ describe('AbortablePromise', () => {
       return 'completed';
     });
 
-    await expect(completedPromise.native).resolves.toBe('completed');
+    await expect(completedPromise.awaitable).resolves.toBe('completed');
   });
+
   it('should call onfulfilled when handled in chain', async () => {
     const promise = new AbortablePromise<string>((resolve) => {
       setTimeout(() => resolve('resolved'), 100);
@@ -71,6 +72,6 @@ describe('AbortablePromise', () => {
 
     promise.cancel();
 
-    await expect(completedPromise.native).resolves.toBe('completed');
+    await expect(completedPromise.awaitable).resolves.toBe('completed');
   });
 });

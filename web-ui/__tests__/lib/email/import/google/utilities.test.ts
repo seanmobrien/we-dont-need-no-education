@@ -1,5 +1,5 @@
 import { mapContacts } from '@/lib/email/import/google/utilities';
-import { ParsedHeaderMap } from '@/lib/email/import/google/parsedHeaderMap';
+import { ParsedHeaderMap } from '@/lib/email/parsedHeaderMap';
 import type { gmail_v1 } from 'googleapis';
 
 describe('mapContacts', () => {

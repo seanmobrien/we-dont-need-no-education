@@ -1,3 +1,4 @@
+import { ContactSummary } from '../contact';
 import type { GmailEmailImportSource } from './provider-google';
 
 export type { GmailEmailImportSource };
@@ -241,9 +242,61 @@ export type MessageImportStatus = {
  * @property {ImportStatusType} status - The current import status of the email.
  * @property {Array<ImportMessageStatus>} ref - An array of import statuses for all referenced emails.
  */
+/**
+ * Represents the status of an email message import along with its related data.
+ *
+ * @extends MessageImportStatus
+ *
+ * @property {Array<MessageImportStatus>} references - An array of import statuses for all referenced emails.
+ * @property {Omit<ContactSummary, 'contactId' | 'name'> & { name?: string }} sender - The sender's contact summary with an optional name.
+ * @property {Array<Omit<ContactSummary, 'contactId' | 'name'> & { name?: string }} recipients - An array of recipient contact summaries with optional names.
+ * @property {string} subject - The subject of the email message.
+ * @property {Date} receivedDate - The date the email message was received.
+ */
 export type MessageImportStatusWithChildren = MessageImportStatus & {
   /**
    * An array of import statuses for all referenced emails.
    */
   references: Array<MessageImportStatus>;
+  /**
+   * The sender's contact summary with an optional name.
+   */
+  sender: Omit<ContactSummary, 'contactId' | 'name'> & { name?: string };
+  /**
+   * An array of recipient contact summaries with optional names.
+   */
+  recipients: Array<
+    Omit<ContactSummary, 'contactId' | 'name'> & { name?: string }
+  >;
+  /**
+   * The subject of the email message.
+   */
+  subject: string;
+  /**
+   * The date the email message was received.
+   */
+  receivedDate: Date;
 };
+
+/**
+ * Represents the response from an import operation.
+ *
+ * This type is a discriminated union that can represent either a successful or
+ * unsuccessful import operation.
+ *
+ * @property success - Indicates whether the import operation was successful.
+ * @property message - A message providing additional information about the import operation.
+ * @property error - (Optional) An error message or object, present if the import operation failed.
+ * @property data - (Optional) The imported data, present if the import operation was successful.
+ */
+export type ImportResponse =
+  | {
+      success: false;
+      message: string;
+      error: string | Error;
+    }
+  | {
+      success: true;
+      message: string;
+      data: ImportSourceMessage;
+    };

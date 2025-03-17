@@ -15,3 +15,5 @@ export * from './_guards';
 export type * from './_types';
 export * from './_record-decorators';
 export * from './_generics';
+export type { OperationCancelledError } from './abortable-promise';
+export { AbortablePromise } from './abortable-promise';

@@ -1,5 +1,5 @@
 import { UnionToTuple } from './_types';
-import { AbortablePromise } from './_generics';
+import { AbortablePromise } from './abortable-promise';
 
 /**
  * Checks if the given error is an operation cancelled error.
@@ -12,6 +12,19 @@ import { AbortablePromise } from './_generics';
  */
 export const isOperationCancelledError =
   AbortablePromise.isOperationCancelledError;
+
+/**
+ * Checks if the given object is an instance of `AbortablePromise`.
+ *
+ * This function is a type guard that determines whether the provided
+ * object is an `AbortablePromise`. It can be used to ensure that
+ * certain operations are only performed on objects that are
+ * `AbortablePromise` instances.
+ *
+ * @param obj - The object to check.
+ * @returns `true` if the object is an `AbortablePromise`, otherwise `false`.
+ */
+export const isAbortablePromise = AbortablePromise.isAbortablePromise;
 
 interface IsKeyOfGuard {
   <T extends object>(key: unknown): key is keyof T;
@@ -26,7 +39,7 @@ interface IsKeyOfGuard {
  */
 export const isKeyOf: IsKeyOfGuard = <T>(
   key: unknown,
-  check?: T | Array<T>
+  check?: T | Array<T>,
 ): key is keyof T => {
   if (check === undefined || check === null) {
     return false;
@@ -59,10 +72,10 @@ export const isKeyOf: IsKeyOfGuard = <T>(
  */
 export const isMemberOfUnion = <
   T extends string | number | symbol,
-  TCheck extends UnionToTuple<T> = UnionToTuple<T>
+  TCheck extends UnionToTuple<T> = UnionToTuple<T>,
 >(
   check: unknown,
-  union: TCheck
+  union: TCheck,
 ): check is T => {
   return !!union?.includes(check as T);
 };

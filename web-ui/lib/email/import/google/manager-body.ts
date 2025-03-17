@@ -17,7 +17,7 @@ import { EmailRepository } from '@/lib/api/email/database';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { ThreadRepository } from '@/lib/api/thread/database';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
-import { ParsedHeaderMap } from './parsedHeaderMap';
+import { ParsedHeaderMap } from '../../parsedHeaderMap';
 import { query } from '@/lib/neondb';
 import { ContactSummary } from '@/data-models';
 import { LoggedError } from '@/lib/react-util';
@@ -57,7 +57,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
     const emailContents = this.#extractEmailContent(target.raw.payload);
     if (!emailContents) {
       throw new Error(
-        `No valid email content found in the message: ${currentStage}`
+        `No valid email content found in the message: ${currentStage}`,
       );
     }
     const {
@@ -106,8 +106,8 @@ class EmailStageManager extends TransactionalStateManagerBase {
 
     log((l) =>
       l.info(
-        `Processed email with ID: ${emailId}, thread ID: ${threadId}, subject: ${subject}`
-      )
+        `Processed email with ID: ${emailId}, thread ID: ${threadId}, subject: ${subject}`,
+      ),
     );
 
     return context;
@@ -115,7 +115,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
 
   async getThreadIdFromDatabase(
     threadId?: string | null,
-    subject?: string
+    subject?: string,
   ): Promise<number | null> {
     if (!threadId) {
       return null;
@@ -135,7 +135,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
     return newThread.threadId;
   }
   async getParentIdFromDatabase(
-    globalId: string | null
+    globalId: string | null,
   ): Promise<string | null> {
     if (!globalId) {
       return Promise.resolve(null);
@@ -149,7 +149,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
     target: ImportSourceMessage;
   }): Promise<ParsedEmailProps> {
     const parsedHeaders = ParsedHeaderMap.fromHeaders(
-      target!.raw!.payload!.headers
+      target!.raw!.payload!.headers,
     );
     const { sender, recipients } = mapContacts(parsedHeaders).reduce(
       (acc, cur) => {
@@ -165,38 +165,40 @@ class EmailStageManager extends TransactionalStateManagerBase {
       {
         recipients: [] as Array<ParsedContact>,
         sender: undefined as ParsedContact | undefined,
-      }
+      },
     );
 
     if (!sender || !sender.email) {
       throw new Error(`No valid sender found in the message: ${target.stage}`);
     }
     const savedSender = await this.#contactRepository.getContactsByEmails(
-      sender.email
+      sender.email,
     );
     if (savedSender === null || !savedSender.length) {
       throw new Error(`Sender ID not found for the email: ${sender.email}`);
     }
 
     const savedRecipients = await this.#contactRepository.getContactsByEmails(
-      recipients.map((r) => r.email)
+      recipients.map((r) => r.email),
     );
     if (savedRecipients.length !== recipients.length) {
       throw new DataIntegrityError(
-        'Not all recipients were found in the database'
+        'Not all recipients were found in the database',
       );
     }
 
-    const subject = parsedHeaders.getFirstValue('Subject') ?? 'No Subject';
-    let globalMessageId = parsedHeaders.getFirstValue('Message-ID') ?? null;
+    const subject =
+      parsedHeaders.getFirstStringValue('Subject') ?? 'No Subject';
+    let globalMessageId =
+      parsedHeaders.getFirstStringValue('Message-ID') ?? null;
     if (globalMessageId) {
       globalMessageId = globalMessageId.replace(/^<|>$/g, '');
     }
-    const dateInHeader = parsedHeaders.getFirstValue('Date') ?? null;
+    const dateInHeader = parsedHeaders.getFirstStringValue('Date') ?? null;
 
     const threadId = await this.getThreadIdFromDatabase(
       target.raw.threadId,
-      subject
+      subject,
     );
     const parentEmailId = await this.getParentIdFromDatabase(globalMessageId);
 
@@ -222,7 +224,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
       part.mimeType === expectedMimeType ||
       part.headers?.findIndex(
         (h) =>
-          h.name === 'Content-Type' && h.value?.startsWith(expectedMimeType)
+          h.name === 'Content-Type' && h.value?.startsWith(expectedMimeType),
       ) !== -1
     ) {
       if (part.body && part.body.data) {
@@ -232,14 +234,14 @@ class EmailStageManager extends TransactionalStateManagerBase {
     return [
       ...items,
       ...(part.parts ?? []).flatMap((p) =>
-        this.#getContentParts({ part: p, expectedMimeType })
+        this.#getContentParts({ part: p, expectedMimeType }),
       ),
     ];
   }
   #decodeAndNormalize(
     part:
       | gmail_v1.Schema$MessagePart
-      | { body?: gmail_v1.Schema$MessagePartBody }
+      | { body?: gmail_v1.Schema$MessagePartBody },
   ): string {
     if (!part.body?.data) {
       return '';
@@ -258,7 +260,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
           }
           if (
             /^On\s(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s*(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2},?\s\d{4}\s(?:at\s\d{1,2}:\d{2}(?:\s?[APap][Mm])?)?\s.+?\s<[^>]+>\swrote:\s*$/i.test(
-              line
+              line,
             )
           ) {
             foundReplyHeader = true;
@@ -286,8 +288,8 @@ class EmailStageManager extends TransactionalStateManagerBase {
         .addEmailRecipient(recipient.contactId, emailId, 'to')
         .then(
           () => ({ status: 'success' }),
-          () => ({ status: 'error' })
-        )
+          () => ({ status: 'error' }),
+        ),
     );
     const results = await Promise.all(operations);
     if (results.some((r) => r.status === 'error')) {
@@ -295,7 +297,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
     }
   }
   #extractEmailContent(
-    payload: gmail_v1.Schema$Message['payload'] | null
+    payload: gmail_v1.Schema$Message['payload'] | null,
   ): string {
     const parts = payload!.parts ?? [];
     const bodyText = parts
@@ -346,7 +348,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
     JOIN email_property EP ON EP.email_id=E.email_id
     JOIN email_property_type ET ON EP.email_property_type_id=ET.email_property_type_id
     WHERE ET.property_name='In-Reply-To' AND (EP.property_value=${emailId} OR EP.property_value=${globalMessageIdWithBrackets})
-  ) RETURNING emails.email_id`
+  ) RETURNING emails.email_id`,
     );
     if (records.length) {
       log((l) =>
@@ -354,7 +356,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
           message: `Updated parent id for ${records.length} emails`,
           emailId,
           childEmailIds: records.map((r) => r.email_id),
-        })
+        }),
       );
     }
   }
@@ -384,7 +386,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
 
 const managerFactory: ImportStageManagerFactory = (
   stage: ImportStage,
-  addOps: AdditionalStageOptions
+  addOps: AdditionalStageOptions,
 ) => new EmailStageManager(stage, addOps);
 
 export default managerFactory;

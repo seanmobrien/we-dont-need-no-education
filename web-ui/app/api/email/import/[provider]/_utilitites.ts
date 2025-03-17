@@ -19,6 +19,7 @@ import {
   GmailMessagdApi,
 } from '@/data-models/api/import/provider-google';
 import { MailQueryBuilder } from './_mailQueryBuilder';
+import { ParsedHeaderMap } from '@/lib/email/parsedHeaderMap';
 
 /**
  * Parses pagination statistics from a URL or URLSearchParams object.
@@ -30,7 +31,7 @@ import { MailQueryBuilder } from './_mailQueryBuilder';
  * - `total`: The total number of items, initialized to 0.
  */
 export const parsePaginationStats = (
-  req: URL | URLSearchParams
+  req: URL | URLSearchParams,
 ): PaginationStats<string> => {
   if ('searchParams' in req) {
     req = req.searchParams;
@@ -86,7 +87,7 @@ export type KnownGmailErrorCauseType =
  * @returns A boolean indicating whether the value is a known Gmail error cause.
  */
 export const isKnownGmailErrorCause = (
-  check: unknown
+  check: unknown,
 ): check is KnownGmailErrorCauseType =>
   KnownGmailErrorCauseValues.includes(check as KnownGmailErrorCauseType);
 
@@ -97,7 +98,7 @@ export const isKnownGmailErrorCause = (
  * @returns A boolean indicating whether the value is a known Gmail error.
  */
 export const isKnownGmailError = (
-  check: unknown
+  check: unknown,
 ): check is Error & { cause: KnownGmailErrorCauseType } =>
   isError(check) && isKnownGmailErrorCause(check.cause);
 
@@ -133,7 +134,7 @@ export type ErrorFilter = (error: unknown) => NextResponse | null | undefined;
  * If the error cause is not recognized, the function returns null.
  */
 export const defaultGmailErrorFilter = (
-  error: unknown
+  error: unknown,
 ): NextResponse | null | undefined => {
   if (!isKnownGmailError(error)) {
     return undefined;
@@ -142,33 +143,33 @@ export const defaultGmailErrorFilter = (
     case 'unauthorized':
       return NextResponse.json(
         { error: error.message ?? 'Unauthorized' },
-        { status: 401 }
+        { status: 401 },
       );
     case 'email-exists':
       return NextResponse.json(
         { error: error.message ?? 'Email already exists' },
-        { status: 409 }
+        { status: 409 },
       );
     case 'email-not-found':
     case 'source-not-found':
       return NextResponse.json(
         { error: error.message ?? 'Email not found' },
-        { status: 404 }
+        { status: 404 },
       );
     case 'unknown-error':
       return NextResponse.json(
         { error: error.message ?? 'Unknown error' },
-        { status: 500 }
+        { status: 500 },
       );
     case 'invalid-args':
       return NextResponse.json(
         { error: error.message ?? 'Invalid arguments' },
-        { status: 400 }
+        { status: 400 },
       );
     case 'gmail-failure':
       return NextResponse.json(
         { error: error.message ?? 'Gmail error' },
-        { status: 500 }
+        { status: 500 },
       );
     default:
       break;
@@ -304,18 +305,18 @@ const getCurrentState = async ({
           select s.external_id AS providerId, s.stage, s.id${messageField}, s."userId", m.email_id AS targetId from emails m 
             right join staging_message s on s.external_id = m.imported_from_id
             where s.external_id = $1;`.toString(),
-      [emailId]
-    )
+      [emailId],
+    ),
   );
   if (!currentStateRows.length) {
     const existingEmailRows = await query(
       (sql) =>
-        sql`select email_id from emails where imported_from_id = ${emailId};`
+        sql`select email_id from emails where imported_from_id = ${emailId};`,
     );
     if (existingEmailRows.length) {
       throw new Error(
         `Gmail Message ${emailId} has already been imported as email ${existingEmailRows[0].email_id}; manually delete the email if you want to re-import it.`,
-        { cause: 'email-exists' }
+        { cause: 'email-exists' },
       );
     }
     if (!source) {
@@ -392,7 +393,7 @@ export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
   errorFilter?: undefined | ErrorFilter;
 }): Promise<(NextResponse & ImportSourceMessage) | null> => {
   const getReturnValue = (
-    response: NextResponse | null
+    response: NextResponse | null,
   ): NextResponse & ImportSourceMessage =>
     (!!errorFilter ? response : null) as NextResponse & ImportSourceMessage;
   try {
@@ -409,8 +410,8 @@ export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
         return getReturnValue(
           NextResponse.json(
             { error: 'missing provider or emailId' },
-            { status: 400 }
-          )
+            { status: 400 },
+          ),
         );
       }
       const factoryResponse = await googleProviderFactory(provider as string);
@@ -461,7 +462,7 @@ export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
     /// And rethrow or convert to a response
     if (errorFilter) {
       return getReturnValue(
-        NextResponse.json({ error: le.message }, { status: 500 })
+        NextResponse.json({ error: le.message }, { status: 500 }),
       );
     }
     throw le;
@@ -469,7 +470,7 @@ export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
 };
 
 const getImportStatusForExternalId = async (
-  providerId: string
+  providerId: string,
 ): Promise<{ status: ImportStatusType; emailId: string | null }> => {
   let emailId: string | null;
   let status: ImportStatusType;
@@ -479,7 +480,7 @@ const getImportStatusForExternalId = async (
           FROM emails e 
             FULL OUTER JOIN staging_message s 
               ON e.imported_from_id = s.external_id
-          WHERE e.imported_from_id=${providerId} OR s.external_id=${providerId};`
+          WHERE e.imported_from_id=${providerId} OR s.external_id=${providerId};`,
   );
   if (statusRecords.length) {
     const { email_id: recordEmailId, staged_id: recordStagedId } =
@@ -513,17 +514,12 @@ const checkReferencedEmailStatus = async ({
 }) => {
   // First search headers for any references to other email id's
   const extractHeaders = (
-    payload: GmailEmailMessagePayload | undefined
-  ): string[] => {
+    payload: GmailEmailMessagePayload | undefined,
+  ): ParsedHeaderMap => {
     const headers: Array<GmailEmailMessageHeader> = [];
-    const lookFor = ['references', 'in-reply-to'];
     const extractHeadersFromPart = (part: GmailEmailMessagePart): void => {
       if (part.headers) {
-        headers.push(
-          ...part.headers.filter((h) =>
-            lookFor.includes(h.name?.toLocaleLowerCase() ?? 'never-match')
-          )
-        );
+        headers.push(...part.headers);
       }
       if (part.parts) {
         part.parts.forEach(extractHeadersFromPart);
@@ -533,37 +529,48 @@ const checkReferencedEmailStatus = async ({
     if (payload) {
       extractHeadersFromPart(payload);
     }
-
-    return Array.from(
-      new Set(
-        headers
-          .flatMap((h) => {
-            return h.value?.split(' ').map((v) => {
-              const match = v.match(/<([^>]+)>/);
-              return match ? match[1] : v;
-            });
-          })
-          .filter((x) => !!x)
-          .map((x) => String(x))
-      )
-    );
+    return ParsedHeaderMap.fromHeaders(headers, {
+      parseContacts: true,
+      expandArrays: true,
+      extractBrackets: true,
+    });
   };
+
+  //const lookFor = ['references', 'in-reply-to'];
+  const headerMap = extractHeaders(email.payload);
   // Extract every known message id from headers
-  const referencedEmailIds = extractHeaders(email.payload);
+  const referencedEmailIds = Array.from(
+    new Set([
+      ...(headerMap.getAllStringValues('References') ?? []),
+      ...(headerMap.getAllStringValues('In-Reply-To') ?? []),
+    ]),
+  );
+  const recipients = Array.from(
+    new Set([
+      ...(headerMap.getAllContactValues('To') ?? []),
+      ...(headerMap.getAllContactValues('Cc') ?? []),
+      ...(headerMap.getAllContactValues('Bcc') ?? []),
+    ]),
+  );
   // Lookup any existing emails matching these ids
   const importedRecordset = new Map<string, string>(
     (
       await query(
         (sql) =>
-          sql`select email_id, global_message_id from emails where global_message_id = any(${referencedEmailIds});`
+          sql`select email_id, global_message_id from emails where global_message_id = any(${referencedEmailIds});`,
       )
-    ).map((x) => [x.global_message_id as string, x.email_id as string])
+    ).map((x) => [x.global_message_id as string, x.email_id as string]),
   );
   let parseImported = referencedEmailIds.reduce(
     (acc, id) => {
       const emailId = importedRecordset.get(id);
       if (emailId) {
-        acc.processed.push({ emailId, providerId: id, status: 'imported' });
+        acc.processed.push({
+          emailId,
+          provider: 'google',
+          providerId: id,
+          status: 'imported',
+        });
       } else {
         acc.unsorted.push(id);
       }
@@ -572,7 +579,7 @@ const checkReferencedEmailStatus = async ({
     { processed: [], unsorted: [] } as {
       processed: Array<MessageImportStatus>;
       unsorted: Array<string>;
-    }
+    },
   );
   const operations = await Promise.all(
     parseImported.unsorted.map((id) => {
@@ -582,11 +589,12 @@ const checkReferencedEmailStatus = async ({
         .list({ q: queryBuilder.build(), userId: 'me' })
         .then((matches) => ({
           status: 'succeeded',
+          provider: 'google',
           id: id,
           data: matches?.data?.messages?.at(0),
         }))
         .catch((error) => ({ status: 'failed', id: id, error }));
-    })
+    }),
   );
   // If we still have unsorted id's, lets try to look them up with the provider
   parseImported = parseImported.unsorted.reduce(
@@ -596,6 +604,7 @@ const checkReferencedEmailStatus = async ({
       if (match && match.status === 'succeeded' && match.data) {
         acc.processed.push({
           emailId: id,
+          provider: 'google',
           providerId: match!.data!.id!,
           status: 'pending',
         });
@@ -607,10 +616,20 @@ const checkReferencedEmailStatus = async ({
     { processed: parseImported.processed, unsorted: [] } as {
       processed: Array<MessageImportStatus>;
       unsorted: Array<string>;
-    }
+    },
   );
+  // Parse received date
+  const date = headerMap.getFirstStringValue('Date');
+  const receivedDate = date ? new Date(date) : new Date(0);
+
   // Return final result
-  return parseImported.processed;
+  return {
+    processed: parseImported.processed,
+    recipients,
+    receivedDate,
+    subject: headerMap.getFirstStringValue('Subject') ?? '[No Subject]',
+    sender: headerMap.getFirstContactValue('From') ?? { email: 'No Sender' },
+  };
 };
 
 export const getImportMessageStatus = async ({
@@ -631,13 +650,18 @@ export const getImportMessageStatus = async ({
     // and use it to query for import state and our system's email id
     const { emailId, status } = await getImportStatusForExternalId(providerId);
     // Finally, scan referenced emails to locate any additional items pending imoprt
-    const ref = await checkReferencedEmailStatus({ email, mail });
+    const { processed, recipients, sender, subject, receivedDate } =
+      await checkReferencedEmailStatus({ email, mail });
     return {
       emailId,
       providerId,
       provider,
       status,
-      references: ref,
+      recipients,
+      sender,
+      subject,
+      receivedDate,
+      references: processed,
     };
   } catch (error) {
     if (isError(error)) {
@@ -649,6 +673,10 @@ export const getImportMessageStatus = async ({
             providerId: emailIdFromProps,
             provider,
             status: 'not-found',
+            sender: { email: 'unknown' },
+            recipients: [],
+            subject: 'unknown',
+            receivedDate: new Date(0),
             references: [],
           };
         }

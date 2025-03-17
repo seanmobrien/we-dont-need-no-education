@@ -19,14 +19,16 @@ import siteMap from '@/lib/site-util/url-builder';
 import type { PaginatedResultset } from '@/data-models/api';
 import {
   EmailSearchResult,
+  ImportResponse,
   ImportSourceMessage,
+  MessageImportStatusWithChildren,
 } from '@/data-models/api/import/email-message';
 
 const apiRequest = <TResult>(
   cb: (
     api: ApiRequestHelper,
-    builder: typeof siteMap.api.email.import.google
-  ) => TResult
+    builder: typeof siteMap.api.email.import.google,
+  ) => TResult,
 ): TResult => {
   const apiHelper = apiRequestHelperFactory({ area: 'email/import/google' });
   const builder = siteMap.api.email.import.google;
@@ -57,7 +59,7 @@ export const searchEmails = (
     page?: number;
     limit?: number;
   },
-  params?: AdditionalRequestParams
+  params?: AdditionalRequestParams,
 ) =>
   apiRequest((api, builder) =>
     api.get<PaginatedResultset<EmailSearchResult, string | undefined>>(
@@ -71,8 +73,8 @@ export const searchEmails = (
         }),
         action: 'search',
       },
-      params
-    )
+      params,
+    ),
   );
 
 /**
@@ -85,11 +87,11 @@ export const loadEmail = (emailId: string, params?: AdditionalRequestParams) =>
   apiRequest((api, builder) =>
     api.get<ImportSourceMessage>(
       {
-        url: builder.message(emailId),
+        url: builder.page('message', emailId),
         action: 'load',
       },
-      params
-    )
+      params,
+    ),
   );
 
 /**
@@ -100,17 +102,17 @@ export const loadEmail = (emailId: string, params?: AdditionalRequestParams) =>
  */
 export const queueEmailImport = (
   emailId: string,
-  params?: AdditionalRequestParams
+  params?: AdditionalRequestParams,
 ) =>
   apiRequest((api, builder) => {
     debugger;
     return api.post<ImportSourceMessage>(
       {
-        url: builder.message(emailId),
+        url: builder.page('message', emailId),
         action: 'queue',
         input: {},
       },
-      params
+      params,
     );
   });
 
@@ -120,17 +122,59 @@ export const queueEmailImport = (
  * @param emailId - The ID of the email to queue for import.
  * @returns A promise that resolves to the details of the queued email.
  */
-export const stageEmailImport = (
+export const createStagingRecord = (
   emailId: string,
-  params?: AdditionalRequestParams
+  params?: AdditionalRequestParams,
 ) =>
   apiRequest((api, builder) =>
     api.put<ImportSourceMessage>(
       {
-        url: builder.message(emailId),
-        action: 'queue',
+        url: builder.message.page(emailId),
+        action: 'stage',
         input: {},
       },
-      params
-    )
+      params,
+    ),
+  );
+
+/**
+ * Stages an email for import by its ID.
+ *
+ * @param emailId - The ID of the email to queue for import.
+ * @returns A promise that resolves to the details of the imported email.
+ */
+export const importEmailRecord = (
+  emailId: string,
+  params?: AdditionalRequestParams,
+) =>
+  apiRequest((api, builder) =>
+    api.post<ImportResponse>(
+      {
+        url: builder.message.page(emailId),
+        action: 'import',
+        input: {},
+      },
+      params,
+    ),
+  );
+
+/**
+ * Queries the import status of a message by its email ID.
+ *
+ * @param emailId - The unique identifier of the email message.
+ * @param params - Optional additional request parameters.
+ * @returns A promise that resolves to the import status of the message, including any child messages.
+ */
+export const queryImportStatus = (
+  emailId: string,
+  params?: AdditionalRequestParams,
+) =>
+  apiRequest((api, builder) =>
+    api.get<MessageImportStatusWithChildren>(
+      {
+        url: builder.child('message', emailId).page('status'),
+        action: 'status',
+      },
+      params,
+    ),
   );

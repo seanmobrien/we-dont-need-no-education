@@ -7,7 +7,9 @@ export const siteMap = {
       stats: '',
       import: {
         google: {
-          message: '',
+          message: {
+            status: '',
+          },
           search: '',
         },
         list: '',

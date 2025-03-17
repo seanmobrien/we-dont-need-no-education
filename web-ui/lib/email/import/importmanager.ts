@@ -1,5 +1,6 @@
 import {
   GmailEmailImportSource,
+  ImportResponse,
   ImportSourceMessage,
   ImportStage,
   ImportStageValues,
@@ -62,7 +63,7 @@ export class DefaultImportManager {
    */
   async runImportStage(
     target: ImportSourceMessage,
-    { req }: { req: NextRequest }
+    { req }: { req: NextRequest },
   ): Promise<ImportSourceMessage> {
     const typedRunStage = async (stage: ImportStage) => {
       const providerEmailId = target?.providerId ?? 'No ID';
@@ -91,7 +92,7 @@ export class DefaultImportManager {
               })
               .catch((e2) => {
                 throw new AggregateError('Error during rollback', e, e2);
-              })
+              }),
           );
         // If we didn't throw and we're processing the 'new' stage then whatever we got back is what we want
         if (stage === 'new') {
@@ -99,7 +100,7 @@ export class DefaultImportManager {
         }
         if (!context.target) {
           throw new Error(
-            `No import target found in current context in stage ${stage}`
+            `No import target found in current context in stage ${stage}`,
           );
         }
         return context.target;
@@ -127,7 +128,10 @@ export class DefaultImportManager {
    * @param {NextRequest} options.req - The request object.
    * @returns {Promise<{ success: boolean; message: string; data?: ImportSourceMessage; error?: unknown }>} - The result of the import operation.
    */
-  async importEmail(emailId: string, { req }: { req: NextRequest }) {
+  async importEmail(
+    emailId: string,
+    { req }: { req: NextRequest },
+  ): Promise<ImportResponse> {
     try {
       let result: ImportSourceMessage = {
         providerId: emailId ?? TransactionalStateManagerBase.NullId,
@@ -149,7 +153,7 @@ export class DefaultImportManager {
               message: 'Import stage did not progress, retrying.',
               stage: lastStage,
               tries,
-            })
+            }),
           );
         } else {
           lastStage = result.stage;
@@ -160,7 +164,7 @@ export class DefaultImportManager {
           l.info({
             message: 'Import stage completed',
             stage: typeof result === 'string' ? 'new' : result.stage,
-          })
+          }),
         );
       }
       return {
@@ -171,7 +175,7 @@ export class DefaultImportManager {
     } catch (error) {
       if (!LoggedError.isLoggedError(error)) {
         log((l) =>
-          l.error(errorLogFactory({ error, source: 'DefaultImportManager' }))
+          l.error(errorLogFactory({ error, source: 'DefaultImportManager' })),
         );
       }
       return {

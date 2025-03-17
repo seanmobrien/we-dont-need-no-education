@@ -1,23 +1,23 @@
 {
   "compilerOptions": {
-    "target": "ES2023",
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "incremental": true,
+    "noEmit": true,
+    "jsx": "preserve", // Ensure JSX is supported
     "lib": [
       "dom",
       "dom.iterable",
+      "es6",
       "esnext"
     ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "moduleDetection": "auto",
-    "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve", // Ensure JSX is supported
-    "incremental": true,
+    "moduleDetection": "auto",
+    "noImplicitAny": true,
+    "noImplicitThis": true,
     "plugins": [
       {
         "name": "next"
@@ -30,7 +30,12 @@
       "tailwindcss-classnames": [
         "./tailwindcss.classnames"
       ]
-    }
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "target": "ES2023"
   },
   "include": [
     "./*.ts",

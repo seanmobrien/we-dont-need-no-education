@@ -1,9 +1,13 @@
+import { logs } from '@opentelemetry/api-logs';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import {
   SimpleLogRecordProcessor,
   type LogRecordProcessor,
+  LoggerProvider,
 } from '@opentelemetry/sdk-logs';
 import { registerOTel, InstrumentationOptionOrName } from '@vercel/otel';
+import { Resource } from '@opentelemetry/resources';
+
 export async function register() {
   let traceExporter: SpanExporter | undefined;
   let logRecordProcessor: LogRecordProcessor | undefined;
@@ -22,9 +26,28 @@ export async function register() {
 
     instrumentations.push(
       new PinoInstrumentation({
-        // disableLogSending: true,
-        // Pino instrumentation options.
-      })
+        disableLogSending: false,
+        // Include trace context in log records and map custom log levels
+        logHook: (span, record) => {
+          record['trace_id'] = span.spanContext().traceId;
+          record['span_id'] = span.spanContext().spanId;
+          // Map custom log levels to standard log levels
+          switch (record.level) {
+            case 'verbose':
+              record.severity = 'DEBUG';
+              break;
+            case 'silly':
+              record.severity = 'TRACE';
+              break;
+          }
+          // Ensure the message property is included
+          if (record.message) {
+            record['message'] = record.message;
+          } else {
+            record['message'] = 'No message provided';
+          }
+        },
+      }),
     );
 
     traceExporter = new AzureMonitorTraceExporter({
@@ -34,7 +57,7 @@ export async function register() {
     logRecordProcessor = new SimpleLogRecordProcessor(
       new AzureMonitorLogExporter({
         connectionString,
-      })
+      }),
     );
   }
 
@@ -45,5 +68,16 @@ export async function register() {
     instrumentations,
   });
 
-  console.log('Instrumentation Registered');
+  if (logRecordProcessor) {
+    const loggerProvider = new LoggerProvider({
+      resource: new Resource({
+        'service.name': 'sue-the-schools-webui',
+      }),
+    });
+    loggerProvider.addLogRecordProcessor(logRecordProcessor);
+    logs.setGlobalLoggerProvider(loggerProvider);
+  }
+  console.log(
+    `Instrumentation Registered for stack ${process.env.NEXT_RUNTIME}`,
+  );
 }

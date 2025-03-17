@@ -62,7 +62,7 @@ export class LoggedError extends Error {
       message,
       critical,
       ...itsRecusionMan
-    }: TurtleRecurisionParams = { log: false }
+    }: TurtleRecurisionParams = { log: false },
   ): LoggedError {
     if (LoggedError.isLoggedError(e)) {
       return e;
@@ -70,14 +70,16 @@ export class LoggedError extends Error {
     if (shouldLog) {
       if (!isError(e)) {
         log((l) =>
-          l.warn({ message: 'Some bonehead threw a not-error', error: e })
+          l.warn({ message: 'Some bonehead threw a not-error', error: e }),
         );
       }
-      log((l) =>
-        l.error(
-          errorLogFactory({ error: e, source, message, ...itsRecusionMan })
-        )
-      );
+      const logObject = errorLogFactory({
+        error: e,
+        source,
+        message,
+        ...itsRecusionMan,
+      });
+      log((l) => l.error(logObject.message ?? 'Error occurred', logObject));
     }
     return isError(e)
       ? new LoggedError(e, { critical })
@@ -109,7 +111,7 @@ export class LoggedError extends Error {
     options?:
       | (Omit<LoggedErrorOptions, 'error'> &
           Partial<Pick<LoggedErrorOptions, 'error'>>)
-      | Error
+      | Error,
   ) {
     super(
       typeof message === 'string' ? message : LoggedError.buildMessage(message),
@@ -117,7 +119,7 @@ export class LoggedError extends Error {
         ? isError(message)
           ? undefined
           : options
-        : options
+        : options,
     );
     let ops: LoggedErrorOptions;
     if (typeof message === 'string') {

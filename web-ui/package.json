@@ -20,10 +20,17 @@
     "@azure/identity": "^4.7.0",
     "@azure/monitor-opentelemetry-exporter": "^1.0.0-beta.29",
     "@azure/storage-blob": "^12.26.0",
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
     "@googleapis/gmail": "^12.0.0",
+    "@mui/icons-material": "^6.4.7",
+    "@mui/material": "^6.4.7",
+    "@mui/material-nextjs": "^6.4.3",
     "@neondatabase/serverless": "^0.10.4",
     "@opentelemetry/api": "^1.7.0",
     "@opentelemetry/instrumentation-pino": "^0.46.1",
+    "@toolpad/core": "^0.13.0",
     "@vercel/otel": "^1.10.2",
     "autoprefixer": "^10.4.20",
     "bullmq": "^5.41.7",
@@ -69,14 +76,6 @@
     "ts-jest": "^29.2.5"
   },
   "overrides": {
-    "psl": "npm:@imput/psl@2.0.4",
-    "data-urls@3.*": {
-      "whatwg-url": "12.0.1"
-    },
-    "jest-environment-jsdom": {
-      "jsdom": {
-        "whatwg-url": "12.0.1"
-      }
-    }
+    "uri-js": "npm:uri-js-replace"
   }
 }
