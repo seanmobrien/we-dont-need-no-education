@@ -466,10 +466,11 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
         ))}
       {(knownEmails?.length ?? 0) > 0 && (
         <Box sx={{ width: '100%' }}>
-          <Paper sx={{ width: '100%', mb: 2 }}>
-            <TableContainer>
+          <Paper sx={{ width: '100%', mb: 2, overflow: 'hidden' }}>
+            <TableContainer sx={{ maxHeight: 430 }}>
               <Table
-                sx={{ minWidth: 750 }}
+                stickyHeader
+                sx={{ width: '100%', px: 2 }}
                 aria-labelledby="tableTitle"
                 size={'medium'}
               >

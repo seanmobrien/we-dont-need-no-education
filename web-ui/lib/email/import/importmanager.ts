@@ -11,7 +11,7 @@ import {
   type StageProcessorContext,
 } from './types';
 import { managerMapFactory } from './google/managermapfactory';
-import { errorLogFactory, log } from '@/lib/logger';
+import { log, CustomAppInsightsEvent } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isError } from '@/lib/react-util';
 import { NextRequest } from 'next/server';
@@ -133,6 +133,8 @@ export class DefaultImportManager {
     { req }: { req: NextRequest },
   ): Promise<ImportResponse> {
     try {
+      const event = new CustomAppInsightsEvent('importEmail');
+      event.startTimer('Import-email');
       let result: ImportSourceMessage = {
         providerId: emailId ?? TransactionalStateManagerBase.NullId,
         stage: 'new',
@@ -160,6 +162,7 @@ export class DefaultImportManager {
           tries = 0;
         }
         result = await this.runImportStage(result, { req });
+        event.increment('processed-stages');
         log((l) =>
           l.info({
             message: 'Import stage completed',
@@ -167,21 +170,22 @@ export class DefaultImportManager {
           }),
         );
       }
+      event.dispose();
+      log((l) => l.info(event));
       return {
         success: true,
         message: 'Import successful',
         data: result,
       };
     } catch (error) {
-      if (!LoggedError.isLoggedError(error)) {
-        log((l) =>
-          l.error(errorLogFactory({ error, source: 'DefaultImportManager' })),
-        );
-      }
+      const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        source: 'DefaultImportManager',
+        log: true,
+      });
       return {
         success: false,
         message: (isError(error) ? error.message : null) ?? 'Import failed',
-        error: error,
+        error: le,
       };
     }
   }

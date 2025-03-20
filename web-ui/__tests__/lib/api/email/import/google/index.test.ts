@@ -16,22 +16,22 @@ const apiHelper = {
   get: jest
     .fn()
     .mockImplementation((x, y) =>
-      sendApiRequest({ method: 'get', ...x, ...y })
+      sendApiRequest({ method: 'get', ...x, ...y }),
     ),
   post: jest
     .fn()
     .mockImplementation((x, y) =>
-      sendApiRequest({ method: 'post', ...x, ...y })
+      sendApiRequest({ method: 'post', ...x, ...y }),
     ),
   put: jest
     .fn()
     .mockImplementation((x, y) =>
-      sendApiRequest({ method: 'put', ...x, ...y })
+      sendApiRequest({ method: 'put', ...x, ...y }),
     ),
   delete: jest
     .fn()
     .mockImplementation((x, y) =>
-      sendApiRequest({ method: 'delete', ...x, ...y })
+      sendApiRequest({ method: 'delete', ...x, ...y }),
     ),
 };
 
@@ -42,12 +42,12 @@ let mockApiRequest = sendApiRequest as jest.Mock;
 
 beforeEach(() => {
   (apiRequestHelperFactory as jest.Mock).mockReturnValue(apiHelper);
-  (siteMap.api.email.import.google.message as jest.Mock).mockReturnValue(
-    messageUri
-  );
-  (siteMap.api.email.import.google.search as jest.Mock).mockReturnValue(
-    searchUri
-  );
+  (
+    siteMap.api.email.import.google.message as unknown as jest.Mock
+  ).mockReturnValue(messageUri);
+  (
+    siteMap.api.email.import.google.search as unknown as jest.Mock
+  ).mockReturnValue(searchUri);
   mockApiRequest = sendApiRequest as jest.Mock;
   mockApiRequest.mockClear();
 });
@@ -73,7 +73,7 @@ describe('googleEmailImport', () => {
         url: searchUri,
       });
       expect(siteMap.api.email.import.google.search).toHaveBeenCalledWith(
-        criteria
+        criteria,
       );
       expect(result).toBe(mockResponse);
     });
@@ -93,7 +93,7 @@ describe('googleEmailImport', () => {
         url: messageUri,
       });
       expect(siteMap.api.email.import.google.message).toHaveBeenCalledWith(
-        emailId
+        emailId,
       );
       expect(result).toBe(mockResponse);
     });
@@ -114,7 +114,7 @@ describe('googleEmailImport', () => {
         url: messageUri,
       });
       expect(siteMap.api.email.import.google.message).toHaveBeenCalledWith(
-        emailId
+        emailId,
       );
       expect(result).toBe(mockResponse);
     });

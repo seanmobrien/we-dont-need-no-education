@@ -9,8 +9,9 @@ import {
   AdditionalStageOptions,
 } from '../types';
 import { query, queryExt } from '@/lib/neondb';
-import { log } from '@/lib/logger';
+import { CustomAppInsightsEvent, log } from '@/lib/logger';
 import { NextRequest } from 'next/server';
+import { NextApiRequest } from 'next';
 
 /**
  * The `TransactionalStateManagerBase` class provides a base implementation for managing
@@ -37,13 +38,11 @@ export class TransactionalStateManagerBase
   readonly #stage: ImportStage;
   readonly #nextStage: ImportStage;
   #activeTransaction: ImportSourceMessage | undefined;
-  #request: NextRequest | null;
+  #request: NextRequest | NextApiRequest;
   #skipStageBump = false;
+  protected importEvent: CustomAppInsightsEvent | undefined;
 
-  constructor(
-    stage: ImportStage,
-    { req = null }: AdditionalStageOptions = { req: null }
-  ) {
+  constructor(stage: ImportStage, { req }: AdditionalStageOptions) {
     this.#stage = stage;
 
     this.#nextStage =
@@ -54,10 +53,10 @@ export class TransactionalStateManagerBase
     this.#transactionId = TransactionalStateManagerBase.NullId;
     this.#request = req;
   }
-  get request(): NextRequest | null {
+  get request(): NextRequest | NextApiRequest {
     return this.#request;
   }
-  get requireRequest(): NextRequest {
+  get requireRequest(): NextRequest | NextApiRequest {
     if (!this.#request) {
       throw new Error('Request is required');
     }
@@ -123,7 +122,7 @@ export class TransactionalStateManagerBase
    */
   protected setTransaction(
     target: ImportSourceMessage,
-    skipStageBump?: boolean
+    skipStageBump?: boolean,
   ): boolean {
     if (this.#activeTransaction) {
       throw new Error('Transaction already in progress');
@@ -146,7 +145,7 @@ export class TransactionalStateManagerBase
         message: '[AUDIT]: Import Transaction Started.',
         stage: this.stage,
         txId: this.txId,
-      })
+      }),
     );
     return true;
   }
@@ -159,8 +158,14 @@ export class TransactionalStateManagerBase
    * @throws {Error} - Throws an error if there is no active transaction or if the staging message update fails.
    */
   public async commit(
-    ctx: StageProcessorContext
+    ctx: StageProcessorContext,
   ): Promise<StageProcessorContext> {
+    if (this.importEvent) {
+      this.importEvent.dispose();
+      log((l) => l.info(this.importEvent!)).then(
+        () => (this.importEvent = undefined),
+      );
+    }
     if (!this.#skipStageBump) {
       const work = ctx;
       work.currentStage = ctx.nextStage as ImportStage;
@@ -169,7 +174,7 @@ export class TransactionalStateManagerBase
       }
       if (ctx.currentStage !== 'completed') {
         work.nextStage = TransactionalStateManagerBase.calculateNextStage(
-          ctx.nextStage
+          ctx.nextStage,
         );
       }
     }
@@ -185,7 +190,7 @@ export class TransactionalStateManagerBase
       if (ctx.currentStage === 'completed') {
         const result = await query(
           (sql) =>
-            sql`DELETE FROM staging_message WHERE id = ${id} RETURNING id`
+            sql`DELETE FROM staging_message WHERE id = ${id} RETURNING id`,
         );
         if (!result.length) {
           throw new Error('Failed to delete staging message');
@@ -193,7 +198,7 @@ export class TransactionalStateManagerBase
       } else {
         const result = await queryExt(
           (sql) =>
-            sql`UPDATE staging_message SET stage = ${ctx.currentStage} WHERE id = ${id}`
+            sql`UPDATE staging_message SET stage = ${ctx.currentStage} WHERE id = ${id}`,
         );
         if (!result.rowCount) {
           throw new Error('Failed to update staging message');
@@ -204,7 +209,7 @@ export class TransactionalStateManagerBase
           message: '[AUDIT]: Import Transaction Committed.',
           stage: this.#stage,
           txId: this.#activeTransaction?.id,
-        })
+        }),
       );
     }
     this.#resetTransaction();
@@ -230,6 +235,12 @@ export class TransactionalStateManagerBase
    * @returns {Promise<void>} A promise that resolves when the rollback is complete.
    */
   public async rollback(): Promise<void> {
+    if (this.importEvent) {
+      this.importEvent.dispose();
+      log((l) => l.info(this.importEvent!)).then(
+        () => (this.importEvent = undefined),
+      );
+    }
     const id = this.txId;
     if (!id || id === TransactionalStateManagerBase.NullId) {
       log((l) => l.verbose({ message: 'No active transaction to roll back' }));
@@ -240,7 +251,7 @@ export class TransactionalStateManagerBase
       (sql) =>
         sql`UPDATE staging_message SET stage = ${
           this.#stage
-        } WHERE id = ${id} RETURNING id`
+        } WHERE id = ${id} RETURNING id`,
     );
 
     if (!result.length) {
@@ -252,7 +263,7 @@ export class TransactionalStateManagerBase
         message: '[AUDIT]: Import Transaction Rolled Back.',
         stage: this.#stage,
         txId: this.txId,
-      })
+      }),
     );
     this.#resetTransaction();
   }
@@ -266,7 +277,7 @@ export class TransactionalStateManagerBase
    */
   public run(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    ctx: StageProcessorContext
+    ctx: StageProcessorContext,
   ): Promise<StageProcessorContext> {
     throw new Error('Method not implemented.');
   }

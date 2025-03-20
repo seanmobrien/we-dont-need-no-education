@@ -6,6 +6,7 @@ import { ContactRepository } from '@/lib/api/contacts/database';
 import { EmailRepository } from '@/lib/api/email/database';
 import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
 import { ThreadRepository } from '@/lib/api/thread/database';
+import { NextApiRequest } from 'next';
 import { NextRequest } from 'next/server';
 
 /**
@@ -78,7 +79,7 @@ export type TransactionalImportStageManager = {
  * Represents the context for processing a specific stage in the import process.
  */
 export type AdditionalStageOptions = {
-  req: NextRequest | null;
+  req: NextRequest | NextApiRequest;
   threadRepository?: ThreadRepository;
   emailRepository?: EmailRepository;
   contactRepository?: ContactRepository;
@@ -112,7 +113,7 @@ export const StageManagerMethodKeyValues = [
  */
 export type ImportStageManagerFactory = (
   stage: ImportStage,
-  { req }: AdditionalStageOptions
+  { req }: AdditionalStageOptions,
 ) => TransactionalImportStageManager;
 
 /**

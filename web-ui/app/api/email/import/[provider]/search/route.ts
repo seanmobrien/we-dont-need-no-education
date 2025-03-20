@@ -7,10 +7,10 @@ import { EmailSearchResult } from '@/data-models/api/import/email-message';
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: Promise<{ provider: string }> }
+  { params }: { params: Promise<{ provider: string }> },
 ) => {
   const { provider } = await params;
-  const factoryResponse = await googleProviderFactory(provider);
+  const factoryResponse = await googleProviderFactory(provider, { req });
   if (factoryResponse instanceof Response) {
     return factoryResponse;
   }

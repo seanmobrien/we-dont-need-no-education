@@ -68,14 +68,15 @@ export const sendApiRequest = <T>({
       if (!response.ok) {
         let errorMessage = `Api failure: ${response.statusText}`;
         let errorData;
+        const errorBody = await response.text();
         try {
-          errorData = await response.json();
+          errorData = JSON.parse(errorBody);
           errorMessage += ` - ${
             errorData.message || JSON.stringify(errorData)
           }`;
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (e) {
-          errorData = await response.text();
+          errorData = errorBody;
           errorMessage += ` - ${errorData}`;
         }
         throw new ApiRequestError(errorMessage, response);
@@ -97,13 +98,6 @@ export const sendApiRequest = <T>({
       resolveOuter(data);
       return data;
     } catch (error) {
-      /*
-      if (isOperationCancelledError(error) || error == null) {
-        debugger;
-        resolveOuter(undefined as unknown as T);
-        return;
-      }
-      */
       rejectOuter(
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,

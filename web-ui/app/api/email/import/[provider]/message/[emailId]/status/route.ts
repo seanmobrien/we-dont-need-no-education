@@ -4,18 +4,19 @@ import { LoggedError } from '@/lib/react-util';
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: Promise<{ provider: string; emailId: string }> }
+  { params }: { params: Promise<{ provider: string; emailId: string }> },
 ) => {
   const { provider, emailId } = await params;
   try {
     const result = await getImportMessageStatus({
+      req,
       provider,
       emailId,
     });
     if (!result) {
       return NextResponse.json(
         { error: 'Unexpected failure' },
-        { status: 500 }
+        { status: 500 },
       );
     }
     return NextResponse.json(result, { status: 200 });

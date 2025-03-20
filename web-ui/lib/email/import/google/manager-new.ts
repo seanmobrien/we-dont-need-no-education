@@ -27,6 +27,7 @@ class NewStateManager extends TransactionalStateManagerBase {
     let target: ImportSourceMessage | null = null;
     try {
       target = await getImportMessageSource({
+        req: this.request,
         provider: 'google',
         emailId,
         refresh: false,
@@ -50,7 +51,7 @@ class NewStateManager extends TransactionalStateManagerBase {
         message: '[AUDIT]: Email import queued successfully.',
         emailId,
         stage: currentStage,
-      })
+      }),
     );
     return {
       ...context,

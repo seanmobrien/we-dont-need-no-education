@@ -1,4 +1,4 @@
-import { isNeonDbError } from '@/lib/neondb/_guards';
+import { isDbError } from '@/lib/neondb/_guards';
 
 /**
  * Creates an error log object with the provided error, source, and additional information.
@@ -39,25 +39,20 @@ export const errorLogFactory: ({
       message: error.message,
       stack: error.stack,
     };
-    if (isNeonDbError(error)) {
+    if (isDbError(error)) {
       loggedError = {
         ...loggedError,
         name: error.name,
         code: error.code,
         detail: error.detail,
         severity: error.severity,
-        internalQuery: error.internalQuery,
+        internalQuery: error.query ?? error.internal_query,
         where: error.where,
-        schema: error.schema,
-        table: error.table,
-        column: error.column,
+        schema: error.schema_name,
+        table: error.table_name,
+        column: error.column_name,
+        cause: error.cause,
       };
-      if (error.sourceError) {
-        loggedError.sourceError = {
-          message: error.sourceError.message,
-          stack: error.sourceError.stack,
-        };
-      }
     }
     ret.error = loggedError;
   } else {

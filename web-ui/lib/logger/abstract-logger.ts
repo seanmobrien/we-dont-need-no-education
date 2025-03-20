@@ -1,4 +1,15 @@
-import { ILogger } from './logger';
+import { isError, isUnknownRecord, LoggedError } from '../react-util';
+import {
+  ApplicationInsightsBaseType,
+  ApplicationInsightsCustomEventName,
+  ApplicationInsightsEventBaseType,
+  ApplicationInsightsExceptionBaseType,
+  ATTR_EXCEPTION_MESSAGE,
+  ATTR_EXCEPTION_STACKTRACE,
+  ATTR_EXCEPTION_TYPE,
+} from './constants';
+import { CustomAppInsightsEvent } from './event';
+import type { ILogger } from './types';
 
 export class AbstractLogger implements ILogger {
   /**
@@ -32,45 +43,91 @@ export class AbstractLogger implements ILogger {
   }
 
   protected buildLogRecord(
-    message: string | object,
+    message: string | Record<string, unknown> | Error | object,
     ...args: unknown[]
   ): [object] {
     let record: Record<string, unknown> & { [Symbol.toStringTag]?: string };
+    let sliceArgOffset = 0;
     if (typeof message === 'string') {
-      record = { body: message };
+      record = { message };
       if (args.length > 0) {
-        let sliceArgOffset = 0;
-        if (typeof args[0] === 'object') {
+        if (typeof args[0] === 'object' && args[0] !== null) {
           record = {
             ...record,
             ...args[0],
+            body: {
+              ...(record.body ?? {}),
+              ...('body' in args[0] ? (args[0].body ?? {}) : {}),
+            },
           };
           sliceArgOffset = 1;
         }
-        if (args.length > sliceArgOffset) {
-          record = {
-            ...record,
-            TraceArguments: args.slice(sliceArgOffset),
-          };
-        }
       }
-    } else {
+      return this.buildLogRecord(record, ...args.slice(sliceArgOffset));
+    }
+    if ('dispose' in message && typeof message.dispose === 'function') {
+      message.dispose();
+    }
+    // Error / exception messages
+    if (isError(message)) {
+      const le = LoggedError.isTurtlesAllTheWayDownBaby(message);
       record = {
-        ...(!!message ? message : { Message: 'no message provided.' }),
-        TraceArguments: args,
+        [ApplicationInsightsBaseType]: ApplicationInsightsExceptionBaseType,
+        ...le,
+        [ATTR_EXCEPTION_STACKTRACE]: le.stack,
+        [ATTR_EXCEPTION_TYPE]:
+          'source' in le ? (le.source ?? le.name) : le.name,
+        [ATTR_EXCEPTION_MESSAGE]:
+          le.message ?? ('body' in message ? message.body : undefined),
+      };
+      delete record.stack;
+      if ('source' in record) {
+        delete record.source;
+      }
+    } else if (CustomAppInsightsEvent.isCustomAppInsightsEvent(message)) {
+      // Custom Event messages
+      record = {
+        [ApplicationInsightsCustomEventName]: message.event,
+        [ApplicationInsightsBaseType]: ApplicationInsightsEventBaseType,
+        ...message,
+        body: {
+          measurements: message.measurements ?? {},
+          ...('body' in message ? (message.body ?? {}) : {}),
+        },
+      };
+      delete record.measurements;
+      delete record.event;
+    } else {
+      if (!isUnknownRecord(message)) {
+        throw new Error('Message is not a valid object');
+      }
+      // and everything else is a generic message
+      record = {
+        msg: message.message ?? message.Message ?? message.body,
+        ...message,
       };
     }
-    // Normalize capitalization of the Message property
-    const normalizedMessage = String(
-      record.body ??
-        record.Message ??
-        record.message ??
-        'View trace record for more information.',
-    );
-    record.body = normalizedMessage;
+    // Append any unprocessed arguments
+    if (args.length > sliceArgOffset) {
+      record = {
+        ...record,
+        // TraceArguments: args,
+      };
+    }
+    Object.keys(record).forEach((key) => {
+      if (
+        typeof key !== 'string' ||
+        key.startsWith('_') ||
+        typeof record[key] === 'function'
+      ) {
+        delete record[key];
+      }
+    });
+    // Cleanup message / Message hanger-ons
     delete record.message;
     delete record.Message;
-    record[Symbol.toStringTag] = normalizedMessage;
+
+    record[Symbol.toStringTag] = String(record.body) ?? 'No message provided';
     return [record];
   }
 
@@ -78,13 +135,10 @@ export class AbstractLogger implements ILogger {
     this.logInfoMessage(...this.buildLogRecord(message, ...args));
   }
   error(message: string | object, ...args: unknown[]): void {
-    const logArguments = this.buildLogRecord(message, ...args);
-    const logRecord: Record<string, string> = logArguments[0];
-    logRecord['exception.message'] = logRecord.body;
-    logRecord['exception.stacktrace'] = logRecord.stack;
-    logRecord['exception.type'] = logRecord.source;
-    delete logRecord.stack;
-    delete logRecord.source;
+    const logArguments = this.buildLogRecord(
+      LoggedError.isTurtlesAllTheWayDownBaby(message),
+      ...args,
+    );
     this.logErrorMessage(...logArguments);
   }
   warn(message: string | object, ...args: unknown[]): void {

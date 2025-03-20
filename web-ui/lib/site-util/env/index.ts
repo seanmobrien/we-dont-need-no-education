@@ -32,9 +32,14 @@
  */
 import { serverEnvFactory, ServerEnvType } from './_server';
 import { clientEnvFactory, ClientEnvType } from './_client';
-import { runtime, isRunningOnClient, isRunningOnServer } from './_common';
+import {
+  runtime,
+  isRunningOnClient,
+  isRunningOnServer,
+  isRunningOnEdge,
+} from './_common';
 
-export { runtime, isRunningOnClient, isRunningOnServer };
+export { runtime, isRunningOnClient, isRunningOnServer, isRunningOnEdge };
 
 export type { ServerEnvType, ClientEnvType };
 
@@ -55,8 +60,8 @@ export type ClientEnvKey = keyof ClientEnvType;
 export type EnvType = typeof window extends 'undefined'
   ? ServerEnvType
   : typeof window extends undefined
-  ? ServerEnvType
-  : ClientEnvType;
+    ? ServerEnvType
+    : ClientEnvType;
 
 /**
  * app-wide parsed environment variables.
@@ -85,8 +90,8 @@ interface EnvOverloads {
   <TKey extends ClientEnvKey | ServerEnvKey>(): TKey extends ClientEnvKey
     ? ClientEnvType
     : TKey extends ServerEnvKey
-    ? ServerEnvType
-    : never;
+      ? ServerEnvType
+      : never;
   /**
    * Returns a union type of all available environement variables.
    * @returns { ClientEnvType | ServerEnvType } The environment variables.
@@ -100,7 +105,7 @@ interface EnvOverloads {
  * @returns The value of the environment variable.
  */
 export const env: EnvOverloads = <TKey extends ServerEnvKey | ClientEnvKey>(
-  key?: TKey
+  key?: TKey,
 ): ClientEnvType | ServerEnvType => {
   if (!envInstance) {
     envInstance = isRunningOnClient() ? clientEnvFactory() : serverEnvFactory();
@@ -113,6 +118,6 @@ export const env: EnvOverloads = <TKey extends ServerEnvKey | ClientEnvKey>(
   ] as unknown as TKey extends ClientEnvKey
     ? ClientEnvType
     : TKey extends ServerEnvKey
-    ? ServerEnvType
-    : never;
+      ? ServerEnvType
+      : never;
 };

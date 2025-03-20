@@ -1,30 +1,25 @@
-import { auth } from '@/auth';
 import { credentialFactory } from '@/lib/site-util/auth';
 import { google } from 'googleapis';
-import { Session } from 'next-auth';
-import { NextResponse } from 'next/server';
+import { NextApiRequest } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 
-type CredentialOps = { userId: number } | { session: Session };
+type CredentialOps = { req: NextRequest | NextApiRequest; userId?: number };
 
 export const googleProviderFactory = async (
   provider: string,
-  options?: CredentialOps
+  options: CredentialOps,
 ) => {
   if (provider !== 'google') {
     return NextResponse.json({ error: 'Provider not found' }, { status: 404 });
   }
-  let credentialOptions: CredentialOps | undefined = options;
-  if (!credentialOptions) {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    credentialOptions = { session };
+  if (!options.req) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const credential = await credentialFactory({
     provider,
     service: 'email',
-    ...credentialOptions,
+    req: options.req,
+    userId: options.userId,
   });
 
   const client = google.gmail({
@@ -34,10 +29,7 @@ export const googleProviderFactory = async (
 
   return {
     client,
-    userId:
-      'userId' in credentialOptions
-        ? credentialOptions.userId
-        : Number(credentialOptions.session.user!.id!),
+    userId: credential.userId,
     mail: client.users.messages,
   };
 };

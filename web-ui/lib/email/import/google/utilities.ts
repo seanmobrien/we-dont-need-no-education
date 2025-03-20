@@ -18,7 +18,10 @@ export const mapContacts = (
           .getAllValues(headerName)
           .flatMap((v) =>
             mapContact(
-              { value: v },
+              {
+                value:
+                  typeof v === 'string' ? v : `${v.name ?? ''} <${v.email}>`,
+              },
               headerName.toLocaleLowerCase() as RecipientType,
             ),
           ),

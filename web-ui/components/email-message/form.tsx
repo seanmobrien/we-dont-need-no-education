@@ -72,12 +72,12 @@ const inputClass = classnames(
   spacing('p-2'),
   outlineStyle('focus:outline-none'),
   ringWidth('focus:ring'),
-  ringColor('focus:ring-blue-300')
+  ringColor('focus:ring-blue-300'),
 );
 const labelClass = classnames(
   display('block'),
   typography('font-medium'),
-  margin('mb-1')
+  margin('mb-1'),
 );
 const buttonClass = classnames(
   width('w-full'),
@@ -85,25 +85,25 @@ const buttonClass = classnames(
   borderRadius('rounded'),
   typography('text-white'),
   opacity('hover:opacity-80'),
-  transitionProperty('transition')
+  transitionProperty('transition'),
 );
 const primaryButton = classnames(
   buttonClass,
-  backgroundColor('bg-blue-500', 'hover:bg-blue-600', 'disabled:bg-gray-400')
+  backgroundColor('bg-blue-500', 'hover:bg-blue-600', 'disabled:bg-gray-400'),
 );
 const containerClass = classnames(
   maxWidth('max-w-lg'),
   margin('mx-auto'),
   spacing('p-6'),
   borderRadius('rounded-lg'),
-  boxShadow('shadow-md')
+  boxShadow('shadow-md'),
 );
 
 const useElementUpdateDispatchCallback = <
   TElementType extends HTMLElement = HTMLElement,
-  TDispatchType = string
+  TDispatchType = string,
 >(
-  dispatch: Dispatch<TDispatchType>
+  dispatch: Dispatch<TDispatchType>,
 ) =>
   useCallback(
     (e: ChangeEvent<TElementType>) => {
@@ -111,7 +111,7 @@ const useElementUpdateDispatchCallback = <
         dispatch(e.target.value as TDispatchType);
       }
     },
-    [dispatch]
+    [dispatch],
   );
 
 const EmailForm: ForwardRefRenderFunction<
@@ -119,7 +119,7 @@ const EmailForm: ForwardRefRenderFunction<
   EmailFormProps
 > = (
   { emailId = null, withButtons = true, onSaved, afterSaveBehavior = 'none' },
-  ref
+  ref,
 ) => {
   const [sender, setSender] = useState<ContactSummary>(createContactSummary());
   const [recipients, setRecipients] = useState<ContactSummary[]>([]);
@@ -152,7 +152,7 @@ const EmailForm: ForwardRefRenderFunction<
           setSentTimestamp(
             typeof data.sentOn === 'string'
               ? data.sentOn
-              : data.sentOn.toISOString()
+              : data.sentOn.toISOString(),
           );
           setThreadId(data.threadId ?? null);
           setParentEmailId(data.parentEmailId ?? null);
@@ -163,12 +163,12 @@ const EmailForm: ForwardRefRenderFunction<
             return;
           }
           log((l) =>
-            l.error(errorLogFactory({ error, source: 'email-form: load' }))
+            l.error(errorLogFactory({ error, source: 'email-form: load' })),
           );
           setMessage(
             String(
-              isError(error) ? error.message : 'Error fetching email details.'
-            )
+              isError(error) ? error.message : 'Error fetching email details.',
+            ),
           );
         })
         .finally(() => {
@@ -234,14 +234,14 @@ const EmailForm: ForwardRefRenderFunction<
               error,
               source: 'email-form: submit',
               details: 'Network error detected',
-            })
-          )
+            }),
+          ),
         );
         setMessage(
           String(
             isError(error ? error.message : null) ??
-              'Network error. Please try again.'
-          )
+              'Network error. Please try again.',
+          ),
         );
         return null;
       })
@@ -269,17 +269,17 @@ const EmailForm: ForwardRefRenderFunction<
   const handleSubmit = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      await saveEmailCallback();
+      await saveEmailCallback().awaitable;
     },
-    [saveEmailCallback]
+    [saveEmailCallback],
   );
 
   useImperativeHandle(
     ref,
     () => ({
-      saveEmailCallback,
+      saveEmailCallback: () => saveEmailCallback().awaitable,
     }),
-    [saveEmailCallback]
+    [saveEmailCallback],
   );
 
   return (
@@ -287,7 +287,7 @@ const EmailForm: ForwardRefRenderFunction<
       <h2
         className={classnames(
           margin('mb-4'),
-          typography('text-xl', 'font-semibold')
+          typography('text-xl', 'font-semibold'),
         )}
       >
         {emailId ? 'Edit Email' : 'Create Email'}
@@ -420,10 +420,10 @@ const EmailForm: ForwardRefRenderFunction<
             {loading === 'saving'
               ? 'Submitting...'
               : loading === 'loading'
-              ? 'Loading...'
-              : emailId
-              ? 'Update Email'
-              : 'Create Email'}
+                ? 'Loading...'
+                : emailId
+                  ? 'Update Email'
+                  : 'Create Email'}
           </button>
         ) : !!loading ? (
           loading === 'saving' ? (

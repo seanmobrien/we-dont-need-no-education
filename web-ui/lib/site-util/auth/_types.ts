@@ -1,5 +1,7 @@
 import { OAuth2Client } from 'google-auth-library';
+import { NextApiRequest } from 'next';
 import { Session } from 'next-auth';
+import { NextRequest } from 'next/server';
 
 export type IServerSessionTokens = {
   gmail: Promise<string | null>;
@@ -24,7 +26,7 @@ export type SessionExt = Session & {
 };
 
 export type ICredential = {
-  gmail: string | null;
+  userId: number;
   refresh_token: string;
   access_token: string;
   client: OAuth2Client;
@@ -33,17 +35,12 @@ export type ICredential = {
 export const ServiceValues = ['email'] as const;
 export type Service = (typeof ServiceValues)[number];
 
-export type CredentialOptions =
-  | {
-      provider: string;
-      service: Service;
-      session: Session;
-    }
-  | {
-      provider: string;
-      service: Service;
-      userId: number;
-    };
+export type CredentialOptions = {
+  provider: string;
+  service: Service;
+  req: NextRequest | NextApiRequest;
+  userId?: number;
+};
 
 export type ICredentialProvider = {
   getCredential(options: CredentialOptions): Promise<ICredential>;

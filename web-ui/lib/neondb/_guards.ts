@@ -1,7 +1,7 @@
-import type { NeonDbError } from '@neondatabase/serverless';
+import type { PostgresError } from 'postgres';
 
-export const isNeonDbError = (error: unknown): error is NeonDbError =>
+export const isDbError = (error: unknown): error is PostgresError =>
   !!error &&
   typeof error === 'object' &&
   'name' in error &&
-  error.name === 'NeonDbError';
+  error.name === 'PostgresError';

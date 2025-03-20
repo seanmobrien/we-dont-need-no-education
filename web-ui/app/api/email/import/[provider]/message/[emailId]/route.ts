@@ -11,13 +11,15 @@ import { LoggedError } from '@/lib/react-util';
 import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
 import { errorLogFactory, log } from '@/lib/logger';
 import { queueAttachment } from '@/lib/email/import/google/attachment-download';
+import type { NextApiRequest } from 'next/types';
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: Promise<{ provider: string; emailId: string }> }
+  { params }: { params: Promise<{ provider: string; emailId: string }> },
 ) => {
   const { provider, emailId } = await params;
   const result = await getImportMessageSource({
+    req,
     provider,
     emailId,
     refresh: true,
@@ -30,7 +32,7 @@ export const GET = async (
 
 export const POST = async (
   req: NextRequest,
-  { params }: { params: Promise<{ provider: string; emailId: string }> }
+  { params }: { params: Promise<{ provider: string; emailId: string }> },
 ) => {
   const { provider, emailId } = await params;
   const importInstance = new DefaultImportManager(provider);
@@ -39,6 +41,7 @@ export const POST = async (
 };
 
 type StageAttachmentProps = {
+  req: NextRequest | NextApiRequest;
   stagedMessageId: string;
   part: gmail_v1.Schema$MessagePart;
 };
@@ -49,6 +52,7 @@ type AttachmentStagedResult = {
 };
 
 export const stageAttachment = async ({
+  req,
   stagedMessageId,
   part,
 }: StageAttachmentProps): Promise<AttachmentStagedResult> => {
@@ -80,6 +84,7 @@ export const stageAttachment = async ({
     await queueAttachment({
       id: `${stagedMessageId}:${model.partId}`,
       job: { model: { ...model, stagedMessageId: stagedMessageId } },
+      req: req,
     });
 
     return {
@@ -101,18 +106,21 @@ export const stageAttachment = async ({
 };
 
 export const queueStagedAttachments = ({
+  req,
   stagedMessageId,
   part: partFromProps,
 }: StageAttachmentProps): Array<Promise<AttachmentStagedResult>> => {
   const partItems = [];
   if (partFromProps.filename && partFromProps.body?.attachmentId) {
-    partItems.push(stageAttachment({ stagedMessageId, part: partFromProps }));
+    partItems.push(
+      stageAttachment({ req, stagedMessageId, part: partFromProps }),
+    );
   }
   return partFromProps.parts
     ? [
         ...partItems,
         ...partFromProps.parts.flatMap((part) =>
-          queueStagedAttachments({ stagedMessageId, part })
+          queueStagedAttachments({ req, stagedMessageId, part }),
         ),
       ]
     : partItems;
@@ -120,10 +128,11 @@ export const queueStagedAttachments = ({
 
 export const PUT = async (
   req: NextRequest,
-  { params }: { params: Promise<{ provider: string; emailId: string }> }
+  { params }: { params: Promise<{ provider: string; emailId: string }> },
 ) => {
   const { provider, emailId } = await params;
   const result = await getImportMessageSource({
+    req,
     provider,
     emailId,
     refresh: true,
@@ -139,45 +148,46 @@ export const PUT = async (
   if (result.stage !== 'new') {
     if (req.nextUrl.searchParams.get('refresh')) {
       await query(
-        (sql) => sql`delete from staging_message where external_id = ${emailId}`
+        (sql) =>
+          sql`delete from staging_message where external_id = ${emailId}`,
       );
       result.stage = 'new';
     } else {
       return NextResponse.json(
         { error: 'message already imported' },
-        { status: 400 }
+        { status: 400 },
       );
     }
   }
   const id = newUuid();
   const payload = JSON.stringify({
     external_id: emailId,
-    message: result.raw,
+    id: id,
     stage: 'staged',
-    id,
+    message: result.raw,
     userId: result.userId,
   });
-  const records = await queryExt(
-    (sql) => sql`
-  INSERT INTO staging_message 
-  SELECT * FROM jsonb_populate_record(
-    NULL::staging_message,
-  ${payload}::jsonb
-  ) 
-    RETURNING id`
+  console.log(payload);
+  const records = await queryExt((sql) =>
+    sql(
+      "INSERT INTO staging_message SELECT * FROM  \
+      jsonb_populate_record(null::staging_message, '" +
+        payload.replaceAll("'", "''") +
+        "'::jsonb)",
+    ),
   );
   if (records.rowCount !== 1) {
     return NextResponse.json(
       { error: 'Unexpected failure updating staging table.' },
-      { status: 500 }
+      { status: 500 },
     );
   }
   // Stage attachments
   try {
     const attachments = await Promise.all(
       (result.raw.payload?.parts ?? []).flatMap((part) =>
-        queueStagedAttachments({ stagedMessageId: id, part })
-      )
+        queueStagedAttachments({ req, stagedMessageId: id, part }),
+      ),
     );
     if (!attachments.every((attachment) => attachment.status === 'success')) {
       throw new Error('Failed to stage attachments', { cause: attachments });
@@ -190,8 +200,8 @@ export const PUT = async (
           data: { emailId, attachments: result.raw.payload?.parts },
           error,
           source: 'email-import',
-        })
-      )
+        }),
+      ),
     );
     try {
       await query((sql) => sql`delete from staging_message where id = ${id}`);
@@ -204,7 +214,7 @@ export const PUT = async (
     console.error('Unexpected error processing attachments:', error);
     return NextResponse.json(
       { error: 'Failed to process attachments' },
-      { status: 500 }
+      { status: 500 },
     );
   }
   return NextResponse.json(
@@ -213,6 +223,6 @@ export const PUT = async (
       id,
       stage: 'staged',
     },
-    { status: 201 }
+    { status: 201 },
   );
 };

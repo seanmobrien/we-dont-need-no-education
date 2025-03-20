@@ -19,6 +19,8 @@ const nextConfig: NextConfig = {
     '@opentelemetry/exporter-jaeger',
     '@opentelemetry',
     'pino',
+    'pg',
+    '@auth/pg-adapter',
   ],
 };
 

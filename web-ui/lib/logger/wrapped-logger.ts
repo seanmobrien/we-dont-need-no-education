@@ -1,5 +1,5 @@
 import { AbstractLogger } from './abstract-logger';
-import { ILogger } from './logger';
+import type { ILogger } from './types';
 
 export class WrappedLogger extends AbstractLogger {
   readonly #logger: ILogger;

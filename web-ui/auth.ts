@@ -1,9 +1,13 @@
-import NextAuth from 'next-auth';
+process.env.NODE_PG_FORCE_NATIVE = '0';
+import NextAuth, { Session } from 'next-auth';
+import { Adapter } from 'next-auth/adapters';
 import type { Provider } from 'next-auth/providers';
+import { JWT } from 'next-auth/jwt';
 import Google from 'next-auth/providers/google';
-import { Pool } from '@neondatabase/serverless';
-import PostgresAdapter from '@auth/pg-adapter';
-import { query } from './lib/neondb';
+//import { Pool } from '@neondatabase/serverless';
+import { query } from '@/lib/neondb';
+import { isRunningOnEdge } from './lib/site-util/env';
+import { logEvent } from '@/lib/logger';
 
 const providers: Provider[] = [
   Google({
@@ -29,12 +33,30 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth(() => {
-  // Create a `Pool` inside the request handler.
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-  const adapter = PostgresAdapter(pool);
+export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
+  console.log(
+    'creating auth config for environment ',
+    process.env.NEXT_RUNTIME,
+  );
+  let adapter: Adapter | undefined;
+
+  if (!isRunningOnEdge()) {
+    console.log('creating adapter for environment ', process.env.NEXT_RUNTIME);
+    process.env.PG_FORCE_NATIVE = '0';
+    const { Pool } = await import('pg');
+    const { default: PostgresAdapter } = await import('@auth/pg-adapter');
+    // Create a `Pool` inside the request handler.
+    adapter = PostgresAdapter(
+      new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false, requestCert: false },
+      }),
+    );
+  }
+
   return {
     // debug: true,
+    session: { strategy: 'jwt' },
     adapter,
     providers,
     /*
@@ -57,10 +79,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth(() => {
           if (!records.length) {
             throw new Error('Failed to update account');
           }
-          console.log('updated token');
         }
+        logEvent('signIn');
         // Add user to database
         return true;
+      },
+      jwt({ token, user, account }) {
+        if (user) {
+          // User is available during sign-in
+          token.user_id = Number(user.id!);
+          token.account_id = token.account_id ?? user.account_id;
+        }
+        if (account) {
+          token.account_id = Number(account.id!);
+        }
+        return token;
+      },
+      session({ session, token }: { session: Session; token: JWT }) {
+        session.user!.id = String(token.user_id!);
+        session.user!.account_id = token.account_id!;
+        return session;
       },
     },
   };

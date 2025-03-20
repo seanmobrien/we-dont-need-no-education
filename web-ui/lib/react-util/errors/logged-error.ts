@@ -1,5 +1,5 @@
 import { errorLogFactory, log } from '@/lib/logger';
-import { isError } from '../_utility-methods';
+import { isAbortError, isError } from '../_utility-methods';
 
 /**
  * A unique symbol used to brand the `LoggedError` class instances.
@@ -25,9 +25,30 @@ type TurtleRecurisionParams = Record<string, unknown> & {
   source?: string;
   message?: string;
   critical?: boolean;
+  logCanceledOperation?: boolean;
 };
 
-export class LoggedError extends Error {
+/**
+ * Represents a custom error that logs additional information.
+ *
+ * @remarks
+ * This class extends the built-in `Error` class to provide additional logging capabilities.
+ * It includes methods to check if an error is a `LoggedError`, wrap errors in a `LoggedError`,
+ * and build error messages from options.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   throw new Error('Something went wrong');
+ * } catch (e) {
+ *   const loggedError = LoggedError.isTurtlesAllTheWayDownBaby(e, { log: true });
+ *   console.error(loggedError);
+ * }
+ * ```
+ *
+ * @public
+ */
+export class LoggedError implements Error {
   /**
    * Checks if the given error is an instance of `ValidationError`.
    *
@@ -58,6 +79,7 @@ export class LoggedError extends Error {
     e: unknown,
     {
       log: shouldLog = false,
+      logCanceledOperation = false,
       source = 'Turtles, baby',
       message,
       critical,
@@ -72,14 +94,16 @@ export class LoggedError extends Error {
         log((l) =>
           l.warn({ message: 'Some bonehead threw a not-error', error: e }),
         );
+        if (logCanceledOperation || !isAbortError(e)) {
+          const logObject = errorLogFactory({
+            error: e,
+            source,
+            message,
+            ...itsRecusionMan,
+          });
+          log((l) => l.error(logObject.message ?? 'Error occurred', logObject));
+        }
       }
-      const logObject = errorLogFactory({
-        error: e,
-        source,
-        message,
-        ...itsRecusionMan,
-      });
-      log((l) => l.error(logObject.message ?? 'Error occurred', logObject));
     }
     return isError(e)
       ? new LoggedError(e, { critical })
@@ -113,25 +137,18 @@ export class LoggedError extends Error {
           Partial<Pick<LoggedErrorOptions, 'error'>>)
       | Error,
   ) {
-    super(
-      typeof message === 'string' ? message : LoggedError.buildMessage(message),
-      typeof message === 'object'
-        ? isError(message)
-          ? undefined
-          : options
-        : options,
-    );
     let ops: LoggedErrorOptions;
     if (typeof message === 'string') {
-      if (!options) {
-        throw new Error('LoggedError requires an error object');
-      }
-      if (isError(options)) {
-        ops = { error: options, critical: true };
-      } else if (options.error) {
-        ops = options as LoggedErrorOptions;
+      if (options) {
+        if (isError(options)) {
+          ops = { error: options, critical: true };
+        } else if (options.error) {
+          ops = options as LoggedErrorOptions;
+        } else {
+          throw new TypeError("LoggedError requires an 'error' property");
+        }
       } else {
-        throw new TypeError("LoggedError requires an 'error' property");
+        ops = { error: new Error(message), critical: true };
       }
     } else {
       ops = isError(message) ? { error: message, critical: true } : message;
@@ -139,7 +156,21 @@ export class LoggedError extends Error {
     this.#critical = ops.critical ?? true;
     this.#error = ops.error;
     this[Symbol.toStringTag] = this.message;
+    if (!this.#error) {
+      throw new TypeError("LoggedError requires an 'error' property");
+    }
+    Object.entries(this.#error).forEach(([key, value]) => {
+      if (!(key in this) && typeof value !== 'function') {
+        if (typeof key === 'string' || typeof key === 'symbol') {
+          this[key as string | symbol] = value;
+        }
+      }
+    });
   }
+  /**
+   * Index signature to allow dynamic property access, enabling 'cloning' of the error object.
+   */
+  [key: string | symbol]: unknown;
 
   /**
    * Gets the field associated with the Logged error.
@@ -157,7 +188,20 @@ export class LoggedError extends Error {
   get critical(): boolean {
     return this.#critical;
   }
-
+  get name(): string {
+    return this.#error.name;
+  }
+  get cause() {
+    return this.#error.cause;
+  }
+  /**
+   * Gets the stack trace associated with the Logged error.
+   *
+   * @returns {string} The stack trace associated with the Logged error.
+   */
+  get stack(): string {
+    return this.#error.stack ?? 'no stack trace available';
+  }
   /**
    * Gets the error message associated with the Logged error.
    *

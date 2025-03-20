@@ -1,6 +1,6 @@
 import { PaginationStats, PaginatedResultset } from '@/data-models';
 import { log } from '../logger';
-import { query, queryExt } from '../neondb';
+import { query, queryExt } from '@/lib/neondb';
 import { FirstParameter, PartialExceptFor } from '../typescript';
 import {
   ObjectRepository,
@@ -67,7 +67,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     Array<any>,
-    string
+    string,
   ] {
     throw new Error('Method not implemented.');
   }
@@ -83,7 +83,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
   >): [
     string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Array<any>
+    Array<any>,
   ] {
     throw new Error('Method not implemented.');
   }
@@ -99,7 +99,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
   >): [
     string,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Array<any>
+    Array<any>,
   ] {
     throw new Error('Method not implemented.');
   }
@@ -114,7 +114,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     ObjectRepository<T, KId>['update']
   >): [
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Record<string, any>
+    Record<string, any>,
   ] {
     throw new Error('Method not implemented.');
   }
@@ -123,7 +123,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     const [sqlQuery, values, sqlCountQuery] = this.getListQueryProperties();
     return this.defaultListImpl(
       { sqlQuery, values, sqlCountQuery },
-      pagination
+      pagination,
     );
   }
   defaultListImpl(
@@ -137,7 +137,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
       values: Array<any>;
       sqlCountQuery: string;
     },
-    pagination?: PaginationStats
+    pagination?: PaginationStats,
   ): Promise<PaginatedResultset<Partial<T>>> {
     return this.innerList(
       () =>
@@ -145,13 +145,13 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
           (sql) => this.forwardCallToDb<false, false>(sql, sqlQuery, values),
           {
             transform: this.mapRecordToSummary,
-          }
+          },
         ),
       () =>
         query((sql) =>
-          this.forwardCallToDb<false, false>(sql, sqlCountQuery, values)
+          this.forwardCallToDb<false, false>(sql, sqlCountQuery, values),
         ),
-      pagination
+      pagination,
     );
   }
 
@@ -164,9 +164,9 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
           (sql) => this.forwardCallToDb<false, false>(sql, sqlImp, sqlArgs),
           {
             transform: this.mapRecordToObject,
-          }
+          },
         );
-      }
+      },
     );
   }
 
@@ -179,9 +179,9 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
           (sql) => this.forwardCallToDb<false, false>(sql, sqlImp, sqlArgs),
           {
             transform: this.mapRecordToObject,
-          }
+          },
         );
-      }
+      },
     );
   }
 
@@ -204,15 +204,15 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
           (sql) =>
             sql<false, true>(
               `UPDATE ${this.tableName} SET ${updateFields.join(
-                ', '
+                ', ',
               )} WHERE ${String(
-                this.tableIdField
+                this.tableIdField,
               )} = $${paramIndex} RETURNING *`.toString(),
-              values
+              values,
             ),
-          { transform: this.mapRecordToObject }
+          { transform: this.mapRecordToObject },
         );
-      }
+      },
     );
   }
 
@@ -223,7 +223,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
         const sqlImpl = `DELETE FROM ${this.tableName} 
           WHERE ${String(this.tableIdField)}=$1`.toString();
         return queryExt<T>((sql) => sql<false, true>(sqlImpl, [recordId]));
-      }
+      },
     );
   }
 
@@ -237,11 +237,11 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    */
   validate<TMethod extends keyof ObjectRepository<T, KId>>(
     method: TMethod,
-    obj: FirstParameter<Pick<ObjectRepository<T, KId>, TMethod>[TMethod]>
+    obj: FirstParameter<Pick<ObjectRepository<T, KId>, TMethod>[TMethod]>,
   ): void {
     // NO-OP, but can be overridden
     log((l) =>
-      l.silly(`Using ${method} so the squigglies leave me alone...`, obj)
+      l.silly(`Using ${method} so the squigglies leave me alone...`, obj),
     );
   }
 }

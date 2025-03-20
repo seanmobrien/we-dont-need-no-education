@@ -8,7 +8,7 @@ import {
   MessageImportStatus,
 } from '@/data-models/api/import/email-message';
 import { query } from '@/lib/neondb';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
 import { isError, LoggedError } from '@/lib/react-util';
 import { auth } from '@/auth';
@@ -20,6 +20,7 @@ import {
 } from '@/data-models/api/import/provider-google';
 import { MailQueryBuilder } from './_mailQueryBuilder';
 import { ParsedHeaderMap } from '@/lib/email/parsedHeaderMap';
+import { NextApiRequest } from 'next/types';
 
 /**
  * Parses pagination statistics from a URL or URLSearchParams object.
@@ -196,9 +197,11 @@ type EmailAndUserId = {
 const getGmailMessage = async ({
   provider,
   emailId,
+  req,
 }: {
   emailId: string;
   provider: string;
+  req: NextRequest | NextApiRequest;
 }): Promise<EmailAndUserId> => {
   try {
     const session = await auth();
@@ -215,7 +218,7 @@ const getGmailMessage = async ({
       });
     }
 
-    const factoryResponse = await googleProviderFactory(provider);
+    const factoryResponse = await googleProviderFactory(provider, { req });
     if ('status' in factoryResponse) {
       throw new Error('Error in factory response', { cause: 'gmail-failure' });
     }
@@ -353,16 +356,17 @@ const getCurrentState = async ({
 
 interface GetImportMessageSourceOverloads {
   (params: {
+    req: NextRequest | NextApiRequest;
     provider?: string;
     emailId?: string;
     refresh?: boolean;
     errorFilter: ErrorFilter;
   }): Promise<NextResponse | ImportSourceMessage | null>;
   (params: {
+    req: NextRequest | NextApiRequest;
     provider?: string;
     emailId?: string;
     refresh?: boolean;
-    errorFilter?: undefined;
   }): Promise<ImportSourceMessage | null>;
 }
 
@@ -382,11 +386,13 @@ interface GetImportMessageSourceOverloads {
  * @throws {Error} If an error occurs during the process.
  */
 export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
+  req,
   provider,
   emailId,
   refresh = false,
   errorFilter,
 }: {
+  req: NextRequest | NextApiRequest;
   provider?: string;
   emailId?: string;
   refresh?: boolean;
@@ -414,7 +420,9 @@ export const getImportMessageSource: GetImportMessageSourceOverloads = async ({
           ),
         );
       }
-      const factoryResponse = await googleProviderFactory(provider as string);
+      const factoryResponse = await googleProviderFactory(provider as string, {
+        req,
+      });
       if ('status' in factoryResponse) {
         return getReturnValue(factoryResponse);
       }
@@ -635,15 +643,18 @@ const checkReferencedEmailStatus = async ({
 export const getImportMessageStatus = async ({
   provider,
   emailId: emailIdFromProps,
+  req,
 }: {
   provider: string;
   emailId: string;
+  req: NextRequest | NextApiRequest;
 }): Promise<MessageImportStatusWithChildren> => {
   try {
     // First off load the email from the provider
     const { email, mail } = await getGmailMessage({
       provider,
       emailId: emailIdFromProps,
+      req,
     });
     // Extract the provider id...
     const providerId = email.id!;

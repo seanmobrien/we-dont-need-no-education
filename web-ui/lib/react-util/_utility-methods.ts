@@ -22,7 +22,11 @@ export const generateUniqueId = () =>
  * @returns True if the value is an Error object, otherwise false.
  */
 export const isError = (value: unknown): value is Error =>
-  typeof value === 'object' && !!value && 'message' in value;
+  typeof value === 'object' &&
+  !!value &&
+  'message' in value &&
+  'stack' in value &&
+  typeof value.stack === 'string';
 
 /**
  * Checks if the given value is a DOMException with the name 'AbortError'.
@@ -31,7 +35,7 @@ export const isError = (value: unknown): value is Error =>
  * @returns True if the value is a DOMException with the name 'AbortError', otherwise false.
  */
 export const isAbortError = (
-  value: unknown
+  value: unknown,
 ): value is DOMException | OperationCanceledException =>
   (isError(value) && value.name === 'AbortError') ||
   value instanceof DOMException ||
@@ -44,7 +48,7 @@ export const isAbortError = (
  * @returns True if the value is a TemplateStringsArray, false otherwise.
  */
 export const isTemplateStringsArray = (
-  value: unknown
+  value: unknown,
 ): value is TemplateStringsArray =>
   Array.isArray(value) &&
   'raw' in value &&
@@ -69,7 +73,7 @@ export const isTemplateStringsArray = (
  */
 export const isTruthy = (
   value: unknown,
-  defaultValue: boolean = false
+  defaultValue: boolean = false,
 ): boolean => {
   if (value === undefined || value === null) {
     return defaultValue;
@@ -86,3 +90,13 @@ export const isTruthy = (
   }
   return false;
 };
+
+/**
+ * Checks if the given value is an indexable record (aka object)
+ *
+ * @param check - The value to check.
+ * @returns True if the value is an object, otherwise false.
+ */
+export const isUnknownRecord = (
+  check: unknown,
+): check is Record<string, unknown> => typeof check === 'object' && !!check;

@@ -6,7 +6,14 @@ import {
   MessageImportStatus,
   MessageImportStatusWithChildren,
 } from '@/data-models/api/import/email-message';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+  ChangeEvent,
+} from 'react';
 import { ImportRecordProps, ImportRecordJobState } from './types';
 import {
   queryImportStatus,
@@ -15,8 +22,15 @@ import {
 import { isAbortablePromise } from '@/lib/typescript';
 import { LoggedError } from '@/lib/react-util';
 import { log } from '@/lib/logger';
-import { TableRow, TableCell, Checkbox, CircularProgress } from '@mui/material';
+import {
+  TableRow,
+  TableCell,
+  Checkbox,
+  CircularProgress,
+  Typography,
+} from '@mui/material';
 import { isError } from '@/lib/react-util';
+import theme from '@/theme';
 
 export const ImportRecord: React.FC<ImportRecordProps> = ({
   importStatus: importStatusFromProps,
@@ -36,15 +50,7 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
     Promise<ImportResponse> | undefined
   >();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
-  const isMounted = useRef(true);
-
-  // Set isMounted reference value
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
+  const itemRef = useRef<HTMLSpanElement | null>(null);
 
   // compute import status
   const { sessionLabel, jobState } = useMemo((): {
@@ -53,6 +59,12 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
   } => {
     const ret = {} as { jobState: ImportRecordJobState; sessionLabel: string };
     const { status = 'pending' } = importStatus;
+
+    if (errorMessage) {
+      ret.sessionLabel = errorMessage;
+      ret.jobState = 'error';
+      return ret;
+    }
     switch (status) {
       case 'pending':
         // Are we a full-fledged status object?
@@ -86,33 +98,35 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
         ret.jobState = 'done';
         ret.sessionLabel = 'Not found';
         break;
+      case 'error':
+        ret.jobState = 'pending';
+        ret.sessionLabel = 'Retry after error';
+        break;
       default:
         ret.jobState = 'done';
         ret.sessionLabel = 'Imported';
         break;
     }
-    if (errorMessage) {
-      ret.sessionLabel = errorMessage;
-      ret.jobState = 'error';
-    }
+
     return ret;
   }, [importStatus, errorMessage, isChecked, importRequest]);
 
   useEffect(() => {
     const onRequestError = (error: unknown) => {
       const errorSource = 'google-email-import-status';
-      if (isMounted.current) {
+      if (itemRef.current) {
         const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
           source: errorSource,
           provider: providerId,
         });
         setErrorMessage(le.message);
+        notifyParent({ providerId, action: 'import-error', error: le });
       } else {
         log((l) =>
           l.warn({
             message:
-              'ImportRecord unmounted before error handling could complete; waiting for remoun to process',
+              'ImportRecord unmounted before error handling could complete; waiting for remount to process',
             source: errorSource,
             error,
           }),
@@ -133,7 +147,7 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
             ...importStatus,
             ...data,
           };
-          if (isMounted.current) {
+          if (itemRef.current) {
             setImportStatus(newStatus);
             if (data.references?.length || data.status === 'imported') {
               notifyParent({
@@ -155,7 +169,7 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
     const processImport = (req?: Promise<ImportResponse>) => {
       const workingRequest = req ?? importRequest;
       if (!workingRequest) {
-        if (isMounted.current) {
+        if (itemRef.current) {
           log((l) =>
             l.warn({
               message: 'No import request available for processing',
@@ -167,7 +181,7 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
       }
       workingRequest
         .then((response) => {
-          if (isMounted.current) {
+          if (itemRef.current) {
             if (response.success) {
               const { data } = response;
               setImportStatus((prev) => ({
@@ -191,19 +205,26 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
           }
         })
         .catch((e) => {
-          onRequestError(e);
-          notifyParent({
-            providerId,
-            action: 'download-complete',
-            successful: false,
-            error: LoggedError.isTurtlesAllTheWayDownBaby(e),
-          });
+          if (itemRef.current) {
+            onRequestError(e);
+            notifyParent({
+              providerId,
+              action: 'download-complete',
+              successful: false,
+              error: LoggedError.isTurtlesAllTheWayDownBaby(e),
+            });
+          }
         })
         .finally(() => {
-          setImportRequest(undefined);
+          if (itemRef.current) {
+            setImportRequest(undefined);
+          }
         });
     };
     const importMessage = () => {
+      if (!itemRef.current) {
+        return;
+      }
       let request: Promise<ImportResponse>;
       const actualRequest = importRequest
         ? importRequest
@@ -232,6 +253,9 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
       case 'done':
         // Intentional NO-OP; nothing to do here
         break;
+      case 'error':
+        // no-op for now
+        break;
       default:
         console.warn('Unhandled job state', jobState, providerId);
         // nothing to do yet
@@ -246,19 +270,29 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
     canImport,
     importRequest,
   ]);
+  const onCheckChanged = useCallback(
+    (evt: ChangeEvent<HTMLInputElement>, checked: boolean) =>
+      notifyParent({ providerId, action: 'check-changed', checked }),
+    [notifyParent, providerId],
+  );
 
   const loadedImportStatus = importStatus as MessageImportStatusWithChildren;
-
+  const backgroundColor =
+    jobState === 'error'
+      ? theme.palette.error.light
+      : jobState === 'done'
+        ? theme.palette.success.light
+        : undefined;
+  const inLoadingView =
+    jobState === 'loading-message' || jobState === 'waiting-for-import';
   return (
-    <TableRow>
+    <TableRow sx={{ backgroundColor }}>
       <TableCell padding="checkbox">
         {jobState !== 'loading-message' && jobState !== 'done' && (
           <Checkbox
             color="primary"
             checked={isChecked}
-            onChange={(evt, checked) =>
-              notifyParent({ providerId, action: 'check-changed', checked })
-            }
+            onChange={onCheckChanged}
             inputProps={{
               'aria-labelledby': `enhanced-table-checkbox-${providerId}`,
             }}
@@ -279,12 +313,20 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
               ?.map((x) => x.name ?? x.email)
               ?.join(', ') ?? '')}
       </TableCell>
-      <TableCell>
-        {(jobState === 'loading-message' ||
-          jobState === 'waiting-for-import') && (
+      <TableCell
+        colSpan={inLoadingView ? 2 : undefined}
+        sx={{ pl: inLoadingView ? 6 : undefined }}
+      >
+        {inLoadingView && (
           <>
-            <CircularProgress />{' '}
-            {jobState === 'loading-message' ? 'Loading...' : 'Importing...'}
+            <CircularProgress />
+            <Typography
+              variant="body2"
+              sx={{ ml: 4, pl: 6, pb: 3 }}
+              typography={'span'}
+            >
+              {jobState === 'loading-message' ? 'Loading...' : 'Importing...'}
+            </Typography>
           </>
         )}
         {jobState === 'waiting-for-import'
@@ -294,12 +336,12 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
               ? new Date(loadedImportStatus.receivedDate).toLocaleDateString()
               : loadedImportStatus.receivedDate.toDateString())}
       </TableCell>
+      {!inLoadingView && (
+        <TableCell>{loadedImportStatus.subject || ''}</TableCell>
+      )}
       <TableCell>
-        {jobState === 'waiting-for-import'
-          ? ''
-          : loadedImportStatus.subject || ''}
+        <span ref={itemRef}>{sessionLabel}</span>
       </TableCell>
-      <TableCell>{sessionLabel}</TableCell>
     </TableRow>
   );
 };

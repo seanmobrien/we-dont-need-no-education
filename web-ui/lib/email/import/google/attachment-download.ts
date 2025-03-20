@@ -4,6 +4,8 @@ import { errorLogFactory } from '@/lib/logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@/lib/neondb';
 import { StagedAttachment } from '@/lib/api/email/import/staged-attachment';
+import { NextApiRequest } from 'next/types';
+import { NextRequest } from 'next/server';
 
 export type AttachmentDownloadJob = {
   model: StagedAttachment;
@@ -19,12 +21,17 @@ const downloadAttachment = async ({
   messageId,
   attachmentId,
   userId,
+  req,
 }: {
   messageId: string;
   attachmentId: string;
+  req: NextRequest | NextApiRequest;
   userId: number;
 }): Promise<Buffer> => {
-  const factoryResponse = await googleProviderFactory('google', { userId });
+  const factoryResponse = await googleProviderFactory('google', {
+    req,
+    userId,
+  });
   if ('status' in factoryResponse) {
     throw new Error('Error creating google provider');
   }
@@ -58,10 +65,10 @@ const uploadToAzureStorage = async ({
   }
 
   const blobServiceClient = BlobServiceClient.fromConnectionString(
-    AZURE_STORAGE_CONNECTION_STRING
+    AZURE_STORAGE_CONNECTION_STRING,
   );
   const containerClient = blobServiceClient.getContainerClient(
-    `email-attachments-${externalId}`
+    `email-attachments-${externalId}`,
   );
   await containerClient.createIfNotExists();
   const blockBlobClient = containerClient.getBlockBlobClient(fileName);
@@ -78,28 +85,30 @@ const uploadToAzureStorage = async ({
 const attachmentJobs = new Map<string, Promise<AttachmentDownloadResult>>();
 
 export const saveAttachment = async (
+  req: NextRequest | NextApiRequest,
   id: string,
-  job: AttachmentDownloadJob
+  job: AttachmentDownloadJob,
 ): Promise<AttachmentDownloadResult> => {
   try {
     log((l) =>
       l.verbose({
         message: `Processing attachment download job ${id}.`,
         data: job,
-      })
+      }),
     );
 
     const { model } = job;
     const records = await query(
       (sql) =>
-        sql`select external_id, "userId" from staging_message where id=${model.stagedMessageId}`
+        sql`select external_id, "userId" from staging_message where id=${model.stagedMessageId}`,
     );
     if (!records.length) {
       throw new Error(
-        `Staged message with ID ${model.stagedMessageId} not found`
+        `Staged message with ID ${model.stagedMessageId} not found`,
       );
     }
     const attachmentBuffer = await downloadAttachment({
+      req,
       messageId: String(records[0].external_id),
       attachmentId: model.attachmentId!,
       userId: Number(records[0].userId),
@@ -113,7 +122,7 @@ export const saveAttachment = async (
 
     await query(
       (sql) =>
-        sql`UPDATE staging_attachment SET "storageId"=${fileUrl}, IMPORTED=true WHERE staging_message_id=${model.stagedMessageId} AND "partId"=${model.partId}`
+        sql`UPDATE staging_attachment SET "storageId"=${fileUrl}, IMPORTED=true WHERE staging_message_id=${model.stagedMessageId} AND "partId"=${model.partId}`,
     );
 
     const result: AttachmentDownloadResult = {
@@ -130,16 +139,18 @@ export const saveAttachment = async (
           error,
           jobId: id,
           jobData: job,
-        })
-      )
+        }),
+      ),
     );
     throw error;
   }
 };
 export const queueAttachment = ({
+  req,
   job,
   id,
 }: {
+  req: NextRequest | NextApiRequest;
   job: AttachmentDownloadJob;
   id: string;
 }) => {
@@ -147,7 +158,7 @@ export const queueAttachment = ({
     log((l) => l.warn({ message: `Attachment job ${id} already exists` }));
     return;
   }
-  attachmentJobs.set(id, saveAttachment(id, job));
+  attachmentJobs.set(id, saveAttachment(req, id, job));
 };
 export const getQueuedAttachment = (id: string) => {
   if (!attachmentJobs.has(id)) {

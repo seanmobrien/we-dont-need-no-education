@@ -5,11 +5,13 @@ import {
 } from '@/data-models';
 import { isError, isTemplateStringsArray } from '@/lib/react-util';
 import { errorLogFactory, log } from '../logger';
-import { TransformedFullQueryResults } from '../neondb';
+import type {
+  TransformedFullQueryResults,
+  DbQueryFunction,
+} from '@/lib/neondb';
 import { ValidationError } from '../react-util';
 import { DataIntegrityError } from '../react-util/errors/data-integrity-error';
 import { LoggedError } from '../react-util/errors/logged-error';
-import { NeonQueryFunction } from '@neondatabase/serverless';
 import { RecordToObjectImpl, RecordToSummaryImpl } from './_types';
 
 /**
@@ -34,8 +36,8 @@ export class AbstractObjectRepository<T extends object> {
             message: String(error),
             source,
             error: error,
-          })
-        )
+          }),
+        ),
       );
       throw new LoggedError({
         error: new Error(String(error)),
@@ -49,8 +51,8 @@ export class AbstractObjectRepository<T extends object> {
             message: 'Database Integrity failure',
             source,
             error,
-          })
-        )
+          }),
+        ),
       );
       throw new LoggedError({ error, critical: false });
     }
@@ -61,8 +63,8 @@ export class AbstractObjectRepository<T extends object> {
             message: 'Validation error',
             source,
             error,
-          })
-        )
+          }),
+        ),
       );
       throw new LoggedError({ error, critical: false });
     }
@@ -72,8 +74,8 @@ export class AbstractObjectRepository<T extends object> {
           message: '[AUDIT] A database operation failed',
           source,
           error,
-        })
-      )
+        }),
+      ),
     );
     throw new LoggedError({
       error: isError(error) ? error : new Error(String(error)),
@@ -157,12 +159,12 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected forwardCallToDb = <
     ArrayMode extends boolean,
-    FullResults extends boolean
+    FullResults extends boolean,
   >(
-    sql: NeonQueryFunction<ArrayMode, FullResults>,
+    sql: DbQueryFunction<ArrayMode, FullResults>,
     sqlQuery: string | TemplateStringsArray,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    values: Array<any>
+    values: Array<any>,
   ) => {
     return isTemplateStringsArray(sqlQuery)
       ? sql(sqlQuery, ...values)
@@ -187,10 +189,10 @@ export class AbstractObjectRepository<T extends object> {
     getData: (
       num: number,
       page: number,
-      offset: number
+      offset: number,
     ) => Promise<Array<Partial<T>>>,
     getDataCount: () => Promise<Record<string, unknown>[]>,
-    pagination?: PaginationStats
+    pagination?: PaginationStats,
   ): Promise<PaginatedResultset<Partial<T>>> {
     const { num, page, offset } = parsePaginationStats(pagination);
     try {
@@ -239,7 +241,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected async innerGet(
     validateData: () => void,
-    doQuery: () => Promise<T[]>
+    doQuery: () => Promise<T[]>,
   ): Promise<T | null> {
     validateData();
     try {
@@ -263,7 +265,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected async innerUpdate(
     validateData: () => void,
-    doQuery: () => Promise<TransformedFullQueryResults<T>>
+    doQuery: () => Promise<TransformedFullQueryResults<T>>,
   ) {
     validateData();
     try {
@@ -274,14 +276,14 @@ export class AbstractObjectRepository<T extends object> {
           `Failed to update "${this.tableName}" record`,
           {
             table: this.tableName,
-          }
+          },
         );
       }
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] -  ${this.tableName} updated:`,
           row: result.rows[0],
-        })
+        }),
       );
       return result.rows[0];
     } catch (error) {
@@ -301,7 +303,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected async innerCreate(
     validateData: () => void,
-    doQuery: () => Promise<T[]>
+    doQuery: () => Promise<T[]>,
   ): Promise<T> {
     validateData();
     try {
@@ -310,14 +312,14 @@ export class AbstractObjectRepository<T extends object> {
         l.verbose({
           message: `[[AUDIT]] -  ${this.tableName} record created:`,
           row: result[0],
-        })
+        }),
       );
       if (result.length !== 1) {
         throw new DataIntegrityError(
           `Failed to create "${this.tableName}" record.`,
           {
             table: this.tableName,
-          }
+          },
         );
       }
       return result[0];
@@ -337,7 +339,7 @@ export class AbstractObjectRepository<T extends object> {
    */
   protected async innerDelete(
     validate: () => void,
-    doQuery: () => Promise<TransformedFullQueryResults<T>>
+    doQuery: () => Promise<TransformedFullQueryResults<T>>,
   ): Promise<boolean> {
     validate();
     try {
@@ -347,13 +349,13 @@ export class AbstractObjectRepository<T extends object> {
           `Failed to delete from ${this.tableName}`,
           {
             table: this.tableName,
-          }
+          },
         );
       }
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] -  ${this.tableName} deleted a record.`,
-        })
+        }),
       );
       return true;
     } catch (error) {

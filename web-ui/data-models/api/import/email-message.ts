@@ -192,6 +192,7 @@ export const ImportStatusTypeValues = [
   'pending',
   'not-found',
   'in-progress',
+  'error',
 ] as const;
 
 /**
