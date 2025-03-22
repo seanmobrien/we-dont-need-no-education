@@ -1,14 +1,13 @@
-import { errorLogFactory, log } from '@/lib/logger';
 import { query, queryExt } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { PartialExceptFor } from '@/lib/typescript';
-import { isError } from '@/lib/react-util';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { parsePaginationStats } from '@/data-models';
 import { ObjectRepository } from '../_types';
 import { Thread, ThreadSummary } from '@/data-models/api/thread';
+import { BaseObjectRepository } from '../_baseObjectRepository';
+import { log } from '@/lib/logger';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
   threadId: Number(record.thread_id),
@@ -23,74 +22,19 @@ export class ThreadRepository
   constructor() {}
   static MapRecordToSummary = mapRecordToSummary;
 
-  static logError(error: unknown): never {
-    if (typeof error !== 'object' || error === null) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: String(error),
-            source: 'ThreadRepository',
-            error: error,
-          })
-        )
-      );
-      throw new LoggedError({
-        error: new Error(String(error)),
-        critical: true,
-      });
-    }
-    if (DataIntegrityError.isDataIntegrityError(error)) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: 'Database Integrity failure',
-            source: 'ThreadRepository',
-            error,
-          })
-        )
-      );
-      throw new LoggedError({ error, critical: false });
-    }
-    if (ValidationError.isValidationError(error)) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: 'Validation error',
-            source: 'ThreadRepository',
-            error,
-          })
-        )
-      );
-      throw new LoggedError({ error, critical: false });
-    }
-    log((l) =>
-      l.error(
-        errorLogFactory({
-          message: '[AUDIT] A database operation failed',
-          source: 'ThreadRepository',
-          error,
-        })
-      )
-    );
-    throw new LoggedError({
-      error: isError(error) ? error : new Error(String(error)),
-      critical: true,
-    });
-  }
-
   async list(
-    pagination?: PaginationStats
+    pagination?: PaginationStats,
   ): Promise<PaginatedResultset<ThreadSummary>> {
     const { num, page, offset } = parsePaginationStats(pagination);
     try {
       const results = await query(
         (sql) =>
           sql`SELECT * FROM threads ORDER BY created_date DESC LIMIT ${num} OFFSET ${offset}`,
-        { transform: ThreadRepository.MapRecordToSummary }
+        { transform: ThreadRepository.MapRecordToSummary },
       );
       if (results.length === page) {
         const total = await query(
-          (sql) => sql`SELECT COUNT(*) as records FROM threads`
+          (sql) => sql`SELECT COUNT(*) as records FROM threads`,
         );
         return {
           results,
@@ -111,7 +55,10 @@ export class ThreadRepository
         };
       }
     } catch (error) {
-      ThreadRepository.logError(error);
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ThreadRepository',
+      });
     }
     return {
       results: [],
@@ -130,17 +77,20 @@ export class ThreadRepository
       if (typeof threadId === 'string') {
         result = await query(
           (sql) => sql`SELECT * FROM threads WHERE external_id = ${threadId}`,
-          { transform: ThreadRepository.MapRecordToSummary }
+          { transform: ThreadRepository.MapRecordToSummary },
         );
       } else {
         result = await query(
           (sql) => sql`SELECT * FROM threads WHERE thread_id = ${threadId}`,
-          { transform: ThreadRepository.MapRecordToSummary }
+          { transform: ThreadRepository.MapRecordToSummary },
         );
       }
       return result.length === 1 ? result[0] : null;
     } catch (error) {
-      ThreadRepository.logError(error);
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ThreadRepository',
+      });
     }
     // should never get here as logError throws
     return null;
@@ -163,7 +113,7 @@ export class ThreadRepository
         (sql) =>
           sql`INSERT INTO threads (subject, created_at, external_id) VALUES (${subject}, ${createdDate}, ${externalId}) \
             RETURNING *`,
-        { transform: ThreadRepository.MapRecordToSummary }
+        { transform: ThreadRepository.MapRecordToSummary },
       );
       log((l) => l.verbose('[ [AUDIT]] -  Thread created:', result[0]));
       if (result.length !== 1) {
@@ -173,8 +123,10 @@ export class ThreadRepository
       }
       return result[0];
     } catch (error) {
-      ThreadRepository.logError(error);
-      throw error;
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ThreadRepository',
+      });
     }
   }
 
@@ -216,11 +168,11 @@ export class ThreadRepository
         (sql) =>
           sql<false, true>(
             `UPDATE threads SET ${updateFields.join(
-              ', '
+              ', ',
             )} WHERE thread_id = $${paramIndex} RETURNING *`.toString(),
-            values
+            values,
           ),
-        { transform: ThreadRepository.MapRecordToSummary }
+        { transform: ThreadRepository.MapRecordToSummary },
       );
 
       if (result.rowCount === 0) {
@@ -229,8 +181,10 @@ export class ThreadRepository
       log((l) => l.verbose('[[AUDIT]] -  Thread updated:', result.rows[0]));
       return result.rows[0];
     } catch (error) {
-      ThreadRepository.logError(error);
-      throw error;
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ThreadRepository',
+      });
     }
   }
 
@@ -243,16 +197,17 @@ export class ThreadRepository
         (sql) => sql`
             DELETE FROM threads
             WHERE thread_id = ${threadId}
-            RETURNING thread_id`
+            RETURNING thread_id`,
       );
       if (results.length === 0) {
         throw new DataIntegrityError('Failed to delete Thread');
       }
       return true;
     } catch (error) {
-      if (!ThreadRepository.logError(error)) {
-        throw error;
-      }
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ThreadRepository',
+      });
     }
     return false;
   }

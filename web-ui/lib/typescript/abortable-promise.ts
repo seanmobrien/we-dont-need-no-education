@@ -1,4 +1,5 @@
 import { ICancellablePromiseExt } from './_types';
+import { log } from '@/lib/logger'; // Assuming you have a logger utility
 
 export const abortablePromise: unique symbol = Symbol('abortablePromise');
 
@@ -33,6 +34,13 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
     const controller = new AbortController();
     this.#controller = controller;
     let onAbortCallback: (() => void) | undefined;
+
+    log((l) =>
+      l.info('AbortablePromise created', {
+        timestamp: new Date().toISOString(),
+      }),
+    );
+
     this.#promise = new Promise<T>((resolve, reject) => {
       onAbortCallback = () => {
         const error = new Error('Promise was cancelled', {
@@ -48,6 +56,11 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
         controller.signal.removeEventListener('abort', onAbortCallback);
         onAbortCallback = undefined;
       }
+      log((l) =>
+        l.info('AbortablePromise cleaned up', {
+          timestamp: new Date().toISOString(),
+        }),
+      );
     });
   }
 
@@ -65,29 +78,58 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
     onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ((reason: any) => TResult2 | PromiseLike<TResult2>) | null | undefined,
   ): ICancellablePromiseExt<TResult1 | TResult2> {
+    log((l) =>
+      l.info('AbortablePromise then called', {
+        timestamp: new Date().toISOString(),
+      }),
+    );
     this.#promise = this.#promise.then(onfulfilled, onrejected) as Promise<T>;
     return this as ICancellablePromiseExt<TResult1 | TResult2>;
   }
+
   catch<TResult = never>(
     onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined,
   ): ICancellablePromiseExt<T | TResult> {
+    log((l) =>
+      l.info('AbortablePromise catch called', {
+        timestamp: new Date().toISOString(),
+      }),
+    );
     this.#promise = this.#promise.catch(onrejected) as Promise<T>;
     return this as ICancellablePromiseExt<T | TResult>;
   }
+
   finally(
     onfinally?: (() => void) | null | undefined,
   ): ICancellablePromiseExt<T> {
+    log((l) =>
+      l.info('AbortablePromise finally called', {
+        timestamp: new Date().toISOString(),
+      }),
+    );
     this.#promise = this.#promise.finally(onfinally);
     return this;
   }
+
   cancel(): void {
+    log((l) =>
+      l.info('AbortablePromise cancel called', {
+        timestamp: new Date().toISOString(),
+      }),
+    );
     this.#controller.abort();
   }
+
   cancelled<TResult = never>(
     onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined,
   ): ICancellablePromiseExt<T | TResult> {
+    log((l) =>
+      l.info('AbortablePromise cancelled called', {
+        timestamp: new Date().toISOString(),
+      }),
+    );
     this.#promise = this.#promise.catch((e) =>
       this.isMyAbortError(e) ? onrejected?.(e) : Promise.reject(e),
     ) as Promise<T>;

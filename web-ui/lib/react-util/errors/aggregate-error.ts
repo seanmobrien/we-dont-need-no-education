@@ -45,7 +45,7 @@ export class AggregateError extends Error {
    */
   private static buildMessage(
     messageOrError: string | Error,
-    errors: Error[]
+    errors: Error[],
   ): string {
     return messageOrError instanceof Error
       ? `An aggregate error has occurred:\n${[
@@ -78,8 +78,6 @@ export class AggregateError extends Error {
       typeof messageOrError == 'object'
         ? [messageOrError, ...errors]
         : [...errors];
-    // Set the prototype explicitly.
-    Object.setPrototypeOf(this, AggregateError.prototype);
   }
 
   [index: number]: Error;
@@ -110,12 +108,12 @@ export class AggregateError extends Error {
   }
 
   /**
-   * Returns an iterator that allows iterating over the errors in the aggregate error.
+   * Returns an array of all errors in the aggregate error.
    *
-   * @returns {IterableIterator<Error>} An iterator for the errors.
+   * @returns {Error[]} An array of the errors.
    */
-  public [Symbol.iterator](): IterableIterator<Error> {
-    return this.#errors[Symbol.iterator]();
+  public all(): Error[] {
+    return [...this.#errors];
   }
 
   /**

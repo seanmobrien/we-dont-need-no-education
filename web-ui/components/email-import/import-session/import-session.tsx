@@ -1,7 +1,7 @@
 'use client';
 
 import { ChangeEvent, useCallback, useMemo, useState } from 'react';
-import { ImportRecord } from './import-record';
+import ImportRecord from './import-record';
 import {
   InputLabel,
   InputAdornment,
@@ -19,10 +19,9 @@ import Mail from '@mui/icons-material/Mail';
 import { LoggedError } from '@/lib/react-util';
 import { searchEmails } from '@/lib/api/email/import/google';
 import { log } from '@/lib/logger';
-import EnhancedTableHead from './import-table-head';
-import { HeadCell, ImportRecordNotifyProps } from './types';
+import { EnhancedTableHead, HeadCell } from '@/components/general';
+import { ImportRecordNotifyProps } from './types';
 import { MessageImportStatus } from '@/data-models/api/import/email-message';
-
 type ActionButonTaskType = 'load' | 'import' | 'cancel';
 
 const headCells: HeadCell[] = [

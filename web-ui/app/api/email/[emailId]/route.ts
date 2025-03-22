@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neondb';
-import { errorLogFactory, log } from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { mapRecordToObject } from '../email-route-util';
+import { LoggedError } from '@/lib/react-util';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ emailId: string }> }
+  { params }: { params: Promise<{ emailId: string }> },
 ) {
   const { emailId } = await params;
   const guidRegex =
@@ -13,7 +14,7 @@ export async function GET(
   if (!emailId || !guidRegex.test(emailId)) {
     return NextResponse.json(
       { error: 'Email ID is required' },
-      { status: 400 }
+      { status: 400 },
     );
   }
   try {
@@ -44,24 +45,21 @@ export async function GET(
         WHERE e.email_id = ${emailId}
         GROUP BY e.email_id, sender.contact_id, sender.name, sender.email;
       `,
-      { transform: mapRecordToObject }
+      { transform: mapRecordToObject },
     );
     return result.length === 0
       ? NextResponse.json({ error: 'Email not found' }, { status: 404 })
       : NextResponse.json(result[0], { status: 200 });
   } catch (error) {
-    log((l) =>
-      l.error(
-        errorLogFactory({
-          error,
-          source: 'GET email/emailId',
-          include: { emailId: emailId },
-        })
-      )
-    );
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'GET email/emailId',
+      msg: 'Error fetching email details',
+      include: { emailId: emailId },
+    });
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -91,35 +89,40 @@ export async function DELETE({
   if (!emailId) {
     return NextResponse.json(
       { error: 'Email ID is required' },
-      { status: 400 }
+      { status: 400 },
     );
   }
   try {
     // Delete associated recipients first
     await query(
-      (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`
+      (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`,
     );
 
     // Delete the email
     const result = await query(
-      (sql) => sql`DELETE FROM emails WHERE email_id = ${emailId} RETURNING *`
+      (sql) => sql`DELETE FROM emails WHERE email_id = ${emailId} RETURNING *`,
     );
 
     if (result.length === 0) {
       return NextResponse.json({ error: 'Email not found' }, { status: 404 });
     }
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email deleted:', result: result[0] })
+      l.verbose({ msg: '[[AUDIT]] -  Email deleted:', result: result[0] }),
     );
     return NextResponse.json(
       { message: 'Email deleted successfully', email: result[0] },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    log((l) => l.error(errorLogFactory({ source: 'DELETE email', error })));
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'DELETE email/emailId',
+      msg: 'Error deleting email',
+      include: { emailId },
+    });
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

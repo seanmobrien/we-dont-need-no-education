@@ -34,14 +34,9 @@ export const providerMap = providers.map((provider) => {
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
-  console.log(
-    'creating auth config for environment ',
-    process.env.NEXT_RUNTIME,
-  );
   let adapter: Adapter | undefined;
 
   if (!isRunningOnEdge()) {
-    console.log('creating adapter for environment ', process.env.NEXT_RUNTIME);
     process.env.PG_FORCE_NATIVE = '0';
     const { Pool } = await import('pg');
     const { default: PostgresAdapter } = await import('@auth/pg-adapter');

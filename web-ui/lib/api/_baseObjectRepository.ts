@@ -24,9 +24,25 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
   extends AbstractObjectRepository<T>
   implements ObjectRepository<T, KId>
 {
+  /**
+   * The name of the table in the database.
+   * @type {string}
+   */
   protected readonly objectIdField: KId;
+  /**
+   * The name of the key field in the database table.
+   * @type {string}
+   */
   protected readonly tableIdField: string;
 
+  /**
+   * Constructs a new instance of BaseObjectRepository.
+   *
+   * @param {string} tableName - The name of the table in the database.
+   * @param {KId | [KId, string]} idField - The key field in the database table.
+   * @param {RecordToObjectImpl<T>} objectMap - Function to map database records to objects.
+   * @param {RecordToSummaryImpl<T>} summaryMap - Function to map database records to summaries.
+   */
   constructor({
     tableName,
     idField,
@@ -57,11 +73,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    *
    * @throws {Error} Method not implemented.
    *
-   * @returns {[
-   *   TemplateStringsArray,
-   *   Array<any>,
-   *   TemplateStringsArray
-   * ]} The list query properties.
+   * @returns {[string, Array<any>, string]} The list query properties.
    */
   protected getListQueryProperties(): [
     string,
@@ -75,8 +87,8 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
   /**
    * Gets the properties required to create a query.
    *
-   * @returns A tuple containing a `TemplateStringsArray` and an array of any type.
-   * @throws An error indicating that the method is not implemented.
+   * @returns {[string, Array<any>]} A tuple containing a `TemplateStringsArray` and an array of any type.
+   * @throws {Error} An error indicating that the method is not implemented.
    */
   protected getCreateQueryProperties({}: FirstParameter<
     ObjectRepository<T, KId>['create']
@@ -91,8 +103,8 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
   /**
    * Retrieves the query properties.
    *
-   * @returns A tuple containing a TemplateStringsArray and an array of any type.
-   * @throws Error if the method is not implemented.
+   * @returns {[string, Array<any>]} A tuple containing a TemplateStringsArray and an array of any type.
+   * @throws {Error} If the method is not implemented.
    */
   protected getQueryProperties({}: FirstParameter<
     ObjectRepository<T, KId>['get']
@@ -107,7 +119,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
   /**
    * Gets the properties required to update a query.
    *
-   * @returns {Record<string, any>} An object containing the properties for the update query.
+   * @returns {[Record<string, any>]} An object containing the properties for the update query.
    * @throws {Error} Throws an error if the method is not implemented.
    */
   protected getUpdateQueryProperties({}: FirstParameter<
@@ -119,6 +131,12 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     throw new Error('Method not implemented.');
   }
 
+  /**
+   * Retrieves a list of items with optional pagination.
+   *
+   * @param {PaginationStats} [pagination] - Optional pagination parameters.
+   * @returns {Promise<PaginatedResultset<Partial<T>>>} A promise that resolves to a paginated result set of partial items.
+   */
   list(pagination?: PaginationStats): Promise<PaginatedResultset<Partial<T>>> {
     const [sqlQuery, values, sqlCountQuery] = this.getListQueryProperties();
     return this.defaultListImpl(
@@ -126,6 +144,17 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
       pagination,
     );
   }
+
+  /**
+   * Default implementation for listing items with optional pagination.
+   *
+   * @param {Object} params - The parameters for the list query.
+   * @param {string} params.sqlQuery - The SQL query string.
+   * @param {Array<any>} params.values - The values for the SQL query.
+   * @param {string} params.sqlCountQuery - The SQL count query string.
+   * @param {PaginationStats} [pagination] - Optional pagination parameters.
+   * @returns {Promise<PaginatedResultset<Partial<T>>>} A promise that resolves to a paginated result set of partial items.
+   */
   defaultListImpl(
     {
       sqlCountQuery,
@@ -155,6 +184,12 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     );
   }
 
+  /**
+   * Retrieves an item by its ID.
+   *
+   * @param {T[KId]} recordId - The ID of the record to retrieve.
+   * @returns {Promise<T | null>} A promise that resolves to the retrieved item or null if not found.
+   */
   get(recordId: T[KId]): Promise<T | null> {
     return this.innerGet(
       () => this.validate('get', recordId),
@@ -170,6 +205,12 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     );
   }
 
+  /**
+   * Creates a new item.
+   *
+   * @param {Omit<T, KId>} props - The properties of the item to create.
+   * @returns {Promise<T>} A promise that resolves to the created item.
+   */
   create(props: Omit<T, KId>): Promise<T> {
     return this.innerCreate(
       () => this.validate('create', props),
@@ -185,6 +226,12 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     );
   }
 
+  /**
+   * Updates an existing item.
+   *
+   * @param {PartialExceptFor<T, KId>} props - The properties of the item to update.
+   * @returns {Promise<T>} A promise that resolves to the updated item.
+   */
   update(props: PartialExceptFor<T, KId>): Promise<T> {
     return this.innerUpdate(
       () => this.validate('update', props),
@@ -216,6 +263,12 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     );
   }
 
+  /**
+   * Deletes an item by its ID.
+   *
+   * @param {T[KId]} recordId - The ID of the record to delete.
+   * @returns {Promise<boolean>} A promise that resolves to true if the item was deleted, otherwise false.
+   */
   delete(recordId: T[KId]): Promise<boolean> {
     return this.innerDelete(
       () => this.validate('delete', recordId),
@@ -232,8 +285,8 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * This is a no-op by default but can be overridden in subclasses.
    *
    * @template TMethod - The type of the method in the ObjectRepository.
-   * @param method - The method to use for validation.
-   * @param obj - The object to validate, which is the first parameter of the specified method.
+   * @param {TMethod} method - The method to use for validation.
+   * @param {FirstParameter<Pick<ObjectRepository<T, KId>, TMethod>[TMethod]>} obj - The object to validate, which is the first parameter of the specified method.
    */
   validate<TMethod extends keyof ObjectRepository<T, KId>>(
     method: TMethod,

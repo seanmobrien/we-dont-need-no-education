@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryExt } from '@/lib/neondb';
-import { errorLogFactory, log } from '@/lib/logger';
+import { log } from '@/lib/logger';
 import {
   normalizeNullableNumeric,
   parsePaginationStats,
@@ -10,7 +10,7 @@ import {
   mapRecordToObject,
   mapRecordToSummary,
 } from './email-route-util';
-import { ValidationError } from '@/lib/react-util';
+import { LoggedError, ValidationError } from '@/lib/react-util';
 
 /**
  * Handles the GET request to fetch a list of emails with sender and recipient information.
@@ -52,17 +52,20 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         GROUP BY e.email_id, sender.contact_id, sender.name, sender.email
         ORDER BY e.sent_timestamp DESC
         LIMIT ${num} OFFSET ${offset};`,
-      { transform: mapRecordToSummary }
+      { transform: mapRecordToSummary },
     );
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email list:', result, num, offset })
+      l.verbose({ msg: '[[AUDIT]] -  Email list:', result, num, offset }),
     );
     return NextResponse.json(result, { status: 200 });
   } catch (error) {
-    log((l) => l.error(errorLogFactory({ source: 'GET email', error })));
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'GET email',
+    });
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -103,26 +106,26 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Insert email into the database
     const result = await query(
       (
-        sql
+        sql,
       ) => sql`INSERT INTO emails (sender_id, subject, email_contents, sent_timestamp, thread_id, parent_email_id) 
        VALUES (${senderId}, ${subject}, ${body}, ${sentOn}, ${normalizeNullableNumeric(
-        threadId
-      )}, ${normalizeNullableNumeric(parentEmailId)}) RETURNING *`,
-      { transform: mapRecordToObject }
+         threadId,
+       )}, ${normalizeNullableNumeric(parentEmailId)}) RETURNING *`,
+      { transform: mapRecordToObject },
     );
 
     const emailId = Number(result[0].emailId);
     await insertRecipients(emailId, recipients);
 
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email created:', result: result[0] })
+      l.verbose({ msg: '[[AUDIT]] -  Email created:', result: result[0] }),
     );
 
     return NextResponse.json(
@@ -130,7 +133,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         message: 'Email created successfully',
         email: result[0],
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     if (ValidationError.isValidationError(error)) {
@@ -140,11 +143,11 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       l.error({
         source: 'POST email',
         error,
-      })
+      }),
     );
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -181,7 +184,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     if (!emailId) {
       return NextResponse.json(
         { error: 'Email ID is required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -196,7 +199,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     ) {
       return NextResponse.json(
         { error: 'At least one field is required for update' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -237,17 +240,17 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       (sql) =>
         sql<false, true>(
           `UPDATE emails SET ${updateFields.join(
-            ', '
+            ', ',
           )} WHERE email_id = $${paramIndex} RETURNING *`,
-          values
+          values,
         ),
-      { transform: mapRecordToObject }
+      { transform: mapRecordToObject },
     );
 
     if (result.rowCount === 0) {
       return NextResponse.json(
         { error: 'Email not found or not updated' },
-        { status: 404 }
+        { status: 404 },
       );
     }
     if (recipients && recipients.length > 0) {
@@ -255,18 +258,18 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     }
 
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email updated:', result: result.rows[0] })
+      l.verbose({ msg: '[[AUDIT]] -  Email updated:', result: result.rows[0] }),
     );
 
     return NextResponse.json(
       { message: 'Email updated successfully', email: result.rows[0] },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     log((l) => l.error({ source: 'PUT email', error }));
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

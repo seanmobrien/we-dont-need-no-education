@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mapRecordToSummary } from '../email-route-util';
 import { query } from '@/lib/neondb';
-import { errorLogFactory, log } from '@/lib/logger';
 import { parsePaginationStats } from '@/data-models';
+import { LoggedError } from '@/lib/react-util';
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const whereClauses = [];
     if (queryParam) {
       whereClauses.push(
-        "(e.subject ILIKE '%' || $1 || '%' OR sender.name ILIKE '%' || $1 || '%')"
+        "(e.subject ILIKE '%' || $1 || '%' OR sender.name ILIKE '%' || $1 || '%')",
       );
     }
     if (contactIds.length > 0) {
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     const result = await query(
       (sql) => sql<false, false>(querySql.toString(), [queryParam]),
-      { transform: mapRecordToSummary }
+      { transform: mapRecordToSummary },
     );
 
     const countQuery =
@@ -72,13 +72,17 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(
       { pageStats: { page, num, total: total[0].records }, results: result },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    log((l) => l.error(errorLogFactory({ error, source: 'GET email/query' })));
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'GET email/query',
+      msg: 'Error searching emails',
+    });
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

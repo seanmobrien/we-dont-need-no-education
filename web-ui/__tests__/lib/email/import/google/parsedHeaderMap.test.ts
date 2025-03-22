@@ -1,4 +1,6 @@
 import {
+  BracketHeaderParser,
+  EmailHeaderParser,
   isParsedHeaderMap,
   ParsedHeaderMap,
 } from '@/lib/email/parsedHeaderMap';
@@ -130,56 +132,60 @@ describe('ParsedHeaderMap', () => {
     it('should create a parse map with default options', () => {
       const parseMap = ParsedHeaderMap.makeParseMap();
       expect(parseMap).toEqual({
-        to: undefined,
-        cc: undefined,
-        bcc: undefined,
-        from: undefined,
-        'in-reply-to': undefined,
-        references: undefined,
-        'return-path': undefined,
-        'message-id': undefined,
+        to: expect.any(EmailHeaderParser),
+        cc: expect.any(EmailHeaderParser),
+        bcc: expect.any(EmailHeaderParser),
+        from: expect.any(EmailHeaderParser),
+        'in-reply-to': expect.any(BracketHeaderParser),
+        references: expect.any(BracketHeaderParser),
+        'return-path': expect.any(BracketHeaderParser),
+        'message-id': expect.any(BracketHeaderParser),
+        get: expect.any(Function),
       });
     });
 
     it('should create a parse map with expandArrays option', () => {
       const parseMap = ParsedHeaderMap.makeParseMap({ expandArrays: true });
       expect(parseMap).toEqual({
-        to: { split: ',' },
-        cc: { split: ',' },
-        bcc: { split: ',' },
-        from: { split: ',' },
-        'in-reply-to': { split: ' ' },
-        references: { split: ' ' },
-        'return-path': undefined,
-        'message-id': undefined,
+        to: expect.any(EmailHeaderParser),
+        cc: expect.any(EmailHeaderParser),
+        bcc: expect.any(EmailHeaderParser),
+        from: expect.any(EmailHeaderParser),
+        'in-reply-to': expect.any(BracketHeaderParser),
+        references: expect.any(BracketHeaderParser),
+        'return-path': expect.any(BracketHeaderParser),
+        'message-id': expect.any(BracketHeaderParser),
+        get: expect.any(Function),
       });
     });
 
     it('should create a parse map with parseContacts option', () => {
       const parseMap = ParsedHeaderMap.makeParseMap({ parseContacts: true });
       expect(parseMap).toEqual({
-        to: { parse: expect.any(Function) },
-        cc: { parse: expect.any(Function) },
-        bcc: { parse: expect.any(Function) },
-        from: { parse: expect.any(Function) },
-        'in-reply-to': undefined,
-        references: undefined,
-        'return-path': undefined,
-        'message-id': undefined,
+        to: expect.any(EmailHeaderParser),
+        cc: expect.any(EmailHeaderParser),
+        bcc: expect.any(EmailHeaderParser),
+        from: expect.any(EmailHeaderParser),
+        'in-reply-to': expect.any(BracketHeaderParser),
+        references: expect.any(BracketHeaderParser),
+        'return-path': expect.any(BracketHeaderParser),
+        'message-id': expect.any(BracketHeaderParser),
+        get: expect.any(Function),
       });
     });
 
     it('should create a parse map with extractBrackets option', () => {
       const parseMap = ParsedHeaderMap.makeParseMap({ extractBrackets: true });
       expect(parseMap).toEqual({
-        to: undefined,
-        cc: undefined,
-        bcc: undefined,
-        from: undefined,
-        'in-reply-to': { parse: expect.any(Function) },
-        references: { parse: expect.any(Function) },
-        'return-path': { parse: expect.any(Function) },
-        'message-id': { parse: expect.any(Function) },
+        to: expect.any(EmailHeaderParser),
+        cc: expect.any(EmailHeaderParser),
+        bcc: expect.any(EmailHeaderParser),
+        from: expect.any(EmailHeaderParser),
+        'in-reply-to': expect.any(BracketHeaderParser),
+        references: expect.any(BracketHeaderParser),
+        'return-path': expect.any(BracketHeaderParser),
+        'message-id': expect.any(BracketHeaderParser),
+        get: expect.any(Function),
       });
     });
   });

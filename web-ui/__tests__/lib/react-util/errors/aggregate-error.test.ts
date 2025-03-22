@@ -44,7 +44,7 @@ describe('AggregateError', () => {
     const aggregateError = new AggregateError('Primary error', error1, error2);
 
     const errors = [];
-    for (const error of aggregateError) {
+    for (const error of aggregateError.all()) {
       errors.push(error);
     }
 

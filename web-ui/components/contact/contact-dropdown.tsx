@@ -90,6 +90,7 @@ const ContactDropdown = ({
   return (
     <div className={classnames(className)}>
       <select
+        title="Select contact"
         value={contactId}
         onChange={handleSelectChange}
         className={classnames(width('w-full'))}

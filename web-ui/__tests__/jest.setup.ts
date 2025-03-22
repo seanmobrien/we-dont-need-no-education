@@ -6,11 +6,10 @@ import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
 import { neon } from '@neondatabase/serverless';
 import postgres from 'postgres';
-import { globalContactCache } from '@/data-models/api/contact-cache';
+import { resetGlobalCache } from '@/data-models/api/contact-cache';
 // jest.setup.ts
 import '@testing-library/jest-dom';
 import 'jest';
-import { ContactCache } from '@/data-models/api/contact-cache';
 
 jest.mock('google-auth-library');
 jest.mock('googleapis');
@@ -67,9 +66,10 @@ const resetEnvVariables = () => {
 
 beforeEach(() => {
   resetEnvVariables();
-  globalContactCache((cache) => cache.clear());
+  resetGlobalCache();
 });
 
 afterEach(() => {
   jest.clearAllMocks();
+  resetGlobalCache();
 });

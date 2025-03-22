@@ -55,7 +55,7 @@ type ParseHeaderOptions = {
  *          If the input string matches the expected format, the object will have
  *          `name` and `email` properties. Otherwise, it will only have the `email` property.
  */
-class EmailHeaderParser implements ParseHeaderArrayRecord {
+export class EmailHeaderParser implements ParseHeaderArrayRecord {
   readonly #parser: (x: string) => ContactInHeader | string;
   readonly #split?: string;
 
@@ -78,7 +78,7 @@ class EmailHeaderParser implements ParseHeaderArrayRecord {
   }
 }
 
-class BracketHeaderParser implements ParseHeaderArrayRecord {
+export class BracketHeaderParser implements ParseHeaderArrayRecord {
   readonly #parser: (x: string) => string;
   readonly #split?: string;
 

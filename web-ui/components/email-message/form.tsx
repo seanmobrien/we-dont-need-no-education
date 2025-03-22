@@ -1,7 +1,7 @@
 'use client';
 
-import { errorLogFactory, log } from '@/lib/logger';
-import { isError } from '@/lib/react-util';
+import { log } from '@/lib/logger';
+import { isError, LoggedError } from '@/lib/react-util';
 import {
   useState,
   useEffect,
@@ -162,9 +162,10 @@ const EmailForm: ForwardRefRenderFunction<
           if (cancelled || AbortablePromise.isOperationCancelledError(error)) {
             return;
           }
-          log((l) =>
-            l.error(errorLogFactory({ error, source: 'email-form: load' })),
-          );
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'email-form: load',
+          });
           setMessage(
             String(
               isError(error) ? error.message : 'Error fetching email details.',
@@ -228,15 +229,12 @@ const EmailForm: ForwardRefRenderFunction<
         return result;
       })
       .catch((error) => {
-        log((l) =>
-          l.error(
-            errorLogFactory({
-              error,
-              source: 'email-form: submit',
-              details: 'Network error detected',
-            }),
-          ),
-        );
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'email-form: submit',
+          details: 'Error saving email',
+          include: { emailId },
+        });
         setMessage(
           String(
             isError(error ? error.message : null) ??

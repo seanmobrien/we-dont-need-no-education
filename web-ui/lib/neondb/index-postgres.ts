@@ -4,14 +4,9 @@
  * This module provides a connection to the Neon database using the postgres.js driver.
  */
 
-import postgres, {
-  Sql,
-  RowList,
-  ParameterOrFragment,
-  PendingQuery,
-} from 'postgres';
+import { Sql, RowList, ParameterOrFragment, PendingQuery } from 'postgres';
+import sql from './connection';
 import { isDbError } from './_guards';
-export { isDbError };
 
 export type QueryProps<ResultType extends object = Record<string, unknown>> = {
   transform?: (result: Record<string, unknown>) => ResultType;
@@ -25,22 +20,6 @@ export type TransformedFullQueryResults<
   command: string;
   rowCount: number;
   rows: Array<ResultType>;
-};
-
-let _connection: Sql | undefined;
-const connection = () => {
-  if (_connection) {
-    return _connection;
-  }
-  const ret =
-    typeof process.env.DATABASE_URL === 'string'
-      ? process.env.DATABASE_URL
-      : '';
-  if (ret === '') {
-    throw new Error('DATABASE_URL is not set');
-  }
-  _connection = postgres(ret, { ssl: 'verify-full' });
-  return _connection;
 };
 
 const asRecord = (
@@ -130,7 +109,6 @@ export const query = <ResultType extends object = Record<string, unknown>>(
   cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
   props: QueryProps<ResultType> = {},
 ): Promise<Array<ResultType>> => {
-  const sql = connection();
   return applyTransform<ResultType>(cb(sqlNeonAdapter(sql)), props);
 };
 
@@ -144,7 +122,6 @@ export const queryExt = <ResultType extends object = Record<string, unknown>>(
   cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
   props: QueryProps<ResultType> = {},
 ): Promise<TransformedFullQueryResults<ResultType>> => {
-  const sql = connection();
   return applyResultsetTransform(cb(sqlNeonAdapter(sql)), props);
 };
 

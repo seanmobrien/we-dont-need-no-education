@@ -1,8 +1,8 @@
 import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import type { Contact } from '@/data-models/api';
 import { createContact, isContact, isContactSummary } from '@/data-models/api';
-import { errorLogFactory, log } from '@/lib/logger';
-import { isAbortError } from '@/lib/react-util';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 
 type ContactFormProps = {
   contact?: Contact | number;
@@ -25,7 +25,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
     const fetchContact = async (contactId: number) => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/contacts?contact_id=${contactId}`, {
+        const response = await fetch(`/api/contacts/${contactId}`, {
           signal,
         });
         if (!response.ok) {
@@ -34,20 +34,10 @@ const ContactForm: React.FC<ContactFormProps> = ({
         const contactData = await response.json();
         setFormData(contactData);
       } catch (error) {
-        log((l) =>
-          l.error(
-            errorLogFactory({
-              source: 'contact-form fetch',
-              error,
-              include: {
-                msg: isAbortError(error)
-                  ? 'Reuest cancelled'
-                  : 'Error fetching contact',
-                contactId,
-              },
-            })
-          )
-        );
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          msg: 'Error fetching contact',
+        });
       } finally {
         setLoading(false);
       }
@@ -68,7 +58,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
       const { name, value } = event.target;
       setFormData((prevData) => ({ ...prevData, [name]: value }));
     },
-    [setFormData]
+    [setFormData],
   );
 
   const onSaveClicked = useCallback(
@@ -77,9 +67,17 @@ const ContactForm: React.FC<ContactFormProps> = ({
       try {
         const controller = new AbortController();
         const signal = controller.signal;
-
-        const response = await fetch('/api/contacts', {
-          method: formData.contactId > 0 ? 'PUT' : 'POST',
+        let uri: string;
+        let method: 'POST' | 'PUT';
+        if (formData.contactId > 0) {
+          uri = `/api/contacts/${formData.contactId}`;
+          method = 'PUT';
+        } else {
+          uri = '/api/contacts';
+          method = 'POST';
+        }
+        const response = await fetch(uri, {
+          method: method,
           headers: {
             'Content-Type': 'application/json',
           },
@@ -104,7 +102,7 @@ const ContactForm: React.FC<ContactFormProps> = ({
         log((l) => l.error('Error saving contact:', error));
       }
     },
-    [formData, onSave]
+    [formData, onSave],
   );
 
   if (loading) {

@@ -9,7 +9,6 @@ import { DefaultImportManager } from '@/lib/email/import/importmanager';
 import { gmail_v1 } from 'googleapis';
 import { LoggedError } from '@/lib/react-util';
 import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
-import { errorLogFactory, log } from '@/lib/logger';
 import { queueAttachment } from '@/lib/email/import/google/attachment-download';
 import type { NextApiRequest } from 'next/types';
 
@@ -193,16 +192,11 @@ export const PUT = async (
       throw new Error('Failed to stage attachments', { cause: attachments });
     }
   } catch (error) {
-    log((l) =>
-      l.error(
-        errorLogFactory({
-          message: 'Unexpected error processing attachments',
-          data: { emailId, attachments: result.raw.payload?.parts },
-          error,
-          source: 'email-import',
-        }),
-      ),
-    );
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'email-import',
+      data: { emailId, attachments: result.raw.payload?.parts },
+    });
     try {
       await query((sql) => sql`delete from staging_message where id = ${id}`);
     } catch (suppress) {

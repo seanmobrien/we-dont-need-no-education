@@ -1,9 +1,9 @@
 import { TableHead, TableRow, TableCell, Checkbox } from '@mui/material';
-import { HeadCell } from './types';
+import { HeadCell } from './_types';
 
 interface EnhancedTableProps {
   numSelected: number;
-  onSelectAllClick: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onSelectAllClick?: (event: React.ChangeEvent<HTMLInputElement>) => void;
   rowCount: number;
   headCells: HeadCell[];
 }
@@ -17,17 +17,19 @@ const EnhancedTableHead: React.FC<EnhancedTableProps> = ({
   return (
     <TableHead>
       <TableRow>
-        <TableCell padding="checkbox">
-          <Checkbox
-            color="primary"
-            indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
-            onChange={onSelectAllClick}
-            inputProps={{
-              'aria-label': 'select all emails',
-            }}
-          />
-        </TableCell>
+        {onSelectAllClick && (
+          <TableCell padding="checkbox">
+            <Checkbox
+              color="primary"
+              indeterminate={numSelected > 0 && numSelected < rowCount}
+              checked={rowCount > 0 && numSelected === rowCount}
+              onChange={onSelectAllClick}
+              inputProps={{
+                'aria-label': 'select all emails',
+              }}
+            />
+          </TableCell>
+        )}
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}

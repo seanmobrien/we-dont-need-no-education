@@ -79,7 +79,7 @@ export const sendApiRequest = <T>({
           errorData = errorBody;
           errorMessage += ` - ${errorData}`;
         }
-        throw new ApiRequestError(errorMessage, response);
+        rejectOuter(new ApiRequestError(errorMessage, response));
       }
       const contentType = response.headers.get('Content-Type');
       const data =
@@ -105,10 +105,6 @@ export const sendApiRequest = <T>({
           message: `API request failed for [${url}]`,
           url,
           method,
-          response:
-            typeof error === 'object' && error && 'response' in error
-              ? error.response
-              : undefined,
         }),
       );
     }

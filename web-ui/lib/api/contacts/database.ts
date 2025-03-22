@@ -1,20 +1,19 @@
 import { Contact, ContactSummary } from '@/data-models/api/contact';
-import { errorLogFactory, log } from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { query, queryExt } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { PartialExceptFor } from '@/lib/typescript';
-import { isError } from '@/lib/react-util';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { isContact, parsePaginationStats } from '@/data-models';
 import { ObjectRepository } from '@/data-models/api/object-repository';
 import { globalContactCache } from '@/data-models/api';
 import { RecipientType } from '@/lib/email/import/types';
+import { BaseObjectRepository } from '../_baseObjectRepository';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,
-  updateContact: boolean = true
+  updateContact: boolean = true,
 ) => {
   const ret = {
     contactId: Number(record.contact_id),
@@ -45,74 +44,19 @@ export class ContactRepository
   static MapRecordToSummary = mapRecordToSummary;
   static MapRecordToObject = mapRecordToObject;
 
-  static logError(error: unknown): never {
-    if (typeof error !== 'object' || error === null) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: String(error),
-            source: 'ContactRepository',
-            error: error,
-          })
-        )
-      );
-      throw new LoggedError({
-        error: new Error(String(error)),
-        critical: true,
-      });
-    }
-    if (DataIntegrityError.isDataIntegrityError(error)) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: 'Database Integrity failure',
-            source: 'ContactRepository',
-            error,
-          })
-        )
-      );
-      throw new LoggedError({ error, critical: false });
-    }
-    if (ValidationError.isValidationError(error)) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: 'Validation error',
-            source: 'ContactRepository',
-            error,
-          })
-        )
-      );
-      throw new LoggedError({ error, critical: false });
-    }
-    log((l) =>
-      l.error(
-        errorLogFactory({
-          message: '[AUDIT] A database operation failed',
-          source: 'ContactRepository',
-          error,
-        })
-      )
-    );
-    throw new LoggedError({
-      error: isError(error) ? error : new Error(String(error)),
-      critical: true,
-    });
-  }
-
   async list(
-    pagination?: PaginationStats
+    pagination?: PaginationStats,
   ): Promise<PaginatedResultset<ContactSummary>> {
     const { num, page, offset } = parsePaginationStats(pagination);
     try {
       const results = await query(
         (sql) =>
           sql`SELECT * FROM contacts ORDER BY contact_id LIMIT ${num} OFFSET ${offset}`,
-        { transform: ContactRepository.MapRecordToSummary }
+        { transform: ContactRepository.MapRecordToSummary },
       );
       if (results.length === page) {
         const total = await query(
-          (sql) => sql`SELECT COUNT(*) as records FROM contacts`
+          (sql) => sql`SELECT COUNT(*) as records FROM contacts`,
         );
         return {
           results,
@@ -133,13 +77,16 @@ export class ContactRepository
         };
       }
     } catch (error) {
-      ContactRepository.logError(error);
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ContactRepository.list',
+      });
     }
   }
 
   async get(
     contactId: number,
-    reload: boolean = false
+    reload: boolean = false,
   ): Promise<Contact | null> {
     if (!reload) {
       const cachedContact = globalContactCache((cache) => cache.get(contactId));
@@ -150,12 +97,14 @@ export class ContactRepository
     try {
       const result = await query(
         (sql) => sql`SELECT * FROM contacts WHERE contact_id = ${contactId}`,
-        { transform: ContactRepository.MapRecordToObject }
+        { transform: ContactRepository.MapRecordToObject },
       );
       return result.length === 1 ? result[0] : null;
     } catch (error) {
-      ContactRepository.logError(error);
-      throw error;
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ContactRepository.list',
+      });
     }
   }
 
@@ -177,7 +126,7 @@ export class ContactRepository
         (sql) =>
           sql`INSERT INTO contacts (name, email, phone, role_dscr, is_district_staff) VALUES (${name}, ${email}, ${phoneNumber}, ${jobDescription}, ${isDistrictStaff})\
             RETURNING *`,
-        { transform: ContactRepository.MapRecordToObject }
+        { transform: ContactRepository.MapRecordToObject },
       );
       log((l) => l.verbose('[ [AUDIT]] -  Contact created:', result[0]));
       if (result.length !== 1) {
@@ -187,8 +136,10 @@ export class ContactRepository
       }
       return result[0];
     } catch (error) {
-      ContactRepository.logError(error);
-      throw error;
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ContactRepository.list',
+      });
     }
   }
 
@@ -241,11 +192,11 @@ export class ContactRepository
         (sql) =>
           sql<false, true>(
             `UPDATE contacts SET ${updateFields.join(
-              ', '
+              ', ',
             )} WHERE contact_id = $${paramIndex} RETURNING *`,
-            values
+            values,
           ),
-        { transform: ContactRepository.MapRecordToObject }
+        { transform: ContactRepository.MapRecordToObject },
       );
 
       if (result.rowCount === 0) {
@@ -254,8 +205,10 @@ export class ContactRepository
       log((l) => l.verbose('[[AUDIT]] -  Contact updated:', result.rows[0]));
       return result.rows[0];
     } catch (error) {
-      ContactRepository.logError(error);
-      throw error;
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ContactRepository.update',
+      });
     }
   }
 
@@ -268,7 +221,7 @@ export class ContactRepository
         (sql) => sql`
             DELETE FROM contacts
             WHERE contact_id = ${contactId}
-            RETURNING contact_id`
+            RETURNING contact_id`,
       );
       if (results.length === 0) {
         throw new DataIntegrityError('Failed to delete contact');
@@ -276,9 +229,10 @@ export class ContactRepository
       globalContactCache((cache) => cache.remove(contactId));
       return true;
     } catch (error) {
-      if (!ContactRepository.logError(error)) {
-        throw error;
-      }
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ContactRepository.delete',
+      });
     }
     return false;
   }
@@ -286,7 +240,7 @@ export class ContactRepository
   async addEmailRecipient(
     contactId: number,
     emailId: string,
-    type?: RecipientType
+    type?: RecipientType,
   ): Promise<void> {
     if (!contactId || !emailId) {
       throw new ValidationError({
@@ -298,20 +252,25 @@ export class ContactRepository
       await query(
         (sql) => sql`
           INSERT INTO email_recipients (recipient_id, email_id, recipient_type)
-          VALUES (${contactId}, ${emailId}, ${type})`
+          VALUES (${contactId}, ${emailId}, ${type})`,
       );
       log((l) =>
-        l.verbose('[ [AUDIT]] - Email recipient added:', { contactId, emailId })
+        l.verbose('[ [AUDIT]] - Email recipient added:', {
+          contactId,
+          emailId,
+        }),
       );
     } catch (error) {
-      ContactRepository.logError(error);
-      throw error;
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ContactRepository.addEmailRecipient',
+      });
     }
   }
 
   async getContactsByEmails(
     emails: string[] | string,
-    refresh: boolean = false
+    refresh: boolean = false,
   ): Promise<Array<ContactSummary>> {
     let emailList = Array.isArray(emails) ? emails : [emails];
     const returned = Array<ContactSummary>();
@@ -324,7 +283,7 @@ export class ContactRepository
         return returned;
       }
       emailList = emailList.filter(
-        (x) => !returned.find((y) => y.email.toLowerCase() === x.toLowerCase())
+        (x) => !returned.find((y) => y.email.toLowerCase() === x.toLowerCase()),
       );
     }
     try {
@@ -333,12 +292,14 @@ export class ContactRepository
           SELECT * FROM contacts
           WHERE email = ANY(${emailList})
         `,
-        { transform: ContactRepository.MapRecordToObject }
+        { transform: ContactRepository.MapRecordToObject },
       );
       return results;
     } catch (error) {
-      ContactRepository.logError(error);
-      throw error;
+      AbstractObjectRepository.logDatabaseError({
+        error,
+        source: 'ContactRepository.getContactsByEmails',
+      });
     }
   }
 }

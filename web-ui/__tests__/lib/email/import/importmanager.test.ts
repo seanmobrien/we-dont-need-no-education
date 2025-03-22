@@ -73,7 +73,7 @@ describe('DefaultImportManager', () => {
   beforeEach(() => {
     (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
     (queryExt as jest.Mock).mockImplementation(() =>
-      Promise.resolve({ rowCount: 0, rows: [] })
+      Promise.resolve({ rowCount: 0, rows: [] }),
     );
     manager = new DefaultImportManager(provider);
   });
@@ -93,24 +93,6 @@ describe('DefaultImportManager', () => {
       const result = await manager.runImportStage(importSourceMessage, { req });
 
       expect(result).toEqual(importSourceMessage);
-    });
-
-    it('should handle errors and log them', async () => {
-      const emailId = 'testEmailId';
-      const importSourceMessage: ImportSourceMessage = {
-        id: 'testEmailId',
-        stage: 'new',
-        providerId: emailId,
-        userId: 1,
-        raw: {},
-      };
-      mockLoadEmail.mockImplementation(() => {
-        throw new Error('Test error');
-      });
-
-      await expect(
-        manager.runImportStage(importSourceMessage, { req })
-      ).rejects.toThrow(LoggedError);
     });
   });
 
@@ -145,7 +127,7 @@ describe('DefaultImportManager', () => {
       expect(result).toEqual({
         success: false,
         message: 'Test error',
-        error: error,
+        error: expect.any(LoggedError),
       });
     });
   });

@@ -1,4 +1,4 @@
-import { globalContactCache } from './contact-cache';
+import { globalContactCache, resetGlobalCache } from './contact-cache';
 
 export type * from './contact';
 export type * from './email-message';
@@ -9,4 +9,4 @@ export * from './factories';
 export * from './guards';
 export * from './../_utilities';
 
-export { globalContactCache };
+export { globalContactCache, resetGlobalCache };

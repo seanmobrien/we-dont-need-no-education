@@ -4,7 +4,7 @@ import {
   parsePaginationStats,
 } from '@/data-models';
 import { isError, isTemplateStringsArray } from '@/lib/react-util';
-import { errorLogFactory, log } from '../logger';
+import { log } from '../logger';
 import type {
   TransformedFullQueryResults,
   DbQueryFunction,
@@ -20,66 +20,103 @@ import { RecordToObjectImpl, RecordToSummaryImpl } from './_types';
  *
  * @template T - The type of object this repository handles.
  */
+/**
+ * AbstractObjectRepository is a generic class that provides common database operations
+ * for objects of type `T`. It includes methods for logging database errors, mapping
+ * database records to objects, and performing CRUD operations.
+ *
+ * @template T - The type of objects managed by this repository.
+ */
 export class AbstractObjectRepository<T extends object> {
   /**
-   * Logs an error and throws a `LoggedError` based on the type of the error.
+   * Logs and throws a database error.
    *
-   * @param source - The source of the error.
-   * @param error - The error to be logged and thrown.
-   * @throws {LoggedError} - Throws a `LoggedError` with the appropriate error and criticality.
+   * This method processes different types of errors and throws a `LoggedError` with appropriate details.
+   * It handles generic errors, data integrity errors, and validation errors, logging them accordingly.
+   *
+   * @param params - The parameters for logging the database error.
+   * @param params.error - The error object to be logged and thrown.
+   * @param params.source - The source of the error, typically indicating where the error originated.
+   *
+   * @throws {LoggedError} - Throws a `LoggedError` with details about the error, including its criticality and source.
    */
-  static logError(source: string, error: unknown): never {
+  static logDatabaseError(params: { error: unknown; source: string }): never;
+
+  /**
+   * Logs and throws a database error.
+   *
+   * This method processes different types of errors and throws a `LoggedError` with appropriate details.
+   * It handles generic errors, data integrity errors, and validation errors, logging them accordingly.
+   *
+   * @param {string} source - The source of the error, typically indicating where the error originated.
+   * @param {unknown} error - The error object to be logged and thrown.
+   *
+   * @throws {LoggedError} - Throws a `LoggedError` with details about the error, including its criticality and source.
+   */
+  static logDatabaseError(source: string, error: unknown): never;
+
+  /**
+   * Logs a database error and throws a `LoggedError` with appropriate details.
+   *
+   * @param paramsOrSource - Either an object containing the error and source, or a string representing the source.
+   * @param errorFromArgs - The error to be logged if `paramsOrSource` is a string.
+   * @throws {LoggedError} - Throws a `LoggedError` with details about the error.
+   *
+   * @overload
+   * @param paramsOrSource - An object containing the error and source.
+   * @param paramsOrSource.error - The error to be logged.
+   * @param paramsOrSource.source - The source of the error.
+   * @throws {LoggedError} - Throws a `LoggedError` with details about the error.
+   *
+   * @overload
+   * @param paramsOrSource - A string representing the source of the error.
+   * @param errorFromArgs - The error to be logged.
+   * @throws {LoggedError} - Throws a `LoggedError` with details about the error.
+   */
+  static logDatabaseError(
+    paramsOrSource: { error: unknown; source: string } | string,
+    errorFromArgs?: unknown,
+  ): never {
+    let error: unknown;
+    let source: string;
+    if (typeof paramsOrSource === 'string') {
+      source = paramsOrSource;
+      error = errorFromArgs;
+    } else {
+      source = paramsOrSource.source;
+      error = paramsOrSource.error;
+    }
     if (typeof error !== 'object' || error === null) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: String(error),
-            source,
-            error: error,
-          }),
-        ),
-      );
-      throw new LoggedError({
+      throw LoggedError.isTurtlesAllTheWayDownBaby({
         error: new Error(String(error)),
+        log: true,
+        source,
         critical: true,
       });
     }
     if (DataIntegrityError.isDataIntegrityError(error)) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: 'Database Integrity failure',
-            source,
-            error,
-          }),
-        ),
-      );
-      throw new LoggedError({ error, critical: false });
+      throw LoggedError.isTurtlesAllTheWayDownBaby({
+        error,
+        critical: false,
+        source,
+        log: true,
+      });
     }
     if (ValidationError.isValidationError(error)) {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            message: 'Validation error',
-            source,
-            error,
-          }),
-        ),
-      );
-      throw new LoggedError({ error, critical: false });
+      throw LoggedError.isTurtlesAllTheWayDownBaby({
+        error,
+        critical: false,
+        message: 'Validation error',
+        source,
+        log: true,
+      });
     }
-    log((l) =>
-      l.error(
-        errorLogFactory({
-          message: '[AUDIT] A database operation failed',
-          source,
-          error,
-        }),
-      ),
-    );
-    throw new LoggedError({
+    throw LoggedError.isTurtlesAllTheWayDownBaby({
       error: isError(error) ? error : new Error(String(error)),
       critical: true,
+      log: true,
+      source,
+      message: '[AUDIT] A database operation failed',
     });
   }
 
@@ -218,7 +255,7 @@ export class AbstractObjectRepository<T extends object> {
         };
       }
     } catch (error) {
-      AbstractObjectRepository.logError(this.source, error);
+      AbstractObjectRepository.logDatabaseError({ source: this.source, error });
     }
     return {
       results: [],
@@ -248,7 +285,7 @@ export class AbstractObjectRepository<T extends object> {
       const result = await doQuery();
       return result.length === 1 ? result[0] : null;
     } catch (error) {
-      AbstractObjectRepository.logError(this.source, error);
+      AbstractObjectRepository.logDatabaseError({ source: this.source, error });
     }
   }
 
@@ -287,7 +324,7 @@ export class AbstractObjectRepository<T extends object> {
       );
       return result.rows[0];
     } catch (error) {
-      AbstractObjectRepository.logError(this.source, error);
+      AbstractObjectRepository.logDatabaseError({ source: this.source, error });
     }
   }
 
@@ -324,7 +361,7 @@ export class AbstractObjectRepository<T extends object> {
       }
       return result[0];
     } catch (error) {
-      AbstractObjectRepository.logError(this.source, error);
+      AbstractObjectRepository.logDatabaseError({ source: this.source, error });
     }
   }
 
@@ -359,7 +396,7 @@ export class AbstractObjectRepository<T extends object> {
       );
       return true;
     } catch (error) {
-      if (!AbstractObjectRepository.logError(this.source, error)) {
+      if (!AbstractObjectRepository.logDatabaseError(this.source, error)) {
         throw error;
       }
     }

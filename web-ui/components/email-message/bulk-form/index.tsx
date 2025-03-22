@@ -28,10 +28,11 @@ import {
   verticalAlign,
 } from 'tailwindcss-classnames';
 import ContactDropdown from '@/components/contact/contact-dropdown';
-import { errorLogFactory, log } from '@/lib/logger';
+import { log } from '@/lib/logger';
 import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';
+import { LoggedError } from '@/lib/react-util';
 
 type BulkUpdateOperationRecord = {
   record: RecordWithDirtyState<EmailMessage>;
@@ -46,7 +47,7 @@ type BulkUpdateOperation = {
 
 const BulkEmailForm: React.FC = () => {
   const [emails, setEmails] = useState<RecordWithDirtyState<EmailMessage>[]>(
-    []
+    [],
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -78,7 +79,7 @@ const BulkEmailForm: React.FC = () => {
           setLoading(false);
         });
     },
-    [pageStats.num, setEmails, setPageStats, setLoading, setError]
+    [pageStats.num, setEmails, setPageStats, setLoading, setError],
   );
 
   useEffect(() => {
@@ -126,11 +127,10 @@ const BulkEmailForm: React.FC = () => {
             return res.json();
           })
           .catch((error) => {
-            log((l) =>
-              l.error(
-                errorLogFactory({ error, source: 'bulk-email-form Save' })
-              )
-            );
+            LoggedError.isTurtlesAllTheWayDownBaby({
+              error,
+              source: 'bulk-email-form Save',
+            });
             return undefined;
           }),
       })),
@@ -152,14 +152,14 @@ const BulkEmailForm: React.FC = () => {
               (res) =>
                 res &&
                 (res.emailId === email.emailId ||
-                  (!email.emailId && isSameEmail(email, res)))
+                  (!email.emailId && isSameEmail(email, res))),
             );
             if (result) {
               setRecordDirty(result, false);
               return result;
             }
             return email;
-          })
+          }),
         );
       })
       .catch((err) => {
@@ -176,8 +176,8 @@ const BulkEmailForm: React.FC = () => {
     setValue: (
       target: TElement,
       field: keyof EmailMessage,
-      msg: EmailMessage
-    ) => void
+      msg: EmailMessage,
+    ) => void,
   ) => {
     const target = event.target as TElement;
     const field = target.dataset.field as keyof EmailMessage;
@@ -225,13 +225,13 @@ const BulkEmailForm: React.FC = () => {
         spacing('p-6', 'mx-8'),
         width('w-full'),
         borders('rounded-lg'),
-        boxShadow('shadow-md')
+        boxShadow('shadow-md'),
       )}
     >
       <h2
         className={classnames(
           typography('text-xl', 'font-semibold'),
-          margin('mb-4')
+          margin('mb-4'),
         )}
       >
         Bulk Add Emails
@@ -277,7 +277,7 @@ const BulkEmailForm: React.FC = () => {
                     <td
                       className={classnames(
                         borders('border-t', 'border-l'),
-                        spacing('p-2')
+                        spacing('p-2'),
                       )}
                     >
                       <ContactDropdown
@@ -296,7 +296,7 @@ const BulkEmailForm: React.FC = () => {
                     <td
                       className={classnames(
                         borders('border-t'),
-                        spacing('p-2')
+                        spacing('p-2'),
                       )}
                     >
                       <ContactRecipients
@@ -313,10 +313,11 @@ const BulkEmailForm: React.FC = () => {
                     <td
                       className={classnames(
                         borders('border-t'),
-                        spacing('p-2')
+                        spacing('p-2'),
                       )}
                     >
                       <input
+                        aria-label="Sent On"
                         type="datetime-local"
                         value={normalizeDateAndTime(email.sentOn)}
                         data-field="sentOn"
@@ -326,7 +327,7 @@ const BulkEmailForm: React.FC = () => {
                     <td
                       className={classnames(
                         borders('border-y', 'border-r'),
-                        spacing('p-2')
+                        spacing('p-2'),
                       )}
                       rowSpan={4}
                     >
@@ -342,18 +343,18 @@ const BulkEmailForm: React.FC = () => {
                                   throw new Error('Error deleting email');
                                 }
                                 setEmails((prevEmails) =>
-                                  prevEmails.filter((_, i) => i !== index)
+                                  prevEmails.filter((_, i) => i !== index),
                                 );
                               })
                               .catch((error) => {
                                 log((l) =>
-                                  l.error('Error deleting email:', error)
+                                  l.error('Error deleting email:', error),
                                 );
                                 setError('Error deleting email.');
                               });
                           } else {
                             setEmails((prevEmails) =>
-                              prevEmails.filter((_, i) => i !== index)
+                              prevEmails.filter((_, i) => i !== index),
                             );
                           }
                         }}
@@ -361,7 +362,7 @@ const BulkEmailForm: React.FC = () => {
                           spacing('p-2'),
                           backgrounds('bg-red-500', 'hover:bg-red-600'),
                           typography('text-white'),
-                          borders('rounded')
+                          borders('rounded'),
                         )}
                       >
                         Delete
@@ -375,7 +376,7 @@ const BulkEmailForm: React.FC = () => {
                         borders('border-l'),
                         spacing('p-2'),
                         fontWeight('font-semibold'),
-                        verticalAlign('align-top')
+                        verticalAlign('align-top'),
                       )}
                     >
                       Parent Email
@@ -400,7 +401,7 @@ const BulkEmailForm: React.FC = () => {
                       className={classnames(
                         borders('border-l'),
                         spacing('p-2'),
-                        fontWeight('font-semibold')
+                        fontWeight('font-semibold'),
                       )}
                     >
                       Subject
@@ -408,6 +409,7 @@ const BulkEmailForm: React.FC = () => {
 
                     <td colSpan={2} className={classnames(spacing('p-2'))}>
                       <input
+                        aria-label="Subject"
                         type="text"
                         data-field="subject"
                         value={email.subject}
@@ -421,7 +423,7 @@ const BulkEmailForm: React.FC = () => {
                       className={classnames(
                         borders('border-b', 'border-l'),
                         spacing('p-2'),
-                        fontWeight('font-semibold')
+                        fontWeight('font-semibold'),
                       )}
                     >
                       Body
@@ -430,13 +432,14 @@ const BulkEmailForm: React.FC = () => {
                       colSpan={2}
                       className={classnames(
                         borders('border-b'),
-                        spacing('p-2')
+                        spacing('p-2'),
                       )}
                     >
                       <textarea
+                        aria-label="Body"
                         className={classnames(
                           width('w-full'),
-                          borders('border')
+                          borders('border'),
                         )}
                         rows={4}
                         data-field="body"
@@ -458,7 +461,7 @@ const BulkEmailForm: React.FC = () => {
               backgrounds('bg-blue-500', 'hover:bg-blue-600'),
               typography('text-white'),
               borders('rounded'),
-              margin('mr-2')
+              margin('mr-2'),
             )}
           >
             Previous
@@ -470,7 +473,7 @@ const BulkEmailForm: React.FC = () => {
               backgrounds('bg-blue-500', 'hover:bg-blue-600'),
               typography('text-white'),
               borders('rounded'),
-              margin('mt-4')
+              margin('mt-4'),
             )}
           >
             Add Row
@@ -482,7 +485,7 @@ const BulkEmailForm: React.FC = () => {
               backgrounds('bg-green-500', 'hover:bg-green-600'),
               typography('text-white'),
               borders('rounded'),
-              margin('mt-4', 'ml-2')
+              margin('mt-4', 'ml-2'),
             )}
           >
             Save
@@ -494,7 +497,7 @@ const BulkEmailForm: React.FC = () => {
               spacing('p-2'),
               backgrounds('bg-blue-500', 'hover:bg-blue-600'),
               typography('text-white'),
-              borders('rounded')
+              borders('rounded'),
             )}
           >
             Next

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mapRecordToSummary } from '../../email-route-util';
 import { query, queryExt } from '@/lib/neondb';
-import { errorLogFactory, log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 
 export const mapRecordToThreadSummary = (record: Record<string, unknown>) => ({
   threadId: record.thread_id,
@@ -11,7 +11,7 @@ export const mapRecordToThreadSummary = (record: Record<string, unknown>) => ({
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ threadId: string }> }
+  { params }: { params: Promise<{ threadId: string }> },
 ) {
   try {
     // Extract the slug from params
@@ -25,7 +25,7 @@ export async function GET(
         sql`SELECT thread_id, subject, created_at FROM threads WHERE thread_id = ${threadIdNumber};`,
       {
         transform: mapRecordToThreadSummary,
-      }
+      },
     );
     if (threadRecord.length === 0) {
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 });
@@ -64,7 +64,7 @@ export async function GET(
        `,
       {
         transform: mapRecordToSummary,
-      }
+      },
     );
     return NextResponse.json(
       {
@@ -72,13 +72,17 @@ export async function GET(
         emails: result.rows,
         total: result.rowCount,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    log((l) => l.error(errorLogFactory({ error, source: 'GET email/query' })));
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      msg: 'Error fetching email thread',
+      source: 'GET email/thread/[threadId]',
+    });
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

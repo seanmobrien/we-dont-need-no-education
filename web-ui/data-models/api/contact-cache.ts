@@ -15,13 +15,19 @@ export type ContactCache = {
 };
 
 class ContactCacheImpl implements ContactCache {
-  static #globalContactCache: ContactCache;
+  static #globalContactCache: ContactCache | null;
   static ContactCacheImpl: ContactCacheImpl;
   static get globalCache(): ContactCache {
     if (!ContactCacheImpl.#globalContactCache) {
       ContactCacheImpl.#globalContactCache = new ContactCacheImpl();
     }
     return ContactCacheImpl.#globalContactCache;
+  }
+  static resetGlobalCache(): void {
+    if (ContactCacheImpl.#globalContactCache) {
+      ContactCacheImpl.#globalContactCache.clear();
+      ContactCacheImpl.#globalContactCache = null;
+    }
   }
 
   private cache: Map<number, CachedContact> = new Map();
@@ -59,7 +65,7 @@ class ContactCacheImpl implements ContactCache {
   get(id: number): CachedContact | undefined;
   get(id: Array<number>): Array<CachedContact | undefined>;
   get(
-    id: number | Array<number>
+    id: number | Array<number>,
   ): CachedContact | undefined | Array<CachedContact | undefined> {
     return forOneOrMany((x) => {
       const ret = this.cache.get(x);
@@ -70,7 +76,7 @@ class ContactCacheImpl implements ContactCache {
   getByEmail(email: string): CachedContact | undefined;
   getByEmail(email: Array<string>): Array<CachedContact | undefined>;
   getByEmail(
-    email: string | Array<string>
+    email: string | Array<string>,
   ): CachedContact | undefined | Array<CachedContact | undefined> {
     return forOneOrMany((x) => {
       const ret = this.cacheByEmail.get(x.toLocaleLowerCase());
@@ -102,7 +108,7 @@ class ContactCacheImpl implements ContactCache {
   public hasByEmail(email: string | Array<string>): boolean | boolean[] {
     return forOneOrMany(
       (x) => this.cacheByEmail.has(x.toLocaleLowerCase()),
-      email
+      email,
     );
   }
 }
@@ -115,5 +121,6 @@ class ContactCacheImpl implements ContactCache {
  * @returns The result of the callback function.
  */
 export const globalContactCache = <TRet>(
-  cb: (cache: ContactCache) => TRet
+  cb: (cache: ContactCache) => TRet,
 ): TRet => cb(ContactCacheImpl.globalCache);
+export const resetGlobalCache = () => ContactCacheImpl.resetGlobalCache();

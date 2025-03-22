@@ -4,7 +4,7 @@ import { ContactSummary, Contact } from './contact';
 
 export type ObjectRepository<T, K extends keyof T> = {
   list: (
-    pagination?: PaginationStats
+    pagination?: PaginationStats,
   ) => Promise<PaginatedResultset<ContactSummary>>;
 
   get: (contactId: number) => Promise<Contact | null>;

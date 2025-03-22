@@ -18,6 +18,19 @@ import {
   ICancellablePromiseExt,
   isOperationCancelledError,
 } from '@/lib/typescript';
+import UnsubscribeIcon from '@mui/icons-material/Unsubscribe';
+import {
+  Grid2 as Grid,
+  Box,
+  CircularProgress,
+  Paper,
+  TableContainer,
+  Table,
+  TableBody,
+  TableRow,
+} from '@mui/material';
+import { HeadCell, EnhancedTableHead } from '@/components/general';
+import { TableCell } from '@mui/material';
 
 const textGray600 = typography('text-gray-600');
 
@@ -29,12 +42,36 @@ const listItemClass = classnames(
   backgrounds('bg-gray-50', 'hover:bg-gray-100'),
   interactivity('cursor-pointer'),
   transitionProperty('transition'),
-  boxShadow('hover:shadow')
+  boxShadow('hover:shadow'),
 );
 
 const senderClass = typography('font-semibold', 'text-gray-800');
 const subjectClass = textGray600; // Reused text color class
 const timestampClass = classnames(typography('text-sm'), textGray600); // Applied shared text color
+
+const headCells: HeadCell[] = [
+  { id: 'sender', numeric: false, disablePadding: true, label: 'Sender' },
+  {
+    id: 'subject',
+    numeric: false,
+    disablePadding: false,
+    label: 'Subject',
+    maxWidth: '180px',
+  },
+  {
+    id: 'receivedDate',
+    numeric: false,
+    disablePadding: false,
+    label: 'Received Date',
+  },
+  { id: 'callsToAction', numeric: false, disablePadding: false, label: 'CTA' },
+  {
+    id: 'complianceScore',
+    numeric: false,
+    disablePadding: false,
+    label: 'Compliance Score',
+  },
+];
 
 const EmailListServer = ({
   pageNumber = 1,
@@ -76,41 +113,92 @@ const EmailListServer = ({
   return loading ? (
     <p className={textGray600}>Loading emails...</p>
   ) : (
-    <div>
-      {!emails?.length && (
-        <p className={textGray600} data-testid="email-list-none-found">
-          No emails found.
-        </p>
-      )}
-      {emails?.map((email) => (
-        <div key={email.emailId} className={listItemClass}>
-          <div>
-            <p className={senderClass}>
-              <Link
-                href={siteMap.email.edit(email.emailId)}
-                data-testid={`email-list-sender-${email.emailId}`}
-              >
-                {email.sender?.name}
-              </Link>
-            </p>
-            <p className={subjectClass}>
-              <Link
-                href={siteMap.email.edit(email.emailId)}
-                data-testid={`email-list-subject-${email.emailId}`}
-              >
-                {email.subject}
-              </Link>
-            </p>
-          </div>
-          <p
-            className={timestampClass}
-            data-testid={`email-list-timestamp-${email.emailId}`}
-          >
-            {new Date(email.sentOn).toLocaleString()}
-          </p>
-        </div>
-      ))}
-    </div>
+    <>
+      <Grid container spacing={2}>
+        {loading && (
+          <Grid size={12}>
+            <Box sx={{ color: 'info', textAlign: 'center' }}>
+              <CircularProgress />
+              Loading...
+            </Box>
+          </Grid>
+        )}
+        {!emails?.length && (
+          <Grid size={12}>
+            <Box sx={{ color: 'warning', textAlign: 'center' }}>
+              <UnsubscribeIcon />
+              No emails found.
+            </Box>
+          </Grid>
+        )}
+        {emails?.length && (
+          <Box sx={{ width: '100%' }}>
+            <Paper sx={{ width: '100%', mb: 2, overflow: 'hidden' }}>
+              <TableContainer sx={{ maxHeight: 430 }}>
+                <Table
+                  stickyHeader
+                  sx={{ width: '100%' }}
+                  aria-labelledby="tableTitle"
+                  size={'medium'}
+                >
+                  <EnhancedTableHead
+                    headCells={headCells}
+                    numSelected={0}
+                    rowCount={emails.length}
+                  />
+                  <TableBody>
+                    {emails.map(({ sender, emailId, subject, sentOn }) => (
+                      <TableRow key={emailId} hover>
+                        <TableCell>
+                          <Link
+                            key={emailId}
+                            href={siteMap.email.edit(emailId)}
+                          >
+                            {sender?.name}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <Link
+                            key={emailId}
+                            href={siteMap.email.edit(emailId)}
+                          >
+                            {subject}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <Link
+                            key={emailId}
+                            href={siteMap.email.edit(emailId)}
+                          >
+                            {new Date(sentOn).toLocaleString()}
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <Link
+                            key={emailId}
+                            href={siteMap.email.edit(emailId)}
+                          >
+                            TODO
+                          </Link>
+                        </TableCell>
+                        <TableCell>
+                          <Link
+                            key={emailId}
+                            href={siteMap.email.edit(emailId)}
+                          >
+                            TODO
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </Box>
+        )}
+      </Grid>
+    </>
   );
 };
 

@@ -10,6 +10,8 @@ const config: Config.InitialOptions = {
     '**/?(*.)+(spec|test).(ts|tsx)',
   ], // Test file patterns
   moduleNameMapper: {
+    '^@/instrumentation(.*)$':
+      '<rootDir>/__tests__/jest.mock-instrumentation.ts', // Mock instrumentation module
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
   },
   transform: {
@@ -26,8 +28,9 @@ const config: Config.InitialOptions = {
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
-  detectLeaks: true,
-  detectOpenHandles: true,
+  // detectLeaks: true,
+  // detectOpenHandles: true,
+  // logHeapUsage: true,
 };
 
 export default config;

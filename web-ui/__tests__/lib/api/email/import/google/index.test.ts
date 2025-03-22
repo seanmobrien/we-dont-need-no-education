@@ -43,7 +43,7 @@ let mockApiRequest = sendApiRequest as jest.Mock;
 beforeEach(() => {
   (apiRequestHelperFactory as jest.Mock).mockReturnValue(apiHelper);
   (
-    siteMap.api.email.import.google.message as unknown as jest.Mock
+    siteMap.api.email.import.google.page as unknown as jest.Mock
   ).mockReturnValue(messageUri);
   (
     siteMap.api.email.import.google.search as unknown as jest.Mock
@@ -92,7 +92,8 @@ describe('googleEmailImport', () => {
         method: 'get',
         url: messageUri,
       });
-      expect(siteMap.api.email.import.google.message).toHaveBeenCalledWith(
+      expect(siteMap.api.email.import.google.page).toHaveBeenCalledWith(
+        'message',
         emailId,
       );
       expect(result).toBe(mockResponse);
@@ -113,7 +114,8 @@ describe('googleEmailImport', () => {
         method: 'post',
         url: messageUri,
       });
-      expect(siteMap.api.email.import.google.message).toHaveBeenCalledWith(
+      expect(siteMap.api.email.import.google.page).toHaveBeenCalledWith(
+        'message',
         emailId,
       );
       expect(result).toBe(mockResponse);

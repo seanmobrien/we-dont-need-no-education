@@ -1,6 +1,6 @@
 import { ImportStage } from '@/data-models/api/import/email-message';
 import { AdditionalStageOptions, StageProcessorContext } from '../types';
-import { errorLogFactory, log } from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 
 import { getQueuedAttachment } from './attachment-download';
@@ -33,7 +33,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
   readonly #attachmentRepository = new EmailAttachmentRepository();
   async processAttachment(
     context: StageProcessorContext,
-    record: StagedAttachment
+    record: StagedAttachment,
   ): Promise<AttachmentImportResult> {
     return new Promise<AttachmentImportResult>((resolve) => {
       getQueuedAttachment(`${record.stagedMessageId}:${record.partId}`)
@@ -53,7 +53,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
                 messageId: job.result.stagedMessageId,
                 download: job.result.storageId,
                 job,
-              })
+              }),
             );
             this.#attachmentRepository
               .create({
@@ -110,14 +110,9 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
   async run(context: StageProcessorContext): Promise<StageProcessorContext> {
     const { target } = context;
     if (typeof target !== 'object') {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            error: new Error('Invalid target stage'),
-            source: 'DefaultImportManager::attachment',
-            context,
-          })
-        )
+      LoggedError.isTurtlesAllTheWayDownBaby(
+        new Error('Invalid target stage'),
+        { log: true },
       );
       return context;
     }
@@ -128,7 +123,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
       this.processAttachment(context, {
         ...attachment,
         stagedMessageId: attachment.stagedMessageId ?? target.id!,
-      })
+      }),
     );
 
     const result = await Promise.all(allPromises);
@@ -138,7 +133,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
           message: 'Attachment processing failed',
           source: 'AttachmentStateManager',
           result,
-        })
+        }),
       );
       throw new Error('Attachment processing failed');
     }
@@ -149,7 +144,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
 
 const attachmentStateManagerFactory = (
   stage: ImportStage,
-  options: AdditionalStageOptions
+  options: AdditionalStageOptions,
 ): TransactionalStateManagerBase => new AttachmentStateManager(stage, options);
 
 export default attachmentStateManagerFactory;

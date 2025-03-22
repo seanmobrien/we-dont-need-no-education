@@ -6,7 +6,7 @@ import {
 } from '../types';
 import { TransactionalStateManagerBase } from './transactional-statemanager';
 import { ImportStage } from '@/data-models/api/import/email-message';
-import { errorLogFactory, log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 
 class CompletedStateManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {
@@ -15,18 +15,13 @@ class CompletedStateManager extends TransactionalStateManagerBase {
   async run(context: StageProcessorContext): Promise<StageProcessorContext> {
     const { target } = context;
     if (typeof target !== 'object') {
-      log((l) =>
-        l.error(
-          errorLogFactory({
-            error: new Error('Invalid target stage'),
-            source: 'DefaultImportManager::completed',
-            context,
-          })
-        )
+      LoggedError.isTurtlesAllTheWayDownBaby(
+        new Error('Invalid target stage'),
+        { log: true, source: 'DefaultImportManager::completed' },
       );
     } else {
       await query(
-        (sql) => sql`DELETE FROM import_staged WHERE id = ${target.id}`
+        (sql) => sql`DELETE FROM import_staged WHERE id = ${target.id}`,
       );
     }
     return context;
@@ -35,7 +30,7 @@ class CompletedStateManager extends TransactionalStateManagerBase {
 
 const managerFactory: ImportStageManagerFactory = (
   stage,
-  additionalOptions: AdditionalStageOptions
+  additionalOptions: AdditionalStageOptions,
 ) => new CompletedStateManager(stage, additionalOptions);
 
 export default managerFactory;

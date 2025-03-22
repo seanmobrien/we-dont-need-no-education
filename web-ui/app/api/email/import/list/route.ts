@@ -1,11 +1,12 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { errorLogFactory, log } from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/data-models/api';
 import {
   ImportStage,
   StagedMessageSummary,
 } from '@/data-models/api/import/email-message';
+import { LoggedError } from '@/lib/react-util';
 
 /**
  * Handles GET requests to fetch a paginated list of emails with sender and recipient information.
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
               l.warn({
                 msg: '[[WARNING]] - Unexpected recipient type detected:',
                 recipients,
-              })
+              }),
             );
             recipients = null;
           }
@@ -77,11 +78,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           };
           return ret;
         },
-      }
+      },
     );
 
     const total = await query(
-      (q) => q`SELECT COUNT(*) AS records FROM staging_message;`
+      (q) => q`SELECT COUNT(*) AS records FROM staging_message;`,
     );
     log((l) =>
       l.verbose({
@@ -90,18 +91,21 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
         num,
         offset,
         cbTotal: total,
-      })
+      }),
     );
 
     return NextResponse.json(
       { pageStats: { page, num, total: total[0].records }, results: result },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
-    log((l) => l.error(errorLogFactory({ source: 'GET email', error })));
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'GET email/import/list',
+    });
     return NextResponse.json(
       { error: 'Internal Server Error' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -11,11 +11,20 @@ import {
   type StageProcessorContext,
 } from './types';
 import { managerMapFactory } from './google/managermapfactory';
-import { log, CustomAppInsightsEvent } from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isError } from '@/lib/react-util';
 import { NextRequest } from 'next/server';
 import { TransactionalStateManagerBase } from './default/transactional-statemanager';
+import {
+  context,
+  SpanKind,
+  SpanStatusCode,
+  trace,
+  Tracer,
+} from '@opentelemetry/api';
+
+import { appMeters } from '@/instrumentation';
 
 /**
  * The `DefaultImportManager` class implements the `ImportManager` interface and provides
@@ -40,7 +49,7 @@ export class DefaultImportManager {
   static Stages = ImportStageValues;
   readonly #provider: string;
   readonly #map: ImportManagerMap;
-
+  readonly #tracer: Tracer;
   /**
    * Creates an instance of `DefaultImportManager`.
    *
@@ -50,6 +59,7 @@ export class DefaultImportManager {
   constructor(provider: string) {
     this.#provider = provider;
     this.#map = managerMapFactory(this.#provider);
+    this.#tracer = trace.getTracer('sue-the-schools-webui');
   }
 
   /**
@@ -132,61 +142,148 @@ export class DefaultImportManager {
     emailId: string,
     { req }: { req: NextRequest },
   ): Promise<ImportResponse> {
-    try {
-      const event = new CustomAppInsightsEvent('importEmail');
-      event.startTimer('Import-email');
-      let result: ImportSourceMessage = {
-        providerId: emailId ?? TransactionalStateManagerBase.NullId,
-        stage: 'new',
-        // Note these
-        raw: null as unknown as GmailEmailImportSource,
-        userId: undefined as unknown as number,
-      };
-      let tries = 0;
-      let lastStage: ImportStage | null = null;
-      while (result.stage !== 'completed') {
-        if (lastStage === result.stage) {
-          tries++;
-          if (tries > 3) {
-            throw new Error('Import stage did not progress after 3 attempts');
-          }
-          log((l) =>
-            l.warn({
-              message: 'Import stage did not progress, retrying.',
-              stage: lastStage,
-              tries,
-            }),
+    const activeContext = context.active();
+
+    return this.#tracer.startActiveSpan(
+      'Import Email',
+      {
+        root: false,
+        kind: SpanKind.INTERNAL,
+        startTime: performance.now(),
+      },
+      activeContext,
+      async (emailImportSpan): Promise<ImportResponse> => {
+        emailImportSpan
+          .setAttribute('emailId', emailId)
+          .setAttribute('provider', this.#provider)
+          .setAttribute('timestamp', new Date().toISOString());
+        try {
+          let currentUserId = 0;
+          let result: ImportSourceMessage = {
+            providerId: emailId ?? TransactionalStateManagerBase.NullId,
+            stage: 'new',
+            raw: null as unknown as GmailEmailImportSource,
+            userId: undefined as unknown as number,
+          };
+          let tries = 0;
+          let lastStage: ImportStage | null = null;
+          await context.with(
+            trace.setSpan(activeContext, emailImportSpan),
+            async () => {
+              while (result.stage !== 'completed') {
+                await this.#tracer.startActiveSpan(
+                  result.stage === 'staged'
+                    ? 'Staging email for import'
+                    : `Import Stage: ${result.stage}`,
+                  {
+                    root: false,
+                    kind: SpanKind.INTERNAL,
+                    startTime: performance.now(),
+                  },
+                  activeContext,
+                  async (stageSpan): Promise<void> => {
+                    if (currentUserId) {
+                      stageSpan.setAttribute('userId', currentUserId);
+                    }
+                    try {
+                      if (lastStage === result.stage) {
+                        tries++;
+                        if (tries > 3) {
+                          const stageError = new Error(
+                            `Import stage did not progress after 3 attempts: ${result.stage}`,
+                          );
+                          stageSpan.recordException(
+                            stageError,
+                            performance.now(),
+                          );
+                          appMeters
+                            .createCounter('Email Import: Stage Failed')
+                            .add(1);
+                          stageSpan
+                            .addEvent(
+                              'Import stage failed',
+                              { stage: result.stage },
+                              performance.now(),
+                            )
+                            .setStatus({
+                              code: SpanStatusCode.ERROR,
+                              message: `Import stage ${result.stage} failed`,
+                            });
+                          throw stageError;
+                        }
+                        stageSpan.addEvent(
+                          'Import stage did not progress, retrying.',
+                          { tries: tries, stage: result.stage },
+                          performance.now(),
+                        );
+                      } else {
+                        lastStage = result.stage;
+                        tries = 0;
+                      }
+                      result = await this.runImportStage(result, { req });
+
+                      if (result.userId !== currentUserId) {
+                        log((l) =>
+                          l.info({
+                            message: 'User ID changed',
+                            stage:
+                              typeof result === 'string' ? 'new' : result.stage,
+                          }),
+                        );
+                        stageSpan.setAttribute('userId', currentUserId);
+                        emailImportSpan.setAttribute('userId', currentUserId);
+                        currentUserId = result.userId;
+                      }
+                      log((l) =>
+                        l.info({
+                          message: 'Import stage completed',
+                          stage:
+                            typeof result === 'string' ? 'new' : result.stage,
+                        }),
+                      );
+                    } finally {
+                      stageSpan.end();
+                    }
+                  },
+                );
+              }
+            },
           );
-        } else {
-          lastStage = result.stage;
-          tries = 0;
+
+          appMeters.createCounter('Email Import: Operation Successful').add(1);
+          emailImportSpan
+            .addEvent('Import completed', {}, performance.now())
+            .setStatus({
+              code: SpanStatusCode.OK,
+              message: 'Import completed successfully',
+            });
+          return {
+            success: true,
+            message: 'Import successful',
+            data: result,
+          };
+        } catch (error) {
+          const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            source: 'DefaultImportManager',
+            log: true,
+          });
+          emailImportSpan.recordException(le, Date.now());
+          appMeters.createCounter('Email Import: Operation Failed').add(1);
+          emailImportSpan
+            .addEvent('Import failed', {}, performance.now())
+            .setStatus({
+              code: SpanStatusCode.ERROR,
+              message: 'Import failed',
+            });
+          return {
+            success: false,
+            message: (isError(error) ? error.message : null) ?? 'Import failed',
+            error: le,
+          };
+        } finally {
+          emailImportSpan.end();
         }
-        result = await this.runImportStage(result, { req });
-        event.increment('processed-stages');
-        log((l) =>
-          l.info({
-            message: 'Import stage completed',
-            stage: typeof result === 'string' ? 'new' : result.stage,
-          }),
-        );
-      }
-      event.dispose();
-      log((l) => l.info(event));
-      return {
-        success: true,
-        message: 'Import successful',
-        data: result,
-      };
-    } catch (error) {
-      const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        source: 'DefaultImportManager',
-        log: true,
-      });
-      return {
-        success: false,
-        message: (isError(error) ? error.message : null) ?? 'Import failed',
-        error: le,
-      };
-    }
+      },
+    );
   }
 }

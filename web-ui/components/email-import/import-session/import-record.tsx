@@ -32,7 +32,7 @@ import {
 import { isError } from '@/lib/react-util';
 import theme from '@/theme';
 
-export const ImportRecord: React.FC<ImportRecordProps> = ({
+const ImportRecord: React.FC<ImportRecordProps> = ({
   importStatus: importStatusFromProps,
   isChecked,
   canImport,
@@ -345,3 +345,5 @@ export const ImportRecord: React.FC<ImportRecordProps> = ({
     </TableRow>
   );
 };
+
+export default ImportRecord;
