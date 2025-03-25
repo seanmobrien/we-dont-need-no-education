@@ -4,10 +4,9 @@ import { Adapter } from 'next-auth/adapters';
 import type { Provider } from 'next-auth/providers';
 import { JWT } from 'next-auth/jwt';
 import Google from 'next-auth/providers/google';
-//import { Pool } from '@neondatabase/serverless';
-import { query } from '@/lib/neondb';
-import { isRunningOnEdge } from './lib/site-util/env';
+import { isRunningOnEdge, isRunningOnServer } from './lib/site-util/env';
 import { logEvent } from '@/lib/logger';
+import { env } from '@/lib/site-util/env';
 
 const providers: Provider[] = [
   Google({
@@ -36,14 +35,14 @@ export const providerMap = providers.map((provider) => {
 export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
   let adapter: Adapter | undefined;
 
-  if (!isRunningOnEdge()) {
+  if (!isRunningOnEdge() && typeof window === 'undefined') {
     process.env.PG_FORCE_NATIVE = '0';
     const { Pool } = await import('pg');
     const { default: PostgresAdapter } = await import('@auth/pg-adapter');
     // Create a `Pool` inside the request handler.
     adapter = PostgresAdapter(
       new Pool({
-        connectionString: process.env.DATABASE_URL,
+        connectionString: env('DATABASE_URL'),
         ssl: { rejectUnauthorized: false, requestCert: false },
       }),
     );
@@ -65,14 +64,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
         return !!auth;
       },
       signIn: async ({ account }) => {
-        // Update refresh token if provided
-        if (account && account.refresh_token) {
-          const records = await query(
-            (sql) =>
-              sql`UPDATE accounts SET access_token=${account.access_token}, refresh_token = ${account.refresh_token} WHERE provider='google' AND "providerAccountId" = ${account.providerAccountId} RETURNING *`,
-          );
-          if (!records.length) {
-            throw new Error('Failed to update account');
+        if (!isRunningOnEdge() && isRunningOnServer()) {
+          const { query } = await import('@/lib/neondb');
+          // Update refresh token if provided
+          if (account && account.refresh_token) {
+            const records = await query(
+              (sql) =>
+                sql`UPDATE accounts SET access_token=${account.access_token}, refresh_token = ${account.refresh_token} WHERE provider='google' AND "providerAccountId" = ${account.providerAccountId} RETURNING *`,
+            );
+            if (!records.length) {
+              throw new Error('Failed to update account');
+            }
           }
         }
         logEvent('signIn');

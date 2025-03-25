@@ -51,7 +51,9 @@ export const isNextRequest = (req: unknown): req is NextRequest =>
  * @param res - The object to check.
  * @returns `true` if `res` is a LikeNextResponse, otherwise `false`.
  */
-export const isLikeNextResponse = (res: unknown): res is LikeNextResponse =>
+export const isLikeNextResponse = <Data = unknown>(
+  res: unknown,
+): res is LikeNextResponse<Data> =>
   typeof res === 'object' &&
   !!res &&
   'status' in res &&
@@ -63,7 +65,9 @@ export const isLikeNextResponse = (res: unknown): res is LikeNextResponse =>
  * @param res - The response object to check.
  * @returns True if the response is a NextApiResponse, false otherwise.
  */
-export const isNextApiResponse = (res: unknown): res is NextApiResponse =>
+export const isNextApiResponse = <Data = unknown>(
+  res: unknown,
+): res is NextApiResponse<Data> =>
   isLikeNextResponse(res) &&
   'json' in res &&
   typeof res.json === 'function' &&
@@ -76,7 +80,9 @@ export const isNextApiResponse = (res: unknown): res is NextApiResponse =>
  * @param res - The response object to check.
  * @returns True if the response is a NextResponse, false otherwise.
  */
-export const isNextResponse = (res: unknown): res is NextResponse =>
-  isLikeNextResponse(res) &&
+export const isNextResponse = <Data = unknown>(
+  res: unknown,
+): res is NextResponse<Data> =>
+  isLikeNextResponse<Data>(res) &&
   'cookies' in res &&
   typeof res.cookies === 'object';

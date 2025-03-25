@@ -1,13 +1,16 @@
 import { query, queryExt } from '@/lib/neondb';
-import { ValidationError } from '@/lib/react-util/errors';
-import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
+import { ValidationError, DataIntegrityError } from '@/lib/react-util';
 import { PartialExceptFor } from '@/lib/typescript';
-import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
-import { parsePaginationStats } from '@/data-models';
-import { ObjectRepository } from '../_types';
-import { Thread, ThreadSummary } from '@/data-models/api/thread';
-import { BaseObjectRepository } from '../_baseObjectRepository';
 import { log } from '@/lib/logger';
+import type {
+  PaginatedResultset,
+  PaginationStats,
+  Thread,
+  ThreadSummary,
+} from '@/data-models';
+import { parsePaginationStats } from '@/data-models';
+import type { ObjectRepository } from '../_types';
+import { AbstractObjectRepository } from '../abstractObjectRepository';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
   threadId: Number(record.thread_id),
@@ -210,5 +213,8 @@ export class ThreadRepository
       });
     }
     return false;
+  }
+  innerQuery<TRet>(): TRet {
+    throw new TypeError('Not implemented');
   }
 }

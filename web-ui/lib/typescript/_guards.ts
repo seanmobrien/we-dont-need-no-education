@@ -79,3 +79,13 @@ export const isMemberOfUnion = <
 ): check is T => {
   return !!union?.includes(check as T);
 };
+
+export const isPromise = <T = void>(check: unknown): check is Promise<T> =>
+  !!check &&
+  typeof check === 'object' &&
+  'then' in check &&
+  typeof check.then === 'function' &&
+  'catch' in check &&
+  typeof check.catch === 'function' &&
+  'finally' in check &&
+  typeof check.finally === 'function';

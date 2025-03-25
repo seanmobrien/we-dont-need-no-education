@@ -3,12 +3,13 @@ import { query } from '@/lib/neondb';
 import { log } from '@/lib/logger';
 import { mapRecordToObject } from '../email-route-util';
 import { LoggedError } from '@/lib/react-util';
+import { extractParams } from '@/lib/nextjs-util';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ emailId: string }> },
+  withParams: { params: Promise<{ emailId: string }> },
 ) {
-  const { emailId } = await params;
+  const { emailId } = await extractParams(withParams);
   const guidRegex =
     /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
   if (!emailId || !guidRegex.test(emailId)) {

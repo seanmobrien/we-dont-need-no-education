@@ -15,6 +15,8 @@ export type LikeNextRequest = NextApiRequest | NextRequest;
  * It can be either a `NextApiResponse` from the `next` module or a
  * `NextResponse` from the `next/server` module.
  *
- * @type {NextApiResponse | NextResponse} LikeNextResponse
+ * @type {NextApiResponse<Data> | NextResponse<Data>} LikeNextResponse
  */
-export type LikeNextResponse = NextApiResponse | NextResponse;
+export type LikeNextResponse<Data = unknown> =
+  | NextApiResponse<Data>
+  | NextResponse<Data>;

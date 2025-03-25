@@ -115,6 +115,7 @@ export class AbstractObjectRepository<T extends object> {
       error: isError(error) ? error : new Error(String(error)),
       critical: true,
       log: true,
+      shouldLog: true,
       source,
       message: '[AUDIT] A database operation failed',
     });
@@ -235,13 +236,21 @@ export class AbstractObjectRepository<T extends object> {
     try {
       const results = await getData(num, page, offset);
       if (results.length >= num) {
-        const total = await getDataCount();
+        const totalRecord = await getDataCount();
+        let total: number = 0;
+        if (totalRecord.length > 0) {
+          if ('records' in totalRecord[0])
+            total = Number(totalRecord[0].records);
+          else total = Number(Object.values(totalRecord[0])[0]);
+        } else {
+          total = 0;
+        }
         return {
           results,
           pageStats: {
             num,
             page,
-            total: total[0].records as number,
+            total,
           },
         };
       } else {

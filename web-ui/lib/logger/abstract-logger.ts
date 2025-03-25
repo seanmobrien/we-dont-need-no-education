@@ -1,4 +1,4 @@
-import { isError, isUnknownRecord, LoggedError } from '../react-util';
+import { isError, isRecord, LoggedError } from '../react-util';
 import {
   ApplicationInsightsBaseType,
   ApplicationInsightsCustomEventName,
@@ -100,7 +100,7 @@ export class AbstractLogger implements ILogger {
       delete record.measurements;
       delete record.event;
     } else {
-      if (!isUnknownRecord(message)) {
+      if (!isRecord(message)) {
         throw new Error('Message is not a valid object');
       }
       // and everything else is a generic message

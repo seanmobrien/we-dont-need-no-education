@@ -1,3 +1,6 @@
+jest.mock('@/lib/send-api-request');
+jest.mock('@/lib/site-util/url-builder');
+
 import {
   getEmailList,
   getEmail,
@@ -6,13 +9,10 @@ import {
   deleteEmailRecord,
   getEmailStats,
   getEmailSearchResults,
-} from '@/lib/api/email';
+} from '@/lib/api/client';
 import { apiRequestHelperFactory } from '@/lib/send-api-request';
 import siteMap from '@/lib/site-util/url-builder';
 import { ContactSummary } from '@/data-models';
-
-jest.mock('@/lib/send-api-request');
-jest.mock('@/lib/site-util/url-builder');
 
 const apiHelper = {
   get: jest.fn(),
@@ -34,7 +34,6 @@ describe('Email API', () => {
   const builder = siteMap.api.email;
 
   beforeEach(() => {
-    jest.clearAllMocks();
     (apiRequestHelperFactory as jest.Mock).mockReturnValue(apiHelper);
   });
 

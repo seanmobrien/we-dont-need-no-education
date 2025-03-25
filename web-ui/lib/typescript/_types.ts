@@ -122,7 +122,17 @@ export type KebabToCamelCase<S extends string> =
  * Simple utility type for declaring keys of other types.
  */
 export type KeyOf<T> = keyof T;
-
+/**
+ * Extracts the resolved value type of a promise.
+ *
+ * @template T - The promise type.
+ * @example
+ * ```typescript
+ * type MyPromise = Promise<string>;
+ * type ResolvedType = UnwrapPromise<MyPromise>; // string
+ * ```
+ */
+export type UnwrapPromise<T> = T extends Promise<infer U> ? U : T;
 /**
  * Represents a promise that can be canceled.
  *
@@ -323,3 +333,16 @@ export type MethodsOf<T> = Pick<T, KeysOfMethods<T>>;
 export type ReturnTypeOfMethods<T> = {
   [K in keyof T]: T[K] extends (...args: any[]) => infer R ? R : never;
 }[keyof MethodsOf<T>];
+
+/**
+ * Excludes types from `T` that are exactly the same as `U`.
+ *
+ * @template T - The union type from which to exclude exact matches.
+ * @template U - The type to exclude from `T`.
+ *
+ * @example
+ * ```typescript
+ * type Result = ExcludeExactMatch<'a' | 'b' | 'c', 'b'>; // Result is 'a' | 'c'
+ * ```
+ */
+export type ExcludeExactMatch<T, U> = T extends U ? never : T;

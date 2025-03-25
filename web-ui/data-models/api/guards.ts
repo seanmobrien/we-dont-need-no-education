@@ -1,9 +1,9 @@
 import { Contact, ContactSummary } from './contact';
 import {
-  EmailPropertyType,
   MessageImportStatus,
   MessageImportStatusWithChildren,
 } from './import/email-message';
+import { EmailPropertyType } from './email-properties/property-type';
 
 export const isContactSummary = (check: unknown): check is ContactSummary => {
   const candidate = check as ContactSummary;

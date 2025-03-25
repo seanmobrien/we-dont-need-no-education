@@ -3,11 +3,11 @@ import {
   EmailPropertyTypeRepository,
 } from '@/lib/api/email/properties';
 
+import { ImportStage } from '@/data-models/api/import/email-message';
 import {
-  ImportStage,
   EmailProperty,
   EmailPropertyCategoryTypeId,
-} from '@/data-models/api/import/email-message';
+} from '@/data-models/api/email-properties/property-type';
 import {
   StageProcessorContext,
   ImportStageManagerFactory,

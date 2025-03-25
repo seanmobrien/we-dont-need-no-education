@@ -1,137 +1,19 @@
 import {
-  EmailProperty,
-  EmailPropertyCategoryType,
-  EmailPropertyCategoryTypeId,
   EmailPropertyType,
-  EmailPropertyTypeTypeValues,
-} from '@/data-models/api/import/email-message';
-import { ValidationError } from '@/lib/react-util';
-import { FirstParameter, newUuid } from '@/lib/typescript';
-import { BaseObjectRepository } from '../../_baseObjectRepository';
-import { ObjectRepository } from '../../_types';
-import {
+  EmailPropertyCategoryTypeId,
+  EmailPropertyCategoryType,
+  PaginationStats,
+  PaginatedResultset,
   lookupEmailPropertyCategory,
   lookupEmailPropertyType,
-  PaginatedResultset,
-  PaginationStats,
-} from '@/data-models/api';
+} from '@/data-models';
+import { ValidationError } from '@/lib/react-util';
+import { FirstParameter } from '@/lib/typescript';
+import { BaseObjectRepository } from '../../_baseObjectRepository';
+import { ObjectRepository } from '../../_types';
 
-const mapRecordToObject = (record: Record<string, unknown>) => ({
-  value: String(record.property_value),
-  typeId: Number(record.email_property_type_id),
-  propertyId: String(record.property_id),
-  emailId: String(record.email_id),
-  createdOn:
-    record.created_on instanceof Date
-      ? record.created_on
-      : new Date(String(record.created_on)),
-});
-
-export class EmailPropertyRepository extends BaseObjectRepository<
-  EmailProperty,
-  'propertyId'
-> {
-  constructor() {
-    super({
-      tableName: 'email_property',
-      idField: 'propertyId',
-      objectMap: mapRecordToObject,
-      summaryMap: mapRecordToObject,
-    });
-  }
-  /**
-   * Validates the input for a specific method.
-   *
-   * @template TMethod
-   * @param {TMethod} method - The method to validate.
-   * @param {FirstParameter<ObjectRepository<T, KId>[TMethod]>} obj - The input to validate.
-   */
-  validate<TMethod extends keyof ObjectRepository<EmailProperty, 'propertyId'>>(
-    method: TMethod,
-    obj: FirstParameter<
-      Pick<ObjectRepository<EmailProperty, 'propertyId'>, TMethod>[TMethod]
-    >
-  ): void {
-    const asModel = obj as EmailProperty;
-    if (asModel.typeId && typeof asModel.typeId !== 'number') {
-      const parsedTypeId = EmailPropertyTypeTypeValues.indexOf(asModel.typeId);
-      if (parsedTypeId === -1) {
-        throw new ValidationError({
-          field: 'typeId',
-          value: asModel.typeId,
-          source: 'EmailPropertyRepository',
-        });
-      }
-      asModel.typeId = parsedTypeId;
-    }
-    switch (method) {
-      case 'create':
-        if (!asModel.emailId || !asModel.typeId) {
-          throw new ValidationError({
-            field: 'propertyId||At least one field is required for update',
-            source: 'EmailPropertyRepository',
-          });
-        }
-        if (!asModel.propertyId) {
-          asModel.propertyId = newUuid();
-        }
-        break;
-      case 'update':
-        if (
-          !asModel.propertyId ||
-          (!asModel.emailId && !asModel.typeId && !asModel.value)
-        ) {
-          throw new ValidationError({
-            field: 'propertyId||At least one field is required for update',
-            source: 'EmailPropertyRepository',
-          });
-        }
-        break;
-      default:
-        break;
-    }
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected getListQueryProperties(): [string, Array<any>, string] {
-    return [
-      `SELECT * FROM email_property ORDER BY email_id`,
-      [],
-      `SELECT COUNT(*) as records FROM email_property`,
-    ];
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected getQueryProperties(recordId: string): [string, Array<any>] {
-    return ['SELECT * FROM email_property WHERE property_id = $1', [recordId]];
-  }
-  protected getCreateQueryProperties({
-    value,
-    typeId,
-    emailId,
-    createdOn,
-    propertyId,
-  }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  EmailProperty): [string, Array<any>] {
-    return [
-      `INSERT INTO email_property (property_value, email_property_type_id, email_id, created_on, property_id) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [value, typeId, emailId, createdOn, propertyId],
-    ];
-  }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected updateQueryProperties(obj: EmailProperty): [Record<string, any>] {
-    return [
-      {
-        property_value: obj.value,
-        email_property_type_id: obj.typeId,
-        property_id: obj.propertyId,
-        email_id: obj.emailId,
-        created_on: obj.createdOn,
-      },
-    ];
-  }
-}
-
-const mapPropertyTypeRecordToObject = (
-  record: Record<string, unknown>
+export const mapPropertyTypeRecordToObject = (
+  record: Record<string, unknown>,
 ): EmailPropertyType => ({
   categoryId: Number(record.email_property_category_id),
   typeId: Number(record.email_property_type_id),
@@ -149,7 +31,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
   constructor() {
     super({
       tableName: 'email_property_type',
-      idField: 'typeId',
+      idField: ['typeId', 'email_property_type_id'],
       objectMap: mapPropertyTypeRecordToObject,
       summaryMap: mapPropertyTypeRecordToObject,
     });
@@ -157,7 +39,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
 
   async listForCategory(
     categoryId: EmailPropertyCategoryTypeId | EmailPropertyCategoryType,
-    pagination: PaginationStats = { page: 1, num: 1000, total: 1000 }
+    pagination: PaginationStats = { page: 1, num: 1000, total: 1000 },
   ): Promise<PaginatedResultset<EmailPropertyType>> {
     const [, , sqlCountQuery] = this.getListQueryProperties();
     const values = [lookupEmailPropertyCategory(categoryId)];
@@ -169,7 +51,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
         values,
         sqlCountQuery,
       },
-      pagination
+      pagination,
     );
     return results as PaginatedResultset<EmailPropertyType>;
   }
@@ -185,7 +67,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<EmailPropertyType, 'typeId'>, TMethod>[TMethod]
-    >
+    >,
   ): void {
     const asModel = obj as EmailPropertyType;
     if (
@@ -258,19 +140,30 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
     name,
     categoryId,
     createdOn,
-  }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  EmailPropertyType): [string, Array<any>] {
+  }: EmailPropertyType): [
+    string,
+    [
+      string,
+      number | EmailPropertyCategoryType | EmailPropertyCategoryTypeId,
+      Date,
+    ],
+  ] {
     return [
       `INSERT INTO email_property_type (property_name, email_property_category_id, created_at) VALUES ($1, $2, $3) RETURNING *`,
       [name, categoryId, createdOn],
     ];
   }
-  protected updateQueryProperties({
+  protected getUpdateQueryProperties({
     categoryId,
     name,
     createdOn,
-  }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  EmailPropertyType): [Record<string, any>] {
+  }: EmailPropertyType): [
+    {
+      email_property_category_id: number;
+      property_name: string;
+      created_at: Date | undefined;
+    },
+  ] {
     return [
       {
         email_property_category_id: Number(categoryId),

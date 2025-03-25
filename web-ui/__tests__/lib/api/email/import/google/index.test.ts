@@ -1,3 +1,6 @@
+jest.mock('@/lib/send-api-request');
+jest.mock('@/lib/site-util/url-builder');
+
 import {
   searchEmails,
   loadEmail,
@@ -8,9 +11,6 @@ import {
   apiRequestHelperFactory,
 } from '@/lib/send-api-request';
 import siteMap from '@/lib/site-util/url-builder';
-
-jest.mock('@/lib/send-api-request');
-jest.mock('@/lib/site-util/url-builder');
 
 const apiHelper = {
   get: jest

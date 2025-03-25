@@ -15,8 +15,8 @@ import {
   gridColumn,
 } from 'tailwindcss-classnames';
 
-const Home = async ({ params }: { params: Promise<{ emailId: string }> }) => {
-  const { emailId } = await params;
+const Home = async ({ params }: { params: { emailId: string } }) => {
+  const { emailId } = await (params as unknown as Promise<{ emailId: string }>);
 
   return (
     <div
@@ -27,7 +27,7 @@ const Home = async ({ params }: { params: Promise<{ emailId: string }> }) => {
         minHeight('min-h-screen'),
         padding('p-8', 'pb-20', 'sm:p-20'),
         gap('gap-16'),
-        'font-[family-name:var(--font-geist-sans)]'
+        'font-[family-name:var(--font-geist-sans)]',
       )}
     >
       <main
@@ -35,7 +35,7 @@ const Home = async ({ params }: { params: Promise<{ emailId: string }> }) => {
           display('flex'),
           flexDirection('flex-col'),
           gap('gap-8'),
-          alignItems('items-center', 'sm:items-start')
+          alignItems('items-center', 'sm:items-start'),
         )}
       >
         <div
@@ -43,7 +43,7 @@ const Home = async ({ params }: { params: Promise<{ emailId: string }> }) => {
             display('flex'),
             alignItems('items-center'),
             gap('gap-2'),
-            gridColumn('col-span-12')
+            gridColumn('col-span-12'),
           )}
         >
           <EmailForm
@@ -58,7 +58,7 @@ const Home = async ({ params }: { params: Promise<{ emailId: string }> }) => {
             display('flex'),
             gap('gap-4'),
             alignItems('items-center'),
-            flexBox('flex-col', 'sm:flex-row')
+            flexBox('flex-col', 'sm:flex-row'),
           )}
         ></div>
       </main>
@@ -67,7 +67,7 @@ const Home = async ({ params }: { params: Promise<{ emailId: string }> }) => {
           display('flex'),
           flexDirection('flex-col', 'sm:flex-row'),
           gap('gap-4'),
-          alignItems('items-center')
+          alignItems('items-center'),
         )}
       >
         <a
@@ -76,7 +76,7 @@ const Home = async ({ params }: { params: Promise<{ emailId: string }> }) => {
             alignItems('items-center'),
             gap('gap-2'),
             textDecoration('hover:underline'),
-            textUnderlineOffset('hover:underline-offset-4')
+            textUnderlineOffset('hover:underline-offset-4'),
           )}
           href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
           target="_blank"

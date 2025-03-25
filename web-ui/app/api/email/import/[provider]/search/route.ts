@@ -9,7 +9,9 @@ export const GET = async (
   req: NextRequest,
   { params }: { params: Promise<{ provider: string }> },
 ) => {
-  const { provider } = await params;
+  const { provider } = await (params as unknown as Promise<{
+    provider: string;
+  }>);
   const factoryResponse = await googleProviderFactory(provider, { req });
   if (factoryResponse instanceof Response) {
     return factoryResponse;

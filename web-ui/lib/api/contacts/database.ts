@@ -1,15 +1,21 @@
-import { Contact, ContactSummary } from '@/data-models/api/contact';
+import type {
+  Contact,
+  ContactSummary,
+  PaginatedResultset,
+  PaginationStats,
+  ObjectRepository,
+} from '@/data-models';
+import {
+  isContact,
+  parsePaginationStats,
+  globalContactCache,
+} from '@/data-models';
 import { log } from '@/lib/logger';
 import { query, queryExt } from '@/lib/neondb';
-import { ValidationError } from '@/lib/react-util/errors';
-import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
+import { ValidationError, DataIntegrityError } from '@/lib/react-util';
 import { PartialExceptFor } from '@/lib/typescript';
-import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
-import { isContact, parsePaginationStats } from '@/data-models';
-import { ObjectRepository } from '@/data-models/api/object-repository';
-import { globalContactCache } from '@/data-models/api';
 import { RecipientType } from '@/lib/email/import/types';
-import { BaseObjectRepository } from '../_baseObjectRepository';
+import { AbstractObjectRepository } from '../abstractObjectRepository';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,

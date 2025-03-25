@@ -139,8 +139,9 @@ export class EmailRepository extends BaseObjectRepository<
       ],
     ];
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  protected updateQueryProperties(obj: RepositoryEmail): [Record<string, any>] {
+  protected getUpdateQueryProperties(
+    obj: RepositoryEmail,
+  ): [Record<string, unknown>] {
     return [
       {
         sender_id: obj.senderId,
@@ -296,7 +297,7 @@ export class EmailAttachmentRepository extends BaseObjectRepository<
       ],
     ];
   }
-  protected updateQueryProperties(
+  protected getUpdateQueryProperties(
     obj: EmailMessageAttachment,
   ): [Record<string, string | number | null>] {
     return [

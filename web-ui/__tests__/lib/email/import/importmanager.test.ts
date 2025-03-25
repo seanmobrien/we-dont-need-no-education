@@ -2,6 +2,15 @@
  * @jest-environment node
  */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+jest.mock('@/lib/neondb');
+jest.mock('google-auth-library');
+jest.mock('googleapis');
+jest.mock('@/lib/send-api-request');
+jest.mock('@/lib/api/email/import/google');
+jest.mock('@/lib/logger', () => ({
+  log: jest.fn(),
+}));
+jest.mock('@/lib/email/import/google/managermapfactory');
 
 import { DefaultImportManager } from '@/lib/email/import/importmanager';
 import {
@@ -19,17 +28,6 @@ import { ICancellablePromise, ICancellablePromiseExt } from '@/lib/typescript';
 import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
 import { ImportManagerMap } from '@/lib/email/import/types';
 import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';
-
-jest.mock('@/lib/neondb');
-jest.mock('google-auth-library');
-jest.mock('googleapis');
-jest.mock('@/lib/send-api-request');
-jest.mock('@/lib/api/email/import/google');
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-  errorLogFactory: jest.fn(),
-}));
-jest.mock('@/lib/email/import/google/managermapfactory');
 
 const mockManagerMapFactory = managerMapFactory as jest.MockedFunction<
   typeof managerMapFactory

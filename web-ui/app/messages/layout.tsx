@@ -1,15 +1,19 @@
 import * as React from 'react';
 import { DashboardLayout } from '@toolpad/core/DashboardLayout';
 import { PageContainer } from '@toolpad/core/PageContainer';
-
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import FolderIcon from '@mui/icons-material/Folder';
-import Sync from '@mui/icons-material/Sync';
 import { NextAppProvider } from '@toolpad/core/nextjs';
-import { signIn, signOut, SessionProvider } from 'next-auth/react';
-import { auth } from '@/auth';
+import { SessionProvider } from 'next-auth/react';
+import { auth, signIn, signOut } from '@/auth';
 
-export const NAVIGATION = [
+import Sync from '@mui/icons-material/Sync';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+
+export const Authentication = {
+  signIn,
+  signOut,
+};
+
+export const DashboardNavigation = [
   {
     title: 'Dashboard',
     icon: <DashboardIcon />,
@@ -21,12 +25,7 @@ export const NAVIGATION = [
     icon: <Sync />,
   },
 ];
-
-const AUTHENTICATION = {
-  signIn,
-  signOut,
-};
-const BRANDING = {
+export const Branding = {
   title: 'Sue the Schools',
 };
 
@@ -37,10 +36,9 @@ export default async function DashboardPagesLayout(props: {
   return (
     <SessionProvider session={session}>
       <NextAppProvider
-        navigation={NAVIGATION}
-        branding={BRANDING}
+        navigation={DashboardNavigation}
+        branding={Branding}
         session={session}
-        authentication={AUTHENTICATION}
       >
         <DashboardLayout>
           <PageContainer>{props.children}</PageContainer>

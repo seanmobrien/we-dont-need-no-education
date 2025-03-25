@@ -1,4 +1,4 @@
-import { IUrlBuilder, MappedUrlBuilder, MappedPageOverloads } from './_types';
+import { IUrlBuilder, MappedPageOverloads } from './_types';
 import { UrlBuilder } from './_impl';
 
 /**
@@ -10,11 +10,11 @@ import { UrlBuilder } from './_impl';
  */
 const mappedPageOverloadFactory = (
   builder: IUrlBuilder,
-  page: string
+  page: string,
 ): MappedPageOverloads => {
   const ret: MappedPageOverloads = (
     slug?: string | number | object,
-    params?: object
+    params?: object,
   ) => {
     if (typeof slug === 'object') {
       return builder.page(page, slug);
@@ -27,6 +27,46 @@ const mappedPageOverloadFactory = (
   return ret;
 };
 
+let siteBuilderRoot = new UrlBuilder({ parent: null, segment: '' });
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const mappedUrlBuilderFactory = (_arg: unknown) => {
+  if ('api' in siteBuilderRoot) {
+    return siteBuilderRoot;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ret = new UrlBuilder({ parent: null, segment: '' }) as any;
+  ret.api = ret.child('api');
+  ret.api.contact = mappedPageOverloadFactory(ret.api, 'contact');
+  ret.api.email = ret.api.child('email');
+  ret.api.email.search = mappedPageOverloadFactory(ret.api, 'search');
+  ret.api.email.thread = mappedPageOverloadFactory(ret.api, 'thread');
+  ret.api.email.stats = mappedPageOverloadFactory(ret.api, 'stats');
+  ret.api.email.import = ret.api.email.child('import');
+  ret.api.email.import.google = ret.api.email.import.child('google');
+  ret.api.email.import.google.message =
+    ret.api.email.import.google.child('message');
+  ret.api.email.import.google.message.status = mappedPageOverloadFactory(
+    ret.api.email.import.google.message,
+    'status',
+  );
+  ret.api.email.import.google.search = mappedPageOverloadFactory(
+    ret.api.email.import.google,
+    'search',
+  );
+  ret.api.email.import.list = mappedPageOverloadFactory(
+    ret.api.email.import,
+    'list',
+  );
+  ret.email = ret.child('email');
+  ret.email.bulkEdit = mappedPageOverloadFactory(ret.email, 'bulk-edit');
+  ret.email.edit = mappedPageOverloadFactory(ret.email, 'edit');
+
+  siteBuilderRoot = ret;
+
+  return ret;
+};
+
 /**
  * Factory function to create a MappedUrlBuilder based on a provided map.
  *
@@ -35,7 +75,6 @@ const mappedPageOverloadFactory = (
  * @param builder - Optional URL builder instance. If not provided, a new UrlBuilder instance is created.
  * @returns A MappedUrlBuilder instance based on the provided map.
  * @throws {TypeError} If the map is not an object.
- */
 export const mappedUrlBuilderFactory = <TMap>(
   map: TMap,
   builder?: IUrlBuilder
@@ -66,3 +105,4 @@ export const mappedUrlBuilderFactory = <TMap>(
 
   return retBuilder as MappedUrlBuilder<typeof map>;
 };
+ */

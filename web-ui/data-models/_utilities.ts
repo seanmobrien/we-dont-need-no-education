@@ -11,13 +11,13 @@ import type {
   EmailPropertyCategoryTypeId,
   EmailPropertyTypeType,
   EmailPropertyTypeTypeId,
-} from './api/import/email-message';
+} from './api/email-properties/property-type';
 import {
   EmailPropertyCategoryTypeIdValues,
   EmailPropertyCategoryTypeValues,
   EmailPropertyTypeTypeIdValues,
   EmailPropertyTypeTypeValues,
-} from './api/import/email-message';
+} from './api/email-properties/property-type';
 
 /**
  * Normalizes a nullable numeric value.
@@ -31,7 +31,7 @@ import {
 export const normalizeNullableNumeric = (
   value: number | null,
   defaultValue: number | null = null,
-  minValue: number = 1
+  minValue: number = 1,
 ): number | null => ((value ?? 0) > minValue - 1 ? value : defaultValue);
 
 /**
@@ -56,7 +56,7 @@ export const normalizeNullableNumeric = (
  * ```
  */
 export const parsePaginationStats = (
-  req: URL | URLSearchParams | (PaginationStats | undefined)
+  req: URL | URLSearchParams | (PaginationStats | undefined),
 ): PaginationStats & { offset: number } => {
   let page: number | string | undefined | null;
   let num: number | string | undefined | null;
@@ -84,6 +84,23 @@ export const parsePaginationStats = (
     offset: (page - 1) * num,
   };
 };
+
+/**
+ * Checks if the given value is of type `PaginationStats`.
+ *
+ * @param check - The value to check.
+ * @returns `true` if the value is a `PaginationStats` object, otherwise `false`.
+ */
+export const isPaginationStats = (check: unknown): check is PaginationStats => {
+  if (check && typeof check === 'object') {
+    const { page, num } = check as PaginationStats;
+    return (
+      typeof page === 'number' && typeof num === 'number' && page > 0 && num > 0
+    );
+  }
+  return false;
+};
+
 /**
  * Normalizes a date and time input to an ISO string format.
  *
@@ -95,7 +112,7 @@ export const parsePaginationStats = (
  */
 export const normalizeDateAndTime = (
   input: string | Date,
-  defaultValue?: Date
+  defaultValue?: Date,
 ) => {
   let date: Date;
   try {
@@ -118,13 +135,13 @@ export const normalizeDateAndTime = (
  * @returns {EmailPropertyTypeTypeId | -1} The email property type ID or -1 if not found.
  */
 export const lookupEmailPropertyType = (
-  propertyType: string | number
+  propertyType: string | number,
 ): EmailPropertyTypeTypeId | -1 => {
   const index =
     typeof propertyType === 'number'
       ? propertyType
       : EmailPropertyTypeTypeValues.indexOf(
-          propertyType as EmailPropertyTypeType
+          propertyType as EmailPropertyTypeType,
         );
   return index === -1 ? -1 : EmailPropertyTypeTypeIdValues[index];
 };
@@ -136,7 +153,7 @@ export const lookupEmailPropertyType = (
  * @returns {check is EmailPropertyTypeType} True if the value is a valid email property type, false otherwise.
  */
 export const isEmailPropertyType = (
-  check: unknown
+  check: unknown,
 ): check is EmailPropertyTypeType =>
   typeof check === 'string' && lookupEmailPropertyType(check) !== -1;
 
@@ -148,13 +165,13 @@ export const isEmailPropertyType = (
  * @returns {EmailPropertyCategoryTypeId | -1} The email property category ID or -1 if not found.
  */
 export const lookupEmailPropertyCategory = (
-  propertyCategory: string | number
+  propertyCategory: string | number,
 ): EmailPropertyCategoryTypeId | -1 => {
   const index =
     typeof propertyCategory === 'number'
       ? propertyCategory
       : EmailPropertyCategoryTypeValues.indexOf(
-          propertyCategory as EmailPropertyCategoryType
+          propertyCategory as EmailPropertyCategoryType,
         );
   return index === -1 ? -1 : EmailPropertyCategoryTypeIdValues[index];
 };
@@ -166,7 +183,7 @@ export const lookupEmailPropertyCategory = (
  * @returns {check is EmailPropertyCategoryType} True if the value is a valid email property category type, false otherwise.
  */
 export const isEmailPropertyCategory = (
-  check: unknown
+  check: unknown,
 ): check is EmailPropertyCategoryType => {
   const isValidCategory =
     typeof check === 'string' && lookupEmailPropertyCategory(check) !== -1;

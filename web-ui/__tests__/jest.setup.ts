@@ -1,4 +1,44 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
+// Mocking modules before imports
+jest.mock('google-auth-library');
+jest.mock('googleapis');
+jest.mock('@neondatabase/serverless');
+jest.mock('postgres');
+jest.mock('next-auth', () => {
+  return jest.fn();
+});
+jest.mock('@/auth', () => {
+  return {
+    auth: jest.fn(() => ({
+      id: 'fdsdfs',
+    })),
+  };
+});
+jest.mock('@/lib/neondb/connection', () => {});
+
+const makeMockImplementation = (name: string) => {
+  return (...args: unknown[]) =>
+    console.log(`logger::${name} called with `, args);
+};
+const logger = () => ({
+  warn: jest.fn(makeMockImplementation('warn')),
+  error: jest.fn(makeMockImplementation('error')),
+  info: jest.fn(makeMockImplementation('info')),
+  debug: jest.fn(makeMockImplementation('debug')),
+  silly: jest.fn(makeMockImplementation('silly')),
+  verbose: jest.fn(makeMockImplementation('verbose')),
+  log: jest.fn(makeMockImplementation('log')),
+});
+
+jest.mock('@/lib/logger', () => {
+  return {
+    logger: Promise.resolve(logger),
+    log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => cb(logger())),
+    errorLogFactory: jest.fn((x) => x),
+  };
+});
+
 import NextAuth from 'next-auth';
 import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
@@ -11,22 +51,7 @@ import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import '@testing-library/jest-dom';
 import 'jest';
 
-jest.mock('google-auth-library');
-jest.mock('googleapis');
-jest.mock('@neondatabase/serverless');
-jest.mock('postgres');
 // Automocks
-
-jest.mock('next-auth', () => {
-  return jest.fn();
-});
-jest.mock('@/auth', () => {
-  return {
-    auth: jest.fn(() => ({
-      id: 'fdsdfs',
-    })),
-  };
-});
 (postgres as unknown as jest.Mock).mockImplementation((strings, ...values) => {
   return jest.fn(() => Promise.resolve({ rows: [] }));
 });
@@ -56,6 +81,15 @@ const DefaultEnvVariables = {
   REDIS_URL: 'redis://neverurl',
   REDIS_PASSWORD: 'redis-password',
 };
+
+global.fetch = jest.fn().mockImplementation(() => {
+  console.log('in mock fetch', new Error().stack);
+  return Promise.resolve({
+    ok: false,
+    status: 500,
+    json: () => Promise.resolve({ response: 'error' }),
+  });
+});
 
 const resetEnvVariables = () => {
   process.env = {

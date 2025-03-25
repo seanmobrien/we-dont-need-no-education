@@ -1,7 +1,7 @@
 import {
   EmailPropertyTypeTypeValues,
   EmailPropertyCategoryTypeValues,
-} from '@/data-models/api/import/email-message';
+} from '@/data-models/api/email-properties/property-type';
 import {
   isEmailPropertyCategory,
   isEmailPropertyType,
@@ -40,7 +40,7 @@ describe('normalizeDateAndTime', () => {
   it('should return the default value if the input is invalid', () => {
     const defaultValue = new Date('2023-10-10T10:10:10Z');
     expect(normalizeDateAndTime('invalid-date', defaultValue)).toBe(
-      '2023-10-10T10:10'
+      '2023-10-10T10:10',
     );
   });
 
@@ -53,7 +53,7 @@ describe('normalizeDateAndTime', () => {
 describe('lookupEmailPropertyType', () => {
   it('should return the correct ID for a known property type', () => {
     expect(lookupEmailPropertyType('Cc')).toBe(
-      EmailPropertyTypeTypeValues.indexOf('Cc') + 1
+      EmailPropertyTypeTypeValues.indexOf('Cc') + 1,
     );
   });
 
@@ -75,7 +75,7 @@ describe('isEmailPropertyType', () => {
 describe('lookupEmailPropertyCategory', () => {
   it('should return the correct ID for a known property category', () => {
     expect(lookupEmailPropertyCategory('Key Point')).toBe(
-      EmailPropertyCategoryTypeValues.indexOf('Key Point') + 1
+      EmailPropertyCategoryTypeValues.indexOf('Key Point') + 1,
     );
   });
 

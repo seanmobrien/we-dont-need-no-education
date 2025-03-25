@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
       process.env.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,
   },
+  experimental: {
+    // nodeMiddleware: true,
+  },
   publicRuntimeConfig: {
     hostname: process.env.NEXT_PUBLIC_HOSTNAME,
   },
@@ -15,7 +18,7 @@ const nextConfig: NextConfig = {
     '@opentelemetry/instrumentation',
     '@opentelemetry/instrumentation-pino',
     '@azure/monitor-opentelemetry-exporter',
-    /*
+
     '@azure/monitor-opentelemetry',
     '@azure/opentelemetry-instumentation-azure-sdk',
     '@microsoft/applicationinsights-web',
@@ -27,9 +30,9 @@ const nextConfig: NextConfig = {
     '@opentelemetry/exporter-jaeger',
     '@opentelemetry',
     'pino',
+
     'pg',
     '@auth/pg-adapter',
-    */
   ],
 };
 

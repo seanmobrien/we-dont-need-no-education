@@ -16,13 +16,13 @@ import type {
 import { apiRequestHelperFactory } from '@/lib/send-api-request';
 
 import siteMap from '@/lib/site-util/url-builder';
-import type { PaginatedResultset } from '@/data-models/api';
-import {
+import type {
+  PaginatedResultset,
   EmailSearchResult,
   ImportResponse,
   ImportSourceMessage,
   MessageImportStatusWithChildren,
-} from '@/data-models/api/import/email-message';
+} from '@/data-models';
 
 const apiRequest = <TResult>(
   cb: (

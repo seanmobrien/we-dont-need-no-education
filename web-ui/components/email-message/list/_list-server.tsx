@@ -1,18 +1,8 @@
 import { EmailMessageSummary } from '@/data-models/api/email-message';
-import { getEmailList } from '@/lib/api/email';
+import { getEmailList } from '@/lib/api/client';
 import Link from 'next/link';
 import { Dispatch, useState, useEffect } from 'react';
-import classnames, {
-  backgrounds,
-  borders,
-  boxShadow,
-  display,
-  flexBox,
-  interactivity,
-  spacing,
-  transitionProperty,
-  typography,
-} from 'tailwindcss-classnames';
+import { typography } from 'tailwindcss-classnames';
 import siteMap from '@/lib/site-util/url-builder';
 import {
   ICancellablePromiseExt,
@@ -33,21 +23,6 @@ import { HeadCell, EnhancedTableHead } from '@/components/general';
 import { TableCell } from '@mui/material';
 
 const textGray600 = typography('text-gray-600');
-
-const listItemClass = classnames(
-  display('flex'),
-  flexBox('items-center', 'justify-between'),
-  spacing('p-4'),
-  borders('border', 'rounded'),
-  backgrounds('bg-gray-50', 'hover:bg-gray-100'),
-  interactivity('cursor-pointer'),
-  transitionProperty('transition'),
-  boxShadow('hover:shadow'),
-);
-
-const senderClass = typography('font-semibold', 'text-gray-800');
-const subjectClass = textGray600; // Reused text color class
-const timestampClass = classnames(typography('text-sm'), textGray600); // Applied shared text color
 
 const headCells: HeadCell[] = [
   { id: 'sender', numeric: false, disablePadding: true, label: 'Sender' },

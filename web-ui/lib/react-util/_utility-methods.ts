@@ -3,17 +3,14 @@
  *
  * A collection of utility methods for use in React applications.
  */
-
-import { OperationCanceledException } from 'typescript';
-import { isOperationCancelledError } from '../typescript';
-
 /**
  * Generates a unique identifier string.
  *
  * @returns {string} A unique identifier consisting of 7 alpha-numeric characters.
  */
-export const generateUniqueId = () =>
-  Math.random().toString(36).substring(2, 9);
+export function generateUniqueId(): string {
+  return Math.random().toString(36).slice(2, 9);
+}
 
 /**
  * Checks if the given value is an instance of the Error object.
@@ -21,12 +18,14 @@ export const generateUniqueId = () =>
  * @param value - The value to check.
  * @returns True if the value is an Error object, otherwise false.
  */
-export const isError = (value: unknown): value is Error =>
-  typeof value === 'object' &&
-  !!value &&
-  'message' in value &&
-  'stack' in value &&
-  typeof value.stack === 'string';
+export function isError(value: unknown): value is Error {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    (value instanceof Error ||
+      ('message' in value && 'name' in value && 'stack' in value))
+  );
+}
 
 /**
  * Checks if the given value is a DOMException with the name 'AbortError'.
@@ -34,12 +33,9 @@ export const isError = (value: unknown): value is Error =>
  * @param value - The value to check.
  * @returns True if the value is a DOMException with the name 'AbortError', otherwise false.
  */
-export const isAbortError = (
-  value: unknown,
-): value is DOMException | OperationCanceledException =>
-  (isError(value) && value.name === 'AbortError') ||
-  value instanceof DOMException ||
-  isOperationCancelledError(value);
+export function isAbortError(value: unknown): value is Error {
+  return value instanceof DOMException && value.name === 'AbortError';
+}
 
 /**
  * Type guard to check if a value is a TemplateStringsArray.
@@ -47,12 +43,11 @@ export const isAbortError = (
  * @param value - The value to check.
  * @returns True if the value is a TemplateStringsArray, false otherwise.
  */
-export const isTemplateStringsArray = (
+export function isTemplateStringsArray(
   value: unknown,
-): value is TemplateStringsArray =>
-  Array.isArray(value) &&
-  'raw' in value &&
-  Array.isArray((value as TemplateStringsArray).raw);
+): value is TemplateStringsArray {
+  return Array.isArray(value) && 'raw' in value;
+}
 
 /**
  * Determines if a given value is truthy.
@@ -71,25 +66,21 @@ export const isTemplateStringsArray = (
  * @param defaultValue - The default boolean value to return if the value is `undefined` or `null`. Defaults to `false`.
  * @returns `true` if the value is considered truthy, otherwise `false`.
  */
-export const isTruthy = (
+export function isTruthy(
   value: unknown,
   defaultValue: boolean = false,
-): boolean => {
+): boolean {
   if (value === undefined || value === null) {
     return defaultValue;
   }
   if (typeof value === 'string') {
-    const normalized = value.trim().toLowerCase();
-    return ['true', '1', 'yes', 'y'].includes(normalized);
+    const trimmedValue = value.trim().toLowerCase();
+    return (
+      trimmedValue === 'true' || trimmedValue === '1' || trimmedValue === 'yes'
+    );
   }
-  if (!!value) {
-    if (typeof value === 'object') {
-      return Object.keys(value).length > 0;
-    }
-    return true;
-  }
-  return false;
-};
+  return Boolean(value);
+}
 
 /**
  * Checks if the given value is an indexable record (aka object)
@@ -97,6 +88,27 @@ export const isTruthy = (
  * @param check - The value to check.
  * @returns True if the value is an object, otherwise false.
  */
-export const isUnknownRecord = (
+export function isRecord(check: unknown): check is Record<string, unknown> {
+  return check !== null && typeof check === 'object';
+}
+
+/**
+ * A unique symbol used for type branding.
+ */
+export const TypeBrandSymbol: unique symbol = Symbol('TypeBrandSymbol');
+
+/**
+ * Checks if the given value is type branded with the specified brand.
+ *
+ * @param check - The value to check.
+ * @param brand - The brand symbol to check against.
+ * @returns True if the value is type branded with the specified brand, otherwise false.
+ */
+export const isTypeBranded = <TResult>(
   check: unknown,
-): check is Record<string, unknown> => typeof check === 'object' && !!check;
+  brand: symbol,
+): check is TResult =>
+  typeof check === 'object' &&
+  check !== null &&
+  TypeBrandSymbol in check &&
+  check[TypeBrandSymbol] === brand;

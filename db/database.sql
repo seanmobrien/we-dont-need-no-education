@@ -1,137 +1,1448 @@
-CREATE TABLE contacts (
-    contact_id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    role_dscr VARCHAR(100),  
-    is_district_staff BOOLEAN DEFAULT FALSE,
-    phone VARCHAR(20),
-);
+--
+-- PostgreSQL database dump
+--
 
-CREATE TABLE threads (
-    thread_id SERIAL PRIMARY KEY,
-    subject TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Dumped from database version 16.8
+-- Dumped by pg_dump version 17.4
 
+-- Started on 2025-03-22 14:10:19
 
-CREATE TABLE emails (
-    email_id SERIAL PRIMARY KEY,
-    sender_id INT NOT NULL REFERENCES contacts(contact_id) ON DELETE CASCADE,
-    thread_id INT NULL REFERENCES threads(thread_id) ON DELETE SET NULL,
-    parent_email_id INT NULL REFERENCES emails(email_id) ON DELETE SET NULL,  
-    [subject] TEXT NOT NULL,
-    email_contents TEXT NOT NULL,
-    sent_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
 
+SET default_tablespace = '';
 
-CREATE TABLE email_recipients (
-    email_id INT NOT NULL REFERENCES emails(email_id) ON DELETE CASCADE,
-    recipient_id INT NOT NULL REFERENCES contacts(contact_id) ON DELETE CASCADE,
-    PRIMARY KEY (email_id, recipient_id)
-);
+SET default_table_access_method = heap;
 
-CREATE TABLE policy_types (
-    policy_type_id SERIAL PRIMARY KEY,
-    type_name VARCHAR(50) UNIQUE NOT NULL  
-);
+--
+-- TOC entry 221 (class 1259 OID 33325)
+-- Name: accounts; Type: TABLE; Schema: public; Owner: -
+--
 
-
-CREATE TABLE policies_statutes (
-    policy_id SERIAL PRIMARY KEY,
-    policy_type_id INT NOT NULL REFERENCES policy_types(policy_type_id) ON DELETE CASCADE,
-    chapter VARCHAR(50),
-    section VARCHAR(50),
-    paragraph TEXT,
-    description TEXT
+CREATE TABLE public.accounts (
+    id integer NOT NULL,
+    "userId" integer NOT NULL,
+    type character varying(255) NOT NULL,
+    provider character varying(255) NOT NULL,
+    "providerAccountId" character varying(255) NOT NULL,
+    refresh_token text,
+    access_token text,
+    expires_at bigint,
+    token_type text,
+    scope text,
+    id_token text,
+    session_state text
 );
 
 
-CREATE TABLE email_attachments (
-    attachment_id SERIAL PRIMARY KEY,
-    email_id INT NOT NULL REFERENCES emails(email_id) ON DELETE CASCADE,
-    file_name VARCHAR(255) NOT NULL,
-    file_path TEXT NOT NULL,  
-    extracted_text TEXT NULL,  
-    extracted_text_tsv TSVECTOR,  
-    policy_id INT NULL REFERENCES policies_statutes(policy_id) ON DELETE SET NULL,
-    summary TEXT NULL  
-);
+--
+-- TOC entry 222 (class 1259 OID 33330)
+-- Name: accounts_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
 
-CREATE INDEX idx_attachment_search ON email_attachments USING GIN(extracted_text_tsv);
-
-CREATE TABLE key_points (
-    key_point_id SERIAL PRIMARY KEY,
-    email_id INT NOT NULL REFERENCES emails(email_id) ON DELETE CASCADE,
-    description TEXT NOT NULL,
-    policy_id INT NULL REFERENCES policies_statutes(policy_id) ON DELETE SET NULL
-);
+CREATE SEQUENCE public.accounts_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
 
+--
+-- TOC entry 4296 (class 0 OID 0)
+-- Dependencies: 222
+-- Name: accounts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
 
-CREATE TABLE call_to_action (
-    action_id SERIAL PRIMARY KEY,
-    email_id INT NOT NULL REFERENCES emails(email_id) ON DELETE CASCADE,
-    description TEXT NOT NULL,
-    opened_date DATE,
-    closed_date DATE,
-    compliancy_close_date DATE,
-    completion_percentage DECIMAL(5,2) DEFAULT 0.0 CHECK (completion_percentage BETWEEN 0 AND 100),
-    policy_id INT NULL REFERENCES policies_statutes(policy_id) ON DELETE SET NULL
-);
+ALTER SEQUENCE public.accounts_id_seq OWNED BY public.accounts.id;
 
-CREATE TABLE call_to_action_responses (
-    response_id SERIAL PRIMARY KEY,
-    action_id INT NOT NULL REFERENCES call_to_action(action_id) ON DELETE CASCADE,
-    email_id INT NOT NULL REFERENCES emails(email_id) ON DELETE CASCADE,
-    description TEXT NOT NULL,
-    completion_percentage DECIMAL(5,2) DEFAULT 0.0 CHECK (completion_percentage BETWEEN 0 AND 100),
-    response_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+--
+-- TOC entry 223 (class 1259 OID 33331)
+-- Name: call_to_action_details; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.call_to_action_details (
+    property_id uuid NOT NULL,
+    opened_date date,
+    closed_date date,
+    compliancy_close_date date,
+    completion_percentage numeric(5,2) DEFAULT 0.0,
+    policy_id integer
 );
 
 
-CREATE TABLE violations_detected (
-    violation_id SERIAL PRIMARY KEY,
-    email_id INT NULL REFERENCES emails(email_id) ON DELETE CASCADE,
-    attachment_id INT NULL REFERENCES email_attachments(attachment_id) ON DELETE CASCADE,
-    key_point_id INT NULL REFERENCES key_points(key_point_id) ON DELETE CASCADE,
-    action_id INT NULL REFERENCES call_to_action(action_id) ON DELETE CASCADE,
-    violation_type VARCHAR(255) NOT NULL,
-    severity_level INT CHECK (severity_level BETWEEN 1 AND 5),
-    detected_by VARCHAR(255) DEFAULT 'AI-System',
-    detected_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    notes TEXT
-);
+--
+-- TOC entry 224 (class 1259 OID 33335)
+-- Name: call_to_action_response_details; Type: TABLE; Schema: public; Owner: -
+--
 
-CREATE TABLE legal_references (
-    reference_id SERIAL PRIMARY KEY,
-    case_name VARCHAR(255) NOT NULL,
-    source VARCHAR(255) NOT NULL,  
-    policy_id INT NULL REFERENCES policies_statutes(policy_id) ON DELETE CASCADE,
-    summary TEXT NOT NULL,
-    url TEXT
+CREATE TABLE public.call_to_action_response_details (
+    property_id uuid NOT NULL,
+    action_property_id uuid NOT NULL,
+    completion_percentage numeric(5,2) DEFAULT 0.0,
+    response_timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
-CREATE TABLE email_sentiment_analysis (
-    analysis_id SERIAL PRIMARY KEY,
-    email_id INT NOT NULL REFERENCES emails(email_id) ON DELETE CASCADE,
-    sentiment_score INT CHECK (sentiment_score BETWEEN -5 AND 5),  
-    detected_hostility BOOLEAN DEFAULT FALSE,
-    flagged_phrases TEXT,
-    detected_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+--
+-- TOC entry 225 (class 1259 OID 33340)
+-- Name: compliance_scores_details; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.compliance_scores_details (
+    property_id uuid NOT NULL,
+    action_property_id uuid,
+    compliance_score integer,
+    violations_found integer DEFAULT 0,
+    response_delay_days integer DEFAULT 0,
+    overall_grade character varying(10),
+    evaluated_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
 
 
-CREATE TABLE compliance_scores (
-    score_id SERIAL PRIMARY KEY,
-    email_id INT NULL REFERENCES emails(email_id) ON DELETE CASCADE,
-    action_id INT NULL REFERENCES call_to_action(action_id) ON DELETE CASCADE,
-    compliance_score INT CHECK (compliance_score BETWEEN 0 AND 100),
-    violations_found INT DEFAULT 0,
-    response_delay_days INT DEFAULT 0,
-    overall_grade VARCHAR(10) CHECK (overall_grade IN ('A', 'B', 'C', 'D', 'F')),
-    evaluated_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+--
+-- TOC entry 226 (class 1259 OID 33346)
+-- Name: contacts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.contacts (
+    contact_id integer NOT NULL,
+    name character varying(255) NOT NULL,
+    email character varying(255) NOT NULL,
+    role_dscr character varying(100),
+    is_district_staff boolean DEFAULT false,
+    phone character varying(30)
 );
 
+
+--
+-- TOC entry 227 (class 1259 OID 33352)
+-- Name: contacts_contact_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.contacts_contact_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4297 (class 0 OID 0)
+-- Dependencies: 227
+-- Name: contacts_contact_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.contacts_contact_id_seq OWNED BY public.contacts.contact_id;
+
+
+--
+-- TOC entry 228 (class 1259 OID 33353)
+-- Name: email_attachments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_attachments (
+    attachment_id integer NOT NULL,
+    file_name text NOT NULL,
+    file_path text NOT NULL,
+    extracted_text text,
+    extracted_text_tsv tsvector,
+    policy_id integer,
+    summary text,
+    email_id uuid NOT NULL,
+    mime_type text NOT NULL,
+    size integer NOT NULL
+);
+
+
+--
+-- TOC entry 229 (class 1259 OID 33358)
+-- Name: email_attachments_attachment_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.email_attachments_attachment_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4298 (class 0 OID 0)
+-- Dependencies: 229
+-- Name: email_attachments_attachment_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.email_attachments_attachment_id_seq OWNED BY public.email_attachments.attachment_id;
+
+
+--
+-- TOC entry 230 (class 1259 OID 33359)
+-- Name: email_property; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_property (
+    property_value text,
+    email_property_type_id integer NOT NULL,
+    property_id uuid NOT NULL,
+    email_id uuid NOT NULL,
+    created_on timestamp without time zone
+);
+
+
+--
+-- TOC entry 4299 (class 0 OID 0)
+-- Dependencies: 230
+-- Name: COLUMN email_property.property_value; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.email_property.property_value IS 'Property value';
+
+
+--
+-- TOC entry 4300 (class 0 OID 0)
+-- Dependencies: 230
+-- Name: COLUMN email_property.email_property_type_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.email_property.email_property_type_id IS 'Foriegn key to the PropertyType table';
+
+
+--
+-- TOC entry 4301 (class 0 OID 0)
+-- Dependencies: 230
+-- Name: COLUMN email_property.property_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.email_property.property_id IS 'Primary key to Property table';
+
+
+--
+-- TOC entry 231 (class 1259 OID 33364)
+-- Name: email_property_category; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_property_category (
+    email_property_category_id integer NOT NULL,
+    description character varying(50),
+    created_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- TOC entry 232 (class 1259 OID 33368)
+-- Name: email_property_category_email_property_category_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.email_property_category_email_property_category_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4302 (class 0 OID 0)
+-- Dependencies: 232
+-- Name: email_property_category_email_property_category_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.email_property_category_email_property_category_id_seq OWNED BY public.email_property_category.email_property_category_id;
+
+
+--
+-- TOC entry 233 (class 1259 OID 33369)
+-- Name: email_property_type; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_property_type (
+    email_property_type_id integer NOT NULL,
+    email_property_category_id integer NOT NULL,
+    property_name character varying(100) NOT NULL,
+    created_at timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- TOC entry 234 (class 1259 OID 33373)
+-- Name: email_property_type_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.email_property_type_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4303 (class 0 OID 0)
+-- Dependencies: 234
+-- Name: email_property_type_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.email_property_type_id_seq OWNED BY public.email_property_type.email_property_type_id;
+
+
+--
+-- TOC entry 235 (class 1259 OID 33374)
+-- Name: email_recipients; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_recipients (
+    recipient_id integer NOT NULL,
+    email_id uuid NOT NULL,
+    recipient_type public.recipient_type DEFAULT 'to'::public.recipient_type NOT NULL
+);
+
+
+--
+-- TOC entry 236 (class 1259 OID 33378)
+-- Name: email_sentiment_analysis_details; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.email_sentiment_analysis_details (
+    property_id uuid NOT NULL,
+    sentiment_score integer,
+    detected_hostility boolean DEFAULT false,
+    flagged_phrases text,
+    detected_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- TOC entry 237 (class 1259 OID 33385)
+-- Name: emails; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.emails (
+    sender_id integer NOT NULL,
+    thread_id integer,
+    subject text NOT NULL,
+    email_contents text NOT NULL,
+    sent_timestamp timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    imported_from_id character varying(20),
+    global_message_id character varying(255),
+    email_id uuid DEFAULT gen_random_uuid() NOT NULL,
+    parent_id uuid
+);
+
+
+--
+-- TOC entry 238 (class 1259 OID 33392)
+-- Name: key_points_details; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.key_points_details (
+    property_id uuid NOT NULL,
+    policy_id integer
+);
+
+
+--
+-- TOC entry 239 (class 1259 OID 33395)
+-- Name: legal_references; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.legal_references (
+    reference_id integer NOT NULL,
+    case_name character varying(255) NOT NULL,
+    source character varying(255) NOT NULL,
+    policy_id integer,
+    summary text NOT NULL,
+    url text
+);
+
+
+--
+-- TOC entry 240 (class 1259 OID 33400)
+-- Name: legal_references_reference_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.legal_references_reference_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4304 (class 0 OID 0)
+-- Dependencies: 240
+-- Name: legal_references_reference_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.legal_references_reference_id_seq OWNED BY public.legal_references.reference_id;
+
+
+--
+-- TOC entry 241 (class 1259 OID 33401)
+-- Name: policies_statutes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.policies_statutes (
+    policy_id integer NOT NULL,
+    policy_type_id integer NOT NULL,
+    chapter character varying(50),
+    section character varying(50),
+    paragraph text,
+    description text
+);
+
+
+--
+-- TOC entry 242 (class 1259 OID 33406)
+-- Name: policies_statutes_policy_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.policies_statutes_policy_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4305 (class 0 OID 0)
+-- Dependencies: 242
+-- Name: policies_statutes_policy_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.policies_statutes_policy_id_seq OWNED BY public.policies_statutes.policy_id;
+
+
+--
+-- TOC entry 243 (class 1259 OID 33407)
+-- Name: policy_types; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.policy_types (
+    policy_type_id integer NOT NULL,
+    type_name character varying(50) NOT NULL
+);
+
+
+--
+-- TOC entry 244 (class 1259 OID 33410)
+-- Name: policy_types_policy_type_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.policy_types_policy_type_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4306 (class 0 OID 0)
+-- Dependencies: 244
+-- Name: policy_types_policy_type_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.policy_types_policy_type_id_seq OWNED BY public.policy_types.policy_type_id;
+
+
+--
+-- TOC entry 245 (class 1259 OID 33411)
+-- Name: sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sessions (
+    id integer NOT NULL,
+    "sessionToken" character varying(255) NOT NULL,
+    "userId" integer NOT NULL,
+    expires timestamp with time zone NOT NULL
+);
+
+
+--
+-- TOC entry 246 (class 1259 OID 33414)
+-- Name: sessions_ext; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sessions_ext (
+    session_id integer NOT NULL,
+    token_gmail character varying(255)
+);
+
+
+--
+-- TOC entry 247 (class 1259 OID 33422)
+-- Name: sessions_ext_session_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.sessions_ext ALTER COLUMN session_id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.sessions_ext_session_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- TOC entry 248 (class 1259 OID 33423)
+-- Name: sessions_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.sessions_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4307 (class 0 OID 0)
+-- Dependencies: 248
+-- Name: sessions_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.sessions_id_seq OWNED BY public.sessions.id;
+
+
+--
+-- TOC entry 249 (class 1259 OID 33424)
+-- Name: staging_attachment; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.staging_attachment (
+    staging_message_id uuid NOT NULL,
+    "partId" numeric(4,2) NOT NULL,
+    "mimeType" character varying(255),
+    "storageId" character varying(2048),
+    imported boolean DEFAULT false NOT NULL,
+    size integer DEFAULT 0 NOT NULL,
+    "attachmentId" text,
+    filename text
+);
+
+
+--
+-- TOC entry 250 (class 1259 OID 33431)
+-- Name: staging_message; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.staging_message (
+    external_id character varying(20),
+    stage public.import_stage_type,
+    id uuid NOT NULL,
+    message public.email_message_type,
+    "userId" integer
+);
+
+
+--
+-- TOC entry 251 (class 1259 OID 33436)
+-- Name: threads; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.threads (
+    thread_id integer NOT NULL,
+    subject text NOT NULL,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    external_id character varying(255)
+);
+
+
+--
+-- TOC entry 252 (class 1259 OID 33442)
+-- Name: threads_thread_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.threads_thread_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4308 (class 0 OID 0)
+-- Dependencies: 252
+-- Name: threads_thread_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.threads_thread_id_seq OWNED BY public.threads.thread_id;
+
+
+--
+-- TOC entry 253 (class 1259 OID 33443)
+-- Name: users; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.users (
+    id integer NOT NULL,
+    name character varying(255),
+    email character varying(255),
+    "emailVerified" timestamp with time zone,
+    image text
+);
+
+
+--
+-- TOC entry 254 (class 1259 OID 33448)
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.users_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- TOC entry 4309 (class 0 OID 0)
+-- Dependencies: 254
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+
+--
+-- TOC entry 255 (class 1259 OID 33449)
+-- Name: verification_tokens; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.verification_tokens (
+    identifier text NOT NULL,
+    token text NOT NULL,
+    expires timestamp with time zone NOT NULL
+);
+
+
+--
+-- TOC entry 256 (class 1259 OID 33454)
+-- Name: violation_details; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.violation_details (
+    property_id uuid NOT NULL,
+    attachment_id integer,
+    key_point_property_id uuid,
+    action_property_id uuid,
+    violation_type character varying(255) NOT NULL,
+    severity_level integer,
+    detected_by character varying(255) DEFAULT 'AI-System'::character varying,
+    detected_on timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+--
+-- TOC entry 4014 (class 2604 OID 33461)
+-- Name: accounts id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accounts ALTER COLUMN id SET DEFAULT nextval('public.accounts_id_seq'::regclass);
+
+
+--
+-- TOC entry 4021 (class 2604 OID 33462)
+-- Name: contacts contact_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts ALTER COLUMN contact_id SET DEFAULT nextval('public.contacts_contact_id_seq'::regclass);
+
+
+--
+-- TOC entry 4023 (class 2604 OID 33463)
+-- Name: email_attachments attachment_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_attachments ALTER COLUMN attachment_id SET DEFAULT nextval('public.email_attachments_attachment_id_seq'::regclass);
+
+
+--
+-- TOC entry 4024 (class 2604 OID 33464)
+-- Name: email_property_category email_property_category_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_property_category ALTER COLUMN email_property_category_id SET DEFAULT nextval('public.email_property_category_email_property_category_id_seq'::regclass);
+
+
+--
+-- TOC entry 4026 (class 2604 OID 33465)
+-- Name: email_property_type email_property_type_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_property_type ALTER COLUMN email_property_type_id SET DEFAULT nextval('public.email_property_type_id_seq'::regclass);
+
+
+--
+-- TOC entry 4033 (class 2604 OID 33466)
+-- Name: legal_references reference_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legal_references ALTER COLUMN reference_id SET DEFAULT nextval('public.legal_references_reference_id_seq'::regclass);
+
+
+--
+-- TOC entry 4034 (class 2604 OID 33467)
+-- Name: policies_statutes policy_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.policies_statutes ALTER COLUMN policy_id SET DEFAULT nextval('public.policies_statutes_policy_id_seq'::regclass);
+
+
+--
+-- TOC entry 4035 (class 2604 OID 33468)
+-- Name: policy_types policy_type_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.policy_types ALTER COLUMN policy_type_id SET DEFAULT nextval('public.policy_types_policy_type_id_seq'::regclass);
+
+
+--
+-- TOC entry 4036 (class 2604 OID 33469)
+-- Name: sessions id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sessions ALTER COLUMN id SET DEFAULT nextval('public.sessions_id_seq'::regclass);
+
+
+--
+-- TOC entry 4039 (class 2604 OID 33470)
+-- Name: threads thread_id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.threads ALTER COLUMN thread_id SET DEFAULT nextval('public.threads_thread_id_seq'::regclass);
+
+
+--
+-- TOC entry 4041 (class 2604 OID 33471)
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+
+--
+-- TOC entry 4045 (class 2606 OID 33473)
+-- Name: accounts accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT accounts_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4049 (class 2606 OID 33475)
+-- Name: call_to_action_details call_to_action_details_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.call_to_action_details
+    ADD CONSTRAINT call_to_action_details_pkey PRIMARY KEY (property_id);
+
+
+--
+-- TOC entry 4052 (class 2606 OID 33477)
+-- Name: call_to_action_response_details call_to_action_response_details_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.call_to_action_response_details
+    ADD CONSTRAINT call_to_action_response_details_pkey PRIMARY KEY (property_id);
+
+
+--
+-- TOC entry 4056 (class 2606 OID 33479)
+-- Name: compliance_scores_details compliance_scores_details_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compliance_scores_details
+    ADD CONSTRAINT compliance_scores_details_pkey PRIMARY KEY (property_id);
+
+
+--
+-- TOC entry 4047 (class 2606 OID 33481)
+-- Name: accounts constraint_userId; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.accounts
+    ADD CONSTRAINT "constraint_userId" UNIQUE ("userId");
+
+
+--
+-- TOC entry 4060 (class 2606 OID 33483)
+-- Name: contacts contacts_email_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts
+    ADD CONSTRAINT contacts_email_key UNIQUE (email);
+
+
+--
+-- TOC entry 4062 (class 2606 OID 33485)
+-- Name: contacts contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.contacts
+    ADD CONSTRAINT contacts_pkey PRIMARY KEY (contact_id);
+
+
+--
+-- TOC entry 4064 (class 2606 OID 33487)
+-- Name: email_attachments email_attachments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_attachments
+    ADD CONSTRAINT email_attachments_pkey PRIMARY KEY (attachment_id);
+
+
+--
+-- TOC entry 4072 (class 2606 OID 33489)
+-- Name: email_property_category email_property_category_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_property_category
+    ADD CONSTRAINT email_property_category_pkey PRIMARY KEY (email_property_category_id);
+
+
+--
+-- TOC entry 4069 (class 2606 OID 33491)
+-- Name: email_property email_property_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_property
+    ADD CONSTRAINT email_property_pkey PRIMARY KEY (property_id);
+
+
+--
+-- TOC entry 4075 (class 2606 OID 33493)
+-- Name: email_property_type email_property_type_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_property_type
+    ADD CONSTRAINT email_property_type_pkey PRIMARY KEY (email_property_type_id);
+
+
+--
+-- TOC entry 4077 (class 2606 OID 33495)
+-- Name: email_recipients email_recipients_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_recipients
+    ADD CONSTRAINT email_recipients_pkey PRIMARY KEY (email_id, recipient_id);
+
+
+--
+-- TOC entry 4080 (class 2606 OID 33497)
+-- Name: email_sentiment_analysis_details email_sentiment_analysis_details_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_sentiment_analysis_details
+    ADD CONSTRAINT email_sentiment_analysis_details_pkey PRIMARY KEY (property_id);
+
+
+--
+-- TOC entry 4084 (class 2606 OID 33499)
+-- Name: emails emails_new_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.emails
+    ADD CONSTRAINT emails_new_pkey PRIMARY KEY (email_id);
+
+
+--
+-- TOC entry 4090 (class 2606 OID 33501)
+-- Name: key_points_details key_points_details_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.key_points_details
+    ADD CONSTRAINT key_points_details_pkey PRIMARY KEY (property_id);
+
+
+--
+-- TOC entry 4092 (class 2606 OID 33503)
+-- Name: legal_references legal_references_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legal_references
+    ADD CONSTRAINT legal_references_pkey PRIMARY KEY (reference_id);
+
+
+--
+-- TOC entry 4104 (class 2606 OID 33505)
+-- Name: staging_attachment pk_staging_attachment; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.staging_attachment
+    ADD CONSTRAINT pk_staging_attachment PRIMARY KEY (staging_message_id, "partId");
+
+
+--
+-- TOC entry 4094 (class 2606 OID 33507)
+-- Name: policies_statutes policies_statutes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.policies_statutes
+    ADD CONSTRAINT policies_statutes_pkey PRIMARY KEY (policy_id);
+
+
+--
+-- TOC entry 4096 (class 2606 OID 33509)
+-- Name: policy_types policy_types_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.policy_types
+    ADD CONSTRAINT policy_types_pkey PRIMARY KEY (policy_type_id);
+
+
+--
+-- TOC entry 4098 (class 2606 OID 33511)
+-- Name: policy_types policy_types_type_name_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.policy_types
+    ADD CONSTRAINT policy_types_type_name_key UNIQUE (type_name);
+
+
+--
+-- TOC entry 4102 (class 2606 OID 33513)
+-- Name: sessions_ext sessions_ext_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sessions_ext
+    ADD CONSTRAINT sessions_ext_pkey PRIMARY KEY (session_id);
+
+
+--
+-- TOC entry 4100 (class 2606 OID 33515)
+-- Name: sessions sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sessions
+    ADD CONSTRAINT sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4107 (class 2606 OID 33517)
+-- Name: staging_message staging_message_external_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.staging_message
+    ADD CONSTRAINT staging_message_external_id_key UNIQUE (external_id);
+
+
+--
+-- TOC entry 4109 (class 2606 OID 33519)
+-- Name: staging_message staging_message_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.staging_message
+    ADD CONSTRAINT staging_message_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4111 (class 2606 OID 33521)
+-- Name: threads threads_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.threads
+    ADD CONSTRAINT threads_pkey PRIMARY KEY (thread_id);
+
+
+--
+-- TOC entry 4113 (class 2606 OID 33523)
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4115 (class 2606 OID 33525)
+-- Name: verification_tokens verification_tokens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.verification_tokens
+    ADD CONSTRAINT verification_tokens_pkey PRIMARY KEY (identifier, token);
+
+
+--
+-- TOC entry 4121 (class 2606 OID 33527)
+-- Name: violation_details violation_details_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.violation_details
+    ADD CONSTRAINT violation_details_pkey PRIMARY KEY (property_id);
+
+
+--
+-- TOC entry 4073 (class 1259 OID 33528)
+-- Name: email_property_category_property_type_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX email_property_category_property_type_id ON public.email_property_type USING btree (email_property_category_id, email_property_type_id);
+
+
+--
+-- TOC entry 4070 (class 1259 OID 33529)
+-- Name: email_property_unique_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX email_property_unique_idx ON public.email_property USING btree (email_id, email_property_type_id, property_id);
+
+
+--
+-- TOC entry 4065 (class 1259 OID 33530)
+-- Name: fki_email_attachments_email_fkey; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_email_attachments_email_fkey ON public.email_attachments USING btree (email_id);
+
+
+--
+-- TOC entry 4078 (class 1259 OID 33531)
+-- Name: fki_email_recipients_email_id_fkey; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_email_recipients_email_id_fkey ON public.email_recipients USING btree (email_id);
+
+
+--
+-- TOC entry 4085 (class 1259 OID 33532)
+-- Name: fki_fk_emails_parent_email; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_fk_emails_parent_email ON public.emails USING btree (parent_id);
+
+
+--
+-- TOC entry 4105 (class 1259 OID 33533)
+-- Name: fki_fk_staging_message_users; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX fki_fk_staging_message_users ON public.staging_message USING btree ("userId");
+
+
+--
+-- TOC entry 4066 (class 1259 OID 33534)
+-- Name: idx_attachment_search; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_attachment_search ON public.email_attachments USING gin (extracted_text_tsv);
+
+
+--
+-- TOC entry 4050 (class 1259 OID 33535)
+-- Name: idx_call_to_action_details_policy_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_call_to_action_details_policy_id ON public.call_to_action_details USING btree (policy_id);
+
+
+--
+-- TOC entry 4053 (class 1259 OID 33536)
+-- Name: idx_call_to_action_response_action_property_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_call_to_action_response_action_property_id ON public.call_to_action_response_details USING btree (action_property_id);
+
+
+--
+-- TOC entry 4054 (class 1259 OID 33537)
+-- Name: idx_call_to_action_response_timestamp; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_call_to_action_response_timestamp ON public.call_to_action_response_details USING btree (response_timestamp);
+
+
+--
+-- TOC entry 4057 (class 1259 OID 33538)
+-- Name: idx_compliance_scores_action_property_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_compliance_scores_action_property_id ON public.compliance_scores_details USING btree (action_property_id);
+
+
+--
+-- TOC entry 4058 (class 1259 OID 33539)
+-- Name: idx_compliance_scores_evaluated_on; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_compliance_scores_evaluated_on ON public.compliance_scores_details USING btree (evaluated_on);
+
+
+--
+-- TOC entry 4067 (class 1259 OID 33540)
+-- Name: idx_email_attachments_email_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_attachments_email_id ON public.email_attachments USING btree (email_id);
+
+
+--
+-- TOC entry 4081 (class 1259 OID 33541)
+-- Name: idx_email_sentiment_analysis_detected_on; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_sentiment_analysis_detected_on ON public.email_sentiment_analysis_details USING btree (detected_on);
+
+
+--
+-- TOC entry 4082 (class 1259 OID 33542)
+-- Name: idx_email_sentiment_analysis_sentiment_score; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_email_sentiment_analysis_sentiment_score ON public.email_sentiment_analysis_details USING btree (sentiment_score);
+
+
+--
+-- TOC entry 4086 (class 1259 OID 33543)
+-- Name: idx_emails_parent; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_emails_parent ON public.emails USING btree (parent_id);
+
+
+--
+-- TOC entry 4087 (class 1259 OID 33544)
+-- Name: idx_emails_unique_desc; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX idx_emails_unique_desc ON public.emails USING btree (thread_id DESC, sender_id DESC, parent_id DESC, email_id DESC);
+
+
+--
+-- TOC entry 4088 (class 1259 OID 33545)
+-- Name: idx_key_points_policy_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_key_points_policy_id ON public.key_points_details USING btree (policy_id);
+
+
+--
+-- TOC entry 4116 (class 1259 OID 33546)
+-- Name: idx_violation_details_action_property_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_violation_details_action_property_id ON public.violation_details USING btree (action_property_id);
+
+
+--
+-- TOC entry 4117 (class 1259 OID 33547)
+-- Name: idx_violation_details_attachment_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_violation_details_attachment_id ON public.violation_details USING btree (attachment_id);
+
+
+--
+-- TOC entry 4118 (class 1259 OID 33548)
+-- Name: idx_violation_details_detected_on; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_violation_details_detected_on ON public.violation_details USING btree (detected_on);
+
+
+--
+-- TOC entry 4119 (class 1259 OID 33549)
+-- Name: idx_violation_details_key_point_property_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_violation_details_key_point_property_id ON public.violation_details USING btree (key_point_property_id);
+
+
+--
+-- TOC entry 4140 (class 2606 OID 33550)
+-- Name: sessions FK_account; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sessions
+    ADD CONSTRAINT "FK_account" FOREIGN KEY ("userId") REFERENCES public.accounts("userId");
+
+
+--
+-- TOC entry 4141 (class 2606 OID 33555)
+-- Name: sessions_ext FK_sessions_ext_sessions; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sessions_ext
+    ADD CONSTRAINT "FK_sessions_ext_sessions" FOREIGN KEY (session_id) REFERENCES public.sessions(id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4122 (class 2606 OID 33560)
+-- Name: call_to_action_details call_to_action_details_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.call_to_action_details
+    ADD CONSTRAINT call_to_action_details_fk FOREIGN KEY (property_id) REFERENCES public.email_property(property_id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4123 (class 2606 OID 33565)
+-- Name: call_to_action_response_details call_to_action_response_action_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.call_to_action_response_details
+    ADD CONSTRAINT call_to_action_response_action_fk FOREIGN KEY (action_property_id) REFERENCES public.email_property(property_id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4124 (class 2606 OID 33570)
+-- Name: call_to_action_response_details call_to_action_response_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.call_to_action_response_details
+    ADD CONSTRAINT call_to_action_response_fk FOREIGN KEY (property_id) REFERENCES public.email_property(property_id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4125 (class 2606 OID 33575)
+-- Name: compliance_scores_details compliance_scores_action_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compliance_scores_details
+    ADD CONSTRAINT compliance_scores_action_fk FOREIGN KEY (action_property_id) REFERENCES public.email_property(property_id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4126 (class 2606 OID 33580)
+-- Name: compliance_scores_details compliance_scores_details_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.compliance_scores_details
+    ADD CONSTRAINT compliance_scores_details_fk FOREIGN KEY (property_id) REFERENCES public.email_property(property_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4127 (class 2606 OID 33585)
+-- Name: email_attachments email_attachments_email_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_attachments
+    ADD CONSTRAINT email_attachments_email_fkey FOREIGN KEY (email_id) REFERENCES public.emails(email_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4310 (class 0 OID 0)
+-- Dependencies: 4127
+-- Name: CONSTRAINT email_attachments_email_fkey ON email_attachments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON CONSTRAINT email_attachments_email_fkey ON public.email_attachments IS 'Foreign Key into the email table';
+
+
+--
+-- TOC entry 4128 (class 2606 OID 33590)
+-- Name: email_attachments email_attachments_policy_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_attachments
+    ADD CONSTRAINT email_attachments_policy_id_fkey FOREIGN KEY (policy_id) REFERENCES public.policies_statutes(policy_id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4129 (class 2606 OID 33595)
+-- Name: email_property email_property_email_property_type; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_property
+    ADD CONSTRAINT email_property_email_property_type FOREIGN KEY (email_property_type_id) REFERENCES public.email_property_type(email_property_type_id);
+
+
+--
+-- TOC entry 4130 (class 2606 OID 33600)
+-- Name: email_property email_property_emails; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_property
+    ADD CONSTRAINT email_property_emails FOREIGN KEY (email_id) REFERENCES public.emails(email_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4131 (class 2606 OID 33605)
+-- Name: email_property_type email_property_type_email_property_category; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_property_type
+    ADD CONSTRAINT email_property_type_email_property_category FOREIGN KEY (email_property_category_id) REFERENCES public.email_property_category(email_property_category_id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4132 (class 2606 OID 33610)
+-- Name: email_recipients email_recipients_email_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_recipients
+    ADD CONSTRAINT email_recipients_email_id_fkey FOREIGN KEY (email_id) REFERENCES public.emails(email_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4311 (class 0 OID 0)
+-- Dependencies: 4132
+-- Name: CONSTRAINT email_recipients_email_id_fkey ON email_recipients; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON CONSTRAINT email_recipients_email_id_fkey ON public.email_recipients IS 'Foreign Key into emails table';
+
+
+--
+-- TOC entry 4133 (class 2606 OID 33615)
+-- Name: email_recipients email_recipients_recipient_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_recipients
+    ADD CONSTRAINT email_recipients_recipient_id_fkey FOREIGN KEY (recipient_id) REFERENCES public.contacts(contact_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4134 (class 2606 OID 33620)
+-- Name: email_sentiment_analysis_details email_sentiment_analysis_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.email_sentiment_analysis_details
+    ADD CONSTRAINT email_sentiment_analysis_fk FOREIGN KEY (property_id) REFERENCES public.email_property(property_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4135 (class 2606 OID 33625)
+-- Name: emails emails_relation_1; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.emails
+    ADD CONSTRAINT emails_relation_1 FOREIGN KEY (sender_id) REFERENCES public.contacts(contact_id);
+
+
+--
+-- TOC entry 4136 (class 2606 OID 33630)
+-- Name: emails fk_emails_parent_email; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.emails
+    ADD CONSTRAINT fk_emails_parent_email FOREIGN KEY (parent_id) REFERENCES public.emails(email_id) ON UPDATE CASCADE ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4312 (class 0 OID 0)
+-- Dependencies: 4136
+-- Name: CONSTRAINT fk_emails_parent_email ON emails; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON CONSTRAINT fk_emails_parent_email ON public.emails IS 'Attaches an email to it''s parent';
+
+
+--
+-- TOC entry 4142 (class 2606 OID 33635)
+-- Name: staging_attachment fk_staging_attachment_staging_message; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.staging_attachment
+    ADD CONSTRAINT fk_staging_attachment_staging_message FOREIGN KEY (staging_message_id) REFERENCES public.staging_message(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4143 (class 2606 OID 33640)
+-- Name: staging_message fk_staging_message_users; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.staging_message
+    ADD CONSTRAINT fk_staging_message_users FOREIGN KEY ("userId") REFERENCES public.users(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4137 (class 2606 OID 33645)
+-- Name: key_points_details key_points_details_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.key_points_details
+    ADD CONSTRAINT key_points_details_fk FOREIGN KEY (property_id) REFERENCES public.email_property(property_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4138 (class 2606 OID 33650)
+-- Name: legal_references legal_references_policy_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.legal_references
+    ADD CONSTRAINT legal_references_policy_id_fkey FOREIGN KEY (policy_id) REFERENCES public.policies_statutes(policy_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4139 (class 2606 OID 33655)
+-- Name: policies_statutes policies_statutes_policy_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.policies_statutes
+    ADD CONSTRAINT policies_statutes_policy_type_id_fkey FOREIGN KEY (policy_type_id) REFERENCES public.policy_types(policy_type_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4144 (class 2606 OID 33660)
+-- Name: violation_details violation_details_action_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.violation_details
+    ADD CONSTRAINT violation_details_action_fk FOREIGN KEY (action_property_id) REFERENCES public.call_to_action_details(property_id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4145 (class 2606 OID 33665)
+-- Name: violation_details violation_details_attachment_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.violation_details
+    ADD CONSTRAINT violation_details_attachment_fk FOREIGN KEY (attachment_id) REFERENCES public.email_attachments(attachment_id) ON DELETE SET NULL;
+
+
+--
+-- TOC entry 4146 (class 2606 OID 33670)
+-- Name: violation_details violation_details_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.violation_details
+    ADD CONSTRAINT violation_details_fk FOREIGN KEY (property_id) REFERENCES public.email_property(property_id) ON DELETE CASCADE;
+
+
+--
+-- TOC entry 4147 (class 2606 OID 33675)
+-- Name: violation_details violation_details_key_point_fk; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.violation_details
+    ADD CONSTRAINT violation_details_key_point_fk FOREIGN KEY (key_point_property_id) REFERENCES public.key_points_details(property_id) ON DELETE SET NULL;
+
+
+-- Completed on 2025-03-22 14:10:31
+
+--
+-- PostgreSQL database dump complete
+--
 

@@ -3,6 +3,7 @@ import { log } from '../logger';
 import { query, queryExt } from '@/lib/neondb';
 import { FirstParameter, PartialExceptFor } from '../typescript';
 import {
+  IObjectRepositoryExt,
   ObjectRepository,
   RecordToObjectImpl,
   RecordToSummaryImpl,
@@ -64,6 +65,14 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     }
   }
 
+  /**
+   * Gets the unique identifier of the model object.
+   *
+   * @returns {KId} The unique identifier of the object.
+   */
+  public get objectId(): KId {
+    return this.objectIdField;
+  }
   /**
    * Gets the list query properties.
    *
@@ -232,7 +241,7 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
    * @param {PartialExceptFor<T, KId>} props - The properties of the item to update.
    * @returns {Promise<T>} A promise that resolves to the updated item.
    */
-  update(props: PartialExceptFor<T, KId>): Promise<T> {
+  update(props: PartialExceptFor<T, KId> & Required<Pick<T, KId>>): Promise<T> {
     return this.innerUpdate(
       () => this.validate('update', props),
       () => {
@@ -296,5 +305,15 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
     log((l) =>
       l.silly(`Using ${method} so the squigglies leave me alone...`, obj),
     );
+  }
+
+  innerQuery<TRet>(query: (repo: IObjectRepositoryExt<T>) => TRet): TRet {
+    return query({
+      list: this.innerList.bind(this),
+      get: this.innerGet.bind(this),
+      create: this.innerCreate.bind(this),
+      update: this.innerUpdate.bind(this),
+      delete: this.innerDelete.bind(this),
+    });
   }
 }

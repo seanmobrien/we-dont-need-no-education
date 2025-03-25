@@ -1,22 +1,20 @@
 /**
  * @jest-environment node
  */
+jest.mock('@/lib/neondb');
 
 import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { query, queryExt } from '@/lib/neondb';
 
-jest.mock('@/lib/neondb');
-
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('Email API', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
     (queryExt as jest.Mock).mockImplementation(() =>
-      Promise.resolve({ rowCount: 0, rows: [] })
+      Promise.resolve({ rowCount: 0, rows: [] }),
     );
   });
 

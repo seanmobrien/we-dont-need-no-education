@@ -86,6 +86,21 @@ export class LoggedError implements Error {
       ...itsRecusionMan
     }: TurtleRecurisionParams = { log: false },
   ): LoggedError {
+    if (
+      arguments.length === 1 &&
+      typeof e === 'object' &&
+      e !== null &&
+      'error' in e &&
+      isError(e.error) &&
+      ('critical' in e || 'log' in e || 'source' in e)
+    ) {
+      // We've been passed a composite error object...extract error and try again
+      const { error: theError, ...allTheRest } = e;
+      return LoggedError.isTurtlesAllTheWayDownBaby(
+        theError,
+        allTheRest as TurtleRecurisionParams,
+      );
+    }
     if (LoggedError.isLoggedError(e)) {
       return e;
     }
@@ -94,15 +109,15 @@ export class LoggedError implements Error {
         log((l) =>
           l.warn({ message: 'Some bonehead threw a not-error', error: e }),
         );
-        if (logCanceledOperation || !isAbortError(e)) {
-          const logObject = errorLogFactory({
-            error: e,
-            source,
-            message,
-            ...itsRecusionMan,
-          });
-          log((l) => l.error(logObject.message ?? 'Error occurred', logObject));
-        }
+      }
+      if (logCanceledOperation || !isAbortError(e)) {
+        const logObject = errorLogFactory({
+          error: e,
+          source,
+          message,
+          ...itsRecusionMan,
+        });
+        log((l) => l.error(logObject.message ?? 'Error occurred', logObject));
       }
     }
     return isError(e)

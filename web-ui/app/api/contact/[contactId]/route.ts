@@ -3,6 +3,7 @@ import { query, queryExt } from '@/lib/neondb';
 import { log } from '@/lib/logger';
 import { globalContactCache } from '@/data-models/api';
 import { isTruthy, LoggedError } from '@/lib/react-util';
+import { extractParams } from '@/lib/nextjs-util';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,
@@ -122,10 +123,10 @@ export async function PUT(
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ contactId: number }> },
+  withParams: { params: Promise<{ contactId: number }> },
 ) {
   try {
-    const { contactId } = await params;
+    const { contactId } = await extractParams(withParams);
     const refresh = isTruthy(req.nextUrl.searchParams.get('refresh'));
 
     if (!contactId) {

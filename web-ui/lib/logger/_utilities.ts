@@ -1,4 +1,24 @@
-import { isDbError } from '@/lib/neondb/_guards';
+type DbError = Error & {
+  code: number;
+  detail: string;
+  severity: number | string;
+  internalQuery: string;
+  where: string;
+  schema: string;
+  table: string;
+  column: string;
+  schema_name: string;
+  column_name: string;
+  table_name: string;
+  query: string;
+  internal_query: string;
+};
+
+export const isDbError = (error: unknown): error is DbError =>
+  !!error &&
+  typeof error === 'object' &&
+  'name' in error &&
+  error.name === 'PostgresError';
 
 /**
  * Creates an error log object with the provided error, source, and additional information.

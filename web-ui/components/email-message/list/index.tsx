@@ -13,7 +13,7 @@ import {
   position,
 } from 'tailwindcss-classnames';
 import type { EmailMessageStats } from '@/data-models/api';
-import { getEmailStats } from '@/lib/api/email';
+import { getEmailStats } from '@/lib/api/client';
 import Link from 'next/link';
 import {
   ICancellablePromiseExt,
@@ -29,7 +29,7 @@ const containerClass = classnames(
   margin('mx-auto'),
   spacing('p-6'),
   borders('rounded-lg'),
-  boxShadow('shadow-md')
+  boxShadow('shadow-md'),
 );
 
 const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
@@ -118,7 +118,7 @@ const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
     (newPage: number) => {
       setPageNumber(Math.max(1, Math.min(newPage, pageStats.pages)));
     },
-    [pageStats.pages, setPageNumber]
+    [pageStats.pages, setPageNumber],
   );
 
   const handleMenuClick = useCallback(() => {
@@ -130,7 +130,7 @@ const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
       <h2
         className={classnames(
           typography('text-xl', 'font-semibold'),
-          margin('mb-4')
+          margin('mb-4'),
         )}
       >
         Email List
@@ -157,7 +157,7 @@ const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
             spacing('p-2'),
             backgrounds('bg-blue-500', 'hover:bg-blue-600'),
             typography('text-white'),
-            borders('rounded')
+            borders('rounded'),
           )}
         >
           Add Email
@@ -169,7 +169,7 @@ const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
               borders('border', 'rounded'),
               boxShadow('shadow-md'),
               spacing('mt-2'),
-              position('absolute')
+              position('absolute'),
             )}
           >
             <Link
@@ -177,7 +177,7 @@ const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
               className={classnames(
                 spacing('p-2'),
                 display('block'),
-                backgrounds('hover:bg-gray-100')
+                backgrounds('hover:bg-gray-100'),
               )}
               title="Add Email"
             >
@@ -188,7 +188,7 @@ const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
               className={classnames(
                 spacing('p-2'),
                 display('block'),
-                backgrounds('hover:bg-gray-100')
+                backgrounds('hover:bg-gray-100'),
               )}
               title="Bulk Add Email"
             >
@@ -207,7 +207,7 @@ const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
             backgrounds('bg-blue-500', 'hover:bg-blue-600'),
             typography('text-white'),
             borders('rounded'),
-            margin('mr-2')
+            margin('mr-2'),
           )}
         >
           Previous
@@ -219,7 +219,7 @@ const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
             spacing('p-2'),
             backgrounds('bg-blue-500', 'hover:bg-blue-600'),
             typography('text-white'),
-            borders('rounded')
+            borders('rounded'),
           )}
         >
           Next

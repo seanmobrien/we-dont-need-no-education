@@ -1,11 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { log } from '@/lib/logger';
 import { query } from '@/lib/neondb';
-import { parsePaginationStats } from '@/data-models/api';
-import {
-  ImportStage,
-  StagedMessageSummary,
-} from '@/data-models/api/import/email-message';
+import { parsePaginationStats } from '@/data-models';
+import type { ImportStage, StagedMessageSummary } from '@/data-models';
 import { LoggedError } from '@/lib/react-util';
 
 /**

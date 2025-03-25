@@ -29,24 +29,25 @@ export const logger = (): Promise<ILogger> =>
           useOnlyCustomLevels: false,
         });
       } else {
+        const isJest = process.env.JEST_WORKER_ID !== undefined;
+        const transport = isJest
+          ? undefined
+          : {
+              target: 'pino-pretty',
+              options: {
+                colorize: true,
+              },
+            };
+
         _logger = pino<'verbose' | 'silly', false>({
           level: env('NEXT_PUBLIC_LOG_LEVEL_CLIENT'),
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },
           useOnlyCustomLevels: false,
-          transport: {
-            target: 'pino-pretty',
-            options: {
-              colorize: true,
-            },
-          },
+          transport,
         });
       }
-      // NOTE: This is to assist with debugging, and should not be left in production
-      process.on('warning', (e) =>
-        _logger.warn({ Message: e.message, stack: e.stack }),
-      );
     }
     resolve(new WrappedLogger(_logger));
   });
@@ -57,6 +58,7 @@ export const logger = (): Promise<ILogger> =>
  * @param cb - A callback function that takes a logger instance as an argument.
  */
 export const log = (cb: (l: ILogger) => void) => logger().then(cb);
+
 /**
  * @remarks
  * This helper function provides multiple overloads for logging events.

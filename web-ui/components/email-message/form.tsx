@@ -40,7 +40,7 @@ import {
 import ContactRecipients from '../contact/contact-recipients';
 import EmailSelect from './select';
 import { SubmitRefCallbackInstance } from './_types';
-import { getEmail, writeEmailRecord } from '@/lib/api/email';
+import { getEmail, writeEmailRecord } from '@/lib/api/client';
 import { AbortablePromise, ICancellablePromiseExt } from '@/lib/typescript';
 import siteMap from '@/lib/site-util/url-builder';
 import { useRouter } from 'next/navigation';

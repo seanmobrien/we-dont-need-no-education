@@ -1,9 +1,9 @@
+jest.mock('@/lib/site-util/env');
+
 import { UrlBuilder } from '@/lib/site-util/url-builder/_impl';
 import { siteMap } from '@/lib/site-util/url-builder/_sitemap';
 import { mappedUrlBuilderFactory } from '@/lib/site-util/url-builder/_from-map';
 import { env } from '@/lib/site-util/env';
-
-jest.mock('@/lib/site-util/env');
 
 describe('UrlBuilder', () => {
   const hostname = 'http://test-run.localhost';
@@ -21,7 +21,7 @@ describe('UrlBuilder', () => {
     const rootBuilder = UrlBuilder.rootBuilder;
     const childBuilder = rootBuilder.child('child-segment', 'child-slug');
     expect(childBuilder.url.toString()).toBe(
-      `${hostname}/child-segment/child-slug`
+      `${hostname}/child-segment/child-slug`,
     );
   });
 
@@ -71,14 +71,14 @@ describe('UrlBuilder', () => {
       const builder = UrlBuilder.rootBuilder;
       const url = builder.page('about', { param1: 'value1', param2: 'value2' });
       expect(url.toString()).toBe(
-        `${hostname}/about?param1=value1&param2=value2`
+        `${hostname}/about?param1=value1&param2=value2`,
       );
     });
 
     it('should throw an error if slug contains a slash', () => {
       const builder = UrlBuilder.rootBuilder;
       expect(() => builder.page('about', 'team/us')).toThrow(
-        'Invalid slug name.'
+        'Invalid slug name.',
       );
     });
 
@@ -89,7 +89,7 @@ describe('UrlBuilder', () => {
         param2: 'value2',
       });
       expect(url.toString()).toBe(
-        `${hostname}/about/team?param1=value1&param2=value2`
+        `${hostname}/about/team?param1=value1&param2=value2`,
       );
     });
   });

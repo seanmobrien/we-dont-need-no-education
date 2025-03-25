@@ -17,7 +17,7 @@ export type StagedAttachment = {
 };
 
 const mapRecordToObject = (
-  record: Record<string, unknown>
+  record: Record<string, unknown>,
 ): StagedAttachment => ({
   stagedMessageId: record.staging_message_id as string,
   partId: record.partId as number,
@@ -45,21 +45,21 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
 
   async create(
     props: Omit<StagedAttachment, 'partId'> &
-      Partial<Pick<StagedAttachment, 'partId'>>
+      Partial<Pick<StagedAttachment, 'partId'>>,
   ): Promise<StagedAttachment> {
     return super.create(props);
   }
 
   async getForMessage(
-    stagedMessageId: string
+    stagedMessageId: string,
   ): Promise<ReadonlyArray<StagedAttachment>> {
     const runQuery = () =>
       query(
         (sql) => sql`
-      SELECT * FROM staging_attachment WHERE staging_message_id = ${stagedMessageId} ORDER BY "partId"`
+      SELECT * FROM staging_attachment WHERE staging_message_id = ${stagedMessageId} ORDER BY "partId"`,
       );
     return this.innerList(runQuery, runQuery).then(
-      (x) => x.results as ReadonlyArray<StagedAttachment>
+      (x) => x.results as ReadonlyArray<StagedAttachment>,
     );
   }
 
@@ -74,7 +74,7 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
     method: TMethod,
     obj: FirstParameter<
       Pick<ObjectRepository<StagedAttachment, 'partId'>, TMethod>[TMethod]
-    >
+    >,
   ): void {
     if (!obj) {
       throw new ValidationError('No object provided');
@@ -113,8 +113,8 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
       [stagedMessageId, partId, filename, mimeType, size, attachmentId],
     ];
   }
-  protected updateQueryProperties(
-    obj: StagedAttachment
+  protected getUpdateQueryProperties(
+    obj: StagedAttachment,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): [Record<string, any>] {
     return [

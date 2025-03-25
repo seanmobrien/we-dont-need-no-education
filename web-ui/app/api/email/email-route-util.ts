@@ -8,8 +8,8 @@
  * - mapRecordToObject: Maps a record to an object containing email details and body content.
  */
 
-import { ContactSummary } from '@/data-models';
-import { query, queryExt } from '@/lib/neondb';
+import type { ContactSummary } from '@/data-models';
+import { query } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util';
 
 /**
@@ -34,7 +34,7 @@ export const mapRecordToSummary = (record: Record<string, unknown>) => ({
       contactId: r.recipient_id,
       name: r.recipient_name,
       email: r.recipient_email,
-    })
+    }),
   ),
 });
 
@@ -53,7 +53,7 @@ export const insertRecipients = async (
   emailId: number,
   recipients: ContactSummary[],
   clear: boolean = true,
-  allowEmpty: boolean = false
+  allowEmpty: boolean = false,
 ) => {
   if (!allowEmpty && !recipients?.length) {
     throw new ValidationError({
@@ -67,7 +67,7 @@ export const insertRecipients = async (
   // Delete existing recipients if clear is true
   if (clear) {
     await query(
-      (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`
+      (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`,
     );
   }
   if (!recipients.length) {

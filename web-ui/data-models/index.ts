@@ -1,13 +1,4 @@
-export type * from './api';
 export type * from './_types';
 
-export * from './api/factories';
+export * from './api';
 export * from './_utilities';
-
-export {
-  isContactSummary,
-  isContact,
-  isEmailPropertyDataModel,
-  isMessageImportStatus,
-  isMessageImportWithChildrenStatus,
-} from './api';

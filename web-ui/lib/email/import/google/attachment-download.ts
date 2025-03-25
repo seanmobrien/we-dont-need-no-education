@@ -2,10 +2,11 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { log } from '@/lib/logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@/lib/neondb';
-import { StagedAttachment } from '@/lib/api/email/import/staged-attachment';
+import type { StagedAttachment } from '@/lib/api';
 import { NextApiRequest } from 'next/types';
 import { NextRequest } from 'next/server';
 import { LoggedError } from '@/lib/react-util';
+import { env } from '@/lib/site-util/env';
 
 export type AttachmentDownloadJob = {
   model: StagedAttachment;
@@ -58,11 +59,9 @@ const uploadToAzureStorage = async ({
   fileName: string;
   mimeType: string;
 }): Promise<string> => {
-  const AZURE_STORAGE_CONNECTION_STRING =
-    process.env.AZURE_STORAGE_CONNECTION_STRING;
-  if (!AZURE_STORAGE_CONNECTION_STRING) {
-    throw new Error('Azure Storage connection string is not defined');
-  }
+  const AZURE_STORAGE_CONNECTION_STRING = env(
+    'AZURE_STORAGE_CONNECTION_STRING',
+  );
 
   const blobServiceClient = BlobServiceClient.fromConnectionString(
     AZURE_STORAGE_CONNECTION_STRING,

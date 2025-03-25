@@ -78,6 +78,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-mock-extended": "^4.0.0-beta1",
     "jsdom": "^26.0.0",
+    "msw": "^2.7.3",
     "postcss": "^8.5.3",
     "ts-jest": "^29.2.6"
   },

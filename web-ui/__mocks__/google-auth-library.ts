@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { mockDeep } from 'jest-mock-extended';
-import { OAuth2Client } from 'google-auth-library';
-import { GaxiosError, GaxiosResponse } from 'gaxios';
+import type { OAuth2Client } from 'google-auth-library';
+import type { GaxiosError, GaxiosResponse } from 'gaxios';
 
 const mockOAuth2Client = jest.fn().mockImplementation(() => {
   const ret = mockDeep<OAuth2Client>();
@@ -15,15 +15,15 @@ const mockOAuth2Client = jest.fn().mockImplementation(() => {
         cb(null, token.token);
       }
       return Promise.resolve(token);
-    }
+    },
   );
   ret.refreshAccessToken.mockImplementation(
     (
       cb?: (
         err: GaxiosError | null,
         credentials?: object | null,
-        res?: GaxiosResponse
-      ) => void
+        res?: GaxiosResponse,
+      ) => void,
     ) => {
       const result = {
         credentials: {
@@ -36,7 +36,7 @@ const mockOAuth2Client = jest.fn().mockImplementation(() => {
         cb(null, result.credentials, result.res);
       }
       return Promise.resolve(result);
-    }
+    },
   );
   return ret;
 });
