@@ -8,6 +8,7 @@ const isTestEnvironment = () => {
   );
 };
 
+console.log('Connecting to database...');
 const sql = isTestEnvironment()
   ? jest.fn().mockImplementation(() => {
       console.warn('How did you get here?', new Error().stack);
@@ -17,9 +18,9 @@ const sql = isTestEnvironment()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as unknown as postgres.Sql<any>;
     })()
-  : postgres(env('DATABASE_URL'), { ssl: 'verify-full' });
+  : postgres(env('DATABASE_URL'), { ssl: 'verify-full', max: 3 });
 
-if (!!process?.on && isTestEnvironment()) {
+if (!!process?.on && !isTestEnvironment()) {
   prexit(async () => {
     console.log('Closing database connection.');
     await (sql?.end({ timeout: 5 }) ?? Promise.resolve());

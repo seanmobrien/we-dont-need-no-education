@@ -81,11 +81,14 @@ export async function GET(
  * 5. Logs the deletion operation.
  * 6. Returns a success response if the email is deleted, or an error response if the email is not found or if an internal server error occurs.
  */
-export async function DELETE({
-  params,
-}: {
-  params: Promise<{ emailId: string }>;
-}): Promise<NextResponse> {
+export async function DELETE(
+  req: NextRequest,
+  {
+    params,
+  }: {
+    params: Promise<{ emailId: string }>;
+  },
+): Promise<NextResponse> {
   const { emailId: emailId } = await params;
   if (!emailId) {
     return NextResponse.json(

@@ -23,16 +23,19 @@ class ContactStageManager extends TransactionalStateManagerBase {
     const contacts = mapContacts(target.raw?.payload?.headers);
     if (!contacts || contacts.length === 0) {
       throw new Error(
-        `No valid contacts found in the message: ${currentStage}`
+        `No valid contacts found in the message: ${currentStage}`,
       );
     }
 
     const contactRepository = new ContactRepository();
-    const retrievedContacts = await contactRepository.getContactsByEmails(
+    const retrievedContacts = (
+      await contactRepository.list({ page: 1, num: 1000, total: 1000 })
+    ).results;
+    /*contactRepository.getContactsByEmails(
       contacts.map((c) => c.email)
-    );
+    );*/
     const newContacts = contacts.filter(
-      (c) => !retrievedContacts.some((rc) => rc.email === c.email)
+      (c) => !retrievedContacts.some((rc) => rc.email === c.email),
     );
     if (newContacts.length === 0) {
       log((l) => l.info(`No new contacts found in message: ${currentStage}`));
@@ -45,7 +48,7 @@ class ContactStageManager extends TransactionalStateManagerBase {
         });
       });
       log((l) =>
-        l.info(`Found and created ${newContacts.length} new contacts`)
+        l.info(`Found and created ${newContacts.length} new contacts`),
       );
     }
     return Promise.resolve(options);
@@ -54,7 +57,7 @@ class ContactStageManager extends TransactionalStateManagerBase {
 
 const managerFactory: ImportStageManagerFactory = (
   stage: ImportStage,
-  addOps: AdditionalStageOptions
+  addOps: AdditionalStageOptions,
 ) => new ContactStageManager(stage, addOps);
 
 export default managerFactory;

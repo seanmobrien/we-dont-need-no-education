@@ -17,7 +17,7 @@ const contactCacheClass = jest.fn(() => {
   ret.getByEmail.mockReturnValue(undefined);
   return ret;
 });
-let contactCacheInstance = new contactCacheClass();
+const contactCacheInstance = new contactCacheClass();
 
 const globalContactCache = (): ContactCache => {
   console.log('in mocked contact cache accessor');

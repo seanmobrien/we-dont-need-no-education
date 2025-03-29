@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
-import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/database';
-import { RepositoryCrudController } from '@/lib/api';
+import {
+  RepositoryCrudController,
+  CallToActionDetailsRepository,
+} from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
 import { parsePaginationStats } from '@/data-models';
 import { db } from '@/lib/neondb';

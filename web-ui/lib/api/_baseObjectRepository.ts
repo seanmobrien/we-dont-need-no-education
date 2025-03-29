@@ -1,6 +1,6 @@
 import { PaginationStats, PaginatedResultset } from '@/data-models';
 import { log } from '../logger';
-import { query, queryExt } from '@/lib/neondb';
+import { query, queryExt, TransformedFullQueryResults } from '@/lib/neondb';
 import { FirstParameter, PartialExceptFor } from '../typescript';
 import {
   IObjectRepositoryExt,
@@ -251,25 +251,40 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
         let paramIndex = 1;
         Object.entries(fieldMap).forEach(([key, value]) => {
           if (value !== undefined) {
-            updateFields.push(`${key} = $${paramIndex++}`);
+            updateFields.push(`"${key}" = $${paramIndex++}`);
             values.push(value);
           }
         });
         values.push(props[this.objectIdField]);
-        return queryExt(
+        const ret = queryExt(
           (sql) =>
             sql<false, true>(
               `UPDATE ${this.tableName} SET ${updateFields.join(
                 ', ',
-              )} WHERE ${String(
+              )} WHERE "${String(
                 this.tableIdField,
-              )} = $${paramIndex} RETURNING *`.toString(),
+              )}" = $${paramIndex} RETURNING *`.toString(),
               values,
             ),
           { transform: this.mapRecordToObject },
         );
+        return this.postProcessUpdate({ updateQuery: ret, props });
       },
     );
+  }
+
+  /**
+   * Override to append post-processing logic to the update query.
+   * @param updateQuery Update query promise
+   * @returns The updateQuery argument
+   */
+  protected postProcessUpdate({
+    updateQuery,
+  }: {
+    props: PartialExceptFor<T, KId> & Required<Pick<T, KId>>;
+    updateQuery: Promise<TransformedFullQueryResults<T>>;
+  }): Promise<TransformedFullQueryResults<T>> {
+    return updateQuery;
   }
 
   /**

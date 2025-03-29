@@ -10,5 +10,7 @@ export type * from './import';
 
 export * from './factories';
 export * from './guards';
+export * from './attachment';
+export * from './document-unit';
 
 export { globalContactCache, resetGlobalCache };

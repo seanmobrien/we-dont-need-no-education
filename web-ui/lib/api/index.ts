@@ -4,3 +4,5 @@ export * from './_baseObjectRepository';
 export * from './thread/database';
 export * from './email';
 export type * from './email';
+export * from './document-unit';
+export * from './attachment';

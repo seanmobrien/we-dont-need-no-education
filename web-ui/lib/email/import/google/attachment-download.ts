@@ -75,7 +75,7 @@ const uploadToAzureStorage = async ({
   await blockBlobClient.uploadData(buffer, {
     blobHTTPHeaders: {
       blobContentType: mimeType || 'application/octet-stream',
-      blobContentDisposition: `attachment; filename="${fileName}"`,
+      blobContentDisposition: `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       blobContentEncoding: 'base64',
     },
   });

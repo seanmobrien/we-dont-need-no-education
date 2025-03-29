@@ -1,1 +1,2 @@
-export * from './email/area';
+export * from './email/client';
+export * from './email/properties/client';

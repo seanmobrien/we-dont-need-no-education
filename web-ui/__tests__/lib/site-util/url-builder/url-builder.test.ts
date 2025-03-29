@@ -1,7 +1,6 @@
 jest.mock('@/lib/site-util/env');
 
 import { UrlBuilder } from '@/lib/site-util/url-builder/_impl';
-import { siteMap } from '@/lib/site-util/url-builder/_sitemap';
 import { mappedUrlBuilderFactory } from '@/lib/site-util/url-builder/_from-map';
 import { env } from '@/lib/site-util/env';
 
@@ -32,7 +31,7 @@ describe('UrlBuilder', () => {
   });
 
   it('should create a sitemap bulder', () => {
-    const target = mappedUrlBuilderFactory(siteMap);
+    const target = mappedUrlBuilderFactory();
     expect(target).not.toBeNull();
     const bulkEdit = target.email.bulkEdit();
     expect(bulkEdit.toString()).toBe(`${hostname}/email/bulk-edit`);

@@ -283,7 +283,11 @@ class EmailStageManager extends TransactionalStateManagerBase {
     emailId: string;
     recipients: Array<ContactSummary>;
   }) {
-    const operations = recipients.map((recipient) =>
+    const uniqueRecipients = Array.from(
+      new Map(recipients.map((r) => [r.contactId, r])).values(),
+    );
+
+    const operations = uniqueRecipients.map((recipient) =>
       this.#contactRepository
         .addEmailRecipient(recipient.contactId, emailId, 'to')
         .then(

@@ -70,17 +70,19 @@ export class AbstractLogger implements ILogger {
     if ('dispose' in message && typeof message.dispose === 'function') {
       message.dispose();
     }
+    let stringValue: string;
     // Error / exception messages
     if (isError(message)) {
       const le = LoggedError.isTurtlesAllTheWayDownBaby(message);
+      stringValue =
+        le.message ?? ('body' in message ? message.body : undefined);
       record = {
         [ApplicationInsightsBaseType]: ApplicationInsightsExceptionBaseType,
         ...le,
         [ATTR_EXCEPTION_STACKTRACE]: le.stack,
         [ATTR_EXCEPTION_TYPE]:
           'source' in le ? (le.source ?? le.name) : le.name,
-        [ATTR_EXCEPTION_MESSAGE]:
-          le.message ?? ('body' in message ? message.body : undefined),
+        [ATTR_EXCEPTION_MESSAGE]: stringValue,
       };
       delete record.stack;
       if ('source' in record) {
@@ -88,6 +90,7 @@ export class AbstractLogger implements ILogger {
       }
     } else if (CustomAppInsightsEvent.isCustomAppInsightsEvent(message)) {
       // Custom Event messages
+      stringValue = `AppInsights Event: ${message.event}`;
       record = {
         [ApplicationInsightsCustomEventName]: message.event,
         [ApplicationInsightsBaseType]: ApplicationInsightsEventBaseType,
@@ -104,8 +107,9 @@ export class AbstractLogger implements ILogger {
         throw new Error('Message is not a valid object');
       }
       // and everything else is a generic message
+      stringValue = String(message.message ?? message.Message ?? message.body);
       record = {
-        msg: message.message ?? message.Message ?? message.body,
+        msg: stringValue,
         ...message,
       };
     }
@@ -140,7 +144,7 @@ export class AbstractLogger implements ILogger {
         ...(record.attributes ?? {}),
       };
     }
-    record[Symbol.toStringTag] = String(record.body) ?? 'No message provided';
+    record[Symbol.toStringTag] = stringValue ?? 'No message provided';
     return [record];
   }
 

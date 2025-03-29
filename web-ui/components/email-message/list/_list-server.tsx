@@ -135,7 +135,7 @@ const EmailListServer = ({
                         <TableCell>
                           <Link
                             key={emailId}
-                            href={siteMap.email.edit(emailId)}
+                            href={siteMap.messages.email(emailId)}
                           >
                             {subject}
                           </Link>

@@ -296,7 +296,7 @@ describe('Email API', () => {
       ];
       (query as jest.Mock).mockResolvedValue(mockResult);
 
-      const res = await DELETE({
+      const res = await DELETE({} as NextRequest, {
         params: Promise.resolve({ emailId: ValidEmailId }),
       });
 
@@ -310,7 +310,7 @@ describe('Email API', () => {
     it('should return 404 status if email is not found', async () => {
       (query as jest.Mock).mockResolvedValue([]);
 
-      const res = await DELETE({
+      const res = await DELETE({} as NextRequest, {
         params: Promise.resolve({ emailId: ValidEmailId }),
       });
 
@@ -321,7 +321,9 @@ describe('Email API', () => {
     });
 
     it('should return 400 status if emailId is missing', async () => {
-      const res = await DELETE({ params: Promise.resolve({ emailId: '' }) });
+      const res = await DELETE({} as NextRequest, {
+        params: Promise.resolve({ emailId: '' }),
+      });
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({

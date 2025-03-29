@@ -110,7 +110,7 @@ const assignDownloadSlots = ({
 };
 
 const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
-  concurrentSessions = 1,
+  concurrentSessions = 3,
 }) => {
   const [query, setQuery] = useState('');
   const [lastQuery, setLastQuery] = useState('');

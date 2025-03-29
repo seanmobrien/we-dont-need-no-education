@@ -10,7 +10,7 @@ const appendParams = (url: URL, params: object | undefined) => {
     const serializeParam = (
       q: URLSearchParams,
       key: string,
-      value: unknown
+      value: unknown,
     ) => {
       if (typeof value !== 'number' && !value) {
         return;
@@ -61,7 +61,7 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {URL} The root URL constructed using the base path '/' and the hostname from the environment variable `NEXT_PUBLIC_HOSTNAME`.
    */
-  static get root() {
+  static get root(): URL {
     return new URL('/', env('NEXT_PUBLIC_HOSTNAME'));
   }
 
@@ -70,7 +70,7 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {UrlBuilder} A new `UrlBuilder` instance with no parent and an empty segment.
    */
-  static get rootBuilder() {
+  static get rootBuilder(): UrlBuilder {
     return new UrlBuilder({
       parent: null as unknown as IUrlBuilder,
       segment: '',
@@ -109,8 +109,8 @@ export class UrlBuilder implements IUrlBuilder {
     ) {
       throw new TypeError(
         `invalid or missing info object provided: ${JSON.stringify(
-          info ?? 'null'
-        )}`
+          info ?? 'null',
+        )}`,
       );
     }
     this.info = info as UrlBuilderInfo;
@@ -121,7 +121,7 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {string} The path of the parent if `this.info.parent` is not null; otherwise, an empty string.
    */
-  private get parentPart() {
+  private get parentPart(): string {
     return this.info.parent == null ? '' : this.info.parent.path;
   }
 
@@ -130,7 +130,7 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {string} The slug part of the URL.
    */
-  private get slugPart() {
+  private get slugPart(): string {
     return UrlBuilder.buildSlugPart(this.info.slug);
   }
   /**
@@ -140,7 +140,7 @@ export class UrlBuilder implements IUrlBuilder {
    * @private
    * @returns {URL} The URL object with a trailing slash.
    */
-  private get urlWithSlash() {
+  private get urlWithSlash(): URL {
     return new URL(`${this.path}/`, UrlBuilder.root);
   }
 
@@ -149,7 +149,7 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {IUrlBuilder | null} The parent URL builder or null if there is no parent.
    */
-  get parent() {
+  get parent(): IUrlBuilder | null {
     return this.info.parent;
   }
 
@@ -158,7 +158,7 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {string} The segment of the URL.
    */
-  get segment() {
+  get segment(): string {
     return this.info.segment;
   }
 
@@ -167,7 +167,7 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {string | number | undefined} The slug of the URL.
    */
-  get slug() {
+  get slug(): string | number | undefined {
     return this.info.slug;
   }
 
@@ -176,7 +176,7 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {string} The path of the URL.
    */
-  get path() {
+  get path(): string {
     const p = `${this.parentPart}/${this.info.segment}${this.slugPart}`;
     return p.endsWith('/') ? p.slice(0, -1) : p;
   }
@@ -185,11 +185,15 @@ export class UrlBuilder implements IUrlBuilder {
    *
    * @returns {URL} The URL object representing the current path.
    */
-  get url() {
+  get url(): URL {
     return new URL(this.path, UrlBuilder.root);
   }
 
-  toString() {
+  /**
+   * This is the same as calling `this.path`.
+   * @returns {string} The string representation of the URL.
+   */
+  toString(): string {
     return this.path;
   }
 
@@ -200,7 +204,7 @@ export class UrlBuilder implements IUrlBuilder {
    * @param slug - The optional slug for the child URL.
    * @returns {UrlBuilder} A new `UrlBuilder` instance representing the child URL.
    */
-  child(segment: string, slug?: string | number) {
+  child(segment: string, slug?: string | number): UrlBuilder {
     return new UrlBuilder({ parent: this, segment, slug });
   }
   /**
@@ -224,10 +228,14 @@ export class UrlBuilder implements IUrlBuilder {
    * @overload
    * @returns {URL} - The builder URL - essentially the same as accessing the url property.
    */
+  page(page: string, slug: string | number, params?: object): URL;
+  page(page: string | number, params?: object): URL;
+  page(params: object): URL;
+  page(): URL;
   page(
     page?: number | string | object,
     slug?: string | number | object,
-    params?: object
+    params?: object,
   ) {
     if (typeof page === 'undefined') {
       return this.url;

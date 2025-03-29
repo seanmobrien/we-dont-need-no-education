@@ -4,6 +4,6 @@ import { siteMap } from './_sitemap';
 
 export { mappedUrlBuilderFactory };
 
-const siteBuilder = mappedUrlBuilderFactory(siteMap);
+const siteBuilder = mappedUrlBuilderFactory();
 
 export default siteBuilder;

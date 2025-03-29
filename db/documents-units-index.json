@@ -1,0 +1,41 @@
+{
+  "name": "document-units-index",
+  "fields": [
+    { "name": "unit_id", "type": "Edm.String", "key": true, "filterable": true }, 
+    { "name": "email_id", "type": "Edm.String", "filterable": true, "facetable": false }, 
+    { "name": "attachment_id", "type": "Edm.Int32", "filterable": true }, 
+    { "name": "email_property_id", "type": "Edm.String", "filterable": true }, 
+    { "name": "document_type", "type": "Edm.String", "filterable": true, "facetable": true }, 
+    { "name": "content", "type": "Edm.String", "searchable": true, "analyzer": "standard.lucene" }, 
+    { "name": "embedding", "type": "Collection(Edm.Single)", "dimensions": 1536, "vectorSearchConfiguration": "default" },
+    { "name": "embedding_model", "type": "Edm.String", "filterable": true, "sortable": true }, 
+    { "name": "embedded_on", "type": "Edm.DateTimeOffset", "filterable": true, "sortable": true }, 
+    { "name": "created_on", "type": "Edm.DateTimeOffset", "filterable": true, "sortable": true }
+  ],
+  "vectorSearch": {
+    "algorithmConfigurations": [
+      {
+        "name": "default",
+        "kind": "hnsw",
+        "hnswParameters": {
+          "m": 4,
+          "efConstruction": 400,
+          "efSearch": 500,
+          "metric": "cosine"
+        }
+      }
+    ]
+  },
+  "semantic": {
+    "configurations": [
+      {
+        "name": "default",
+        "prioritizedFields": {
+          "contentFields": [
+            { "fieldName": "content" }
+          ]
+        }
+      }
+    ]
+  }
+}

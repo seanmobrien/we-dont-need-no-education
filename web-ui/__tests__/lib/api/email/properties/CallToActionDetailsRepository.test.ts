@@ -4,7 +4,7 @@
  */
 jest.mock('@/lib/neondb');
 
-import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/database';
+import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
 import { ValidationError } from '@/lib/react-util';
 import { query, queryExt } from '@/lib/neondb';
 import { CallToActionDetails } from '@/data-models/api';
@@ -43,7 +43,7 @@ describe('CallToActionDetailsRepository', () => {
         compliancyCloseDate: new Date(),
         completionPercentage: 50,
         policyId: 1,
-        propertyValue: 'test-value',
+        value: 'test-value',
         emailId: 'email-id',
         createdOn: new Date(),
       });
@@ -85,7 +85,7 @@ describe('CallToActionDetailsRepository', () => {
         compliancyCloseDate: new Date(),
         completionPercentage: 50,
         policyId: 1,
-        propertyValue: 'test-value',
+        value: 'test-value',
         emailId: 'email-id',
         createdOn: new Date(),
       };
@@ -94,7 +94,7 @@ describe('CallToActionDetailsRepository', () => {
       );
       expect(sqlQuery).toContain('INSERT INTO email_property');
       expect(values).toEqual([
-        obj.propertyValue,
+        obj.value,
         obj.propertyId,
         obj.emailId,
         obj.createdOn,
@@ -116,13 +116,13 @@ describe('CallToActionDetailsRepository', () => {
         compliancyCloseDate: new Date(),
         completionPercentage: 50,
         policyId: 1,
-        propertyValue: 'test-value',
+        value: 'test-value',
         emailId: 'email-id',
         createdOn: new Date(),
       };
       const [fieldMap] = (repository as any).getUpdateQueryProperties(obj);
       expect(fieldMap).toEqual({
-        property_value: obj.propertyValue,
+        property_value: obj.value,
         email_property_type_id: 4,
         property_id: obj.propertyId,
         email_id: obj.emailId,

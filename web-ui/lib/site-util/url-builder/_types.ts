@@ -1,5 +1,3 @@
-import { PickField } from '@/lib/typescript';
-
 /**
  * Builds a URL relative to this instance given a page segment, slug value, and query paramters.
  *
@@ -41,7 +39,7 @@ export type IUrlBuilder = {
   /**
    * Gets the parent URL builder.
    */
-  get parent(): IUrlBuilder;
+  get parent(): IUrlBuilder | null;
 
   /**
    * Gets the current URL segment.
@@ -107,29 +105,3 @@ export type UrlBuilderInfo = {
  * or another record with unknown properties.
  */
 export type UrlMap = Record<string, string | Record<string, unknown>>;
-
-/**
- * A type that maps a given type `TMap` to a URL builder structure.
- *
- * This type recursively maps the keys of `TMap` and `IUrlBuilder` to URL builder functions or nested URL builders.
- *
- * - If the key exists in `IUrlBuilder`, it picks the corresponding field from `IUrlBuilder`.
- * - If the key exists in `TMap`:
- *   - If the corresponding field in `TMap` is a string, it maps to a function that takes an optional slug and returns a URL.
- *   - If the corresponding field in `TMap` is a nested object, it recursively maps to another `MappedUrlBuilder`.
- *
- * @template TMap - The type to be mapped to a URL builder structure.
- */
-export type MappedUrlBuilder<TMap> = {
-  [K in keyof TMap | keyof IUrlBuilder]: K extends keyof IUrlBuilder
-    ? PickField<IUrlBuilder, K>
-    : K extends keyof TMap
-    ? PickField<TMap, K> extends infer NestedMap
-      ? NestedMap extends string
-        ? MappedPageOverloads
-        : NestedMap extends Record<string, unknown>
-        ? MappedUrlBuilder<NestedMap>
-        : never
-      : never
-    : never;
-};

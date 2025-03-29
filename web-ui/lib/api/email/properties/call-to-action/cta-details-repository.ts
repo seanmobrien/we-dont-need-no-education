@@ -3,7 +3,11 @@ import { ObjectRepository } from '../../../_types';
 import { ValidationError } from '@/lib/react-util';
 import { FirstParameter, newUuid } from '@/lib/typescript';
 import { CallToActionDetails } from '@/data-models/api';
-import { mapEmailPropertyRecordToObject } from '../email-property-repository';
+import {
+  EmailPropertyRepository,
+  mapEmailPropertyRecordToObject,
+} from '../email-property-repository';
+import { TransformedFullQueryResults } from '@/lib/neondb';
 
 const mapRecordToObject = (
   record: Record<string, unknown>,
@@ -31,7 +35,7 @@ export class CallToActionDetailsRepository extends BaseObjectRepository<
   constructor() {
     super({
       tableName: 'call_to_action_details',
-      idField: 'propertyId',
+      idField: ['propertyId', 'property_id'],
       objectMap: mapRecordToObject,
       summaryMap: mapRecordToObject,
     });
@@ -80,9 +84,13 @@ export class CallToActionDetailsRepository extends BaseObjectRepository<
 
   protected getQueryProperties(recordId: string): [string, Array<unknown>] {
     return [
-      `SELECT * FROM call_to_action_details 
-       JOIN email_property ON call_to_action_details.property_id = email_property.property_id 
-       WHERE call_to_action_details.property_id = $1`,
+      `SELECT ep.*, ept.property_name,epc.description, epc.email_property_category_id,
+            cta.opened_date, cta.closed_date, cta.compliancy_close_date, cta.completion_percentage, cta.policy_id
+            FROM email_property ep 
+             JOIN call_to_action_details cta ON cta.property_id = ep.property_id 
+             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
+       WHERE cta.property_id = $1`,
       [recordId],
     ];
   }
@@ -120,23 +128,14 @@ export class CallToActionDetailsRepository extends BaseObjectRepository<
   }
 
   protected getUpdateQueryProperties({
-    propertyId,
     openedDate,
     closedDate,
     compliancyCloseDate,
     completionPercentage,
     policyId,
-    value,
-    emailId,
-    createdOn,
   }: CallToActionDetails): [Record<string, unknown>] {
     return [
       {
-        property_value: value,
-        email_property_type_id: 4,
-        property_id: propertyId,
-        email_id: emailId,
-        created_on: createdOn,
         opened_date: openedDate,
         closed_date: closedDate,
         compliancy_close_date: compliancyCloseDate,
@@ -144,5 +143,22 @@ export class CallToActionDetailsRepository extends BaseObjectRepository<
         policy_id: policyId,
       },
     ];
+  }
+  /**
+   * Override to append post-processing logic to the update query.
+   * @param updateQuery Update query promise
+   * @returns The updateQuery argument
+   */
+  protected postProcessUpdate({
+    updateQuery,
+    props,
+  }: {
+    props: CallToActionDetails;
+    updateQuery: Promise<TransformedFullQueryResults<CallToActionDetails>>;
+  }): Promise<TransformedFullQueryResults<CallToActionDetails>> {
+    return updateQuery.then((result) => {
+      const repo = new EmailPropertyRepository();
+      return repo.update(props).then(() => result);
+    });
   }
 }

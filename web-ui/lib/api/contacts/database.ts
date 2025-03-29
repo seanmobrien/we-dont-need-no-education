@@ -130,7 +130,7 @@ export class ContactRepository
       }
       const result = await query(
         (sql) =>
-          sql`INSERT INTO contacts (name, email, phone, role_dscr, is_district_staff) VALUES (${name}, ${email}, ${phoneNumber}, ${jobDescription}, ${isDistrictStaff})\
+          sql`INSERT INTO contacts (name, email, phone, role_dscr, is_district_staff) VALUES (${name}, ${email}, ${phoneNumber ?? null}, ${jobDescription ?? null}, ${isDistrictStaff ?? true})\
             RETURNING *`,
         { transform: ContactRepository.MapRecordToObject },
       );
