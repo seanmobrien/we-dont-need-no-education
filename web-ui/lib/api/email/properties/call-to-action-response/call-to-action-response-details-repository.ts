@@ -102,7 +102,7 @@ export class CallToActionResponseDetailsRepository extends BaseObjectRepository<
     return [
       `WITH ins1 AS (
         INSERT INTO email_property (property_value, email_property_type_id, property_id, email_id, created_on) 
-        VALUES ($1, 5, $2, $3, $4) RETURNING property_id
+        VALUES ($1, 7, $2, $3, $4) RETURNING property_id
       )
       INSERT INTO call_to_action_response_details (property_id, action_property_id, completion_percentage, response_timestamp) 
       VALUES ((SELECT property_id FROM ins1), $5, $6, $7) RETURNING *`,

@@ -52,8 +52,8 @@ export class BaseObjectRepository<T extends object, KId extends keyof T>
   }: {
     tableName: string;
     idField: KId | [KId, string];
-    objectMap: RecordToObjectImpl<T>;
-    summaryMap: RecordToSummaryImpl<T>;
+    objectMap: RecordToObjectImpl<T> | string;
+    summaryMap: RecordToSummaryImpl<T> | string;
   }) {
     super({ tableName, objectMap, summaryMap });
     if (Array.isArray(idField)) {

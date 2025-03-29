@@ -31,17 +31,36 @@ export type DocumentUnitSummary = {
   /**
    * The type of document represented by this unit. Can be 'email', 'attachment', or 'property'.
    * This is important for understanding the context of the document unit.
-   * Valid Values: 'email', 'attachment', 'property'
+   * Valid Values: 'email', 'attachment', ''note' | 'key_point' | 'cta' | 'sentiment' | 'compliance';
    *
    * @example "email"
    */
-  documentType: 'email' | 'attachment' | 'property';
+  documentType:
+    | 'email'
+    | 'attachment'
+    | 'note'
+    | 'key_point'
+    | 'cta'
+    | 'sentiment'
+    | 'compliance';
 
   /**
    * The date and time when the document unit was created.
    * This is important for tracking the freshness of the document unit and its relevance.
    */
   createdOn: Date;
+
+  /**
+   * The URL or link to the document unit, if applicable. This can be used to access the document directly.
+   * This is important for providing easy access to the document unit.
+   */
+  hrefDocument?: string;
+
+  /**
+   * The URL or link to the API endpoint for the document unit, if applicable. This can be used to access the document's metadata or perform operations on it.
+   * This is important for providing easy access to the document unit's API.
+   */
+  hrefApi?: string;
 };
 
 /**

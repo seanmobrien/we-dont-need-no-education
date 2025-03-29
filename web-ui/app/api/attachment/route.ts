@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
-import { RepositoryCrudController, EmailAttachmentRepository } from '@/lib/api';
+import { RepositoryCrudController, AttachmentRepository } from '@/lib/api';
 
-const repository = new EmailAttachmentRepository();
+const repository = new AttachmentRepository();
 const controller = new RepositoryCrudController(repository);
 
 export async function GET(req: NextRequest) {

@@ -6,48 +6,15 @@ import {
   DocumentUnit,
   DocumentUnitSummary,
 } from '@/data-models/api/document-unit';
-
-/**
- * Maps a record object to a `DocumentUnitSummary` object.
- *
- * @param record - A record object containing key-value pairs representing the document unit data.
- * @returns A `DocumentUnitSummary` object with the mapped properties.
- *
- * - `unitId`: The unit ID, converted to a number.
- * - `emailId`: The email ID, converted to a string if present, otherwise `null`.
- * - `attachmentId`: The attachment ID, converted to a number if present, otherwise `null`.
- * - `emailPropertyId`: The email property ID, converted to a string if present, otherwise `null`.
- * - `documentType`: The document type, cast to the `DocumentUnit['documentType']` type.
- * - `createdOn`: The creation date, converted to a `Date` object.
- */
-const mapToDocumentUnitSummary = (
-  record: Record<string, unknown>,
-): DocumentUnitSummary => ({
-  unitId: Number(record.unit_id),
-  emailId: record.email_id ? String(record.email_id) : null,
-  attachmentId: record.attachment_id ? Number(record.attachment_id) : null,
-  emailPropertyId: record.email_property_id
-    ? String(record.email_property_id)
-    : null,
-  documentType: String(record.document_type) as DocumentUnit['documentType'],
-  createdOn: new Date(String(record.created_on)),
-});
-
-/**
- * Maps a record object to a `DocumentUnit` object.
- *
- * @param record - A record object containing key-value pairs representing the document unit data.
- * @returns A `DocumentUnit` object with the mapped properties.
- */
-const mapToDocumentUnit = (record: Record<string, unknown>): DocumentUnit => {
-  const ret = mapToDocumentUnitSummary(record);
-  return {
-    ...ret,
-    content: String(record.content),
-    embeddingModel: String(record.embedding_model),
-    embeddedOn: new Date(String(record.embedded_on)),
-  };
-};
+import {
+  AccountSASPermissions,
+  AccountSASResourceTypes,
+  AccountSASServices,
+  generateAccountSASQueryParameters,
+  SASProtocol,
+  StorageSharedKeyCredential,
+} from '@azure/storage-blob';
+import { env } from '@/lib/site-util/env';
 
 /**
  * Repository for managing `DocumentUnit` objects.
@@ -56,6 +23,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
   DocumentUnit,
   'unitId'
 > {
+  #sasKey: string | undefined = undefined;
   /**
    * Initializes a new instance of the `DocumentUnitsRepository` class.
    */
@@ -63,9 +31,31 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     super({
       tableName: 'document_units',
       idField: ['unitId', 'unit_id'],
-      objectMap: mapToDocumentUnit,
-      summaryMap: mapToDocumentUnitSummary,
+      objectMap: 'mapToDocumentUnit',
+      summaryMap: 'mapToDocumentUnitSummary',
     });
+  }
+  protected get SasKey(): string {
+    if (this.#sasKey === undefined) {
+      const sasOptions = {
+        services: AccountSASServices.parse('b').toString(), // blobs, tables, queues, files
+        resourceTypes: AccountSASResourceTypes.parse('sco').toString(), // service, container, object
+        permissions: AccountSASPermissions.parse('r'), // permissions
+        protocol: SASProtocol.Https,
+        startsOn: new Date(),
+        expiresOn: new Date(new Date().valueOf() + 3 * 60 * 60 * 1000), // 3 hours
+      };
+
+      const sasToken = generateAccountSASQueryParameters(
+        sasOptions,
+        new StorageSharedKeyCredential(
+          env('AZURE_STORAGE_ACCOUNT_NAME'),
+          env('AZURE_STORAGE_ACCOUNT_KEY'),
+        ),
+      ).toString();
+      this.#sasKey = sasToken[0] === '?' ? sasToken : `?${sasToken}`;
+    }
+    return this.#sasKey;
   }
 
   /**
@@ -81,19 +71,58 @@ export class DocumentUnitRepository extends BaseObjectRepository<
       Pick<ObjectRepository<DocumentUnit, 'unitId'>, TMethod>[TMethod]
     >,
   ): void {
-    const asModel = obj as DocumentUnit;
-    if (!['email', 'attachment', 'property'].includes(asModel.documentType)) {
-      throw new ValidationError({
-        field: 'documentType',
-        value: asModel.documentType,
-        source: 'DocumentUnitsRepository',
-      });
-    }
-    if (method === 'create' && !asModel.content) {
-      throw new ValidationError({
-        field: 'content',
-        source: 'DocumentUnitsRepository',
-      });
+    switch (method) {
+      case 'create':
+        break;
+      case 'get':
+      case 'delete':
+        if (Array.isArray(obj)) {
+          if (obj.length < 1 || isNaN(Number.parseInt(obj[0]))) {
+            throw new ValidationError({
+              field: 'unitId',
+              value: obj,
+              source: 'DocumentUnitsRepository',
+            });
+          }
+        } else if (isNaN(Number.parseInt(String(obj)))) {
+          throw new ValidationError({
+            field: 'unitId',
+            value: obj,
+            source: 'DocumentUnitsRepository',
+          });
+        }
+        break;
+      case 'create':
+        const asCreateModel = obj as DocumentUnit;
+        if (
+          !['email', 'attachment', 'property'].includes(
+            asCreateModel.documentType,
+          )
+        ) {
+          throw new ValidationError({
+            field: 'documentType',
+            value: asCreateModel.documentType,
+            source: 'DocumentUnitsRepository',
+          });
+        }
+        if (!asCreateModel.content) {
+          throw new ValidationError({
+            field: 'content',
+            source: 'DocumentUnitsRepository',
+          });
+        }
+        break;
+      default:
+        const asModel = obj as DocumentUnit;
+        if (
+          !['email', 'attachment', 'property'].includes(asModel.documentType)
+        ) {
+          throw new ValidationError({
+            field: 'documentType',
+            value: asModel.documentType,
+            source: 'DocumentUnitsRepository',
+          });
+        }
     }
   }
 
@@ -104,7 +133,10 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    */
   protected getListQueryProperties(): [string, Array<unknown>, string] {
     return [
-      `SELECT * FROM document_units ORDER BY unit_id`,
+      `SELECT du.*, ea.file_path
+    FROM document_units du
+    LEFT JOIN email_attachments ea ON du.attachment_id = ea.attachment_id
+    ORDER BY du.unit_id`,
       [],
       `SELECT COUNT(*) as records FROM document_units`,
     ];
@@ -117,7 +149,12 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    * @returns A tuple containing the SQL query and parameters.
    */
   protected getQueryProperties(recordId: number): [string, Array<unknown>] {
-    return [`SELECT * FROM document_units WHERE unit_id = $1`, [recordId]];
+    return [
+      `SELECT du.*, ea.file_path
+    FROM document_units du
+    LEFT JOIN email_attachments ea ON du.attachment_id = ea.attachment_id WHERE unit_id = $1`,
+      [recordId],
+    ];
   }
 
   /**
@@ -167,4 +204,85 @@ export class DocumentUnitRepository extends BaseObjectRepository<
       },
     ];
   }
+
+  /**
+   * Maps a record object to a `DocumentUnitSummary` object.
+   *
+   * @param record - A record object containing key-value pairs representing the document unit data.
+   * @returns A `DocumentUnitSummary` object with the mapped properties.
+   *
+   * - `unitId`: The unit ID, converted to a number.
+   * - `emailId`: The email ID, converted to a string if present, otherwise `null`.
+   * - `attachmentId`: The attachment ID, converted to a number if present, otherwise `null`.
+   * - `emailPropertyId`: The email property ID, converted to a string if present, otherwise `null`.
+   * - `documentType`: The document type, cast to the `DocumentUnit['documentType']` type.
+   * - `createdOn`: The creation date, converted to a `Date` object.
+   */
+  mapToDocumentUnitSummary = (
+    record: Record<string, unknown>,
+  ): DocumentUnitSummary => {
+    const ret: DocumentUnitSummary = {
+      unitId: Number(record.unit_id),
+      emailId: record.email_id ? String(record.email_id) : null,
+      attachmentId: record.attachment_id ? Number(record.attachment_id) : null,
+      emailPropertyId: record.email_property_id
+        ? String(record.email_property_id)
+        : null,
+      documentType: String(
+        record.document_type,
+      ) as DocumentUnit['documentType'],
+      createdOn: new Date(String(record.created_on)),
+    };
+    switch (ret.documentType) {
+      case 'email':
+        ret.hrefDocument = `/api/email/${ret.emailId}`;
+        ret.hrefApi = `/api/email/${ret.emailId}`;
+        break;
+      case 'attachment':
+        ret.hrefDocument = record.file_path
+          ? `${record.file_path}${this.SasKey}`
+          : undefined;
+        ret.hrefApi = `/api/attachment/${ret.attachmentId}`;
+        break;
+      case 'note':
+        ret.hrefDocument = `api/email/${ret.emailId}/properties/${ret.emailPropertyId}`;
+        ret.hrefApi = `api/email/${ret.emailId}/properties/${ret.emailPropertyId}`;
+        break;
+      case 'key_point':
+        ret.hrefDocument = `api/email/${ret.emailId}/properties/key-points/${ret.emailPropertyId}`;
+        ret.hrefApi = `api/email/${ret.emailId}/properties/key-points/${ret.emailPropertyId}`;
+        break;
+      case 'cta':
+        ret.hrefDocument = `api/email/${ret.emailId}/properties/call-to-action/${ret.emailPropertyId}`;
+        ret.hrefApi = `api/email/${ret.emailId}/properties/call-to-action/${ret.emailPropertyId}`;
+        break;
+      case 'sentiment':
+        ret.hrefDocument = `api/email/${ret.emailId}/properties/sentiment-analysis/${ret.emailPropertyId}`;
+        ret.hrefApi = `api/email/${ret.emailId}/properties/sentiment-analysis/${ret.emailPropertyId}`;
+        break;
+      case 'compliance':
+        ret.hrefDocument = `api/email/${ret.emailId}/properties/compliance-scores/${ret.emailPropertyId}`;
+        ret.hrefApi = `api/email/${ret.emailId}/properties/compliance-scores/${ret.emailPropertyId}`;
+        break;
+      default:
+        break;
+    }
+    return ret;
+  };
+
+  /**
+   * Maps a record object to a `DocumentUnit` object.
+   *
+   * @param record - A record object containing key-value pairs representing the document unit data.
+   * @returns A `DocumentUnit` object with the mapped properties.
+   */
+  mapToDocumentUnit = (record: Record<string, unknown>): DocumentUnit => {
+    const ret = this.mapToDocumentUnitSummary(record);
+    return {
+      ...ret,
+      content: String(record.content),
+      embeddingModel: String(record.embedding_model),
+      embeddedOn: new Date(String(record.embedded_on)),
+    };
+  };
 }

@@ -4,46 +4,38 @@ import { ValidationError } from '@/lib/react-util';
 import { FirstParameter } from '@/lib/typescript';
 import { EmailAttachment } from '@/data-models/api/attachment';
 
-export class EmailAttachmentsRepository extends BaseObjectRepository<
+const attachmentSummaryRecordMap = (record: Record<string, unknown>) => ({
+  attachmentId: Number(record.attachment_id),
+  fileName: String(record.file_name),
+  filePath: String(record.file_path),
+  policyId: record.policy_id ? Number(record.policy_id) : null,
+  emailId: String(record.email_id),
+  mimeType: String(record.mime_type),
+  size: Number(record.size),
+});
+
+const attachmentRecordMap = (record: Record<string, unknown>) => {
+  const ret = attachmentSummaryRecordMap(record);
+  return {
+    ...ret,
+    extractedText: record.extracted_text ? String(record.extracted_text) : null,
+    extractedTextTsv: record.extracted_text_tsv
+      ? String(record.extracted_text_tsv)
+      : null,
+    summary: record.summary ? String(record.summary) : null,
+  };
+};
+
+export class AttachmentRepository extends BaseObjectRepository<
   EmailAttachment,
   'attachmentId'
 > {
   constructor() {
     super({
       tableName: 'email_attachments',
-      idField: ['attachmentId', 'attachment_id'],
-      objectMap: (record) => ({
-        attachmentId: Number(record.attachment_id),
-        fileName: String(record.file_name),
-        filePath: String(record.file_path),
-        extractedText: record.extracted_text
-          ? String(record.extracted_text)
-          : null,
-        extractedTextTsv: record.extracted_text_tsv
-          ? String(record.extracted_text_tsv)
-          : null,
-        policyId: record.policy_id ? Number(record.policy_id) : null,
-        summary: record.summary ? String(record.summary) : null,
-        emailId: String(record.email_id),
-        mimeType: String(record.mime_type),
-        size: Number(record.size),
-      }),
-      summaryMap: (record) => ({
-        attachmentId: Number(record.attachment_id),
-        fileName: String(record.file_name),
-        filePath: String(record.file_path),
-        extractedText: record.extracted_text
-          ? String(record.extracted_text)
-          : null,
-        extractedTextTsv: record.extracted_text_tsv
-          ? String(record.extracted_text_tsv)
-          : null,
-        policyId: record.policy_id ? Number(record.policy_id) : null,
-        summary: record.summary ? String(record.summary) : null,
-        emailId: String(record.email_id),
-        mimeType: String(record.mime_type),
-        size: Number(record.size),
-      }),
+      idField: 'attachmentId',
+      objectMap: attachmentRecordMap,
+      summaryMap: attachmentSummaryRecordMap,
     });
   }
 

@@ -122,8 +122,8 @@ export class AbstractObjectRepository<T extends object> {
   }
 
   readonly #tableName: string;
-  readonly #objectMap: RecordToObjectImpl<T>;
-  readonly #summaryMap: RecordToSummaryImpl<T>;
+  readonly #objectMap: RecordToObjectImpl<T> | string;
+  readonly #summaryMap: RecordToSummaryImpl<T> | string;
 
   /**
    * Constructs a new instance of the class.
@@ -138,8 +138,8 @@ export class AbstractObjectRepository<T extends object> {
     summaryMap,
   }: {
     tableName: string;
-    objectMap: RecordToObjectImpl<T>;
-    summaryMap: RecordToSummaryImpl<T>;
+    objectMap: RecordToObjectImpl<T> | string;
+    summaryMap: RecordToSummaryImpl<T> | string;
   }) {
     this.#tableName = tableName;
     this.#objectMap = objectMap;
@@ -153,6 +153,16 @@ export class AbstractObjectRepository<T extends object> {
    * @type {(record: Record<string, unknown>) => Partial<T>}
    */
   protected get mapRecordToSummary(): RecordToSummaryImpl<T> {
+    if (typeof this.#summaryMap === 'string') {
+      if (this.#summaryMap in this) {
+        return (this as Record<string, unknown>)[
+          this.#summaryMap
+        ] as RecordToSummaryImpl<T>;
+      }
+      throw new Error(
+        `The summary map "${this.#summaryMap}" is not a valid function.`,
+      );
+    }
     return this.#summaryMap;
   }
 
@@ -162,6 +172,16 @@ export class AbstractObjectRepository<T extends object> {
    * @returns {RecordToObjectImpl<T>} The function that maps a record to an object.
    */
   protected get mapRecordToObject(): RecordToObjectImpl<T> {
+    if (typeof this.#objectMap === 'string') {
+      if (this.#objectMap in this) {
+        return (this as Record<string, unknown>)[
+          this.#objectMap
+        ] as RecordToObjectImpl<T>;
+      }
+      throw new Error(
+        `The object map "${this.#objectMap}" is not a valid function.`,
+      );
+    }
     return this.#objectMap;
   }
 
