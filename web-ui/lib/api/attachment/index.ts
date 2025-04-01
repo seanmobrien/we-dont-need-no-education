@@ -33,7 +33,7 @@ export class AttachmentRepository extends BaseObjectRepository<
   constructor() {
     super({
       tableName: 'email_attachments',
-      idField: 'attachmentId',
+      idField: ['attachmentId', 'attachment_id'],
       objectMap: attachmentRecordMap,
       summaryMap: attachmentSummaryRecordMap,
     });

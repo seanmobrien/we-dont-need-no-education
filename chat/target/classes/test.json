@@ -1,0 +1,350 @@
+{
+  "@odata.etag": "\"0x8DD6F897F661FA1\"",
+  "name": "document_units",
+  "fields": [
+    {
+      "name": "id",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "stored": true,
+      "sortable": true,
+      "facetable": true,
+      "key": true,
+      "synonymMaps": []
+    },
+    {
+      "name": "content_vector",
+      "type": "Collection(Edm.Single)",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "stored": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "dimensions": 1536,
+      "vectorSearchProfile": "vector-profile",
+      "synonymMaps": []
+    },
+
+    {
+      "name": "content",
+      "type": "Edm.String",
+      "searchable": true,
+      "filterable": true,
+      "retrievable": true,
+      "stored": true,
+      "sortable": true,
+      "facetable": true,
+      "key": false,
+      "analyzer": "standard.lucene",
+      "synonymMaps": []
+    },
+    {
+      "name": "embedding",
+      "type": "Collection(Edm.Single)",
+      "searchable": true,
+      "filterable": false,
+      "retrievable": true,
+      "stored": true,
+      "sortable": false,
+      "facetable": false,
+      "key": false,
+      "dimensions": 1536,
+      "vectorSearchProfile": "vector-profile",
+      "synonymMaps": []
+    },
+    {
+      "name": "metadata",
+      "type": "Edm.ComplexType",
+      "fields": [
+        {
+          "name": "source",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "attributes",
+          "type": "Collection(Edm.ComplexType)",
+          "fields": [
+            {
+              "name": "key",
+              "type": "Edm.String",
+              "searchable": true,
+              "filterable": true,
+              "retrievable": true,
+              "stored": true,
+              "sortable": false,
+              "facetable": true,
+              "key": false,
+              "synonymMaps": []
+            },
+            {
+              "name": "value",
+              "type": "Edm.String",
+              "searchable": true,
+              "filterable": true,
+              "retrievable": true,
+              "stored": true,
+              "sortable": false,
+              "facetable": true,
+              "key": false,
+              "synonymMaps": []
+            }
+          ]
+        },
+        {
+          "name": "email_id",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "parent_email_id",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "attachment_id",
+          "type": "Edm.Int32",
+          "searchable": false,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "email_property_id",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "document_type",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "created_on",
+          "type": "Edm.DateTimeOffset",
+          "searchable": false,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "violation_tags",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": false,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "severity_level",
+          "type": "Edm.Int32",
+          "searchable": false,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "sentiment_score",
+          "type": "Edm.Int32",
+          "searchable": false,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "detected_hostility",
+          "type": "Edm.Boolean",
+          "searchable": false,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "flagged_phrases",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "compliance_score",
+          "type": "Edm.Int32",
+          "searchable": false,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "overall_grade",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "thread_id",
+          "type": "Edm.Int32",
+          "searchable": false,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "href_document",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        },
+        {
+          "name": "href_api",
+          "type": "Edm.String",
+          "searchable": true,
+          "filterable": true,
+          "retrievable": true,
+          "stored": true,
+          "sortable": true,
+          "facetable": true,
+          "key": false,
+          "synonymMaps": []
+        }
+      ]
+    }
+  ],
+  "scoringProfiles": [],
+  "suggesters": [],
+  "analyzers": [],
+  "normalizers": [],
+  "tokenizers": [],
+  "tokenFilters": [],
+  "charFilters": [],
+  "similarity": {
+    "@odata.type": "#Microsoft.Azure.Search.BM25Similarity"
+  },
+  "semantic": {
+    "configurations": [
+      {
+        "name": "default",
+        "prioritizedFields": {
+          "prioritizedContentFields": [
+            {
+              "fieldName": "violation_tags"
+            },
+            {
+              "fieldName": "flagged_phrases"
+            }
+          ],
+          "prioritizedKeywordsFields": []
+        }
+      }
+    ]
+  },
+  "vectorSearch": {
+    "algorithms": [
+      {
+        "name": "hnsw-algorithm",
+        "kind": "hnsw",
+        "hnswParameters": {
+          "metric": "cosine",
+          "m": 4,
+          "efConstruction": 400,
+          "efSearch": 500
+        }
+      }
+    ],
+    "profiles": [
+      {
+        "name": "vector-profile",
+        "algorithm": "hnsw-algorithm"
+      }
+    ],
+    "vectorizers": [],
+    "compressions": []
+  }
+}

@@ -5,6 +5,7 @@ import { FirstParameter } from '@/lib/typescript';
 import {
   DocumentUnit,
   DocumentUnitSummary,
+  isDocumentUnitType,
 } from '@/data-models/api/document-unit';
 import {
   AccountSASPermissions,
@@ -24,18 +25,36 @@ export class DocumentUnitRepository extends BaseObjectRepository<
   'unitId'
 > {
   #sasKey: string | undefined = undefined;
+  #generateDownloadKey: boolean = false;
+  #pendingEmbed: boolean = false;
   /**
    * Initializes a new instance of the `DocumentUnitsRepository` class.
    */
-  constructor() {
+  constructor({
+    generateDownloadKey = false,
+    alwaysReturnContent = false,
+    pendingEmbed = false,
+  }: {
+    generateDownloadKey?: boolean;
+    alwaysReturnContent?: boolean;
+    pendingEmbed?: boolean;
+  } = {}) {
     super({
       tableName: 'document_units',
       idField: ['unitId', 'unit_id'],
       objectMap: 'mapToDocumentUnit',
-      summaryMap: 'mapToDocumentUnitSummary',
+      summaryMap:
+        (alwaysReturnContent ?? false)
+          ? 'mapToDocumentUnit'
+          : 'mapToDocumentUnitSummary',
     });
+    this.#generateDownloadKey = generateDownloadKey ?? false;
+    this.#pendingEmbed = pendingEmbed ?? false;
   }
   protected get SasKey(): string {
+    if (!this.#generateDownloadKey) {
+      return '';
+    }
     if (this.#sasKey === undefined) {
       const sasOptions = {
         services: AccountSASServices.parse('b').toString(), // blobs, tables, queues, files
@@ -94,11 +113,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
         break;
       case 'create':
         const asCreateModel = obj as DocumentUnit;
-        if (
-          !['email', 'attachment', 'property'].includes(
-            asCreateModel.documentType,
-          )
-        ) {
+        if (!isDocumentUnitType(asCreateModel.documentType)) {
           throw new ValidationError({
             field: 'documentType',
             value: asCreateModel.documentType,
@@ -114,9 +129,7 @@ export class DocumentUnitRepository extends BaseObjectRepository<
         break;
       default:
         const asModel = obj as DocumentUnit;
-        if (
-          !['email', 'attachment', 'property'].includes(asModel.documentType)
-        ) {
+        if (asModel.documentType && !isDocumentUnitType(asModel.documentType)) {
           throw new ValidationError({
             field: 'documentType',
             value: asModel.documentType,
@@ -132,13 +145,32 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    * @returns A tuple containing the SQL query, parameters, and count query.
    */
   protected getListQueryProperties(): [string, Array<unknown>, string] {
+    const wherePendingEmbed = this.#pendingEmbed
+      ? ' WHERE du.embedded_on IS NULL'
+      : '';
     return [
-      `SELECT du.*, ea.file_path
+      `SELECT du.*, ea.file_path, e.thread_id,
+  ARRAY(
+    SELECT e.email_id
+    FROM email_property ep
+    JOIN emails e ON ep.property_value = e.global_message_id
+    WHERE ep.email_id = du.email_id
+      AND ep.email_property_type_id = 22
+  ) AS related_email_ids,
+  (
+    SELECT e.email_id
+    FROM email_property ep
+    JOIN emails e ON ep.property_value = e.global_message_id
+    WHERE ep.email_id = du.email_id
+      AND ep.email_property_type_id = 26
+  ) AS parent_email_id
     FROM document_units du
     LEFT JOIN email_attachments ea ON du.attachment_id = ea.attachment_id
-    ORDER BY du.unit_id`,
+    LEFT JOIN emails e ON du.email_id = e.email_id
+    ${wherePendingEmbed} 
+    ORDER BY du.unit_id`.toString(),
       [],
-      `SELECT COUNT(*) as records FROM document_units`,
+      `SELECT COUNT(*) as records FROM document_units du ${wherePendingEmbed}`.toString(),
     ];
   }
 
@@ -150,8 +182,23 @@ export class DocumentUnitRepository extends BaseObjectRepository<
    */
   protected getQueryProperties(recordId: number): [string, Array<unknown>] {
     return [
-      `SELECT du.*, ea.file_path
+      `SELECT du.*, ea.file_path, e.thread_id,
+  ARRAY(
+    SELECT e.email_id
+    FROM email_property ep
+    JOIN emails e ON ep.property_value = e.global_message_id
+    WHERE ep.email_id = du.email_id
+      AND ep.email_property_type_id = 22
+  ) AS related_email_ids,
+  (
+    SELECT e.email_id
+    FROM email_property ep
+    JOIN emails e ON ep.property_value = e.global_message_id
+    WHERE ep.email_id = du.email_id
+      AND ep.email_property_type_id = 26
+  ) AS parent_email_id
     FROM document_units du
+    LEFT JOIN emails e ON du.email_id = e.email_id
     LEFT JOIN email_attachments ea ON du.attachment_id = ea.attachment_id WHERE unit_id = $1`,
       [recordId],
     ];
@@ -195,12 +242,14 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     content,
     documentType,
     embeddingModel,
+    embeddedOn,
   }: DocumentUnit): [Record<string, unknown>] {
     return [
       {
         content,
         document_type: documentType,
         embedding_model: embeddingModel,
+        embedded_on: embeddedOn,
       },
     ];
   }
@@ -228,41 +277,52 @@ export class DocumentUnitRepository extends BaseObjectRepository<
       emailPropertyId: record.email_property_id
         ? String(record.email_property_id)
         : null,
+      threadId: record.thread_id ? Number(record.thread_id) : 0,
+      relatedEmailIds: record.related_email_ids
+        ? (record.related_email_ids as string[])
+        : [],
       documentType: String(
         record.document_type,
       ) as DocumentUnit['documentType'],
       createdOn: new Date(String(record.created_on)),
+      parentEmailId: record.parent_email_id
+        ? String(record.parent_email_id)
+        : null,
+      embeddingModel: record.embedding_model
+        ? String(record.embedding_model)
+        : null,
+      embeddedOn: new Date(String(record.embedded_on)),
     };
     switch (ret.documentType) {
       case 'email':
-        ret.hrefDocument = `/api/email/${ret.emailId}`;
-        ret.hrefApi = `/api/email/${ret.emailId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}`;
         break;
       case 'attachment':
         ret.hrefDocument = record.file_path
           ? `${record.file_path}${this.SasKey}`
           : undefined;
-        ret.hrefApi = `/api/attachment/${ret.attachmentId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/attachment/${ret.attachmentId}`;
         break;
       case 'note':
-        ret.hrefDocument = `api/email/${ret.emailId}/properties/${ret.emailPropertyId}`;
-        ret.hrefApi = `api/email/${ret.emailId}/properties/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/${ret.emailPropertyId}`;
         break;
       case 'key_point':
-        ret.hrefDocument = `api/email/${ret.emailId}/properties/key-points/${ret.emailPropertyId}`;
-        ret.hrefApi = `api/email/${ret.emailId}/properties/key-points/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/key-points/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/key-points/${ret.emailPropertyId}`;
         break;
       case 'cta':
-        ret.hrefDocument = `api/email/${ret.emailId}/properties/call-to-action/${ret.emailPropertyId}`;
-        ret.hrefApi = `api/email/${ret.emailId}/properties/call-to-action/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/call-to-action/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/call-to-action/${ret.emailPropertyId}`;
         break;
       case 'sentiment':
-        ret.hrefDocument = `api/email/${ret.emailId}/properties/sentiment-analysis/${ret.emailPropertyId}`;
-        ret.hrefApi = `api/email/${ret.emailId}/properties/sentiment-analysis/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/sentiment-analysis/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/sentiment-analysis/${ret.emailPropertyId}`;
         break;
       case 'compliance':
-        ret.hrefDocument = `api/email/${ret.emailId}/properties/compliance-scores/${ret.emailPropertyId}`;
-        ret.hrefApi = `api/email/${ret.emailId}/properties/compliance-scores/${ret.emailPropertyId}`;
+        ret.hrefDocument = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/compliance-scores/${ret.emailPropertyId}`;
+        ret.hrefApi = `${env('NEXT_PUBLIC_HOSTNAME')}/api/email/${ret.emailId}/properties/compliance-scores/${ret.emailPropertyId}`;
         break;
       default:
         break;
@@ -281,8 +341,6 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     return {
       ...ret,
       content: String(record.content),
-      embeddingModel: String(record.embedding_model),
-      embeddedOn: new Date(String(record.embedded_on)),
     };
   };
 }

@@ -14,6 +14,8 @@ const serverEnvSchema = z.object({
   AUTH_GOOGLE_ID: z.string(),
   AUTH_GOOGLE_SECRET: z.string(),
   AUTH_GOOGLE_APIKEY: z.string(),
+  AUTH_HEADER_BYPASS_KEY: z.string().optional(),
+  AUTH_HEADER_BYPASS_VALUE: z.string().optional(),
   AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: z.string().optional(),
   AZURE_STORAGE_CONNECTION_STRING: z.string().min(1),
   AZURE_STORAGE_ACCOUNT_KEY: z.string().min(1),

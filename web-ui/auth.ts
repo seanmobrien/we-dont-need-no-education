@@ -2,11 +2,28 @@ process.env.NODE_PG_FORCE_NATIVE = '0';
 import NextAuth, { Session } from 'next-auth';
 import { Adapter } from 'next-auth/adapters';
 import type { Provider } from 'next-auth/providers';
+import { skipCSRFCheck } from '@auth/core';
+
 import { JWT } from 'next-auth/jwt';
 import Google from 'next-auth/providers/google';
+import CredentialsProvider from 'next-auth/providers/credentials';
 import { isRunningOnEdge, isRunningOnServer } from './lib/site-util/env';
 import { logEvent } from '@/lib/logger';
 import { env } from '@/lib/site-util/env';
+
+const hasSecretHeaderBypass = (req: Request | undefined): boolean => {
+  if (!req) {
+    return false;
+  }
+  const headerName = env('AUTH_HEADER_BYPASS_KEY');
+  const checkHeaderValue = env('AUTH_HEADER_BYPASS_VALUE');
+  if (!headerName || !checkHeaderValue) {
+    return false;
+  }
+  const headerValue = req?.headers.get(headerName);
+  // Disable CSRF validation if Skynet credentials are used
+  return headerValue === checkHeaderValue;
+};
 
 const providers: Provider[] = [
   Google({
@@ -22,6 +39,22 @@ const providers: Provider[] = [
       },
     },
   }),
+  CredentialsProvider({
+    name: 'Secret Header',
+    credentials: {},
+    authorize: async (credentials, req) => {
+      if (hasSecretHeaderBypass(req)) {
+        return {
+          id: 3,
+          account_id: 3,
+          image: '',
+          name: 'secret header',
+          email: 'secret-header@notadomain.org',
+        }; // Return user object with string properties
+      }
+      return null; // Authentication failed
+    },
+  }),
 ];
 
 export const providerMap = providers.map((provider) => {
@@ -32,7 +65,7 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
+export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => {
   let adapter: Adapter | undefined;
 
   if (!isRunningOnEdge() && typeof window === 'undefined') {
@@ -53,6 +86,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
     session: { strategy: 'jwt' },
     adapter,
     providers,
+    skipCSRFCheck: hasSecretHeaderBypass(req) ? skipCSRFCheck : undefined,
     /*
     pages: {
       signIn: '/auth/signin',
@@ -90,10 +124,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
         if (account) {
           token.account_id = Number(account.id!);
         }
+        // Add Skynet credentials provider logic
+        if (!token.user_id && !token.account_id) {
+          token.user_id = 3;
+          token.account_id = 3;
+        }
         return token;
       },
       session({ session, token }: { session: Session; token: JWT }) {
-        session.user!.id = String(token.user_id!);
+        session.user!.id = token.user_id!;
         session.user!.account_id = token.account_id!;
         return session;
       },

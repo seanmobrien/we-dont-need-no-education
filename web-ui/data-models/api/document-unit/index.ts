@@ -1,3 +1,24 @@
+export const DocumentUnitTypeValues = [
+  'email',
+  'attachment',
+  'note',
+  'key_point',
+  'cta',
+  'cta_response',
+  'sentiment',
+  'compliance',
+] as const;
+export type DocumentUnitType = (typeof DocumentUnitTypeValues)[number];
+
+/**
+ * Determines if the given value is a valid `DocumentUnitType`.
+ *
+ * @param check - The value to check.
+ * @returns A boolean indicating whether the value is a valid `DocumentUnitType`.
+ */
+export const isDocumentUnitType = (check: unknown): check is DocumentUnitType =>
+  DocumentUnitTypeValues.includes(check as DocumentUnitType);
+
 /**
  * Represents a summary of a document unit, which can be an email, an attachment, or a property.
  */
@@ -35,15 +56,7 @@ export type DocumentUnitSummary = {
    *
    * @example "email"
    */
-  documentType:
-    | 'email'
-    | 'attachment'
-    | 'note'
-    | 'key_point'
-    | 'cta'
-    | 'sentiment'
-    | 'compliance';
-
+  documentType: DocumentUnitType;
   /**
    * The date and time when the document unit was created.
    * This is important for tracking the freshness of the document unit and its relevance.
@@ -61,6 +74,38 @@ export type DocumentUnitSummary = {
    * This is important for providing easy access to the document unit's API.
    */
   hrefApi?: string;
+
+  /**
+   * The identifier of the thread to which the document unit belongs, if applicable. This can be used to group related emails together.
+   * This is important for understanding the context of the document unit.
+   */
+  threadId: number;
+
+  /**
+   * The identifier of the parent email - eg the email the current email was a reply to - if applicable. This can be used to identify the email to which this document unit belongs.
+   * This is important for understanding the context of the document unit.
+   */
+  parentEmailId: string | null;
+
+  /**
+   * An array containing the identifiers of related emails, if applicable. This can be used to identify other emails that are related to this document unit.
+   * This is important for understanding the context of the document unit.
+   */
+  relatedEmailIds: string[];
+  /**
+   * The name of the model used for embedding the document.
+   * This is important for understanding how the document is represented in vector space.
+   *
+   * @example "text-embedding-ada-002"
+   */
+  embeddingModel: string | null;
+  /**
+   * The date and time when the document was embedded.
+   * This can be useful for tracking the freshness of the embedding and its relevance.
+   *
+   * @example "2023-10-01T12:00:00Z"
+   */
+  embeddedOn: Date | null;
 };
 
 /**
@@ -82,18 +127,4 @@ export type DocumentUnit = DocumentUnitSummary & {
    * @example "This is an example of document content."
    */
   content: string;
-  /**
-   * The name of the model used for embedding the document.
-   * This is important for understanding how the document is represented in vector space.
-   *
-   * @example "text-embedding-ada-002"
-   */
-  embeddingModel: string;
-  /**
-   * The date and time when the document was embedded.
-   * This can be useful for tracking the freshness of the embedding and its relevance.
-   *
-   * @example "2023-10-01T12:00:00Z"
-   */
-  embeddedOn: Date;
 };
