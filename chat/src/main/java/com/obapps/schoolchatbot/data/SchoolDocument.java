@@ -1,0 +1,57 @@
+package com.obapps.schoolchatbot.data;
+
+import dev.langchain4j.data.document.Document;
+import dev.langchain4j.data.document.Metadata;
+import java.util.HashMap;
+
+public class SchoolDocument implements Document {
+
+  private String content;
+  private Metadata metadata;
+
+  public SchoolDocument(DocumentUnit source) {
+    if (source == null) {
+      throw new IllegalArgumentException("source cannot be null");
+    }
+    if (source.unitId <= 0) {
+      throw new IllegalArgumentException("unitId must be a positive integer");
+    }
+    this.content = source.content;
+    var meta = new HashMap<String, Object>();
+    meta.put("id", source.unitId);
+    meta.put("email_id", source.emailId);
+    if (source.parentEmailId != null && !source.parentEmailId.isEmpty()) {
+      meta.put("parent_email_id", source.parentEmailId);
+    }
+    if (source.attachmentId != null) {
+      meta.put("attachment_id", source.attachmentId);
+    }
+    if (source.emailPropertyId != null) {
+      meta.put("email_property_id", source.emailPropertyId);
+    }
+    meta.put("thread_id", source.threadId);
+
+    meta.put("relatedEmailIds", String.join(",", source.relatedEmailIds));
+    meta.put("document_type", source.documentType);
+    meta.put("created_on", source.createdOn);
+
+    meta.put("href_document", source.hrefDocument);
+    meta.put("href_api", source.hrefApi);
+
+    this.metadata = new Metadata(meta);
+  }
+
+  public String id() {
+    return this.metadata.getString("id");
+  }
+
+  @Override
+  public String text() {
+    return content;
+  }
+
+  @Override
+  public Metadata metadata() {
+    return metadata;
+  }
+}
