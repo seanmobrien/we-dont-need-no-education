@@ -13,25 +13,16 @@ public class Prompts {
     "A Key Point of Interest is a specific statement or topic in the email that is relevant to legal or policy obligations, " +
     "or otherwise warrants further review, investigation, or possible legal action-e.g.:\n" +
     "\n" +
-    "- Allegations of harassment or violence.\n" +
-    "- Concerns about safety or compliance.\n" +
+    "- Allegations of harassment or violence, or other concerns about safety.\n" +
     "- Statements about the district's obligations or responsibilities\n" +
     "- Statements about the district's policies or procedures\n" +
-    "- Statements about the district's response to a situation\n" +
-    "- Statements about the district's actions or inactions\n" +
+    "- Statements about the district's act6ions or inactions in response to a situation\n" +
     "- Statements speaking towards the district's compliance with laws or policies\n" +
-    "- Statements about the district's obligations to maintain records\n" +
-    "- Statements about the district's obligations to respond to data requests\n" +
+    "- Statements about the district's obligations to maintain records or respond to data requests\n" +
     "- Statements about the district's obligations to investigate harassment or violence\n" +
-    "- Any other significant issues or topics that may require further attention\n" +
-    "When a Key Point is identifed, use the appropriate function to add it to our database for further analysis.\n" +
-    "If there is a relationship between a previously identified Key Point ('responds to', 'supports', 'contradicts', etc.), " +
-    "use the appropriate function to add that relationship to our database.\n  If additional information is needed to fully " +
-    "evaluate compliance or intent, request that information using available functions.  If more information is still needed, " +
-    "use the availalbe function to attach a note to the record stating what is needed.\n" +
-    "You are extremely throrough.  Identify **all** matching Key Points in the communication, even if there are more than 10.  If you find a Key Point " +
-    "that was already identified during a previous pass over this record (e.g. the 'from_this_message' flag is set to true), " +
-    "do not re-add it and continue your analysis for new Key Points.\n",
+    "- Any other significant issues or topics that may require further attention\n\n" +
+    "When a Key Point is identifed, use the 'addKeyPointToDatabase()' tool to add it to our database for further analysis.\n" +
+    getToolUsage("Key Points"),
     2,
     "**This phase is focused on identifying calls to action (CTAs) and CTA Responsive Actions.**\n" + //
     "In general, CTA's originate from communication sent by a parent, and Responsive Actions originate from communication " +
@@ -45,10 +36,23 @@ public class Prompts {
     "- \"Please correct this record...\"\n" +
     "- \"This is not correct...\"\n" +
     "\n" + //
-    "If CTAs are **implied** (e.g., “I still don't understand what happened”), flag them as `\"inferred\": true`.  Simalarly, " +
-    "If a statement is relevant to an open call to action but not explicitly responsive it should also be flagged as inferred." +
-    "When a CTA or Responsive Action is identified, use the appropriate function to add it to our database for further analysis.\n"
+    "If CTAs are **implied** (e.g., “I still don't understand what happened”), flag them as `\"inferred\": true`.  " +
+    "If a statement is relevant to an open CTA but not explicitly responsive it should also be flagged as inferred.  " +
+    "When a CTA or Responsive Action is identified, use the appropriate function to add it to our database for further analysis.\n" +
+    getToolUsage("CTA or Responsive Action")
   );
+
+  protected static String getToolUsage(String friendlyName) {
+    return String.format(
+      "If additional information is needed to fully evaluate compliance or intent, request that information using the avalable tools.  " +
+      "If more information is still needed, use the 'addProcessingNote()' tool to attach a note explaining the need.\n\n" +
+      "You are extremely throrough.  Identify **all** matching %s in the communication, even if there are more than 10.  If you find a %s " +
+      "that is present in the **Identified %s** section, do not re-add it and instead continue analysis to identify other new records.\n",
+      friendlyName,
+      friendlyName,
+      friendlyName
+    );
+  }
 
   public static String getPromptForPhase(Integer phase) {
     var promptBuilder = new StringBuilder();
@@ -73,7 +77,8 @@ public class Prompts {
           " task is Phase [%d] of a 5-phase legal review. Each phase focuses on a different compliance dimension.\n",
           phase
         )
-      );
+      )
+      .append(getPolicyPrompt());
     var phaseUniquePrompt = PHASE_PROMPTS.get(phase);
     if (phaseUniquePrompt != null) {
       promptBuilder.append(phaseUniquePrompt);
@@ -86,6 +91,49 @@ public class Prompts {
     promptBuilder.append("\n\n");
     promptBuilder.append(getRecordStructure());
     return promptBuilder.toString();
+  }
+
+  protected static String getPolicyPrompt() {
+    var builder = new StringBuilder();
+    builder.append(
+      "** Available Resources **\n" +
+      "The following district policies and up-to-date state and federal laws are available to assit you in your review:\n" +
+      "  - Policy 103: Complaints-Students, Employees, Parents, Other Persons\n" + //
+      "  - Policy 1920: PLHSStudent Handbook\n" + //
+      "  - Policy 211: Criminal or Civil Action Against School District, School Board Member, Employee or Student\n" + //
+      "  - Policy 301: School District Administration\n" + //
+      "  - Policy 304: Superintendent Contract, Duties and Evaluation\n" + //
+      "  - Policy 306: Administrator Code of Ethics\n" + //
+      "  - Policy 403: Discipline, Suspension and Dismissal of School District Employees\n" + //
+      "  - Policy 406: Public and Private Personnel Data\n" + //
+      "  - Policy 407: Safety\n" + //
+      "  - Policy 414: Mandated Reporting\n" + //
+      "  - Policy 501: Weapons\n" + //
+      "  - Policy 504: Procedural Safeguards\n" + //
+      "  - Policy 506: Student Discipline\n" + //
+      "  - Policy 506: Bullying Prohibition\n" + //
+      "  - Policy 515: Protection and Privacy of Student Records\n" + //
+      "  - Policy 521: Grievance Procedure\n" + //
+      "  - Policy 522: Title IX Sex Nondiscrimination Policy, Grievance Procedure and Process\n" + //
+      "  - Policy 524: Electronic Technologies Acceptable Use Policy\n" + //
+      "  - Policy 526: Harrassment Violence Report Form\n" + //
+      "  - Policy 722: Public Data Requests\n" +
+      "  - MN Statute 13: Data Practices\n" + //
+      "  - MN Statute 121.A: Student Rights Responsibilities and Behaviors\n" + //
+      "  - MN Statute 122.A: Teachers and Educators\n" + //
+      "  - MN Statute 123.B: School District Powers and Duties\n" + //
+      "  - MN Statute 125.B: Education and Technology\n" + //
+      "  - MN Statute 127.A: Admin of Education\n" + //
+      "  - MN Statute 363.A: Human Rights\n" + //
+      "  - MN Statute 626.556: MN Statute 626.556\"" +
+      "  - FERPA: Family Educational Rights and Privacy Act\n" +
+      "  - Title IX: Title IX of the Education Amendments of 1972\n" +
+      "\nIf additional legal policy information is needed, you may call the `lookupPolicySummary` to retrieve it. \n" +
+      "When analyzing a situation for legal compliance, you should rely on **Available Resources** when available. If " +
+      "the policy is listed, use the `lookupPolicySummary()` tool to retrieve the official description before drawing conclusions.\n" +
+      "\n"
+    );
+    return builder.toString();
   }
 
   protected static String getRecordStructure() {
@@ -103,13 +151,6 @@ public class Prompts {
         Strings.getRecordOutput(
           "Sample JSON Record",
           "{ \"field_name\": \"value\" }"
-        )
-      )
-      .append("\n")
-      .append(
-        Strings.getRecordOutput(
-          "Sample Text Record",
-          "This block of text can be referred to as 'Sample Text Record'."
         )
       )
       .append("\n\n")

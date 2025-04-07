@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.data;
 
 import com.obapps.schoolchatbot.util.Db;
+import com.obapps.schoolchatbot.util.Strings;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -9,7 +10,6 @@ import java.util.UUID;
 
 public class KeyPoint extends DocumentProperty {
 
-  private Integer policyId;
   private Double relevance;
   private double compliance;
   private Integer severityRanking;
@@ -41,7 +41,7 @@ public class KeyPoint extends DocumentProperty {
    */
   public KeyPoint() {
     super();
-    setPropertyType(9);
+    setPropertyType(DocumentPropertyType.KnownValues.KeyPoint);
     setInferred(false);
   }
 
@@ -52,7 +52,7 @@ public class KeyPoint extends DocumentProperty {
    */
   public KeyPoint(Map<String, Object> stateBag) {
     super(stateBag);
-    Db.saveIntFromStateBag(stateBag, "policy_id", this::setPolicyId);
+    setPropertyType(DocumentPropertyType.KnownValues.KeyPoint);
     Db.saveDoubleFromStateBag(stateBag, "relevance", this::setRelevance);
     Db.saveDoubleFromStateBag(stateBag, "compliance", this::setCompliance);
     Db.saveIntFromStateBag(
@@ -66,24 +66,7 @@ public class KeyPoint extends DocumentProperty {
       this::setPolicyBasis
     );
     Db.saveStringArrayFromStateBag(stateBag, "tags", this::setTags);
-  }
-
-  /**
-   * Gets the policy ID associated with this KeyPoint.
-   *
-   * @return The policy ID as an Integer.
-   */
-  public Integer getPolicyId() {
-    return policyId;
-  }
-
-  /**
-   * Sets the policy ID for this KeyPoint.
-   *
-   * @param policyId The policy ID to set.
-   */
-  public void setPolicyId(Integer policyId) {
-    this.policyId = policyId;
+    Db.saveBooleanFromStateBag(stateBag, "inferred", this::setInferred);
   }
 
   /**
@@ -178,12 +161,6 @@ public class KeyPoint extends DocumentProperty {
 
   @SuppressWarnings("unchecked")
   @Override
-  public KeyPoint addToDb() throws SQLException {
-    return addToDb(Db.getInstance());
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
   public KeyPoint addToDb(Db db) throws SQLException {
     var propertyRecord = super.addToDb(db);
     if (propertyRecord == null || getPropertyId() == null) {
@@ -192,12 +169,10 @@ public class KeyPoint extends DocumentProperty {
 
     var records = db.executeUpdate(
       "INSERT INTO key_points_details " +
-      "(property_id, policy_id, relevance, compliance, severity_ranking, inferred, policy_basis, tags) " +
+      "(property_id, relevance, compliance, severity_ranking, inferred, policy_basis, tags) " +
       "VALUES " +
-      "(?,?,?,?,?,?,?,?)",
+      "(?,?,?,?,?,?,?)",
       getPropertyId(),
-      //policyId < 1 ? null : policyId,
-      null,
       relevance,
       compliance,
       severityRanking,
@@ -236,7 +211,8 @@ public class KeyPoint extends DocumentProperty {
   public static KeyPoint loadKeyPoint(Db db, UUID emailPropertyId)
     throws SQLException {
     var record = db.selectRecords(
-      "SELECT ep.*, kp.policy_id, kp.relevance, kp.compliance " +
+      "SELECT ep.property_value, ep.email_property_type_id, ep.property_id, " +
+      "ep.document_id, ep.created_on, kp.* " +
       "FROM document_property ep " +
       "JOIN key_points_details kp ON ep.property_id = kp.property_id " +
       "WHERE ep.property_id = ?",
@@ -248,20 +224,70 @@ public class KeyPoint extends DocumentProperty {
     return null;
   }
 
+  /**
+   * Builder class for constructing instances of {@link KeyPoint}.
+   * This class extends {@link DocumentPropertyBuilderBase} to provide
+   * additional methods specific to {@link KeyPoint}.
+   */
   public static class KeyPointBuilder
-    extends DocumentPropertyBuilderBase<KeyPoint, KeyPointBuilder> {
+    extends KeyPointBuilderBase<KeyPoint, KeyPointBuilder> {
 
-    protected KeyPointBuilder() {
+    public KeyPointBuilder() {
       super(new KeyPoint());
     }
+  }
 
-    protected KeyPointBuilder(KeyPoint target) {
+  /**
+   * Base builder class for constructing instances of {@link KeyPoint}.
+   * This class extends {@link DocumentPropertyBuilderBase} to provide
+   * additional methods specific to {@link KeyPoint}.  It supports creating
+   * a builder class for objects that are or inherit from {@link KeyPoint}.
+   */
+  public static class KeyPointBuilderBase<
+    T1 extends KeyPoint, B extends KeyPointBuilderBase<T1, B>
+  >
+    extends DocumentPropertyBuilderBase<T1, B> {
+
+    /**
+     * Constructor for creating a new {@link KeyPointBuilder} instance
+     * with an existing {@link KeyPoint} target.
+     *
+     * @param target The existing {@link KeyPoint} instance to modify.
+     */
+    protected KeyPointBuilderBase(T1 target) {
       super(target);
     }
 
-    public <B extends KeyPointBuilder> B emailProperty(
-      DocumentProperty emailProperty
-    ) {
+    /**
+     * Copies the properties from the given {@link KeyPoint} instance to the current builder instance.
+     *
+     * @param keyPoint the {@link KeyPoint} instance whose properties are to be copied
+     * @param <B> the type of the builder extending {@link KeyPointBuilder}
+     * @return the current builder instance with the copied properties
+     */
+    public <B2 extends B> B2 copy(KeyPoint keyPoint) {
+      return self()
+        .documentId(target.getDocumentId())
+        .createdOn(target.getCreatedOn())
+        .propertyType(target.getPropertyType())
+        .propertyValue(target.getPropertyValue())
+        .inferred(target.getInferred())
+        .relevance(target.getRelevance())
+        .compliance(target.getCompliance())
+        .severity(target.getSeverityRanking())
+        .tags(target.getTags())
+        .policyBasis(target.getPolicyBasis())
+        .createdOn(target.getCreatedOn());
+    }
+
+    /**
+     * Sets the email property of the {@link KeyPoint} using a {@link DocumentProperty}.
+     *
+     * @param emailProperty The {@link DocumentProperty} containing email-related data.
+     * @param <B>           The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 emailProperty(DocumentProperty emailProperty) {
       return self()
         .documentId(emailProperty.getDocumentId())
         .propertyId(emailProperty.getPropertyId())
@@ -270,53 +296,116 @@ public class KeyPoint extends DocumentProperty {
         .createdOn(emailProperty.getCreatedOn());
     }
 
-    public <B extends KeyPointBuilder> B policyId(Integer policyId) {
-      target.setPolicyId(policyId);
-      return self();
-    }
-
-    public <B extends KeyPointBuilder> B inferred(Boolean inferred) {
+    /**
+     * Sets whether the {@link KeyPoint} is inferred.
+     *
+     * @param inferred A {@link Boolean} indicating if the key point is inferred.
+     * @param <B>      The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 inferred(Boolean inferred) {
       target.setInferred(inferred);
       return self();
     }
 
-    public <B extends KeyPointBuilder> B relevance(Double relevance) {
+    /**
+     * Sets the relevance score of the {@link KeyPoint}.
+     *
+     * @param relevance A {@link Double} representing the relevance score.
+     * @param <B>       The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 relevance(Double relevance) {
       target.setRelevance(relevance);
       return self();
     }
 
-    public <B extends KeyPointBuilder> B compliance(double compliance) {
+    /**
+     * Sets the compliance score of the {@link KeyPoint}.
+     *
+     * @param compliance A {@code double} representing the compliance score.
+     * @param <B>        The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 compliance(double compliance) {
       target.setCompliance(compliance);
       return self();
     }
 
-    public <B extends KeyPointBuilder> B severity(Integer severity) {
+    /**
+     * Sets the severity ranking of the {@link KeyPoint}.
+     *
+     * @param severity An {@link Integer} representing the severity ranking.
+     * @param <B>      The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 severity(Integer severity) {
       target.setSeverityRanking(severity);
       return self();
     }
 
-    public <B extends KeyPointBuilder> B tags(String tags) {
-      var tagList = List.of(Objects.requireNonNullElse(tags, "").split(","));
+    /**
+     * Sets the tags for the {@link KeyPoint} using a comma-separated string.
+     *
+     * @param tags A {@link String} containing comma-separated tags.
+     * @param <B>  The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 tags(String tags) {
+      var tagList = Strings.commasToList(Objects.requireNonNullElse(tags, ""));
       return tags(tagList);
     }
 
-    public <B extends KeyPointBuilder> B tags(List<String> tags) {
+    /**
+     * Sets the tags for the {@link KeyPoint} using a list of strings.
+     *
+     * @param tags A {@link List} of {@link String} representing the tags.
+     * @param <B>  The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 tags(List<String> tags) {
       target.setTags(tags);
       return self();
     }
 
-    public <B extends KeyPointBuilder> B policyBasis(String tags) {
-      var tagList = List.of(Objects.requireNonNullElse(tags, "").split(","));
-      return policyBasis(tagList);
+    /**
+     * Sets the policy basis for the {@link KeyPoint} using a comma-separated string.
+     *
+     * @param policy A {@link String} containing comma-separated policy basis.
+     * @param <B>    The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 policyBasis(String policy) {
+      var policies = Strings.commasToList(
+        Objects.requireNonNullElse(policy, "")
+      );
+      return policyBasis(policies);
     }
 
-    public <B extends KeyPointBuilder> B policyBasis(List<String> tags) {
-      target.setPolicyBasis(tags);
+    /**
+     * Sets the policy basis for the {@link KeyPoint} using a list of strings.
+     *
+     * @param policy A {@link List} of {@link String} representing the policy basis.
+     * @param <B>    The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 policyBasis(List<String> policy) {
+      target.setPolicyBasis(policy);
       return self();
     }
   }
 
-  public static KeyPointBuilder builder() {
+  /**
+   * Creates and returns a new instance of the {@link KeyPointBuilder}.
+   * This method provides a convenient way to construct a {@link KeyPoint} object
+   * using the builder pattern.
+   *
+   * @return a new {@link KeyPointBuilder} instance.
+   */
+  public static KeyPointBuilderBase<
+    ? extends KeyPoint,
+    ? extends KeyPointBuilderBase<?, ?>
+  > builder() {
     return new KeyPointBuilder();
   }
 }

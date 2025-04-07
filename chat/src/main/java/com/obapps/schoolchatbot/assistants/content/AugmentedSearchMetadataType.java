@@ -14,6 +14,8 @@ public class AugmentedSearchMetadataType {
     public static final String document_id = "document_id";
     public static final String policy_dscr = "policy_description";
     public static final String compliance = "compliance_rating";
+    public static final String tags = "tags";
+    public static final String current_document = "current_document";
   }
 
   public static class EmailMetadata {

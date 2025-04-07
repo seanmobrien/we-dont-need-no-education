@@ -35,20 +35,27 @@ public class KeyPointAnalysis extends DocumentChatAssistant {
     try {
       var promptBuilder = new StringBuilder();
       promptBuilder.append(Prompts.getPromptForPhase(this.getPhase()));
-
-      detectedPoints = Content.KeyPoints.size();
+      var keyPoints = Content.KeyPoints.stream()
+        .filter(k -> k.isFromCurrentDocument())
+        .map(x -> String.format("  - %s", x.getObject().getPropertyValue()))
+        .toList();
+      detectedPoints = keyPoints.size();
+      var recordBuilder = new StringBuilder();
       if (detectedPoints > 0) {
-        promptBuilder
+        recordBuilder
           .append("You have already identified the following Key Points:\n")
-          .append(
-            Strings.getRecordOutput(
-              "Key Points",
-              Content.toJsonArray(Content.KeyPoints)
-            )
-          );
+          .append(String.join("\n", keyPoints));
       } else {
-        promptBuilder.append("You have not yet identified any Key Points.\n");
+        promptBuilder.append(
+          "No Key Points have been found on this record yet.\n"
+        );
       }
+      promptBuilder.append(
+        Strings.getRecordOutput(
+          "Identified Key Points",
+          recordBuilder.toString()
+        )
+      );
       promptBuilder.append("\n");
       promptBuilder.append(Content.getActiveDocumentContent().getPromptText());
       promptBuilder.append("\n\n");

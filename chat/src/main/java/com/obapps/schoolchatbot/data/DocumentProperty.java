@@ -101,10 +101,6 @@ public class DocumentProperty {
     }
   }
 
-  public <T extends DocumentProperty> T addToDb() throws SQLException {
-    return addToDb(Db.getInstance());
-  }
-
   @SuppressWarnings("unchecked")
   public <T extends DocumentProperty> T addToDb(Db db) throws SQLException {
     if (propertyId == null) {
@@ -126,15 +122,17 @@ public class DocumentProperty {
   }
 
   public static DocumentProperty addManualReview(
+    Db db,
     Integer documentId,
     Exception e,
     String sender,
     Object... args
   ) {
-    return addManualReview(documentId, null, e, sender, args);
+    return addManualReview(db, documentId, null, e, sender, args);
   }
 
   public static DocumentProperty addManualReview(
+    Db db,
     Integer documentId,
     String message,
     Exception e,
@@ -168,7 +166,7 @@ public class DocumentProperty {
         )
         .createdOn(LocalDateTime.now())
         .build()
-        .addToDb();
+        .addToDb(db);
     } catch (Exception ex) {
       LoggerFactory.getLogger(DocumentProperty.class).error(
         "Error adding manual review property to document: " + documentId,

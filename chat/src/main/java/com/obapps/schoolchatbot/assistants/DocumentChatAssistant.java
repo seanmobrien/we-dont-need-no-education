@@ -94,7 +94,12 @@ public abstract class DocumentChatAssistant
     UserMessage userMessage
   ) {
     Content = AugmentedContentList.from(sourceContent);
-    return generatePrompt(userMessage);
+    var prompt = generatePrompt(userMessage);
+    log.info(
+      "Generated Prompt: {}",
+      prompt.hasSingleText() ? prompt.singleText() : prompt.toString() // I don't know if this will actually work, so far we're always returning a single text
+    );
+    return prompt;
   }
 
   /**

@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -682,8 +683,14 @@ public class Db {
     }
     List<String> value;
     try {
-      if (v1 instanceof String[]) {
-        value = List.of((String[]) v1);
+      if (v1 instanceof PgArray) {
+        var pgArray = (PgArray) v1;
+        value = List.of((String[]) pgArray.getArray());
+      } else if (v1 instanceof Array) {
+        var array = (Array) v1;
+        value = List.of((String[]) array.getArray());
+      } else if (v1 instanceof String) {
+        value = List.of(v1.toString());
       } else if (v1 instanceof List) {
         value = new ArrayList<>();
         for (Object obj : (List<?>) v1) {

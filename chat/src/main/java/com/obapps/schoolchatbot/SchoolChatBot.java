@@ -175,4 +175,8 @@ public class SchoolChatBot {
       System.out.println("Thank you for using the School Chat Bot. Goodbye!");
     }
   }
+
+  public static String hello() {
+    return "world!";
+  }
 }

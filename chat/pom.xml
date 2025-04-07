@@ -14,7 +14,25 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.junit</groupId>
+				<artifactId>junit-bom</artifactId>
+				<version>5.12.1</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+
     <dependencies>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20230618</version> <!-- or latest -->
+        </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-azure-open-ai</artifactId>
@@ -61,19 +79,7 @@
             <version>3.2.0</version>
         </dependency>
         
-<!--
-        <dependency>
-            <groupId>org.tinylog</groupId>
-            <artifactId>tinylog-impl</artifactId>
-            <version>2.6.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.tinylog</groupId>
-            <artifactId>slf4j-tinylog</artifactId>
-            <version>2.6.2</version>
-        </dependency>
-        -->
-        
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
@@ -104,7 +110,27 @@
             <artifactId>logback-classic</artifactId>
             <version>1.5.12</version>
         </dependency>
+
+        
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>5.16.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>5.16.1</version>
+            <scope>test</scope>
+        </dependency>    
     </dependencies>
+
 <!--
   <plugins>
     <plugin>
@@ -114,5 +140,33 @@
     </plugin>
   </plugins>
   -->
-  
+  	<build>
+		<plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.5.3</version>                
+                <configuration>
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                </configuration>
+			</plugin>
+            <!-- <plugin>
+                <groupId>com.hubspot.maven.plugins</groupId>
+                <artifactId>prettier-maven-plugin</artifactId>
+                <version>0.8</version>
+            </plugin> -->
+            
+		</plugins>
+	</build>
 </project>

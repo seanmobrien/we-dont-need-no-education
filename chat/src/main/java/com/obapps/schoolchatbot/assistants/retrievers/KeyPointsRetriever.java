@@ -1,7 +1,7 @@
 package com.obapps.schoolchatbot.assistants.retrievers;
 
 import com.obapps.schoolchatbot.assistants.content.AugmentedSearchMetadataType;
-import com.obapps.schoolchatbot.data.HistoricKeyPoint;
+import com.obapps.schoolchatbot.data.repositories.HistoricKeyPointRepository;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.query.Query;
 import java.sql.SQLException;
@@ -11,8 +11,17 @@ import java.util.List;
 
 public class KeyPointsRetriever extends ContentRetrieverBase {
 
+  private HistoricKeyPointRepository keyPointRepository;
+
   public KeyPointsRetriever() {
+    this(null);
+  }
+
+  public KeyPointsRetriever(HistoricKeyPointRepository repository) {
     super(KeyPointsRetriever.class);
+    keyPointRepository = repository == null
+      ? new HistoricKeyPointRepository()
+      : repository;
   }
 
   @Override
@@ -23,7 +32,8 @@ public class KeyPointsRetriever extends ContentRetrieverBase {
       return ret;
     }
     try {
-      var keyPoints = HistoricKeyPoint.getKeyPointHistoryForDocument(input);
+      var keyPoints =
+        this.keyPointRepository.getKeyPointHistoryForDocument(input);
       if (keyPoints != null) {
         for (var keyPoint : keyPoints) {
           var meta = new HashMap<String, Object>();
@@ -41,11 +51,19 @@ public class KeyPointsRetriever extends ContentRetrieverBase {
           );
           meta.put(
             AugmentedSearchMetadataType.KeyPoint.policy_dscr,
-            keyPoint.getPolicyDisplayName()
+            String.join(", ", keyPoint.getPolicyBasis())
+          );
+          meta.put(
+            AugmentedSearchMetadataType.KeyPoint.tags,
+            String.join(", ", keyPoint.getTags())
           );
           meta.put(
             AugmentedSearchMetadataType.KeyPoint.compliance,
             keyPoint.getCompliance()
+          );
+          meta.put(
+            AugmentedSearchMetadataType.KeyPoint.current_document,
+            keyPoint.isFromThisMessage() ? 1 : 0
           );
           ret.add(CreateContent(keyPoint.toJson(), meta));
         }

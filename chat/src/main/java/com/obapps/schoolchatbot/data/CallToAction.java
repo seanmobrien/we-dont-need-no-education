@@ -104,12 +104,6 @@ public class CallToAction extends DocumentProperty {
 
   @SuppressWarnings("unchecked")
   @Override
-  public CallToAction addToDb() throws SQLException {
-    return addToDb(Db.getInstance());
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
   public CallToAction addToDb(Db db) throws SQLException {
     super.addToDb(db);
     db.executeUpdate(

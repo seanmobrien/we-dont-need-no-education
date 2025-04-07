@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.data;
 
 import com.obapps.schoolchatbot.util.Db;
+import com.obapps.schoolchatbot.util.Strings;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,6 @@ import java.util.Map;
 public class HistoricKeyPoint extends KeyPoint {
 
   private Boolean fromThisMessage;
-  private String policyDisplayName;
 
   /**
    * Checks if the key point originates from the current message.
@@ -57,24 +57,6 @@ public class HistoricKeyPoint extends KeyPoint {
    */
   public void setFromThisMessage(boolean fromThisMessage) {
     this.fromThisMessage = fromThisMessage;
-  }
-
-  /**
-   * Sets the display name of the policy.
-   *
-   * @param fromThisMessage the new display name to be set for the policy
-   */
-  public void setPolicyDisplayName(String fromThisMessage) {
-    this.policyDisplayName = fromThisMessage;
-  }
-
-  /**
-   * Retrieves the display name of the policy.
-   *
-   * @return the policy display name as a {@code String}.
-   */
-  public String getPolicyDisplayName() {
-    return this.policyDisplayName;
   }
 
   /**
@@ -99,30 +81,7 @@ public class HistoricKeyPoint extends KeyPoint {
       "from_this_message",
       this::setFromThisMessage
     );
-    Db.saveFromStateBag(
-      stateBag,
-      "impacted_policy",
-      this::setPolicyDisplayName
-    );
-    Db.saveBooleanFromStateBag(
-      stateBag,
-      "from_this_message",
-      this::setFromThisMessage
-    );
     Db.saveFromStateBag(stateBag, "key_note", this::setPropertyValue);
-  }
-
-  /**
-   * Retrieves the history of key points associated with a specific document.
-   *
-   * @param documentId the ID of the document for which the key point history is to be retrieved
-   * @return a list of {@link HistoricKeyPoint} objects representing the key point history for the specified document
-   * @throws SQLException if a database access error occurs
-   */
-  public static List<HistoricKeyPoint> getKeyPointHistoryForDocument(
-    Integer documentId
-  ) throws SQLException {
-    return getKeyPointHistoryForDocument(Db.getInstance(), documentId);
   }
 
   /**
@@ -137,11 +96,8 @@ public class HistoricKeyPoint extends KeyPoint {
     Db db,
     Integer documentId
   ) throws SQLException {
-    // TODO: Fix
-    return new ArrayList<HistoricKeyPoint>();
-    /*
     var records = db.selectRecords(
-      "SELECT * FROM document_unit_key_point_history(?)",
+      "SELECT * FROM document_unit_key_point_history(?, true)",
       documentId
     );
     var ret = new ArrayList<HistoricKeyPoint>();
@@ -150,10 +106,106 @@ public class HistoricKeyPoint extends KeyPoint {
       ret.add(keyPoint);
     }
     return ret;
-    */
   }
 
-  public static class HistoricKeyPointBuilder extends KeyPointBuilder {
+  /**
+   * Searches for key points in the database based on the provided criteria.
+   *
+   * @param matchFromPolicyBasis A comma-delimited list of policy basis strings to match against.
+   *                             If null or empty, this criterion is ignored.
+   * @param matchFromTags A comma-delimited list of tags to match against.
+   *                      If null or empty, this criterion is ignored.
+   * @param matchFromSummary A summary string to match against.
+   *                         If null or empty, this criterion is ignored.
+   * @param excludeInferred A boolean indicating whether to exclude inferred key points.
+   * @param excludeDocumentId An integer representing the document ID to exclude from the results.
+   *                          If less than 1, this criterion is ignored.
+   * @return A list of {@code HistoricKeyPoint} objects that match the search criteria.
+   * @throws SQLException If a database access error occurs.
+   */
+  public static List<HistoricKeyPoint> searchForKeyPoints(
+    Db db,
+    String matchFromPolicyBasis,
+    String matchFromTags,
+    String matchFromSummary,
+    Boolean excludeInferred,
+    Integer excludeDocumentId
+  ) throws SQLException {
+    var matchFromPolicyBasisList = Strings.commasToList(matchFromPolicyBasis);
+    var matchFromTagsList = Strings.commasToList(matchFromTags);
+    return searchForKeyPoints(
+      db,
+      matchFromPolicyBasisList,
+      matchFromTagsList,
+      matchFromSummary,
+      excludeInferred,
+      excludeDocumentId
+    );
+  }
+
+  /**
+   * Searches for key points in the database based on the provided criteria.
+   *
+   * @param db The database instance to use for the query.
+   * @param matchFromPolicyBasis A list of policy basis strings to match against.
+   *                             If null or empty, this criterion is ignored.
+   * @param matchFromTags A list of tags to match against.
+   *                      If null or empty, this criterion is ignored.
+   * @param matchFromSummary A summary string to match against.
+   *                         If null or empty, this criterion is ignored.
+   * @param excludeInferred A boolean indicating whether to exclude inferred key points.
+   * @param excludeDocumentId An integer representing the document ID to exclude from the results.
+   *                          If less than 1, this criterion is ignored.
+   * @return A list of {@code HistoricKeyPoint} objects that match the search criteria.
+   * @throws SQLException If a database access error occurs.
+   */
+  public static List<HistoricKeyPoint> searchForKeyPoints(
+    Db db,
+    List<String> matchFromPolicyBasis,
+    List<String> matchFromTags,
+    String matchFromSummary,
+    Boolean excludeInferred,
+    Integer excludeDocumentId
+  ) throws SQLException {
+    var records = db.selectRecords(
+      "SELECT * FROM document_unit_key_point_search(" +
+      "matchPolicy => ?, matchTag => ?, matchSummary => ?," +
+      "excludeInferred => ?, excludeDocumentId => ?" +
+      ")",
+      matchFromPolicyBasis == null
+        ? null
+        : matchFromPolicyBasis.size() < 1 ? null : matchFromPolicyBasis,
+      matchFromTags == null
+        ? null
+        : matchFromTags.size() < 1 ? null : matchFromTags,
+      matchFromSummary == null
+        ? null
+        : matchFromSummary.length() < 1 ? null : matchFromSummary,
+      excludeInferred,
+      excludeDocumentId < 1 ? -1 : excludeDocumentId
+    );
+    var ret = new ArrayList<HistoricKeyPoint>();
+    for (var record : records) {
+      var keyPoint = new HistoricKeyPoint(record);
+      ret.add(keyPoint);
+    }
+    return ret;
+  }
+
+  /**
+   * Builder class for creating and configuring instances of {@link HistoricKeyPoint}.
+   * This builder extends {@link KeyPointBuilder} and provides additional methods
+   * specific to {@link HistoricKeyPoint}.
+   *
+   * <p>Usage example:</p>
+   * <pre>{@code
+   * HistoricKeyPoint historicKeyPoint = HistoricKeyPointBuilder.builder()
+   *     .fromThisMessage(true)
+   *     .build();
+   * }</pre>
+   */
+  public static class HistoricKeyPointBuilder
+    extends KeyPointBuilderBase<HistoricKeyPoint, HistoricKeyPointBuilder> {
 
     protected HistoricKeyPointBuilder() {
       super(new HistoricKeyPoint());
@@ -164,16 +216,18 @@ public class HistoricKeyPoint extends KeyPoint {
       return (HistoricKeyPointBuilder) self();
     }
 
-    public HistoricKeyPointBuilder policyDisplayName(String policyDisplayName) {
-      ((HistoricKeyPoint) target).setPolicyDisplayName(policyDisplayName);
-      return (HistoricKeyPointBuilder) self();
-    }
-
     public static HistoricKeyPointBuilder builder() {
       return new HistoricKeyPointBuilder();
     }
   }
 
+  /**
+   * Creates and returns a new instance of the {@link HistoricKeyPointBuilder}.
+   * This method provides a convenient way to construct a {@link HistoricKeyPoint}
+   * object using the builder pattern.
+   *
+   * @return a new instance of {@link HistoricKeyPointBuilder}.
+   */
   public static HistoricKeyPointBuilder builder() {
     return new HistoricKeyPointBuilder();
   }

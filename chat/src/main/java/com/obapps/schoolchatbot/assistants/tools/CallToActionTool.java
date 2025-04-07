@@ -1,7 +1,9 @@
 package com.obapps.schoolchatbot.assistants.tools;
 
 import com.obapps.schoolchatbot.assistants.DocumentChatAssistant;
+import com.obapps.schoolchatbot.assistants.services.JustInTimePolicyLookup;
 import com.obapps.schoolchatbot.data.*;
+import com.obapps.schoolchatbot.util.Db;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import java.sql.SQLException;
@@ -11,8 +13,30 @@ import java.util.UUID;
 
 public class CallToActionTool extends MessageTool {
 
+  private final Db _innerDb;
+  private final JustInTimePolicyLookup policyLookup;
+
   public CallToActionTool(DocumentChatAssistant content) {
+    this(content, null, null);
+  }
+
+  public CallToActionTool(
+    DocumentChatAssistant content,
+    Db db,
+    JustInTimePolicyLookup policyLookup
+  ) {
     super(content);
+    this._innerDb = db;
+    this.policyLookup = policyLookup == null
+      ? new JustInTimePolicyLookup()
+      : policyLookup;
+  }
+
+  private Db db() throws SQLException {
+    if (_innerDb == null) {
+      return Db.getInstance();
+    }
+    return _innerDb;
   }
 
   @Tool(
@@ -78,23 +102,28 @@ public class CallToActionTool extends MessageTool {
       if (policyId > 0) {
         builder.policyId(policyId);
       }
-      builder.build().addToDb();
+      builder.build().addToDb(db());
     } catch (SQLException ex) {
       Colors.Set(c -> c.RED);
       log.error(
         "Unexpected SQL failure recording key point.  Details: " + action,
         ex
       );
-      DocumentProperty.addManualReview(
-        msg.getDocumentId(),
-        ex,
-        "addCallToActionToDatabase",
-        action,
-        relevantPolicy,
-        dueDate,
-        compliance_rating_current,
-        compliance_rating_current_reasons
-      );
+      try {
+        DocumentProperty.addManualReview(
+          db(),
+          msg.getDocumentId(),
+          ex,
+          "addCallToActionToDatabase",
+          action,
+          relevantPolicy,
+          dueDate,
+          compliance_rating_current,
+          compliance_rating_current_reasons
+        );
+      } catch (SQLException e2) {
+        // Supresss - we're already in an error state
+      }
       Colors.Reset();
       return;
     }
@@ -162,7 +191,7 @@ public class CallToActionTool extends MessageTool {
         .complianceAggregate(compliance_rating_aggregate)
         .complianceAggregateReasons(compliance_rating_aggregate_reasons)
         .build()
-        .addToDb();
+        .addToDb(db());
       addDetectedPoint();
     } catch (SQLException ex) {
       Colors.Set(c -> c.RED);
@@ -171,18 +200,24 @@ public class CallToActionTool extends MessageTool {
         responsive_action,
         ex
       );
-      DocumentProperty.addManualReview(
-        msg.getDocumentId(),
-        ex,
-        "addCtaResponse",
-        action_id,
-        responsive_action,
-        completion_percentage,
-        compliance_response_score,
-        compliance_response_reasons,
-        compliance_rating_aggregate,
-        compliance_rating_aggregate_reasons
-      );
+      try {
+        DocumentProperty.addManualReview(
+          db(),
+          msg.getDocumentId(),
+          ex,
+          "addCtaResponse",
+          action_id,
+          responsive_action,
+          completion_percentage,
+          compliance_response_score,
+          compliance_response_reasons,
+          compliance_rating_aggregate,
+          compliance_rating_aggregate_reasons
+        );
+      } catch (SQLException e2) {
+        // Supresss - we're already in an error state
+      }
+
       Colors.Reset();
       return;
     }
@@ -192,10 +227,80 @@ public class CallToActionTool extends MessageTool {
   }
 
   @Tool(
-    name = "lookupPolicyInternalId",
-    value = "Looks up the internal ID of a policy given a search string, such as the policy name or chapter number."
+    name = "lookupPolicySummary",
+    value = "Uses vector search to retrieve a summary of school district policy or search topic associated with the provided query.  The query can be a policy name, or a specific topic or search string.  " +
+    "The summary is returned as a string.\n  The **scope** property can be used to ensure results are relevant to your request.\n" +
+    " ** Returns **\n" +
+    "  - A string containing the summary of the policy associated with the provided query.  If no policy is found, an empty string is returned.\n" +
+    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
   )
-  public Integer lookupPolicyInternalId(String searchFor) {
-    return PolicyTypeMap.Instance.lookupPolicyId(searchFor);
+  public String lookupPolicySummary(
+    @P(
+      required = true,
+      value = "The search query.  This can be a policy name (eg 'Title IX' or 'Policy 506'), a specific topic, or a genralized search string."
+    ) String query,
+    @P(
+      required = true,
+      value = "Used to filter the scope of searched policies.  Supported values are:\n" +
+      "  - school_policy: Search only school district policies.\n" +
+      "  - state_policy: Search only state policies or law.\n" +
+      "  - federal_policy: Search only federal policies or law.\n" +
+      "  - Empty String: Search all policies.\n"
+    ) String scope
+  ) {
+    JustInTimePolicyLookup.PolicyType policyType = null;
+    if (scope != null) {
+      switch (scope) {
+        case "school_policy":
+          policyType = JustInTimePolicyLookup.PolicyType.SchoolBoard;
+          break;
+        case "state_policy":
+          policyType = JustInTimePolicyLookup.PolicyType.State;
+          break;
+        case "federal_policy":
+          policyType = JustInTimePolicyLookup.PolicyType.Federel;
+          break;
+        default:
+          policyType = JustInTimePolicyLookup.PolicyType.All;
+          break;
+      }
+    }
+    try {
+      return this.policyLookup.summarizePolicy(query, policyType);
+    } catch (Exception e) {
+      log.error(
+        "Unexpected failure searching for policy summary.  Details: " + query,
+        e
+      );
+      return "ERROR: " + e.getMessage();
+    }
+  }
+
+  @Tool(
+    name = "addProcessingNote",
+    value = "Adds a note to the processing history of the email.  This is useful for adding notes about the analysis process, or for adding information that may be useful for future analysis.\n"
+  )
+  public void addProcessingNote(String note) {
+    var msg = message();
+    try {
+      if (msg.getDocumentId() == null) {
+        log.warn(
+          "Unable to add processing note - no Document ID available.  Details: " +
+          note
+        );
+        return;
+      }
+      DocumentProperty.builder()
+        .documentId(msg.getDocumentId())
+        .propertyValue(note)
+        .propertyType(DocumentPropertyType.KnownValues.ProcessingNote)
+        .build()
+        .addToDb(db());
+    } catch (SQLException e) {
+      log.error(
+        "Unexpected SQL failure adding processing note.  Details: " + note,
+        e
+      );
+    }
   }
 }
