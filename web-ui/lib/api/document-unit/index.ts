@@ -152,14 +152,14 @@ export class DocumentUnitRepository extends BaseObjectRepository<
       `SELECT du.*, ea.file_path, e.thread_id,
   ARRAY(
     SELECT e.email_id
-    FROM email_property ep
+    FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
     WHERE ep.email_id = du.email_id
       AND ep.email_property_type_id = 22
   ) AS related_email_ids,
   (
     SELECT e.email_id
-    FROM email_property ep
+    FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
     WHERE ep.email_id = du.email_id
       AND ep.email_property_type_id = 26
@@ -185,14 +185,14 @@ export class DocumentUnitRepository extends BaseObjectRepository<
       `SELECT du.*, ea.file_path, e.thread_id,
   ARRAY(
     SELECT e.email_id
-    FROM email_property ep
+    FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
     WHERE ep.email_id = du.email_id
       AND ep.email_property_type_id = 22
   ) AS related_email_ids,
   (
     SELECT e.email_id
-    FROM email_property ep
+    FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
     WHERE ep.email_id = du.email_id
       AND ep.email_property_type_id = 26

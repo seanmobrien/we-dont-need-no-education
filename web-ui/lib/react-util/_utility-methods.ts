@@ -76,8 +76,13 @@ export function isTruthy(
   if (typeof value === 'string') {
     const trimmedValue = value.trim().toLowerCase();
     return (
-      trimmedValue === 'true' || trimmedValue === '1' || trimmedValue === 'yes'
+      trimmedValue === 'true' ||
+      trimmedValue === '1' ||
+      trimmedValue === 'yes' ||
+      trimmedValue === 'y'
     );
+  } else if (Array.isArray(value)) {
+    return value.length > 0;
   }
   return Boolean(value);
 }

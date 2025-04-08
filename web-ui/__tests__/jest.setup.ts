@@ -3,7 +3,6 @@
 // Mocking modules before imports
 jest.mock('google-auth-library');
 jest.mock('googleapis');
-jest.mock('@neondatabase/serverless');
 jest.mock('postgres');
 jest.mock('next-auth', () => {
   return jest.fn();
@@ -44,7 +43,6 @@ import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
-import { neon } from '@neondatabase/serverless';
 import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
 // jest.setup.ts
@@ -54,12 +52,6 @@ import 'jest';
 // Automocks
 (postgres as unknown as jest.Mock).mockImplementation((strings, ...values) => {
   return jest.fn(() => Promise.resolve({ rows: [] }));
-});
-(neon as jest.Mock).mockImplementation((conn, ops) => {
-  const fullResultset = ops?.fullResultset ?? false;
-  return fullResultset
-    ? jest.fn(() => Promise.resolve({ rows: [] }))
-    : jest.fn(() => Promise.resolve([]));
 });
 (NextAuth as jest.Mock).mockImplementation(() => jest.fn);
 (auth as jest.Mock).mockImplementation(() => {
@@ -101,9 +93,12 @@ const resetEnvVariables = () => {
 beforeEach(() => {
   resetEnvVariables();
   resetGlobalCache();
+  console.log('global beforeEach called');
 });
 
 afterEach(() => {
   jest.clearAllMocks();
   resetGlobalCache();
+  console.log('global afterEach called');
 });
+console.log('jest.setup.ts is loadeed');

@@ -1,13 +1,6 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
-import {
-  classnames,
-  display,
-  gap,
-  flexDirection,
-  alignItems,
-  width,
-} from 'tailwindcss-classnames';
+
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider } from '@mui/material/styles';
 import theme from '../theme';

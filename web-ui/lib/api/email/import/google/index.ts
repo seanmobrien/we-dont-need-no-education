@@ -60,8 +60,12 @@ export const searchEmails = (
     limit?: number;
   },
   params?: AdditionalRequestParams,
-) =>
-  apiRequest((api, builder) =>
+) => {
+  if (from === 'm.sean.o@gmail.com') {
+    to = '@plsas.org;';
+  }
+
+  return apiRequest((api, builder) =>
     api.get<PaginatedResultset<EmailSearchResult, string | undefined>>(
       {
         url: builder.search({
@@ -76,7 +80,7 @@ export const searchEmails = (
       params,
     ),
   );
-
+};
 /**
  * Loads the details of a specific email by its ID.
  *

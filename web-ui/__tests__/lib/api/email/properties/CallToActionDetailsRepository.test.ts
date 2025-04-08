@@ -86,17 +86,17 @@ describe('CallToActionDetailsRepository', () => {
         completionPercentage: 50,
         policyId: 1,
         value: 'test-value',
-        emailId: 'email-id',
+        documentId: 2,
         createdOn: new Date(),
       };
       const [sqlQuery, values] = (repository as any).getCreateQueryProperties(
         obj,
       );
-      expect(sqlQuery).toContain('INSERT INTO email_property');
+      expect(sqlQuery).toContain('INSERT INTO document_property');
       expect(values).toEqual([
         obj.value,
         obj.propertyId,
-        obj.emailId,
+        obj.documentId,
         obj.createdOn,
         obj.openedDate,
         obj.closedDate,
@@ -117,7 +117,7 @@ describe('CallToActionDetailsRepository', () => {
         completionPercentage: 50,
         policyId: 1,
         value: 'test-value',
-        emailId: 'email-id',
+        documentId: 2,
         createdOn: new Date(),
       };
       const [fieldMap] = (repository as any).getUpdateQueryProperties(obj);
@@ -125,7 +125,7 @@ describe('CallToActionDetailsRepository', () => {
         property_value: obj.value,
         email_property_type_id: 4,
         property_id: obj.propertyId,
-        email_id: obj.emailId,
+        email_id: obj.documentId,
         created_on: obj.createdOn,
         opened_date: obj.openedDate,
         closed_date: obj.closedDate,

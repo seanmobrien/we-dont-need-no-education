@@ -17,22 +17,22 @@ const config: Config.InitialOptions = {
   },
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest', // Transform TypeScript files using ts-jest
-    '^.+\\.(js|jsx)$': 'babel-jest', // Transform JavaScript files using babel-jest
+    // '^.+\\.(js|jsx)$': 'babel-jest', // Transform JavaScript files using babel-jest
   },
   transformIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next'], // Ignore node_modules
   // collectCoverage: true, // Enable coverage collection
   collectCoverage: false, // Enable coverage collection
   collectCoverageFrom: [
-    '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
-    '!**/*.d.ts', // Exclude type declaration files
-    '!__(tests|mocks)__/**/*.*', // Exclude type declaration files
-    '!**/*.{jsx,tsx}', // Exclude JSX-based
-    '!<rootDir>/.next', // Exclude JSX-based
+    // '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
+    //'!**/*.d.ts', // Exclude type declaration files
+    //'!__(tests|mocks)__/**/*.*', // Exclude type declaration files
+    //'!**/*.{jsx,tsx}', // Exclude JSX-based
+    //'!<rootDir>/.next', // Exclude JSX-based
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
-  // detectLeaks: true,
-  // detectOpenHandles: true,
+  //detectLeaks: true,
+  detectOpenHandles: true,
   // logHeapUsage: true,
 };
 

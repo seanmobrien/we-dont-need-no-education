@@ -3,7 +3,7 @@ import { DashboardLayout } from '@toolpad/core/DashboardLayout';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import { SessionProvider } from 'next-auth/react';
-import { auth, signIn, signOut } from '@/auth';
+import { auth } from '@/auth';
 
 import Sync from '@mui/icons-material/Sync';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -90,7 +90,7 @@ export default async function DashboardPagesLayout(props: {
       <NextAppProvider
         navigation={DashboardNavigation}
         branding={Branding}
-        session={session}
+        session={session ?? null}
       >
         <DashboardLayout>
           <PageContainer>{props.children}</PageContainer>

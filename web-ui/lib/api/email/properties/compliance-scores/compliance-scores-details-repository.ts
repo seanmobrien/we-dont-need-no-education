@@ -81,7 +81,7 @@ export class ComplianceScoresDetailsRepository extends BaseObjectRepository<
   protected getListQueryProperties(): [string, Array<unknown>, string] {
     return [
       `SELECT * FROM compliance_scores_details 
-       JOIN email_property ON compliance_scores_details.property_id = email_property.property_id 
+       JOIN document_property ON compliance_scores_details.property_id = document_property.property_id 
        ORDER BY compliance_scores_details.property_id`,
       [],
       `SELECT COUNT(*) as records FROM compliance_scores_details`,
@@ -92,7 +92,7 @@ export class ComplianceScoresDetailsRepository extends BaseObjectRepository<
     return [
       `SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
             csd.action_property_id, csd.compliance_score, csd.violations_found, csd.response_delay_days, csd.overall_grade, csd.evaluated_on
-            FROM email_property ep 
+            FROM document_property ep 
              JOIN compliance_scores_details csd ON csd.property_id = ep.property_id 
              JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
@@ -110,20 +110,22 @@ export class ComplianceScoresDetailsRepository extends BaseObjectRepository<
     overallGrade,
     evaluatedOn,
     value,
-    emailId,
+    documentId,
+    tags,
+    policy_basis,
     createdOn,
   }: ComplianceScoresDetails): [string, Array<unknown>] {
     return [
       `WITH ins1 AS (
-        INSERT INTO email_property (property_value, email_property_type_id, property_id, email_id, created_on) 
-        VALUES ($1, 6, $2, $3, $4) RETURNING property_id
+        INSERT INTO document_property (property_value, email_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
+        VALUES ($1, 6, $2, $3, $4, $11, $12) RETURNING property_id
       )
       INSERT INTO compliance_scores_details (property_id, action_property_id, compliance_score, violations_found, response_delay_days, overall_grade, evaluated_on) 
       VALUES ((SELECT property_id FROM ins1), $5, $6, $7, $8, $9, $10) RETURNING *`,
       [
         value,
         propertyId,
-        emailId,
+        documentId,
         createdOn ?? new Date(),
         actionPropertyId,
         complianceScore,
@@ -131,6 +133,8 @@ export class ComplianceScoresDetailsRepository extends BaseObjectRepository<
         responseDelayDays,
         overallGrade,
         evaluatedOn ?? new Date(),
+        tags?.length ? tags : null,
+        policy_basis?.length ? policy_basis : null,
       ],
     ];
   }

@@ -11,16 +11,17 @@ public class CallToAction extends DocumentProperty {
   private LocalDate closedDate;
   private LocalDate compliancyCloseDate;
   private Double completionPercentage = 0.0;
-  private Integer policyId;
   private Double complianceMessage = 100.0;
   private String complianceMessageReasons;
 
   public CallToAction() {
     super();
+    setPropertyType(DocumentPropertyType.KnownValues.CallToAction);
   }
 
   public CallToAction(Map<String, Object> stateBag) {
     super(stateBag);
+    setPropertyType(DocumentPropertyType.KnownValues.CallToAction);
     Db.saveLocalDateFromStateBag(stateBag, "opened_date", this::setOpenedDate);
     Db.saveLocalDateFromStateBag(stateBag, "closed_date", this::setClosedDate);
     Db.saveLocalDateFromStateBag(
@@ -33,7 +34,6 @@ public class CallToAction extends DocumentProperty {
       "completion_percentage",
       this::setCompletionPercentage
     );
-    Db.saveIntFromStateBag(stateBag, "policy_id", this::setPolicyId);
     Db.saveDoubleFromStateBag(
       stateBag,
       "compliance_message",
@@ -78,14 +78,6 @@ public class CallToAction extends DocumentProperty {
     this.completionPercentage = completionPercentage;
   }
 
-  public Integer getPolicyId() {
-    return policyId;
-  }
-
-  public void setPolicyId(Integer policyId) {
-    this.policyId = policyId;
-  }
-
   public Double getComplianceMessage() {
     return complianceMessage;
   }
@@ -108,14 +100,13 @@ public class CallToAction extends DocumentProperty {
     super.addToDb(db);
     db.executeUpdate(
       "INSERT INTO call_to_action_details " +
-      "(property_id, opened_date, closed_date, compliancy_close_date, completion_percentage, policy_id, compliance_message, compliance_message_reasons) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      "(property_id, opened_date, closed_date, compliancy_close_date, completion_percentage, compliance_message, compliance_message_reasons) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?)",
       getPropertyId(),
       openedDate,
       closedDate,
       compliancyCloseDate,
       completionPercentage,
-      policyId < 1 ? null : policyId,
       complianceMessage,
       complianceMessageReasons
     );
@@ -150,11 +141,6 @@ public class CallToAction extends DocumentProperty {
       Double completionPercentage
     ) {
       target.setCompletionPercentage(completionPercentage);
-      return self();
-    }
-
-    public CallToActionBuilder policyId(Integer policyId) {
-      target.setPolicyId(policyId);
       return self();
     }
 

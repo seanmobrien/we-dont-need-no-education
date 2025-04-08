@@ -24,20 +24,20 @@ export async function GET(
               sql,
             ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
             ctar.action_property_id, ctar.completion_percentage, ctar.response_timestamp
-            FROM email_property ep 
+            FROM document_property ep 
              JOIN call_to_action_response_details ctar ON ctar.property_id = ep.property_id 
              JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE ep.email_id = ${emailId} AND ept.email_property_category_id=5 LIMIT ${num} OFFSET ${offset}`,
+             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=5 LIMIT ${num} OFFSET ${offset}`,
           ),
         () =>
           db(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
-             FROM email_property ep 
+             FROM document_property ep 
              JOIN call_to_action_response_details ctar ON ctar.property_id = ep.property_id 
              JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE ep.email_id = ${emailId} AND ept.email_property_category_id=5`,
+             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=5`,
           ),
         parsePaginationStats(new URL(req.url)),
       ),

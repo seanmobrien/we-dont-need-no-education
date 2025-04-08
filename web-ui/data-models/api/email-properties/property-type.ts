@@ -20,11 +20,13 @@ export type EmailPropertyCategory = {
 export type EmailPropertySummary = {
   typeId: number | EmailPropertyTypeType | EmailPropertyTypeTypeId;
   propertyId: string;
-  emailId: string;
+  documentId: number;
   createdOn: Date;
   categoryId?: number;
   typeName?: string;
   categoryName?: string;
+  tags?: string[];
+  policy_basis?: string[];
 };
 /**
  * Represents an email property which extends the summary of an email property

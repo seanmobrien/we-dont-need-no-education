@@ -38,7 +38,7 @@ public class Prompts {
     "\n" + //
     "If CTAs are **implied** (e.g., “I still don't understand what happened”), flag them as `\"inferred\": true`.  " +
     "If a statement is relevant to an open CTA but not explicitly responsive it should also be flagged as inferred.  " +
-    "When a CTA or Responsive Action is identified, use the appropriate function to add it to our database for further analysis.\n" +
+    "When a CTA or Responsive Action is identified, use the 'addCallToActionToDatabase(add it to our database for further analysis.\n" +
     getToolUsage("CTA or Responsive Action")
   );
 
@@ -111,7 +111,7 @@ public class Prompts {
       "  - Policy 501: Weapons\n" + //
       "  - Policy 504: Procedural Safeguards\n" + //
       "  - Policy 506: Student Discipline\n" + //
-      "  - Policy 506: Bullying Prohibition\n" + //
+      "  - Policy 506.1: Bullying Prohibition\n" + //
       "  - Policy 515: Protection and Privacy of Student Records\n" + //
       "  - Policy 521: Grievance Procedure\n" + //
       "  - Policy 522: Title IX Sex Nondiscrimination Policy, Grievance Procedure and Process\n" + //

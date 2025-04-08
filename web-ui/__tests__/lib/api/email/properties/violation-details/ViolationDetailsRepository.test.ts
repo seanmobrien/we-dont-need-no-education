@@ -84,7 +84,7 @@ describe('ViolationDetailsRepository', () => {
         actionPropertyId: 'action-id',
         violationType: 'test-violation',
         severityLevel: 2,
-        emailId: 'test-email-id',
+        documentId: 1,
         createdOn: new Date(),
         value: 'test-value',
         detectedBy: 'test-detector',
@@ -93,11 +93,11 @@ describe('ViolationDetailsRepository', () => {
       const [sqlQuery, values] = (repository as any).getCreateQueryProperties(
         obj,
       );
-      expect(sqlQuery).toContain('INSERT INTO email_property');
+      expect(sqlQuery).toContain('INSERT INTO document_property');
       expect(values).toEqual([
         obj.value,
         obj.propertyId,
-        obj.emailId,
+        obj.documentId,
         obj.createdOn,
         obj.attachmentId,
         obj.keyPointPropertyId,
@@ -119,7 +119,7 @@ describe('ViolationDetailsRepository', () => {
         actionPropertyId: 'action-id',
         violationType: 'test-violation',
         severityLevel: 2,
-        emailId: 'test-email-id',
+        documentId: 4,
         createdOn: new Date(),
         value: 'test-value',
         detectedBy: 'test-detector',

@@ -24,7 +24,7 @@ export async function GET(
               sql,
             ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
             vd.attachment_id, vd.key_point_property_id, vd.action_property_id, vd.violation_type, vd.severity_level, vd.detected_by, vd.detected_on
-            FROM email_property ep 
+            FROM document_property ep 
              JOIN violation_details vd ON vd.property_id = ep.property_id 
              JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
@@ -33,7 +33,7 @@ export async function GET(
         () =>
           db(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
-             FROM email_property ep 
+             FROM document_property ep 
              JOIN violation_details vd ON vd.property_id = ep.property_id 
              JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id

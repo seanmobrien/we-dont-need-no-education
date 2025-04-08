@@ -13,9 +13,11 @@ export const mapEmailPropertyRecordToObject = (
   value: String(record.property_value),
   typeId: Number(record.email_property_type_id),
   propertyId: String(record.property_id),
-  emailId: String(record.email_id),
+  documentId: Number(record.document_id),
   typeName: record.property_name ? String(record.property_name) : undefined,
   categoryName: record.description ? String(record.description) : undefined,
+  tags: record.tags ? (record.tags as string[]) : [],
+  policy_basis: record.policy_basis ? (record.policy_basis as string[]) : [],
   categoryId: !!record.email_property_category_id
     ? Number(record.email_property_category_id)
     : undefined,
@@ -31,7 +33,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
 > {
   constructor() {
     super({
-      tableName: 'email_property',
+      tableName: 'document_property',
       idField: ['propertyId', 'property_id'],
       objectMap: mapEmailPropertyRecordToObject,
       summaryMap: mapEmailPropertyRecordToObject,
@@ -64,7 +66,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
     }
     switch (method) {
       case 'create':
-        if (!asModel.emailId || !asModel.typeId) {
+        if (!asModel.documentId || !asModel.typeId) {
           throw new ValidationError({
             field: 'propertyId||At least one field is required for update',
             source: 'EmailPropertyRepository',
@@ -77,7 +79,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
       case 'update':
         if (
           !asModel.propertyId ||
-          (!asModel.emailId && !asModel.typeId && !asModel.value)
+          (!asModel.documentId && !asModel.typeId && !asModel.value)
         ) {
           throw new ValidationError({
             field: 'propertyId||At least one field is required for update',
@@ -93,19 +95,19 @@ export class EmailPropertyRepository extends BaseObjectRepository<
   protected getListQueryProperties(): [string, Array<any>, string] {
     return [
       `SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id
-            FROM email_property ep
+            FROM document_property ep
             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id      
-      ORDER BY email_id`,
+      ORDER BY document_id`,
       [],
-      `SELECT COUNT(*) as records FROM email_property`,
+      `SELECT COUNT(*) as records FROM document_property`,
     ];
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected getQueryProperties(recordId: string): [string, Array<any>] {
     return [
       'SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id \
-            FROM email_property ep \
+            FROM document_property ep \
             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id \
             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id WHERE property_id = $1',
       [recordId],
@@ -114,14 +116,24 @@ export class EmailPropertyRepository extends BaseObjectRepository<
   protected getCreateQueryProperties({
     value,
     typeId,
-    emailId,
+    documentId,
     createdOn,
     propertyId,
+    policy_basis,
+    tags,
   }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
   EmailProperty): [string, Array<any>] {
     return [
-      `INSERT INTO email_property (property_value, email_property_type_id, email_id, created_on, property_id) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [value, typeId, emailId, createdOn ?? new Date(), propertyId],
+      `INSERT INTO document_property (property_value, email_property_type_id, document_id, created_on, property_id, tags, policy_basis) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [
+        value,
+        typeId,
+        documentId,
+        createdOn ?? new Date(),
+        propertyId,
+        (tags ?? []).length ? tags : null,
+        (policy_basis ?? []).length ? policy_basis : null,
+      ],
     ];
   }
   protected getUpdateQueryProperties(
@@ -132,8 +144,10 @@ export class EmailPropertyRepository extends BaseObjectRepository<
         property_value: obj.value,
         email_property_type_id: obj.typeId,
         property_id: obj.propertyId,
-        email_id: obj.emailId,
+        document_id: obj.documentId,
         created_on: obj.createdOn,
+        tags: (obj.tags ?? []).length ? obj.tags : null,
+        policy_basis: (obj.policy_basis ?? []).length ? obj.policy_basis : null,
       },
     ];
   }

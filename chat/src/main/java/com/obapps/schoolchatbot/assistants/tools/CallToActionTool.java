@@ -9,6 +9,7 @@ import dev.langchain4j.agent.tool.Tool;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.UUID;
 
 public class CallToActionTool extends MessageTool {
@@ -41,19 +42,13 @@ public class CallToActionTool extends MessageTool {
 
   @Tool(
     name = "addCallToActionToDatabase",
-    value = "Adds a newly identified call to action to our database."
+    value = "Adds a newly identified and analyzed call to action from the target document to our database."
   )
   public void addCallToActionToDatabase(
     @P(
       required = true,
       value = "The action to be taken, such as \"Provide this record\", \"Explain why this action was taken\", or \"What steps will be taken to keep my child safe\"."
     ) String action,
-    @P(
-      required = false,
-      value = "If the call to action is relevant to a legally mandated obligation, such as a MN Statute 13 request for an educational record, provide the statute number or name here." +
-      "  If the call to action is not legally mandated, this value should be a null or empty string.  Statute can be provided either via an Internal Policy Id, or the locality (eg \"Federal\", " +
-      "\"School\", \"State\") and the name or number of the policy or statute; for example, \"MN 13\", or \"Federal FERPA\""
-    ) String relevantPolicy,
     @P(
       required = true,
       value = "If a mandated response timeframe can be determined, provide the date the response must be completed by to remain complaint with that obligation.  If no timeframe is known, then pass null or an empty string."
@@ -67,7 +62,15 @@ public class CallToActionTool extends MessageTool {
       value = "A list of reasons why the compliance rating was assigned.  This should be a comma separated list of reasons, such as \"No response provided\", \"No explanation provided\"." +
       "  If no reasons are known, then pass null or an empty string." +
       "  If the compliance rating is not relevant to this email, then pass null or an empty string."
-    ) String compliance_rating_current_reasons
+    ) String compliance_rating_current_reasons,
+    @P(
+      required = true,
+      value = "A comma-delimited list of any laws or school board policies that provide a basis for this point.  For example, 'Title IX, MN Statute 13.3, Board Policy 503'"
+    ) String policyBasis,
+    @P(
+      required = false,
+      value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
+    ) String tags
   ) {
     var msg = message();
     try {
@@ -78,7 +81,6 @@ public class CallToActionTool extends MessageTool {
           action
         );
       }
-      var policyId = PolicyTypeMap.Instance.lookupPolicyId(relevantPolicy);
 
       // Parse the date string into a LocalDate
       // Define a formatter matching the date format
@@ -91,17 +93,17 @@ public class CallToActionTool extends MessageTool {
       // Save Data
       var builder = CallToAction.builder()
         .documentId(msg.getDocumentId())
-        .propertyType(4)
+        .propertyType(DocumentPropertyType.KnownValues.CallToAction)
         .propertyValue(action)
+        .tags(tags)
+        .policyBasis(policyBasis)
         .createdOn(msg.getDocumentSendDate())
         .openedDate(msg.getDocumentSendDate().toLocalDate())
         .compliancyCloseDate(parsedDueDate)
         .completionPercentage(0.0)
         .complianceMessage(compliance_rating_current)
         .complianceMessageReasons(compliance_rating_current_reasons);
-      if (policyId > 0) {
-        builder.policyId(policyId);
-      }
+
       builder.build().addToDb(db());
     } catch (SQLException ex) {
       Colors.Set(c -> c.RED);
@@ -116,10 +118,11 @@ public class CallToActionTool extends MessageTool {
           ex,
           "addCallToActionToDatabase",
           action,
-          relevantPolicy,
           dueDate,
           compliance_rating_current,
-          compliance_rating_current_reasons
+          compliance_rating_current_reasons,
+          policyBasis,
+          tags
         );
       } catch (SQLException e2) {
         // Supresss - we're already in an error state
@@ -129,19 +132,28 @@ public class CallToActionTool extends MessageTool {
     }
     Colors.Set(color -> color.BRIGHT + color.CYAN);
     addDetectedPoint();
-    log.info("Added new CTA to database:\n\t" + action);
+    log.info(
+      "Added CTA to  database: {}\n\tCompliance Ratiing: {}\n\tCompliance Reasons: {}\n\t" +
+      "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
+      action,
+      compliance_rating_current,
+      compliance_rating_current_reasons,
+      Objects.requireNonNullElse(policyBasis, "<none>"),
+      Objects.requireNonNullElse(tags, "<none>"),
+      message().getDocumentId()
+    );
     Colors.Reset();
   }
 
   @Tool(
     name = "addCtaResponseToDatabase",
-    value = "Adds responsive action in reagards to a CTA that was opened on an earlier email to the database."
+    value = "Adds a Responsive Action that has been identified within the target document to our database.  Includes a link to the CTA this is in response to, and a rating of compliance specifically for this response as well as the CTA as a whole."
   )
   public void addCtaResponseToDatabase(
     @P(
       required = true,
-      value = "The action id identifying the CTA"
-    ) String action_id,
+      value = "Unique identifier for the call to action this response is in reference to.  If the action is responsive to more than one CTA, add a record for each of them."
+    ) String call_to_action_id,
     @P(
       required = true,
       value = "The responsive action taken."
@@ -167,7 +179,15 @@ public class CallToActionTool extends MessageTool {
       required = true,
       value = "A list of reasons why the aggregate compliance rating was assigned.  This should be a comma separated list of reasons, such as \"No response provided\", \"No explanation provided\"." +
       "  If no reasons are known, then pass null or an empty string."
-    ) String compliance_rating_aggregate_reasons
+    ) String compliance_rating_aggregate_reasons,
+    @P(
+      required = true,
+      value = "A comma-delimited list of any laws or school board policies that provide a basis for this point.  For example, 'Title IX, MN Statute 13.3, Board Policy 503'"
+    ) String policyBasis,
+    @P(
+      required = false,
+      value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
+    ) String tags
   ) {
     var msg = message();
     try {
@@ -180,7 +200,7 @@ public class CallToActionTool extends MessageTool {
       }
       CallToActionResponse.builder()
         .documentId(msg.getDocumentId())
-        .actionPropertyId(UUID.fromString(action_id))
+        .actionPropertyId(UUID.fromString(call_to_action_id))
         .propertyType(5)
         .propertyValue(responsive_action)
         .createdOn(msg.getDocumentSendDate())
@@ -190,6 +210,8 @@ public class CallToActionTool extends MessageTool {
         .complianceMessageReasons(compliance_response_reasons)
         .complianceAggregate(compliance_rating_aggregate)
         .complianceAggregateReasons(compliance_rating_aggregate_reasons)
+        .policyBasis(policyBasis)
+        .tags(tags)
         .build()
         .addToDb(db());
       addDetectedPoint();
@@ -206,7 +228,7 @@ public class CallToActionTool extends MessageTool {
           msg.getDocumentId(),
           ex,
           "addCtaResponse",
-          action_id,
+          call_to_action_id,
           responsive_action,
           completion_percentage,
           compliance_response_score,
@@ -222,7 +244,17 @@ public class CallToActionTool extends MessageTool {
       return;
     }
     Colors.Set(color -> color.BRIGHT + color.CYAN);
-    log.info("Added CTA Response to database:\n\t" + responsive_action);
+    log.info(
+      "Added CTA to  database: {}\n\tRelated CTA: {}\n\tCompliance Ratiing: {}\n\tCompliance Reasons: {}\n\t" +
+      "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
+      responsive_action,
+      call_to_action_id,
+      compliance_response_score,
+      compliance_response_reasons,
+      Objects.requireNonNullElse(policyBasis, "<none>"),
+      Objects.requireNonNullElse(tags, "<none>"),
+      message().getDocumentId()
+    );
     Colors.Reset();
   }
 

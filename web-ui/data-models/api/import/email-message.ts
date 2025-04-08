@@ -47,6 +47,10 @@ export type ImportSourceMessage = {
    * The user id of the user who owns the email.
    */
   userId: number;
+  /**
+   * The unique identified of the associated document record
+   */
+  documentId?: number;
 };
 
 /**

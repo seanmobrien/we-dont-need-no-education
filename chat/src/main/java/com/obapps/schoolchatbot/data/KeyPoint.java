@@ -1,11 +1,8 @@
 package com.obapps.schoolchatbot.data;
 
 import com.obapps.schoolchatbot.util.Db;
-import com.obapps.schoolchatbot.util.Strings;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 public class KeyPoint extends DocumentProperty {
@@ -13,8 +10,6 @@ public class KeyPoint extends DocumentProperty {
   private Double relevance;
   private double compliance;
   private Integer severityRanking;
-  private List<String> tags;
-  private List<String> policyBasis;
   private Boolean inferred;
 
   /**
@@ -60,12 +55,6 @@ public class KeyPoint extends DocumentProperty {
       "severity_ranking",
       this::setSeverityRanking
     );
-    Db.saveStringArrayFromStateBag(
-      stateBag,
-      "policy_basis",
-      this::setPolicyBasis
-    );
-    Db.saveStringArrayFromStateBag(stateBag, "tags", this::setTags);
     Db.saveBooleanFromStateBag(stateBag, "inferred", this::setInferred);
   }
 
@@ -85,42 +74,6 @@ public class KeyPoint extends DocumentProperty {
    */
   public void setSeverityRanking(Integer severityRanking) {
     this.severityRanking = severityRanking;
-  }
-
-  /**
-   * Gets the tags associated with this KeyPoint.
-   *
-   * @return A list of tags as Strings.
-   */
-  public List<String> getTags() {
-    return tags;
-  }
-
-  /**
-   * Sets the tags for this KeyPoint.
-   *
-   * @param tags The list of tags to set.
-   */
-  public void setTags(List<String> tags) {
-    this.tags = tags;
-  }
-
-  /**
-   * Gets the policy basis associated with this KeyPoint.
-   *
-   * @return A list of policy basis as Strings.
-   */
-  public List<String> getPolicyBasis() {
-    return policyBasis;
-  }
-
-  /**
-   * Sets the policy basis for this KeyPoint.
-   *
-   * @param policyBasis The list of policy basis to set.
-   */
-  public void setPolicyBasis(List<String> policyBasis) {
-    this.policyBasis = policyBasis;
   }
 
   /**
@@ -169,16 +122,14 @@ public class KeyPoint extends DocumentProperty {
 
     var records = db.executeUpdate(
       "INSERT INTO key_points_details " +
-      "(property_id, relevance, compliance, severity_ranking, inferred, policy_basis, tags) " +
+      "(property_id, relevance, compliance, severity_ranking, inferred) " +
       "VALUES " +
-      "(?,?,?,?,?,?,?)",
+      "(?,?,?,?,?)",
       getPropertyId(),
       relevance,
       compliance,
       severityRanking,
-      inferred,
-      policyBasis,
-      tags
+      inferred
     );
     if (records < 1) {
       throw new SQLException(
@@ -212,7 +163,7 @@ public class KeyPoint extends DocumentProperty {
     throws SQLException {
     var record = db.selectRecords(
       "SELECT ep.property_value, ep.email_property_type_id, ep.property_id, " +
-      "ep.document_id, ep.created_on, kp.* " +
+      "ep.document_id, ep.created_on, ep.tags, ep.policybasis, kp.* " +
       "FROM document_property ep " +
       "JOIN key_points_details kp ON ep.property_id = kp.property_id " +
       "WHERE ep.property_id = ?",
@@ -293,7 +244,9 @@ public class KeyPoint extends DocumentProperty {
         .propertyId(emailProperty.getPropertyId())
         .propertyType(emailProperty.getPropertyType())
         .propertyValue(emailProperty.getPropertyValue())
-        .createdOn(emailProperty.getCreatedOn());
+        .createdOn(emailProperty.getCreatedOn())
+        .tags(emailProperty.getTags())
+        .policyBasis(emailProperty.getPolicyBasis());
     }
 
     /**
@@ -341,56 +294,6 @@ public class KeyPoint extends DocumentProperty {
      */
     public <B2 extends B> B2 severity(Integer severity) {
       target.setSeverityRanking(severity);
-      return self();
-    }
-
-    /**
-     * Sets the tags for the {@link KeyPoint} using a comma-separated string.
-     *
-     * @param tags A {@link String} containing comma-separated tags.
-     * @param <B>  The type of the builder.
-     * @return The builder instance for method chaining.
-     */
-    public <B2 extends B> B2 tags(String tags) {
-      var tagList = Strings.commasToList(Objects.requireNonNullElse(tags, ""));
-      return tags(tagList);
-    }
-
-    /**
-     * Sets the tags for the {@link KeyPoint} using a list of strings.
-     *
-     * @param tags A {@link List} of {@link String} representing the tags.
-     * @param <B>  The type of the builder.
-     * @return The builder instance for method chaining.
-     */
-    public <B2 extends B> B2 tags(List<String> tags) {
-      target.setTags(tags);
-      return self();
-    }
-
-    /**
-     * Sets the policy basis for the {@link KeyPoint} using a comma-separated string.
-     *
-     * @param policy A {@link String} containing comma-separated policy basis.
-     * @param <B>    The type of the builder.
-     * @return The builder instance for method chaining.
-     */
-    public <B2 extends B> B2 policyBasis(String policy) {
-      var policies = Strings.commasToList(
-        Objects.requireNonNullElse(policy, "")
-      );
-      return policyBasis(policies);
-    }
-
-    /**
-     * Sets the policy basis for the {@link KeyPoint} using a list of strings.
-     *
-     * @param policy A {@link List} of {@link String} representing the policy basis.
-     * @param <B>    The type of the builder.
-     * @return The builder instance for method chaining.
-     */
-    public <B2 extends B> B2 policyBasis(List<String> policy) {
-      target.setPolicyBasis(policy);
       return self();
     }
   }

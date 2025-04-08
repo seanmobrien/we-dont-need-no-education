@@ -24,16 +24,18 @@ export async function GET(
           db(
             (sql) =>
               sql`SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id
-            FROM email_property ep
+            FROM document_property ep
             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-            WHERE email_id=${emailId} LIMIT ${num} OFFSET ${offset}`,
+            JOIN document_units d ON d.unit_id = ep.document_id
+            JOIN email e ON e.email_id = d.email_id
+            WHERE e.email_id=${emailId} LIMIT ${num} OFFSET ${offset}`,
             { transform: mapEmailPropertyRecordToObject },
           ),
         () =>
           db(
             (sql) =>
-              sql`SELECT COUNT(*) AS total FROM email_property WHERE email_id=${emailId}`,
+              sql`SELECT COUNT(*) AS total FROM document_property WHERE document_property_email(document_property.property_id)=${emailId}`,
           ),
         parsePaginationStats(new URL(req.url)),
       ),

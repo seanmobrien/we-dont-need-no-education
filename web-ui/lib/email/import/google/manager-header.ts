@@ -134,11 +134,11 @@ class HeaderStateManager extends TransactionalStateManagerBase {
             const operations = await Promise.all(
               parts.map((part) => {
                 const newProperty: EmailProperty = {
-                  emailId: target.targetId!,
+                  documentId: target.documentId!,
                   value: valueParser(part).trim(),
                   propertyId: newUuid(),
                   createdOn: new Date(),
-                  typeId,
+                  typeId: typeId,
                 };
                 return emailPropertyRepository.create(newProperty).then(
                   (result) => {
@@ -170,12 +170,12 @@ class HeaderStateManager extends TransactionalStateManagerBase {
               );
             }
             const successfulOps = operations as HeaderSuccessResult[];
-            const { emailId, propertyId } = successfulOps[0].result;
+            const { documentId, propertyId } = successfulOps[0].result;
             log((l) =>
               l.verbose({
                 message: `Created array of email property for email header ${headerName}: ${operations.length} items created.`,
                 headerName,
-                emailId,
+                documentId,
                 propertyId,
                 typeId,
                 count: operations.length,
@@ -183,7 +183,7 @@ class HeaderStateManager extends TransactionalStateManagerBase {
             );
           } else {
             const newProperty: EmailProperty = {
-              emailId: target.targetId!,
+              documentId: target.documentId!,
               value: headerValue,
               propertyId: newUuid(),
               createdOn: new Date(),
@@ -199,7 +199,7 @@ class HeaderStateManager extends TransactionalStateManagerBase {
               l.verbose({
                 message: `Created email property for email header `,
                 headerName,
-                emailId: result.emailId,
+                documentId: result.documentId,
                 propertyId: result.propertyId,
                 typeId: result.typeId,
               }),

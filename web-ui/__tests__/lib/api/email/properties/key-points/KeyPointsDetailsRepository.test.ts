@@ -74,18 +74,18 @@ describe('KeyPointsDetailsRepository', () => {
       const obj: KeyPointsDetails = {
         propertyId: 'test-id',
         policyId: 1,
-        emailId: 'email-id',
+        documentId: 4,
         createdOn: new Date(),
         value: 'test-value',
       };
       const [sqlQuery, values] = (repository as any).getCreateQueryProperties(
         obj,
       );
-      expect(sqlQuery).toContain('INSERT INTO email_property');
+      expect(sqlQuery).toContain('INSERT INTO document_property');
       expect(values).toEqual([
         obj.value,
         obj.propertyId,
-        obj.emailId,
+        obj.documentId,
         obj.policyId,
       ]);
     });

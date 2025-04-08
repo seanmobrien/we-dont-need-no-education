@@ -45,7 +45,7 @@ const providers: Provider[] = [
     authorize: async (credentials, req) => {
       if (hasSecretHeaderBypass(req)) {
         return {
-          id: 3,
+          id: '3',
           account_id: 3,
           image: '',
           name: 'secret header',
@@ -132,7 +132,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => {
         return token;
       },
       session({ session, token }: { session: Session; token: JWT }) {
-        session.user!.id = token.user_id!;
+        session.user!.id = String(token.user_id!);
         session.user!.account_id = token.account_id!;
         return session;
       },

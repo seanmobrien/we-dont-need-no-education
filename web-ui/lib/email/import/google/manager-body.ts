@@ -80,10 +80,11 @@ class EmailStageManager extends TransactionalStateManagerBase {
       emailContents,
       sentOn: dateInHeader ? new Date(dateInHeader) : new Date(0),
     };
-    const emailId = await this.#insertEmailRecord(emailData);
+    const { emailId, documentId } = await this.#insertEmailRecord(emailData);
     log((l) => l.info(`Inserted email record with ID: ${emailId}`));
     if (context.target) {
       context.target.targetId = emailId;
+      context.target.documentId = documentId;
     }
     try {
       await this.#addRecipientsToEmail({ emailId, recipients });
@@ -349,7 +350,8 @@ class EmailStageManager extends TransactionalStateManagerBase {
   emails.email_id IN (
     SELECT E.email_id 
     FROM emails E
-    JOIN email_property EP ON EP.email_id=E.email_id
+    JOIN document_units D ON D.email_id=E.email_id
+    JOIN document_property EP ON D.unit_id=EP.document_id    
     JOIN email_property_type ET ON EP.email_property_type_id=ET.email_property_type_id
     WHERE ET.property_name='In-Reply-To' AND (EP.property_value=${emailId} OR EP.property_value=${globalMessageIdWithBrackets})
   ) RETURNING emails.email_id`,
@@ -377,14 +379,14 @@ class EmailStageManager extends TransactionalStateManagerBase {
     subject: string;
     emailContents: string;
   }) {
-    const { emailId } = await this.#emailRepository.create({
+    const { emailId, documentId } = await this.#emailRepository.create({
       ...props,
       importedFromId: importedFrom,
     });
 
     // TODO: Use globalMessageId to
 
-    return emailId;
+    return { emailId, documentId };
   }
 }
 

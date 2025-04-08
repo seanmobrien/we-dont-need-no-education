@@ -18,10 +18,12 @@ public class CallToActionResponse extends DocumentProperty {
 
   public CallToActionResponse() {
     super();
+    setPropertyType(DocumentPropertyType.KnownValues.CallToActionResponse);
   }
 
   public CallToActionResponse(Map<String, Object> stateBag) {
     super(stateBag);
+    setPropertyType(DocumentPropertyType.KnownValues.CallToActionResponse);
     Db.saveUuidFromStateBag(
       stateBag,
       "action_property_id",

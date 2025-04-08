@@ -6,6 +6,7 @@ import com.obapps.schoolchatbot.util.Db;
 import com.obapps.schoolchatbot.util.Strings;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -18,6 +19,8 @@ public class DocumentProperty {
   Integer propertyType;
   String propertyValue;
   LocalDateTime createdOn;
+  private List<String> tags;
+  private List<String> policyBasis;
 
   public DocumentProperty() {}
 
@@ -31,6 +34,19 @@ public class DocumentProperty {
     this.documentId = documentId;
     this.propertyType = propertyType;
     this.propertyValue = propertyValue;
+  }
+
+  public DocumentProperty(
+    UUID propertyId,
+    Integer documentId,
+    Integer propertyType,
+    String propertyValue,
+    List<String> policyBasis,
+    List<String> tags
+  ) {
+    this(propertyId, documentId, propertyType, propertyValue);
+    this.policyBasis = policyBasis;
+    this.tags = tags;
   }
 
   public DocumentProperty(Map<String, Object> stateBag) {
@@ -47,6 +63,12 @@ public class DocumentProperty {
       "created_on",
       this::setCreatedOn
     );
+    Db.saveStringArrayFromStateBag(
+      stateBag,
+      "policy_basis",
+      this::setPolicyBasis
+    );
+    Db.saveStringArrayFromStateBag(stateBag, "tags", this::setTags);
   }
 
   public UUID getPropertyId() {
@@ -89,6 +111,42 @@ public class DocumentProperty {
     this.createdOn = createdOn;
   }
 
+  /**
+   * Gets the tags associated with this DocumentProperty.
+   *
+   * @return A list of tags as Strings.
+   */
+  public List<String> getTags() {
+    return tags;
+  }
+
+  /**
+   * Sets the tags for this DocumentProperty.
+   *
+   * @param tags The list of tags to set.
+   */
+  public void setTags(List<String> tags) {
+    this.tags = tags;
+  }
+
+  /**
+   * Gets the policy basis associated with this DocumentProperty.
+   *
+   * @return A list of policy basis as Strings.
+   */
+  public List<String> getPolicyBasis() {
+    return policyBasis;
+  }
+
+  /**
+   * Sets the policy basis for this DocumentProperty.
+   *
+   * @param policyBasis The list of policy basis to set.
+   */
+  public void setPolicyBasis(List<String> policyBasis) {
+    this.policyBasis = policyBasis;
+  }
+
   public String toJson() {
     ObjectMapper objectMapper = Strings.objectMapperFactory();
     try {
@@ -110,13 +168,15 @@ public class DocumentProperty {
       createdOn = LocalDateTime.now();
     }
     db.executeUpdate(
-      "INSERT INTO document_property (property_id, document_id, email_property_type_id, property_value, created_on) " +
-      "VALUES (?, ?, ?, ?, ?)",
+      "INSERT INTO document_property (property_id, document_id, email_property_type_id, property_value, created_on, policy_basis, tags) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?)",
       propertyId,
       documentId,
       propertyType,
       propertyValue,
-      createdOn
+      createdOn,
+      policyBasis == null || policyBasis.size() == 0 ? null : policyBasis,
+      tags == null || tags.size() == 0 ? null : tags
     );
     return (T) this;
   }
@@ -234,6 +294,56 @@ public class DocumentProperty {
     public <C extends B> C createdOn(LocalDateTime createdOn) {
       target.setCreatedOn(createdOn);
       return (C) self();
+    }
+
+    /**
+     * Sets the tags for the {@link DocumentProperty} using a comma-separated string.
+     *
+     * @param tags A {@link String} containing comma-separated tags.
+     * @param <B>  The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 tags(String tags) {
+      var tagList = Strings.commasToList(Objects.requireNonNullElse(tags, ""));
+      return tags(tagList);
+    }
+
+    /**
+     * Sets the tags for the {@link DocumentProperty} using a list of strings.
+     *
+     * @param tags A {@link List} of {@link String} representing the tags.
+     * @param <B>  The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 tags(List<String> tags) {
+      target.setTags(tags);
+      return self();
+    }
+
+    /**
+     * Sets the policy basis for the {@link DocumentProperty} using a comma-separated string.
+     *
+     * @param policy A {@link String} containing comma-separated policy basis.
+     * @param <B>    The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 policyBasis(String policy) {
+      var policies = Strings.commasToList(
+        Objects.requireNonNullElse(policy, "")
+      );
+      return policyBasis(policies);
+    }
+
+    /**
+     * Sets the policy basis for the {@link DocumentProperty} using a list of strings.
+     *
+     * @param policy A {@link List} of {@link String} representing the policy basis.
+     * @param <B>    The type of the builder.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 policyBasis(List<String> policy) {
+      target.setPolicyBasis(policy);
+      return self();
     }
 
     public T1 build() {

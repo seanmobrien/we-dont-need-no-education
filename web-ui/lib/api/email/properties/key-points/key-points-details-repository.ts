@@ -62,7 +62,7 @@ export class KeyPointsDetailsRepository extends BaseObjectRepository<
   protected getListQueryProperties(): [string, Array<unknown>, string] {
     return [
       `SELECT * FROM key_points_details 
-       JOIN email_property ON key_points_details.property_id = email_property.property_id 
+       JOIN document_property ON key_points_details.property_id = document_property.property_id 
        ORDER BY key_points_details.property_id`,
       [],
       `SELECT COUNT(*) as records FROM key_points_details`,
@@ -73,7 +73,7 @@ export class KeyPointsDetailsRepository extends BaseObjectRepository<
     return [
       `SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
             kpd.policy_id
-            FROM email_property ep 
+            FROM document_property ep 
              JOIN key_points_details kpd ON kpd.property_id = ep.property_id 
              JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
@@ -86,17 +86,27 @@ export class KeyPointsDetailsRepository extends BaseObjectRepository<
     propertyId,
     policyId,
     value,
-    emailId,
+    documentId,
+    tags,
+    policy_basis,
     createdOn,
   }: KeyPointsDetails): [string, Array<unknown>] {
     return [
       `WITH ins1 AS (
-        INSERT INTO email_property (property_value, email_property_type_id, property_id, email_id, created_on) 
-        VALUES ($1, 9, $2, $3, $4) RETURNING property_id
+        INSERT INTO document_property (property_value, email_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
+        VALUES ($1, 9, $2, $3, $4, $6, $7) RETURNING property_id
       )
       INSERT INTO key_points_details (property_id, policy_id) 
       VALUES ((SELECT property_id FROM ins1), $5) RETURNING *`,
-      [value, propertyId, emailId, createdOn ?? new Date(), policyId ?? null],
+      [
+        value,
+        propertyId,
+        documentId,
+        createdOn ?? new Date(),
+        policyId ?? null,
+        tags,
+        policy_basis,
+      ],
     ];
   }
 

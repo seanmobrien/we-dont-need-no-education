@@ -86,11 +86,11 @@ describe('CallToActionResponseDetailsRepository', () => {
       const [sqlQuery, values] = (repository as any).getCreateQueryProperties(
         obj,
       );
-      expect(sqlQuery).toContain('INSERT INTO email_property');
+      expect(sqlQuery).toContain('INSERT INTO document_property');
       expect(values).toEqual([
         obj.value,
         obj.propertyId,
-        obj.emailId,
+        obj.documentId,
         obj.createdOn,
         obj.actionPropertyId,
         obj.completionPercentage,

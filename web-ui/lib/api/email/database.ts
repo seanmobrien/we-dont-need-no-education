@@ -9,13 +9,17 @@ import {
 import { BaseObjectRepository } from '../_baseObjectRepository';
 import { query } from '@/lib/neondb';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
+import { db } from '@/lib/neondb';
 
 type RepositoryEmailSummary = Omit<
   EmailMessageSummary,
   'sender' | 'recipients'
 > & { senderId: number };
 
-type RepositoryEmail = RepositoryEmailSummary & { emailContents: string };
+type RepositoryEmail = RepositoryEmailSummary & {
+  emailContents: string;
+  documentId?: number;
+};
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,
@@ -49,6 +53,25 @@ export class EmailRepository extends BaseObjectRepository<
       objectMap: mapRecordToObject,
       summaryMap: mapRecordToSummary,
     });
+  }
+
+  public async create(
+    props: Omit<RepositoryEmail, 'emailId'>,
+  ): Promise<RepositoryEmail> {
+    const ret = await super.create(props);
+    if (ret && ret.emailId) {
+      const importDate = props.sentOn ? new Date(props.sentOn) : new Date();
+      const res = await db(
+        (sql) => sql`INSERT INTO document_units (email_id, content, created_on)
+        VALUES (${ret.emailId}, ${props.emailContents}, ${importDate})
+        returning unit_id`,
+      );
+      if (res.length < 1) {
+        throw new Error('Failed to create document unit');
+      }
+      ret.documentId = res[0].unit_id;
+    }
+    return ret;
   }
   /**
    * Validates the input for a specific method.

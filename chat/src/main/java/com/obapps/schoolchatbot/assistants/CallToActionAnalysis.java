@@ -103,17 +103,15 @@ public class CallToActionAnalysis extends DocumentChatAssistant {
   }
 
   protected String lookupCtaHistory() {
-    return "TODO: Add Call to Action Retriever and pull from there.\n";
-    /*
+    return "TODO: Add Call to Action Retriever and pull from there.\n";    
     var contentBuilder = new StringBuilder();
     
     try {
-      var ctaHistory = Db.getInstance()
+      var ctaHistory = this.Content.
         .selectRecords(
           "SELECT * FROM document_unit_cta_history(?)",
           getDocumentId()
         );
-      StringBuilder contentBuilder = new StringBuilder();
       if (!ctaHistory.isEmpty()) {
         contentBuilder
           .append(
@@ -137,18 +135,16 @@ public class CallToActionAnalysis extends DocumentChatAssistant {
         "states a technical error occurred during message analysis and manual review is required.  Error Details: " +
         ex.getMessage()
       );
-    }
-    */
+    }    
   }
 
   String serializeCallsToAction(
-    AugmentedContentList content,
     List<Map<String, Object>> ctaHistory
   ) {
     var lastActionId = "";
     var actionJsonArray = new JsonArray();
     JsonObject jsonAction = null;
-    var meta = content.getActiveDocument();
+    var meta = this.getContent().getActiveDocument();    
     var documentId = meta.getDocumentId();
     for (var record : ctaHistory) {
       if (record == null) continue;
@@ -171,10 +167,10 @@ public class CallToActionAnalysis extends DocumentChatAssistant {
         saveProperty(record, "opened_date", jsonAction);
         saveProperty(record, "action_description", jsonAction);
         saveProperty(record, "compliance_close_date", jsonAction);
-        saveProperty(record, "impacted_policy", jsonAction);
         saveProperty(record, "completion_percentage", jsonAction);
         saveProperty(record, "compliance_aggregate_score", jsonAction);
-        saveProperty(record, "impacted_policy", jsonAction);
+        saveProperty(record, "policy_basis", jsonAction);
+        saveProperty(record, "tags", jsonAction);
       } else {
         var jsonResponse = new JsonObject();
         jsonAction.get("responses").getAsJsonArray().add(jsonResponse);
