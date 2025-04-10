@@ -35,33 +35,15 @@ public class JustInTimePolicyLookup {
       : chunkFilter;
   }
 
-  public enum PolicyType {
-    All,
-    SchoolBoard,
-    State,
-    Federel,
-  }
-
   public String summarizePolicy(String query) {
-    return summarizePolicy(query, PolicyType.All);
+    return summarizePolicy(query, AzurePolicySearchClient.ScopeType.All);
   }
 
-  public String summarizePolicy(String query, PolicyType policyType) {
-    Integer scopeFilter;
-    switch (policyType) {
-      case SchoolBoard:
-        scopeFilter = 1;
-        break;
-      case State:
-        scopeFilter = 2;
-        break;
-      case Federel:
-        scopeFilter = 3;
-        break;
-      default:
-        scopeFilter = -1; // No filter applied
-    }
-    List<String> chunks = searchClient.hybridSearch(query, 15, scopeFilter); // pull top 15
+  public String summarizePolicy(
+    String query,
+    AzurePolicySearchClient.ScopeType policyType
+  ) {
+    List<String> chunks = searchClient.hybridSearch(query, 15, policyType); // pull top 15
     List<String> filtered = chunkFilter.filterTopPolicyChunks(chunks, 5); // use best 5
 
     StringBuilder chunkBlock = new StringBuilder();

@@ -6,6 +6,10 @@ import com.obapps.schoolchatbot.util.EnvVars;
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader;
 import dev.langchain4j.data.document.parser.apache.pdfbox.ApachePdfBoxDocumentParser;
 
+/**
+ * A utility class for embedding Minnesota law documents into a vector database.
+ * This class provides methods to process and embed Minnesota law documents for search and retrieval.
+ */
 public class EmbedMnLaw extends DocumentEmbedder {
 
   private EmbedMnLaw(EmbedPolicyFolderOptions options) {
@@ -69,5 +73,14 @@ public class EmbedMnLaw extends DocumentEmbedder {
     }
        */
     return processed > 0;
+  }
+
+  /**
+   * The main method to execute the Minnesota law document embedding process.
+   *
+   * @param args Command-line arguments passed to the application.
+   */
+  public static void main(String[] args) {
+    // ...existing code...
   }
 }

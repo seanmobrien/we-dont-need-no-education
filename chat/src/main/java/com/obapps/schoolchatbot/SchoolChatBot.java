@@ -7,47 +7,26 @@ import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import java.util.Scanner;
 
 /**
- * The {@code SchoolChatBot} class provides a command-line interface for interacting
- * with a chatbot designed for educational purposes. It allows users to analyze
- * text for key points or calls to action using Azure OpenAI services. The class
- * manages the lifecycle of the chatbot, including initialization, user interaction,
- * and cleanup.
+ * The main entry point for the SchoolChatBot application.
+ * This class initializes and starts the chatbot application.
  *
- * <p>Features:
+ * <p>Key Features:</p>
  * <ul>
- *   <li>Singleton pattern to ensure a single instance of the chatbot.</li>
- *   <li>Integration with Azure OpenAI for text analysis.</li>
- *   <li>Command-line interface for user interaction.</li>
+ *   <li>Provides a singleton instance of the chatbot.</li>
+ *   <li>Initializes the application with a shared {@link Scanner} instance.</li>
+ *   <li>Includes utility methods for accessing AI models and configurations.</li>
  * </ul>
  *
- * <p>Usage:
- * <pre>{@code
- * public static void main(String[] args) {
- *     SchoolChatBot.main(args);
- * }
- * }</pre>
- *
- * <p>Dependencies:
- * <ul>
- *   <li>{@code AzureOpenAiChatModel} for OpenAI integration.</li>
- *   <li>{@code EnvVars} for environment variable configuration.</li>
- *   <li>{@code Scanner} for reading user input.</li>
- *   <li>{@code KeyPointAnalysis} and {@code CallToActionAnalysis} for text analysis.</li>
- * </ul>
- *
- * <p>Example Interaction:
+ * <p>Example usage:</p>
  * <pre>
- * Welcome to the School Chat Bot!
- * Please select an option:
- * 1. Analyze for Key Points
- * 2. Analyze for Calls to Action
- * 3. Exit
+ * {@code
+ * SchoolChatBot bot = SchoolChatBot.getInstance();
+ * bot.start();
+ * }
  * </pre>
  *
- * @see AzureOpenAiChatModel
- * @see EnvVars
- * @see KeyPointAnalysis
- * @see CallToActionAnalysis
+ * <p>Thread Safety:</p>
+ * <p>This class is thread-safe as it uses a synchronized singleton pattern for initialization.</p>
  */
 public class SchoolChatBot {
 
@@ -162,11 +141,9 @@ public class SchoolChatBot {
   }
 
   /**
-   * The main entry point for the School Chat Bot application.
-   * This method provides a command-line interface for users to interact with the bot.
-   * Users can choose to analyze key points or calls to action in their messages.
+   * The main method to launch the SchoolChatBot application.
    *
-   * @param args Command-line arguments (not used).
+   * @param args Command-line arguments passed to the application.
    */
   public static void main(String[] args) {
     try (Scanner scanner = new Scanner(System.in)) {
@@ -176,6 +153,11 @@ public class SchoolChatBot {
     }
   }
 
+  /**
+   * A simple method to return a greeting message.
+   *
+   * @return A greeting string "world!".
+   */
   public static String hello() {
     return "world!";
   }

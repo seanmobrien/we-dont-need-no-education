@@ -1,6 +1,9 @@
 package com.obapps.schoolchatbot.assistants.tools;
 
 import com.obapps.schoolchatbot.assistants.DocumentChatAssistant;
+import com.obapps.schoolchatbot.assistants.services.AzurePolicySearchClient;
+import com.obapps.schoolchatbot.assistants.services.AzureSearchClient;
+import com.obapps.schoolchatbot.assistants.services.JustInTimeDocumentLookup;
 import com.obapps.schoolchatbot.assistants.services.JustInTimePolicyLookup;
 import com.obapps.schoolchatbot.data.*;
 import com.obapps.schoolchatbot.data.repositories.HistoricKeyPointRepository;
@@ -13,15 +16,17 @@ public class AddKeyPointsTool extends MessageTool {
 
   private final HistoricKeyPointRepository keyPointRepository;
   private final JustInTimePolicyLookup policyLookup;
+  private final JustInTimeDocumentLookup documentLookup;
 
   /**
    * Constructor for the AddKeyPointsTool class.
    * Initializes the tool with the provided message metadata and sets up a logger.
    *
    * @param messageMetadata The message metadata associated with this tool.
+   * @throws SQLException
    */
   public AddKeyPointsTool(DocumentChatAssistant content) {
-    this(content, null, null);
+    this(content, null, null, null);
   }
 
   /**
@@ -29,11 +34,13 @@ public class AddKeyPointsTool extends MessageTool {
    * Initializes the tool with the provided message metadata and sets up a logger.
    *
    * @param messageMetadata The message metadata associated with this tool.
+   * @throws SQLException
    */
   public AddKeyPointsTool(
     DocumentChatAssistant content,
     HistoricKeyPointRepository keyPointRepository,
-    JustInTimePolicyLookup policyLookup
+    JustInTimePolicyLookup policyLookup,
+    JustInTimeDocumentLookup documentLookup
   ) {
     super(content);
     this.keyPointRepository = keyPointRepository == null
@@ -42,6 +49,9 @@ public class AddKeyPointsTool extends MessageTool {
     this.policyLookup = policyLookup == null
       ? new JustInTimePolicyLookup()
       : policyLookup;
+    this.documentLookup = documentLookup == null
+      ? new JustInTimeDocumentLookup()
+      : documentLookup;
   }
 
   @Tool(
@@ -150,7 +160,7 @@ public class AddKeyPointsTool extends MessageTool {
           tags,
           policyBasis
         );
-      } catch (SQLException e2) {
+      } catch (Throwable e2) {
         // Supresss - we're already in an error state
       }
       return "ERROR: " + ex.getMessage();
@@ -244,7 +254,7 @@ public class AddKeyPointsTool extends MessageTool {
           matchFromSummary,
           excludeInferred
         );
-      } catch (SQLException e2) {
+      } catch (Throwable e2) {
         // Supresss - we're already in an error state
       }
       return new KeyPoint[0];
@@ -273,20 +283,20 @@ public class AddKeyPointsTool extends MessageTool {
       "  - Empty String: Search all policies.\n"
     ) String scope
   ) {
-    JustInTimePolicyLookup.PolicyType policyType = null;
+    AzurePolicySearchClient.ScopeType policyType = null;
     if (scope != null) {
       switch (scope) {
         case "school_policy":
-          policyType = JustInTimePolicyLookup.PolicyType.SchoolBoard;
+          policyType = AzurePolicySearchClient.ScopeType.SchoolBoard;
           break;
         case "state_policy":
-          policyType = JustInTimePolicyLookup.PolicyType.State;
+          policyType = AzurePolicySearchClient.ScopeType.State;
           break;
         case "federal_policy":
-          policyType = JustInTimePolicyLookup.PolicyType.Federel;
+          policyType = AzurePolicySearchClient.ScopeType.Federal;
           break;
         default:
-          policyType = JustInTimePolicyLookup.PolicyType.All;
+          policyType = AzurePolicySearchClient.ScopeType.All;
           break;
       }
     }
@@ -295,6 +305,73 @@ public class AddKeyPointsTool extends MessageTool {
     } catch (Exception e) {
       log.error(
         "Unexpected failure searching for policy summary.  Details: " + query,
+        e
+      );
+      return "ERROR: " + e.getMessage();
+    }
+  }
+
+  /**
+   * Uses vector search to retrieve a summary of a document.
+   *
+   * The summary is returned as a string. The **scope** property can be used to ensure
+   * results are relevant to your request.
+   *
+   * **Returns**
+   * - A string containing the summary of the document associated with the provided query.
+   *   If no document is found, an empty string is returned.
+   * - If the operation failed, the word 'ERROR' and a description of the failure, e.g.
+   *   'ERROR: No document context available.'
+   *
+   * @param query The search query. This can be a policy name (e.g., 'Title IX' or 'Policy 506'),
+   *              a specific topic, or a generalized search string. This parameter is required.
+   * @param scope Used to filter the scope of searched documents. Supported values are:
+   *              - "email": Search only email records.
+   *              - "attachment": Search only attachments.
+   *              - Empty String: Search all documents.
+   *              This parameter is required.
+   * @return A string containing the summary of the document or an error message if the operation fails.
+   */
+  @Tool(
+    name = "lookupDocumentSummary",
+    value = "Uses vector search to retrieve a summary of a document.  " +
+    "The summary is returned as a string.\n  The **scope** property can be used to ensure results are relevant to your request.\n" +
+    " ** Returns **\n" +
+    "  - A string containing the summary of the document associated with the provided query.  If no document is found, an empty string is returned.\n" +
+    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
+  )
+  public String lookupDocumentSummary(
+    @P(
+      required = true,
+      value = "The search query.  This can be a policy name (eg 'Title IX' or 'Policy 506'), a specific topic, or a genralized search string."
+    ) String query,
+    @P(
+      required = true,
+      value = "Used to filter the scope of searched documents.  Supported values are:\n" +
+      "  - email: Search only email records.\n" +
+      "  - attachment: Search only attachments.\n" +
+      "  - Empty String: Search all documents.\n"
+    ) String scope
+  ) {
+    AzureSearchClient.ScopeType policyType = null;
+    if (scope != null) {
+      switch (scope) {
+        case "email":
+          policyType = AzureSearchClient.ScopeType.Email;
+          break;
+        case "attachment":
+          policyType = AzureSearchClient.ScopeType.Attachment;
+          break;
+        default:
+          policyType = AzureSearchClient.ScopeType.All;
+          break;
+      }
+    }
+    try {
+      return this.documentLookup.summarizeDocument(query, policyType);
+    } catch (Exception e) {
+      log.error(
+        "Unexpected failure searching for nessage summary.  Details: " + query,
         e
       );
       return "ERROR: " + e.getMessage();

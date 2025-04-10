@@ -5,6 +5,26 @@ package com.obapps.schoolchatbot.data;
  * representing different types of policies. These constants can be used
  * throughout the application to refer to specific policy types in a
  * consistent and type-safe manner.
+ *
+ * <p>Key Features:</p>
+ * <ul>
+ *   <li>Defines constants for school, state law, and federal law policy types.</li>
+ *   <li>Provides utility methods for retrieving policy types and descriptions.</li>
+ * </ul>
+ *
+ * <p>Example usage:</p>
+ * <pre>
+ * {@code
+ * Integer schoolPolicy = PolicyTypeConstants.POLICY_TYPE_SCHOOL;
+ * PolicyType type = PolicyTypeConstants.getPolicyType(1);
+ * String description = PolicyTypeConstants.getDescription(type);
+ * }
+ * </pre>
+ *
+ * <p>Thread Safety:</p>
+ * <p>This class is thread-safe as it only contains static methods and constants.</p>
+ *
+ * @see PolicyType
  */
 public final class PolicyTypeConstants {
 

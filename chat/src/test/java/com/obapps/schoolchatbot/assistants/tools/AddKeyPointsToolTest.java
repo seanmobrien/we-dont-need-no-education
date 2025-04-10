@@ -8,6 +8,7 @@ import static org.mockito.Mockito.*;
 
 import com.obapps.schoolchatbot.assistants.DocumentChatAssistant;
 import com.obapps.schoolchatbot.assistants.content.AugmentedContentList;
+import com.obapps.schoolchatbot.assistants.services.JustInTimeDocumentLookup;
 import com.obapps.schoolchatbot.assistants.services.JustInTimePolicyLookup;
 import com.obapps.schoolchatbot.data.DocumentWithMetadata;
 import com.obapps.schoolchatbot.data.HistoricKeyPoint;
@@ -27,6 +28,7 @@ public class AddKeyPointsToolTest {
   private HistoricKeyPointRepository mockRepository;
   private DocumentWithMetadata mockMessageMetadata;
   private JustInTimePolicyLookup mockJustInTimePolicyLookup;
+  private JustInTimeDocumentLookup mockJustInTimeDocumentLookup;
 
   @Mock
   Db mockDb;
@@ -36,6 +38,7 @@ public class AddKeyPointsToolTest {
     mockAssistant = mock(DocumentChatAssistant.class);
     var mockContent = mock(AugmentedContentList.class);
     mockJustInTimePolicyLookup = mock(JustInTimePolicyLookup.class);
+    mockJustInTimeDocumentLookup = mock(JustInTimeDocumentLookup.class);
     mockMessageMetadata = mock(DocumentWithMetadata.class);
     when(mockContent.getActiveDocument()).thenReturn(mockMessageMetadata);
     when(mockAssistant.getContent()).thenReturn(mockContent);
@@ -46,7 +49,8 @@ public class AddKeyPointsToolTest {
     addKeyPointsTool = new AddKeyPointsTool(
       mockAssistant,
       mockRepository,
-      mockJustInTimePolicyLookup
+      mockJustInTimePolicyLookup,
+      mockJustInTimeDocumentLookup
     );
   }
 

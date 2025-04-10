@@ -3,6 +3,7 @@ package com.obapps.schoolchatbot.data;
 import com.obapps.schoolchatbot.util.Db;
 import java.sql.SQLException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 public class KeyPoint extends DocumentProperty {
@@ -27,7 +28,7 @@ public class KeyPoint extends DocumentProperty {
    * @param inferred True if inferred, otherwise false.
    */
   public void setInferred(Boolean inferred) {
-    this.inferred = inferred;
+    this.inferred = Objects.requireNonNullElse(inferred, false);
   }
 
   /**

@@ -63,8 +63,8 @@ public class HistoricKeyPointTests {
     assertFalse(result.isEmpty(), "Result should not be empty");
     assertEquals(1, result.size(), "Result size should match expected size");
     var record = result.get(0);
-    assertEquals(expectedRecord.get("key_note"), record.propertyValue);
-    assertEquals(expectedRecord.get("property_id"), record.propertyId);
+    assertEquals(expectedRecord.get("key_note"), record.getPropertyValue());
+    assertEquals(expectedRecord.get("property_id"), record.getPropertyId());
   }
 
   @Test
@@ -86,8 +86,8 @@ public class HistoricKeyPointTests {
 
     assertEquals(1, result.size());
     HistoricKeyPoint keyPoint = result.get(0);
-    assertEquals(mockRecord.get("key_note"), keyPoint.propertyValue);
-    assertEquals(mockRecord.get("property_id"), keyPoint.propertyId);
+    assertEquals(mockRecord.get("key_note"), keyPoint.getPropertyValue());
+    assertEquals(mockRecord.get("property_id"), keyPoint.getPropertyId());
   }
 
   @Test

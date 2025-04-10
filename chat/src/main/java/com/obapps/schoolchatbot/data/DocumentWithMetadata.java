@@ -6,6 +6,7 @@ import com.obapps.schoolchatbot.util.Db;
 import com.obapps.schoolchatbot.util.Strings;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public class DocumentWithMetadata implements IMessageMetadata {
@@ -20,6 +21,9 @@ public class DocumentWithMetadata implements IMessageMetadata {
   Boolean isFromParent;
   String subject;
   Integer threadId;
+  private String senderRole;
+  private UUID replyToEmailId;
+  private List<String> relatedEmails;
 
   public DocumentWithMetadata() {
     // Default constructor
@@ -74,6 +78,30 @@ public class DocumentWithMetadata implements IMessageMetadata {
     return this.content;
   }
 
+  public String getSenderRole() {
+    return senderRole;
+  }
+
+  public void setSenderRole(String senderRole) {
+    this.senderRole = senderRole;
+  }
+
+  public UUID getReplyToEmailId() {
+    return replyToEmailId;
+  }
+
+  public void setReplyToEmailId(UUID replyToEmailId) {
+    this.replyToEmailId = replyToEmailId;
+  }
+
+  public List<String> getRelatedEmails() {
+    return relatedEmails;
+  }
+
+  public void setRelatedEmails(List<String> relatedEmails) {
+    this.relatedEmails = relatedEmails;
+  }
+
   public String toJson() {
     ObjectMapper objectMapper = Strings.objectMapperFactory();
     try {
@@ -102,6 +130,9 @@ public class DocumentWithMetadata implements IMessageMetadata {
     private String content;
     private String subject;
     private Integer threadId;
+    private String senderRole;
+    private UUID replyToEmailId;
+    private List<String> relatedEmails;
 
     public Builder setDocumentId(Integer documentId) {
       this.documentId = documentId;
@@ -153,6 +184,21 @@ public class DocumentWithMetadata implements IMessageMetadata {
       return this;
     }
 
+    public Builder setSenderRole(String senderRole) {
+      this.senderRole = senderRole;
+      return this;
+    }
+
+    public Builder setReplyToEmailId(UUID replyToEmailId) {
+      this.replyToEmailId = replyToEmailId;
+      return this;
+    }
+
+    public Builder setRelatedEmails(List<String> relatedEmails) {
+      this.relatedEmails = relatedEmails;
+      return this;
+    }
+
     public DocumentWithMetadata build() {
       if (this.documentId < 1) {
         throw new IllegalStateException("Document ID cannot be null");
@@ -171,6 +217,10 @@ public class DocumentWithMetadata implements IMessageMetadata {
       emailMetadata.isFromParent = this.isFromParent;
       emailMetadata.content = this.content;
       emailMetadata.subject = this.subject;
+      emailMetadata.senderRole = this.senderRole;
+      emailMetadata.replyToEmailId = this.replyToEmailId;
+      emailMetadata.relatedEmails = this.relatedEmails;
+
       return emailMetadata;
     }
   }
@@ -208,8 +258,9 @@ public class DocumentWithMetadata implements IMessageMetadata {
     throws SQLException {
     var resultset = Db.getInstance()
       .selectRecords(
-        "SELECT du.unit_id AS document_id, du.content, du.document_type, e.email_id, du.created_on, e.sender_id, " +
-        "e.subject, e.thread_id, c.name AS sender_name, c.is_district_staff " +
+        "SELECT du.unit_id AS document_id, du.content, du.document_type, e.email_id, e.sender_id, " +
+        "e.subject, e.thread_id, e.sent_timestamp, e.parent_id, c.name AS sender_name, " +
+        "c.role_dscr, document_unit_related_emails(du.unit_id) AS related_emails " +
         "FROM document_units du " +
         "JOIN emails e ON du.email_id=e.email_id " +
         "JOIN contacts c ON e.sender_id=c.contact_id " +
@@ -226,17 +277,21 @@ public class DocumentWithMetadata implements IMessageMetadata {
     Db.saveUuidFromStateBag(record, "email_id", b::setEmailId);
     Db.saveLocalDateTimeFromStateBag(
       record,
-      "created_on",
+      "sent_timestamp",
       b::setDocumentSendDate
     );
     Db.saveFromStateBag(record, "sender_name", b::setSender);
-    Db.saveFromStateBag(record, "recipients", b::setRecipients);
+    Db.saveFromStateBag(record, "role_dscr", b::setSenderRole);
+    Db.saveUuidFromStateBag(record, "replyToEmail", b::setReplyToEmailId);
+    Db.saveStringArrayFromStateBag(
+      record,
+      "related_emails",
+      b::setRelatedEmails
+    );
     Db.saveFromStateBag(record, "subject", b::setSubject);
     Db.saveIntFromStateBag(record, "thread_id", b::setThreadId);
     Db.saveIntFromStateBag(record, "document_id", b::setDocumentId);
-    Db.saveBooleanFromStateBag(record, "is_district_staff", check ->
-      b.setIsFromParent(!check)
-    );
+
     return b.build();
   }
 }

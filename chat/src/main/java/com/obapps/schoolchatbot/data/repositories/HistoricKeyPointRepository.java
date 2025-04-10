@@ -17,11 +17,40 @@ import java.util.List;
  * </ul>
  *
  * <p>All database interactions are facilitated through the singleton instance of the
- * {@link Db} class.
+ * {@link Db} class, unless a custom instance is provided.
  *
  * <p>Methods in this class may throw {@link SQLException} if a database access error occurs.
  */
 public class HistoricKeyPointRepository {
+
+  private Db _db;
+
+  /**
+   * Default constructor that uses the singleton instance of {@link Db}.
+   */
+  public HistoricKeyPointRepository() {
+    this._db = null;
+  }
+
+  /**
+   * Constructor that allows injecting a custom {@link Db} instance.
+   *
+   * @param db The custom {@link Db} instance to use.
+   */
+  public HistoricKeyPointRepository(Db db) {
+    this._db = db;
+  }
+
+  /**
+   * Provides access to the database instance used by this repository.
+   *
+   * @return The {@link Db} instance used by this repository.
+   * @throws SQLException
+   */
+  public Db db() throws SQLException {
+    this._db = this._db == null ? Db.getInstance() : this._db;
+    return this._db;
+  }
 
   /**
    * Retrieves the history of key points associated with a specific document.
@@ -98,15 +127,5 @@ public class HistoricKeyPointRepository {
       excludeInferred,
       excludeDocumentId
     );
-  }
-
-  /**
-   * Provides access to the singleton instance of the database.
-   *
-   * @return The singleton instance of the {@link Db} class.
-   * @throws SQLException If a database access error occurs.
-   */
-  public Db db() throws SQLException {
-    return Db.getInstance();
   }
 }

@@ -50,6 +50,17 @@ public class AugmentedSearchMetadataType {
     public static String chapter = "policy_chapter";
   }
 
+  public static class CallToAction {
+
+    public static String name = "CallToAction";
+    public static final String id = "id";
+    public static final String document_id = "document_id";
+    public static final String policy_dscr = "policy_dscr";
+    public static final String tags = "tags";
+    public static final String completion_percentage = "completion_percentage";
+    public static final String current_document = "current_document";
+  }
+
   public static AugmentedContent createAugmentedContent(Content source) {
     if (source == null) {
       throw new IllegalArgumentException("source cannot be null");
@@ -63,6 +74,8 @@ public class AugmentedSearchMetadataType {
         return new AugmentedEmailSearch(source);
       case PolicySearch:
         return new AugmentedPolicySearch(source);
+      case CallToAction:
+        return new CallToActionContent(source);
       default:
         return new GenericAugmentedContent(source);
     }

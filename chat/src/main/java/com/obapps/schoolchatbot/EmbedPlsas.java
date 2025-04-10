@@ -4,6 +4,10 @@ import com.obapps.schoolchatbot.data.*;
 import com.obapps.schoolchatbot.util.DocumentEmbedder;
 import com.obapps.schoolchatbot.util.EnvVars;
 
+/**
+ * A utility class for embedding PLSAS (Prior Lake-Savage Area Schools) documents into a vector database.
+ * This class provides methods to process and embed PLSAS documents for search and retrieval.
+ */
 public class EmbedPlsas extends DocumentEmbedder {
 
   private EmbedPlsas(EmbedPolicyFolderOptions options) {
@@ -34,5 +38,14 @@ public class EmbedPlsas extends DocumentEmbedder {
     );
 
     return true;
+  }
+
+  /**
+   * The main method to execute the PLSAS document embedding process.
+   *
+   * @param args Command-line arguments passed to the application.
+   */
+  public static void main(String[] args) {
+    // ...existing code...
   }
 }

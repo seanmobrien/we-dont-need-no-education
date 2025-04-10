@@ -21,7 +21,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import okhttp3.*;
+import org.apache.commons.cli.Options;
 
+/**
+ * A utility class for embedding documents into a vector database.
+ * This class provides methods to process and embed documents for search and retrieval.
+ */
 public class EmbedDocuments {
 
   private EmbedDocuments(EmbedDocumentsOptions options) {
@@ -266,7 +271,12 @@ public class EmbedDocuments {
   protected void dispose() {
     // Dispose of resources if needed
   }
-  /*
+
+  /**
+   * The main method to execute the document embedding process.
+   *
+   * @param args Command-line arguments passed to the application.
+   */
   public static void main(String[] args) {
     EmbedDocumentsOptions options;
     try {
@@ -283,7 +293,7 @@ public class EmbedDocuments {
       options = new EmbedDocumentsOptions()
         .setReindex(parser.hasOption("reindex"))
         .setVerbose(parser.hasOption("verbose"));
-    } catch (ParseException e) {
+    } catch (Exception e) {
       System.out.println("Could not parse command line: " + e.getMessage());
       return;
     }
@@ -303,5 +313,4 @@ public class EmbedDocuments {
     }
     System.out.println("All done...");
   }
-  */
 }

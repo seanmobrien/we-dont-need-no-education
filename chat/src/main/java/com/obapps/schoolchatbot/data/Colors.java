@@ -2,6 +2,26 @@ package com.obapps.schoolchatbot.data;
 
 import java.util.function.Function;
 
+/**
+ * The {@code Colors} class provides ANSI escape codes for text formatting and coloring in the console.
+ *
+ * <p>Key Features:</p>
+ * <ul>
+ *   <li>Provides constants for text colors, background colors, and text styles.</li>
+ *   <li>Includes utility methods for applying and resetting colors.</li>
+ * </ul>
+ *
+ * <p>Example usage:</p>
+ * <pre>
+ * {@code
+ * Colors.Set(c -> c.RED + "This is red text" + c.RESET);
+ * Colors.Reset();
+ * }
+ * </pre>
+ *
+ * <p>Thread Safety:</p>
+ * <p>This class is thread-safe as it only contains static methods and constants.</p>
+ */
 public class Colors {
 
   public final String RESET = "\u001B[0m";

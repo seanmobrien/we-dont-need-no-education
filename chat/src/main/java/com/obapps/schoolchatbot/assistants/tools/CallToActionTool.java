@@ -1,6 +1,9 @@
 package com.obapps.schoolchatbot.assistants.tools;
 
 import com.obapps.schoolchatbot.assistants.DocumentChatAssistant;
+import com.obapps.schoolchatbot.assistants.services.AzurePolicySearchClient;
+import com.obapps.schoolchatbot.assistants.services.AzureSearchClient;
+import com.obapps.schoolchatbot.assistants.services.JustInTimeDocumentLookup;
 import com.obapps.schoolchatbot.assistants.services.JustInTimePolicyLookup;
 import com.obapps.schoolchatbot.data.*;
 import com.obapps.schoolchatbot.util.Db;
@@ -9,28 +12,35 @@ import dev.langchain4j.agent.tool.Tool;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 public class CallToActionTool extends MessageTool {
 
   private final Db _innerDb;
   private final JustInTimePolicyLookup policyLookup;
+  private final JustInTimeDocumentLookup documentLookup;
 
   public CallToActionTool(DocumentChatAssistant content) {
-    this(content, null, null);
+    this(content, null, null, null);
   }
 
   public CallToActionTool(
     DocumentChatAssistant content,
     Db db,
-    JustInTimePolicyLookup policyLookup
+    JustInTimePolicyLookup policyLookup,
+    JustInTimeDocumentLookup documentLookup
   ) {
     super(content);
     this._innerDb = db;
     this.policyLookup = policyLookup == null
       ? new JustInTimePolicyLookup()
       : policyLookup;
+    this.documentLookup = documentLookup == null
+      ? new JustInTimeDocumentLookup()
+      : documentLookup;
   }
 
   private Db db() throws SQLException {
@@ -40,6 +50,32 @@ public class CallToActionTool extends MessageTool {
     return _innerDb;
   }
 
+  /**
+   * Adds a newly identified and analyzed call to action from the target document to the database.
+   *
+   * @param action The action to be taken, such as "Provide this record", "Explain why this action was taken",
+   *               or "What steps will be taken to keep my child safe".
+   * @param inferred A boolean indicating whether this CTA is inferred from the document, or explicitly stated.
+   *                 If the point is explicitly stated, this should be false. If the CTA is inferred, this should be true.
+   * @param dueDate The date by which responsive action is expected to be taken, in the format "yyyy-MM-dd".
+   * @param dueDateEnforceable A boolean indicating whether the due date is enforceable, e.g., has a demonstrable basis
+   *                           in law or school board policy.
+   * @param reasonableRating A rating from 1-10 as to how reasonable the request for action is. Requests for actions
+   *                         the district is obligated to perform, such as a valid records request, are rated at 10.
+   *                         Requests that the district is not legally able to perform, such as violating FERPA privacy
+   *                         protections, are rated at 1.
+   * @param compliance_rating_current A rating from 0-100 regarding the degree to which this email specifically represents
+   *                                  compliance with a district's legal and moral obligations in regard to this call to action.
+   * @param compliance_rating_current_reasons A comma-separated list of reasons why the compliance rating was assigned,
+   *                                          such as "No response provided", "No explanation provided". If no reasons are
+   *                                          known, pass null or an empty string. If the compliance rating is not relevant
+   *                                          to this email, pass null or an empty string.
+   * @param policyBasis A comma-delimited list of any laws or school board policies that provide a basis for this point,
+   *                    e.g., "Title IX, MN Statute 13.3, Board Policy 503".
+   * @param tags A comma-delimited list of tags that can be used to categorize this point, e.g., "bullying, harassment, discrimination".
+   *             This parameter is optional and can be null.
+   * @throws Throwable If an unexpected error occurs during the process of adding the call to action to the database.
+   */
   @Tool(
     name = "addCallToActionToDatabase",
     value = "Adds a newly identified and analyzed call to action from the target document to our database."
@@ -51,8 +87,20 @@ public class CallToActionTool extends MessageTool {
     ) String action,
     @P(
       required = true,
-      value = "If a mandated response timeframe can be determined, provide the date the response must be completed by to remain complaint with that obligation.  If no timeframe is known, then pass null or an empty string."
+      value = "A boolean indicating whether this CTA is inferred from the document, or explicitly stated.  If the point is explicitly stated, then this should be false.  If the CTA is inferred, then this should be true."
+    ) Boolean inferred,
+    @P(
+      required = true,
+      value = "The date by which responsive action is expected to be taken."
     ) String dueDate,
+    @P(
+      required = true,
+      value = "A boolean indicating whether the due date is enforceable - eg has demonstratible basis in law or school board policy."
+    ) Boolean dueDateEnforceable,
+    @P(
+      required = true,
+      value = "A rating from 1-10 as to how reasonable the request for action is.  Requests for actions the district is obligated to perform, for example a valid records request, are rated at 10.  Requests that the District do things they are not legally able to do - for example, violating FERPA privacy protections - are rated at 1."
+    ) Integer reasonableRating,
     @P(
       required = true,
       value = "A rating from 0-100 regarding the degree to which this email in specific represents compliance with a district's legal and moral obligations in regards to this call to action."
@@ -71,7 +119,7 @@ public class CallToActionTool extends MessageTool {
       required = false,
       value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
     ) String tags
-  ) {
+  ) throws Throwable {
     var msg = message();
     try {
       // First, email property record
@@ -145,6 +193,32 @@ public class CallToActionTool extends MessageTool {
     Colors.Reset();
   }
 
+  /**
+   * Adds a Responsive Action that has been identified within the target document to the database.
+   * This includes a link to the Call to Action (CTA) this is in response to, and ratings of compliance
+   * for both the specific response and the CTA as a whole.
+   *
+   * @param call_to_action_id Unique identifier for the call to action this response is in reference to.
+   *                          If the action is responsive to more than one CTA, add a record for each of them.
+   * @param responsive_action The responsive action taken.
+   * @param completion_percentage The percentage to which this CTA can be considered fully resolved.
+   * @param compliance_response_score A rating from 0-100 regarding the degree to which this email specifically
+   *                                  represents compliance with a district's legal and moral obligations in
+   *                                  regards to this call to action.
+   * @param compliance_response_reasons A list of reasons why the compliance rating was assigned. This should
+   *                                    be a comma-separated list of reasons, such as "No response provided",
+   *                                    "No explanation provided". If no reasons are known, pass null or an empty string.
+   * @param compliance_rating_aggregate A rating from 0-100 regarding the degree to which the District is in
+   *                                    compliance with the CTA as a whole.
+   * @param compliance_rating_aggregate_reasons A list of reasons why the aggregate compliance rating was assigned.
+   *                                            This should be a comma-separated list of reasons, such as
+   *                                            "No response provided", "No explanation provided". If no reasons
+   *                                            are known, pass null or an empty string.
+   * @param policyBasis A comma-delimited list of any laws or school board policies that provide a basis for this point.
+   *                    For example, "Title IX, MN Statute 13.3, Board Policy 503".
+   * @param tags A comma-delimited list of tags that can be used to categorize this point. For example,
+   *             "bullying, harassment, discrimination". This parameter is optional.
+   */
   @Tool(
     name = "addCtaResponseToDatabase",
     value = "Adds a Responsive Action that has been identified within the target document to our database.  Includes a link to the CTA this is in response to, and a rating of compliance specifically for this response as well as the CTA as a whole."
@@ -236,7 +310,7 @@ public class CallToActionTool extends MessageTool {
           compliance_rating_aggregate,
           compliance_rating_aggregate_reasons
         );
-      } catch (SQLException e2) {
+      } catch (Throwable e2) {
         // Supresss - we're already in an error state
       }
 
@@ -258,6 +332,24 @@ public class CallToActionTool extends MessageTool {
     Colors.Reset();
   }
 
+  /**
+   * Uses vector search to retrieve a summary of a school district policy or a search topic
+   * associated with the provided query. The query can be a policy name, a specific topic,
+   * or a generalized search string.
+   *
+   * @param query The search query. This can be a policy name (e.g., "Title IX" or "Policy 506"),
+   *              a specific topic, or a generalized search string. This parameter is required.
+   * @param scope Used to filter the scope of searched policies. Supported values are:
+   *              - "school_policy": Search only school district policies.
+   *              - "state_policy": Search only state policies or law.
+   *              - "federal_policy": Search only federal policies or law.
+   *              - Empty String: Search all policies.
+   *              This parameter is required.
+   * @return A string containing the summary of the policy associated with the provided query.
+   *         If no policy is found, an empty string is returned. If the operation fails,
+   *         the method returns "ERROR" followed by a description of the failure
+   *         (e.g., "ERROR: No document context available.").
+   */
   @Tool(
     name = "lookupPolicySummary",
     value = "Uses vector search to retrieve a summary of school district policy or search topic associated with the provided query.  The query can be a policy name, or a specific topic or search string.  " +
@@ -280,20 +372,20 @@ public class CallToActionTool extends MessageTool {
       "  - Empty String: Search all policies.\n"
     ) String scope
   ) {
-    JustInTimePolicyLookup.PolicyType policyType = null;
+    AzurePolicySearchClient.ScopeType policyType = null;
     if (scope != null) {
       switch (scope) {
         case "school_policy":
-          policyType = JustInTimePolicyLookup.PolicyType.SchoolBoard;
+          policyType = AzurePolicySearchClient.ScopeType.SchoolBoard;
           break;
         case "state_policy":
-          policyType = JustInTimePolicyLookup.PolicyType.State;
+          policyType = AzurePolicySearchClient.ScopeType.State;
           break;
         case "federal_policy":
-          policyType = JustInTimePolicyLookup.PolicyType.Federel;
+          policyType = AzurePolicySearchClient.ScopeType.Federal;
           break;
         default:
-          policyType = JustInTimePolicyLookup.PolicyType.All;
+          policyType = AzurePolicySearchClient.ScopeType.All;
           break;
       }
     }
@@ -306,6 +398,107 @@ public class CallToActionTool extends MessageTool {
       );
       return "ERROR: " + e.getMessage();
     }
+  }
+
+  /**
+   * Uses vector search to retrieve a summary of a document.
+   *
+   * The summary is returned as a string. The **scope** property can be used to ensure
+   * results are relevant to your request.
+   *
+   * **Returns**
+   * - A string containing the summary of the document associated with the provided query.
+   *   If no document is found, an empty string is returned.
+   * - If the operation failed, the word 'ERROR' and a description of the failure, e.g.
+   *   'ERROR: No document context available.'
+   *
+   * @param query The search query. This can be a policy name (e.g., 'Title IX' or 'Policy 506'),
+   *              a specific topic, or a generalized search string. This parameter is required.
+   * @param scope Used to filter the scope of searched documents. Supported values are:
+   *              - "email": Search only email records.
+   *              - "attachment": Search only attachments.
+   *              - Empty String: Search all documents.
+   *              This parameter is required.
+   * @return A string containing the summary of the document or an error message if the operation fails.
+   */
+  @Tool(
+    name = "lookupDocumentSummary",
+    value = "Uses vector search to retrieve a summary of a document.  " +
+    "The summary is returned as a string.\n  The **scope** property can be used to ensure results are relevant to your request.\n" +
+    " ** Returns **\n" +
+    "  - A string containing the summary of the document associated with the provided query.  If no document is found, an empty string is returned.\n" +
+    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
+  )
+  public String lookupDocumentSummary(
+    @P(
+      required = true,
+      value = "The search query.  This can be a policy name (eg 'Title IX' or 'Policy 506'), a specific topic, or a genralized search string."
+    ) String query,
+    @P(
+      required = true,
+      value = "Used to filter the scope of searched documents.  Supported values are:\n" +
+      "  - email: Search only email records.\n" +
+      "  - attachment: Search only attachments.\n" +
+      "  - Empty String: Search all documents.\n"
+    ) String scope
+  ) {
+    AzureSearchClient.ScopeType policyType = null;
+    if (scope != null) {
+      switch (scope) {
+        case "email":
+          policyType = AzureSearchClient.ScopeType.Email;
+          break;
+        case "attachment":
+          policyType = AzureSearchClient.ScopeType.Attachment;
+          break;
+        default:
+          policyType = AzureSearchClient.ScopeType.All;
+          break;
+      }
+    }
+    try {
+      return this.documentLookup.summarizeDocument(query, policyType);
+    } catch (Exception e) {
+      log.error(
+        "Unexpected failure searching for nessage summary.  Details: " + query,
+        e
+      );
+      return "ERROR: " + e.getMessage();
+    }
+  }
+
+  /**
+   * Retrieves the details of active calls to action from the database, including details
+   * about the responsive actions that have already occurred.
+   *
+   * @param ids A comma-delimited list containing the IDs of calls to action to retrieve.
+   * @return An array of {@link HistoricCallToAction} objects representing the details
+   *         of the specified calls to action.
+   */
+  @Tool(
+    name = "getCtaDetails",
+    value = "Retrieves the details of active calls to action from the database, including details about the responsive actions that have already occured."
+  )
+  public HistoricCallToAction[] getCtaDetails(
+    @P(
+      required = true,
+      value = "A comma-delimited list containing the id's of calls to action to retrieve"
+    ) String ids
+  ) {
+    var idArray = List.of(ids.split(","))
+      .stream()
+      .map(s -> s.trim().replaceAll("\"", ""))
+      .collect(Collectors.toSet())
+      .stream()
+      .collect(Collectors.toList());
+
+    return getContent()
+      .CallsToAction.stream()
+      .filter(cta -> cta.isIdMatch(idArray))
+      .collect(Collectors.toList())
+      .stream()
+      .map(o -> (HistoricCallToAction) o.getObject())
+      .toArray(HistoricCallToAction[]::new);
   }
 
   @Tool(

@@ -2,9 +2,11 @@ package com.obapps.schoolchatbot.assistants;
 
 import com.obapps.schoolchatbot.assistants.content.AugmentedContentList;
 import com.obapps.schoolchatbot.data.IMessageMetadata;
+import com.obapps.schoolchatbot.util.Strings;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.injector.ContentInjector;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -171,11 +173,26 @@ public abstract class DocumentChatAssistant
     if (message == null) {
       return "** ERROR: No document found in context. **";
     }
-    var builder = new StringBuilder();
-    if (includeMetadata) {
-      builder.append("\nMetadata here\n");
+    var emailMessage = message.getObject();
+    var metadata = new HashMap<String, Object>();
+    metadata.put("Message Send Date", emailMessage.getDocumentSendDate());
+    if (emailMessage.getReplyToEmailId() != null) {
+      metadata.put("In Reply To", emailMessage.getReplyToEmailId());
     }
-    builder.append(message.getObject().getContent());
-    return builder.toString();
+    metadata.put("Sent By", emailMessage.getSender());
+    metadata.put("Sender Role", emailMessage.getSenderRole());
+    metadata.put("Message ID", emailMessage.getDocumentId());
+    metadata.put("Message Subject", emailMessage.getSubject());
+    metadata.put("Thread ID", emailMessage.getThreadId());
+    var messages = emailMessage.getRelatedEmails();
+    if (messages != null && messages.size() > 0) {
+      metadata.put("Related Messages", String.join(", ", messages));
+    }
+
+    return Strings.getRecordOutput(
+      "Analysis Target Document",
+      emailMessage.getContent(),
+      metadata
+    );
   }
 }

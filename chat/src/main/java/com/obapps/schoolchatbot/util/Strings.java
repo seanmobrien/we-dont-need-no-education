@@ -6,6 +6,39 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Utility class for string manipulation and formatting.
+ *
+ * <p>This class provides various utility methods for working with strings,
+ * including methods for generating record prefixes and suffixes, converting
+ * comma-separated strings into lists, splitting strings based on delimiters,
+ * and formatting strings to fit within a specified width.
+ *
+ * <p>Additionally, it includes a factory method for creating a pre-configured
+ * Jackson {@link ObjectMapper} instance.
+ *
+ * <p>Key functionalities:
+ * <ul>
+ *   <li>Generate record prefixes and suffixes with optional metadata.</li>
+ *   <li>Convert comma-separated strings into lists of trimmed substrings.</li>
+ *   <li>Split strings into lists based on custom delimiters.</li>
+ *   <li>Format strings for multi-line output with optional padding and word wrapping.</li>
+ *   <li>Create a Jackson {@link ObjectMapper} with specific configurations.</li>
+ * </ul>
+ *
+ * <p>All methods in this class are static and can be accessed directly without
+ * creating an instance of the class.
+ *
+ * <p>Example usage:
+ * <pre>
+ * {@code
+ * String prefix = Strings.getRecordPrefix("RecordName");
+ * List<String> list = Strings.commasToList("a, b, c");
+ * String formatted = Strings.formatForMultipleLines(4, "This is a long string", 20);
+ * ObjectMapper mapper = Strings.objectMapperFactory();
+ * }
+ * </pre>
+ */
 public class Strings {
 
   public static final String getRecordPrefix(String recordName) {
@@ -63,7 +96,12 @@ public class Strings {
 
   public static ObjectMapper objectMapperFactory() {
     ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.configure(
+      com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+      false
+    );
     objectMapper.registerModule(new JavaTimeModule());
+
     //.registerModule(new JSR310Module());
     return objectMapper;
   }
@@ -111,5 +149,34 @@ public class Strings {
       }
     }
     return list;
+  }
+
+  /**
+   * Splits a given string into multiple lines, each with a maximum specified width.
+   * Words are preserved and not split across lines.
+   *
+   * @param width the maximum width of each line in characters.
+   * @param value the input string to be formatted into multiple lines.
+   * @return a list of strings, where each string represents a line with a length
+   *         not exceeding the specified width.
+   *         The last line may be shorter than the specified width.
+   * @throws NullPointerException if the input string {@code value} is null.
+   */
+  public static List<String> formatForMultipleLines(
+    Integer width,
+    String value
+  ) {
+    var result = new ArrayList<String>();
+    String[] words = value.split(" ");
+    StringBuilder lineBuilder = new StringBuilder();
+    for (String word : words) {
+      if (lineBuilder.length() + word.length() > width) {
+        result.add(lineBuilder.toString().trim());
+        lineBuilder.setLength(0);
+      }
+      lineBuilder.append(word).append(" ");
+    }
+    result.add(lineBuilder.toString().trim());
+    return result;
   }
 }

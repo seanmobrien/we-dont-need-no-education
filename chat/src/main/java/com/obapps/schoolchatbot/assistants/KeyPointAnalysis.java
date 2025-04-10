@@ -3,6 +3,7 @@ package com.obapps.schoolchatbot.assistants;
 import com.obapps.schoolchatbot.assistants.retrievers.*;
 import com.obapps.schoolchatbot.assistants.tools.*;
 import com.obapps.schoolchatbot.data.*;
+import com.obapps.schoolchatbot.util.Db;
 import com.obapps.schoolchatbot.util.Strings;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
@@ -11,18 +12,59 @@ import dev.langchain4j.rag.DefaultRetrievalAugmentor.DefaultRetrievalAugmentorBu
 import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.service.AiServices;
+import java.sql.SQLException;
 import java.util.Scanner;
 
+/**
+ * Represents the KeyPointAnalysis assistant.
+ *
+ * <p>This class extends the {@link DocumentChatAssistant} to provide specific
+ * functionality for analyzing and interacting with key points in documents.</p>
+ *
+ * <p>Key Features:</p>
+ * <ul>
+ *   <li>Supports starting a conversation with the user.</li>
+ *   <li>Generates prompts for analyzing key points in documents.</li>
+ *   <li>Prepares retrieval augmentors and assistant services for key point analysis.</li>
+ * </ul>
+ *
+ * <p>Example usage:</p>
+ * <pre>
+ * {@code
+ * KeyPointAnalysis analysis = new KeyPointAnalysis();
+ * analysis.talkWith(scanner, args);
+ * }
+ * </pre>
+ */
 public class KeyPointAnalysis extends DocumentChatAssistant {
 
+  private Db db;
+
+  /**
+   * Default constructor initializing the assistant with default properties.
+   */
   public KeyPointAnalysis() {
-    super(new AssistantProps(1));
+    this(new AssistantProps(1));
   }
 
+  /**
+   * Constructor initializing the assistant with a specific initial request.
+   *
+   * @param initialRequest The initial request to set for the assistant.
+   */
   public KeyPointAnalysis(String initialRequest) {
-    super(new AssistantProps(1).setInitialRequest(initialRequest));
+    this(new AssistantProps(1).setInitialRequest(initialRequest));
   }
 
+  protected KeyPointAnalysis(AssistantProps props) {
+    super(props);
+  }
+
+  /**
+   * Starts a conversation with the user using the provided scanner.
+   *
+   * @param scanner The scanner to read user input.
+   */
   public void talkWith(Scanner scanner) {
     super.startConversationWith(scanner);
   }
@@ -34,7 +76,7 @@ public class KeyPointAnalysis extends DocumentChatAssistant {
   public UserMessage generatePrompt(UserMessage userMessage) {
     try {
       var promptBuilder = new StringBuilder();
-      promptBuilder.append(Prompts.getPromptForPhase(this.getPhase()));
+      promptBuilder.append(Prompts.getPromptForPhase(this.getPhase(), Content));
       var keyPoints = Content.KeyPoints.stream()
         .filter(k -> k.isFromCurrentDocument())
         .map(x -> String.format("  - %s", x.getObject().getPropertyValue()))
@@ -57,7 +99,7 @@ public class KeyPointAnalysis extends DocumentChatAssistant {
         )
       );
       promptBuilder.append("\n");
-      promptBuilder.append(Content.getActiveDocumentContent().getPromptText());
+      promptBuilder.append(getDocumentContents());
       promptBuilder.append("\n\n");
 
       Colors.Reset();
@@ -70,6 +112,11 @@ public class KeyPointAnalysis extends DocumentChatAssistant {
       Colors.Reset();
       return UserMessage.builder().addContent(new TextContent("PING")).build();
     }
+  }
+
+  public Db db() throws SQLException {
+    this.db = db == null ? Db.getInstance() : db;
+    return this.db;
   }
 
   @Override
@@ -100,6 +147,13 @@ public class KeyPointAnalysis extends DocumentChatAssistant {
     ).tools(tool);
   }
 
+  /**
+   * Handles the assistant's response to the user.
+   *
+   * @param response The assistant's response.
+   * @param lastUserMessage The last message from the user.
+   * @return A string indicating the next action, such as "exit".
+   */
   @Override
   protected String onAssistantResponse(
     String response,
@@ -119,6 +173,12 @@ public class KeyPointAnalysis extends DocumentChatAssistant {
   String lastAutoMessage = null;
   String _lastKeyPoint;
 
+  /**
+   * Runs the KeyPointAnalysis assistant with the specified scanner and arguments.
+   *
+   * @param scanner The scanner to read user input.
+   * @param args The arguments to configure the assistant.
+   */
   public static void run(Scanner scanner, String[] args) {
     KeyPointAnalysis emailSummarizer = new KeyPointAnalysis();
     if (args.length > 0) {

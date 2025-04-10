@@ -35,6 +35,9 @@ import java.util.List;
  */
 public class AugmentedContentList {
 
+  public final List<CallToActionContent> CallsToAction = new ArrayList<
+    CallToActionContent
+  >();
   public final List<KeyPointsContent> KeyPoints = new ArrayList<
     KeyPointsContent
   >();
@@ -79,6 +82,9 @@ public class AugmentedContentList {
         break;
       case PolicySearch:
         PolicySearch.add((AugmentedPolicySearch) content);
+        break;
+      case CallToAction:
+        CallsToAction.add((CallToActionContent) content);
         break;
       default:
         Other.add(content);

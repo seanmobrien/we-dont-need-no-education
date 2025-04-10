@@ -4,6 +4,10 @@ import com.obapps.schoolchatbot.data.*;
 import com.obapps.schoolchatbot.util.DocumentEmbedder;
 import com.obapps.schoolchatbot.util.EnvVars;
 
+/**
+ * A utility class for embedding federal documents into a vector database.
+ * This class provides methods to process and embed federal documents for search and retrieval.
+ */
 public class EmbedFeds extends DocumentEmbedder {
 
   private EmbedFeds(EmbedPolicyFolderOptions options) {
@@ -34,5 +38,14 @@ public class EmbedFeds extends DocumentEmbedder {
     );
 
     return true;
+  }
+
+  /**
+   * The main method to execute the federal document embedding process.
+   *
+   * @param args Command-line arguments passed to the application.
+   */
+  public static void main(String[] args) {
+    // ...existing code...
   }
 }

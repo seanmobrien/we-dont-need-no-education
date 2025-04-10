@@ -19,12 +19,17 @@ import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.router.DefaultQueryRouter;
 import dev.langchain4j.service.AiServices;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Represents a generic chat assistant that provides foundational methods
+ * for interacting with users and handling AI services.
+ */
 public class ChatAssistant {
 
   protected AzureOpenAiEmbeddingModel embeddingModel;
@@ -42,6 +47,7 @@ public class ChatAssistant {
       .apiKey(openAiVars.getApiKey())
       .endpoint(openAiVars.getApiEndpoint())
       .deploymentName(openAiVars.getDeploymentEmbedding())
+      .timeout(Duration.ofMillis(2 * 60 * 1000))
       .build();
 
     // Chat Model for high-fidelity analysis
@@ -50,6 +56,7 @@ public class ChatAssistant {
       .endpoint(openAiVars.getApiEndpoint())
       .deploymentName(openAiVars.getDeploymentChat())
       .logRequestsAndResponses(true)
+      .timeout(Duration.ofMillis(2 * 60 * 1000))
       .build();
   }
 
@@ -90,6 +97,15 @@ public class ChatAssistant {
     return this.assistant;
   }
 
+  /**
+   * Prepares the assistant service with the specified augmentor and memory.
+   *
+   * @param builder The AI services builder.
+   * @param retrievalAugmentor The retrieval augmentor to use.
+   * @param chatMemory The chat memory to use, or null for no memory.
+   * @param <T> The type of the AI service.
+   * @return The configured AI services instance.
+   */
   protected <T> AiServices<T> prepareAssistantService(
     AiServices<T> builder,
     RetrievalAugmentor retrievalAugmentor,
@@ -125,6 +141,11 @@ public class ChatAssistant {
     return (T) this;
   }
 
+  /**
+   * Starts a conversation with the user using the provided scanner.
+   *
+   * @param scanner The scanner to read user input.
+   */
   protected void startConversationWith(Scanner scanner) {
     Logger log = LoggerFactory.getLogger(this.getClass());
     while (true) {

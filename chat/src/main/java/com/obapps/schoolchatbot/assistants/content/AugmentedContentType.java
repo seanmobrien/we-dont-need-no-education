@@ -6,4 +6,5 @@ public enum AugmentedContentType {
   EmailSearch,
   KeyPoint,
   EmailMetadata,
+  CallToAction,
 }

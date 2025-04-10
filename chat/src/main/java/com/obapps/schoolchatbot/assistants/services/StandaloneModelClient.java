@@ -18,6 +18,10 @@ public class StandaloneModelClient implements IStandaloneModelClient {
       : llm;
   }
 
+  public ChatLanguageModel getModel() {
+    return model;
+  }
+
   public String call(String prompt) {
     if (prompt == null || prompt.isEmpty()) {
       return "Prompt is empty or null";

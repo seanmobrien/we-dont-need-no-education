@@ -83,7 +83,8 @@ public class AzurePolicySearchClientTest {
     String query = "school policy";
     float[] embedding = { 0.1f, 0.2f, 0.3f };
     int topK = 5;
-    int policyTypeId = 1;
+    AzurePolicySearchClient.ScopeType policyTypeId =
+      AzurePolicySearchClient.ScopeType.SchoolBoard;
     when(mockEmbeddingService.embed(query)).thenReturn(embedding);
 
     // Act
@@ -105,7 +106,8 @@ public class AzurePolicySearchClientTest {
     String query = "school policy";
     float[] embedding = { 0.1f, 0.2f, 0.3f };
     int topK = 5;
-    int policyTypeId = -1;
+    AzurePolicySearchClient.ScopeType policyTypeId =
+      AzurePolicySearchClient.ScopeType.All;
     when(mockEmbeddingService.embed(query)).thenReturn(embedding);
 
     // Act

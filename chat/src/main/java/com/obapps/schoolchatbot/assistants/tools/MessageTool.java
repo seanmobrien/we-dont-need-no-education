@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.assistants.tools;
 
 import com.obapps.schoolchatbot.assistants.DocumentChatAssistant;
+import com.obapps.schoolchatbot.assistants.content.AugmentedContentList;
 import com.obapps.schoolchatbot.data.IMessageMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,22 @@ public class MessageTool {
     detectedPoints++;
   }
 
+  /**
+   * Retrieves the augmented content list from the assistant.
+   *
+   * @return an instance of {@link AugmentedContentList} containing the content
+   *         provided by the assistant.
+   */
+  protected AugmentedContentList getContent() {
+    return assistant.getContent();
+  }
+
+  /**
+   * Retrieves the metadata of the currently active document from the assistant.
+   *
+   * @return An instance of {@code IMessageMetadata} representing the metadata
+   *         of the active document.
+   */
   protected IMessageMetadata message() {
     return assistant.getContent().getActiveDocument();
   }

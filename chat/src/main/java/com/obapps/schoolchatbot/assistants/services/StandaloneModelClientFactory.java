@@ -54,10 +54,13 @@ public class StandaloneModelClientFactory {
     String deployment,
     String apiKey
   ) {
+    String normalEndpoint = endpoint.endsWith("/")
+      ? endpoint.substring(0, endpoint.length() - 1)
+      : endpoint;
     // Completion Model for low-fidelity analysis
     return AzureOpenAiChatModel.builder()
       .apiKey(apiKey)
-      .endpoint(endpoint)
+      .endpoint(normalEndpoint)
       .deploymentName(deployment)
       .logRequestsAndResponses(true)
       .build();
