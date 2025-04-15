@@ -1,0 +1,210 @@
+package com.obapps.schoolchatbot.core.assistants.services;
+
+import com.obapps.core.util.EnvVars;
+import java.net.URI;
+import java.net.http.*;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.time.Duration;
+import java.util.*;
+import org.json.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public abstract class AzureBaseSearchClient<TScope> {
+
+  protected final EnvVars envVars;
+  protected final Logger log;
+  protected final EmbeddingService embeddingService;
+  private final TScope defaultScope;
+  protected final HttpClient httpClient = HttpClient.newBuilder()
+    .connectTimeout(Duration.ofSeconds(10))
+    .build();
+
+  protected AzureBaseSearchClient(
+    EnvVars environment,
+    EmbeddingService embeddingService,
+    TScope defaultScope
+  ) {
+    this.defaultScope = defaultScope;
+    this.envVars = environment == null ? EnvVars.getInstance() : environment;
+    this.embeddingService = embeddingService == null
+      ? new EmbeddingService()
+      : embeddingService;
+    log = LoggerFactory.getLogger(this.getClass());
+  }
+
+  protected abstract String getSearchIndexName();
+
+  protected String getServiceUrl() {
+    return String.format(
+      "%s/indexes/%s/docs/search?api-version=2025-03-01-preview",
+      //"%s/indexes/%s/docs/search?api-version=2024-07-01",
+      envVars.getOpenAi().getSearchApiEndpoint(),
+      getSearchIndexName()
+    );
+  }
+
+  protected abstract void appendScopeFilter(
+    JSONObject payload,
+    TScope policyTypeId
+  );
+
+  public List<String> semanticSearch(String query, int topK) {
+    return semanticSearch(query, topK, defaultScope);
+  }
+
+  public List<String> semanticSearch(
+    String query,
+    int topK,
+    TScope policyTypeId
+  ) {
+    String serviceResponse = null;
+    String url = getServiceUrl();
+    try {
+      JSONObject payload = new JSONObject();
+      payload.put("search", query);
+      payload.put("top", topK);
+      payload.put("queryType", "semantic");
+      payload.put("semanticConfiguration", "semantic-search-config");
+      payload.put("select", "content");
+      payload.put("queryLanguage", "en-us");
+      appendScopeFilter(payload, policyTypeId);
+
+      HttpRequest request = HttpRequest.newBuilder()
+        .uri(new URI(url))
+        .timeout(Duration.ofSeconds(10))
+        .header("Content-Type", "application/json")
+        .header("api-key", envVars.getOpenAi().getSearchApiKey())
+        .POST(BodyPublishers.ofString(payload.toString()))
+        .build();
+
+      HttpResponse<String> response = httpClient.send(
+        request,
+        HttpResponse.BodyHandlers.ofString()
+      );
+
+      serviceResponse = response.body();
+      JSONObject json = new JSONObject(serviceResponse);
+      JSONArray results = json.getJSONArray("value");
+
+      List<String> contentChunks = new ArrayList<>();
+      for (int i = 0; i < results.length(); i++) {
+        JSONObject doc = results.getJSONObject(i);
+        contentChunks.add(doc.getString("content"));
+      }
+
+      return contentChunks;
+    } catch (Exception e) {
+      log.error(
+        "Search failed for query [{}] top: [{}] filter: [{}]: {}\nURL: {}\nBody{}",
+        query,
+        topK,
+        policyTypeId,
+        url,
+        e.getMessage(),
+        Objects.requireNonNullElse(serviceResponse, "[Null Response]")
+      );
+      return Collections.emptyList();
+    }
+  }
+
+  public List<String> hybridSearch(String naturalQuery, Integer topK) {
+    return hybridSearch(naturalQuery, null, topK, defaultScope);
+  }
+
+  public List<String> hybridSearch(
+    String naturalQuery,
+    Integer topK,
+    TScope policyTypeId
+  ) {
+    return hybridSearch(naturalQuery, null, topK, policyTypeId);
+  }
+
+  public List<String> hybridSearch(
+    String naturalQuery,
+    float[] embeddingVector,
+    Integer topK
+  ) {
+    return hybridSearch(naturalQuery, embeddingVector, topK, defaultScope);
+  }
+
+  public List<String> hybridSearch(
+    String naturalQuery,
+    float[] embeddingVector,
+    TScope policyTypeId
+  ) {
+    return hybridSearch(naturalQuery, embeddingVector, 15, policyTypeId);
+  }
+
+  public List<String> hybridSearch(
+    String naturalQuery,
+    float[] embeddingVector,
+    Integer topK,
+    TScope policyTypeId
+  ) {
+    String url = getServiceUrl();
+    String serviceResponse = null;
+    try {
+      if (embeddingVector == null || embeddingVector.length == 0) {
+        embeddingVector = this.embeddingService.embed(naturalQuery);
+      }
+
+      JSONObject vectorBlock = new JSONObject();
+      vectorBlock.put("vector", new JSONArray(embeddingVector));
+      vectorBlock.put("kind", "vector");
+      vectorBlock.put("fields", "content_vector");
+      vectorBlock.put("k", topK);
+      vectorBlock.put("exhaustive", true);
+
+      JSONArray vectors = new JSONArray();
+      vectors.put(vectorBlock);
+
+      JSONObject payload = new JSONObject();
+      payload.put("search", naturalQuery); // hybrid search with keyword/semantic weight
+      payload.put("vectorQueries", vectors);
+      payload.put("top", topK);
+      payload.put("queryType", "semantic");
+      payload.put("semanticConfiguration", "semantic-search-config");
+
+      // Select desired fields
+      payload.put("select", "content,id,metadata");
+      appendScopeFilter(payload, policyTypeId);
+
+      HttpRequest request = HttpRequest.newBuilder()
+        .uri(new URI(url))
+        .timeout(Duration.ofSeconds(60))
+        .header("Content-Type", "application/json")
+        .header("api-key", envVars.getOpenAi().getSearchApiKey())
+        .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+        .build();
+
+      HttpResponse<String> response = httpClient.send(
+        request,
+        HttpResponse.BodyHandlers.ofString()
+      );
+      serviceResponse = response.body();
+      JSONObject json = new JSONObject(serviceResponse);
+      JSONArray results = json.getJSONArray("value");
+
+      List<String> contentChunks = new ArrayList<>();
+      for (int i = 0; i < results.length(); i++) {
+        JSONObject doc = results.getJSONObject(i);
+        contentChunks.add(doc.getString("content"));
+      }
+
+      return contentChunks;
+    } catch (Exception e) {
+      System.out.println(serviceResponse);
+      log.error(
+        "Search failed for query [{}] top: [{}] filter: [{}]: {}\nURL: {}\nBody{}",
+        naturalQuery,
+        topK,
+        policyTypeId,
+        url,
+        e.getMessage(),
+        Objects.requireNonNullElse(serviceResponse, "[Null Response]")
+      );
+      return Collections.emptyList();
+    }
+  }
+}

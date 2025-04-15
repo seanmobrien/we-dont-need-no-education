@@ -44,4 +44,6 @@ next-env.d.ts
 /.vscode
 **/.vscode
 
+*.lilith
 logs
+attachments

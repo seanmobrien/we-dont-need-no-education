@@ -1,0 +1,221 @@
+package com.obapps.core.util;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Utility class for string manipulation and formatting.
+ *
+ * <p>This class provides various utility methods for working with strings,
+ * including methods for generating record prefixes and suffixes, converting
+ * comma-separated strings into lists, splitting strings based on delimiters,
+ * and formatting strings to fit within a specified width.
+ *
+ * <p>Additionally, it includes a factory method for creating a pre-configured
+ * Jackson {@link ObjectMapper} instance.
+ *
+ * <p>Key functionalities:
+ * <ul>
+ *   <li>Generate record prefixes and suffixes with optional metadata.</li>
+ *   <li>Convert comma-separated strings into lists of trimmed substrings.</li>
+ *   <li>Split strings into lists based on custom delimiters.</li>
+ *   <li>Format strings for multi-line output with optional padding and word wrapping.</li>
+ *   <li>Create a Jackson {@link ObjectMapper} with specific configurations.</li>
+ * </ul>
+ *
+ * <p>All methods in this class are static and can be accessed directly without
+ * creating an instance of the class.
+ *
+ * <p>Example usage:
+ * <pre>
+ * {@code
+ * String prefix = Strings.getRecordPrefix("RecordName");
+ * List<String> list = Strings.commasToList("a, b, c");
+ * String formatted = Strings.formatForMultipleLines(4, "This is a long string", 20);
+ * ObjectMapper mapper = Strings.objectMapperFactory();
+ * }
+ * </pre>
+ */
+public class Strings {
+
+  public static final String getRecordPrefix(String recordName) {
+    return getRecordPrefix(recordName, null);
+  }
+
+  public static final String getRecordPrefix(
+    String recordName,
+    Map<String, Object> metadata
+  ) {
+    var metaBuilder = new StringBuilder();
+    if (metadata != null && !metadata.isEmpty()) {
+      metaBuilder.append(" [ ");
+      for (var entry : metadata.entrySet()) {
+        var v = entry.getValue();
+        if (v == null) {
+          continue;
+        }
+        var stringValue = v.toString().trim();
+        if (stringValue.length() == 0) {
+          continue;
+        }
+        metaBuilder
+          .append(entry.getKey())
+          .append(": ")
+          .append(entry.getValue())
+          .append(" | ");
+      }
+      metaBuilder.setLength(metaBuilder.length() - 2); // Remove last comma and space
+      metaBuilder.append("]");
+    }
+    return "\n_#_" + recordName + metaBuilder.toString() + "_#_\n";
+  }
+
+  public static final String getRecordSuffix() {
+    return "\n_#_ END _#_\n";
+  }
+
+  public static final String getRecordOutput(
+    String recordName,
+    String recordData
+  ) {
+    return getRecordOutput(recordName, recordData, null);
+  }
+
+  public static final String getRecordOutput(
+    String recordName,
+    String recordData,
+    Map<String, Object> metadata
+  ) {
+    return (
+      getRecordPrefix(recordName, metadata) + recordData + getRecordSuffix()
+    );
+  }
+
+  public static ObjectMapper objectMapperFactory() {
+    ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.configure(
+      com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+      false
+    );
+    objectMapper.registerModule(new JavaTimeModule());
+
+    //.registerModule(new JSR310Module());
+    return objectMapper;
+  }
+
+  /**
+   * Converts a comma-separated string into a list of strings.
+   *
+   * @param str the input string containing elements separated by commas
+   * @return a list of strings obtained by splitting the input string on commas
+   */
+  public static List<String> commasToList(String str) {
+    return seperateIntoList(str, ",");
+  }
+
+  /**
+   * Splits the given string into a list of trimmed substrings based on the specified delimiter.
+   *
+   * <p>If the input string is null or empty, an empty list is returned. Each substring is trimmed
+   * of leading and trailing whitespace. If a substring starts and/or ends with a double quote (`"`),
+   * the quotes are removed along with any additional leading or trailing whitespace.
+   *
+   * @param str       The input string to be split. Can be null or empty.
+   * @param delimiter The delimiter used to split the input string.
+   * @return A list of trimmed substrings obtained by splitting the input string. Returns an empty
+   *         list if the input string is null or empty.
+   */
+  public static List<String> seperateIntoList(String str, String delimiter) {
+    if (str == null || str.isEmpty()) {
+      return List.of();
+    }
+    String[] parts = str.split(delimiter);
+    List<String> list = new ArrayList<>();
+    for (String part : parts) {
+      String trimmedPart = part.trim();
+      if (trimmedPart.startsWith("\"")) {
+        trimmedPart = trimmedPart.substring(1).stripLeading();
+      }
+      if (trimmedPart.endsWith("\"")) {
+        trimmedPart = trimmedPart
+          .substring(0, trimmedPart.length() - 1)
+          .stripTrailing();
+      }
+      if (!trimmedPart.isEmpty()) {
+        list.add(trimmedPart);
+      }
+    }
+    return list;
+  }
+
+  /**
+   * Splits a given string into multiple lines, each with a maximum specified width.
+   * Words are preserved and not split across lines.
+   *
+   * @param width the maximum width of each line in characters.
+   * @param value the input string to be formatted into multiple lines.
+   * @return a list of strings, where each string represents a line with a length
+   *         not exceeding the specified width.
+   *         The last line may be shorter than the specified width.
+   * @throws NullPointerException if the input string {@code value} is null.
+   */
+  public static List<String> formatForMultipleLines(
+    Integer width,
+    String value
+  ) {
+    var result = new ArrayList<String>();
+    if (value == null || value.isEmpty()) {
+      return result;
+    }
+    String[] words = value.split(" ");
+    StringBuilder lineBuilder = new StringBuilder();
+    for (String word : words) {
+      if (lineBuilder.length() + word.length() > width) {
+        if (lineBuilder.length() > 0) {
+          result.add(lineBuilder.toString().trim());
+        }
+        lineBuilder.setLength(0);
+      }
+      if (word.length() > 0) {
+        lineBuilder.append(word).append(" ");
+      }
+    }
+    if (lineBuilder.length() > 0) {
+      result.add(lineBuilder.toString().trim());
+    }
+    return result;
+  }
+
+  /**
+   * Converts a snake_case string to CamelCase, capitalizing the first letter of every group.
+   *
+   * @param snakeCase the input string in snake_case format.
+   * @return the converted string in CamelCase format.
+   */
+  public static String snakeToCamelCase(String snakeCase) {
+    if (snakeCase == null || snakeCase.isEmpty()) {
+      return "";
+    }
+    String[] parts = snakeCase.split("_");
+    StringBuilder camelCase = new StringBuilder(parts[0].toLowerCase());
+    for (var idx = 1; idx < parts.length; idx++) {
+      var part = parts[idx].trim();
+      if (!part.isEmpty()) {
+        camelCase
+          .append(part.substring(0, 1).toUpperCase())
+          .append(part.substring(1).toLowerCase());
+      }
+    }
+    if (camelCase.length() == 0) {
+      return "";
+    }
+    char firstChar = camelCase.charAt(0);
+    if (Character.isUpperCase(firstChar)) {
+      camelCase.setCharAt(0, Character.toLowerCase(firstChar));
+    }
+    return camelCase.toString();
+  }
+}

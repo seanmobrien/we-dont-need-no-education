@@ -1,0 +1,50 @@
+package com.obapps.schoolchatbot.chat.assistants.services;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.obapps.schoolchatbot.core.assistants.services.IStandaloneModelClient;
+import com.obapps.schoolchatbot.core.assistants.services.StandaloneModelClientFactory;
+import com.obapps.schoolchatbot.core.services.ModelType;
+import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.embedding.EmbeddingModel;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+public class StandaloneModelClientFactoryTest {
+
+  private StandaloneModelClientFactory factory;
+
+  @BeforeEach
+  public void setUp() {
+    factory = new StandaloneModelClientFactory();
+  }
+
+  @Test
+  public void testCreate_withHiFiModelType() {
+    IStandaloneModelClient client = factory.create(ModelType.HiFi);
+    assertThat(client.getModel()).isInstanceOf(ChatLanguageModel.class);
+    assertThat(client).isNotNull();
+  }
+
+  @Test
+  public void testCreate_withLoFiModelType() {
+    IStandaloneModelClient client = factory.create(ModelType.LoFi);
+    assertThat(client).isNotNull();
+    assertThat(client.getModel()).isInstanceOf(ChatLanguageModel.class);
+  }
+
+  @Test
+  public void testCreate_withEmbeddingModelType() {
+    EmbeddingModel client = factory.createEmbeddingModel();
+    assertThat(client).isNotNull();
+    assertThat(client).isInstanceOf(EmbeddingModel.class);
+  }
+
+  @Test
+  public void testCreate_withUnknownModelType() {
+    assertThatThrownBy(() -> factory.create(ModelType.Unknown))
+      .isInstanceOf(IllegalArgumentException.class)
+      .hasMessageContaining("Unsupported model type: Unknown");
+  }
+}
