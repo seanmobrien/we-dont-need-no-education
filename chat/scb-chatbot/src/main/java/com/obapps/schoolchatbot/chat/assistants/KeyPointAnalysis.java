@@ -1,10 +1,18 @@
 package com.obapps.schoolchatbot.chat.assistants;
 
+import com.obapps.core.ai.extraction.services.RecordExtractionService;
 import com.obapps.core.util.*;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
+import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.one.InitialKeyPoint;
 import com.obapps.schoolchatbot.chat.assistants.retrievers.KeyPointsRetriever;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.one.IKeyPointAnalyst;
 import com.obapps.schoolchatbot.chat.assistants.tools.*;
 import com.obapps.schoolchatbot.core.assistants.*;
+import com.obapps.schoolchatbot.core.models.AnalystDocumentResult;
+import com.obapps.schoolchatbot.core.models.DocumentProperty;
+import com.obapps.schoolchatbot.core.models.DocumentPropertyType;
+import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisFunctionAudit;
+import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisStageAudit;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
@@ -14,7 +22,10 @@ import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.Result;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Scanner;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Represents the KeyPointAnalysis assistant.
@@ -80,36 +91,29 @@ public class KeyPointAnalysis
   @Override
   public UserMessage generatePrompt(AugmentedContentList contents) {
     try {
-      var promptBuilder = new StringBuilder();
-      promptBuilder.append(
-        Prompts.getPromptForPhase(this.getPhase(), contents)
+      if (contents.getActiveDocument() == null) {
+        return null;
+      }
+      var promptBuilder = new StringBuilder(
+        contents
+          .getActiveDocumentContent()
+          .getDocumentHeaderData(contents.Attachments)
       );
-      var keyPoints = contents.KeyPoints.stream()
+
+      List<String> keyPoints = contents.KeyPoints.stream()
         .filter(k -> k.isFromCurrentDocument())
-        .map(x -> String.format("  - %s", x.getObject().getPropertyValue()))
-        .toList();
-      var dp = keyPoints.size();
-      var recordBuilder = new StringBuilder();
-      if (dp > 0) {
-        recordBuilder
-          .append("You have already identified the following Key Points:\n")
-          .append(String.join("\n", keyPoints));
-      } else {
+        .map(x -> "  📍" + x.getObject().getPropertyValue())
+        .collect(Collectors.toList());
+
+      if (keyPoints.size() > 0) {
         promptBuilder.append(
-          "No Key Points have been found on this record yet.\n"
+          Strings.getRecordOutput("📍 in 📊📄", String.join("\n", keyPoints))
         );
       }
-      promptBuilder.append(
-        Strings.getRecordOutput(
-          "Identified Key Points",
-          recordBuilder.toString()
-        )
-      );
       promptBuilder.append("\n");
       promptBuilder.append(getDocumentContents());
       promptBuilder.append("\n\n");
 
-      Colors.Reset();
       return UserMessage.builder()
         .addContent(new TextContent(promptBuilder.toString()))
         .build();
@@ -146,12 +150,143 @@ public class KeyPointAnalysis
     ChatMemory chatMemory
   ) {
     tool = new AddKeyPointsTool(this);
-    // No chat memory saves on context space
     return super.prepareAssistantService(
-      builder,
-      retrievalAugmentor,
-      null
-    ).tools(tool);
+        builder,
+        retrievalAugmentor,
+        chatMemory
+      )
+      .tools(tool)
+      .systemMessageProvider(id -> Prompts.GetSystemMessageForPhase(1));
+  }
+
+  /**
+   * Processes a document by its ID and generates an analysis result.
+   * This method includes an option to throw an exception on error.
+   *
+   * @param documentId The ID of the document to process.
+   * @param throwOnError A Boolean flag indicating whether to throw an exception on error.
+   * @return An AnalystDocumentResult object containing the analysis result.
+   * @throws Exception
+   */
+  @Override
+  public AnalystDocumentResult processDocument(
+    Integer documentId,
+    Boolean throwOnError
+  ) throws Exception {
+    var result = AnalystDocumentResult.aggregateBuilder();
+
+    try (var tx = Db.getInstance().createTransaction()) {
+      try {
+        resetMessageState();
+        var dId = documentId;
+        if (dId == null) {
+          throw new IllegalArgumentException("Document ID cannot be null.");
+        }
+        if (dId <= 0) {
+          throw new IllegalArgumentException(
+            "Document ID must be a positive integer."
+          );
+        }
+        IKeyPointAnalyst aiService = getAiService(IKeyPointAnalyst.class);
+        var extractionService = new RecordExtractionService<InitialKeyPoint>();
+        //Result<List<InitialKeyPoint>> extractedResult =
+        extractionService.extractRecords(
+          aiService,
+          ai -> ai.processStage(dId),
+          ctx ->
+            ctx
+              .getService()
+              .resumeExtraction(ctx.getIteration(), ctx.getMatchesFound()),
+          (sender, args) -> {
+            var iterationResult = args.getIterationResult();
+            var docResult = new AnalystDocumentResult(
+              iterationResult,
+              true,
+              0,
+              args.getNewRecords(),
+              args.getHasSignaledComplete()
+            );
+            result.append(docResult);
+            log.info(
+              "Iteration {} ({} items remain): {}",
+              args.getIteration(),
+              args.getEstimatedItemsRemaining(),
+              docResult.getSummary()
+            );
+            try {
+              var rez = iterationResult.content().getResults();
+
+              for (var idx = 0; idx < rez.size(); idx++) {
+                var v = rez.get(idx);
+                v.setDocumentId(documentId);
+                if (v.getRecordId() == null || v.getRecordId().length() < 0) {
+                  v.setRecordId(UUID.randomUUID().toString());
+                }
+                v.saveToDb(db);
+              }
+
+              if (iterationResult.content().getProcessingNotes() != null) {
+                var notes = iterationResult.content().getProcessingNotes();
+                for (var idx = 0; idx < notes.size(); idx++) {
+                  DocumentProperty.builder()
+                    .documentId(documentId)
+                    .propertyValue(notes.get(idx))
+                    .propertyType(
+                      DocumentPropertyType.KnownValues.ProcessingNote
+                    )
+                    .build()
+                    .addToDb(db);
+                  addNote();
+                }
+              }
+
+              DocumentUnitAnalysisStageAudit.builder()
+                .documentId(documentId)
+                .iterationId(args.getIteration())
+                .completionSignalled(args.getHasSignaledComplete())
+                .analysisStageId(getPhase())
+                .detectedPoints(args.getNewRecords())
+                .addedNotes(0)
+                .message(
+                  String.format(
+                    "(%d) items remain)",
+                    args.getEstimatedItemsRemaining()
+                  )
+                )
+                .tokens(iterationResult.tokenUsage())
+                .build()
+                .saveToDb(
+                  Db.getInstance(),
+                  DocumentUnitAnalysisFunctionAudit.from(
+                    iterationResult.toolExecutions()
+                  )
+                );
+            } catch (SQLException e) {
+              log.error(
+                "Error saving document audit for document {}: {}",
+                documentId,
+                e.getMessage(),
+                e
+              );
+              throw new RuntimeException(e);
+            }
+          }
+        );
+      } catch (Exception e) {
+        tx.setAbort();
+        if (throwOnError) {
+          throw e;
+        }
+        log.error(
+          "Error processing document {}: {}",
+          documentId,
+          e.getMessage(),
+          e
+        );
+        result.append(new AnalystDocumentResult(e, 0, 0));
+      }
+    }
+    return result.build();
   }
 
   /**

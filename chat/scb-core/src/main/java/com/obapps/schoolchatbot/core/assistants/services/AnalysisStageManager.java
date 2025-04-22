@@ -3,6 +3,7 @@ package com.obapps.schoolchatbot.core.assistants.services;
 import com.obapps.core.util.Colors;
 import com.obapps.core.util.Db;
 import com.obapps.schoolchatbot.core.assistants.types.BaseStageAnalystFactory;
+import com.obapps.schoolchatbot.core.models.AnalystDocumentResult;
 import com.obapps.schoolchatbot.core.models.PendingStageAnalyst;
 import java.sql.SQLException;
 import java.util.Objects;
@@ -26,6 +27,31 @@ public class AnalysisStageManager {
     this.stageId = stageId;
     this.database = Objects.requireNonNullElse(database, Db.getInstance());
     this.stageAnalystFactory = stageAnalystFactory;
+  }
+
+  /**
+   * Processes a document based on the provided document ID.
+   *
+   * @param docId The ID of the document to be processed.
+   * @return An instance of {@link AnalystDocumentResult} containing the result of the document processing.
+   *         If an error occurs, the result will contain an exception and default values.
+   * @throws Exception This method does not explicitly throw exceptions, but any unexpected errors
+   *                   during processing are logged and encapsulated in the returned result.
+   */
+  public AnalystDocumentResult processDocument(Integer docId) {
+    try {
+      var analyst = stageAnalystFactory.getStageAnalyst(stageId);
+      return analyst.processDocument(docId, false);
+    } catch (Throwable e) {
+      // Should never ever ever get here
+      log.error(
+        "Error processing document ID {}: {}",
+        docId,
+        e.getMessage(),
+        e
+      );
+      return new AnalystDocumentResult(new Exception(e), 0, 0);
+    }
   }
 
   public void processDocuments() {

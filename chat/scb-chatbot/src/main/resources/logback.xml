@@ -24,7 +24,7 @@
     </appender>
     <appender name="ASYNC-LEGACY" class="ch.qos.logback.classic.AsyncAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
+            <level>DEBUG</level>
         </filter>
         <appender-ref ref="FILE-ROLLING" />
     </appender>
@@ -38,10 +38,25 @@
     </appender>
     <appender name="LILITH" class="ch.qos.logback.core.FileAppender"> 
         <file>${LILITH_LOG}</file> 
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/archived/app.%d{yyyy-MM-dd.HH}.%i.log.gz</fileNamePattern>
+            <!-- each archived file, size max 10MB -->
+            <maxFileSize>10MB</maxFileSize>
+            <!-- total size of all archive files, if total size > 20GB, it will delete old archived file -->
+            <totalSizeCap>5GB</totalSizeCap>
+            <!-- 60 days to keep -->
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
         <encoder class="de.huxhorn.lilith.logback.encoder.ClassicLilithEncoder"> 
-        <IncludeCallerData>true</IncludeCallerData> 
+            <IncludeCallerData>true</IncludeCallerData> 
+            <layout class="com.obapps.core.logback.StripUnicodePatternLayout" />
         </encoder> 
     </appender>
+    <logger name="reactor.netty" level="WARN" />
+    <logger name="reactor.util" level="WARN" />
+    <logger name="io.netty" level="WARN" />
+    <logger name="ai.djl" level="WARN" />
+    <logger name="org.apache.tika" level="OFF" />
 
     <root level="trace">
         <appender-ref ref="ASYNC"/>
@@ -49,6 +64,5 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="ai.djl" level="OFF"/>
-    <logger name="org.apache.tika" level="OFF"/>
+
 </configuration>

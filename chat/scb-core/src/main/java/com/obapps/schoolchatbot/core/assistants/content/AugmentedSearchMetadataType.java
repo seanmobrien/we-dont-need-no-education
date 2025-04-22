@@ -23,9 +23,21 @@ public class AugmentedSearchMetadataType {
 
   public static class EmailMetadata {
 
-    public static String name = "EmailMetadata";
+    public static final String name = "EmailMetadata";
     public static final String id = "document_id";
     public static final String type_id = "document_type_id";
+  }
+
+  public static class EmailAttachment {
+
+    public static final String name = "EmailAttachment";
+    public static final String doctype_email = "email";
+    public static final String email_id = "email_id";
+    public static final String doctype_attachment = "attachment";
+    public static final String id = "attachment_id";
+    public static final String file_name = "file_name";
+    public static final String download_url = "download_url";
+    public static final String size = "size";
   }
 
   public static class Search {
@@ -50,12 +62,12 @@ public class AugmentedSearchMetadataType {
   public static class PolicySearch {
 
     public static final String id = "policy_id";
-    public static String chapter = "policy_chapter";
+    public static final String chapter = "policy_chapter";
   }
 
   public static class CallToAction {
 
-    public static String name = "CallToAction";
+    public static final String name = "CallToAction";
     public static final String id = "id";
     public static final String document_id = "document_id";
     public static final String policy_dscr = "policy_dscr";
@@ -82,15 +94,21 @@ public class AugmentedSearchMetadataType {
       augmentorFactories.put(AugmentedContentType.EmailMetadata, content ->
         new DocumentWithMetadataContent(content)
       );
+      augmentorFactories.put(AugmentedContentType.Attachment, content ->
+        new DocumentAttachmentContent(content)
+      );
     }
     if (augmentorFactories == null) {
-      augmentorFactories = new HashMap<>();
+      throw new IllegalArgumentException("No way we should get here");
+      /*
+    augmentorFactories = new HashMap<>();
       augmentorFactories.put(AugmentedContentType.EmailSearch, content ->
         new AugmentedEmailSearch(content)
       );
       augmentorFactories.put(AugmentedContentType.PolicySearch, content ->
         new AugmentedPolicySearch(content)
       );
+    */
     }
     return augmentorFactories;
   }
@@ -131,7 +149,7 @@ public class AugmentedSearchMetadataType {
     if (factory != null) {
       return (R) factory.apply(source);
     }
-    if (type == AugmentedContentType.EmailMetadata) {
+    if (type == AugmentedContentType.Unknown) {
       LoggerFactory.getLogger(AugmentedSearchMetadataType.class).warn(
         "No factory found for type: " + type
       );

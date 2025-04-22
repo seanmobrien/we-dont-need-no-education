@@ -129,7 +129,18 @@ public class SchoolChatBot {
       }
       switch (choice) {
         case 1:
-          KeyPointAnalysis.run(appScanner, args);
+          try {
+            choice = Integer.parseInt(appScanner.nextLine());
+            var stage1 = new AnalysisStageManager(
+              1,
+              Db.getInstance(),
+              new StageAnalystFactory()
+            );
+            stage1.processDocument(choice);
+          } catch (SQLException e) {
+            System.out.println("Error processing document: " + e.getMessage());
+            continue;
+          }
           break;
         case 2:
           CallToActionAnalysis.run(appScanner, args);

@@ -44,6 +44,10 @@ public class AugmentedContentListBase {
   public final List<AugmentedPolicySearch> PolicySearch = new ArrayList<
     AugmentedPolicySearch
   >();
+
+  public final List<DocumentAttachmentContent> Attachments = new ArrayList<
+    DocumentAttachmentContent
+  >();
   public final List<AugmentedContent> Other = new ArrayList<AugmentedContent>();
 
   public AugmentedContentListBase() {}
@@ -74,6 +78,9 @@ public class AugmentedContentListBase {
         break;
       case PolicySearch:
         PolicySearch.add((AugmentedPolicySearch) content);
+        break;
+      case Attachment:
+        Attachments.add((DocumentAttachmentContent) content);
         break;
       default:
         addOtherItem(type, content);

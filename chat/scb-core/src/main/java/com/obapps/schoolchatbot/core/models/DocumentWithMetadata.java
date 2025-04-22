@@ -18,12 +18,12 @@ public class DocumentWithMetadata implements IMessageMetadata {
   String recipients = null;
   LocalDateTime documentSendDate = null;
   String content = null;
-  Boolean isFromParent;
+  Boolean isFromDistrictStaff;
   String subject;
   Integer threadId;
   private String senderRole;
-  private UUID replyToEmailId;
-  private List<String> relatedEmails;
+  private Integer replyToDocumentId;
+  private List<Integer> relatedDocuments;
 
   public DocumentWithMetadata() {
     // Default constructor
@@ -50,8 +50,8 @@ public class DocumentWithMetadata implements IMessageMetadata {
   }
 
   @Override
-  public Boolean getIsFromParent() {
-    return isFromParent;
+  public Boolean getIsFromDistrictStaff() {
+    return isFromDistrictStaff;
   }
 
   @Override
@@ -86,20 +86,20 @@ public class DocumentWithMetadata implements IMessageMetadata {
     this.senderRole = senderRole;
   }
 
-  public UUID getReplyToEmailId() {
-    return replyToEmailId;
+  public Integer getReplyToDocumentId() {
+    return replyToDocumentId;
   }
 
-  public void setReplyToEmailId(UUID replyToEmailId) {
-    this.replyToEmailId = replyToEmailId;
+  public void setReplyToDocumentId(Integer replyToDocumentId) {
+    this.replyToDocumentId = replyToDocumentId;
   }
 
-  public List<String> getRelatedEmails() {
-    return relatedEmails;
+  public List<Integer> getRelatedDocuments() {
+    return relatedDocuments;
   }
 
-  public void setRelatedEmails(List<String> relatedEmails) {
-    this.relatedEmails = relatedEmails;
+  public void setRelatedDocuments(List<Integer> relatedDocuments) {
+    this.relatedDocuments = relatedDocuments;
   }
 
   public String toJson() {
@@ -107,10 +107,7 @@ public class DocumentWithMetadata implements IMessageMetadata {
     try {
       return objectMapper.writeValueAsString(this);
     } catch (JsonProcessingException e) {
-      throw new RuntimeException(
-        "Error serializing HistoricKeyPoint to JSON",
-        e
-      );
+      throw new RuntimeException("Error serializing document to JSON", e);
     }
   }
 
@@ -126,13 +123,13 @@ public class DocumentWithMetadata implements IMessageMetadata {
     private String sender;
     private String recipients;
     private LocalDateTime documentSendDate = LocalDateTime.now();
-    private Boolean isFromParent = false;
+    private Boolean isFromDistrictStaff = false;
     private String content;
     private String subject;
     private Integer threadId;
     private String senderRole;
-    private UUID replyToEmailId;
-    private List<String> relatedEmails;
+    private Integer replyToDocumentId;
+    private List<Integer> relatedDocuments;
 
     public Builder setDocumentId(Integer documentId) {
       this.documentId = documentId;
@@ -169,8 +166,8 @@ public class DocumentWithMetadata implements IMessageMetadata {
       return this;
     }
 
-    public Builder setIsFromParent(Boolean isFromParent) {
-      this.isFromParent = isFromParent;
+    public Builder setIsFromDistrictStaff(Boolean isFromDistrictStaff) {
+      this.isFromDistrictStaff = isFromDistrictStaff;
       return this;
     }
 
@@ -189,13 +186,13 @@ public class DocumentWithMetadata implements IMessageMetadata {
       return this;
     }
 
-    public Builder setReplyToEmailId(UUID replyToEmailId) {
-      this.replyToEmailId = replyToEmailId;
+    public Builder setReplyToDocumentId(Integer replyToDocumentId) {
+      this.replyToDocumentId = replyToDocumentId;
       return this;
     }
 
-    public Builder setRelatedEmails(List<String> relatedEmails) {
-      this.relatedEmails = relatedEmails;
+    public Builder setRelatedDocuments(List<Integer> relatedDocuments) {
+      this.relatedDocuments = relatedDocuments;
       return this;
     }
 
@@ -214,12 +211,12 @@ public class DocumentWithMetadata implements IMessageMetadata {
       emailMetadata.sender = this.sender;
       emailMetadata.recipients = this.recipients;
       emailMetadata.documentSendDate = this.documentSendDate;
-      emailMetadata.isFromParent = this.isFromParent;
+      emailMetadata.isFromDistrictStaff = this.isFromDistrictStaff;
       emailMetadata.content = this.content;
       emailMetadata.subject = this.subject;
       emailMetadata.senderRole = this.senderRole;
-      emailMetadata.replyToEmailId = this.replyToEmailId;
-      emailMetadata.relatedEmails = this.relatedEmails;
+      emailMetadata.replyToDocumentId = this.replyToDocumentId;
+      emailMetadata.relatedDocuments = this.relatedDocuments;
 
       return emailMetadata;
     }
@@ -256,6 +253,17 @@ public class DocumentWithMetadata implements IMessageMetadata {
    */
   public static DocumentWithMetadata fromDb(Db db, Integer documentId)
     throws SQLException {
+    var theDb = db == null ? Db.getInstance() : db;
+    var theResults = theDb.selectObjects(
+      DocumentWithMetadata.class,
+      "SELECT * FROM public.\"DocumentWithDetails\" WHERE document_id=?",
+      documentId
+    );
+    if (theResults == null || theResults.size() == 0) {
+      return null;
+    }
+    return theResults.get(0);
+    /*
     var resultset = Db.getInstance()
       .selectRecords(
         "SELECT du.unit_id AS document_id, du.content, du.document_type, e.email_id, e.sender_id, " +
@@ -264,13 +272,13 @@ public class DocumentWithMetadata implements IMessageMetadata {
         "FROM document_units du " +
         "JOIN emails e ON du.email_id=e.email_id " +
         "JOIN contacts c ON e.sender_id=c.contact_id " +
-        "WHERE unit_id = ?",
+        "WHERE du.unit_id = ?",
         documentId
       );
     if (resultset == null || resultset.size() == 0) {
       return null;
     }
-    var record = resultset.get(0);
+    var record = resultset.get(0);    
     var b = builder();
     Db.saveFromStateBag(record, "content", b::setContent);
     Db.saveFromStateBag(record, "document_type", b::setDocumentType);
@@ -291,7 +299,8 @@ public class DocumentWithMetadata implements IMessageMetadata {
     Db.saveFromStateBag(record, "subject", b::setSubject);
     Db.saveIntFromStateBag(record, "thread_id", b::setThreadId);
     Db.saveIntFromStateBag(record, "document_id", b::setDocumentId);
-
     return b.build();
+    */
+
   }
 }

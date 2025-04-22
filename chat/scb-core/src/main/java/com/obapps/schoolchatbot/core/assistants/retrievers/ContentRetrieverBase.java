@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.core.assistants.retrievers;
 
+import com.obapps.schoolchatbot.core.util.SupportingPrompts;
 import dev.langchain4j.data.message.ChatMessageType;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.rag.content.Content;
@@ -51,7 +52,7 @@ public abstract class ContentRetrieverBase implements ContentRetriever {
 
   public abstract List<Content> retrieve(Query query);
 
-  protected Integer getDocumentId(Logger log, Query query) {
+  protected Integer getDocumentId(Query query) {
     var meta = query.metadata();
     if (meta != null) {
       var cm = meta.chatMessage();
@@ -68,16 +69,28 @@ public abstract class ContentRetrieverBase implements ContentRetriever {
             return Integer.parseInt(userQuery);
           } catch (NumberFormatException e) {
             // If we cannot parse from userMessage we try from text
+            if (SupportingPrompts.matchesContinueExtraction(userQuery)) {
+              return 0;
+            }
           }
         }
       }
     }
     var raw = query.text();
+    if (SupportingPrompts.matchesContinueExtraction(raw)) {
+      return 0;
+    }
     try {
       return Integer.parseInt(raw);
     } catch (NumberFormatException e) {
       // Handle the exception if the string cannot be parsed as an integer
-      log.debug("Error parsing document ID from query: " + raw, e);
+      if (log != null) {
+        if (raw.indexOf("continue") == -1) {
+          if (raw != "continue") {
+            log.debug("Error parsing document ID from query: " + raw, e);
+          }
+        }
+      }
     }
     return 0;
   }

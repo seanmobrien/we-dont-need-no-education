@@ -59,10 +59,24 @@ import org.slf4j.LoggerFactory;
  * <p>Ensure that the database connection details are correctly configured in
  * the environment variables before using this class.</p>
  */
-public class Db {
+public class Db implements AutoCloseable {
 
+  /**
+   * A globally accessible, thread-safe singleton instance of the Db class.
+   * This instance is initialized lazily and ensures that only one instance
+   * of the Db class is created throughout the application's lifecycle.
+   * The use of the `volatile` keyword ensures visibility of changes to the
+   * instance across threads.
+   */
   private static volatile Db theGlobalInstance;
 
+  /**
+   * Retrieves an instance of the Db class without throwing an exception.
+   * If an SQLException occurs during the retrieval, it logs a warning and returns null.
+   *
+   * @param notUsed An unused parameter, included for compatibility or future use.
+   * @return An instance of the Db class, or null if an exception occurs.
+   */
   public static Db getInstanceNoThrow(Object notUsed) {
     try {
       return getInstance();
@@ -72,6 +86,15 @@ public class Db {
     }
   }
 
+  /**
+   * Returns the singleton instance of the {@code Db} class.
+   * This method ensures that only one instance of the {@code Db} class
+   * is created (lazy initialization) and provides thread-safe access
+   * to the instance using double-checked locking.
+   *
+   * @return the singleton instance of the {@code Db} class.
+   * @throws SQLException if a database access error occurs during initialization.
+   */
   public static Db getInstance() throws SQLException {
     if (theGlobalInstance == null) {
       synchronized (Db.class) {
@@ -83,6 +106,10 @@ public class Db {
     return theGlobalInstance;
   }
 
+  /**
+   * Cleans up and releases resources associated with the global database instance.
+   * If a global database instance exists, this method closes it and sets the instance to null.
+   */
   public static void teardown() {
     if (theGlobalInstance != null) {
       theGlobalInstance.close();
@@ -90,9 +117,46 @@ public class Db {
     }
   }
 
+  /**
+   * Creates a new unit of work by initializing a database connection and starting a request.
+   *
+   * @return A new instance of the {@code Db} class with an active connection and request.
+   * @throws SQLException If an error occurs while creating the unit of work or initializing the connection.
+   */
+  public static Db createUnitOfWork() throws SQLException {
+    try {
+      var ret = new Db();
+      ret.connectionRequired().beginRequest();
+      return ret;
+    } catch (SQLException e) {
+      LoggerFactory.getLogger(Db.class).warn(
+        "Failed to create unit of work",
+        e
+      );
+      throw new SQLException(e);
+    }
+  }
+
+  /**
+   * Represents a database connection instance.
+   * This field holds the connection to the database, which is used
+   * to execute queries and manage transactions.
+   */
   private Connection connection;
+
+  /**
+   * Logger instance used for logging messages and errors within the Db class.
+   */
   private Logger log;
 
+  /**
+   * Protected constructor for the Db class.
+   * Initializes the logger and attempts to establish a database connection.
+   * If the connection attempt fails, a warning is logged, and the system will
+   * retry on the next query.
+   *
+   * @throws SQLException if an SQL error occurs during connection initialization.
+   */
   protected Db() throws SQLException {
     this.log = LoggerFactory.getLogger(Db.class);
     try {
@@ -154,6 +218,15 @@ public class Db {
     return null;
   }
 
+  /**
+   * Executes the given SQL query with the provided parameters and returns the result as a list of maps.
+   * Each map represents a row in the result set, where the keys are column names and the values are the corresponding column values.
+   *
+   * @param sql    The SQL query to execute.
+   * @param params The parameters to bind to the query placeholders.
+   * @return A list of maps representing the query result, or {@code null} if an error occurs.
+   * @throws SQLException If an error occurs while preparing or executing the query.
+   */
   public List<Map<String, Object>> selectRecords(String sql, Object... params) {
     try (var stmt = prepareStatement(sql, params)) {
       try (var rs = stmt.executeQuery()) {
@@ -173,16 +246,6 @@ public class Db {
     }
     return null;
   }
-
-  /**
-   * Executes a SQL query and retrieves a single value from the result set.
-   *
-   * @param sql    The SQL query to execute.
-   * @param params The parameters to be set in the prepared statement.
-   * @return An {@link Optional} containing the single value retrieved from the
-   *         first column of the first row in the result set, or an empty
-   *         {@link Optional} if no rows are returned or an error occurs.
-   */
 
   /**
    * Executes a SQL query and retrieves a single value from the result set.
@@ -258,7 +321,6 @@ public class Db {
         e
       );
     }
-    // return 0;
   }
 
   /**
@@ -300,12 +362,19 @@ public class Db {
     var stmt = connection.prepareStatement(sql, autoGeneratedKeys);
     for (int i = 0; i < params.length; i++) {
       if (params[i] instanceof List) {
-        var list = (List<?>) params[i];
-        Array array = connection.createArrayOf(
-          "text",
-          list.toArray(new String[0])
-        );
-        stmt.setArray(i + 1, array);
+        if (params[i] instanceof List<?> list) {
+          if (!list.isEmpty() && list.get(0) instanceof UUID) {
+            UUID[] uuidArray = list.toArray(new UUID[0]);
+            Array array = connection.createArrayOf("uuid", uuidArray);
+            stmt.setArray(i + 1, array);
+          } else {
+            Array array = connection.createArrayOf(
+              "text",
+              list.toArray(new String[0])
+            );
+            stmt.setArray(i + 1, array);
+          }
+        }
         continue;
       }
       stmt.setObject(i + 1, params[i]);
@@ -437,6 +506,16 @@ public class Db {
     return fld == null ? defaultValue : fld.toString();
   }
 
+  /**
+   * Saves a value from the provided state bag into a target field using a setter function.
+   * If the specified field is not found in the state bag, a default value is used instead.
+   *
+   * @param stateBag    A map containing the state data.
+   * @param fieldName   The name of the field to retrieve from the state bag.
+   * @param setter      A Consumer function to set the value of the target field.
+   * @return            A Boolean indicating whether the value was successfully retrieved
+   *                    from the state bag (true) or if the default value was used (false).
+   */
   public static Boolean saveFromStateBag(
     Map<String, Object> stateBag,
     String fieldName,
@@ -806,8 +885,9 @@ public class Db {
                 Strings.snakeToCamelCase(columnName)
               );
               field.setAccessible(true);
-
-              if (value instanceof java.sql.Timestamp) {
+              if (value == null) {
+                field.set(instance, null);
+              } else if (value instanceof java.sql.Timestamp) {
                 field.set(
                   instance,
                   ((java.sql.Timestamp) value).toLocalDateTime()
@@ -823,7 +903,11 @@ public class Db {
                 value instanceof java.util.UUID ||
                 field.getType().equals(UUID.class)
               ) {
-                field.set(instance, UUID.fromString(value.toString()));
+                if (field.getType().equals(UUID.class)) {
+                  field.set(instance, UUID.fromString(value.toString()));
+                } else {
+                  field.set(instance, value.toString());
+                }
               } else if (
                 field.getType().equals(Double.class) ||
                 field.getType().equals(double.class)
@@ -833,7 +917,10 @@ public class Db {
                 field.getType().equals(Integer.class) ||
                 field.getType().equals(int.class)
               ) {
-                field.set(instance, Integer.valueOf(value.toString()));
+                field.set(
+                  instance,
+                  value == null ? null : Integer.valueOf(value.toString())
+                );
               } else {
                 field.set(instance, value);
               }
@@ -849,6 +936,88 @@ public class Db {
       log.error("Error executing query [" + sql + "]", e);
     }
     return new ArrayList<>();
+  }
+
+  public IDbTransaction createTransaction() {
+    return new DbTx();
+  }
+
+  /**
+   * The {@code DbTx} class represents a database transaction that implements the {@link AutoCloseable} interface.
+   * It provides mechanisms to manage the lifecycle of a transaction, including starting, committing, rolling back,
+   * and finalizing the transaction.
+   *
+   * <p>Usage of this class ensures that database transactions are properly handled, even in the presence of exceptions,
+   * by leveraging the try-with-resources statement.
+   *
+   * <p>Example usage:
+   * <pre>
+   * try (DbTx transaction = new DbTx()) {
+   *     // Perform database operations here
+   *     // If an exception occurs, the transaction will be rolled back automatically
+   * }
+   * </pre>
+   *
+   * <p>Features:
+   * <ul>
+   *   <li>Automatically begins a transaction upon instantiation.</li>
+   *   <li>Allows manual rollback of the transaction using {@link #setAbort()}.</li>
+   *   <li>Commits the transaction upon successful completion unless explicitly rolled back.</li>
+   *   <li>Ensures proper cleanup of resources when the transaction is closed.</li>
+   * </ul>
+   *
+   * <p>Note:
+   * <ul>
+   *   <li>Ensure that the {@code connection} object is properly initialized and managed outside this class.</li>
+   *   <li>Exceptions during transaction management are logged but not rethrown.</li>
+   * </ul>
+   */
+  protected class DbTx implements IDbTransaction {
+
+    private boolean rolledBack = false;
+    private boolean disposed = false;
+    private final boolean initialAutoComplete;
+
+    public DbTx() {
+      boolean initialComplete = true;
+      try {
+        initialComplete = connection.getAutoCommit();
+        connection.beginRequest();
+        connection.setAutoCommit(false);
+      } catch (Exception e) {
+        log.error("Error starting transaction", e);
+      }
+      this.initialAutoComplete = initialComplete;
+    }
+
+    public void setAbort() {
+      if (disposed) {
+        return;
+      }
+      rolledBack = true;
+      try {
+        connection.rollback();
+      } catch (SQLException e) {
+        log.error("Error rolling back transaction", e);
+      }
+    }
+
+    public void close() {
+      if (disposed) {
+        return;
+      }
+      try {
+        if (!rolledBack) {
+          connection.commit();
+        }
+        connection.setAutoCommit(this.initialAutoComplete);
+        connection.endRequest();
+      } catch (SQLException e) {
+        log.error("Error finalizing transaction", e);
+      } finally {
+        disposed = true;
+      }
+    }
   }
 
   private static final String NO_VALUE = "__no-value__";

@@ -1,12 +1,12 @@
 package com.obapps.schoolchatbot.chat.assistants;
 
 import com.obapps.schoolchatbot.core.assistants.types.BaseStageAnalystFactory;
-import com.obapps.schoolchatbot.core.assistants.types.IStageAnalyst;
+import com.obapps.schoolchatbot.core.assistants.types.IStageAnalystController;
 
 public class StageAnalystFactory extends BaseStageAnalystFactory {
 
   @Override
-  public IStageAnalyst getStageAnalyst(int stageId) {
+  public IStageAnalystController getStageAnalyst(int stageId) {
     switch (stageId) {
       case 1:
         return new KeyPointAnalysis();

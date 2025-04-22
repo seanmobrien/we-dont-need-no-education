@@ -36,10 +36,14 @@ public abstract class AzureBaseSearchClient<TScope> {
   protected abstract String getSearchIndexName();
 
   protected String getServiceUrl() {
+    var searchEndpoint = envVars.getOpenAi().getSearchApiEndpoint();
+    if (searchEndpoint.endsWith("/")) {
+      searchEndpoint = searchEndpoint.substring(0, searchEndpoint.length() - 1);
+    }
     return String.format(
       "%s/indexes/%s/docs/search?api-version=2025-03-01-preview",
       //"%s/indexes/%s/docs/search?api-version=2024-07-01",
-      envVars.getOpenAi().getSearchApiEndpoint(),
+      searchEndpoint,
       getSearchIndexName()
     );
   }
@@ -72,7 +76,7 @@ public abstract class AzureBaseSearchClient<TScope> {
 
       HttpRequest request = HttpRequest.newBuilder()
         .uri(new URI(url))
-        .timeout(Duration.ofSeconds(10))
+        .timeout(Duration.ofSeconds(60))
         .header("Content-Type", "application/json")
         .header("api-key", envVars.getOpenAi().getSearchApiKey())
         .POST(BodyPublishers.ofString(payload.toString()))
@@ -144,6 +148,7 @@ public abstract class AzureBaseSearchClient<TScope> {
   ) {
     String url = getServiceUrl();
     String serviceResponse = null;
+    JSONObject payload = new JSONObject();
     try {
       if (embeddingVector == null || embeddingVector.length == 0) {
         embeddingVector = this.embeddingService.embed(naturalQuery);
@@ -159,7 +164,6 @@ public abstract class AzureBaseSearchClient<TScope> {
       JSONArray vectors = new JSONArray();
       vectors.put(vectorBlock);
 
-      JSONObject payload = new JSONObject();
       payload.put("search", naturalQuery); // hybrid search with keyword/semantic weight
       payload.put("vectorQueries", vectors);
       payload.put("top", topK);
@@ -169,10 +173,9 @@ public abstract class AzureBaseSearchClient<TScope> {
       // Select desired fields
       payload.put("select", "content,id,metadata");
       appendScopeFilter(payload, policyTypeId);
-
       HttpRequest request = HttpRequest.newBuilder()
         .uri(new URI(url))
-        .timeout(Duration.ofSeconds(60))
+        .timeout(Duration.ofSeconds(600))
         .header("Content-Type", "application/json")
         .header("api-key", envVars.getOpenAi().getSearchApiKey())
         .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
@@ -196,13 +199,14 @@ public abstract class AzureBaseSearchClient<TScope> {
     } catch (Exception e) {
       System.out.println(serviceResponse);
       log.error(
-        "Search failed for query [{}] top: [{}] filter: [{}]: {}\nURL: {}\nBody{}",
+        "Search failed for query [{}] top: [{}] filter: [{}]: {}\nURL: {}\nBody{}\nPayload: {}",
         naturalQuery,
         topK,
         policyTypeId,
         url,
         e.getMessage(),
-        Objects.requireNonNullElse(serviceResponse, "[Null Response]")
+        Objects.requireNonNullElse(serviceResponse, "[Null Response]"),
+        payload.toString()
       );
       return Collections.emptyList();
     }

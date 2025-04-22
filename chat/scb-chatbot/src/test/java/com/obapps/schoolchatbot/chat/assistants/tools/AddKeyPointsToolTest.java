@@ -85,7 +85,6 @@ public class AddKeyPointsToolTest {
     assertThat(result).isNotNull();
     verify(mockRepository, times(2)).db();
   }
-*/
   @Test
   public void testAddKeyPointToDatabase_withNoDocumentId() throws SQLException {
     when(mockMessageMetadata.getDocumentId()).thenReturn(null);
@@ -122,6 +121,7 @@ public class AddKeyPointsToolTest {
     assertThat(result).startsWith("ERROR: ");
     verify(mockRepository, times(2)).db();
   }
+*/
 
   @Test
   public void testSearchForRelatedKeyPoints_withNoMatches()

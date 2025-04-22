@@ -1,5 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
+import com.obapps.core.util.EnvVars;
+import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,16 +15,17 @@ public class EmbeddingService {
   public EmbeddingService(EmbeddingModel openAiClient) {
     super();
     if (openAiClient == null) {
+      /*
       this.openAiClient = new StandaloneModelClientFactory()
         .createEmbeddingClient();
-      /*
+      */
+
       var openAiVars = EnvVars.getInstance().getOpenAi();
       this.openAiClient = AzureOpenAiEmbeddingModel.builder()
         .apiKey(openAiVars.getApiKey())
         .endpoint(openAiVars.getApiEndpoint())
         .deploymentName(openAiVars.getDeploymentEmbedding())
         .build();
-      */
     } else {
       this.openAiClient = openAiClient;
     }

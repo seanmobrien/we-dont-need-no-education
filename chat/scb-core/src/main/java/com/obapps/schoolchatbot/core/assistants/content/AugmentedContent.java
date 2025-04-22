@@ -51,7 +51,7 @@ public abstract class AugmentedContent {
     var metaValue = meta.getString(key);
     return (
       value != null &&
-      value.stream().anyMatch(v -> v.equalsIgnoreCase(metaValue))
+      value.stream().anyMatch(v -> v.equalsIgnoreCase(metaValue.toString()))
     );
   }
 
@@ -68,7 +68,7 @@ public abstract class AugmentedContent {
       return false;
     }
     var metaValue = meta.getString(key);
-    return metaValue != null && metaValue.equalsIgnoreCase(value);
+    return metaValue != null && metaValue.toString().equalsIgnoreCase(value);
   }
 
   public static AugmentedContentType getAugmentedType(Content content) {
@@ -78,18 +78,19 @@ public abstract class AugmentedContent {
     }
     var meta = txt.metadata();
     var name = meta.getString(AugmentedSearchMetadataType.contentType);
-    if (name == AugmentedSearchMetadataType.KeyPoint.name) {
-      return AugmentedContentType.KeyPoint;
-    }
-    if (name == AugmentedSearchMetadataType.EmailMetadata.name) {
-      return AugmentedContentType.EmailMetadata;
-    }
-    if (name == AugmentedSearchMetadataType.CallToAction.name) {
-      return AugmentedContentType.CallToAction;
+    switch (name) {
+      case AugmentedSearchMetadataType.KeyPoint.name:
+        return AugmentedContentType.KeyPoint;
+      case AugmentedSearchMetadataType.EmailMetadata.name:
+        return AugmentedContentType.EmailMetadata;
+      case AugmentedSearchMetadataType.CallToAction.name:
+        return AugmentedContentType.CallToAction;
+      case AugmentedSearchMetadataType.EmailAttachment.name:
+        return AugmentedContentType.Attachment;
     }
     if (meta.containsKey(AugmentedSearchMetadataType.Search.filename)) {
       // Search doesn't have an augmented name; we know how it walks,  so look at how it
-      //talks, and quacks next
+      // talks, and quacks next
       if (
         meta.containsKey(AugmentedSearchMetadataType.PolicySearch.id) &&
         meta.containsKey(AugmentedSearchMetadataType.PolicySearch.chapter)

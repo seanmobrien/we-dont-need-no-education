@@ -45,7 +45,7 @@ public class AzurePolicySearchClient
     if (policyTypeValue > 0) {
       String metadataFilter =
         "metadata/attributes/any(a: a/key eq 'policy_type_id' and a/value eq '" +
-        policyTypeId +
+        policyTypeValue +
         "')";
       payload.put("filter", metadataFilter);
     }

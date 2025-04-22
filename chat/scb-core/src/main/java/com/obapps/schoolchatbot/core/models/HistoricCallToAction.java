@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * The {@code HistoricCallToAction} class represents a historical call-to-action (CTA)
@@ -221,5 +222,37 @@ public class HistoricCallToAction extends CallToAction {
     }
 
     return result;
+  }
+
+  public static HistoricCallToAction getCallsToAction(Db db, UUID id) {
+    var cta = db
+      .selectRecords("SELECT * FROM \"CallToAction\" WHERE property_id = ?", id)
+      .stream()
+      .map(record -> {
+        var action = new HistoricCallToAction(record);
+        action.setResponses(new ArrayList<>());
+        return action;
+      })
+      .collect(Collectors.toList())
+      .getFirst();
+    if (cta == null) {
+      return null;
+    }
+    db
+      .selectRecords(
+        "SELECT * FROM \"ResponsiveAction\" WHERE action_property_id = ?",
+        id
+      )
+      .stream()
+      .forEach(record -> {
+        var response = new CallToActionResponse(record);
+        Db.saveFromStateBag(
+          record,
+          "action_description",
+          response::setPropertyValue
+        );
+        cta.getResponses().add(response);
+      });
+    return cta;
   }
 }

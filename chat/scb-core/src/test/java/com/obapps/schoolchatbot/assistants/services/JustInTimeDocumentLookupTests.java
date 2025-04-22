@@ -7,6 +7,7 @@ import com.obapps.schoolchatbot.core.assistants.services.AzureSearchClient;
 import com.obapps.schoolchatbot.core.assistants.services.DocumentChunkFilter;
 import com.obapps.schoolchatbot.core.assistants.services.IStandaloneModelClient;
 import com.obapps.schoolchatbot.core.assistants.services.JustInTimeDocumentLookup;
+import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,13 +19,16 @@ class JustInTimeDocumentLookupTests {
   private IStandaloneModelClient mockSummarizer;
   private DocumentChunkFilter mockChunkFilter;
   private JustInTimeDocumentLookup documentLookup;
+  private IDocumentContentSource mockDocumentSource;
 
   @BeforeEach
   void setUp() {
+    mockDocumentSource = mock(IDocumentContentSource.class);
     mockSearchClient = mock(AzureSearchClient.class);
     mockSummarizer = mock(IStandaloneModelClient.class);
     mockChunkFilter = mock(DocumentChunkFilter.class);
     documentLookup = new JustInTimeDocumentLookup(
+      mockDocumentSource,
       mockSearchClient,
       mockSummarizer,
       mockChunkFilter
@@ -33,7 +37,7 @@ class JustInTimeDocumentLookupTests {
 
   @Test
   void runRealQuery() {
-    documentLookup = new JustInTimeDocumentLookup();
+    documentLookup = new JustInTimeDocumentLookup(mockDocumentSource);
 
     String query = "How many times was Caty struck over the head?";
 

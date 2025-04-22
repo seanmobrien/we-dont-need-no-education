@@ -1,5 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
+import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
+
 /**
  * The JustInTimeDocumentLookup class is responsible for performing just-in-time
  * document lookups and summarizations using Azure Search and a summarization model.
@@ -14,8 +16,9 @@ public class JustInTimeDocumentLookup
    * Initializes the class with default instances of AzureSearchClient,
    * IStandaloneModelClient, and DocumentChunkFilter.
    */
-  public JustInTimeDocumentLookup() {
+  public JustInTimeDocumentLookup(IDocumentContentSource documentSource) {
     this(
+      documentSource,
       new AzureSearchClient(),
       new StandaloneModelClient(),
       new DocumentChunkFilter()
@@ -25,6 +28,7 @@ public class JustInTimeDocumentLookup
   /**
    * Constructor for JustInTimeDocumentLookup.
    *
+   * @param documentSource The IDocumentContentSource instance to use for document retrieval.
    * @param searchClient The AzureSearchClient instance to use for searching documents.
    *                     If null, a default instance of AzureSearchClient is created.
    * @param summarizer   The IStandaloneModelClient instance to use for summarizing documents.
@@ -33,11 +37,13 @@ public class JustInTimeDocumentLookup
    *                     If null, a default instance of DocumentChunkFilter is created.
    */
   public JustInTimeDocumentLookup(
+    IDocumentContentSource documentSource,
     AzureSearchClient searchClient,
     IStandaloneModelClient summarizer,
     DocumentChunkFilter chunkFilter
   ) {
     super(
+      documentSource,
       searchClient == null ? new AzureSearchClient() : searchClient,
       summarizer == null ? new StandaloneModelClient() : summarizer,
       chunkFilter == null ? new DocumentChunkFilter() : chunkFilter

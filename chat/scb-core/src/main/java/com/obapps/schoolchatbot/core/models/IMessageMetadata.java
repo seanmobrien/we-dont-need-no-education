@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.models;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,7 +42,7 @@ public interface IMessageMetadata {
    *
    * @return true if the message is from a parent, false otherwise.
    */
-  Boolean getIsFromParent();
+  Boolean getIsFromDistrictStaff();
 
   /**
    * Gets the sender of the message.
@@ -49,6 +50,13 @@ public interface IMessageMetadata {
    * @return the sender as a String.
    */
   String getSender();
+
+  /**
+   * Gets the sender of the message.
+   *
+   * @return the sender as a String.
+   */
+  String getSenderRole();
 
   /**
    * Gets the recipients of the message.
@@ -70,4 +78,17 @@ public interface IMessageMetadata {
    * @return the thread ID as an Integer.
    */
   Integer getThreadId();
+  /**
+   * Gets the sender of the message.
+   *
+   * @return the sender as a String.
+   */
+  Integer getReplyToDocumentId();
+
+  /**
+   * Gets the related documents associated with the message.
+   *
+   * @return the related documents as an Integer.
+   */
+  List<Integer> getRelatedDocuments();
 }

@@ -1,14 +1,12 @@
 package com.obapps.schoolchatbot.core.assistants;
 
-import com.obapps.core.util.Colors;
 import com.obapps.core.util.Db;
-import com.obapps.core.util.Strings;
 import com.obapps.schoolchatbot.core.assistants.content.AugmentedContent;
 import com.obapps.schoolchatbot.core.assistants.content.AugmentedContentListBase;
 import com.obapps.schoolchatbot.core.assistants.content.AugmentedSearchMetadataType;
-import com.obapps.schoolchatbot.core.assistants.types.IStageAnalyst;
+import com.obapps.schoolchatbot.core.assistants.content.DocumentWithMetadataContent;
+import com.obapps.schoolchatbot.core.assistants.types.IStageAnalystController;
 import com.obapps.schoolchatbot.core.models.AnalystDocumentResult;
-import com.obapps.schoolchatbot.core.models.DocumentProperty;
 import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisFunctionAudit;
 import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisStageAudit;
 import com.obapps.schoolchatbot.core.util.ContentMapper;
@@ -18,8 +16,6 @@ import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.injector.ContentInjector;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -72,7 +68,7 @@ public abstract class DocumentChatAssistant<
   TContentListType extends AugmentedContentListBase
 >
   extends ChatAssistant
-  implements ContentInjector, IStageAnalyst {
+  implements ContentInjector, IStageAnalystController {
 
   private Class<TContentListType> clazz = null;
 
@@ -215,6 +211,7 @@ public abstract class DocumentChatAssistant<
     addedNotes = 0;
     iterationIndex = 0;
     Content = null;
+    messageWindowMemory.clear();
   }
 
   /**
@@ -230,10 +227,7 @@ public abstract class DocumentChatAssistant<
       return processDocument(documentId, false);
     } catch (Exception e) {
       e.printStackTrace();
-      return new AnalystDocumentResult.Builder()
-        .setMessage(e.getMessage())
-        .setSuccess(false)
-        .build();
+      return new AnalystDocumentResult(e, detectedPoints, addedNotes);
     }
   }
 
@@ -250,47 +244,40 @@ public abstract class DocumentChatAssistant<
     Integer documentId,
     Boolean throwOnError
   ) throws Exception {
-    resetMessageState();
-    try {
-      detectedPoints = 0;
-      addedNotes = 0;
-      var aggregated = new AnalystDocumentResult.Builder().setSuccess(true);
-      while (!analysisCompleteCalled) {
-        var pass = runIteration(documentId, iterationIndex);
-        aggregated.append(pass);
-        iterationIndex++;
-        if (iterationIndex > 10) {
-          DocumentProperty.addManualReview(
-            documentId,
-            "Document has been processed 10 times.  Please review the results.",
-            new Exception("Document has been processed 10 times."),
-            "DocumentChatAssistant.processDocument"
+    var result = AnalystDocumentResult.aggregateBuilder();
+    Integer lastDetectedPoints = 0;
+    Integer lastAddedNotes = 0;
+    Boolean earlyExit = false;
+    try (var tx = Db.getInstance().createTransaction()) {
+      try {
+        resetMessageState();
+        while (!earlyExit && !analysisCompleteCalled) {
+          lastDetectedPoints = detectedPoints;
+          lastAddedNotes = addedNotes;
+          var pass = runIteration(documentId, iterationIndex);
+          result.append(pass);
+          if (!pass.getSuccess()) {
+            tx.setAbort();
+            earlyExit = true;
+          }
+          iterationIndex++;
+        }
+      } catch (Exception e) {
+        tx.setAbort();
+        if (throwOnError) {
+          throw e;
+        } else {
+          result.append(
+            new AnalystDocumentResult(
+              e,
+              detectedPoints - lastDetectedPoints,
+              addedNotes - lastAddedNotes
+            )
           );
-          analysisCompleteCalled = true;
         }
       }
-      return aggregated.build();
-    } catch (Exception e) {
-      if (throwOnError) {
-        throw e;
-      } else {
-        return new AnalystDocumentResult.Builder()
-          .setMessage(
-            e.getMessage() +
-            "\r\nStack Trace:\r\n\t" +
-            String.join(
-              "\r\n\t",
-              Arrays.stream(e.getStackTrace())
-                .map(StackTraceElement::toString)
-                .toArray(String[]::new)
-            )
-          )
-          .setNewNotes(addedNotes)
-          .setNewRecords(detectedPoints)
-          .setSuccess(false)
-          .build();
-      }
     }
+    return result.build();
   }
 
   private AnalystDocumentResult runIteration(
@@ -306,49 +293,33 @@ public abstract class DocumentChatAssistant<
       var userQuery = documentId.toString();
       var initalNotes = this.addedNotes;
       var initalPoints = this.detectedPoints;
-      var agentResult = getAssistant().answer(userQuery);
-      var tokenCounter = agentResult.tokenUsage();
-      var agentAnswer = agentResult.content();
-      var newNotes = addedNotes - initalNotes;
-      var newPoints = detectedPoints - initalPoints;
-      var message = String.format(
-        "Document %d used %d tokens (%d in/%d out) to process pass %d.  Detected %d points and added %d notes.  %s receive message finalizer signal.  Ouput:\n",
-        documentId,
-        tokenCounter.totalTokenCount(),
-        tokenCounter.inputTokenCount(),
-        tokenCounter.outputTokenCount(),
-        iterationIndex,
-        newPoints,
-        newNotes,
-        analysisCompleteCalled ? "Did" : "Did not"
+
+      var agentResult = getAssistant()
+        .answer(iterationIndex == 0 ? userQuery : "continue");
+      var result = new AnalystDocumentResult(
+        agentResult,
+        true,
+        addedNotes - initalNotes,
+        detectedPoints - initalPoints,
+        this.analysisCompleteCalled
       );
-      log.info("{}{}", message, agentAnswer);
-      Colors.writeInLivingColor(c -> c.YELLOW + c.BRIGHT, message);
-      Colors.writeInLivingColor(c -> c.BLUE + c.BRIGHT, agentAnswer);
+      log.info("Iteration {}: {}", iterationIndex + 1, result.getSummary());
       onAssistantResponse(agentResult, userQuery);
       DocumentUnitAnalysisStageAudit.builder()
         .documentId(documentId)
         .iterationId(iterationIndex)
         .completionSignalled(analysisCompleteCalled)
         .analysisStageId(getPhase())
-        .detectedPoints(newPoints)
-        .addedNotes(newNotes)
-        .message(agentAnswer)
+        .detectedPoints(result.getNewRecords())
+        .addedNotes(result.getNewNotes())
+        .message(result.getMessage())
         .tokens(agentResult.tokenUsage())
         .build()
         .saveToDb(
           getDb(),
           DocumentUnitAnalysisFunctionAudit.from(agentResult.toolExecutions())
         );
-      return new AnalystDocumentResult.Builder()
-        .setMessage(agentAnswer)
-        .setNewNotes(newNotes)
-        .setNewRecords(newPoints)
-        .setSuccess(true)
-        .setInputTokens(tokenCounter.inputTokenCount())
-        .setOutputTokens(tokenCounter.outputTokenCount())
-        .setFunctionCalls(agentResult.toolExecutions().size())
-        .build();
+      return result;
     } catch (Exception e) {
       log.error(
         String.format(
@@ -359,10 +330,7 @@ public abstract class DocumentChatAssistant<
         ),
         e
       );
-      throw new IllegalStateException(
-        "An unexpected error occurred processing the document",
-        e
-      );
+      throw new SQLException(e);
     }
   }
 
@@ -382,6 +350,16 @@ public abstract class DocumentChatAssistant<
       log.warn(
         "Attempted to inject into a non-user message: {}",
         sourceContent
+      );
+      return UserMessage.builder()
+        .contents(ContentMapper.fromRagContent(sourceContent))
+        .build();
+    }
+    if (Content != null) {
+      log.info(
+        "Continuing coversation using active document {}.\n\tUser Message: {}",
+        Content.getActiveDocument().getDocumentId(),
+        userMessage.toString()
       );
       return UserMessage.builder()
         .contents(ContentMapper.fromRagContent(sourceContent))
@@ -436,6 +414,18 @@ public abstract class DocumentChatAssistant<
   }
 
   /**
+   * Retrieves the document with its associated metadata content.
+   *
+   * @return A {@link DocumentWithMetadataContent} object representing the document.
+   */
+  public DocumentWithMetadataContent getSourceDocument() {
+    if (Content != null) {
+      return Content.getActiveDocumentContent();
+    }
+    return null;
+  }
+
+  /**
    * Retrieves the contents of a document.
    * This method acts as a wrapper to fetch the document contents
    * with default parameters.
@@ -487,35 +477,6 @@ public abstract class DocumentChatAssistant<
     if (message == null) {
       return "** ERROR: No document found in context. **";
     }
-    var emailMessage = message.getObject();
-    var metadata = new HashMap<String, Object>();
-    metadata.put("Message Send Date", emailMessage.getDocumentSendDate());
-    if (emailMessage.getReplyToEmailId() != null) {
-      metadata.put("In Reply To", emailMessage.getReplyToEmailId());
-    }
-    metadata.put("Sent By", emailMessage.getSender());
-    metadata.put("Sender Role", emailMessage.getSenderRole());
-    metadata.put("Message ID", emailMessage.getDocumentId());
-    metadata.put("Message Subject", emailMessage.getSubject());
-    metadata.put("Thread ID", emailMessage.getThreadId());
-    metadata.put("Document Type", emailMessage.getDocumentType());
-    metadata.put("Sent On", emailMessage.getDocumentSendDate());
-    var messages = emailMessage.getRelatedEmails();
-    if (messages != null && messages.size() > 0) {
-      metadata.put("Related Messages", String.join(", ", messages));
-    }
-
-    return (
-      String.format(
-        "*** Target Document ***ID:%d, Pass %d\n",
-        emailMessage.getDocumentId(),
-        this.getIterationIndex()
-      ) +
-      Strings.getRecordOutput(
-        "Analysis Target Document",
-        emailMessage.getContent(),
-        metadata
-      )
-    );
+    return message.getPromptText();
   }
 }

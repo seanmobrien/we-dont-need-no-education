@@ -41,6 +41,12 @@
         <encoder class="de.huxhorn.lilith.logback.encoder.ClassicLilithEncoder"> 
         <IncludeCallerData>true</IncludeCallerData> 
         </encoder> 
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/archived/lilith.%d{yyyy-MM-dd.HH}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <totalSizeCap>5GB</totalSizeCap>
+            <maxHistory>60</maxHistory>
+        </rollingPolicy>
     </appender>
 
     <root level="trace">
@@ -51,4 +57,5 @@
 
     <logger name="ai.djl" level="OFF"/>
     <logger name="org.apache.tika" level="OFF"/>
+    <logger name="reactor.netty" level="ERROR"/>
 </configuration>

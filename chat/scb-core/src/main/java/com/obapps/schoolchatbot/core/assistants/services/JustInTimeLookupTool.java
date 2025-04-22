@@ -1,7 +1,10 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
 import com.obapps.core.util.EnvVars;
+import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
+import com.obapps.schoolchatbot.core.util.PromptSymbols;
 import java.util.List;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,11 +16,6 @@ import org.slf4j.LoggerFactory;
  */
 public class JustInTimeLookupTool<TScope> {
 
-  /** The number of search hits to retrieve from the search client. */
-  private static final Integer NUMBER_OF_SEARCH_HITS = 15;
-  /** The number of summarized results to filter from the search hits. */
-  private static final Integer NUMBER_OF_SUMMARIZED_RESULTS = 5;
-
   /** Logger instance for logging debug and informational messages. */
   protected final Logger log;
   /** The search client used to perform hybrid searches. */
@@ -26,20 +24,25 @@ public class JustInTimeLookupTool<TScope> {
   protected final IChunkFilter chunkFilter;
   /** The summarizer client used to generate summaries from document chunks. */
   protected final IStandaloneModelClient summarizer;
+  /** The document content source used to retrieve document content. */
+  protected final IDocumentContentSource documentSource;
 
   /**
    * Constructs a new instance of JustInTimeLookupTool.
    *
+   * @param documentSource The document content source used to retrieve document content.
    * @param searchClient The search client used to perform hybrid searches.
    * @param summarizer The summarizer client used to generate summaries.
    * @param chunkFilter The filter used to extract top document chunks.
    */
   protected JustInTimeLookupTool(
+    IDocumentContentSource documentSource,
     AzureBaseSearchClient<TScope> searchClient,
     IStandaloneModelClient summarizer,
     IChunkFilter chunkFilter
   ) {
     this.log = LoggerFactory.getLogger(this.getClass());
+    this.documentSource = documentSource;
     this.searchClient = searchClient;
     this.chunkFilter = chunkFilter;
     this.summarizer = summarizer;
@@ -75,65 +78,116 @@ public class JustInTimeLookupTool<TScope> {
     Boolean summarize
   ) {
     var settings = EnvVars.getInstance().getJustInTimeSearch();
-
+    // pull top n chunks from the search client
     List<String> chunks = searchClient.hybridSearch(
       query,
       settings.getNumSearchHits(),
       scope
-    ); // pull top 15
+    );
+    log.trace(
+      "{} Search results:\n\tInput: {}\n\tOutput: {}",
+      this.getClass().getSimpleName(),
+      query,
+      chunks
+    );
+    // filter the top n chunks from the search results
     List<String> filtered = settings.isPrefilterEnabled()
-      ? chunkFilter.filterTopN(chunks, NUMBER_OF_SUMMARIZED_RESULTS)
+      ? chunkFilter.filterTopN(chunks, settings.getNumSummary())
       : chunks; // use best 5
+    log.debug("Filtered chunks: {}", filtered);
+    if (filtered.isEmpty()) {
+      return "No results found.";
+    }
 
     StringBuilder chunkBlock = new StringBuilder();
     for (int i = 0; i < filtered.size(); i++) {
       chunkBlock
-        .append("__BEGIN Result [" + i + "]__\n")
+        .append(PromptSymbols.ANALYZE + " Result [" + (i + 1) + "]\n")
         .append(filtered.get(i))
-        .append("\n")
-        .append("__END Result [" + i + "]__\n\n");
+        .append("\n\n");
     }
-
+    // Early exit if summarization is not needed
+    log.debug("Chunked blocks: {}", chunkBlock.toString());
     if (!summarize || !settings.isSummaryEnabled()) {
-      return chunkBlock.length() > 0
-        ? chunkBlock.toString()
-        : "No results found.";
+      return chunkBlock.toString();
     }
 
-    String summarizationPrompt = String.format(
-      "You are an AI Legal research assistant assisting in document analysis for compliance and insights.\n\n" +
-      "Given a set of source documents, and attorney query, your task is to:\n\n" +
-      "1. Prepare information for attorney review.\n" +
-      "2. Remove content that is irrelevant.\n" +
-      "3. **DO NOT** pull from any other sources\n\n" +
-      "4. Include content as-is from source materials - **DO NOT** summarize or change relevant text.\n\n" +
-      /* 
-      "1. Extract key points, deadlines, and responsible actors.\n" +
-      "2. Return a short summary paragraph.\n" +
-      "3. Provide a more detailed summary on the 3 most relevant chunks.\n\n" +
-      "** Example Input **\n\n" +
-      "__BEGIN Chunk [0]__\n" +
-      "The document outlines the following steps...\n" +
-      "__END Chunk [0]__\n\n" +
-      "__BEGIN Chunk [1]__\n" +
-      "The coordinator shall review the document within 5 days.\n" +
-      "__END Chunk [1]__\n\n" +
-      "__BEGIN Chunk [2]__\n" +
-      "The team may request additional information...\n\n" +
-      "__END Chunk [2]__\n\n\n" +
-      "** Example Output **\n\n" +
-      "Summary:\n" +
-      "The school must take reasonable steps to address Title IX complaints, with the Title IX coordinator responsible for beginning an investigation within 10 calendar days. Students also have the option to request accommodations\n" +
-      "3 Most Relevant Chunks:\n" +
-      "[0] The document outlines the following steps...\n" +
-      "[1] The coordinator shall review the document within 5 days.\n" +
-      "[2] The team may request additional information...\n\n\n\n" +
-       */
+    var emailContents = new StringBuilder();
+    var documentContent = documentSource == null
+      ? null
+      : documentSource.getSourceDocument();
+    var documentObject = documentContent == null
+      ? null
+      : documentContent.getObject();
+    if (documentObject == null) {
+      emailContents
+        .append("No document context was provided with this query...again!\n")
+        .append(
+          "You know how these senior researchers are, though...if you don't\n"
+        )
+        .append(
+          "come back with SOMETHING useful, they will be all over you.  Assume the \n"
+        )
+        .append(
+          "document was related to the ongoing Title IX investigation or a requset for \n"
+        )
+        .append("an education record.");
+    } else {
+      emailContents
+        .append(PromptSymbols.REFERENCE + " Sender: ")
+        .append(
+          Objects.requireNonNullElse(documentObject.getSender(), "[Not Set]")
+        )
+        .append("\nRole: ")
+        .append(
+          Objects.requireNonNullElse(
+            documentObject.getSenderRole(),
+            "[Not Set]"
+          )
+        )
+        .append("\n")
+        .append("Contents: \n")
+        .append(PromptSymbols.QUOTE + " ")
+        .append(
+          Objects.requireNonNullElse(documentObject.getContent(), "[Not Set]")
+        )
+        .append("\n");
+    }
 
-      "--- BEGIN INPUT ---\n" +
-      "%s\n" +
-      "--- END INPUT ---\n\n" +
-      "Summary:\n",
+    // Pass off to model for the heavy lifting
+    String summarizationPrompt = String.format(
+      "You are a research assistant supporting a legal compliance investigation.\n\n" +
+      "The legal team is analyzing the following communication between a parent and a school district:\n" +
+      "===\n" +
+      " %s\n" + // Document being analyzed
+      "===\n\n" +
+      "They issued this legal research query to better understand the situation:\n" +
+      PromptSymbols.REFERENCE +
+      " %s\n\n" +
+      "You have been provided with retrieved policy documents, legal guidance, or prior communications in response to this query.\n\n" +
+      PromptSymbols.INSTRUCTION +
+      " Your task is to extract " +
+      PromptSymbols.PINNED +
+      " **only the sections directly relevant** to understanding or evaluating the email and search intent.\n" +
+      PromptSymbols.WARNING +
+      " Do not summarize the entire document. Instead, return specific passages that:\n" +
+      PromptSymbols.CHECKLIST_CONFIRMED +
+      " Provide legal or procedural context for what's discussed in the message\n" +
+      PromptSymbols.CHECKLIST_CONFIRMED +
+      " Clarify whether the district's actions or omissions may violate policy\n" +
+      PromptSymbols.CHECKLIST_CONFIRMED +
+      " Explain what a specific law, rule, or local policy requires or prohibits in this context\n\n" +
+      PromptSymbols.CHECKLIST_CONFIRMED +
+      " If nothing clearly applies to the email or search query, return nothing.\n" +
+      PromptSymbols.EXCLUSION +
+      " Do not editorialize or assume conclusions.\n" +
+      PromptSymbols.EXCLUSION +
+      " Do not explain general policy background unless it directly applies.\n\n" +
+      PromptSymbols.INSIGHT +
+      " The results will be passed to an LLM that will use them only as **supplementary context**, not as a basis for standalone findings. Precision is more valuable than coverage.\n\n",
+      PromptSymbols.SECTION_DIVIDER + "Retrieved Documents:\n%s",
+      emailContents.toString(),
+      query,
       chunkBlock.toString()
     );
 

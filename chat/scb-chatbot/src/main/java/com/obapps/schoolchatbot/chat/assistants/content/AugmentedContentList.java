@@ -6,6 +6,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class AugmentedContentList extends AugmentedContentListBase {
+  // Static block for initialization
+  static {
+    AugmentedSearchMetadataType.addAugmentorFactory(
+      AugmentedContentType.CallToAction,
+      c -> new CallToActionContent(c)
+    );
+    AugmentedSearchMetadataType.addAugmentorFactory(
+      AugmentedContentType.KeyPoint,
+      c -> new KeyPointsContent(c)
+    );
+  }
 
   public final List<CallToActionContent> CallsToAction = new ArrayList<
     CallToActionContent
@@ -35,6 +46,9 @@ public class AugmentedContentList extends AugmentedContentListBase {
         break;
       case CallToAction:
         CallsToAction.add((CallToActionContent) content);
+        break;
+      case Attachment:
+        Attachments.add((DocumentAttachmentContent) content);
         break;
       default:
         super.addOtherItem(type, content);

@@ -81,13 +81,13 @@ public class MessageTool<TListType extends AugmentedContentListBase> {
     var msg = this.message();
     if (msg != null && msg.getDocumentId().equals(documentId)) {
       log.info("Processing completed for document ID: {}", documentId);
-      assistant.setAnalysisCompleteCalled(true);
     } else {
       log.warn(
         "Received processing completed call for document ID: {} but no active document found.",
         documentId
       );
     }
+    assistant.setAnalysisCompleteCalled(true);
   }
 
   /**

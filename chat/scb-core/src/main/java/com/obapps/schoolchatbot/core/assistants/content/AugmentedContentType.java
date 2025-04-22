@@ -7,4 +7,5 @@ public enum AugmentedContentType {
   KeyPoint,
   EmailMetadata,
   CallToAction,
+  Attachment,
 }

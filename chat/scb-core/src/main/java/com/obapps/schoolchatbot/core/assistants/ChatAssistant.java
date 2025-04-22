@@ -61,33 +61,11 @@ public class ChatAssistant {
         )
       );
 
-    // Step 1: Create the embedding model
-    // var openAiVars = EnvVars.getInstance().getOpenAi();
-
-    /*
-    Note: this is now done on the fly in the EmbeddingModelFactory
-    // Create EmbeddingModel object for Azure OpenAI text-embedding-ada-002
-    this.embeddingModel = AzureOpenAiEmbeddingModel.builder()
-      .apiKey(openAiVars.getApiKey())
-      .endpoint(openAiVars.getApiEndpoint())
-      .deploymentName(openAiVars.getDeploymentEmbedding())
-      .timeout(Duration.ofMillis(2 * 60 * 1000))      
-      .build();
-    */
-
     // Chat Model for high-fidelity analysis
     this.chatLanguageModel = this.languageModelFactory.createModel(
         ModelType.HiFi
       );
-    /*
-    AzureOpenAiChatModel.builder()
-      .apiKey(openAiVars.getApiKey())
-      .endpoint(openAiVars.getApiEndpoint())
-      .deploymentName(openAiVars.getDeploymentChat())      
-      .logRequestsAndResponses(true)
-      .timeout(Duration.ofMillis(2 * 60 * 1000))
-      .build();
-    */
+    messageWindowMemory = MessageWindowChatMemory.withMaxMessages(100);
   }
 
   protected final EmbeddingModel getEmbeddingModel() {
@@ -108,15 +86,13 @@ public class ChatAssistant {
       : retrievalAugmentorBuilder.build();
   }
 
-  protected final Assistant getAssistant() {
-    if (this.assistant != null) {
-      return this.assistant;
-    }
-    // Create assistant with support for overridden configuration
-    this.assistant = prepareAssistantService(
-      AiServices.builder(Assistant.class)
+  protected MessageWindowChatMemory messageWindowMemory;
+
+  protected final <TService> TService getAiService(Class<TService> clazz) {
+    return prepareAssistantService(
+      AiServices.builder(clazz)
         .chatLanguageModel(chatLanguageModel)
-        .maxSequentialToolsInvocations(999)
+        .maxSequentialToolsInvocations(100)
         .moderationModel(
           new ModerationModel() {
             @Override
@@ -131,8 +107,16 @@ public class ChatAssistant {
           }
         ),
       getRetrievalAugmentor(),
-      MessageWindowChatMemory.withMaxMessages(10)
+      messageWindowMemory
     ).build();
+  }
+
+  protected final Assistant getAssistant() {
+    if (this.assistant != null) {
+      return this.assistant;
+    }
+    // Create assistant with support for overridden configuration
+    this.assistant = getAiService(Assistant.class);
     // Return assistant
     return this.assistant;
   }

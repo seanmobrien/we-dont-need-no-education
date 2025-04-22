@@ -35,10 +35,10 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     super(content);
     this._innerDb = db;
     this.policyLookup = policyLookup == null
-      ? new JustInTimePolicyLookup()
+      ? new JustInTimePolicyLookup(content)
       : policyLookup;
     this.documentLookup = documentLookup == null
-      ? new JustInTimeDocumentLookup()
+      ? new JustInTimeDocumentLookup(content)
       : documentLookup;
   }
 
@@ -49,9 +49,25 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     return _innerDb;
   }
 
+  @Tool(
+    name = "signalAnalysisPhaseComplete",
+    value = "Called once all calls to action and responsive actions have been extracted from the document to signal that the analysis phase is complete for the provided document ID.\n" +
+    " ** Returns **\n" +
+    "  - If the operation succeeded, a message indicating success.\n" +
+    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
+  )
+  public void signalAnalysisPhaseComplete(
+    @P(
+      required = true,
+      value = "The ID of the document for which all matches have been found."
+    ) Integer documentId
+  ) {
+    processingCompletedCalled(documentId);
+  }
+
   /**
    * Adds a newly identified and analyzed call to action from the target document to the database.
-   *
+   * @return The ID of the newly added item
    * @param action The action to be taken, such as "Provide this record", "Explain why this action was taken",
    *               or "What steps will be taken to keep my child safe".
    * @param inferred A boolean indicating whether this CTA is inferred from the document, or explicitly stated.
@@ -77,12 +93,15 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
    */
   @Tool(
     name = "addCallToActionToDatabase",
-    value = "Adds a newly identified and analyzed call to action from the target document to our database."
+    value = "Adds a newly identified call to action from the target document to our database." +
+    " *** Returns **\n" +
+    "  - If the operation succeeded, the ID of the newly added item.\n" +
+    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
   )
-  public void addCallToActionToDatabase(
+  public String addCallToActionToDatabase(
     @P(
       required = true,
-      value = "The action to be taken, such as \"Provide this record\", \"Explain why this action was taken\", or \"What steps will be taken to keep my child safe\"."
+      value = "The action to be taken, such as \"Provide this record\", \"Explain why this action was taken\", or \"What steps will be taken to keep my child safe\".   ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead. "
     ) String action,
     @P(
       required = true,
@@ -119,7 +138,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       value = "A comma-delimited list of any laws or school board policies that provide a basis for this point.  For example, 'Title IX, MN Statute 13.3, Board Policy 503'"
     ) String policyBasis,
     @P(
-      required = false,
+      required = true,
       value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
     ) String tags
   ) throws Throwable {
@@ -152,13 +171,32 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
         .reasonabilityRating(reasonableRating)
         .reasonableReason(reasonableRatingReasons);
 
-      builder.build().addToDb(db());
+      var newRecordId = builder
+        .build()
+        .addToDb(db())
+        .getPropertyId()
+        .toString();
+      Colors.Set(color -> color.BRIGHT + color.CYAN);
+      addDetectedPoint();
+      log.info(
+        "Added CTA to  database: {}\n\tCompliance Ratiing: {}\n\tCompliance Reasons: {}\n\t" +
+        "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
+        action,
+        compliance_rating_current,
+        compliance_rating_current_reasons,
+        Objects.requireNonNullElse(policyBasis, "<none>"),
+        Objects.requireNonNullElse(tags, "<none>"),
+        message().getDocumentId()
+      );
+      Colors.Reset();
+      return newRecordId.toString();
     } catch (SQLException ex) {
       Colors.Set(c -> c.RED);
       log.error(
         "Unexpected SQL failure recording key point.  Details: " + action,
         ex
       );
+      Colors.Reset();
       DocumentProperty.addManualReview(
         c -> db(),
         msg.getDocumentId(),
@@ -171,22 +209,8 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
         policyBasis,
         tags
       );
-      Colors.Reset();
-      return;
+      return "ERROR: " + ex.getMessage();
     }
-    Colors.Set(color -> color.BRIGHT + color.CYAN);
-    addDetectedPoint();
-    log.info(
-      "Added CTA to  database: {}\n\tCompliance Ratiing: {}\n\tCompliance Reasons: {}\n\t" +
-      "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
-      action,
-      compliance_rating_current,
-      compliance_rating_current_reasons,
-      Objects.requireNonNullElse(policyBasis, "<none>"),
-      Objects.requireNonNullElse(tags, "<none>"),
-      message().getDocumentId()
-    );
-    Colors.Reset();
   }
 
   /**
@@ -221,16 +245,19 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
    */
   @Tool(
     name = "addCtaResponseToDatabase",
-    value = "Adds a Responsive Action that has been identified within the target document to our database.  Includes a link to the CTA this is in response to, and a rating of compliance specifically for this response as well as the CTA as a whole."
+    value = "Adds a Responsive Action that has been identified within the target document to our database.  Includes a link to the CTA this is in response to, and a rating of compliance specifically for this response as well as the CTA as a whole." +
+    " *** Returns **\n" +
+    "  - If the operation succeeded, the ID of the newly addedf item.\n" +
+    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
   )
-  public void addCtaResponseToDatabase(
+  public String addCtaResponseToDatabase(
     @P(
       required = true,
       value = "Unique identifier for the call to action this response is in reference to.  If the action is responsive to more than one CTA, add a record for each of them."
-    ) UUID call_to_action_id,
+    ) String call_to_action_id,
     @P(
       required = true,
-      value = "The responsive action taken."
+      value = "The responsive action taken.  ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead."
     ) String responsive_action,
     @P(
       required = true,
@@ -259,7 +286,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       value = "A comma-delimited list of any laws or school board policies that provide a basis for this point.  For example, 'Title IX, MN Statute 13.3, Board Policy 503'"
     ) String policyBasis,
     @P(
-      required = false,
+      required = true,
       value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
     ) String tags,
     @P(
@@ -280,6 +307,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     ) Boolean inferred
   ) {
     var msg = message();
+    String newId = "ERROR: Unknown error";
     try {
       // First, email property record
       if (msg.getDocumentId() < 1) {
@@ -288,10 +316,10 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
           responsive_action
         );
       }
-      CallToActionResponse.builder()
+      newId = CallToActionResponse.builder()
         .documentId(msg.getDocumentId())
-        .actionPropertyId(call_to_action_id)
-        .propertyType(5)
+        .actionPropertyId(UUID.fromString(call_to_action_id))
+        .propertyType(DocumentPropertyType.KnownValues.CallToActionResponse)
         .propertyValue(responsive_action)
         .createdOn(msg.getDocumentSendDate())
         .completionPercentage(completion_percentage)
@@ -307,8 +335,24 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
         .severity(severity)
         .inferred(inferred)
         .build()
-        .addToDb(db());
+        .addToDb(db())
+        .getPropertyId()
+        .toString();
       addDetectedPoint();
+      Colors.Set(color -> color.BRIGHT + color.CYAN);
+      log.info(
+        "Added Responsive Action to  database: {}\n\tRelated CTA: {}\n\tCompliance Ratiing: {}\n\tCompliance Reasons: {}\n\t" +
+        "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
+        responsive_action,
+        call_to_action_id,
+        compliance_response_score,
+        compliance_response_reasons,
+        Objects.requireNonNullElse(policyBasis, "<none>"),
+        Objects.requireNonNullElse(tags, "<none>"),
+        message().getDocumentId()
+      );
+      Colors.Reset();
+      return newId;
     } catch (SQLException ex) {
       Colors.Set(c -> c.RED);
       log.error(
@@ -330,21 +374,8 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
         compliance_rating_aggregate_reasons
       );
       Colors.Reset();
-      return;
+      return "ERROR: " + ex.getMessage();
     }
-    Colors.Set(color -> color.BRIGHT + color.CYAN);
-    log.info(
-      "Added CTA to  database: {}\n\tRelated CTA: {}\n\tCompliance Ratiing: {}\n\tCompliance Reasons: {}\n\t" +
-      "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
-      responsive_action,
-      call_to_action_id,
-      compliance_response_score,
-      compliance_response_reasons,
-      Objects.requireNonNullElse(policyBasis, "<none>"),
-      Objects.requireNonNullElse(tags, "<none>"),
-      message().getDocumentId()
-    );
-    Colors.Reset();
   }
 
   /**
@@ -376,7 +407,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
   public String lookupPolicySummary(
     @P(
       required = true,
-      value = "The search query.  This can be a policy name (eg 'Title IX' or 'Policy 506'), a specific topic, or a genralized search string."
+      value = "The search query.  This can be a policy name (eg 'Title IX' or 'Policy 506'), a specific topic, or a genralized search string.    ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead."
     ) String query,
     @P(
       required = true,
@@ -469,7 +500,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
   public String lookupDocumentSummary(
     @P(
       required = true,
-      value = "The search query.  This can be a policy name (eg 'Title IX' or 'Policy 506'), a specific topic, or a genralized search string."
+      value = "The search query.  This can be any relevant search term.  ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead."
     ) String query,
     @P(
       required = true,
@@ -497,7 +528,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       return this.documentLookup.summarizeDocument(query, policyType);
     } catch (Exception e) {
       log.error(
-        "Unexpected failure searching for nessage summary.  Details: " + query,
+        "Unexpected failure searching for message summary.  Details: " + query,
         e
       );
       return "ERROR: " + e.getMessage();
@@ -522,27 +553,39 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       value = "A comma-delimited list containing the id's of calls to action to retrieve"
     ) String ids
   ) {
-    var idArray = List.of(ids.split(","))
-      .stream()
-      .map(s -> s.trim().replaceAll("\"", ""))
-      .collect(Collectors.toSet())
-      .stream()
-      .collect(Collectors.toList());
-
-    return getContent()
-      .CallsToAction.stream()
-      .filter(cta -> cta.isIdMatch(idArray))
-      .collect(Collectors.toList())
-      .stream()
-      .map(o -> (HistoricCallToAction) o.getObject())
-      .toArray(HistoricCallToAction[]::new);
+    try {
+      var data = db();
+      return List.of(ids.split(","))
+        .stream()
+        .map(s -> s.trim().replaceAll("\"", ""))
+        .collect(Collectors.toSet())
+        .stream()
+        .map(c ->
+          HistoricCallToAction.getCallsToAction(data, UUID.fromString(c))
+        )
+        .filter(Objects::nonNull)
+        .collect(Collectors.toList())
+        .toArray(new HistoricCallToAction[0]);
+    } catch (SQLException e) {
+      log.error(
+        "Unexpected SQL failure retrieving call to action details.  Details: " +
+        ids,
+        e
+      );
+      return new HistoricCallToAction[0];
+    }
   }
 
   @Tool(
     name = "addProcessingNote",
     value = "Adds a note to the processing history of the email.  This is useful for adding notes about the analysis process, or for adding information that may be useful for future analysis.\n"
   )
-  public void addProcessingNote(String note) {
+  public void addProcessingNote(
+    @P(
+      required = true,
+      value = "The note to be added to the processing history of the email.  This is useful for adding notes about the analysis process, or for adding information that may be useful for future analysis.  ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead."
+    ) String note
+  ) {
     var msg = message();
     try {
       if (msg.getDocumentId() == null) {

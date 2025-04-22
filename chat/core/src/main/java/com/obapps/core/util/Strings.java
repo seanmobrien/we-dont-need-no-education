@@ -94,6 +94,31 @@ public class Strings {
     );
   }
 
+  public static final String getTable(Map<String, Object> metadata) {
+    return getTable(metadata, null);
+  }
+
+  public static final String getTable(
+    Map<String, Object> metadata,
+    String recordName
+  ) {
+    if (metadata == null || metadata.isEmpty()) {
+      return "";
+    }
+    var builder = new StringBuilder();
+    if (recordName != null && !recordName.isEmpty()) {
+      builder
+        .append("---------- ")
+        .append(recordName)
+        .append(" ----------")
+        .append("\n");
+    }
+    metadata.forEach((key, value) -> {
+      builder.append(key).append(": ").append(value).append("\n");
+    });
+    return builder.toString();
+  }
+
   public static ObjectMapper objectMapperFactory() {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.configure(

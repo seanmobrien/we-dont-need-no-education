@@ -28,7 +28,7 @@ public class KeyPointsRetriever extends ContentRetrieverBase {
   @Override
   public List<Content> retrieve(Query query) {
     var ret = new ArrayList<Content>();
-    var input = getDocumentId(null, query);
+    var input = getDocumentId(query);
     if (input == null || input.compareTo(1) < 0) {
       return ret;
     }

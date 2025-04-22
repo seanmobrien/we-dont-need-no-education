@@ -1,5 +1,43 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
+import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
+
+/**
+ * The `JustInTimePolicyLookup` class extends the `JustInTimeLookupTool` to provide
+ * functionality for searching and summarizing laws and policies in real-time.
+ * It integrates with Azure services and custom filtering mechanisms to retrieve
+ * and process relevant document content.
+ *
+ * <p>This class supports two constructors:
+ * <ul>
+ *   <li>A default constructor that initializes the class with default instances
+ *       of `AzurePolicySearchClient`, `StandaloneModelClient`, and `PolicyChunkFilter`.</li>
+ *   <li>A parameterized constructor that allows customization of the document source,
+ *       search client, summarizer, and chunk filter.</li>
+ * </ul>
+ *
+ * <p>Key Features:
+ * <ul>
+ *   <li>Search and summarize policies using a query string.</li>
+ *   <li>Support for specifying a scope type for more targeted searches.</li>
+ *   <li>Default scope type is `AzurePolicySearchClient.ScopeType.All`.</li>
+ * </ul>
+ *
+ * <p>Usage Example:
+ * <pre>
+ * {@code
+ * IDocumentContentSource documentSource = ...;
+ * JustInTimePolicyLookup policyLookup = new JustInTimePolicyLookup(documentSource);
+ * String summary = policyLookup.summarizePolicy("data privacy laws");
+ * System.out.println(summary);
+ * }
+ * </pre>
+ *
+ * @see JustInTimeLookupTool
+ * @see AzurePolicySearchClient
+ * @see IStandaloneModelClient
+ * @see PolicyChunkFilter
+ */
 public class JustInTimePolicyLookup
   extends JustInTimeLookupTool<AzurePolicySearchClient.ScopeType> {
 
@@ -8,8 +46,9 @@ public class JustInTimePolicyLookup
    * Initializes the class with default instances of AzureSearchClient,
    * IStandaloneModelClient, and DocumentChunkFilter.
    */
-  public JustInTimePolicyLookup() {
+  public JustInTimePolicyLookup(IDocumentContentSource documentSource) {
     this(
+      documentSource,
       new AzurePolicySearchClient(),
       new StandaloneModelClient(),
       new PolicyChunkFilter()
@@ -19,6 +58,7 @@ public class JustInTimePolicyLookup
   /**
    * Constructor for JustInTimeDocumentLookup.
    *
+   * @param documentSource The IDocumentContentSource instance to use for document retrieval.
    * @param searchClient The AzureSearchClient instance to use for searching documents.
    *                     If null, a default instance of AzureSearchClient is created.
    * @param summarizer   The IStandaloneModelClient instance to use for summarizing documents.
@@ -27,11 +67,13 @@ public class JustInTimePolicyLookup
    *                     If null, a default instance of DocumentChunkFilter is created.
    */
   public JustInTimePolicyLookup(
+    IDocumentContentSource documentSource,
     AzurePolicySearchClient searchClient,
     IStandaloneModelClient summarizer,
     PolicyChunkFilter chunkFilter
   ) {
     super(
+      documentSource,
       searchClient == null ? new AzurePolicySearchClient() : searchClient,
       summarizer == null ? new StandaloneModelClient() : summarizer,
       chunkFilter == null ? new DocumentChunkFilter() : chunkFilter

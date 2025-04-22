@@ -41,4 +41,28 @@ public interface ILanguageModelFactory {
    * @throws IllegalArgumentException If the specified model type is unsupported.
    */
   public EmbeddingModel createEmbeddingModel();
+
+  /**
+   * Creates an instance of the specified service class.
+   *
+   * @param <TService> The type of the service to be created.
+   * @param clazz The class object representing the type of the service to be created.
+   * @return An instance of the specified service type.
+   * @throws Exception If an error occurs during the creation of the service.
+   */
+  public <TService> TService createService(Class<TService> clazz);
+
+  /**
+   * Creates an instance of the specified service class.
+   *
+   * @param <TService> The type of the service to be created.
+   * @param clazz The class object representing the type of the service to be created.
+   * @param options A set of options governing the service creation.
+   * @return An instance of the specified service type.
+   * @throws Exception If an error occurs during the creation of the service.
+   */
+  public <TService> TService createService(
+    Class<TService> clazz,
+    AiServiceOptions options
+  );
 }

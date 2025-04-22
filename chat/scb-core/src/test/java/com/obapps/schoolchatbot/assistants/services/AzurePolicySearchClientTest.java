@@ -31,6 +31,8 @@ public class AzurePolicySearchClientTest {
   @BeforeEach
   public void setUp() {
     MockitoAnnotations.openMocks(this);
+    EnvVars.OpenAiVars mockOpenAiVars = mock(EnvVars.OpenAiVars.class);
+    when(mockEnvVars.getOpenAi()).thenReturn(mockOpenAiVars);
     client = new AzurePolicySearchClient(mockEnvVars, mockEmbeddingService);
   }
 

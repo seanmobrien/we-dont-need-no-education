@@ -362,6 +362,9 @@ public class DocumentProperty {
     if (createdOn == null) {
       createdOn = LocalDateTime.now();
     }
+    if (db == null) {
+      db = Db.getInstance();
+    }
     db.executeUpdate(
       "INSERT INTO document_property (property_id, document_id, email_property_type_id, property_value, created_on, policy_basis, tags) " +
       "VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -482,7 +485,7 @@ public class DocumentProperty {
         });
       }
       formattedMessage = String.format(
-        "%s: %s\n" +
+        "Message: %s\n" +
         "Sender: %s\n" +
         "Stack Trace: %s\n" +
         "The following contextual data was provided:\n\t%s\n",

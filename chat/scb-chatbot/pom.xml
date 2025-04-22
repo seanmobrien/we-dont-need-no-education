@@ -52,48 +52,39 @@
         </dependency>
    <dependency>
                 <groupId>org.json</groupId>
-                <artifactId>json</artifactId>
-                <version>20230618</version> 
+                <artifactId>json</artifactId>                
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-azure-open-ai</artifactId>
-                <version>${langchain4j.version}</version>
+                <artifactId>langchain4j-azure-open-ai</artifactId>                
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-core</artifactId>
-                <version>${langchain4j.version}</version>
+                <artifactId>langchain4j-core</artifactId>                
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j</artifactId>
-                <version>${langchain4j.version}</version>
+                <artifactId>langchain4j</artifactId>                
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-embeddings</artifactId>
-                <version>${langchain4j.version}</version>
+                <artifactId>langchain4j-embeddings</artifactId>                
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-easy-rag</artifactId>
-                <version>${langchain4j.version}</version>
+                <artifactId>langchain4j-easy-rag</artifactId>                
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-open-ai</artifactId>
-                <version>${langchain4j.version}</version>
+                <artifactId>langchain4j-open-ai</artifactId>                
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-azure-ai-search</artifactId>
-                <version>${langchain4j.version}</version>
+                <artifactId>langchain4j-azure-ai-search</artifactId>                
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
-                <version>${langchain4j.version}</version>
+                <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>                
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -107,6 +98,11 @@
                 <version>5.16.1</version>
                 <scope>test</scope>
             </dependency>   
+            <dependency>
+                <groupId>org.redisson</groupId>
+                <artifactId>redisson</artifactId>
+                <version>3.45.1</version>
+            </dependency> 
         <dependency>
             <groupId>io.github.cdimascio</groupId>
             <artifactId>dotenv-java</artifactId>

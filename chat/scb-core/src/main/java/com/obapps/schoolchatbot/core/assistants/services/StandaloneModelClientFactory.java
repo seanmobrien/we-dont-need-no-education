@@ -1,13 +1,17 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
+import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.obapps.core.util.EnvVars;
 import com.obapps.core.util.EnvVars.OpenAiVars;
+import com.obapps.schoolchatbot.core.services.AiServiceOptions;
 import com.obapps.schoolchatbot.core.services.ILanguageModelFactory;
 import com.obapps.schoolchatbot.core.services.ModelType;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
+import dev.langchain4j.service.AiServices;
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -64,18 +68,12 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       ? endpoint.substring(0, endpoint.length() - 1)
       : endpoint;
 
-    var runtimeArg = java.lang.management.ManagementFactory.getRuntimeMXBean()
-      .getInputArguments()
-      .toString();
-    boolean isDebugMode =
-      runtimeArg.contains("-agentlib:jdwp") ||
-      runtimeArg.contains("--logagents");
+    boolean isDebugMode = true;
 
     var builder = AzureOpenAiEmbeddingModel.builder()
       .apiKey(apiKey)
       .endpoint(normalEndpoint)
       .deploymentName(deployment)
-      .openAIClient(null)
       .timeout(Duration.ofMillis(2 * 60 * 1000))
       .logRequestsAndResponses(isDebugMode);
 
@@ -88,27 +86,41 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     String deployment,
     String apiKey
   ) {
+    return createChatLlm(endpoint, deployment, apiKey, null);
+  }
+
+  protected ChatLanguageModel createChatLlm(
+    String endpoint,
+    String deployment,
+    String apiKey,
+    Function<
+      AzureOpenAiChatModel.Builder,
+      AzureOpenAiChatModel.Builder
+    > builderFunc
+  ) {
     String normalEndpoint = endpoint.endsWith("/")
       ? endpoint.substring(0, endpoint.length() - 1)
       : endpoint;
 
+    /*
     var runtimeArg = java.lang.management.ManagementFactory.getRuntimeMXBean()
       .getInputArguments()
       .toString();
-    boolean isDebugMode =
-      runtimeArg.contains("-agentlib:jdwp") ||
-      runtimeArg.contains("--logagents");
+    */
+    boolean isDebugMode = true;
 
     var builder = AzureOpenAiChatModel.builder()
       .apiKey(apiKey)
       .endpoint(normalEndpoint)
       .deploymentName(deployment)
-      .openAIClient(null)
       .timeout(Duration.ofMillis(2 * 60 * 1000))
       .logRequestsAndResponses(isDebugMode);
 
     if (userName != null) {
       builder.user(userName);
+    }
+    if (builderFunc != null) {
+      builder = builderFunc.apply(builder);
     }
     var model = builder.build();
     return model;
@@ -123,12 +135,40 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     );
   }
 
+  protected ChatLanguageModel createLoFiClient(
+    Function<
+      AzureOpenAiChatModel.Builder,
+      AzureOpenAiChatModel.Builder
+    > builderFunc
+  ) {
+    return createChatLlm(
+      openAiEnv(OpenAiVars::getApiEndpointCompletions),
+      openAiEnv(OpenAiVars::getDeploymentCompletions),
+      openAiEnv(OpenAiVars::getSearchApiKeyCompletions),
+      builderFunc
+    );
+  }
+
   protected ChatLanguageModel createHiFiClient() {
     // Completion Model for high-fidelity analysis
     return createChatLlm(
       openAiEnv(OpenAiVars::getApiEndpoint),
       openAiEnv(OpenAiVars::getDeploymentChat),
       openAiEnv(OpenAiVars::getApiKey)
+    );
+  }
+
+  protected ChatLanguageModel createHiFiClient(
+    Function<
+      AzureOpenAiChatModel.Builder,
+      AzureOpenAiChatModel.Builder
+    > builderFunc
+  ) {
+    return createChatLlm(
+      openAiEnv(OpenAiVars::getApiEndpoint),
+      openAiEnv(OpenAiVars::getDeploymentChat),
+      openAiEnv(OpenAiVars::getApiKey),
+      builderFunc
     );
   }
 
@@ -177,6 +217,29 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
         break;
       case LoFi:
         llm = createLoFiClient();
+        break;
+      default:
+        throw new IllegalArgumentException(
+          "Unsupported model type: " + modelType
+        );
+    }
+    return llm;
+  }
+
+  protected ChatLanguageModel createModel(
+    ModelType modelType,
+    Function<
+      AzureOpenAiChatModel.Builder,
+      AzureOpenAiChatModel.Builder
+    > builderFunc
+  ) {
+    ChatLanguageModel llm = null;
+    switch (modelType) {
+      case HiFi:
+        llm = createHiFiClient(builderFunc);
+        break;
+      case LoFi:
+        llm = createLoFiClient(builderFunc);
         break;
       default:
         throw new IllegalArgumentException(
@@ -263,5 +326,33 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       }
       return factory;
     }
+  }
+
+  // Removed duplicate method to resolve type erasure conflict
+
+  @Override
+  public <TService> TService createService(Class<TService> clazz) {
+    return createService(clazz, AiServiceOptions.builder().build());
+  }
+
+  @Override
+  public <TService> TService createService(
+    Class<TService> clazz,
+    AiServiceOptions options
+  ) {
+    @SuppressWarnings("removal")
+    var model = createModel(options.modelType, b -> {
+      if (options.structuredOutput) {
+        b.responseFormat(new ChatCompletionsJsonResponseFormat());
+      }
+      return b;
+    });
+    var builder = AiServices.builder(clazz).chatLanguageModel(model);
+    if (options.memoryWindow != null) {
+      builder.chatMemory(
+        MessageWindowChatMemory.withMaxMessages(options.memoryWindow)
+      );
+    }
+    return builder.build();
   }
 }

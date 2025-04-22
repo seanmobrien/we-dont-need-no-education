@@ -1,6 +1,5 @@
 package com.obapps.schoolchatbot.chat.assistants.tools;
 
-import com.obapps.core.util.Colors;
 import com.obapps.schoolchatbot.chat.assistants.KeyPointAnalysis;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
 import com.obapps.schoolchatbot.core.assistants.services.*;
@@ -10,7 +9,6 @@ import com.obapps.schoolchatbot.core.repositories.*;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import java.sql.SQLException;
-import java.util.Objects;
 
 public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
 
@@ -47,12 +45,14 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
       ? new HistoricKeyPointRepository()
       : keyPointRepository;
     this.policyLookup = policyLookup == null
-      ? new JustInTimePolicyLookup()
+      ? new JustInTimePolicyLookup(content)
       : policyLookup;
     this.documentLookup = documentLookup == null
-      ? new JustInTimeDocumentLookup()
+      ? new JustInTimeDocumentLookup(content)
       : documentLookup;
   }
+
+  /*
 
   @Tool(
     name = "addProcessingNote",
@@ -96,7 +96,7 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
   public String addKeyPointToDatabase(
     @P(
       required = true,
-      value = "A summary of the key point.  It should include enough information to be able to identify the concern and understand the basis for the severity and compliance ratings during subsequent analysis stages."
+      value = "A summary of the key point.  It should include enough information to be able to identify the concern and understand the basis for the severity and compliance ratings during subsequent analysis stages.  ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead.  "
     ) String keyPointSummary,
     @P(
       required = true,
@@ -119,7 +119,7 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
       value = "A comma-delimited list of any laws or school board policies that provide a basis for this point.  For example, 'Title IX, MN Statute 13.3, Board Policy 503'"
     ) String policyBasis,
     @P(
-      required = false,
+      required = true,
       value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
     ) String tags
   ) {
@@ -191,7 +191,7 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
   public void signalAnalysisPhaseComplete(Integer documentId) {
     processingCompletedCalled(documentId);
   }
-
+*/
   @Tool(
     name = "searchForRelatedKeyPoints",
     value = "Searches for key points that are related to the provided summary, policy basis, and tags.  The search is performed using " +
