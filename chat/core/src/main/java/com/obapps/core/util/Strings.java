@@ -132,6 +132,30 @@ public class Strings {
   }
 
   /**
+   * Normalizes the given string for output by replacing specific characters
+   * with their standard equivalents and trimming leading and trailing whitespace.
+   *
+   * <p>This method performs the following transformations:
+   * <ul>
+   *   <li>Replaces curly quotation marks (“ and ”) with standard double quotes (").</li>
+   *   <li>Replaces various forms of single quotation marks (’ and ‘) with a standard single quote (').</li>
+   *   <li>Trims any leading or trailing whitespace from the string.</li>
+   * </ul>
+   *
+   * @param value the input string to be normalized; may be {@code null} or empty.
+   * @return the normalized string, or the original string if it is {@code null} or empty.
+   */
+  public static String normalizeForOutput(String value) {
+    if (value == null || value.isEmpty()) {
+      return value;
+    }
+    return value
+      .replaceAll("“|”", "\"")
+      .replaceAll("’|‘|‘|’|‘|’|‘|’|’", "'")
+      .trim();
+  }
+
+  /**
    * Converts a comma-separated string into a list of strings.
    *
    * @param str the input string containing elements separated by commas

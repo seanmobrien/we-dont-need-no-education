@@ -37,6 +37,10 @@ public class EnvVars {
     return new AzureStorageVars();
   }
 
+  public RedisVars getRedis() {
+    return new RedisVars();
+  }
+
   public String get(String key) {
     return get(key, "");
   }
@@ -92,6 +96,17 @@ public class EnvVars {
 
     public String getPolicySearchIndexName() {
       return get("AZURE_AISEARCH_POLICY_INDEX_NAME");
+    }
+  }
+
+  public class RedisVars {
+
+    public String getUrl() {
+      return get("REDIS_URL");
+    }
+
+    public String getKey() {
+      return get("REDIS_PASSWORD");
     }
   }
 
@@ -153,6 +168,12 @@ public class EnvVars {
 
     public boolean isSummaryEnabled() {
       return Boolean.parseBoolean(get("JUSTINTIME_SEARCH_SUMMARY_ENABLED"));
+    }
+
+    public boolean isDocumentSummaryEnabled() {
+      return Boolean.parseBoolean(
+        get("JUSTINTIME_SEARCH_DOCUMENTS_SUMMARY_ENABLED", "false")
+      );
     }
 
     public int getNumSearchHits() {

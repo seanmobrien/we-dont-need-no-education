@@ -7,8 +7,6 @@ import com.obapps.schoolchatbot.core.assistants.content.AugmentedSearchMetadataT
 import com.obapps.schoolchatbot.core.assistants.content.DocumentWithMetadataContent;
 import com.obapps.schoolchatbot.core.assistants.types.IStageAnalystController;
 import com.obapps.schoolchatbot.core.models.AnalystDocumentResult;
-import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisFunctionAudit;
-import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisStageAudit;
 import com.obapps.schoolchatbot.core.util.ContentMapper;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageType;
@@ -224,7 +222,7 @@ public abstract class DocumentChatAssistant<
    */
   public AnalystDocumentResult processDocument(Integer documentId) {
     try {
-      return processDocument(documentId, false);
+      return this.processDocument(documentId, false);
     } catch (Exception e) {
       e.printStackTrace();
       return new AnalystDocumentResult(e, detectedPoints, addedNotes);
@@ -240,10 +238,13 @@ public abstract class DocumentChatAssistant<
    * @return An AnalystDocumentResult object containing the analysis result.
    * @throws Exception
    */
-  public AnalystDocumentResult processDocument(
+  public abstract AnalystDocumentResult processDocument(
     Integer documentId,
     Boolean throwOnError
-  ) throws Exception {
+  ) throws Exception;
+
+  /* {
+    throw new NotImplementedError();
     var result = AnalystDocumentResult.aggregateBuilder();
     Integer lastDetectedPoints = 0;
     Integer lastAddedNotes = 0;
@@ -333,7 +334,7 @@ public abstract class DocumentChatAssistant<
       throw new SQLException(e);
     }
   }
-
+*/
   /**
    * Injects augmented content into the user message and generates a prompt.
    *

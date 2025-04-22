@@ -1,6 +1,6 @@
 <configuration>
-    <property name="DEV_LOG" value="c:/Users/seanm/source/repos/NoEducation/chat/logs/app.log"/>
-    <property name="LILITH_LOG" value="c:/Users/seanm/source/repos/NoEducation/chat/logs/app-log.lilith"/>
+    <property name="DEV_LOG" value="c:/Users/seanm/source/repos/NoEducation/chat/logs/app-prod.log"/>
+    <property name="LILITH_LOG" value="c:/Users/seanm/source/repos/NoEducation/chat/logs/app-prod-log.lilith"/>
 
     <appender name="FILE-ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${DEV_LOG}</file>

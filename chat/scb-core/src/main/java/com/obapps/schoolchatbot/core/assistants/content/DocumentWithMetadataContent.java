@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.content;
 
 import com.obapps.core.util.*;
+import com.obapps.schoolchatbot.core.assistants.retrievers.ContentRetrieverBase;
 import com.obapps.schoolchatbot.core.models.DocumentWithMetadata;
 import dev.langchain4j.rag.content.Content;
 import java.util.HashMap;
@@ -12,7 +13,21 @@ public class DocumentWithMetadataContent
   extends AugmentedJsonObject<DocumentWithMetadata> {
 
   public DocumentWithMetadataContent(Content source) {
-    super(source, DocumentWithMetadata.class);
+    super(copy(source), DocumentWithMetadata.class);
+  }
+
+  private static Content copy(Content source) {
+    var text = source.textSegment().text();
+    if (text != null && !text.isEmpty()) {
+      return Content.from(
+        dev.langchain4j.data.segment.TextSegment.from(
+          source.textSegment().text(),
+          source.textSegment().metadata()
+        ),
+        source.metadata()
+      );
+    }
+    return source;
   }
 
   public String getDocumentHeaderData(

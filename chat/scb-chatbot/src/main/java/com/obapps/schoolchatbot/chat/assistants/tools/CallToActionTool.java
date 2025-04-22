@@ -49,6 +49,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     return _innerDb;
   }
 
+  /*
   @Tool(
     name = "signalAnalysisPhaseComplete",
     value = "Called once all calls to action and responsive actions have been extracted from the document to signal that the analysis phase is complete for the provided document ID.\n" +
@@ -90,7 +91,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
    * @param tags A comma-delimited list of tags that can be used to categorize this point, e.g., "bullying, harassment, discrimination".
    *             This parameter is optional and can be null.
    * @throws Throwable If an unexpected error occurs during the process of adding the call to action to the database.
-   */
+   
   @Tool(
     name = "addCallToActionToDatabase",
     value = "Adds a newly identified call to action from the target document to our database." +
@@ -242,7 +243,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
    * For example, "Title IX, MN Statute 13.3, Board Policy 503".
    * @param tags A comma-delimited list of tags that can be used to categorize this point. For example,
    *  "bullying, harassment, discrimination". This parameter is optional.
-   */
+   
   @Tool(
     name = "addCtaResponseToDatabase",
     value = "Adds a Responsive Action that has been identified within the target document to our database.  Includes a link to the CTA this is in response to, and a rating of compliance specifically for this response as well as the CTA as a whole." +
@@ -377,7 +378,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       return "ERROR: " + ex.getMessage();
     }
   }
-
+ */
   /**
    * Uses vector search to retrieve a summary of a school district policy or a search topic
    * associated with the provided query. The query can be a policy name, a specific topic,
@@ -573,6 +574,29 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
         e
       );
       return new HistoricCallToAction[0];
+    }
+  }
+
+  @Tool(
+    name = "getDocumentDetails",
+    value = "Retrieves full details on a specific document by id."
+  )
+  public DocumentWithMetadata getDocumentDetails(
+    @P(
+      required = true,
+      value = "The ID of the document to retrieve details for."
+    ) Integer documentId
+  ) {
+    try {
+      var data = db();
+      return DocumentWithMetadata.fromDb(data, documentId);
+    } catch (SQLException e) {
+      log.error(
+        "Unexpected SQL failure retrieving document details.  Details: " +
+        documentId,
+        e
+      );
+      return null;
     }
   }
 

@@ -1,11 +1,16 @@
 package com.obapps.schoolchatbot.chat;
 
+import com.obapps.core.redis.IRedisConnection;
+import com.obapps.core.redis.RedisConnectionFactory;
 import com.obapps.core.util.*;
 import com.obapps.schoolchatbot.chat.assistants.*;
 import com.obapps.schoolchatbot.core.assistants.services.*;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import java.sql.SQLException;
 import java.util.Scanner;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 /**
  * The main entry point for the SchoolChatBot application.
@@ -29,9 +34,10 @@ import java.util.Scanner;
  * <p>Thread Safety:</p>
  * <p>This class is thread-safe as it uses a synchronized singleton pattern for initialization.</p>
  */
-public class SchoolChatBot {
+public class SchoolChatBot implements IRedisConnection {
 
   private static SchoolChatBot globalInstance;
+  private RedissonClient redisClient;
 
   public static SchoolChatBot getInstance() {
     return globalInstance;
@@ -61,6 +67,27 @@ public class SchoolChatBot {
    */
   private SchoolChatBot(Scanner scanner) {
     this.appScanner = scanner;
+    initializeRedisConnection();
+  }
+
+  private void initializeRedisConnection() {
+    Config config = new Config();
+    config
+      .useSingleServer()
+      .setAddress(EnvVars.getInstance().getRedis().getUrl());
+    redisClient = Redisson.create(config);
+    RedisConnectionFactory.setGlobalInstance(this);
+  }
+
+  @Override
+  public RedissonClient getRedisClient() {
+    return redisClient;
+  }
+
+  private void closeRedisConnection() {
+    if (redisClient != null) {
+      redisClient.shutdown();
+    }
   }
 
   /**
@@ -106,7 +133,9 @@ public class SchoolChatBot {
    * 3. Executes the corresponding functionality based on the user's choice:
    *    - Option 1: Invokes the KeyPointAnalysis module.
    *    - Option 2: Invokes the CallToActionAnalysis module.
-   *    - Option 3: Exits the application.
+   *    - Option 3: Processes documents for Stage 1.
+   *    - Option 4: Processes documents for Stage 2.
+   *    - Option 5: Exits the application.
    * 4. Handles invalid input and prompts the user to try again.
    */
   protected void run(String[] args) {
@@ -132,7 +161,7 @@ public class SchoolChatBot {
           try {
             choice = Integer.parseInt(appScanner.nextLine());
             var stage1 = new AnalysisStageManager(
-              1,
+              2,
               Db.getInstance(),
               new StageAnalystFactory()
             );
@@ -187,6 +216,14 @@ public class SchoolChatBot {
   public static void main(String[] args) {
     try (Scanner scanner = new Scanner(System.in)) {
       SchoolChatBot.globalInstance = new SchoolChatBot(scanner);
+      Runtime.getRuntime()
+        .addShutdownHook(
+          new Thread(() -> {
+            if (globalInstance != null) {
+              globalInstance.closeRedisConnection();
+            }
+          })
+        );
       SchoolChatBot.globalInstance.run(args);
       System.out.println("Thank you for using the School Chat Bot. Goodbye!");
     }

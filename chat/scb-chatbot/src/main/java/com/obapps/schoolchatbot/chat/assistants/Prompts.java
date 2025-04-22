@@ -285,6 +285,7 @@ public class Prompts {
       🧰🛠️: Tools
         - 📚 `lookupPolicySummary(query,scope)`: Policy/legal compliance lookup; prefer indexed results.
         - 📄 `lookupDocumentSummary(query,scope)`: Search case docs/attachments.
+        - 📊 `getDocumentDetails(id)`: Retrieve a specific document/attachments by id.
         {{task_tools}}
       ✅: If you need more information to complete your task, you may use any or all of the tools above.
         ⚠️: If more info is still needed after using the tools, include a Processing Note (📝⚙️) describing the information gap in your

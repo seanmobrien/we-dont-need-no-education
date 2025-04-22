@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
+import com.obapps.core.util.EnvVars;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 
 /**
@@ -20,7 +21,9 @@ public class JustInTimeDocumentLookup
     this(
       documentSource,
       new AzureSearchClient(),
-      new StandaloneModelClient(),
+      EnvVars.getInstance().getJustInTimeSearch().isDocumentSummaryEnabled()
+        ? new StandaloneModelClient()
+        : null,
       new DocumentChunkFilter()
     );
   }

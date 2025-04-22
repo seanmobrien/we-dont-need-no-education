@@ -108,7 +108,7 @@ public class JustInTimeLookupTool<TScope> {
     }
     // Early exit if summarization is not needed
     log.debug("Chunked blocks: {}", chunkBlock.toString());
-    if (!summarize || !settings.isSummaryEnabled()) {
+    if (summarizer == null || !summarize || !settings.isSummaryEnabled()) {
       return chunkBlock.toString();
     }
 

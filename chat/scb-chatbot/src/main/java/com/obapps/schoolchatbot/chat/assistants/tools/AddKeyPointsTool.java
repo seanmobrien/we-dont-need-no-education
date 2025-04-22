@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.chat.assistants.tools;
 
+import com.obapps.core.util.Db;
 import com.obapps.schoolchatbot.chat.assistants.KeyPointAnalysis;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
 import com.obapps.schoolchatbot.core.assistants.services.*;
@@ -386,6 +387,29 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
         e
       );
       return "ERROR: " + e.getMessage();
+    }
+  }
+
+  @Tool(
+    name = "getDocumentDetails",
+    value = "Retrieves full details on a specific document by id."
+  )
+  public DocumentWithMetadata getDocumentDetails(
+    @P(
+      required = true,
+      value = "The ID of the document to retrieve details for."
+    ) Integer documentId
+  ) {
+    try {
+      var data = Db.getInstance();
+      return DocumentWithMetadata.fromDb(data, documentId);
+    } catch (SQLException e) {
+      log.error(
+        "Unexpected SQL failure retrieving document details.  Details: " +
+        documentId,
+        e
+      );
+      return null;
     }
   }
 }

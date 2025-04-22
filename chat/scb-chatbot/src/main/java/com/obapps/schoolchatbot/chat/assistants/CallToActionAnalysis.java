@@ -1,12 +1,22 @@
 package com.obapps.schoolchatbot.chat.assistants;
 
+import com.obapps.core.ai.extraction.services.RecordExtractionService;
 import com.obapps.core.util.Colors;
+import com.obapps.core.util.Db;
 import com.obapps.core.util.Strings;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
+import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.InitialCtaOrResponsiveAction;
 import com.obapps.schoolchatbot.chat.assistants.retrievers.CallToActionRetriever;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.CtaBrokerService;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.ICtaAnalyst;
 import com.obapps.schoolchatbot.chat.assistants.tools.*;
 import com.obapps.schoolchatbot.core.assistants.AssistantProps;
 import com.obapps.schoolchatbot.core.assistants.DocumentChatAssistant;
+import com.obapps.schoolchatbot.core.models.AnalystDocumentResult;
+import com.obapps.schoolchatbot.core.models.DocumentProperty;
+import com.obapps.schoolchatbot.core.models.DocumentPropertyType;
+import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisFunctionAudit;
+import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisStageAudit;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
@@ -15,7 +25,9 @@ import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.Result;
+import java.sql.SQLException;
 import java.util.Scanner;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -26,23 +38,23 @@ import java.util.stream.Collectors;
 public class CallToActionAnalysis
   extends DocumentChatAssistant<AugmentedContentList> {
 
+  private final CtaBrokerService ctaBrokerService;
+
   /**
    * Default constructor initializing the assistant with default properties.
    */
   public CallToActionAnalysis() {
-    super(AugmentedContentList.class, new AssistantProps(2));
+    this(null);
   }
 
   /**
-   * Constructor initializing the assistant with a specific initial request.
-   *
-   * @param initialRequest The initial request to set for the assistant.
+   * Default constructor initializing the assistant with default properties.
    */
-  public CallToActionAnalysis(String initialRequest) {
-    super(
-      AugmentedContentList.class,
-      new AssistantProps(2).setInitialRequest(initialRequest)
-    );
+  public CallToActionAnalysis(CtaBrokerService ctaBrokerService) {
+    super(AugmentedContentList.class, new AssistantProps(2));
+    this.ctaBrokerService = ctaBrokerService == null
+      ? new CtaBrokerService()
+      : ctaBrokerService;
   }
 
   /**
@@ -197,6 +209,141 @@ public class CallToActionAnalysis
       )
       .tools(new CallToActionTool(this))
       .systemMessageProvider(id -> Prompts.GetSystemMessageForPhase(2));
+  }
+
+  protected Db db() throws SQLException {
+    return Db.getInstance();
+  }
+
+  /**
+   * Processes a document by its ID and generates an analysis result.
+   * This method includes an option to throw an exception on error.
+   *
+   * @param documentId The ID of the document to process.
+   * @param throwOnError A Boolean flag indicating whether to throw an exception on error.
+   * @return An AnalystDocumentResult object containing the analysis result.
+   * @throws Exception
+   */
+  @Override
+  public AnalystDocumentResult processDocument(
+    Integer documentId,
+    Boolean throwOnError
+  ) throws Exception {
+    var result = AnalystDocumentResult.aggregateBuilder();
+
+    try (var tx = Db.getInstance().createTransaction()) {
+      try {
+        resetMessageState();
+        if (documentId == null || documentId <= 0) {
+          throw new IllegalArgumentException(
+            "Document ID must be a positive integer."
+          );
+        }
+
+        ICtaAnalyst aiService = getAiService(ICtaAnalyst.class);
+        var extractionService = new RecordExtractionService<
+          InitialCtaOrResponsiveAction
+        >();
+
+        extractionService.extractRecords(
+          aiService,
+          ai -> ai.processStage(documentId),
+          ctx ->
+            ctx
+              .getService()
+              .resumeExtraction(ctx.getIteration(), ctx.getMatchesFound()),
+          (sender, args) -> {
+            var iterationResult = args.getIterationResult();
+            var docResult = new AnalystDocumentResult(
+              iterationResult,
+              true,
+              0,
+              args.getNewRecords(),
+              args.getHasSignaledComplete()
+            );
+            result.append(docResult);
+
+            log.info(
+              "Iteration {} ({} items remain): {}",
+              args.getIteration(),
+              args.getEstimatedItemsRemaining(),
+              docResult.getSummary()
+            );
+
+            try {
+              var records = iterationResult.content().getResults();
+              for (var record : records) {
+                if (
+                  record.getDocumentId() == null || record.getDocumentId() == 0
+                ) {
+                  record.setDocumentId(documentId);
+                }
+              }
+              ctaBrokerService.addToQueue(records);
+              if (iterationResult.content().getProcessingNotes() != null) {
+                for (var note : iterationResult
+                  .content()
+                  .getProcessingNotes()) {
+                  DocumentProperty.builder()
+                    .documentId(documentId)
+                    .propertyValue(note)
+                    .propertyType(
+                      DocumentPropertyType.KnownValues.ProcessingNote
+                    )
+                    .build()
+                    .addToDb(db());
+                  addNote();
+                }
+              }
+
+              DocumentUnitAnalysisStageAudit.builder()
+                .documentId(documentId)
+                .iterationId(args.getIteration())
+                .completionSignalled(args.getHasSignaledComplete())
+                .analysisStageId(getPhase())
+                .detectedPoints(args.getNewRecords())
+                .addedNotes(0)
+                .message(
+                  String.format(
+                    "(%d items remain)",
+                    args.getEstimatedItemsRemaining()
+                  )
+                )
+                .tokens(iterationResult.tokenUsage())
+                .build()
+                .saveToDb(
+                  Db.getInstance(),
+                  DocumentUnitAnalysisFunctionAudit.from(
+                    iterationResult.toolExecutions()
+                  )
+                );
+            } catch (SQLException e) {
+              log.error(
+                "Error saving document audit for document {}: {}",
+                documentId,
+                e.getMessage(),
+                e
+              );
+              throw new RuntimeException(e);
+            }
+          }
+        );
+      } catch (Exception e) {
+        tx.setAbort();
+        if (throwOnError) {
+          throw e;
+        }
+        log.error(
+          "Error processing document {}: {}",
+          documentId,
+          e.getMessage(),
+          e
+        );
+        result.append(new AnalystDocumentResult(e, 0, 0));
+      }
+    }
+
+    return result.build();
   }
 
   /**
