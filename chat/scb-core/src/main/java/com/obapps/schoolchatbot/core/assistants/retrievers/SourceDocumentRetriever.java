@@ -11,14 +11,37 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * Retrieves source documents and their associated metadata or attachments.
+ *
+ * <p>This class provides methods to retrieve documents and their attachments
+ * based on a query. It also includes serialization methods for documents and
+ * attachments to convert them into {@link Content} objects with metadata.
+ */
 public class SourceDocumentRetriever extends ContentRetrieverBase {
 
+  /**
+   * Service for handling storage-related operations.
+   */
   private final StorageService storageService;
 
+  /**
+   * Flag indicating whether to include the reply-to email
+   */
+  private Boolean includeReplyTo = false;
+
+  /**
+   * Default constructor initializing with a default {@link StorageService}.
+   */
   public SourceDocumentRetriever() {
     this(null);
   }
 
+  /**
+   * Constructor initializing with a specified {@link StorageService}.
+   *
+   * @param storageService the storage service to use
+   */
   public SourceDocumentRetriever(StorageService storageService) {
     super(SourceDocumentRetriever.class);
     this.storageService = storageService == null
@@ -26,6 +49,42 @@ public class SourceDocumentRetriever extends ContentRetrieverBase {
       : storageService;
   }
 
+  /**
+   * Retrieves the value of the includeReplyTo flag.
+   *
+   * @return {@code true} if the reply-to feature is included; {@code false} otherwise.
+   */
+  public Boolean getIncludeReplyTo() {
+    return includeReplyTo;
+  }
+
+  /**
+   * Sets the value of the includeReplyTo flag.
+   *
+   * @param includeReplyTo {@code true} to include the reply-to feature; {@code false} otherwise.
+   */
+  public void setIncludeReplyTo(Boolean includeReplyTo) {
+    this.includeReplyTo = includeReplyTo;
+  }
+
+  /**
+   * Retrieves a list of content based on the provided query.
+   *
+   * <p>This method attempts to retrieve a document and its associated attachments
+   * based on the document ID extracted from the query. If no valid document ID is
+   * found in the query, it returns a single content item created from the query text.
+   *
+   * <p>If a document is found, it is serialized and added to the result list. Any
+   * attachments associated with the document are also serialized and included in
+   * the result list.
+   *
+   * <p>In case of a database error while retrieving the document or its attachments,
+   * an error is logged, and the method returns the content retrieved up to that point.
+   *
+   * @param query The query containing the document ID or text to retrieve content for.
+   * @return A list of {@link Content} objects representing the retrieved document,
+   *         its attachments, or a fallback content item based on the query text.
+   */
   @Override
   public List<Content> retrieve(Query query) {
     var ret = new ArrayList<Content>();
@@ -58,7 +117,28 @@ public class SourceDocumentRetriever extends ContentRetrieverBase {
     return ret;
   }
 
+  /**
+   * Serializes an email attachment into a {@link Content} object with metadata.
+   *
+   * @param attachment the email attachment to serialize
+   * @return a {@link Content} object representing the serialized attachment
+   */
   protected Content serializeAttachment(EmailAttachment attachment) {
+    return serializeAttachment(storageService, attachment);
+  }
+
+  /**
+   * Serializes an email attachment into a {@link Content} object with metadata,
+   * using the specified storage service.
+   *
+   * @param storageService the storage service to use for generating download URLs
+   * @param attachment the email attachment to serialize
+   * @return a {@link Content} object representing the serialized attachment
+   */
+  public static Content serializeAttachment(
+    StorageService storageService,
+    EmailAttachment attachment
+  ) {
     var meta = new HashMap<String, Object>();
     meta.put(
       AugmentedSearchMetadataType.contentType,
@@ -87,11 +167,38 @@ public class SourceDocumentRetriever extends ContentRetrieverBase {
     return CreateContent(attachment.toJson(), meta);
   }
 
-  protected Content serializeDocument(DocumentWithMetadata document) {
+  /**
+   * Serializes a document into a {@link Content} object with metadata.
+   *
+   * @param document the document to serialize
+   * @return a {@link Content} object representing the serialized document
+   */
+  public static Content serializeDocument(DocumentWithMetadata document) {
+    return serializeDocument(document, null);
+  }
+
+  /**
+   * Serializes a document into a {@link Content} object with metadata,
+   * including an optional content subtype.
+   *
+   * @param document the document to serialize
+   * @param contentSubType an optional subtype for the content
+   * @return a {@link Content} object representing the serialized document
+   */
+  public static Content serializeDocument(
+    DocumentWithMetadata document,
+    String contentSubType
+  ) {
     var meta = new HashMap<String, Object>();
     meta.put(
       AugmentedSearchMetadataType.contentType,
-      AugmentedSearchMetadataType.EmailMetadata.name
+      contentSubType == null
+        ? AugmentedSearchMetadataType.EmailMetadata.name
+        : String.format(
+          "%s/%s",
+          AugmentedSearchMetadataType.EmailMetadata.name,
+          contentSubType
+        )
     );
     meta.put(
       AugmentedSearchMetadataType.EmailMetadata.id,

@@ -1,4 +1,4 @@
-package com.obapps.schoolchatbot.chat.assistants.models.ai;
+package com.obapps.schoolchatbot.core.models.ai.phases;
 
 import java.time.LocalDateTime;
 import java.util.List;

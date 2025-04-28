@@ -990,6 +990,10 @@ public class Db implements AutoCloseable {
       this.initialAutoComplete = initialComplete;
     }
 
+    public Db getDb() {
+      return Db.this;
+    }
+
     public void setAbort() {
       if (disposed) {
         return;

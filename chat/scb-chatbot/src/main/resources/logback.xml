@@ -1,6 +1,6 @@
 <configuration>
-    <property name="DEV_LOG" value="c:/Users/seanm/source/repos/NoEducation/chat/logs/app-prod.log"/>
-    <property name="LILITH_LOG" value="c:/Users/seanm/source/repos/NoEducation/chat/logs/app-prod-log.lilith"/>
+    <property name="DEV_LOG" value="c:/Users/seanm/source/repos/NoEducation/chat/logs/app.log"/>
+    <property name="LILITH_LOG" value="c:/Users/seanm/source/repos/NoEducation/chat/logs/app-log.lilith"/>
 
     <appender name="FILE-ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${DEV_LOG}</file>
@@ -52,6 +52,7 @@
             <layout class="com.obapps.core.logback.StripUnicodePatternLayout" />
         </encoder> 
     </appender>
+    <logger name="org.redisson" level="WARN" />
     <logger name="reactor.netty" level="WARN" />
     <logger name="reactor.util" level="WARN" />
     <logger name="io.netty" level="WARN" />

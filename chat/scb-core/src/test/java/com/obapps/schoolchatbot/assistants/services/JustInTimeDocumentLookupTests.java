@@ -3,9 +3,9 @@ package com.obapps.schoolchatbot.assistants.services;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.schoolchatbot.core.assistants.services.AzureSearchClient;
 import com.obapps.schoolchatbot.core.assistants.services.DocumentChunkFilter;
-import com.obapps.schoolchatbot.core.assistants.services.IStandaloneModelClient;
 import com.obapps.schoolchatbot.core.assistants.services.JustInTimeDocumentLookup;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 import java.util.Arrays;

@@ -1,12 +1,22 @@
 package com.obapps.schoolchatbot.core.assistants;
 
+import com.obapps.core.ai.extraction.models.IRecordExtractionEnvelope;
+import com.obapps.core.ai.extraction.services.IterationEventArgs;
+import com.obapps.core.ai.extraction.services.RecordExtractionService;
 import com.obapps.core.util.Db;
+import com.obapps.core.util.IDbTransaction;
 import com.obapps.schoolchatbot.core.assistants.content.AugmentedContent;
 import com.obapps.schoolchatbot.core.assistants.content.AugmentedContentListBase;
 import com.obapps.schoolchatbot.core.assistants.content.AugmentedSearchMetadataType;
 import com.obapps.schoolchatbot.core.assistants.content.DocumentWithMetadataContent;
+import com.obapps.schoolchatbot.core.assistants.services.ai.phases.IPhaseAnalyst;
 import com.obapps.schoolchatbot.core.assistants.types.IStageAnalystController;
 import com.obapps.schoolchatbot.core.models.AnalystDocumentResult;
+import com.obapps.schoolchatbot.core.models.DocumentProperty;
+import com.obapps.schoolchatbot.core.models.DocumentPropertyType;
+import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisFunctionAudit;
+import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisStageAudit;
+import com.obapps.schoolchatbot.core.models.ai.phases.BasePhaseRecord;
 import com.obapps.schoolchatbot.core.util.ContentMapper;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageType;
@@ -15,6 +25,7 @@ import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.injector.ContentInjector;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.function.BiConsumer;
 
 /**
  * The `DocumentChatAssistant` class is an abstract base class that extends the `ChatAssistant` class
@@ -95,11 +106,14 @@ public abstract class DocumentChatAssistant<
     this.setAutoResponse(props.initialRequest);
     this.phaseId = props.phase;
     this.database = props.database;
+    if (props.includeReplyTo) {
+      this.includeReplyTo = true;
+    }
   }
 
   private Db database = null;
 
-  private Db getDb() throws SQLException {
+  protected Db getDb() throws SQLException {
     if (this.database != null) {
       return this.database;
     }
@@ -213,16 +227,42 @@ public abstract class DocumentChatAssistant<
   }
 
   /**
-   * Processes a document by its ID and generates an analysis result.
-   * This method acts as a wrapper for the overloaded version of processDocument
-   * with additional parameters.
-   *
-   * @param documentId The ID of the document to process.
-   * @return An AnalystDocumentResult object containing the analysis result.
+   * Processes a document based on the provided document ID.  Set up to support RecordExtraactionService-
+   * based workflow, but should be flexible enough to support non-standerd AiSevrvice-based workflows as well.
+   * @implNote This method's primary responsibility is to manage the transaction, error handling, and global
+   * mesage state.  It then delegates the actual document processing to the `processDocumentExtract` method,
+   * which provides subclasses with the flexibility to implement their own processing logic
+   * @param documentId The ID of the document to process. Must be a positive integer.
+   * @return An instance of {@link AnalystDocumentResult} containing the results of the document processing.
+   * @throws IllegalArgumentException If the provided document ID is null or not a positive integer.
+   * @throws Exception If an error occurs during document processing.
    */
   public AnalystDocumentResult processDocument(Integer documentId) {
     try {
-      return this.processDocument(documentId, false);
+      var result = AnalystDocumentResult.aggregateBuilder();
+
+      try (var tx = this.getDb().createTransaction()) {
+        try {
+          resetMessageState();
+          if (documentId == null || documentId <= 0) {
+            throw new IllegalArgumentException(
+              "Document ID must be a positive integer."
+            );
+          }
+          var actualResult = this.processDocumentExtract(tx, documentId);
+          result.append(actualResult);
+        } catch (Exception e) {
+          tx.setAbort();
+          log.error(
+            "Error processing document {}: {}",
+            documentId,
+            e.getMessage(),
+            e
+          );
+          result.append(new AnalystDocumentResult(e, 0, 0));
+        }
+      }
+      return result.build();
     } catch (Exception e) {
       e.printStackTrace();
       return new AnalystDocumentResult(e, detectedPoints, addedNotes);
@@ -230,111 +270,175 @@ public abstract class DocumentChatAssistant<
   }
 
   /**
-   * Processes a document by its ID and generates an analysis result.
-   * This method includes an option to throw an exception on error.
+   * Handles the processing of a documents during a batch analysis iteration.  It is intended
+   * be called during the onDocumentBatchCallback handler of {@link RecordExtractService} This method
+   * supports common operations most analysis batches will perform, like:
+   * - Appends the current iteration's results to the aggregate result.
+   * - Logs the iteration progress and summary.
+   * - Updates document records with the provided document ID if necessary.
+   * - Adds processing notes to the database.
+   * - Generates and saves an audit record for the current analysis stage.
    *
-   * @param documentId The ID of the document to process.
-   * @param throwOnError A Boolean flag indicating whether to throw an exception on error.
-   * @return An AnalystDocumentResult object containing the analysis result.
-   * @throws Exception
+   * @param <TModel>        The type of the base phase record being processed.
+   * @param <TModelResult>  The type of the record extraction envelope containing the results.
+   * @param result          The aggregate builder for the analyst document results.
+   * @param args            The iteration event arguments containing iteration-specific data.
+   *
+   * @throws RuntimeException If an SQL exception occurs while saving audit results to the database.
    */
-  public abstract AnalystDocumentResult processDocument(
-    Integer documentId,
-    Boolean throwOnError
-  ) throws Exception;
+  protected <
+    TModel extends BasePhaseRecord,
+    TModelResult extends IRecordExtractionEnvelope<TModel>
+  > void onDocumentBatchProcessed(
+    AnalystDocumentResult.AggregateBuilder result,
+    IterationEventArgs<TModel, TModelResult> args
+  ) {
+    var iterationResult = args.getIterationResult();
+    var docResult = new AnalystDocumentResult(
+      iterationResult,
+      true,
+      0,
+      args.getNewRecords(),
+      args.getHasSignaledComplete()
+    );
+    result.append(docResult);
 
-  /* {
-    throw new NotImplementedError();
-    var result = AnalystDocumentResult.aggregateBuilder();
-    Integer lastDetectedPoints = 0;
-    Integer lastAddedNotes = 0;
-    Boolean earlyExit = false;
-    try (var tx = Db.getInstance().createTransaction()) {
-      try {
-        resetMessageState();
-        while (!earlyExit && !analysisCompleteCalled) {
-          lastDetectedPoints = detectedPoints;
-          lastAddedNotes = addedNotes;
-          var pass = runIteration(documentId, iterationIndex);
-          result.append(pass);
-          if (!pass.getSuccess()) {
-            tx.setAbort();
-            earlyExit = true;
-          }
-          iterationIndex++;
-        }
-      } catch (Exception e) {
-        tx.setAbort();
-        if (throwOnError) {
-          throw e;
-        } else {
-          result.append(
-            new AnalystDocumentResult(
-              e,
-              detectedPoints - lastDetectedPoints,
-              addedNotes - lastAddedNotes
-            )
-          );
-        }
+    log.info(
+      "Iteration {} ({} items remain): {}",
+      args.getIteration(),
+      args.getEstimatedItemsRemaining(),
+      docResult.getSummary()
+    );
+    var records = iterationResult.content().getResults();
+    // Do we have enough info to handle document id?
+    Integer documentId = args.getProperty("documentId", 0);
+    if (documentId == null || documentId < 1) {
+      return;
+    }
+    for (var record : records) {
+      if (record.getDocumentId() == null || record.getDocumentId() == 0) {
+        record.setDocumentId(documentId);
       }
     }
-    return result.build();
-  }
-
-  private AnalystDocumentResult runIteration(
-    Integer documentId,
-    Integer iterationIndex
-  ) throws SQLException {
+    Db db = args.getProperty("db", null);
     try {
-      log.debug(
-        "About to process document with ID {}, Pass {}",
-        documentId,
-        iterationIndex + 1
-      );
-      var userQuery = documentId.toString();
-      var initalNotes = this.addedNotes;
-      var initalPoints = this.detectedPoints;
-
-      var agentResult = getAssistant()
-        .answer(iterationIndex == 0 ? userQuery : "continue");
-      var result = new AnalystDocumentResult(
-        agentResult,
-        true,
-        addedNotes - initalNotes,
-        detectedPoints - initalPoints,
-        this.analysisCompleteCalled
-      );
-      log.info("Iteration {}: {}", iterationIndex + 1, result.getSummary());
-      onAssistantResponse(agentResult, userQuery);
-      DocumentUnitAnalysisStageAudit.builder()
+      if (db == null) {
+        db = getDb();
+      }
+      var addedNotes = 0;
+      var notes = iterationResult.content().getProcessingNotes();
+      if (notes != null) {
+        for (var note : notes) {
+          if (note == null || note.isEmpty()) {
+            continue;
+          }
+          DocumentProperty.builder()
+            .documentId(documentId)
+            .propertyValue(note)
+            .propertyType(DocumentPropertyType.KnownValues.ProcessingNote)
+            .build()
+            .addToDb(db);
+          addedNotes++;
+          addNote();
+        }
+      }
+      // Generate an analysis audit record
+      var auditRecord = DocumentUnitAnalysisStageAudit.builder()
         .documentId(documentId)
-        .iterationId(iterationIndex)
-        .completionSignalled(analysisCompleteCalled)
+        .iterationId(args.getIteration())
+        .completionSignalled(false)
         .analysisStageId(getPhase())
-        .detectedPoints(result.getNewRecords())
-        .addedNotes(result.getNewNotes())
-        .message(result.getMessage())
-        .tokens(agentResult.tokenUsage())
+        .detectedPoints(args.getNewRecords())
+        .addedNotes(addedNotes)
+        .tokens(iterationResult.tokenUsage());
+      if (args.getHasSignaledComplete()) {
+        if (args.getProperty("inPostProcessingQueue", false)) {
+          auditRecord = auditRecord.inPostProcessingQueue(true);
+        } else {
+          auditRecord = auditRecord.completionSignalled(true);
+        }
+      } else {
+        auditRecord.completionSignalled(false);
+      }
+      if (args.getProperty("message", null) != null) {
+        auditRecord.message(args.getProperty("message", null));
+      } else {
+        auditRecord.message(
+          String.format("(%d items remain)", args.getEstimatedItemsRemaining())
+        );
+      }
+      // AUDIT: Save the audit record to the database
+      auditRecord
         .build()
         .saveToDb(
-          getDb(),
-          DocumentUnitAnalysisFunctionAudit.from(agentResult.toolExecutions())
+          db,
+          DocumentUnitAnalysisFunctionAudit.from(
+            iterationResult.toolExecutions()
+          )
         );
-      return result;
-    } catch (Exception e) {
+    } catch (SQLException e) {
       log.error(
-        String.format(
-          "Error while processing document with ID %d pass %d: %s",
-          documentId,
-          iterationIndex + 1,
-          e.getMessage()
-        ),
+        "Error saving document stage audit results for document {}: {}",
+        documentId,
+        e.getMessage(),
         e
       );
-      throw new SQLException(e);
+      throw new RuntimeException(e);
     }
   }
-*/
+
+  /**
+   * Extracts records from a document using a specified service and processes each iteration
+   * with a provided callback function.  I know, we're bouncing around a lot here...I'd
+   * pretend it's all duesto some deep and insigthful design that has a uncalculable effect
+   * on scalibility, but really, Ijust haven't figured out Java genreic quite yet.  This
+   * flippping language! I swear I think half of the architecture extss soleuy to
+   * spite c.
+   *
+   * @param <TModel> The type of the model that extends {@link BasePhaseRecord}.
+   * @param <TEnvelope> The type of the envelope that implements {@link IRecordExtractionEnvelope}.
+   * @param <TService> The type of the service that implements {@link IPhaseAnalyst}.
+   * @param clazz The class type of the service to be used for record extraction.
+   * @param documentId The ID of the document from which records are to be extracted.
+   * @param onIterationProcessed A callback function that processes each iteration event.
+   *                              It accepts an {@link AnalystDocumentResult.AggregateBuilder}
+   *                              and {@link IterationEventArgs} as parameters.
+   * @return An {@link AnalystDocumentResult} containing the aggregated results of the extraction process.
+   */
+  protected <
+    TModel extends BasePhaseRecord,
+    TEnvelope extends IRecordExtractionEnvelope<TModel>,
+    TService extends IPhaseAnalyst<TModel, TEnvelope>
+  > AnalystDocumentResult extractRecords(
+    Class<TService> clazz,
+    Integer documentId,
+    BiConsumer<
+      AnalystDocumentResult.AggregateBuilder,
+      IterationEventArgs<TModel, TEnvelope>
+    > onIterationProcessed
+  ) {
+    var results = AnalystDocumentResult.aggregateBuilder();
+    new RecordExtractionService<TModel>().extractRecords(
+      getAiService(clazz),
+      ai -> ai.processStage(documentId),
+      ctx ->
+        ctx
+          .getService()
+          .resumeExtraction(ctx.getIteration(), ctx.getMatchesFound()),
+      (sender, args) ->
+        onIterationProcessed.accept(
+          results,
+          args.setProperty("documentId", documentId)
+        )
+    );
+    return results.build();
+  }
+
+  protected abstract AnalystDocumentResult processDocumentExtract(
+    IDbTransaction tx,
+    Integer documentId
+  ) throws Exception;
+
   /**
    * Injects augmented content into the user message and generates a prompt.
    *
@@ -410,6 +514,11 @@ public abstract class DocumentChatAssistant<
    */
   protected abstract UserMessage generatePrompt(TContentListType content);
 
+  /**
+   * Retrieves the content associated with this instance.
+   *
+   * @return the content of type {@code TContentListType}.
+   */
   public TContentListType getContent() {
     return Content;
   }

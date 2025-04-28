@@ -13,17 +13,4 @@ public interface IStageAnalystController extends IDocumentContentSource {
    * @return An {@link AnalystDocumentResult} containing the result of the processing.
    */
   AnalystDocumentResult processDocument(Integer documentId);
-
-  /**
-   * Processes a document based on its unique identifier, with an option to throw an exception on error.
-   *
-   * @param documentId   The unique identifier of the document to process.
-   * @param throwOnError A boolean indicating whether to throw an exception if an error occurs.
-   * @return An {@link AnalystDocumentResult} containing the result of the processing.
-   * @throws Throwable If an error occurs during processing and {@code throwOnError} is true.
-   */
-  AnalystDocumentResult processDocument(
-    Integer documentId,
-    Boolean throwOnError
-  ) throws Throwable;
 }

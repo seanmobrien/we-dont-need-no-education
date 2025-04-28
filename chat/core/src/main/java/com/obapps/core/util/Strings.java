@@ -1,7 +1,10 @@
 package com.obapps.core.util;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -28,23 +31,26 @@ import java.util.Map;
  *
  * <p>All methods in this class are static and can be accessed directly without
  * creating an instance of the class.
- *
- * <p>Example usage:
- * <pre>
- * {@code
- * String prefix = Strings.getRecordPrefix("RecordName");
- * List<String> list = Strings.commasToList("a, b, c");
- * String formatted = Strings.formatForMultipleLines(4, "This is a long string", 20);
- * ObjectMapper mapper = Strings.objectMapperFactory();
- * }
- * </pre>
  */
 public class Strings {
 
+  /**
+   * Generates a record prefix string with optional metadata.
+   *
+   * @param recordName the name of the record.
+   * @return the generated record prefix string.
+   */
   public static final String getRecordPrefix(String recordName) {
     return getRecordPrefix(recordName, null);
   }
 
+  /**
+   * Generates a record prefix string with optional metadata.
+   *
+   * @param recordName the name of the record.
+   * @param metadata optional metadata to include in the prefix.
+   * @return the generated record prefix string.
+   */
   public static final String getRecordPrefix(
     String recordName,
     Map<String, Object> metadata
@@ -73,10 +79,22 @@ public class Strings {
     return "\n_#_" + recordName + metaBuilder.toString() + "_#_\n";
   }
 
+  /**
+   * Generates a record suffix string.
+   *
+   * @return the generated record suffix string.
+   */
   public static final String getRecordSuffix() {
     return "\n_#_ END _#_\n";
   }
 
+  /**
+   * Generates a complete record output string with prefix, data, and suffix.
+   *
+   * @param recordName the name of the record.
+   * @param recordData the data of the record.
+   * @return the complete record output string.
+   */
   public static final String getRecordOutput(
     String recordName,
     String recordData
@@ -84,6 +102,14 @@ public class Strings {
     return getRecordOutput(recordName, recordData, null);
   }
 
+  /**
+   * Generates a complete record output string with prefix, data, and suffix.
+   *
+   * @param recordName the name of the record.
+   * @param recordData the data of the record.
+   * @param metadata optional metadata to include in the output.
+   * @return the complete record output string.
+   */
   public static final String getRecordOutput(
     String recordName,
     String recordData,
@@ -94,10 +120,23 @@ public class Strings {
     );
   }
 
+  /**
+   * Generates a table representation of metadata.
+   *
+   * @param metadata the metadata to include in the table.
+   * @return the generated table string.
+   */
   public static final String getTable(Map<String, Object> metadata) {
     return getTable(metadata, null);
   }
 
+  /**
+   * Generates a table representation of metadata with an optional record name.
+   *
+   * @param metadata the metadata to include in the table.
+   * @param recordName the optional name of the record.
+   * @return the generated table string.
+   */
   public static final String getTable(
     Map<String, Object> metadata,
     String recordName
@@ -119,6 +158,11 @@ public class Strings {
     return builder.toString();
   }
 
+  /**
+   * Creates a pre-configured Jackson {@link ObjectMapper} instance.
+   *
+   * @return the configured {@link ObjectMapper} instance.
+   */
   public static ObjectMapper objectMapperFactory() {
     ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.configure(
@@ -126,9 +170,83 @@ public class Strings {
       false
     );
     objectMapper.registerModule(new JavaTimeModule());
-
-    //.registerModule(new JSR310Module());
     return objectMapper;
+  }
+
+  /**
+   * Safely serializes an object to a JSON string.
+   *
+   * @param object the object to serialize.
+   * @return the serialized JSON string, or an error message if serialization fails.
+   */
+  public static String safelySerializeAsJson(Object object) {
+    try {
+      return serializeAsJson(object);
+    } catch (Exception e) {
+      return "Error serializing object to JSON: " + e.getMessage();
+    }
+  }
+
+  /**
+   * Serializes an object to a JSON string.
+   *
+   * @param object the object to serialize.
+   * @return the serialized JSON string.
+   * @throws RuntimeException if serialization fails.
+   */
+  public static String serializeAsJson(Object object) {
+    ObjectMapper objectMapper = Strings.objectMapperFactory();
+    try {
+      return objectMapper.writeValueAsString(object);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(
+        "Error serializing " + object.getClass().getName() + " to JSON",
+        e
+      );
+    }
+  }
+
+  /**
+   * Serializes an object to a JSON string.
+   *
+   * @param object the object to serialize.
+   * @return the serialized JSON string.
+   * @throws RuntimeException if serialization fails.
+   */
+  public static <T> T loadFromJson(Class<T> clazz, String source) {
+    ObjectMapper objectMapper = Strings.objectMapperFactory();
+    try {
+      return (T) objectMapper.readValue(source, clazz);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(
+        "Error loading " + clazz.getName() + " from JSON",
+        e
+      );
+    }
+  }
+
+  /**
+   * Serializes an object to a JSON string.
+   *
+   * @param object the object to serialize.
+   * @return the serialized JSON string.
+   * @throws RuntimeException if serialization fails.
+   */
+  public static <T> T loadFromJsonStream(Class<T> clazz, Reader source) {
+    ObjectMapper objectMapper = Strings.objectMapperFactory();
+    try {
+      return (T) objectMapper.readValue(source, clazz);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(
+        "Error loading " + clazz.getName() + " from JSON",
+        e
+      );
+    } catch (IOException e) {
+      throw new RuntimeException(
+        "Error loading " + clazz.getName() + " from JSON",
+        e
+      );
+    }
   }
 
   /**
@@ -158,8 +276,8 @@ public class Strings {
   /**
    * Converts a comma-separated string into a list of strings.
    *
-   * @param str the input string containing elements separated by commas
-   * @return a list of strings obtained by splitting the input string on commas
+   * @param str the input string containing elements separated by commas.
+   * @return a list of strings obtained by splitting the input string on commas.
    */
   public static List<String> commasToList(String str) {
     return seperateIntoList(str, ",");
@@ -172,10 +290,9 @@ public class Strings {
    * of leading and trailing whitespace. If a substring starts and/or ends with a double quote (`"`),
    * the quotes are removed along with any additional leading or trailing whitespace.
    *
-   * @param str       The input string to be split. Can be null or empty.
-   * @param delimiter The delimiter used to split the input string.
-   * @return A list of trimmed substrings obtained by splitting the input string. Returns an empty
-   *         list if the input string is null or empty.
+   * @param str the input string to be split. Can be null or empty.
+   * @param delimiter the delimiter used to split the input string.
+   * @return a list of trimmed substrings obtained by splitting the input string.
    */
   public static List<String> seperateIntoList(String str, String delimiter) {
     if (str == null || str.isEmpty()) {

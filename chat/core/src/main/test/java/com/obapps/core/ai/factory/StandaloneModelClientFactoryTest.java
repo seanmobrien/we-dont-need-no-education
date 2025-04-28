@@ -1,11 +1,11 @@
-package com.obapps.schoolchatbot.chat.assistants.services;
+package com.obapps.core.ai.factory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.obapps.schoolchatbot.core.assistants.services.IStandaloneModelClient;
-import com.obapps.schoolchatbot.core.assistants.services.StandaloneModelClientFactory;
-import com.obapps.schoolchatbot.core.services.ModelType;
+import com.obapps.core.ai.factory.models.ModelType;
+import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
+import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import org.junit.jupiter.api.BeforeEach;

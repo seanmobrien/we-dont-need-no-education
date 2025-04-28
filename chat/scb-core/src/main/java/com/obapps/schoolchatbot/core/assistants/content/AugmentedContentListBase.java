@@ -113,7 +113,26 @@ public class AugmentedContentListBase {
    */
   public DocumentWithMetadataContent getActiveDocumentContent() {
     if (EmailMetadata != null && !EmailMetadata.isEmpty()) {
-      return EmailMetadata.get(0);
+      var ret = EmailMetadata.stream()
+        .filter(s -> s.getAugmentSubContentType() == "")
+        .findFirst();
+      return ret.isPresent() ? ret.get() : null;
+    }
+    return null;
+  }
+
+  /**
+   * Retrieves the document content with metadata that has the "reply-to" augment sub-content type.
+   *
+   * @return A {@link DocumentWithMetadataContent} object representing the "reply-to" document content
+   *         if found, or {@code null} if no such content exists or if the EmailMetadata list is empty.
+   */
+  public DocumentWithMetadataContent getReplyToDocumentContent() {
+    if (EmailMetadata != null && !EmailMetadata.isEmpty()) {
+      var ret = EmailMetadata.stream()
+        .filter(s -> s.getAugmentSubContentType().equals("reply-to"))
+        .findFirst();
+      return ret.isPresent() ? ret.get() : null;
     }
     return null;
   }

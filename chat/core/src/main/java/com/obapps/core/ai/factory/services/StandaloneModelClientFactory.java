@@ -1,11 +1,12 @@
-package com.obapps.schoolchatbot.core.assistants.services;
+package com.obapps.core.ai.factory.services;
 
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
+import com.obapps.core.ai.factory.models.AiServiceOptions;
+import com.obapps.core.ai.factory.models.ModelType;
+import com.obapps.core.ai.factory.types.ILanguageModelFactory;
+import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.core.util.EnvVars;
 import com.obapps.core.util.EnvVars.OpenAiVars;
-import com.obapps.schoolchatbot.core.services.AiServiceOptions;
-import com.obapps.schoolchatbot.core.services.ILanguageModelFactory;
-import com.obapps.schoolchatbot.core.services.ModelType;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
@@ -331,15 +332,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   // Removed duplicate method to resolve type erasure conflict
 
   @Override
-  public <TService> TService createService(Class<TService> clazz) {
-    return createService(clazz, AiServiceOptions.builder().build());
-  }
-
-  @Override
-  public <TService> TService createService(
-    Class<TService> clazz,
-    AiServiceOptions options
-  ) {
+  public <TService> TService createService(AiServiceOptions<TService> options) {
     @SuppressWarnings("removal")
     var model = createModel(options.modelType, b -> {
       if (options.structuredOutput) {
@@ -347,12 +340,18 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       }
       return b;
     });
-    var builder = AiServices.builder(clazz).chatLanguageModel(model);
+    var builder = AiServices.builder(options.getClazz()).chatLanguageModel(
+      model
+    );
     if (options.memoryWindow != null) {
       builder.chatMemory(
         MessageWindowChatMemory.withMaxMessages(options.memoryWindow)
       );
     }
+    if (options.onSetup != null) {
+      options.onSetup.accept(builder);
+    }
+
     return builder.build();
   }
 }

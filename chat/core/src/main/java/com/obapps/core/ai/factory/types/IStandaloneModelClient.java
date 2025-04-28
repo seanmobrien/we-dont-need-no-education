@@ -1,4 +1,4 @@
-package com.obapps.schoolchatbot.core.assistants.services;
+package com.obapps.core.ai.factory.types;
 
 import dev.langchain4j.model.chat.ChatLanguageModel;
 

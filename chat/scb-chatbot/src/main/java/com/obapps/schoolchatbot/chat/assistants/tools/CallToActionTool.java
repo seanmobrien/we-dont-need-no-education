@@ -1,36 +1,33 @@
 package com.obapps.schoolchatbot.chat.assistants.tools;
 
-import com.obapps.core.util.Colors;
 import com.obapps.core.util.Db;
 import com.obapps.schoolchatbot.chat.assistants.CallToActionAnalysis;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
 import com.obapps.schoolchatbot.core.assistants.services.*;
 import com.obapps.schoolchatbot.core.assistants.tools.MessageTool;
 import com.obapps.schoolchatbot.core.models.*;
+import com.obapps.schoolchatbot.core.repositories.*;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 public class CallToActionTool extends MessageTool<AugmentedContentList> {
 
   private final Db _innerDb;
   private final JustInTimePolicyLookup policyLookup;
   private final JustInTimeDocumentLookup documentLookup;
+  private HistoricKeyPointRepository keyPointRepository;
 
   public CallToActionTool(CallToActionAnalysis content) {
-    this(content, null, null, null);
+    this(content, null, null, null, null);
   }
 
   public CallToActionTool(
     CallToActionAnalysis content,
     Db db,
     JustInTimePolicyLookup policyLookup,
-    JustInTimeDocumentLookup documentLookup
+    JustInTimeDocumentLookup documentLookup,
+    HistoricKeyPointRepository keyPointRepository
   ) {
     super(content);
     this._innerDb = db;
@@ -40,6 +37,9 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     this.documentLookup = documentLookup == null
       ? new JustInTimeDocumentLookup(content)
       : documentLookup;
+    this.keyPointRepository = keyPointRepository == null
+      ? new HistoricKeyPointRepository()
+      : keyPointRepository;
   }
 
   private Db db() throws SQLException {
@@ -49,336 +49,96 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     return _innerDb;
   }
 
-  /*
-  @Tool(
-    name = "signalAnalysisPhaseComplete",
-    value = "Called once all calls to action and responsive actions have been extracted from the document to signal that the analysis phase is complete for the provided document ID.\n" +
-    " ** Returns **\n" +
-    "  - If the operation succeeded, a message indicating success.\n" +
-    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
-  )
-  public void signalAnalysisPhaseComplete(
-    @P(
-      required = true,
-      value = "The ID of the document for which all matches have been found."
-    ) Integer documentId
-  ) {
-    processingCompletedCalled(documentId);
-  }
-
   /**
-   * Adds a newly identified and analyzed call to action from the target document to the database.
-   * @return The ID of the newly added item
-   * @param action The action to be taken, such as "Provide this record", "Explain why this action was taken",
-   *               or "What steps will be taken to keep my child safe".
-   * @param inferred A boolean indicating whether this CTA is inferred from the document, or explicitly stated.
-   *                 If the point is explicitly stated, this should be false. If the CTA is inferred, this should be true.
-   * @param dueDate The date by which responsive action is expected to be taken, in the format "yyyy-MM-dd".
-   * @param dueDateEnforceable A boolean indicating whether the due date is enforceable, e.g., has a demonstrable basis
-   *                           in law or school board policy.
-   * @param reasonableRating A rating from 1-10 as to how reasonable the request for action is. Requests for actions
-   *                         the district is obligated to perform, such as a valid records request, are rated at 10.
-   *                         Requests that the district is not legally able to perform, such as violating FERPA privacy
-   *                         protections, are rated at 1.
-   * @param compliance_rating_current A rating from 0-100 regarding the degree to which this email specifically represents
-   *                                  compliance with a district's legal and moral obligations in regard to this call to action.
-   * @param compliance_rating_current_reasons A comma-separated list of reasons why the compliance rating was assigned,
-   *                                          such as "No response provided", "No explanation provided". If no reasons are
-   *                                          known, pass null or an empty string. If the compliance rating is not relevant
-   *                                          to this email, pass null or an empty string.
-   * @param policyBasis A comma-delimited list of any laws or school board policies that provide a basis for this point,
-   *                    e.g., "Title IX, MN Statute 13.3, Board Policy 503".
-   * @param tags A comma-delimited list of tags that can be used to categorize this point, e.g., "bullying, harassment, discrimination".
-   *             This parameter is optional and can be null.
-   * @throws Throwable If an unexpected error occurs during the process of adding the call to action to the database.
-   
-  @Tool(
-    name = "addCallToActionToDatabase",
-    value = "Adds a newly identified call to action from the target document to our database." +
-    " *** Returns **\n" +
-    "  - If the operation succeeded, the ID of the newly added item.\n" +
-    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
-  )
-  public String addCallToActionToDatabase(
-    @P(
-      required = true,
-      value = "The action to be taken, such as \"Provide this record\", \"Explain why this action was taken\", or \"What steps will be taken to keep my child safe\".   ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead. "
-    ) String action,
-    @P(
-      required = true,
-      value = "A boolean indicating whether this CTA is inferred from the document, or explicitly stated.  If the point is explicitly stated, then this should be false.  If the CTA is inferred, then this should be true."
-    ) Boolean inferred,
-    @P(
-      required = true,
-      value = "The date by which responsive action is expected to be taken."
-    ) LocalDate dueDate,
-    @P(
-      required = true,
-      value = "A boolean indicating whether the due date is enforceable - eg has demonstratible basis in law or school board policy."
-    ) Boolean dueDateEnforceable,
-    @P(
-      required = true,
-      value = "A rating from 1-10 as to how reasonable the request for action is.  Reasonability includes factors like whether the District is legally or policy-bound to comply with the request, or if enough time is being allowed for the district to adequately response."
-    ) Integer reasonableRating,
-    @P(
-      required = true,
-      value = "A comma-delimited list of reasons why the reasonable rating was assigned."
-    ) String reasonableRatingReasons,
-    @P(
-      required = true,
-      value = "A rating from 0-100 regarding the degree to which this email in specific represents compliance with a district's legal and moral obligations in regards to this call to action."
-    ) Double compliance_rating_current,
-    @P(
-      required = true,
-      value = "A list of reasons why the compliance rating was assigned.  This should be a comma separated list of reasons, such as \"No response provided\", \"No explanation provided\"." +
-      "  If no reasons are known, then pass null or an empty string." +
-      "  If the compliance rating is not relevant to this email, then pass null or an empty string."
-    ) String compliance_rating_current_reasons,
-    @P(
-      required = true,
-      value = "A comma-delimited list of any laws or school board policies that provide a basis for this point.  For example, 'Title IX, MN Statute 13.3, Board Policy 503'"
-    ) String policyBasis,
-    @P(
-      required = true,
-      value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
-    ) String tags
-  ) throws Throwable {
-    var msg = message();
-    try {
-      // First, email property record
-      if (msg.getEmailId() == null) {
-        log.warn(
-          "Unable to record CTA - no email message ID available.  Details: " +
-          action
-        );
-      }
-
-      //var emailPropertyId =
-      // Save Data
-      var builder = CallToAction.builder()
-        .documentId(msg.getDocumentId())
-        .propertyType(DocumentPropertyType.KnownValues.CallToAction)
-        .propertyValue(action)
-        .tags(tags)
-        .policyBasis(policyBasis)
-        .createdOn(msg.getDocumentSendDate())
-        .openedDate(msg.getDocumentSendDate().toLocalDate())
-        .compliancyCloseDate(dueDate)
-        .completionPercentage(0.0)
-        .complianceMessage(compliance_rating_current)
-        .complianceMessageReasons(compliance_rating_current_reasons)
-        .inferred(inferred)
-        .complianceDateEnforceable(dueDateEnforceable)
-        .reasonabilityRating(reasonableRating)
-        .reasonableReason(reasonableRatingReasons);
-
-      var newRecordId = builder
-        .build()
-        .addToDb(db())
-        .getPropertyId()
-        .toString();
-      Colors.Set(color -> color.BRIGHT + color.CYAN);
-      addDetectedPoint();
-      log.info(
-        "Added CTA to  database: {}\n\tCompliance Ratiing: {}\n\tCompliance Reasons: {}\n\t" +
-        "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
-        action,
-        compliance_rating_current,
-        compliance_rating_current_reasons,
-        Objects.requireNonNullElse(policyBasis, "<none>"),
-        Objects.requireNonNullElse(tags, "<none>"),
-        message().getDocumentId()
-      );
-      Colors.Reset();
-      return newRecordId.toString();
-    } catch (SQLException ex) {
-      Colors.Set(c -> c.RED);
-      log.error(
-        "Unexpected SQL failure recording key point.  Details: " + action,
-        ex
-      );
-      Colors.Reset();
-      DocumentProperty.addManualReview(
-        c -> db(),
-        msg.getDocumentId(),
-        ex,
-        "addCallToActionToDatabase",
-        action,
-        dueDate,
-        compliance_rating_current,
-        compliance_rating_current_reasons,
-        policyBasis,
-        tags
-      );
-      return "ERROR: " + ex.getMessage();
-    }
-  }
-
-  /**
-   * Adds a Responsive Action that has been identified within the target document to the database.
-   * This includes a link to the Call to Action (CTA) this is in response to, and ratings of compliance
-   * for both the specific response and the CTA as a whole.
+   * Searches for key points that are related to the provided summary, policy basis, and tags.
+   * The search is performed using a fuzzy match on the summary and policy basis, and an exact match on the tags.
+   * Inferred key points can be excluded from the search results by passing true to excludeInferred.
    *
-   * @param call_to_action_id Unique identifier for the call to action this response is in reference to.
-   *  If the action is responsive to more than one CTA, add a record for each of them.
-   * @param responsive_action The responsive action taken.
-   * @param completion_percentage The percentage to which this CTA can be considered fully resolved.
-   * @param compliance_response_score A rating from 0-100 regarding the degree to which this email specifically
-   * represents compliance with a district's legal and moral obligations in regards to this call to action.
-   * @param compliance_response_reasons A comma-delimted list of reasons why the compliance rating was assigned.
-   * @param compliance_rating_aggregate A rating from 0-100 regarding the degree to which the District has complied with the CTA
-   * when taking into account all action or inaction taken in response.
-   * @param compliance_rating_aggregate_reasons A comma-delimited list of reasons why the aggregate compliance rating was assigned.
-   * @param reasonableRating  A rating from 1-10 as to how reasonable the response is. This includes factors like whether the response
-   * is inline with the request, the degree to which it aligns with the law or policy, and the reasonableness of the request itself.
-   * Responses in which the district acts in good faith to fulfill their obligations - for example provides a fully responsive dataset,
-   * or refuses to provide a record with valid legal basis - are rated at a 10.  Responses in which the district does not act in good
-   * faith or is duplicitous - for example, claiming privacy protections for data a parent has legal basis to access or providing
-   * datasets that are not fully responsive or inappropriately redacted, are rated at a 1.
-   * @param reasonableRatingReasons A comma-delimted list of reasons why the reasonable rating was assigned.
-   * @param severity A rating from 1-10 as to the severity of the response.  This includes factors like the degree to which it is likely to cause harm to
-   * the student or parent, or places the district in legal jeopardy.
-   * @param inferred A boolean indicating whether this CTA is inferred from the document, or explicitly stated / omitted.
-   * @param policyBasis A comma-delimited list of any laws or school board policies that provide a basis for this point.
-   * For example, "Title IX, MN Statute 13.3, Board Policy 503".
-   * @param tags A comma-delimited list of tags that can be used to categorize this point. For example,
-   *  "bullying, harassment, discrimination". This parameter is optional.
-   
+   * @param matchFromPolicyBasis A comma-delimited list of policies or laws to search for, or an empty string if policy basis should not be considered.
+   *                             Returned key points will be associated with all of the referenced policies.
+   * @param matchFromTags        If provided, a comma-delimited list of tags to search for, or an empty string if tags should not be considered.
+   *                             Returned key points will contain all of the referenced tags.
+   * @param matchFromSummary     A string used to search the summary field. Pass an empty string to ignore summary matches.
+   * @param excludeInferred      If true, inferred key points will be excluded from the results. If false (the default), inferred key points will be included.
+   * @return                     An array of KeyPoint objects that match the search criteria. If no key points are found, an empty array is returned.
+   * @throws SQLException        If an unexpected SQL error occurs during the search.
+   */
   @Tool(
-    name = "addCtaResponseToDatabase",
-    value = "Adds a Responsive Action that has been identified within the target document to our database.  Includes a link to the CTA this is in response to, and a rating of compliance specifically for this response as well as the CTA as a whole." +
-    " *** Returns **\n" +
-    "  - If the operation succeeded, the ID of the newly addedf item.\n" +
-    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
+    name = "searchForRelatedKeyPoints",
+    value = "Searches for key points that are related to the provided summary, policy basis, and tags.  The search is performed using " +
+    "a fuzzy match on the summary and policy basis, and an exact match on the tags.  The results are returned as an array of KeyPoint objects.  " +
+    "Inferred key points can be excluded from the search results by pasing true to excludeInferred.\n" +
+    " ** Returns **\n" +
+    "  - An array of KeyPoint objects that match the search criteria.  If no key points are found, an empty array is returned."
   )
-  public String addCtaResponseToDatabase(
+  public KeyPoint[] searchForRelatedKeyPoints(
     @P(
       required = true,
-      value = "Unique identifier for the call to action this response is in reference to.  If the action is responsive to more than one CTA, add a record for each of them."
-    ) String call_to_action_id,
+      value = "A comma-delimited list of policies or laws to search for, or an empty string if policy basis should not be considered.  Returned key points will be associated with all of the referenced policies.  "
+    ) String matchFromPolicyBasis,
     @P(
       required = true,
-      value = "The responsive action taken.  ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead."
-    ) String responsive_action,
+      value = "If provided, a comma-delimited list of tags to search forfor, or an empty string if tags should not be considered.  Returned key points will contain all of the referenced tags."
+    ) String matchFromTags,
     @P(
       required = true,
-      value = "The percentage to which this CTA can be consider fully resolved."
-    ) Double completion_percentage,
+      value = "A string used to search the summary field.  Pass an empty string to ignore summary matches. "
+    ) String matchFromSummary,
     @P(
       required = true,
-      value = "A rating from 0-100 regarding the degree to which this email in specific represents compliance with a district's legal and moral obligations in regards to this call to action."
-    ) Double compliance_response_score,
-    @P(
-      required = true,
-      value = "A list of reasons why the compliance rating was assigned.  This should be a comma separated list of reasons, such as \"No response provided\", \"No explanation provided\"." +
-      "  If no reasons are known, then pass null or an empty string."
-    ) String compliance_response_reasons,
-    @P(
-      required = true,
-      value = "A rating from 0-100 regarding the degree to which the District is in compliance with the CTA as a whole."
-    ) Double compliance_rating_aggregate,
-    @P(
-      required = true,
-      value = "A list of reasons why the aggregate compliance rating was assigned.  This should be a comma separated list of reasons, such as \"No response provided\", \"No explanation provided\"." +
-      "  If no reasons are known, then pass null or an empty string."
-    ) String compliance_rating_aggregate_reasons,
-    @P(
-      required = true,
-      value = "A comma-delimited list of any laws or school board policies that provide a basis for this point.  For example, 'Title IX, MN Statute 13.3, Board Policy 503'"
-    ) String policyBasis,
-    @P(
-      required = true,
-      value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
-    ) String tags,
-    @P(
-      required = true,
-      value = "A rating from 1-10 as to how reasonable the response is. This includes factors like whether the response is inline with the request, the degree to which it aligns with the law or policy, and the reasonableness of the request itself. Responses in which the district acts in good faith to fulfill their obligations - for example provides a fully responsive dataset, or refuses to provide a record with valid legal basis - are rated at a 10.  Responses in which the district does not act in good faith or is duplicitous - for example, claiming privacy protections for data a parent has legal basis to access or providing datasets that are not fully responsive or inappropriately redacted, are rated at a 1."
-    ) Integer reasonableRating,
-    @P(
-      required = true,
-      value = "A comma-delimted list of reasons why the reasonable rating was assigned."
-    ) String reasonableRatingReasons,
-    @P(
-      required = true,
-      value = "A rating from 1-10 as to the severity of the response.  This includes factors like the degree to which it is likely to cause harm to the student or parent, or places the district in legal jeopardy."
-    ) Integer severity,
-    @P(
-      required = true,
-      value = "A boolean indicating whether this CTA is inferred from the document, or explicitly stated / omitted."
-    ) Boolean inferred
+      value = "If true, inferred key points will be excluded from the results.  If false (the default), inferred key points will be included."
+    ) Boolean excludeInferred
   ) {
     var msg = message();
-    String newId = "ERROR: Unknown error";
+    var documentId = msg == null ? -1 : msg.getDocumentId();
     try {
-      // First, email property record
-      if (msg.getDocumentId() < 1) {
-        log.warn(
-          "Unable to record CTA - no email message ID available.  Details: " +
-          responsive_action
-        );
+      var hits =
+        this.keyPointRepository.searchForKeyPoints(
+            matchFromPolicyBasis,
+            matchFromTags,
+            matchFromSummary,
+            excludeInferred,
+            documentId
+          );
+      if (hits == null || hits.isEmpty()) {
+        return new KeyPoint[0];
       }
-      newId = CallToActionResponse.builder()
-        .documentId(msg.getDocumentId())
-        .actionPropertyId(UUID.fromString(call_to_action_id))
-        .propertyType(DocumentPropertyType.KnownValues.CallToActionResponse)
-        .propertyValue(responsive_action)
-        .createdOn(msg.getDocumentSendDate())
-        .completionPercentage(completion_percentage)
-        .responseTimestamp(msg.getDocumentSendDate())
-        .complianceMessage(compliance_response_score)
-        .complianceMessageReasons(compliance_response_reasons)
-        .complianceAggregate(compliance_rating_aggregate)
-        .complianceAggregateReasons(compliance_rating_aggregate_reasons)
-        .policyBasis(policyBasis)
-        .tags(tags)
-        .reasonableRequest(reasonableRating)
-        .reasonableReasons(reasonableRatingReasons)
-        .severity(severity)
-        .inferred(inferred)
-        .build()
-        .addToDb(db())
-        .getPropertyId()
-        .toString();
-      addDetectedPoint();
-      Colors.Set(color -> color.BRIGHT + color.CYAN);
+      var keyPoints = new KeyPoint[hits.size()];
+      for (int i = 0; i < hits.size(); i++) {
+        keyPoints[i] = hits.get(i);
+      }
       log.info(
-        "Added Responsive Action to  database: {}\n\tRelated CTA: {}\n\tCompliance Ratiing: {}\n\tCompliance Reasons: {}\n\t" +
-        "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
-        responsive_action,
-        call_to_action_id,
-        compliance_response_score,
-        compliance_response_reasons,
-        Objects.requireNonNullElse(policyBasis, "<none>"),
-        Objects.requireNonNullElse(tags, "<none>"),
-        message().getDocumentId()
+        "Found {} key points matching search criteria: {}, {}, {}",
+        hits.size(),
+        matchFromPolicyBasis,
+        matchFromTags,
+        matchFromSummary
       );
-      Colors.Reset();
-      return newId;
-    } catch (SQLException ex) {
-      Colors.Set(c -> c.RED);
+      return keyPoints;
+    } catch (SQLException e) {
       log.error(
-        "Unexpected SQL failure recording key point.  Details: " +
-        responsive_action,
-        ex
+        "Unexpected SQL failure searching for key points.  Details: " +
+        matchFromPolicyBasis +
+        ", " +
+        matchFromTags +
+        ", " +
+        matchFromSummary,
+        e
       );
       DocumentProperty.addManualReview(
-        c -> db(),
+        s -> this.keyPointRepository.db(),
         msg.getDocumentId(),
-        ex,
-        "addCtaResponse",
-        call_to_action_id,
-        responsive_action,
-        completion_percentage,
-        compliance_response_score,
-        compliance_response_reasons,
-        compliance_rating_aggregate,
-        compliance_rating_aggregate_reasons
+        e,
+        "AddKeyPointsTool",
+        matchFromPolicyBasis,
+        matchFromTags,
+        matchFromSummary,
+        excludeInferred
       );
-      Colors.Reset();
-      return "ERROR: " + ex.getMessage();
+      return new KeyPoint[0];
     }
   }
- */
+
   /**
    * Uses vector search to retrieve a summary of a school district policy or a search topic
    * associated with the provided query. The query can be a policy name, a specific topic,
@@ -543,7 +303,6 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
    * @param ids A comma-delimited list containing the IDs of calls to action to retrieve.
    * @return An array of {@link HistoricCallToAction} objects representing the details
    *         of the specified calls to action.
-   */
   @Tool(
     name = "getCtaDetails",
     value = "Retrieves the details of active calls to action from the database, including details about the responsive actions that have already occured."
@@ -576,6 +335,7 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       return new HistoricCallToAction[0];
     }
   }
+   */
 
   @Tool(
     name = "getDocumentDetails",

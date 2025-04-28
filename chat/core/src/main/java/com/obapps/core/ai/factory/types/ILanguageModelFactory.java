@@ -1,8 +1,33 @@
-package com.obapps.schoolchatbot.core.services;
+package com.obapps.core.ai.factory.types;
 
+import com.obapps.core.ai.factory.models.AiServiceOptions;
+import com.obapps.core.ai.factory.models.ModelType;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 
+/**
+ * The ILanguageModelFactory interface provides methods for managing and creating
+ * language model instances and related services. It allows setting and retrieving
+ * a username, creating various types of language models, and creating service instances
+ * with specified options.
+ *
+ * <p>Key functionalities include:</p>
+ * <ul>
+ *   <li>Setting and retrieving the username associated with the factory instance.</li>
+ *   <li>Creating language models of different types, such as HiFi, LoFi, and Embedding models.</li>
+ *   <li>Creating embedding models for specialized use cases.</li>
+ *   <li>Creating service instances of a specified type with configurable options.</li>
+ * </ul>
+ *
+ * <p>Implementations of this interface are expected to handle the creation logic
+ * for language models and services, and to validate input parameters where necessary.</p>
+ *
+ * <p>Exceptions:</p>
+ * <ul>
+ *   <li>{@link IllegalArgumentException} is thrown if an unsupported model type is specified.</li>
+ *   <li>{@link Exception} is thrown if an error occurs during service creation.</li>
+ * </ul>
+ */
 public interface ILanguageModelFactory {
   /**
    * Sets the username used when creating a model.
@@ -46,23 +71,9 @@ public interface ILanguageModelFactory {
    * Creates an instance of the specified service class.
    *
    * @param <TService> The type of the service to be created.
-   * @param clazz The class object representing the type of the service to be created.
-   * @return An instance of the specified service type.
-   * @throws Exception If an error occurs during the creation of the service.
-   */
-  public <TService> TService createService(Class<TService> clazz);
-
-  /**
-   * Creates an instance of the specified service class.
-   *
-   * @param <TService> The type of the service to be created.
-   * @param clazz The class object representing the type of the service to be created.
    * @param options A set of options governing the service creation.
    * @return An instance of the specified service type.
    * @throws Exception If an error occurs during the creation of the service.
    */
-  public <TService> TService createService(
-    Class<TService> clazz,
-    AiServiceOptions options
-  );
+  public <TService> TService createService(AiServiceOptions<TService> options);
 }

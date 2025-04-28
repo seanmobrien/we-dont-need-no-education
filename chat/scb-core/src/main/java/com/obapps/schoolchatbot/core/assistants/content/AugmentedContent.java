@@ -3,6 +3,7 @@ package com.obapps.schoolchatbot.core.assistants.content;
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.rag.content.Content;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class AugmentedContent {
 
@@ -30,6 +31,31 @@ public abstract class AugmentedContent {
 
   public Boolean isIdMatch(List<String> id) {
     return isMetaMatch(source, "id", id);
+  }
+
+  protected String getMetaString(String key) {
+    return getMetaString(key, null);
+  }
+
+  protected String getMetaString(String key, String defaultValue) {
+    var segment = source.textSegment();
+    if (segment == null) {
+      return defaultValue;
+    }
+    var meta = segment.metadata();
+    if (meta == null || !meta.containsKey(key)) {
+      return defaultValue;
+    }
+    return meta.getString(key);
+  }
+
+  public String getAugmentSubContentType() {
+    var fullType = getMetaString(AugmentedSearchMetadataType.contentType);
+    if (fullType == null) {
+      return "";
+    }
+    var idx = fullType.indexOf("/");
+    return idx < 0 ? "" : fullType.substring(idx + 1);
   }
 
   public static Boolean isMetaMatch(
@@ -78,6 +104,11 @@ public abstract class AugmentedContent {
     }
     var meta = txt.metadata();
     var name = meta.getString(AugmentedSearchMetadataType.contentType);
+    var subTypeDesignator = Objects.requireNonNullElse(name, "").indexOf("/");
+    if (subTypeDesignator > 0) {
+      name = name.substring(0, subTypeDesignator);
+    }
+
     switch (name) {
       case AugmentedSearchMetadataType.KeyPoint.name:
         return AugmentedContentType.KeyPoint;

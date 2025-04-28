@@ -1,8 +1,8 @@
 package com.obapps.schoolchatbot.chat.assistants.models.ai.phases.one;
 
 import com.obapps.core.util.Db;
-import com.obapps.schoolchatbot.chat.assistants.models.ai.BasePhaseRecord;
 import com.obapps.schoolchatbot.core.models.KeyPoint;
+import com.obapps.schoolchatbot.core.models.ai.phases.BasePhaseRecord;
 import dev.langchain4j.model.output.structured.Description;
 import java.sql.SQLException;
 import java.time.LocalDateTime;

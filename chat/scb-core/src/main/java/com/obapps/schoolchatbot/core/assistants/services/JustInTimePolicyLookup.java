@@ -1,5 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
+import com.obapps.core.ai.factory.services.StandaloneModelClient;
+import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 
 /**

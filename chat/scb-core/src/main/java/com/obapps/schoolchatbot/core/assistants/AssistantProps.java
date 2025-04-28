@@ -31,6 +31,7 @@ public class AssistantProps {
 
   public AssistantProps(Integer phase) {
     this.phase = phase;
+    this.includeReplyTo = false;
   }
 
   @SuppressWarnings("unchecked")
@@ -39,6 +40,7 @@ public class AssistantProps {
     return (T) this;
   }
 
+  public Boolean includeReplyTo;
   public String initialRequest;
   public Integer phase;
   public Db database;
@@ -46,6 +48,14 @@ public class AssistantProps {
   @SuppressWarnings("unchecked")
   public <T extends AssistantProps> T setDatabase(Db database) {
     this.database = database;
+    return (T) this;
+  }
+
+  @SuppressWarnings("unchecked")
+  public <T extends AssistantProps> T setIncludeReplyTo(
+    Boolean includeReplyTo
+  ) {
+    this.includeReplyTo = includeReplyTo;
     return (T) this;
   }
 }

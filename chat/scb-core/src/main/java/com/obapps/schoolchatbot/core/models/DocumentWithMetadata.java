@@ -44,6 +44,10 @@ public class DocumentWithMetadata implements IMessageMetadata {
     return documentType;
   }
 
+  public void setDocumentType(String documentType) {
+    this.documentType = documentType;
+  }
+
   @Override
   public LocalDateTime getDocumentSendDate() {
     return documentSendDate;
@@ -75,7 +79,7 @@ public class DocumentWithMetadata implements IMessageMetadata {
   }
 
   public String getContent() {
-    return this.content;
+    return Strings.normalizeForOutput(this.content);
   }
 
   public String getSenderRole() {
@@ -137,7 +141,7 @@ public class DocumentWithMetadata implements IMessageMetadata {
     }
 
     public Builder setContent(String contents) {
-      this.content = contents;
+      this.content = Strings.normalizeForOutput(contents);
       return this;
     }
 
@@ -212,7 +216,7 @@ public class DocumentWithMetadata implements IMessageMetadata {
       emailMetadata.recipients = this.recipients;
       emailMetadata.documentSendDate = this.documentSendDate;
       emailMetadata.isFromDistrictStaff = this.isFromDistrictStaff;
-      emailMetadata.content = this.content;
+      emailMetadata.content = Strings.normalizeForOutput(this.content);
       emailMetadata.subject = this.subject;
       emailMetadata.senderRole = this.senderRole;
       emailMetadata.replyToDocumentId = this.replyToDocumentId;
@@ -240,7 +244,7 @@ public class DocumentWithMetadata implements IMessageMetadata {
 
   public static DocumentWithMetadata fromDb(Integer documentId)
     throws SQLException {
-    return fromDb(Db.getInstance(), documentId);
+    return fromDb(Db.getInstance(), documentId, null);
   }
 
   /**
@@ -253,6 +257,24 @@ public class DocumentWithMetadata implements IMessageMetadata {
    */
   public static DocumentWithMetadata fromDb(Db db, Integer documentId)
     throws SQLException {
+    return fromDb(db, documentId, null);
+  }
+
+  /**
+   * Creates a DocumentWithMetadata object from the database using the provided document ID.
+   *
+   * @param db The database instance to use for the query.
+   * @param documentId The ID of the document to retrieve.
+   * @param documentTypeOverride An optional override for the document type.
+   *   If provided, it will be used instead of the type from the database.
+   * @return A DocumentWithMetadata object populated with data fro`m the database, or null if no matching record is found.
+   * @throws SQLException If a database access error occurs.
+   */
+  public static DocumentWithMetadata fromDb(
+    Db db,
+    Integer documentId,
+    String documentTypeOverride
+  ) throws SQLException {
     var theDb = db == null ? Db.getInstance() : db;
     var theResults = theDb.selectObjects(
       DocumentWithMetadata.class,
@@ -262,45 +284,16 @@ public class DocumentWithMetadata implements IMessageMetadata {
     if (theResults == null || theResults.size() == 0) {
       return null;
     }
-    return theResults.get(0);
-    /*
-    var resultset = Db.getInstance()
-      .selectRecords(
-        "SELECT du.unit_id AS document_id, du.content, du.document_type, e.email_id, e.sender_id, " +
-        "e.subject, e.thread_id, e.sent_timestamp, e.parent_id, c.name AS sender_name, " +
-        "c.role_dscr, document_unit_related_emails(du.unit_id) AS related_emails " +
-        "FROM document_units du " +
-        "JOIN emails e ON du.email_id=e.email_id " +
-        "JOIN contacts c ON e.sender_id=c.contact_id " +
-        "WHERE du.unit_id = ?",
-        documentId
-      );
-    if (resultset == null || resultset.size() == 0) {
-      return null;
+    var ret = theResults.get(0);
+    if (documentTypeOverride != null && ret != null) {
+      ret.setDocumentType(documentTypeOverride);
     }
-    var record = resultset.get(0);    
-    var b = builder();
-    Db.saveFromStateBag(record, "content", b::setContent);
-    Db.saveFromStateBag(record, "document_type", b::setDocumentType);
-    Db.saveUuidFromStateBag(record, "email_id", b::setEmailId);
-    Db.saveLocalDateTimeFromStateBag(
-      record,
-      "sent_timestamp",
-      b::setDocumentSendDate
-    );
-    Db.saveFromStateBag(record, "sender_name", b::setSender);
-    Db.saveFromStateBag(record, "role_dscr", b::setSenderRole);
-    Db.saveUuidFromStateBag(record, "replyToEmail", b::setReplyToEmailId);
-    Db.saveStringArrayFromStateBag(
-      record,
-      "related_emails",
-      b::setRelatedEmails
-    );
-    Db.saveFromStateBag(record, "subject", b::setSubject);
-    Db.saveIntFromStateBag(record, "thread_id", b::setThreadId);
-    Db.saveIntFromStateBag(record, "document_id", b::setDocumentId);
-    return b.build();
-    */
-
+    return ret;
   }
+
+  /**
+   * A constant representing the document type "reply-to".
+   * This is used to identify documents that are replies to other documents.
+   */
+  public static final String DocumentTypeReplyTo = "reply-to";
 }

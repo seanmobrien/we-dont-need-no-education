@@ -1,12 +1,11 @@
 package com.obapps.schoolchatbot.core.repositories;
 
 import com.obapps.core.ai.extraction.services.RecordExtractionService;
+import com.obapps.core.ai.factory.models.AiServiceOptions;
+import com.obapps.core.ai.factory.models.ModelType;
+import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.util.Db;
-import com.obapps.schoolchatbot.core.assistants.services.StandaloneModelClientFactory;
 import com.obapps.schoolchatbot.core.models.HistoricCallToAction;
-import com.obapps.schoolchatbot.core.models.ai.ResearchAssistantReleventHits;
-import com.obapps.schoolchatbot.core.services.AiServiceOptions;
-import com.obapps.schoolchatbot.core.services.ModelType;
 import com.obapps.schoolchatbot.core.services.ai.IResearchAssistant;
 import java.sql.SQLException;
 import java.util.List;
@@ -133,14 +132,6 @@ public class HistoricCallToActionRepository {
     Integer documentId,
     List<HistoricCallToAction> source
   ) throws SQLException {
-    IResearchAssistant client = _clientFactory.createService(
-      IResearchAssistant.class,
-      AiServiceOptions.builder()
-        .setModelType(ModelType.LoFi)
-        .setStructuredOutput(true)
-        .setMemoryWindow(15)
-        .build()
-    );
     var contents = db()
       .selectSingleValue(
         "SELECT content FROM document_units WHERE unit_id=?",
@@ -156,10 +147,13 @@ public class HistoricCallToActionRepository {
       ___ END RECORD ID <Record Id> ___
       """;
     var phaseGoal = "identify Calls to Action and Responses";
-    var fancyResult = new RecordExtractionService<
-      ResearchAssistantReleventHits
-    >().extractRecords(
-      client,
+    var fancyResult = RecordExtractionService.extractRecords(
+      _clientFactory,
+      AiServiceOptions.builder(IResearchAssistant.class)
+        .setModelType(ModelType.LoFi)
+        .setStructuredOutput(true)
+        .setMemoryWindow(15)
+        .build(),
       c ->
         c.prepareSupportingDocuments(
           supportingRecordsSchema,

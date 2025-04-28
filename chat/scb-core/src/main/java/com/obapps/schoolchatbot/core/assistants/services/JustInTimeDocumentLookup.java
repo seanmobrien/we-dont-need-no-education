@@ -1,5 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
+import com.obapps.core.ai.factory.services.StandaloneModelClient;
+import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.core.util.EnvVars;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 
@@ -75,6 +77,6 @@ public class JustInTimeDocumentLookup
     String query,
     AzureSearchClient.ScopeType scope
   ) {
-    return super.justInTimeLookup(query, scope, true);
+    return super.justInTimeLookup(query, scope, false);
   }
 }

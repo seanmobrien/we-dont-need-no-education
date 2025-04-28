@@ -6,10 +6,10 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.schoolchatbot.core.assistants.content.DocumentWithMetadataContent;
 import com.obapps.schoolchatbot.core.assistants.services.AzurePolicySearchClient;
 import com.obapps.schoolchatbot.core.assistants.services.AzurePolicySearchClient.ScopeType;
-import com.obapps.schoolchatbot.core.assistants.services.IStandaloneModelClient;
 import com.obapps.schoolchatbot.core.assistants.services.JustInTimePolicyLookup;
 import com.obapps.schoolchatbot.core.assistants.services.PolicyChunkFilter;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;

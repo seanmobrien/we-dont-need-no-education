@@ -11,6 +11,46 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import java.sql.SQLException;
 
+/**
+ * The AddKeyPointsTool class provides tools for searching and summarizing key points,
+ * policies, and documents. It includes methods for searching related key points,
+ * retrieving policy summaries, summarizing documents, and fetching document details.
+ *
+ * <p>Key Features:</p>
+ * <ul>
+ *   <li>Search for related key points based on policy basis, tags, and summary.</li>
+ *   <li>Retrieve summaries of policies using vector search.</li>
+ *   <li>Summarize documents with optional scope filtering (e.g., emails, attachments).</li>
+ *   <li>Fetch full details of a document by its ID.</li>
+ * </ul>
+ *
+ * <p>Usage:</p>
+ * <ul>
+ *   <li>Use {@link #searchForRelatedKeyPoints(String, String, String, Boolean)} to find key points matching specific criteria.</li>
+ *   <li>Use {@link #lookupPolicySummary(String, String)} to retrieve a summary of a policy or topic.</li>
+ *   <li>Use {@link #lookupDocumentSummary(String, String)} to summarize a document based on a query.</li>
+ *   <li>Use {@link #getDocumentDetails(Integer)} to retrieve detailed metadata for a specific document.</li>
+ * </ul>
+ *
+ * <p>Dependencies:</p>
+ * <ul>
+ *   <li>{@link HistoricKeyPointRepository} for key point storage and retrieval.</li>
+ *   <li>{@link JustInTimePolicyLookup} for policy-related operations.</li>
+ *   <li>{@link JustInTimeDocumentLookup} for document-related operations.</li>
+ * </ul>
+ *
+ * <p>Exceptions:</p>
+ * <ul>
+ *   <li>Handles {@link SQLException} for database-related operations.</li>
+ *   <li>Logs unexpected failures and provides error messages for failed operations.</li>
+ * </ul>
+ *
+ * <p>Annotations:</p>
+ * <ul>
+ *   <li>{@link Tool} annotations provide metadata for each method, including name, description, and return details.</li>
+ *   <li>{@link P} annotations describe parameters for each method.</li>
+ * </ul>
+ */
 public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
 
   private final HistoricKeyPointRepository keyPointRepository;
@@ -53,146 +93,20 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
       : documentLookup;
   }
 
-  /*
-
-  @Tool(
-    name = "addProcessingNote",
-    value = "Adds a note to the processing history of the email.  This is useful for adding notes about the analysis process, or for adding information that may be useful for future analysis.\n"
-  )
-  public void addProcessingNote(String note) {
-    var msg = message();
-    var msgId = msg.getDocumentId();
-    try {
-      if (msgId == null) {
-        log.warn(
-          "Unable to add processing note - no Document ID available.  Details: " +
-          note
-        );
-        return;
-      }
-      DocumentProperty.builder()
-        .documentId(msg.getDocumentId())
-        .propertyValue(note)
-        .propertyType(DocumentPropertyType.KnownValues.ProcessingNote)
-        .build()
-        .addToDb(this.keyPointRepository.db());
-      addNote();
-    } catch (SQLException e) {
-      DocumentProperty.addManualReview(msgId, e, "AddNote", note);
-      log.error(
-        "Unexpected SQL failure adding processing note.  Details: " + note,
-        e
-      );
-    }
-  }
-
-  @Tool(
-    name = "addKeyPointToDatabase",
-    value = "Adds an analyzed key point identified from the target document to our database for further analysis.  Each Key Point is related to at least one " +
-    "legal obligation the school is subject to.\n" +
-    " ** Returns **\n" +
-    "  - If the operation succeeded, a unique identifier for the key point.\n" +
-    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
-  )
-  public String addKeyPointToDatabase(
-    @P(
-      required = true,
-      value = "A summary of the key point.  It should include enough information to be able to identify the concern and understand the basis for the severity and compliance ratings during subsequent analysis stages.  ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead.  "
-    ) String keyPointSummary,
-    @P(
-      required = true,
-      value = "A rating from 1-100 describing the degree to which the policy in question is relevant to this point and/or warrants further analysis and investigation given the available information."
-    ) Double relevancePercentage,
-    @P(
-      required = true,
-      value = "A rating from 1-100 describing the level of compliance with relevant policies the school district is demonstrating."
-    ) Double compliancePercentage,
-    @P(
-      required = true,
-      value = "A rating of 1-10 describing the severity level of the concern, with 1 being a minor issue and 10 being a major issue."
-    ) Integer severity,
-    @P(
-      required = true,
-      value = "Whether the point is inferred from context or explicitly stated.  If true, the point is inferred."
-    ) Boolean inferred,
-    @P(
-      required = true,
-      value = "A comma-delimited list of any laws or school board policies that provide a basis for this point.  For example, 'Title IX, MN Statute 13.3, Board Policy 503'"
-    ) String policyBasis,
-    @P(
-      required = true,
-      value = "A comma-delimited list of tags that can be used to categorize this point.  For example, 'bullying, harassment, discrimination'."
-    ) String tags
-  ) {
-    var msg = message();
-    var msgId = msg.getDocumentId();
-    KeyPoint keyPoint = null;
-
-    try {
-      // First, email property record
-      if (msgId == null) {
-        log.warn(
-          "Unable store Key Point - no Document ID available.  Details: " +
-          keyPointSummary
-        );
-        return "ERROR: No document context available.";
-      }
-      keyPoint = KeyPoint.builder()
-        .propertyValue(keyPointSummary)
-        .documentId(msgId)
-        .relevance(relevancePercentage)
-        .compliance(compliancePercentage)
-        .severity(severity)
-        .tags(tags)
-        .policyBasis(policyBasis)
-        .build();
-      keyPoint.addToDb(this.keyPointRepository.db());
-    } catch (SQLException ex) {
-      log.error(
-        "Unexpected SQL failure recording key point.  Details: " + msgId,
-        keyPointSummary,
-        ex
-      );
-      DocumentProperty.addManualReview(
-        msgId,
-        ex,
-        "AddKeyPointsTool",
-        keyPointSummary,
-        relevancePercentage,
-        compliancePercentage,
-        severity,
-        tags,
-        policyBasis
-      );
-      return "ERROR: " + ex.getMessage();
-    }
-    Colors.Set(color -> color.BRIGHT + color.CYAN);
-    addDetectedPoint();
-    log.info(
-      "Added Key Point to database: {}\n\tRelevance: {}\n\tCompliance Percentage: {}\n\t" +
-      "Policy Basis: {}\n\tTags: {}\n\tDocument Id: {}",
-      keyPointSummary,
-      relevancePercentage,
-      compliancePercentage,
-      Objects.requireNonNullElse(policyBasis, "<none>"),
-      Objects.requireNonNullElse(tags, "<none>"),
-      msgId
-    );
-    Colors.Reset();
-    return keyPoint.getPropertyId().toString();
-  }
-
-  @Tool(
-    name = "signalAnalysisPhaseComplete",
-    value = "Called once all key points have been extracted from the document to signal that the analysis phase is complete for the provided document ID.\n" +
-    " ** Returns **\n" +
-    "  - If the operation succeeded, a message indicating success.\n" +
-    "  - If the operation failed, the word 'ERROR' and a description of the failure, e.g. 'ERROR: No document context available.'"
-  )
-  public void signalAnalysisPhaseComplete(Integer documentId) {
-    processingCompletedCalled(documentId);
-  }
-*/
+  /**
+   * Searches for key points that are related to the provided summary, policy basis, and tags.
+   * The search is performed using a fuzzy match on the summary and policy basis, and an exact match on the tags.
+   * Inferred key points can be excluded from the search results by passing true to excludeInferred.
+   *
+   * @param matchFromPolicyBasis A comma-delimited list of policies or laws to search for, or an empty string if policy basis should not be considered.
+   *                             Returned key points will be associated with all of the referenced policies.
+   * @param matchFromTags        If provided, a comma-delimited list of tags to search for, or an empty string if tags should not be considered.
+   *                             Returned key points will contain all of the referenced tags.
+   * @param matchFromSummary     A string used to search the summary field. Pass an empty string to ignore summary matches.
+   * @param excludeInferred      If true, inferred key points will be excluded from the results. If false (the default), inferred key points will be included.
+   * @return                     An array of KeyPoint objects that match the search criteria. If no key points are found, an empty array is returned.
+   * @throws SQLException        If an unexpected SQL error occurs during the search.
+   */
   @Tool(
     name = "searchForRelatedKeyPoints",
     value = "Searches for key points that are related to the provided summary, policy basis, and tags.  The search is performed using " +

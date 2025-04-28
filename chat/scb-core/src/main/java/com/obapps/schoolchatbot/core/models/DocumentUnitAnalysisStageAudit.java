@@ -23,6 +23,7 @@ public class DocumentUnitAnalysisStageAudit {
   private Integer tokensInput;
   private Integer tokensOutput;
   private Boolean completionSignalled;
+  private Boolean inPostProcessingQueue;
 
   public DocumentUnitAnalysisStageAudit() {}
 
@@ -38,6 +39,8 @@ public class DocumentUnitAnalysisStageAudit {
     this.analysisStageId = analysisStageId;
     this.detectedPoints = detectedPoints;
     this.timestamp = timestamp;
+    this.completionSignalled = null;
+    this.inPostProcessingQueue = null;
   }
 
   public Integer getAnalysisAuditId() {
@@ -128,6 +131,14 @@ public class DocumentUnitAnalysisStageAudit {
     this.completionSignalled = completionSignalled;
   }
 
+  public void setInPostProcessingQueue(Boolean inPostProcessingQueue) {
+    this.inPostProcessingQueue = inPostProcessingQueue;
+  }
+
+  public Boolean getInPostProcessingQueue() {
+    return inPostProcessingQueue;
+  }
+
   public static class Builder {
 
     private Integer analysisAuditId;
@@ -141,6 +152,7 @@ public class DocumentUnitAnalysisStageAudit {
     private Integer tokensInput;
     private Integer tokensOutput;
     private Boolean completionSignalled;
+    private Boolean inPostProcessingQueue;
 
     public Builder analysisAuditId(Integer analysisAuditId) {
       this.analysisAuditId = analysisAuditId;
@@ -198,6 +210,11 @@ public class DocumentUnitAnalysisStageAudit {
       );
     }
 
+    public Builder inPostProcessingQueue(Boolean inPostProcessingQueue) {
+      this.inPostProcessingQueue = inPostProcessingQueue;
+      return this;
+    }
+
     public Builder completionSignalled(Boolean completionSignalled) {
       this.completionSignalled = completionSignalled;
       return this;
@@ -216,7 +233,12 @@ public class DocumentUnitAnalysisStageAudit {
       audit.setIteration(iterationId);
       audit.setTokensInput(tokensInput);
       audit.setTokensOutput(tokensOutput);
-      audit.setCompletionSignalled(completionSignalled);
+      if (completionSignalled != null) {
+        audit.setCompletionSignalled(completionSignalled);
+      }
+      if (inPostProcessingQueue != null) {
+        audit.setInPostProcessingQueue(inPostProcessingQueue);
+      }
       return audit;
     }
   }
@@ -238,7 +260,7 @@ public class DocumentUnitAnalysisStageAudit {
       return;
     }
     var res = db.insertAndGetGeneratedKeys(
-      "INSERT INTO document_unit_analysis_stage_audit (document_id, analysis_stage_id, detected_points, notes, message, timestamp, iteration, tokens_input, tokens_output, completion_signalled) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
+      "INSERT INTO document_unit_analysis_stage_audit (document_id, analysis_stage_id, detected_points, notes, message, timestamp, iteration, tokens_input, tokens_output, completion_signalled, in_post_processing_queue) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING *",
       documentId,
       analysisStageId,
       detectedPoints,
@@ -248,7 +270,8 @@ public class DocumentUnitAnalysisStageAudit {
       iteration,
       tokensInput,
       tokensOutput,
-      completionSignalled
+      completionSignalled,
+      inPostProcessingQueue
     );
     if (res == null) {
       throw new SQLException("Failed to insert DocumentUnitAnalysisStageAudit");

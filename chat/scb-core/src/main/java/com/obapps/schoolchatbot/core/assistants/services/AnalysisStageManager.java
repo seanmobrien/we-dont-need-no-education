@@ -41,7 +41,7 @@ public class AnalysisStageManager {
   public AnalystDocumentResult processDocument(Integer docId) {
     try {
       var analyst = stageAnalystFactory.getStageAnalyst(stageId);
-      return analyst.processDocument(docId, false);
+      return analyst.processDocument(docId);
     } catch (Throwable e) {
       // Should never ever ever get here
       log.error(

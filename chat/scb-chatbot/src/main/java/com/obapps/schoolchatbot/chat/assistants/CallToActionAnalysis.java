@@ -2,21 +2,16 @@ package com.obapps.schoolchatbot.chat.assistants;
 
 import com.obapps.core.ai.extraction.services.RecordExtractionService;
 import com.obapps.core.util.Colors;
-import com.obapps.core.util.Db;
+import com.obapps.core.util.IDbTransaction;
 import com.obapps.core.util.Strings;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
-import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.InitialCtaOrResponsiveAction;
 import com.obapps.schoolchatbot.chat.assistants.retrievers.CallToActionRetriever;
 import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.CtaBrokerService;
-import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.ICtaAnalyst;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.ICtaExtractionAnalyst;
 import com.obapps.schoolchatbot.chat.assistants.tools.*;
 import com.obapps.schoolchatbot.core.assistants.AssistantProps;
 import com.obapps.schoolchatbot.core.assistants.DocumentChatAssistant;
 import com.obapps.schoolchatbot.core.models.AnalystDocumentResult;
-import com.obapps.schoolchatbot.core.models.DocumentProperty;
-import com.obapps.schoolchatbot.core.models.DocumentPropertyType;
-import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisFunctionAudit;
-import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisStageAudit;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
@@ -25,9 +20,7 @@ import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.Result;
-import java.sql.SQLException;
 import java.util.Scanner;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -84,11 +77,18 @@ public class CallToActionAnalysis
           .getActiveDocumentContent()
           .getDocumentHeaderData(contents.Attachments)
       );
-      promptBuilder.append(lookupCtaHistory());
 
       promptBuilder.append("\n");
       promptBuilder.append(getDocumentContents());
       promptBuilder.append("\n\n");
+
+      var replyTo = contents.getReplyToDocumentContent();
+      if (replyTo != null) {
+        promptBuilder
+          .append(replyTo.getAbbreviatedDocumentHeaderData("Reply-To"))
+          .append(replyTo.getPromptText("Reply-To"))
+          .append("\n\n");
+      }
 
       return UserMessage.builder()
         .addContent(new TextContent(promptBuilder.toString()))
@@ -211,8 +211,43 @@ public class CallToActionAnalysis
       .systemMessageProvider(id -> Prompts.GetSystemMessageForPhase(2));
   }
 
-  protected Db db() throws SQLException {
-    return Db.getInstance();
+  /**
+   * Processes the document extract by analyzing and extracting records from the document.
+   * In most implementations, this means passing processing off to our base class's
+   * {@link extractRecords} to provide a {@link RecordExtractionService}-based implementation.
+   * This allows the subclass to focus on only the specific aspect of phase analysis that it
+   * specializes and has expertise in.  Or, if it wanted it to, it could act like it knows better than
+   * anybody else and provide its own implementation, slashing thousands of jobs in the process,
+   * only to run back to its car company with its tail between its legs once things get tough.
+   * Cause, you know, Musk always has to Musk.
+   *
+   * @param tx          The database transaction context.
+   * @param documentId  The ID of the document to be processed.
+   * @return            The result of the document analysis as an AnalystDocumentResult.
+   * @throws Exception  If an error occurs during the processing of the document.
+   */
+  @Override
+  protected AnalystDocumentResult processDocumentExtract(
+    IDbTransaction tx,
+    Integer documentId
+  ) throws Exception {
+    return extractRecords(
+      ICtaExtractionAnalyst.class,
+      documentId,
+      (results, args) -> {
+        onDocumentBatchProcessed(
+          results,
+          args.setProperty("inPostProcessingQueue", true)
+        );
+        // Ensure all records have a documentId set
+        var records = args.getIterationResult().content().getResults();
+        if (records == null || records.isEmpty()) {
+          return;
+        }
+        // Pass matches off to the broker service for remediation
+        ctaBrokerService.addToQueue(records);
+      }
+    );
   }
 
   /**
@@ -223,7 +258,6 @@ public class CallToActionAnalysis
    * @param throwOnError A Boolean flag indicating whether to throw an exception on error.
    * @return An AnalystDocumentResult object containing the analysis result.
    * @throws Exception
-   */
   @Override
   public AnalystDocumentResult processDocument(
     Integer documentId,
@@ -244,7 +278,7 @@ public class CallToActionAnalysis
         var extractionService = new RecordExtractionService<
           InitialCtaOrResponsiveAction
         >();
-
+ 
         extractionService.extractRecords(
           aiService,
           ai -> ai.processStage(documentId),
@@ -271,6 +305,10 @@ public class CallToActionAnalysis
             );
 
             try {
+
+
+
+              // Enure all records have a documentId set
               var records = iterationResult.content().getResults();
               for (var record : records) {
                 if (
@@ -279,7 +317,9 @@ public class CallToActionAnalysis
                   record.setDocumentId(documentId);
                 }
               }
+              // Pass matches off to the broker service for remediation
               ctaBrokerService.addToQueue(records);
+              // Add processing notes for posterity
               if (iterationResult.content().getProcessingNotes() != null) {
                 for (var note : iterationResult
                   .content()
@@ -295,11 +335,11 @@ public class CallToActionAnalysis
                   addNote();
                 }
               }
-
+              // Generate an analysis audit record 
               DocumentUnitAnalysisStageAudit.builder()
                 .documentId(documentId)
                 .iterationId(args.getIteration())
-                .completionSignalled(args.getHasSignaledComplete())
+                .inPostProcessingQueue(true)
                 .analysisStageId(getPhase())
                 .detectedPoints(args.getNewRecords())
                 .addedNotes(0)
@@ -345,6 +385,7 @@ public class CallToActionAnalysis
 
     return result.build();
   }
+   */
 
   /**
    * Handles the assistant's response to the user.

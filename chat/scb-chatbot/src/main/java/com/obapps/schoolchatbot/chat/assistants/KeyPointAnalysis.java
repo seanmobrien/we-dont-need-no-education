@@ -1,18 +1,12 @@
 package com.obapps.schoolchatbot.chat.assistants;
 
-import com.obapps.core.ai.extraction.services.RecordExtractionService;
 import com.obapps.core.util.*;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
-import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.one.InitialKeyPoint;
 import com.obapps.schoolchatbot.chat.assistants.retrievers.KeyPointsRetriever;
 import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.one.IKeyPointAnalyst;
 import com.obapps.schoolchatbot.chat.assistants.tools.*;
 import com.obapps.schoolchatbot.core.assistants.*;
 import com.obapps.schoolchatbot.core.models.AnalystDocumentResult;
-import com.obapps.schoolchatbot.core.models.DocumentProperty;
-import com.obapps.schoolchatbot.core.models.DocumentPropertyType;
-import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisFunctionAudit;
-import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisStageAudit;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.ChatMemory;
@@ -20,7 +14,6 @@ import dev.langchain4j.rag.DefaultRetrievalAugmentor.DefaultRetrievalAugmentorBu
 import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.Result;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Scanner;
@@ -160,148 +153,51 @@ public class KeyPointAnalysis
   }
 
   /**
-   * Processes a document by its ID and generates an analysis result.
-   * This method includes an option to throw an exception on error.
+   * Processes a document extract by analyzing key points and saving the results to the database.
    *
-   * @param documentId The ID of the document to process.
-   * @param throwOnError A Boolean flag indicating whether to throw an exception on error.
-   * @return An AnalystDocumentResult object containing the analysis result.
-   * @throws Exception
+   * @param tx          The database transaction context.
+   * @param documentId  The unique identifier of the document to process.
+   * @return            An instance of {@link AnalystDocumentResult} containing the analysis results.
+   *
+   * This method performs the following steps:
+   * - Extracts records using the {@link IKeyPointAnalyst} interface.
+   * - Invokes the callback to handle batch processing of document results.
+   * - Ensures all records have the associated document ID set.
+   * - Assigns a unique record ID to records if not already set.
+   * - Saves each record to the database, logging and rethrowing any SQL exceptions encountered.
+   *
+   * @throws RuntimeException If an error occurs while saving a record to the database.
    */
   @Override
-  public AnalystDocumentResult processDocument(
-    Integer documentId,
-    Boolean throwOnError
-  ) throws Exception {
-    var result = AnalystDocumentResult.aggregateBuilder();
-
-    try (var tx = Db.getInstance().createTransaction()) {
-      try {
-        resetMessageState();
-        var dId = documentId;
-        if (dId == null) {
-          throw new IllegalArgumentException("Document ID cannot be null.");
-        }
-        if (dId <= 0) {
-          throw new IllegalArgumentException(
-            "Document ID must be a positive integer."
-          );
-        }
-        IKeyPointAnalyst aiService = getAiService(IKeyPointAnalyst.class);
-        var extractionService = new RecordExtractionService<InitialKeyPoint>();
-        //Result<List<InitialKeyPoint>> extractedResult =
-        extractionService.extractRecords(
-          aiService,
-          ai -> ai.processStage(dId),
-          ctx ->
-            ctx
-              .getService()
-              .resumeExtraction(ctx.getIteration(), ctx.getMatchesFound()),
-          (sender, args) -> {
-            var iterationResult = args.getIterationResult();
-            var docResult = new AnalystDocumentResult(
-              iterationResult,
-              true,
-              0,
-              args.getNewRecords(),
-              args.getHasSignaledComplete()
-            );
-            result.append(docResult);
-            log.info(
-              "Iteration {} ({} items remain): {}",
-              args.getIteration(),
-              args.getEstimatedItemsRemaining(),
-              docResult.getSummary()
-            );
-            try {
-              var rez = iterationResult.content().getResults();
-
-              for (var idx = 0; idx < rez.size(); idx++) {
-                var v = rez.get(idx);
-                v.setDocumentId(documentId);
-                if (v.getRecordId() == null || v.getRecordId().length() < 0) {
-                  v.setRecordId(UUID.randomUUID().toString());
-                }
-                v.saveToDb(db);
-              }
-
-              if (iterationResult.content().getProcessingNotes() != null) {
-                var notes = iterationResult.content().getProcessingNotes();
-                for (var idx = 0; idx < notes.size(); idx++) {
-                  DocumentProperty.builder()
-                    .documentId(documentId)
-                    .propertyValue(notes.get(idx))
-                    .propertyType(
-                      DocumentPropertyType.KnownValues.ProcessingNote
-                    )
-                    .build()
-                    .addToDb(db);
-                  addNote();
-                }
-              }
-
-              DocumentUnitAnalysisStageAudit.builder()
-                .documentId(documentId)
-                .iterationId(args.getIteration())
-                .completionSignalled(args.getHasSignaledComplete())
-                .analysisStageId(getPhase())
-                .detectedPoints(args.getNewRecords())
-                .addedNotes(0)
-                .message(
-                  String.format(
-                    "(%d) items remain)",
-                    args.getEstimatedItemsRemaining()
-                  )
-                )
-                .tokens(iterationResult.tokenUsage())
-                .build()
-                .saveToDb(
-                  Db.getInstance(),
-                  DocumentUnitAnalysisFunctionAudit.from(
-                    iterationResult.toolExecutions()
-                  )
-                );
-            } catch (SQLException e) {
-              log.error(
-                "Error saving document audit for document {}: {}",
-                documentId,
-                e.getMessage(),
-                e
-              );
-              throw new RuntimeException(e);
-            }
-          }
-        );
-      } catch (Exception e) {
-        tx.setAbort();
-        if (throwOnError) {
-          throw e;
-        }
-        log.error(
-          "Error processing document {}: {}",
-          documentId,
-          e.getMessage(),
-          e
-        );
-        result.append(new AnalystDocumentResult(e, 0, 0));
-      }
-    }
-    return result.build();
-  }
-
-  /**
-   * Handles the assistant's response to the user.
-   *
-   * @param response The assistant's response.
-   * @param lastUserMessage The last message from the user.
-   * @return A string indicating the next action, such as "exit".
-   */
-  @Override
-  protected String onAssistantResponse(
-    Result<String> response,
-    String lastUserMessage
+  public AnalystDocumentResult processDocumentExtract(
+    IDbTransaction tx,
+    Integer documentId
   ) {
-    return "exit";
+    return extractRecords(
+      IKeyPointAnalyst.class,
+      documentId,
+      (results, args) -> {
+        onDocumentBatchProcessed(results, args);
+        // Ensure all records have a documentId set
+        var records = args.getIterationResult().content().getResults();
+        if (records == null || records.isEmpty()) {
+          return;
+        }
+        for (var idx = 0; idx < records.size(); idx++) {
+          var v = records.get(idx);
+          v.setDocumentId(documentId);
+          if (v.getRecordId() == null || v.getRecordId().length() < 0) {
+            v.setRecordId(UUID.randomUUID().toString());
+          }
+          try {
+            v.saveToDb(db);
+          } catch (SQLException e) {
+            log.error("An error occurred saving key point at index {}", idx, e);
+            throw new RuntimeException(e);
+          }
+        }
+      }
+    );
   }
 
   /**

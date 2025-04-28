@@ -4,13 +4,18 @@ import com.obapps.core.redis.IRedisConnection;
 import com.obapps.core.redis.RedisConnectionFactory;
 import com.obapps.core.util.*;
 import com.obapps.schoolchatbot.chat.assistants.*;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.IBrokerManagedQueue;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.BrokerManagedQueue;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.CtaCategoryQueueProcessor;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.CtaTitleIXAccessAssesmentQueueProcessor;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.ResponsiveActionAssignmentQueueProcessor;
+import com.obapps.schoolchatbot.chat.services.RedisClient;
 import com.obapps.schoolchatbot.core.assistants.services.*;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Scanner;
-import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 
 /**
  * The main entry point for the SchoolChatBot application.
@@ -37,7 +42,6 @@ import org.redisson.config.Config;
 public class SchoolChatBot implements IRedisConnection {
 
   private static SchoolChatBot globalInstance;
-  private RedissonClient redisClient;
 
   public static SchoolChatBot getInstance() {
     return globalInstance;
@@ -59,6 +63,8 @@ public class SchoolChatBot implements IRedisConnection {
    * cannot be changed after initialization.
    */
   private final Scanner appScanner;
+  private final RedisClient redisClient;
+  private final ArrayList<IBrokerManagedQueue> queues = new ArrayList<>();
 
   /**
    * Constructs a new instance of the SchoolChatBot class.
@@ -67,27 +73,57 @@ public class SchoolChatBot implements IRedisConnection {
    */
   private SchoolChatBot(Scanner scanner) {
     this.appScanner = scanner;
+    this.redisClient = RedisClient.getInstance();
     initializeRedisConnection();
   }
 
   private void initializeRedisConnection() {
-    Config config = new Config();
-    config
-      .useSingleServer()
-      .setAddress(EnvVars.getInstance().getRedis().getUrl());
-    redisClient = Redisson.create(config);
     RedisConnectionFactory.setGlobalInstance(this);
+    this.redisClient.Start();
+    queues.add(
+      new BrokerManagedQueue<>(new CtaCategoryQueueProcessor(), this, null)
+    );
+    queues.add(
+      new BrokerManagedQueue<>(
+        new ResponsiveActionAssignmentQueueProcessor(),
+        this,
+        BrokerManagedQueue.Options.builder().setEnabled(false).build()
+      )
+    );
+    queues.add(
+      new BrokerManagedQueue<>(
+        new CtaTitleIXAccessAssesmentQueueProcessor(),
+        this,
+        BrokerManagedQueue.Options.builder()
+          .setWriteToFile(false)
+          .setEnabled(false)
+          .build()
+      )
+    );
+
+    queues.forEach(queue -> {
+      try {
+        queue.Start();
+      } catch (Exception e) {
+        System.out.println("Error starting queue: " + e.getMessage());
+      }
+    });
   }
 
   @Override
   public RedissonClient getRedisClient() {
-    return redisClient;
+    return redisClient.getRedisClient();
   }
 
   private void closeRedisConnection() {
-    if (redisClient != null) {
-      redisClient.shutdown();
-    }
+    queues.forEach(queue -> {
+      try {
+        queue.Stop();
+      } catch (Exception e) {
+        System.out.println("Error starting queue: " + e.getMessage());
+      }
+    });
+    redisClient.Stop();
   }
 
   /**

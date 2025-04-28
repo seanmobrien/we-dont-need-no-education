@@ -1,7 +1,5 @@
 package com.obapps.schoolchatbot.core.models;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.obapps.core.types.FunctionThatCanThrow;
 import com.obapps.core.util.*;
 import java.sql.SQLException;
@@ -333,15 +331,7 @@ public class DocumentProperty {
    * @throws RuntimeException If an error occurs during serialization.
    */
   public String toJson() {
-    ObjectMapper objectMapper = Strings.objectMapperFactory();
-    try {
-      return objectMapper.writeValueAsString(this);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(
-        "Error serializing " + this.getClass().getName() + " to JSON",
-        e
-      );
-    }
+    return Strings.serializeAsJson(this);
   }
 
   /**

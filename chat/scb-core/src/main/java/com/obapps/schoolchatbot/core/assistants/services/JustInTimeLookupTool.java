@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
+import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.core.util.EnvVars;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 import com.obapps.schoolchatbot.core.util.PromptSymbols;

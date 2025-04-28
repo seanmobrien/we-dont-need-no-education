@@ -1,10 +1,10 @@
 package com.obapps.schoolchatbot.core.assistants;
 
+import com.obapps.core.ai.factory.models.ModelType;
+import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
+import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.util.Colors;
 import com.obapps.schoolchatbot.core.assistants.retrievers.SourceDocumentRetriever;
-import com.obapps.schoolchatbot.core.assistants.services.StandaloneModelClientFactory;
-import com.obapps.schoolchatbot.core.services.ILanguageModelFactory;
-import com.obapps.schoolchatbot.core.services.ModelType;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -36,6 +36,7 @@ public class ChatAssistant {
   protected ChatLanguageModel chatLanguageModel;
   protected Assistant assistant;
   protected Logger log;
+  protected Boolean includeReplyTo;
 
   protected String getUserName() {
     return this.languageModelFactory.getUserName();
@@ -60,12 +61,12 @@ public class ChatAssistant {
           (int) (Math.random() * 100000)
         )
       );
-
     // Chat Model for high-fidelity analysis
     this.chatLanguageModel = this.languageModelFactory.createModel(
         ModelType.HiFi
       );
     messageWindowMemory = MessageWindowChatMemory.withMaxMessages(100);
+    this.includeReplyTo = false;
   }
 
   protected final EmbeddingModel getEmbeddingModel() {
@@ -152,7 +153,11 @@ public class ChatAssistant {
     var retrievers = new ArrayList<ContentRetriever>(
       List.of(additionalRetrievers)
     );
-    retrievers.add(new SourceDocumentRetriever());
+    var sourceDocRetriever = new SourceDocumentRetriever();
+    if (this.includeReplyTo) {
+      sourceDocRetriever.setIncludeReplyTo(true);
+    }
+    retrievers.add(sourceDocRetriever);
     // Setup content retrieval augmentation
     return builder.queryRouter(new DefaultQueryRouter(retrievers));
   }

@@ -1,4 +1,4 @@
-package com.obapps.schoolchatbot.core.services;
+package com.obapps.core.ai.factory.models;
 
 /**
  * Enum representing different types of models that can be used in the application.

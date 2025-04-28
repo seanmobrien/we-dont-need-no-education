@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
 import com.obapps.core.util.EnvVars;
+import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import java.util.Map;
@@ -15,11 +16,6 @@ public class EmbeddingService {
   public EmbeddingService(EmbeddingModel openAiClient) {
     super();
     if (openAiClient == null) {
-      /*
-      this.openAiClient = new StandaloneModelClientFactory()
-        .createEmbeddingClient();
-      */
-
       var openAiVars = EnvVars.getInstance().getOpenAi();
       this.openAiClient = AzureOpenAiEmbeddingModel.builder()
         .apiKey(openAiVars.getApiKey())
@@ -32,14 +28,34 @@ public class EmbeddingService {
   }
 
   private final EmbeddingModel openAiClient;
+  private Boolean cacheEmbeddings = true;
 
-  private final Map<String, float[]> embeddingCache = new ConcurrentHashMap<>();
-
-  public float[] embed(String query) {
-    return embeddingCache.computeIfAbsent(query, this::callEmbeddingApi);
+  public EmbeddingService setCacheEmbeddings(Boolean cacheEmbeddings) {
+    this.cacheEmbeddings = cacheEmbeddings;
+    return this;
   }
 
-  private float[] callEmbeddingApi(String query) {
-    return openAiClient.embed(query).content().vector();
+  private final Map<String, Embedding> embeddingCache =
+    new ConcurrentHashMap<>();
+
+  public Embedding embedding(String query) {
+    if (!cacheEmbeddings) {
+      return getEmbedding(query);
+    }
+    if (embeddingCache.containsKey(query)) {
+      return embeddingCache.get(query);
+    }
+    return cacheEmbeddings
+      ? embeddingCache.computeIfAbsent(query, this::getEmbedding)
+      : getEmbedding(query);
+  }
+
+  public float[] embed(String query) {
+    var embed = embedding(query);
+    return embed == null ? null : embed.vector();
+  }
+
+  private Embedding getEmbedding(String query) {
+    return openAiClient.embed(query).content();
   }
 }

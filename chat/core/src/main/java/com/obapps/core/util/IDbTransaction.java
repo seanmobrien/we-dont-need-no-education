@@ -7,6 +7,13 @@ package com.obapps.core.util;
  */
 public interface IDbTransaction extends AutoCloseable {
   /**
+   * Retrieves the database instance associated with the current transaction.
+   *
+   * @return the {@link Db} instance representing the database.
+   */
+  public Db getDb();
+
+  /**
    * Marks the current database transaction to be aborted.
    * Once this method is called, the transaction will not be committed
    * and any changes made during the transaction will be rolled back.
