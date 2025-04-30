@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.redisson.api.RQueue;
 
 public class CtaBrokerQueueTest {
 
@@ -19,6 +20,9 @@ public class CtaBrokerQueueTest {
 
   @Mock
   private IRedisConnection mockRedis;
+
+  @Mock
+  private RQueue<InitialCtaOrResponsiveAction> mockQueue;
 
   @Mock
   private IQueueProcessor<InitialCtaOrResponsiveAction, Boolean> mockProcessor;
@@ -29,9 +33,15 @@ public class CtaBrokerQueueTest {
     queue = new TestableCtaBrokerQueue(mockRedis, mockProcessor);
   }
 
+  private IQueueProcessor.QueueBatchContext<
+    InitialCtaOrResponsiveAction
+  > makeBatch(List<InitialCtaOrResponsiveAction> items) {
+    return BrokerManagedQueue.batchContext(mockQueue, items);
+  }
+
   @Test
   public void testProcessBatch_Success() {
-    List<InitialCtaOrResponsiveAction> batch = new ArrayList<>();
+    var batch = makeBatch(new ArrayList<>());
     batch.add(new InitialCtaOrResponsiveAction());
     when(mockProcessor.processBatch(batch)).thenReturn(true);
     Boolean result = queue.processBatch(batch);
@@ -41,7 +51,7 @@ public class CtaBrokerQueueTest {
 
   @Test
   public void testProcessBatch_Failure() {
-    List<InitialCtaOrResponsiveAction> batch = new ArrayList<>();
+    var batch = makeBatch(new ArrayList<>());
     when(mockProcessor.processBatch(batch)).thenThrow(
       new RuntimeException("Processing failed")
     );
@@ -69,7 +79,9 @@ public class CtaBrokerQueueTest {
     }
 
     @Override
-    protected Boolean processBatch(List<InitialCtaOrResponsiveAction> batch) {
+    protected Boolean processBatch(
+      IQueueProcessor.QueueBatchContext<InitialCtaOrResponsiveAction> batch
+    ) {
       return super.processBatch(batch);
     }
   }

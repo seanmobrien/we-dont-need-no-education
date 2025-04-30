@@ -19,14 +19,20 @@ public class ResponsiveActionAssignmentQueueProcessor
   }
 
   @Override
-  public Boolean processBatch(List<InitialCtaOrResponsiveAction> models) {
+  public Boolean processBatch(
+    IQueueProcessor.QueueBatchContext<InitialCtaOrResponsiveAction> models
+  ) {
+    models.setAbort();
     return false;
   }
 
   @Override
   public BatchResult<
     Result<List<InitialCtaOrResponsiveAction>>
-  > processBatchWithResult(List<InitialCtaOrResponsiveAction> models) {
+  > processBatchWithResult(
+    IQueueProcessor.QueueBatchContext<InitialCtaOrResponsiveAction> models
+  ) {
+    models.setAbort();
     return BatchResult.builder(
       (Result<List<InitialCtaOrResponsiveAction>>) null
     )

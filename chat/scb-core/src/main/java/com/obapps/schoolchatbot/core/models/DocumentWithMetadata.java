@@ -24,6 +24,7 @@ public class DocumentWithMetadata implements IMessageMetadata {
   private String senderRole;
   private Integer replyToDocumentId;
   private List<Integer> relatedDocuments;
+  private List<Integer> attachments;
 
   public DocumentWithMetadata() {
     // Default constructor
@@ -102,6 +103,10 @@ public class DocumentWithMetadata implements IMessageMetadata {
     return relatedDocuments;
   }
 
+  public List<Integer> getAttachments() {
+    return this.attachments;
+  }
+
   public void setRelatedDocuments(List<Integer> relatedDocuments) {
     this.relatedDocuments = relatedDocuments;
   }
@@ -134,9 +139,15 @@ public class DocumentWithMetadata implements IMessageMetadata {
     private String senderRole;
     private Integer replyToDocumentId;
     private List<Integer> relatedDocuments;
+    private List<Integer> attachments;
 
     public Builder setDocumentId(Integer documentId) {
       this.documentId = documentId;
+      return this;
+    }
+
+    public Builder setAttachments(List<Integer> attachments) {
+      this.attachments = attachments;
       return this;
     }
 
@@ -221,6 +232,7 @@ public class DocumentWithMetadata implements IMessageMetadata {
       emailMetadata.senderRole = this.senderRole;
       emailMetadata.replyToDocumentId = this.replyToDocumentId;
       emailMetadata.relatedDocuments = this.relatedDocuments;
+      emailMetadata.attachments = this.attachments;
 
       return emailMetadata;
     }
@@ -267,7 +279,7 @@ public class DocumentWithMetadata implements IMessageMetadata {
    * @param documentId The ID of the document to retrieve.
    * @param documentTypeOverride An optional override for the document type.
    *   If provided, it will be used instead of the type from the database.
-   * @return A DocumentWithMetadata object populated with data fro`m the database, or null if no matching record is found.
+   * @return A DocumentWithMetadata object populated with data from the database, or null if no matching record is found.
    * @throws SQLException If a database access error occurs.
    */
   public static DocumentWithMetadata fromDb(

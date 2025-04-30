@@ -3,6 +3,7 @@ package com.obapps.schoolchatbot.chat.services;
 import com.obapps.core.redis.IRedisConnection;
 import com.obapps.core.redis.RedisConnectionFactory;
 import com.obapps.core.util.EnvVars;
+import com.obapps.core.util.Strings;
 import java.util.concurrent.TimeUnit;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
@@ -22,7 +23,7 @@ public class RedisClient implements IRedisConnection, AutoCloseable {
         new Thread(() -> {
           Boolean couldStop = false;
           try {
-            couldStop = this.Stop();
+            couldStop = this.stop();
           } catch (Exception e) {
             System.err.println("Failed to stop RedisClient: " + e.getMessage());
             e.printStackTrace();
@@ -41,7 +42,7 @@ public class RedisClient implements IRedisConnection, AutoCloseable {
 
   @Override
   public void close() {
-    if (!Stop()) {
+    if (!stop()) {
       log.error(
         "Failed to close RedisClient",
         new Exception("RedisClient did not stop properly")
@@ -49,7 +50,7 @@ public class RedisClient implements IRedisConnection, AutoCloseable {
     }
   }
 
-  public Boolean Start() {
+  public Boolean start() {
     if (redisClient != null) {
       return false;
     }
@@ -59,7 +60,60 @@ public class RedisClient implements IRedisConnection, AutoCloseable {
     return ret;
   }
 
-  public Boolean Stop() {
+  public Boolean stop() {
+    return stop(false);
+  }
+
+  public Boolean isRunning() {
+    return redisClient != null && redisClient.isShutdown() == false;
+  }
+
+  private void initializeRedisConnection() {
+    Config config = new Config();
+    config
+      .useSingleServer()
+      .setAddress(EnvVars.getInstance().getRedis().getUrl())
+      .setPassword(EnvVars.getInstance().getRedis().getKey())
+      .setTimeout(10000)
+      .setRetryAttempts(5)
+      .setConnectTimeout(5000)
+      .setConnectionPoolSize(32) // default 64
+      .setConnectionMinimumIdleSize(12) //default 24
+      .setSubscriptionConnectionPoolSize(25) //default 50
+      .setSubscriptionConnectionMinimumIdleSize(1); //default 1
+    redisClient = Redisson.create(config);
+    RedisConnectionFactory.setGlobalInstance(this);
+  }
+
+  public static synchronized RedisClient getInstance() {
+    if (instance == null) {
+      instance = new RedisClient();
+      instance.start();
+    }
+    return instance;
+  }
+
+  @Override
+  public RedissonClient getRedisClient() {
+    return redisClient;
+  }
+
+  @Override
+  public <TValue> String writeToOfflineStorage(TValue value, String name) {
+    var fileName = EnvVars.getInstance()
+      .getRedis()
+      .getOfflineStorageUniqueFile(name);
+    Strings.writeObjectToFile(value, fileName);
+    return fileName;
+  }
+
+  @Override
+  public <TValue> String writeToOfflineStorage(TValue value) {
+    return writeToOfflineStorage(value, null);
+  }
+
+  @Override
+  public Boolean stop(Boolean force) {
     if (redisClient != null) {
       log.info("RedisClient: Initiating shutdown");
       redisClient.shutdown(3, 15, TimeUnit.SECONDS);
@@ -75,37 +129,5 @@ public class RedisClient implements IRedisConnection, AutoCloseable {
       return true;
     }
     return false;
-  }
-
-  public Boolean isRunning() {
-    return redisClient != null && redisClient.isShutdown() == false;
-  }
-
-  private void initializeRedisConnection() {
-    Config config = new Config();
-    config
-      .useSingleServer()
-      .setAddress(EnvVars.getInstance().getRedis().getUrl())
-      .setPassword(EnvVars.getInstance().getRedis().getKey())
-      .setTimeout(10000)
-      .setRetryAttempts(5)
-      .setConnectionPoolSize(32) // default 64
-      .setConnectionMinimumIdleSize(12) //default 24
-      .setSubscriptionConnectionPoolSize(25) //default 50
-      .setSubscriptionConnectionMinimumIdleSize(1); //default 1
-    redisClient = Redisson.create(config);
-    RedisConnectionFactory.setGlobalInstance(this);
-  }
-
-  public static synchronized RedisClient getInstance() {
-    if (instance == null) {
-      instance = new RedisClient();
-    }
-    return instance;
-  }
-
-  @Override
-  public RedissonClient getRedisClient() {
-    return redisClient;
   }
 }

@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.util.*;
+import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,12 +77,12 @@ public class HistoricKeyPoint extends KeyPoint {
    */
   public HistoricKeyPoint(Map<String, Object> stateBag) {
     super(stateBag);
-    Db.saveBooleanFromStateBag(
+    FieldUtil.saveBooleanFromStateBag(
       stateBag,
       "from_this_message",
       this::setFromThisMessage
     );
-    Db.saveFromStateBag(stateBag, "key_note", this::setPropertyValue);
+    FieldUtil.saveFromStateBag(stateBag, "key_note", this::setPropertyValue);
   }
 
   public static HistoricKeyPoint getForId(

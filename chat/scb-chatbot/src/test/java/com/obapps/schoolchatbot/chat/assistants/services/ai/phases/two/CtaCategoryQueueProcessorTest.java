@@ -18,6 +18,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.redisson.api.RQueue;
 
 class CtaCategoryQueueProcessorTest {
 
@@ -34,6 +35,13 @@ class CtaCategoryQueueProcessorTest {
     processor = new CtaCategoryQueueProcessor(mockDb, mockFactory, broker);
   }
 
+  @SuppressWarnings("unchecked")
+  private IQueueProcessor.QueueBatchContext<
+    InitialCtaOrResponsiveAction
+  > makeBatch(List<InitialCtaOrResponsiveAction> items) {
+    return BrokerManagedQueue.batchContext(Mockito.mock(RQueue.class), items);
+  }
+
   @Test
   void testProcessBatch_NullModels() {
     Boolean result = processor.processBatch(null);
@@ -42,7 +50,7 @@ class CtaCategoryQueueProcessorTest {
 
   @Test
   void testProcessBatch_EmptyModels() {
-    Boolean result = processor.processBatch(Collections.emptyList());
+    Boolean result = processor.processBatch(makeBatch(Collections.emptyList()));
     assertFalse(result, "Processing an empty batch should return false.");
   }
 
@@ -51,7 +59,7 @@ class CtaCategoryQueueProcessorTest {
     List<InitialCtaOrResponsiveAction> models = List.of(
       new InitialCtaOrResponsiveAction()
     );
-    Boolean result = processor.processBatch(models);
+    Boolean result = processor.processBatch(makeBatch(models));
     assertTrue(
       result,
       "Processing a valid batch currently returns false as per implementation."
@@ -89,7 +97,7 @@ class CtaCategoryQueueProcessorTest {
       }
     }
     when(broker.addToCategorizedQueue(any())).thenReturn(true);
-    Boolean result = processor.processBatch(copy);
+    Boolean result = processor.processBatch(makeBatch(copy));
 
     assertTrue(
       result,

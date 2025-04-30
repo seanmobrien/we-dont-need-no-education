@@ -286,6 +286,31 @@ public class CallToActionCategory {
   }
 
   /**
+   * Loads a list of CallToActionCategory objects associated with a specific Call-to-Action (CTA) ID.
+   *
+   * @param db    The database instance to use for the query. If null, a default instance is retrieved.
+   * @param ctaId The UUID of the Call-to-Action for which categories are to be loaded.
+   * @return A list of CallToActionCategory objects associated with the specified Call-to-Action ID.
+   * @throws SQLException If a database access error occurs during the query execution.
+   */
+  public static List<CallToActionCategory> loadForDocumentProprety(
+    Db db,
+    UUID ctaId
+  ) throws SQLException {
+    if (db == null) {
+      db = Db.getInstance();
+    }
+    return db.selectObjects(
+      CallToActionCategory.class,
+      "SELECT * FROM call_to_action_category cat " +
+      "JOIN document_property_call_to_action_category cta_cat " +
+      "ON cat.cta_category_id = cta_cat.cta_category_id  " +
+      "WHERE cta_cat.property_id = ?",
+      ctaId
+    );
+  }
+
+  /**
    * Deletes the current CallToActionCategory instance from the database.
    * @param db The database instance to use.
    * @throws SQLException If an error occurs during the operation.

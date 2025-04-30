@@ -2,6 +2,7 @@ package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.types.FunctionThatCanThrow;
 import com.obapps.core.util.*;
+import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -153,25 +154,33 @@ public class DocumentProperty {
    *                 - "tags": A string array representing the tags.
    */
   public DocumentProperty(Map<String, Object> stateBag) {
-    Db.saveUuidFromStateBag(stateBag, "property_id", this::setPropertyId);
-    Db.saveIntFromStateBag(stateBag, "document_id", this::setDocumentId);
-    Db.saveIntFromStateBag(
+    FieldUtil.saveUuidFromStateBag(
+      stateBag,
+      "property_id",
+      this::setPropertyId
+    );
+    FieldUtil.saveIntFromStateBag(stateBag, "document_id", this::setDocumentId);
+    FieldUtil.saveIntFromStateBag(
       stateBag,
       "email_property_type_id",
       this::setPropertyType
     );
-    Db.saveFromStateBag(stateBag, "property_value", this::setPropertyValue);
-    Db.saveLocalDateTimeFromStateBag(
+    FieldUtil.saveFromStateBag(
+      stateBag,
+      "property_value",
+      this::setPropertyValue
+    );
+    FieldUtil.saveLocalDateTimeFromStateBag(
       stateBag,
       "created_on",
       this::setCreatedOn
     );
-    Db.saveStringArrayFromStateBag(
+    FieldUtil.saveStringArrayFromStateBag(
       stateBag,
       "policy_basis",
       this::setPolicyBasis
     );
-    Db.saveStringArrayFromStateBag(stateBag, "tags", this::setTags);
+    FieldUtil.saveStringArrayFromStateBag(stateBag, "tags", this::setTags);
   }
 
   /**
@@ -365,6 +374,35 @@ public class DocumentProperty {
       createdOn,
       policyBasis == null || policyBasis.size() == 0 ? null : policyBasis,
       tags == null || tags.size() == 0 ? null : tags
+    );
+    return (T) this;
+  }
+
+  /**
+   * Updates an existing DocumentProperty record in the database.
+   * If the `propertyId` is null, the update operation will not proceed.
+   *
+   * @param db The database instance used to execute the update operation.
+   * @param <T> The type of the DocumentProperty subclass.
+   * @return The current instance of the DocumentProperty (or subclass) after being updated in the database.
+   * @throws SQLException If an error occurs while executing the database operation.
+   */
+  @SuppressWarnings("unchecked")
+  public <T extends DocumentProperty> T updateDb(Db db) throws SQLException {
+    if (propertyId == null) {
+      throw new IllegalArgumentException(
+        "propertyId cannot be null for update operation."
+      );
+    }
+    if (db == null) {
+      db = Db.getInstance();
+    }
+    db.executeUpdate(
+      "UPDATE document_property SET property_value = ?, policy_basis = COALESCE(?, policy_basis), tags = COALESCE(?, tags) WHERE property_id = ?",
+      propertyValue,
+      policyBasis == null || policyBasis.size() == 0 ? null : policyBasis,
+      tags == null || tags.size() == 0 ? null : tags,
+      propertyId
     );
     return (T) this;
   }

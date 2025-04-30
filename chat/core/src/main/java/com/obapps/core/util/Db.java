@@ -5,17 +5,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
-import org.postgresql.jdbc.PgArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,15 +56,6 @@ import org.slf4j.LoggerFactory;
 public class Db implements AutoCloseable {
 
   /**
-   * A globally accessible, thread-safe singleton instance of the Db class.
-   * This instance is initialized lazily and ensures that only one instance
-   * of the Db class is created throughout the application's lifecycle.
-   * The use of the `volatile` keyword ensures visibility of changes to the
-   * instance across threads.
-   */
-  private static volatile Db theGlobalInstance;
-
-  /**
    * Retrieves an instance of the Db class without throwing an exception.
    * If an SQLException occurs during the retrieval, it logs a warning and returns null.
    *
@@ -86,6 +71,19 @@ public class Db implements AutoCloseable {
     }
   }
 
+  static Db getInitialValue() {
+    try {
+      return new Db();
+    } catch (SQLException e) {
+      LoggerFactory.getLogger(Db.class).warn("Failed to get Db instance", e);
+    }
+    return null;
+  }
+
+  private static final ThreadLocal<Db> threadLocalDb = ThreadLocal.withInitial(
+    Db::getInitialValue
+  );
+
   /**
    * Returns the singleton instance of the {@code Db} class.
    * This method ensures that only one instance of the {@code Db} class
@@ -96,12 +94,10 @@ public class Db implements AutoCloseable {
    * @throws SQLException if a database access error occurs during initialization.
    */
   public static Db getInstance() throws SQLException {
+    var theGlobalInstance = threadLocalDb.get();
     if (theGlobalInstance == null) {
-      synchronized (Db.class) {
-        if (theGlobalInstance == null) {
-          theGlobalInstance = new Db();
-        }
-      }
+      theGlobalInstance = new Db();
+      threadLocalDb.set(theGlobalInstance);
     }
     return theGlobalInstance;
   }
@@ -111,6 +107,7 @@ public class Db implements AutoCloseable {
    * If a global database instance exists, this method closes it and sets the instance to null.
    */
   public static void teardown() {
+    var theGlobalInstance = threadLocalDb.get();
     if (theGlobalInstance != null) {
       theGlobalInstance.close();
       theGlobalInstance = null;
@@ -126,6 +123,7 @@ public class Db implements AutoCloseable {
   public static Db createUnitOfWork() throws SQLException {
     try {
       var ret = new Db();
+      ret._inTx = true;
       ret.connectionRequired().beginRequest();
       return ret;
     } catch (SQLException e) {
@@ -180,13 +178,44 @@ public class Db implements AutoCloseable {
    */
   protected Connection connectionRequired() throws SQLException {
     if (connection == null) {
-      synchronized (this) {
-        if (connection == null) {
-          connection = connect();
-        }
-      }
+      connection = connect();
     }
     return connection;
+  }
+
+  /**
+   * Establishes a connection to the database using the JDBC URL provided by the environment variables.
+   *
+   * @return A {@link Connection} object representing the connection to the database.
+   * @throws SQLException If a database access error occurs or the connection cannot be established.
+   *
+   * This method retrieves the database URL from the environment variables and attempts to establish
+   * a connection using the {@link DriverManager#getConnection(String)} method. If the connection is
+   * successful, it prints the database product version to the console. In case of an error, it closes
+   * the connection (if initialized) and logs the error details to the console.
+   */
+  public static Connection connect() throws SQLException {
+    Connection conn = null;
+    try {
+      var sql = EnvVars.getInstance().getDb();
+      var props = new java.util.Properties();
+      props.setProperty("user", sql.getUser());
+      props.setProperty("password", sql.getPassword());
+      conn = DriverManager.getConnection(sql.getUrl(), props);
+      Colors.Set(c -> c.CYAN);
+      System.out.println(conn.getMetaData().getDatabaseProductVersion());
+      Colors.Reset();
+    } catch (SQLException e) {
+      if (conn != null) {
+        conn.close();
+      }
+      LoggerFactory.getLogger(com.obapps.core.util.Db.class).error(
+        "Error connecting to database: ",
+        e
+      );
+    }
+
+    return conn;
   }
 
   /**
@@ -214,6 +243,8 @@ public class Db implements AutoCloseable {
       }
     } catch (SQLException e) {
       log.error("Error executing query [" + sql + "]", e);
+    } finally {
+      closeAfterQuery();
     }
     return null;
   }
@@ -243,8 +274,10 @@ public class Db implements AutoCloseable {
       }
     } catch (SQLException e) {
       log.error("Error executing query [" + sql + "]", e);
+    } finally {
+      closeAfterQuery();
     }
-    return null;
+    return List.of();
   }
 
   /**
@@ -268,6 +301,8 @@ public class Db implements AutoCloseable {
       }
     } catch (SQLException e) {
       log.error("Error executing query [" + sql + "]", e);
+    } finally {
+      closeAfterQuery();
     }
     return Optional.empty();
   }
@@ -296,6 +331,8 @@ public class Db implements AutoCloseable {
       }
     } catch (SQLException e) {
       log.error("Error executing query [" + sql + "]", e);
+    } finally {
+      closeAfterQuery();
     }
     return null;
   }
@@ -320,6 +357,8 @@ public class Db implements AutoCloseable {
         e.getErrorCode(),
         e
       );
+    } finally {
+      closeAfterQuery();
     }
   }
 
@@ -359,7 +398,11 @@ public class Db implements AutoCloseable {
     String sql,
     Object... params
   ) throws SQLException {
-    var stmt = connection.prepareStatement(sql, autoGeneratedKeys);
+    var conn = connectionRequired();
+    if (conn == null) {
+      throw new SQLException("No connection available.");
+    }
+    var stmt = conn.prepareStatement(sql, autoGeneratedKeys);
     for (int i = 0; i < params.length; i++) {
       if (params[i] instanceof List) {
         if (params[i] instanceof List<?> list) {
@@ -410,6 +453,8 @@ public class Db implements AutoCloseable {
       }
     } catch (SQLException e) {
       log.error("Error executing query [" + sq + "]", e);
+    } finally {
+      closeAfterQuery();
     }
     return null;
   }
@@ -437,431 +482,13 @@ public class Db implements AutoCloseable {
     }
   }
 
-  /**
-   * Establishes a connection to the database using the JDBC URL provided by the environment variables.
-   *
-   * @return A {@link Connection} object representing the connection to the database.
-   * @throws SQLException If a database access error occurs or the connection cannot be established.
-   *
-   * This method retrieves the database URL from the environment variables and attempts to establish
-   * a connection using the {@link DriverManager#getConnection(String)} method. If the connection is
-   * successful, it prints the database product version to the console. In case of an error, it closes
-   * the connection (if initialized) and logs the error details to the console.
-   */
-  static Connection connect() throws SQLException {
-    Connection conn = null;
-    try {
-      var sql = EnvVars.getInstance().getDb();
-      var props = new java.util.Properties();
-      props.setProperty("user", sql.getUser());
-      props.setProperty("password", sql.getPassword());
-      conn = DriverManager.getConnection(sql.getUrl(), props);
-      Colors.Set(c -> c.CYAN);
-      System.out.println(conn.getMetaData().getDatabaseProductVersion());
-      Colors.Reset();
-    } catch (SQLException e) {
-      if (conn != null) {
-        conn.close();
-      }
-      LoggerFactory.getLogger(Db.class).error(
-        "Error connecting to database: ",
-        e
-      );
-    }
+  Boolean _inTx = false;
 
-    return conn;
-  }
-
-  /**
-   * Retrieves a value from the state bag using the specified field name.
-   * If the field is not found, it returns an empty string.
-   *
-   * @param stateBag The state bag containing key-value pairs.
-   * @param fieldName The name of the field to retrieve.
-   * @return The value associated with the field name, or an empty string if not found.
-   */
-
-  public static String getFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName
-  ) {
-    return getFromStateBag(stateBag, fieldName, "");
-  }
-
-  /**
-   * Retrieves a value from the provided state bag map based on the specified field name.
-   * If the field is not present in the map or its value is null, the default value is returned.
-   *
-   * @param stateBag    A map containing state data where keys are field names and values are objects.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param defaultValue The default value to return if the field is not found or its value is null.
-   * @return The value associated with the specified field name as a string, or the default value if the field is not found or null.
-   */
-  public static String getFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    String defaultValue
-  ) {
-    var fld = stateBag.get(fieldName);
-    return fld == null ? defaultValue : fld.toString();
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<String> setter
-  ) {
-    return saveFromStateBag(stateBag, fieldName, setter, "");
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<String> setter,
-    String defaultValue
-  ) {
-    Boolean ret = true;
-    var v = getFromStateBag(stateBag, fieldName, NO_VALUE);
-    if (v == NO_VALUE) {
-      ret = false;
-      v = defaultValue;
+  public void closeAfterQuery() {
+    if (_inTx) {
+      return;
     }
-    setter.accept(v.toString());
-    return ret;
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveIntFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<Integer> setter
-  ) {
-    return saveFromStateBag(stateBag, fieldName, setter, 0);
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<Integer> setter,
-    Integer defaultValue
-  ) {
-    Boolean ret = true;
-    Integer v;
-    var v1 = getFromStateBag(stateBag, fieldName, NO_VALUE);
-    if (v1 == NO_VALUE) {
-      ret = false;
-      v1 = defaultValue.toString();
-    }
-    v = Integer.parseInt(v1.toString());
-    setter.accept(v);
-    return ret;
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveDoubleFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<Double> setter
-  ) {
-    return saveFromStateBag(stateBag, fieldName, setter, Double.valueOf(0));
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<Double> setter,
-    Double defaultValue
-  ) {
-    Boolean ret = true;
-    Double v;
-    var v1 = getFromStateBag(stateBag, fieldName, NO_VALUE);
-    if (v1 == NO_VALUE) {
-      ret = false;
-      v1 = defaultValue.toString();
-    }
-    v = Double.parseDouble(v1.toString());
-    setter.accept(v);
-    return ret;
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveUuidFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<UUID> setter
-  ) {
-    Boolean ret = true;
-    var v1 = stateBag.get(fieldName);
-    if (v1 == null) {
-      return false;
-    }
-    UUID value;
-    try {
-      value = (UUID) v1;
-    } catch (Exception e) {
-      value = UUID.fromString(v1.toString());
-      return false;
-    }
-    setter.accept(value);
-    return ret;
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveOffsetDateFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<OffsetDateTime> setter
-  ) {
-    Boolean ret = true;
-    var v1 = stateBag.get(fieldName);
-    if (v1 == null) {
-      return false;
-    }
-    OffsetDateTime value;
-    try {
-      value = (OffsetDateTime) v1;
-    } catch (Exception e) {
-      value = OffsetDateTime.parse(
-        v1.toString(),
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSS").withZone(
-          java.time.ZoneOffset.UTC
-        )
-      );
-      return false;
-    }
-    setter.accept(value);
-    return ret;
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveLocalDateFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<LocalDate> setter
-  ) {
-    Boolean ret = true;
-    var v1 = stateBag.get(fieldName);
-    if (v1 == null) {
-      return false;
-    }
-    LocalDate value;
-    try {
-      value = ((java.sql.Timestamp) v1).toInstant()
-        .atZone(java.time.ZoneId.systemDefault())
-        .toLocalDate();
-    } catch (Exception e) {
-      value = LocalDate.parse(
-        v1.toString(),
-        DateTimeFormatter.ofPattern("yyyy-MM-dd")
-      );
-      return false;
-    }
-    setter.accept(value);
-    return ret;
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * The value is expected to be an array of strings. If the specified field is not found
-   * in the state bag, an empty list is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value (empty list) was used (false).
-   */
-  public static Boolean saveStringArrayFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<List<String>> setter
-  ) {
-    Boolean ret = true;
-    var v1 = stateBag.get(fieldName);
-    if (v1 == null) {
-      setter.accept(new ArrayList<>());
-      return false;
-    }
-    List<String> value;
-    try {
-      if (v1 instanceof PgArray) {
-        var pgArray = (PgArray) v1;
-        value = List.of((String[]) pgArray.getArray());
-      } else if (v1 instanceof Array) {
-        var array = (Array) v1;
-        value = List.of((String[]) array.getArray());
-      } else if (v1 instanceof String) {
-        value = List.of(v1.toString());
-      } else if (v1 instanceof List) {
-        value = new ArrayList<>();
-        for (Object obj : (List<?>) v1) {
-          value.add(obj.toString());
-        }
-      } else {
-        throw new IllegalArgumentException(
-          "Unsupported type for string array conversion"
-        );
-      }
-    } catch (Exception e) {
-      setter.accept(new ArrayList<>());
-      return false;
-    }
-    setter.accept(value);
-    return ret;
-  }
-
-  /**
-   * Saves a value from the provided state bag into a target field using a setter function.
-   * If the specified field is not found in the state bag, a default value is used instead.
-   *
-   * @param stateBag    A map containing the state data.
-   * @param fieldName   The name of the field to retrieve from the state bag.
-   * @param setter      A Consumer function to set the value of the target field.
-   * @param defaultValue The default value to use if the field is not found in the state bag.
-   * @return            A Boolean indicating whether the value was successfully retrieved
-   *                    from the state bag (true) or if the default value was used (false).
-   */
-  public static Boolean saveLocalDateTimeFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<LocalDateTime> setter
-  ) {
-    boolean ret = true;
-    var v1 = stateBag.get(fieldName);
-    if (v1 == null) {
-      return false;
-    }
-    LocalDateTime value;
-    try {
-      value = ((java.sql.Timestamp) v1).toLocalDateTime();
-    } catch (Exception e) {
-      var asString = v1.toString();
-      value = LocalDateTime.parse(
-        v1.toString(),
-        DateTimeFormatter.ofPattern(
-          asString.indexOf('T') != -1
-            ? "yyyy-MM-dd'T'HH:mm:ss.n"
-            : "yyyy-MM-dd HH:mm:ss.n"
-        )
-      );
-      return false;
-    }
-    setter.accept(value);
-    return ret;
-  }
-
-  public static Boolean saveBooleanFromStateBag(
-    Map<String, Object> stateBag,
-    String fieldName,
-    Consumer<Boolean> setter
-  ) {
-    Boolean ret = true;
-    var v1 = stateBag.get(fieldName);
-    if (v1 == null) {
-      return false;
-    }
-    Boolean value;
-    try {
-      value = (Boolean) v1;
-    } catch (Exception e) {
-      value = Boolean.parseBoolean(v1.toString());
-      return false;
-    }
-    setter.accept(value);
-    return ret;
+    close();
   }
 
   public <T> List<T> selectObjects(
@@ -934,6 +561,8 @@ public class Db implements AutoCloseable {
       }
     } catch (Exception e) {
       log.error("Error executing query [" + sql + "]", e);
+    } finally {
+      closeAfterQuery();
     }
     return new ArrayList<>();
   }
@@ -977,11 +606,13 @@ public class Db implements AutoCloseable {
     private boolean rolledBack = false;
     private boolean disposed = false;
     private final boolean initialAutoComplete;
+    private final boolean initialInTx = _inTx;
 
     public DbTx() {
       boolean initialComplete = true;
       try {
-        initialComplete = connection.getAutoCommit();
+        _inTx = true;
+        initialComplete = connectionRequired().getAutoCommit();
         connection.beginRequest();
         connection.setAutoCommit(false);
       } catch (Exception e) {
@@ -995,6 +626,7 @@ public class Db implements AutoCloseable {
     }
 
     public void setAbort() {
+      _inTx = initialInTx;
       if (disposed) {
         return;
       }
@@ -1007,6 +639,7 @@ public class Db implements AutoCloseable {
     }
 
     public void close() {
+      _inTx = initialInTx;
       if (disposed) {
         return;
       }
@@ -1016,7 +649,7 @@ public class Db implements AutoCloseable {
         }
         connection.setAutoCommit(this.initialAutoComplete);
         connection.endRequest();
-      } catch (SQLException e) {
+      } catch (Exception e) {
         log.error("Error finalizing transaction", e);
       } finally {
         disposed = true;
@@ -1024,5 +657,5 @@ public class Db implements AutoCloseable {
     }
   }
 
-  private static final String NO_VALUE = "__no-value__";
+  public static final String NO_VALUE = "__no-value__";
 }

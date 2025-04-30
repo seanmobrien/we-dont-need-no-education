@@ -10,6 +10,7 @@ import com.obapps.schoolchatbot.core.repositories.*;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import java.sql.SQLException;
+import java.util.ArrayList;
 
 public class CallToActionTool extends MessageTool<AugmentedContentList> {
 
@@ -341,23 +342,28 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     name = "getDocumentDetails",
     value = "Retrieves full details on a specific document by id."
   )
-  public DocumentWithMetadata getDocumentDetails(
+  public DocumentWithMetadata[] getDocumentDetails(
     @P(
       required = true,
-      value = "The ID of the document to retrieve details for."
-    ) Integer documentId
+      value = "A comma-delimited list of document ID's details should be retrieved for."
+    ) String documentIds
   ) {
-    try {
-      var data = db();
-      return DocumentWithMetadata.fromDb(data, documentId);
-    } catch (SQLException e) {
-      log.error(
-        "Unexpected SQL failure retrieving document details.  Details: " +
-        documentId,
-        e
-      );
-      return null;
+    ArrayList<DocumentWithMetadata> results = new ArrayList<>();
+    for (String dId : documentIds.split(",")) {
+      try {
+        var documentId = Integer.parseInt(dId.trim().replaceAll("\"", ""));
+        var data = db();
+        results.add(DocumentWithMetadata.fromDb(data, documentId));
+      } catch (Exception e) {
+        log.error(
+          "Unexpected SQL failure retrieving document details.  Details: " +
+          dId,
+          e
+        );
+        return null;
+      }
     }
+    return results.toArray(new DocumentWithMetadata[0]);
   }
 
   @Tool(

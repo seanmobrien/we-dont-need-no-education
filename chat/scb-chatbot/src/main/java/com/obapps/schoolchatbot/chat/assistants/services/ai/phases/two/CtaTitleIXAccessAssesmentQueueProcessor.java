@@ -4,23 +4,25 @@ import com.obapps.core.ai.extraction.services.IterationEventArgs;
 import com.obapps.core.ai.extraction.services.RecordExtractionService;
 import com.obapps.core.ai.factory.models.AiServiceOptions;
 import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
+import com.obapps.core.util.DateTimeFormats;
 import com.obapps.core.util.Db;
 import com.obapps.core.util.Strings;
 import com.obapps.schoolchatbot.chat.MessageQueueName;
 import com.obapps.schoolchatbot.chat.assistants.Prompts;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.BatchResult;
-import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CallToActionCategoryEnvelope;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CategorizedCallToAction;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CategorizedCallToActionEnvelope;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.InitialCtaOrResponsiveAction;
 import com.obapps.schoolchatbot.chat.assistants.tools.CallToActionTool;
 import com.obapps.schoolchatbot.core.models.CallToActionCategory;
+import com.obapps.schoolchatbot.core.models.HistoricCallToAction;
 import dev.langchain4j.service.Result;
 import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -31,23 +33,20 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
 
   private final Db _db;
   private final StandaloneModelClientFactory modelClientFactory;
-  private final CtaBrokerService brokerService;
   private final Logger log;
 
   public CtaTitleIXAccessAssesmentQueueProcessor() {
-    this(null, null, null);
+    this(null, null);
   }
 
   public CtaTitleIXAccessAssesmentQueueProcessor(
     Db db,
-    StandaloneModelClientFactory modelClientFactory,
-    CtaBrokerService broker
+    StandaloneModelClientFactory modelClientFactory
   ) {
     this._db = db;
     this.modelClientFactory = modelClientFactory == null
       ? new StandaloneModelClientFactory()
       : modelClientFactory;
-    this.brokerService = broker == null ? new CtaBrokerService() : broker;
     this.log = LoggerFactory.getLogger(this.getClass());
   }
 
@@ -132,7 +131,9 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
   }
 
   @Override
-  public Boolean processBatch(List<CategorizedCallToAction> models) {
+  public Boolean processBatch(
+    IQueueProcessor.QueueBatchContext<CategorizedCallToAction> models
+  ) {
     var res = processBatchWithResult(models);
     return res != null && res.isSuccess();
   }
@@ -140,22 +141,18 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
   @Override
   public BatchResult<
     Result<List<CategorizedCallToAction>>
-  > processBatchWithResult(List<CategorizedCallToAction> models) {
-    // First thing we want to do is de-duplicate the list of models
-    models = CategorizedCallToAction.deDuplicate(models);
-
-    return BatchResult.builder((Result<List<CategorizedCallToAction>>) null)
-      .success(false)
-      .cause(new Exception("not yet implemented"))
-      .errorMessage("Not yet implemented")
-      .build();
+  > processBatchWithResult(
+    IQueueProcessor.QueueBatchContext<CategorizedCallToAction> batch
+  ) {
+    var actionRes = processBatchWithResultIteration(batch, new ArrayList<>());
+    return actionRes;
   }
 
   public BatchResult<
     Result<List<CategorizedCallToAction>>
   > processBatchWithResultIteration(
-    List<CategorizedCallToAction> batch,
-    List<CategorizedCallToAction> unprocessed
+    IQueueProcessor.QueueBatchContext<CategorizedCallToAction> batch,
+    List<CategorizedCallToAction> processed
   ) {
     if (batch == null || batch.isEmpty()) {
       return BatchResult.failure("Batch is null or empty.", List.of());
@@ -175,7 +172,7 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
       properties,
       modelClientFactory,
       AiServiceOptions.builder(ICtaCategorizerAnalyst.class)
-        .setMemoryWindow(20)
+        .setMemoryWindow(100)
         .onSetup(ai ->
           ai
             .systemMessageProvider(o -> Prompts.GetSystemMessageForPhase(2020))
@@ -188,7 +185,7 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
         ctx
           .getService()
           .resumeTitleIxExtraction(ctx.getIteration(), ctx.getMatchesFound()),
-      (s, e) -> onBatchComplete(batch, categories, s, e)
+      (s, e) -> onBatchComplete(batch, processed, s, e)
     );
 
     var rez = result.content();
@@ -208,12 +205,7 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
           .noneMatch(id -> id.compareToIgnoreCase(recordId) == 0);
       })
       .collect(Collectors.toList());
-    unprocessed.removeIf(c -> {
-      var recordId = c.getRecordId();
-      return allProcessedIds
-        .stream()
-        .anyMatch(id -> id.compareToIgnoreCase(recordId) == 0);
-    });
+
     if (missed.size() > 0) {
       var message = String.format(
         "Only %d out of %d records were procesed, please re-submit remaining %d records.",
@@ -231,12 +223,14 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
       );
       processingNotes.add(message);
     } else {
-      if (unprocessed.size() > 0) {
+      if (processed.size() != batch.size()) {
+        var batchSize = batch.size();
         processingNotes.add(
           String.format(
             "All %d records in this batch were processed successfully, but %d records remain unprocessed.",
             batch.size(),
-            unprocessed.size()
+            batchSize,
+            processed.size()
           )
         );
       } else {
@@ -270,8 +264,8 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
   }
 
   protected void onBatchComplete(
-    List<CategorizedCallToAction> batch,
-    ArrayList<CallToActionCategory> hnkj,
+    IQueueProcessor.QueueBatchContext<CategorizedCallToAction> batch,
+    List<CategorizedCallToAction> processed,
     Object sender,
     IterationEventArgs<
       CategorizedCallToAction,
@@ -297,5 +291,185 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
       );
       return;
     }
+    itRes.forEach(result -> {
+      var recordId = result.getRecordId();
+      var fromBatch = batch
+        .stream()
+        .filter(
+          m ->
+            Strings.compareIgnoreCase(recordId, m.recordId) &&
+            m.getCategories().containsAll(result.getCategories())
+        )
+        .findFirst()
+        .orElse(null);
+      if (fromBatch == null) {
+        log.warn(
+          "No original record found for record id {} in iteration {}.",
+          recordId,
+          ctx.getIteration()
+        );
+        return;
+      }
+      if (saveRecord(fromBatch, result)) {
+        batch.setComplete(fromBatch);
+        processed.add(fromBatch);
+      }
+    });
+  }
+
+  Boolean saveRecord(
+    CategorizedCallToAction fromBatch,
+    CategorizedCallToAction processed
+  ) {
+    if (fromBatch == null || processed == null) {
+      return false;
+    }
+    HistoricCallToAction cta = null;
+    try {
+      var recordId = UUID.fromString(fromBatch.getRecordId());
+      cta = HistoricCallToAction.getCallsToAction(_db, recordId, false, true);
+      if (cta == null) {
+        cta = HistoricCallToAction.HistoricCallToActionBuilder.builder()
+          .propertyId(recordId)
+          .propertyValue(fromBatch.getPropertyValue())
+          .documentId(fromBatch.getDocumentId())
+          .createdOn(fromBatch.getCreatedOn())
+          .openedDate(fromBatch.getCreatedOn().toLocalDate())
+          .compliancyCloseDate(
+            DateTimeFormats.asLocalDate(fromBatch.compliancyCloseDate)
+          )
+          .complianceDateEnforceable(fromBatch.complianceDateEnforceable)
+          .inferred(fromBatch.inferred)
+          .closureActions(fromBatch.getClosureActionItems())
+          .policyBasis(fromBatch.getPolicyBasis())
+          .tags(fromBatch.getTags())
+          .severity(fromBatch.getSeverity())
+          .severityReasons(fromBatch.getSeverityReasons())
+          .titleIxApplicable(processed.reasonablyTitleIx)
+          .titleIxApplicableReasons(processed.getReasonablyTitleIxReasons())
+          .sentiment(fromBatch.sentiment)
+          .sentimentReasons(fromBatch.sentimentReasons)
+          .categories(
+            fromBatch
+              .getCategories()
+              .stream()
+              .map(m ->
+                CallToActionCategory.builder().setCtaCategoryId(m).build()
+              )
+              .toList()
+          )
+          .relatedDocuments(
+            processed.relatedDocuments
+              .stream()
+              .map(m ->
+                com.obapps.schoolchatbot.core.models.DocumentRelationship.builder()
+                  .documentId(m.documentId)
+                  .relationship(m.relationshipType)
+                  .relatedPropertyId(recordId)
+                  .build()
+              )
+              .toList()
+          )
+          .build();
+        cta.addToDb(db());
+      } else {
+        var updateCta = copyToExisting(fromBatch, processed, cta);
+        if (updateCta) {
+          cta.updateDb(db());
+        }
+      }
+    } catch (SQLException e) {
+      log.error(
+        String.format(
+          "Failed to save CTA - %s\nRecord id %s.\nFaulting record data:\n%s",
+          fromBatch.getRecordId(),
+          cta == null
+            ? (Strings.safelySerializeAsJson(fromBatch) +
+              "\n" +
+              Strings.safelySerializeAsJson(processed))
+            : Strings.safelySerializeAsJson(cta)
+        ),
+        e
+      );
+      return false;
+    }
+    return true;
+  }
+
+  boolean copyToExisting(
+    CategorizedCallToAction fromBatch,
+    CategorizedCallToAction processed,
+    HistoricCallToAction cta
+  ) {
+    var updateCta = false;
+    // Do a quick comparison of text
+    if (
+      !Strings.compareIgnoreCase(
+        cta.getPropertyValue(),
+        fromBatch.getPropertyValue()
+      )
+    ) {
+      var p1 = cta.getPropertyValue();
+      var p2 = fromBatch.getPropertyValue();
+      cta.setPropertyValue(String.format("%s\n%s", p1, p2));
+      log.warn(
+        "CTA text discrepancy detected; in database:\n{}\nFrom batch:\n{}",
+        p1,
+        p2
+      );
+      // No change, no need to save
+      updateCta = true;
+    }
+    if (cta.getTitleIxApplicable() < processed.reasonablyTitleIx) {
+      cta.setTitleIxApplicable(processed.reasonablyTitleIx);
+      updateCta = true;
+    }
+    var existingReasons = new ArrayList<>(
+      Objects.requireNonNullElse(
+        cta.getTitleIxApplicableReasons(),
+        List.of(new String[0])
+      )
+    );
+    var newReasons = processed
+      .getReasonablyTitleIxReasons()
+      .stream()
+      .filter(reason -> !existingReasons.contains(reason))
+      .collect(Collectors.toList());
+    if (!newReasons.isEmpty()) {
+      existingReasons.addAll(newReasons);
+      cta.setTitleIxApplicableReasons(existingReasons);
+      updateCta = true;
+    }
+
+    var existingClosureActions = new ArrayList<>(
+      Objects.requireNonNullElse(
+        cta.getClosureActions(),
+        List.of(new String[0])
+      )
+    );
+    var newClosureActions = fromBatch
+      .getClosureActionItems()
+      .stream()
+      .filter(action -> !existingClosureActions.contains(action))
+      .collect(Collectors.toList());
+    if (!newClosureActions.isEmpty()) {
+      existingClosureActions.addAll(newClosureActions);
+      cta.setClosureActions(existingClosureActions);
+      updateCta = true;
+    }
+
+    cta.setRelatedDocuments(
+      processed.relatedDocuments
+        .stream()
+        .map(m ->
+          com.obapps.schoolchatbot.core.models.DocumentRelationship.builder()
+            .documentId(m.documentId)
+            .relationship(m.relationshipType)
+            .build()
+        )
+        .toList()
+    );
+
+    return updateCta;
   }
 }

@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import net.bytebuddy.asm.Advice.Local;
 
 /**
  * Utility class for string manipulation and formatting.
@@ -103,6 +105,27 @@ public class Strings {
   }
 
   /**
+   * Compares two strings for equality, ignoring case considerations.
+   *
+   * @param s1 the first string to compare, may be {@code null}
+   * @param s2 the second string to compare, may be {@code null}
+   * @return {@code true} if both strings are equal ignoring case, or both are {@code null};
+   *         {@code false} otherwise
+   */
+  public static boolean compareIgnoreCase(String s1, String s2) {
+    if (s1 == null && s2 == null) {
+      return true;
+    }
+    if (s1 == null || s2 == null) {
+      return false;
+    }
+    var l = Locale.getDefault();
+    var v1 = s1.trim().toLowerCase(l);
+    var v2 = s2.trim().toLowerCase(l);
+    return v1.equals(v2) || v1 == v2;
+  }
+
+  /**
    * Generates a complete record output string with prefix, data, and suffix.
    *
    * @param recordName the name of the record.
@@ -171,6 +194,25 @@ public class Strings {
     );
     objectMapper.registerModule(new JavaTimeModule());
     return objectMapper;
+  }
+
+  /**
+   * Writes the given object to a file at the specified file path in JSON format.
+   *
+   * @param object   The object to be written to the file. It must be serializable.
+   * @param filePath The path of the file where the object will be written.
+   * @throws RuntimeException If an I/O error occurs during the writing process.
+   */
+  public static void writeObjectToFile(Object object, String filePath) {
+    try {
+      var objectMapper = objectMapperFactory();
+      objectMapper.writeValue(new java.io.File(filePath), object);
+    } catch (IOException e) {
+      throw new RuntimeException(
+        "Error writing object to file: " + filePath,
+        e
+      );
+    }
   }
 
   /**

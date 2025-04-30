@@ -55,7 +55,9 @@ import java.util.List;
  */
 public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
 
-  @Description("Whether the item is a 🔔 or a 📩.")
+  @Description(
+    "Whether the item is a Call to Action 🔔 or a Responsive Action 📩.\n - if 🔔 use `CTA`.\n - if 📩, use `RESPONSIVE_ACTION`."
+  )
   public ActionType actionType;
 
   /**
@@ -113,7 +115,6 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
 
   /**
    * The reasonability rating of the CTA.
-   */
   @Description(
     "A rating from -10 through 10 as to how reasonable the request or action is.\nRequests for actions " + //
     "the district is obligated to perform, such as a valid records request, are rated at 10. " + //
@@ -127,10 +128,12 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
     "shoud explicitly identify why not."
   )
   public Integer reasonabilityRating;
+   */
 
   /**
    * The reasonable reason text.
    */
+  /*
   @Description(
     "A list of reasons the reasonability rating has been assigned.  At least " +
     "one reason should be provided.  If the request has been determined not to be " +
@@ -138,6 +141,8 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
     "why not."
   )
   public List<String> reasonableReason;
+
+  */
 
   /**
    * The reasonability rating of the CTA.
@@ -408,12 +413,12 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
     /**
      * The reasonability rating of the CTA.
      */
-    private Integer reasonabilityRating;
+    // private Integer reasonabilityRating;
 
     /**
      * The reasonable reason text.
      */
-    private List<String> reasonableReason;
+    // private List<String> reasonableReason;
 
     /**
      * The reasonability rating of the CTA.
@@ -497,6 +502,7 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
       return self();
     }
 
+    /*
     public T reasonabilityRating(Integer reasonabilityRating) {
       this.reasonabilityRating = reasonabilityRating;
       return self();
@@ -506,6 +512,7 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
       this.reasonableReason = reasonableReason;
       return self();
     }
+ */
 
     public T sentiment(Double sentiment) {
       this.sentiment = sentiment;
@@ -571,8 +578,8 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
       instance.closedDate = this.closedDate;
       instance.compliancyCloseDate = this.compliancyCloseDate;
       instance.complianceDateEnforceable = this.complianceDateEnforceable;
-      instance.reasonabilityRating = this.reasonabilityRating;
-      instance.reasonableReason = this.reasonableReason;
+      // instance.reasonabilityRating = this.reasonabilityRating;
+      // instance.reasonableReason = this.reasonableReason;
       instance.sentiment = this.sentiment;
       instance.sentimentReasons = this.sentimentReasons;
       instance.closureActionItems = this.closureActionItems;
@@ -593,18 +600,26 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
       this.closedDate = source.closedDate;
       this.compliancyCloseDate = source.compliancyCloseDate;
       this.complianceDateEnforceable = source.complianceDateEnforceable;
-      this.reasonabilityRating = source.reasonabilityRating;
-      this.reasonableReason = source.reasonableReason;
+      // this.reasonabilityRating = source.reasonabilityRating;
+      // this.reasonableReason = source.reasonableReason;
       this.sentiment = source.sentiment;
-      this.sentimentReasons = source.sentimentReasons;
-      this.closureActionItems = source.closureActionItems;
+      this.sentimentReasons = source.sentimentReasons == null
+        ? null
+        : List.copyOf(source.sentimentReasons);
+      this.closureActionItems = source.closureActionItems == null
+        ? null
+        : List.copyOf(source.closureActionItems);
       this.recordId(source.recordId);
       this.documentId = source.documentId;
       this.createdOn = source.createdOn;
       this.tags = source.tags;
-      this.policyBasis = source.policyBasis;
+      this.policyBasis = source.policyBasis == null
+        ? null
+        : List.copyOf(source.policyBasis);
       this.severity = source.severity;
-      this.severityReasons = source.severityReasons;
+      this.severityReasons = source.severityReasons == null
+        ? null
+        : List.copyOf(source.severityReasons);
       this.createdOn = source.createdOn;
       this.tags = source.tags;
       return self();

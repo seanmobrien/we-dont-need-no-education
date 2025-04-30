@@ -1,11 +1,15 @@
 package com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two;
 
+import com.obapps.core.util.Strings;
 import dev.langchain4j.model.output.structured.Description;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.BiConsumer;
+import java.util.function.Predicate;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class CategorizedCallToAction extends InitialCtaOrResponsiveAction {
 
@@ -105,50 +109,116 @@ public class CategorizedCallToAction extends InitialCtaOrResponsiveAction {
     return looseIdHash.toString();
   }
 
+  public boolean isMatch(CategorizedCallToAction other) {
+    if (other == null) {
+      return false;
+    }
+    return Strings.compareIgnoreCase(getGroupById(), other.getGroupById());
+  }
+
+  public void merge(CategorizedCallToAction other) {
+    if (other == null) {
+      return;
+    }
+    if (Strings.compareIgnoreCase(this.propertyValue, other.propertyValue)) {
+      setPropertyValue(
+        String.format("%s\n%s", this.propertyValue, other.propertyValue)
+      );
+    }
+    if (other.reasonablyTitleIx > this.reasonablyTitleIx) {
+      this.reasonablyTitleIx = other.reasonablyTitleIx;
+    }
+    if (other.reasonablyTitleIxReasons != null) {
+      if (this.reasonablyTitleIxReasons == null) {
+        this.reasonablyTitleIxReasons = new ArrayList<>();
+      }
+      for (String reason : other.reasonablyTitleIxReasons) {
+        if (!this.reasonablyTitleIxReasons.contains(reason)) {
+          this.reasonablyTitleIxReasons.add(reason);
+        }
+      }
+    }
+    merge(this.reasonablyTitleIxReasons, other.reasonablyTitleIxReasons);
+    merge(this.categories, other.categories);
+    merge(this.relatedDocuments, other.relatedDocuments, i ->
+      !other.relatedDocuments
+        .stream()
+        .anyMatch(
+          c ->
+            c.documentId == i.documentId &&
+            c.relationshipType == i.relationshipType
+        )
+    );
+  }
+
+  private static <T> List<T> merge(List<T> left, List<T> right) {
+    return merge(left, right, i -> !right.contains(i));
+  }
+
+  private static <T> List<T> merge(
+    List<T> left,
+    List<T> right,
+    Predicate<? super T> predicate
+  ) {
+    if (right == null || right.isEmpty()) {
+      return List.of();
+    }
+    var list = new ArrayList<>(
+      Objects.requireNonNullElse(left, new ArrayList<>())
+    );
+    var items = right.stream().filter(predicate).toList();
+    list.addAll(items);
+    return list;
+  }
+
   public static List<CategorizedCallToAction> deDuplicate(
-    List<CategorizedCallToAction> source
+    List<CategorizedCallToAction> source,
+    BiConsumer<
+      Pair<CategorizedCallToAction, CategorizedCallToAction>,
+      CategorizedCallToAction
+    > onDuplicateMerged
   ) {
     var map = new HashMap<String, CategorizedCallToAction>();
     for (CategorizedCallToAction action : source) {
       var hashId = action.getGroupById();
       if (map.containsKey(hashId)) {
         var existingAction = map.get(hashId);
+        var deepCopy = new CategorizedCallToAction.Builder()
+          .copy(existingAction)
+          .build();
+
         if (
           action.reasonablyTitleIx != null &&
           action.reasonablyTitleIx >
           Objects.requireNonNullElse(existingAction.reasonablyTitleIx, 0)
         ) {
-          existingAction.reasonablyTitleIx = action.reasonablyTitleIx;
+          deepCopy.reasonablyTitleIx = action.reasonablyTitleIx;
         }
         if (
           action.reasonablyTitleIxReasons != null &&
           action.reasonablyTitleIxReasons.size() > 0
         ) {
           if (
-            existingAction.reasonablyTitleIxReasons == null ||
-            existingAction.reasonablyTitleIxReasons.size() == 0
+            deepCopy.reasonablyTitleIxReasons == null ||
+            deepCopy.reasonablyTitleIxReasons.size() == 0
           ) {
-            existingAction.reasonablyTitleIxReasons =
-              action.reasonablyTitleIxReasons;
+            deepCopy.reasonablyTitleIxReasons = action.reasonablyTitleIxReasons;
           } else {
-            var list = new ArrayList<>(existingAction.reasonablyTitleIxReasons);
+            var list = new ArrayList<>(deepCopy.reasonablyTitleIxReasons);
             list.addAll(action.reasonablyTitleIxReasons);
-            existingAction.reasonablyTitleIxReasons = list
+            deepCopy.reasonablyTitleIxReasons = list
               .stream()
               .distinct()
               .toList();
           }
         }
         if (action.categories != null && !action.categories.isEmpty()) {
-          if (
-            existingAction.categories == null ||
-            existingAction.categories.isEmpty()
-          ) {
-            existingAction.categories = action.categories;
+          if (deepCopy.categories == null || deepCopy.categories.isEmpty()) {
+            deepCopy.categories = action.categories;
           } else {
-            var list = new ArrayList<>(existingAction.categories);
+            var list = new ArrayList<>(deepCopy.categories);
             list.addAll(action.categories);
-            existingAction.categories = list.stream().distinct().toList();
+            deepCopy.categories = list.stream().distinct().toList();
           }
         }
 
@@ -156,15 +226,18 @@ public class CategorizedCallToAction extends InitialCtaOrResponsiveAction {
           action.relatedDocuments != null && !action.relatedDocuments.isEmpty()
         ) {
           if (
-            existingAction.relatedDocuments == null ||
-            existingAction.relatedDocuments.isEmpty()
+            deepCopy.relatedDocuments == null ||
+            deepCopy.relatedDocuments.isEmpty()
           ) {
-            existingAction.relatedDocuments = action.relatedDocuments;
+            deepCopy.relatedDocuments = action.relatedDocuments;
           } else {
-            var list = new ArrayList<>(existingAction.relatedDocuments);
+            var list = new ArrayList<>(deepCopy.relatedDocuments);
             list.addAll(action.relatedDocuments);
-            existingAction.relatedDocuments = list.stream().distinct().toList();
+            deepCopy.relatedDocuments = list.stream().distinct().toList();
           }
+        }
+        if (onDuplicateMerged != null) {
+          onDuplicateMerged.accept(Pair.of(existingAction, deepCopy), action);
         }
         continue;
       }
@@ -239,8 +312,14 @@ public class CategorizedCallToAction extends InitialCtaOrResponsiveAction {
     public Builder copy(CategorizedCallToAction source) {
       super.copy(source)
         .reasonablyTitleIx(source.reasonablyTitleIx)
-        .reasonablyTitleIxReasons(source.reasonablyTitleIxReasons)
-        .categories(source.categories)
+        .reasonablyTitleIxReasons(
+          source.reasonablyTitleIxReasons == null
+            ? null
+            : List.copyOf(source.reasonablyTitleIxReasons)
+        )
+        .categories(
+          source.categories == null ? null : List.copyOf(source.categories)
+        )
         .recordId(source.recordId);
       return this;
     }

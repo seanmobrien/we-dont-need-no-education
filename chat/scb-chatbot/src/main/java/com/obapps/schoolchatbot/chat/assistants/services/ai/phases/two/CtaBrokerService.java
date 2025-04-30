@@ -9,6 +9,7 @@ import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.ActionType;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CategorizedCallToAction;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.InitialCtaOrResponsiveAction;
 import com.obapps.schoolchatbot.core.models.DocumentUnitAnalysisStageAudit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -78,7 +79,28 @@ public class CtaBrokerService {
   }
 
   public Boolean addToCategorizedQueue(CategorizedCallToAction item) {
-    return addItemToQueue(item, MessageQueueName.CtaCategorizedCta);
+    var queue = redis
+      .getRedisClient()
+      .getQueue(MessageQueueName.CtaCategorizedCta);
+    if (queue == null) {
+      log.error("Queue not found: {}", MessageQueueName.CtaCategorizedCta);
+      return false;
+    }
+    var found = new ArrayList<CategorizedCallToAction>();
+    queue.forEach(a -> {
+      if (found.isEmpty() && a instanceof CategorizedCallToAction) {
+        CategorizedCallToAction categorizedCta = (CategorizedCallToAction) a;
+        if (categorizedCta.isMatch(item)) {
+          found.add(categorizedCta);
+          queue.remove(categorizedCta);
+          categorizedCta.merge(item);
+        }
+      }
+    });
+    return addItemToQueue(
+      found.isEmpty() ? item : found.get(0),
+      MessageQueueName.CtaCategorizedCta
+    );
   }
 
   protected void auditActionFailure(

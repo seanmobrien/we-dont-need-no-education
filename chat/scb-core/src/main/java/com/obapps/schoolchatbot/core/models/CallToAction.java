@@ -1,9 +1,12 @@
 package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.util.Db;
+import com.obapps.core.util.IDbTransaction;
+import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -60,12 +63,12 @@ public class CallToAction extends DocumentProperty {
   /**
    * The compliance message score for the CTA.
    */
-  private Double complianceMessage = 100.0;
+  private Double complianceRating = 100.0;
 
   /**
    * Reasons for the compliance message.
    */
-  private String complianceMessageReasons;
+  private String complianceRatingReasons;
 
   /**
    * Indicates whether the CTA is inferred.
@@ -85,7 +88,75 @@ public class CallToAction extends DocumentProperty {
   /**
    * The reasonable reason text.
    */
-  private String reasonableReason;
+  private List<String> reasonableReason;
+
+  private Integer titleIxApplicable;
+
+  private List<String> titleIxApplicableReasons;
+
+  private List<String> closureActions;
+
+  private Double sentiment;
+  private List<String> sentimentReasons;
+
+  private Integer severity;
+  private List<String> severityReasons;
+
+  /**
+   * Retrieves the Title IX applicable status.
+   *
+   * @return The Title IX applicable status as an {@link Integer}.
+   */
+  public Integer getTitleIxApplicable() {
+    return titleIxApplicable;
+  }
+
+  /**
+   * Sets the Title IX applicable status.
+   *
+   * @param titleIxApplicable The {@link Integer} representing the Title IX applicable status.
+   */
+  public void setTitleIxApplicable(Integer titleIxApplicable) {
+    this.titleIxApplicable = titleIxApplicable;
+  }
+
+  /**
+   * Retrieves the reasons for Title IX applicability.
+   *
+   * @return The reasons for Title IX applicability as a {@link List<String>} array.
+   */
+  public List<String> getTitleIxApplicableReasons() {
+    return titleIxApplicableReasons;
+  }
+
+  /**
+   * Sets the reasons for Title IX applicability.
+   *
+   * @param titleIxApplicableReasons The {@link List<String>} array representing the reasons for Title IX applicability.
+   */
+  public void setTitleIxApplicableReasons(
+    List<String> titleIxApplicableReasons
+  ) {
+    this.titleIxApplicableReasons = titleIxApplicableReasons;
+  }
+
+  /**
+   * Retrieves the closure actions.
+   *
+   * @return The closure actions as a {@link List<String>} array.
+   */
+  public List<String> getClosureActions() {
+    return closureActions;
+  }
+
+  /**
+   * Sets the closure actions.
+   *
+   * @param closureActions The {@link List<String>} array representing the closure actions.
+   */
+  public void setClosureActions(List<String> closureActions) {
+    this.closureActions = closureActions;
+  }
 
   /**
    * Default constructor initializing a new instance with default values.
@@ -103,43 +174,78 @@ public class CallToAction extends DocumentProperty {
   public CallToAction(Map<String, Object> stateBag) {
     super(stateBag);
     setPropertyType(DocumentPropertyType.KnownValues.CallToAction);
-    Db.saveLocalDateFromStateBag(stateBag, "opened_date", this::setOpenedDate);
-    Db.saveLocalDateFromStateBag(stateBag, "closed_date", this::setClosedDate);
-    Db.saveLocalDateFromStateBag(
+    FieldUtil.saveLocalDateFromStateBag(
+      stateBag,
+      "opened_date",
+      this::setOpenedDate
+    );
+    FieldUtil.saveLocalDateFromStateBag(
+      stateBag,
+      "closed_date",
+      this::setClosedDate
+    );
+    FieldUtil.saveLocalDateFromStateBag(
       stateBag,
       "compliancy_close_date",
       this::setCompliancyCloseDate
     );
-    Db.saveDoubleFromStateBag(
+    FieldUtil.saveDoubleFromStateBag(
       stateBag,
       "completion_percentage",
       this::setCompletionPercentage
     );
-    Db.saveDoubleFromStateBag(
+    FieldUtil.saveDoubleFromStateBag(
       stateBag,
-      "compliance_message",
-      this::setComplianceMessage
+      "compliance_rating",
+      this::setComplianceRating
     );
-    Db.saveFromStateBag(
+    FieldUtil.saveFromStateBag(
       stateBag,
-      "compliance_message_reasons",
-      this::setComplianceMessageReasons
+      "compliance_rating_reasons",
+      this::setComplianceRatingReasons
     );
-    Db.saveBooleanFromStateBag(stateBag, "inferred", this::setInferred);
-    Db.saveBooleanFromStateBag(
+    FieldUtil.saveBooleanFromStateBag(stateBag, "inferred", this::setInferred);
+    FieldUtil.saveBooleanFromStateBag(
       stateBag,
       "compliance_date_enforceable",
       this::setComplianceDateEnforceable
     );
-    Db.saveIntFromStateBag(
+    FieldUtil.saveIntFromStateBag(
       stateBag,
       "reasonable_request",
       this::setReasonabilityRating
     );
-    Db.saveFromStateBag(
+    FieldUtil.saveStringArrayFromStateBag(
       stateBag,
-      "reasonable_reason",
+      "reasonable_reasons",
       this::setReasonableReason
+    );
+    FieldUtil.saveDoubleFromStateBag(stateBag, "sentiment", this::setSentiment);
+    FieldUtil.saveStringArrayFromStateBag(
+      stateBag,
+      "sentiment_reasons",
+      this::setSentimentReasons
+    );
+    FieldUtil.saveIntFromStateBag(stateBag, "severity", this::setSeverity);
+    FieldUtil.saveStringArrayFromStateBag(
+      stateBag,
+      "severity_reason",
+      this::setSeverityReasons
+    );
+    FieldUtil.saveIntFromStateBag(
+      stateBag,
+      "title_ix_applicable",
+      this::setTitleIxApplicable
+    );
+    FieldUtil.saveStringArrayFromStateBag(
+      stateBag,
+      "title_ix_applicable_reasons",
+      this::setTitleIxApplicableReasons
+    );
+    FieldUtil.saveStringArrayFromStateBag(
+      stateBag,
+      "closure_actions",
+      this::setClosureActions
     );
   }
 
@@ -284,8 +390,8 @@ public class CallToAction extends DocumentProperty {
    *
    * @return The compliance message score as a {@link Double}.
    */
-  public Double getComplianceMessage() {
-    return complianceMessage;
+  public Double getComplianceRating() {
+    return complianceRating;
   }
 
   /**
@@ -293,8 +399,8 @@ public class CallToAction extends DocumentProperty {
    *
    * @param complianceMessage The {@link Double} representing the compliance message score.
    */
-  public void setComplianceMessage(Double complianceMessage) {
-    this.complianceMessage = Objects.requireNonNullElse(complianceMessage, 0.0);
+  public void setComplianceRating(Double complianceMessage) {
+    this.complianceRating = Objects.requireNonNullElse(complianceMessage, 0.0);
   }
 
   /**
@@ -302,8 +408,8 @@ public class CallToAction extends DocumentProperty {
    *
    * @return The compliance message reasons as a {@link String}.
    */
-  public String getComplianceMessageReasons() {
-    return complianceMessageReasons;
+  public String getComplianceRatingReasons() {
+    return complianceRatingReasons;
   }
 
   /**
@@ -311,8 +417,8 @@ public class CallToAction extends DocumentProperty {
    *
    * @param complianceMessageReasons The {@link String} representing the compliance message reasons.
    */
-  public void setComplianceMessageReasons(String complianceMessageReasons) {
-    this.complianceMessageReasons = complianceMessageReasons;
+  public void setComplianceRatingReasons(String complianceMessageReasons) {
+    this.complianceRatingReasons = complianceMessageReasons;
   }
 
   /**
@@ -380,7 +486,7 @@ public class CallToAction extends DocumentProperty {
    *
    * @return The reasonable reason as a {@link String}.
    */
-  public String getReasonableReason() {
+  public List<String> getReasonableReason() {
     return reasonableReason;
   }
 
@@ -389,7 +495,7 @@ public class CallToAction extends DocumentProperty {
    *
    * @param reasonableReason The {@link String} representing the reasonable reason.
    */
-  public void setReasonableReason(String reasonableReason) {
+  public void setReasonableReason(List<String> reasonableReason) {
     this.reasonableReason = reasonableReason;
   }
 
@@ -407,6 +513,78 @@ public class CallToAction extends DocumentProperty {
   }
 
   /**
+   * Retrieves the sentiment score.
+   *
+   * @return The sentiment score as a {@link Double}.
+   */
+  public Double getSentiment() {
+    return sentiment;
+  }
+
+  /**
+   * Sets the sentiment score.
+   *
+   * @param sentiment The {@link Double} representing the sentiment score.
+   */
+  public void setSentiment(Double sentiment) {
+    this.sentiment = sentiment;
+  }
+
+  /**
+   * Retrieves the sentiment reasons.
+   *
+   * @return The sentiment reasons as a {@link List} of {@link String}.
+   */
+  public List<String> getSentimentReasons() {
+    return sentimentReasons;
+  }
+
+  /**
+   * Sets the sentiment reasons.
+   *
+   * @param sentimentReasons The {@link List} of {@link String} representing the sentiment reasons.
+   */
+  public void setSentimentReasons(List<String> sentimentReasons) {
+    this.sentimentReasons = sentimentReasons;
+  }
+
+  /**
+   * Retrieves the severity score.
+   *
+   * @return The severity score as an {@link Integer}.
+   */
+  public Integer getSeverity() {
+    return severity;
+  }
+
+  /**
+   * Sets the severity score.
+   *
+   * @param severity The {@link Integer} representing the severity score.
+   */
+  public void setSeverity(Integer severity) {
+    this.severity = severity;
+  }
+
+  /**
+   * Retrieves the severity reasons.
+   *
+   * @return The severity reasons as a {@link List} of {@link String}.
+   */
+  public List<String> getSeverityReasons() {
+    return severityReasons;
+  }
+
+  /**
+   * Sets the severity reasons.
+   *
+   * @param severityReasons The {@link List} of {@link String} representing the severity reasons.
+   */
+  public void setSeverityReasons(List<String> severityReasons) {
+    this.severityReasons = severityReasons;
+  }
+
+  /**
    * Adds the current {@code CallToAction} instance to the database.
    *
    * @param db The database instance used to execute the insert operation.
@@ -416,24 +594,117 @@ public class CallToAction extends DocumentProperty {
   @SuppressWarnings("unchecked")
   @Override
   public CallToAction addToDb(Db db) throws SQLException {
-    super.addToDb(db);
-    db.executeUpdate(
-      "INSERT INTO call_to_action_details " +
-      "(property_id, opened_date, closed_date, compliancy_close_date, completion_percentage, compliance_message, compliance_message_reasons, inferred, compliance_date_enforceable, reasonable_request, reasonable_reasons) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      getPropertyId(),
-      openedDate,
-      closedDate,
-      compliancyCloseDate,
-      completionPercentage,
-      complianceMessage,
-      complianceMessageReasons,
-      inferred,
-      complianceDateEnforceable,
-      reasonabilityRating,
-      reasonableReason
-    );
+    try {
+      if (db == null) {
+        db = Db.getInstance();
+      }
+      try (IDbTransaction tx = db.createTransaction()) {
+        this.addToDb(tx);
+      }
+    } catch (Exception ex) {
+      throw new SQLException(
+        "Failed to add call_to_action_details for property_id: " +
+        getPropertyId(),
+        ex
+      );
+    }
     return this;
+  }
+
+  public CallToAction addToDb(IDbTransaction tx) throws SQLException {
+    try {
+      super.addToDb(tx.getDb());
+      tx
+        .getDb()
+        .executeUpdate(
+          "INSERT INTO call_to_action_details " +
+          "(property_id, opened_date, closed_date, compliancy_close_date, completion_percentage, compliance_rating, inferred, compliance_date_enforceable, reasonable_request, reasonable_reasons, sentiment, sentiment_reasons, compliance_rating_reasons, severity, severity_reason, title_ix_applicable, title_ix_applicable_reasons, closure_actions) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          getPropertyId(),
+          openedDate,
+          closedDate,
+          compliancyCloseDate,
+          completionPercentage,
+          complianceRating,
+          inferred,
+          complianceDateEnforceable,
+          reasonabilityRating,
+          reasonableReason,
+          sentiment,
+          sentimentReasons,
+          complianceRatingReasons,
+          severity,
+          severityReasons,
+          titleIxApplicable,
+          titleIxApplicableReasons,
+          closureActions
+        );
+    } catch (Exception ex) {
+      tx.setAbort();
+      throw new SQLException(
+        "Failed to add call_to_action_details for property_id: " +
+        getPropertyId(),
+        ex
+      );
+    }
+    return this;
+  }
+
+  @SuppressWarnings("unchecked")
+  public CallToAction updateDb(Db db) throws SQLException {
+    try {
+      try (var tx = db.createTransaction()) {
+        this.updateDb(tx);
+      }
+    } catch (Exception ex) {
+      throw new SQLException(
+        "Failed to update call_to_action_details for property_id: " +
+        getPropertyId(),
+        ex
+      );
+    }
+    return this;
+  }
+
+  public CallToAction updateDb(IDbTransaction tx) throws SQLException {
+    try {
+      super.updateDb(tx.getDb());
+      tx
+        .getDb()
+        .executeUpdate(
+          "UPDATE call_to_action_details SET " +
+          "opened_date = ?, closed_date = ?, compliancy_close_date = ?, completion_percentage = ?, compliance_rating = ?, inferred = ?, compliance_date_enforceable = ?, reasonable_request = ?, reasonable_reasons = ?, sentiment = ?, sentiment_reasons = ?, compliance_rating_reasons = ?, severity = ?, severity_reason = ?, title_ix_applicable = ?, title_ix_applicable_reasons = ?, closure_actions = ? " +
+          "WHERE property_id = ?",
+          openedDate,
+          closedDate,
+          compliancyCloseDate,
+          completionPercentage,
+          complianceRating,
+          inferred,
+          complianceDateEnforceable,
+          reasonabilityRating,
+          reasonableReason,
+          sentiment,
+          sentimentReasons,
+          complianceRatingReasons,
+          severity,
+          severityReasons,
+          titleIxApplicable,
+          titleIxApplicableReasons,
+          closureActions,
+          getPropertyId()
+        );
+      return this;
+    } catch (Exception ex) {
+      if (tx != null) {
+        tx.setAbort();
+      }
+      throw new SQLException(
+        "Failed to update call_to_action_details for property_id: " +
+        getPropertyId(),
+        ex
+      );
+    }
   }
 
   /**
@@ -511,7 +782,7 @@ public class CallToAction extends DocumentProperty {
      * @return The builder instance for method chaining.
      */
     public <B2 extends B> B2 complianceMessage(Double complianceMessage) {
-      target.setComplianceMessage(complianceMessage);
+      target.setComplianceRating(complianceMessage);
       return self();
     }
 
@@ -524,7 +795,7 @@ public class CallToAction extends DocumentProperty {
     public <B2 extends B> B2 complianceMessageReasons(
       String complianceMessageReasons
     ) {
-      target.setComplianceMessageReasons(complianceMessageReasons);
+      target.setComplianceRatingReasons(complianceMessageReasons);
       return self();
     }
 
@@ -569,8 +840,87 @@ public class CallToAction extends DocumentProperty {
      * @param reasonableReason The {@link String} representing the reasonable reason.
      * @return The builder instance for method chaining.
      */
-    public <B2 extends B> B2 reasonableReason(String reasonableReason) {
+    public <B2 extends B> B2 reasonableReason(List<String> reasonableReason) {
       target.setReasonableReason(reasonableReason);
+      return self();
+    }
+
+    /**
+     * Sets the reasonability rating for the {@link CallToAction}.
+     *
+     * @param reasonabilityRating The {@link Integer} representing the reasonability rating.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 sentiment(Double sentiment) {
+      target.setSentiment(sentiment);
+      return self();
+    }
+
+    /**
+     * Sets the reasonable reason text for the {@link CallToAction}.
+     *
+     * @param reasonableReason The {@link String} representing the reasonable reason.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 sentimentReasons(List<String> reasonableReason) {
+      target.setSentimentReasons(reasonableReason);
+      return self();
+    }
+
+    /**
+     * Sets the Title IX applicable status for the {@link CallToAction}.
+     *
+     * @param titleIxApplicable The {@link Integer} representing the Title IX applicable status.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 titleIxApplicable(Integer titleIxApplicable) {
+      target.setTitleIxApplicable(titleIxApplicable);
+      return self();
+    }
+
+    /**
+     * Sets the reasons for Title IX applicability for the {@link CallToAction}.
+     *
+     * @param titleIxApplicableReasons The {@link List<String>} array representing the reasons for Title IX applicability.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 titleIxApplicableReasons(
+      List<String> titleIxApplicableReasons
+    ) {
+      target.setTitleIxApplicableReasons(titleIxApplicableReasons);
+      return self();
+    }
+
+    /**
+     * Sets the closure actions for the {@link CallToAction}.
+     *
+     * @param closureActions The {@link List<String>} array representing the closure actions.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 closureActions(List<String> closureActions) {
+      target.setClosureActions(closureActions);
+      return self();
+    }
+
+    /**
+     * Sets the severity level for the {@link CallToAction}.
+     *
+     * @param severity The {@link Integer} representing the severity level.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 severity(Integer severity) {
+      target.setSeverity(severity);
+      return self();
+    }
+
+    /**
+     * Sets the closure actions for the {@link CallToAction}.
+     *
+     * @param closureActions The {@link List<String>} array representing the closure actions.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends B> B2 severityReasons(List<String> severityReasons) {
+      target.setSeverityReasons(severityReasons);
       return self();
     }
   }
@@ -606,10 +956,14 @@ public class CallToAction extends DocumentProperty {
    *
    * @return A new {@link CallToActionBuilderBase} instance.
    */
-  public static CallToActionBuilderBase<
-    ? extends CallToAction,
-    ? extends CallToActionBuilderBase<?, ?>
-  > builder() {
-    return new CallToActionBuilder();
+  @SuppressWarnings("unchecked")
+  public static <
+    TDocType extends CallToAction,
+    TBuilder extends CallToActionBuilderBase<
+      TDocType,
+      ? extends CallToActionBuilderBase<?, ?>
+    >
+  > TBuilder builder(Class<TDocType> clazz) {
+    return (TBuilder) new CallToActionBuilder();
   }
 }

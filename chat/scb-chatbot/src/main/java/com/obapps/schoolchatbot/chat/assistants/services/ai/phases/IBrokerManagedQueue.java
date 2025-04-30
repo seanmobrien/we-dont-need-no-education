@@ -1,9 +1,11 @@
 package com.obapps.schoolchatbot.chat.assistants.services.ai.phases;
 
 public interface IBrokerManagedQueue {
-  void Start();
+  void start();
 
-  void Stop();
+  Boolean stop(Boolean force);
 
-  Boolean getIsRuning();
+  void shutdown();
+
+  Boolean getIsRunning();
 }

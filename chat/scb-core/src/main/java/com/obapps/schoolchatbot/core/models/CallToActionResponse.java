@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.util.Db;
+import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -63,37 +64,37 @@ public class CallToActionResponse extends DocumentProperty {
   public CallToActionResponse(Map<String, Object> stateBag) {
     super(stateBag);
     setPropertyType(DocumentPropertyType.KnownValues.CallToActionResponse);
-    Db.saveUuidFromStateBag(
+    FieldUtil.saveUuidFromStateBag(
       stateBag,
       "action_property_id",
       this::setActionPropertyId
     );
-    Db.saveDoubleFromStateBag(
+    FieldUtil.saveDoubleFromStateBag(
       stateBag,
       "completion_percentage",
       this::setCompletionPercentage
     );
-    Db.saveLocalDateTimeFromStateBag(
+    FieldUtil.saveLocalDateTimeFromStateBag(
       stateBag,
       "response_timestamp",
       this::setResponseTimestamp
     );
-    Db.saveDoubleFromStateBag(
+    FieldUtil.saveDoubleFromStateBag(
       stateBag,
       "compliance_message",
       this::setComplianceMessage
     );
-    Db.saveFromStateBag(
+    FieldUtil.saveFromStateBag(
       stateBag,
       "compliance_message_reasons",
       this::setComplianceMessageReasons
     );
-    Db.saveDoubleFromStateBag(
+    FieldUtil.saveDoubleFromStateBag(
       stateBag,
       "compliance_aggregate",
       this::setComplianceAggregate
     );
-    Db.saveFromStateBag(
+    FieldUtil.saveFromStateBag(
       stateBag,
       "compliance_aggregate_reasons",
       this::setComplianceAggregateReasons

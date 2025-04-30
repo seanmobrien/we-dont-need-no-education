@@ -108,6 +108,24 @@ public class EnvVars {
     public String getKey() {
       return get("REDIS_PASSWORD");
     }
+
+    public String getOfflineStorage() {
+      return get("REDIS_OFFLINE_STORAGE", "./redis-offline/");
+    }
+
+    public String getOfflineStorageUniqueFile(String name) {
+      var folder = new java.io.File(getOfflineStorage());
+      if (!folder.exists()) {
+        folder.mkdirs();
+      }
+      var uniqueFilename = String.format(
+        "%s/%s_%d.json",
+        folder.getAbsolutePath(),
+        Objects.requireNonNullElse(name, "value"),
+        System.currentTimeMillis()
+      );
+      return uniqueFilename;
+    }
   }
 
   public class AzureStorageVars {

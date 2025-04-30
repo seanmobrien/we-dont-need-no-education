@@ -1,6 +1,8 @@
 package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.util.Db;
+import com.obapps.core.util.IDbTransaction;
+import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,8 +45,40 @@ import java.util.stream.Collectors;
  */
 public class HistoricCallToAction extends CallToAction {
 
+  private List<CallToActionCategory> categories;
+
   private List<CallToActionResponse> responses;
   private Boolean fromThisMessage = false;
+
+  /**
+   * Retrieves the list of categories associated with this historical CTA.
+   *
+   * @return A list of {@link CallToActionCategory} objects.
+   */
+  public List<CallToActionCategory> getCategories() {
+    return categories;
+  }
+
+  /**
+   * Sets the list of categories associated with this historical CTA.
+   *
+   * @param categories A list of {@link CallToActionCategory} objects to associate with this CTA.
+   */
+  public void setCategories(List<CallToActionCategory> categories) {
+    this.categories = categories;
+  }
+
+  public void setRelatedDocuments(List<DocumentRelationship> documents) {
+    if (documents != null && !documents.isEmpty()) {
+      this.relatedDocuments = documents;
+    }
+  }
+
+  public List<DocumentRelationship> getRelatedDocuments() {
+    return relatedDocuments;
+  }
+
+  private List<DocumentRelationship> relatedDocuments;
 
   /**
    * Retrieves the list of responses associated with this historical CTA.
@@ -97,7 +131,7 @@ public class HistoricCallToAction extends CallToAction {
     }
     var r2 = this.responses.getLast();
     return r2 == null
-      ? this.getComplianceMessage()
+      ? this.getComplianceRating()
       : r2.getComplianceAggregate();
   }
 
@@ -116,19 +150,44 @@ public class HistoricCallToAction extends CallToAction {
    */
   public HistoricCallToAction(Map<String, Object> stateBag) {
     super(stateBag);
-    Db.saveBooleanFromStateBag(
+    FieldUtil.saveBooleanFromStateBag(
       stateBag,
       "from_this_message",
       this::setFromThisMessage
     );
-    Db.saveFromStateBag(stateBag, "action_description", this::setPropertyValue);
+    FieldUtil.saveFromStateBag(
+      stateBag,
+      "action_description",
+      this::setPropertyValue
+    );
     if (this.getOpenedDate() == null) {
-      Db.saveLocalDateFromStateBag(
+      FieldUtil.saveLocalDateFromStateBag(
         stateBag,
         "response_timestamp",
         this::setOpenedDate
       );
     }
+  }
+
+  public CallToAction addToDb(IDbTransaction tx) throws SQLException {
+    super.addToDb(tx);
+    for (DocumentRelationship doc : this.getRelatedDocuments()) {
+      doc.addToDb(tx.getDb());
+    }
+    return this;
+  }
+
+  public CallToAction updateDb(IDbTransaction tx) throws SQLException {
+    super.updateDb(tx);
+    var db = tx.getDb();
+    db.executeUpdate(
+      "DELETE FROM document_property_call_to_action_category WHERE property_id=?",
+      this.getPropertyId()
+    );
+    for (DocumentRelationship doc : this.getRelatedDocuments()) {
+      doc.addToDb(tx.getDb());
+    }
+    return this;
   }
 
   /**
@@ -167,6 +226,32 @@ public class HistoricCallToAction extends CallToAction {
       List<CallToActionResponse> responses
     ) {
       target.setResponses(responses);
+      return self();
+    }
+
+    /**
+     * Sets the list of categories for the {@link HistoricCallToAction} in the builder.
+     *
+     * @param categories A list of {@link CallToActionCategory} objects to associate with the CTA.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends HistoricCallToActionBuilder> B2 categories(
+      List<CallToActionCategory> categories
+    ) {
+      target.setCategories(categories);
+      return self();
+    }
+
+    /**
+     * Sets the list of categories for the {@link HistoricCallToAction} in the builder.
+     *
+     * @param categories A list of {@link CallToActionCategory} objects to associate with the CTA.
+     * @return The builder instance for method chaining.
+     */
+    public <B2 extends HistoricCallToActionBuilder> B2 relatedDocuments(
+      List<DocumentRelationship> documents
+    ) {
+      target.setRelatedDocuments(documents);
       return self();
     }
 
@@ -212,7 +297,7 @@ public class HistoricCallToAction extends CallToAction {
         result.add(action);
       } else {
         CallToActionResponse response = new CallToActionResponse(record);
-        Db.saveFromStateBag(
+        FieldUtil.saveFromStateBag(
           record,
           "action_description",
           response::setPropertyValue
@@ -224,35 +309,59 @@ public class HistoricCallToAction extends CallToAction {
     return result;
   }
 
-  public static HistoricCallToAction getCallsToAction(Db db, UUID id) {
+  public static HistoricCallToAction getCallsToAction(Db db, UUID id)
+    throws SQLException {
+    return getCallsToAction(db, id, true, true);
+  }
+
+  public static HistoricCallToAction getCallsToAction(
+    Db db,
+    UUID id,
+    Boolean loadResponses,
+    Boolean loadCategories
+  ) throws SQLException {
+    if (db == null) {
+      db = Db.getInstance();
+    }
     var cta = db
       .selectRecords("SELECT * FROM \"CallToAction\" WHERE property_id = ?", id)
       .stream()
       .map(record -> {
         var action = new HistoricCallToAction(record);
         action.setResponses(new ArrayList<>());
+        action.setCategories(new ArrayList<>());
         return action;
       })
       .collect(Collectors.toList())
-      .getFirst();
+      .stream()
+      .findFirst() // Changed from getFirst() to findFirst()
+      .orElse(null);
     if (cta == null) {
       return null;
     }
-    db
-      .selectRecords(
-        "SELECT * FROM \"ResponsiveAction\" WHERE action_property_id = ?",
-        id
-      )
-      .stream()
-      .forEach(record -> {
-        var response = new CallToActionResponse(record);
-        Db.saveFromStateBag(
-          record,
-          "action_description",
-          response::setPropertyValue
-        );
-        cta.getResponses().add(response);
-      });
+    if (loadResponses) {
+      db
+        .selectRecords(
+          "SELECT * FROM \"ResponsiveAction\" WHERE action_property_id = ?",
+          id
+        )
+        .stream()
+        .forEach(record -> {
+          var response = new CallToActionResponse(record);
+          FieldUtil.saveFromStateBag(
+            record,
+            "action_description",
+            response::setPropertyValue
+          );
+          cta.getResponses().add(response);
+        });
+    }
+    if (loadCategories) {
+      var cats = CallToActionCategory.loadForDocumentProprety(db, id);
+      if (cats != null && !cats.isEmpty()) {
+        cta.setCategories(cats);
+      }
+    }
     return cta;
   }
 }

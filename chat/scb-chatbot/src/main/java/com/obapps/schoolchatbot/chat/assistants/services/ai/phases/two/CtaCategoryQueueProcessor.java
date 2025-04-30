@@ -4,6 +4,7 @@ import com.obapps.core.ai.extraction.services.IterationEventArgs;
 import com.obapps.core.ai.extraction.services.RecordExtractionService;
 import com.obapps.core.ai.factory.models.AiServiceOptions;
 import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
+import com.obapps.core.util.DateTimeFormats;
 import com.obapps.core.util.Db;
 import com.obapps.core.util.Strings;
 import com.obapps.schoolchatbot.chat.MessageQueueName;
@@ -17,7 +18,6 @@ import dev.langchain4j.model.output.TokenUsage;
 import dev.langchain4j.service.Result;
 import dev.langchain4j.service.tool.ToolExecution;
 import java.sql.SQLException;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -110,9 +110,7 @@ public class CtaCategoryQueueProcessor
               %s""",
             cta.getRecordId(),
             cta.getPropertyValue(),
-            cta
-              .getCreatedOn()
-              .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")),
+            cta.getCreatedOn().format(DateTimeFormats.localDate),
             cta.getDocumentId(),
             String.join("\n", cta.getClosureActionItems()),
             String.join("\n", cta.getPolicyBasis())
@@ -123,7 +121,9 @@ public class CtaCategoryQueueProcessor
   }
 
   @Override
-  public Boolean processBatch(List<InitialCtaOrResponsiveAction> batch) {
+  public Boolean processBatch(
+    IQueueProcessor.QueueBatchContext<InitialCtaOrResponsiveAction> batch
+  ) {
     return processBatchWithResult(batch).isSuccess();
   }
 
@@ -134,7 +134,9 @@ public class CtaCategoryQueueProcessor
         com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CallToActionCategory
       >
     >
-  > processBatchWithResult(List<InitialCtaOrResponsiveAction> batch) {
+  > processBatchWithResult(
+    IQueueProcessor.QueueBatchContext<InitialCtaOrResponsiveAction> batch
+  ) {
     if (batch == null || batch.isEmpty()) {
       return BatchResult.failure("Batch is null or empty.", List.of());
     }

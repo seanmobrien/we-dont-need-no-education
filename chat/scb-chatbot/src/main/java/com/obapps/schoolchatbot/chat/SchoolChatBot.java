@@ -1,6 +1,5 @@
 package com.obapps.schoolchatbot.chat;
 
-import com.obapps.core.redis.IRedisConnection;
 import com.obapps.core.redis.RedisConnectionFactory;
 import com.obapps.core.util.*;
 import com.obapps.schoolchatbot.chat.assistants.*;
@@ -15,7 +14,6 @@ import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Scanner;
-import org.redisson.api.RedissonClient;
 
 /**
  * The main entry point for the SchoolChatBot application.
@@ -39,7 +37,7 @@ import org.redisson.api.RedissonClient;
  * <p>Thread Safety:</p>
  * <p>This class is thread-safe as it uses a synchronized singleton pattern for initialization.</p>
  */
-public class SchoolChatBot implements IRedisConnection {
+public class SchoolChatBot {
 
   private static SchoolChatBot globalInstance;
 
@@ -78,52 +76,45 @@ public class SchoolChatBot implements IRedisConnection {
   }
 
   private void initializeRedisConnection() {
-    RedisConnectionFactory.setGlobalInstance(this);
-    this.redisClient.Start();
+    RedisConnectionFactory.setGlobalInstance(this.redisClient);
     queues.add(
-      new BrokerManagedQueue<>(new CtaCategoryQueueProcessor(), this, null)
+      new BrokerManagedQueue<>(
+        new CtaCategoryQueueProcessor(),
+        redisClient,
+        null
+      )
     );
     queues.add(
       new BrokerManagedQueue<>(
         new ResponsiveActionAssignmentQueueProcessor(),
-        this,
+        redisClient,
         BrokerManagedQueue.Options.builder().setEnabled(false).build()
       )
     );
     queues.add(
       new BrokerManagedQueue<>(
         new CtaTitleIXAccessAssesmentQueueProcessor(),
-        this,
+        redisClient,
         BrokerManagedQueue.Options.builder()
-          .setWriteToFile(false)
-          .setEnabled(false)
+          .setWriteToFile(true)
+          .setMaxItemsToProcess(40)
+          .setMinItemsToProcess(10)
           .build()
       )
     );
 
     queues.forEach(queue -> {
       try {
-        queue.Start();
+        queue.start();
       } catch (Exception e) {
         System.out.println("Error starting queue: " + e.getMessage());
       }
     });
-  }
-
-  @Override
-  public RedissonClient getRedisClient() {
-    return redisClient.getRedisClient();
   }
 
   private void closeRedisConnection() {
-    queues.forEach(queue -> {
-      try {
-        queue.Stop();
-      } catch (Exception e) {
-        System.out.println("Error starting queue: " + e.getMessage());
-      }
-    });
-    redisClient.Stop();
+    queues.get(0).shutdown();
+    redisClient.stop();
   }
 
   /**

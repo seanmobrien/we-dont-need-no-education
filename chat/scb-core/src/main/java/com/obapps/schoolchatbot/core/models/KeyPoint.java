@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.util.Db;
+import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Objects;
@@ -49,14 +50,18 @@ public class KeyPoint extends DocumentProperty {
   public KeyPoint(Map<String, Object> stateBag) {
     super(stateBag);
     setPropertyType(DocumentPropertyType.KnownValues.KeyPoint);
-    Db.saveDoubleFromStateBag(stateBag, "relevance", this::setRelevance);
-    Db.saveDoubleFromStateBag(stateBag, "compliance", this::setCompliance);
-    Db.saveIntFromStateBag(
+    FieldUtil.saveDoubleFromStateBag(stateBag, "relevance", this::setRelevance);
+    FieldUtil.saveDoubleFromStateBag(
+      stateBag,
+      "compliance",
+      this::setCompliance
+    );
+    FieldUtil.saveIntFromStateBag(
       stateBag,
       "severity_ranking",
       this::setSeverityRanking
     );
-    Db.saveBooleanFromStateBag(stateBag, "inferred", this::setInferred);
+    FieldUtil.saveBooleanFromStateBag(stateBag, "inferred", this::setInferred);
   }
 
   /**
