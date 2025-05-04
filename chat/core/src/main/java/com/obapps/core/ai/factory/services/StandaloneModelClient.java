@@ -2,7 +2,7 @@ package com.obapps.core.ai.factory.services;
 
 import com.obapps.core.ai.factory.models.ModelType;
 import com.obapps.core.ai.factory.types.IStandaloneModelClient;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 
 /**
  * The StandaloneModelClient class provides a client for interacting with a chat language model.
@@ -13,7 +13,7 @@ public class StandaloneModelClient implements IStandaloneModelClient {
   /**
    * The chat language model used by this client.
    */
-  private final ChatLanguageModel model;
+  private final ChatModel model;
 
   /**
    * Default constructor that initializes the client with a default LoFi model.
@@ -27,7 +27,7 @@ public class StandaloneModelClient implements IStandaloneModelClient {
    *
    * @param llm The chat language model to use. If null, a default LoFi model is created.
    */
-  public StandaloneModelClient(ChatLanguageModel llm) {
+  public StandaloneModelClient(ChatModel llm) {
     super();
     model = llm == null
       ? new StandaloneModelClientFactory().createModel(ModelType.LoFi)
@@ -39,7 +39,7 @@ public class StandaloneModelClient implements IStandaloneModelClient {
    *
    * @return The chat language model.
    */
-  public ChatLanguageModel getModel() {
+  public ChatModel getModel() {
     return model;
   }
 

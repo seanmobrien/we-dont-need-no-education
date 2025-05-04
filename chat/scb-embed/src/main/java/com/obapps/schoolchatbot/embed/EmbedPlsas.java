@@ -52,8 +52,7 @@ public class EmbedPlsas extends DocumentEmbedder {
     // Example usage of EmbedPlsas
     var options = new EmbedPolicyFolderOptions();
     options.sourceFolder = "C:\\Users\\seanm\\OneDrive\\PLSASComplaint\\FedLaw"; // Specify the folder containing PLSAS documents
-    var embedPlsas = new EmbedPlsas(options);
-    try {
+    try (var embedPlsas = new EmbedPlsas(options)) {
       embedPlsas.run();
     } catch (Exception e) {
       e.printStackTrace();

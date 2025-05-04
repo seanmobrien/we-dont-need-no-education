@@ -1,22 +1,12 @@
 package com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.util.Db;
-import com.obapps.core.util.Strings;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.InitialCtaOrResponsiveAction;
-import java.io.FileReader;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

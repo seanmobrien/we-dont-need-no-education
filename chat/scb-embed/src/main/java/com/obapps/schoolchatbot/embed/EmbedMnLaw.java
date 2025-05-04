@@ -87,8 +87,7 @@ public class EmbedMnLaw extends DocumentEmbedder {
     var options = new EmbedPolicyFolderOptions();
     options.sourceFolder =
       "C:\\Users\\seanm\\OneDrive\\PLSASComplaint\\PLSAS Policy"; // Specify the folder containing PLSAS documents
-    var embedPlsas = new EmbedMnLaw(options);
-    try {
+    try (var embedPlsas = new EmbedMnLaw(options)) {
       embedPlsas.run();
     } catch (Exception e) {
       e.printStackTrace();

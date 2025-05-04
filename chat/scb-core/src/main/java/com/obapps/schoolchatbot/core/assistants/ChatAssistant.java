@@ -8,7 +8,7 @@ import com.obapps.schoolchatbot.core.assistants.retrievers.SourceDocumentRetriev
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.moderation.Moderation;
 import dev.langchain4j.model.moderation.ModerationModel;
@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 public class ChatAssistant {
 
   protected EmbeddingModel _embeddingModel;
-  protected ChatLanguageModel chatLanguageModel;
+  protected ChatModel ChatModel;
   protected Assistant assistant;
   protected Logger log;
   protected Boolean includeReplyTo;
@@ -62,9 +62,7 @@ public class ChatAssistant {
         )
       );
     // Chat Model for high-fidelity analysis
-    this.chatLanguageModel = this.languageModelFactory.createModel(
-        ModelType.HiFi
-      );
+    this.ChatModel = this.languageModelFactory.createModel(ModelType.HiFi);
     messageWindowMemory = MessageWindowChatMemory.withMaxMessages(100);
     this.includeReplyTo = false;
   }
@@ -92,7 +90,7 @@ public class ChatAssistant {
   protected final <TService> TService getAiService(Class<TService> clazz) {
     return prepareAssistantService(
       AiServices.builder(clazz)
-        .chatLanguageModel(chatLanguageModel)
+        .chatModel(ChatModel)
         .maxSequentialToolsInvocations(100)
         .moderationModel(
           new ModerationModel() {

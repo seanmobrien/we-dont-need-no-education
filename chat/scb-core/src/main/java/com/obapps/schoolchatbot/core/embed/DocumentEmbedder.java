@@ -15,8 +15,6 @@ import dev.langchain4j.data.document.parser.apache.pdfbox.ApachePdfBoxDocumentPa
 import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
-import dev.langchain4j.model.azure.AzureOpenAiTokenizer;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.retriever.azure.search.AzureAiSearchContentRetriever;
 import dev.langchain4j.rag.content.retriever.azure.search.AzureAiSearchQueryType;
@@ -122,7 +120,7 @@ public class DocumentEmbedder implements AutoCloseable {
     this.documentSplitter = DocumentSplitters.recursive(
       openAiVars.getDocumentSplitterMaxTokens(),
       openAiVars.getDocumentSplitterOverlap(),
-      modelFactory.getTokenizer(ModelType.Embedding)
+      modelFactory.getTokenCountEstimator(ModelType.Embedding)
     );
 
     // Create ContentRetriever object for Azure AI Search with Hybrid Search applied

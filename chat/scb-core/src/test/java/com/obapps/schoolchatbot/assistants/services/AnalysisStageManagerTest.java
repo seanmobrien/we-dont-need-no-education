@@ -8,7 +8,6 @@ import static org.mockito.Mockito.*;
 import com.obapps.core.util.Db;
 import com.obapps.schoolchatbot.core.assistants.services.AnalysisStageManager;
 import com.obapps.schoolchatbot.core.assistants.types.BaseStageAnalystFactory;
-import com.obapps.schoolchatbot.core.models.PendingStageAnalyst;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;

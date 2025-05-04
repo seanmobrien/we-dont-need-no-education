@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.obapps.core.ai.factory.models.ModelType;
 import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.ai.factory.types.IStandaloneModelClient;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ public class StandaloneModelClientFactoryTest {
   @Test
   public void testCreate_withHiFiModelType() {
     IStandaloneModelClient client = factory.create(ModelType.HiFi);
-    assertThat(client.getModel()).isInstanceOf(ChatLanguageModel.class);
+    assertThat(client.getModel()).isInstanceOf(ChatModel.class);
     assertThat(client).isNotNull();
   }
 
@@ -31,7 +31,7 @@ public class StandaloneModelClientFactoryTest {
   public void testCreate_withLoFiModelType() {
     IStandaloneModelClient client = factory.create(ModelType.LoFi);
     assertThat(client).isNotNull();
-    assertThat(client.getModel()).isInstanceOf(ChatLanguageModel.class);
+    assertThat(client.getModel()).isInstanceOf(ChatModel.class);
   }
 
   @Test

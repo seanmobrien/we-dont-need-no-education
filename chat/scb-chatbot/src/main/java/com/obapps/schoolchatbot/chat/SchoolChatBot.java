@@ -11,9 +11,7 @@ import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.Responsiv
 import com.obapps.schoolchatbot.chat.services.RedisClient;
 import com.obapps.schoolchatbot.core.assistants.services.*;
 import com.obapps.schoolchatbot.embed.EmbedDocuments;
-import com.obapps.schoolchatbot.embed.EmbedPlsas;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
-import io.netty.util.internal.shaded.org.jctools.queues.QueueProgressIndicators;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;

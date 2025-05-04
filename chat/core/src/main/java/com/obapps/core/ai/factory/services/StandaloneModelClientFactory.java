@@ -11,19 +11,18 @@ import com.obapps.core.ai.telemetry.SpanChatModelListener;
 import com.obapps.core.util.EnvVars;
 import com.obapps.core.util.EnvVars.OpenAiVars;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.Tokenizer;
+import dev.langchain4j.model.TokenCountEstimator;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
-import dev.langchain4j.model.azure.AzureOpenAiTokenizer;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.azure.AzureOpenAiTokenCountEstimator;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.service.AiServices;
 import java.time.Duration;
-import java.util.List;
 import java.util.function.Function;
 
 /**
- * Factory class for creating instances of {@link ChatLanguageModel} and {@link IStandaloneModelClient}.
+ * Factory class for creating instances of {@link ChatModel} and {@link IStandaloneModelClient}.
  * This class provides methods to create different types of language models (HiFi, LoFi, and Embedding)
  * and encapsulates the logic for initializing these models with the appropriate configurations.
  *
@@ -53,8 +52,11 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   private EnvVars envVars;
   private String userName;
 
+  @SuppressWarnings("unused")
   private static final MetricsChatModelListener MetricsChatModelListener =
     new MetricsChatModelListener();
+
+  @SuppressWarnings("unused")
   private static final SpanChatModelListener SpanChatModelListener =
     new SpanChatModelListener();
 
@@ -95,7 +97,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     return model;
   }
 
-  protected ChatLanguageModel createChatLlm(
+  protected ChatModel createChatLlm(
     String endpoint,
     String deployment,
     String apiKey
@@ -103,7 +105,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     return createChatLlm(endpoint, deployment, apiKey, null);
   }
 
-  protected ChatLanguageModel createChatLlm(
+  protected ChatModel createChatLlm(
     String endpoint,
     String deployment,
     String apiKey,
@@ -128,10 +130,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       .endpoint(normalEndpoint)
       .deploymentName(deployment)
       .timeout(Duration.ofMillis(2 * 60 * 1000))
-      .logRequestsAndResponses(
-        isDebugMode
-      )//.listeners(List.of(SpanChatModelListener, MetricsChatModelListener))
-    ;
+      .logRequestsAndResponses(isDebugMode); //.listeners(List.of(SpanChatModelListener, MetricsChatModelListener))
 
     if (userName != null) {
       builder.user(userName);
@@ -143,7 +142,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     return model;
   }
 
-  protected ChatLanguageModel createLoFiClient() {
+  protected ChatModel createLoFiClient() {
     // Completion Model for low-fidelity analysis
     return createChatLlm(
       openAiEnv(OpenAiVars::getApiEndpointCompletions),
@@ -152,7 +151,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     );
   }
 
-  protected ChatLanguageModel createLoFiClient(
+  protected ChatModel createLoFiClient(
     Function<
       AzureOpenAiChatModel.Builder,
       AzureOpenAiChatModel.Builder
@@ -166,7 +165,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     );
   }
 
-  protected ChatLanguageModel createHiFiClient() {
+  protected ChatModel createHiFiClient() {
     // Completion Model for high-fidelity analysis
     return createChatLlm(
       openAiEnv(OpenAiVars::getApiEndpoint),
@@ -175,7 +174,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     );
   }
 
-  protected ChatLanguageModel createHiFiClient(
+  protected ChatModel createHiFiClient(
     Function<
       AzureOpenAiChatModel.Builder,
       AzureOpenAiChatModel.Builder
@@ -208,17 +207,17 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   }
 
   /**
-   * Creates a ChatLanguageModel instance based on the specified model type.
+   * Creates a ChatModel instance based on the specified model type.
    *
    * @param modelType The type of model to create. Supported types are:
    *                  - HiFi: High-fidelity language model.
    *                  - LoFi: Low-fidelity language model.
    *                  - Embedding: Embedding-based language model.
-   * @return A ChatLanguageModel instance corresponding to the specified model type.
+   * @return A ChatModel instance corresponding to the specified model type.
    * @throws IllegalArgumentException If the specified model type is unsupported.
    */
-  public ChatLanguageModel createModel(ModelType modelType) {
-    ChatLanguageModel llm = null;
+  public ChatModel createModel(ModelType modelType) {
+    ChatModel llm = null;
     switch (modelType) {
       case HiFi:
         llm = createHiFiClient();
@@ -234,14 +233,14 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     return llm;
   }
 
-  protected ChatLanguageModel createModel(
+  protected ChatModel createModel(
     ModelType modelType,
     Function<
       AzureOpenAiChatModel.Builder,
       AzureOpenAiChatModel.Builder
     > builderFunc
   ) {
-    ChatLanguageModel llm = null;
+    ChatModel llm = null;
     switch (modelType) {
       case HiFi:
         llm = createHiFiClient(builderFunc);
@@ -258,8 +257,8 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   }
 
   @Override
-  public Tokenizer getTokenizer(ModelType modelType) {
-    return new AzureOpenAiTokenizer(
+  public TokenCountEstimator getTokenCountEstimator(ModelType modelType) {
+    return new AzureOpenAiTokenCountEstimator(
       EnvVars.getInstance().getOpenAi().getDeploymentEmbedding()
     );
   }
@@ -367,9 +366,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       }
       return b;
     });
-    var builder = AiServices.builder(options.getClazz()).chatLanguageModel(
-      model
-    );
+    var builder = AiServices.builder(options.getClazz()).chatModel(model);
     if (options.memoryWindow != null && options.memoryWindow > 0) {
       builder.chatMemory(
         MessageWindowChatMemory.withMaxMessages(options.memoryWindow)

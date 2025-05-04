@@ -1,11 +1,9 @@
 package com.obapps.schoolchatbot.assistants.services;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 import com.obapps.core.ai.factory.types.ILanguageModelFactory;
-import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.schoolchatbot.core.assistants.models.search.AiSearchResult;
 import com.obapps.schoolchatbot.core.assistants.services.AzureSearchClient;
 import com.obapps.schoolchatbot.core.assistants.services.DocumentChunkFilter;
@@ -19,7 +17,6 @@ import org.junit.jupiter.api.Test;
 class JustInTimeDocumentLookupTests {
 
   private AzureSearchClient mockSearchClient;
-  private IStandaloneModelClient mockSummarizer;
   private DocumentChunkFilter mockChunkFilter;
   private JustInTimeDocumentLookup documentLookup;
   private IDocumentContentSource mockDocumentSource;
@@ -28,7 +25,6 @@ class JustInTimeDocumentLookupTests {
   void setUp() {
     mockDocumentSource = mock(IDocumentContentSource.class);
     mockSearchClient = mock(AzureSearchClient.class);
-    mockSummarizer = mock(IStandaloneModelClient.class);
     ILanguageModelFactory mockFactory = mock(ILanguageModelFactory.class);
     mockChunkFilter = mock(DocumentChunkFilter.class);
     documentLookup = new JustInTimeDocumentLookup(

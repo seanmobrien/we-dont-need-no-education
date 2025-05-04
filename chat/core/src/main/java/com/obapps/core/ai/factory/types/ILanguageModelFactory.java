@@ -3,8 +3,8 @@ package com.obapps.core.ai.factory.types;
 import com.obapps.core.ai.factory.models.AiServiceOptions;
 import com.obapps.core.ai.factory.models.EmbeddingOptions;
 import com.obapps.core.ai.factory.models.ModelType;
-import dev.langchain4j.model.Tokenizer;
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.TokenCountEstimator;
+import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 
 /**
@@ -29,16 +29,16 @@ public interface ILanguageModelFactory {
   public String getUserName();
 
   /**
-   * Creates a ChatLanguageModel instance based on the specified model type.
+   * Creates a ChatModel instance based on the specified model type.
    *
    * @param modelType The type of model to create. Supported types are:
    *                  - HiFi: High-fidelity language model.
    *                  - LoFi: Low-fidelity language model.
    *                  - Embedding: Embedding-based language model.
-   * @return A ChatLanguageModel instance corresponding to the specified model type.
+   * @return A ChatModel instance corresponding to the specified model type.
    * @throws IllegalArgumentException If the specified model type is unsupported.
    */
-  public ChatLanguageModel createModel(ModelType modelType);
+  public ChatModel createModel(ModelType modelType);
 
   /**
    * Creates an EmbeddingModel instance with default options.
@@ -66,10 +66,10 @@ public interface ILanguageModelFactory {
   public <TService> TService createService(AiServiceOptions<TService> options);
 
   /**
-   * Retrieves the tokenizer associated with the specified model type.
+   * Retrieves the TokenCountEstimator associated with the specified model type.
    *
-   * @param modelType The type of the model for which the tokenizer is required.
-   * @return The tokenizer corresponding to the given model type.
+   * @param modelType The type of the model for which the TokenCountEstimator is required.
+   * @return The TokenCountEstimator corresponding to the given model type.
    */
-  public Tokenizer getTokenizer(ModelType modelType);
+  public TokenCountEstimator getTokenCountEstimator(ModelType modelType);
 }

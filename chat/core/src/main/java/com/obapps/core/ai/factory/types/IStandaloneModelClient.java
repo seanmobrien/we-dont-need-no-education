@@ -1,6 +1,6 @@
 package com.obapps.core.ai.factory.types;
 
-import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.ChatModel;
 
 /**
  * Interface representing a standalone model client for interacting with a model.
@@ -18,7 +18,7 @@ public interface IStandaloneModelClient {
   /**
    * Retrieves the chat language model instance.
    *
-   * @return an instance of {@link ChatLanguageModel} representing the chat language model.
+   * @return an instance of {@link ChatModel} representing the chat language model.
    */
-  ChatLanguageModel getModel();
+  ChatModel getModel();
 }

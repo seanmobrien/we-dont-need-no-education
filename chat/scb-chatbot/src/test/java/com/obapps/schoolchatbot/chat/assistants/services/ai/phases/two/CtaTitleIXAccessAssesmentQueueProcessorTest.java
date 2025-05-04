@@ -6,12 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.util.Db;
-import com.obapps.core.util.Strings;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CategorizedCallToAction;
-import java.io.FileReader;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

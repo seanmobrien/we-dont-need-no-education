@@ -131,7 +131,7 @@ public class EmbedDocuments {
     var documentSplitter = DocumentSplitters.recursive(
       openAiVars.getDocumentSplitterMaxTokens(),
       openAiVars.getDocumentSplitterOverlap(),
-      modelFactory.getTokenizer(ModelType.Embedding)
+      modelFactory.getTokenCountEstimator(ModelType.Embedding)
     );
 
     // Create ContentRetriever object for Azure AI Search with Hybrid Search applied
