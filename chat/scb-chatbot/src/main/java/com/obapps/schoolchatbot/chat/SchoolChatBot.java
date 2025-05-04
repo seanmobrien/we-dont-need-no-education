@@ -10,9 +10,13 @@ import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.CtaTitleI
 import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.ResponsiveActionAssignmentQueueProcessor;
 import com.obapps.schoolchatbot.chat.services.RedisClient;
 import com.obapps.schoolchatbot.core.assistants.services.*;
+import com.obapps.schoolchatbot.embed.EmbedDocuments;
+import com.obapps.schoolchatbot.embed.EmbedPlsas;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
+import io.netty.util.internal.shaded.org.jctools.queues.QueueProgressIndicators;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -37,7 +41,7 @@ import java.util.Scanner;
  * <p>Thread Safety:</p>
  * <p>This class is thread-safe as it uses a synchronized singleton pattern for initialization.</p>
  */
-public class SchoolChatBot {
+public class SchoolChatBot implements AutoCloseable {
 
   private static SchoolChatBot globalInstance;
 
@@ -62,7 +66,6 @@ public class SchoolChatBot {
    */
   private final Scanner appScanner;
   private final RedisClient redisClient;
-  private final ArrayList<IBrokerManagedQueue> queues = new ArrayList<>();
 
   /**
    * Constructs a new instance of the SchoolChatBot class.
@@ -74,6 +77,8 @@ public class SchoolChatBot {
     this.redisClient = RedisClient.getInstance();
     initializeRedisConnection();
   }
+
+  private List<IBrokerManagedQueue> queues = new ArrayList<>();
 
   private void initializeRedisConnection() {
     RedisConnectionFactory.setGlobalInstance(this.redisClient);
@@ -110,11 +115,6 @@ public class SchoolChatBot {
         System.out.println("Error starting queue: " + e.getMessage());
       }
     });
-  }
-
-  private void closeRedisConnection() {
-    queues.get(0).shutdown();
-    redisClient.stop();
   }
 
   /**
@@ -169,13 +169,25 @@ public class SchoolChatBot {
     Boolean isDone = false;
 
     while (!isDone) {
+      if (EnvVars.getInstance().getDb().getUrl().indexOf("prod") > 0) {
+        Colors.writeInLivingColor(
+          c -> c.RED,
+          "Running in production mode. Please be careful with your actions.\n"
+        );
+      } else {
+        Colors.writeInLivingColor(
+          c -> c.YELLOW,
+          "Running in development mode.\n"
+        );
+      }
       System.out.println("Welcome to the School Chat Bot!");
       System.out.println("Please select an option:");
       System.out.println("1. Analyze for Key Points");
       System.out.println("2. Analyze for Calls to Action");
       System.out.println("3. Process Documents for Stage 1");
       System.out.println("4. Process Documents for Stage 2");
-      System.out.println("5. Exit");
+      System.out.println("5. Embed pending documents");
+      System.out.println("6. Exit");
       int choice;
       try {
         choice = Integer.parseInt(appScanner.nextLine());
@@ -226,6 +238,9 @@ public class SchoolChatBot {
           }
           break;
         case 5:
+          EmbedDocuments.main(args);
+          break;
+        case 6:
           System.out.println("Exiting the application. Goodbye!");
           isDone = true;
           break;
@@ -242,26 +257,21 @@ public class SchoolChatBot {
    */
   public static void main(String[] args) {
     try (Scanner scanner = new Scanner(System.in)) {
-      SchoolChatBot.globalInstance = new SchoolChatBot(scanner);
-      Runtime.getRuntime()
-        .addShutdownHook(
-          new Thread(() -> {
-            if (globalInstance != null) {
-              globalInstance.closeRedisConnection();
-            }
-          })
-        );
-      SchoolChatBot.globalInstance.run(args);
-      System.out.println("Thank you for using the School Chat Bot. Goodbye!");
+      var scb = new SchoolChatBot(scanner);
+      SchoolChatBot.globalInstance = scb;
+      try (scb) {
+        SchoolChatBot.globalInstance.run(args);
+      }
+    } catch (Exception e) {
+      System.out.println("Error: " + e.getMessage());
     }
   }
 
-  /**
-   * A simple method to return a greeting message.
-   *
-   * @return A greeting string "world!".
-   */
-  public static String hello() {
-    return "world!";
+  @Override
+  public void close() throws Exception {
+    EmbedDocuments.cancel(true);
+    BrokerManagedQueue.shutdownAllQueues();
+    redisClient.close();
+    redisClient.stop(true);
   }
 }

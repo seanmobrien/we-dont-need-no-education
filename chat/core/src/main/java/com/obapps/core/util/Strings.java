@@ -6,10 +6,10 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import net.bytebuddy.asm.Advice.Local;
 
 /**
  * Utility class for string manipulation and formatting.
@@ -225,7 +225,12 @@ public class Strings {
     try {
       return serializeAsJson(object);
     } catch (Exception e) {
-      return "Error serializing object to JSON: " + e.getMessage();
+      return (
+        "Error serializing object to JSON: " +
+        e.getMessage() +
+        "\n" +
+        Arrays.toString(e.getStackTrace())
+      );
     }
   }
 

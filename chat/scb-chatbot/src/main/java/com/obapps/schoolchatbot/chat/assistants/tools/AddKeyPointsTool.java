@@ -170,7 +170,6 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
         e
       );
       DocumentProperty.addManualReview(
-        s -> this.keyPointRepository.db(),
         msg.getDocumentId(),
         e,
         "AddKeyPointsTool",

@@ -1,6 +1,6 @@
 package com.obapps.schoolchatbot.chat.assistants.models.ai.phases.one;
 
-import com.obapps.core.util.Db;
+import com.obapps.core.util.IDbTransaction;
 import com.obapps.schoolchatbot.core.models.KeyPoint;
 import com.obapps.schoolchatbot.core.models.ai.phases.BasePhaseRecord;
 import dev.langchain4j.model.output.structured.Description;
@@ -282,23 +282,28 @@ public class InitialKeyPoint extends BasePhaseRecord {
    * @return The saved KeyPoint object.
    * @throws SQLException If a database access error occurs.
    */
-  public KeyPoint saveToDb(Db db) throws SQLException {
-    if (db == null) {
-      db = Db.getInstance();
+  public KeyPoint saveToDb(IDbTransaction tx) throws SQLException {
+    if (tx == null) {
+      throw new IllegalArgumentException("Transaction cannot be null");
     }
-    var keyPoint = KeyPoint.builder()
-      .propertyValue(this.property_value)
-      .documentId(this.getDocumentId())
-      .relevance(this.getRelevance())
-      .compliance(this.getCompliance())
-      .severity(this.getSeverity())
-      .tags(this.getTags())
-      .policyBasis(this.getPolicyBasis())
-      .inferred(this.getInferred())
-      .createdOn(this.getCreatedOn())
-      .build();
-    keyPoint.addToDb(db);
-    return keyPoint;
+    try {
+      var keyPoint = KeyPoint.builder()
+        .propertyValue(this.property_value)
+        .documentId(this.getDocumentId())
+        .relevance(this.getRelevance())
+        .compliance(this.getCompliance())
+        .severity(this.getSeverity())
+        .tags(this.getTags())
+        .policyBasis(this.getPolicyBasis())
+        .inferred(this.getInferred())
+        .createdOn(this.getCreatedOn())
+        .build();
+      keyPoint.addToDb(tx);
+      return keyPoint;
+    } catch (SQLException e) {
+      tx.setAbort();
+      throw new SQLException(e);
+    }
   }
 
   /**

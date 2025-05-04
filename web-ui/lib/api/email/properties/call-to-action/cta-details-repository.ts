@@ -88,7 +88,7 @@ export class CallToActionDetailsRepository extends BaseObjectRepository<
             cta.opened_date, cta.closed_date, cta.compliancy_close_date, cta.completion_percentage
             FROM document_property ep 
              JOIN call_to_action_details cta ON cta.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
        WHERE cta.property_id = $1`,
       [recordId],
@@ -110,7 +110,7 @@ export class CallToActionDetailsRepository extends BaseObjectRepository<
   }: CallToActionDetails): [string, Array<unknown>] {
     return [
       `WITH ins1 AS (
-        INSERT INTO document_property (property_value, email_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
+        INSERT INTO document_property (property_value, document_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
         VALUES ($1, 4, $2, $3, $4, $10, $11) RETURNING property_id
       )
       INSERT INTO call_to_action_details (property_id, opened_date, closed_date, compliancy_close_date, completion_percentage, policy_id) 

@@ -26,7 +26,7 @@ export async function GET(
             vd.attachment_id, vd.key_point_property_id, vd.action_property_id, vd.violation_type, vd.severity_level, vd.detected_by, vd.detected_on
             FROM document_property ep 
              JOIN violation_details vd ON vd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
              WHERE ep.email_id = ${emailId} AND ept.email_property_category_id=7 LIMIT ${num} OFFSET ${offset}`,
           ),
@@ -35,7 +35,7 @@ export async function GET(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
              FROM document_property ep 
              JOIN violation_details vd ON vd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
              WHERE ep.email_id = ${emailId} AND ept.email_property_category_id=7`,
           ),

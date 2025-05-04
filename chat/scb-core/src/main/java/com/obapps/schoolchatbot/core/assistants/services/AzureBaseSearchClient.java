@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
 import com.obapps.core.util.EnvVars;
+import com.obapps.schoolchatbot.core.assistants.models.search.AiSearchResult;
 import java.net.URI;
 import java.net.http.*;
 import java.net.http.HttpRequest.BodyPublishers;
@@ -35,16 +36,21 @@ public abstract class AzureBaseSearchClient<TScope> {
 
   protected abstract String getSearchIndexName();
 
+  protected String getSearchApiVersion() {
+    return "2025-03-01-preview";
+  }
+
   protected String getServiceUrl() {
     var searchEndpoint = envVars.getOpenAi().getSearchApiEndpoint();
     if (searchEndpoint.endsWith("/")) {
       searchEndpoint = searchEndpoint.substring(0, searchEndpoint.length() - 1);
     }
     return String.format(
-      "%s/indexes/%s/docs/search?api-version=2025-03-01-preview",
+      "%s/indexes/%s/docs/search?api-version=%s",
       //"%s/indexes/%s/docs/search?api-version=2024-07-01",
       searchEndpoint,
-      getSearchIndexName()
+      getSearchIndexName(),
+      getSearchApiVersion()
     );
   }
 
@@ -87,17 +93,10 @@ public abstract class AzureBaseSearchClient<TScope> {
         HttpResponse.BodyHandlers.ofString()
       );
 
-      serviceResponse = response.body();
-      JSONObject json = new JSONObject(serviceResponse);
-      JSONArray results = json.getJSONArray("value");
-
-      List<String> contentChunks = new ArrayList<>();
-      for (int i = 0; i < results.length(); i++) {
-        JSONObject doc = results.getJSONObject(i);
-        contentChunks.add(doc.getString("content"));
-      }
-
-      return contentChunks;
+      return parseResponse(response, query, topK, policyTypeId)
+        .stream()
+        .map(AiSearchResult::getContent)
+        .toList();
     } catch (Exception e) {
       log.error(
         "Search failed for query [{}] top: [{}] filter: [{}]: {}\nURL: {}\nBody{}",
@@ -146,6 +145,52 @@ public abstract class AzureBaseSearchClient<TScope> {
     Integer topK,
     TScope policyTypeId
   ) {
+    var results = hybridSearchEx(
+      naturalQuery,
+      embeddingVector,
+      topK,
+      policyTypeId
+    );
+    return results.stream().map(AiSearchResult::getContent).toList();
+  }
+
+  public List<AiSearchResult> hybridSearchEx(
+    String naturalQuery,
+    Integer topK
+  ) {
+    return hybridSearchEx(naturalQuery, null, topK, defaultScope);
+  }
+
+  public List<AiSearchResult> hybridSearchEx(
+    String naturalQuery,
+    Integer topK,
+    TScope policyTypeId
+  ) {
+    return hybridSearchEx(naturalQuery, null, topK, policyTypeId);
+  }
+
+  public List<AiSearchResult> hybridSearchEx(
+    String naturalQuery,
+    float[] embeddingVector,
+    Integer topK
+  ) {
+    return hybridSearchEx(naturalQuery, embeddingVector, topK, defaultScope);
+  }
+
+  public List<AiSearchResult> hybridSearchEx(
+    String naturalQuery,
+    float[] embeddingVector,
+    TScope policyTypeId
+  ) {
+    return hybridSearchEx(naturalQuery, embeddingVector, 15, policyTypeId);
+  }
+
+  public List<AiSearchResult> hybridSearchEx(
+    String naturalQuery,
+    float[] embeddingVector,
+    Integer topK,
+    TScope policyTypeId
+  ) {
     String url = getServiceUrl();
     String serviceResponse = null;
     JSONObject payload = new JSONObject();
@@ -185,17 +230,7 @@ public abstract class AzureBaseSearchClient<TScope> {
         request,
         HttpResponse.BodyHandlers.ofString()
       );
-      serviceResponse = response.body();
-      JSONObject json = new JSONObject(serviceResponse);
-      JSONArray results = json.getJSONArray("value");
-
-      List<String> contentChunks = new ArrayList<>();
-      for (int i = 0; i < results.length(); i++) {
-        JSONObject doc = results.getJSONObject(i);
-        contentChunks.add(doc.getString("content"));
-      }
-
-      return contentChunks;
+      return parseResponse(response, naturalQuery, topK, policyTypeId);
     } catch (Exception e) {
       System.out.println(serviceResponse);
       log.error(
@@ -210,5 +245,53 @@ public abstract class AzureBaseSearchClient<TScope> {
       );
       return Collections.emptyList();
     }
+  }
+
+  protected List<AiSearchResult> parseResponse(
+    HttpResponse<String> serviceResponse,
+    String query,
+    int topK,
+    TScope policyTypeId
+  ) {
+    var responseBody = serviceResponse.body();
+    JSONObject json = new JSONObject(responseBody);
+    JSONArray results = json.getJSONArray("value");
+    var hitCount = results.length();
+    if (hitCount == 0) {
+      log.warn(
+        "No results found for query [{}] top: [{}] filter: [{}]",
+        query,
+        topK,
+        policyTypeId
+      );
+      return Collections.emptyList();
+    }
+    log.trace(
+      "Found [{}] results for query [{}] top: [{}] filter: [{}]",
+      hitCount,
+      query,
+      topK,
+      policyTypeId
+    );
+    List<AiSearchResult> contentChunks = new ArrayList<>();
+    for (int i = 0; i < results.length(); i++) {
+      JSONObject doc = null;
+      try {
+        doc = results.getJSONObject(i);
+        contentChunks.add(AiSearchResult.builder().raw(doc).build());
+        log.trace("\tResult [{}]: {}", i, doc.toString());
+      } catch (Exception e) {
+        log.error(
+          String.format(
+            "Error parsing search result at index %s: %s\nData: %s",
+            i,
+            e.getMessage(),
+            doc == null ? "[null]" : doc.toString()
+          ),
+          e
+        );
+      }
+    }
+    return contentChunks;
   }
 }

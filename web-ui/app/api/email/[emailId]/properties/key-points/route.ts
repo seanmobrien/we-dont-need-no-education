@@ -26,7 +26,7 @@ export async function GET(
             kpd.policy_id
             FROM document_property ep 
              JOIN key_points_details kpd ON kpd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
              WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=2 LIMIT ${num} OFFSET ${offset}`,
           ),
@@ -35,7 +35,7 @@ export async function GET(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
              FROM document_property ep 
              JOIN key_points_details kpd ON kpd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
              WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=2`,
           ),

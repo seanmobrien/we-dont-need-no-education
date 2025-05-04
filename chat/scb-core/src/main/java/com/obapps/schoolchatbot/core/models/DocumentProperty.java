@@ -1,6 +1,5 @@
 package com.obapps.schoolchatbot.core.models;
 
-import com.obapps.core.types.FunctionThatCanThrow;
 import com.obapps.core.util.*;
 import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
@@ -147,7 +146,7 @@ public class DocumentProperty {
    *                 The following keys are expected in the state bag:
    *                 - "property_id": A UUID representing the property ID.
    *                 - "document_id": An integer representing the document ID.
-   *                 - "email_property_type_id": An integer representing the property type.
+   *                 - "document_property_type_id": An integer representing the property type.
    *                 - "property_value": A value representing the property value.
    *                 - "created_on": A LocalDateTime representing the creation timestamp.
    *                 - "policy_basis": A string array representing the policy basis.
@@ -162,7 +161,7 @@ public class DocumentProperty {
     FieldUtil.saveIntFromStateBag(stateBag, "document_id", this::setDocumentId);
     FieldUtil.saveIntFromStateBag(
       stateBag,
-      "email_property_type_id",
+      "document_property_type_id",
       this::setPropertyType
     );
     FieldUtil.saveFromStateBag(
@@ -354,27 +353,72 @@ public class DocumentProperty {
    * @throws SQLException If an error occurs while executing the database operation.
    */
   @SuppressWarnings("unchecked")
-  public <T extends DocumentProperty> T addToDb(Db db) throws SQLException {
+  public <T extends DocumentProperty> T addToDb(IDbTransaction tx)
+    throws SQLException {
+    if (tx == null) {
+      throw new IllegalArgumentException(
+        "Transaction cannot be null for add property operation."
+      );
+    }
     if (propertyId == null) {
       propertyId = UUID.randomUUID();
     }
     if (createdOn == null) {
       createdOn = LocalDateTime.now();
     }
-    if (db == null) {
-      db = Db.getInstance();
+
+    try {
+      var recordsUpdated = tx
+        .getDb()
+        .executeUpdate(
+          "INSERT INTO document_property (property_id, document_id, document_property_type_id, property_value, created_on, policy_basis, tags) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?)",
+          propertyId,
+          documentId,
+          propertyType,
+          propertyValue,
+          createdOn,
+          policyBasis == null || policyBasis.size() == 0 ? null : policyBasis,
+          tags == null || tags.size() == 0 ? null : tags
+        );
+      if (recordsUpdated == null || recordsUpdated < 1) {
+        throw new SQLException(
+          String.format(
+            "Error inserting document_property: %s",
+            "No records were inserted."
+          )
+        );
+      }
+      // Is this one of the property types that needs a backing document record?
+      if (DocumentType.DocumentPropertyTypes.containsKey(propertyType)) {
+        var documentType = DocumentType.DocumentPropertyTypes.get(propertyType);
+        recordsUpdated = tx
+          .getDb()
+          .executeUpdate(
+            "INSERT INTO document_units (email_id, document_property_id, content, document_type, created_on) " +
+            "VALUES (document_unit_email(?), ?, ?, ?, ?)",
+            documentId,
+            propertyId,
+            propertyValue,
+            documentType,
+            createdOn
+          );
+        if (recordsUpdated == null || recordsUpdated < 1) {
+          throw new SQLException(
+            String.format(
+              "Error inserting document_units: %s",
+              "No records were inserted."
+            )
+          );
+        }
+      }
+    } catch (SQLException e) {
+      tx.setAbort();
+      throw new SQLException(
+        String.format("Error inserting document_property: %s", e.getMessage()),
+        e
+      );
     }
-    db.executeUpdate(
-      "INSERT INTO document_property (property_id, document_id, email_property_type_id, property_value, created_on, policy_basis, tags) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?)",
-      propertyId,
-      documentId,
-      propertyType,
-      propertyValue,
-      createdOn,
-      policyBasis == null || policyBasis.size() == 0 ? null : policyBasis,
-      tags == null || tags.size() == 0 ? null : tags
-    );
     return (T) this;
   }
 
@@ -388,22 +432,36 @@ public class DocumentProperty {
    * @throws SQLException If an error occurs while executing the database operation.
    */
   @SuppressWarnings("unchecked")
-  public <T extends DocumentProperty> T updateDb(Db db) throws SQLException {
+  public <T extends DocumentProperty> T updateDb(IDbTransaction tx)
+    throws SQLException {
     if (propertyId == null) {
       throw new IllegalArgumentException(
         "propertyId cannot be null for update operation."
       );
     }
-    if (db == null) {
-      db = Db.getInstance();
+    if (tx == null) {
+      throw new IllegalArgumentException(
+        "Transaction cannot be null for update operation."
+      );
     }
-    db.executeUpdate(
-      "UPDATE document_property SET property_value = ?, policy_basis = COALESCE(?, policy_basis), tags = COALESCE(?, tags) WHERE property_id = ?",
-      propertyValue,
-      policyBasis == null || policyBasis.size() == 0 ? null : policyBasis,
-      tags == null || tags.size() == 0 ? null : tags,
-      propertyId
-    );
+    try {
+      tx
+        .getDb()
+        .executeUpdate(
+          "UPDATE document_property SET property_value = ?, policy_basis = COALESCE(?, policy_basis), tags = COALESCE(?, tags) WHERE property_id = ?",
+          propertyValue,
+          policyBasis == null || policyBasis.size() == 0 ? null : policyBasis,
+          tags == null || tags.size() == 0 ? null : tags,
+          propertyId
+        );
+    } catch (SQLException e) {
+      tx.setAbort();
+      throw new SQLException(
+        String.format("Error updating document_property: %s", e.getMessage()),
+        e
+      );
+    }
+
     return (T) this;
   }
 
@@ -421,14 +479,7 @@ public class DocumentProperty {
     String sender,
     Object... args
   ) {
-    try {
-      addManualReview(Db::getInstanceNoThrow, documentId, e, sender, args);
-    } catch (Exception ex) {
-      LoggerFactory.getLogger(DocumentProperty.class).error(
-        "Error adding manual review for document: " + documentId,
-        ex
-      );
-    }
+    addManualReview(documentId, e, null, sender, args);
   }
 
   /**
@@ -441,7 +492,7 @@ public class DocumentProperty {
    * @param args        Additional arguments or metadata related to the manual review.
    */
   public static void addManualReview(
-    FunctionThatCanThrow<SQLException, Object, Db> db,
+    IDbTransaction db,
     Integer documentId,
     Exception e,
     String sender,
@@ -466,8 +517,19 @@ public class DocumentProperty {
     Object... args
   ) {
     try {
-      addManualReview(Db::getInstanceNoThrow, documentId, e, sender, args);
-    } catch (Exception ex) {
+      try (var thisDb = Db.createUnitOfWork()) {
+        var thisTx = thisDb.createTransaction();
+        try (thisTx) {
+          addManualReview(thisTx, documentId, message, e, sender, args);
+        } catch (Exception ex) {
+          thisTx.setAbort();
+          LoggerFactory.getLogger(DocumentProperty.class).error(
+            "Error adding manual review for document: " + documentId,
+            ex
+          );
+        }
+      }
+    } catch (SQLException ex) {
       LoggerFactory.getLogger(DocumentProperty.class).error(
         "Error adding manual review for document: " + documentId,
         ex
@@ -478,7 +540,7 @@ public class DocumentProperty {
   /**
    * Adds a manual review property to a document in the database.
    *
-   * @param db          The database instance where the property will be added.
+   * @param tx          The database transaction to participate in.
    * @param documentId  The ID of the document to which the property will be added.
    * @param message     A message describing the reason for the manual review. If null, the exception message will be used.
    * @param e           The exception associated with the manual review.
@@ -486,7 +548,7 @@ public class DocumentProperty {
    * @param args        Additional arguments providing context for the manual review.
    */
   public static void addManualReview(
-    FunctionThatCanThrow<SQLException, Object, Db> db,
+    IDbTransaction tx,
     Integer documentId,
     String message,
     Exception e,
@@ -533,8 +595,9 @@ public class DocumentProperty {
         .propertyValue(formattedMessage)
         .createdOn(LocalDateTime.now())
         .build()
-        .addToDb(db.apply(null));
+        .addToDb(tx);
     } catch (Exception ex) {
+      tx.setAbort();
       if (formattedMessage == null) {
         formattedMessage = "Error building formatted message.";
       }
@@ -571,6 +634,9 @@ public class DocumentProperty {
    */
   public static DocumentProperty getFromDb(Db db, UUID propertyId)
     throws SQLException {
+    if (db == null) {
+      db = Db.getInstance();
+    }
     var records = db.selectRecords(
       "SELECT * FROM document_property WHERE property_id = ?",
       DocumentProperty.class,

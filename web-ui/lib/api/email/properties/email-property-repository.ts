@@ -11,7 +11,7 @@ export const mapEmailPropertyRecordToObject = (
   record: Record<string, unknown>,
 ) => ({
   value: String(record.property_value),
-  typeId: Number(record.email_property_type_id),
+  typeId: Number(record.document_property_type_id),
   propertyId: String(record.property_id),
   documentId: Number(record.document_id),
   typeName: record.property_name ? String(record.property_name) : undefined,
@@ -96,7 +96,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
     return [
       `SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id
             FROM document_property ep
-            JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+            JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id      
       ORDER BY document_id`,
       [],
@@ -108,7 +108,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
     return [
       'SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id \
             FROM document_property ep \
-            JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id \
+            JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id \
             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id WHERE property_id = $1',
       [recordId],
     ];
@@ -124,7 +124,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
   }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
   EmailProperty): [string, Array<any>] {
     return [
-      `INSERT INTO document_property (property_value, email_property_type_id, document_id, created_on, property_id, tags, policy_basis) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO document_property (property_value, document_property_type_id, document_id, created_on, property_id, tags, policy_basis) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [
         value,
         typeId,
@@ -142,7 +142,7 @@ export class EmailPropertyRepository extends BaseObjectRepository<
     return [
       {
         property_value: obj.value,
-        email_property_type_id: obj.typeId,
+        document_property_type_id: obj.typeId,
         property_id: obj.propertyId,
         document_id: obj.documentId,
         created_on: obj.createdOn,

@@ -2,7 +2,6 @@ package com.obapps.core.util;
 
 import java.sql.Array;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -54,6 +53,18 @@ import org.slf4j.LoggerFactory;
  * the environment variables before using this class.</p>
  */
 public class Db implements AutoCloseable {
+
+  static com.zaxxer.hikari.HikariDataSource dataSource;
+
+  static {
+    var sql = EnvVars.getInstance().getDb();
+    com.zaxxer.hikari.HikariConfig config =
+      new com.zaxxer.hikari.HikariConfig();
+    config.setJdbcUrl(sql.getUrl());
+    config.setUsername(sql.getUser());
+    config.setPassword(sql.getPassword());
+    dataSource = new com.zaxxer.hikari.HikariDataSource(config);
+  }
 
   /**
    * Retrieves an instance of the Db class without throwing an exception.
@@ -184,31 +195,20 @@ public class Db implements AutoCloseable {
   }
 
   /**
-   * Establishes a connection to the database using the JDBC URL provided by the environment variables.
+   * Establishes a connection to the database using HikariCP for connection pooling.
    *
    * @return A {@link Connection} object representing the connection to the database.
    * @throws SQLException If a database access error occurs or the connection cannot be established.
    *
    * This method retrieves the database URL from the environment variables and attempts to establish
-   * a connection using the {@link DriverManager#getConnection(String)} method. If the connection is
-   * successful, it prints the database product version to the console. In case of an error, it closes
-   * the connection (if initialized) and logs the error details to the console.
+   * a connection using HikariCP. If the connection is successful, it prints the database product version
+   * to the console. In case of an error, it closes the connection (if initialized) and logs the error details.
    */
   public static Connection connect() throws SQLException {
     Connection conn = null;
     try {
-      var sql = EnvVars.getInstance().getDb();
-      var props = new java.util.Properties();
-      props.setProperty("user", sql.getUser());
-      props.setProperty("password", sql.getPassword());
-      conn = DriverManager.getConnection(sql.getUrl(), props);
-      Colors.Set(c -> c.CYAN);
-      System.out.println(conn.getMetaData().getDatabaseProductVersion());
-      Colors.Reset();
+      conn = dataSource.getConnection();
     } catch (SQLException e) {
-      if (conn != null) {
-        conn.close();
-      }
       LoggerFactory.getLogger(com.obapps.core.util.Db.class).error(
         "Error connecting to database: ",
         e
@@ -623,6 +623,10 @@ public class Db implements AutoCloseable {
 
     public Db getDb() {
       return Db.this;
+    }
+
+    public Db createUnitOfWork() throws SQLException {
+      return Db.createUnitOfWork();
     }
 
     public void setAbort() {

@@ -1,9 +1,9 @@
 package com.obapps.schoolchatbot.core.models;
 
+import com.esotericsoftware.minlog.Log;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.obapps.core.util.*;
-import com.obapps.core.util.Db;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -12,6 +12,8 @@ import java.util.UUID;
 public class DocumentWithMetadata implements IMessageMetadata {
 
   Integer documentId = null;
+  Integer attachmentId = null;
+  UUID propertyId = null;
   UUID emailId = null;
   String documentType = "email";
   String sender = null;
@@ -21,10 +23,14 @@ public class DocumentWithMetadata implements IMessageMetadata {
   Boolean isFromDistrictStaff;
   String subject;
   Integer threadId;
+  String filePath;
   private String senderRole;
   private Integer replyToDocumentId;
   private List<Integer> relatedDocuments;
   private List<Integer> attachments;
+  private UUID documentPropertyId;
+  private String embeddingModel;
+  private LocalDateTime embeddedOn;
 
   public DocumentWithMetadata() {
     // Default constructor
@@ -79,6 +85,10 @@ public class DocumentWithMetadata implements IMessageMetadata {
     return this.threadId;
   }
 
+  public String getFilePath() {
+    return filePath;
+  }
+
   public String getContent() {
     return Strings.normalizeForOutput(this.content);
   }
@@ -111,6 +121,80 @@ public class DocumentWithMetadata implements IMessageMetadata {
     this.relatedDocuments = relatedDocuments;
   }
 
+  public Integer getAttachmentId() {
+    return attachmentId;
+  }
+
+  public void setAttachmentId(Integer attachmentId) {
+    this.attachmentId = attachmentId;
+  }
+
+  public UUID getDocumentPropertyId() {
+    return documentPropertyId;
+  }
+
+  public void setDocumentPropertyId(UUID documentPropertyId) {
+    this.documentPropertyId = documentPropertyId;
+  }
+
+  private static final String ROOT_BASE_PATH_STRING =
+    "https://api.schoolchatbot.com/v1/";
+
+  public String getHrefDocument() {
+    var docType = this.getDocumentType();
+    if (Strings.compareIgnoreCase(docType, "attachment")) {
+      var filePath = this.getFilePath();
+      if (filePath != null && !filePath.isEmpty()) {
+        return filePath;
+      }
+    }
+    return getHrefApi();
+  }
+
+  public String getHrefApi() {
+    var basePath = new StringBuilder(ROOT_BASE_PATH_STRING);
+    var docType = this.getDocumentType();
+    if (docType == null || docType.isEmpty()) {
+      return null;
+    }
+    if (Strings.compareIgnoreCase(docType, "email")) {
+      basePath.append("api/email/").append(this.getEmailId().toString());
+      return basePath.toString();
+    }
+    if (Strings.compareIgnoreCase(docType, "attachment")) {
+      basePath.append("api/attachment/").append(this.getAttachmentId());
+      return basePath.toString();
+    }
+    if (Strings.compareIgnoreCase(docType, "document")) {
+      basePath.append("api/document/").append(this.getDocumentId());
+      return basePath.toString();
+    }
+    basePath
+      .append("api/email/")
+      .append(this.getEmailId().toString())
+      .append("/properties/")
+      .append(docType)
+      .append("/")
+      .append(this.getDocumentPropertyId());
+    return basePath.toString();
+  }
+
+  public String getEmbeddingModel() {
+    return embeddingModel;
+  }
+
+  public void setEmbeddingModel(String embeddingModel) {
+    this.embeddingModel = embeddingModel;
+  }
+
+  public LocalDateTime getEmbeddedOn() {
+    return embeddedOn;
+  }
+
+  public void setEmbeddedOn(LocalDateTime embeddedOn) {
+    this.embeddedOn = embeddedOn;
+  }
+
   public String toJson() {
     ObjectMapper objectMapper = Strings.objectMapperFactory();
     try {
@@ -140,6 +224,11 @@ public class DocumentWithMetadata implements IMessageMetadata {
     private Integer replyToDocumentId;
     private List<Integer> relatedDocuments;
     private List<Integer> attachments;
+    private Integer attachmentId;
+    private UUID documentPropertyId;
+    private String embeddingModel;
+    private LocalDateTime embeddedOn;
+    private String filePath;
 
     public Builder setDocumentId(Integer documentId) {
       this.documentId = documentId;
@@ -158,6 +247,11 @@ public class DocumentWithMetadata implements IMessageMetadata {
 
     public Builder setEmailId(UUID emailMessageId) {
       this.emailId = emailMessageId;
+      return this;
+    }
+
+    public Builder setFilePath(String filePath) {
+      this.filePath = filePath;
       return this;
     }
 
@@ -211,6 +305,26 @@ public class DocumentWithMetadata implements IMessageMetadata {
       return this;
     }
 
+    public Builder setAttachmentId(Integer attachmentId) {
+      this.attachmentId = attachmentId;
+      return this;
+    }
+
+    public Builder setDocumentPropertyId(UUID documentPropertyId) {
+      this.documentPropertyId = documentPropertyId;
+      return this;
+    }
+
+    public Builder setEmbeddingModel(String embeddingModel) {
+      this.embeddingModel = embeddingModel;
+      return this;
+    }
+
+    public Builder setEmbeddedOn(LocalDateTime embeddedOn) {
+      this.embeddedOn = embeddedOn;
+      return this;
+    }
+
     public DocumentWithMetadata build() {
       if (this.documentId < 1) {
         throw new IllegalStateException("Document ID cannot be null");
@@ -233,6 +347,11 @@ public class DocumentWithMetadata implements IMessageMetadata {
       emailMetadata.replyToDocumentId = this.replyToDocumentId;
       emailMetadata.relatedDocuments = this.relatedDocuments;
       emailMetadata.attachments = this.attachments;
+      emailMetadata.attachmentId = this.attachmentId;
+      emailMetadata.documentPropertyId = this.documentPropertyId;
+      emailMetadata.embeddingModel = this.embeddingModel;
+      emailMetadata.filePath = this.filePath;
+      emailMetadata.embeddedOn = this.embeddedOn;
 
       return emailMetadata;
     }
@@ -301,6 +420,30 @@ public class DocumentWithMetadata implements IMessageMetadata {
       ret.setDocumentType(documentTypeOverride);
     }
     return ret;
+  }
+
+  /**
+   * Creates a DocumentWithMetadata object from the database using the provided document ID.
+   *
+   * @param db The database instance to use for the query.
+   * @param documentId The ID of the document to retrieve.
+   * @param documentTypeOverride An optional override for the document type.
+   *   If provided, it will be used instead of the type from the database.
+   * @return A DocumentWithMetadata object populated with data from the database, or null if no matching record is found.
+   * @throws SQLException If a database access error occurs.
+   */
+  public static List<DocumentWithMetadata> listFromDb(Db db, String filter)
+    throws SQLException {
+    var theDb = db == null ? Db.getInstance() : db;
+    var theResults = theDb.selectObjects(
+      DocumentWithMetadata.class,
+      String.format("SELECT * FROM public.\"DocumentWithDetails\" %s", filter)
+    );
+    if (theResults == null || theResults.size() == 0) {
+      Log.warn(null, "No records found");
+      return List.of();
+    }
+    return theResults;
   }
 
   /**

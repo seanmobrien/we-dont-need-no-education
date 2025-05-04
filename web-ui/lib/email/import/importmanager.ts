@@ -197,7 +197,7 @@ export class DefaultImportManager {
                             performance.now(),
                           );
                           appMeters
-                            .createCounter('Email Import: Stage Failed')
+                            .createCounter('Email Import Stage Failed')
                             .add(1);
                           stageSpan
                             .addEvent(
@@ -250,7 +250,7 @@ export class DefaultImportManager {
             },
           );
 
-          appMeters.createCounter('Email Import: Operation Successful').add(1);
+          appMeters.createCounter('Email Import Operation Successful').add(1);
           emailImportSpan
             .addEvent('Import completed', {}, performance.now())
             .setStatus({
@@ -268,7 +268,7 @@ export class DefaultImportManager {
             log: true,
           });
           emailImportSpan.recordException(le, Date.now());
-          appMeters.createCounter('Email Import: Operation Failed').add(1);
+          appMeters.createCounter('EmailImportOperationFailed').add(1);
           emailImportSpan
             .addEvent('Import failed', {}, performance.now())
             .setStatus({

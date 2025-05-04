@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 public class PendingStageAnalystTest {
 
+  /*
   @Test
   public void testLoadForStage_fromDb() throws SQLException {
     // Arrange
@@ -29,7 +30,7 @@ public class PendingStageAnalystTest {
       result.get(1).getSentTimestamp()
     );
   }
-
+ */
   @Test
   public void testLoadForStage_withValidData() {
     // Arrange

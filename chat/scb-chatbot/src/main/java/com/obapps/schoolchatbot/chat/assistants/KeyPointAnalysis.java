@@ -190,7 +190,7 @@ public class KeyPointAnalysis
             v.setRecordId(UUID.randomUUID().toString());
           }
           try {
-            v.saveToDb(db);
+            v.saveToDb(tx);
           } catch (SQLException e) {
             log.error("An error occurred saving key point at index {}", idx, e);
             throw new RuntimeException(e);

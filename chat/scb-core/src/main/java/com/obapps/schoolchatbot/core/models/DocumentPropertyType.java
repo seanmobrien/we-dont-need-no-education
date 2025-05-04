@@ -17,4 +17,20 @@ public class DocumentPropertyType {
     public static final Integer ProcessingNote = 102;
     public static final Integer ManualReviewRequest = 1000;
   }
+
+  public static class KnownDescriptions {
+
+    public static String KeyPoint = "Key Point";
+    public static String From = "From";
+    public static String CallToAction = "Call to Action";
+    public static String CallToActionResponse = "Call to Action Response";
+    public static String ComplianceScore = "Compliance Score";
+    public static String Violation = "Violation";
+    public static String SentimentAnalysis = "Sentiment Analysis";
+    public static String References = "References";
+    public static String InReplyTo = "In Reply To";
+    public static String Subject = "Subject";
+    public static String ProcessingNote = "Processing Note";
+    public static String ManualReviewRequest = "Manual Review Request";
+  }
 }

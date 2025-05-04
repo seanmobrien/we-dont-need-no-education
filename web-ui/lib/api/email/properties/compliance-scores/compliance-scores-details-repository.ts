@@ -94,7 +94,7 @@ export class ComplianceScoresDetailsRepository extends BaseObjectRepository<
             csd.action_property_id, csd.compliance_score, csd.violations_found, csd.response_delay_days, csd.overall_grade, csd.evaluated_on
             FROM document_property ep 
              JOIN compliance_scores_details csd ON csd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
        WHERE csd.property_id = $1`,
       [recordId],
@@ -117,7 +117,7 @@ export class ComplianceScoresDetailsRepository extends BaseObjectRepository<
   }: ComplianceScoresDetails): [string, Array<unknown>] {
     return [
       `WITH ins1 AS (
-        INSERT INTO document_property (property_value, email_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
+        INSERT INTO document_property (property_value, document_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
         VALUES ($1, 6, $2, $3, $4, $11, $12) RETURNING property_id
       )
       INSERT INTO compliance_scores_details (property_id, action_property_id, compliance_score, violations_found, response_delay_days, overall_grade, evaluated_on) 

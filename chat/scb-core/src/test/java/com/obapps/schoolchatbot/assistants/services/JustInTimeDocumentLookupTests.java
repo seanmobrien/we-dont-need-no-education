@@ -1,9 +1,12 @@
 package com.obapps.schoolchatbot.assistants.services;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.ai.factory.types.IStandaloneModelClient;
+import com.obapps.schoolchatbot.core.assistants.models.search.AiSearchResult;
 import com.obapps.schoolchatbot.core.assistants.services.AzureSearchClient;
 import com.obapps.schoolchatbot.core.assistants.services.DocumentChunkFilter;
 import com.obapps.schoolchatbot.core.assistants.services.JustInTimeDocumentLookup;
@@ -26,48 +29,42 @@ class JustInTimeDocumentLookupTests {
     mockDocumentSource = mock(IDocumentContentSource.class);
     mockSearchClient = mock(AzureSearchClient.class);
     mockSummarizer = mock(IStandaloneModelClient.class);
+    ILanguageModelFactory mockFactory = mock(ILanguageModelFactory.class);
     mockChunkFilter = mock(DocumentChunkFilter.class);
     documentLookup = new JustInTimeDocumentLookup(
       mockDocumentSource,
       mockSearchClient,
-      mockSummarizer,
+      mockFactory,
       mockChunkFilter
     );
   }
 
   @Test
-  void runRealQuery() {
-    documentLookup = new JustInTimeDocumentLookup(mockDocumentSource);
-
-    String query = "How many times was Caty struck over the head?";
-
-    String result = documentLookup.summarizeDocument(query);
-
-    System.out.println(result);
-  }
-
-  @Test
   void testSummarizeDocument() {
     String query = "Test query";
-    List<String> mockChunks = Arrays.asList("Chunk 1", "Chunk 2", "Chunk 3");
-    List<String> mockFilteredChunks = Arrays.asList("Chunk 1", "Chunk 2");
-    String mockSummary = "Mock summary.";
-
-    when(mockSearchClient.hybridSearch(query, 15)).thenReturn(mockChunks);
-    when(mockChunkFilter.filterTopN(mockChunks, 5)).thenReturn(
-      mockFilteredChunks
+    List<AiSearchResult> mockChunks = Arrays.asList(
+      AiSearchResult.builder().content("Chunk 1").score(.9).build(),
+      AiSearchResult.builder().content("Chunk 2").score(.8).build(),
+      AiSearchResult.builder().content("Chunk 3").score(.7).build()
     );
-    when(mockSummarizer.call(anyString())).thenReturn(mockSummary);
+
+    when(
+      mockSearchClient.hybridSearchEx(
+        query,
+        10,
+        AzureSearchClient.ScopeType.All
+      )
+    ).thenReturn(mockChunks);
 
     String result = documentLookup.summarizeDocument(query);
 
-    assertEquals(mockSummary, result);
-    verify(mockSearchClient).hybridSearch(
+    assertTrue(result.contains("_#_Hit #0-1_#_"));
+    assertTrue(result.contains("_#_Hit #1-1_#_"));
+    assertTrue(result.contains("_#_Hit #2-1_#_"));
+    verify(mockSearchClient).hybridSearchEx(
       query,
-      15,
+      10,
       AzureSearchClient.ScopeType.All
     );
-    verify(mockChunkFilter).filterTopN(mockChunks, 5);
-    verify(mockSummarizer).call(anyString());
   }
 }

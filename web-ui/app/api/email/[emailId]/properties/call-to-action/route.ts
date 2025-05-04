@@ -26,7 +26,7 @@ export async function GET(
             cta.opened_date, cta.closed_date, cta.compliancy_close_date, cta.completion_percentage, cta.policy_id
             FROM document_property ep 
              JOIN call_to_action_details cta ON cta.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
              WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=4 LIMIT ${num} OFFSET ${offset}`,
           ),
@@ -35,7 +35,7 @@ export async function GET(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
              FROM document_property ep 
              JOIN call_to_action_details cta ON cta.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
              WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=4`,
           ),

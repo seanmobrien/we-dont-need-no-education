@@ -1,10 +1,12 @@
 package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.util.Db;
+import com.obapps.core.util.IDbTransaction;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.slf4j.LoggerFactory;
 
 public class DocumentRelationship {
 
@@ -75,67 +77,6 @@ public class DocumentRelationship {
     return new Builder();
   }
 
-  public void saveToDb(Db db) throws SQLException {
-    if (documentId != null) {
-      updateDb(db);
-      return;
-    }
-
-    Integer relationshipTypeId = getOrCreateRelationshipTypeId(
-      db,
-      relationship
-    );
-
-    var res = db.insertAndGetGeneratedKeys(
-      "INSERT INTO document_property_related_document (related_property_id, document_id, relationship_type) VALUES (?, ?, ?) RETURNING document_id",
-      relatedPropertyId,
-      documentId,
-      relationshipTypeId
-    );
-    if (res == null) {
-      throw new SQLException("Failed to insert DocumentRelationship");
-    }
-    documentId = res;
-  }
-
-  private Integer getOrCreateRelationshipTypeId(Db db, String relationship)
-    throws SQLException {
-    Optional<Integer> v = db.selectSingleValue(
-      "SELECT relation_reason_id FROM document_property_relation_reason WHERE description = ?",
-      relationship
-    );
-    if (v.isPresent()) {
-      return v.get();
-    }
-
-    var res = db.insertAndGetGeneratedKeys(
-      "INSERT INTO document_property_relation_reason (description) VALUES (?) RETURNING relation_reason_id",
-      relationship
-    );
-    if (res == null) {
-      throw new SQLException("Failed to insert new relationship type");
-    }
-    return res;
-  }
-
-  public void updateDb(Db db) throws SQLException {
-    if (documentId == null) {
-      throw new SQLException("Cannot update record without documentId");
-    }
-
-    Integer relationshipTypeId = getOrCreateRelationshipTypeId(
-      db,
-      relationship
-    );
-
-    db.executeUpdate(
-      "UPDATE document_property_related_document SET related_property_id = ?, relationship_type = ? WHERE document_id = ?",
-      relatedPropertyId,
-      relationshipTypeId,
-      documentId
-    );
-  }
-
   public static List<DocumentRelationship> loadForProperty(
     Db db,
     UUID relatedPropertyId
@@ -163,21 +104,79 @@ public class DocumentRelationship {
     return records.isEmpty() ? null : records.get(0);
   }
 
-  public void addToDb(Db db) throws SQLException {
+  public void saveToDb(IDbTransaction tx) throws SQLException {
+    if (tx == null) {
+      throw new IllegalArgumentException("tx cannot be null");
+    }
+    if (relatedPropertyId == null) {
+      throw new IllegalArgumentException("relatedPropertyId cannot be null");
+    }
     if (documentId == null) {
-      throw new SQLException("Cannot add record without documentId");
+      throw new IllegalArgumentException("documentId cannot be null");
+    }
+    if (relationship == null) {
+      throw new IllegalArgumentException("relationship cannot be null");
     }
 
-    Integer relationshipTypeId = getOrCreateRelationshipTypeId(
-      db,
+    // We actually want these updates to commit outside of our parent scope
+    try (var db = tx.createUnitOfWork()) {
+      // Resolve relationship type id
+      Integer relationshipTypeId = getOrCreateRelationshipTypeId(
+        db,
+        relationship
+      );
+
+      Optional<Long> exists = db.selectSingleValue(
+        """
+        SELECT COUNT(*)
+        FROM document_property_related_document
+        WHERE related_property_id = ?
+          AND document_id = ?
+          AND relationship_type = ?
+          """,
+        relatedPropertyId,
+        documentId,
+        relationshipTypeId
+      );
+      if (exists.isPresent() && exists.get() > 0) {
+        LoggerFactory.getLogger(getClass()).warn(
+          "Skipping Relationship {} {} {} - already exists",
+          relatedPropertyId,
+          documentId,
+          relationshipTypeId
+        );
+        return; // Already exists, no need to insert again
+      }
+
+      var res = db.executeUpdate(
+        "INSERT INTO document_property_related_document (related_property_id, document_id, relationship_type) VALUES (?, ?, ?)",
+        relatedPropertyId,
+        documentId,
+        relationshipTypeId
+      );
+      if (res == 0) {
+        throw new SQLException("Failed to insert DocumentRelationship");
+      }
+    }
+  }
+
+  private Integer getOrCreateRelationshipTypeId(Db db, String relationship)
+    throws SQLException {
+    Optional<Integer> v = db.selectSingleValue(
+      "SELECT relation_reason_id FROM document_property_relation_reason WHERE description = ?",
       relationship
     );
+    if (v.isPresent()) {
+      return v.get();
+    }
 
-    db.executeUpdate(
-      "INSERT INTO document_property_related_document (related_property_id, document_id, relationship_type) VALUES (?, ?, ?)",
-      relatedPropertyId,
-      documentId,
-      relationshipTypeId
+    var res = db.insertAndGetGeneratedKeys(
+      "INSERT INTO document_property_relation_reason (description) VALUES (?)",
+      relationship
     );
+    if (res == null || res < 1) {
+      throw new SQLException("Failed to insert new relationship type");
+    }
+    return res;
   }
 }

@@ -1,10 +1,13 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
-import com.obapps.core.ai.factory.types.IStandaloneModelClient;
+import com.obapps.core.ai.factory.models.AiServiceOptions;
+import com.obapps.core.ai.factory.models.ModelType;
+import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.util.EnvVars;
+import com.obapps.core.util.Strings;
+import com.obapps.schoolchatbot.core.assistants.services.ai.supplementary.ISearchAugmentor;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 import com.obapps.schoolchatbot.core.util.PromptSymbols;
-import java.util.List;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +27,7 @@ public class JustInTimeLookupTool<TScope> {
   /** The filter used to extract top document chunks from search results. */
   protected final IChunkFilter chunkFilter;
   /** The summarizer client used to generate summaries from document chunks. */
-  protected final IStandaloneModelClient summarizer;
+  protected final ILanguageModelFactory modelFactory;
   /** The document content source used to retrieve document content. */
   protected final IDocumentContentSource documentSource;
 
@@ -33,21 +36,23 @@ public class JustInTimeLookupTool<TScope> {
    *
    * @param documentSource The document content source used to retrieve document content.
    * @param searchClient The search client used to perform hybrid searches.
-   * @param summarizer The summarizer client used to generate summaries.
+   * @param modelFactory The language model factory used to create AI services.
    * @param chunkFilter The filter used to extract top document chunks.
    */
   protected JustInTimeLookupTool(
     IDocumentContentSource documentSource,
     AzureBaseSearchClient<TScope> searchClient,
-    IStandaloneModelClient summarizer,
+    ILanguageModelFactory modelFactory,
     IChunkFilter chunkFilter
   ) {
     this.log = LoggerFactory.getLogger(this.getClass());
     this.documentSource = documentSource;
     this.searchClient = searchClient;
     this.chunkFilter = chunkFilter;
-    this.summarizer = summarizer;
+    this.modelFactory = modelFactory;
   }
+
+  void scratchpad() {}
 
   /**
    * Performs a just-in-time lookup based on the provided query and scope and returns
@@ -80,7 +85,7 @@ public class JustInTimeLookupTool<TScope> {
   ) {
     var settings = EnvVars.getInstance().getJustInTimeSearch();
     // pull top n chunks from the search client
-    List<String> chunks = searchClient.hybridSearch(
+    var chunks = searchClient.hybridSearchEx(
       query,
       settings.getNumSearchHits(),
       scope
@@ -92,24 +97,34 @@ public class JustInTimeLookupTool<TScope> {
       chunks
     );
     // filter the top n chunks from the search results
-    List<String> filtered = settings.isPrefilterEnabled()
+    var filtered = chunks;
+    /*
+    settings.isPrefilterEnabled()
       ? chunkFilter.filterTopN(chunks, settings.getNumSummary())
       : chunks; // use best 5
     log.debug("Filtered chunks: {}", filtered);
+     */
     if (filtered.isEmpty()) {
       return "No results found.";
     }
 
     StringBuilder chunkBlock = new StringBuilder();
     for (int i = 0; i < filtered.size(); i++) {
+      var hit = filtered.get(i);
       chunkBlock
-        .append(PromptSymbols.ANALYZE + " Result [" + (i + 1) + "]\n")
-        .append(filtered.get(i))
-        .append("\n\n");
+        .append(
+          Strings.getRecordOutput(
+            "Hit #" + i + "-1",
+            hit.getContent(),
+            hit.getMetatadaForRecord()
+          )
+        )
+        .append("\n");
     }
     // Early exit if summarization is not needed
     log.debug("Chunked blocks: {}", chunkBlock.toString());
-    if (summarizer == null || !summarize || !settings.isSummaryEnabled()) {
+
+    if (!summarize || !settings.isSummaryEnabled()) {
       return chunkBlock.toString();
     }
 
@@ -120,20 +135,8 @@ public class JustInTimeLookupTool<TScope> {
     var documentObject = documentContent == null
       ? null
       : documentContent.getObject();
-    if (documentObject == null) {
-      emailContents
-        .append("No document context was provided with this query...again!\n")
-        .append(
-          "You know how these senior researchers are, though...if you don't\n"
-        )
-        .append(
-          "come back with SOMETHING useful, they will be all over you.  Assume the \n"
-        )
-        .append(
-          "document was related to the ongoing Title IX investigation or a requset for \n"
-        )
-        .append("an education record.");
-    } else {
+
+    if (documentObject != null) {
       emailContents
         .append(PromptSymbols.REFERENCE + " Sender: ")
         .append(
@@ -155,50 +158,102 @@ public class JustInTimeLookupTool<TScope> {
         .append("\n");
     }
 
-    // Pass off to model for the heavy lifting
-    String summarizationPrompt = String.format(
-      "You are a research assistant supporting a legal compliance investigation.\n\n" +
-      "The legal team is analyzing the following communication between a parent and a school district:\n" +
-      "===\n" +
-      " %s\n" + // Document being analyzed
-      "===\n\n" +
-      "They issued this legal research query to better understand the situation:\n" +
-      PromptSymbols.REFERENCE +
-      " %s\n\n" +
-      "You have been provided with retrieved policy documents, legal guidance, or prior communications in response to this query.\n\n" +
-      PromptSymbols.INSTRUCTION +
-      " Your task is to extract " +
-      PromptSymbols.PINNED +
-      " **only the sections directly relevant** to understanding or evaluating the email and search intent.\n" +
-      PromptSymbols.WARNING +
-      " Do not summarize the entire document. Instead, return specific passages that:\n" +
-      PromptSymbols.CHECKLIST_CONFIRMED +
-      " Provide legal or procedural context for what's discussed in the message\n" +
-      PromptSymbols.CHECKLIST_CONFIRMED +
-      " Clarify whether the district's actions or omissions may violate policy\n" +
-      PromptSymbols.CHECKLIST_CONFIRMED +
-      " Explain what a specific law, rule, or local policy requires or prohibits in this context\n\n" +
-      PromptSymbols.CHECKLIST_CONFIRMED +
-      " If nothing clearly applies to the email or search query, return nothing.\n" +
-      PromptSymbols.EXCLUSION +
-      " Do not editorialize or assume conclusions.\n" +
-      PromptSymbols.EXCLUSION +
-      " Do not explain general policy background unless it directly applies.\n\n" +
-      PromptSymbols.INSIGHT +
-      " The results will be passed to an LLM that will use them only as **supplementary context**, not as a basis for standalone findings. Precision is more valuable than coverage.\n\n",
-      PromptSymbols.SECTION_DIVIDER + "Retrieved Documents:\n%s",
-      emailContents.toString(),
-      query,
-      chunkBlock.toString()
-    );
-
-    var summary = summarizer.call(summarizationPrompt);
-    log.debug(
-      "{} Summary:\n\tInput: {}\n\tOutput: {}",
-      this.getClass().getSimpleName(),
-      summarizationPrompt,
-      summary
-    );
-    return summary;
+    var ret = modelFactory
+      .createService(
+        AiServiceOptions.builder(ISearchAugmentor.class)
+          .setModelType(ModelType.LoFi)
+          .setMemoryWindow(20)
+          .onSetup(svc ->
+            svc.systemMessageProvider(o ->
+              documentObject == null
+                ? JustInTimeLookupWithoutDocSystemPrompt
+                : JustInTimeLookupSystemPrompt
+            )
+          )
+          .build()
+      )
+      .augmentSearch(
+        query,
+        Strings.getRecordOutput("📊📄", emailContents.toString()),
+        null
+      );
+    log.trace("Returning augmented search results: {}", ret);
+    return ret;
   }
+
+  public static final String JustInTimeLookupBaseSystemPrompt =
+    """
+    You are a research assistant supporting a legal compliance investigation.  The legal team has provided
+    you with a query to investigate%s and a set of preliminary search results.
+
+    📝 Your task is to analyze the search results and extract 📌 **only the sections directly relevant**
+    to understanding or evaluating the email and search intent.
+    ⚠️ Do not summarize the entire document. Instead, return specific passages that:
+      ✅ Provide legal or procedural context for what's discussed in the message.
+      ✅ Clarify whether the district's actions or omissions may violate policy.
+      ✅ Explain what a specific law, rule, or local policy requires or prohibits in this context.
+      ✅ Demonstrate an understanding or lack thereof of the district's obligations under the law.
+      ✅ Include a requset for a specific action or response from the district.
+        - Whenever possible, include the deadline for the action or response.
+    📝 If nothing clearly applies to the email or search query within a result, exclude that individual
+        result in your response.
+    ❌ Do not editorialize or assume conclusions.
+    ❌ Do not explain general policy background unless it directly applies.
+    🧠 The results will be passed to an LLM that will use them only as **supplementary context**, not
+        as a basis for standalone findings. Precision is more valuable than coverage
+    📝 The results will be used to draft a legal research memo, so be sure to include any relevant
+        deadlines or responsible actors when applicable.
+    ⚠️ Any metadata provided with the result should be returned without modification.
+
+    🗂️ The request will be structured as follows:
+    BEGIN Request Record Schema
+    🕵️ (Query): <Contents of the Research Query driving the request>
+    %s
+    📋 Search Results:
+    _#_ Result #1<Result Number> <Metadata Key: Metadata Value>|<Metadata Key: Metadata Value>|<Metadata Key: Metadata Value> _#_
+    <Contents of Search Result 1>
+    _#_ END Result #1<Result Number> _#_
+    _#_ Result <Result Number> <Metadata Key: Metadata Value>|<Metadata Key: Metadata Value>|<Metadata Key: Metadata Value> _#_
+    <Contents of Search Result 2>
+    _#_ END Result <Result Number> _#_
+    END Request Record Schema
+
+    🗂️ Your response should be structured as follows:
+    BEGIN Response Record Schema
+    📋 Augmented Search Results:
+    _#_ Result #1-1<Result Number 1, Relevant Passage Number 1> <Metadata Key: Metadata Value>|<Metadata Key: Metadata Value>|<Metadata Key: Metadata Value> _#_
+    <Contents of Search Result 1>
+    _#_ END Result #1-1<Result Number 1>, <Relevant Finding Number 1> _#_
+    _#_ Result #1<Result Number 1>-2<Relevant Passage Number 2>,  <Metadata Key: Metadata Value>|<Metadata Key: Metadata Value>|<Metadata Key: Metadata Value> _#_
+    <Contents of Search Result 1>
+    _#_ END Result #1-2<Result Number 1, Relevant Finding Number 2> _#_
+    _#_ Result <Result Number>-<Relevant Passage Number> <Metadata Key: Metadata Value>|<Metadata Key: Metadata Value>|<Metadata Key: Metadata Value> _#_
+    <Contents of Search Result 2>
+    _#_ END Result <Result Number> _#_
+    END Response Record Schema
+    """;
+  public static final String JustInTimeLookupSystemPrompt = String.format(
+    JustInTimeLookupBaseSystemPrompt,
+    ", the document they are analyzing to provide context",
+    "_#_ 📊📄<Document Context> _#_\r\n" + //
+    "    <Contents of the Document under analysis>\r\n" + //
+    "    _#_ END Document Context _#_"
+  );
+  public static final String JustInTimeLookupWithoutDocSystemPrompt =
+    String.format(JustInTimeLookupBaseSystemPrompt, "", "");
+
+  public static final String JustInTimeLookupWithoutDocUserPrompt =
+    """
+    🕵️: {query}
+    📋 Search Results:
+    {results}
+    """;
+
+  public static final String JustInTimeLookupWithDocUserPrompt =
+    """
+    🕵️: {query}
+    {document}
+    📋 Search Results:
+    {results}
+    """;
 }

@@ -17,6 +17,8 @@
         <project.build.artifactId>com.obapps.schoolchatbot</project.build.artifactId>
         <project.build.version>1.0-SNAPSHOT</project.build.version>
         <langchain4j.version>1.0.0-beta3</langchain4j.version>
+        <jakartaee-api.version>10.0.0</jakartaee-api.version>
+        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
     </properties>
 
     <dependencyManagement>
@@ -29,8 +31,19 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+            <dependency>
+                <groupId>io.opentelemetry</groupId>
+                <artifactId>opentelemetry-api</artifactId>
+                <version>1.49.0</version>
+            </dependency>
 
-     <dependency>
+            <dependency>
+                <groupId>jakarta.enterprise</groupId>
+                <artifactId>jakarta.enterprise.cdi-api</artifactId>
+                <version>4.1.0</version>
+                <scope>provided</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
                 <version>20230618</version> 
@@ -120,6 +133,11 @@
                 <artifactId>postgresql</artifactId>
                 <version>42.7.5</version>
             </dependency>
+            <dependency>
+                <groupId>com.zaxxer</groupId>
+                <artifactId>HikariCP</artifactId>
+                <version>6.3.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <modules>
@@ -141,7 +159,8 @@
                     </execution>
                 </executions>
             </plugin>
-			<plugin>
+			<!-- 
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.5.3</version>                
@@ -149,7 +168,7 @@
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
 			</plugin>
-            <!-- <plugin>
+            <plugin>
                 <groupId>com.hubspot.maven.plugins</groupId>
                 <artifactId>prettier-maven-plugin</artifactId>
                 <version>0.8</version>

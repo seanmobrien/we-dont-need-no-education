@@ -1,5 +1,7 @@
 package com.obapps.schoolchatbot.core.embed;
 
+import com.obapps.core.ai.factory.models.ModelType;
+import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.util.Colors;
 import com.obapps.core.util.Db;
 import com.obapps.core.util.EnvVars;
@@ -15,6 +17,7 @@ import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
 import dev.langchain4j.model.azure.AzureOpenAiTokenizer;
+import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.retriever.azure.search.AzureAiSearchContentRetriever;
 import dev.langchain4j.rag.content.retriever.azure.search.AzureAiSearchQueryType;
 import java.util.ArrayList;
@@ -64,7 +67,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DocumentEmbedder implements AutoCloseable {
 
-  protected AzureOpenAiEmbeddingModel embeddingModel;
+  protected EmbeddingModel embeddingModel;
   protected DocumentSplitter documentSplitter;
   protected AzureAiSearchContentRetriever contentRetriever;
   protected final EmbedPolicyFolderOptions options;
@@ -104,7 +107,8 @@ public class DocumentEmbedder implements AutoCloseable {
    */
   protected DocumentEmbedder(
     EmbedPolicyFolderOptions options,
-    String searchIndexName
+    String searchIndexName,
+    ILanguageModelFactory modelFactory
   ) {
     this.log = LoggerFactory.getLogger(DocumentEmbedder.class);
     this.options = options;
@@ -112,25 +116,20 @@ public class DocumentEmbedder implements AutoCloseable {
     var openAiVars = EnvVars.getInstance().getOpenAi();
 
     // Create EmbeddingModel object for Azure OpenAI text-embedding-ada-002
-    this.embeddingModel = AzureOpenAiEmbeddingModel.builder()
-      .apiKey(openAiVars.getApiKey())
-      .endpoint(openAiVars.getApiEndpoint())
-      .deploymentName(openAiVars.getDeploymentEmbedding())
-      .logRequestsAndResponses(true)
-      .build();
+    this.embeddingModel = modelFactory.createEmbeddingModel();
 
     // Create Document Splitter object
     this.documentSplitter = DocumentSplitters.recursive(
-      254,
-      40,
-      new AzureOpenAiTokenizer("gpt-4o-2024-11-20")
+      openAiVars.getDocumentSplitterMaxTokens(),
+      openAiVars.getDocumentSplitterOverlap(),
+      modelFactory.getTokenizer(ModelType.Embedding)
     );
 
     // Create ContentRetriever object for Azure AI Search with Hybrid Search applied
     this.contentRetriever = AzureAiSearchContentRetriever.builder()
       .apiKey(openAiVars.getSearchApiKey())
       .endpoint(openAiVars.getSearchApiEndpoint())
-      .dimensions(1536)
+      .dimensions(openAiVars.getVectorSizeLarge())
       .indexName(searchIndexName)
       .createOrUpdateIndex(false)
       .embeddingModel(embeddingModel)

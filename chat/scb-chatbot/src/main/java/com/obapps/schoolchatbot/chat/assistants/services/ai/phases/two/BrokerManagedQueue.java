@@ -31,6 +31,11 @@ public class BrokerManagedQueue<TQueueItem> implements IBrokerManagedQueue {
    */
   private static final ScheduledExecutorService scheduler =
     Executors.newScheduledThreadPool(3);
+  private static Boolean isShuttingDown = false;
+
+  protected static Boolean hasShutdownBeenCalled() {
+    return isShuttingDown;
+  }
 
   /**
    * A list of all currently running broker-managed queues.
@@ -288,7 +293,7 @@ public class BrokerManagedQueue<TQueueItem> implements IBrokerManagedQueue {
    *
    * This method is synchronized to ensure thread safety during the shutdown process.
    */
-  private static synchronized void shutdownAllQueues() {
+  public static synchronized void shutdownAllQueues() {
     if (scheduler.isShutdown() || scheduler.isTerminated()) {
       return; // Scheduler already shut down
     }

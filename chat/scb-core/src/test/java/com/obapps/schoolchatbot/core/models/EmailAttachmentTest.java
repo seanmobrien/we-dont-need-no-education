@@ -49,7 +49,18 @@ class EmailAttachmentTest {
   void testSaveToDb() throws SQLException {
     Db mockDb = Mockito.mock(Db.class);
     Mockito.when(
-      mockDb.insertAndGetGeneratedKeys(Mockito.anyString(), Mockito.any())
+      mockDb.insertAndGetGeneratedKeys(
+        Mockito.anyString(),
+        Mockito.any(),
+        Mockito.any(),
+        Mockito.any(),
+        Mockito.any(),
+        Mockito.any(),
+        Mockito.any(),
+        Mockito.any(),
+        Mockito.any(),
+        Mockito.any()
+      )
     ).thenReturn(1);
 
     EmailAttachment attachment = new EmailAttachment(
@@ -80,7 +91,19 @@ class EmailAttachmentTest {
     );
     attachment.updateDb(mockDb);
 
-    Mockito.verify(mockDb).executeUpdate(Mockito.anyString(), Mockito.any());
+    Mockito.verify(mockDb).executeUpdate(
+      Mockito.anyString(),
+      Mockito.any(),
+      Mockito.any(),
+      Mockito.any(),
+      Mockito.any(),
+      Mockito.any(),
+      Mockito.any(),
+      Mockito.any(),
+      Mockito.any(),
+      Mockito.any(),
+      Mockito.any()
+    );
   }
 
   @Test

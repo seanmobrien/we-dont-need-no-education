@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.embed;
 
+import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.util.Colors;
 import com.obapps.core.util.EnvVars;
 import com.obapps.schoolchatbot.core.embed.DocumentEmbedder;
@@ -14,7 +15,8 @@ public class EmbedPlsas extends DocumentEmbedder {
   private EmbedPlsas(EmbedPolicyFolderOptions options) {
     super(
       options,
-      EnvVars.getInstance().getOpenAi().getPolicySearchIndexName()
+      EnvVars.getInstance().getOpenAi().getPolicySearchIndexName(),
+      new StandaloneModelClientFactory()
     );
   }
 
@@ -47,6 +49,14 @@ public class EmbedPlsas extends DocumentEmbedder {
    * @param args Command-line arguments passed to the application.
    */
   public static void main(String[] args) {
-    // ...existing code...
+    // Example usage of EmbedPlsas
+    var options = new EmbedPolicyFolderOptions();
+    options.sourceFolder = "C:\\Users\\seanm\\OneDrive\\PLSASComplaint\\FedLaw"; // Specify the folder containing PLSAS documents
+    var embedPlsas = new EmbedPlsas(options);
+    try {
+      embedPlsas.run();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
 }

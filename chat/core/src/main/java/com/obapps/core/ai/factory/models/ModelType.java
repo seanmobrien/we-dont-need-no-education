@@ -23,4 +23,8 @@ public enum ModelType {
    * Low-fidelity model type.
    */
   LoFi,
+  /**
+   * Embedding models aren't "real" models, but still...
+   */
+  Embedding,
 }

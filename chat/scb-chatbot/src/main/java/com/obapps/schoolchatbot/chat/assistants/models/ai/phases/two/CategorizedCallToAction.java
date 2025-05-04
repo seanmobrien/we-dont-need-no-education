@@ -120,12 +120,15 @@ public class CategorizedCallToAction extends InitialCtaOrResponsiveAction {
     if (other == null) {
       return;
     }
-    if (Strings.compareIgnoreCase(this.propertyValue, other.propertyValue)) {
+    if (!Strings.compareIgnoreCase(this.propertyValue, other.propertyValue)) {
       setPropertyValue(
         String.format("%s\n%s", this.propertyValue, other.propertyValue)
       );
     }
-    if (other.reasonablyTitleIx > this.reasonablyTitleIx) {
+    if (
+      Objects.requireNonNullElse(other.reasonablyTitleIx, -1) >
+      Objects.requireNonNullElse(this.reasonablyTitleIx, -1)
+    ) {
       this.reasonablyTitleIx = other.reasonablyTitleIx;
     }
     if (other.reasonablyTitleIxReasons != null) {

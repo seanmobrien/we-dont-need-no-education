@@ -329,7 +329,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
           return result;
         }
       }
-      throw new Error('Failure extracting and normalizing email content');
+      return 'No text available for extraction';
     }
     return bodyText;
   }
@@ -352,7 +352,7 @@ class EmailStageManager extends TransactionalStateManagerBase {
     FROM emails E
     JOIN document_units D ON D.email_id=E.email_id
     JOIN document_property EP ON D.unit_id=EP.document_id    
-    JOIN email_property_type ET ON EP.email_property_type_id=ET.email_property_type_id
+    JOIN email_property_type ET ON EP.document_property_type_id=ET.document_property_type_id
     WHERE ET.property_name='In-Reply-To' AND (EP.property_value=${emailId} OR EP.property_value=${globalMessageIdWithBrackets})
   ) RETURNING emails.email_id`,
     );

@@ -33,6 +33,13 @@ public class AzurePolicySearchClientTest {
     MockitoAnnotations.openMocks(this);
     EnvVars.OpenAiVars mockOpenAiVars = mock(EnvVars.OpenAiVars.class);
     when(mockEnvVars.getOpenAi()).thenReturn(mockOpenAiVars);
+    when(mockOpenAiVars.getApiKey()).thenReturn("test-api-key");
+
+    when(mockOpenAiVars.getSearchApiEndpoint()).thenReturn(
+      "https://api.test.com/v1/"
+    );
+    when(mockOpenAiVars.getSearchApiKey()).thenReturn("test-search-api-key");
+
     client = new AzurePolicySearchClient(mockEnvVars, mockEmbeddingService);
   }
 

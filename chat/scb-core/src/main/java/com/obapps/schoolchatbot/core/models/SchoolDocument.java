@@ -1,7 +1,9 @@
 package com.obapps.schoolchatbot.core.models;
 
+import com.obapps.core.util.DateTimeFormats;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 
 public class SchoolDocument implements Document {
@@ -20,20 +22,24 @@ public class SchoolDocument implements Document {
     var meta = new HashMap<String, Object>();
     meta.put("id", source.unitId);
     meta.put("email_id", source.emailId);
-    if (source.parentEmailId != null && !source.parentEmailId.isEmpty()) {
+    if (source.parentEmailId != null && source.parentEmailId > 0) {
       meta.put("parent_email_id", source.parentEmailId);
     }
     if (source.attachmentId != null) {
       meta.put("attachment_id", source.attachmentId);
     }
-    if (source.emailPropertyId != null) {
-      meta.put("email_property_id", source.emailPropertyId);
+    if (source.documentPropertyId != null) {
+      meta.put("document_property_id", source.documentPropertyId);
     }
     meta.put("thread_id", source.threadId);
 
     meta.put("relatedEmailIds", String.join(",", source.relatedEmailIds));
     meta.put("document_type", source.documentType);
-    meta.put("created_on", source.createdOn);
+    meta.put("created_on", DateTimeFormats.localTime.format(source.createdOn));
+    meta.put(
+      "embedded_on",
+      DateTimeFormats.localTime.format(LocalDateTime.now())
+    );
 
     meta.put("href_document", source.hrefDocument);
     meta.put("href_api", source.hrefApi);

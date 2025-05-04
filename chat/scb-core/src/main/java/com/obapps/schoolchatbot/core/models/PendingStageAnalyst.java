@@ -3,6 +3,7 @@ package com.obapps.schoolchatbot.core.models;
 import com.obapps.core.util.Db;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -103,7 +104,14 @@ public class PendingStageAnalyst {
     );
     return ret
       .stream()
-      .sorted((a, b) -> a.getSentTimestamp().compareTo(b.getSentTimestamp()))
+      .sorted((a, b) ->
+        Objects.requireNonNullElse(
+          a.getSentTimestamp(),
+          LocalDateTime.MAX
+        ).compareTo(
+          Objects.requireNonNullElse(b.getSentTimestamp(), LocalDateTime.MAX)
+        )
+      )
       .toList();
   }
 

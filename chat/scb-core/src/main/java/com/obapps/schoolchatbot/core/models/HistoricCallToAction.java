@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.core.models;
 
+import com.esotericsoftware.minlog.Log;
 import com.obapps.core.util.Db;
 import com.obapps.core.util.IDbTransaction;
 import com.obapps.core.util.sql.FieldUtil;
@@ -169,24 +170,56 @@ public class HistoricCallToAction extends CallToAction {
     }
   }
 
-  public CallToAction addToDb(IDbTransaction tx) throws SQLException {
+  /*
+  @SuppressWarnings("unchecked")
+  public HistoricCallToAction addToDb(IDbTransaction tx) throws SQLException {
     super.addToDb(tx);
-    for (DocumentRelationship doc : this.getRelatedDocuments()) {
-      doc.addToDb(tx.getDb());
-    }
+    addRelationshipsToDb(tx);
     return this;
   }
+   
 
-  public CallToAction updateDb(IDbTransaction tx) throws SQLException {
+  @SuppressWarnings("unchecked")
+  @Override
+  public HistoricCallToAction updateDb(IDbTransaction tx) throws SQLException {
     super.updateDb(tx);
     var db = tx.getDb();
     db.executeUpdate(
       "DELETE FROM document_property_call_to_action_category WHERE property_id=?",
       this.getPropertyId()
     );
+    addRelationshipsToDb(tx);
+    return this;
+  }
+  */
+  void addRelationshipsToDb(IDbTransaction tx) {
     for (DocumentRelationship doc : this.getRelatedDocuments()) {
-      doc.addToDb(tx.getDb());
+      doc.setRelatedPropertyId(getPropertyId());
+      try {
+        doc.saveToDb(tx);
+      } catch (SQLException e) {
+        Log.warn(
+          String.format(
+            "Unexpected failure occurred adding document relationship.\nDocument id: %s\nProperty Id: %s\nRelationship: %s",
+            doc.getDocumentId(),
+            this.getPropertyId(),
+            doc.getRelationship()
+          ),
+          e
+        );
+      }
     }
+  }
+
+  @SuppressWarnings("unchecked")
+  public HistoricCallToAction updateDb(IDbTransaction tx) throws SQLException {
+    super.updateDb(tx);
+    var db = tx.getDb();
+    db.executeUpdate(
+      "DELETE FROM document_property_call_to_action_category WHERE property_id=?",
+      this.getPropertyId()
+    );
+    addRelationshipsToDb(tx);
     return this;
   }
 

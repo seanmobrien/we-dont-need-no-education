@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.util.Db;
+import com.obapps.core.util.IDbTransaction;
 import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.util.Map;
@@ -38,8 +39,8 @@ public class KeyPoint extends DocumentProperty {
    */
   public KeyPoint() {
     super();
-    setPropertyType(DocumentPropertyType.KnownValues.KeyPoint);
-    setInferred(false);
+    this.setPropertyType(DocumentPropertyType.KnownValues.KeyPoint);
+    this.setInferred(false);
   }
 
   /**
@@ -49,7 +50,7 @@ public class KeyPoint extends DocumentProperty {
    */
   public KeyPoint(Map<String, Object> stateBag) {
     super(stateBag);
-    setPropertyType(DocumentPropertyType.KnownValues.KeyPoint);
+    this.setPropertyType(DocumentPropertyType.KnownValues.KeyPoint);
     FieldUtil.saveDoubleFromStateBag(stateBag, "relevance", this::setRelevance);
     FieldUtil.saveDoubleFromStateBag(
       stateBag,
@@ -120,26 +121,30 @@ public class KeyPoint extends DocumentProperty {
 
   @SuppressWarnings("unchecked")
   @Override
-  public KeyPoint addToDb(Db db) throws SQLException {
-    var propertyRecord = super.addToDb(db);
+  public KeyPoint addToDb(IDbTransaction tx) throws SQLException {
+    var propertyRecord = super.addToDb(tx);
     if (propertyRecord == null || getPropertyId() == null) {
       throw new SQLException("Unexpected error adding email_property record");
     }
 
-    var records = db.executeUpdate(
-      "INSERT INTO key_points_details " +
-      "(property_id, relevance, compliance, severity_ranking, inferred) " +
-      "VALUES " +
-      "(?,?,?,?,?)",
-      getPropertyId(),
-      relevance,
-      compliance,
-      severityRanking,
-      inferred
-    );
+    var records = tx
+      .getDb()
+      .executeUpdate(
+        // Updated to use tx.getDb()
+        "INSERT INTO key_points_details " +
+        "(property_id, relevance, compliance, severity_ranking, inferred) " +
+        "VALUES " +
+        "(?,?,?,?,?)",
+        getPropertyId(),
+        relevance,
+        compliance,
+        severityRanking,
+        inferred
+      );
     if (records < 1) {
+      tx.setAbort();
       throw new SQLException(
-        "Unexpected error adding key_points_details record"
+        "Unexpected error adding key_points_details record - no records were added."
       );
     }
     return this;
@@ -148,32 +153,32 @@ public class KeyPoint extends DocumentProperty {
   /**
    * Loads a KeyPoint object based on the provided email property ID.
    *
-   * @param emailPropertyId the ID of the email property to load the KeyPoint for
+   * @param documentPropertyId the ID of the email property to load the KeyPoint for
    * @return the loaded KeyPoint object
    * @throws SQLException if a database access error occurs
    */
-  public static KeyPoint loadKeyPoint(UUID emailPropertyId)
+  public static KeyPoint loadKeyPoint(UUID documentPropertyId)
     throws SQLException {
-    return loadKeyPoint(Db.getInstance(), emailPropertyId);
+    return loadKeyPoint(Db.getInstance(), documentPropertyId);
   }
 
   /**
    * Loads a KeyPoint object from the database based on the given email property ID.
    *
    * @param db               The database connection object used to execute the query.
-   * @param emailPropertyId  The ID of the email property to retrieve the associated KeyPoint.
+   * @param documentPropertyId  The ID of the email property to retrieve the associated KeyPoint.
    * @return                 A KeyPoint object if a matching record is found, or null if no record exists.
    * @throws SQLException    If a database access error occurs or the query fails.
    */
-  public static KeyPoint loadKeyPoint(Db db, UUID emailPropertyId)
+  public static KeyPoint loadKeyPoint(Db db, UUID documentPropertyId)
     throws SQLException {
     var record = db.selectRecords(
-      "SELECT ep.property_value, ep.email_property_type_id, ep.property_id, " +
+      "SELECT ep.property_value, ep.document_property_type_id, ep.property_id, " +
       "ep.document_id, ep.created_on, ep.tags, ep.policybasis, kp.* " +
       "FROM document_property ep " +
       "JOIN key_points_details kp ON ep.property_id = kp.property_id " +
       "WHERE ep.property_id = ?",
-      emailPropertyId
+      documentPropertyId
     );
     if (record.size() > 0) {
       return new KeyPoint(record.get(0));
@@ -240,19 +245,21 @@ public class KeyPoint extends DocumentProperty {
     /**
      * Sets the email property of the {@link KeyPoint} using a {@link DocumentProperty}.
      *
-     * @param emailProperty The {@link DocumentProperty} containing email-related data.
+     * @param documentProperty The {@link DocumentProperty} containing email-related data.
      * @param <B>           The type of the builder.
      * @return The builder instance for method chaining.
      */
-    public <B2 extends B> B2 emailProperty(DocumentProperty emailProperty) {
+    public <B2 extends B> B2 documentProperty(
+      DocumentProperty documentProperty
+    ) {
       return self()
-        .documentId(emailProperty.getDocumentId())
-        .propertyId(emailProperty.getPropertyId())
-        .propertyType(emailProperty.getPropertyType())
-        .propertyValue(emailProperty.getPropertyValue())
-        .createdOn(emailProperty.getCreatedOn())
-        .tags(emailProperty.getTags())
-        .policyBasis(emailProperty.getPolicyBasis());
+        .documentId(documentProperty.getDocumentId())
+        .propertyId(documentProperty.getPropertyId())
+        .propertyType(documentProperty.getPropertyType())
+        .propertyValue(documentProperty.getPropertyValue())
+        .createdOn(documentProperty.getCreatedOn())
+        .tags(documentProperty.getTags())
+        .policyBasis(documentProperty.getPolicyBasis());
     }
 
     /**

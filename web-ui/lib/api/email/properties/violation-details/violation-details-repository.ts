@@ -85,7 +85,7 @@ export class ViolationDetailsRepository extends BaseObjectRepository<
             vd.attachment_id, vd.key_point_property_id, vd.action_property_id, vd.violation_type, vd.severity_level, vd.detected_by, vd.detected_on
             FROM document_property ep 
              JOIN violation_details vd ON vd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
        WHERE vd.property_id = $1`,
       [recordId],
@@ -109,7 +109,7 @@ export class ViolationDetailsRepository extends BaseObjectRepository<
   }: ViolationDetails): [string, Array<unknown>] {
     return [
       `WITH ins1 AS (
-        INSERT INTO document_property (property_value, email_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
+        INSERT INTO document_property (property_value, document_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
         VALUES ($1, 7, $2, $3, $4, $12, $13) RETURNING property_id
       )
       INSERT INTO violation_details (property_id, attachment_id, key_point_property_id, action_property_id, violation_type, severity_level, detected_by, detected_on) 

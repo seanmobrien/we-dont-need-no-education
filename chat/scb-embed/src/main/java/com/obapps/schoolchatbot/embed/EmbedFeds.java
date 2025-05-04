@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.embed;
 
+import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.util.Colors;
 import com.obapps.core.util.EnvVars;
 import com.obapps.schoolchatbot.core.embed.DocumentEmbedder;
@@ -14,7 +15,8 @@ public class EmbedFeds extends DocumentEmbedder {
   private EmbedFeds(EmbedPolicyFolderOptions options) {
     super(
       options,
-      EnvVars.getInstance().getOpenAi().getPolicySearchIndexName()
+      EnvVars.getInstance().getOpenAi().getPolicySearchIndexName(),
+      new StandaloneModelClientFactory()
     );
   }
 

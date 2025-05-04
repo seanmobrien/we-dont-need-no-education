@@ -27,7 +27,7 @@ public class HistoricKeyPointTests {
   Map<String, Object> makeMockRecord() {
     Map<String, Object> expectedRecord = new HashMap<>();
     expectedRecord.put("property_id", (Object) UUID.randomUUID());
-    expectedRecord.put("email_property_type_id", (Object) 9);
+    expectedRecord.put("document_property_type_id", (Object) 9);
     expectedRecord.put("email_id", (Object) UUID.randomUUID());
     expectedRecord.put("document_id", (Object) 100);
     expectedRecord.put("key_note", (Object) "from mock");

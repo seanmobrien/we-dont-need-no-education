@@ -2,18 +2,24 @@ package com.obapps.core.ai.factory.services;
 
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.obapps.core.ai.factory.models.AiServiceOptions;
+import com.obapps.core.ai.factory.models.EmbeddingOptions;
 import com.obapps.core.ai.factory.models.ModelType;
 import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.ai.factory.types.IStandaloneModelClient;
+import com.obapps.core.ai.telemetry.MetricsChatModelListener;
+import com.obapps.core.ai.telemetry.SpanChatModelListener;
 import com.obapps.core.util.EnvVars;
 import com.obapps.core.util.EnvVars.OpenAiVars;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import dev.langchain4j.model.Tokenizer;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
+import dev.langchain4j.model.azure.AzureOpenAiTokenizer;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.service.AiServices;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -47,6 +53,11 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   private EnvVars envVars;
   private String userName;
 
+  private static final MetricsChatModelListener MetricsChatModelListener =
+    new MetricsChatModelListener();
+  private static final SpanChatModelListener SpanChatModelListener =
+    new SpanChatModelListener();
+
   public StandaloneModelClientFactory() {
     this(null);
   }
@@ -63,7 +74,8 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   protected EmbeddingModel createEmbeddingLlm(
     String endpoint,
     String deployment,
-    String apiKey
+    String apiKey,
+    Integer dimensions
   ) {
     String normalEndpoint = endpoint.endsWith("/")
       ? endpoint.substring(0, endpoint.length() - 1)
@@ -74,6 +86,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     var builder = AzureOpenAiEmbeddingModel.builder()
       .apiKey(apiKey)
       .endpoint(normalEndpoint)
+      .dimensions(dimensions)
       .deploymentName(deployment)
       .timeout(Duration.ofMillis(2 * 60 * 1000))
       .logRequestsAndResponses(isDebugMode);
@@ -115,7 +128,10 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       .endpoint(normalEndpoint)
       .deploymentName(deployment)
       .timeout(Duration.ofMillis(2 * 60 * 1000))
-      .logRequestsAndResponses(isDebugMode);
+      .logRequestsAndResponses(
+        isDebugMode
+      )//.listeners(List.of(SpanChatModelListener, MetricsChatModelListener))
+    ;
 
     if (userName != null) {
       builder.user(userName);
@@ -170,15 +186,6 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       openAiEnv(OpenAiVars::getDeploymentChat),
       openAiEnv(OpenAiVars::getApiKey),
       builderFunc
-    );
-  }
-
-  protected EmbeddingModel createEmbeddingClient() {
-    // Completion Model for high-fidelity analysis
-    return createEmbeddingLlm(
-      openAiEnv(OpenAiVars::getApiEndpoint),
-      openAiEnv(OpenAiVars::getDeploymentEmbedding),
-      openAiEnv(OpenAiVars::getApiKey)
     );
   }
 
@@ -250,6 +257,13 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     return llm;
   }
 
+  @Override
+  public Tokenizer getTokenizer(ModelType modelType) {
+    return new AzureOpenAiTokenizer(
+      EnvVars.getInstance().getOpenAi().getDeploymentEmbedding()
+    );
+  }
+
   /**
    * Creates and returns an instance of the EmbeddingModel.
    * This method delegates the creation process to the createEmbeddingClient method.
@@ -257,7 +271,20 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
    * @return an instance of EmbeddingModel
    */
   public EmbeddingModel createEmbeddingModel() {
-    return createEmbeddingClient();
+    return createEmbeddingModel(null);
+  }
+
+  public EmbeddingModel createEmbeddingModel(EmbeddingOptions options) {
+    if (options == null) {
+      options = EmbeddingOptions.builder().build();
+    }
+    // Completion Model for high-fidelity analysis
+    return createEmbeddingLlm(
+      openAiEnv(OpenAiVars::getApiEndpointEmbedding),
+      openAiEnv(OpenAiVars::getDeploymentEmbedding),
+      openAiEnv(OpenAiVars::getApiKey),
+      options.dimensions
+    );
   }
 
   /**
@@ -343,7 +370,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     var builder = AiServices.builder(options.getClazz()).chatLanguageModel(
       model
     );
-    if (options.memoryWindow != null) {
+    if (options.memoryWindow != null && options.memoryWindow > 0) {
       builder.chatMemory(
         MessageWindowChatMemory.withMaxMessages(options.memoryWindow)
       );

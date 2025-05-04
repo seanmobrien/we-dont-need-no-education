@@ -24,7 +24,7 @@
       "sortable": false,
       "facetable": false,
       "key": false,
-      "dimensions": 1536,
+      "dimensions": 3072,
       "vectorSearchProfile": "vector-profile",
       "synonymMaps": []
     },
@@ -52,7 +52,7 @@
       "sortable": false,
       "facetable": false,
       "key": false,
-      "dimensions": 1536,
+      "dimensions": 3072,
       "vectorSearchProfile": "vector-profile",
       "synonymMaps": []
     },
@@ -139,7 +139,7 @@
           "synonymMaps": []
         },
         {
-          "name": "email_property_id",
+          "name": "document_property_id",
           "type": "Edm.String",
           "searchable": true,
           "filterable": true,

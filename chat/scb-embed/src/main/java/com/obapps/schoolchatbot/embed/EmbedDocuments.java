@@ -1,27 +1,34 @@
 package com.obapps.schoolchatbot.embed;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonObject;
-import com.obapps.core.util.*;
+import com.obapps.core.ai.factory.models.ModelType;
+import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
+import com.obapps.core.ai.factory.types.ILanguageModelFactory;
+import com.obapps.core.exceptions.ErrorUtil;
 import com.obapps.core.util.EnvVars;
-import com.obapps.schoolchatbot.core.models.*;
+import com.obapps.schoolchatbot.core.models.DocumentUnit;
+import com.obapps.schoolchatbot.core.models.EmbedDocumentsOptions;
+import com.obapps.schoolchatbot.core.models.SchoolDocument;
+import com.obapps.schoolchatbot.core.models.embed.DocumentUnitEmbeddedProps;
+import com.obapps.schoolchatbot.core.services.embed.DatabaseDocumentStore;
+import com.obapps.schoolchatbot.core.services.embed.IDocumentStore;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
-import dev.langchain4j.model.azure.AzureOpenAiEmbeddingModel;
-import dev.langchain4j.model.azure.AzureOpenAiTokenizer;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.retriever.azure.search.AzureAiSearchContentRetriever;
 import dev.langchain4j.rag.content.retriever.azure.search.AzureAiSearchQueryType;
 import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import okhttp3.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A utility class for embedding documents into a vector database.
@@ -29,48 +36,87 @@ import org.apache.commons.cli.Options;
  */
 public class EmbedDocuments {
 
-  private EmbedDocuments(EmbedDocumentsOptions options) {
-    this.options = options;
-    httpClient = new OkHttpClient.Builder().followRedirects(false).build();
+  public EmbedDocuments(
+    ILanguageModelFactory factory,
+    IDocumentStore documentService,
+    EmbedDocumentsOptions options
+  ) {
+    this.options = options == null ? new EmbedDocumentsOptions() : options;
+    this.documentService = documentService == null
+      ? new DatabaseDocumentStore()
+      : documentService;
+    this.modelFactory = factory == null
+      ? new StandaloneModelClientFactory()
+      : factory;
   }
 
-  private String authCookies;
-  private final EmbedDocumentsOptions options;
-  private final OkHttpClient httpClient;
+  private EmbedDocuments(EmbedDocumentsOptions options) {
+    this(null, null, options);
+  }
 
-  // private final ObjectMapper objectMapper;
-
-  public Boolean run() throws Exception {
-    if (
-      EnvVars.getInstance().get("PIPELINES_EMBEDDOCUMENTS_ENABLED") == "false"
-    ) {
-      System.out.println("Embedding is disabled.");
-      return false;
+  public static void setSignalExit(Boolean signal) {
+    if (signal) {
+      signalExit = true;
     }
+  }
+
+  private static Boolean signalExit = false;
+  protected static final Logger log = LoggerFactory.getLogger(
+    EmbedDocuments.class
+  );
+  private final EmbedDocumentsOptions options;
+  private EmbeddingModel embeddingModel;
+  private final IDocumentStore documentService;
+  private final ILanguageModelFactory modelFactory;
+
+  private static ExecutorService executorService =
+    Executors.newSingleThreadExecutor();
+  private static Future<?> backgroundTask;
+
+  protected EmbeddingModel getEmbeddingModel() {
+    if (embeddingModel == null) {
+      embeddingModel = modelFactory.createEmbeddingModel();
+      if (embeddingModel == null) {
+        throw new IllegalStateException("Embedding model is not initialized.");
+      }
+    }
+    return embeddingModel;
+  }
+
+  public Integer run() throws Exception {
+    Integer ret;
     // Step 1: Authenticate
     try {
-      this.authCookies = authenticate();
-      if (options.verbose) {
-        System.out.println("  Authenticated successfully");
+      if (!documentService.authenticate()) {
+        log.error(
+          "Authentication failed.",
+          new Exception("Authentication failed.")
+        );
+        return -1;
       }
+      log.trace("Authentication successful.");
     } catch (Exception e) {
-      System.out.println("Error: " + e.getMessage());
-      return false;
+      log.error("Authentication Error: " + e.getMessage(), e);
+      return -1;
     }
-    // Step 2: Get the list of documents
-    var documents = readDocumentUnits();
-    if (documents.isEmpty()) {
-      System.out.println("No documents to embed.");
-      return true;
+    try {
+      // Step 2: Get the list of documents
+      var documents = documentService.readDocumentUnits(options.reindex);
+      if (documents.isEmpty()) {
+        log.info("No documents pending embedding.");
+        return 0;
+      }
+
+      log.trace("Found {} documents to embed.", documents.size());
+      // Step 3: Embed the documents
+      ret = embedDocuments(documents);
+      log.info("Successfully embedded {} segments", ret);
+    } catch (Exception e) {
+      log.error("Error: " + e.getMessage(), e);
+      return -1;
     }
-    if (options.verbose) {
-      System.out.println(
-        "  Found " + documents.size() + " documents to embed."
-      );
-    }
-    // Step 3: Embed the documents
-    embedDocuments(documents);
-    return true;
+
+    return ret;
   }
 
   protected Integer embedDocuments(List<DocumentUnit> documents)
@@ -79,26 +125,22 @@ public class EmbedDocuments {
     var openAiVars = EnvVars.getInstance().getOpenAi();
 
     // Create EmbeddingModel object for Azure OpenAI text-embedding-ada-002
-    var embeddingModel = AzureOpenAiEmbeddingModel.builder()
-      .apiKey(openAiVars.getApiKey())
-      .endpoint(openAiVars.getApiEndpoint())
-      .deploymentName(openAiVars.getDeploymentEmbedding())
-      .logRequestsAndResponses(true)
-      .build();
+    var embeddingModel = getEmbeddingModel();
 
     // Create Document Splitter object
     var documentSplitter = DocumentSplitters.recursive(
-      254,
-      40,
-      new AzureOpenAiTokenizer("gpt-4o-2024-11-20")
+      openAiVars.getDocumentSplitterMaxTokens(),
+      openAiVars.getDocumentSplitterOverlap(),
+      modelFactory.getTokenizer(ModelType.Embedding)
     );
 
     // Create ContentRetriever object for Azure AI Search with Hybrid Search applied
     var contentRetriever = AzureAiSearchContentRetriever.builder()
       .apiKey(openAiVars.getSearchApiKey())
       .endpoint(openAiVars.getSearchApiEndpoint())
-      .dimensions(1536)
+      .dimensions(openAiVars.getVectorSizeLarge())
       .indexName(openAiVars.getSearchIndexName())
+      .dimensions(openAiVars.getVectorSizeLarge())
       .createOrUpdateIndex(false)
       .embeddingModel(embeddingModel)
       .queryType(AzureAiSearchQueryType.HYBRID_WITH_RERANKING)
@@ -109,6 +151,11 @@ public class EmbedDocuments {
     // Step 2: Embed the documents
     Integer succeeded = 0;
     for (var documentUnit : documents) {
+      if (signalExit) {
+        log.info("Exiting embedding process.");
+        return succeeded;
+      }
+
       Boolean embedded = embedDocument(
         contentRetriever,
         documentSplitter,
@@ -116,16 +163,10 @@ public class EmbedDocuments {
         documentUnit
       );
       if (embedded) {
+        log.trace("Document {} embedded successfully.", documentUnit.unitId);
         succeeded++;
-        if (options.verbose) {
-          System.out.println(
-            "  Document " + documentUnit.unitId + " embedded successfully."
-          );
-        }
       } else {
-        System.out.println(
-          "  Document " + documentUnit.unitId + " embedding failed."
-        );
+        log.warn("Document {} embedding failed.", documentUnit.unitId);
       }
     }
     return succeeded;
@@ -137,139 +178,71 @@ public class EmbedDocuments {
     EmbeddingModel embeddingModel,
     DocumentUnit sourceDocumentUnit
   ) { // Custom metadata
-    var embeddings = new ArrayList<Embedding>();
-    var segmentsToStore = new ArrayList<TextSegment>();
-
-    Document document = new SchoolDocument(sourceDocumentUnit);
-    List<TextSegment> segments = documentSplitter.split(document);
-    for (TextSegment segment : segments) {
-      segmentsToStore.add(segment);
-      embeddings.add(embeddingModel.embed(segment).content());
-    }
-
     try {
+      var embeddings = new ArrayList<Embedding>();
+      var segmentsToStore = new ArrayList<TextSegment>();
+
+      Document document = new SchoolDocument(sourceDocumentUnit);
+      if (document.text() == null || document.text().isEmpty()) {
+        return false;
+      }
+      List<TextSegment> segments = documentSplitter.split(document);
+      for (TextSegment segment : segments) {
+        segmentsToStore.add(segment);
+        embeddings.add(embeddingModel.embed(segment).content());
+      }
+
       contentRetriever.addAll(embeddings, segmentsToStore);
+
+      var openAi = EnvVars.getInstance().getOpenAi();
+      var props = new DocumentUnitEmbeddedProps();
+      props.document = sourceDocumentUnit;
+      props.embeddingModel = openAi.getDeploymentEmbedding();
+      props.embeddings = embeddings;
+      props.segments = segmentsToStore;
+
+      // Set embedding model and date
+      documentService.onDocumentUnitEmbedded(props);
+      return true; // Return true
     } catch (Exception ex) {
-      System.out.println("Error embedding document: " + ex.getMessage());
-      return false;
-    }
-    // Set embedding model and date
-    setDocumentUnitEmbeddedOn(
-      sourceDocumentUnit,
-      EnvVars.getInstance().getOpenAi().getDeploymentEmbedding()
-    );
-    return true;
-  }
-
-  protected void setDocumentUnitEmbeddedOn(
-    DocumentUnit documentUnit,
-    String embeddingModel
-  ) {
-    JsonObject jsonObject = new JsonObject();
-    jsonObject.addProperty("unitId", documentUnit.unitId);
-    jsonObject.addProperty("embeddingModel", embeddingModel);
-    jsonObject.addProperty(
-      "embeddedOn",
-      OffsetDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)
-    );
-    // Step 2: PUT it over to the server for update
-    var restApiVars = EnvVars.getInstance().getRestService();
-    var request = new Request.Builder()
-      .url(
-        restApiVars.getServiceUrl("/api/document-unit/" + documentUnit.unitId)
-      )
-      .put(
-        RequestBody.create(
-          jsonObject.toString(),
-          MediaType.parse("application/json")
-        )
-      )
-      .addHeader("Cookie", authCookies)
-      .build();
-    var response = httpClient.newCall(request);
-    try {
-      var processed = response.execute();
-      if (!processed.isSuccessful()) {
-        System.out.println("Unexpected response code: " + processed.code());
-      }
-      processed.close();
-      // Step 2: Parse the JSON response
-    } catch (IOException e) {
-      System.out.println("Unexpected response code: " + e.getMessage());
-    }
-  }
-
-  protected String authenticate() throws IOException {
-    // Step 1: POST to the auth endpoint
-    var restApiVars = EnvVars.getInstance().getRestService();
-    var request = new Request.Builder()
-      .url(restApiVars.getServiceUrl("/api/auth/callback/credentials"))
-      .post(new FormBody.Builder().build())
-      .addHeader(
-        restApiVars.getAuthHeaderBypassKey(),
-        restApiVars.getAuthHeaderBypassValue()
-      )
-      .build();
-    var authResponse = httpClient.newCall(request).execute();
-    try {
-      // Step 2: Capture cookies
-      Headers headers = authResponse.headers();
-      StringBuilder authCookies = new StringBuilder();
-      headers
-        .values("Set-Cookie")
-        .forEach((String setCookie) -> {
-          var idxOf = setCookie.indexOf(";");
-          if (idxOf > 0) {
-            setCookie = setCookie.substring(0, idxOf);
-          }
-          authCookies.append(setCookie).append("; ");
-        });
-      if (authCookies.indexOf("authjs.session-token=") == -1) {
-        throw new IOException("Login unsuccessful; No session token found.");
-      }
-      return authCookies.substring(0, authCookies.length() - 2);
-    } finally {
-      authResponse.close();
-    }
-  }
-
-  protected List<DocumentUnit> readDocumentUnits() throws IOException {
-    // Step 1: GET the list of documents
-    var restApiVars = EnvVars.getInstance().getRestService();
-
-    var request = new Request.Builder()
-      // It's late, going to cheat a little bit and return document content as well
-      .url(
-        restApiVars.getServiceUrl(
-          "/api/document-unit?limit=1000&offset=0&content=true&pending=true"
-        )
-      )
-      .get()
-      .addHeader("Cookie", authCookies)
-      .build();
-    var response = httpClient.newCall(request).execute();
-    try {
-      if (!response.isSuccessful()) {
-        throw new IOException("Unexpected code " + response);
-      }
-      // Step 2: Parse the JSON response
-      ObjectMapper objectMapper = Strings.objectMapperFactory();
-
-      var results = objectMapper.readValue(
-        response.body().string(),
-        PaginatedResults.class
+      ErrorUtil.handleException(
+        log,
+        ex,
+        "Error embedding document %s:",
+        sourceDocumentUnit.unitId
       );
-      if (results == null || results.results == null) {
-        throw new IOException("Unexpected result shape");
-      }
-      return results.results;
-    } finally {
-      response.close();
+      return false;
     }
   }
 
   protected void dispose() {
     // Dispose of resources if needed
+  }
+
+  public static void cancel(Boolean signal) {
+    if (signal) {
+      EmbedDocuments.signalExit = true;
+      if (backgroundTask != null) {
+        try {
+          if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+            backgroundTask.cancel(true); // Interrupt if still running after 60 seconds
+            executorService.shutdownNow();
+            log.warn(
+              "Executor service did not terminate gracefully within 60 seconds."
+            );
+          } else {
+            log.info("Executor service terminated gracefully.");
+          }
+        } catch (InterruptedException e) {
+          ErrorUtil.handleException(
+            log,
+            e,
+            "Interrupted while waiting for executor service to terminate."
+          );
+          executorService.shutdownNow();
+        }
+      }
+    }
   }
 
   /**
@@ -294,23 +267,34 @@ public class EmbedDocuments {
         .setReindex(parser.hasOption("reindex"))
         .setVerbose(parser.hasOption("verbose"));
     } catch (Exception e) {
-      System.out.println("Could not parse command line: " + e.getMessage());
+      ErrorUtil.handleException(log, e, "Could not parse command line:");
       return;
     }
+
     var program = new EmbedDocuments(options);
-    try {
-      var res = program.run();
-      if (!res) {
-        System.out.println("Embedding unsuccessful.");
-      } else if (options.verbose) {
-        System.out.println("Embedding successfully completed.");
+    backgroundTask = executorService.submit(() -> {
+      try {
+        var res = program.run();
+        if (res == -1) {
+          System.out.println("Embedding unsuccessful.");
+        } else if (options.verbose) {
+          System.out.println(
+            String.format(
+              "Embedding successfully completed, %d items indexed.%n",
+              res
+            )
+          );
+        }
+      } catch (Exception e) {
+        System.out.println("Critical Application Error: " + e.getMessage());
+        e.printStackTrace();
+      } finally {
+        program.dispose();
+        System.out.println("Program disposed successfully.");
       }
-    } catch (Exception e) {
-      System.out.println("Critical Application Error: " + e.getMessage());
-      e.printStackTrace();
-    } finally {
-      program.dispose();
-    }
-    System.out.println("All done...");
+      System.out.println("All done...");
+    });
+
+    System.out.println("Task submitted to background thread.");
   }
 }

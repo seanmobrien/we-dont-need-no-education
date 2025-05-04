@@ -91,7 +91,7 @@ public class HistoricKeyPoint extends KeyPoint {
     Integer documentContext
   ) {
     var record = db.selectRecords(
-      "SELECT dp.property_id, dp.email_property_type_id, d.email_id, dp.document_id,\r\n" +
+      "SELECT dp.property_id, dp.document_property_type_id, d.email_id, dp.document_id,\r\n" +
       "d.email_id=requested_doc.email_id as from_this_message,\r\n" +
       "dp.property_value AS key_note,\r\n" +
       "e_actual.sent_timestamp AS created_on, kp.relevance, kp.compliance, \r\n" +

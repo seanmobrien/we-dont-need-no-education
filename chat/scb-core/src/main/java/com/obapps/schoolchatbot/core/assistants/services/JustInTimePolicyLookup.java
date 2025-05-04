@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
-import com.obapps.core.ai.factory.services.StandaloneModelClient;
+import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
+import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 
@@ -52,7 +53,7 @@ public class JustInTimePolicyLookup
     this(
       documentSource,
       new AzurePolicySearchClient(),
-      new StandaloneModelClient(),
+      new StandaloneModelClientFactory(),
       new PolicyChunkFilter()
     );
   }
@@ -71,13 +72,13 @@ public class JustInTimePolicyLookup
   public JustInTimePolicyLookup(
     IDocumentContentSource documentSource,
     AzurePolicySearchClient searchClient,
-    IStandaloneModelClient summarizer,
+    ILanguageModelFactory summarizer,
     PolicyChunkFilter chunkFilter
   ) {
     super(
       documentSource,
       searchClient == null ? new AzurePolicySearchClient() : searchClient,
-      summarizer == null ? new StandaloneModelClient() : summarizer,
+      summarizer == null ? new StandaloneModelClientFactory() : summarizer,
       chunkFilter == null ? new DocumentChunkFilter() : chunkFilter
     );
   }

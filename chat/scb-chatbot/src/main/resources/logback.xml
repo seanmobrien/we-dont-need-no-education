@@ -57,7 +57,8 @@
     <logger name="reactor.util" level="WARN" />
     <logger name="io.netty" level="WARN" />
     <logger name="ai.djl" level="WARN" />
-    <logger name="org.apache.tika" level="OFF" />
+    <logger name="org.apache.tika" level="WARN" />
+    <logger name="com.zaxxer" level="WARN" />
 
     <root level="trace">
         <appender-ref ref="ASYNC"/>

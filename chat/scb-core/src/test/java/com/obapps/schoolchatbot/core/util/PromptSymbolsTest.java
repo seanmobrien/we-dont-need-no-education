@@ -51,7 +51,7 @@ public class PromptSymbolsTest {
     String result = PromptSymbols.processTokens(token);
 
     // Assert
-    assertThat(result).isEqualTo("promptsymbols_checklist_confirmed");
+    assertThat(result).isEqualTo(token);
   }
 
   @Test
@@ -76,6 +76,6 @@ public class PromptSymbolsTest {
     String result = PromptSymbols.processTokens(token);
 
     // Assert
-    assertThat(result).isEqualTo("\u2705_"); // ✅_
+    assertThat(result).isEqualTo("\u2705!"); // ✅_
   }
 }

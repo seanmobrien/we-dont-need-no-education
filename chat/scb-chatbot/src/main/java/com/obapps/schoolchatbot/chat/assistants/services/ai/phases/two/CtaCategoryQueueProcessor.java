@@ -91,6 +91,12 @@ public class CtaCategoryQueueProcessor
     );
   }
 
+  static String joinByNewLine(List<String> list) {
+    return list == null || list.isEmpty()
+      ? "No items."
+      : String.join("\n", list);
+  }
+
   static String serializeCtas(List<InitialCtaOrResponsiveAction> models) {
     return Strings.getRecordOutput(
       "🔔",
@@ -110,10 +116,12 @@ public class CtaCategoryQueueProcessor
               %s""",
             cta.getRecordId(),
             cta.getPropertyValue(),
-            cta.getCreatedOn().format(DateTimeFormats.localDate),
+            cta.getCreatedOn() == null
+              ? null
+              : cta.getCreatedOn().format(DateTimeFormats.localDate),
             cta.getDocumentId(),
-            String.join("\n", cta.getClosureActionItems()),
-            String.join("\n", cta.getPolicyBasis())
+            joinByNewLine(cta.getClosureActionItems()),
+            joinByNewLine(cta.getPolicyBasis())
           )
         )
         .collect(Collectors.joining("\n"))

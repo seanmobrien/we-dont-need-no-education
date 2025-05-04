@@ -1,6 +1,6 @@
 package com.obapps.schoolchatbot.core.models;
 
-import com.obapps.core.util.Db;
+import com.obapps.core.util.IDbTransaction;
 import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
@@ -337,26 +337,36 @@ public class CallToActionResponse extends DocumentProperty {
    */
   @SuppressWarnings("unchecked")
   @Override
-  public CallToActionResponse addToDb(Db db) throws SQLException {
-    super.addToDb(db);
-    db.executeUpdate(
-      "INSERT INTO call_to_action_response_details " +
-      "(property_id, action_property_id, completion_percentage, response_timestamp, compliance_message, compliance_message_reasons, compliance_aggregate, compliance_aggregate_reasons, reasonable_request, reasonable_reasons, severity, inferred) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-      getPropertyId(),
-      actionPropertyId,
-      completionPercentage,
-      responseTimestamp,
-      complianceMessage,
-      complianceMessageReasons,
-      complianceAggregate,
-      complianceAggregateReasons,
-      reasonableRequest,
-      reasonableReasons,
-      severity,
-      inferred
-    );
-    return this;
+  public CallToActionResponse addToDb(IDbTransaction tx) throws SQLException {
+    super.addToDb(tx);
+    try {
+      tx
+        .getDb()
+        .executeUpdate(
+          "INSERT INTO call_to_action_response_details " +
+          "(property_id, action_property_id, completion_percentage, response_timestamp, compliance_message, compliance_message_reasons, compliance_aggregate, compliance_aggregate_reasons, reasonable_request, reasonable_reasons, severity, inferred) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          getPropertyId(),
+          actionPropertyId,
+          completionPercentage,
+          responseTimestamp,
+          complianceMessage,
+          complianceMessageReasons,
+          complianceAggregate,
+          complianceAggregateReasons,
+          reasonableRequest,
+          reasonableReasons,
+          severity,
+          inferred
+        );
+      return this;
+    } catch (SQLException e) {
+      tx.setAbort();
+      throw new SQLException(
+        "Unexpected error saving responsive action: " + e.getMessage(),
+        e
+      );
+    }
   }
 
   /**

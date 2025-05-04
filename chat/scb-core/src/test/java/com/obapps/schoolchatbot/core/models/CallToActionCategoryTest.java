@@ -1,6 +1,9 @@
 package com.obapps.schoolchatbot.core.models;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.obapps.core.util.Db;
@@ -31,20 +34,38 @@ public class CallToActionCategoryTest {
 
   @Test
   void testSaveToDb() throws SQLException {
-    when(mockDb.executeUpdate(anyString(), any())).thenReturn(1);
+    when(
+      mockDb.executeUpdate(anyString(), anyString(), any(), any(), any(), any())
+    ).thenReturn(1);
 
     category.saveToDb(mockDb);
 
-    verify(mockDb, times(1)).executeUpdate(anyString(), any());
+    verify(mockDb, times(1)).executeUpdate(
+      anyString(),
+      anyString(),
+      any(),
+      any(),
+      any(),
+      any()
+    );
   }
 
   @Test
   void testUpdateDb() throws SQLException {
-    when(mockDb.executeUpdate(anyString(), any())).thenReturn(1);
+    when(
+      mockDb.executeUpdate(anyString(), anyString(), any(), any(), any(), any())
+    ).thenReturn(1);
 
     category.updateDb(mockDb);
 
-    verify(mockDb, times(1)).executeUpdate(anyString(), any());
+    verify(mockDb, times(1)).executeUpdate(
+      anyString(),
+      anyString(),
+      any(),
+      any(),
+      any(),
+      any()
+    );
   }
 
   @Test

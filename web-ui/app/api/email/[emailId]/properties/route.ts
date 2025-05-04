@@ -25,7 +25,7 @@ export async function GET(
             (sql) =>
               sql`SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id
             FROM document_property ep
-            JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+            JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
             JOIN document_units d ON d.unit_id = ep.document_id
             JOIN email e ON e.email_id = d.email_id

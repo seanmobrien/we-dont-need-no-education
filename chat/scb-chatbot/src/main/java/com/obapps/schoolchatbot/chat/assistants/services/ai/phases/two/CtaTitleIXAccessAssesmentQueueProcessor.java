@@ -326,56 +326,73 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
     }
     HistoricCallToAction cta = null;
     try {
-      var recordId = UUID.fromString(fromBatch.getRecordId());
-      cta = HistoricCallToAction.getCallsToAction(_db, recordId, false, true);
-      if (cta == null) {
-        cta = HistoricCallToAction.HistoricCallToActionBuilder.builder()
-          .propertyId(recordId)
-          .propertyValue(fromBatch.getPropertyValue())
-          .documentId(fromBatch.getDocumentId())
-          .createdOn(fromBatch.getCreatedOn())
-          .openedDate(fromBatch.getCreatedOn().toLocalDate())
-          .compliancyCloseDate(
-            DateTimeFormats.asLocalDate(fromBatch.compliancyCloseDate)
-          )
-          .complianceDateEnforceable(fromBatch.complianceDateEnforceable)
-          .inferred(fromBatch.inferred)
-          .closureActions(fromBatch.getClosureActionItems())
-          .policyBasis(fromBatch.getPolicyBasis())
-          .tags(fromBatch.getTags())
-          .severity(fromBatch.getSeverity())
-          .severityReasons(fromBatch.getSeverityReasons())
-          .titleIxApplicable(processed.reasonablyTitleIx)
-          .titleIxApplicableReasons(processed.getReasonablyTitleIxReasons())
-          .sentiment(fromBatch.sentiment)
-          .sentimentReasons(fromBatch.sentimentReasons)
-          .categories(
-            fromBatch
-              .getCategories()
-              .stream()
-              .map(m ->
-                CallToActionCategory.builder().setCtaCategoryId(m).build()
+      try (var db = Db.createUnitOfWork()) {
+        var tx = db.createTransaction();
+        try (tx) {
+          var recordId = UUID.fromString(fromBatch.getRecordId());
+          cta = HistoricCallToAction.getCallsToAction(
+            _db,
+            recordId,
+            false,
+            true
+          );
+          if (cta == null) {
+            cta = HistoricCallToAction.HistoricCallToActionBuilder.builder()
+              .propertyId(recordId)
+              .propertyValue(fromBatch.getPropertyValue())
+              .documentId(fromBatch.getDocumentId())
+              .createdOn(fromBatch.getCreatedOn())
+              .openedDate(fromBatch.getCreatedOn().toLocalDate())
+              .compliancyCloseDate(
+                DateTimeFormats.asLocalDate(fromBatch.compliancyCloseDate)
               )
-              .toList()
-          )
-          .relatedDocuments(
-            processed.relatedDocuments
-              .stream()
-              .map(m ->
-                com.obapps.schoolchatbot.core.models.DocumentRelationship.builder()
-                  .documentId(m.documentId)
-                  .relationship(m.relationshipType)
-                  .relatedPropertyId(recordId)
-                  .build()
+              .complianceDateEnforceable(fromBatch.complianceDateEnforceable)
+              .inferred(fromBatch.inferred)
+              .closureActions(fromBatch.getClosureActionItems())
+              .policyBasis(fromBatch.getPolicyBasis())
+              .tags(fromBatch.getTags())
+              .severity(fromBatch.getSeverity())
+              .severityReasons(fromBatch.getSeverityReasons())
+              .titleIxApplicable(processed.reasonablyTitleIx)
+              .titleIxApplicableReasons(processed.getReasonablyTitleIxReasons())
+              .sentiment(fromBatch.sentiment)
+              .sentimentReasons(fromBatch.sentimentReasons)
+              .categories(
+                fromBatch
+                  .getCategories()
+                  .stream()
+                  .map(m ->
+                    CallToActionCategory.builder().setCtaCategoryId(m).build()
+                  )
+                  .toList()
               )
-              .toList()
-          )
-          .build();
-        cta.addToDb(db());
-      } else {
-        var updateCta = copyToExisting(fromBatch, processed, cta);
-        if (updateCta) {
-          cta.updateDb(db());
+              .relatedDocuments(
+                processed.relatedDocuments
+                  .stream()
+                  .map(m ->
+                    com.obapps.schoolchatbot.core.models.DocumentRelationship.builder()
+                      .documentId(m.documentId)
+                      .relationship(m.relationshipType)
+                      .relatedPropertyId(recordId)
+                      .build()
+                  )
+                  .toList()
+              )
+              .build();
+            cta.addToDb(tx);
+          } else {
+            var updateCta = copyToExisting(fromBatch, processed, cta);
+            if (updateCta) {
+              cta.updateDb(tx);
+            }
+          }
+        } catch (Exception e) {
+          tx.setAbort();
+          log.error(
+            "An error occurred saving call to action Failed to create transaction",
+            e
+          );
+          return false;
         }
       }
     } catch (SQLException e) {

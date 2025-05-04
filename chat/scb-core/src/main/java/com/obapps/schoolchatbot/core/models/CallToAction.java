@@ -68,7 +68,7 @@ public class CallToAction extends DocumentProperty {
   /**
    * Reasons for the compliance message.
    */
-  private String complianceRatingReasons;
+  private List<String> complianceRatingReasons;
 
   /**
    * Indicates whether the CTA is inferred.
@@ -199,7 +199,7 @@ public class CallToAction extends DocumentProperty {
       "compliance_rating",
       this::setComplianceRating
     );
-    FieldUtil.saveFromStateBag(
+    FieldUtil.saveStringArrayFromStateBag(
       stateBag,
       "compliance_rating_reasons",
       this::setComplianceRatingReasons
@@ -408,7 +408,7 @@ public class CallToAction extends DocumentProperty {
    *
    * @return The compliance message reasons as a {@link String}.
    */
-  public String getComplianceRatingReasons() {
+  public List<String> getComplianceRatingReasons() {
     return complianceRatingReasons;
   }
 
@@ -417,7 +417,9 @@ public class CallToAction extends DocumentProperty {
    *
    * @param complianceMessageReasons The {@link String} representing the compliance message reasons.
    */
-  public void setComplianceRatingReasons(String complianceMessageReasons) {
+  public void setComplianceRatingReasons(
+    List<String> complianceMessageReasons
+  ) {
     this.complianceRatingReasons = complianceMessageReasons;
   }
 
@@ -584,36 +586,12 @@ public class CallToAction extends DocumentProperty {
     this.severityReasons = severityReasons;
   }
 
-  /**
-   * Adds the current {@code CallToAction} instance to the database.
-   *
-   * @param db The database instance used to execute the insert operation.
-   * @return The current instance of {@code CallToAction} after being added to the database.
-   * @throws SQLException If an error occurs while executing the database operation.
-   */
-  @SuppressWarnings("unchecked")
   @Override
-  public CallToAction addToDb(Db db) throws SQLException {
+  @SuppressWarnings("unchecked")
+  public <T extends DocumentProperty> T addToDb(IDbTransaction tx)
+    throws SQLException {
     try {
-      if (db == null) {
-        db = Db.getInstance();
-      }
-      try (IDbTransaction tx = db.createTransaction()) {
-        this.addToDb(tx);
-      }
-    } catch (Exception ex) {
-      throw new SQLException(
-        "Failed to add call_to_action_details for property_id: " +
-        getPropertyId(),
-        ex
-      );
-    }
-    return this;
-  }
-
-  public CallToAction addToDb(IDbTransaction tx) throws SQLException {
-    try {
-      super.addToDb(tx.getDb());
+      super.addToDb(tx);
       tx
         .getDb()
         .executeUpdate(
@@ -647,10 +625,9 @@ public class CallToAction extends DocumentProperty {
         ex
       );
     }
-    return this;
+    return (T) this;
   }
 
-  @SuppressWarnings("unchecked")
   public CallToAction updateDb(Db db) throws SQLException {
     try {
       try (var tx = db.createTransaction()) {
@@ -666,9 +643,14 @@ public class CallToAction extends DocumentProperty {
     return this;
   }
 
-  public CallToAction updateDb(IDbTransaction tx) throws SQLException {
+  @SuppressWarnings("unchecked")
+  public <T extends DocumentProperty> T updateDb(IDbTransaction tx)
+    throws SQLException {
+    if (tx == null) {
+      throw new IllegalArgumentException("Transaction cannot be null.");
+    }
     try {
-      super.updateDb(tx.getDb());
+      super.updateDb(tx);
       tx
         .getDb()
         .executeUpdate(
@@ -694,11 +676,9 @@ public class CallToAction extends DocumentProperty {
           closureActions,
           getPropertyId()
         );
-      return this;
+      return (T) this;
     } catch (Exception ex) {
-      if (tx != null) {
-        tx.setAbort();
-      }
+      tx.setAbort();
       throw new SQLException(
         "Failed to update call_to_action_details for property_id: " +
         getPropertyId(),
@@ -793,7 +773,7 @@ public class CallToAction extends DocumentProperty {
      * @return The builder instance for method chaining.
      */
     public <B2 extends B> B2 complianceMessageReasons(
-      String complianceMessageReasons
+      List<String> complianceMessageReasons
     ) {
       target.setComplianceRatingReasons(complianceMessageReasons);
       return self();

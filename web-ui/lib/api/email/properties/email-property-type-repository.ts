@@ -16,7 +16,7 @@ export const mapPropertyTypeRecordToObject = (
   record: Record<string, unknown>,
 ): EmailPropertyType => ({
   categoryId: Number(record.email_property_category_id),
-  typeId: Number(record.email_property_type_id),
+  typeId: Number(record.document_property_type_id),
   name: String(record.property_name),
   createdOn:
     record.created_at instanceof Date
@@ -31,7 +31,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
   constructor() {
     super({
       tableName: 'email_property_type',
-      idField: ['typeId', 'email_property_type_id'],
+      idField: ['typeId', 'document_property_type_id'],
       objectMap: mapPropertyTypeRecordToObject,
       summaryMap: mapPropertyTypeRecordToObject,
     });
@@ -132,7 +132,7 @@ export class EmailPropertyTypeRepository extends BaseObjectRepository<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected getQueryProperties(recordId: number): [string, Array<any>] {
     return [
-      'SELECT * FROM email_property_type WHERE email_property_type_id = $1',
+      'SELECT * FROM email_property_type WHERE document_property_type_id = $1',
       [recordId],
     ];
   }

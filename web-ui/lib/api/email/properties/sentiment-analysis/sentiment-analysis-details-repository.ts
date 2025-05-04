@@ -86,7 +86,7 @@ export class SentimentAnalysisDetailsRepository extends BaseObjectRepository<
             esad.sentiment_score, esad.detected_hostility, esad.flagged_phrases, esad.detected_on
             FROM document_property ep 
              JOIN email_sentiment_analysis_details esad ON esad.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
        WHERE esad.property_id = $1`,
       [recordId],
@@ -107,7 +107,7 @@ export class SentimentAnalysisDetailsRepository extends BaseObjectRepository<
   }: EmailSentimentAnalysisDetails): [string, Array<unknown>] {
     return [
       `WITH ins1 AS (
-        INSERT INTO document_property (property_value, email_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
+        INSERT INTO document_property (property_value, document_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
         VALUES ($1, 8, $2, $3, $4, $9, $10) RETURNING property_id
       )
       INSERT INTO email_sentiment_analysis_details (property_id, sentiment_score, detected_hostility, flagged_phrases, detected_on) 

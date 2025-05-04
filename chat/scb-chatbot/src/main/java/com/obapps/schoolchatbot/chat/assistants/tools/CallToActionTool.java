@@ -14,24 +14,21 @@ import java.util.ArrayList;
 
 public class CallToActionTool extends MessageTool<AugmentedContentList> {
 
-  private final Db _innerDb;
   private final JustInTimePolicyLookup policyLookup;
   private final JustInTimeDocumentLookup documentLookup;
   private HistoricKeyPointRepository keyPointRepository;
 
   public CallToActionTool(CallToActionAnalysis content) {
-    this(content, null, null, null, null);
+    this(content, null, null, null);
   }
 
   public CallToActionTool(
     CallToActionAnalysis content,
-    Db db,
     JustInTimePolicyLookup policyLookup,
     JustInTimeDocumentLookup documentLookup,
     HistoricKeyPointRepository keyPointRepository
   ) {
     super(content);
-    this._innerDb = db;
     this.policyLookup = policyLookup == null
       ? new JustInTimePolicyLookup(content)
       : policyLookup;
@@ -41,13 +38,6 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     this.keyPointRepository = keyPointRepository == null
       ? new HistoricKeyPointRepository()
       : keyPointRepository;
-  }
-
-  private Db db() throws SQLException {
-    if (_innerDb == null) {
-      return Db.getInstance();
-    }
-    return _innerDb;
   }
 
   /**
@@ -127,7 +117,6 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
         e
       );
       DocumentProperty.addManualReview(
-        s -> this.keyPointRepository.db(),
         msg.getDocumentId(),
         e,
         "AddKeyPointsTool",
@@ -219,7 +208,6 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       }
 
       DocumentProperty.addManualReview(
-        c -> db(),
         msg.getDocumentId(),
         e,
         "summarizePolicy",
@@ -349,19 +337,25 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
     ) String documentIds
   ) {
     ArrayList<DocumentWithMetadata> results = new ArrayList<>();
-    for (String dId : documentIds.split(",")) {
-      try {
-        var documentId = Integer.parseInt(dId.trim().replaceAll("\"", ""));
-        var data = db();
-        results.add(DocumentWithMetadata.fromDb(data, documentId));
-      } catch (Exception e) {
-        log.error(
-          "Unexpected SQL failure retrieving document details.  Details: " +
-          dId,
-          e
-        );
-        return null;
+    if (documentIds == null || documentIds.isEmpty()) {
+      return null;
+    }
+
+    try (var data = Db.createUnitOfWork()) {
+      for (String dId : documentIds.split(",")) {
+        try {
+          var documentId = Integer.parseInt(dId.trim().replaceAll("\"", ""));
+          results.add(DocumentWithMetadata.fromDb(data, documentId));
+        } catch (Exception e) {
+          log.error(
+            "Unexpected SQL failure retrieving document details.  Details: " +
+            dId,
+            e
+          );
+        }
       }
+    } catch (SQLException e) {
+      log.error("Unexpected error connecting to database.", e);
     }
     return results.toArray(new DocumentWithMetadata[0]);
   }
@@ -376,22 +370,29 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       value = "The note to be added to the processing history of the email.  This is useful for adding notes about the analysis process, or for adding information that may be useful for future analysis.  ***Quotation marks are not allowed as input*** - use single-dash (e.g ') instead."
     ) String note
   ) {
+    Integer documentId;
     var msg = message();
     try {
-      if (msg.getDocumentId() == null) {
-        log.warn(
-          "Unable to add processing note - no Document ID available.  Details: " +
-          note
-        );
-        return;
+      if (msg == null || msg.getDocumentId() == null) {
+        documentId = -1;
+      } else {
+        documentId = msg.getDocumentId();
       }
-      DocumentProperty.builder()
-        .documentId(msg.getDocumentId())
-        .propertyValue(note)
-        .propertyType(DocumentPropertyType.KnownValues.ProcessingNote)
-        .build()
-        .addToDb(db());
-      addNote();
+      try (var db = Db.createUnitOfWork()) {
+        var n = DocumentProperty.builder()
+          .documentId(documentId)
+          .propertyValue(note)
+          .propertyType(DocumentPropertyType.KnownValues.ProcessingNote)
+          .build()
+          .addToDb(db.createTransaction());
+        if (documentId == -1) {
+          log.warn(
+            "Processing note [{}] was added to the generalized fallback document because there is no current context available.",
+            n.getPropertyId()
+          );
+        }
+        addNote();
+      }
     } catch (SQLException e) {
       log.error(
         "Unexpected SQL failure adding processing note.  Details: " + note,

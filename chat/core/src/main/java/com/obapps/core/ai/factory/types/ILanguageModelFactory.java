@@ -1,7 +1,9 @@
 package com.obapps.core.ai.factory.types;
 
 import com.obapps.core.ai.factory.models.AiServiceOptions;
+import com.obapps.core.ai.factory.models.EmbeddingOptions;
 import com.obapps.core.ai.factory.models.ModelType;
+import dev.langchain4j.model.Tokenizer;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 
@@ -10,23 +12,6 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
  * language model instances and related services. It allows setting and retrieving
  * a username, creating various types of language models, and creating service instances
  * with specified options.
- *
- * <p>Key functionalities include:</p>
- * <ul>
- *   <li>Setting and retrieving the username associated with the factory instance.</li>
- *   <li>Creating language models of different types, such as HiFi, LoFi, and Embedding models.</li>
- *   <li>Creating embedding models for specialized use cases.</li>
- *   <li>Creating service instances of a specified type with configurable options.</li>
- * </ul>
- *
- * <p>Implementations of this interface are expected to handle the creation logic
- * for language models and services, and to validate input parameters where necessary.</p>
- *
- * <p>Exceptions:</p>
- * <ul>
- *   <li>{@link IllegalArgumentException} is thrown if an unsupported model type is specified.</li>
- *   <li>{@link Exception} is thrown if an error occurs during service creation.</li>
- * </ul>
  */
 public interface ILanguageModelFactory {
   /**
@@ -56,16 +41,19 @@ public interface ILanguageModelFactory {
   public ChatLanguageModel createModel(ModelType modelType);
 
   /**
-   * Creates a ChatLanguageModel instance based on the specified model type.
+   * Creates an EmbeddingModel instance with default options.
    *
-   * @param modelType The type of model to create. Supported types are:
-   *                  - HiFi: High-fidelity language model.
-   *                  - LoFi: Low-fidelity language model.
-   *                  - Embedding: Embedding-based language model.
-   * @return A ChatLanguageModel instance corresponding to the specified model type.
-   * @throws IllegalArgumentException If the specified model type is unsupported.
+   * @return An EmbeddingModel instance.
    */
   public EmbeddingModel createEmbeddingModel();
+
+  /**
+   * Creates an EmbeddingModel instance with specified options.
+   *
+   * @param options The options to configure the embedding model.
+   * @return An EmbeddingModel instance configured with the provided options.
+   */
+  public EmbeddingModel createEmbeddingModel(EmbeddingOptions options);
 
   /**
    * Creates an instance of the specified service class.
@@ -76,4 +64,12 @@ public interface ILanguageModelFactory {
    * @throws Exception If an error occurs during the creation of the service.
    */
   public <TService> TService createService(AiServiceOptions<TService> options);
+
+  /**
+   * Retrieves the tokenizer associated with the specified model type.
+   *
+   * @param modelType The type of the model for which the tokenizer is required.
+   * @return The tokenizer corresponding to the given model type.
+   */
+  public Tokenizer getTokenizer(ModelType modelType);
 }

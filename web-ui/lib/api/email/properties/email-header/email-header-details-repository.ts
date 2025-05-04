@@ -58,14 +58,14 @@ export class EmailHeaderDetailsRepository extends BaseObjectRepository<
     return [
       `SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id
        FROM document_property ep
-       JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+       JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
        JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
        WHERE ept.email_property_category_id = 1
        ORDER BY ep.property_id`,
       [],
       `SELECT COUNT(*) as records 
        FROM document_property ep
-       JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+       JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
        WHERE ept.email_property_category_id = 1`,
     ];
   }
@@ -74,7 +74,7 @@ export class EmailHeaderDetailsRepository extends BaseObjectRepository<
     return [
       `SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id
        FROM document_property ep
-       JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
+       JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
        JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
        WHERE ep.property_id = $1 AND ept.email_property_category_id = 1`,
       [recordId],
@@ -91,7 +91,7 @@ export class EmailHeaderDetailsRepository extends BaseObjectRepository<
     policy_basis,
   }: EmailProperty): [string, Array<unknown>] {
     return [
-      `INSERT INTO document_property (property_value, email_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
+      `INSERT INTO document_property (property_value, document_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
       [
         value,

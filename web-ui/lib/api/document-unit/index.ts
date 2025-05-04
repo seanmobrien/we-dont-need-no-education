@@ -155,14 +155,14 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
     WHERE ep.email_id = du.email_id
-      AND ep.email_property_type_id = 22
+      AND ep.document_property_type_id = 22
   ) AS related_email_ids,
   (
     SELECT e.email_id
     FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
     WHERE ep.email_id = du.email_id
-      AND ep.email_property_type_id = 26
+      AND ep.document_property_type_id = 26
   ) AS parent_email_id
     FROM document_units du
     LEFT JOIN email_attachments ea ON du.attachment_id = ea.attachment_id
@@ -188,14 +188,14 @@ export class DocumentUnitRepository extends BaseObjectRepository<
     FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
     WHERE ep.email_id = du.email_id
-      AND ep.email_property_type_id = 22
+      AND ep.document_property_type_id = 22
   ) AS related_email_ids,
   (
     SELECT e.email_id
     FROM document_property ep
     JOIN emails e ON ep.property_value = e.global_message_id
     WHERE ep.email_id = du.email_id
-      AND ep.email_property_type_id = 26
+      AND ep.document_property_type_id = 26
   ) AS parent_email_id
     FROM document_units du
     LEFT JOIN emails e ON du.email_id = e.email_id

@@ -2,6 +2,7 @@ package com.obapps.schoolchatbot.core.assistants.content;
 
 import com.obapps.schoolchatbot.core.assistants.types.ContentAugmentorFactory;
 import dev.langchain4j.data.document.Document;
+import dev.langchain4j.model.output.structured.Description;
 import dev.langchain4j.rag.content.Content;
 import java.util.HashMap;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,13 @@ public class AugmentedSearchMetadataType {
     public static final String id = "email_id";
     public static final String parent_email_id = "parent_email_id";
     public static final String attachment_id = "attachment_id";
+
+    @Deprecated
+    @Description("Deprecated, use document_property_id instead")
     public static final String email_property_id = "email_property_id";
+
+    public static final String document_property_id = "document_property_id";
+
     public static final String thread_id = "thread_id";
     public static final String relatedEmailIds = "relatedEmailIds";
     public static final String document_type = "document_type";

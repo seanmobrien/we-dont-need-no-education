@@ -56,10 +56,6 @@ public class EnvVars {
       return get("AZURE_OPENAI_KEY");
     }
 
-    public String getApiEndpoint() {
-      return get("AZURE_OPENAI_ENDPOINT");
-    }
-
     public String getSearchApiKey() {
       return get("AZURE_AISEARCH_KEY");
     }
@@ -69,15 +65,35 @@ public class EnvVars {
     }
 
     public String getDeploymentChat() {
-      return get("AZURE_OPENAI_DEPLOYMENT_CHAT");
+      var ret = get("AZURE_OPENAI_DEPLOYMENT_CHAT");
+      return ret.isEmpty() ? "gpt-4.1" : ret;
     }
 
+    public String getApiEndpoint() {
+      return get("AZURE_OPENAI_ENDPOINT");
+    }
+
+    /**
+     * Retrieves the deployment embedding configuration value from the environment variables.
+     * If the environment variable "AZURE_OPENAI_DEPLOYMENT_EMBEDDING" is not set or is empty,
+     * a default value of "text-embedding-3-large" is returned.
+     *
+     * @return The deployment embedding value from the environment variable, or the default value
+     *         "text-embedding-3-large" if the variable is not set or empty.
+     */
     public String getDeploymentEmbedding() {
-      return get("AZURE_OPENAI_DEPLOYMENT_EMBEDDING");
+      var ret = get("AZURE_OPENAI_DEPLOYMENT_EMBEDDING");
+      return ret.isEmpty() ? "text-embedding-3-large" : ret;
+    }
+
+    public String getApiEndpointEmbedding() {
+      var ret = get("AZURE_OPENAI_ENDPOINT_EMBEDDING");
+      return ret.isEmpty() ? this.getApiEndpoint() : ret;
     }
 
     public String getDeploymentCompletions() {
-      return get("AZURE_OPENAI_DEPLOYMENT_COMPLETIONS");
+      var ret = get("AZURE_OPENAI_DEPLOYMENT_COMPLETIONS");
+      return ret.isEmpty() ? "o3-mini" : ret;
     }
 
     public String getApiEndpointCompletions() {
@@ -96,6 +112,22 @@ public class EnvVars {
 
     public String getPolicySearchIndexName() {
       return get("AZURE_AISEARCH_POLICY_INDEX_NAME");
+    }
+
+    public int getDocumentSplitterMaxTokens() {
+      return Integer.parseInt(get("DOCUMENT_SPLITTER_MAX_TOKENS", "512"));
+    }
+
+    public int getDocumentSplitterOverlap() {
+      return Integer.parseInt(get("DOCUMENT_SPLITTER_OVERLAP", "15"));
+    }
+
+    public int getVectorSizeSmall() {
+      return Integer.parseInt(get("VECTOR_SIZE_SMALL", "1536"));
+    }
+
+    public int getVectorSizeLarge() {
+      return Integer.parseInt(get("VECTOR_SIZE_LARGE", "3072"));
     }
   }
 

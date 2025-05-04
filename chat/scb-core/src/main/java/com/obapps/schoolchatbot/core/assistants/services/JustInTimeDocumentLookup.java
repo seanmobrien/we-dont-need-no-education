@@ -1,7 +1,7 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
-import com.obapps.core.ai.factory.services.StandaloneModelClient;
-import com.obapps.core.ai.factory.types.IStandaloneModelClient;
+import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
+import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.util.EnvVars;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 
@@ -24,7 +24,7 @@ public class JustInTimeDocumentLookup
       documentSource,
       new AzureSearchClient(),
       EnvVars.getInstance().getJustInTimeSearch().isDocumentSummaryEnabled()
-        ? new StandaloneModelClient()
+        ? new StandaloneModelClientFactory()
         : null,
       new DocumentChunkFilter()
     );
@@ -44,13 +44,13 @@ public class JustInTimeDocumentLookup
   public JustInTimeDocumentLookup(
     IDocumentContentSource documentSource,
     AzureSearchClient searchClient,
-    IStandaloneModelClient summarizer,
+    ILanguageModelFactory summarizer,
     DocumentChunkFilter chunkFilter
   ) {
     super(
       documentSource,
       searchClient == null ? new AzureSearchClient() : searchClient,
-      summarizer == null ? new StandaloneModelClient() : summarizer,
+      summarizer == null ? new StandaloneModelClientFactory() : summarizer,
       chunkFilter == null ? new DocumentChunkFilter() : chunkFilter
     );
   }

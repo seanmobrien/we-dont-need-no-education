@@ -112,12 +112,26 @@ public abstract class DocumentChatAssistant<
   }
 
   private Db database = null;
+  private Db activeDb = null;
+  private IDbTransaction transaction = null;
 
   protected Db getDb() throws SQLException {
     if (this.database != null) {
       return this.database;
     }
-    return Db.getInstance();
+    if (this.activeDb != null) {
+      return this.activeDb;
+    }
+    this.activeDb = Db.createUnitOfWork();
+    return this.activeDb;
+  }
+
+  protected IDbTransaction getTransaction() throws SQLException {
+    if (this.transaction != null) {
+      return this.transaction;
+    }
+    this.transaction = getDb().createTransaction();
+    return this.transaction;
   }
 
   private final Integer phaseId;
@@ -237,34 +251,45 @@ public abstract class DocumentChatAssistant<
    * @throws IllegalArgumentException If the provided document ID is null or not a positive integer.
    * @throws Exception If an error occurs during document processing.
    */
-  public AnalystDocumentResult processDocument(Integer documentId) {
+  public synchronized AnalystDocumentResult processDocument(
+    Integer documentId
+  ) {
     try {
       var result = AnalystDocumentResult.aggregateBuilder();
-
-      try (var tx = this.getDb().createTransaction()) {
-        try {
-          resetMessageState();
-          if (documentId == null || documentId <= 0) {
-            throw new IllegalArgumentException(
-              "Document ID must be a positive integer."
-            );
-          }
-          var actualResult = this.processDocumentExtract(tx, documentId);
-          result.append(actualResult);
-        } catch (Exception e) {
-          tx.setAbort();
-          log.error(
-            "Error processing document {}: {}",
-            documentId,
-            e.getMessage(),
-            e
+      var thisDb = this.getDb();
+      IDbTransaction tx = this.getTransaction();
+      try (tx) {
+        this.resetMessageState();
+        if (documentId == null || documentId <= 0) {
+          throw new IllegalArgumentException(
+            "Document ID must be a positive integer."
           );
-          result.append(new AnalystDocumentResult(e, 0, 0));
+        }
+        var actualResult = this.processDocumentExtract(tx, documentId);
+        result.append(actualResult);
+      } catch (Exception e) {
+        tx.setAbort();
+        log.error(
+          "Error processing document {}: {}",
+          documentId,
+          e.getMessage(),
+          e
+        );
+        result.append(new AnalystDocumentResult(e, 0, 0));
+      } finally {
+        this.transaction = null;
+        if (this.database == null && thisDb != null) {
+          thisDb.close();
         }
       }
       return result.build();
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error(
+        "Error processing document {}: {}",
+        documentId,
+        e.getMessage(),
+        e
+      );
       return new AnalystDocumentResult(e, detectedPoints, addedNotes);
     }
   }
@@ -320,11 +345,8 @@ public abstract class DocumentChatAssistant<
         record.setDocumentId(documentId);
       }
     }
-    Db db = args.getProperty("db", null);
+
     try {
-      if (db == null) {
-        db = getDb();
-      }
       var addedNotes = 0;
       var notes = iterationResult.content().getProcessingNotes();
       if (notes != null) {
@@ -337,7 +359,7 @@ public abstract class DocumentChatAssistant<
             .propertyValue(note)
             .propertyType(DocumentPropertyType.KnownValues.ProcessingNote)
             .build()
-            .addToDb(db);
+            .addToDb(getTransaction());
           addedNotes++;
           addNote();
         }
@@ -371,7 +393,7 @@ public abstract class DocumentChatAssistant<
       auditRecord
         .build()
         .saveToDb(
-          db,
+          transaction.getDb(),
           DocumentUnitAnalysisFunctionAudit.from(
             iterationResult.toolExecutions()
           )

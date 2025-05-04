@@ -12,10 +12,18 @@ public class AugmentedEmailSearch extends AugmentedSearchContent {
     return meta.getString(AugmentedSearchMetadataType.EmailSearch.id);
   }
 
-  public String getEmailPropertyId() {
-    return meta.getString(
-      AugmentedSearchMetadataType.EmailSearch.email_property_id
+  @SuppressWarnings("deprecation")
+  public String getDocumentPropertyId() {
+    var ret = meta.getString(
+      AugmentedSearchMetadataType.EmailSearch.document_property_id
     );
+    if (ret == null || ret.isEmpty()) {
+      // Fallback to the deprecated property
+      ret = meta.getString(
+        AugmentedSearchMetadataType.EmailSearch.email_property_id
+      );
+    }
+    return ret;
   }
 
   public String getEmailThreadId() {
