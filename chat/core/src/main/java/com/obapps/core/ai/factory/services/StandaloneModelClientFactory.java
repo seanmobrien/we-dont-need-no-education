@@ -130,7 +130,12 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       .endpoint(normalEndpoint)
       .deploymentName(deployment)
       .timeout(Duration.ofMillis(2 * 60 * 1000))
+      .temperature(1.0)
       .logRequestsAndResponses(isDebugMode); //.listeners(List.of(SpanChatModelListener, MetricsChatModelListener))
+
+    // The o-series models do not support the temperature parameter.
+    // Note we re currently relying on naming conventinons to determine this,
+    // but we may want to add a more robust check in the future.
 
     if (userName != null) {
       builder.user(userName);
@@ -355,8 +360,6 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
     }
   }
 
-  // Removed duplicate method to resolve type erasure conflict
-
   @Override
   public <TService> TService createService(AiServiceOptions<TService> options) {
     @SuppressWarnings("removal")
@@ -364,7 +367,9 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       if (options.structuredOutput) {
         b.responseFormat(new ChatCompletionsJsonResponseFormat());
       }
-      return b;
+      return options.onSetupModelCallback == null
+        ? b
+        : options.onSetupModelCallback.apply(b);
     });
     var builder = AiServices.builder(options.getClazz()).chatModel(model);
     if (options.memoryWindow != null && options.memoryWindow > 0) {
@@ -372,8 +377,9 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
         MessageWindowChatMemory.withMaxMessages(options.memoryWindow)
       );
     }
-    if (options.onSetup != null) {
-      options.onSetup.accept(builder);
+
+    if (options.onSetupServiceCallback != null) {
+      options.onSetupServiceCallback.accept(builder);
     }
 
     return builder.build();

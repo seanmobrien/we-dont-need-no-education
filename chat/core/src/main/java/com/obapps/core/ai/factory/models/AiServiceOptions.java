@@ -1,7 +1,9 @@
 package com.obapps.core.ai.factory.models;
 
+import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import dev.langchain4j.service.AiServices;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Represents configuration options for an AI service.
@@ -37,17 +39,12 @@ import java.util.function.Consumer;
  * <p>This class is not thread-safe. If multiple threads access an instance of this class
  * concurrently, external synchronization is required.</p>
  */
-public class AiServiceOptions<TService> {
+public class AiServiceOptions<TService> extends ChatModelOptionsBase {
 
   /**
    * Indicates whether the output should be structured.
    */
   public boolean structuredOutput;
-
-  /**
-   * Specifies the model type to be used.
-   */
-  public ModelType modelType = ModelType.LoFi;
 
   /**
    * Defines the memory window size for the service.
@@ -57,7 +54,7 @@ public class AiServiceOptions<TService> {
   /**
    * A callback that is invoked during the setup of the service options.
    */
-  public Consumer<AiServices<TService>> onSetup = null;
+  public Consumer<AiServices<TService>> onSetupServiceCallback = null;
 
   /**
    * The class type of the service being configured.
@@ -125,6 +122,20 @@ public class AiServiceOptions<TService> {
   }
 
   /**
+   * Creates a new builder for configuring AiServiceOptions.
+   *
+   * @param <TService> The type of the service being configured.
+   * @param clazz      The class type of the service.
+   * @return A new Builder instance.
+   */
+  public static <TService> Builder<TService> builder(
+    Class<TService> clazz,
+    ChatModelOptionsBase options
+  ) {
+    return new Builder<TService>(clazz).copy(options);
+  }
+
+  /**
    * A builder class for constructing AiServiceOptions instances.
    *
    * @param <TService> The type of the service being configured.
@@ -151,10 +162,17 @@ public class AiServiceOptions<TService> {
      */
     private Integer memoryWindow = 0;
 
+    private Double temperature = null;
+
     /**
      * A callback that is invoked during the setup of the service options.
      */
     private Consumer<AiServices<TService>> setupCallback = null;
+
+    private Function<
+      AzureOpenAiChatModel.Builder,
+      AzureOpenAiChatModel.Builder
+    > setupModelCallback;
 
     /**
      * Constructs a Builder instance with the specified service class.
@@ -181,25 +199,40 @@ public class AiServiceOptions<TService> {
      * @param <T>              The type of the builder.
      * @return The builder instance.
      */
-    public <T extends Builder<TService>> T setStructuredOutput(
-      boolean structuredOutput
-    ) {
+    public Builder<TService> setStructuredOutput(boolean structuredOutput) {
       this.structuredOutput = structuredOutput;
-      return self();
+      return this;
     }
 
     /**
      * Sets a callback to be invoked during the setup of the service options.
      *
-     * @param setupCallback The setup callback.
+     * @param setupServiceCallback The setup callback.
      * @param <T>           The type of the builder.
      * @return The builder instance.
      */
-    public <T extends Builder<TService>> T onSetup(
-      Consumer<AiServices<TService>> setupCallback
+    public Builder<TService> onSetupModel(
+      Function<
+        AzureOpenAiChatModel.Builder,
+        AzureOpenAiChatModel.Builder
+      > setupModelCallback
     ) {
-      this.setupCallback = setupCallback;
-      return self();
+      this.setupModelCallback = setupModelCallback;
+      return this;
+    }
+
+    /**
+     * Sets a callback to be invoked during the setup of the service options.
+     *
+     * @param setupServiceCallback The setup callback.
+     * @param <T>           The type of the builder.
+     * @return The builder instance.
+     */
+    public Builder<TService> onSetupService(
+      Consumer<AiServices<TService>> setupServiceCallback
+    ) {
+      this.setupCallback = setupServiceCallback;
+      return this;
     }
 
     /**
@@ -209,9 +242,22 @@ public class AiServiceOptions<TService> {
      * @param <T>       The type of the builder.
      * @return The builder instance.
      */
-    public <T extends Builder<TService>> T setModelType(ModelType modelType) {
+    public Builder<TService> setModelType(ModelType modelType) {
       this.modelType = modelType;
-      return self();
+      return this;
+    }
+
+    /**
+     * Sets the temperature value for the AI service options.
+     *
+     * @param temperature the temperature value to set. If null, the current value remains unchanged.
+     * @return the Builder instance for chaining method calls.
+     */
+    public Builder<TService> setTemperature(Double temperature) {
+      if (temperature != null) {
+        this.temperature = temperature;
+      }
+      return this;
     }
 
     /**
@@ -221,13 +267,11 @@ public class AiServiceOptions<TService> {
      * @param <T>          The type of the builder.
      * @return The builder instance.
      */
-    public <T extends Builder<TService>> T setMemoryWindow(
-      Integer memoryWindow
-    ) {
+    public Builder<TService> setMemoryWindow(Integer memoryWindow) {
       if (memoryWindow != null) {
         this.memoryWindow = memoryWindow;
       }
-      return self();
+      return this;
     }
 
     /**
@@ -237,13 +281,19 @@ public class AiServiceOptions<TService> {
      * @param <T>    The type of the builder.
      * @return The builder instance.
      */
-    public <T extends Builder<TService>> T copy(
-      AiServiceOptions<TService> source
-    ) {
-      this.structuredOutput = source.structuredOutput;
+    public Builder<TService> copy(ChatModelOptionsBase source) {
       this.modelType = source.modelType;
-      this.memoryWindow = source.memoryWindow;
-      return self();
+      this.temperature = source.temperature;
+      this.setupModelCallback = source.onSetupModelCallback;
+
+      if (source instanceof AiServiceOptions) {
+        var aiSource = (AiServiceOptions<TService>) source;
+        this.structuredOutput = aiSource.structuredOutput;
+        this.memoryWindow = aiSource.memoryWindow;
+        this.setupCallback = aiSource.onSetupServiceCallback;
+      }
+
+      return this;
     }
 
     /**
@@ -252,27 +302,17 @@ public class AiServiceOptions<TService> {
      * @param <TOps> The type of the AiServiceOptions instance.
      * @return A new AiServiceOptions instance.
      */
-    @SuppressWarnings("unchecked")
-    public <TOps extends AiServiceOptions<TService>> TOps build() {
-      var ret = (TOps) new AiServiceOptions<TService>(
+    public AiServiceOptions<TService> build() {
+      var ret = new AiServiceOptions<TService>(
         clazz,
-        structuredOutput,
-        modelType,
-        memoryWindow
+        this.structuredOutput,
+        this.modelType,
+        this.memoryWindow
       );
-      ret.onSetup = this.setupCallback;
+      ret.temperature = this.temperature;
+      ret.onSetupServiceCallback = this.setupCallback;
+      ret.onSetupModelCallback = this.setupModelCallback;
       return ret;
-    }
-
-    /**
-     * Returns the current builder instance.
-     *
-     * @param <T> The type of the builder.
-     * @return The builder instance.
-     */
-    @SuppressWarnings({ "unchecked" })
-    private <T extends Builder<TService>> T self() {
-      return (T) this;
     }
   }
 }

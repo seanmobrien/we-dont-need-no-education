@@ -260,7 +260,7 @@ public class CtaCategoryQueueProcessor
       modelClientFactory,
       AiServiceOptions.builder(ICtaCategorizerAnalyst.class)
         .setMemoryWindow(20)
-        .onSetup(ai ->
+        .onSetupService(ai ->
           ai
             .systemMessageProvider(o -> Prompts.GetSystemMessageForPhase(2010))
             .tools(new CallToActionTool(null))

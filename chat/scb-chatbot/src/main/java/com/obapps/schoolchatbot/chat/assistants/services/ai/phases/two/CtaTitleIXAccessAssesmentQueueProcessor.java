@@ -173,7 +173,7 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
       modelClientFactory,
       AiServiceOptions.builder(ICtaCategorizerAnalyst.class)
         .setMemoryWindow(100)
-        .onSetup(ai ->
+        .onSetupService(ai ->
           ai
             .systemMessageProvider(o -> Prompts.GetSystemMessageForPhase(2020))
             .tools(new CallToActionTool(null))

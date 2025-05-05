@@ -1,10 +1,9 @@
-package com.obapps.core.ai.factory;
+package com.obapps.core.ai.factory.services;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.obapps.core.ai.factory.models.ModelType;
-import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;

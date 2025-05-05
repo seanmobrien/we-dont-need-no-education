@@ -2,7 +2,6 @@ package com.obapps.core.util;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.obapps.core.util.EnvVars;
 import org.junit.jupiter.api.*;
 
 class EnvVarsTests {

@@ -163,7 +163,7 @@ public class JustInTimeLookupTool<TScope> {
         AiServiceOptions.builder(ISearchAugmentor.class)
           .setModelType(ModelType.LoFi)
           .setMemoryWindow(20)
-          .onSetup(svc ->
+          .onSetupService(svc ->
             svc.systemMessageProvider(o ->
               documentObject == null
                 ? JustInTimeLookupWithoutDocSystemPrompt

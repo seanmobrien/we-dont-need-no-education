@@ -218,7 +218,7 @@ public class RecordExtractionService<TRecord> {
    * @throws IllegalArgumentException If the content is null or not an instance of
    *                                  {@code IRecordExtractionEnvelope<?>}.
    */
-  private IRecordExtractionEnvelope<TRecord> getIteration(Result<?> result) {
+  protected IRecordExtractionEnvelope<TRecord> getIteration(Result<?> result) {
     var content = result.content();
     if (content == null || !(content instanceof IRecordExtractionEnvelope<?>)) {
       throw new IllegalArgumentException("Content cannot be null");

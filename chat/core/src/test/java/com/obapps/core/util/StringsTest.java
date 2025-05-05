@@ -2,7 +2,6 @@ package com.obapps.core.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.obapps.core.util.*;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
