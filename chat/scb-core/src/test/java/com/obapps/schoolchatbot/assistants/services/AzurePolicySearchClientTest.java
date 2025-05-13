@@ -5,17 +5,22 @@ import static org.mockito.Mockito.*;
 
 import com.obapps.core.util.EnvVars;
 import com.obapps.schoolchatbot.core.assistants.services.AzurePolicySearchClient;
+import com.obapps.schoolchatbot.core.assistants.services.AzureSearchClient;
 import com.obapps.schoolchatbot.core.assistants.services.EmbeddingService;
 import java.net.http.HttpClient;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 // filepath: c:\Users\seanm\source\repos\NoEducation\chat\src\test\java\com\obapps\schoolchatbot\assistants\services\AzurePolicySearchClientTest.java
 
 public class AzurePolicySearchClientTest {
+
+  private static final Boolean FOR_REAL = true;
 
   @Mock
   private EnvVars mockEnvVars;
@@ -41,6 +46,11 @@ public class AzurePolicySearchClientTest {
     when(mockOpenAiVars.getSearchApiKey()).thenReturn("test-search-api-key");
 
     client = new AzurePolicySearchClient(mockEnvVars, mockEmbeddingService);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    Mockito.clearAllCaches();
   }
 
   @Test
@@ -132,4 +142,28 @@ public class AzurePolicySearchClientTest {
     assertThat(results).isNotNull();
     // Additional assertions can be added based on expected behavior
   }
+  /*
+  @Test
+  public void testHybridSearch_withPolicyTypeId_forReal() {
+    if (!FOR_REAL) return; // Skip this test if not running for real
+    // Arrange
+    String query = "e";
+    int topK = 5;
+    AzurePolicySearchClient.ScopeType policyTypeId =
+      AzurePolicySearchClient.ScopeType.SchoolBoard;
+    client = new AzurePolicySearchClient(
+      EnvVars.getInstance(),
+      new EmbeddingService()
+    );
+
+    var c = new AzureSearchClient();
+    var docType = AzureSearchClient.ScopeType.Cta;
+    // Act
+    var results = c.hybridSearchEx(query, topK, docType);
+
+    // Assert
+    assertThat(results).size().isGreaterThan(0);
+    // Additional assertions can be added based on expected behavior
+  }
+     */
 }

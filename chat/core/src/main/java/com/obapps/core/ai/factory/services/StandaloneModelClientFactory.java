@@ -2,6 +2,8 @@ package com.obapps.core.ai.factory.services;
 
 import com.azure.ai.openai.models.ChatCompletionsJsonResponseFormat;
 import com.obapps.core.ai.factory.models.AiServiceOptions;
+import com.obapps.core.ai.factory.models.ChatModelOptions;
+import com.obapps.core.ai.factory.models.ChatModelOptionsBase;
 import com.obapps.core.ai.factory.models.EmbeddingOptions;
 import com.obapps.core.ai.factory.models.ModelType;
 import com.obapps.core.ai.factory.types.ILanguageModelFactory;
@@ -20,6 +22,7 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.service.AiServices;
 import java.time.Duration;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 /**
  * Factory class for creating instances of {@link ChatModel} and {@link IStandaloneModelClient}.
@@ -100,31 +103,14 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   protected ChatModel createChatLlm(
     String endpoint,
     String deployment,
-    String apiKey
-  ) {
-    return createChatLlm(endpoint, deployment, apiKey, null);
-  }
-
-  protected ChatModel createChatLlm(
-    String endpoint,
-    String deployment,
     String apiKey,
-    Function<
-      AzureOpenAiChatModel.Builder,
-      AzureOpenAiChatModel.Builder
-    > builderFunc
+    ChatModelOptionsBase options
   ) {
     String normalEndpoint = endpoint.endsWith("/")
       ? endpoint.substring(0, endpoint.length() - 1)
       : endpoint;
-
-    /*
-    var runtimeArg = java.lang.management.ManagementFactory.getRuntimeMXBean()
-      .getInputArguments()
-      .toString();
-    */
+    options = options == null ? ChatModelOptions.builder().build() : options;
     boolean isDebugMode = true;
-
     var builder = AzureOpenAiChatModel.builder()
       .apiKey(apiKey)
       .endpoint(normalEndpoint)
@@ -134,63 +120,23 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       .logRequestsAndResponses(isDebugMode); //.listeners(List.of(SpanChatModelListener, MetricsChatModelListener))
 
     // The o-series models do not support the temperature parameter.
-    // Note we re currently relying on naming conventinons to determine this,
+    // Note we are currently relying on naming conventions to determine this,
     // but we may want to add a more robust check in the future.
 
+    Pattern oSeriesPattern = Pattern.compile("^|-o\\d-|$");
+    if (oSeriesPattern.matcher(deployment).find()) {
+      builder.temperature(1.0);
+    } else if (options.temperature != null && options.temperature > 0) {
+      builder.temperature(options.temperature);
+    }
     if (userName != null) {
       builder.user(userName);
     }
-    if (builderFunc != null) {
-      builder = builderFunc.apply(builder);
+    if (options.onSetupModelCallback != null) {
+      builder = options.onSetupModelCallback.apply(builder);
     }
     var model = builder.build();
     return model;
-  }
-
-  protected ChatModel createLoFiClient() {
-    // Completion Model for low-fidelity analysis
-    return createChatLlm(
-      openAiEnv(OpenAiVars::getApiEndpointCompletions),
-      openAiEnv(OpenAiVars::getDeploymentCompletions),
-      openAiEnv(OpenAiVars::getSearchApiKeyCompletions)
-    );
-  }
-
-  protected ChatModel createLoFiClient(
-    Function<
-      AzureOpenAiChatModel.Builder,
-      AzureOpenAiChatModel.Builder
-    > builderFunc
-  ) {
-    return createChatLlm(
-      openAiEnv(OpenAiVars::getApiEndpointCompletions),
-      openAiEnv(OpenAiVars::getDeploymentCompletions),
-      openAiEnv(OpenAiVars::getSearchApiKeyCompletions),
-      builderFunc
-    );
-  }
-
-  protected ChatModel createHiFiClient() {
-    // Completion Model for high-fidelity analysis
-    return createChatLlm(
-      openAiEnv(OpenAiVars::getApiEndpoint),
-      openAiEnv(OpenAiVars::getDeploymentChat),
-      openAiEnv(OpenAiVars::getApiKey)
-    );
-  }
-
-  protected ChatModel createHiFiClient(
-    Function<
-      AzureOpenAiChatModel.Builder,
-      AzureOpenAiChatModel.Builder
-    > builderFunc
-  ) {
-    return createChatLlm(
-      openAiEnv(OpenAiVars::getApiEndpoint),
-      openAiEnv(OpenAiVars::getDeploymentChat),
-      openAiEnv(OpenAiVars::getApiKey),
-      builderFunc
-    );
   }
 
   /**
@@ -222,43 +168,49 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
    * @throws IllegalArgumentException If the specified model type is unsupported.
    */
   public ChatModel createModel(ModelType modelType) {
-    ChatModel llm = null;
-    switch (modelType) {
-      case HiFi:
-        llm = createHiFiClient();
-        break;
-      case LoFi:
-        llm = createLoFiClient();
-        break;
-      default:
-        throw new IllegalArgumentException(
-          "Unsupported model type: " + modelType
-        );
-    }
-    return llm;
+    return createModel(ChatModelOptions.builder().modelType(modelType).build());
   }
 
-  protected ChatModel createModel(
-    ModelType modelType,
-    Function<
-      AzureOpenAiChatModel.Builder,
-      AzureOpenAiChatModel.Builder
-    > builderFunc
-  ) {
-    ChatModel llm = null;
-    switch (modelType) {
+  /**
+   * Creates a ChatModel instance based on the specified options.
+   *
+   * @param options The options to configure the model.
+   * @return A ChatModel instance configured with the specified options.
+   * @throws IllegalArgumentException If the specified model type is unsupported.
+   */
+  public ChatModel createModel(ChatModelOptionsBase options) {
+    String deployment = null;
+    String endpoint = null;
+    switch (options.modelType) {
       case HiFi:
-        llm = createHiFiClient(builderFunc);
+        endpoint = openAiEnv(OpenAiVars::getApiEndpoint);
+        deployment = openAiEnv(OpenAiVars::getDeploymentChat);
         break;
       case LoFi:
-        llm = createLoFiClient(builderFunc);
+        endpoint = openAiEnv(OpenAiVars::getApiEndpointCompletions);
+        deployment = openAiEnv(OpenAiVars::getDeploymentCompletions);
         break;
       default:
-        throw new IllegalArgumentException(
-          "Unsupported model type: " + modelType
-        );
+        deployment = null;
+        break;
     }
-    return llm;
+    if (deployment == null) {
+      throw new IllegalArgumentException(
+        "Unsupported model type: " + options.modelType
+      );
+    }
+    var model = createChatLlm(
+      endpoint,
+      deployment,
+      openAiEnv(OpenAiVars::getApiKey),
+      options
+    );
+    if (model == null) {
+      throw new IllegalArgumentException(
+        "Unsupported model type: " + options.modelType
+      );
+    }
+    return model;
   }
 
   @Override
@@ -363,25 +315,27 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   @Override
   public <TService> TService createService(AiServiceOptions<TService> options) {
     @SuppressWarnings("removal")
-    var model = createModel(options.modelType, b -> {
-      if (options.structuredOutput) {
-        b.responseFormat(new ChatCompletionsJsonResponseFormat());
-      }
-      return options.onSetupModelCallback == null
-        ? b
-        : options.onSetupModelCallback.apply(b);
-    });
+    var model = createModel(
+      AiServiceOptions.builder(options)
+        .onSetupModel(b -> {
+          if (options.structuredOutput) {
+            b.responseFormat(new ChatCompletionsJsonResponseFormat());
+          }
+          return options.onSetupModelCallback == null
+            ? b
+            : options.onSetupModelCallback.apply(b);
+        })
+        .build()
+    );
     var builder = AiServices.builder(options.getClazz()).chatModel(model);
     if (options.memoryWindow != null && options.memoryWindow > 0) {
       builder.chatMemory(
         MessageWindowChatMemory.withMaxMessages(options.memoryWindow)
       );
     }
-
     if (options.onSetupServiceCallback != null) {
       options.onSetupServiceCallback.accept(builder);
     }
-
     return builder.build();
   }
 }

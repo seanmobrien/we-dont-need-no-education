@@ -13,7 +13,7 @@ public class ChatModelOptions extends ChatModelOptionsBase {
     return new Builder().copy(options);
   }
 
-  protected static class Builder {
+  public static class Builder {
 
     private ModelType modelType = ModelType.LoFi;
     private Double temperature = null;
@@ -47,7 +47,7 @@ public class ChatModelOptions extends ChatModelOptionsBase {
      * @param <T>           The type of the builder.
      * @return The builder instance.
      */
-    public Builder onSetup(
+    public Builder onSetupModelCallback(
       Function<
         AzureOpenAiChatModel.Builder,
         AzureOpenAiChatModel.Builder

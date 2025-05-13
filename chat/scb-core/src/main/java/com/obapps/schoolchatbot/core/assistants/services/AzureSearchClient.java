@@ -27,8 +27,11 @@ public class AzureSearchClient
       case Attachment:
         policyTypeValue = "attachment";
         break;
-      case Notes:
-        policyTypeValue = "";
+      case KeyPoint:
+        policyTypeValue = "key_point";
+        break;
+      case Cta:
+        policyTypeValue = "cta";
         break;
       default:
         policyTypeValue = "";
@@ -52,6 +55,7 @@ public class AzureSearchClient
     All,
     Email,
     Attachment,
-    Notes,
+    KeyPoint,
+    Cta,
   }
 }

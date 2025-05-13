@@ -1,14 +1,9 @@
 package com.obapps.schoolchatbot.core.assistants.services;
 
-import com.obapps.core.ai.factory.models.AiServiceOptions;
-import com.obapps.core.ai.factory.models.ModelType;
 import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.util.EnvVars;
 import com.obapps.core.util.Strings;
-import com.obapps.schoolchatbot.core.assistants.services.ai.supplementary.ISearchAugmentor;
 import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
-import com.obapps.schoolchatbot.core.util.PromptSymbols;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,10 +117,11 @@ public class JustInTimeLookupTool<TScope> {
         .append("\n");
     }
     // Early exit if summarization is not needed
-    log.debug("Chunked blocks: {}", chunkBlock.toString());
+    log.info("Returning search results: {}", chunkBlock.toString());
+    return chunkBlock.toString();
+    /*
 
     if (!summarize || !settings.isSummaryEnabled()) {
-      return chunkBlock.toString();
     }
 
     var emailContents = new StringBuilder();
@@ -156,6 +152,10 @@ public class JustInTimeLookupTool<TScope> {
           Objects.requireNonNullElse(documentObject.getContent(), "[Not Set]")
         )
         .append("\n");
+    } else {
+      emailContents.append(
+        "NOTE: No specific document context was provided.  Please use general case outline instead.\n"
+      );
     }
 
     var ret = modelFactory
@@ -175,10 +175,11 @@ public class JustInTimeLookupTool<TScope> {
       .augmentSearch(
         query,
         Strings.getRecordOutput("📊📄", emailContents.toString()),
-        null
+        chunkBlock.toString()
       );
     log.trace("Returning augmented search results: {}", ret);
     return ret;
+    */
   }
 
   public static final String JustInTimeLookupBaseSystemPrompt =

@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.chat.assistants.tools;
 
+import com.obapps.core.exceptions.ErrorUtil;
 import com.obapps.core.util.Db;
 import com.obapps.schoolchatbot.chat.assistants.CallToActionAnalysis;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
@@ -11,6 +12,7 @@ import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.UUID;
 
 public class CallToActionTool extends MessageTool<AugmentedContentList> {
 
@@ -185,30 +187,39 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
           policyType = AzurePolicySearchClient.ScopeType.All;
           break;
       }
+    } else {
+      policyType = AzurePolicySearchClient.ScopeType.All;
     }
     try {
       return this.policyLookup.summarizePolicy(query, policyType);
     } catch (Exception e) {
-      log.error(
-        "Unexpected failure searching for policy summary.  Details: " + query,
+      ErrorUtil.handleException(
+        log,
+        e,
+        "Unexpected failure searching for policy summary.  Query: %s\nDetails: " +
+        query,
         e
       );
       var msg = message();
+      Integer documentId;
       if (msg != null) {
-        if (msg.getDocumentId() == null) {
+        documentId = msg.getDocumentId();
+        if (documentId == null) {
           log.warn(
-            "Unable to add processing note - no Document ID available.  Details: " +
+            "Unable to associate processing note - no Document ID available.  Query: " +
             query
           );
+          documentId = -1;
         }
       } else {
         log.warn(
-          "Unable to add processing note - no message context available."
+          "Unable to associate processing note - no message context available.  Query: " +
+          query
         );
+        documentId = -1;
       }
-
       DocumentProperty.addManualReview(
-        msg.getDocumentId(),
+        documentId,
         e,
         "summarizePolicy",
         query,
@@ -235,6 +246,8 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
    * @param scope Used to filter the scope of searched documents. Supported values are:
    *              - "email": Search only email records.
    *              - "attachment": Search only attachments.
+   *              - "cta": Search only calls to action.
+   *              - "key_point": Search only key points.
    *              - Empty String: Search all documents.
    *              This parameter is required.
    * @return A string containing the summary of the document or an error message if the operation fails.
@@ -257,6 +270,8 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
       value = "Used to filter the scope of searched documents.  Supported values are:\n" +
       "  - email: Search only email records.\n" +
       "  - attachment: Search only attachments.\n" +
+      "  - cta: Search only calls to action.\n" +
+      "  - key_point: Search only key points.\n" +
       "  - Empty String: Search all documents.\n"
     ) String scope
   ) {
@@ -269,62 +284,57 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
         case "attachment":
           policyType = AzureSearchClient.ScopeType.Attachment;
           break;
+        case "cta":
+          policyType = AzureSearchClient.ScopeType.Cta;
+          break;
+        case "key_point":
+          policyType = AzureSearchClient.ScopeType.KeyPoint;
+          break;
         default:
           policyType = AzureSearchClient.ScopeType.All;
           break;
       }
+    } else {
+      policyType = AzureSearchClient.ScopeType.All;
     }
     try {
       return this.documentLookup.summarizeDocument(query, policyType);
     } catch (Exception e) {
-      log.error(
-        "Unexpected failure searching for message summary.  Details: " + query,
+      ErrorUtil.handleException(
+        log,
+        e,
+        "Unexpected failure searching for document summary.  Query: %s\nDetails: " +
+        query,
         e
+      );
+      var msg = message();
+      Integer documentId;
+      if (msg != null) {
+        documentId = msg.getDocumentId();
+        if (documentId == null) {
+          log.warn(
+            "Unable to associate processing note - no Document ID available.  Query: " +
+            query
+          );
+          documentId = -1;
+        }
+      } else {
+        log.warn(
+          "Unable to associate processing note - no message context available.  Query: " +
+          query
+        );
+        documentId = -1;
+      }
+      DocumentProperty.addManualReview(
+        documentId,
+        e,
+        "summarizeDocument",
+        query,
+        policyType
       );
       return "ERROR: " + e.getMessage();
     }
   }
-
-  /**
-   * Retrieves the details of active calls to action from the database, including details
-   * about the responsive actions that have already occurred.
-   *
-   * @param ids A comma-delimited list containing the IDs of calls to action to retrieve.
-   * @return An array of {@link HistoricCallToAction} objects representing the details
-   *         of the specified calls to action.
-  @Tool(
-    name = "getCtaDetails",
-    value = "Retrieves the details of active calls to action from the database, including details about the responsive actions that have already occured."
-  )
-  public HistoricCallToAction[] getCtaDetails(
-    @P(
-      required = true,
-      value = "A comma-delimited list containing the id's of calls to action to retrieve"
-    ) String ids
-  ) {
-    try {
-      var data = db();
-      return List.of(ids.split(","))
-        .stream()
-        .map(s -> s.trim().replaceAll("\"", ""))
-        .collect(Collectors.toSet())
-        .stream()
-        .map(c ->
-          HistoricCallToAction.getCallsToAction(data, UUID.fromString(c))
-        )
-        .filter(Objects::nonNull)
-        .collect(Collectors.toList())
-        .toArray(new HistoricCallToAction[0]);
-    } catch (SQLException e) {
-      log.error(
-        "Unexpected SQL failure retrieving call to action details.  Details: " +
-        ids,
-        e
-      );
-      return new HistoricCallToAction[0];
-    }
-  }
-   */
 
   @Tool(
     name = "getDocumentDetails",
@@ -343,9 +353,32 @@ public class CallToActionTool extends MessageTool<AugmentedContentList> {
 
     try (var data = Db.createUnitOfWork()) {
       for (String dId : documentIds.split(",")) {
+        var normalDocId = dId.trim().replaceAll("\"", "");
         try {
-          var documentId = Integer.parseInt(dId.trim().replaceAll("\"", ""));
-          results.add(DocumentWithMetadata.fromDb(data, documentId));
+          try {
+            var documentId = Integer.parseInt(normalDocId);
+            var doc = DocumentWithMetadata.fromDb(data, documentId);
+            if (doc != null) {
+              results.add(doc);
+            } else {
+              log.warn(
+                "Unable to retrieve document details for ID: {}.  Document not found.",
+                normalDocId
+              );
+            }
+          } catch (NumberFormatException ignore) {
+            // Not a number, is it a guid?
+            var emailOrPropertyId = UUID.fromString(normalDocId);
+            var doc = DocumentWithMetadata.fromDb(data, emailOrPropertyId);
+            if (doc != null) {
+              results.add(doc);
+            } else {
+              log.warn(
+                "Unable to retrieve document details for ID: {}.  Document not found.",
+                normalDocId
+              );
+            }
+          }
         } catch (Exception e) {
           log.error(
             "Unexpected SQL failure retrieving document details.  Details: " +

@@ -3,12 +3,12 @@ package com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two;
 import com.obapps.schoolchatbot.chat.assistants.Prompts;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CallToActionCategoryEnvelope;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CategorizedCallToActionEnvelope;
-import com.obapps.schoolchatbot.core.models.ai.ChatResponse;
+import com.obapps.schoolchatbot.core.services.ai.IAiChatAssistant;
 import dev.langchain4j.service.Result;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
-public interface ICtaCategorizerAnalyst {
+public interface ICtaCategorizerAnalyst extends IAiChatAssistant {
   @UserMessage(Prompts.StartExtractionForCtaCategories)
   public Result<CategorizedCallToActionEnvelope> assessTitleIx(
     @V("categories") String categories,
@@ -36,6 +36,4 @@ public interface ICtaCategorizerAnalyst {
     @V("matchesFound") Integer matchesFound,
     @V("categories") String categories
   );
-
-  Result<ChatResponse> answer(String query);
 }

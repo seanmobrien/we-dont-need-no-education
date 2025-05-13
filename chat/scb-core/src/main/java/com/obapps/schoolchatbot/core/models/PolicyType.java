@@ -20,4 +20,8 @@ public enum PolicyType {
    * Represents federal laws.
    */
   FederalLaw,
+  /**
+   * Represents other types of policies.
+   */
+  Unknown,
 }

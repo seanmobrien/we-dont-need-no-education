@@ -7,14 +7,14 @@
     <parent>        
         <groupId>com.obapps.schoolchatbot</groupId>
         <artifactId>com.obapps.schoolchatbot</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath> <!-- points to the parent pom -->
     </parent>
     <groupId>com.obapps.schoolchatbot</groupId>
     <artifactId>com.obapps.core</artifactId>
     
     <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -106,27 +106,6 @@
         <dependency>
             <groupId>dev.langchain4j</groupId>
             <artifactId>langchain4j-azure-open-ai</artifactId>
-            <exclusions>
-            <!--
-                <exclusion>
-                    <artifactId>reactor-netty-http</artifactId>
-                    <groupId>io.projectreactor.netty</groupId>
-                </exclusion>
-
-                <exclusion>
-                    <artifactId>reactor-netty-core</artifactId>
-                    <groupId>io.projectreactor.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>netty-transport-native-epoll</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-transport</artifactId>
-                </exclusion>
-                -->
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
@@ -193,15 +172,7 @@
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>
-            <artifactId>langchain4j-azure-ai-search</artifactId>
-            <exclusions>
-            <!--
-                <exclusion>
-                    <groupId>com.azure</groupId>
-                    <artifactId>azure-core</artifactId>
-                </exclusion>
-                -->
-            </exclusions>
+            <artifactId>langchain4j-azure-ai-search</artifactId>            
         </dependency>
         <dependency>
             <groupId>com.azure</groupId>

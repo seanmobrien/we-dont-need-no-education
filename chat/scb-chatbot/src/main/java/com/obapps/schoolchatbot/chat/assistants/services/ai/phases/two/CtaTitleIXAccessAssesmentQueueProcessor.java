@@ -63,6 +63,14 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
     }
   }
 
+  public Boolean getIsReady() {
+    return true;
+  }
+
+  public synchronized void onBeginProcessing() {
+    // No-op
+  }
+
   String makeCategoryRecord(List<CallToActionCategory> categories) {
     return Strings.getRecordOutput(
       "🏷️",

@@ -18,7 +18,7 @@ public abstract class AzureBaseSearchClient<TScope> {
   protected final EmbeddingService embeddingService;
   private final TScope defaultScope;
   protected final HttpClient httpClient = HttpClient.newBuilder()
-    .connectTimeout(Duration.ofSeconds(10))
+    .connectTimeout(Duration.ofSeconds(30))
     .build();
 
   protected AzureBaseSearchClient(
@@ -76,7 +76,8 @@ public abstract class AzureBaseSearchClient<TScope> {
       payload.put("top", topK);
       payload.put("queryType", "semantic");
       payload.put("semanticConfiguration", "semantic-search-config");
-      payload.put("select", "content");
+      payload.put("select", "content,metadata");
+      payload.put("queryType", "semantic");
       payload.put("queryLanguage", "en-us");
       appendScopeFilter(payload, policyTypeId);
 
@@ -203,7 +204,7 @@ public abstract class AzureBaseSearchClient<TScope> {
       vectorBlock.put("vector", new JSONArray(embeddingVector));
       vectorBlock.put("kind", "vector");
       vectorBlock.put("fields", "content_vector");
-      vectorBlock.put("k", topK);
+      vectorBlock.put("k", 50);
       vectorBlock.put("exhaustive", true);
 
       JSONArray vectors = new JSONArray();
@@ -255,6 +256,28 @@ public abstract class AzureBaseSearchClient<TScope> {
   ) {
     var responseBody = serviceResponse.body();
     JSONObject json = new JSONObject(responseBody);
+    if (json.has("error")) {
+      JSONObject error = json.getJSONObject("error");
+      String errorMessage = error.getString("message");
+      String errorCode = error.getString("code");
+      throw new RuntimeException(
+        String.format(
+          "Error in search response: %s. Code: %s\nResponse: %s",
+          Objects.requireNonNullElse(errorMessage, "[null]"),
+          Objects.requireNonNullElse(errorCode, "[null]"),
+          json.toString()
+        )
+      );
+    }
+    if (!json.has("value")) {
+      log.error(
+        "No 'value' field in search response. Query: [{}] top: [{}] filter: [{}]",
+        query,
+        topK,
+        policyTypeId
+      );
+      return Collections.emptyList();
+    }
     JSONArray results = json.getJSONArray("value");
     var hitCount = results.length();
     if (hitCount == 0) {

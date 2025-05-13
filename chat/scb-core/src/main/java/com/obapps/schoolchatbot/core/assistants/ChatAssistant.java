@@ -5,6 +5,7 @@ import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.util.Colors;
 import com.obapps.schoolchatbot.core.assistants.retrievers.SourceDocumentRetriever;
+import com.obapps.schoolchatbot.core.services.ai.IAiChatAssistant;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -34,7 +35,7 @@ public class ChatAssistant {
 
   protected EmbeddingModel _embeddingModel;
   protected ChatModel ChatModel;
-  protected Assistant assistant;
+  protected IAiChatAssistant assistant;
   protected Logger log;
   protected Boolean includeReplyTo;
 
@@ -110,12 +111,12 @@ public class ChatAssistant {
     ).build();
   }
 
-  protected final Assistant getAssistant() {
+  protected final IAiChatAssistant getAssistant() {
     if (this.assistant != null) {
       return this.assistant;
     }
     // Create assistant with support for overridden configuration
-    this.assistant = getAiService(Assistant.class);
+    this.assistant = getAiService(IAiChatAssistant.class);
     // Return assistant
     return this.assistant;
   }

@@ -49,6 +49,20 @@ public class CtaBrokerService {
     return false;
   }
 
+  public Integer getQueueSize(String queueName) {
+    try {
+      var queue = redis.getRedisClient().getQueue(queueName);
+      if (queue == null) {
+        log.error("Queue not found: {}", queueName);
+        return 0;
+      }
+      return queue.size();
+    } catch (Exception e) {
+      log.error("Error getting queue size: {}", e.getMessage(), e);
+    }
+    return 0;
+  }
+
   public Boolean addToQueue(InitialCtaOrResponsiveAction action) {
     try {
       if (action.getRecordId() == null || action.getRecordId().isEmpty()) {

@@ -3,23 +3,23 @@ package com.obapps.schoolchatbot.embed;
 import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.util.Colors;
 import com.obapps.core.util.EnvVars;
-import com.obapps.schoolchatbot.core.embed.DocumentEmbedder;
 import com.obapps.schoolchatbot.core.models.*;
 
 /**
  * A utility class for embedding PLSAS (Prior Lake-Savage Area Schools) documents into a vector database.
  * This class provides methods to process and embed PLSAS documents for search and retrieval.
  */
-public class EmbedPlsas extends DocumentEmbedder {
+public class EmbedPlsas extends FileSystemEmbedder {
 
-  private EmbedPlsas(EmbedPolicyFolderOptions options) {
+  public EmbedPlsas(EmbedPolicyFolderOptions options) {
     super(
-      options,
+      options.setPolicyType(PolicyType.School),
       EnvVars.getInstance().getOpenAi().getPolicySearchIndexName(),
       new StandaloneModelClientFactory()
     );
   }
 
+  @Override
   public Boolean run() throws Exception {
     if (EnvVars.getInstance().get("PIPELINES_EMBEDPLSAS_ENABLED") == "false") {
       System.out.println("Embedding is disabled.");

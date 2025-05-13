@@ -105,6 +105,6 @@ public class JustInTimePolicyLookup
     String query,
     AzurePolicySearchClient.ScopeType scope
   ) {
-    return super.justInTimeLookup(query, scope, true);
+    return super.justInTimeLookup(query, scope, false);
   }
 }

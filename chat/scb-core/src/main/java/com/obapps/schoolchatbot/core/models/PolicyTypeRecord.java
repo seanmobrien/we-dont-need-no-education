@@ -7,9 +7,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PolicyTypeRecord {
+
+  private static final Logger log = LoggerFactory.getLogger(
+    PolicyTypeRecord.class
+  );
 
   public Integer PolicyId;
   public PolicyType PolicyType;
@@ -79,10 +84,7 @@ public class PolicyTypeRecord {
       this.PolicyId = readPolicyId;
       return this.PolicyId;
     } catch (SQLException e) {
-      LoggerFactory.getLogger(PolicyTypeRecord.class).error(
-        "Database failure",
-        e
-      );
+      log.error("Database failure", e);
       return 0;
     }
   }
@@ -100,7 +102,9 @@ public class PolicyTypeRecord {
    * <p>The input string is expected to follow the format:
    * {@code POLICYTYPE_CHAPTER[.SECTION] - DESCRIPTION.pdf}, where:
    * <ul>
-   *   <li>{@code POLICYTYPE} is a sequence of uppercase letters.</li>
+   *   <li>{@code POLICYTYPE} is a sequence of uppercase letters identifying the {@link PolicyType}.</li>
+   *        - e.g. {@code FED}, {@code MN} ({@link PolicyType.State}), or {@code PLSAS} ({@link PolicyType.Policy}).
+   *   </li>
    *   <li>{@code CHAPTER} is a numeric value.</li>
    *   <li>{@code SECTION} is an optional numeric value.</li>
    *   <li>{@code DESCRIPTION} is a textual description.</li>
@@ -120,7 +124,24 @@ public class PolicyTypeRecord {
 
     // If the input matches the pattern, extract the groups and create a PolicyTypeRecord
     if (matcher.matches()) {
-      // PolicyType is throwaway until we've established a pattern
+      switch (matcher.group("policytype")) {
+        case "FED":
+          type = com.obapps.schoolchatbot.core.models.PolicyType.FederalLaw;
+          break;
+        case "MN":
+          type = com.obapps.schoolchatbot.core.models.PolicyType.StateLaw;
+          break;
+        case "PLSAS":
+          type = com.obapps.schoolchatbot.core.models.PolicyType.School;
+          break;
+        default:
+          log.warn(
+            "Unrecognized policy type: {}, the provided default of {} will be used.",
+            matcher.group("policytype"),
+            type
+          );
+          break;
+      }
       String chapter = matcher.group("chapter");
       String section = matcher.group("section"); // May be null
       String description = matcher.group("description");

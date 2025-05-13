@@ -6,14 +6,14 @@
     <parent>
         <groupId>com.obapps.schoolchatbot</groupId>
         <artifactId>com.obapps.schoolchatbot</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath> <!-- points to the parent pom -->        
     </parent>
     <groupId>com.obapps.schoolchatbot</groupId>
     <artifactId>com.obapps.schoolchatbot.core</artifactId>
     
     <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -23,8 +23,6 @@
 
 	<dependencyManagement>
 		<dependencies>
-
-
 
 
 	        <dependency>
@@ -71,6 +69,11 @@
 
 
     <dependencies>
+       <dependency>
+            <groupId>com.obapps.schoolchatbot</groupId>
+            <artifactId>com.obapps.core</artifactId>
+            <version>1.0.1-SNAPSHOT</version> <!-- or latest -->
+        </dependency>
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-common</artifactId>
@@ -79,21 +82,36 @@
             <groupId>org.jetbrains.kotlin</groupId>
             <artifactId>kotlin-stdlib-jdk8</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.obapps.schoolchatbot</groupId>
-            <artifactId>com.obapps.core</artifactId>
-            <version>1.0-SNAPSHOT</version> <!-- or latest -->
-        </dependency>
+     
                 <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
             <version>4.1.118.Final</version>
         </dependency>
         <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-buffer</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-common</artifactId>                
+        </dependency>
+        
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec</artifactId>                
+        </dependency>
+        
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-codec-http</artifactId>                
+        </dependency>
+        <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-core-http-netty</artifactId>            
             <version>1.15.11</version>
             <exclusions>
+                <!--
                 <exclusion>
                     <artifactId>reactor-netty-http</artifactId>
                     <groupId>io.projectreactor.netty</groupId>
@@ -106,12 +124,14 @@
                     <artifactId>reactor-netty-http</artifactId>
                     <groupId>io.projectreactor.netty</groupId>
                 </exclusion>
-                <exclusion>
-                    <artifactId>netty-transport-native-epoll</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
+                
                 <exclusion>
                     <artifactId>netty-transport</artifactId>
+                    <groupId>io.netty</groupId>
+                </exclusion>
+                -->
+                <exclusion>
+                    <artifactId>netty-transport-native-epoll</artifactId>
                     <groupId>io.netty</groupId>
                 </exclusion>
             </exclusions>
@@ -119,7 +139,6 @@
             <dependency>
                 <groupId>org.json</groupId>
                 <artifactId>json</artifactId>
-                <version>20230618</version> <!-- or latest -->
             </dependency>
             <dependency>
                 <groupId>dev.langchain4j</groupId>
@@ -157,21 +176,38 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.squareup.okhttp3</groupId>
-            <artifactId>okhttp</artifactId>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>fontbox</artifactId>
             <exclusions>
-            <!-- 
                 <exclusion>
-                    <artifactId>kotlin-stdlib-jdk8</artifactId>
-                    <groupId>org.jetbrains.kotlin</groupId>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
                 </exclusion>
-                -->
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-logging</artifactId>
+                    <groupId>commons-logging</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>            
         </dependency>   
             <dependency>
                 <groupId>dev.langchain4j</groupId>
                 <artifactId>langchain4j-open-ai</artifactId>
             </dependency>
+            
             <dependency>
                 <groupId>dev.langchain4j</groupId>
                 <artifactId>langchain4j-azure-ai-search</artifactId>
@@ -226,7 +262,6 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.25.3</version>
         </dependency>
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
@@ -257,21 +292,7 @@
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>5.16.1</version>
-                <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>objenesis</artifactId>
-                        <groupId>org.objenesis</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>byte-buddy-agent</artifactId>
-                        <groupId>net.bytebuddy</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>byte-buddy</artifactId>
-                        <groupId>net.bytebuddy</groupId>
-                    </exclusion>
-                </exclusions>
+                <scope>test</scope>               
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -294,8 +315,7 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-			<!--
+            </plugin>			
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
@@ -304,7 +324,6 @@
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
 			</plugin>
-            -->
 		</plugins>
 	</build>
 </project>

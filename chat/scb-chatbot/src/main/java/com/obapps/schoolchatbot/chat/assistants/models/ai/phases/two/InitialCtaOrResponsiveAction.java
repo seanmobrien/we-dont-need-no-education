@@ -73,7 +73,7 @@ public class InitialCtaOrResponsiveAction extends BasePhaseRecord {
   @Description(
     "A description of this 🔔/📩.  Can be a sentence or paragraph.  Later steps in this " +
     "phase not have direct access to the document, so it is important that this contains enough " +
-    "information as to understand what the responsive actions are being requested or have been taken."
+    "information as to understand what responsive actions are being requested or have been taken."
   )
   public String propertyValue;
 

@@ -245,12 +245,16 @@ public class EmbedDocuments {
     }
   }
 
+  public static void main(String[] args) {
+    main(true, args);
+  }
+
   /**
    * The main method to execute the document embedding process.
    *
    * @param args Command-line arguments passed to the application.
    */
-  public static void main(String[] args) {
+  public static void main(Boolean runInBackground, String[] args) {
     EmbedDocumentsOptions options;
     try {
       var parser = new org.apache.commons.cli.DefaultParser()
@@ -272,29 +276,39 @@ public class EmbedDocuments {
     }
 
     var program = new EmbedDocuments(options);
-    backgroundTask = executorService.submit(() -> {
-      try {
-        var res = program.run();
-        if (res == -1) {
-          System.out.println("Embedding unsuccessful.");
-        } else if (options.verbose) {
-          System.out.println(
-            String.format(
-              "Embedding successfully completed, %d items indexed.%n",
-              res
-            )
-          );
-        }
-      } catch (Exception e) {
-        System.out.println("Critical Application Error: " + e.getMessage());
-        e.printStackTrace();
-      } finally {
-        program.dispose();
-        System.out.println("Program disposed successfully.");
-      }
-      System.out.println("All done...");
-    });
+    if (runInBackground.equals(Boolean.TRUE)) {
+      backgroundTask = executorService.submit(() -> {
+        runProgram(program, options);
+      });
+      System.out.println("Task submitted to background thread.");
+    } else {
+      runProgram(program, options);
+    }
+  }
 
-    System.out.println("Task submitted to background thread.");
+  static void runProgram(
+    EmbedDocuments program,
+    EmbedDocumentsOptions options
+  ) {
+    try {
+      var res = program.run();
+      if (res == -1) {
+        System.out.println("Embedding unsuccessful.");
+      } else if (options.verbose) {
+        System.out.println(
+          String.format(
+            "Embedding successfully completed, %d items indexed.%n",
+            res
+          )
+        );
+      }
+    } catch (Exception e) {
+      System.out.println("Critical Application Error: " + e.getMessage());
+      e.printStackTrace();
+    } finally {
+      program.dispose();
+      System.out.println("Program disposed successfully.");
+    }
+    System.out.println("All done...");
   }
 }

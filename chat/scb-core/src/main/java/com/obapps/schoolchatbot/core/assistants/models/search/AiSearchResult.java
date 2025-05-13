@@ -370,6 +370,19 @@ public class AiSearchResult {
       if (result.has("@search.score")) {
         score(result.getDouble("@search.score"));
       }
+      if (result.has("metadata")) {
+        var meta = result.getJSONObject("metadata");
+        if (meta != null && meta.has("attributes")) {
+          var attributes = meta.getJSONArray("attributes");
+          for (int i = 0; i < attributes.length(); i++) {
+            var attribute = attributes.getJSONObject(i);
+            this.metadata.put(
+                attribute.getString("key"),
+                attribute.getString("value")
+              );
+          }
+        }
+      }
       return this;
     }
 

@@ -1,8 +1,10 @@
 package com.obapps.schoolchatbot.chat;
 
+import com.obapps.core.exceptions.ErrorUtil;
 import com.obapps.core.redis.RedisConnectionFactory;
 import com.obapps.core.util.*;
 import com.obapps.schoolchatbot.chat.assistants.*;
+import com.obapps.schoolchatbot.chat.assistants.services.ai.chat.ToolAwareAssistant;
 import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.IBrokerManagedQueue;
 import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.BrokerManagedQueue;
 import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.CtaCategoryQueueProcessor;
@@ -10,7 +12,12 @@ import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.CtaTitleI
 import com.obapps.schoolchatbot.chat.assistants.services.ai.phases.two.ResponsiveActionAssignmentQueueProcessor;
 import com.obapps.schoolchatbot.chat.services.RedisClient;
 import com.obapps.schoolchatbot.core.assistants.services.*;
+import com.obapps.schoolchatbot.core.models.EmbedPolicyFolderOptions;
 import com.obapps.schoolchatbot.embed.EmbedDocuments;
+import com.obapps.schoolchatbot.embed.EmbedFeds;
+import com.obapps.schoolchatbot.embed.EmbedMnLaw;
+import com.obapps.schoolchatbot.embed.EmbedPlsas;
+import com.obapps.schoolchatbot.embed.FileSystemEmbedder;
 import dev.langchain4j.model.azure.AzureOpenAiChatModel;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -91,7 +98,13 @@ public class SchoolChatBot implements AutoCloseable {
       new BrokerManagedQueue<>(
         new ResponsiveActionAssignmentQueueProcessor(),
         redisClient,
-        BrokerManagedQueue.Options.builder().setEnabled(false).build()
+        BrokerManagedQueue.Options.builder()
+          // .setEnabled(false)
+          .setWriteToFile(true)
+          .setMaxItemsToProcess(1)
+          .setMinItemsToProcess(1)
+          .setPollIntervalMinutes(1)
+          .build()
       )
     );
     queues.add(
@@ -99,7 +112,6 @@ public class SchoolChatBot implements AutoCloseable {
         new CtaTitleIXAccessAssesmentQueueProcessor(),
         redisClient,
         BrokerManagedQueue.Options.builder()
-          .setWriteToFile(true)
           .setMaxItemsToProcess(40)
           .setMinItemsToProcess(10)
           .build()
@@ -180,12 +192,13 @@ public class SchoolChatBot implements AutoCloseable {
       }
       System.out.println("Welcome to the School Chat Bot!");
       System.out.println("Please select an option:");
-      System.out.println("1. Analyze for Key Points");
-      System.out.println("2. Analyze for Calls to Action");
-      System.out.println("3. Process Documents for Stage 1");
-      System.out.println("4. Process Documents for Stage 2");
-      System.out.println("5. Embed pending documents");
-      System.out.println("6. Exit");
+      System.out.println("1. Chat with tool support");
+      System.out.println("2. Analyze for Key Points");
+      System.out.println("3. Analyze for Calls to Action");
+      System.out.println("4. Process Documents for Stage 1");
+      System.out.println("5. Process Documents for Stage 2");
+      System.out.println("6. Embed pending documents");
+      System.out.println("7. Exit");
       int choice;
       try {
         choice = Integer.parseInt(appScanner.nextLine());
@@ -195,6 +208,22 @@ public class SchoolChatBot implements AutoCloseable {
       }
       switch (choice) {
         case 1:
+          try {
+            var chatAssistant = new ToolAwareAssistant(
+              ToolAwareAssistant.options(appScanner)
+            );
+            chatAssistant.chat();
+          } catch (Exception e) {
+            Colors.writeInLivingColor(
+              c -> c.RED,
+              "Error during chat: %s",
+              e.getMessage()
+            );
+            ErrorUtil.handleException(e);
+            continue;
+          }
+          break;
+        case 2:
           try {
             choice = Integer.parseInt(appScanner.nextLine());
             var stage1 = new AnalysisStageManager(
@@ -208,10 +237,10 @@ public class SchoolChatBot implements AutoCloseable {
             continue;
           }
           break;
-        case 2:
+        case 3:
           CallToActionAnalysis.run(appScanner, args);
           break;
-        case 3:
+        case 4:
           try {
             var stage1 = new AnalysisStageManager(
               1,
@@ -223,7 +252,7 @@ public class SchoolChatBot implements AutoCloseable {
             System.out.println("Error processing documents: " + e.getMessage());
           }
           break;
-        case 4:
+        case 5:
           try {
             var stage2 = new AnalysisStageManager(
               2,
@@ -235,16 +264,70 @@ public class SchoolChatBot implements AutoCloseable {
             System.out.println("Error processing documents: " + e.getMessage());
           }
           break;
-        case 5:
-          EmbedDocuments.main(args);
-          break;
         case 6:
+          embedDocuments();
+          break;
+        case 7:
           System.out.println("Exiting the application. Goodbye!");
           isDone = true;
           break;
         default:
           System.out.println("Invalid choice. Please try again.");
       }
+    }
+  }
+
+  protected void embedDocuments() {
+    try {
+      System.out.println("Embed documents of type:");
+      System.out.println("1. PLSAS Policy");
+      System.out.println("2. MN State");
+      System.out.println("3. Federal Law");
+      System.out.println("4. Case Documents");
+      System.out.println("5. Cancel");
+      FileSystemEmbedder embedder = null;
+      String BASE_FOLDER = "C:\\Users\\seanm\\OneDrive\\PLSASComplaint\\";
+      try {
+        int typeChoice = Integer.parseInt(appScanner.nextLine());
+        switch (typeChoice) {
+          case 1:
+            embedder = new EmbedPlsas(
+              new EmbedPolicyFolderOptions()
+                .setSourceFolder(BASE_FOLDER + "PLSAS Policy")
+            );
+            break;
+          case 2:
+            embedder = new EmbedMnLaw(
+              new EmbedPolicyFolderOptions()
+                .setSourceFolder(BASE_FOLDER + "MNLaw")
+            );
+            break;
+          case 3:
+            embedder = new EmbedFeds(
+              new EmbedPolicyFolderOptions()
+                .setSourceFolder(BASE_FOLDER + "FedLaw")
+            );
+            break;
+          case 4:
+            EmbedDocuments.main(null);
+            break;
+          case 5:
+            System.out.println("Operation cancelled.");
+            break;
+          default:
+            System.out.println("Invalid choice. Please try again.");
+            break;
+        }
+      } catch (NumberFormatException e) {
+        System.out.println("Invalid input. Please enter a number.");
+      }
+      if (embedder != null) {
+        try (var e = embedder) {
+          e.run();
+        }
+      }
+    } catch (Exception e) {
+      System.out.println("Error embedding documents: " + e.getMessage());
     }
   }
 

@@ -6,7 +6,7 @@
 
     <groupId>com.obapps.schoolchatbot</groupId>
     <artifactId>com.obapps.schoolchatbot</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -15,7 +15,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.groupId>com.obapps.schoolchatbot</project.build.groupId>
         <project.build.artifactId>com.obapps.schoolchatbot</project.build.artifactId>
-        <project.build.version>1.0-SNAPSHOT</project.build.version>
+        <project.build.version>1.0.1-SNAPSHOT</project.build.version>
         <langchain4j.version>1.0.0-beta3</langchain4j.version>
         <jakartaee-api.version>10.0.0</jakartaee-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
@@ -23,7 +23,21 @@
 
     <dependencyManagement>
         <dependencies>
-
+            <dependency>
+                <groupId>com.obapps.schoolchatbot</groupId>
+                <artifactId>com.obapps.core</artifactId>
+                <version>1.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.obapps.schoolchatbot</groupId>
+                <artifactId>com.obapps.schoolchatbot.core</artifactId>
+                <version>1.0.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.obapps.schoolchatbot</groupId>
+                <artifactId>com.obapps.schoolchatbot.embed</artifactId>
+                <version>1.0.1-SNAPSHOT</version>
+            </dependency>
 			<dependency>
 				<groupId>org.junit</groupId>
 				<artifactId>junit-bom</artifactId>
@@ -48,7 +62,12 @@
                 <artifactId>json</artifactId>
                 <version>20230618</version> 
             </dependency>
-                    <dependency>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.3.4</version>
+        </dependency>
+         <dependency>
             <groupId>org.apache.pdfbox</groupId>
             <artifactId>fontbox</artifactId>
             <version>2.0.32</version>
@@ -56,6 +75,17 @@
                 <exclusion>
                     <groupId>commons-logging</groupId>
                     <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.25.3</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>byte-buddy</artifactId>
+                    <groupId>net.bytebuddy</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -75,20 +105,6 @@
                 <artifactId>langchain4j-azure-open-ai</artifactId>
                 <version>1.0.0-beta4</version>
                             <exclusions>
-                <!--
-                <exclusion>
-                    <artifactId>reactor-netty-http</artifactId>
-                    <groupId>io.projectreactor.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>netty-transport-native-epoll</artifactId>
-                    <groupId>io.netty</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-transport</artifactId>
-                </exclusion>
-                -->
             </exclusions>
             </dependency>
             <dependency>
@@ -101,7 +117,6 @@
                 <artifactId>langchain4j</artifactId>
                 <version>1.0.0-rc1</version>
             </dependency>
-            
             <dependency>
                 <groupId>dev.langchain4j</groupId>
                 <artifactId>langchain4j-embeddings</artifactId>
@@ -151,30 +166,7 @@
                     <exclusion>
                         <artifactId>reactor-transport-native-epoll</artifactId>
                         <groupId>io.netty</groupId>
-                    </exclusion>
-                <!--
-                    <exclusion>
-                        <artifactId>netty-transport-native-epoll</artifactId>
-                        <groupId>io.netty</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>reactor-netty-http</artifactId>
-                        <groupId>io.projectreactor.netty</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>reactor-netty-core</artifactId>
-                        <groupId>io.projectreactor.netty</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>reactor-netty-http</artifactId>
-                        <groupId>io.projectreactor.netty</groupId>
-                    </exclusion>
-     
-                    <exclusion>
-                        <artifactId>netty-transport</artifactId>
-                        <groupId>io.netty</groupId>
-                    </exclusion>
-                    -->
+                    </exclusion>               
                 </exclusions>
             </dependency>
             <dependency>
@@ -186,11 +178,6 @@
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-databind</artifactId>
                 <version>2.17.2</version>
-            </dependency>
-            <dependency>
-                <groupId>commons-logging</groupId>
-                <artifactId>commons-logging</artifactId>
-                <version>1.3.4</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>

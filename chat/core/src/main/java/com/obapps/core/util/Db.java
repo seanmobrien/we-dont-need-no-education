@@ -63,6 +63,7 @@ public class Db implements AutoCloseable {
     config.setJdbcUrl(sql.getUrl());
     config.setUsername(sql.getUser());
     config.setPassword(sql.getPassword());
+    config.setMaxLifetime(60 * 5 * 1000);
     dataSource = new com.zaxxer.hikari.HikariDataSource(config);
   }
 

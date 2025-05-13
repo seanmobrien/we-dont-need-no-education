@@ -1,6 +1,7 @@
 package com.obapps.schoolchatbot.core.models;
 
 import com.obapps.core.util.DateTimeFormats;
+import com.obapps.core.util.Strings;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
 import java.time.LocalDateTime;
@@ -8,6 +9,7 @@ import java.util.HashMap;
 
 public class SchoolDocument implements Document {
 
+  private DocumentUnit source;
   private String content;
   private Metadata metadata;
 
@@ -15,6 +17,7 @@ public class SchoolDocument implements Document {
     if (source == null) {
       throw new IllegalArgumentException("source cannot be null");
     }
+    this.source = source;
     if (source.unitId <= 0) {
       throw new IllegalArgumentException("unitId must be a positive integer");
     }
@@ -53,7 +56,21 @@ public class SchoolDocument implements Document {
 
   @Override
   public String text() {
-    return content;
+    switch (this.source.documentType) {
+      case "cta":
+        return Strings.normalizeForOutput(
+          String.format(
+            """
+            🔔 ID: %s
+            🏷️ %s
+            """,
+            this.source.documentPropertyId,
+            this.source.content
+          )
+        );
+      default:
+        return Strings.normalizeForOutput(content);
+    }
   }
 
   @Override

@@ -17,6 +17,7 @@ public class RecordExtractionServiceTests {
 
   @Test
   public void testFactoryMethodOf() {
+    @SuppressWarnings("unchecked")
     Function<Object, Result<IRecordExtractionEnvelope<Object>>> mockExtractor =
       mock(Function.class);
     RecordExtractionService<Object> service = RecordExtractionService.of(
@@ -32,8 +33,10 @@ public class RecordExtractionServiceTests {
   public void testExtractRecordsWithValidCallbacks() {
     RecordExtractionService<String> service = new RecordExtractionService<>();
 
+    @SuppressWarnings("unchecked")
     Function<Object, Result<IRecordExtractionEnvelope<String>>> firstCallback =
       mock(Function.class);
+    @SuppressWarnings("unchecked")
     Function<
       RecordExtractionContext<
         String,
@@ -42,12 +45,14 @@ public class RecordExtractionServiceTests {
       >,
       Result<IRecordExtractionEnvelope<String>>
     > continueCallback = mock(Function.class);
+    @SuppressWarnings("unchecked")
     BiConsumer<
       Object,
       IterationEventArgs<String, IRecordExtractionEnvelope<String>>
     > onIterationProcessed = mock(BiConsumer.class);
 
     Object mockService = new Object();
+    @SuppressWarnings("unchecked")
     IRecordExtractionEnvelope<String> mockEnvelope = mock(
       IRecordExtractionEnvelope.class
     );
@@ -80,6 +85,7 @@ public class RecordExtractionServiceTests {
   public void testGetIterationWithValidResult() {
     var service = new TestableRecordExtractionService();
 
+    @SuppressWarnings("unchecked")
     IRecordExtractionEnvelope<String> mockEnvelope = mock(
       IRecordExtractionEnvelope.class
     );

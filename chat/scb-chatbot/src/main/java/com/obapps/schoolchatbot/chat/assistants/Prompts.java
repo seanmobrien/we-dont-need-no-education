@@ -136,6 +136,25 @@ public class Prompts {
   }
 
   public static final Map<Integer, PhaseTemplateVariables> PHASE_VARS = Map.of(
+    -1,
+    PhaseTemplateVariables.builder()
+      .setPhaseNumber(-1)
+      .setPhaseName("Consultation")
+      .setTaskGoal("Consult with the parent about the case")
+      .setTaskTargetDescription(
+        """
+        🧭 The goal of this phase is to consult with the parent about the case.  This includes:
+          ✅ Answering questions the parent has about the case and associated documents.
+          ✅ Providing policy guidance and clarification.
+          ✅ Assisting the parent ot better unstearsand their availalble options.
+          ✅ Providing the parent with information about the case and associated documents
+          📌 When answering the parent's question, if it pertains to a policy or law, use `lookupPolicySummary` tool to ground your response.
+          📌 if the question pertains to the case, a document, or other key fact, use the `lookupDocumentSummary` tool to ground your response.
+        """
+      )
+      .setMessageSchema("<User Request: String>")
+      .setOverrideCompletionPrompt("")
+      .build(),
     1,
     PhaseTemplateVariables.builder()
       .setPhaseNumber(1)
@@ -145,14 +164,16 @@ public class Prompts {
         """
         🗝️ Key Point of Interests 📍 are 💬 statements or topics in the document that are relevant to
           🏛️legal or 🧾policy obligations, or otherwise warrant further review or 🕵️, such as:
-            ✅ Information recarding allegations of harassment or violence, or other concerns about safety.
+            ✅ Information regarding allegations of harassment or violence, or other concerns about safety.
             ✅ Information about the 🏫 obligations or responsibilities, including ethical policies mandating
                 the 🏫 act in good faith and with common decency and compliance with applicable laws and policies.
             ✅ Information about the 🏫 actions, failures to act, or retaliatory actions taken in response to a situation.
-            ✅ Information about the 🏫 maintanence and responsiveness to data requests.
-          These points can be directly stated or inferred from the context of the 📊📄.  When inferred,
-          the `\"inferred\": true` flag should be set in the emitted 🧾 Response Object.
-            """
+            ✅ Information about the 🏫 maintenance and responsiveness to data requests.
+          ✨ A Key point may not specifically be translateable into a call to action.  Any noteworthy information that is relevant to the case should be extracted.
+                These points can be directly stated or inferred from the context of the 📊📄.  When inferred,
+                the `\"inferred\": true` flag should be set in the emitted 🧾 Response Object.
+          ✨ When evaluating key points, use all of the tools and information available to you.  This includes, but is not limited to tools.
+          """
       )
       .addTaskTool(
         "Search for Key Points of Interest",
@@ -366,7 +387,7 @@ public class Prompts {
       )
       .setTaskTargetDescription(
         """
-        🧭 There are 5 steps in Phase 2; You are responsible for ➡️ 4 (🔔 Asses Title IX Relevance)
+        🧭 There are 6 steps in Phase 2; You are responsible for ➡️ 4 (🔔 Asses Title IX Relevance)
           ✅ === Step 1: Identify Calls to Action (🔔) ===
           ✅ === Step 2: Identify Responsive Actions (📩) ===
           ✅ === Step 3: 🔔 Relationship Analysis ===
@@ -383,7 +404,7 @@ public class Prompts {
                📌 The parents have asserted all of the records they have requested are 🗝️ data as they either speak directly towards in-scope matters, demonstrate incompliance with accessible communication standards, speak to the hostile school environment that was created, or when taken together are evidence supporting systemic bias or discrimination their child faced.  Your job is to provide an unbiased and legally grounded opinion of that assesment.
              ☐  Using available tools, gather extensive information about the nature and context of the request.  As you identify relevant documents in your search, note the ID of the related document and reason of relation and include it in the output.  Each CTA should be related to at least two documents, but more is better.  The more information you can provide, the better.
             ☐  Evaluate each 🔔 in light of this context and assign a rating from 0-10 regarding the degree to which the request or data are relevant to the Title IX claim.  A rating of 0 means the request is in no way relevant and no special access to data necessary, a rating of 10 means the request is so obviously relevant that no assesor or auditor - including a biased one - could reasonably argue otherwise.  A rating of 5 indicates an unbiased auditor or assessor applying best practices would likely find it relevant, but be open to explanations otherwise.
-            ☐  The CTA database will be sourced from your response, so it is imperitive that you analyze and return information about every document related to a 🔔.
+            ☐  The CTA databas
           ⛔ === Step 5: 📩 Reconciliation ===
           ⛔ === Step 6: 🔔 Status Assessment ===
         """
@@ -440,6 +461,65 @@ public class Prompts {
             ...
           """
         )
+      )
+      .build(),
+    2030,
+    PhaseTemplateVariables.builder()
+      .setPhaseNumber(2030)
+      .setPhaseName("📩 Reconciliation")
+      .addTaskTool(
+        "Search for Key Points of Interest",
+        "searchForRelatedKeyPoints"
+      )
+      .setTaskGoal("Associate 📩 with 🔔")
+      .setOverrideCompletionPrompt(
+        SupportingPrompts.Extraction_CompletionPrompt_NoCount
+      )
+      .setTaskTargetDescription(
+        """
+        🧭 There are 6 steps in Phase 2; You are responsible for ➡️ 5 (📩 Reconciliation)
+          ✅ === Step 1: Identify Calls to Action (🔔) ===
+          ✅ === Step 2: Identify Responsive Actions (📩) ===
+          ✅ === Step 3: 🔔 Relationship Analysis ===
+          ✅ === Step 4: 🔔 Asses Title IX Relevance  ===
+          ☐ === Step 5: 📩 Reconciliation ===
+            You will be provided with a list of 📩 that have been identified in this case.  Your task is to associate each 📩 with the 🔔 it is related to.
+            ☐ For each 📩, identify the at least one 🔔 it is responsive to.
+              ☐  Immediately invoke the lookupDocumentSummary tool with scope 'cta' to retrieve the summary of all eligible call-to-action identifiers. **Do not proceed with any matching or association** unless tool response data is incorporated in your reasoning.
+                📌 A 📩 can be responsive to more than one 🔔.  **All related 🔔 should be
+                    identified** and returned in the output.  Use `lookupDocumentSummary` with multiple search terms if necesasry.
+              ☐  Then, use `getDocumentDetails` to confirm the match and identify related actions. validate that the call-to-action identifier associated with the document exists before including it in the 'associatedCallToActionIds' field.
+                  📌 A 📩 may not always match the expected responsive action perfectly.  When in doubt, associate.
+            ☐ Replace any internal inference or explanation of methodology with explicit tool call outputs. Your final response must cite the tool outputs directly and not rely on conceptual reasoning alone.
+            ☐ Only return 🔔 identifiers that exist and have been confirmed via a tool.  **Never return an identifier that has not been confirmed**.
+            ☐ When you come across 📄 that are related to the 📩 and may be useful in future stages include it in `relatedDocuments`.
+            ☐ All provided 📩 should be processed and reconciled.  If you have performed a thorough search and are positive that there are
+                no related 🔔, please note that in the output by setting the `exhaustiveSearchPerformed` flag to true.  If you are not sure,
+                leave it false/null and we will resubmit the request for further analysis.
+            ☐ Provide an initial assessment of how relevant the 📩 is relevant under Title IX.
+              ⚠️ When evaluating requests for acknowledgement of receipt, trace the request back to the original email and evaluate the the
+                  send date of that email with the date of the response against Title IX timeliness requirements.
+                  ☐ 📌 In these cases, include a processing note containing the number of days elapsed between the original request and the response.
+          ⛔ === Step 6: 🔔 Status Assessment ===
+        """
+      )
+      .setMessageSchema(
+        Strings.getRecordOutput(
+          "📩 Responsive Actions",
+          """
+            🗂️ (Record Divider)
+              📩 Id: <Action 1 ID>
+              🏷️ Description: <Action 1 Details>
+              📅: <Action 1 Opened Date>
+              📊📄: <Associated Document ID>
+            🗂️(Record Divider)
+              📩 Id: <Action 2 ID>
+              🏷️ Description: <Action 2 Details>
+              📅: <Action 2 Opened Date>
+              📊📄: <Associated Document ID>
+          """
+        ) +
+        "\n\n"
       )
       .build()
   );
@@ -508,8 +588,8 @@ public class Prompts {
           📎 The 🎯 parent has made multiple direct requests for details on the 🏫 plan to ensure 🎯 safety upon return.
             ❌ The 🏫 has not responded with a plan.
             🧠 After months without a responsive plan, the 🎯 parents were forced to enroll 🎯 in a private 🏫 at their expense.
-            🤔 The 🏫 position is no plan was required because 🎯 is not enrolled.
-        ⚖️ A Title IX investigation was opened regarding (💥1) and (💥2) on 📅12/20/24.
+            🤔 The 🏫 position is no plan was required because 🎯 is not enrolled; however 🎯 was enrolled in District services until 12/14/24.
+        ⚖️ A Title IX investigation was opened regarding (💥1) and (💥2) on 📅11/20/24.
           📌 The investigation remained in the initial phase until dismissed on 📅4/8/25.
               🕵️ 🏫 claims they could not identify the assailant.
               ❌ The only substantive investigation update provided to 🎯 was the notification of dismissal.
@@ -540,8 +620,9 @@ public class Prompts {
     🗂️⚙️ **Resources**
       🧰🛠️: Tools
         - 📚 `lookupPolicySummary(query,scope)`: Policy/legal compliance lookup; prefer indexed results.
-        - 📄 `lookupDocumentSummary(query,scope)`: Search case docs/attachments.
+        - 📄 `lookupDocumentSummary(query,scope)`: Search case documentation.  Supports various scopes - see tool for details.
         - 📊 `getDocumentDetails(id)`: Retrieve a specific document/attachments by id.
+        - 📎 `getAttachmentDetails(id)`: Retrieves a specific email attachment by id.
         {{task_tools}}
       ✅: If you need more information to complete your task, you may use any or all of the tools above.
         ⚠️: If more info is still needed after using the tools, include a Processing Note (📝⚙️) describing the information gap in your
@@ -605,5 +686,31 @@ public class Prompts {
 
   public static Boolean matchesContinueExtraction(String userPrompt) {
     return SupportingPrompts.matchesContinueExtraction(userPrompt);
+  }
+
+  public static class FieldDescriptions {
+
+    public static final String ReasonablyTitleIx =
+      "A rating from 0-10 indicating how well the specific request fits requirements to be related to a Title IX key document or inquiry " +
+      "given the facts in this case. A rating of 0 means the request is in no way relevant and no special access to data necessary, a rating " +
+      "of 10 means the request is so obviously relevant that no assesor or auditor - including a biased one - could reasonably argue otherwise.  " +
+      "A rating of 5 indicates an unbiased auditor or assessor applying best practices would likely find it relevant and eligible for expanded " +
+      "data access accorded Title IX's equal access to data mandates, but be open to explanations otherwise.";
+    public static final String ReasonablyTitleIxReasons =
+      "A list of reasons why the category is or is not reasonably related to Title IX. These should be specific examples or explanations " +
+      "that support the rating given to `reasonablyTitleIx`.";
+    public static final String RelatedDocuments =
+      "A list containing IDs of related documents that were identified as linked to this item during analysis.";
+    public static final String ProcessingNotes =
+      "Adds a Processing Note (📝⚙️) to the processing history of this item.  This is used to explain anomalies, add information " +
+      "that may be useful for future analysis, or request access to information that was not available via a tool. ";
+
+    public static final String ComplianceChapter13 =
+      "A rating from -1 to 1 indicating the degree to which the response is compliant with obligations under MN Statute 13, specifically when related to this " +
+      "🔔.  A rating of 1 describes a response that is fully responsive and meets all obligations.  A rating of 0 describes a response that is entirely non-responsive " +
+      "and does not meet any obligations.  Ratings below 0 describe a response that is demonstratibly non-compliant; eg citing of inaplicable or inappropriate statutes, " +
+      "providing inaccurate or misleading information, or failing to provide information in a way that speaks to obstruction of the request or retaliation.";
+    public static final String ComplianceChapter13Reasons =
+      "A list containing specific examples or explanations that support the rating given to `complianceChapter13`.";
   }
 }

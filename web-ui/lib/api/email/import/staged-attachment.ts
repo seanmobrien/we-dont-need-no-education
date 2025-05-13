@@ -14,6 +14,7 @@ export type StagedAttachment = {
   size: number;
   fileOid: string | null;
   attachmentId: string | null;
+  extractedText?: string | null;
 };
 
 const mapRecordToObject = (
@@ -28,6 +29,7 @@ const mapRecordToObject = (
   size: record.size as number,
   fileOid: record.file_oid as string | null,
   attachmentId: record.attachmentId as string | null,
+  extractedText: record.extractedText as string | null,
 });
 
 export class StagedAttachmentRepository extends BaseObjectRepository<

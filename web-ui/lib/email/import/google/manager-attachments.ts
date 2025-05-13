@@ -52,6 +52,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
                 partId: job.result.partId,
                 messageId: job.result.stagedMessageId,
                 download: job.result.storageId,
+                textLength: job.result.extractedText?.length ?? 0,
                 job,
               }),
             );
@@ -62,7 +63,7 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
                 filePath: job.result.storageId!,
                 size: record.size,
                 mimeType: record.mimeType ?? 'application/octet-stream',
-                extractedText: null,
+                extractedText: job.result.extractedText ?? null,
                 extractedTextVector: null,
                 policyId: null,
                 summary: null,

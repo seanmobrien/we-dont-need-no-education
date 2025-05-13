@@ -8,7 +8,7 @@ public class ChatModelOptionsBase {
   /**
    * Specifies the model type to be used.
    */
-  public ModelType modelType = ModelType.LoFi;
+  public ModelType modelType = ModelType.HiFi;
 
   /**
    * The temperature parameter controls the randomness of the model's output.

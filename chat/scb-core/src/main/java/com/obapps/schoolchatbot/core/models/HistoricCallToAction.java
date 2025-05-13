@@ -124,7 +124,6 @@ public class HistoricCallToAction extends CallToAction {
    *         the method returns 0.0. If the last response is null, it retrieves the
    *         compliance message; otherwise, it retrieves the compliance aggregate
    *         from the last response.
-   */
   public Double getAggregateComplianceScore() {
     var r = this.getResponses().toArray();
     if (r.length == 0) {
@@ -135,6 +134,7 @@ public class HistoricCallToAction extends CallToAction {
       ? this.getComplianceRating()
       : r2.getComplianceAggregate();
   }
+   */
 
   /**
    * Default constructor for the {@code HistoricCallToAction} class.
@@ -329,7 +329,10 @@ public class HistoricCallToAction extends CallToAction {
         actionMap.put(actionPropertyId, action);
         result.add(action);
       } else {
-        CallToActionResponse response = new CallToActionResponse(record);
+        CallToActionResponse response = CallToActionResponse.loadFromDb(
+          db,
+          (UUID) record.get("document_property_id")
+        );
         FieldUtil.saveFromStateBag(
           record,
           "action_description",
@@ -373,24 +376,17 @@ public class HistoricCallToAction extends CallToAction {
       return null;
     }
     if (loadResponses) {
-      db
-        .selectRecords(
+      cta.responses = db
+        .selectObjects(
+          CallToActionResponse.class,
           "SELECT * FROM \"ResponsiveAction\" WHERE action_property_id = ?",
           id
         )
         .stream()
-        .forEach(record -> {
-          var response = new CallToActionResponse(record);
-          FieldUtil.saveFromStateBag(
-            record,
-            "action_description",
-            response::setPropertyValue
-          );
-          cta.getResponses().add(response);
-        });
+        .toList();
     }
     if (loadCategories) {
-      var cats = CallToActionCategory.loadForDocumentProprety(db, id);
+      var cats = CallToActionCategory.loadForDocumentProperty(db, id);
       if (cats != null && !cats.isEmpty()) {
         cta.setCategories(cats);
       }

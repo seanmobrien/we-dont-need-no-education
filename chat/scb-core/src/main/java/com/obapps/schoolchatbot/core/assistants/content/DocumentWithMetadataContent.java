@@ -78,9 +78,10 @@ public class DocumentWithMetadataContent
         var attachment = attachments.get(idx);
         var attachmentKey = "Attachment " + (idx + 1);
         var attachmentValue = String.format(
-          "[%s] 🔗 %s",
+          "[%s] 🔗 %s [ID %s]",
           attachment.getFileName(),
-          attachment.getDownloadUrl()
+          attachment.getDownloadUrl(),
+          attachment.getObject().getAttachmentId()
         );
         table.put(attachmentKey, attachmentValue);
       }
@@ -197,7 +198,7 @@ public class DocumentWithMetadataContent
       "Related Documents",
       "📎 <Related Document IDs> NOTE: Comma-delimited list of related document IDs.",
       "Attachment <n>",
-      "📎 <Attachment File Name> 🔗 <Attachment Download URL> NOTE: The attachment can be downloaded at this url if needed."
+      "📎 <Attachment File Name> 🔗 <Attachment Download URL> [ID: <Attachment ID>] NOTE: To retrieve the attachment, either download it from the download URL or pass the Attachment ID to the `getAttachmentDetails` tool."
     );
     return Strings.getTable(
       table,

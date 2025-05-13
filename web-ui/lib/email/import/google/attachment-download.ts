@@ -1,4 +1,5 @@
 import { BlobServiceClient } from '@azure/storage-blob';
+import pdfParse from 'pdf-parse';
 import { log } from '@/lib/logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@/lib/neondb';
@@ -83,6 +84,62 @@ const uploadToAzureStorage = async ({
 };
 const attachmentJobs = new Map<string, Promise<AttachmentDownloadResult>>();
 
+export const extractAttachmentText = async ({
+  buffer,
+  fileName,
+  mimeType,
+}: {
+  buffer: Buffer;
+  fileName: string;
+  mimeType: string;
+}): Promise<string | null> => {
+  // Are we working with a pdf?
+  if (!(mimeType === 'application/pdf' || fileName.endsWith('.pdf'))) {
+    // No, early exit
+    log((l) =>
+      l.verbose({
+        message: `Attachment ${fileName} is not a PDF, skipping text extraction.`,
+        data: { mimeType, fileName },
+      }),
+    );
+    return null;
+  }
+  try {
+    const pdfBuffer = Buffer.from(buffer);
+
+    const pdfData = await pdfParse(pdfBuffer);
+    const extractedText = pdfData.text?.trim();
+    if (!extractedText) {
+      // No extractable text, return null;
+      log((l) =>
+        l.verbose({
+          message: `Attachment ${fileName} is not a PDF, skipping text extraction.`,
+          data: { mimeType, fileName },
+        }),
+      );
+      return null;
+    }
+    // Sanitize the extracted text to remove null characters
+    const sanitizedText = extractedText.replace(/\x00/g, '');
+    // and return it!
+    log((l) =>
+      l.info({
+        message: `Extracted ${sanitizedText.length} characters from attachment ${fileName}`,
+        data: { mimeType, fileName },
+      }),
+    );
+    return sanitizedText;
+  } catch (e) {
+    LoggedError.isTurtlesAllTheWayDownBaby(e, {
+      log: true,
+      source: 'attachment-download',
+      data: { fileName, mimeType },
+    });
+  }
+  // If we made it to here we have no extracted text to return.
+  return null;
+};
+
 export const saveAttachment = async (
   req: NextRequest | NextApiRequest,
   id: string,
@@ -112,6 +169,11 @@ export const saveAttachment = async (
       attachmentId: model.attachmentId!,
       userId: Number(records[0].userId),
     });
+    const extractedText = await extractAttachmentText({
+      buffer: attachmentBuffer,
+      fileName: model.filename,
+      mimeType: model.mimeType ?? 'application/octet-stream',
+    });
     const fileUrl = await uploadToAzureStorage({
       buffer: attachmentBuffer,
       externalId: String(records[0].external_id),
@@ -125,7 +187,7 @@ export const saveAttachment = async (
     );
 
     const result: AttachmentDownloadResult = {
-      result: { ...model, storageId: fileUrl },
+      result: { ...model, storageId: fileUrl, extractedText },
       success: true,
     };
     return result;

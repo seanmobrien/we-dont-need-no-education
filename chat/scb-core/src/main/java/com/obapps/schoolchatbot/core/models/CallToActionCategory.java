@@ -293,7 +293,7 @@ public class CallToActionCategory {
    * @return A list of CallToActionCategory objects associated with the specified Call-to-Action ID.
    * @throws SQLException If a database access error occurs during the query execution.
    */
-  public static List<CallToActionCategory> loadForDocumentProprety(
+  public static List<CallToActionCategory> loadForDocumentProperty(
     Db db,
     UUID ctaId
   ) throws SQLException {

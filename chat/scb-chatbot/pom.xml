@@ -6,14 +6,14 @@
     <parent>
         <groupId>com.obapps.schoolchatbot</groupId>
         <artifactId>com.obapps.schoolchatbot</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath> <!-- points to the parent pom -->        
     </parent>
     <groupId>com.obapps.schoolchatbot</groupId>
     <artifactId>com.obapps.schoolchatbot.chat</artifactId>
     
     <packaging>jar</packaging>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.1-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -38,17 +38,14 @@
         <dependency>
             <groupId>com.obapps.schoolchatbot</groupId>
             <artifactId>com.obapps.core</artifactId>
-            <version>1.0-SNAPSHOT</version> <!-- or latest -->
         </dependency>
         <dependency>
             <groupId>com.obapps.schoolchatbot</groupId>
             <artifactId>com.obapps.schoolchatbot.core</artifactId>
-            <version>${project.build.version}</version> <!-- or latest -->
         </dependency>        
         <dependency>
             <groupId>com.obapps.schoolchatbot</groupId>
             <artifactId>com.obapps.schoolchatbot.embed</artifactId>
-            <version>${project.build.version}</version> <!-- or latest -->
         </dependency>
    <dependency>
                 <groupId>org.json</groupId>

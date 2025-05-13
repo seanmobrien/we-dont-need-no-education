@@ -19,6 +19,19 @@ public interface IQueueProcessor<TModel, TBatchResult> {
   public String getQueueName();
 
   /**
+   * Checks if the queue processor is ready to process batches.
+   * @return True if the processor is ready, otherwise false.
+   */
+  Boolean getIsReady();
+
+  /**
+   * Called to signal the beginning of the processing phase.
+   * Implementations should use this method to perform any setup
+   * or initialization required before processing starts.
+   */
+  void onBeginProcessing();
+
+  /**
    * Processes a batch of models in the given context.
    *
    * @param context The context containing the batch of models to process.
@@ -44,6 +57,18 @@ public interface IQueueProcessor<TModel, TBatchResult> {
    * @param <TModel> The type of the models contained in the batch.
    */
   public static interface QueueBatchContext<TModel> extends List<TModel> {
+    /**
+     * Creates a batch context for processing a subset of items from a queue.
+     *
+     * @param batchStart The starting index of the batch within the queue.
+     * @param batchSize The number of items to include in the batch.
+     * @return A {@link QueueBatchContext} containing the specified batch of items.
+     */
+    public IQueueProcessor.QueueBatchContext<TModel> makeBatch(
+      Integer batchStart,
+      Integer batchSize
+    );
+
     /**
      * Marks the given model as complete, indicating that processing for the model
      * has been finalized.  Calling this method will remove the model from the underlying

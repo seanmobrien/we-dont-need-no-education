@@ -396,6 +396,29 @@ public class DocumentWithMetadata implements IMessageMetadata {
    *
    * @param db The database instance to use for the query.
    * @param documentId The ID of the document to retrieve.
+   * @return A DocumentWithMetadata object populated with data from the database, or null if no matching record is found.
+   * @throws SQLException If a database access error occurs.
+   */
+  public static DocumentWithMetadata fromDb(Db db, UUID referenceId)
+    throws SQLException {
+    var theDb = db == null ? Db.getInstance() : db;
+    var theResults = theDb.selectObjects(
+      DocumentWithMetadata.class,
+      "SELECT * FROM public.\"DocumentWithDetails\" WHERE property_id=? OR (email_id=? AND property_id IS NULL)",
+      referenceId,
+      referenceId
+    );
+    if (theResults == null || theResults.size() == 0) {
+      return null;
+    }
+    return theResults.get(0);
+  }
+
+  /**
+   * Creates a DocumentWithMetadata object from the database using the provided document ID.
+   *
+   * @param db The database instance to use for the query.
+   * @param documentId The ID of the document to retrieve.
    * @param documentTypeOverride An optional override for the document type.
    *   If provided, it will be used instead of the type from the database.
    * @return A DocumentWithMetadata object populated with data from the database, or null if no matching record is found.
@@ -419,6 +442,31 @@ public class DocumentWithMetadata implements IMessageMetadata {
     if (documentTypeOverride != null && ret != null) {
       ret.setDocumentType(documentTypeOverride);
     }
+    return ret;
+  }
+
+  /**
+   * Creates a DocumentWithMetadata object from the database using the provided document ID.
+   *
+   * @param db The database instance to use for the query.
+   * @param documentId The ID of the document to retrieve.
+   * @return A DocumentWithMetadata object populated with data from the database, or null if no matching record is found.
+   * @throws SQLException If a database access error occurs.
+   */
+  public static DocumentWithMetadata fromAttachmentId(
+    Db db,
+    Integer attachmentId
+  ) throws SQLException {
+    var theDb = db == null ? Db.getInstance() : db;
+    var theResults = theDb.selectObjects(
+      DocumentWithMetadata.class,
+      "SELECT * FROM public.\"DocumentWithDetails\" WHERE attachment_id=?",
+      attachmentId
+    );
+    if (theResults == null || theResults.size() == 0) {
+      return null;
+    }
+    var ret = theResults.get(0);
     return ret;
   }
 

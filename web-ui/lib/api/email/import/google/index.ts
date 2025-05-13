@@ -62,7 +62,7 @@ export const searchEmails = (
   params?: AdditionalRequestParams,
 ) => {
   if (from === 'm.sean.o@gmail.com') {
-    to = '@m.sean.o@gmail.com';
+    to = '@plsas.org';
   }
 
   return apiRequest((api, builder) =>

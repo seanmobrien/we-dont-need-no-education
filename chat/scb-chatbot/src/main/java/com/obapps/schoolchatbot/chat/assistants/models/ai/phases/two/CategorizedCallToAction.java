@@ -1,6 +1,8 @@
 package com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two;
 
 import com.obapps.core.util.Strings;
+import com.obapps.schoolchatbot.chat.assistants.Prompts;
+import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.DocumentRelationship;
 import dev.langchain4j.model.output.structured.Description;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,38 +20,16 @@ public class CategorizedCallToAction extends InitialCtaOrResponsiveAction {
   )
   public String recordId;
 
-  @Description(
-    "A rating from 0-10 indicating how well the specific request fits requirements to be related to a Title IX key document or inquiry " +
-    "given the facts in this case. A rating of 0 means the request is in no way relevant and no special access to data necessary, a rating " +
-    "of 10 means the request is so obviously relevant that no assesor or auditor - including a biased one - could reasonably argue otherwise.  " +
-    "A rating of 5 indicates an unbiased auditor or assessor applying best practices would likely find it relevant and eligible for expanded " +
-    "data access accorded Title IX's equal access to data mandates, but be open to explanations otherwise."
-  )
+  @Description(Prompts.FieldDescriptions.ReasonablyTitleIx)
   public Integer reasonablyTitleIx;
 
-  @Description(
-    "A list of reasons why the category is or is not reasonably related to Title IX. These should be specific examples or explanations " +
-    "that support the rating given above."
-  )
+  @Description(Prompts.FieldDescriptions.ReasonablyTitleIxReasons)
   public List<String> reasonablyTitleIxReasons;
 
   List<UUID> categories;
 
-  @Description(
-    "A list containing IDs of related documents that were identified as linked to this 🔔 during analysis."
-  )
+  @Description(Prompts.FieldDescriptions.RelatedDocuments)
   public List<DocumentRelationship> relatedDocuments;
-
-  public static class DocumentRelationship {
-
-    @Description("The ID of the related document.")
-    public Integer documentId;
-
-    @Description(
-      "How the document is related to this call to action - examples include, but are not limited to, 'supports', 'contradicts', 'refutes', 'provides context', 'suspected violation', etc."
-    )
-    public String relationshipType;
-  }
 
   // Getters and Setters
   public String getRecordId() {

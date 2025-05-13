@@ -1,11 +1,12 @@
 package com.obapps.schoolchatbot.core.models;
 
+import com.obapps.core.util.Db;
 import com.obapps.core.util.IDbTransaction;
-import com.obapps.core.util.sql.FieldUtil;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -35,17 +36,15 @@ import java.util.UUID;
  */
 public class CallToActionResponse extends DocumentProperty {
 
-  private UUID actionPropertyId;
-  private Double completionPercentage = 0.0;
   private LocalDateTime responseTimestamp;
-  private Double complianceMessage;
-  private String complianceMessageReasons;
-  private Double complianceAggregate;
-  private String complianceAggregateReasons;
-  private Integer reasonableRequest;
+  private Double sentiment;
+  private List<String> sentimentReasons;
+  private List<String> severityReasons;
+  private Integer reasonableResponse;
   private String reasonableReasons;
   private Integer severity;
   private Boolean inferred;
+  private List<AssociatedCallToAction> associatedCallsToAction;
 
   /**
    * Default constructor for the {@code CallToActionResponse} class.
@@ -54,87 +53,38 @@ public class CallToActionResponse extends DocumentProperty {
   public CallToActionResponse() {
     super();
     setPropertyType(DocumentPropertyType.KnownValues.CallToActionResponse);
+    this.associatedCallsToAction = new ArrayList<>();
   }
 
   /**
-   * Constructs a {@code CallToActionResponse} object and initializes its fields using the provided state bag.
+   * Constructor for the {@code CallToActionResponse} class.
+   * Initializes a new instance with the specified property ID and sets the property type to {@code CallToActionResponse}.
    *
-   * @param stateBag A map containing key-value pairs used to initialize the properties of the {@code CallToActionResponse} object.
+   * @param propertyId The unique identifier for the property.
    */
-  public CallToActionResponse(Map<String, Object> stateBag) {
-    super(stateBag);
+  public CallToActionResponse(UUID propertyId) {
+    super();
+    setPropertyId(propertyId);
     setPropertyType(DocumentPropertyType.KnownValues.CallToActionResponse);
-    FieldUtil.saveUuidFromStateBag(
-      stateBag,
-      "action_property_id",
-      this::setActionPropertyId
-    );
-    FieldUtil.saveDoubleFromStateBag(
-      stateBag,
-      "completion_percentage",
-      this::setCompletionPercentage
-    );
-    FieldUtil.saveLocalDateTimeFromStateBag(
-      stateBag,
-      "response_timestamp",
-      this::setResponseTimestamp
-    );
-    FieldUtil.saveDoubleFromStateBag(
-      stateBag,
-      "compliance_message",
-      this::setComplianceMessage
-    );
-    FieldUtil.saveFromStateBag(
-      stateBag,
-      "compliance_message_reasons",
-      this::setComplianceMessageReasons
-    );
-    FieldUtil.saveDoubleFromStateBag(
-      stateBag,
-      "compliance_aggregate",
-      this::setComplianceAggregate
-    );
-    FieldUtil.saveFromStateBag(
-      stateBag,
-      "compliance_aggregate_reasons",
-      this::setComplianceAggregateReasons
-    );
+    this.associatedCallsToAction = new ArrayList<>();
   }
 
   /**
-   * Retrieves the action property ID associated with this response.
+   * Retrieves the associated calls to action for the response.
    *
-   * @return The action property ID as a {@link UUID}.
+   * @return A list of {@link AssociatedCallToAction} representing the associated calls to action.
    */
-  public UUID getActionPropertyId() {
-    return actionPropertyId;
+  public List<AssociatedCallToAction> getAssociatedCallsToAction() {
+    return List.copyOf(associatedCallsToAction);
   }
 
   /**
-   * Sets the action property ID for this response.
+   * Sets the associated calls to action for the response.
    *
-   * @param actionPropertyId The {@link UUID} representing the action property ID.
+   * @param actions The {@link List<AssociatedCallToAction>} representing the associated calls to action.
    */
-  public void setActionPropertyId(UUID actionPropertyId) {
-    this.actionPropertyId = actionPropertyId;
-  }
-
-  /**
-   * Retrieves the completion percentage of the response.
-   *
-   * @return The completion percentage as a {@link Double}.
-   */
-  public Double getCompletionPercentage() {
-    return completionPercentage;
-  }
-
-  /**
-   * Sets the completion percentage of the response.
-   *
-   * @param completionPercentage The {@link Double} representing the completion percentage.
-   */
-  public void setCompletionPercentage(Double completionPercentage) {
-    this.completionPercentage = completionPercentage;
+  public void setAssociatedCallsToAction(List<AssociatedCallToAction> actions) {
+    this.associatedCallsToAction = new ArrayList<>(actions);
   }
 
   /**
@@ -189,93 +139,75 @@ public class CallToActionResponse extends DocumentProperty {
    *
    * @return The compliance message score as a {@link Double}.
    */
-  public Double getComplianceMessage() {
-    return complianceMessage;
+  public Double getSentiment() {
+    return sentiment;
   }
 
   /**
    * Sets the compliance message score for the response.
    *
-   * @param complianceMessage The {@link Double} representing the compliance message score.
+   * @param sentiment The {@link Double} representing the sentiment score.
    */
-  public void setComplianceMessage(Double complianceMessage) {
-    this.complianceMessage = complianceMessage;
+  public void setSentiment(Double sentiment) {
+    this.sentiment = sentiment;
   }
 
   /**
-   * Retrieves the reasons for the compliance message.
+   * Retrieves the reasons for the sentiment score.
    *
-   * @return The compliance message reasons as a {@link String}.
+   * @return The sentiment reasons as a {@link String}.
    */
-  public String getComplianceMessageReasons() {
-    return complianceMessageReasons;
+  public List<String> getSentimentReasons() {
+    return sentimentReasons;
   }
 
   /**
-   * Sets the reasons for the compliance message.
+   * Sets the reasons for the sentiment score.
    *
-   * @param complianceMessageReasons The {@link String} representing the compliance message reasons.
+   * @param sentimentReasons The {@link List<String>} representing the sentiment reasons.
    */
-  public void setComplianceMessageReasons(String complianceMessageReasons) {
-    this.complianceMessageReasons = complianceMessageReasons;
-  }
-
-  /**
-   * Retrieves the compliance aggregate score for the response.
-   *
-   * @return The compliance aggregate score as a {@link Double}.
-   */
-  public Double getComplianceAggregate() {
-    return complianceAggregate;
-  }
-
-  /**
-   * Sets the compliance aggregate score for the response.
-   *
-   * @param complianceAggregate The {@link Double} representing the compliance aggregate score.
-   */
-  public void setComplianceAggregate(Double complianceAggregate) {
-    this.complianceAggregate = complianceAggregate;
+  public void setSentimentReasons(List<String> sentimentReasons) {
+    this.sentimentReasons = sentimentReasons;
   }
 
   /**
    * Retrieves the reasons for the compliance aggregate score.
    *
-   * @return The compliance aggregate reasons as a {@link String}.
+   * @return The compliance aggregate reasons as a {@link List<String>}.
    */
-  public String getComplianceAggregateReasons() {
-    return complianceAggregateReasons;
+  public List<String> getSeverityReasons() {
+    return severityReasons;
   }
 
   /**
    * Sets the reasons for the compliance aggregate score.
    *
-   * @param complianceAggregateReasons The {@link String} representing the compliance aggregate reasons.
+   * @param severityReasons The {@link List<String>} representing the severity reasons.
    */
-  public void setComplianceAggregateReasons(String complianceAggregateReasons) {
-    this.complianceAggregateReasons = complianceAggregateReasons;
+  public void setSeverityReasons(List<String> severityReasons) {
+    this.severityReasons = severityReasons;
   }
 
   /**
-   * Retrieves the reasonable request rating.
+   * Retrieves the reasonable response rating.
    *
-   * @return The reasonable request rating as an {@link Integer}.
+   * @return The reasonable response rating as an {@link Integer}.
    */
-  public Integer getReasonableRequest() {
-    return reasonableRequest;
+  public Integer getReasonableResponse() {
+    return reasonableResponse;
   }
 
   /**
-   * Sets the reasonable request rating.
+   * Sets the reasonable response rating.
    *
-   * @param reasonableRequest The {@link Integer} representing the reasonable request rating.
+   * @param reasonableResponse The {@link Integer} representing the reasonable response rating.
    */
-  public void setReasonableRequest(Integer reasonableRequest) {
-    this.reasonableRequest = reasonableRequest;
+  public void setReasonableResponse(Integer reasonableResponse) {
+    this.reasonableResponse = reasonableResponse;
   }
 
   /**
-   * Retrieves the reasons for the reasonable request rating.
+   * Retrieves the reasons for the reasonable response rating.
    *
    * @return The reasons as a {@link String}.
    */
@@ -284,7 +216,7 @@ public class CallToActionResponse extends DocumentProperty {
   }
 
   /**
-   * Sets the reasons for the reasonable request rating.
+   * Sets the reasons for the reasonable response rating.
    *
    * @param reasonableReasons The {@link String} representing the reasons.
    */
@@ -344,21 +276,25 @@ public class CallToActionResponse extends DocumentProperty {
         .getDb()
         .executeUpdate(
           "INSERT INTO call_to_action_response_details " +
-          "(property_id, action_property_id, completion_percentage, response_timestamp, compliance_message, compliance_message_reasons, compliance_aggregate, compliance_aggregate_reasons, reasonable_request, reasonable_reasons, severity, inferred) " +
-          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "(property_id, response_timestamp, sentiment, sentiment_reasons, " +
+          "reasonable_response, reasonable_reasons, severity, severity_reasons, inferred) " +
+          "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
           getPropertyId(),
-          actionPropertyId,
-          completionPercentage,
           responseTimestamp,
-          complianceMessage,
-          complianceMessageReasons,
-          complianceAggregate,
-          complianceAggregateReasons,
-          reasonableRequest,
+          sentiment,
+          sentimentReasons,
+          reasonableResponse,
           reasonableReasons,
           severity,
+          severityReasons,
           inferred
         );
+
+      for (var cta : associatedCallsToAction) {
+        if (!cta.updateDb(tx, getPropertyId())) throw new SQLException(
+          "Error adding associated call to action to database - no record created or updated."
+        );
+      }
       return this;
     } catch (SQLException e) {
       tx.setAbort();
@@ -367,6 +303,23 @@ public class CallToActionResponse extends DocumentProperty {
         e
       );
     }
+  }
+
+  /**
+   * loads a {@code CallToActionResponse} instance from the database.
+   *
+   * @param db The database instance used to execute the select operation.
+   * @return The current instance of {@code CallToActionResponse} after being loaded from the database.
+   * @throws SQLException If an error occurs while executing the database operation.
+   */
+  public static CallToActionResponse loadFromDb(Db db, UUID id)
+    throws SQLException {
+    var ret = db.selectObjects(
+      CallToActionResponse.class,
+      "SELECT * FROM call_to_action_response_details WHERE property_id = ?",
+      id
+    );
+    return ret.size() > 0 ? ret.get(0) : null;
   }
 
   /**
@@ -404,8 +357,10 @@ public class CallToActionResponse extends DocumentProperty {
      * @param actionPropertyId The {@link UUID} representing the action property ID.
      * @return The builder instance for method chaining.
      */
-    public CallToActionResponseBuilder actionPropertyId(UUID actionPropertyId) {
-      target.setActionPropertyId(actionPropertyId);
+    public CallToActionResponseBuilder severityReasons(
+      List<String> severityReasons
+    ) {
+      target.setSeverityReasons(severityReasons);
       return self();
     }
 
@@ -415,10 +370,8 @@ public class CallToActionResponse extends DocumentProperty {
      * @param completionPercentage The {@link Double} representing the completion percentage.
      * @return The builder instance for method chaining.
      */
-    public CallToActionResponseBuilder completionPercentage(
-      Double completionPercentage
-    ) {
-      target.setCompletionPercentage(completionPercentage);
+    public CallToActionResponseBuilder sentiment(Double sentiment) {
+      target.setSentiment(sentiment);
       return self();
     }
 
@@ -436,61 +389,22 @@ public class CallToActionResponse extends DocumentProperty {
     }
 
     /**
-     * Sets the compliance message score for the {@link CallToActionResponse}.
-     *
-     * @param complianceMessage The {@link Double} representing the compliance message score.
-     * @return The builder instance for method chaining.
-     */
-    public CallToActionResponseBuilder complianceMessage(
-      Double complianceMessage
-    ) {
-      target.setComplianceMessage(complianceMessage);
-      return self();
-    }
-
-    /**
      * Sets the compliance message reasons for the {@link CallToActionResponse}.
      *
-     * @param complianceMessageReasons The {@link String} representing the compliance message reasons.
+     * @param sentimentReasons The {@link List<String>} representing the sentiment reasons.
      * @return The builder instance for method chaining.
      */
-    public CallToActionResponseBuilder complianceMessageReasons(
-      String complianceMessageReasons
+    public CallToActionResponseBuilder sentimentReasons(
+      List<String> sentimentReasons
     ) {
-      target.setComplianceMessageReasons(complianceMessageReasons);
+      target.setSentimentReasons(sentimentReasons);
       return self();
     }
 
-    /**
-     * Sets the compliance aggregate score for the {@link CallToActionResponse}.
-     *
-     * @param complianceAggregate The {@link Double} representing the compliance aggregate score.
-     * @return The builder instance for method chaining.
-     */
-    public CallToActionResponseBuilder complianceAggregate(
-      Double complianceAggregate
+    public CallToActionResponseBuilder reasonableResponse(
+      Integer reasonableResponse
     ) {
-      target.setComplianceAggregate(complianceAggregate);
-      return self();
-    }
-
-    /**
-     * Sets the compliance aggregate reasons for the {@link CallToActionResponse}.
-     *
-     * @param complianceAggregateReasons The {@link String} representing the compliance aggregate reasons.
-     * @return The builder instance for method chaining.
-     */
-    public CallToActionResponseBuilder complianceAggregateReasons(
-      String complianceAggregateReasons
-    ) {
-      target.setComplianceAggregateReasons(complianceAggregateReasons);
-      return self();
-    }
-
-    public CallToActionResponseBuilder reasonableRequest(
-      Integer reasonableRequest
-    ) {
-      target.setReasonableRequest(reasonableRequest);
+      target.setReasonableResponse(reasonableResponse);
       return self();
     }
 
@@ -510,6 +424,13 @@ public class CallToActionResponse extends DocumentProperty {
       target.setInferred(inferred);
       return self();
     }
+
+    public CallToActionResponseBuilder associatedCallsToAction(
+      List<AssociatedCallToAction> associatedCallsToAction
+    ) {
+      target.setAssociatedCallsToAction(associatedCallsToAction);
+      return self();
+    }
   }
 
   /**
@@ -520,5 +441,14 @@ public class CallToActionResponse extends DocumentProperty {
    */
   public static CallToActionResponseBuilder builder() {
     return new CallToActionResponseBuilder();
+  }
+
+  /**
+   * Adds an associated call-to-action to the list of associated calls-to-action.
+   *
+   * @param cta the {@link AssociatedCallToAction} object to be added
+   */
+  public void addAssociatedCallToAction(AssociatedCallToAction cta) {
+    this.associatedCallsToAction.add(cta);
   }
 }

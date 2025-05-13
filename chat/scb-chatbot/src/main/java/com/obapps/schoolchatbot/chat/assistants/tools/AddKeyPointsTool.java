@@ -1,5 +1,6 @@
 package com.obapps.schoolchatbot.chat.assistants.tools;
 
+import com.obapps.core.exceptions.ErrorUtil;
 import com.obapps.core.util.Db;
 import com.obapps.schoolchatbot.chat.assistants.KeyPointAnalysis;
 import com.obapps.schoolchatbot.chat.assistants.content.AugmentedContentList;
@@ -273,6 +274,8 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
       value = "Used to filter the scope of searched documents.  Supported values are:\n" +
       "  - email: Search only email records.\n" +
       "  - attachment: Search only attachments.\n" +
+      "  - key point: Search only key points.\n" +
+      "  - cta: Search only calls to action points.\n" +
       "  - Empty String: Search all documents.\n"
     ) String scope
   ) {
@@ -284,6 +287,12 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
           break;
         case "attachment":
           policyType = AzureSearchClient.ScopeType.Attachment;
+          break;
+        case "key point":
+          policyType = AzureSearchClient.ScopeType.KeyPoint;
+          break;
+        case "cta":
+          policyType = AzureSearchClient.ScopeType.Cta;
           break;
         default:
           policyType = AzureSearchClient.ScopeType.All;
@@ -305,7 +314,8 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
 
   @Tool(
     name = "getDocumentDetails",
-    value = "Retrieves full details on a specific document by id."
+    value = "Retrieves full details on a specific document by id.  Any the id of any document returned by " +
+    "`lookupDocumentSummary` can be used as input to this tool to access more information."
   )
   public DocumentWithMetadata getDocumentDetails(
     @P(
@@ -317,10 +327,35 @@ public class AddKeyPointsTool extends MessageTool<AugmentedContentList> {
       var data = Db.getInstance();
       return DocumentWithMetadata.fromDb(data, documentId);
     } catch (SQLException e) {
-      log.error(
-        "Unexpected SQL failure retrieving document details.  Details: " +
-        documentId,
-        e
+      ErrorUtil.handleException(
+        log,
+        e,
+        "Unexpected SQL failure retrieving document details for document id %s.  Details: ",
+        documentId
+      );
+      return null;
+    }
+  }
+
+  @Tool(
+    name = "getAttachmentDetails",
+    value = "Retrieves full details on a specific attachment by id."
+  )
+  public DocumentWithMetadata getAttachmentDetails(
+    @P(
+      required = true,
+      value = "The ID of the attachment to retrieve details for."
+    ) Integer attachmentId
+  ) {
+    try {
+      var data = Db.getInstance();
+      return DocumentWithMetadata.fromAttachmentId(data, attachmentId);
+    } catch (SQLException e) {
+      ErrorUtil.handleException(
+        log,
+        e,
+        "Unexpected SQL failure retrieving attachment details for attachmetn id %s.  Details: ",
+        attachmentId
       );
       return null;
     }

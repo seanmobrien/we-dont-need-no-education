@@ -580,7 +580,7 @@ public class BrokerManagedQueue<TQueueItem> implements IBrokerManagedQueue {
       if (queueOptions.writeToFile) {
         flushBatchToFile(batch);
       }
-      if (!queueOptions.isEnabled) {
+      if (!queueOptions.isEnabled || !processor.getIsReady()) {
         log.trace(
           "Skipping processing for {} items from queue {} (disabled)",
           batch.size(),
@@ -588,7 +588,14 @@ public class BrokerManagedQueue<TQueueItem> implements IBrokerManagedQueue {
         );
         return;
       }
+      if (batch != null && !batch.isEmpty()) {
+        processor.onBeginProcessing();
+      }
       while (batch != null && !batch.isEmpty()) {
+        if (isShuttingDown) {
+          log.info("Shutting down queue {}", getQueueName());
+          return;
+        }
         var success = processBatch(batch);
         if (success.equals(Boolean.TRUE)) {
           // If setAbort was not called and items were not individually completed, complete the batch
@@ -664,6 +671,7 @@ public class BrokerManagedQueue<TQueueItem> implements IBrokerManagedQueue {
     extends WrappedList<TQueueItem>
     implements IQueueProcessor.QueueBatchContext<TQueueItem> {
 
+    private final BrokerQueueBatchContext<TQueueItem> parent;
     private final RQueue<TQueueItem> queue;
     private Boolean isAborted = false;
     private Boolean isCompleted = false;
@@ -674,17 +682,47 @@ public class BrokerManagedQueue<TQueueItem> implements IBrokerManagedQueue {
     ) {
       super(items);
       this.queue = queue;
+      this.parent = null;
+    }
+
+    public BrokerQueueBatchContext(
+      BrokerQueueBatchContext<TQueueItem> parent,
+      List<TQueueItem> items
+    ) {
+      super(items);
+      this.isAborted = parent.isAborted;
+      this.isCompleted = parent.isCompleted;
+      this.queue = parent.queue;
+      this.parent = parent;
+    }
+
+    @Override
+    public IQueueProcessor.QueueBatchContext<TQueueItem> makeBatch(
+      Integer batchStart,
+      Integer batchSize
+    ) {
+      return new BrokerQueueBatchContext<TQueueItem>(
+        this,
+        this.subList(batchStart, batchStart + batchSize)
+      );
     }
 
     @Override
     public void setComplete(TQueueItem model) {
       isCompleted = true;
-      queue.remove(model);
+      if (parent == null) {
+        queue.remove(model);
+      } else {
+        parent.setComplete(model);
+      }
     }
 
     @Override
     public void setAbort() {
       isAborted = true;
+      if (parent != null) {
+        parent.setAbort();
+      }
     }
 
     @Override
@@ -699,10 +737,17 @@ public class BrokerManagedQueue<TQueueItem> implements IBrokerManagedQueue {
 
     @Override
     public Boolean replace(TQueueItem oldModel, TQueueItem newModel) {
-      var ret = queue.remove(oldModel);
-      remove(oldModel);
-      queue.add(newModel);
-      add(newModel);
+      Boolean ret;
+      if (parent == null) {
+        ret = queue.remove(oldModel);
+        remove(oldModel);
+        queue.add(newModel);
+      } else {
+        ret = parent.replace(oldModel, newModel);
+      }
+      if (ret.equals(Boolean.TRUE)) {
+        add(newModel);
+      }
       return ret;
     }
 
@@ -711,17 +756,27 @@ public class BrokerManagedQueue<TQueueItem> implements IBrokerManagedQueue {
       List<TQueueItem> oldModels,
       List<TQueueItem> newModels
     ) {
-      var ret = queue.removeAll(oldModels);
-      removeAll(oldModels);
-      queue.addAll(newModels);
+      Boolean ret;
+      if (parent == null) {
+        ret = queue.removeAll(oldModels);
+        removeAll(oldModels);
+        queue.addAll(newModels);
+      } else {
+        ret = parent.replace(oldModels, newModels);
+      }
       addAll(newModels);
       return ret;
     }
 
     @Override
     public Boolean replace(List<TQueueItem> newModels) {
-      var ret = queue.removeAll(this);
-      queue.addAll(newModels);
+      Boolean ret;
+      if (parent == null) {
+        ret = queue.removeAll(this);
+        queue.addAll(newModels);
+      } else {
+        ret = parent.replace(this, newModels);
+      }
       clear();
       addAll(newModels);
       return ret;

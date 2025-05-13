@@ -129,10 +129,9 @@ public class AiServiceOptions<TService> extends ChatModelOptionsBase {
    * @return A new Builder instance.
    */
   public static <TService> Builder<TService> builder(
-    Class<TService> clazz,
-    ChatModelOptionsBase options
+    AiServiceOptions<TService> options
   ) {
-    return new Builder<TService>(clazz).copy(options);
+    return new Builder<TService>(options.getClazz()).copy(options);
   }
 
   /**
@@ -150,7 +149,7 @@ public class AiServiceOptions<TService> extends ChatModelOptionsBase {
     /**
      * The model type to be used.
      */
-    private ModelType modelType = ModelType.LoFi;
+    private ModelType modelType = ModelType.HiFi;
 
     /**
      * Indicates whether the output should be structured.
@@ -286,7 +285,8 @@ public class AiServiceOptions<TService> extends ChatModelOptionsBase {
       this.temperature = source.temperature;
       this.setupModelCallback = source.onSetupModelCallback;
 
-      if (source instanceof AiServiceOptions) {
+      if (source instanceof AiServiceOptions<?>) {
+        @SuppressWarnings("unchecked")
         var aiSource = (AiServiceOptions<TService>) source;
         this.structuredOutput = aiSource.structuredOutput;
         this.memoryWindow = aiSource.memoryWindow;

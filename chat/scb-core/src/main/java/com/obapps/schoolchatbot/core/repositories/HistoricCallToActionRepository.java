@@ -2,7 +2,6 @@ package com.obapps.schoolchatbot.core.repositories;
 
 import com.obapps.core.ai.extraction.services.RecordExtractionService;
 import com.obapps.core.ai.factory.models.AiServiceOptions;
-import com.obapps.core.ai.factory.models.ModelType;
 import com.obapps.core.ai.factory.services.StandaloneModelClientFactory;
 import com.obapps.core.util.Db;
 import com.obapps.schoolchatbot.core.models.HistoricCallToAction;
@@ -150,7 +149,6 @@ public class HistoricCallToActionRepository {
     var fancyResult = RecordExtractionService.extractRecords(
       _clientFactory,
       AiServiceOptions.builder(IResearchAssistant.class)
-        .setModelType(ModelType.LoFi)
         .setStructuredOutput(true)
         .setMemoryWindow(15)
         .build(),
