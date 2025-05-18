@@ -5,7 +5,6 @@ import static org.mockito.Mockito.*;
 
 import com.obapps.core.util.EnvVars;
 import com.obapps.schoolchatbot.core.assistants.services.AzurePolicySearchClient;
-import com.obapps.schoolchatbot.core.assistants.services.AzureSearchClient;
 import com.obapps.schoolchatbot.core.assistants.services.EmbeddingService;
 import java.net.http.HttpClient;
 import java.util.List;

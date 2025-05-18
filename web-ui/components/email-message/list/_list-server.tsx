@@ -10,7 +10,7 @@ import {
 } from '@/lib/typescript';
 import UnsubscribeIcon from '@mui/icons-material/Unsubscribe';
 import {
-  Grid2 as Grid,
+  Grid as Grid,
   Box,
   CircularProgress,
   Paper,
@@ -143,7 +143,7 @@ const EmailListServer = ({
                         <TableCell>
                           <Link
                             key={emailId}
-                            href={siteMap.email.edit(emailId)}
+                            href={siteMap.messages.email(emailId)}
                           >
                             {new Date(sentOn).toLocaleString()}
                           </Link>
@@ -151,7 +151,7 @@ const EmailListServer = ({
                         <TableCell>
                           <Link
                             key={emailId}
-                            href={siteMap.email.edit(emailId)}
+                            href={siteMap.messages.email(emailId)}
                           >
                             TODO
                           </Link>
@@ -159,7 +159,7 @@ const EmailListServer = ({
                         <TableCell>
                           <Link
                             key={emailId}
-                            href={siteMap.email.edit(emailId)}
+                            href={siteMap.messages.email(emailId)}
                           >
                             TODO
                           </Link>

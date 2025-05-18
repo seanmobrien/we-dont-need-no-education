@@ -12,7 +12,6 @@ import com.obapps.core.util.Strings;
 import com.obapps.schoolchatbot.chat.MessageQueueName;
 import com.obapps.schoolchatbot.chat.assistants.Prompts;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.BatchResult;
-import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.DocumentRelationship;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.AssociatedResponsiveAction;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.AssociatedResponsiveActionEnvelope;
 import com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.InitialCtaOrResponsiveAction;
@@ -359,7 +358,7 @@ public class ResponsiveActionAssignmentQueueProcessor
               .toList();
             relatedDocuments.forEach(rd -> {
               try {
-                rd.saveToDb(tx);
+                rd.saveToDb(tx, false);
               } catch (Exception e) {
                 ErrorUtil.handleException(
                   log,
@@ -375,6 +374,7 @@ public class ResponsiveActionAssignmentQueueProcessor
                     rd.getRelationship()
                   )
                 );
+                batch.setAbort();
               }
             });
 

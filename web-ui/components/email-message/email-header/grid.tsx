@@ -1,6 +1,6 @@
 'use client';
 import {
-  Grid2 as Grid,
+  Grid as Grid,
   Box,
   CircularProgress,
   Paper,

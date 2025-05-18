@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       process.env.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,
   },
   experimental: {
-    // nodeMiddleware: true,
+    //nodeMiddleware: true,
   },
   publicRuntimeConfig: {
     hostname: process.env.NEXT_PUBLIC_HOSTNAME,
@@ -29,11 +29,21 @@ const nextConfig: NextConfig = {
     '@opentelemetry/api',
     '@opentelemetry/exporter-jaeger',
     '@opentelemetry',
+    'cloudflare:sockets',
     'pino',
     'pdf-parse',
     'pg',
     '@auth/pg-adapter',
   ],
+  webpack: (config, { webpack }) => {
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^pg-native$|^cloudflare:sockets$/,
+      }),
+    );
+
+    return config;
+  },
 };
 
 export default nextConfig;

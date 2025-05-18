@@ -105,6 +105,11 @@ public class DocumentRelationship {
   }
 
   public void saveToDb(IDbTransaction tx) throws SQLException {
+    saveToDb(tx, true);
+  }
+
+  public void saveToDb(IDbTransaction tx, Boolean isolated)
+    throws SQLException {
     if (tx == null) {
       throw new IllegalArgumentException("tx cannot be null");
     }
@@ -119,45 +124,46 @@ public class DocumentRelationship {
     }
 
     // We actually want these updates to commit outside of our parent scope
-    try (var db = tx.createUnitOfWork()) {
-      // Resolve relationship type id
-      Integer relationshipTypeId = getOrCreateRelationshipTypeId(
-        db,
-        relationship
-      );
+    // try  (var db = isolated ? tx.createUnitOfWork() : tx.getDb())  {
+    var db = tx.getDb();
+    // Resolve relationship type id
+    Integer relationshipTypeId = getOrCreateRelationshipTypeId(
+      db,
+      relationship
+    );
 
-      Optional<Long> exists = db.selectSingleValue(
-        """
-        SELECT COUNT(*)
-        FROM document_property_related_document
-        WHERE related_property_id = ?
-          AND document_id = ?
-          AND relationship_type = ?
-          """,
+    Optional<Long> exists = db.selectSingleValue(
+      """
+      SELECT COUNT(*)
+      FROM document_property_related_document
+      WHERE related_property_id = ?
+        AND document_id = ?
+        AND relationship_type = ?
+        """,
+      relatedPropertyId,
+      documentId,
+      relationshipTypeId
+    );
+    if (exists.isPresent() && exists.get() > 0) {
+      LoggerFactory.getLogger(getClass()).warn(
+        "Skipping Relationship {} {} {} - already exists",
         relatedPropertyId,
         documentId,
         relationshipTypeId
       );
-      if (exists.isPresent() && exists.get() > 0) {
-        LoggerFactory.getLogger(getClass()).warn(
-          "Skipping Relationship {} {} {} - already exists",
-          relatedPropertyId,
-          documentId,
-          relationshipTypeId
-        );
-        return; // Already exists, no need to insert again
-      }
-
-      var res = db.executeUpdate(
-        "INSERT INTO document_property_related_document (related_property_id, document_id, relationship_type) VALUES (?, ?, ?)",
-        relatedPropertyId,
-        documentId,
-        relationshipTypeId
-      );
-      if (res == 0) {
-        throw new SQLException("Failed to insert DocumentRelationship");
-      }
+      return; // Already exists, no need to insert again
     }
+
+    var res = db.executeUpdate(
+      "INSERT INTO document_property_related_document (related_property_id, document_id, relationship_type) VALUES (?, ?, ?)",
+      relatedPropertyId,
+      documentId,
+      relationshipTypeId
+    );
+    if (res == 0) {
+      throw new SQLException("Failed to insert DocumentRelationship");
+    }
+    // }
   }
 
   private Integer getOrCreateRelationshipTypeId(Db db, String relationship)

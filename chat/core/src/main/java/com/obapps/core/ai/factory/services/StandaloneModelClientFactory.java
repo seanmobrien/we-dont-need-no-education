@@ -21,6 +21,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.service.AiServices;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -55,11 +56,9 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
   private EnvVars envVars;
   private String userName;
 
-  @SuppressWarnings("unused")
   private static final MetricsChatModelListener MetricsChatModelListener =
     new MetricsChatModelListener();
 
-  @SuppressWarnings("unused")
   private static final SpanChatModelListener SpanChatModelListener =
     new SpanChatModelListener();
 
@@ -117,7 +116,8 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
       .deploymentName(deployment)
       .timeout(Duration.ofMillis(2 * 60 * 1000))
       .temperature(1.0)
-      .logRequestsAndResponses(isDebugMode); //.listeners(List.of(SpanChatModelListener, MetricsChatModelListener))
+      .listeners(List.of(SpanChatModelListener, MetricsChatModelListener))
+      .logRequestsAndResponses(isDebugMode);
 
     // The o-series models do not support the temperature parameter.
     // Note we are currently relying on naming conventions to determine this,

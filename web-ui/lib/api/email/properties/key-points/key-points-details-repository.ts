@@ -14,7 +14,13 @@ const mapRecordToObject = (
 ): KeyPointsDetails => {
   return {
     ...mapEmailPropertyRecordToObject(record),
-    policyId: record.policy_id ? Number(record.policy_id) : null,
+    propertyId: String(record.property_id),
+    relevance: record.relevance ? Number(record.relevance) : null,
+    compliance: record.compliance ? Number(record.compliance) : null,
+    severityRanking: record.severityRanking
+      ? Number(record.severityRanking)
+      : null,
+    inferred: Boolean(record.inferred),
   };
 };
 
@@ -84,38 +90,50 @@ export class KeyPointsDetailsRepository extends BaseObjectRepository<
 
   protected getCreateQueryProperties({
     propertyId,
-    policyId,
     value,
     documentId,
     tags,
     policy_basis,
     createdOn,
+    relevance,
+    compliance,
+    severityRanking,
+    inferred,
   }: KeyPointsDetails): [string, Array<unknown>] {
     return [
       `WITH ins1 AS (
         INSERT INTO document_property (property_value, document_property_type_id, property_id, document_id, created_on, tags, policy_basis) 
         VALUES ($1, 9, $2, $3, $4, $6, $7) RETURNING property_id
       )
-      INSERT INTO key_points_details (property_id, policy_id) 
-      VALUES ((SELECT property_id FROM ins1), $5) RETURNING *`,
+      INSERT INTO key_points_details (property_id, relevance, compliance, severity_ranking, inferred)
+      VALUES ((SELECT property_id FROM ins1), $5, $6, $7, $8) RETURNING *`,
       [
         value,
         propertyId,
         documentId,
         createdOn ?? new Date(),
-        policyId ?? null,
-        tags,
-        policy_basis,
+        tags ?? null,
+        policy_basis ?? null,
+        relevance ?? null,
+        compliance ?? null,
+        severityRanking ?? null,
+        inferred ?? false,
       ],
     ];
   }
 
   protected getUpdateQueryProperties({
-    policyId,
+    relevance,
+    compliance,
+    severityRanking,
+    inferred,
   }: KeyPointsDetails): [Record<string, unknown>] {
     return [
       {
-        policy_id: policyId,
+        relevance: relevance ?? null,
+        compliance: compliance ?? null,
+        severityRanking: severityRanking ?? null,
+        inferred: inferred ?? false,
       },
     ];
   }

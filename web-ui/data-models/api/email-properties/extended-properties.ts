@@ -10,7 +10,10 @@ export type CallToActionDetails = Omit<EmailPropertySummary, 'typeId'> & {
 };
 
 export type KeyPointsDetails = Omit<EmailPropertySummary, 'typeId'> & {
-  policyId: number | null;
+  relevance: number | null;
+  compliance: number | null;
+  severityRanking: number | null;
+  inferred: boolean;
   value: string;
 };
 

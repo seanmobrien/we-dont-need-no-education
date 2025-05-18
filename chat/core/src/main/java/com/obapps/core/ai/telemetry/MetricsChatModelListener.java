@@ -1,11 +1,13 @@
 package com.obapps.core.ai.telemetry;
 
+import com.obapps.core.util.EnvVars;
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.chat.listener.ChatModelRequestContext;
 import dev.langchain4j.model.chat.listener.ChatModelResponseContext;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.DoubleHistogram;
@@ -243,6 +245,14 @@ public class MetricsChatModelListener implements ChatModelListener {
 
   private LongHistogram clientTokenUsage;
   private DoubleHistogram clientOperationDuration;
+
+  public MetricsChatModelListener() {
+    super();
+    meter = GlobalOpenTelemetry.getMeter(
+      EnvVars.getInstance().getOtel().getResourceServiceName()
+    );
+    init();
+  }
 
   @Inject
   private Meter meter;

@@ -94,19 +94,7 @@ public class SchoolChatBot implements AutoCloseable {
         null
       )
     );
-    queues.add(
-      new BrokerManagedQueue<>(
-        new ResponsiveActionAssignmentQueueProcessor(),
-        redisClient,
-        BrokerManagedQueue.Options.builder()
-          // .setEnabled(false)
-          .setWriteToFile(true)
-          .setMaxItemsToProcess(1)
-          .setMinItemsToProcess(1)
-          .setPollIntervalMinutes(1)
-          .build()
-      )
-    );
+
     queues.add(
       new BrokerManagedQueue<>(
         new CtaTitleIXAccessAssesmentQueueProcessor(),
@@ -198,7 +186,8 @@ public class SchoolChatBot implements AutoCloseable {
       System.out.println("4. Process Documents for Stage 1");
       System.out.println("5. Process Documents for Stage 2");
       System.out.println("6. Embed pending documents");
-      System.out.println("7. Exit");
+      System.out.println("7. Process Responsive Actions");
+      System.out.println("8. Exit");
       int choice;
       try {
         choice = Integer.parseInt(appScanner.nextLine());
@@ -210,7 +199,9 @@ public class SchoolChatBot implements AutoCloseable {
         case 1:
           try {
             var chatAssistant = new ToolAwareAssistant(
-              ToolAwareAssistant.options(appScanner)
+              ToolAwareAssistant.options(appScanner).setLogToFile(
+                "chat-log.txt"
+              )
             );
             chatAssistant.chat();
           } catch (Exception e) {
@@ -268,6 +259,21 @@ public class SchoolChatBot implements AutoCloseable {
           embedDocuments();
           break;
         case 7:
+          if (queues.size() < 3) {
+            var q = new BrokerManagedQueue<>(
+              new ResponsiveActionAssignmentQueueProcessor(),
+              redisClient,
+              BrokerManagedQueue.Options.builder()
+                .setMaxItemsToProcess(1)
+                .setMinItemsToProcess(1)
+                .setPollIntervalMinutes(1)
+                .build()
+            );
+            queues.add(q);
+            q.start();
+          }
+          break;
+        case 8:
           System.out.println("Exiting the application. Goodbye!");
           isDone = true;
           break;

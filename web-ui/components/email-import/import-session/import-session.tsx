@@ -14,7 +14,7 @@ import {
   TableBody,
   CircularProgress,
 } from '@mui/material';
-import Grid from '@mui/material/Grid2';
+import Grid from '@mui/material/Grid';
 import Mail from '@mui/icons-material/Mail';
 import { LoggedError } from '@/lib/react-util';
 import { searchEmails } from '@/lib/api/email/import/google';

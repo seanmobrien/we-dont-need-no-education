@@ -50,6 +50,35 @@ public class EnvVars {
     return ret.isEmpty() ? defaultValue : ret;
   }
 
+  public OtelVars getOtel() {
+    return new OtelVars();
+  }
+
+  public class OtelVars {
+
+    public String getResourceAttributes() {
+      return get(
+        "OTEL_RESOURCE_ATTRIBUTES",
+        "service.name=obapps-core, service.version=1.0.0"
+      );
+    }
+
+    public String getOtelEndpoint() {
+      return get("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
+    }
+
+    public String getResourceServiceName() {
+      var ret = getResourceAttributes(); // Example: "service.name=obapps-core, service.version=1.0.0"
+      for (String pair : ret.split(",")) {
+        String[] keyValue = pair.trim().split("=");
+        if (keyValue.length == 2 && keyValue[0].equals("service.name")) {
+          return keyValue[1];
+        }
+      }
+      return "service.name=obapps-core"; // Return default if null if the key is not found
+    }
+  }
+
   public class OpenAiVars {
 
     public String getApiKey() {

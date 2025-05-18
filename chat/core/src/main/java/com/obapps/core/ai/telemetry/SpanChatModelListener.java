@@ -1,5 +1,6 @@
 package com.obapps.core.ai.telemetry;
 
+import com.obapps.core.util.EnvVars;
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.chat.listener.ChatModelRequestContext;
@@ -7,6 +8,7 @@ import dev.langchain4j.model.chat.listener.ChatModelResponseContext;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.output.TokenUsage;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.SpanBuilder;
@@ -233,11 +235,24 @@ import java.util.Arrays;
 @Dependent
 public class SpanChatModelListener implements ChatModelListener {
 
-  private static final String OTEL_SCOPE_KEY_NAME = "OTelScope";
-  private static final String OTEL_SPAN_KEY_NAME = "OTelSpan";
+  private static final String OTEL_SCOPE_KEY_NAME = "otel.scope.name";
+  private static final String OTEL_SPAN_KEY_NAME = "otel.span.name";
 
   @Inject
   private Tracer tracer;
+
+  public SpanChatModelListener() {
+    this(
+      GlobalOpenTelemetry.getTracer(
+        EnvVars.getInstance().getOtel().getResourceServiceName()
+      )
+    );
+  }
+
+  public SpanChatModelListener(Tracer tracer) {
+    super();
+    this.tracer = tracer;
+  }
 
   @Override
   public void onRequest(ChatModelRequestContext requestContext) {

@@ -45,6 +45,7 @@ public class CallToActionResponse extends DocumentProperty {
   private Integer severity;
   private Boolean inferred;
   private List<AssociatedCallToAction> associatedCallsToAction;
+  private List<DocumentRelationship> relatedDocuments;
 
   /**
    * Default constructor for the {@code CallToActionResponse} class.
@@ -54,6 +55,7 @@ public class CallToActionResponse extends DocumentProperty {
     super();
     setPropertyType(DocumentPropertyType.KnownValues.CallToActionResponse);
     this.associatedCallsToAction = new ArrayList<>();
+    this.relatedDocuments = new ArrayList<>();
   }
 
   /**
@@ -150,6 +152,15 @@ public class CallToActionResponse extends DocumentProperty {
    */
   public void setSentiment(Double sentiment) {
     this.sentiment = sentiment;
+  }
+
+  /**
+   * Sets the compliance message score for the response.
+   *
+   * @param sentiment The {@link Double} representing the sentiment score.
+   */
+  public void setRelatedDocuments(List<DocumentRelationship> relatedDocuments) {
+    this.relatedDocuments = relatedDocuments;
   }
 
   /**
@@ -295,6 +306,11 @@ public class CallToActionResponse extends DocumentProperty {
           "Error adding associated call to action to database - no record created or updated."
         );
       }
+      for (var doc : relatedDocuments) {
+        doc.setRelatedPropertyId(getPropertyId());
+        doc.saveToDb(tx, false);
+      }
+
       return this;
     } catch (SQLException e) {
       tx.setAbort();
@@ -429,6 +445,13 @@ public class CallToActionResponse extends DocumentProperty {
       List<AssociatedCallToAction> associatedCallsToAction
     ) {
       target.setAssociatedCallsToAction(associatedCallsToAction);
+      return self();
+    }
+
+    public CallToActionResponseBuilder relatedDocuments(
+      List<DocumentRelationship> relatedDocuments
+    ) {
+      target.setRelatedDocuments(relatedDocuments);
       return self();
     }
   }
