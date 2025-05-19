@@ -4,7 +4,7 @@
  */
 jest.mock('@/lib/neondb');
 
-import { EmailHeaderDetailsRepository } from '@/lib/api/email/properties/email-header/email-header-details-repository';
+import { EmailHeaderDetailsRepository } from '@/lib/api/email/properties/email-headers/email-header-details-repository';
 import { ValidationError } from '@/lib/react-util';
 import { query, queryExt } from '@/lib/neondb';
 import { EmailProperty } from '@/data-models/api';

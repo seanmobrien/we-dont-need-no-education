@@ -1,23 +1,28 @@
-import { EmailHeaderGrid } from '@/components/email-message/email-header/grid';
-import { extractParams } from '@/lib/nextjs-util';
+import { auth } from '@/auth';
+import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
+import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
 import { Box } from '@mui/material';
+import stableColumns from './grid-columns';
 
-const Home = async (pageProps: { params: Promise<{ emailId: string }> }) => {
-  const { emailId } = await extractParams(pageProps);
+const Home = async () => {
+  const session = await auth();
+
   return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        '& > :not(style)': {
-          m: 1,
-        },
-      }}
-    >
-      <EmailHeaderGrid emailId={emailId} />
-    </Box>
+    <EmailDashboardLayout session={session}>
+      <Box
+        sx={{
+          width: '100%',
+          '& > :not(style)': {
+            m: 1,
+          },
+        }}
+      >
+        <EmailPropertyDataGrid
+          property="email-headers"
+          columns={stableColumns}
+        />
+      </Box>
+    </EmailDashboardLayout>
   );
 };
 

@@ -1,11 +1,10 @@
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
-import { KeyPointsGrid } from '@/components/email-message/key-points/grid';
-import { extractParams } from '@/lib/nextjs-util';
+import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
 import { Box } from '@mui/material';
+import stableColumns from './grid-columns';
 
-const Home = async (args: { params: Promise<{ emailId: string }> }) => {
-  const { emailId } = await extractParams(args);
+const Home = async () => {
   const session = await auth();
 
   return (
@@ -18,7 +17,7 @@ const Home = async (args: { params: Promise<{ emailId: string }> }) => {
           },
         }}
       >
-        <KeyPointsGrid emailId={emailId} />
+        <EmailPropertyDataGrid property="key-points" columns={stableColumns} />
       </Box>
     </EmailDashboardLayout>
   );

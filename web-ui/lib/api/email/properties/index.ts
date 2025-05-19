@@ -14,4 +14,4 @@ export * from './call-to-action-response/call-to-action-response-details-reposit
 export * from './compliance-scores/compliance-scores-details-repository';
 export * from './violation-details/violation-details-repository';
 export * from './sentiment-analysis/sentiment-analysis-details-repository';
-export * from './email-header/email-header-details-repository';
+export * from './email-headers/email-header-details-repository';

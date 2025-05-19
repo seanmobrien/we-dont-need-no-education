@@ -17,7 +17,10 @@ const Home = async () => {
           },
         }}
       >
-        <EmailPropertyDataGrid property="notes" columns={stableColumns} />
+        <EmailPropertyDataGrid
+          property="call-to-action-response"
+          columns={stableColumns}
+        />
       </Box>
     </EmailDashboardLayout>
   );

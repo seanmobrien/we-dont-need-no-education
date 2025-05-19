@@ -74,7 +74,7 @@ export const EmailDashboardLayout = ({
                 title: 'Compliance',
               },
               {
-                segment: 'header',
+                segment: 'email-header',
                 icon: <PrivacyTipIcon key="header-icon" />,
                 title: 'Headers',
               },
