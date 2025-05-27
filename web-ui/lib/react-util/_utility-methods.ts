@@ -83,6 +83,9 @@ export function isTruthy(
     );
   } else if (Array.isArray(value)) {
     return value.length > 0;
+    // If we have a completely empty object that's as good as false, and certainly not truthy
+  } else if (typeof value === 'object' && Object.keys(value).length === 0) {
+    return false;
   }
   return Boolean(value);
 }

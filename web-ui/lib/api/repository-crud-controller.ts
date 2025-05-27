@@ -20,6 +20,8 @@ import {
   parsePaginationStats,
 } from '@/data-models';
 import type { PaginationStats } from '@/data-models';
+import { GridSortModel, GridFilterModel } from '@mui/x-data-grid-pro';
+import { PaginatedGridListRequest } from '../components/mui/data-grid';
 
 type KeysFromModel<
   TRepositoryModel,
@@ -63,6 +65,8 @@ export class RepositoryCrudController<
   >;
   async list(
     ops: PaginationStats,
+    sort?: GridSortModel,
+    filter?: GridFilterModel,
   ): Promise<
     NextResponse<
       PaginatedResultset<Partial<TRepositoryModel>> | { error: string }
@@ -77,21 +81,24 @@ export class RepositoryCrudController<
   >;
 
   async list(
-    ops?: LikeNextRequest | PaginationStats<number>,
+    ops?: LikeNextRequest | PaginatedGridListRequest,
   ): Promise<
     NextResponse<
       PaginatedResultset<Partial<TRepositoryModel>> | { error: string }
     >
   > {
-    let pagination: PaginationStats & { offset?: number };
+    let pagination: PaginatedGridListRequest & { offset?: number };
     if (isRequestOrApiRequest(ops)) {
+      const thisUrl = new URL(ops.url!);
       pagination = ops.url
-        ? parsePaginationStats(new URL(ops.url))
+        ? parsePaginationStats(thisUrl)
         : { page: 1, num: 10, total: 0 };
     } else if (ops) {
       pagination = {
         page: ops.page ?? 1,
         num: ops.num ?? 10,
+        filter: ops.filter,
+        sort: ops.sort,
         total: 0,
         offset: undefined,
       };

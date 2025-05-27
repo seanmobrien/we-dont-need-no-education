@@ -1,8 +1,7 @@
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
-import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
 import { Box } from '@mui/material';
-import stableColumns from './grid-columns';
+import KpiGrid from './grid';
 
 const Home = async () => {
   const session = await auth();
@@ -17,7 +16,7 @@ const Home = async () => {
           },
         }}
       >
-        <EmailPropertyDataGrid property="key-points" columns={stableColumns} />
+        <KpiGrid />
       </Box>
     </EmailDashboardLayout>
   );

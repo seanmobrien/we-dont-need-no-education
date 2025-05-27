@@ -1,8 +1,10 @@
 import { BaseObjectRepository } from '@/lib/api/_baseObjectRepository';
 import { ObjectRepository } from '@/lib/api/_types';
+import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { query } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util';
 import { FirstParameter } from '@/lib/typescript';
+import { GridSortModel } from '@mui/x-data-grid-pro';
 
 export type StagedAttachment = {
   stagedMessageId: string;
@@ -55,12 +57,17 @@ export class StagedAttachmentRepository extends BaseObjectRepository<
   async getForMessage(
     stagedMessageId: string,
   ): Promise<ReadonlyArray<StagedAttachment>> {
-    const runQuery = () =>
+    const runQuery = (x: number, y: number, z: number, sort?: GridSortModel) =>
       query(
         (sql) => sql`
-      SELECT * FROM staging_attachment WHERE staging_message_id = ${stagedMessageId} ORDER BY "partId"`,
+      SELECT * FROM staging_attachment WHERE staging_message_id = ${stagedMessageId} ${buildOrderBy({ source: sort, sql })}`,
       );
-    return this.innerList(runQuery, runQuery).then(
+    const runQueryCount = () =>
+      query(
+        (sql) =>
+          sql`SELECT COUNT(*) as records FROM staging_attachment WHERE staging_message_id = ${stagedMessageId}`,
+      );
+    return this.innerList(runQuery, runQueryCount).then(
       (x) => x.results as ReadonlyArray<StagedAttachment>,
     );
   }

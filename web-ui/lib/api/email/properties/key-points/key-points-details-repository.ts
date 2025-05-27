@@ -17,9 +17,7 @@ const mapRecordToObject = (
     propertyId: String(record.property_id),
     relevance: record.relevance ? Number(record.relevance) : null,
     compliance: record.compliance ? Number(record.compliance) : null,
-    severityRanking: record.severityRanking
-      ? Number(record.severityRanking)
-      : null,
+    severity: record.severity_ranking ? Number(record.severity_ranking) : null,
     inferred: Boolean(record.inferred),
   };
 };
@@ -97,7 +95,7 @@ export class KeyPointsDetailsRepository extends BaseObjectRepository<
     createdOn,
     relevance,
     compliance,
-    severityRanking,
+    severity: severityRanking,
     inferred,
   }: KeyPointsDetails): [string, Array<unknown>] {
     return [
@@ -125,7 +123,7 @@ export class KeyPointsDetailsRepository extends BaseObjectRepository<
   protected getUpdateQueryProperties({
     relevance,
     compliance,
-    severityRanking,
+    severity: severityRanking,
     inferred,
   }: KeyPointsDetails): [Record<string, unknown>] {
     return [

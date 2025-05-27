@@ -1,231 +1,167 @@
 'use client';
-
-import { useEffect, useState, useCallback } from 'react';
-import {
-  classnames,
-  spacing,
-  borders,
-  typography,
-  backgrounds,
-  margin,
-  boxShadow,
-  display,
-  position,
-} from 'tailwindcss-classnames';
-import type { EmailMessageStats } from '@/data-models/api';
-import { getEmailStats } from '@/lib/api/client';
-import Link from 'next/link';
-import {
-  ICancellablePromiseExt,
-  isOperationCancelledError,
-} from '@/lib/typescript';
+import { JSX, useMemo, useCallback } from 'react';
+import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
-import EmailListServer from './_list-server';
-// Shared class for text color used multiple times
-const marginBottom2 = margin('mb-2');
+import classnames, {
+  display,
+  flexDirection,
+  width,
+} from '@/tailwindcss.classnames';
+import { Box } from '@mui/material';
+import { EmailGridProps } from '@/components/mui/data-grid/types';
+import {
+  GridCallbackDetails,
+  GridColDef,
+  GridRowParams,
+  MuiEvent,
+} from '@mui/x-data-grid-pro';
+import { ContactSummary, EmailMessageSummary } from '@/data-models';
+import AttachEmailIcon from '@mui/icons-material/AttachEmail';
+import KeyIcon from '@mui/icons-material/Key';
+import TextSnippetIcon from '@mui/icons-material/TextSnippet';
+import CallToActionIcon from '@mui/icons-material/CallToAction';
+import { useRouter } from 'next/navigation';
 
-// Define reusable class names using `classnames`
-const containerClass = classnames(
-  margin('mx-auto'),
-  spacing('p-6'),
-  borders('rounded-lg'),
-  boxShadow('shadow-md'),
-);
-
-const EmailList = ({ perPage = 10 }: { perPage?: number }) => {
-  const [error, setError] = useState('');
-  const [showMenu, setShowMenu] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [pageNumber, setPageNumber] = useState(1);
-  const [pageStats, setPageStats] = useState<
-    EmailMessageStats & { pages: number }
-  >({
-    total: 0,
-    pages: 0,
-    lastUpdated: new Date(0),
-  });
-  const fetchPageStats = useCallback(() => {
-    setLoading(true);
-    return getEmailStats()
-      .then((data) => {
-        if (data.total !== pageStats.total) {
-          const pages = Math.ceil(data.total / perPage);
-          if (pageNumber > pages) {
-            setPageNumber(pages);
-          }
-          setPageStats({
-            pages,
-            ...data,
-          });
-        }
-        setError('');
-        return true;
-      })
-      .catch((error) => {
-        if (!isOperationCancelledError(error)) {
-          setError('Error fetching emails.');
-        }
-        return false;
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, [
-    pageStats.total,
-    perPage,
-    pageNumber,
-    setError,
-    setPageStats,
-    setLoading,
-  ]);
-
-  useEffect(() => {
-    const thisPageStats = pageStats;
-    let cancelled = false;
-    let timeoutId = 0;
-    let currentRequest: ICancellablePromiseExt<boolean> | null = null;
-    const refresh = async () => {
-      if (currentRequest) {
-        return;
-      }
-      currentRequest = fetchPageStats();
-      const success = await currentRequest;
-      if (success) {
-        setError('');
-      }
-      currentRequest = null;
-      if (!cancelled) {
-        timeoutId = window.setTimeout(refresh, 60000);
-      }
-    };
-    if (thisPageStats.total === 0) {
-      refresh();
-    } else {
-      timeoutId = window.setTimeout(refresh, 1000);
-    }
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-      timeoutId = 0;
-      if (currentRequest) {
-        currentRequest.cancel();
-        currentRequest = null;
-      }
-    };
-  }, [pageStats, fetchPageStats]);
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setPageNumber(Math.max(1, Math.min(newPage, pageStats.pages)));
+/**
+ * Defines the column configuration for the email message list grid.
+ *
+ * Each column is represented as a `GridColDef` object specifying:
+ * - `field`: The property name in the data source.
+ * - `headerName`: The display name for the column header.
+ * - `editable`: Whether the column is editable by the user.
+ *
+ * Columns included:
+ * - `sender`: Displays the sender of the email.
+ * - `subject`: Displays the subject of the email.
+ * - `sentDate`: Displays the date the email was sent.
+ */
+const stableColumns: GridColDef<EmailMessageSummary>[] = [
+  {
+    field: 'count_attachments',
+    headerName: 'Attachments',
+    description: '# attachments',
+    renderHeader: () => <AttachEmailIcon fontSize="small" />,
+    valueFormatter: (v: number) => (v ? v : ''),
+    width: 30,
+    type: 'number',
+  },
+  {
+    field: 'sender',
+    headerName: 'From',
+    editable: false,
+    flex: 0.2,
+    valueGetter: (sender: ContactSummary | undefined) => {
+      return sender ? sender.name : 'Unknown';
     },
-    [pageStats.pages, setPageNumber],
+  },
+  { field: 'subject', headerName: 'Subject', editable: false, flex: 1 },
+  {
+    field: 'count_kpi',
+    description: '# KPI',
+    renderHeader: () => <KeyIcon fontSize="small" />,
+    valueFormatter: (v: number) => (v ? v : '-'),
+    width: 10,
+    type: 'number',
+  },
+  {
+    field: 'count_notes',
+    description: '# Notes',
+    renderHeader: () => <TextSnippetIcon fontSize="small" />,
+    valueFormatter: (v: number) => (v ? v : '-'),
+    width: 10,
+    type: 'number',
+  },
+  {
+    field: 'count_cta',
+    description: '# CTA',
+    renderHeader: () => <CallToActionIcon fontSize="small" />,
+    valueGetter: (v: number, row: EmailMessageSummary) => {
+      return (v ?? 0) + (row.count_responsive_actions ?? 0);
+    },
+    valueFormatter: (v: number) => (v ? v : '-'),
+    width: 10,
+    type: 'number',
+  },
+  {
+    field: 'sentOn',
+    headerName: 'Sent',
+    editable: false,
+    width: 160,
+    type: 'date',
+    valueGetter: (v: string | Date) => {
+      return v ? new Date(v) : v;
+    },
+    valueFormatter: (v: Date) => {
+      if (isNaN(v.getTime())) return '';
+      const mm = String(v.getMonth() + 1).padStart(2, '0');
+      const dd = String(v.getDate()).padStart(2, '0');
+      const yyyy = v.getFullYear();
+      return `${mm}/${dd}/${yyyy}`;
+    },
+  },
+];
+
+/**
+ * Displays a list of email messages in a data grid with columns for sender, subject, and sent date.
+ *
+ * @param {EmailGridProps} props - Props for configuring the email data grid.
+ * @param {number | string | undefined} [maxHeight] - Optional maximum height for the grid container.
+ * @returns {JSX.Element} The rendered email list component.
+ *
+ * @remarks
+ * - Uses a server-bound data grid to fetch and display email data.
+ * - Columns are fixed and non-editable.
+ * - The grid fetches data from the email API endpoint defined in the site map.
+ */
+export const EmailList = ({
+  maxHeight = undefined,
+  onRowDoubleClick: onRowDoubleClickProps,
+  ...props
+}: EmailGridProps): JSX.Element => {
+  const containerSx = useMemo(
+    () => ({
+      maxHeight,
+    }),
+    [maxHeight],
+  );
+  const { push } = useRouter();
+
+  const onRowDoubleClick = useCallback(
+    (
+      params: GridRowParams<EmailMessageSummary>,
+      event: MuiEvent<React.MouseEvent<HTMLElement, MouseEvent>>,
+      details: GridCallbackDetails,
+    ) => {
+      if (onRowDoubleClickProps) {
+        onRowDoubleClickProps(params, event, details);
+      }
+      if (!event.isPropagationStopped()) {
+        const emailId = params.row.emailId;
+        if (emailId) {
+          push(siteMap.messages.email(emailId).toString());
+        }
+      }
+    },
+    [onRowDoubleClickProps, push],
   );
 
-  const handleMenuClick = useCallback(() => {
-    setShowMenu(!showMenu);
-  }, [showMenu]);
-
   return (
-    <div className={containerClass}>
-      <h2
-        className={classnames(
-          typography('text-xl', 'font-semibold'),
-          margin('mb-4'),
-        )}
-      >
-        Email List
-      </h2>
-      {error && (
-        <p
-          className={classnames(typography('text-red-500'), marginBottom2)}
-          data-testid="email-list-error"
-        >
-          {error}
-        </p>
+    <Box
+      className={classnames(
+        display('flex'),
+        flexDirection('flex-col'),
+        width('w-full'),
       )}
-      <EmailListServer
-        pageNumber={pageNumber}
-        perPage={perPage}
-        loading={loading}
-        setLoading={setLoading}
-        setError={setError}
+      sx={containerSx}
+    >
+      <ServerBoundDataGrid<EmailMessageSummary>
+        {...props}
+        columns={stableColumns}
+        url={siteMap.api.email.url}
+        idColumn="emailId"
+        onRowDoubleClick={onRowDoubleClick}
       />
-      <div className={classnames(position('relative'))}>
-        <button
-          onClick={handleMenuClick}
-          className={classnames(
-            spacing('p-2'),
-            backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-            typography('text-white'),
-            borders('rounded'),
-          )}
-        >
-          Add Email
-        </button>
-        {showMenu && (
-          <div
-            className={classnames(
-              backgrounds('bg-white'),
-              borders('border', 'rounded'),
-              boxShadow('shadow-md'),
-              spacing('mt-2'),
-              position('absolute'),
-            )}
-          >
-            <Link
-              href={siteMap.email.edit()}
-              className={classnames(
-                spacing('p-2'),
-                display('block'),
-                backgrounds('hover:bg-gray-100'),
-              )}
-              title="Add Email"
-            >
-              Add Email
-            </Link>
-            <Link
-              href={siteMap.email.bulkEdit()}
-              className={classnames(
-                spacing('p-2'),
-                display('block'),
-                backgrounds('hover:bg-gray-100'),
-              )}
-              title="Bulk Add Email"
-            >
-              Bulk Add Email
-            </Link>
-          </div>
-        )}
-      </div>
-
-      <div className={classnames(display('flex'), margin('mt-4'))}>
-        <button
-          onClick={() => handlePageChange(pageNumber - 1)}
-          disabled={pageNumber === 1}
-          className={classnames(
-            spacing('p-2'),
-            backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-            typography('text-white'),
-            borders('rounded'),
-            margin('mr-2'),
-          )}
-        >
-          Previous
-        </button>
-        <button
-          onClick={() => handlePageChange(pageNumber + 1)}
-          disabled={pageNumber >= pageStats.pages}
-          className={classnames(
-            spacing('p-2'),
-            backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-            typography('text-white'),
-            borders('rounded'),
-          )}
-        >
-          Next
-        </button>
-      </div>
-    </div>
+    </Box>
   );
 };
 

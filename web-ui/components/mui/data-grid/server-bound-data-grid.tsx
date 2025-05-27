@@ -15,23 +15,21 @@ import {
   SxProps,
   Theme,
 } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGridPro, GridValidRowModel } from '@mui/x-data-grid-pro';
 
 import { useMemo, useState } from 'react';
+import { ServerBoundDataGridProps } from './types';
 
 const stableGridLogger = simpleScopedLogger('KeyPointsGrid');
 
-export const ServerBoundDataGrid = ({
+export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   columns,
   url,
   getRecordData,
   idColumn,
-}: {
-  columns: GridColDef[];
-  url: string;
-  getRecordData?: (url: string) => Promise<Response>;
-  idColumn: string;
-}) => {
+  initialState: initialStateProp,
+  ...props
+}: ServerBoundDataGridProps<TRowModel>) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +55,24 @@ export const ServerBoundDataGrid = ({
     return sxRet;
   }, [error, isLoading]);
 
+  const initialState = useMemo(
+    () => ({
+      ...StableDefaultInitialState,
+      ...{
+        ...initialStateProp,
+        pagination: {
+          ...StableDefaultInitialState.pagination,
+          ...(initialStateProp?.pagination ?? {}),
+          paginationModel: {
+            ...StableDefaultInitialState.pagination.paginationModel,
+            ...(initialStateProp?.pagination?.paginationModel ?? {}),
+          },
+        },
+      },
+    }),
+    [initialStateProp],
+  );
+
   return (
     <Box sx={sxWrapper}>
       {isLoading && (
@@ -70,15 +86,19 @@ export const ServerBoundDataGrid = ({
       ) : (
         <Paper sx={{ width: '100%', mb: 2, overflow: 'hidden' }}>
           <TableContainer>
-            <DataGrid
+            <DataGridPro<TRowModel>
+              filterDebounceMs={2000}
+              pagination
               logger={stableGridLogger}
+              loading={isLoading}
               logLevel="debug"
               columns={columns}
               getRowId={stableGetRowId}
               dataSource={memoizedDataSource}
-              initialState={StableDefaultInitialState}
+              initialState={initialState}
               pageSizeOptions={StableDefaultPageSizeOptions}
               onDataSourceError={memoizedDataSource.onDataSourceError}
+              {...props}
             />
           </TableContainer>
         </Paper>

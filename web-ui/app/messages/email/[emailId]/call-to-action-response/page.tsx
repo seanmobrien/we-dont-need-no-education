@@ -1,6 +1,5 @@
 import { Box } from '@mui/material';
-import stableColumns from './grid-columns';
-import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
+import CtaResponseGrid from './grid';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import { auth } from '@/auth';
 
@@ -17,10 +16,7 @@ const Home = async () => {
           },
         }}
       >
-        <EmailPropertyDataGrid
-          property="call-to-action-response"
-          columns={stableColumns}
-        />
+        <CtaResponseGrid />
       </Box>
     </EmailDashboardLayout>
   );

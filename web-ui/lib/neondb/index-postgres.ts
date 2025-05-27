@@ -20,6 +20,8 @@ import { isTypeBranded, TypeBrandSymbol } from '../react-util';
 import { ExcludeExactMatch } from '../typescript';
 import { log } from '../logger';
 
+export { sql };
+
 export type QueryProps<ResultType extends object = Record<string, unknown>> = {
   transform?: <RecordType extends Record<string, unknown>>(
     result: RecordType,
@@ -395,10 +397,24 @@ export interface ISqlNeonAdapter {
     string: string,
     params?: any[],
   ): PendingQuery<any>;
+  [wrappedAdapter]: Sql<any>;
 }
 
+const wrappedAdapter: unique symbol = Symbol('SqlNeonAdapter::WrappedAdapter');
+
+/**
+ * Creates an adapter function for executing SQL queries using the provided `sql` instance.
+ *
+ * The returned function can be called with either a raw SQL string (executed unsafely)
+ * or a template string (executed safely with parameterization). It also attaches the original
+ * `sql` instance to the returned function under the `wrappedAdapter` symbol.
+ *
+ * @param sql - The SQL instance to use for executing queries.
+ * @returns An adapter function that can execute SQL queries using either raw strings or template strings,
+ *          and exposes the original `sql` instance via the `wrappedAdapter` symbol.
+ */
 export const sqlNeonAdapter = (sql: Sql<any>): ISqlNeonAdapter => {
-  return (
+  const ret = (
     template: string | TemplateStringsArray,
     ...parameters: readonly ParameterOrFragment<any[keyof any]>[]
   ) => {
@@ -407,7 +423,36 @@ export const sqlNeonAdapter = (sql: Sql<any>): ISqlNeonAdapter => {
     }
     return sql(template, ...parameters);
   };
+  ret[wrappedAdapter] = sql;
+  return ret;
 };
+
+/**
+ * Type guard to determine if the provided value implements the `ISqlNeonAdapter` interface.
+ *
+ * Checks if the input is a function and contains a property keyed by `wrappedAdapter`
+ * whose value is an object, which are characteristics of the `ISqlNeonAdapter`.
+ *
+ * @param check - The value to be checked.
+ * @returns `true` if `check` is an `ISqlNeonAdapter`, otherwise `false`.
+ */
+export const isSqlNeonAdapter = (check: unknown): check is ISqlNeonAdapter =>
+  typeof check === 'function' &&
+  wrappedAdapter in check &&
+  typeof (check as ISqlNeonAdapter)[wrappedAdapter] === 'object';
+
+/**
+ * Unwraps the underlying SQL database adapter from a wrapped SqlDb instance.
+ *
+ * @typeParam TModel - The type of the model records handled by the SQL database.
+ * @param adapter - The wrapped SQL Neon adapter instance.
+ * @returns The unwrapped `SqlDb` instance typed with `TModel`.
+ */
+export const unwrapAdapter = <
+  TModel extends Record<string, unknown> = Record<string, unknown>,
+>(
+  adapter: ISqlNeonAdapter,
+) => adapter[wrappedAdapter] as SqlDb<TModel>;
 
 /**
  * Executes a query against the Neon database.

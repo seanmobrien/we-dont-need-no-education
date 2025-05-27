@@ -17,6 +17,44 @@ const mapRecordToObject = (
     actionPropertyId: String(record.action_property_id),
     completionPercentage: Number(record.completion_percentage),
     responseTimestamp: new Date(String(record.response_timestamp)),
+    severity:
+      record.severity == null || record.severity === undefined
+        ? undefined
+        : Number(record.severity),
+    severity_reasons:
+      record.severity_reasons == null ||
+      record.severity_reasons === undefined ||
+      !Array.isArray(record.severity_reasons) ||
+      record.severity_reasons.length === 0
+        ? undefined
+        : (record.severity_reasons as string[]),
+    inferred:
+      record.inferred == null || record.inferred === undefined
+        ? undefined
+        : Boolean(record.inferred),
+    compliance_average_chapter_13:
+      record.compliance_average_chapter_13 == null ||
+      record.compliance_average_chapter_13 === undefined
+        ? undefined
+        : Number(record.compliance_average_chapter_13),
+    compliance_chapter_13_reasons:
+      record.compliance_chapter_13_reasons == null ||
+      record.compliance_chapter_13_reasons === undefined ||
+      !Array.isArray(record.compliance_chapter_13_reasons) ||
+      record.compliance_chapter_13_reasons.length === 0
+        ? undefined
+        : (record.compliance_chapter_13_reasons as string[]),
+    sentiment:
+      record.sentiment == null || record.sentiment === undefined
+        ? undefined
+        : Number(record.sentiment),
+    sentiment_reasons:
+      record.sentiment_reasons == null ||
+      record.sentiment_reasons === undefined ||
+      !Array.isArray(record.sentiment_reasons) ||
+      record.sentiment_reasons.length === 0
+        ? undefined
+        : (record.sentiment_reasons as string[]),
   };
 };
 

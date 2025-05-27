@@ -1,57 +1,100 @@
 import { PaginatedResultset } from '@/data-models';
 import { LoggedError } from '@/lib/react-util';
-import { GridGetRowsResponse, GridValidRowModel } from '@mui/x-data-grid';
+import {
+  GridFilterModel,
+  GridGetRowsResponse,
+  GridLogicOperator,
+  GridSortModel,
+  GridValidRowModel,
+} from '@mui/x-data-grid-pro';
 import { GetRequestCacheRecordProps } from './types';
-
+import { env } from '@/lib/site-util/env';
 export class RequestCacheRecord<TModel extends GridValidRowModel = object> {
   static #globalCache: Map<string, RequestCacheRecord> = new Map<
     string,
     RequestCacheRecord
   >();
 
-  static #buildKey(url: string, page: number, pageSize: number): string {
-    return `${url}-${page}-${pageSize}`;
+  static #buildKey(
+    url: string,
+    page: number,
+    pageSize: number,
+    sort = [] as GridSortModel,
+    {
+      items: filterItems = [],
+      logicOperator: filterLogicOperator = GridLogicOperator.And,
+      quickFilterValues: filterQuickFilterValues = [],
+      quickFilterLogicOperator:
+        filterQuickFilterLogicOperator = GridLogicOperator.And,
+      quickFilterExcludeHiddenColumns:
+        filterQuickFilterExcludeHiddenColumns = true,
+    }: GridFilterModel = {} as GridFilterModel,
+  ): string {
+    const urlWithParams = new URL(url);
+    urlWithParams.searchParams.set('num', pageSize.toString());
+    urlWithParams.searchParams.set('page', (page + 1).toString()); // API is 1-based, DataGrid is 0-based
+    if (sort.length > 0) {
+      urlWithParams.searchParams.set(
+        'sort',
+        sort.map((s) => `${s.field}:${s.sort ?? 'asc'}`).join(','),
+      );
+    }
+    if (filterItems.length > 0 || filterQuickFilterValues.length > 0) {
+      urlWithParams.searchParams.set(
+        'filter',
+        JSON.stringify({
+          items: filterItems,
+          logicOperator: filterLogicOperator,
+          quickFilterValues: filterQuickFilterValues,
+          quickFilterLogicOperator: filterQuickFilterLogicOperator,
+          quickFilterExcludeHiddenColumns:
+            filterQuickFilterExcludeHiddenColumns,
+        }),
+      );
+    }
+    return urlWithParams.toString();
   }
   static get({
     url,
     page,
     pageSize,
+    sort = [] as GridSortModel,
+    filter,
     getRecordData,
     setIsLoading,
   }: GetRequestCacheRecordProps): Promise<GridGetRowsResponse> {
-    const key = RequestCacheRecord.#buildKey(url, page, pageSize);
+    console.log('RequestCacheRecord.get');
+    const key = RequestCacheRecord.#buildKey(url, page, pageSize, sort, filter);
     let record: RequestCacheRecord | undefined =
       RequestCacheRecord.#globalCache.get(key);
     if (!record) {
       setIsLoading((v) => (v ? v : true));
 
-      const urlWithParams = new URL(url);
-      urlWithParams.searchParams.set('num', pageSize.toString());
-      urlWithParams.searchParams.set('page', (page + 1).toString()); // API is 1-based, DataGrid is 0-based
-
+      const response: Promise<Response> = getRecordData
+        ? getRecordData({
+            url,
+            page,
+            pageSize,
+            filter,
+            sort,
+          })
+        : fetch(key);
       record = new RequestCacheRecord(
         url,
         page,
         pageSize,
-        RequestCacheRecord.#requestData(
-          urlWithParams.toString(),
-          getRecordData,
-        ),
+        sort,
+        filter ?? ({} as GridFilterModel),
+        response,
       );
     }
     return record.chain();
   }
 
-  static #requestData(
-    url: string,
-    getRecordData?: (url: string) => Promise<Response>,
-  ): Promise<Response> {
-    const req = getRecordData ?? fetch;
-    return req(url);
-  }
-
   readonly #page: number;
   readonly #pageSize: number;
+  readonly #sort: GridSortModel;
+  readonly #filter: GridFilterModel;
   readonly #url: string;
   #resolveTo: Promise<GridGetRowsResponse>;
 
@@ -59,11 +102,15 @@ export class RequestCacheRecord<TModel extends GridValidRowModel = object> {
     url: string,
     page: number,
     pageSize: number,
+    sort: GridSortModel,
+    filter: GridFilterModel,
     request: Promise<Response>,
   ) {
     this.#url = url;
     this.#page = page;
     this.#pageSize = pageSize;
+    this.#sort = sort;
+    this.#filter = filter;
     this.#resolveTo = new Promise(async (resolve, reject) => {
       try {
         const resolvedRequest = await request;
@@ -71,12 +118,9 @@ export class RequestCacheRecord<TModel extends GridValidRowModel = object> {
         try {
           resolve(processedResult);
         } finally {
-          setTimeout(
-            () => {
-              RequestCacheRecord.#globalCache.delete(this.key);
-            },
-            2 * 60 * 1000,
-          );
+          setTimeout(() => {
+            RequestCacheRecord.#globalCache.delete(this.key);
+          }, env('NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT'));
         }
       } catch (error) {
         RequestCacheRecord.#globalCache.delete(this.key);
@@ -90,7 +134,13 @@ export class RequestCacheRecord<TModel extends GridValidRowModel = object> {
   }
 
   get key(): string {
-    return RequestCacheRecord.#buildKey(this.#url, this.#page, this.#pageSize);
+    return RequestCacheRecord.#buildKey(
+      this.#url,
+      this.#page,
+      this.#pageSize,
+      this.#sort,
+      this.#filter,
+    );
   }
   get page(): number {
     return this.#page;
@@ -109,6 +159,7 @@ export class RequestCacheRecord<TModel extends GridValidRowModel = object> {
     }
     const data = (await response.json()) as PaginatedResultset<TModel>;
     const rowCount = data.pageStats?.total ?? 0;
+    console.log('paginate?', data.pageStats, data);
     return {
       rows: data.results.map((item: TModel) => ({
         ...item,

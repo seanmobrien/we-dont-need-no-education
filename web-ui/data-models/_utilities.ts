@@ -18,6 +18,13 @@ import {
   EmailPropertyTypeTypeIdValues,
   EmailPropertyTypeTypeValues,
 } from './api/email-properties/property-type';
+import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
+import {
+  parseFilterOptions,
+  parseSortOptions,
+} from '@/lib/components/mui/data-grid/utility';
+import { PaginatedGridListRequest } from '@/lib/components/mui/data-grid';
+import { isLikeNextRequest, LikeNextRequest } from '@/lib/nextjs-util';
 
 /**
  * Normalizes a nullable numeric value.
@@ -56,28 +63,45 @@ export const normalizeNullableNumeric = (
  * ```
  */
 export const parsePaginationStats = (
-  req: URL | URLSearchParams | (PaginationStats | undefined),
-): PaginationStats & { offset: number } => {
+  req:
+    | URL
+    | URLSearchParams
+    | (PaginatedGridListRequest | undefined)
+    | LikeNextRequest,
+): PaginatedGridListRequest & { offset: number } => {
   let page: number | string | undefined | null;
   let num: number | string | undefined | null;
+  let filter: GridFilterModel | undefined;
+  let sort: GridSortModel | undefined;
+  if (isLikeNextRequest(req)) {
+    req = new URL(req.url!);
+  }
   if (!!req && ('searchParams' in req || 'get' in req)) {
     if ('searchParams' in req) {
       req = req.searchParams;
     }
     page = req.get('page');
     num = req.get('num');
+    filter = parseFilterOptions(req);
+    sort = parseSortOptions(req);
   } else {
     if (!req) {
       page = undefined;
       num = undefined;
+      filter = undefined;
+      sort = undefined;
     } else {
       page = req.page;
       num = req.num;
+      filter = req.filter;
+      sort = req.sort;
     }
   }
   page = normalizeNullableNumeric(Number(page), 1) ?? 1;
   num = normalizeNullableNumeric(Number(num), 10) ?? 10;
   return {
+    filter,
+    sort,
     page,
     num,
     total: 0,

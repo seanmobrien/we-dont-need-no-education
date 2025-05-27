@@ -27,6 +27,11 @@ export type EmailMessageSummary = {
   importedFromId?: string | null;
   globalMessageId?: string | null;
   recipients: ContactSummary[];
+  count_attachments?: number;
+  count_kpi?: number;
+  count_notes?: number;
+  count_cta?: number;
+  count_responsive_actions?: number;
 };
 
 /**

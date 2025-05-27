@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mapRecordToSummary } from '../email-route-util';
+import { mapRecordToSummary } from '../../../../lib/api/email/util';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/data-models';
 import { LoggedError } from '@/lib/react-util';

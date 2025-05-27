@@ -29,6 +29,20 @@ export const mapRecordToSummary = (record: Record<string, unknown>) => ({
     name: record.sendername,
     email: record.senderemail,
   },
+  count_attachments:
+    record.count_attachments === undefined
+      ? undefined
+      : Number(record.count_attachments),
+  count_kpi:
+    record.count_kpi === undefined ? undefined : Number(record.count_kpi),
+  count_notes:
+    record.count_notes === undefined ? undefined : Number(record.count_notes),
+  count_cta:
+    record.count_cta === undefined ? undefined : Number(record.count_cta),
+  count_responsive_actions:
+    record.count_responsive_actions === undefined
+      ? undefined
+      : Number(record.count_responsive_actions),
   recipients: ((record.recipients as Array<Record<string, unknown>>) || []).map(
     (r: Record<string, unknown>) => ({
       contactId: r.recipient_id,

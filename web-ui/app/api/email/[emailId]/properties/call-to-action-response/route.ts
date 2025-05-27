@@ -4,12 +4,25 @@ import {
   CallToActionResponseDetailsRepository,
 } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { parsePaginationStats } from '@/data-models';
+import {
+  CallToActionResponseDetails,
+  parsePaginationStats,
+} from '@/data-models';
 import { db } from '@/lib/neondb';
+import {
+  buildOrderBy,
+  DefaultEmailColumnMap,
+} from '@/lib/components/mui/data-grid/server';
+import {
+  buildAttachmentOrEmailFilter,
+  buildQueryFilter,
+} from '@/lib/components/mui/data-grid/buildQueryFilter';
 
 const repository = new CallToActionResponseDetailsRepository();
 const controller = new RepositoryCrudController(repository);
-
+const columnMap = {
+  ...DefaultEmailColumnMap,
+} as const;
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
@@ -19,25 +32,55 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db(
-            (
-              sql,
-            ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
-            ctar.action_property_id, ctar.completion_percentage, ctar.response_timestamp
+          db<CallToActionResponseDetails, Record<string, unknown>>(
+            (sql) => sql`SELECT ep.*, ctar.response_timestamp,
+            ctar.severity, ctar.inferred, ctar.sentiment, ctar.sentiment_reasons, ctar.severity_reasons, 
+            (SELECT AVG(car.compliance_chapter_13) 
+              FROM call_to_action_details_call_to_action_response car 
+              WHERE car.call_to_action_response_id=ep.property_id
+            ) AS compliance_average_chapter_13,
+            (SELECT array_agg(reasons_raw_chapter_13) AS compliance_chapter_13_reasons FROM (
+              SELECT UNNEST(car.compliance_chapter_13_reasons) AS reasons_raw_chapter_13
+              FROM call_to_action_details_call_to_action_response car
+              WHERE car.call_to_action_response_id=ep.property_id
+            ) sub) AS compliance_chapter_13_reasons
             FROM document_property ep 
              JOIN call_to_action_response_details ctar ON ctar.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=5 LIMIT ${num} OFFSET ${offset}`,
+             JOIN document_units du ON du.unit_id = ep.document_id
+             WHERE ep.document_property_type_id=5 
+            ${buildAttachmentOrEmailFilter({
+              email_id: emailId,
+              sql,
+              attachments: req,
+              append: true,
+              email_id_table: 'du',
+              email_id_column: 'email_id',
+              document_id_table: 'ep',
+              document_id_column: 'document_id',
+            })} 
+            ${buildQueryFilter({ sql, source: req, append: true, columnMap })} 
+            ${buildOrderBy({ sql, source: req, columnMap })}             
+             LIMIT ${num} OFFSET ${offset}`,
+            { transform: r.mapRecordToObject },
           ),
         () =>
           db(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
              FROM document_property ep 
              JOIN call_to_action_response_details ctar ON ctar.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.email_property_type_id = ep.email_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=5`,
+             JOIN document_units du ON du.unit_id = ep.document_id
+             WHERE ep.document_property_type_id=5 
+            ${buildAttachmentOrEmailFilter({
+              email_id: emailId,
+              sql,
+              attachments: req,
+              append: true,
+              email_id_table: 'du',
+              email_id_column: 'email_id',
+              document_id_table: 'ep',
+              document_id_column: 'document_id',
+            })} 
+            ${buildQueryFilter({ sql, source: req, append: true, columnMap })}`,
           ),
         parsePaginationStats(new URL(req.url)),
       ),

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neondb';
 import { log } from '@/lib/logger';
-import { mapRecordToObject } from '../email-route-util';
+import { mapRecordToObject } from '../../../../lib/api/email/util';
 import { LoggedError } from '@/lib/react-util';
 import { extractParams } from '@/lib/nextjs-util';
 

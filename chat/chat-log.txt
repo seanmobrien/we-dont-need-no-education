@@ -379,3 +379,5 @@ For a basic InProc trace, you have the key data points covered.
 For more advanced diagnostics, security, and distributed tracing, you could consider the above additions (especially session/user/correlation data and error/exception fields).
 
 Let me know your tracing goals, and I can recommend further customization!
+[2025-05-22 16:00:24.34790] User:
+

@@ -46,6 +46,19 @@ export const isNextRequest = (req: unknown): req is NextRequest =>
   typeof req.nextUrl === 'object';
 
 /**
+ * Determines if the provided object is similar to a Next.js request object.
+ *
+ * This function returns `true` if the input is recognized as either a Next.js
+ * page request or a Next.js API request, based on the `isNextRequest` and
+ * `isNextApiRequest` type guards.
+ *
+ * @param req - The object to test for Next.js request compatibility.
+ * @returns `true` if `req` is like a Next.js request, otherwise `false`.
+ */
+export const isLikeNextRequest = (req: unknown): req is LikeNextRequest =>
+  isNextRequest(req) || isNextApiRequest(req);
+
+/**
  * Type guard to check if the given object is a LikeNextResponse.
  *
  * @param res - The object to check.

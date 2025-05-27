@@ -18,7 +18,7 @@ const sql = isTestEnvironment()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as unknown as postgres.Sql<any>;
     })()
-  : postgres(env('DATABASE_URL'), { ssl: 'verify-full', max: 3 });
+  : postgres(env('DATABASE_URL'), { ssl: 'verify-full', max: 3, debug: true });
 
 if (!!process?.on && !isTestEnvironment()) {
   prexit(async () => {

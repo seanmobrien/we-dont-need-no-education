@@ -70,7 +70,17 @@ describe('ViolationDetailsRepository', () => {
       const [sqlQuery, values] = (repository as any).getQueryProperties(
         recordId,
       );
-      expect(sqlQuery).toContain('SELECT * FROM violation_details');
+
+      const normalize = (str: string) => str.replace(/\s+/g, ' ').trim();
+      expect(normalize(sqlQuery)).toContain(
+        normalize(`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
+                vd.attachment_id, vd.key_point_property_id, vd.action_property_id, vd.violation_type, vd.severity_level, vd.detected_by, vd.detected_on
+                FROM document_property ep
+                 JOIN violation_details vd ON vd.property_id = ep.property_id
+                 JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
+                 JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
+           WHERE vd.property_id = $1`),
+      );
       expect(values).toEqual([recordId]);
     });
   });
@@ -106,6 +116,8 @@ describe('ViolationDetailsRepository', () => {
         obj.severityLevel,
         obj.detectedBy,
         obj.detectedOn,
+        null,
+        null,
       ]);
     });
   });

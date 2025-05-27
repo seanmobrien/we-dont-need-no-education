@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mapRecordToSummary } from '../../email-route-util';
+import { mapRecordToSummary } from '../../../../../lib/api/email/util';
 import { query, queryExt } from '@/lib/neondb';
 import { LoggedError } from '@/lib/react-util';
 

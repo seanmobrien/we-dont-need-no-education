@@ -1,4 +1,7 @@
+jest.mock('@/lib/neondb');
+
 import { generateUniqueId, isTruthy } from '@/lib/react-util/_utility-methods';
+import { query } from '@/lib/neondb';
 
 describe('generateUniqueId', () => {
   it('should generate a unique identifier of 9 characters', () => {

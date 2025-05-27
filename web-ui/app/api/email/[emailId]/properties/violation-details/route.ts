@@ -6,6 +6,7 @@ import {
 import { extractParams } from '@/lib/nextjs-util';
 import { parsePaginationStats } from '@/data-models';
 import { db } from '@/lib/neondb';
+import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 
 const repository = new ViolationDetailsRepository();
 const controller = new RepositoryCrudController(repository);
@@ -28,7 +29,9 @@ export async function GET(
              JOIN violation_details vd ON vd.property_id = ep.property_id 
              JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE ep.email_id = ${emailId} AND ept.email_property_category_id=7 LIMIT ${num} OFFSET ${offset}`,
+             WHERE ep.email_id = ${emailId} AND ept.email_property_category_id=7 
+             ${buildOrderBy({ sql, source: req })}           
+             LIMIT ${num} OFFSET ${offset}`,
           ),
         () =>
           db(

@@ -57,7 +57,11 @@ describe('CallToActionDetailsRepository', () => {
       const [sqlQuery, values, sqlCountQuery] = (
         repository as any
       ).getListQueryProperties();
-      expect(sqlQuery).toContain('SELECT * FROM call_to_action_details');
+      expect(sqlQuery).toContain('FROM document_property ep');
+      expect(sqlQuery).toContain(
+        'JOIN call_to_action_details cta ON cta.property_id = ep.property_id',
+      );
+      expect(sqlQuery).toContain('WHERE cta.property_id = $1');
       expect(values).toEqual([]);
       expect(sqlCountQuery).toContain(
         'SELECT COUNT(*) as records FROM call_to_action_details',
@@ -71,7 +75,19 @@ describe('CallToActionDetailsRepository', () => {
       const [sqlQuery, values] = (repository as any).getQueryProperties(
         recordId,
       );
-      expect(sqlQuery).toContain('SELECT * FROM call_to_action_details');
+      expect(sqlQuery).toContain(
+        `SELECT ep.*, ept.property_name,epc.description, epc.email_property_category_id,
+      cta.opened_date, cta.closed_date, cta.compliancy_close_date, cta.completion_percentage, 
+      cta.compliance_rating, cta.inferred, cta.compliance_date_enforceable, cta.reasonable_request, 
+      cta.reasonable_reasons, cta.sentiment, cta.sentiment_reasons, cta.compliance_rating_reasons, 
+      cta.severity, cta.severity_reason, cta.title_ix_applicable, cta.title_ix_applicable_reasons, 
+      cta.closure_actions
+      FROM document_property ep
+        JOIN call_to_action_details cta ON cta.property_id = ep.property_id
+        JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
+        JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
+  WHERE cta.property_id = $1`,
+      );
       expect(values).toEqual([recordId]);
     });
   });
@@ -122,11 +138,10 @@ describe('CallToActionDetailsRepository', () => {
       };
       const [fieldMap] = (repository as any).getUpdateQueryProperties(obj);
       expect(fieldMap).toEqual({
-        opened_date: obj.openedDate,
-        closed_date: obj.closedDate,
-        compliancy_close_date: obj.compliancyCloseDate,
-        completion_percentage: obj.completionPercentage,
-        policy_id: obj.policyId,
+        opened_date: obj.opened_date,
+        closed_date: obj.closed_date,
+        compliancy_close_date: obj.compliancy_close_date,
+        completion_percentage: obj.completion_percentage,
         property_value: obj.value,
         email_id: obj.documentId,
         created_on: obj.createdOn,

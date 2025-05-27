@@ -6,6 +6,7 @@ import {
 import { extractParams } from '@/lib/nextjs-util';
 import { parsePaginationStats } from '@/data-models';
 import { db } from '@/lib/neondb';
+import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 
 const repository = new EmailHeaderDetailsRepository();
 const controller = new RepositoryCrudController(repository);
@@ -26,7 +27,9 @@ export async function GET(
             FROM document_property ep 
              JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=1 LIMIT ${num} OFFSET ${offset}`,
+             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=1 
+             ${buildOrderBy({ sql, source: req })}
+             LIMIT ${num} OFFSET ${offset}`,
           ),
         () =>
           db(

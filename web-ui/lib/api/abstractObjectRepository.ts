@@ -13,6 +13,7 @@ import { ValidationError } from '../react-util';
 import { DataIntegrityError } from '../react-util/errors/data-integrity-error';
 import { LoggedError } from '../react-util/errors/logged-error';
 import { RecordToObjectImpl, RecordToSummaryImpl } from './_types';
+import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
 
 /**
  * AbstractObjectRepository is a base class for handling database operations
@@ -152,7 +153,7 @@ export class AbstractObjectRepository<T extends object> {
    *
    * @type {(record: Record<string, unknown>) => Partial<T>}
    */
-  protected get mapRecordToSummary(): RecordToSummaryImpl<T> {
+  get mapRecordToSummary(): RecordToSummaryImpl<T> {
     if (typeof this.#summaryMap === 'string') {
       if (this.#summaryMap in this) {
         return (this as Record<string, unknown>)[
@@ -171,7 +172,7 @@ export class AbstractObjectRepository<T extends object> {
    *
    * @returns {RecordToObjectImpl<T>} The function that maps a record to an object.
    */
-  protected get mapRecordToObject(): RecordToObjectImpl<T> {
+  get mapRecordToObject(): RecordToObjectImpl<T> {
     if (typeof this.#objectMap === 'string') {
       if (this.#objectMap in this) {
         return (this as Record<string, unknown>)[
@@ -244,19 +245,30 @@ export class AbstractObjectRepository<T extends object> {
    * @throws Will log an error if the data retrieval fails.
    */
   protected async innerList(
-    getData: (
-      num: number,
-      page: number,
-      offset: number,
-    ) => Promise<Array<Partial<T>>>,
-    getDataCount: () => Promise<Record<string, unknown>[]>,
+    getData:
+      | ((
+          num: number,
+          page: number,
+          offset: number,
+        ) => Promise<Array<Partial<T>>>)
+      | ((
+          num: number,
+          page: number,
+          offset: number,
+          sort?: GridSortModel,
+          filter?: GridFilterModel,
+        ) => Promise<Array<Partial<T>>>),
+    getDataCount: (
+      filter?: GridFilterModel,
+    ) => Promise<Record<string, unknown>[]>,
     pagination?: PaginationStats,
   ): Promise<PaginatedResultset<Partial<T>>> {
-    const { num, page, offset } = parsePaginationStats(pagination);
+    const { num, page, offset, filter, sort } =
+      parsePaginationStats(pagination);
     try {
-      const results = await getData(num, page, offset);
+      const results = await getData(num, page, offset, sort, filter);
       if (results.length >= num) {
-        const totalRecord = await getDataCount();
+        const totalRecord = await getDataCount(filter);
         let total: number = 0;
         if (totalRecord.length > 0) {
           if ('records' in totalRecord[0])

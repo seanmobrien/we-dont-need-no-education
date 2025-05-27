@@ -3,7 +3,7 @@ import type {
   GridRowIdGetter,
   GridRowModel,
   GridValidRowModel,
-} from '@mui/x-data-grid';
+} from '@mui/x-data-grid-pro';
 import { useCallback } from 'react';
 
 export const useGetRowId = (

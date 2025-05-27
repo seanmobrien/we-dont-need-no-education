@@ -1,8 +1,10 @@
 import type {
+  GridFilterModel,
   GridGetRowsParams,
   GridPaginationModel,
+  GridSortModel,
   GridUpdateRowParams,
-} from '@mui/x-data-grid';
+} from '@mui/x-data-grid-pro';
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
 import { LoggedError } from '@/lib/react-util';
 import { useMemo } from 'react';
@@ -44,12 +46,16 @@ export const useDataSource = ({
             pageSize = 10,
             page = 0,
           } = {} as GridPaginationModel,
+          sortModel = [] as GridSortModel,
+          filterModel = { items: [] } as GridFilterModel,
         }: GridGetRowsParams = {} as GridGetRowsParams,
       ) =>
         RequestCacheRecord.get({
-          url,
+          url: String(url),
           page,
           pageSize,
+          sort: sortModel,
+          filter: filterModel,
           setIsLoading,
           getRecordData,
         })

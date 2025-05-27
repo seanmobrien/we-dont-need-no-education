@@ -9,8 +9,9 @@ import {
   insertRecipients,
   mapRecordToObject,
   mapRecordToSummary,
-} from './email-route-util';
+} from '../../../lib/api/email/util';
 import { LoggedError, ValidationError } from '@/lib/react-util';
+import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 
 /**
  * Handles the GET request to fetch a list of emails with sender and recipient information.
@@ -26,8 +27,8 @@ import { LoggedError, ValidationError } from '@/lib/react-util';
  */
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
-    const { num, offset } = parsePaginationStats(new URL(req.url));
-
+    const thisUrl = new URL(req.url);
+    const { num, offset, page } = parsePaginationStats(thisUrl);
     // Fetch list of emails with sender info
     const result = await query(
       (sql) =>
@@ -38,26 +39,61 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           sender.contact_id AS senderId,
           sender.name AS senderName,
           sender.email AS senderEmail,
-          COALESCE(json_agg(
-            json_build_object(
-              'recipient_id', recipient.contact_id,
-              'recipient_name', recipient.name,
-              'recipient_email', recipient.email
-            )
-          ) FILTER (WHERE recipient.contact_id IS NOT NULL), '[]') AS recipients
+          (
+            
+              SELECT COALESCE(json_agg(json_build_object(
+                          'recipient_id', recipient.contact_id,
+                          'recipient_name', recipient.name,
+                          'recipient_email', recipient.email
+                      )
+                ),'[]')						
+                FROM email_recipients er 
+                    LEFT JOIN contacts recipient ON er.recipient_id = recipient.contact_id 
+                WHERE e.email_id = er.email_id AND recipient.contact_id IS NOT NULL    
+          ) AS recipients,
+          (SELECT COUNT(*) FROM email_attachments ea WHERE ea.email_id=e.email_id) AS count_attachments,
+          (
+            SELECT COUNT(*) FROM document_property dp 
+            JOIN document_units d2 ON d2.unit_id=dp.document_id
+            WHERE d2.email_id=e.email_id
+              AND document_property_type_id=9
+          ) AS count_kpi,
+          (
+            SELECT COUNT(*) FROM document_property dp 
+            WHERE document_unit_email(dp.document_id)=e.email_id
+              AND (document_property_type_id=102 OR document_property_type_id=1000)
+          ) AS count_notes,
+          (
+            SELECT COUNT(*) FROM document_property dp 
+            WHERE document_unit_email(dp.document_id)=e.email_id
+              AND document_property_type_id=4
+          ) AS count_cta,
+          (
+            SELECT COUNT(*) FROM document_property dp 
+            WHERE document_unit_email(dp.document_id)=e.email_id
+              AND document_property_type_id=5
+          ) AS count_responsive_actions
         FROM emails e
-        JOIN contacts sender ON e.sender_id = sender.contact_id
-        LEFT JOIN email_recipients er ON e.email_id = er.email_id
-        LEFT JOIN contacts recipient ON er.recipient_id = recipient.contact_id
-        GROUP BY e.email_id, sender.contact_id, sender.name, sender.email
-        ORDER BY e.sent_timestamp DESC
+        JOIN contacts sender ON e.sender_id = sender.contact_id                      
+        ${buildOrderBy({ sql, source: req, defaultSort: [{ field: 'sent_timestamp', sort: 'desc' }] })}          
         LIMIT ${num} OFFSET ${offset};`,
       { transform: mapRecordToSummary },
     );
     log((l) =>
       l.verbose({ msg: '[[AUDIT]] -  Email list:', result, num, offset }),
     );
-    return NextResponse.json(result, { status: 200 });
+    const total = await query(
+      (sql) => sql`SELECT COUNT(*) AS records  FROM emails e
+        JOIN contacts sender ON e.sender_id = sender.contact_id`,
+    );
+
+    return NextResponse.json(
+      {
+        pageStats: { page, num, total: Number(total[0].records) },
+        results: result,
+      },
+      { status: 200 },
+    );
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,

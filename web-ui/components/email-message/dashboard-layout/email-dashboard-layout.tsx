@@ -34,7 +34,6 @@ export const EmailDashboardLayout = ({
 }) => {
   const { emailId } = useParams<{ emailId: string }>();
 
-  console.log('Email ID in layout:', emailId ?? 'undefined');
   const dashboardNavigation = useMemo<NavigationItem[]>(() => {
     const viewEmailNavigation: NavigationItem[] = emailId
       ? [
