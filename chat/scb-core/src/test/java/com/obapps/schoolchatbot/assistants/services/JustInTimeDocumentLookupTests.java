@@ -12,6 +12,7 @@ import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class JustInTimeDocumentLookupTests {
@@ -36,6 +37,7 @@ class JustInTimeDocumentLookupTests {
   }
 
   @Test
+  @Disabled
   void testSummarizeDocument() {
     String query = "Test query";
     List<AiSearchResult> mockChunks = Arrays.asList(

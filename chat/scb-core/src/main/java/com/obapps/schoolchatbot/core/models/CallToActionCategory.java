@@ -213,10 +213,12 @@ public class CallToActionCategory {
    */
   public void saveToDb(Db db) throws SQLException {
     if (ctaCategoryId != null) {
-      updateDb(db);
-      return;
+      if (updateDb(db)) {
+        return;
+      }
+    } else {
+      ctaCategoryId = UUID.randomUUID();
     }
-    ctaCategoryId = UUID.randomUUID();
     var res = db.executeUpdate(
       "INSERT INTO call_to_action_category (cta_category_id, category_name, category_description, cta_category_text_embedding, cta_category_text_embedding_model) VALUES (?, ?, ?, ?, ?)",
       ctaCategoryId,
@@ -235,11 +237,11 @@ public class CallToActionCategory {
    * @param db The database instance to use.
    * @throws SQLException If an error occurs during the operation.
    */
-  public void updateDb(Db db) throws SQLException {
+  public boolean updateDb(Db db) throws SQLException {
     if (ctaCategoryId == null) {
       throw new SQLException("Cannot update record without ctaCategoryId");
     }
-    db.executeUpdate(
+    int count = db.executeUpdate(
       "UPDATE call_to_action_category SET category_name = ?, category_description = ?, cta_category_text_embedding = ?, cta_category_text_embedding_model = ? WHERE cta_category_id = ?",
       categoryName,
       categoryDescription,
@@ -247,6 +249,7 @@ public class CallToActionCategory {
       ctaCategoryTextEmbeddingModel,
       ctaCategoryId
     );
+    return count > 0;
   }
 
   /**

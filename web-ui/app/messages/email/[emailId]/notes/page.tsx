@@ -1,7 +1,8 @@
-import { Box } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { NoteGrid } from './grid';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import { auth } from '@/auth';
+import { ChatPanel } from '@/components/ai/chat-panel';
 
 const Home = async () => {
   const session = await auth();
@@ -16,7 +17,10 @@ const Home = async () => {
           },
         }}
       >
-        <NoteGrid />
+        <Stack>
+          <NoteGrid />
+          <ChatPanel page="email-notes" />
+        </Stack>
       </Box>
     </EmailDashboardLayout>
   );

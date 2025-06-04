@@ -2,6 +2,7 @@ import { Box } from '@mui/material';
 import CtaGrid from './grid';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import { auth } from '@/auth';
+import { ChatPanel } from '@/components/ai/chat-panel';
 
 const Page = async () => {
   const session = await auth();
@@ -17,6 +18,7 @@ const Page = async () => {
         }}
       >
         <CtaGrid />
+        <ChatPanel page="email-cta" />
       </Box>
     </EmailDashboardLayout>
   );

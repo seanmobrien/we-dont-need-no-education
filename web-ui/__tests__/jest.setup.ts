@@ -72,6 +72,18 @@ const DefaultEnvVariables = {
   AUTH_GOOGLE_APIKEY: 'auth-google-apikey',
   REDIS_URL: 'redis://neverurl',
   REDIS_PASSWORD: 'redis-password',
+  AZURE_OPENAI_ENDPOINT: 'https://fake-openai-endpoint.com',
+  AZURE_OPENAI_KEY: 'blahblah',
+  AZURE_AISEARCH_ENDPOINT: 'https://fake-aisearch-endpoint.com',
+  AZURE_AISEARCH_KEY: 'fake-aisearch-key',
+  AZURE_AISEARCH_DOCUMENTS_INDEX_NAME: 'documents-index',
+  AZURE_AISEARCH_POLICY_INDEX_NAME: 'policy-index',
+  AZURE_AISEARCH_VECTOR_SIZE_SMALL: '1536',
+  AZURE_AISEARCH_VECTOR_SIZE_LARGE: '3172',
+  AZURE_AISEARCH_DOCUMENT_SPLITTER_OVERLAP: '50',
+  AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: '1000',
+  AZURE_STORAGE_ACCOUNT_KEY: 'azure-storage-account-key',
+  AZURE_STORAGE_ACCOUNT_NAME: 'azure-storage-account-name',
 };
 
 global.fetch = jest.fn().mockImplementation(() => {
@@ -93,12 +105,10 @@ const resetEnvVariables = () => {
 beforeEach(() => {
   resetEnvVariables();
   resetGlobalCache();
-  console.log('global beforeEach called');
 });
 
 afterEach(() => {
   jest.clearAllMocks();
   resetGlobalCache();
-  console.log('global afterEach called');
 });
 console.log('jest.setup.ts is loadeed');

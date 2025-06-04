@@ -407,15 +407,24 @@ public class CtaCategoryQueueProcessor
       )
       .collect(Collectors.toList())
       .stream()
-      // That are not matches for items added in previous batches
-      .filter(category ->
-        categories
-          .stream()
-          .noneMatch(c -> c.getCategoryName().equals(category.categoryName))
-      )
       .forEach(category -> {
-        if (!addCategory(category, categories)) {
-          log.warn("Failed to add category: {}", category.categoryName);
+        // That are not matches for items added in previous batches
+        var alreadyAdded = categories
+          .stream()
+          .filter(c -> c.getCategoryName().equals(category.categoryName))
+          .findFirst()
+          .orElse(null);
+        if (alreadyAdded != null) {
+          category.categoryId = alreadyAdded.getCtaCategoryId().toString();
+          log.info(
+            "Category {} already exists, reusing existing ID: {}",
+            category.categoryName,
+            category.categoryId
+          );
+        } else {
+          if (!addCategory(category, categories)) {
+            log.warn("Failed to add category: {}", category.categoryName);
+          }
         }
       });
 
@@ -445,7 +454,9 @@ public class CtaCategoryQueueProcessor
         brokerService.addToCategorizedQueue(
           com.obapps.schoolchatbot.chat.assistants.models.ai.phases.two.CategorizedCallToAction.builder()
             .copy(ctaSource)
-            .categories(List.of(cat.getCtaCategoryId()))
+            .categories(
+              cat == null ? List.of() : List.of(cat.getCtaCategoryId())
+            )
             .build()
         );
       });

@@ -37,7 +37,7 @@ export const EmailMasterPanel = ({
             >
               Policy Basis
             </Typography>
-            <Typography variant="body1" align="left">
+            <Typography variant="body1" align="left" component="div">
               {policy_basis?.map((item) => (
                 <Chip key={item} label={item} style={{ margin: 2 }} />
               ))}
@@ -51,7 +51,7 @@ export const EmailMasterPanel = ({
             >
               Tags
             </Typography>
-            <Typography variant="body1" align="left">
+            <Typography variant="body1" align="left" component="div">
               {tags?.map((item) => (
                 <Chip key={item} label={item} style={{ margin: 2 }} />
               ))}

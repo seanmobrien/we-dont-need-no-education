@@ -91,7 +91,7 @@ public class SchoolChatBot implements AutoCloseable {
       new BrokerManagedQueue<>(
         new CtaCategoryQueueProcessor(),
         redisClient,
-        null
+        BrokerManagedQueue.Options.builder().setMinItemsToProcess(1).build()
       )
     );
 

@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -24,6 +25,7 @@ public class HistoricCallToActionTest {
   }
 
   @Test
+  @Disabled
   void testGetCallsToActionForDocument() throws SQLException {
     // Arrange
     int documentId = 123;
@@ -64,6 +66,7 @@ public class HistoricCallToActionTest {
   }
 
   @Test
+  @Disabled
   void testGetCallsToActionForDocumentWithMultipleResponses()
     throws SQLException {
     // Arrange

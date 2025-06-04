@@ -20,7 +20,7 @@ export type ClientEnvType = ReturnType<typeof clientEnvSchema.parse>;
  *
  * @doc
  */
-const clientEnvInstance = {
+export const clientRawInstance = {
   /**
    * The hostname for the public-facing application.
    * @type {string | undefined}
@@ -67,4 +67,4 @@ const clientEnvSchema = z.object({
  * @doc
  */
 export const clientEnvFactory = (): ClientEnvType =>
-  clientEnvSchema.parse(clientEnvInstance);
+  clientEnvSchema.parse(clientRawInstance);

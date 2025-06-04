@@ -11,6 +11,7 @@ import { alpha, styled } from '@mui/material/styles';
 import Slider, { sliderClasses, SliderProps } from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
 import { debounce } from '@mui/material/utils';
+import { Box } from '@mui/material';
 
 interface ProgressBarProps {
   value: number;
@@ -24,64 +25,35 @@ const Center = styled('div')({
   alignItems: 'center',
 });
 
-const Bar = styled('div')({
-  height: '100%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontSize: 18,
-  position: 'relative',
-  width: '100%',
-  '&::after': {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    transform: 'translate(-50%, -50%)',
-  },
-  '&.low': {
-    '&::after': {
-      content: '"☁️"',
-    },
-  },
-  '&.med': {
-    '&::after': {
-      content: '"⚠️"',
-    },
-  },
-  '&.fire': {
-    '&::after': {
-      content: '"🔥"',
-    },
-  },
-  '&.dragon': {
-    '&::after': {
-      content: '"🐉"',
-    },
-  },
-  '&.death': {
-    '&::after': {
-      content: '"💀"',
-    },
-  },
-});
-
-const ProgressBar = React.memo(function ProgressBar(props: ProgressBarProps) {
+const SeverityBox = React.memo(function ProgressBar(props: ProgressBarProps) {
   const { value } = props;
   const rawValueInPercent = value * 10;
   const valueInPercent = Math.abs(rawValueInPercent);
-
+  let cbChar;
+  if (value < 2) {
+    cbChar = '☀️';
+  } else if (value <= 4) {
+    cbChar = '☁️';
+  } else if (value <= 6) {
+    cbChar = '⚠️';
+  } else if (value <= 8) {
+    cbChar = '🔥';
+  } else if (value <= 9) {
+    cbChar = '🐉';
+  } else {
+    cbChar = '💀';
+  }
   const classes = clsx({
-    low: value < 2,
-    medium: value >= 2 && value <= 4,
+    'w-full': true,
+    low: value < 3,
+    medium: value >= 3 && value <= 5,
     fire: value > 6 && value <= 8,
     dragon: value > 8 && value <= 9,
     death: value > 9,
   });
-  const style = { maxWidth: `${valueInPercent}%` };
-
   return (
     <Tooltip title={`${valueInPercent.toLocaleString()} %`} enterTouchDelay={0}>
-      <Bar className={classes} style={style} />
+      <Box className={classes}>{cbChar}</Box>
     </Tooltip>
   );
 });
@@ -212,7 +184,7 @@ export const renderSeverity = <
 
   return (
     <Center>
-      <ProgressBar value={params.value} />
+      <SeverityBox value={params.value} />
     </Center>
   );
 };

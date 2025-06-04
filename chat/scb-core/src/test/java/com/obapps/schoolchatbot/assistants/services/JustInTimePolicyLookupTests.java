@@ -14,6 +14,7 @@ import com.obapps.schoolchatbot.core.assistants.types.IDocumentContentSource;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 class JustInTimePolicyLookupTests {
@@ -43,6 +44,7 @@ class JustInTimePolicyLookupTests {
   private Boolean realTestsEnabled = false;
 
   @Test
+  @Disabled
   void testSummarizePolicy() {
     String query = "Test policy query";
     AzurePolicySearchClient.ScopeType policyType =

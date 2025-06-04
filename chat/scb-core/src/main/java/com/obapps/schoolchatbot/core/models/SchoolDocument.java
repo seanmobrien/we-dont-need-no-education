@@ -35,8 +35,13 @@ public class SchoolDocument implements Document {
       meta.put("document_property_id", source.documentPropertyId);
     }
     meta.put("thread_id", source.threadId);
-
+    // Arrays are really tricky w/ azure search+langchain. We're going to try storing the value as a comma-seperated field for coherence
     meta.put("relatedEmailIds", String.join(",", source.relatedEmailIds));
+    // and appending a key + value for searching
+    source.relatedEmailIds.forEach(emailId ->
+      meta.put("relatedEmailId:" + emailId, emailId)
+    );
+
     meta.put("document_type", source.documentType);
     meta.put("created_on", DateTimeFormats.localTime.format(source.createdOn));
     meta.put(

@@ -455,6 +455,24 @@ export const unwrapAdapter = <
 ) => adapter[wrappedAdapter] as SqlDb<TModel>;
 
 /**
+ * Returns a SQL database adapter of type `SqlDb<TModel>` from the provided adapter.
+ * If the adapter is an `ISqlNeonAdapter`, it unwraps and returns the underlying `SqlDb<TModel>`.
+ * Otherwise, it returns the adapter as-is.
+ *
+ * @typeParam TModel - The type of the model records handled by the SQL database.
+ * @param adapter - The adapter instance, which can be either an `ISqlNeonAdapter` or a `SqlDb<TModel>`.
+ * @returns The unwrapped `SqlDb<TModel>` if the adapter is an `ISqlNeonAdapter`, or the adapter itself.
+ */
+export const asSql = <
+  TModel extends Record<string, unknown> = Record<string, unknown>,
+>(
+  adapter: ISqlNeonAdapter | SqlDb<TModel>,
+) =>
+  isSqlNeonAdapter(adapter)
+    ? (adapter[wrappedAdapter] as SqlDb<TModel>)
+    : adapter;
+
+/**
  * Executes a query against the Neon database.
  *
  * @param cb - A callback function that receives a postgres Sql instance and returns a Promise of RowList.

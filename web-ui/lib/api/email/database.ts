@@ -62,8 +62,10 @@ export class EmailRepository extends BaseObjectRepository<
     if (ret && ret.emailId) {
       const importDate = props.sentOn ? new Date(props.sentOn) : new Date();
       const res = await db(
-        (sql) => sql`INSERT INTO document_units (email_id, content, created_on)
-        VALUES (${ret.emailId}, ${props.emailContents}, ${importDate})
+        (
+          sql,
+        ) => sql`INSERT INTO document_units (email_id, content, created_on, document_type)
+        VALUES (${ret.emailId}, ${props.emailContents}, ${importDate}, 'email')
         returning unit_id`,
       );
       if (res.length < 1) {

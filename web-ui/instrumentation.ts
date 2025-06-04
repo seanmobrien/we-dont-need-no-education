@@ -133,7 +133,9 @@ export async function register() {
     }
     if (typeof window === 'undefined') {
       console.log(
-        `Instrumentation Registered for server stack ${process.env.NEXT_RUNTIME}`,
+        'Instrumentation Registered for server stack [' +
+          process.env.NEXT_RUNTIME +
+          ']',
       );
     } else {
       console.log(

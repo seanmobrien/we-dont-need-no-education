@@ -10,6 +10,7 @@ import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.core.ai.telemetry.MetricsChatModelListener;
 import com.obapps.core.ai.telemetry.SpanChatModelListener;
+//import com.obapps.core.ai.tools.HybridToolProvider;
 import com.obapps.core.util.EnvVars;
 import com.obapps.core.util.EnvVars.OpenAiVars;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -328,6 +329,7 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
         .build()
     );
     var builder = AiServices.builder(options.getClazz()).chatModel(model);
+    //builder.toolProvider(new HybridToolProvider());
     if (options.memoryWindow != null && options.memoryWindow > 0) {
       builder.chatMemory(
         MessageWindowChatMemory.withMaxMessages(options.memoryWindow)

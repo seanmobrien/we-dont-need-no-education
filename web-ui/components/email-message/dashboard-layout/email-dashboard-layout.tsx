@@ -22,7 +22,7 @@ import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 
 const Branding = {
-  title: 'Sue the Schools',
+  title: 'Mystery Compliance Theater 2000',
 };
 
 export const EmailDashboardLayout = ({

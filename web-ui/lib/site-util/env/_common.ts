@@ -114,7 +114,8 @@ export const ZodProcessors = {
    *
    * @returns {ZodString} A Zod string schema for log levels.
    */
-  logLevel: (): z.ZodDefault<z.ZodString> => z.string().default('info'),
+  logLevel: (level: string = 'info'): z.ZodDefault<z.ZodString> =>
+    z.string().default(level ?? 'info'),
 
   /**
    * Processor for integer values.

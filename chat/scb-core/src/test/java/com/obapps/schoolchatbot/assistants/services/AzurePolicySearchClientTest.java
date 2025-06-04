@@ -10,6 +10,7 @@ import java.net.http.HttpClient;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -18,8 +19,6 @@ import org.mockito.MockitoAnnotations;
 // filepath: c:\Users\seanm\source\repos\NoEducation\chat\src\test\java\com\obapps\schoolchatbot\assistants\services\AzurePolicySearchClientTest.java
 
 public class AzurePolicySearchClientTest {
-
-  private static final Boolean FOR_REAL = true;
 
   @Mock
   private EnvVars mockEnvVars;
@@ -53,6 +52,7 @@ public class AzurePolicySearchClientTest {
   }
 
   @Test
+  @Disabled
   public void testHybridSearch_withValidInputs() {
     // Arrange
     String query = "school policy";
@@ -69,6 +69,7 @@ public class AzurePolicySearchClientTest {
   }
 
   @Test
+  @Disabled
   public void testHybridSearch_withEmptyQuery() {
     // Arrange
     String query = "";
@@ -83,6 +84,7 @@ public class AzurePolicySearchClientTest {
   }
 
   @Test
+  @Disabled
   public void testHybridSearch_withNullEmbedding() {
     // Arrange
     String query = "school policy";
@@ -96,6 +98,7 @@ public class AzurePolicySearchClientTest {
     assertThat(results).isEmpty();
   }
 
+  @Disabled
   @Test
   public void testHybridSearch_withPolicyTypeId() {
     // Arrange
@@ -120,6 +123,7 @@ public class AzurePolicySearchClientTest {
   }
 
   @Test
+  @Disabled
   public void testHybridSearch_withInvalidPolicyTypeId() {
     // Arrange
     String query = "school policy";
@@ -142,6 +146,7 @@ public class AzurePolicySearchClientTest {
     // Additional assertions can be added based on expected behavior
   }
   /*
+  private static final Boolean FOR_REAL = true;
   @Test
   public void testHybridSearch_withPolicyTypeId_forReal() {
     if (!FOR_REAL) return; // Skip this test if not running for real

@@ -3,7 +3,7 @@ export const StableDefaultInitialState = {
     rowCount: -1,
     paginationModel: {
       page: 0,
-      pageSize: 10,
+      pageSize: 5,
     },
   },
 };
