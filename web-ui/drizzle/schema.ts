@@ -22,6 +22,7 @@ import {
   time,
   pgView,
   interval,
+  pgMaterializedView,
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -94,13 +95,13 @@ export const documentUnits = pgTable(
       foreignColumns: [emailAttachments.attachmentId],
       name: 'document_units_attachment_id_fkey',
     }).onDelete('cascade'),
-    /*
-		foreignKey({
+    /* I don't understand drizzle well enough to know why yet, but this FK fucks everything up
+  foreignKey({
 			columns: [table.documentPropertyId],
 			foreignColumns: [documentProperty.propertyId],
 			name: "document_units_email_property_id_fkey1"
 		}).onDelete("cascade"),
-*/
+  */
     check(
       'document_type_check_allowed_values',
       sql`(document_type)::text = ANY (ARRAY[('email'::character varying)::text, ('attachment'::character varying)::text, ('note'::character varying)::text, ('key_point'::character varying)::text, ('cta_response'::character varying)::text, ('cta'::character varying)::text, ('sentiment'::character varying)::text, ('pending_upload'::character varying)::text, ('compliance'::character varying)::text]))) NOT VALID`,
@@ -144,18 +145,8 @@ export const documentProperty = pgTable(
   ],
 );
 
-export const callToActionCategory = pgTable('call_to_action_category', {
-  ctaCategoryId: uuid('cta_category_id').primaryKey().notNull(),
-  categoryName: text('category_name').notNull(),
-  categoryDescription: text('category_description').notNull(),
-  ctaCategoryTextEmbedding: vector('cta_category_text_embedding', {
-    dimensions: 1536,
-  }),
-  ctaCategoryTextEmbeddingModel: text('cta_category_text_embedding_model'),
-});
-
-export const documentPropertyRelationReason = pgTable(
-  'document_property_relation_reason',
+export const documentRelationshipReason = pgTable(
+  'document_relationship_reason',
   {
     relationReasonId: integer('relation_reason_id')
       .primaryKey()
@@ -170,6 +161,16 @@ export const documentPropertyRelationReason = pgTable(
     description: text(),
   },
 );
+
+export const callToActionCategory = pgTable('call_to_action_category', {
+  ctaCategoryId: uuid('cta_category_id').primaryKey().notNull(),
+  categoryName: text('category_name').notNull(),
+  categoryDescription: text('category_description').notNull(),
+  ctaCategoryTextEmbedding: vector('cta_category_text_embedding', {
+    dimensions: 1536,
+  }),
+  ctaCategoryTextEmbeddingModel: text('cta_category_text_embedding_model'),
+});
 
 export const analysisStage = pgTable('analysis_stage', {
   analysisStageId: integer('analysis_stage_id').primaryKey().notNull(),
@@ -292,16 +293,14 @@ export const sessions = pgTable(
 export const sessionsExt = pgTable(
   'sessions_ext',
   {
-    sessionId: integer('session_id')
-      .primaryKey()
-      .generatedByDefaultAsIdentity({
-        name: 'sessions_ext_session_id_seq',
-        startWith: 1,
-        increment: 1,
-        minValue: 1,
-        maxValue: 2147483647,
-        cache: 1,
-      }),
+    sessionId: integer('session_id').primaryKey().generatedByDefaultAsIdentity({
+      name: 'sessions_ext_session_id_seq',
+      startWith: 1,
+      increment: 1,
+      minValue: 1,
+      maxValue: 2147483647,
+      cache: 1,
+    }),
     tokenGmail: varchar('token_gmail', { length: 255 }),
   },
   (table) => [
@@ -379,6 +378,7 @@ export const emailAttachments = pgTable(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),
     ),
+    // no vector support in drizzle yet :(
     // index("idx_attachment_search").using("gin", table.extractedTextTsv.asc().nullsLast().op("tsvector_ops")),
     index('idx_email_attachments_email_id').using(
       'btree',
@@ -453,7 +453,7 @@ export const stagingMessage = pgTable(
     stage: importStageType(),
     id: uuid().primaryKey().notNull(),
     // TODO: failed to parse database type 'email_message_type'
-    // message: unknown("message"),
+    // message: ("message"),
     userId: integer(),
   },
   (table) => [
@@ -506,60 +506,6 @@ export const policyTypes = pgTable(
     typeName: varchar('type_name', { length: 50 }).notNull(),
   },
   (table) => [unique('policy_types_type_name_key').on(table.typeName)],
-);
-
-export const violationDetails = pgTable(
-  'violation_details',
-  {
-    propertyId: uuid('property_id').primaryKey().notNull(),
-    attachmentId: integer('attachment_id'),
-    keyPointPropertyId: uuid('key_point_property_id'),
-    actionPropertyId: uuid('action_property_id'),
-    violationType: varchar('violation_type', { length: 255 }).notNull(),
-    severityLevel: integer('severity_level'),
-    detectedBy: varchar('detected_by', { length: 255 }).default('AI-System'),
-    detectedOn: timestamp('detected_on', { mode: 'string' }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
-  },
-  (table) => [
-    index('idx_violation_details_action_property_id').using(
-      'btree',
-      table.actionPropertyId.asc().nullsLast().op('uuid_ops'),
-    ),
-    index('idx_violation_details_attachment_id').using(
-      'btree',
-      table.attachmentId.asc().nullsLast().op('int4_ops'),
-    ),
-    index('idx_violation_details_detected_on').using(
-      'btree',
-      table.detectedOn.asc().nullsLast().op('timestamp_ops'),
-    ),
-    index('idx_violation_details_key_point_property_id').using(
-      'btree',
-      table.keyPointPropertyId.asc().nullsLast().op('uuid_ops'),
-    ),
-    foreignKey({
-      columns: [table.actionPropertyId],
-      foreignColumns: [callToActionDetails.propertyId],
-      name: 'violation_details_action_fk',
-    }).onDelete('set null'),
-    foreignKey({
-      columns: [table.attachmentId],
-      foreignColumns: [emailAttachments.attachmentId],
-      name: 'violation_details_attachment_fk',
-    }).onDelete('set null'),
-    foreignKey({
-      columns: [table.keyPointPropertyId],
-      foreignColumns: [keyPointsDetails.propertyId],
-      name: 'violation_details_key_point_fk',
-    }).onDelete('set null'),
-    foreignKey({
-      columns: [table.propertyId],
-      foreignColumns: [documentProperty.propertyId],
-      name: 'violation_details_property_id_fkey',
-    }).onDelete('cascade'),
-  ],
 );
 
 export const complianceScoresDetails = pgTable(
@@ -644,6 +590,7 @@ export const keyPointsDetails = pgTable(
     propertyId: uuid('property_id').primaryKey().notNull(),
     relevance: doublePrecision().notNull(),
     compliance: doublePrecision().notNull(),
+    complianceReasons: text('compliance_reasons').array(),
     severityRanking: integer('severity_ranking').default(sql`'-1'`),
     inferred: boolean().default(false).notNull(),
   },
@@ -713,6 +660,42 @@ export const callToActionDetails = pgTable(
       columns: [table.propertyId],
       foreignColumns: [documentProperty.propertyId],
       name: 'call_to_action_details_property_id_fkey',
+    }).onDelete('cascade'),
+  ],
+);
+
+export const violationDetails = pgTable(
+  'violation_details',
+  {
+    propertyId: uuid('property_id').primaryKey().notNull(),
+    emailDocumentId: integer('email_document_id').notNull(),
+    violationType: text('violation_type').notNull(),
+    severityLevel: integer('severity_level').notNull(),
+    detectedBy: varchar('detected_by', { length: 255 })
+      .default('AI-System')
+      .notNull(),
+    detectedOn: timestamp('detected_on', { mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    violationReasons: text('violation_reasons').array().notNull(),
+    titleIxRelevancy: doublePrecision('title_ix_relevancy').notNull(),
+    chapt13Relevancy: doublePrecision('chapt_13_relevancy').notNull(),
+    ferpaRelevancy: doublePrecision('ferpa_relevancy').notNull(),
+    otherRelevancy: jsonb('other_relevancy'),
+  },
+  (table) => [
+    index('idx_violation_details_attachment_id').using(
+      'btree',
+      table.emailDocumentId.asc().nullsLast().op('int4_ops'),
+    ),
+    index('idx_violation_details_detected_on').using(
+      'btree',
+      table.detectedOn.asc().nullsLast().op('timestamp_ops'),
+    ),
+    foreignKey({
+      columns: [table.emailDocumentId],
+      foreignColumns: [documentUnits.unitId],
+      name: 'violation_email',
     }).onDelete('cascade'),
   ],
 );
@@ -840,8 +823,9 @@ export const emailRecipients = pgTable(
   ],
 );
 
-export const documentPropertyRelatedDocument = pgTable(
-  'document_property_related_document',
+/*
+export const documentPropertyRelatedDocumentOld = pgTable(
+  'document_property_related_document_old',
   {
     relatedPropertyId: uuid('related_property_id').notNull(),
     documentId: integer('document_id').notNull(),
@@ -861,7 +845,7 @@ export const documentPropertyRelatedDocument = pgTable(
     }).onDelete('cascade'),
     foreignKey({
       columns: [table.relationshipType],
-      foreignColumns: [documentPropertyRelationReason.relationReasonId],
+      foreignColumns: [documentRelationshipReason.relationReasonId],
       name: 'fk_relation',
     }).onDelete('cascade'),
     primaryKey({
@@ -874,12 +858,13 @@ export const documentPropertyRelatedDocument = pgTable(
     }),
   ],
 );
-
+*/
 export const documentUnitEmbeddings = pgTable(
   'document_unit_embeddings',
   {
     documentId: integer('document_id').notNull(),
     index: integer().notNull(),
+    // No vector support in drizzle yet :(
     // vector: vector().notNull(),
     createdOn: time('created_on').default(sql`CURRENT_TIMESTAMP`),
   },
@@ -892,6 +877,43 @@ export const documentUnitEmbeddings = pgTable(
     primaryKey({
       columns: [table.documentId, table.index],
       name: 'document_unit_vector_store_pkey',
+    }),
+  ],
+);
+
+export const documentRelationship = pgTable(
+  'document_relationship',
+  {
+    sourceDocumentId: integer('source_document_id').notNull(),
+    targetDocumentId: integer('target_document_id').notNull(),
+    relationshipReasonId: integer('relationship_reason_id').notNull(),
+    timestamp: timestamp({ mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.targetDocumentId],
+      foreignColumns: [documentUnits.unitId],
+      name: 'fk_target',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.sourceDocumentId],
+      foreignColumns: [documentUnits.unitId],
+      name: 'fk_source',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.relationshipReasonId],
+      foreignColumns: [documentRelationshipReason.relationReasonId],
+      name: 'fk_relation',
+    }).onDelete('cascade'),
+    primaryKey({
+      columns: [
+        table.sourceDocumentId,
+        table.targetDocumentId,
+        table.relationshipReasonId,
+      ],
+      name: 'document_relationship_pkey',
     }),
   ],
 );
@@ -1032,7 +1054,7 @@ export const responsiveAction = pgView('ResponsiveAction', {
   responseSeverityReason: text('response_severity_reason'),
   relatedDocuments: integer('related_documents'),
 }).as(
-  sql`SELECT cta.property_id AS call_to_action_id, dp_cta.document_id AS call_to_action_source_document_id, ra.property_id AS responsive_action_id, dp_ra.document_id AS responsive_action_source_document_id, dp_cta.property_value AS request_contents, dp_ra.property_value AS response_contents, cta.inferred AS request_inferred, ra.inferred AS response_inferred, cta.completion_percentage AS request_completion_percentage, lnk.completion_percentage AS response_completion_percentage, lnk.completion_percentage_reasons AS response_completion_percentage_reasons, cta.opened_date AS request_opened_date, cta.compliancy_close_date AS request_compliancy_deadline, cta.compliance_date_enforceable AS enforceable_compliance_date, cta.closed_date AS request_closed_date, ra.response_timestamp AS response_date, cta.compliancy_close_date::timestamp with time zone - COALESCE(ra.response_timestamp::timestamp with time zone, CURRENT_TIMESTAMP) AS response_days_until_deadline, cta.severity AS request_severity, cta.severity_reason AS request_severity_reason, cta.title_ix_applicable, cta.title_ix_applicable_reasons, lnk.compliance_chapter_13, lnk.compliance_chapter_13_reasons, ra.severity AS response_severity, ra.severity_reasons AS response_severity_reason, ARRAY( SELECT rd.document_id FROM document_property_related_document rd WHERE rd.related_property_id = cta.property_id OR rd.related_property_id = ra.property_id) AS related_documents FROM call_to_action_details cta JOIN document_property dp_cta ON cta.property_id = dp_cta.property_id LEFT JOIN call_to_action_details_call_to_action_response lnk ON cta.property_id = lnk.call_to_action_id LEFT JOIN call_to_action_response_details ra ON lnk.call_to_action_response_id = ra.property_id LEFT JOIN document_property dp_ra ON ra.property_id = dp_ra.property_id ORDER BY dp_cta.created_on, ra.response_timestamp`,
+  sql`SELECT cta.property_id AS call_to_action_id, dp_cta.document_id AS call_to_action_source_document_id, ra.property_id AS responsive_action_id, dp_ra.document_id AS responsive_action_source_document_id, dp_cta.property_value AS request_contents, dp_ra.property_value AS response_contents, cta.inferred AS request_inferred, ra.inferred AS response_inferred, cta.completion_percentage AS request_completion_percentage, lnk.completion_percentage AS response_completion_percentage, lnk.completion_percentage_reasons AS response_completion_percentage_reasons, cta.opened_date AS request_opened_date, cta.compliancy_close_date AS request_compliancy_deadline, cta.compliance_date_enforceable AS enforceable_compliance_date, cta.closed_date AS request_closed_date, ra.response_timestamp AS response_date, cta.compliancy_close_date::timestamp with time zone - COALESCE(ra.response_timestamp::timestamp with time zone, CURRENT_TIMESTAMP) AS response_days_until_deadline, cta.severity AS request_severity, cta.severity_reason AS request_severity_reason, cta.title_ix_applicable, cta.title_ix_applicable_reasons, lnk.compliance_chapter_13, lnk.compliance_chapter_13_reasons, ra.severity AS response_severity, ra.severity_reasons AS response_severity_reason, ARRAY( SELECT rd.document_id FROM document_property_related_document_old rd WHERE rd.related_property_id = cta.property_id OR rd.related_property_id = ra.property_id) AS related_documents FROM call_to_action_details cta JOIN document_property dp_cta ON cta.property_id = dp_cta.property_id LEFT JOIN call_to_action_details_call_to_action_response lnk ON cta.property_id = lnk.call_to_action_id LEFT JOIN call_to_action_response_details ra ON lnk.call_to_action_response_id = ra.property_id LEFT JOIN document_property dp_ra ON ra.property_id = dp_ra.property_id ORDER BY dp_cta.created_on, ra.response_timestamp`,
 );
 
 export const keyPoints = pgView('KeyPoints', {
@@ -1091,4 +1113,16 @@ export const documentWithDetails = pgView('DocumentWithDetails', {
   attachments: integer(),
 }).as(
   sql`SELECT d.unit_id AS document_id, d.email_id, d.attachment_id, d.document_property_id AS property_id, d.content, d.document_type, d.embedding_model, d.embedded_on, d.created_on, c.name AS sender, c.role_dscr AS sender_role, c.is_district_staff AS is_from_district_staff, e.subject, e.sent_timestamp AS document_send_date, e.thread_id, a.file_path, email_is_replyto_document(e.email_id) AS reply_to_document_id, ( SELECT array_agg(rd.document_id) AS array_agg FROM email_related_emails(e.email_id, true, true) rd(email_id, global_message_id, document_id) WHERE rd.document_id IS NOT NULL) AS related_documents, ( SELECT array_agg(du.unit_id) AS array_agg FROM email_attachments att JOIN document_units du ON att.attachment_id = du.attachment_id WHERE att.email_id = d.email_id) AS attachments FROM document_units d JOIN emails e ON d.email_id = e.email_id JOIN contacts c ON e.sender_id = c.contact_id LEFT JOIN email_attachments a ON d.attachment_id = a.attachment_id`,
+);
+
+export const documentPropertyRelatedDocument = pgMaterializedView(
+  'document_property_related_document',
+  {
+    relatedPropertyId: uuid('related_property_id'),
+    documentId: integer('document_id'),
+    relationshipType: integer('relationship_type'),
+    timestamp: timestamp({ mode: 'string' }),
+  },
+).as(
+  sql`SELECT du.document_property_id AS related_property_id, dpr.target_document_id AS document_id, dpr.relationship_reason_id AS relationship_type, dpr."timestamp" FROM document_relationship dpr JOIN document_units du ON dpr.source_document_id = du.unit_id`,
 );

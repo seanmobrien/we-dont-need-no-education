@@ -84,6 +84,8 @@ describe('EmailHeaderDetailsRepository', () => {
         obj.propertyId,
         obj.documentId,
         obj.createdOn,
+        null,
+        null,
       ]);
     });
   });
@@ -97,6 +99,8 @@ describe('EmailHeaderDetailsRepository', () => {
       const [fieldMap] = (repository as any).getUpdateQueryProperties(obj);
       expect(fieldMap).toEqual({
         property_value: obj.value,
+        policy_basis: null,
+        tags: null,
       });
     });
   });

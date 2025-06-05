@@ -8,8 +8,27 @@
  * @param v - The value to convert to a `Date`.
  * @returns The corresponding `Date` object, or `null` if the input is falsy.
  */
-export const valueGetterDate = (v: unknown) =>
-  v ? (typeof v === 'number' ? new Date(v) : new Date(String(v))) : null;
+export const valueGetterDate = (v: unknown) => {
+  if (v) {
+    if (typeof v === 'number' && !isNaN(v)) {
+      return new Date(v);
+    }
+    if (typeof v === 'string' && v.trim() !== '') {
+      const check = new Date(v);
+      if (isNaN(check.getTime())) {
+        return new Date(Number(v));
+      }
+      return check;
+    }
+    if (v instanceof Date) {
+      return v;
+    }
+    if (typeof v === 'object' && v !== null) {
+      return new Date(String(v));
+    }
+  }
+  return null;
+};
 
 export const valueGetterPercentageFactory = ({
   base = 100,

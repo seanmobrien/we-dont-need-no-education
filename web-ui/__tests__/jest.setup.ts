@@ -4,6 +4,7 @@
 jest.mock('google-auth-library');
 jest.mock('googleapis');
 jest.mock('postgres');
+
 jest.mock('next-auth', () => {
   return jest.fn();
 });
@@ -38,6 +39,28 @@ jest.mock('@/lib/logger', () => {
   };
 });
 
+jest.mock('drizzle-orm/postgres-js', () => {
+  return {
+    drizzle: jest.fn(() => ({
+      query: jest.fn(() => ({
+        select: jest.fn(() => ({
+          from: jest.fn(() => ({
+            where: jest.fn(() => ({
+              orderBy: jest.fn(() => ({
+                limit: jest.fn(() => ({
+                  offset: jest.fn(() => ({
+                    execute: jest.fn(() => Promise.resolve({ rows: [] })),
+                  })),
+                })),
+              })),
+            })),
+          })),
+        })),
+      })),
+    })),
+  };
+});
+
 import NextAuth from 'next-auth';
 import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
@@ -45,6 +68,7 @@ import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
 import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
+import { drizzle } from 'drizzle-orm/postgres-js';
 // jest.setup.ts
 import '@testing-library/jest-dom';
 import 'jest';
@@ -111,4 +135,3 @@ afterEach(() => {
   jest.clearAllMocks();
   resetGlobalCache();
 });
-console.log('jest.setup.ts is loadeed');

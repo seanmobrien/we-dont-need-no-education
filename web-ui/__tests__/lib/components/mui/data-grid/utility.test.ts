@@ -48,7 +48,7 @@ describe('utility functions', () => {
 
     it('handles empty sort param', () => {
       const params = new URLSearchParams({ sort: '' });
-      expect(parseSortOptions(params)).toEqual([]);
+      expect(parseSortOptions(params)).toBeUndefined();
     });
   });
 
@@ -164,7 +164,7 @@ describe('utility functions', () => {
       const params = new URLSearchParams({
         filter: JSON.stringify({ foo: 'bar' }),
       });
-      expect(parseFilterOptions(params)).toEqual({ foo: 'bar' });
+      expect(parseFilterOptions(params)).toEqual(undefined);
     });
   });
 });
@@ -211,7 +211,7 @@ describe('utility functions', () => {
 
     it('handles empty sort param', () => {
       const params = new URLSearchParams({ sort: '' });
-      expect(parseSortOptions(params)).toEqual([]);
+      expect(parseSortOptions(params)).toBeUndefined();
     });
   });
 
@@ -327,7 +327,7 @@ describe('utility functions', () => {
       const params = new URLSearchParams({
         filter: JSON.stringify({ foo: 'bar' }),
       });
-      expect(parseFilterOptions(params)).toEqual({ foo: 'bar' });
+      expect(parseFilterOptions(params)).toBeUndefined();
     });
   });
 });

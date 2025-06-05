@@ -64,7 +64,9 @@ describe('KeyPointsDetailsRepository', () => {
       const [sqlQuery, values] = (repository as any).getQueryProperties(
         recordId,
       );
-      expect(sqlQuery).toContain('SELECT * FROM key_points_details');
+      expect(sqlQuery).toContain(
+        'SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id',
+      );
       expect(values).toEqual([recordId]);
     });
   });
@@ -73,10 +75,13 @@ describe('KeyPointsDetailsRepository', () => {
     it('should return the correct SQL query and parameters for a given KeyPointsDetails object', () => {
       const obj: KeyPointsDetails = {
         propertyId: 'test-id',
-        policyId: 1,
         documentId: 4,
         createdOn: new Date(),
         value: 'test-value',
+        relevance: null,
+        compliance: null,
+        severity: null,
+        inferred: false,
       };
       const [sqlQuery, values] = (repository as any).getCreateQueryProperties(
         obj,
@@ -86,21 +91,14 @@ describe('KeyPointsDetailsRepository', () => {
         obj.value,
         obj.propertyId,
         obj.documentId,
-        obj.policyId,
+        obj.createdOn,
+        null, // policy_basis
+        null, // tags
+        obj.relevance,
+        obj.compliance,
+        obj.severity,
+        obj.inferred,
       ]);
-    });
-  });
-
-  describe('updateQueryProperties', () => {
-    it('should return the correct SQL query and parameters for a given KeyPointsDetails object', () => {
-      const obj: KeyPointsDetails = {
-        propertyId: 'test-id',
-        policyId: 1,
-      } as KeyPointsDetails;
-      const [fieldMap] = (repository as any).getUpdateQueryProperties(obj);
-      expect(fieldMap).toEqual({
-        policy_id: obj.policyId,
-      });
     });
   });
 });

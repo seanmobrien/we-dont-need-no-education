@@ -346,13 +346,24 @@ public class ResponsiveActionAssignmentQueueProcessor
               )
               .build();
             response.addToDb(tx);
+
+            Optional<Integer> newDocumentId = tx
+              .getDb()
+              .selectSingleValue(
+                "SELECT unit_id FROM document_units WHERE document_property_id=?",
+                response.getPropertyId()
+              );
+            var noteDocId = newDocumentId.isPresent()
+              ? newDocumentId.get()
+              : response.getDocumentId();
+
             var relatedDocuments = actionResult.relatedDocuments
               .stream()
               .map(rd ->
                 com.obapps.schoolchatbot.core.models.DocumentRelationship.builder()
-                  .documentId(rd.documentId)
+                  .targetDocumentId(rd.documentId)
                   .relationship(rd.relationshipType)
-                  .relatedPropertyId(response.getPropertyId())
+                  .sourceDocumentId(noteDocId)
                   .build()
               )
               .toList();
@@ -378,15 +389,6 @@ public class ResponsiveActionAssignmentQueueProcessor
               }
             });
 
-            Optional<Integer> newDocumentId = tx
-              .getDb()
-              .selectSingleValue(
-                "SELECT unit_id FROM document_units WHERE document_property_id=?",
-                response.getPropertyId()
-              );
-            var noteDocId = newDocumentId.isPresent()
-              ? newDocumentId.get()
-              : response.getDocumentId();
             actionResult.processingNotes.forEach(note -> {
               if (note != null && !note.isEmpty()) {
                 try {

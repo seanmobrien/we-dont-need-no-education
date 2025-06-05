@@ -10,19 +10,35 @@ import org.slf4j.LoggerFactory;
 
 public class DocumentRelationship {
 
-  private Integer documentId;
+  private Integer sourceDocumentId;
+  private Integer targetDocumentId;
   private String relationship;
-  private UUID relatedPropertyId;
 
   public DocumentRelationship() {}
 
   // Getters and Setters
+  public Integer getSourceDocumentId() {
+    return sourceDocumentId;
+  }
+
+  public void setSourceDocumentId(Integer sourceDocumentId) {
+    this.sourceDocumentId = sourceDocumentId;
+  }
+
   public Integer getDocumentId() {
-    return documentId;
+    return getTargetDocumentId();
+  }
+
+  public Integer getTargetDocumentId() {
+    return targetDocumentId;
+  }
+
+  public void setTargetDocumentId(Integer targetDocumentId) {
+    this.targetDocumentId = targetDocumentId;
   }
 
   public void setDocumentId(Integer documentId) {
-    this.documentId = documentId;
+    this.setTargetDocumentId(documentId);
   }
 
   public String getRelationship() {
@@ -33,23 +49,52 @@ public class DocumentRelationship {
     this.relationship = relationship;
   }
 
+  @Deprecated // Use getRelatedPropertyId instead
   public UUID getRelatedPropertyId() {
-    return relatedPropertyId;
+    Optional<UUID> v = Db.getInstanceNoThrow(null).selectSingleValue(
+      "SELECT document_property_id FROM document_units WHERE document_id=$1",
+      sourceDocumentId
+    );
+    return v.orElseThrow(() ->
+      new IllegalArgumentException(
+        "sourceDocumentId must be a valid document id"
+      )
+    );
   }
 
+  @Deprecated // Use setRelatedPropertyId instead
   public void setRelatedPropertyId(UUID relatedPropertyId) {
-    this.relatedPropertyId = relatedPropertyId;
+    Optional<Integer> v = Db.getInstanceNoThrow(null).selectSingleValue(
+      "SELECT unit_id FROM document_units WHERE document_property_id=$1",
+      relatedPropertyId
+    );
+    v.ifPresentOrElse(this::setSourceDocumentId, () -> {
+      throw new IllegalArgumentException(
+        "relatedPropertyId must be a valid document property id"
+      );
+    });
   }
 
   // Builder
   public static class Builder {
 
-    private Integer documentId;
+    private Integer targetDocumentId;
     private String relationship;
     private UUID relatedPropertyId;
+    private Integer sourceDocumentId;
 
+    public Builder targetDocumentId(Integer documentId) {
+      this.targetDocumentId = documentId;
+      return this;
+    }
+
+    @Deprecated // Use targetDocumentId instead
     public Builder documentId(Integer documentId) {
-      this.documentId = documentId;
+      return this.targetDocumentId(documentId);
+    }
+
+    public Builder sourceDocumentId(Integer sourceDocumentId) {
+      this.sourceDocumentId = sourceDocumentId;
       return this;
     }
 
@@ -58,6 +103,7 @@ public class DocumentRelationship {
       return this;
     }
 
+    @Deprecated // Use sourceDocumentId instead
     public Builder relatedPropertyId(UUID relatedPropertyId) {
       this.relatedPropertyId = relatedPropertyId;
       return this;
@@ -65,9 +111,13 @@ public class DocumentRelationship {
 
     public DocumentRelationship build() {
       DocumentRelationship documentRelationship = new DocumentRelationship();
-      documentRelationship.setDocumentId(this.documentId);
+      documentRelationship.setTargetDocumentId(this.targetDocumentId);
       documentRelationship.setRelationship(this.relationship);
-      documentRelationship.setRelatedPropertyId(this.relatedPropertyId);
+      if (this.sourceDocumentId != null) {
+        documentRelationship.setSourceDocumentId(this.sourceDocumentId);
+      } else {
+        documentRelationship.setRelatedPropertyId(this.relatedPropertyId);
+      }
       return documentRelationship;
     }
   }
@@ -113,11 +163,11 @@ public class DocumentRelationship {
     if (tx == null) {
       throw new IllegalArgumentException("tx cannot be null");
     }
-    if (relatedPropertyId == null) {
-      throw new IllegalArgumentException("relatedPropertyId cannot be null");
+    if (sourceDocumentId == null) {
+      throw new IllegalArgumentException("sourceDocumentId cannot be null");
     }
-    if (documentId == null) {
-      throw new IllegalArgumentException("documentId cannot be null");
+    if (targetDocumentId == null) {
+      throw new IllegalArgumentException("targetDocumentId cannot be null");
     }
     if (relationship == null) {
       throw new IllegalArgumentException("relationship cannot be null");
@@ -135,49 +185,52 @@ public class DocumentRelationship {
     Optional<Long> exists = db.selectSingleValue(
       """
       SELECT COUNT(*)
-      FROM document_property_related_document
-      WHERE related_property_id = ?
-        AND document_id = ?
+      FROM document_relationship
+      WHERE source_document_id = ?
+        AND target_document_id = ?
         AND relationship_type = ?
         """,
-      relatedPropertyId,
-      documentId,
+      sourceDocumentId,
+      targetDocumentId,
       relationshipTypeId
     );
     if (exists.isPresent() && exists.get() > 0) {
       LoggerFactory.getLogger(getClass()).warn(
         "Skipping Relationship {} {} {} - already exists",
-        relatedPropertyId,
-        documentId,
+        sourceDocumentId,
+        targetDocumentId,
         relationshipTypeId
       );
       return; // Already exists, no need to insert again
     }
 
     var res = db.executeUpdate(
-      "INSERT INTO document_property_related_document (related_property_id, document_id, relationship_type) VALUES (?, ?, ?)",
-      relatedPropertyId,
-      documentId,
+      """
+      INSERT INTO document_relationship
+        (source_document_id, target_document_id,
+        relationship_type)
+      VALUES (?, ?, ?)""",
+      sourceDocumentId,
+      targetDocumentId,
       relationshipTypeId
     );
     if (res == 0) {
       throw new SQLException("Failed to insert DocumentRelationship");
     }
-    // }
   }
 
   private Integer getOrCreateRelationshipTypeId(Db db, String relationship)
     throws SQLException {
+    // Check if the relationship type already exists
     Optional<Integer> v = db.selectSingleValue(
-      "SELECT relation_reason_id FROM document_property_relation_reason WHERE description = ?",
+      "SELECT relation_reason_id FROM document_relationship_reason WHERE description = ?",
       relationship
     );
     if (v.isPresent()) {
       return v.get();
     }
-
     var res = db.insertAndGetGeneratedKeys(
-      "INSERT INTO document_property_relation_reason (description) VALUES (?)",
+      "INSERT INTO document_relationship_reason (description) VALUES (?)",
       relationship
     );
     if (res == null || res < 1) {

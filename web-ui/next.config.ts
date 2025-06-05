@@ -44,7 +44,6 @@ const nextConfig: NextConfig = {
         resourceRegExp: /^pg-native$|^cloudflare:sockets$/,
       }),
     );
-
     return config;
   },
 };

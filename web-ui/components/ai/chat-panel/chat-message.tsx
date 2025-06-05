@@ -9,6 +9,7 @@ import { Paper, Box } from '@mui/material';
 import { Message } from 'ai';
 import MuiMarkdown from 'mui-markdown';
 import React from 'react';
+import ToolInovocation from './tool-invocation';
 import { useMemo } from 'react';
 
 const ChatMessage = ({ message }: { message: Message }) => {
@@ -28,14 +29,15 @@ const ChatMessage = ({ message }: { message: Message }) => {
     'ml-auto': role === 'user',
   });
 
+  const cssContainerPadding = padding({
+    'pl-8': role === 'user',
+    'pr-8': role !== 'user',
+  });
+  const cssContainer = classnames(width('w-full'), cssContainerPadding);
+
   return useMemo(
     () => (
-      <div
-        className={classnames(
-          width('w-full'),
-          padding(role === 'user' ? 'pl-8' : 'pr-8'),
-        )}
-      >
+      <div className={cssContainer}>
         <Paper
           elevation={6}
           className={classnames(
@@ -45,30 +47,24 @@ const ChatMessage = ({ message }: { message: Message }) => {
             width('w-fit'),
           )}
         >
-          <Box className="p-2">
+          <Box className={classnames(padding('p-2'))}>
             {parts
-              .map((part, idx) => {
-                if (part.type === 'text') {
-                  return <MuiMarkdown key={idx}>{part.text}</MuiMarkdown>;
-                }
-                if (part.type === 'tool-invocation') {
-                  return part.toolInvocation ? (
-                    <Box key={idx}>
-                      <strong>Tool Call:</strong> {part.toolInvocation.toolName}{' '}
-                      {part.toolInvocation.args
-                        ? `(${Array.isArray(part.toolInvocation.args) ? part.toolInvocation.args.join(', ') : JSON.stringify(part.toolInvocation.args)})`
-                        : null}
-                    </Box>
-                  ) : null;
-                }
-                return null;
-              })
+              .map((part, idx) =>
+                part.type === 'text' ? (
+                  <MuiMarkdown key={idx}>{part.text}</MuiMarkdown>
+                ) : part.type === 'tool-invocation' ? (
+                  <ToolInovocation
+                    key={idx}
+                    toolInvocation={part.toolInvocation}
+                  />
+                ) : null,
+              )
               .filter(Boolean)}
           </Box>
         </Paper>
       </div>
     ),
-    [parts, cssAlign, cssJustify, cssMargin],
+    [parts, cssAlign, cssJustify, cssMargin, cssContainer],
   );
 };
 

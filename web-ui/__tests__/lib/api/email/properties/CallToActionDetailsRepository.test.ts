@@ -71,7 +71,9 @@ describe('CallToActionDetailsRepository', () => {
       const [sqlQuery, values] = (repository as any).getQueryProperties(
         recordId,
       );
-      expect(sqlQuery).toContain('SELECT * FROM call_to_action_details');
+      expect(sqlQuery).toContain(
+        'SELECT ep.*, ept.property_name,epc.description, epc.email_property_category_id',
+      );
       expect(values).toEqual([recordId]);
     });
   });
@@ -80,14 +82,15 @@ describe('CallToActionDetailsRepository', () => {
     it('should return the correct SQL query and parameters for a given CallToActionDetails object', () => {
       const obj: CallToActionDetails = {
         propertyId: 'test-id',
-        openedDate: new Date(),
-        closedDate: new Date(),
-        compliancyCloseDate: new Date(),
-        completionPercentage: 50,
-        policyId: 1,
+        opened_date: new Date(),
+        closed_date: new Date(),
+        compliancy_close_date: new Date(),
+        completion_percentage: 50,
         value: 'test-value',
         documentId: 2,
         createdOn: new Date(),
+        inferred: false,
+        compliance_date_enforceable: true,
       };
       const [sqlQuery, values] = (repository as any).getCreateQueryProperties(
         obj,
@@ -98,11 +101,25 @@ describe('CallToActionDetailsRepository', () => {
         obj.propertyId,
         obj.documentId,
         obj.createdOn,
-        obj.openedDate,
-        obj.closedDate,
-        obj.compliancyCloseDate,
-        obj.completionPercentage,
-        obj.policyId,
+        null,
+        null,
+        obj.opened_date,
+        obj.closed_date,
+        obj.compliancy_close_date,
+        obj.completion_percentage,
+        null,
+        obj.inferred ?? null,
+        obj.compliance_date_enforceable ?? null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
       ]);
     });
   });
@@ -111,27 +128,35 @@ describe('CallToActionDetailsRepository', () => {
     it('should return the correct SQL query and parameters for a given CallToActionDetails object', () => {
       const obj: CallToActionDetails = {
         propertyId: 'test-id',
-        openedDate: new Date(),
-        closedDate: new Date(),
-        compliancyCloseDate: new Date(),
-        completionPercentage: 50,
-        policyId: 1,
+        opened_date: new Date(),
+        closed_date: new Date(),
+        compliancy_close_date: new Date(),
+        completion_percentage: 50,
         value: 'test-value',
         documentId: 2,
         createdOn: new Date(),
+        inferred: false,
+        compliance_date_enforceable: true,
       };
       const [fieldMap] = (repository as any).getUpdateQueryProperties(obj);
       expect(fieldMap).toEqual({
-        property_value: obj.value,
-        email_property_type_id: 4,
-        property_id: obj.propertyId,
-        email_id: obj.documentId,
-        created_on: obj.createdOn,
-        opened_date: obj.openedDate,
-        closed_date: obj.closedDate,
-        compliancy_close_date: obj.compliancyCloseDate,
-        completion_percentage: obj.completionPercentage,
-        policy_id: obj.policyId,
+        closed_date: obj.closed_date,
+        closure_actions: undefined,
+        completion_percentage: obj.completion_percentage,
+        compliance_date_enforceable: obj.compliance_date_enforceable ?? null,
+        compliance_rating: undefined,
+        compliance_rating_reasons: undefined,
+        compliancy_close_date: obj.compliancy_close_date,
+        inferred: obj.inferred ?? null,
+        opened_date: obj.opened_date,
+        reasonable_reasons: undefined,
+        reasonable_request: undefined,
+        sentiment: undefined,
+        sentiment_reasons: undefined,
+        severity: undefined,
+        severity_reason: undefined,
+        title_ix_applicable: undefined,
+        title_ix_applicable_reasons: undefined,
       });
     });
   });

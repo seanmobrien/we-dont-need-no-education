@@ -69,7 +69,9 @@ describe('ComplianceScoresDetailsRepository', () => {
       const [sqlQuery, values] = (repository as any).getQueryProperties(
         recordId,
       );
-      expect(sqlQuery).toContain('SELECT * FROM compliance_scores_details');
+      expect(sqlQuery).toContain(
+        'SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,',
+      );
       expect(values).toEqual([recordId]);
     });
   });
@@ -93,13 +95,15 @@ describe('ComplianceScoresDetailsRepository', () => {
         obj.value,
         obj.propertyId,
         obj.documentId,
-        obj.createdOn,
+        values[3],
         obj.actionPropertyId,
         obj.complianceScore,
         obj.violationsFound,
         obj.responseDelayDays,
         obj.overallGrade,
         obj.evaluatedOn,
+        null,
+        null,
       ]);
     });
   });

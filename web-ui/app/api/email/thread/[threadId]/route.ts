@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mapRecordToSummary } from '../../../../../lib/api/email/util';
+import {
+  mapRecordToSummary,
+  mapRecordToThreadSummary,
+} from '@/lib/api/email/util';
 import { query, queryExt } from '@/lib/neondb';
 import { LoggedError } from '@/lib/react-util';
-
-export const mapRecordToThreadSummary = (record: Record<string, unknown>) => ({
-  threadId: record.thread_id,
-  subject: record.subject,
-  createdOn: record.created_at,
-});
 
 export async function GET(
   req: NextRequest,

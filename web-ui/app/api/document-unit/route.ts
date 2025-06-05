@@ -1,6 +1,13 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { RepositoryCrudController, DocumentUnitRepository } from '@/lib/api';
 import { isTruthy } from '@/lib/react-util';
+import { DocumentSchema } from '@/lib/ai/tools';
+
+import {
+  getMultipleCaseFileDocuments,
+  toolCallbackArrayResultSchemaFactory,
+} from '@/lib/ai/tools';
+import z from 'zod';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -8,15 +15,40 @@ export async function GET(req: NextRequest) {
   const generateDownloadKey = isTruthy(searchParams.get('downloadable'));
   const alwaysReturnContent = isTruthy(searchParams.get('content'));
   const pendingEmbed = isTruthy(searchParams.get('pending'));
+  const id = searchParams.get('id');
 
-  const controller = new RepositoryCrudController(
-    new DocumentUnitRepository({
-      generateDownloadKey,
-      alwaysReturnContent,
-      pendingEmbed,
-    }),
-  );
-  return controller.list(req);
+  try {
+    if (!!id) {
+      const parsedId = Array.isArray(id) ? id : String(id).split(',');
+      const rawRecords = await getMultipleCaseFileDocuments({
+        caseFileIds: parsedId,
+      });
+
+      const parsedRecords = z
+        .object(toolCallbackArrayResultSchemaFactory(DocumentSchema))
+        .safeParse(rawRecords.structuredContent);
+      if (!parsedRecords.success) {
+        console.log(parsedRecords.error);
+        throw { error: parsedRecords.error, data: rawRecords };
+      }
+      return NextResponse.json(parsedRecords.data);
+    } else {
+      const controller = new RepositoryCrudController(
+        new DocumentUnitRepository({
+          generateDownloadKey,
+          alwaysReturnContent,
+          pendingEmbed,
+        }),
+      );
+      return controller.list(req);
+    }
+  } catch (error) {
+    return NextResponse.json(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { error: (error as any)?.message ?? 'Unknown error', data: { error } },
+      { status: 500 },
+    );
+  }
 }
 
 export async function POST(

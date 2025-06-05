@@ -4,10 +4,7 @@ import {
   EmailPropertyRepository,
   mapEmailPropertyRecordToObject,
 } from '@/lib/api';
-import {
-  buildOrderBy,
-  parseSortOptions,
-} from '@/lib/components/mui/data-grid/utility';
+import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { db } from '@/lib/neondb';
 import { extractParams } from '@/lib/nextjs-util';
 import { NextRequest } from 'next/server';
@@ -22,7 +19,6 @@ export async function GET(
 
   return controller.listFromRepository(async (r) => {
     const { emailId } = await extractParams<{ emailId: string }>(args);
-    const sortOptions = parseSortOptions(new URL(req.url));
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
@@ -35,7 +31,7 @@ export async function GET(
             JOIN document_units d ON d.unit_id = ep.document_id
             JOIN email e ON e.email_id = d.email_id
             WHERE e.email_id=${emailId} 
-            ${sql(sortOptions ? buildOrderBy(sortOptions) : ' AND 1=1 ')}
+            ${buildOrderBy({ sql, source: req })}
             LIMIT ${num} OFFSET ${offset}`,
             { transform: mapEmailPropertyRecordToObject },
           ),

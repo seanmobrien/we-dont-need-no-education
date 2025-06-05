@@ -182,7 +182,7 @@ const handler = createMcpHandler(
                 'The unique identifier of the email associated with the case file document, if applicable.',
               ),
             attachmentId: z
-              .string()
+              .number()
               .nullable()
               .describe(
                 'The unique identifier of the document property associated with the case file document, if applicable.',

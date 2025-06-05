@@ -85,7 +85,7 @@ describe('buildQueryFilter', () => {
 
   it('returns WHERE with filter items', () => {
     const filter: GridFilterModel = {
-      items: [{ field: 'foo', operator: '=', value: 'bar' }],
+      items: [{ field: 'foo', operator: 'equals', value: 'bar' }],
     };
     const result = buildQueryFilter({ sql, source: filter });
     expect(result).toContain('WHERE foo = bar');
@@ -93,7 +93,7 @@ describe('buildQueryFilter', () => {
 
   it('returns AND with append true', () => {
     const filter: GridFilterModel = {
-      items: [{ field: 'foo', operator: '=', value: 'bar' }],
+      items: [{ field: 'foo', operator: 'equals', value: 'bar' }],
     };
     const result = buildQueryFilter({ sql, source: filter, append: true });
     expect(result).toContain('AND foo = bar');
@@ -106,7 +106,7 @@ describe('buildQueryFilter', () => {
 
   it('uses defaultFilter if source is undefined', () => {
     const filter: GridFilterModel = {
-      items: [{ field: 'foo', operator: '=', value: 'bar' }],
+      items: [{ field: 'foo', operator: 'equals', value: 'bar' }],
     };
     const result = buildQueryFilter({
       sql,

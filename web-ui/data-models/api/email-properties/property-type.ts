@@ -89,6 +89,8 @@ export enum EmailPropertyTypeTypeId {
   ViolationDetails = 7,
   SentimentAnalysis = 8,
   KeyPoints = 9,
+  Note = 102,
+  ManualReview = 1000,
 }
 export const EmailPropertyTypeTypeIdValues = [
   EmailPropertyTypeTypeId.From,

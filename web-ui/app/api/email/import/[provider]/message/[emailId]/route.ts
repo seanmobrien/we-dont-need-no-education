@@ -5,13 +5,19 @@ import {
 } from '../../_utilitites';
 import { query, queryExt } from '@/lib/neondb';
 import { newUuid } from '@/lib/typescript';
-import { DefaultImportManager } from '@/lib/email/import/importmanager';
-import { gmail_v1 } from 'googleapis';
+import {
+  DefaultImportManager,
+  queueStagedAttachments,
+} from '@/lib/email/import/google';
 import { LoggedError } from '@/lib/react-util';
-import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
-import { queueAttachment } from '@/lib/email/import/google/attachment-download';
-import type { NextApiRequest } from 'next/types';
 
+/**
+ * Handles GET requests to retrieve an importable email message from the associated provider (e.g., Gmail).
+ *
+ * @param req - The incoming Next.js request object.
+ * @param params - A promise resolving to an object containing the provider name and email ID.
+ * @returns A response containing the importable message source or an error/status object.
+ */
 export const GET = async (
   req: NextRequest,
   { params }: { params: Promise<{ provider: string; emailId: string }> },
@@ -29,6 +35,15 @@ export const GET = async (
     : NextResponse.json(result, { status: 200 });
 };
 
+/**
+ * Handles the POST request to initiate the import process for a staged email.
+ *
+ * @param req - The incoming Next.js request object.
+ * @param params - A promise resolving to an object containing the email provider and email ID.
+ * @returns A JSON response with the result of the import operation.
+ *
+ * This API endpoint triggers the import process for a specific staged email, identified by the provider and emailId.
+ */
 export const POST = async (
   req: NextRequest,
   { params }: { params: Promise<{ provider: string; emailId: string }> },
@@ -39,92 +54,22 @@ export const POST = async (
   return NextResponse.json(result, { status: 200 });
 };
 
-type StageAttachmentProps = {
-  req: NextRequest | NextApiRequest;
-  stagedMessageId: string;
-  part: gmail_v1.Schema$MessagePart;
-};
-type AttachmentStagedResult = {
-  status: 'success' | 'error';
-  error?: string;
-  partId: string;
-};
-
-export const stageAttachment = async ({
-  req,
-  stagedMessageId,
-  part,
-}: StageAttachmentProps): Promise<AttachmentStagedResult> => {
-  const {
-    partId = 'unknown',
-    filename,
-    mimeType,
-  } = part as gmail_v1.Schema$MessagePart;
-  try {
-    if (partId === 'unknown') {
-      throw new Error('partId is required');
-    }
-    const repository = new StagedAttachmentRepository();
-    const model = await repository.create({
-      stagedMessageId,
-      partId: Number(partId),
-      filename: filename ?? `attachment-${partId}`,
-      mimeType:
-        mimeType ??
-        part.headers?.find((h) => h.name === 'Content-Type')?.value ??
-        null,
-      storageId: null,
-      imported: false,
-      size: part.body!.size ?? 0,
-      fileOid: null,
-      attachmentId: part.body!.attachmentId!,
-    });
-
-    await queueAttachment({
-      id: `${stagedMessageId}:${model.partId}`,
-      job: { model: { ...model, stagedMessageId: stagedMessageId } },
-      req: req,
-    });
-
-    return {
-      status: 'success',
-      partId: partId!,
-    };
-  } catch (error) {
-    const e = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'email-import',
-      data: { stagedMessageId, partId, filename, mimeType },
-    });
-    return {
-      status: 'error',
-      error: e.message,
-      partId: partId ?? 'unknown',
-    };
-  }
-};
-
-export const queueStagedAttachments = ({
-  req,
-  stagedMessageId,
-  part: partFromProps,
-}: StageAttachmentProps): Array<Promise<AttachmentStagedResult>> => {
-  const partItems = [];
-  if (partFromProps.filename && partFromProps.body?.attachmentId) {
-    partItems.push(
-      stageAttachment({ req, stagedMessageId, part: partFromProps }),
-    );
-  }
-  return partFromProps.parts
-    ? [
-        ...partItems,
-        ...partFromProps.parts.flatMap((part) =>
-          queueStagedAttachments({ req, stagedMessageId, part }),
-        ),
-      ]
-    : partItems;
-};
-
+/**
+ * Handles the PUT request to stage an email message for import.
+ *
+ * This API endpoint processes an email message identified by the given provider and emailId,
+ * stages it for import, and stores it in the `staging_message` table. If the message has already
+ * been imported and the `refresh` query parameter is not set, it returns an error. If `refresh`
+ * is set, it deletes the previous staging record and stages the message again.
+ *
+ * The endpoint also processes and stages any attachments associated with the email message.
+ * If attachment processing fails, the staged message is rolled back and an error is returned.
+ *
+ * @param req - The Next.js request object.
+ * @param params - An object containing the provider and emailId as route parameters.
+ * @returns A JSON response with the staged message details and status code 201 on success,
+ *          or an error message with the appropriate status code on failure.
+ */
 export const PUT = async (
   req: NextRequest,
   { params }: { params: Promise<{ provider: string; emailId: string }> },

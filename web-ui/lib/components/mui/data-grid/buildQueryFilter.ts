@@ -185,6 +185,9 @@ export const buildQueryFilter = ({
   }
   const columnMap = columnMapFactory(columnMapFromProps);
   // The sql template tag may return a string or undefined in the test mock, so always coerce to string
-  const result = sql`${conjunction} ${source.items.flatMap((x, i) => [i ? sql` AND ` : sql``, buildItemFilter({ item: x, sql, columnMap })])}`;
+  const result = source.items.reduce((acc, x, i) => {
+    const filter = buildItemFilter({ item: x, sql, columnMap });
+    return i === 0 ? sql`${acc} ${filter}` : sql`${acc} AND ${filter}`;
+  }, conjunction);
   return result || sql``;
 };

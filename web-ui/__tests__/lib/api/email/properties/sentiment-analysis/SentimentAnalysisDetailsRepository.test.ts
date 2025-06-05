@@ -72,7 +72,7 @@ describe('SentimentAnalysisDetailsRepository', () => {
         recordId,
       );
       expect(sqlQuery).toContain(
-        'SELECT * FROM email_sentiment_analysis_details',
+        'SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,',
       );
       expect(values).toEqual([recordId]);
     });
@@ -94,11 +94,16 @@ describe('SentimentAnalysisDetailsRepository', () => {
         'INSERT INTO email_sentiment_analysis_details',
       );
       expect(values).toEqual([
+        undefined,
         obj.propertyId,
+        undefined,
+        obj.detectedOn,
         obj.sentimentScore,
         obj.detectedHostility,
         obj.flaggedPhrases,
         obj.detectedOn,
+        null,
+        null,
       ]);
     });
   });

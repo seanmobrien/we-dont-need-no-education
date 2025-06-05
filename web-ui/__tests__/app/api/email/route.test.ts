@@ -249,7 +249,7 @@ describe('Email API', () => {
       const res = await GET(req);
 
       expect(res.status).toBe(200);
-      expect(await res.json()).toEqual(mockResult);
+      expect((await res.json()).results).toEqual(mockResult);
     });
 
     it('should return 400 status if emailId is invalid', async () => {

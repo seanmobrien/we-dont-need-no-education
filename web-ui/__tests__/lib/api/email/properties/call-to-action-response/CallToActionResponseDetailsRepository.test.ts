@@ -69,7 +69,7 @@ describe('CallToActionResponseDetailsRepository', () => {
         recordId,
       );
       expect(sqlQuery).toContain(
-        'SELECT * FROM call_to_action_response_details',
+        'SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id',
       );
       expect(values).toEqual([recordId]);
     });
@@ -91,10 +91,12 @@ describe('CallToActionResponseDetailsRepository', () => {
         obj.value,
         obj.propertyId,
         obj.documentId,
-        obj.createdOn,
+        values[3],
         obj.actionPropertyId,
         obj.completionPercentage,
         obj.responseTimestamp,
+        null,
+        null,
       ]);
     });
   });

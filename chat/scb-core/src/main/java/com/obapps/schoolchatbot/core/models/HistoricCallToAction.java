@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -47,7 +48,7 @@ import java.util.stream.Collectors;
 public class HistoricCallToAction extends CallToAction {
 
   private List<CallToActionCategory> categories;
-
+  private List<DocumentRelationship> relatedDocuments;
   private List<CallToActionResponse> responses;
   private Boolean fromThisMessage = false;
 
@@ -78,8 +79,6 @@ public class HistoricCallToAction extends CallToAction {
   public List<DocumentRelationship> getRelatedDocuments() {
     return relatedDocuments;
   }
-
-  private List<DocumentRelationship> relatedDocuments;
 
   /**
    * Retrieves the list of responses associated with this historical CTA.
@@ -170,31 +169,37 @@ public class HistoricCallToAction extends CallToAction {
     }
   }
 
-  /*
-  @SuppressWarnings("unchecked")
-  public HistoricCallToAction addToDb(IDbTransaction tx) throws SQLException {
-    super.addToDb(tx);
-    addRelationshipsToDb(tx);
-    return this;
-  }
-   
-
-  @SuppressWarnings("unchecked")
-  @Override
-  public HistoricCallToAction updateDb(IDbTransaction tx) throws SQLException {
-    super.updateDb(tx);
-    var db = tx.getDb();
-    db.executeUpdate(
-      "DELETE FROM document_property_call_to_action_category WHERE property_id=?",
-      this.getPropertyId()
-    );
-    addRelationshipsToDb(tx);
-    return this;
-  }
-  */
   void addRelationshipsToDb(IDbTransaction tx) {
+    var relDocs = this.getRelatedDocuments();
+    if (relDocs == null || relDocs.isEmpty()) {
+      return;
+    }
+
+    Optional<Integer> documentId = tx
+      .getDb()
+      .selectSingleValue(
+        """
+        SELECT document_id
+        FROM document_units
+        WHERE document_property_id = ?
+          """,
+        getPropertyId()
+      );
+    if (documentId.isEmpty()) {
+      Log.warn(
+        String.format(
+          "Unexpected failure resolving document id for cta - document relationships cannot be saved.\nProperty Id: %s\nRelationships: %s",
+          this.getPropertyId(),
+          relDocs
+            .stream()
+            .map(DocumentRelationship::getRelationship)
+            .collect(Collectors.joining(", "))
+        )
+      );
+      return;
+    }
     for (DocumentRelationship doc : this.getRelatedDocuments()) {
-      doc.setRelatedPropertyId(getPropertyId());
+      doc.setDocumentId(documentId.get());
       try {
         doc.saveToDb(tx);
       } catch (SQLException e) {

@@ -379,9 +379,8 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
                   .stream()
                   .map(m ->
                     com.obapps.schoolchatbot.core.models.DocumentRelationship.builder()
-                      .documentId(m.documentId)
+                      .targetDocumentId(m.documentId)
                       .relationship(m.relationshipType)
-                      .relatedPropertyId(recordId)
                       .build()
                   )
                   .toList()
@@ -488,7 +487,7 @@ public class CtaTitleIXAccessAssesmentQueueProcessor
         .stream()
         .map(m ->
           com.obapps.schoolchatbot.core.models.DocumentRelationship.builder()
-            .documentId(m.documentId)
+            .targetDocumentId(m.documentId)
             .relationship(m.relationshipType)
             .build()
         )

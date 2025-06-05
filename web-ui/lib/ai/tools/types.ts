@@ -10,6 +10,7 @@ import {
   DocumentPropertyResource,
   DocumentResourceIndex,
 } from './documentResource';
+import { violationDetails } from '@/drizzle/schema';
 
 /**
  * Options for performing a policy search, extending {@link HybridSearchOptions}.
@@ -55,7 +56,7 @@ export type ToolCallbackResult<T> = {
   content: Array<{ type: 'text'; text: string }>;
 } & (
   | {
-      isError: true;
+      isError?: true;
       /**
        * An object wrapping the structured return value of the tool callback.
        */
@@ -63,27 +64,33 @@ export type ToolCallbackResult<T> = {
         /**
          * The result of the tool callback operation, always undefined when the operation failed.
          */
-        result: undefined;
-        /**
-         * Indicates whether an error occurred processing the operation - always true in this case.
-         */
-        isError: true;
-        /**
-         * An optional error message providing details about the failure.
-         */
-        message?: string;
+        result: {
+          /**
+           * Indicates whether an error occurred processing the operation - always true in this case.
+           */
+          isError: true;
+          /**
+           * An optional error message providing details about the failure.
+           */
+          message?: string;
+          /**
+           * An optional cause of the error, which can be any type.
+           */
+          cause?: unknown;
+        };
       };
     }
   | {
       structuredContent: {
         /**
-         * The result of the tool callback operation, of type `T`.
+         * The result of the tool callback operation, of array type `T`.
          */
-        result: T;
-        /**
-         * Indicates whether an error occurred processing the  operation - always false in this case.
-         */
-        isError: false;
+        result: {
+          isError: false;
+          items?: T extends Array<infer U> ? Array<U> : never;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          value?: T extends Array<any> ? never : T;
+        };
       };
     }
 );
@@ -119,3 +126,50 @@ export type MultipleDocumentResourceToolResult = ToolCallbackResult<
 export type DocumentIndexResourceToolResult = ToolCallbackResult<
   Array<DocumentResourceIndex>
 >;
+
+export type CaseFileAmendment = {
+  targetCaseFileId: number | string;
+  severityRating?: number;
+  severityReasons?: Array<string>;
+  notes?: Array<string>;
+  complianceRating?: number;
+  complianceReasons?: Array<string>;
+  completionRating?: number;
+  completionReasons?: Array<string>;
+  addRelatedDocuments?: Array<{
+    relatedToDocumentId: number;
+    relationshipType: string;
+  }>;
+  associateReponsiveAction?: Array<{
+    responsiveDocumentId: number;
+    complianceChapter13: number;
+    comlianceChapter13Reasons: Array<string>;
+    completionPercentage: number;
+    completionReasons: Array<string>;
+  }>;
+  violations?: Array<typeof violationDetails.$inferInsert>;
+
+  sentimentRating?: number;
+  sentimentReasons?: Array<string>;
+  chapter13Rating?: number;
+  chapter13Reasons?: Array<string>;
+  titleIXRating?: number;
+  titleIXReasons?: Array<string>;
+  explaination: string;
+};
+
+export type Amendment = {
+  id: number | string;
+  changes: Partial<CaseFileAmendment>;
+};
+
+export type AmendmentResult = {
+  message: string;
+  UpdatedRecords: Array<Amendment>;
+  InsertedRecords: Array<Amendment>;
+  FailedRecords: Array<
+    Amendment & {
+      error: string;
+    }
+  >;
+};

@@ -15,3 +15,4 @@ export * from './compliance-scores/compliance-scores-details-repository';
 export * from './violation-details/violation-details-repository';
 export * from './sentiment-analysis/sentiment-analysis-details-repository';
 export * from './email-headers/email-header-details-repository';
+export * from './create-document-property';

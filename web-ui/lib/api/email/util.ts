@@ -100,3 +100,17 @@ export const insertRecipients = async (
   }
   return res.length;
 };
+
+/**
+ * Maps a generic record object to a thread summary object.
+ *
+ * @param record - The record containing thread information, expected to have
+ *   `thread_id`, `subject`, and `created_at` properties.
+ * @returns An object with `threadId`, `subject`, and `createdOn` properties
+ *   mapped from the input record.
+ */
+export const mapRecordToThreadSummary = (record: Record<string, unknown>) => ({
+  threadId: record.thread_id,
+  subject: record.subject,
+  createdOn: record.created_at,
+});

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -306,10 +307,23 @@ public class CallToActionResponse extends DocumentProperty {
           "Error adding associated call to action to database - no record created or updated."
         );
       }
-      for (var doc : relatedDocuments) {
-        doc.setRelatedPropertyId(getPropertyId());
-        doc.saveToDb(tx, false);
+      if (relatedDocuments != null && !relatedDocuments.isEmpty()) {
+        Optional<Integer> documentId = tx.getDb().selectSingleValue(
+          "SELECT unit_id FROM document_units WHERE property_id = ?",
+          getPropertyId()
+        );
+        if (documentId.isEmpty()) {
+          throw new SQLException(
+            "Error saving related documents - no document found for property ID: " +
+            getPropertyId()
+          );
+        }
+        for (var doc : relatedDocuments) {
+          doc.setSourceDocumentId(documentId.get());
+          doc.saveToDb(tx, false);
+        }
       }
+
 
       return this;
     } catch (SQLException e) {

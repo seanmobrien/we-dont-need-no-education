@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 jest.mock('@/lib/ai/services/search');
 jest.mock('@/lib/logger');
 jest.mock('@/lib/react-util', () => ({
@@ -6,9 +8,9 @@ jest.mock('@/lib/react-util', () => ({
       return new Error(options.message);
     }),
   },
+  isError: jest.fn((error: any) => error instanceof Error),
 }));
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { searchPolicyStore } from '@/lib/ai/tools/searchPolicyStore';
 import { HybridPolicySearch } from '@/lib/ai/services/search';
 import { log } from '@/lib/logger';
@@ -28,10 +30,6 @@ describe('searchPolicyStore', () => {
       hybridSearch: mockHybridSearch,
     });
     (log as jest.Mock).mockImplementation((cb) => cb({ trace: mockLog }));
-    jest.clearAllMocks();
-  });
-  afterEach(() => {
-    jest.resetAllMocks();
   });
 
   it('should call HybridPolicySearch.hybridSearch with the correct arguments and log the call', async () => {

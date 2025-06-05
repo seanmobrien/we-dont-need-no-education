@@ -146,8 +146,13 @@ export const AiSearchResultEnvelopeSchema = z.object({
         'If set, the client can use this token to retrieve the next page of results by passing it in the `continuationToken` parameter of the next search request.',
     ),
 });
+
 export const DocumentSchema = z.object({
-  unitId: z.number().describe('Unique identifier for the document unit.'),
+  unitId: z
+    .number()
+    .describe(
+      'Unique identifier for this case file.  This value can be passed into `amendCaseFileDocument` and similar tools to refer to this record.',
+    ),
   attachmentId: z
     .number()
     .nullable()
@@ -155,16 +160,29 @@ export const DocumentSchema = z.object({
     .describe('Attachment ID associated with the document.'),
   documentPropertyId: z
     .string()
+    .nullable()
     .optional()
-    .describe('Document property ID associated with the document.'),
-  documentType: z
-    .string()
-    .describe('Type of the document (e.g., email, attachment).'),
+    .describe(
+      'Document property ID associated with the document.  While unitId / documentId is the preferred identifier, this value can be used to refer to this record in some tools.',
+    ),
+  documentType: z.string()
+    .describe(`Type of the document this case file describes.  Valid values include:
+  - 'email': represents an email message.
+  - 'attachment': represents a file attachment.
+  - 'key_point': represents a key point extracted from the case file.
+  - 'cta': Identifies a case file as specifically targeting an individual call to action.
+  - 'cta_response': represents an action taken at least purportedly in response to a call to action.`),
   emailId: z
     .string()
     .optional()
-    .describe('Email ID associated with the document.'),
-  content: z.string().optional().describe('Content of the document.'),
+    .describe(
+      'Email ID associated with the document.  While unitId / documentId is the preferred identifier, when documentType is `email` this value can be passed to tools to refer to this record.',
+    ),
+  content: z
+    .string()
+    .optional()
+    .nullable()
+    .describe('Content of the document.'),
   createdOn: z
     .string()
     .describe(
@@ -172,16 +190,24 @@ export const DocumentSchema = z.object({
     ),
   emailAttachment: z
     .object({
-      attachmentId: z.number().describe('Attachment ID.'),
+      // Not sending attachmentId here as it's available in the parent object
+      // attachmentId: z.number().describe('Attachment ID.'),
       fileName: z.string().describe('Name of the file.'),
       size: z.number().describe('Size of the file in bytes.'),
       mimeType: z.string().describe('MIME type of the file.'),
     })
     .nullable()
-    .optional(),
+    .optional()
+    .describe(
+      'Describes the attachment this case file specifically describes.',
+    ),
   documentProperty: z
     .object({
-      documentPropertyTypeId: z.number().describe('Document property type ID.'),
+      documentPropertyTypeId: z
+        .number()
+        .describe(
+          'Document property type ID.  This value can be pasesed to `getDocumentPropertyType` and similar tools to retrieve the full details of the document property type.',
+        ),
       createdOn: z
         .string()
         .describe(
@@ -217,10 +243,12 @@ export const DocumentSchema = z.object({
                 .describe('Description of the email property category.'),
             })
             .nullable()
-            .optional(),
+            .optional()
+            .describe('A broad category attributed to this case file record'),
         })
         .nullable()
-        .optional(),
+        .optional()
+        .describe('The type of document property this record describes'),
       callToActionDetails: z
         .array(
           z.object({
@@ -319,53 +347,74 @@ export const DocumentSchema = z.object({
           }),
         )
         .nullable()
-        .optional(),
+        .optional()
+        .describe('Specific calls to action included in this communication.'),
       callToActionResponseDetails: z
         .array(z.object({}))
         .optional()
         .nullable()
-        .describe('Details of responsive actions associated with this record.'),
+        .describe(
+          'Details of responsive actions associated with this communication.',
+        ),
     })
     .nullable()
-    .optional(),
+    .optional()
+    .describe(
+      'Details about the document property this case file specifically describes.',
+    ),
+  documentProperties: z
+    .array(z.object({}))
+    .optional()
+    .describe(
+      'An array of document properties associated with this case file.  This is distinct from `documentProperty`, which is the singular record specifically targeted with a case file.',
+    ),
   email: z
     .object({
       contact: z
         .object({
-          contactId: z.number().describe('Contact ID.'),
-          name: z.string().describe('Name of the contact.'),
+          name: z.string().describe('Name of the contact that sent the email.'),
           isDistrictStaff: z
             .boolean()
             .describe('Indicates if the contact is district staff.'),
           email: z.string().describe('Email address of the contact.'),
-          roleDscr: z.string().describe('Role description of the contact.'),
+          roleDscr: z
+            .string()
+            .optional()
+            .nullable()
+            .describe(
+              'The role the contact holds (parent, superintendent, teacher, etc.).',
+            ),
         })
         .nullable()
-        .optional(),
+        .optional()
+        .describe('Contact information of the person who sent the email.'),
       emailRecipients: z
         .array(
           z.object({
             contact: z
               .object({
-                contactId: z.number().describe('Contact ID.'),
-                name: z.string().describe('Name of the contact.'),
+                name: z
+                  .string()
+                  .describe('Name of the person who received the email.'),
                 isDistrictStaff: z
                   .boolean()
                   .describe('Indicates if the contact is district staff.'),
                 email: z.string().describe('Email address of the contact.'),
                 roleDscr: z
                   .string()
+                  .optional()
+                  .nullable()
                   .describe('Role description of the contact.'),
               })
               .optional(),
           }),
         )
         .nullable()
-        .optional(),
+        .optional()
+        .describe('Individual email addresses the communication was sent to.'),
       emailAttachments: z
         .array(
           z.object({
-            attachmentId: z.number().describe('Attachment ID.'),
             fileName: z.string().describe('Name of the file.'),
             size: z.number().describe('Size of the file in bytes.'),
             mimeType: z.string().describe('MIME type of the file.'),
@@ -375,7 +424,7 @@ export const DocumentSchema = z.object({
                   unitId: z
                     .number()
                     .describe(
-                      'Case file Id assigned to the attachment.  This value can be passed to getCaseFileDocument to retreive more information.',
+                      'Case file Id assigned to the attachment.  This value can be passed to getCaseFileDocument and similar tools to retreive attachment conntent and additional information.',
                     ),
                 }),
               )
@@ -384,8 +433,10 @@ export const DocumentSchema = z.object({
           }),
         )
         .nullable()
-        .optional(),
+        .optional()
+        .describe('Attachments associated with this email.'),
     })
     .nullable()
-    .optional(),
+    .optional()
+    .describe('Details about the email this case file specifically describes.'),
 });

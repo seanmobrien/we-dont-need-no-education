@@ -1,6 +1,5 @@
 import { db } from '@/lib/neondb/drizzle-db';
-import { emailPropertyCategory } from '@/drizzle/schema';
-import { toolCallbackResultFactory } from './utility';
+import { resolveCaseFileId, toolCallbackResultFactory } from './utility';
 import {
   DocumentIndexResourceToolResult,
   DocumentResource,
@@ -10,9 +9,84 @@ import {
 } from './types';
 import { LoggedError } from '@/lib/react-util';
 import { log } from '@/lib/logger';
-import { BinaryOperator } from 'drizzle-orm';
+import { FirstParameter } from '@/lib/typescript';
+import { sql } from 'drizzle-orm';
 
-const caseFileDocumentShape = {
+const documentPropertyShape: FirstParameter<
+  (typeof db)['query']['documentProperty']['findFirst']
+> = {
+  columns: {
+    documentPropertyTypeId: true,
+    createdOn: true,
+    policyBasis: true,
+    tags: true,
+    propertyValue: true,
+  },
+  with: {
+    documentUnit: {
+      columns: {
+        content: false,
+        createdOn: false,
+        embeddingModel: false,
+        embeddedOn: false,
+      },
+      with: {
+        docRel_targetDoc: {
+          columns: {
+            targetDocumentId: true,
+            relationshipReasonId: true,
+          },
+          extras: {
+            description:
+              sql`(SELECT description FROM document_relationship_reason WHERE relation_reason_id = relationship_reason_id)`.as(
+                'description',
+              ),
+          },
+        },
+      },
+    },
+    emailPropertyType: {
+      columns: {
+        documentPropertyTypeId: true,
+        propertyName: true,
+      },
+    },
+    callToActionDetails: {
+      columns: {
+        openedDate: true,
+        closedDate: true,
+        compliancyCloseDate: true,
+        completionPercentage: true,
+        complianceRating: true,
+        complianceRatingReasons: true,
+        inferred: true,
+        complianceDateEnforceable: true,
+        reasonableReasons: false,
+        reasonableRequest: false,
+        sentiment: true,
+        sentimentReasons: true,
+        severity: true,
+        severityReason: true,
+        titleIxApplicable: true,
+        titleIxApplicableReasons: true,
+        closureActions: true,
+      },
+    },
+    callToActionResponseDetails: {},
+    keyPointsDetails: {
+      columns: {
+        relevance: true,
+        compliance: true,
+        severityRanking: true,
+        inferred: true,
+      },
+    },
+  },
+};
+
+const caseFileDocumentShape: FirstParameter<
+  (typeof db)['query']['documentUnits']['findFirst']
+> = {
   columns: {
     unitId: true,
     attachmentId: true,
@@ -23,68 +97,73 @@ const caseFileDocumentShape = {
     createdOn: true,
   },
   with: {
+    docRel_sourceDocId: {
+      columns: {
+        targetDocumentId: true,
+        relationshipReasonId: true,
+      },
+      extras: {
+        description:
+          sql`(SELECT description FROM document_relationship_reason WHERE relation_reason_id = relationship_reason_id)`.as(
+            'description',
+          ),
+      },
+    },
     emailAttachment: {
       columns: {
-        attachmentId: true,
+        attachmentId: false,
         fileName: true,
         size: true,
         mimeType: true,
+        extractedText: false,
       },
     },
     documentProperty: {
+      ...documentPropertyShape,
       columns: {
-        documentPropertyTypeId: true,
-        createdOn: true,
-        policyBasis: true,
-        tags: true,
-      },
-      with: {
-        emailPropertyType: {
-          columns: {
-            documentPropertyTypeId: true,
-            propertyName: true,
-          },
-          with: {
-            emailPropertyCategory: {
-              columns: {
-                emailPropertyCategoryId: true,
-                description: true,
-              },
-            },
-          },
-        },
-        callToActionDetails: {
-          columns: {
-            openedDate: true,
-            closedDate: true,
-            compliancyCloseDate: true,
-            completionPercentage: true,
-            complianceRating: true,
-            complianceRatingReasons: true,
-            inferred: true,
-            complianceDateEnforceable: true,
-            reasonableReasons: true,
-            reasonableRequest: true,
-            sentiment: true,
-            sentimentReasons: true,
-            severity: true,
-            severityReason: true,
-            titleIxApplicable: true,
-            titleIxApplicableReasons: true,
-            closureActions: true,
-          },
-        },
-        callToActionResponseDetails: {},
+        ...documentPropertyShape.columns,
+        propertyValue: false,
       },
     },
+    documentProperties: {
+      ...documentPropertyShape,
+      columns: {
+        ...documentPropertyShape.columns,
+        propertyId: true,
+      },
+      where: (dp, { inArray }) =>
+        inArray(dp.documentPropertyTypeId, [
+          4, // EmailPropertyTypeTypeId.CallToAction
+          5, // EmailPropertyTypeTypeId.CallToActionResponse,
+          6, //EmailPropertyTypeTypeId.ComplianceScore,
+          7, //EmailPropertyTypeTypeId.ViolationDetails,
+          8, //EmailPropertyTypeTypeId.SentimentAnalysis,
+          9, //EmailPropertyTypeTypeId.KeyPoints,
+          102, //EmailPropertyTypeTypeId.Note,
+          1000, //  EmailPropertyTypeTypeId.ManualReview,
+        ]),
+    },
     email: {
+      columns: {
+        importedFromId: false,
+        senderId: false,
+        emailContents: false,
+      },
       with: {
-        contact: {},
+        contact: {
+          columns: {
+            contactId: false,
+          },
+        },
         emailRecipients: {
+          columns: {
+            recipientId: false,
+            emailId: false,
+          },
           with: {
             contact: {
               columns: {
-                contactId: true,
+                contactId: false,
                 name: true,
                 isDistrictStaff: true,
                 email: true,
@@ -95,7 +174,7 @@ const caseFileDocumentShape = {
         },
         emailAttachments: {
           columns: {
-            attachmentId: true,
+            attachmentId: false,
             fileName: true,
             size: true,
             mimeType: true,
@@ -111,41 +190,6 @@ const caseFileDocumentShape = {
       },
     },
   },
-};
-
-const resolveCaseFileId = async (
-  documentId: number | string,
-): Promise<number | undefined> => {
-  let parsedId: number | undefined;
-  if (typeof documentId === 'string') {
-    parsedId = parseInt(documentId, 10);
-    if (isNaN(parsedId)) {
-      parsedId = await db.query.documentUnits
-        .findFirst({
-          where: (du, { eq }) =>
-            eq(du.emailId, documentId).append(eq(du.documentType, 'email')),
-          columns: {
-            unitId: true,
-          },
-        })
-        .then((result) => result?.unitId);
-      if (!parsedId) {
-        parsedId = await db.query.documentUnits
-          .findFirst({
-            where: (du, { eq }) => eq(du.documentPropertyId, documentId),
-            columns: {
-              unitId: true,
-            },
-          })
-          .then((result) => result?.unitId);
-      }
-    }
-  } else if (typeof documentId === 'number') {
-    parsedId = documentId;
-  } else {
-    parsedId = undefined;
-  }
-  return parsedId;
 };
 
 export const getCaseFileDocument = async ({
@@ -164,26 +208,16 @@ export const getCaseFileDocument = async ({
     // If we made it this far we at least know we have a numeric documentId :)
     const document = await db.query.documentUnits.findFirst({
       where: (du, { eq }) => eq(du.unitId, parsedId),
-      columns: {
-        unitId: true,
-        attachmentId: true,
-        documentPropertyId: true,
-        documentType: true,
-        emailId: true,
-        content: true,
-        createdOn: true,
-      },
-      with: {
-        ...caseFileDocumentShape.with,
-      },
+      ...caseFileDocumentShape,
     });
     if (!document) {
-      throw new Error(`Document with ID ${parsedId} not found`);
+      throw new Error(
+        `There is no document matching ID ${parsedId} - not found`,
+      );
     }
     log((l) =>
       l.info(
         `getCaseFileDocument: Retrieved document with ID ${document.unitId}`,
-        document,
       ),
     );
     return toolCallbackResultFactory<DocumentResource>(document);
@@ -217,7 +251,6 @@ export const getMultipleCaseFileDocuments = async ({
     log((l) =>
       l.info(
         `getMultipleCaseFileDocuments: Retrieved ${documents.length} documents`,
-        documents,
       ),
     );
     return toolCallbackResultFactory<Array<DocumentResource>>(documents);

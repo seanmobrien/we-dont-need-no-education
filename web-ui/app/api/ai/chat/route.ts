@@ -4,7 +4,7 @@ import { isAiLanguageModelType } from '@/lib/ai/guards';
 import { experimental_createMCPClient as createMCPClient } from 'ai';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import { db } from '@/lib/neondb/drizzle-db';
 import { chatHistory } from '@/drizzle/schema';
@@ -54,62 +54,71 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  const result = streamText({
-    model: aiModelFactory(model),
-    messages,
-    maxSteps: 100,
-    onError: (error) => {
-      log((l) =>
-        l.error({
-          source: 'route:ai:chat onError',
-          message: 'Error during chat processing',
-          error,
-          userId: session?.user?.id,
-          model,
-        }),
-      );
-    },
-    onFinish: async ({ request: { body: requestBody }, ...evt }) => {
-      const response = JSON.stringify(evt, (key, value) => {
-        if (key === 'request' || key.startsWith('x-')) {
-          return undefined;
-        }
-        if (Array.isArray(value) && value.length === 0) {
-          return undefined;
-        }
-        return value;
-      });
-      try {
-        const task = db.insert(chatHistory).values({
-          chatHistoryId,
-          userId: Number(session?.user?.id) ?? 0,
-          request: requestBody ?? '',
-          result: response,
-        });
+  try {
+    const result = streamText({
+      model: aiModelFactory(model),
+      messages,
+      maxSteps: 100,
+      onError: (error) => {
         log((l) =>
-          l.verbose({
-            source: 'route:ai:chat onFinish',
-            message: 'Chat response generated',
-            data: {
-              requestBody,
-              response,
-              userId: session?.user?.id,
-              model,
-            },
+          l.error({
+            source: 'route:ai:chat onError',
+            message: 'Error during chat processing',
+            error,
+            userId: session?.user?.id,
+            model,
           }),
         );
-        await mcpClient.close();
-        await task;
-      } catch (error) {
-        LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          log: true,
-          source: 'route:ai:chat onFinish',
-          severity: 'error',
+      },
+      onFinish: async ({ request: { body: requestBody }, ...evt }) => {
+        const response = JSON.stringify(evt, (key, value) => {
+          if (key === 'request' || key.startsWith('x-')) {
+            return undefined;
+          }
+          if (Array.isArray(value) && value.length === 0) {
+            return undefined;
+          }
+          return value;
         });
-      }
-    },
-    tools: await mcpClient.tools(),
-  });
+        try {
+          const task = db.insert(chatHistory).values({
+            chatHistoryId,
+            userId: Number(session?.user?.id) ?? 0,
+            request: requestBody ?? '',
+            result: response,
+          });
+          log((l) =>
+            l.verbose({
+              source: 'route:ai:chat onFinish',
+              message: 'Chat response generated',
+              data: {
+                requestBody,
+                response,
+                userId: session?.user?.id,
+                model,
+              },
+            }),
+          );
+          await mcpClient.close();
+          await task;
+        } catch (error) {
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'route:ai:chat onFinish',
+            severity: 'error',
+          });
+        }
+      },
+      tools: await mcpClient.tools(),
+    });
 
-  return result.toDataStreamResponse();
+    return result.toDataStreamResponse();
+  } catch (error) {
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'route:ai:chat',
+      severity: 'error',
+    });
+    return NextResponse.error();
+  }
 }
