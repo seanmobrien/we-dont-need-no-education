@@ -34,7 +34,7 @@ const mappedPageOverloadFactory = (
  *
  * @interface MappedUrlBuilder
  *
- * @property {IUrlBuilder & { attachment: IUrlBuilder & { download: MappedPageOverloads; }; contact: MappedPageOverloads; documentUnit: MappedPageOverloads; email: IUrlBuilder & { search: MappedPageOverloads; thread: MappedPageOverloads; stats: MappedPageOverloads; import: IUrlBuilder & { google: IUrlBuilder & { message: IUrlBuilder & { status: MappedPageOverloads; }; search: MappedPageOverloads; }; list: MappedPageOverloads; }; properties: (emailId: string) => IUrlBuilder & { callToAction: MappedPageOverloads; callToActionResponse: MappedPageOverloads; complianceScores: MappedPageOverloads; keyPoints: MappedPageOverloads; sentimentAnalysis: MappedPageOverloads; violationDetails: MappedPageOverloads; emailHeader: MappedPageOverloads; }; }; }} api
+ * @property {IUrlBuilder & { attachment: IUrlBuilder & { download: MappedPageOverloads; }; contact: MappedPageOverloads; doc: MappedPageOverloads; email: IUrlBuilder & { search: MappedPageOverloads; thread: MappedPageOverloads; stats: MappedPageOverloads; import: IUrlBuilder & { google: IUrlBuilder & { message: IUrlBuilder & { status: MappedPageOverloads; }; search: MappedPageOverloads; }; list: MappedPageOverloads; }; properties: (emailId: string) => IUrlBuilder & { callToAction: MappedPageOverloads; callToActionResponse: MappedPageOverloads; complianceScores: MappedPageOverloads; keyPoints: MappedPageOverloads; sentimentAnalysis: MappedPageOverloads; violationDetails: MappedPageOverloads; emailHeader: MappedPageOverloads; }; }; }} api
  * A nested structure for API-related URL builders, including endpoints for attachments,
  * contacts, document units, and email-related operations such as search, thread, stats,
  * and import. Email properties include additional nested builders for specific features.
@@ -80,7 +80,7 @@ export interface MappedUrlBuilder extends IUrlBuilder {
      * @param params - Optional parameters for the document unit page.
      * @returns A function that generates the URL for document units.
      */
-    documentUnit: MappedPageOverloads;
+    doc: MappedPageOverloads;
     /**
      * URL builder for email-related operations, including search, thread, stats,
      * and import. Email properties include additional nested builders for specific features.

@@ -1,7 +1,7 @@
 import z, { ZodRawShape } from 'zod';
 import { ToolCallbackResult } from './types';
 import { isError } from '@/lib/react-util';
-import { db } from '@/lib/neondb/drizzle-db';
+import { db } from '@/lib/drizzle-db/connection';
 
 interface ToolCallbackResultOverloads {
   <T>(result: T): ToolCallbackResult<T>;

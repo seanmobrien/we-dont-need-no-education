@@ -5,7 +5,7 @@ import {
   CaseFileAmendment,
   ToolCallbackResult,
 } from './types';
-import { db } from '@/lib/neondb/drizzle-db';
+import { db } from '@/lib/drizzle-db/connection';
 import { resolveCaseFileId } from './utility';
 import {
   callToActionDetails,
@@ -294,7 +294,7 @@ export const amendCaseRecord = async ({
         content: false,
       },
       with: {
-        documentProperty: {},
+        docProp: {},
       },
     });
     if (target) {
