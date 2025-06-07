@@ -6,7 +6,7 @@ import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
-import { db } from '@/lib/neondb/drizzle-db';
+import { db } from '@/lib/drizzle-db/connection';
 import { chatHistory } from '@/drizzle/schema';
 import { newUuid } from '@/lib/typescript';
 import { LoggedError } from '@/lib/react-util';

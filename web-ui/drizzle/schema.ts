@@ -25,7 +25,7 @@ import {
   pgMaterializedView,
   pgEnum,
 } from 'drizzle-orm/pg-core';
-import { sql } from 'drizzle-orm';
+import { SQL, sql } from 'drizzle-orm';
 
 export const importStageType = pgEnum('import_stage_type', [
   'staged',
@@ -326,6 +326,9 @@ export const emails = pgTable(
     globalMessageId: varchar('global_message_id', { length: 255 }),
     emailId: uuid('email_id').defaultRandom().primaryKey().notNull(),
     parentId: uuid('parent_id'),
+    documentType: varchar('document_type', { length: 50 }).generatedAlwaysAs(
+      (): SQL => sql`email`,
+    ),
   },
   (table) => [
     index('fki_fk_emails_parent_email').using(
@@ -671,6 +674,7 @@ export const violationDetails = pgTable(
     emailDocumentId: integer('email_document_id').notNull(),
     violationType: text('violation_type').notNull(),
     severityLevel: integer('severity_level').notNull(),
+    severityReasons: text('severity_reasons').array().notNull(),
     detectedBy: varchar('detected_by', { length: 255 })
       .default('AI-System')
       .notNull(),

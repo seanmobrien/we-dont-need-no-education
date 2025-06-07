@@ -10,7 +10,10 @@ import {
   DocumentSchema,
   toolCallbackResultSchemaFactory,
   toolCallbackArrayResultSchemaFactory,
+  CaseFileAmendmentShape,
+  AmendmentResultShape,
 } from '@/lib/ai/tools';
+import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { log } from '@/lib/logger';
 import { createMcpHandler } from '@vercel/mcp-adapter';
 import { z } from 'zod';
@@ -208,6 +211,32 @@ const handler = createMcpHandler(
         },
       },
       getCaseFileDocumentIndex,
+    );
+    server.registerTool(
+      'ammendCaseFileDocument',
+      {
+        description:
+          'This tool supports updating values within existing case file documents.  It provides the following capabilities:\n' +
+          '  - Adding a note to the file.\n' +
+          '  - Associating existing call to action and call to action response files.\n' +
+          '  - Adding a violation report to the case file.\n' +
+          '  - Creating relationships between case file documents.\n' +
+          '  - Updating select fields on extracted key points, notes, calls to action, responsive actions, or other relevant information.\n\n' +
+          'Must be used with caution, as it can modify existing case file documents.',
+        inputSchema: {
+          update: CaseFileAmendmentShape,
+        },
+        outputSchema:
+          toolCallbackArrayResultSchemaFactory(AmendmentResultShape),
+        annotations: {
+          title: 'Amend Case File Document',
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+      },
+      amendCaseRecord,
     );
   },
   {

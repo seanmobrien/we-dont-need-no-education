@@ -1,7 +1,7 @@
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 import { isDocumentUnitType } from '@/data-models';
 import { documentProperty, documentUnits } from '@/drizzle/schema';
-import { db } from '@/lib/neondb/drizzle-db';
+import { db } from '@/lib/drizzle-db/connection';
 import { newUuid } from '@/lib/typescript';
 import { log } from '@/lib/logger';
 import { eq } from 'drizzle-orm';

@@ -1,4 +1,5 @@
 import {
+  CaseFileAmendment,
   getCaseFileDocument,
   toolCallbackResultSchemaFactory,
 } from '@/lib/ai/tools';
@@ -7,6 +8,7 @@ import { extractParams } from '@/lib/nextjs-util';
 import { NextRequest, NextResponse } from 'next/server';
 import { DocumentSchema } from '@/lib/ai/tools';
 import { isError } from '@/lib/react-util';
+import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ unitId: number }> },
@@ -35,8 +37,28 @@ export async function PUT(
   req: NextRequest,
   args: { params: Promise<{ unitId: number }> },
 ) {
-  const controller = new RepositoryCrudController(new DocumentUnitRepository());
-  return controller.update(req, args);
+  const { unitId } = await extractParams(args);
+  const data = (await req.json()) as CaseFileAmendment;
+  if (data.targetCaseFileId !== Number(unitId)) {
+    return NextResponse.json(
+      { error: 'Target case file ID does not match the unit ID.' },
+      { status: 400 },
+    );
+  }
+  const response = await amendCaseRecord(data);
+  let status: number;
+  if (response.structuredContent.result.isError) {
+    status = 500;
+  } else {
+    if (response.structuredContent.result.value?.FailedRecords?.length) {
+      status = 400;
+    } else {
+      status = 200;
+    }
+  }
+  return NextResponse.json(response, {
+    status,
+  });
 }
 
 export async function DELETE(

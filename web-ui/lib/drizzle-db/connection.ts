@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
-import sql from './connection';
+import sql from '../neondb/connection';
 import * as schema from '@/drizzle/schema';
-import * as relations from '@/drizzle/relations';
+import * as relations from '@/drizzle/custom-relations';
 
 // You can specify any property from the postgres-js connection options
 export const db = drizzle({
@@ -10,3 +10,4 @@ export const db = drizzle({
   schema: { ...schema, ...relations },
 });
 export { schema, relations };
+export type Database = typeof db;
