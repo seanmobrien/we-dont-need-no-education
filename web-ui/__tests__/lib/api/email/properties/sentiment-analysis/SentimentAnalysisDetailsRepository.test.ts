@@ -97,7 +97,7 @@ describe('SentimentAnalysisDetailsRepository', () => {
         undefined,
         obj.propertyId,
         undefined,
-        obj.detectedOn,
+        values[3],
         obj.sentimentScore,
         obj.detectedHostility,
         obj.flaggedPhrases,

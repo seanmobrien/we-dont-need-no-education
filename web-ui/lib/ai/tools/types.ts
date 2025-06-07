@@ -140,13 +140,7 @@ export type CaseFileAmendment = {
     relatedToDocumentId: number;
     relationshipType: string;
   }>;
-  associateReponsiveAction?: Array<{
-    responsiveDocumentId: number;
-    complianceChapter13: number;
-    comlianceChapter13Reasons: Array<string>;
-    completionPercentage: number;
-    completionReasons: Array<string>;
-  }>;
+  associateResponsiveAction?: Array<ResponsiveActionAssociation>;
   violations?: Array<typeof violationDetails.$inferInsert>;
 
   sentimentRating?: number;
@@ -172,4 +166,12 @@ export type AmendmentResult = {
       error: string;
     }
   >;
+};
+
+export type ResponsiveActionAssociation = {
+  relatedCtaDocumentId: number;
+  complianceChapter13: number;
+  complianceChapter13Reasons: Array<string>;
+  completionPercentage: number;
+  completionReasons: Array<string>;
 };

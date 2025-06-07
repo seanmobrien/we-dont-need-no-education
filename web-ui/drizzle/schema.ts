@@ -674,6 +674,7 @@ export const violationDetails = pgTable(
     emailDocumentId: integer('email_document_id').notNull(),
     violationType: text('violation_type').notNull(),
     severityLevel: integer('severity_level').notNull(),
+    severityReasons: text('severity_reasons').array().notNull(),
     detectedBy: varchar('detected_by', { length: 255 })
       .default('AI-System')
       .notNull(),

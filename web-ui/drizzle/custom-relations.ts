@@ -166,27 +166,34 @@ export const documentPropertyRelations = relations(
         'complianceScoresDetails_propertyId_documentProperty_propertyId',
       fields: [documentProperty.propertyId],
       references: [complianceScoresDetails.propertyId],
-    }),
+    }).withFieldName('compliance'),
     complianceScores: many(complianceScoresDetails, {
       relationName:
         'complianceScoresDetails_actionPropertyId_documentProperty_propertyId',
-    }),
-    sentimentAnalysis: many(emailSentimentAnalysisDetails),
+    }).withFieldName('complianceScores'),
+    sentimentAnalysis: many(emailSentimentAnalysisDetails).withFieldName(
+      'sentimentAnalysis',
+    ),
     keyPoint: one(keyPointsDetails, {
       relationName: 'documentProperty_keyPointsDetails_propertyId',
       fields: [documentProperty.propertyId],
       references: [keyPointsDetails.propertyId],
-    }),
+    }).withFieldName('keyPoint'),
     cta: one(callToActionDetails, {
       relationName: 'documentProperty_callToActionDetails_propertyId',
       fields: [documentProperty.propertyId],
       references: [callToActionDetails.propertyId],
-    }),
+    }).withFieldName('cta'),
     response: one(callToActionResponseDetails, {
       relationName: 'documentProperty_callToActionResponseDetails_propertyId',
       fields: [documentProperty.propertyId],
       references: [callToActionResponseDetails.propertyId],
-    }),
+    }).withFieldName('response'),
+    violation: one(violationDetails, {
+      relationName: 'documentProperty_violationDetails_propertyId',
+      fields: [documentProperty.propertyId],
+      references: [violationDetails.propertyId],
+    }).withFieldName('violation'),
   }),
 );
 

@@ -169,6 +169,18 @@ export const documentPropertyShape: DocumentPropertyQueryShape = {
         inferred: true,
       },
     },
+    violation: {
+      columns: {
+        violationType: true,
+        severityLevel: true,
+        severityReasons: true,
+        violationReasons: true,
+        titleIxRelevancy: true,
+        chapt13Relevancy: true,
+        ferpaRelevancy: true,
+        otherRelevancy: true,
+      },
+    },
   },
 };
 

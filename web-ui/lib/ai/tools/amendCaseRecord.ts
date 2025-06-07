@@ -3,14 +3,17 @@ import {
   Amendment,
   AmendmentResult,
   CaseFileAmendment,
+  ResponsiveActionAssociation,
   ToolCallbackResult,
 } from './types';
 import { db } from '@/lib/drizzle-db/connection';
 import { resolveCaseFileId } from './utility';
 import {
   callToActionDetails,
+  callToActionDetailsCallToActionResponse,
   callToActionResponseDetails,
   documentProperty,
+  documentUnits,
   keyPointsDetails,
   violationDetails,
 } from '@/drizzle/schema';
@@ -19,8 +22,29 @@ import { log } from '@/lib/logger';
 import { toolCallbackResultFactory } from './utility';
 import { newUuid } from '@/lib/typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
+import {
+  CallToActionResponsiveActionLinkType,
+  DbTransactionType,
+  addDocumentRelations,
+  addNotesToDocument,
+} from '@/lib/drizzle-db';
 
+/**
+ * Updates the main record in the database based on the provided document type and amendment details.
+ *
+ * @param tx - The database transaction object.
+ * @param du - The document unit containing the document type and property ID.
+ * @param details - The amendment details including ratings, reasons, and arrays for updated and failed records.
+ * @returns A promise that resolves when the update is complete.
+ * @example
+ * await updateMainRecord(tx, { documentType: 'cta', documentPropertyId: '123' }, {
+ *   severityRating: 5,
+ *   updated: [],
+ *   failed: []
+ * });
+ */
 const updateMainRecord = async (
+  tx: DbTransactionType,
   du: { documentPropertyId: string | null; documentType: string | null },
   {
     severityRating,
@@ -64,7 +88,7 @@ const updateMainRecord = async (
 
   switch (du.documentType) {
     case 'cta':
-      await db
+      await tx
         .update(callToActionDetails)
         .set({
           ...(severityRating !== undefined ? { severity: severityRating } : {}),
@@ -84,7 +108,7 @@ const updateMainRecord = async (
         .execute();
       break;
     case 'cta_response':
-      await db
+      await tx
         .update(callToActionResponseDetails)
         .set({
           ...(complianceRating ? { complianceRating } : {}),
@@ -101,7 +125,7 @@ const updateMainRecord = async (
         .execute();
       break;
     case 'key_point':
-      await db
+      await tx
         .update(keyPointsDetails)
         .set({
           ...(complianceRating ? { compliance: complianceRating } : {}),
@@ -112,6 +136,18 @@ const updateMainRecord = async (
             : {}),
         })
         .where(eq(keyPointsDetails.propertyId, du.documentPropertyId!))
+        .execute();
+      break;
+    case 'compliance':
+      await tx
+        .update(violationDetails)
+        .set({
+          ...(severityRating ? { severityLevel: severityRating } : {}),
+          ...(severityReasons?.length ? { severityReasons } : {}),
+          ...(titleIXRating ? { titleIxRelevancy: titleIXRating } : {}),
+          ...(chapter13Rating ? { chapt13Relevancy: chapter13Rating } : {}),
+        })
+        .where(eq(violationDetails.propertyId, du.documentPropertyId!))
         .execute();
       break;
     default:
@@ -141,6 +177,7 @@ const updateMainRecord = async (
           titleIXReasons,
         },
       });
+      tx.rollback();
       return;
   }
   updated.push({
@@ -162,60 +199,87 @@ const updateMainRecord = async (
   });
 };
 
+/**
+ * Adds notes to the database for a specific target document.
+ *
+ * @param params - An object containing the transaction, notes, target document, and arrays for inserted and failed records.
+ * @returns A promise that resolves when the notes are added.
+ * @example
+ * await addNotes({
+ *   tx,
+ *   notes: ['Note 1', 'Note 2'],
+ *   target: { unitId: 1, emailId: 'abc' },
+ *   insertedRecords: [],
+ *   failedRecords: []
+ * });
+ */
 const addNotes = async ({
+  tx,
   notes: notesFromProps,
   target: { unitId },
   insertedRecords,
   failedRecords,
 }: {
+  tx: DbTransactionType;
   notes?: Array<string>;
-  target: { unitId: number };
+  target: { unitId: number; emailId: string | null };
   insertedRecords: Array<Amendment>;
   failedRecords: Array<Amendment & { error: string }>;
 }) => {
   if (notesFromProps?.length) {
-    const notes = notesFromProps
-      .map((v) => v?.trim() ?? '')
-      .filter((v) => v.length)
-      .map((value) => ({
-        propertyId: newUuid(),
-        documentId: unitId,
-        documentPropertyTypeId: EmailPropertyTypeTypeId.Note,
-        createdOn: Date.now().toString(),
-        propertyValue: value,
-      }));
     try {
-      await db.insert(documentProperty).values(notes).execute();
+      const notes = await addNotesToDocument({
+        db: tx,
+        documentId: unitId,
+        notes: notesFromProps,
+      });
       insertedRecords.push(
         ...notes.map((note) => ({
           id: note.propertyId,
-          changes: { notes: [note.propertyValue] },
+          changes: { notes: [note.propertyValue!] },
         })),
       );
     } catch (error) {
       const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'amendCaseRecord:addNotes',
-        data: { notes, unitId },
+        data: { notesFromProps, unitId },
       });
       failedRecords.push(
-        ...notes.map((note) => ({
-          id: note.propertyId,
+        ...notesFromProps.map((note) => ({
+          id: note,
           error: le.message ?? 'Failed to insert note',
-          changes: { notes: [note.propertyValue] },
+          changes: { notes: [note] },
         })),
       );
+      tx.rollback();
     }
   }
 };
 
+/**
+ * Adds violations to the database for a specific target document.
+ *
+ * @param params - An object containing the transaction, violations, target document, and arrays for inserted and failed records.
+ * @returns A promise that resolves when the violations are added.
+ * @example
+ * await addViolations({
+ *   tx,
+ *   violations: [{ violationType: 'Type A', severityLevel: 3 }],
+ *   target: { unitId: 1, emailId: 'abc' },
+ *   insertedRecords: [],
+ *   failedRecords: []
+ * });
+ */
 export const addViolations = async ({
+  tx,
   violations,
   insertedRecords,
   failedRecords,
-  target: { unitId: emailDocumentId },
+  target: { unitId: emailDocumentId, emailId },
 }: Omit<CaseFileAmendment, 'targetCaseFileId' | 'explaination'> & {
-  target: { unitId: number };
+  tx: DbTransactionType;
+  target: { unitId: number; emailId: string | null };
   insertedRecords: Array<Amendment>;
   failedRecords: Array<Amendment & { error: string }>;
 }): Promise<void> => {
@@ -224,6 +288,7 @@ export const addViolations = async ({
       ({
         violationType,
         severityLevel,
+        severityReasons,
         violationReasons,
         titleIxRelevancy,
         chapt13Relevancy,
@@ -235,17 +300,45 @@ export const addViolations = async ({
           emailDocumentId,
           violationType,
           severityLevel,
+          severityReasons: severityReasons ?? [],
           violationReasons,
-          titleIxRelevancy,
-          chapt13Relevancy,
-          ferpaRelevancy,
-          otherRelevancy,
+          titleIxRelevancy: titleIxRelevancy ?? 0,
+          chapt13Relevancy: chapt13Relevancy ?? 0,
+          ferpaRelevancy: ferpaRelevancy ?? 0,
+          otherRelevancy: otherRelevancy ?? 0,
         };
       },
     );
 
     try {
-      await db.insert(violationDetails).values(violationRecords).execute();
+      await tx
+        .insert(documentUnits)
+        .values(
+          violationRecords.map(({ violationType, propertyId }) => ({
+            emailId,
+            documentType: 'compliance',
+            createdOn: new Date(Date.now()).toISOString(),
+            content: violationType,
+            documentPropertyId: propertyId,
+          })),
+        )
+        .execute();
+
+      await tx
+        .insert(documentProperty)
+        .values(
+          violationRecords.map((v) => ({
+            propertyId: v.propertyId,
+            documentId: v.emailDocumentId,
+            severityLevel: v.severityLevel,
+            severityReason: v.severityReasons,
+            documentPropertyTypeId: EmailPropertyTypeTypeId.ViolationDetails,
+            createdOn: new Date(Date.now()).toISOString(),
+            propertyValue: v.violationType,
+          })),
+        )
+        .execute();
+      await tx.insert(violationDetails).values(violationRecords).execute();
       insertedRecords.push(
         ...violationRecords.map((record) => ({
           id: record.propertyId,
@@ -265,26 +358,228 @@ export const addViolations = async ({
           changes: { violations: [record] },
         })),
       );
+      tx.rollback();
     }
   }
 };
 
+/**
+ * Associates responsive actions with a CTA response document.
+ *
+ * @param params - An object containing the transaction, responsive actions, and target document details.
+ * @returns A promise that resolves when the associations are made.
+ * @throws An error if the document type is not a CTA response or if the document property ID is missing.
+ * @example
+ * await associatResponsiveAction({
+ *   tx,
+ *   associateResponsiveAction: [{ relatedCtaDocumentId: 1 }],
+ *   target: { documentType: 'cta_response', documentPropertyId: '123' }
+ * });
+ */
+const associateResponsiveActions = async ({
+  tx,
+  associateResponsiveAction,
+  target: { documentType, documentPropertyId },
+}: {
+  tx: DbTransactionType;
+  target: {
+    unitId: number;
+    documentType: string | null;
+    documentPropertyId: string | null;
+  };
+  associateResponsiveAction: Array<ResponsiveActionAssociation> | undefined;
+}) => {
+  // See if we can early-exit
+  if (!associateResponsiveAction?.length) {
+    return;
+  }
+  // Verify we are dealing with a valid responsive action
+  if (documentType !== 'cta_response') {
+    throw new Error(
+      'The source document id must be a CTA Response to associate with a CTA.',
+    );
+  }
+  if (!documentPropertyId) {
+    throw new Error(
+      'The source document id must have a document property ID to associate with a CTA.',
+    );
+  }
+  // Load up target documents and ensure they are valid
+  const targetActions = (
+    await tx.query.documentUnits.findMany({
+      where: (documentUnits, { inArray, eq, and }) =>
+        and(
+          inArray(
+            documentUnits.unitId,
+            associateResponsiveAction.map((m) => m.relatedCtaDocumentId),
+          ),
+          eq(documentUnits.documentType, 'cta'),
+        ),
+      with: {
+        docProp: {
+          columns: {},
+          with: {
+            cta: {
+              columns: {},
+              with: {
+                responses: {
+                  columns: {},
+                  with: {
+                    ctaResponse: {
+                      columns: {
+                        propertyId: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+  ).filter((v) =>
+    (
+      v.docProp?.cta?.responses?.map((r) => r.ctaResponse?.propertyId ?? 0) ??
+      []
+    ).includes(documentPropertyId),
+  );
+  if (!targetActions || targetActions.length === 0) {
+    throw new Error(
+      'All target documents must refer to a call to action record.',
+    );
+  }
+  // match up actual found records with incoming requests
+  const records = associateResponsiveAction
+    .map((ra) => {
+      const cta = targetActions.find(
+        (ta) => ta.unitId === ra.relatedCtaDocumentId,
+      );
+      if (!cta) {
+        // I know, ick, but we filter it right away
+        return undefined as unknown as CallToActionResponsiveActionLinkType;
+      }
+      return {
+        callToActionId: cta.documentPropertyId!,
+        callToActionResponseId: documentPropertyId!,
+        complianceChapter13: ra.complianceChapter13,
+        complianceChapter13Reasons: ra.complianceChapter13Reasons,
+        completionPercentage: ra.completionPercentage,
+        completionPercentageReasons: ra.completionReasons,
+      } as CallToActionResponsiveActionLinkType;
+    })
+    .filter(Boolean);
+  // Finally, insert the records
+  await tx
+    .insert(callToActionDetailsCallToActionResponse)
+    .values(records)
+    .execute();
+};
+
+/**
+ * Relates documents by adding relationships between a source document and target documents.
+ *
+ * @param params - An object containing the transaction, target document, inserted records array, and related documents to add.
+ * @returns A promise that resolves when the relationships are added.
+ * @example
+ * await relateDocuments({
+ *   tx,
+ *   target: { unitId: 1, emailId: 'abc' },
+ *   insertedRecords: [],
+ *   addRelatedDocuments: [{ relatedToDocumentId: 2, relationshipType: 'typeA' }]
+ * });
+ */
+const relateDocuments = async ({
+  tx,
+  target: { unitId },
+  insertedRecords,
+  addRelatedDocuments,
+}: {
+  tx: DbTransactionType;
+  insertedRecords: Array<Amendment>;
+  target: { unitId: number; emailId: string | null };
+  addRelatedDocuments?: Array<{
+    relatedToDocumentId: number;
+    relationshipType: string | number;
+  }>;
+}): Promise<void> => {
+  if (!addRelatedDocuments || !addRelatedDocuments.length) {
+    return;
+  }
+  // For our puposes, if we did not throw we can assume they were all
+  // added.  It's poissble we haev dupes or some relastions alraedy existed,
+  // but the model doesn't really care, it just needs to know they are there now.
+  const records = await addDocumentRelations({
+    db: tx,
+    addDocumentRelations: addRelatedDocuments.map(
+      ({ relatedToDocumentId, relationshipType }) => ({
+        sourceDocumentId: unitId,
+        targetDocumentId: relatedToDocumentId,
+        relationshipReasonId: relationshipType,
+      }),
+    ),
+  });
+  records.forEach(
+    ({ targetDocumentId, sourceDocumentId, relationshipReasonId }) => {
+      insertedRecords.push({
+        id: `${targetDocumentId}-${sourceDocumentId}-${relationshipReasonId}`,
+        changes: {
+          addRelatedDocuments: [
+            {
+              relatedToDocumentId: targetDocumentId,
+              relationshipType: String(relationshipReasonId),
+            },
+          ],
+        },
+      });
+    },
+  );
+};
+
+/**
+ * Amends a case record by applying updates, adding notes, violations, and related documents.
+ *
+ * @param amendment - The case file amendment details including target case file ID, notes, violations, and related documents.
+ * @returns A promise that resolves with the result of the amendment process.
+ * @example
+ * const result = await amendCaseRecord({
+ *   targetCaseFileId: 1,
+ *   notes: ['Note 1'],
+ *   violations: [{ violationType: 'Type A', severityLevel: 3 }],
+ *   explaination: 'Reason for amendment',
+ *   addRelatedDocuments: [{ relatedToDocumentId: 2, relationshipType: 'typeA' }]
+ * });
+ */
 export const amendCaseRecord = async ({
-  targetCaseFileId,
-  notes,
-  violations,
-  ...props
-}: CaseFileAmendment): Promise<ToolCallbackResult<AmendmentResult>> => {
+  update: {
+    targetCaseFileId,
+    notes,
+    violations,
+    explaination,
+    addRelatedDocuments,
+    associateResponsiveAction,
+    ...props
+  },
+}: {
+  update: CaseFileAmendment;
+}): Promise<ToolCallbackResult<AmendmentResult>> => {
   const updatedRecords = [] as Array<Amendment>;
   const insertedRecords = [] as Array<Amendment>;
   const failedRecords = [] as Array<Amendment & { error: string }>;
   let message: string | undefined;
+
+  if (!explaination || explaination.trim().length === 0) {
+    return toolCallbackResultFactory<AmendmentResult>(
+      new Error('Explaination is required'),
+    );
+  }
+
   try {
     const targetDocumentId = await resolveCaseFileId(targetCaseFileId);
     if (!targetDocumentId) {
-      throw new Error('Target case file not found', {
-        cause: targetCaseFileId,
-      });
+      return toolCallbackResultFactory<AmendmentResult>(
+        new Error('Target case file ID not found'),
+      );
     }
 
     const target = await db.query.documentUnits.findFirst({
@@ -298,19 +593,46 @@ export const amendCaseRecord = async ({
       },
     });
     if (target) {
-      updateMainRecord(target, {
-        ...props,
-        updated: updatedRecords,
-        failed: failedRecords,
-      });
-      // Handle notes
-      await addNotes({ notes, target, insertedRecords, failedRecords });
-      // Handle violations
-      await addViolations({
-        violations,
-        target,
-        insertedRecords,
-        failedRecords,
+      await db.transaction(async (tx) => {
+        // NOTE: Technically I could run these in parallel, but I want to ensure
+        // but lest have some success with it as-is first.
+        // Apply updates to the main record
+        await updateMainRecord(tx, target, {
+          ...props,
+          updated: updatedRecords,
+          failed: failedRecords,
+        });
+        // Handle notes
+        await addNotes({ tx, notes, target, insertedRecords, failedRecords });
+        // Handle violations
+        await addViolations({
+          tx,
+          violations,
+          target,
+          insertedRecords,
+          failedRecords,
+        });
+        // Related documents
+        await relateDocuments({
+          tx,
+          insertedRecords,
+          target,
+          addRelatedDocuments: addRelatedDocuments,
+        });
+        // Responsive actions
+        await associateResponsiveActions({
+          tx,
+          target,
+          associateResponsiveAction,
+        });
+        // Reason
+        await addNotesToDocument({
+          db: tx,
+          documentId: target.unitId,
+          notes: [
+            `${explaination}\n\nUpdated values: ${JSON.stringify(updatedRecords)}\nInserted values: ${JSON.stringify(insertedRecords)}`,
+          ],
+        });
       });
     } else {
       throw new Error('Target document not found', {
@@ -322,10 +644,15 @@ export const amendCaseRecord = async ({
       log: true,
       source: 'amendCaseRecord',
     });
-    message = 'Failed to fully amend case record - ' + le.message;
+    message = `An error occurred ammending the case record; no updates were committed.  Details: ${le.message}`;
+  }
+  if (failedRecords.length > 0) {
+    message =
+      message ??
+      'We were unable to successfully amend the case record; no updates were committed.';
   }
   return toolCallbackResultFactory({
-    message: message ?? 'Amendment processed successfully',
+    message: message ?? 'All requested updates were successfully applied.',
     UpdatedRecords: updatedRecords,
     InsertedRecords: insertedRecords,
     FailedRecords: failedRecords,
