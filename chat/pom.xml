@@ -16,13 +16,19 @@
         <project.build.groupId>com.obapps.schoolchatbot</project.build.groupId>
         <project.build.artifactId>com.obapps.schoolchatbot</project.build.artifactId>
         <project.build.version>1.0.1-SNAPSHOT</project.build.version>
-        <langchain4j.version>1.0.0-beta3</langchain4j.version>
         <jakartaee-api.version>10.0.0</jakartaee-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>dev.langchain4j</groupId>
+                <artifactId>langchain4j-bom</artifactId>
+                <version>1.0.0</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>com.obapps.schoolchatbot</groupId>
                 <artifactId>com.obapps.core</artifactId>
@@ -101,64 +107,6 @@
             </exclusions>
         </dependency>
             <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-azure-open-ai</artifactId>
-                <version>1.0.0-beta4</version>
-                            <exclusions>
-            </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-core</artifactId>
-                <version>1.0.0-rc1</version>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j</artifactId>
-                <version>1.0.0-rc1</version>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-embeddings</artifactId>
-                <version>1.0.0-beta4</version>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-easy-rag</artifactId>
-                <version>1.0.0-beta4</version>
-                  <exclusions>
-                <exclusion>
-                    <groupId>org.apache.pdfbox</groupId>
-                    <artifactId>fontbox</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.pdfbox</groupId>
-                    <artifactId>pdfbox</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>commons-logging</groupId>
-                    <artifactId>commons-logging</artifactId>
-                </exclusion>
-            </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-open-ai</artifactId>
-                <version>1.0.0-rc1</version>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-azure-ai-search</artifactId>
-                <version>1.0.0-beta4</version>
-                 <exclusions>
-                <exclusion>
-                    <groupId>com.azure</groupId>
-                    <artifactId>azure-core</artifactId>
-                </exclusion>
-
-            </exclusions>
-            </dependency>
-            <dependency>
                 <groupId>com.azure</groupId>
                 <artifactId>azure-core-http-netty</artifactId>            
                 <version>1.15.11</version>
@@ -168,11 +116,6 @@
                         <groupId>io.netty</groupId>
                     </exclusion>               
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>dev.langchain4j</groupId>
-                <artifactId>langchain4j-document-parser-apache-pdfbox</artifactId>
-                <version>1.0.0-beta4</version>
             </dependency>
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
@@ -321,7 +264,7 @@
         <module>core</module>
         <module>scb-core</module>
         <module>scb-embed</module>
-        <module>scb-chatbot</module> 
+        <module>scb-chatbot</module>
     </modules>
   	<build>
 		<plugins>
