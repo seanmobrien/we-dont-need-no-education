@@ -42,6 +42,7 @@ jobs:
         POSTGRES_CONNECTION_URL: "postgresql://bunkdb.postgres.database.azure.com/sue_plsas?sslmode=require"
         POSTGRES_CONNECTION_USER: "someuser"
         POSTGRES_CONNECTION_PW: "not for real"
+        UNIT_TESTING: "1"
         
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
