@@ -313,7 +313,7 @@
 				<version>3.5.3</version>                
                 <configuration>
                     <argLine> -javaagent:${org.mockito:mockito-core:jar}</argLine>
-                    < !--<argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>-- >
+                    < ! <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine> - > 
                 </configuration>
 			</plugin>
 			-->
