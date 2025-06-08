@@ -1,4 +1,3 @@
-process.env.NODE_PG_FORCE_NATIVE = '0';
 import NextAuth, { Session } from 'next-auth';
 import { Adapter } from 'next-auth/adapters';
 import type { Provider } from 'next-auth/providers';
@@ -69,7 +68,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req) => {
   let adapter: Adapter | undefined;
 
   if (!isRunningOnEdge() && typeof window === 'undefined') {
-    process.env.PG_FORCE_NATIVE = '0';
     const { Pool } = await import('pg');
     const { default: PostgresAdapter } = await import('@auth/pg-adapter');
     // Create a `Pool` inside the request handler.
