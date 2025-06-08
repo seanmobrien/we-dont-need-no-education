@@ -39,6 +39,9 @@ jobs:
         AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
         REST_SERVICE_ROOT_URL: ${{ secrets.REST_SERVICE_ROOT_URL }}
         MY_ENV_VAR: "http://localhost:3000"
+        POSTGRES_CONNECTION_URL: "postgresql://bunkdb.postgres.database.azure.com/sue_plsas?sslmode=require"
+        POSTGRES_CONNECTION_USER: "someuser"
+        POSTGRES_CONNECTION_PW: "not for real"
         
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
