@@ -57,14 +57,17 @@ public class Db implements AutoCloseable {
   static com.zaxxer.hikari.HikariDataSource dataSource;
 
   static {
-    var sql = EnvVars.getInstance().getDb();
-    com.zaxxer.hikari.HikariConfig config =
-      new com.zaxxer.hikari.HikariConfig();
-    config.setJdbcUrl(sql.getUrl());
-    config.setUsername(sql.getUser());
-    config.setPassword(sql.getPassword());
-    config.setMaxLifetime(60 * 5 * 1000);
-    dataSource = new com.zaxxer.hikari.HikariDataSource(config);
+    var env = EnvVars.getInstance();
+    if (env.get("UNIT_TESTING") != "1") {
+      var sql = env.getDb();
+      com.zaxxer.hikari.HikariConfig config =
+        new com.zaxxer.hikari.HikariConfig();
+      config.setJdbcUrl(sql.getUrl());
+      config.setUsername(sql.getUser());
+      config.setPassword(sql.getPassword());
+      config.setMaxLifetime(60 * 5 * 1000);
+      dataSource = new com.zaxxer.hikari.HikariDataSource(config);
+    }
   }
 
   /**
