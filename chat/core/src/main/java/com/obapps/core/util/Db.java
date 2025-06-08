@@ -58,7 +58,7 @@ public class Db implements AutoCloseable {
 
   static {
     var env = EnvVars.getInstance();
-    if (env.get("UNIT_TESTING") != "1") {
+    if (System.getenv("UNIT_TESTING") != "1") {
       var sql = env.getDb();
       com.zaxxer.hikari.HikariConfig config =
         new com.zaxxer.hikari.HikariConfig();
