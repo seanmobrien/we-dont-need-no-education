@@ -57,14 +57,30 @@ public class Db implements AutoCloseable {
   static com.zaxxer.hikari.HikariDataSource dataSource;
 
   static {
-    var sql = EnvVars.getInstance().getDb();
-    com.zaxxer.hikari.HikariConfig config =
-      new com.zaxxer.hikari.HikariConfig();
-    config.setJdbcUrl(sql.getUrl());
-    config.setUsername(sql.getUser());
-    config.setPassword(sql.getPassword());
-    config.setMaxLifetime(60 * 5 * 1000);
-    dataSource = new com.zaxxer.hikari.HikariDataSource(config);
+     String isTesting = System.getenv("UNIT_TESTING");
+    if (isTesting != null && (isTesting.equals("true") || isTesting.equals("1") || isTesting.equals(1))) {
+      // Use an in-memory H2 database for unit testing
+      /*
+      com.zaxxer.hikari.HikariConfig config = new com.zaxxer.hikari.HikariConfig();
+      config.setJdbcUrl("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1");
+      config.setUsername("sa");
+      config.setPassword("");
+      config.setMaxLifetime(60 * 5 * 1000);
+      dataSource = new com.zaxxer.hikari.HikariDataSource(config);      
+       */
+      LoggerFactory.getLogger(Db.class).info(
+        "Using in-memory H2 database for unit tests"
+      );
+    } else {
+      var sql = EnvVars.getInstance().getDb();
+      com.zaxxer.hikari.HikariConfig config =
+        new com.zaxxer.hikari.HikariConfig();
+      config.setJdbcUrl(sql.getUrl());
+      config.setUsername(sql.getUser());
+      config.setPassword(sql.getPassword());
+      config.setMaxLifetime(60 * 5 * 1000);
+      dataSource = new com.zaxxer.hikari.HikariDataSource(config);
+    }       
   }
 
   /**
