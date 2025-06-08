@@ -27,6 +27,15 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
+      env:
+        AZURE_AISEARCH_ENDPOINT: ${{ secrets.AZURE_AISEARCH_ENDPOINT }}
+        AZURE_AISEARCH_KEY: ${{ secrets.AZURE_AISEARCH_KEY }}
+        AZURE_AISEARCH_INDEX_NAME: ${{ secrets.AZURE_AISEARCH_INDEX_NAME }}
+        AZURE_AISEARCH_POLICY_INDEX_NAME: ${{ secrets.AZURE_AISEARCH_POLICY_INDEX_NAME }}
+        AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
+        REST_SERVICE_ROOT_URL: ${{ secrets.REST_SERVICE_ROOT_URL }}
+
     - name: Build with Maven
       run: mvn -B package --file chat/pom.xml
 
