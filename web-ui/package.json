@@ -12,7 +12,7 @@
     "start": "next start",
     "test": "jest",
     "lint": "next lint",
-    "generate-css-types": "tailwindcss-classnames -i tailwind.config.ts -o tailwindcss.classnames.ts -x tailwind.customtypes.ts",
+    "generate-css-types": "tailwindcss-classnames -i tailwind.config.mjs -outputFilenames tailwindcss.classnames.ts -x tailwind.customtypes.ts",
     "vercel-build": "npm run bootstrap && next build"
   },
   "dependencies": {
