@@ -52,6 +52,10 @@ const serverEnvSchema = z.object({
   // BEGIN vars shared with client
   NEXT_PUBLIC_HOSTNAME: ZodProcessors.url(),
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: ZodProcessors.logLevel(),
+
+  NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ZodProcessors.integer().default(
+    5 * 60 * 1000,
+  ),
   /**
    * The license key for MUI X Pro components.
    */

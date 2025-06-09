@@ -1,6 +1,7 @@
+import { EmailMessageSummary } from '@/data-models';
 import { GetGridRecordDataProps } from '@/lib/components/mui/data-grid';
 import {
-  DataGridProps,
+  DataGridProProps,
   GridColDef,
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
@@ -13,11 +14,11 @@ export type ServerBoundDataGridProps<
   getRecordData?: (props: GetGridRecordDataProps) => Promise<Response>;
   idColumn: string;
 } & Omit<
-  DataGridProps<TRowModel>,
+  DataGridProProps<TRowModel>,
   | 'dataSource'
   | 'loading'
   | 'onDataSourceError'
-  | 'columns'
+  // | 'columns'
   | 'getRowId'
   | 'pageSizeOptions'
   | 'logger'
@@ -34,8 +35,8 @@ export type EmailPropertyGridProps<
 };
 
 export type EmailGridProps = Omit<
-  ServerBoundDataGridProps,
-  'url' | 'idColumn'
+  ServerBoundDataGridProps<EmailMessageSummary>,
+  'url' | 'idColumn' | 'columns'
 > & {
   maxHeight?: string;
 };
