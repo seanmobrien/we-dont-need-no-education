@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { extractParams } from '@/lib/nextjs-util';
 import { DocumentUnitRepository } from '@/lib/api/document-unit';
 import { LoggedError } from '@/lib/react-util';
+import { DocumentUnit } from '@/data-models/api/document-unit';
 
 export async function GET(
   req: NextRequest,
@@ -27,16 +28,17 @@ export async function GET(
     const documentUnits = await repo.list();
     
     // Filter for attachments related to this email
-    const emailAttachments = documentUnits.data.filter(unit => 
+    const emailAttachments = documentUnits.results.filter((unit: Partial<DocumentUnit>) => 
       unit.emailId === emailId && 
       unit.documentType === 'attachment' && 
-      unit.attachmentId !== null
+      unit.attachmentId !== null &&
+      unit.attachmentId !== undefined
     );
 
     // Transform the data to include the attachment information we need
-    const attachments = emailAttachments.map(unit => ({
-      unitId: unit.unitId,
-      attachmentId: unit.attachmentId,
+    const attachments = emailAttachments.map((unit: Partial<DocumentUnit>) => ({
+      unitId: unit.unitId!,
+      attachmentId: unit.attachmentId!,
       fileName: extractFileNameFromPath(unit.hrefDocument),
       hrefDocument: unit.hrefDocument,
       hrefApi: unit.hrefApi,
