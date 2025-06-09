@@ -45,7 +45,7 @@ export async function PUT(
       { status: 400 },
     );
   }
-  const response = await amendCaseRecord(data);
+  const response = await amendCaseRecord({ update: data });
   let status: number;
   if (response.structuredContent.result.isError) {
     status = 500;

@@ -75,7 +75,7 @@ describe('query', () => {
   it('should resolve with transformed results', async () => {
     const cb = jest.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]);
     const result = await query(cb, {
-      transform: (r) => ({ ...r, id: r.id * 10 }),
+      transform: (r) => ({ ...r, id: Number(r.id) * 10 }),
     });
     expect(result).toEqual([{ id: 10 }, { id: 20 }]);
     expect(cb).toHaveBeenCalled();

@@ -80,6 +80,14 @@ export interface MappedUrlBuilder extends IUrlBuilder {
      * @param params - Optional parameters for the document unit page.
      * @returns A function that generates the URL for document units.
      */
+    documentUnit: MappedPageOverloads;
+    /**
+     * URL builder for document unit-related operations.
+     *
+     * @param slug - Optional slug or object for the document unit page.
+     * @param params - Optional parameters for the document unit page.
+     * @returns A function that generates the URL for document units.
+     */
     doc: MappedPageOverloads;
     /**
      * URL builder for email-related operations, including search, thread, stats,

@@ -117,8 +117,7 @@ class EmailAttachmentTest {
         Mockito.any()
       )
     ).thenReturn(List.of(new EmailAttachment()));
-
-    mockDb = Db.getInstance();
+    
     List<EmailAttachment> attachments = EmailAttachment.loadForEmail(
       mockDb,
       emailId

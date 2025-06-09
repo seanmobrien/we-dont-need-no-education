@@ -10,7 +10,7 @@ import com.obapps.core.ai.factory.types.ILanguageModelFactory;
 import com.obapps.core.ai.factory.types.IStandaloneModelClient;
 import com.obapps.core.ai.telemetry.MetricsChatModelListener;
 import com.obapps.core.ai.telemetry.SpanChatModelListener;
-//import com.obapps.core.ai.tools.HybridToolProvider;
+import com.obapps.core.ai.tools.HybridToolProvider;
 import com.obapps.core.util.EnvVars;
 import com.obapps.core.util.EnvVars.OpenAiVars;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -25,6 +25,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Factory class for creating instances of {@link ChatModel} and {@link IStandaloneModelClient}.
@@ -53,6 +55,8 @@ import java.util.regex.Pattern;
  * This class is not thread-safe and should be used with caution in multi-threaded environments.
  */
 public class StandaloneModelClientFactory implements ILanguageModelFactory {
+
+  private static final Logger log = LoggerFactory.getLogger(StandaloneModelClientFactory.class);
 
   private EnvVars envVars;
   private String userName;
@@ -329,7 +333,22 @@ public class StandaloneModelClientFactory implements ILanguageModelFactory {
         .build()
     );
     var builder = AiServices.builder(options.getClazz()).chatModel(model);
-    //builder.toolProvider(new HybridToolProvider());
+    
+    // Configure MCP support if enabled
+    if (options.mcpEnabled) {
+      String mcpServerUrl = envVars.getMcpServerUrl();
+      if (mcpServerUrl != null && !mcpServerUrl.trim().isEmpty()) {
+        try {
+          builder.toolProvider(new HybridToolProvider(mcpServerUrl));
+          log.info("MCP support enabled with server URL: {}", mcpServerUrl);
+        } catch (Exception e) {
+          log.warn("Failed to initialize MCP support: {}", e.getMessage());
+        }
+      } else {
+        log.warn("MCP support is enabled but MCP_SERVER_URL environment variable is not set or empty. MCP will not be attached.");
+      }
+    }
+    
     if (options.memoryWindow != null && options.memoryWindow > 0) {
       builder.chatMemory(
         MessageWindowChatMemory.withMaxMessages(options.memoryWindow)

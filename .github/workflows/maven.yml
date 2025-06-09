@@ -1,0 +1,108 @@
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: Java CI with Maven
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven      
+
+    - name: Build with Maven
+      run: mvn -B package --file chat/pom.xml
+      env:
+        AZURE_AISEARCH_ENDPOINT: ${{ secrets.AZURE_AISEARCH_ENDPOINT }}
+        AZURE_AISEARCH_KEY: ${{ secrets.AZURE_AISEARCH_KEY }}
+        AZURE_AISEARCH_INDEX_NAME: ${{ secrets.AZURE_AISEARCH_INDEX_NAME }}
+        AZURE_AISEARCH_POLICY_INDEX_NAME: ${{ secrets.AZURE_AISEARCH_POLICY_INDEX_NAME }}
+        AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+        AZURE_OPENAI_KEY: ${{ secrets.AZURE_OPENAI_KEY }}
+        REST_SERVICE_ROOT_URL: ${{ secrets.REST_SERVICE_ROOT_URL }}
+        MY_ENV_VAR: "http://localhost:3000"
+        POSTGRES_CONNECTION_URL: "postgresql://bunkdb.postgres.database.azure.com/sue_plsas?sslmode=require"
+        POSTGRES_CONNECTION_USER: "someuser"
+        POSTGRES_CONNECTION_PW: "not for real"
+        UNIT_TESTING: "1"
+
+    - name: Setup Node.js environment
+      uses: actions/setup-node@v3.9.1
+      with:        
+        node-version: ">=22.13.1"
+        cache: yarn
+        cache-dependency-path: ./web-ui/package-lock.json
+
+    - name: Setup kernel for react native, increase watchers
+      run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+      shell: bash
+      working-directory: ./web-ui
+    - name: Use Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ env.NODEJS_VERSION }}
+        check-latest: true
+        always-auth: true
+      
+    - name: Set yarn config
+      run: yarn config set @folio:registry $FOLIO_NPM_REGISTRY
+      shell: bash
+      working-directory: ./web-ui
+      
+    - name: Set FOLIO NPM snapshot version
+      working-directory: ./web-ui
+      run: |
+        git clone https://github.com/folio-org/folio-tools.git
+        npm --no-git-tag-version version `folio-tools/github-actions-scripts/folioci_npmver.sh`
+        rm -rf folio-tools
+      env:
+        JOB_ID: ${{ github.run_number }}
+      shell: bash
+      
+    - name: Run yarn install
+      working-directory: ./web-ui
+      run: yarn install --ignore-scripts
+      shell: bash
+      
+    - name: Run yarn list
+      working-directory: ./web-ui
+      run: yarn list --pattern @folio
+      shell: bash
+      
+    - name: Run yarn lint
+      working-directory: ./web-ui
+      run: yarn lint
+      continue-on-error: true
+      shell: bash
+      
+    - name: Run yarn test
+      working-directory: ./web-ui
+      run: xvfb-run --server-args="-screen 0 1024x768x24" yarn test $YARN_TEST_OPTIONS
+      shell: bash
+      
+    - name: Run yarn formatjs-compile
+      working-directory: ./web-ui
+      if: ${{ env.COMPILE_TRANSLATION_FILES == 'true' }}
+      run: yarn formatjs-compile
+      shell: bash                      
+    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
+    # - name: Update dependency graph
+    #  uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6

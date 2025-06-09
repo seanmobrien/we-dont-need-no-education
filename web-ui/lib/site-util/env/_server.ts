@@ -6,7 +6,7 @@ import { AiLanguageModelType, isAiLanguageModelType } from '@/lib/ai/core';
 const buildRawInstance = () => ({
   ...clientRawInstance,
   // END NEXT_PUBLIC env vars
-  LOG_LEVEL_SERVER: process.env.LOG_LEVEL_SERVER,
+  LOG_LEVEL_SERVER: process.env.LOG_LEVEL_SERVER ?? 'warn',
   DATABASE_URL: process.env.DATABASE_URL,
   DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
   AZURE_OPENAI_ENDPOINT: process.env.AZURE_OPENAI_ENDPOINT,
@@ -62,6 +62,10 @@ const serverEnvSchema = z.object({
       return isAiLanguageModelType(val) ? val : ('hifi' as AiLanguageModelType);
     })
     .default('hifi' as AiLanguageModelType),
+
+  NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ZodProcessors.integer().default(
+    5 * 60 * 1000,
+  ),
   /**
    * The license key for MUI X Pro components.
    */

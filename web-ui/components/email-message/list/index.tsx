@@ -50,7 +50,7 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     headerName: 'From',
     editable: false,
     flex: 0.2,
-    valueGetter: (sender: ContactSummary | undefined) => {
+    valueGetter: (sender: ContactSummary) => {
       return sender ? sender.name : 'Unknown';
     },
   },

@@ -17,6 +17,7 @@ public class ChatModelOptions extends ChatModelOptionsBase {
 
     private ModelType modelType = ModelType.LoFi;
     private Double temperature = null;
+    private boolean mcpEnabled = true;
     private Function<
       AzureOpenAiChatModel.Builder,
       AzureOpenAiChatModel.Builder
@@ -34,9 +35,15 @@ public class ChatModelOptions extends ChatModelOptionsBase {
       return this;
     }
 
+    public Builder mcpEnabled(boolean mcpEnabled) {
+      this.mcpEnabled = mcpEnabled;
+      return this;
+    }
+
     public Builder copy(ChatModelOptionsBase options) {
       this.modelType = options.modelType;
       this.temperature = options.temperature;
+      this.mcpEnabled = options.mcpEnabled;
       return this;
     }
 
@@ -66,6 +73,7 @@ public class ChatModelOptions extends ChatModelOptionsBase {
       ChatModelOptions ret = new ChatModelOptions();
       ret.modelType = this.modelType;
       ret.temperature = this.temperature;
+      ret.mcpEnabled = this.mcpEnabled;
       ret.onSetupModelCallback = this.setupCallback;
       return ret;
     }
