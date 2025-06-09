@@ -1,4 +1,3 @@
-/*
 package com.obapps.core.ai.tools;
 
 import dev.langchain4j.mcp.McpToolProvider;
@@ -13,10 +12,10 @@ public class HybridToolProvider implements ToolProvider {
 
   private final McpToolProvider mcpToolProvider;
 
-  public HybridToolProvider() {
+  public HybridToolProvider(String mcpServerUrl) {
     super();
     McpTransport transport = new HttpMcpTransport.Builder()
-      .sseUrl("http://localhost:3000/api/ai/tools/sse")
+      .sseUrl(mcpServerUrl)
       .logRequests(true) // if you want to see the traffic in the log
       .logResponses(true)
       .build();
@@ -35,4 +34,3 @@ public class HybridToolProvider implements ToolProvider {
     return mcpToolProvider.provideTools(request);
   }  
 }
-*/

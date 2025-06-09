@@ -173,6 +173,10 @@
             <artifactId>langchain4j-azure-ai-search</artifactId>            
         </dependency>
         <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-mcp</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.azure</groupId>
             <artifactId>azure-core</artifactId>
             <version>1.55.3</version>
