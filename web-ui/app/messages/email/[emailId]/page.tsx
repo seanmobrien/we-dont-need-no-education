@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
-import EmailForm from '@/components/email-message/form';
+import EmailViewer from '@/components/email-message/email-viewer';
 import { extractParams } from '@/lib/nextjs-util';
 import { Box } from '@mui/material';
 import React from 'react';
@@ -19,11 +19,7 @@ const Home = async (args: { params: Promise<{ emailId: string }> }) => {
           },
         }}
       >
-        <EmailForm
-          emailId={emailId}
-          withButtons={true}
-          afterSaveBehavior="redirect"
-        />
+        <EmailViewer emailId={emailId} />
       </Box>
     </EmailDashboardLayout>
   );
