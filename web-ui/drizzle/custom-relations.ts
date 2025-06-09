@@ -237,6 +237,9 @@ export const chatHistoryRelations = relations(chatHistory, ({ one }) => ({
 export const usersRelations = relations(users, ({ many }) => ({
   chatHistories: many(chatHistory),
   stagingMessages: many(stagingMessage),
+  accounts: many(accounts, {
+    relationName: 'accounts_userId_users_id',
+  }),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one, many }) => ({
@@ -247,8 +250,12 @@ export const sessionsRelations = relations(sessions, ({ one, many }) => ({
   sessionsExts: many(sessionsExt),
 }));
 
-export const accountsRelations = relations(accounts, ({ many }) => ({
+export const accountsRelations = relations(accounts, ({ one, many }) => ({
   sessions: many(sessions),
+  user: one(users, {
+    fields: [accounts.userId],
+    references: [users.id],
+  }),
 }));
 
 export const sessionsExtRelations = relations(sessionsExt, ({ one }) => ({

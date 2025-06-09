@@ -254,45 +254,46 @@ export const chatHistory = pgTable(
 );
 
 export const accounts = pgTable(
-  "accounts",
+  'accounts',
   {
-    userId: text("userId")
+    userId: text('userId')
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    type: text("type").$type<"oauth" | "oidc" | "email">().notNull(),
-    provider: text("provider").notNull(),
-    providerAccountId: text("providerAccountId").notNull(),
-    refresh_token: text("refresh_token"),
-    access_token: text("access_token"),
-    expires_at: integer("expires_at"),
-    token_type: text("token_type"),
-    scope: text("scope"),
-    id_token: text("id_token"),
-    session_state: text("session_state"),
+      .references(() => users.id, { onDelete: 'cascade' }),
+    type: text('type').$type<'oauth' | 'oidc' | 'email'>().notNull(),
+    provider: text('provider').notNull(),
+    providerAccountId: text('providerAccountId').notNull(),
+    refresh_token: text('refresh_token'),
+    access_token: text('access_token'),
+    expires_at: integer('expires_at'),
+    token_type: text('token_type'),
+    scope: text('scope'),
+    id_token: text('id_token'),
+    session_state: text('session_state'),
   },
   (account) => ({
     compoundKey: primaryKey({
       columns: [account.provider, account.providerAccountId],
     }),
-    userIdIdx: index("accounts_userId_idx").on(account.userId),
-  })
+    userIdIdx: index('accounts_userId_idx').on(account.userId),
+  }),
 );
 
 export const sessions = pgTable(
-  "sessions",
+  'sessions',
   {
-    sessionToken: text("sessionToken").notNull().primaryKey(),
-    userId: text("userId")
+    id: serial('id').primaryKey().notNull(),
+    sessionToken: text('sessionToken').notNull().primaryKey(),
+    userId: text('userId')
       .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    expires: timestamp("expires", {
-      mode: "date",
+      .references(() => users.id, { onDelete: 'cascade' }),
+    expires: timestamp('expires', {
+      mode: 'date',
       withTimezone: true,
     }).notNull(),
   },
   (session) => ({
-    userIdIdx: index("sessions_userId_idx").on(session.userId),
-  })
+    userIdIdx: index('sessions_userId_idx').on(session.userId),
+  }),
 );
 
 export const sessionsExt = pgTable(
@@ -481,30 +482,33 @@ export const stagingMessage = pgTable(
   ],
 );
 
-export const users = pgTable("users", {
-  id: text("id")
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  name: text("name"),
-  email: text("email").notNull(),
-  emailVerified: timestamp("emailVerified", {
-    mode: "date",
-    withTimezone: true,
+export const users = pgTable(
+  'users',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    name: text('name'),
+    email: text('email').notNull(),
+    emailVerified: timestamp('emailVerified', {
+      mode: 'date',
+      withTimezone: true,
+    }),
+    image: text('image'),
+    created_at: timestamp('created_at', {
+      // custom field
+      mode: 'date',
+      withTimezone: true,
+    }).defaultNow(),
+    updated_at: timestamp('updated_at', {
+      // custom field
+      mode: 'date',
+      withTimezone: true,
+    }).$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    // custom index
   }),
-  image: text("image"),
-  account_id: integer("account_id"), // custom field
-  created_at: timestamp("created_at", { // custom field
-    mode: "date",
-    withTimezone: true,
-  }).defaultNow(),
-  updated_at: timestamp("updated_at", { // custom field
-    mode: "date",
-    withTimezone: true,
-  }).$onUpdate(() => new Date()),
-},
-(table) => ({ // custom index
-  accountIdIdx: index("user_account_id_idx").on(table.account_id),
-})
 );
 
 export const legalReferences = pgTable(
@@ -806,18 +810,18 @@ export const documentUnitAnalysisStageIgnore = pgTable(
 );
 
 export const verificationTokens = pgTable(
-  "verificationToken",
+  'verificationToken',
   {
-    identifier: text("identifier").notNull(),
-    token: text("token").notNull(),
-    expires: timestamp("expires", {
-      mode: "date",
+    identifier: text('identifier').notNull(),
+    token: text('token').notNull(),
+    expires: timestamp('expires', {
+      mode: 'date',
       withTimezone: true,
     }).notNull(),
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  })
+  }),
 );
 
 export const emailRecipients = pgTable(
