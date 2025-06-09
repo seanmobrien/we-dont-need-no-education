@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import EmailViewer from '@/components/email-message/email-viewer';
+import { getEmail } from '@/lib/api/client';
 
 // Mock the API modules
 jest.mock('@/lib/api/client', () => ({
@@ -31,6 +32,9 @@ global.fetch = jest.fn();
 
 const theme = createTheme();
 
+// Get the mocked version for type safety
+const mockGetEmail = jest.mocked(getEmail);
+
 const EmailViewerWrapper = ({ emailId }: { emailId: string }) => (
   <ThemeProvider theme={theme}>
     <EmailViewer emailId={emailId} />
@@ -40,6 +44,27 @@ const EmailViewerWrapper = ({ emailId }: { emailId: string }) => (
 describe('EmailViewer', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    
+    // Mock getEmail to return a cancellable promise-like object
+    const mockCancellablePromise = {
+      then: jest.fn().mockResolvedValue({
+        emailId: 'test-email-id',
+        sender: { contactId: 1, name: 'Test Sender', email: 'sender@test.com' },
+        recipients: [{ contactId: 2, name: 'Test Recipient', email: 'recipient@test.com' }],
+        subject: 'Test Subject',
+        body: 'Test email body content',
+        sentOn: '2023-01-01T00:00:00Z',
+        threadId: 1,
+        parentEmailId: null,
+      }),
+      catch: jest.fn(),
+      finally: jest.fn(),
+      cancel: jest.fn(),
+      cancelled: jest.fn(),
+      awaitable: Promise.resolve(),
+    };
+    
+    mockGetEmail.mockReturnValue(mockCancellablePromise);
   });
 
   it('renders loading state initially', () => {
