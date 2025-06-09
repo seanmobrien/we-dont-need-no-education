@@ -21,6 +21,9 @@ export const logger = (): Promise<ILogger> =>
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },
           useOnlyCustomLevels: false,
+          transport: {
+            target: 'pino-opentelemetry-transport',
+          },
         });
       } else {
         const isJest = process.env.JEST_WORKER_ID !== undefined;
