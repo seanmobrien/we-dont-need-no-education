@@ -30,13 +30,14 @@ export const clientRawInstance = {
    * The log level for client-side logging.
    * @type {string | undefined}
    */
-  NEXT_PUBLIC_LOG_LEVEL_CLIENT: process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT,
+  NEXT_PUBLIC_LOG_LEVEL_CLIENT:
+    process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT ?? 'silly',
   /**
    * The cache timeout for client-side data grids.
    * @type {string | undefined}
    */
   NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT:
-    process.env.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT,
+    process.env.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT ?? '5m',
   /**
    * The license key for MUI X Pro components.
    */

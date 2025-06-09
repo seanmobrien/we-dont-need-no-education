@@ -1,5 +1,8 @@
 attachments
 target
 instrument
+chat-log.txt
+*.log
+**/*.log
 
 
