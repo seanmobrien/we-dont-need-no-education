@@ -163,6 +163,8 @@ public class AiServiceOptions<TService> extends ChatModelOptionsBase {
 
     private Double temperature = null;
 
+    private boolean mcpEnabled = true;
+
     /**
      * A callback that is invoked during the setup of the service options.
      */
@@ -274,6 +276,17 @@ public class AiServiceOptions<TService> extends ChatModelOptionsBase {
     }
 
     /**
+     * Sets whether MCP (Model Context Protocol) support should be enabled.
+     *
+     * @param mcpEnabled Whether MCP should be enabled.
+     * @return The builder instance.
+     */
+    public Builder<TService> setMcpEnabled(boolean mcpEnabled) {
+      this.mcpEnabled = mcpEnabled;
+      return this;
+    }
+
+    /**
      * Copies the configuration from an existing AiServiceOptions instance.
      *
      * @param source The source AiServiceOptions instance.
@@ -283,6 +296,7 @@ public class AiServiceOptions<TService> extends ChatModelOptionsBase {
     public Builder<TService> copy(ChatModelOptionsBase source) {
       this.modelType = source.modelType;
       this.temperature = source.temperature;
+      this.mcpEnabled = source.mcpEnabled;
       this.setupModelCallback = source.onSetupModelCallback;
 
       if (source instanceof AiServiceOptions<?>) {
@@ -310,6 +324,7 @@ public class AiServiceOptions<TService> extends ChatModelOptionsBase {
         this.memoryWindow
       );
       ret.temperature = this.temperature;
+      ret.mcpEnabled = this.mcpEnabled;
       ret.onSetupServiceCallback = this.setupCallback;
       ret.onSetupModelCallback = this.setupModelCallback;
       return ret;

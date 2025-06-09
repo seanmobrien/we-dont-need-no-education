@@ -19,6 +19,13 @@ public class ChatModelOptionsBase {
   public Double temperature = null;
 
   /**
+   * Indicates whether MCP (Model Context Protocol) support should be enabled.
+   * Defaults to true. If enabled but MCP_SERVER_URL is not set, MCP will be
+   * disabled and a warning will be logged.
+   */
+  public boolean mcpEnabled = true;
+
+  /**
    * Supports extended model configuration via a callback.
    * This function allows customization of the AzureOpenAiChatModel.Builder
    * by applying additional configurations or modifications.

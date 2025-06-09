@@ -50,6 +50,10 @@ public class EnvVars {
     return ret.isEmpty() ? defaultValue : ret;
   }
 
+  public String getMcpServerUrl() {
+    return get("MCP_SERVER_URL");
+  }
+
   public OtelVars getOtel() {
     return new OtelVars();
   }
