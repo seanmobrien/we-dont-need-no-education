@@ -5,7 +5,7 @@ import { clientEnvFactory, clientRawInstance } from './_client';
 const buildRawInstance = () => ({
   ...clientRawInstance,
   // END NEXT_PUBLIC env vars
-  LOG_LEVEL_SERVER: process.env.LOG_LEVEL_SERVER,
+  LOG_LEVEL_SERVER: process.env.LOG_LEVEL_SERVER ?? 'warn',
   DATABASE_URL: process.env.DATABASE_URL,
   DATABASE_URL_UNPOOLED: process.env.DATABASE_URL_UNPOOLED,
   AZURE_OPENAI_ENDPOINT: process.env.AZURE_OPENAI_ENDPOINT,
