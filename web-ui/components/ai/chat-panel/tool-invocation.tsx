@@ -17,7 +17,16 @@ const ToolInvocation = ({
   } else if (Array.isArray(args)) {
     argArray = args.length > 0 ? args : ['[No arguments]'];
   } else if (args && typeof args === 'object') {
-    argArray = Object.entries(args).map(([key, value]) => `${key}: ${value}`);
+    argArray = Object.entries(args).map(
+      ([key, value]) =>
+        `${key}: ${
+          typeof value === 'object'
+            ? !!value
+              ? JSON.stringify(value)
+              : 'null'
+            : value
+        }`,
+    );
   } else {
     argArray = ['[No arguments]'];
   }

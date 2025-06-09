@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { isRunningOnClient, ZodProcessors } from './_common';
 import { clientEnvFactory, clientRawInstance } from './_client';
+import { AiLanguageModelType, isAiLanguageModelType } from '@/lib/ai/core';
 
 const buildRawInstance = () => ({
   ...clientRawInstance,
@@ -50,8 +51,17 @@ const buildRawInstance = () => ({
 // Define the schema for server-side environment variables
 const serverEnvSchema = z.object({
   // BEGIN vars shared with client
+  NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ZodProcessors.integer().default(
+    5 * 60 * 1000,
+  ),
   NEXT_PUBLIC_HOSTNAME: ZodProcessors.url(),
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: ZodProcessors.logLevel(),
+  NEXT_PUBLIC_DEFAULT_AI_MODEL: z
+    .string()
+    .transform((val) => {
+      return isAiLanguageModelType(val) ? val : ('hifi' as AiLanguageModelType);
+    })
+    .default('hifi' as AiLanguageModelType),
   /**
    * The license key for MUI X Pro components.
    */
@@ -73,8 +83,8 @@ const serverEnvSchema = z.object({
     .string()
     .default(process.env.AZURE_OPENAI_ENDPOINT ?? ''),
   AZURE_OPENAI_DEPLOYMENT_HIFI: z.string().default('gpt-4.1'),
-  AZURE_OPENAI_DEPLOYMENT_LOFI: z.string().default('o3-mini'),
-  AZURE_OPENAI_DEPLOYMENT_COMPLETIONS: z.string().default('o3-mini'),
+  AZURE_OPENAI_DEPLOYMENT_LOFI: z.string().default('gpt-4o-mini'),
+  AZURE_OPENAI_DEPLOYMENT_COMPLETIONS: z.string().default('gpt-4o-mini'),
   AZURE_OPENAI_ENDPOINT_COMPLETIONS: z
     .string()
     .default(process.env.AZURE_OPENAI_ENDPOINT ?? ''),

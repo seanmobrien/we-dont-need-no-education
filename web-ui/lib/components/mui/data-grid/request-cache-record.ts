@@ -159,7 +159,6 @@ export class RequestCacheRecord<TModel extends GridValidRowModel = object> {
     }
     const data = (await response.json()) as PaginatedResultset<TModel>;
     const rowCount = data.pageStats?.total ?? 0;
-    console.log('paginate?', data.pageStats, data);
     return {
       rows: data.results.map((item: TModel) => ({
         ...item,
