@@ -34,7 +34,7 @@ export const clientRawInstance = {
     process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT ?? 'silly',
   /**
    * The cache timeout for client-side data grids.
-   * @type {string | undefined}
+   * @type {number | undefined}
    */
   NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT:
     process.env.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT ?? (5 * 60 * 1000),
