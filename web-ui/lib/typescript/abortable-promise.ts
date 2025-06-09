@@ -103,21 +103,11 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
   finally(
     onfinally?: (() => void) | null | undefined,
   ): ICancellablePromiseExt<T> {
-    log((l) =>
-      l.info('AbortablePromise finally called', {
-        timestamp: new Date().toISOString(),
-      }),
-    );
     this.#promise = this.#promise.finally(onfinally);
     return this;
   }
 
   cancel(): void {
-    log((l) =>
-      l.info('AbortablePromise cancel called', {
-        timestamp: new Date().toISOString(),
-      }),
-    );
     this.#controller.abort();
   }
 
@@ -125,11 +115,6 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
     onrejected?: // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ((reason: any) => TResult | PromiseLike<TResult>) | null | undefined,
   ): ICancellablePromiseExt<T | TResult> {
-    log((l) =>
-      l.info('AbortablePromise cancelled called', {
-        timestamp: new Date().toISOString(),
-      }),
-    );
     this.#promise = this.#promise.catch((e) =>
       this.isMyAbortError(e) ? onrejected?.(e) : Promise.reject(e),
     ) as Promise<T>;
