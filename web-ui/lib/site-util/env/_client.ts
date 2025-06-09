@@ -37,7 +37,7 @@ export const clientRawInstance = {
    * @type {string | undefined}
    */
   NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT:
-    process.env.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT ?? '5m',
+    process.env.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT ?? (5 * 60 * 1000),
   /**
    * The license key for MUI X Pro components.
    */
