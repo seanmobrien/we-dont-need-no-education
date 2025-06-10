@@ -19,7 +19,15 @@ export const SERVICE_NAME = 'sue-the-schools-webui';
 export const SERVICE_VERSION = '1.0.0';
 export const SCHEMA_URL = 'https://sue-the-schools-webui.notaurl/schema';
 
+// Flag to prevent multiple registrations during hot reloads
+let instrumentationRegistered = false;
+
 export async function register() {
+  if (instrumentationRegistered) {
+    console.log('Instrumentation already registered, skipping...');
+    return;
+  }
+  
   try {
     let traceExporter: SpanExporter | undefined;
     let logRecordProcessor: LogRecordProcessor | undefined;
@@ -131,6 +139,7 @@ export async function register() {
       loggerProvider.addLogRecordProcessor(logRecordProcessor);
       logs.setGlobalLoggerProvider(loggerProvider);
     }
+    instrumentationRegistered = true;
     if (typeof window === 'undefined') {
       console.log(
         'Instrumentation Registered for server stack [' +
