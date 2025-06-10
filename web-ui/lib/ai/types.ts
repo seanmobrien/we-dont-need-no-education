@@ -1,6 +1,6 @@
 import { UIMessage } from 'ai';
-import './unions';
-import { AiModelType } from './unions';
+import './core/unions';
+import { AiModelType } from './core/unions';
 
 /**
  * Defines the number of dimensions for embeddings.
@@ -44,5 +44,11 @@ export type ChatOptions = {
 
 export type ChatRequestMessage = {
   messages: UIMessage[];
-  model: AiModelType;
+  data?: {
+    [key: string]: unknown;
+    model: AiModelType;
+    page: string;
+    threadId: string;
+    writeEnabled?: boolean;
+  };
 };

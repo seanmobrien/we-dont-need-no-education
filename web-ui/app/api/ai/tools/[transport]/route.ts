@@ -213,7 +213,7 @@ const handler = createMcpHandler(
       getCaseFileDocumentIndex,
     );
     server.registerTool(
-      'ammendCaseFileDocument',
+      'amendCaseFileDocument',
       {
         description:
           'This tool supports updating values within existing case file documents.  It provides the following capabilities:\n' +
@@ -222,7 +222,7 @@ const handler = createMcpHandler(
           '  - Adding a violation report to the case file.\n' +
           '  - Creating relationships between case file documents.\n' +
           '  - Updating select fields on extracted key points, notes, calls to action, responsive actions, or other relevant information.\n\n' +
-          'Must be used with caution, as it can modify existing case file documents.',
+          'Must be used with caution, as it can modify existing case file documents; Write access required.',
         inputSchema: {
           update: CaseFileAmendmentShape,
         },

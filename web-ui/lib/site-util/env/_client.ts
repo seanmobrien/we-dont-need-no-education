@@ -42,6 +42,10 @@ export const clientRawInstance = {
    * The license key for MUI X Pro components.
    */
   NEXT_PUBLIC_MUI_LICENSE: process.env.NEXT_PUBLIC_MUI_LICENSE,
+  /**
+   * The default AI model
+   */
+  NEXT_PUBLIC_DEFAULT_AI_MODEL: process.env.NEXT_PUBLIC_DEFAULT_AI_MODEL,
 };
 
 /**

@@ -1,33 +1,4 @@
-import { AiModelType, AiModelTypeValues } from './unions';
 import { ChatOptions, EmbeddingOptions } from './types';
-
-/**
- * Type guard to check if a given value is a valid `AiModelType`.
- *
- * @param value - The value to check.
- * @returns `true` if the value is a string and is included in `AiModelTypeValues`, otherwise `false`.
- */
-export const isAiModelType = (value: unknown): value is AiModelType =>
-  typeof value === 'string' && AiModelTypeValues.includes(value as AiModelType);
-
-/**
- * Type guard that checks if a given value is an `AiModelType` excluding the `'embedding'` type.
- *
- * @param value - The value to check.
- * @returns `true` if the value is an `AiModelType` and not `'embedding'`; otherwise, `false`.
- *
- * @example
- * ```typescript
- * isAiLanguageModelType('hifi'); // true
- * isAiLanguageModelType('lofi'); // true
- * isAiLanguageModelType('embedding'); // false
- * isAiLanguageModelType('other-model'); // false
- * ```
- */
-export const isAiLanguageModelType = (
-  value: unknown,
-): value is Exclude<AiModelType, 'embedding'> =>
-  isAiModelType(value) && value !== 'embedding';
 
 /**
  * Type guard to determine if a given value is of type `ChatOptions`.

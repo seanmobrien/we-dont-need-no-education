@@ -1,9 +1,12 @@
 import { AzureOpenAIProvider, createAzure } from '@ai-sdk/azure';
 import { env } from '@/lib/site-util/env';
 import { EmbeddingModelV1, LanguageModelV1 } from '@ai-sdk/provider';
-import { AiModelType, AiModelTypeValue_Embedding } from './unions';
 import { ChatOptions, EmbeddingOptions } from './types';
-import { isAiModelType } from './guards';
+import { isAiModelType, AiModelType } from '@/lib/ai/core';
+import { AiModelTypeValue_Embedding } from '@/lib/ai/core/unions';
+
+import { wrapLanguageModel } from 'ai';
+import { retryRateLimitMiddleware } from './middleware/retryRateLimitMiddleware';
 
 let azureProjectProvider: AzureOpenAIProvider | undefined;
 
@@ -18,6 +21,13 @@ interface GetAzureProjectProviderOverloads {
     options?: ChatOptions,
   ): LanguageModelV1;
 }
+
+const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
+  return wrapLanguageModel({
+    model,
+    middleware: retryRateLimitMiddleware,
+  });
+};
 
 export const aiModelFactory: GetAzureProjectProviderOverloads = (
   modelType?: AiModelType,
@@ -37,21 +47,25 @@ export const aiModelFactory: GetAzureProjectProviderOverloads = (
     return azureProjectProvider!;
   }
   if (isAiModelType(modelType)) {
+    let model: LanguageModelV1;
     switch (modelType) {
       case 'completions':
-        return azureProjectProvider.completion(
+        model = azureProjectProvider.completion(
           env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS'),
           options as ChatOptions,
         );
+        break;
       case 'lofi':
-        return azureProjectProvider.chat(
+        model = azureProjectProvider.chat(
           env('AZURE_OPENAI_DEPLOYMENT_LOFI'),
           options as ChatOptions,
         );
+        break;
       case 'hifi':
-        return azureProjectProvider.chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI'), {
+        model = azureProjectProvider.chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI'), {
           ...options,
         });
+        break;
       case 'embedding':
         return azureProjectProvider.textEmbeddingModel(
           env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING'),
@@ -60,6 +74,7 @@ export const aiModelFactory: GetAzureProjectProviderOverloads = (
       default:
         throw new Error('Invalid AiModelType provided: ' + modelType);
     }
+    return setupMiddleware(model);
   }
 };
 

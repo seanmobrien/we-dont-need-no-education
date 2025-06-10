@@ -75,7 +75,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
           ) AS count_responsive_actions
         FROM emails e
         JOIN contacts sender ON e.sender_id = sender.contact_id                      
-        ${buildOrderBy({ sql, source: req, defaultSort: [{ field: 'sent_timestamp', sort: 'desc' }] })}          
+        ${buildOrderBy({ sql, source: req, defaultSort: [{ field: 'sent_timestamp', sort: 'desc' }], columnMap: { sentOn: 'sent_timestamp' } })}          
         LIMIT ${num} OFFSET ${offset};`,
       { transform: mapRecordToSummary },
     );
