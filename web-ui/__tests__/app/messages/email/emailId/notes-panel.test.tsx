@@ -72,7 +72,8 @@ describe('NotesPanel', () => {
     render(<NotesPanel row={minimalNote} />);
     
     expect(screen.getByText('Simple note')).toBeInTheDocument();
-    expect(screen.getByText('Note')).toBeInTheDocument(); // default type name
+    // Note appears in both title and as default type name - check that we have multiple instances
+    expect(screen.getAllByText('Note')).toHaveLength(2); // title and type name
     expect(screen.getByText('No policy basis specified')).toBeInTheDocument();
     expect(screen.getByText('No tags specified')).toBeInTheDocument();
   });

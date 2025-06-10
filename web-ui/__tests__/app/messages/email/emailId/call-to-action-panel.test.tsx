@@ -141,7 +141,7 @@ describe('CallToActionPanel', () => {
     
     await waitFor(() => {
       expect(screen.getByText('FERPA')).toBeInTheDocument();
-      expect(screen.getByText('Title IX')).toBeInTheDocument();
+      expect(screen.getAllByText('Title IX')).toHaveLength(2); // Once in scores, once in policy basis
       expect(screen.getByText('urgent')).toBeInTheDocument();
       expect(screen.getByText('compliance')).toBeInTheDocument();
     });

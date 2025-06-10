@@ -19,25 +19,13 @@ const EmailHeaderPanelContent = ({ row }: { row: EmailProperty }) => {
     <>
       {/* Header Information */}
       <Grid container spacing={2}>
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={6}>
           <Typography variant="subtitle1" fontWeight="bold">Header Name</Typography>
           <Typography variant="body2">{row.typeName || 'Unknown Header'}</Typography>
         </Grid>
-        <Grid item xs={12} md={9}>
-          <Typography variant="subtitle1" fontWeight="bold">Header Value</Typography>
-          <Typography 
-            variant="body1" 
-            sx={{ 
-              backgroundColor: 'grey.100', 
-              p: 2, 
-              borderRadius: 1, 
-              fontFamily: 'monospace',
-              fontSize: '0.875rem',
-              wordBreak: 'break-all'
-            }}
-          >
-            {row.value}
-          </Typography>
+        <Grid item xs={12} md={6}>
+          <Typography variant="subtitle1" fontWeight="bold">Category</Typography>
+          <Typography variant="body2">{row.categoryName || 'Email Header'}</Typography>
         </Grid>
       </Grid>
 
@@ -45,7 +33,7 @@ const EmailHeaderPanelContent = ({ row }: { row: EmailProperty }) => {
 
       {/* Basic Information */}
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <Typography variant="subtitle1" fontWeight="bold">Created On</Typography>
           <Typography variant="body2">
             {row.createdOn ? new Intl.DateTimeFormat('en-US', {
@@ -56,10 +44,6 @@ const EmailHeaderPanelContent = ({ row }: { row: EmailProperty }) => {
               minute: '2-digit'
             }).format(new Date(row.createdOn)) : 'Not specified'}
           </Typography>
-        </Grid>
-        <Grid item xs={12} md={6}>
-          <Typography variant="subtitle1" fontWeight="bold">Category</Typography>
-          <Typography variant="body2">{row.categoryName || 'Email Header'}</Typography>
         </Grid>
       </Grid>
 
@@ -99,27 +83,6 @@ const EmailHeaderPanelContent = ({ row }: { row: EmailProperty }) => {
                 </Typography>
               </Grid>
             </Grid>
-            
-            {/* Policy Basis and Tags Section */}
-            <Box>
-              <Typography variant="body2" color="textSecondary" align="left" gutterBottom>
-                Policy Basis
-              </Typography>
-              <Typography variant="body1" align="left">
-                {row.policy_basis && row.policy_basis.length > 0 
-                  ? row.policy_basis.join(', ') 
-                  : 'No policy basis specified'}
-              </Typography>
-              
-              <Typography variant="body2" color="textSecondary" align="left" gutterBottom sx={{ mt: 2 }}>
-                Tags
-              </Typography>
-              <Typography variant="body1" align="left">
-                {row.tags && row.tags.length > 0 
-                  ? row.tags.join(', ') 
-                  : 'No tags specified'}
-              </Typography>
-            </Box>
           </Stack>
         </AccordionDetails>
       </Accordion>
