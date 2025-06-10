@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  ...(process.env.FOR_STANDALONE == '1' ? { output: 'standalone' } : {}),
   env: {
     // Manually add variables you want to expose
     NEXT_PUBLIC_HOSTNAME: process.env.NEXT_PUBLIC_HOSTNAME,
