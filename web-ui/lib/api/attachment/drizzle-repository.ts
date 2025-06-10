@@ -121,18 +121,18 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
    * Prepares EmailAttachment data for database updates
    */
   protected prepareUpdateData(model: Partial<EmailAttachment>): Record<string, unknown> {
+    // Exclude non-updatable fields and fields not in database schema
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { attachmentId, emailId, extractedTextTsv, ...updateFields } = model;
+    
+    // Filter out undefined values to only include fields being updated
     const updateData: Record<string, unknown> = {};
-
-    if (model.fileName !== undefined) updateData.fileName = model.fileName;
-    if (model.filePath !== undefined) updateData.filePath = model.filePath;
-    if (model.extractedText !== undefined) updateData.extractedText = model.extractedText;
-    if (model.policyId !== undefined) updateData.policyId = model.policyId;
-    if (model.summary !== undefined) updateData.summary = model.summary;
-    if (model.mimeType !== undefined) updateData.mimeType = model.mimeType;
-    if (model.size !== undefined) updateData.size = model.size;
-    // Note: emailId is typically not updated after creation
-    // Note: attachmentId is not updatable as it's the primary key
-
+    Object.entries(updateFields).forEach(([key, value]) => {
+      if (value !== undefined) {
+        updateData[key] = value;
+      }
+    });
+    
     return updateData;
   }
 }
