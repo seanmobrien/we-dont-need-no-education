@@ -372,8 +372,9 @@ describe('EmailAttachmentDrizzleRepository', () => {
     it('should use correct table configuration', () => {
       const config = (repository as Record<string, unknown>).config;
       const idField = (repository as Record<string, unknown>).idField;
+      const tableName = (repository as Record<string, unknown>).tableName;
 
-      expect(config.tableName).toBe('email_attachments');
+      expect(tableName).toBe('email_attachments');
       expect(idField).toBe('attachmentId');
       expect(config.table).toBeDefined();
       expect(config.idColumn).toBeUndefined(); // Should be undefined since it's auto-detected

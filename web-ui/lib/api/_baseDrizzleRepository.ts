@@ -1,5 +1,5 @@
 import { db, type Database } from '@/lib/drizzle-db';
-import { ObjectRepository, DrizzleRepositoryConfig } from './_types';
+import { ObjectRepository, DrizzleRepositoryConfig, IObjectRepositoryExt } from './_types';
 import { PaginatedResultset, PaginationStats } from '@/data-models';
 import { PartialExceptFor } from '@/lib/typescript';
 import { eq, count, SQL } from 'drizzle-orm';
@@ -16,16 +16,17 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
 ): { idColumn: PgColumn; idField: KId } {
   try {
     const tableConfig = getTableConfig(config.table);
+    const tableName = config.tableName || tableConfig.name;
     
     // Find the primary key column
     const primaryKeyColumns = tableConfig.columns.filter(col => col.primary);
     
     if (primaryKeyColumns.length === 0) {
-      throw new Error(`No primary key found in table ${config.tableName}`);
+      throw new Error(`No primary key found in table ${tableName}`);
     }
     
     if (primaryKeyColumns.length > 1) {
-      throw new Error(`Multiple primary keys found in table ${config.tableName}. Please specify idColumn and idField manually.`);
+      throw new Error(`Multiple primary keys found in table ${tableName}. Please specify idColumn and idField manually.`);
     }
     
     const primaryKeyColumn = primaryKeyColumns[0];
@@ -39,8 +40,9 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
       idField: camelCaseFieldName as KId
     };
   } catch (error) {
+    const tableName = config.tableName || getTableConfig(config.table).name;
     throw new Error(
-      `Unable to auto-detect primary key for table ${config.tableName}. ` +
+      `Unable to auto-detect primary key for table ${tableName}. ` +
       `Please provide idColumn and idField explicitly in the config. ` +
       `Error: ${error instanceof Error ? error.message : String(error)}`
     );
@@ -64,10 +66,14 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
   protected readonly config: DrizzleRepositoryConfig<T, KId>;
   protected readonly idColumn: PgColumn;
   protected readonly idField: KId;
+  protected readonly tableName: string;
 
   constructor(config: DrizzleRepositoryConfig<T, KId>) {
     this.db = db;
     this.config = config;
+    
+    // Auto-detect table name if not provided
+    this.tableName = config.tableName || getTableConfig(config.table).name;
     
     // Auto-detect primary key if not provided
     if (!config.idColumn || !config.idField) {
@@ -90,7 +96,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
   ): void {
     // NO-OP by default, can be overridden
     log((l) =>
-      l.silly(`Validating ${String(method)} operation`, { obj, tableName: this.config.tableName }),
+      l.silly(`Validating ${String(method)} operation`, { obj, tableName: this.tableName }),
     );
   }
 
@@ -122,7 +128,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       log((l) =>
         l.verbose({
-          message: `[[AUDIT]] - ${this.config.tableName} list:`,
+          message: `[[AUDIT]] - ${this.tableName} list:`,
           result: results,
           num,
           offset,
@@ -167,7 +173,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       log((l) =>
         l.verbose({
-          message: `[[AUDIT]] - ${this.config.tableName} record retrieved:`,
+          message: `[[AUDIT]] - ${this.tableName} record retrieved:`,
           result,
         }),
       );
@@ -193,14 +199,14 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
         .returning();
 
       if (records.length !== 1) {
-        throw new Error(`Failed to create ${this.config.tableName} record`);
+        throw new Error(`Failed to create ${this.tableName} record`);
       }
 
       const result = this.config.recordMapper(records[0]);
 
       log((l) =>
         l.verbose({
-          message: `[[AUDIT]] - ${this.config.tableName} record created:`,
+          message: `[[AUDIT]] - ${this.tableName} record created:`,
           result,
         }),
       );
@@ -227,18 +233,18 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
         .returning();
 
       if (records.length === 0) {
-        throw new Error(`${this.config.tableName} record not found for update`);
+        throw new Error(`${this.tableName} record not found for update`);
       }
 
       if (records.length > 1) {
-        throw new Error(`Multiple ${this.config.tableName} records updated`);
+        throw new Error(`Multiple ${this.tableName} records updated`);
       }
 
       const result = this.config.recordMapper(records[0]);
 
       log((l) =>
         l.verbose({
-          message: `[[AUDIT]] - ${this.config.tableName} record updated:`,
+          message: `[[AUDIT]] - ${this.tableName} record updated:`,
           result,
         }),
       );
@@ -270,7 +276,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       log((l) =>
         l.verbose({
-          message: `[[AUDIT]] - ${this.config.tableName} record deleted:`,
+          message: `[[AUDIT]] - ${this.tableName} record deleted:`,
           result,
         }),
       );
@@ -286,9 +292,9 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
    * Inner query method for accessing repository functionality.
    * Note: This is a simplified implementation for Drizzle compatibility.
    */
-  innerQuery<TRet>(query: (repo: BaseDrizzleRepository<T, KId>) => TRet): TRet {
-    // For Drizzle repositories, we simplify this interface
-    return query(this);
+  innerQuery<TRet>(query: (repo: IObjectRepositoryExt<T>) => TRet): TRet {
+    // For Drizzle repositories, we simplify this interface by casting to the expected type
+    return query(this as unknown as IObjectRepositoryExt<T>);
   }
 
   /**
@@ -335,7 +341,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
   protected logDatabaseError(operation: string, error: unknown): void {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
-      source: `${this.config.tableName}DrizzleRepository::${operation}`,
+      source: `${this.tableName}DrizzleRepository::${operation}`,
     });
   }
 }

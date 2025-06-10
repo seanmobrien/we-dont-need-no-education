@@ -15,8 +15,8 @@ export interface DrizzleRepositoryConfig<T extends object, KId extends keyof T> 
   recordMapper: (record: Record<string, unknown>) => T;
   /** Function to map database record to summary object */
   summaryMapper: (record: Record<string, unknown>) => Partial<T>;
-  /** Table name for logging purposes */
-  tableName: string;
+  /** Table name for logging purposes (optional - will be auto-detected if not provided) */
+  tableName?: string;
   /** The property name of the ID field in the domain object (optional - will be auto-detected if not provided) */
   idField?: KId;
 }

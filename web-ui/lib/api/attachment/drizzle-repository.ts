@@ -48,7 +48,6 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
       table: emailAttachments,
       recordMapper: mapRecordToEmailAttachment,
       summaryMapper: mapRecordToEmailAttachmentSummary,
-      tableName: 'email_attachments',
     });
   }
 
