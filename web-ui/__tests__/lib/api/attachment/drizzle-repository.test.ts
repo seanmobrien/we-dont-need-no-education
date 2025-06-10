@@ -8,11 +8,33 @@ jest.mock('@/lib/drizzle-db', () => ({
   },
 }));
 
-jest.mock('@/drizzle/schema', () => ({
-  emailAttachments: {
-    attachmentId: {},
-  },
-}));
+jest.mock('@/drizzle/schema', () => {
+  const { Table } = require('drizzle-orm');
+  const { PgTable } = require('drizzle-orm/pg-core');
+  
+  // Create a more complete mock that supports getTableConfig
+  const mockAttachmentIdColumn = {
+    name: 'attachment_id',
+    primary: true,
+  };
+  
+  const mockEmailAttachments = {
+    [Table.Symbol.Columns]: {
+      attachmentId: mockAttachmentIdColumn,
+    },
+    [Table.Symbol.Name]: 'email_attachments',
+    [Table.Symbol.Schema]: undefined,
+    [Table.Symbol.ExtraConfigColumns]: {},
+    [PgTable.Symbol.InlineForeignKeys]: {},
+    [PgTable.Symbol.EnableRLS]: false,
+    [PgTable.Symbol.ExtraConfigBuilder]: undefined,
+    attachmentId: mockAttachmentIdColumn,
+  };
+  
+  return {
+    emailAttachments: mockEmailAttachments,
+  };
+});
 
 jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
@@ -349,11 +371,12 @@ describe('EmailAttachmentDrizzleRepository', () => {
   describe('integration with base repository', () => {
     it('should use correct table configuration', () => {
       const config = (repository as Record<string, unknown>).config;
+      const idField = (repository as Record<string, unknown>).idField;
 
       expect(config.tableName).toBe('email_attachments');
-      expect(config.idField).toBe('attachmentId');
+      expect(idField).toBe('attachmentId');
       expect(config.table).toBeDefined();
-      expect(config.idColumn).toBeDefined();
+      expect(config.idColumn).toBeUndefined(); // Should be undefined since it's auto-detected
       expect(config.recordMapper).toBeInstanceOf(Function);
       expect(config.summaryMapper).toBeInstanceOf(Function);
     });

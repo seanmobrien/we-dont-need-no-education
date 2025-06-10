@@ -46,9 +46,6 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
   constructor() {
     super({
       table: emailAttachments,
-      // Auto-detection is preferred, but we can still provide explicit values for compatibility
-      idColumn: emailAttachments.attachmentId,
-      idField: 'attachmentId',
       recordMapper: mapRecordToEmailAttachment,
       summaryMapper: mapRecordToEmailAttachmentSummary,
       tableName: 'email_attachments',

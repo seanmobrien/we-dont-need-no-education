@@ -14,29 +14,37 @@ import { PgColumn } from 'drizzle-orm/pg-core';
 function detectPrimaryKey<T extends object, KId extends keyof T>(
   config: DrizzleRepositoryConfig<T, KId>
 ): { idColumn: PgColumn; idField: KId } {
-  const tableConfig = getTableConfig(config.table);
-  
-  // Find the primary key column
-  const primaryKeyColumns = tableConfig.columns.filter(col => col.primary);
-  
-  if (primaryKeyColumns.length === 0) {
-    throw new Error(`No primary key found in table ${config.tableName}`);
+  try {
+    const tableConfig = getTableConfig(config.table);
+    
+    // Find the primary key column
+    const primaryKeyColumns = tableConfig.columns.filter(col => col.primary);
+    
+    if (primaryKeyColumns.length === 0) {
+      throw new Error(`No primary key found in table ${config.tableName}`);
+    }
+    
+    if (primaryKeyColumns.length > 1) {
+      throw new Error(`Multiple primary keys found in table ${config.tableName}. Please specify idColumn and idField manually.`);
+    }
+    
+    const primaryKeyColumn = primaryKeyColumns[0];
+    
+    // Convert snake_case database column name to camelCase field name
+    const databaseColumnName = primaryKeyColumn.name;
+    const camelCaseFieldName = databaseColumnName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    
+    return {
+      idColumn: primaryKeyColumn,
+      idField: camelCaseFieldName as KId
+    };
+  } catch (error) {
+    throw new Error(
+      `Unable to auto-detect primary key for table ${config.tableName}. ` +
+      `Please provide idColumn and idField explicitly in the config. ` +
+      `Error: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
-  
-  if (primaryKeyColumns.length > 1) {
-    throw new Error(`Multiple primary keys found in table ${config.tableName}. Please specify idColumn and idField manually.`);
-  }
-  
-  const primaryKeyColumn = primaryKeyColumns[0];
-  
-  // Convert snake_case database column name to camelCase field name
-  const databaseColumnName = primaryKeyColumn.name;
-  const camelCaseFieldName = databaseColumnName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-  
-  return {
-    idColumn: primaryKeyColumn,
-    idField: camelCaseFieldName as KId
-  };
 }
 
 /**
