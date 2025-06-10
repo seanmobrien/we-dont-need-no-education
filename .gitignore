@@ -48,3 +48,6 @@ next-env.d.ts
 *.lilith
 logs
 attachments
+
+# for now block mem0
+mem0
