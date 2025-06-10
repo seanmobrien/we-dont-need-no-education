@@ -16,7 +16,11 @@ const config: Config.InitialOptions = {
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
   },
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest', // Transform TypeScript files using ts-jest
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      tsconfig: {
+        jsx: 'react-jsx', // Enable JSX transformation for React
+      },
+    }], // Transform TypeScript files using ts-jest
     // '^.+\\.(js|jsx)$': 'babel-jest', // Transform JavaScript files using babel-jest
   },
   transformIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next'], // Ignore node_modules
