@@ -1,8 +1,7 @@
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
-import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
 import { Box } from '@mui/material';
-import stableColumns from './grid-columns';
+import { EmailHeaderGrid } from './grid';
 import { ChatPanel } from '@/components/ai/chat-panel';
 
 const Home = async () => {
@@ -18,10 +17,7 @@ const Home = async () => {
           },
         }}
       >
-        <EmailPropertyDataGrid
-          property="email-headers"
-          columns={stableColumns}
-        />
+        <EmailHeaderGrid />
         <ChatPanel page="email-headers" />
       </Box>
     </EmailDashboardLayout>
