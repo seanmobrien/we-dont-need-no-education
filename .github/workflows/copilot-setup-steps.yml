@@ -36,5 +36,5 @@ jobs:
 
       - name: Run yarn install
         working-directory: ./web-ui
-        run: yarn install --ignore-scripts
+        run: yarn install --ignore-scripts --frozen-lockfile
         shell: bash
