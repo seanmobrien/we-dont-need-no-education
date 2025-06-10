@@ -2,7 +2,7 @@ import { db, type Database } from '@/lib/drizzle-db';
 import { ObjectRepository, DrizzleRepositoryConfig } from './_types';
 import { PaginatedResultset, PaginationStats } from '@/data-models';
 import { PartialExceptFor } from '@/lib/typescript';
-import { eq, count } from 'drizzle-orm';
+import { eq, count, SQL } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util';
 import { log } from '@/lib/logger';
 import { getTableConfig } from 'drizzle-orm/pg-core';
@@ -103,16 +103,19 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       const num = pagination?.num ?? 10;
       const offset = (page - 1) * num;
 
-      // Build count query with any filters that subclasses may apply
-      const countQuery = this.buildCountQuery();
+      // Get the query conditions from subclasses (if any)
+      const queryConditions = this.buildQueryConditions();
 
-      // Build data query with any filters that subclasses may apply  
-      const dataQuery = this.buildDataQuery();
+      // Build count query with the same conditions
+      const countQueryBase = this.db.select({ count: count() }).from(this.config.table);
+      const countQuery = queryConditions ? countQueryBase.where(queryConditions) : countQueryBase;
 
-      // Get total count
+      // Build data query with the same conditions
+      const dataQueryBase = this.db.select().from(this.config.table);
+      const dataQuery = queryConditions ? dataQueryBase.where(queryConditions) : dataQueryBase;
+
+      // Execute both queries
       const [{ count: totalCount }] = await countQuery;
-
-      // Get paginated data
       const records = await dataQuery.offset(offset).limit(num);
 
       const results = records.map(this.config.summaryMapper);
@@ -289,25 +292,29 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
   }
 
   /**
-   * Builds the count query for list operations.
+   * Builds the query conditions for list operations.
    * Override this method in subclasses to add filtering logic.
-   * This ensures the count query uses the same filters as the data query.
+   * This single method ensures perfect consistency between count and data results.
    * 
-   * @returns Count query with same filters as data query
-   */
-  protected buildCountQuery() {
-    return this.db.select({ count: count() }).from(this.config.table);
-  }
-
-  /**
-   * Builds the data query for list operations.
-   * Override this method in subclasses to add filtering logic.
-   * This ensures the data query uses the same filters as the count query.
+   * Example usage:
+   * ```typescript
+   * protected buildQueryConditions(): SQL | undefined {
+   *   // Apply filters based on repository state or parameters
+   *   if (this.emailId) {
+   *     return eq(this.config.table.emailId, this.emailId);
+   *   }
+   *   if (this.statusFilter) {
+   *     return eq(this.config.table.status, this.statusFilter);
+   *   }
+   *   return undefined; // No filtering
+   * }
+   * ```
    * 
-   * @returns Data query with same filters as count query
+   * @returns Query conditions that will be applied to both count and data queries
    */
-  protected buildDataQuery() {
-    return this.db.select().from(this.config.table);
+  protected buildQueryConditions(): SQL | undefined {
+    // By default, no additional conditions (return all records)
+    return undefined;
   }
 
   /**
