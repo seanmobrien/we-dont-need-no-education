@@ -1,57 +1,57 @@
 # SCB Embed Module
 
-The SCB (School Chatbot) Embed module provides comprehensive document embedding and vector search capabilities for the Title IX Compliance Platform. It handles the conversion of documents into vector embeddings for semantic search, policy document processing, and content similarity analysis.
+The SCB (Victim Advocacy) Embed module provides comprehensive evidence embedding and vector search capabilities for the Title IX Victim Advocacy Platform. It handles the conversion of evidence into vector embeddings for semantic search, policy violation detection, and content similarity analysis to support advocacy efforts against institutional misconduct.
 
 ## Purpose
 
-This module enables advanced semantic search and document similarity features through:
-- **Document Embedding**: Converting text documents into high-dimensional vector representations
-- **Vector Search**: Semantic similarity search across document collections
-- **Policy Processing**: Specialized handling of educational policies and legal documents
-- **Content Indexing**: Efficient indexing and retrieval of embedded documents
-- **Similarity Analysis**: Document clustering and similarity detection
+This module enables advanced semantic search and evidence similarity features through:
+- **Evidence Embedding**: Converting evidence texts into high-dimensional vector representations for analysis
+- **Vector Search**: Semantic similarity search across evidence collections to find patterns of misconduct
+- **Policy Violation Detection**: Specialized handling of educational policies and legal standards to identify violations
+- **Content Indexing**: Efficient indexing and retrieval of embedded evidence for case building
+- **Similarity Analysis**: Evidence clustering and pattern detection for identifying institutional abuse patterns
 
 ## Key Components
 
-### Document Embedders
-- **`EmbedDocuments`**: General-purpose document embedding for school documents
-- **`EmbedFeds`**: Federal policy and regulation embedding processor
-- **`EmbedMnLaw`**: Minnesota state law and education code embedding
-- **`EmbedPlsas`**: PLSAS (Professional Learning Standards and Assessments) document processing
-- **`FileSystemEmbedder`**: File system-based document processing and embedding
+### Evidence Processors
+- **`EmbedDocuments`**: General-purpose evidence embedding for institutional communications and violations
+- **`EmbedFeds`**: Federal policy and regulation embedding processor for violation reference
+- **`EmbedMnLaw`**: Minnesota state law and education code embedding for legal standards comparison
+- **`EmbedPlsas`**: PLSAS (Professional Learning Standards and Assessments) evidence processing
+- **`FileSystemEmbedder`**: File system-based evidence processing and embedding for advocacy cases
 
 ## Features
 
-### Document Processing Pipeline
+### Evidence Processing Pipeline
 ```java
-// Example document embedding workflow
+// Example evidence embedding workflow for advocacy cases
 FileSystemEmbedder embedder = new FileSystemEmbedder();
 
-// Process documents from file system
+// Process evidence from file system for violation detection
 EmbedDocumentsOptions options = EmbedDocumentsOptions.builder()
-    .sourceDirectory("/path/to/documents")
+    .sourceDirectory("/path/to/evidence")
     .embeddingModel("text-embedding-ada-002")
     .chunkSize(1000)
     .chunkOverlap(200)
     .build();
 
-// Generate embeddings
-List<DocumentEmbedding> embeddings = embedder.processDocuments(options);
+// Generate embeddings for case building
+List<DocumentEmbedding> embeddings = embedder.processEvidence(options);
 ```
 
-### Specialized Document Types
+### Specialized Evidence Types
 
-#### Federal Documents (`EmbedFeds`)
-- Federal education regulations and policies
-- Title IX federal guidelines
-- FERPA and other federal education laws
-- Federal court decisions and interpretations
+#### Federal Standards (`EmbedFeds`)
+- Federal education regulations and policies for violation reference
+- Title IX federal guidelines to identify institutional non-compliance
+- FERPA and other federal education laws for violation assessment
+- Federal court decisions and interpretations supporting victim rights
 
 #### State Laws (`EmbedMnLaw`)
-- Minnesota education statutes
-- State-specific Title IX requirements
-- Local compliance regulations
-- State court decisions and precedents
+- Minnesota education statutes for legal standard comparison
+- State-specific Title IX requirements for violation identification
+- Local compliance regulations that institutions must follow
+- State court decisions and precedents supporting victim advocacy
 
 #### Professional Standards (`EmbedPlsas`)
 - Professional learning standards

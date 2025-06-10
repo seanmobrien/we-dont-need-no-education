@@ -1,27 +1,27 @@
 # SCB Chatbot Module
 
-The SCB (School Chatbot) Chatbot module is the main application and orchestration layer for the Title IX Compliance Platform. It provides AI-powered document analysis assistants, interactive chatbot functionality, and coordinates the entire document processing pipeline through intelligent automation.
+The SCB (Victim Advocacy) Chatbot module is the main application and orchestration layer for the Title IX Victim Advocacy Platform. It provides AI-powered evidence analysis assistants, interactive advocacy assistance, and coordinates the entire evidence processing pipeline through intelligent automation to help victims build strong cases against institutional misconduct.
 
 ## Purpose
 
 This module serves as the primary entry point and orchestration layer for:
-- **AI-Powered Chatbot**: Interactive conversational interface for document analysis
-- **Document Processing Pipeline**: Multi-stage automated document analysis workflow
-- **AI Assistants**: Specialized AI agents for different analysis tasks
-- **Tool Integration**: Custom tools for document search, analysis, and processing
-- **Queue Coordination**: Management of asynchronous processing workflows
+- **AI-Powered Advocacy Assistant**: Interactive conversational interface for evidence analysis and case building
+- **Evidence Processing Pipeline**: Multi-stage automated evidence analysis workflow for violation detection
+- **AI Violation Detection**: Specialized AI agents for different analysis tasks focused on institutional failures
+- **Tool Integration**: Custom tools for evidence search, violation analysis, and case building
+- **Queue Coordination**: Management of asynchronous processing workflows for large evidence volumes
 
 ## Architecture Overview
 
 ```
 scb-chatbot/
 ├── chat/
-│   ├── SchoolChatBot.java          # Main application entry point
-│   ├── assistants/                 # AI assistant implementations
-│   │   ├── tools/                  # Custom AI tools
-│   │   ├── services/               # AI processing services
-│   │   └── content/                # Content management
-│   └── services/                   # Supporting services
+│   ├── SchoolChatBot.java          # Main application entry point for advocacy platform
+│   ├── assistants/                 # AI assistant implementations for case building
+│   │   ├── tools/                  # Custom AI tools for violation detection
+│   │   ├── services/               # AI processing services for advocacy
+│   │   └── content/                # Content management for evidence
+│   └── services/                   # Supporting services for victim advocacy
 └── script/                         # Deployment and utility scripts
 ```
 
@@ -29,22 +29,22 @@ scb-chatbot/
 
 ### Main Application (`SchoolChatBot.java`)
 The central application class that provides:
-- **Interactive Menu System**: Command-line interface for various operations
-- **Environment Detection**: Development vs. production mode handling
-- **Service Coordination**: Orchestrates all AI and processing services
-- **User Interface**: Console-based user interaction for administrators
+- **Interactive Menu System**: Command-line interface for various advocacy operations
+- **Environment Detection**: Development vs. production mode handling for case processing
+- **Service Coordination**: Orchestrates all AI and processing services for victim support
+- **User Interface**: Console-based user interaction for advocates and support staff
 
 ### AI Assistants
 
-#### Document Analysis Assistants
-- **Key Point Analysis**: Extracts important information from documents
-- **Call-to-Action Analysis**: Identifies actionable items requiring follow-up
-- **Title IX Assessment**: Evaluates documents for Title IX relevance
-- **Stage Processing**: Multi-phase document analysis workflow
+#### Evidence Analysis Assistants
+- **Key Violation Analysis**: Extracts important violations and institutional failures from evidence
+- **Institutional Failure Analysis**: Identifies institutional failures to respond appropriately to reports
+- **Title IX Violation Assessment**: Evaluates evidence for Title IX compliance failures and misconduct
+- **Case Building**: Multi-phase evidence analysis workflow to build comprehensive advocacy cases
 
 #### Assistant Factory (`StageAnalystFactory`)
 ```java
-// Dynamic assistant creation based on analysis stage
+// Dynamic assistant creation based on advocacy analysis stage
 StageAnalystFactory factory = new StageAnalystFactory();
 
 ToolAwareAssistant assistant = factory.createAssistant(
