@@ -1,6 +1,3 @@
-import { BaseDrizzleRepository, DrizzleRepositoryConfig } from '@/lib/api/_baseDrizzleRepository';
-import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
-
 // Mock the dependencies
 jest.mock('@/lib/drizzle-db', () => ({
   db: {
@@ -20,6 +17,9 @@ jest.mock('@/lib/react-util', () => ({
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
 }));
+
+import { BaseDrizzleRepository, DrizzleRepositoryConfig } from '@/lib/api/_baseDrizzleRepository';
+import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
 
 // Test model interface
 interface TestModel {
