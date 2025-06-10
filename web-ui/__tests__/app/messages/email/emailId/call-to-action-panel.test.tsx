@@ -99,8 +99,8 @@ describe('CallToActionPanel', () => {
   it('displays all dates correctly', async () => {
     render(<CallToActionPanel row={mockCallToActionDetails} />);
     
-    expect(screen.getByText('Jan 1, 2023')).toBeInTheDocument(); // opened_date
-    expect(screen.getByText('Feb 1, 2023')).toBeInTheDocument(); // compliancy_close_date
+    expect(screen.getByText('Jan 1, 2023, 12:00 AM')).toBeInTheDocument(); // opened_date
+    expect(screen.getByText('Feb 1, 2023, 12:00 AM')).toBeInTheDocument(); // compliancy_close_date
   });
 
   it('shows rating scores', async () => {

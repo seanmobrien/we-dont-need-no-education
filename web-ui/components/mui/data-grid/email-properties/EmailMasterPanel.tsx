@@ -15,13 +15,13 @@ export const EmailMasterPanel = ({
       sx={{ py: 2, height: '100%', boxSizing: 'border-box' }}
       direction="column"
     >
-      <Paper sx={{ flex: 1, mx: 'auto', width: '90%', p: 1 }}>
-        <Stack direction="column" spacing={1} sx={{ height: 1 }}>
+      <Paper sx={{ flex: 1, mx: 'auto', width: '95%', p: 2 }}>
+        <Stack direction="column" spacing={2} sx={{ height: 1 }}>
           <Typography variant="h6">{title}</Typography>
           <Typography variant="body2" color="textSecondary" align="left">
             Description
           </Typography>
-          <Typography variant="body1" color="textSecondary" align="left">
+          <Typography variant="body1" align="left" sx={{ backgroundColor: 'grey.100', p: 2, borderRadius: 1, whiteSpace: 'pre-wrap' }}>
             {value}
           </Typography>
           {children}
