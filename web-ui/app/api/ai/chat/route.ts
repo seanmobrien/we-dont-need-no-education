@@ -1,7 +1,5 @@
 import { createDataStreamResponse, streamText } from 'ai';
 import { aiModelFactory, ChatRequestMessage } from '@/lib/ai';
-import { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { experimental_createMCPClient as createMCPClient } from 'ai';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -13,6 +11,7 @@ import { LoggedError } from '@/lib/react-util';
 import { isAiLanguageModelType } from '@/lib/ai/core';
 import { getRetryErrorInfo } from '@/lib/ai/chat';
 import { generateChatId } from '@/lib/components/ai';
+import { toolProviderSetFactory } from '@/lib/ai/mcp';
 
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
@@ -51,33 +50,19 @@ export async function POST(req: NextRequest) {
     return new Response('Invalid messages format', { status: 400 });
   }
   const chatHistoryId = newUuid();
-  const mcpClient = await createMCPClient({
-    transport: {
-      type: 'sse',
-      url: new URL('/api/ai/tools/sse', env('NEXT_PUBLIC_HOSTNAME')).toString(),
-      // Forward current user's session cookie for any calls made by the MCP client
-      headers: getMcpClientHeaders({ req, chatHistoryId }),
-    },
-  });
 
   try {
-    const allTools = await mcpClient.tools();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let tools: any = {};
-    if (!writeEnabled) {
-      tools = Object.entries(allTools).reduce(
-        (acc, [toolName, tool]) => {
-          if ((tool.description?.indexOf('Write access') ?? -1) == -1) {
-            acc[toolName] = tool;
-          }
-          return acc;
-        },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        {} as Record<string, any>,
-      );
-    } else {
-      tools = allTools;
-    }
+    const toolProviders = await toolProviderSetFactory([
+      {
+        allowWrite: writeEnabled,
+        url: new URL(
+          '/api/ai/tools/sse',
+          env('NEXT_PUBLIC_HOSTNAME'),
+        ).toString(),
+        headers: getMcpClientHeaders({ req, chatHistoryId }),
+      },
+      { allowWrite: true, url: env('MEM0_ENDPOINT') },
+    ]);
 
     let isRateLimitError = false;
     let retryAfter = 0;
@@ -94,12 +79,13 @@ export async function POST(req: NextRequest) {
             openai: {
               store: true,
               user: session.user ? `user-${session.user.id}` : `user-anon`,
-            } satisfies OpenAIResponsesProviderOptions,
+            } /*  I swear this existed at some point, but it seems to have been removed from the ai package.
+            satisfies OpenAIResponsesProviderOptions */,
           },
           maxSteps: 100,
           onError: async (error) => {
             log((l) => l.error('on error streamText callback'));
-            const mcpCloseTask = mcpClient.close();
+            const mcpCloseTask = toolProviders.dispose();
             try {
               const rateLimitErrorInfo = getRetryErrorInfo(error);
               if (
@@ -176,7 +162,7 @@ export async function POST(req: NextRequest) {
                   },
                 }),
               );
-              await mcpClient.close();
+              await toolProviders.dispose();
               await task;
             } catch (error) {
               LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -193,7 +179,7 @@ export async function POST(req: NextRequest) {
               });
             }
           },
-          tools,
+          tools: toolProviders.get_tools(),
         });
 
         result.mergeIntoDataStream(dataStream);
@@ -218,6 +204,7 @@ export async function POST(req: NextRequest) {
             retryAfter,
           },
         });
+        toolProviders.dispose();
         // Error messages are masked by default for security reasons.
         // If you want to expose the error message to the client, you can do so here:
         return error instanceof Error ? error.message : String(error);

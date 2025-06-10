@@ -7,6 +7,7 @@ This document provides comprehensive guidelines for LLM-based development assist
 The Title IX Victim Advocacy Platform is a sophisticated advocacy technology solution that combines AI-powered evidence analysis with modern web interfaces to help victims, families, and advocates fight back against educational institutions that mishandle Title IX cases.
 
 ### Core Technologies
+
 - **Backend**: Java 21, Maven, LangChain4j, Azure OpenAI, PostgreSQL, Redis
 - **Frontend**: Next.js 15, TypeScript, Material UI, TailwindCSS, Drizzle ORM
 - **AI/ML**: Azure OpenAI GPT-4, vector embeddings, semantic search
@@ -14,92 +15,12 @@ The Title IX Victim Advocacy Platform is a sophisticated advocacy technology sol
 
 ## Architecture Patterns
 
-### Backend (Java)
-Follow these established patterns when working with the Java backend:
-
-#### Repository Pattern
-```java
-// Always extend from base repository classes for evidence management
-public class EvidenceAnalysisRepository extends BaseRepository<EvidenceAnalysis> {
-    
-    // Use builder pattern for complex entities in advocacy cases
-    public EvidenceAnalysis createAnalysis(EvidenceAnalysisRequest request) {
-        return EvidenceAnalysis.builder()
-            .evidenceId(request.getEvidenceId())
-            .analysisType(request.getAnalysisType())
-            .createdAt(LocalDateTime.now())
-            .build();
-    }
-    
-    // Implement consistent error handling for case building
-    public Optional<EvidenceAnalysis> findByEvidenceId(Integer evidenceId) {
-        try {
-            return db().query(
-                "SELECT * FROM evidence_analysis WHERE evidence_id = ?",
-                this::mapToEntity,
-                evidenceId
-            ).stream().findFirst();
-        } catch (SQLException e) {
-            logger.error("Failed to find analysis for evidence {}", evidenceId, e);
-            return Optional.empty();
-        }
-    }
-}
-```
-
-#### AI Assistant Development
-When creating new AI assistants:
-```java
-// Extend ToolAwareAssistant for AI functionality in victim advocacy
-public class CustomAdvocacyAssistant extends ToolAwareAssistant {
-    
-    @Override
-    protected String getSystemPrompt() {
-        return Prompts.buildSystemPrompt()
-            .withContext("violation analysis for victim advocacy")
-            .withInstructions("Focus on Title IX failures and institutional misconduct")
-            .build();
-    }
-    
-    @Override
-    protected List<MessageTool<?>> getTools() {
-        return List.of(
-            new ViolationDetectionTool(),
-            new EvidenceAnalysisTool(),
-            new InstitutionalFailureTool()
-        );
-    }
-}
-```
-
-#### Tool Implementation
-```java
-// Custom tools should extend MessageTool for advocacy purposes
-public class ViolationDetectionTool extends MessageTool<ViolationSearchResult> {
-    
-    @Tool(
-        name = "detectViolations",
-        value = "Analyzes evidence for Title IX violations and institutional failures"
-    )
-    public String detectViolations(
-        @P(required = true, value = "The evidence content to analyze for violations") String content,
-        @P(required = false, value = "Violation type filter") String violationType
-    ) {
-        // Implementation with proper error handling for advocacy cases
-        try {
-            return violationService.analyze(content, violationType);
-        } catch (Exception e) {
-            logger.error("Violation detection failed for content: {}", content, e);
-            return "ERROR: Violation detection failed - " + e.getMessage();
-        }
-    }
-}
-```
-
 ### Frontend (TypeScript/React)
 
 #### Component Development
+
 Follow these patterns for React components:
+
 ```typescript
 // Use proper TypeScript interfaces for evidence components
 interface EvidenceMessageProps {
@@ -112,19 +33,19 @@ interface EvidenceMessageProps {
 const EvidenceMessage = memo(({ evidenceId, showViolationAnalysis, onAnalysisComplete }: EvidenceMessageProps) => {
   const { data: evidence, isLoading, error } = useEvidence(evidenceId);
   const { mutate: triggerViolationAnalysis } = useViolationAnalysisProcessor();
-  
+
   // Use early returns for loading states
   if (isLoading) return <EvidenceSkeleton />;
   if (error) return <ErrorBoundary error={error} />;
   if (!evidence) return <NotFoundMessage />;
-  
+
   return (
     <Card className={classnames(display('flex'), flexDirection('flex-col'))}>
       <EvidenceHeader evidence={evidence} />
       <EvidenceContent content={evidence.content} />
       {showViolationAnalysis && (
-        <ViolationAnalysisPanel 
-          evidenceId={evidenceId} 
+        <ViolationAnalysisPanel
+          evidenceId={evidenceId}
           onComplete={onAnalysisComplete}
         />
       )}
@@ -134,18 +55,20 @@ const EvidenceMessage = memo(({ evidenceId, showViolationAnalysis, onAnalysisCom
 ```
 
 #### API Integration
+
 ```typescript
 // Use repository pattern for evidence data access
 export class EvidenceRepository extends AbstractObjectRepository<EvidenceMessage> {
-  
-  async findWithViolationAnalysis(filters: EvidenceFilters): Promise<PaginatedResultset<EvidenceWithAnalysis>> {
+  async findWithViolationAnalysis(
+    filters: EvidenceFilters,
+  ): Promise<PaginatedResultset<EvidenceWithAnalysis>> {
     const query = sql`
       SELECT e.*, a.violation_analysis_result 
       FROM evidence e 
       LEFT JOIN evidence_violation_analysis a ON e.id = a.evidence_id
       WHERE ${this.buildFilterConditions(filters)}
     `;
-    
+
     return this.executeQuery(query, this.mapToEvidenceWithAnalysis);
   }
 }
@@ -156,6 +79,7 @@ export class EvidenceRepository extends AbstractObjectRepository<EvidenceMessage
 ### Code Quality Standards
 
 #### Java Code Style
+
 - **Naming**: Use descriptive names (`DocumentAnalysisProcessor` not `DocProcessor`)
 - **Methods**: Keep methods focused and under 50 lines
 - **Error Handling**: Always use try-catch with proper logging
@@ -163,6 +87,7 @@ export class EvidenceRepository extends AbstractObjectRepository<EvidenceMessage
 - **Testing**: Maintain 80%+ test coverage with meaningful tests
 
 #### TypeScript Code Style
+
 - **Types**: Define explicit interfaces for all props and data structures
 - **Components**: Use functional components with proper memo optimization
 - **Hooks**: Create custom hooks for reusable logic
@@ -173,7 +98,9 @@ export class EvidenceRepository extends AbstractObjectRepository<EvidenceMessage
 ### AI Integration Best Practices
 
 #### Prompt Engineering
+
 When working with AI prompts:
+
 ```java
 // Use structured prompts with clear sections for violation detection
 public static String buildViolationAnalysisPrompt(EvidenceContext context) {
@@ -182,22 +109,22 @@ public static String buildViolationAnalysisPrompt(EvidenceContext context) {
         Evidence Type: %s
         Source: %s
         Content Length: %d characters
-        
+
         === TASK ===
         Analyze this evidence for Title IX violations and institutional failures.
-        
+
         === INSTRUCTIONS ===
         1. Identify specific policy violations and institutional failures
         2. Assess violation severity on scale 1-10
         3. Extract evidence of institutional misconduct
         4. Provide specific recommendations for victim advocacy
-        
+
         === OUTPUT FORMAT ===
         Return structured JSON with fields: violation_score, key_violations, institutional_failures, advocacy_recommendations
-        
+
         === EVIDENCE CONTENT ===
         %s
-        """, 
+        """,
         context.getEvidenceType(),
         context.getSource(),
         context.getContent().length(),
@@ -207,6 +134,7 @@ public static String buildViolationAnalysisPrompt(EvidenceContext context) {
 ```
 
 #### Tool Development
+
 ```java
 // Tools should be focused and single-purpose for advocacy
 @Tool(name = "analyzeInstitutionalFailure")
@@ -218,7 +146,7 @@ public InstitutionalFailureAssessment analyzeInstitutionalFailure(
     if (content == null || content.trim().isEmpty()) {
         throw new IllegalArgumentException("Evidence content cannot be empty");
     }
-    
+
     // Process with clear error handling for advocacy cases
     try {
         return failureAnalyzer.assess(content, AnalysisScope.valueOf(scope.toUpperCase()));
@@ -232,16 +160,17 @@ public InstitutionalFailureAssessment analyzeInstitutionalFailure(
 ### Database Operations
 
 #### Query Patterns
+
 ```java
 // Use parameterized queries consistently for evidence management
 public List<EvidenceUnit> findEvidenceByDateRange(LocalDate start, LocalDate end) {
     String sql = """
-        SELECT * FROM evidence_units 
+        SELECT * FROM evidence_units
         WHERE created_on BETWEEN ? AND ?
         AND status = 'active'
         ORDER BY created_on DESC
     """;
-    
+
     return db().query(sql, this::mapToEvidenceUnit, start, end);
 }
 
@@ -259,6 +188,7 @@ public void processEvidenceBatch(List<EvidenceUnit> evidence) throws SQLExceptio
 ```
 
 #### TypeScript Database Access
+
 ```typescript
 // Use Drizzle ORM for type-safe queries in advocacy cases
 const evidenceWithViolationAnalysis = await db
@@ -270,13 +200,16 @@ const evidenceWithViolationAnalysis = await db
     keyViolations: evidenceViolationAnalysis.keyViolations,
   })
   .from(evidence)
-  .leftJoin(evidenceViolationAnalysis, eq(evidence.id, evidenceViolationAnalysis.evidenceId))
+  .leftJoin(
+    evidenceViolationAnalysis,
+    eq(evidence.id, evidenceViolationAnalysis.evidenceId),
+  )
   .where(
     and(
       gte(evidence.receivedDate, startDate),
       lte(evidence.receivedDate, endDate),
-      eq(evidence.processed, true)
-    )
+      eq(evidence.processed, true),
+    ),
   )
   .orderBy(desc(evidence.receivedDate));
 ```
@@ -284,25 +217,26 @@ const evidenceWithViolationAnalysis = await db
 ### Testing Strategies
 
 #### Java Testing
+
 ```java
 // Unit tests with proper mocking
 @ExtendWith(MockitoExtension.class)
 class DocumentAnalysisServiceTest {
-    
+
     @Mock private DocumentRepository documentRepository;
     @Mock private AiAnalysisService aiService;
     @InjectMocks private DocumentAnalysisService service;
-    
+
     @Test
     void shouldAnalyzeDocumentSuccessfully() {
         // Given
         DocumentUnit document = createTestDocument();
         when(documentRepository.findById(1)).thenReturn(Optional.of(document));
         when(aiService.analyze(any())).thenReturn(createAnalysisResult());
-        
+
         // When
         AnalysisResult result = service.analyzeDocument(1);
-        
+
         // Then
         assertThat(result.getStatus()).isEqualTo(AnalysisStatus.COMPLETED);
         assertThat(result.getTitleIxRelevance()).isGreaterThan(0);
@@ -312,6 +246,7 @@ class DocumentAnalysisServiceTest {
 ```
 
 #### Frontend Testing
+
 ```typescript
 // Component testing with React Testing Library
 describe('EmailList', () => {
@@ -320,12 +255,12 @@ describe('EmailList', () => {
       { id: '1', subject: 'Title IX Complaint', titleIxRelevant: true },
       { id: '2', subject: 'General Email', titleIxRelevant: false },
     ];
-    
+
     render(<EmailList emails={mockEmails} />);
-    
+
     const filterCheckbox = screen.getByLabelText(/title ix relevant/i);
     await userEvent.click(filterCheckbox);
-    
+
     expect(screen.getByText('Title IX Complaint')).toBeInTheDocument();
     expect(screen.queryByText('General Email')).not.toBeInTheDocument();
   });
@@ -335,18 +270,19 @@ describe('EmailList', () => {
 ### Performance Optimization
 
 #### Backend Performance
+
 ```java
 // Use connection pooling and batch operations
 public void processBatchDocuments(List<DocumentUnit> documents) {
     // Process in chunks to avoid memory issues
     int batchSize = 100;
     for (int i = 0; i < documents.size(); i += batchSize) {
-        List<DocumentUnit> batch = documents.subList(i, 
+        List<DocumentUnit> batch = documents.subList(i,
             Math.min(i + batchSize, documents.size()));
-        
+
         // Use batch processing for database operations
         batchInsertDocuments(batch);
-        
+
         // Queue analysis jobs asynchronously
         queueAnalysisJobs(batch);
     }
@@ -354,6 +290,7 @@ public void processBatchDocuments(List<DocumentUnit> documents) {
 ```
 
 #### Frontend Performance
+
 ```typescript
 // Use React Query for efficient data management
 const useEmailsWithAnalysis = (filters: EmailFilters) => {
@@ -386,14 +323,15 @@ const VirtualizedEmailList = memo(({ emails }: { emails: Email[] }) => {
 ### ✅ Preferred Patterns
 
 #### Dependency Injection
+
 ```java
 // Use constructor injection
 public class DocumentProcessor {
     private final DocumentRepository repository;
     private final AiAnalysisService aiService;
     private final NotificationService notificationService;
-    
-    public DocumentProcessor(DocumentRepository repository, 
+
+    public DocumentProcessor(DocumentRepository repository,
                            AiAnalysisService aiService,
                            NotificationService notificationService) {
         this.repository = repository;
@@ -404,24 +342,26 @@ public class DocumentProcessor {
 ```
 
 #### Error Handling
+
 ```typescript
 // Comprehensive error handling with user feedback
 const useDocumentProcessor = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<ProcessingError | null>(null);
-  
+
   const processDocument = useCallback(async (documentId: string) => {
     setIsProcessing(true);
     setError(null);
-    
+
     try {
       const result = await documentApi.process(documentId);
       return result;
     } catch (err) {
-      const processingError = err instanceof ProcessingError 
-        ? err 
-        : new ProcessingError('Unknown processing error', err);
-      
+      const processingError =
+        err instanceof ProcessingError
+          ? err
+          : new ProcessingError('Unknown processing error', err);
+
       setError(processingError);
       logger.error('Document processing failed', { documentId, error: err });
       throw processingError;
@@ -429,7 +369,7 @@ const useDocumentProcessor = () => {
       setIsProcessing(false);
     }
   }, []);
-  
+
   return { processDocument, isProcessing, error };
 };
 ```
@@ -437,15 +377,15 @@ const useDocumentProcessor = () => {
 ### ❌ Anti-Patterns to Avoid
 
 #### Avoid Direct Database Access in Components
+
 ```typescript
 // ❌ Don't do this
 const EmailComponent = ({ emailId }: { emailId: string }) => {
   const [email, setEmail] = useState<Email | null>(null);
-  
+
   useEffect(() => {
     // Direct database query in component - BAD
-    db.query('SELECT * FROM emails WHERE id = ?', [emailId])
-      .then(setEmail);
+    db.query('SELECT * FROM emails WHERE id = ?', [emailId]).then(setEmail);
   }, [emailId]);
 };
 
@@ -457,6 +397,7 @@ const EmailComponent = ({ emailId }: { emailId: string }) => {
 ```
 
 #### Avoid Hardcoded AI Prompts
+
 ```java
 // ❌ Don't hardcode prompts
 public String analyzeDocument(String content) {
@@ -471,7 +412,7 @@ public String analyzeDocument(String content) {
         .withAnalysisType(AnalysisType.TITLE_IX)
         .withOutputFormat(OutputFormat.STRUCTURED_JSON)
         .build();
-    
+
     return aiService.complete(prompt);
 }
 ```
@@ -479,19 +420,23 @@ public String analyzeDocument(String content) {
 ## Domain-Specific Guidance
 
 ### Title IX Victim Advocacy Context
+
 When working on advocacy-related features:
+
 - **Sensitivity**: Handle all victim data with utmost privacy and security considerations
 - **Audit Trail**: Ensure all evidence processing activities are logged and traceable for legal purposes
 - **Accuracy**: Prioritize precision in AI analysis to avoid missing violations or false assessments
 - **Timeliness**: Implement appropriate urgency levels for different types of institutional failures
 
 ### Victim Support Requirements
+
 - **Privacy**: Enhanced privacy protections for victim data beyond standard FERPA compliance
 - **Accessibility**: WCAG 2.1 AA compliance for web interfaces to ensure accessibility for all victims
 - **Evidence Integrity**: Maintain chain of custody for digital evidence and documentation
 - **Scalability**: Design for handling large volumes of evidence in complex advocacy cases
 
 ### AI Model Considerations for Advocacy
+
 - **Cost Management**: Monitor token usage and implement efficient caching for evidence analysis
 - **Quality Control**: Implement validation layers for AI-generated violation assessments
 - **Bias Detection**: Include checks for bias in analysis results that could disadvantage victims
@@ -502,6 +447,7 @@ When working on advocacy-related features:
 ### Common Issues and Solutions
 
 #### AI Assistant Not Responding
+
 ```java
 // Add timeout and retry logic for evidence analysis
 @Retryable(value = {AiServiceException.class}, maxAttempts = 3)
@@ -516,29 +462,31 @@ public ViolationAnalysisResult analyzeWithRetry(EvidenceUnit evidence) {
 ```
 
 #### Frontend Performance Issues
+
 ```typescript
 // Use React DevTools Profiler to identify bottlenecks in evidence processing
 const ProfiledEvidenceList = memo(({ evidence }: EvidenceListProps) => {
   const [visibleEvidence, setVisibleEvidence] = useState<Evidence[]>([]);
-  
+
   // Implement virtual scrolling for large evidence lists
   const listRef = useRef<FixedSizeList>(null);
-  
+
   useEffect(() => {
     // Optimize rendering by only showing visible items
     const startIndex = Math.floor(scrollTop / itemHeight);
     const endIndex = Math.min(startIndex + visibleCount, evidence.length);
     setVisibleEvidence(evidence.slice(startIndex, endIndex));
   }, [evidence, scrollTop]);
-  
+
   return <VirtualList ref={listRef} items={visibleEvidence} />;
 });
 ```
 
 ### Logging Best Practices
+
 ```java
 // Structured logging with context for advocacy cases
-logger.info("Evidence violation analysis started", 
+logger.info("Evidence violation analysis started",
     kv("evidenceId", evidence.getId()),
     kv("evidenceType", evidence.getType()),
     kv("analysisStage", currentStage),
@@ -565,18 +513,21 @@ try (Timer.Sample sample = Timer.start(meterRegistry)) {
 ## Future Considerations
 
 ### Scalability Planning
+
 - Design for multi-tenant architecture if needed
 - Consider event-driven architecture for better decoupling
 - Plan for horizontal scaling of AI processing components
 - Implement proper caching strategies for frequently accessed data
 
 ### Technology Evolution
+
 - Stay updated with LangChain4j framework updates
 - Monitor Azure OpenAI service improvements and new models
 - Consider emerging vector database technologies
 - Plan for Next.js and React ecosystem updates
 
 ### Compliance Evolution
+
 - Design flexible rule engines for changing compliance requirements
 - Implement configurable analysis pipelines
 - Plan for new document types and sources

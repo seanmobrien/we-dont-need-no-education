@@ -46,6 +46,7 @@ const buildRawInstance = () => ({
   AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
   REDIS_URL: process.env.REDIS_URL,
   REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+  MEM0_ENDPOINT: process.env.MEM0_ENDPOINT,
 });
 
 // Define the schema for server-side environment variables
@@ -63,9 +64,6 @@ const serverEnvSchema = z.object({
     })
     .default('hifi' as AiLanguageModelType),
 
-  NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ZodProcessors.integer().default(
-    5 * 60 * 1000,
-  ),
   /**
    * The license key for MUI X Pro components.
    */
@@ -112,6 +110,7 @@ const serverEnvSchema = z.object({
   AZURE_STORAGE_ACCOUNT_NAME: z.string().min(1),
   REDIS_URL: z.string().min(1),
   REDIS_PASSWORD: z.string().min(1),
+  MEM0_ENDPOINT: z.string().min(1),
 });
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;
