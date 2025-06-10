@@ -1,29 +1,10 @@
 import { db, type Database } from '@/lib/drizzle-db';
-import { ObjectRepository } from './_types';
+import { ObjectRepository, DrizzleRepositoryConfig } from './_types';
 import { PaginatedResultset, PaginationStats } from '@/data-models';
 import { PartialExceptFor } from '@/lib/typescript';
 import { eq, count } from 'drizzle-orm';
-import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
 import { LoggedError } from '@/lib/react-util';
 import { log } from '@/lib/logger';
-
-/**
- * Configuration interface for BaseDrizzleRepository
- */
-export interface DrizzleRepositoryConfig<T extends object, KId extends keyof T> {
-  /** The Drizzle table schema */
-  table: PgTable;
-  /** The primary key column in the table */
-  idColumn: PgColumn;
-  /** Function to map database record to domain object */
-  recordMapper: (record: Record<string, unknown>) => T;
-  /** Function to map database record to summary object */
-  summaryMapper: (record: Record<string, unknown>) => Partial<T>;
-  /** Table name for logging purposes */
-  tableName: string;
-  /** The property name of the ID field in the domain object */
-  idField: KId;
-}
 
 /**
  * BaseDrizzleRepository is a generic class that provides basic CRUD operations for objects of type T

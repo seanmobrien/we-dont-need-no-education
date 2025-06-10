@@ -1,6 +1,25 @@
 import { PaginatedResultset, PaginationStats } from '@/data-models';
 import { PartialExceptFor } from '../typescript';
 import { TransformedFullQueryResults } from '../neondb';
+import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
+
+/**
+ * Configuration interface for BaseDrizzleRepository
+ */
+export interface DrizzleRepositoryConfig<T extends object, KId extends keyof T> {
+  /** The Drizzle table schema */
+  table: PgTable;
+  /** The primary key column in the table */
+  idColumn: PgColumn;
+  /** Function to map database record to domain object */
+  recordMapper: (record: Record<string, unknown>) => T;
+  /** Function to map database record to summary object */
+  summaryMapper: (record: Record<string, unknown>) => Partial<T>;
+  /** Table name for logging purposes */
+  tableName: string;
+  /** The property name of the ID field in the domain object */
+  idField: KId;
+}
 
 /**
  * Parameters for making a paginated request to the API.

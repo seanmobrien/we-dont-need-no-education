@@ -1,6 +1,3 @@
-import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment/drizzle-repository';
-import { EmailAttachment } from '@/data-models/api/attachment';
-
 // Mock the dependencies
 jest.mock('@/lib/drizzle-db', () => ({
   db: {
@@ -32,6 +29,9 @@ jest.mock('@/lib/react-util', () => ({
     }
   },
 }));
+
+import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment/drizzle-repository';
+import { EmailAttachment } from '@/data-models/api/attachment';
 
 describe('EmailAttachmentDrizzleRepository', () => {
   let repository: EmailAttachmentDrizzleRepository;

@@ -18,7 +18,8 @@ jest.mock('@/lib/react-util', () => ({
   },
 }));
 
-import { BaseDrizzleRepository, DrizzleRepositoryConfig } from '@/lib/api/_baseDrizzleRepository';
+import { BaseDrizzleRepository } from '@/lib/api/_baseDrizzleRepository';
+import { DrizzleRepositoryConfig } from '@/lib/api/_types';
 import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
 
 // Test model interface
