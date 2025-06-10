@@ -1,51 +1,51 @@
 # SCB Core Module
 
-The SCB (School Chatbot) Core module contains the fundamental data models, repositories, and business logic for the Title IX Compliance Platform. It serves as the central data access layer and domain model for all document analysis, compliance tracking, and audit trail functionality.
+The SCB (Victim Advocacy) Core module contains the fundamental data models, repositories, and business logic for the Title IX Victim Advocacy Platform. It serves as the central data access layer and domain model for all evidence analysis, case building, and advocacy trail functionality.
 
 ## Purpose
 
-This module provides the core business logic and data management capabilities:
-- **Domain Models**: Comprehensive data models for documents, analysis results, and compliance tracking
-- **Repository Layer**: Data access objects implementing the repository pattern
-- **Business Services**: Core business logic for document processing and analysis
-- **Audit Trail**: Complete tracking of all document analysis stages and changes
-- **Data Validation**: Input validation and data integrity enforcement
+This module provides the core advocacy logic and data management capabilities:
+- **Domain Models**: Comprehensive data models for evidence, analysis results, and case tracking
+- **Repository Layer**: Data access objects implementing the repository pattern for victim cases
+- **Business Services**: Core advocacy logic for evidence processing and violation analysis
+- **Audit Trail**: Complete tracking of all evidence analysis stages and changes for legal documentation
+- **Data Validation**: Input validation and data integrity enforcement for case building
 
 ## Package Structure
 
 ```
 com.obapps.schoolchatbot.core/
 ├── models/              # Domain models and data entities
-│   ├── ai/             # AI-specific models and responses
-│   ├── analysis/       # Document analysis result models
-│   └── embed/          # Embedding and vector search models
-├── repositories/       # Data access layer implementations
-├── services/           # Business logic and service layer
-├── assistants/         # AI assistant configuration and prompts
-├── embed/              # Document embedding utilities
+│   ├── ai/             # AI-specific models for violation detection
+│   ├── analysis/       # Evidence analysis result models
+│   └── embed/          # Embedding and vector search models for case building
+├── repositories/       # Data access layer implementations for advocacy cases
+├── services/           # Business logic and service layer for victim support
+├── assistants/         # AI assistant configuration and prompts for case building
+├── embed/              # Evidence embedding utilities
 └── util/               # Core-specific utility classes
 ```
 
 ## Key Domain Models
 
-### Document Management
-- **`DocumentUnit`**: Core document entity with metadata and content
-- **`DocumentProperty`**: Document properties and attributes
-- **`DocumentType`**: Document categorization and type definitions
-- **`DocumentRelationship`**: Relationships between related documents
-- **`DocumentWithMetadata`**: Enhanced document with analysis metadata
+### Evidence Management
+- **`DocumentUnit`**: Core evidence entity with metadata and content for case building
+- **`DocumentProperty`**: Evidence properties and attributes for violation tracking
+- **`DocumentType`**: Evidence categorization and type definitions for advocacy cases
+- **`DocumentRelationship`**: Relationships between related evidence pieces
+- **`DocumentWithMetadata`**: Enhanced evidence with violation analysis metadata
 
 ### Analysis and Processing
-- **`DocumentUnitAnalysisStageAudit`**: Audit trail for document analysis stages
-- **`AnalystDocumentResult`**: Results from AI-powered document analysis
-- **`PendingStageAnalyst`**: Queue management for pending analysis tasks
-- **`DocumentUnitAnalysisFunctionAudit`**: Function-level audit trail
+- **`DocumentUnitAnalysisStageAudit`**: Audit trail for evidence analysis stages in advocacy cases
+- **`AnalystDocumentResult`**: Results from AI-powered evidence analysis for violation detection
+- **`PendingStageAnalyst`**: Queue management for pending violation analysis tasks
+- **`DocumentUnitAnalysisFunctionAudit`**: Function-level audit trail for legal documentation
 
-### Title IX Compliance
-- **`CallToAction`**: Actionable items identified in documents
-- **`CallToActionCategory`**: Categorization of call-to-action types
-- **`CallToActionResponse`**: Responses to identified actions
-- **`AssociatedCallToAction`**: Associations between documents and actions
+### Title IX Violations and Case Building
+- **`CallToAction`**: Institutional failures to respond appropriately identified in evidence
+- **`CallToActionCategory`**: Categorization of institutional failure types
+- **`CallToActionResponse`**: Tracking institutional responses to identified failures
+- **`AssociatedCallToAction`**: Associations between evidence and institutional failures
 
 ### Key Points and Insights
 - **`KeyPoint`**: Important points extracted from documents

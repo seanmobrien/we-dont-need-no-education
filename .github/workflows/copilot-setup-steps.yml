@@ -32,7 +32,7 @@ jobs:
         with:        
           node-version: ">=22.13.1"
           cache: yarn
-          cache-dependency-path: ./web-ui/package-lock.json
+          cache-dependency-path: ./web-ui/yarn.lock
 
       - name: Run yarn install
         working-directory: ./web-ui
