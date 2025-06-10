@@ -43,6 +43,7 @@ next-env.d.ts
 # vs code
 /.vscode
 **/.vscode
+.vs
 
 *.lilith
 logs

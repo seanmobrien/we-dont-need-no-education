@@ -72,7 +72,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
     options?: TOptions,
   ): Promise<AiSearchResultEnvelope> {
     const {
-      hitsPerPage: topK = 15, // default to 15 results
+      hitsPerPage: topK = 5, // default to 15 results
       page = 1, // default to first page
       exhaustive = false,
     } = options ?? {};

@@ -33,7 +33,11 @@ const sql = isTestEnvironment()
     ? fnNoOp as postgres.Sql<any>
     : postgres(env('DATABASE_URL'), { ssl: 'verify-full', max: 3, debug: true });
 
-if (process.env.NEXT_RUNTIME === 'nodejs') {
+// Singleton pattern to prevent multiple prexit handler registrations during hot reloads
+let prexitHandlerRegistered = false;
+
+if (process.env.NEXT_RUNTIME === 'nodejs' && !prexitHandlerRegistered) {
+  prexitHandlerRegistered = true;
   await (import('prexit')
     .then(x => x.default))
     .then(prexit => {
