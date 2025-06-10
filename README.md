@@ -1,20 +1,20 @@
-# Title IX Compliance Platform
+# Title IX Victim Advocacy Platform
 
-A comprehensive AI-powered platform for educational institutions to manage Title IX compliance through automated document analysis, email processing, and intelligent workflow management.
+A comprehensive AI-powered platform to empower victims, families, and advocates in fighting back against educational institutions that mishandle Title IX cases through automated document analysis, email processing, and intelligent evidence gathering.
 
 ## Overview
 
-This platform combines a modern web interface with sophisticated AI-powered backend services to help educational institutions efficiently process, analyze, and manage documents and communications for Title IX compliance. The system automatically identifies relevant content, extracts actionable items, and provides intelligent insights through natural language processing.
+This platform combines a modern web interface with sophisticated AI-powered backend services to help victims, parents, and families who face schools that abuse their position of power. When educational institutions suppress or improperly process instances of abuse, harassment, or other illegal activity, this system levels the playing field by providing advanced document analysis capabilities that would typically require expensive legal teams.
 
 ## Key Features
 
-- **AI-Powered Document Analysis**: Leverages Azure OpenAI and LangChain4j for intelligent document processing and Title IX relevance assessment
-- **Email Management System**: Web-based interface for importing, viewing, and analyzing email communications
-- **Multi-Stage Processing Pipeline**: Documents undergo systematic analysis through multiple phases for comprehensive evaluation
-- **Vector Search Capabilities**: Semantic document retrieval using advanced embedding models
-- **Call-to-Action Detection**: Automatically identifies and tracks actionable items within documents
-- **Queue-Based Processing**: Redis-powered asynchronous processing for scalable document analysis
-- **Real-time Dashboard**: Material UI-based interface for monitoring and managing compliance workflows
+- **AI-Powered Evidence Analysis**: Leverages Azure OpenAI and LangChain4j to help victims identify critical evidence and Title IX violations in school communications
+- **Email Evidence Management**: Web-based interface for victims and families to organize, analyze, and build cases from email communications
+- **Multi-Stage Case Building**: Documents undergo systematic analysis to build comprehensive evidence packages for advocacy and legal action
+- **Vector Search Capabilities**: Semantic document retrieval to find similar patterns of institutional misconduct across cases
+- **Action Item Detection**: Automatically identifies school failures to respond appropriately to reports and required actions
+- **Queue-Based Processing**: Redis-powered asynchronous processing to handle large volumes of evidence efficiently
+- **Real-time Case Dashboard**: Material UI-based interface for victims and advocates to monitor evidence analysis and case strength
 
 ## Architecture
 
@@ -34,7 +34,7 @@ This platform combines a modern web interface with sophisticated AI-powered back
 - **Embeddings**: Custom vector embedding pipeline
 
 ### Database (`/db/`)
-- PostgreSQL database with comprehensive schema for document storage, analysis tracking, and compliance management
+- PostgreSQL database with comprehensive schema for evidence storage, analysis tracking, and case management
 
 ## Quick Start
 
@@ -70,31 +70,31 @@ Create appropriate `.env` files with:
 ## Project Structure
 
 ```
-├── web-ui/           # Next.js frontend application
-├── chat/             # Java backend with AI processing
+├── web-ui/           # Next.js frontend application for victims and advocates
+├── chat/             # Java backend with AI processing for evidence analysis
 │   ├── core/         # Core utilities and shared functionality
-│   ├── scb-core/     # School chatbot core models and repositories
-│   ├── scb-embed/    # Document embedding and vector search
-│   └── scb-chatbot/  # Main AI chatbot application
+│   ├── scb-core/     # Victim advocacy core models and repositories
+│   ├── scb-embed/    # Document embedding and evidence search
+│   └── scb-chatbot/  # Main AI assistant for case building
 ├── db/               # Database schema and migrations
 └── docs/             # Additional documentation
 ```
 
 ## Module Documentation
 
-- [Chat Backend README](./chat/README.md) - Comprehensive guide to the Java backend
-- [Web UI README](./web-ui/README.md) - Frontend application documentation
+- [Chat Backend README](./chat/README.md) - Comprehensive guide to the Java backend for evidence analysis
+- [Web UI README](./web-ui/README.md) - Frontend application documentation for victim advocacy interface
 - [Core Module](./chat/core/README.md) - Shared utilities and common functionality
-- [SCB Core](./chat/scb-core/README.md) - Core models and data access layer
-- [SCB Embed](./chat/scb-embed/README.md) - Document embedding and search functionality
-- [SCB Chatbot](./chat/scb-chatbot/README.md) - AI assistant and processing pipeline
+- [SCB Core](./chat/scb-core/README.md) - Core models and data access layer for case management
+- [SCB Embed](./chat/scb-embed/README.md) - Document embedding and evidence search functionality
+- [SCB Chatbot](./chat/scb-chatbot/README.md) - AI assistant for case building and evidence analysis
 
 ## Development Workflow
 
-1. **Document Ingestion**: Import emails and documents through the web interface
-2. **Automated Analysis**: Backend processes documents through multi-stage AI analysis
-3. **Review and Action**: Use the dashboard to review analyzed content and track compliance
-4. **Reporting**: Generate insights and reports based on processed data
+1. **Evidence Collection**: Import emails and documents through the web interface to build your case
+2. **Automated Analysis**: Backend processes evidence through multi-stage AI analysis to identify key violations
+3. **Case Building**: Use the dashboard to review analyzed content and build a comprehensive advocacy strategy
+4. **Reporting**: Generate insights and evidence summaries to support legal action or advocacy efforts
 
 ## Technology Stack
 
