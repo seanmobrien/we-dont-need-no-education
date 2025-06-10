@@ -1,66 +1,66 @@
 # Core Module
 
-The core module provides foundational utilities and shared functionality used across all modules in the Title IX Compliance Platform. It contains essential infrastructure components including database management, configuration handling, logging utilities, and common exception management.
+The core module provides foundational utilities and shared functionality used across all modules in the Title IX Victim Advocacy Platform. It contains essential infrastructure components including database management, configuration handling, logging utilities, and common exception management for supporting victim advocacy cases.
 
 ## Purpose
 
-This module serves as the foundation layer for the entire application, providing:
-- **Database Connection Management**: Centralized database access and connection pooling
-- **Configuration Management**: Environment variable handling and application settings
-- **Logging Infrastructure**: Structured logging with custom formatters and utilities
-- **Common Utilities**: Shared utility classes for string manipulation, validation, and data processing
-- **Exception Handling**: Standardized error handling and exception management
-- **Redis Integration**: Connection factory and utilities for Redis operations
+This module serves as the foundation layer for the entire advocacy platform, providing:
+- **Database Connection Management**: Centralized database access and connection pooling for evidence storage
+- **Configuration Management**: Environment variable handling and application settings for advocacy operations
+- **Logging Infrastructure**: Structured logging with custom formatters and utilities for case audit trails
+- **Common Utilities**: Shared utility classes for string manipulation, validation, and evidence processing
+- **Exception Handling**: Standardized error handling and exception management for advocacy workflows
+- **Redis Integration**: Connection factory and utilities for Redis operations supporting case processing queues
 
 ## Package Structure
 
 ```
 com.obapps.core/
-├── ai/                 # AI-related utilities and abstractions
-├── exceptions/         # Common exception classes and error handling
-├── logback/           # Custom Logback configurations and utilities  
-├── redis/             # Redis connection management and utilities
-├── types/             # Common data types and value objects
-└── util/              # General utility classes
+├── ai/                 # AI-related utilities and abstractions for violation detection
+├── exceptions/         # Common exception classes and error handling for advocacy operations
+├── logback/           # Custom Logback configurations and utilities for case logging
+├── redis/             # Redis connection management and utilities for evidence processing
+├── types/             # Common data types and value objects for advocacy cases
+└── util/              # General utility classes for victim support operations
 ```
 
 ## Key Components
 
 ### Database Management (`util/`)
-- **`Db.java`**: Singleton database connection manager with HikariCP integration
-- **Connection Pooling**: Optimized for high-concurrency document processing
-- **Transaction Management**: Support for transactional operations across modules
-- **Health Monitoring**: Connection health checks and monitoring
+- **`Db.java`**: Singleton database connection manager with HikariCP integration for evidence storage
+- **Connection Pooling**: Optimized for high-concurrency evidence processing in advocacy cases
+- **Transaction Management**: Support for transactional operations across advocacy modules
+- **Health Monitoring**: Connection health checks and monitoring for case database reliability
 
 ### Configuration (`util/`)
-- **Environment Variable Management**: Centralized configuration access
-- **Type-Safe Configuration**: Strongly typed configuration values
-- **Environment Detection**: Development vs. production environment handling
-- **Validation**: Configuration validation and error reporting
+- **Environment Variable Management**: Centralized configuration access for advocacy platform settings
+- **Type-Safe Configuration**: Strongly typed configuration values for victim support operations
+- **Environment Detection**: Development vs. production environment handling for case processing
+- **Validation**: Configuration validation and error reporting for advocacy workflows
 
 ### Logging Infrastructure (`logback/`)
-- **Structured Logging**: JSON-formatted log output for observability
-- **Custom Appenders**: Specialized logging for AI operations and performance metrics
-- **Log Level Management**: Dynamic log level configuration
-- **Audit Logging**: Specialized audit trail logging capabilities
+- **Structured Logging**: JSON-formatted log output for advocacy case observability
+- **Custom Appenders**: Specialized logging for AI operations and violation detection metrics
+- **Log Level Management**: Dynamic log level configuration for case processing
+- **Audit Logging**: Specialized audit trail logging capabilities for legal documentation
 
 ### Redis Integration (`redis/`)
-- **`RedisConnectionFactory`**: Centralized Redis connection management
-- **Connection Pooling**: Efficient connection reuse for queue operations
-- **Cluster Support**: Redis cluster configuration and failover handling
-- **Monitoring**: Connection health and performance monitoring
+- **`RedisConnectionFactory`**: Centralized Redis connection management for evidence processing queues
+- **Connection Pooling**: Efficient connection reuse for case building queue operations
+- **Cluster Support**: Redis cluster configuration and failover handling for large advocacy cases
+- **Monitoring**: Connection health and performance monitoring for evidence processing
 
 ### Exception Management (`exceptions/`)
-- **`ErrorUtil`**: Utility for consistent error handling and logging
-- **Custom Exceptions**: Domain-specific exception classes
-- **Error Categorization**: Structured error classification for better debugging
-- **Stack Trace Management**: Optimized stack trace handling for production
+- **`ErrorUtil`**: Utility for consistent error handling and logging in advocacy operations
+- **Custom Exceptions**: Domain-specific exception classes for victim support workflows
+- **Error Categorization**: Structured error classification for better case processing debugging
+- **Stack Trace Management**: Optimized stack trace handling for production advocacy environments
 
 ### AI Utilities (`ai/`)
-- **Model Configuration**: AI model selection and parameter management
-- **Token Management**: Token counting and cost optimization utilities
-- **Response Processing**: Common response parsing and validation
-- **Rate Limiting**: API rate limiting and retry logic
+- **Model Configuration**: AI model selection and parameter management for violation detection
+- **Token Management**: Token counting and cost optimization utilities for evidence analysis
+- **Response Processing**: Common response parsing and validation for advocacy AI operations
+- **Rate Limiting**: API rate limiting and retry logic for large-scale evidence processing
 
 ## Key Features
 

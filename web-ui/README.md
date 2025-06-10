@@ -1,39 +1,39 @@
-# Web UI - Title IX Compliance Platform
+# Web UI - Title IX Victim Advocacy Platform
 
-A modern, responsive web application for managing Title IX compliance through email processing, document analysis, and AI-powered workflow management. Built with Next.js 15 and Material UI, this frontend provides an intuitive interface for educational institutions to handle compliance documentation efficiently.
+A modern, responsive web application empowering victims, families, and advocates to fight back against educational institutions that mishandle Title IX cases through email processing, evidence analysis, and AI-powered case building. Built with Next.js 15 and Material UI, this frontend provides an intuitive interface for those facing schools that abuse their position of power.
 
 ## Overview
 
-The web UI serves as the primary interface for the Title IX Compliance Platform, offering:
-- **Email Management**: Import, view, and analyze email communications
-- **Document Processing**: Upload and manage compliance-related documents
-- **AI-Powered Analysis**: Real-time insights from document analysis pipeline
-- **Dashboard Interface**: Comprehensive overview of compliance status and workflows
-- **Bulk Operations**: Efficient handling of multiple documents and emails
-- **Role-Based Access**: Secure access controls for different user types
+The web UI serves as the primary interface for the Title IX Victim Advocacy Platform, offering:
+- **Evidence Management**: Import, organize, and analyze email communications and documents
+- **Case Building**: Upload and manage evidence to build strong advocacy cases
+- **AI-Powered Analysis**: Real-time insights to identify institutional failures and violations
+- **Advocacy Dashboard**: Comprehensive overview of case strength and evidence quality
+- **Bulk Operations**: Efficient handling of multiple evidence files and communications
+- **Secure Access**: Protected access for victims, families, and their advocates
 
 ## Key Features
 
-### Email Management System
-- **Gmail Integration**: Direct import from Gmail accounts using Google APIs
-- **Email Viewer**: Rich email display with attachment support
-- **Thread Management**: Organized email thread visualization
-- **Search and Filter**: Advanced search capabilities across email content
-- **Bulk Actions**: Mass email processing and categorization
+### Evidence Management System
+- **Gmail Integration**: Direct import from Gmail accounts using Google APIs to gather institutional communications
+- **Email Viewer**: Rich email display with attachment support for comprehensive evidence review
+- **Thread Management**: Organized email thread visualization to track institutional response patterns
+- **Search and Filter**: Advanced search capabilities across evidence content to find specific violations
+- **Bulk Actions**: Mass evidence processing and categorization for large cases
 
-### Document Analysis Interface
-- **Real-time Processing**: Live updates from AI analysis pipeline
-- **Analysis Results**: Structured display of AI-generated insights
-- **Call-to-Action Tracking**: Monitor and manage actionable items
-- **Key Points Extraction**: Visual presentation of important document elements
-- **Compliance Assessment**: Title IX relevance scoring and recommendations
+### Evidence Analysis Interface
+- **Real-time Processing**: Live updates from AI analysis pipeline to identify institutional failures
+- **Analysis Results**: Structured display of AI-generated insights highlighting policy violations
+- **Action Item Tracking**: Monitor institutional failures to respond appropriately to reports
+- **Key Evidence Extraction**: Visual presentation of critical evidence elements for case building
+- **Violation Assessment**: Title IX compliance failure scoring and advocacy recommendations
 
 ### Advanced Data Grid
-- **Material UI Pro Grid**: Professional-grade data grid with advanced features
-- **Server-Side Operations**: Efficient handling of large datasets
-- **Custom Filtering**: Domain-specific filters for compliance data
-- **Export Capabilities**: Data export in multiple formats
-- **Bulk Editing**: In-line editing for multiple records
+- **Material UI Pro Grid**: Professional-grade data grid with advanced features for evidence organization
+- **Server-Side Operations**: Efficient handling of large evidence datasets
+- **Custom Filtering**: Domain-specific filters for advocacy case data
+- **Export Capabilities**: Evidence export in multiple formats for legal teams
+- **Bulk Editing**: In-line editing for multiple evidence records
 
 ## Technology Stack
 
@@ -68,13 +68,13 @@ web-ui/
 ├── app/                    # Next.js App Router pages
 │   ├── api/               # API routes and server functions
 │   ├── auth/              # Authentication pages
-│   ├── email/             # Email management interface
-│   ├── messages/          # Message processing interface
-│   └── bulk-edit/         # Bulk operations interface
+│   ├── evidence/          # Evidence management interface
+│   ├── case-building/     # Case building and analysis interface
+│   └── advocacy/          # Advocacy tools and bulk operations
 ├── components/            # Reusable UI components
-│   ├── email-message/     # Email-specific components
-│   ├── email-import/      # Gmail import functionality
-│   ├── ai/                # AI integration components
+│   ├── evidence-message/  # Evidence-specific components
+│   ├── evidence-import/   # Evidence import functionality
+│   ├── ai/                # AI integration components for violation detection
 │   ├── mui/               # Material UI customizations
 │   └── general/           # Common UI components
 ├── lib/                   # Utility libraries and configurations
@@ -111,7 +111,7 @@ cp .env.example .env.local
 Create `.env.local` with required configuration:
 ```bash
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/titleix_db"
+DATABASE_URL="postgresql://username:password@localhost:5432/victim_advocacy_db"
 
 # Authentication
 NEXTAUTH_URL="http://localhost:3000"
@@ -122,7 +122,7 @@ AZURE_AD_CLIENT_ID="your-azure-client-id"
 AZURE_AD_CLIENT_SECRET="your-azure-client-secret"
 AZURE_AD_TENANT_ID="your-azure-tenant-id"
 
-# Google APIs (for Gmail integration)
+# Google APIs (for evidence gathering from Gmail)
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
@@ -154,53 +154,53 @@ npm start
 
 ## Key Components
 
-### Email Management
+### Evidence Management
 ```typescript
-// Email list with advanced filtering
-<EmailList 
+// Evidence list with advanced filtering for case building
+<EvidenceList 
   filters={{
     sender: "compliance@school.edu",
     dateRange: { start: "2024-01-01", end: "2024-12-31" },
     hasAttachments: true,
-    titleIXRelevant: true
+    titleIXViolations: true
   }}
-  onEmailSelect={handleEmailSelection}
+  onEvidenceSelect={handleEvidenceSelection}
   bulkActions={true}
 />
 
-// Email viewer with analysis results
-<EmailViewer 
-  emailId={selectedEmailId}
-  showAnalysis={true}
+// Evidence viewer with violation analysis results
+<EvidenceViewer 
+  evidenceId={selectedEvidenceId}
+  showViolationAnalysis={true}
   enableAnnotations={true}
 />
 ```
 
-### Document Processing
+### Evidence Processing
 ```typescript
-// Document upload with AI processing
-<DocumentUpload
-  onUpload={handleDocumentUpload}
+// Evidence upload with AI processing for violation detection
+<EvidenceUpload
+  onUpload={handleEvidenceUpload}
   acceptedTypes={['.pdf', '.docx', '.txt']}
-  autoProcess={true}
+  autoProcessForViolations={true}
   showProgress={true}
 />
 
-// Analysis results display
-<AnalysisResults
-  documentId={documentId}
-  showKeyPoints={true}
-  showCallToActions={true}
+// Violation analysis results display
+<ViolationAnalysisResults
+  evidenceId={evidenceId}
+  showKeyViolations={true}
+  showInstitutionalFailures={true}
   enableExport={true}
 />
 ```
 
 ### Data Grid Integration
 ```typescript
-// Server-bound data grid for large datasets
+// Server-bound data grid for large evidence datasets
 <ServerBoundDataGrid
-  endpoint="/api/emails"
-  columns={emailColumns}
+  endpoint="/api/evidence"
+  columns={evidenceColumns}
   filters={currentFilters}
   sorting={currentSort}
   pagination={true}
@@ -225,30 +225,30 @@ const apiClient = new TypedApiClient({
   retries: 3
 });
 
-// Email operations
-const emails = await apiClient.get('/api/emails', {
-  filters: { titleIXRelevant: true },
+// Evidence operations for advocacy case building
+const evidence = await apiClient.get('/api/evidence', {
+  filters: { titleIXViolations: true },
   pagination: { page: 1, limit: 50 }
 });
 
-// Document analysis
-const analysis = await apiClient.post('/api/documents/analyze', {
-  documentId: 123,
-  analysisType: 'full',
+// Evidence analysis for violation detection
+const violationAnalysis = await apiClient.post('/api/evidence/analyze', {
+  evidenceId: 123,
+  analysisType: 'violation_detection',
   priority: 'high'
 });
 ```
 
 ### Real-time Updates
 ```typescript
-// WebSocket integration for live updates
+// WebSocket integration for live updates on evidence processing
 const { data, status } = useRealtimeData('/api/processing-status', {
-  documentId,
+  evidenceId,
   refreshInterval: 1000
 });
 
-// Server-sent events for progress tracking
-const { progress } = useSSE(`/api/analysis/${documentId}/progress`);
+// Server-sent events for violation analysis progress tracking
+const { progress } = useSSE(`/api/analysis/${evidenceId}/progress`);
 ```
 
 ## Authentication & Authorization
@@ -281,17 +281,17 @@ export const authOptions: NextAuthOptions = {
 
 ### Role-Based Access
 ```typescript
-// Protected route component
-<ProtectedRoute requiredRole="compliance_officer">
-  <BulkDocumentProcessor />
+// Protected route component for victim advocates
+<ProtectedRoute requiredRole="victim_advocate">
+  <BulkEvidenceProcessor />
 </ProtectedRoute>
 
-// Permission-based UI elements
+// Permission-based UI elements for case building
 <ConditionalRender 
-  condition={hasPermission('edit_documents')}
+  condition={hasPermission('edit_evidence')}
   fallback={<ReadOnlyView />}
 >
-  <DocumentEditor />
+  <EvidenceEditor />
 </ConditionalRender>
 ```
 
@@ -299,18 +299,18 @@ export const authOptions: NextAuthOptions = {
 
 ### Database Operations
 ```typescript
-// Repository pattern implementation
-class EmailRepository extends BaseObjectRepository<EmailMessage, 'id'> {
-  async findByTitleIXRelevance(relevant: boolean): Promise<EmailMessage[]> {
+// Repository pattern implementation for evidence management
+class EvidenceRepository extends BaseObjectRepository<EvidenceMessage, 'id'> {
+  async findByTitleIXViolations(hasViolations: boolean): Promise<EvidenceMessage[]> {
     return this.query(
-      sql`SELECT * FROM emails WHERE title_ix_relevant = ${relevant}`
+      sql`SELECT * FROM evidence WHERE title_ix_violations = ${hasViolations}`
     );
   }
 
-  async getBulkAnalysisStatus(emailIds: number[]): Promise<AnalysisStatus[]> {
+  async getBulkViolationAnalysisStatus(evidenceIds: number[]): Promise<AnalysisStatus[]> {
     return this.query(
-      sql`SELECT email_id, status FROM analysis_status 
-          WHERE email_id = ANY(${emailIds})`
+      sql`SELECT evidence_id, status FROM violation_analysis_status 
+          WHERE evidence_id = ANY(${evidenceIds})`
     );
   }
 }
@@ -318,29 +318,29 @@ class EmailRepository extends BaseObjectRepository<EmailMessage, 'id'> {
 
 ### State Management
 ```typescript
-// React Query for server state
-const { data: emails, isLoading, error } = useQuery({
-  queryKey: ['emails', filters],
-  queryFn: () => fetchEmails(filters),
+// React Query for server state management in advocacy cases
+const { data: evidence, isLoading, error } = useQuery({
+  queryKey: ['evidence', filters],
+  queryFn: () => fetchEvidence(filters),
   staleTime: 5 * 60 * 1000, // 5 minutes
 });
 
-// Optimistic updates for better UX
-const updateEmailMutation = useMutation({
-  mutationFn: updateEmail,
-  onMutate: async (newEmail) => {
+// Optimistic updates for better UX in case building
+const updateEvidenceMutation = useMutation({
+  mutationFn: updateEvidence,
+  onMutate: async (newEvidence) => {
     // Cancel outgoing refetches
-    await queryClient.cancelQueries(['emails']);
+    await queryClient.cancelQueries(['evidence']);
     
     // Snapshot previous value
-    const previousEmails = queryClient.getQueryData(['emails']);
+    const previousEvidence = queryClient.getQueryData(['evidence']);
     
     // Optimistically update
-    queryClient.setQueryData(['emails'], (old) => 
-      old?.map(email => email.id === newEmail.id ? newEmail : email)
+    queryClient.setQueryData(['evidence'], (old) => 
+      old?.map(evidence => evidence.id === newEvidence.id ? newEvidence : evidence)
     );
     
-    return { previousEmails };
+    return { previousEvidence };
   },
 });
 ```
@@ -349,15 +349,15 @@ const updateEmailMutation = useMutation({
 
 ### Server-Side Rendering
 ```typescript
-// Server component for initial data loading
-async function EmailDashboard() {
-  const initialEmails = await fetchEmails({ limit: 20 });
-  const stats = await fetchEmailStats();
+// Server component for initial evidence data loading
+async function AdvocacyDashboard() {
+  const initialEvidence = await fetchEvidence({ limit: 20 });
+  const caseStats = await fetchCaseStats();
   
   return (
     <div>
-      <DashboardStats stats={stats} />
-      <EmailGrid initialData={initialEmails} />
+      <CaseStats stats={caseStats} />
+      <EvidenceGrid initialData={initialEvidence} />
     </div>
   );
 }
@@ -365,19 +365,19 @@ async function EmailDashboard() {
 
 ### Client-Side Optimization
 ```typescript
-// Virtual scrolling for large lists
+// Virtual scrolling for large evidence lists
 <VirtualizedList
-  items={emails}
+  items={evidence}
   itemHeight={80}
   renderItem={({ item, index }) => (
-    <EmailListItem email={item} index={index} />
+    <EvidenceListItem evidence={item} index={index} />
   )}
   windowSize={20}
 />
 
-// Lazy loading with Suspense
-<Suspense fallback={<EmailSkeleton />}>
-  <EmailDetails emailId={emailId} />
+// Lazy loading with Suspense for evidence details
+<Suspense fallback={<EvidenceSkeleton />}>
+  <EvidenceDetails evidenceId={evidenceId} />
 </Suspense>
 ```
 
