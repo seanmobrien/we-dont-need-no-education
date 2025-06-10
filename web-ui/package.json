@@ -12,6 +12,8 @@
     "build": "next build",
     "start": "next start",
     "test": "jest",
+    "test:serial": "jest --runInBand",
+    "test:concurrency-stress": "jest --maxWorkers=8 --maxConcurrency=10",
     "lint": "next lint",
     "generate-css-types": "tailwindcss-classnames -input tailwind.config.mjs -outputFilename tailwindcss.classnames.ts -customClassesFilename tailwind.customtypes.ts",
     "vercel-build": "next build"

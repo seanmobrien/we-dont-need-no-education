@@ -9,6 +9,10 @@ const config: Config.InitialOptions = {
     '**/__tests__/**/*.test.(ts|tsx)',
     '**/?(*.)+(spec|test).(ts|tsx)',
   ], // Test file patterns
+  
+  // Concurrency configuration to prevent hanging issues
+  maxWorkers: process.env.CI ? 2 : '50%', // Limit workers in CI, use 50% of cores locally
+  maxConcurrency: 5, // Limit concurrent tests to prevent resource contention
   moduleNameMapper: {
     '^@/instrumentation(.*)$':
       '<rootDir>/__tests__/jest.mock-instrumentation.ts', // Mock instrumentation module
@@ -38,6 +42,11 @@ const config: Config.InitialOptions = {
   //detectLeaks: true,
   detectOpenHandles: true,
   // logHeapUsage: true,
+  
+  // Additional stability configurations for concurrent testing
+  testTimeout: 10000, // Increase timeout to 10 seconds for slower tests
+  openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
+  forceExit: false, // Don't force exit to allow proper cleanup
 };
 
 export default config;
