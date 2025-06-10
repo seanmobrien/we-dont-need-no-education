@@ -126,3 +126,6 @@ export class AttachmentRepository extends BaseObjectRepository<
     ];
   }
 }
+
+// Export the Drizzle-based repository
+export { EmailAttachmentDrizzleRepository } from './drizzle-repository';
