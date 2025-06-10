@@ -1,7 +1,6 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
 import { EmailAttachment } from '@/data-models/api/attachment';
 import { emailAttachments } from '@/drizzle/schema';
-import { ValidationError } from '@/lib/react-util';
 
 /**
  * Maps a database record to an EmailAttachment domain object
@@ -33,85 +32,29 @@ const mapRecordToEmailAttachmentSummary = (record: Record<string, unknown>): Par
 });
 
 /**
- * EmailAttachmentDrizzleRepository provides Drizzle ORM-based data access
- * for email attachment records in a flattened format suitable for REST API consumption.
- * 
- * This repository matches the output format of the existing SQL-based implementation
- * while leveraging Drizzle's type-safe query capabilities.
+ * Example repository demonstrating auto-detection of primary key column and field.
+ * This shows how idColumn and idField can be automatically inferred from the table schema.
  */
-export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
+export class EmailAttachmentAutoDrizzleRepository extends BaseDrizzleRepository<
   EmailAttachment,
   'attachmentId'
 > {
   constructor() {
     super({
       table: emailAttachments,
-      // Auto-detection is preferred, but we can still provide explicit values for compatibility
-      idColumn: emailAttachments.attachmentId,
-      idField: 'attachmentId',
+      // No idColumn or idField specified - they will be auto-detected!
+      // The primary key column 'attachment_id' will be detected and mapped to field 'attachmentId'
       recordMapper: mapRecordToEmailAttachment,
       summaryMapper: mapRecordToEmailAttachmentSummary,
       tableName: 'email_attachments',
     });
   }
 
-  /**
-   * Validates email attachment data for repository operations
-   */
-  protected validate<TMethod extends keyof EmailAttachmentDrizzleRepository>(
-    method: TMethod,
-    obj: Record<string, unknown>,
-  ): void {
-    super.validate(method, obj);
-
-    const asModel = obj as EmailAttachment;
-
-    switch (method) {
-      case 'create':
-        if (!asModel.fileName || !asModel.filePath || !asModel.emailId) {
-          throw new ValidationError({
-            field: 'fileName, filePath, or emailId',
-            source: 'EmailAttachmentDrizzleRepository',
-          });
-        }
-        if (!asModel.mimeType || typeof asModel.size !== 'number') {
-          throw new ValidationError({
-            field: 'mimeType or size',
-            source: 'EmailAttachmentDrizzleRepository',
-          });
-        }
-        break;
-
-      case 'update':
-        if (!asModel.attachmentId) {
-          throw new ValidationError({
-            field: 'attachmentId',
-            source: 'EmailAttachmentDrizzleRepository',
-          });
-        }
-        break;
-
-      case 'get':
-      case 'delete':
-        if (!obj[this.idField]) {
-          throw new ValidationError({
-            field: String(this.idField),
-            source: 'EmailAttachmentDrizzleRepository',
-          });
-        }
-        break;
-    }
-  }
-
-  /**
-   * Prepares EmailAttachment data for database insertion
-   */
   protected prepareInsertData(model: Omit<EmailAttachment, 'attachmentId'>): Record<string, unknown> {
     return {
       fileName: model.fileName,
       filePath: model.filePath,
       extractedText: model.extractedText || null,
-      // Note: extractedTextTsv is not included as it's not supported in the Drizzle schema yet
       policyId: model.policyId || null,
       summary: model.summary || null,
       emailId: model.emailId,
@@ -120,9 +63,6 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
     };
   }
 
-  /**
-   * Prepares EmailAttachment data for database updates
-   */
   protected prepareUpdateData(model: Partial<EmailAttachment>): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
 
@@ -133,8 +73,6 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
     if (model.summary !== undefined) updateData.summary = model.summary;
     if (model.mimeType !== undefined) updateData.mimeType = model.mimeType;
     if (model.size !== undefined) updateData.size = model.size;
-    // Note: emailId is typically not updated after creation
-    // Note: attachmentId is not updatable as it's the primary key
 
     return updateData;
   }

@@ -5,6 +5,39 @@ import { PartialExceptFor } from '@/lib/typescript';
 import { eq, count } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util';
 import { log } from '@/lib/logger';
+import { getTableConfig } from 'drizzle-orm/pg-core';
+import { PgColumn } from 'drizzle-orm/pg-core';
+
+/**
+ * Helper function to detect primary key column and field name from a Drizzle table schema
+ */
+function detectPrimaryKey<T extends object, KId extends keyof T>(
+  config: DrizzleRepositoryConfig<T, KId>
+): { idColumn: PgColumn; idField: KId } {
+  const tableConfig = getTableConfig(config.table);
+  
+  // Find the primary key column
+  const primaryKeyColumns = tableConfig.columns.filter(col => col.primary);
+  
+  if (primaryKeyColumns.length === 0) {
+    throw new Error(`No primary key found in table ${config.tableName}`);
+  }
+  
+  if (primaryKeyColumns.length > 1) {
+    throw new Error(`Multiple primary keys found in table ${config.tableName}. Please specify idColumn and idField manually.`);
+  }
+  
+  const primaryKeyColumn = primaryKeyColumns[0];
+  
+  // Convert snake_case database column name to camelCase field name
+  const databaseColumnName = primaryKeyColumn.name;
+  const camelCaseFieldName = databaseColumnName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  
+  return {
+    idColumn: primaryKeyColumn,
+    idField: camelCaseFieldName as KId
+  };
+}
 
 /**
  * BaseDrizzleRepository is a generic class that provides basic CRUD operations for objects of type T
@@ -21,10 +54,22 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 {
   protected readonly db: Database;
   protected readonly config: DrizzleRepositoryConfig<T, KId>;
+  protected readonly idColumn: PgColumn;
+  protected readonly idField: KId;
 
   constructor(config: DrizzleRepositoryConfig<T, KId>) {
     this.db = db;
     this.config = config;
+    
+    // Auto-detect primary key if not provided
+    if (!config.idColumn || !config.idField) {
+      const detected = detectPrimaryKey(config);
+      this.idColumn = config.idColumn || detected.idColumn;
+      this.idField = config.idField || detected.idField;
+    } else {
+      this.idColumn = config.idColumn;
+      this.idField = config.idField;
+    }
   }
 
   /**
@@ -92,19 +137,19 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
    */
   async get(recordId: T[KId]): Promise<T | null> {
     try {
-      this.validate('get', { [this.config.idField]: recordId });
+      this.validate('get', { [this.idField]: recordId });
 
       const records = await this.db
         .select()
         .from(this.config.table)
-        .where(eq(this.config.idColumn, recordId as string | number));
+        .where(eq(this.idColumn, recordId as string | number));
 
       if (records.length === 0) {
         return null;
       }
 
       if (records.length > 1) {
-        throw new Error(`Multiple records found for ${String(this.config.idField)}: ${recordId}`);
+        throw new Error(`Multiple records found for ${String(this.idField)}: ${recordId}`);
       }
 
       const result = this.config.recordMapper(records[0]);
@@ -167,7 +212,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       const records = await this.db
         .update(this.config.table)
         .set(updateData)
-        .where(eq(this.config.idColumn, model[this.config.idField] as string | number))
+        .where(eq(this.idColumn, model[this.idField] as string | number))
         .returning();
 
       if (records.length === 0) {
@@ -199,11 +244,11 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
    */
   async delete(recordId: T[KId]): Promise<boolean> {
     try {
-      this.validate('delete', { [this.config.idField]: recordId });
+      this.validate('delete', { [this.idField]: recordId });
 
       const records = await this.db
         .delete(this.config.table)
-        .where(eq(this.config.idColumn, recordId as string | number))
+        .where(eq(this.idColumn, recordId as string | number))
         .returning();
 
       if (records.length === 0) {
