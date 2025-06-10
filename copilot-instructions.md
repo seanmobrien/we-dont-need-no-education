@@ -1,10 +1,10 @@
-# Copilot Instructions for Title IX Compliance Platform
+# Copilot Instructions for Title IX Victim Advocacy Platform
 
-This document provides comprehensive guidelines for LLM-based development assistance on the Title IX Compliance Platform. These instructions optimize AI assistance for the specific architecture, patterns, and requirements of this educational compliance system.
+This document provides comprehensive guidelines for LLM-based development assistance on the Title IX Victim Advocacy Platform. These instructions optimize AI assistance for the specific architecture, patterns, and requirements of this victim empowerment and evidence analysis system.
 
 ## Project Overview
 
-The Title IX Compliance Platform is a sophisticated educational technology solution that combines AI-powered document analysis with modern web interfaces to help educational institutions manage compliance requirements efficiently.
+The Title IX Victim Advocacy Platform is a sophisticated advocacy technology solution that combines AI-powered evidence analysis with modern web interfaces to help victims, families, and advocates fight back against educational institutions that mishandle Title IX cases.
 
 ### Core Technologies
 - **Backend**: Java 21, Maven, LangChain4j, Azure OpenAI, PostgreSQL, Redis
@@ -19,28 +19,28 @@ Follow these established patterns when working with the Java backend:
 
 #### Repository Pattern
 ```java
-// Always extend from base repository classes
-public class DocumentAnalysisRepository extends BaseRepository<DocumentAnalysis> {
+// Always extend from base repository classes for evidence management
+public class EvidenceAnalysisRepository extends BaseRepository<EvidenceAnalysis> {
     
-    // Use builder pattern for complex entities
-    public DocumentAnalysis createAnalysis(DocumentAnalysisRequest request) {
-        return DocumentAnalysis.builder()
-            .documentId(request.getDocumentId())
+    // Use builder pattern for complex entities in advocacy cases
+    public EvidenceAnalysis createAnalysis(EvidenceAnalysisRequest request) {
+        return EvidenceAnalysis.builder()
+            .evidenceId(request.getEvidenceId())
             .analysisType(request.getAnalysisType())
             .createdAt(LocalDateTime.now())
             .build();
     }
     
-    // Implement consistent error handling
-    public Optional<DocumentAnalysis> findByDocumentId(Integer documentId) {
+    // Implement consistent error handling for case building
+    public Optional<EvidenceAnalysis> findByEvidenceId(Integer evidenceId) {
         try {
             return db().query(
-                "SELECT * FROM document_analysis WHERE document_id = ?",
+                "SELECT * FROM evidence_analysis WHERE evidence_id = ?",
                 this::mapToEntity,
-                documentId
+                evidenceId
             ).stream().findFirst();
         } catch (SQLException e) {
-            logger.error("Failed to find analysis for document {}", documentId, e);
+            logger.error("Failed to find analysis for evidence {}", evidenceId, e);
             return Optional.empty();
         }
     }
@@ -50,23 +50,23 @@ public class DocumentAnalysisRepository extends BaseRepository<DocumentAnalysis>
 #### AI Assistant Development
 When creating new AI assistants:
 ```java
-// Extend ToolAwareAssistant for AI functionality
-public class CustomComplianceAssistant extends ToolAwareAssistant {
+// Extend ToolAwareAssistant for AI functionality in victim advocacy
+public class CustomAdvocacyAssistant extends ToolAwareAssistant {
     
     @Override
     protected String getSystemPrompt() {
         return Prompts.buildSystemPrompt()
-            .withContext("compliance analysis")
-            .withInstructions("Focus on Title IX relevance")
+            .withContext("violation analysis for victim advocacy")
+            .withInstructions("Focus on Title IX failures and institutional misconduct")
             .build();
     }
     
     @Override
     protected List<MessageTool<?>> getTools() {
         return List.of(
-            new PolicyLookupTool(),
-            new DocumentAnalysisTool(),
-            new CallToActionTool()
+            new ViolationDetectionTool(),
+            new EvidenceAnalysisTool(),
+            new InstitutionalFailureTool()
         );
     }
 }
@@ -74,23 +74,23 @@ public class CustomComplianceAssistant extends ToolAwareAssistant {
 
 #### Tool Implementation
 ```java
-// Custom tools should extend MessageTool
-public class PolicyLookupTool extends MessageTool<PolicySearchResult> {
+// Custom tools should extend MessageTool for advocacy purposes
+public class ViolationDetectionTool extends MessageTool<ViolationSearchResult> {
     
     @Tool(
-        name = "lookupPolicy",
-        value = "Searches for relevant policies based on query criteria"
+        name = "detectViolations",
+        value = "Analyzes evidence for Title IX violations and institutional failures"
     )
-    public String lookupPolicy(
-        @P(required = true, value = "The search query for policy lookup") String query,
-        @P(required = false, value = "Policy type filter") String policyType
+    public String detectViolations(
+        @P(required = true, value = "The evidence content to analyze for violations") String content,
+        @P(required = false, value = "Violation type filter") String violationType
     ) {
-        // Implementation with proper error handling
+        // Implementation with proper error handling for advocacy cases
         try {
-            return policyService.search(query, policyType);
+            return violationService.analyze(content, violationType);
         } catch (Exception e) {
-            logger.error("Policy lookup failed for query: {}", query, e);
-            return "ERROR: Policy lookup failed - " + e.getMessage();
+            logger.error("Violation detection failed for content: {}", content, e);
+            return "ERROR: Violation detection failed - " + e.getMessage();
         }
     }
 }
@@ -101,30 +101,30 @@ public class PolicyLookupTool extends MessageTool<PolicySearchResult> {
 #### Component Development
 Follow these patterns for React components:
 ```typescript
-// Use proper TypeScript interfaces
-interface EmailMessageProps {
-  emailId: string;
-  showAnalysis?: boolean;
-  onAnalysisComplete?: (result: AnalysisResult) => void;
+// Use proper TypeScript interfaces for evidence components
+interface EvidenceMessageProps {
+  evidenceId: string;
+  showViolationAnalysis?: boolean;
+  onAnalysisComplete?: (result: ViolationAnalysisResult) => void;
 }
 
-// Prefer functional components with hooks
-const EmailMessage = memo(({ emailId, showAnalysis, onAnalysisComplete }: EmailMessageProps) => {
-  const { data: email, isLoading, error } = useEmail(emailId);
-  const { mutate: triggerAnalysis } = useAnalysisProcessor();
+// Prefer functional components with hooks for advocacy interface
+const EvidenceMessage = memo(({ evidenceId, showViolationAnalysis, onAnalysisComplete }: EvidenceMessageProps) => {
+  const { data: evidence, isLoading, error } = useEvidence(evidenceId);
+  const { mutate: triggerViolationAnalysis } = useViolationAnalysisProcessor();
   
   // Use early returns for loading states
-  if (isLoading) return <EmailSkeleton />;
+  if (isLoading) return <EvidenceSkeleton />;
   if (error) return <ErrorBoundary error={error} />;
-  if (!email) return <NotFoundMessage />;
+  if (!evidence) return <NotFoundMessage />;
   
   return (
     <Card className={classnames(display('flex'), flexDirection('flex-col'))}>
-      <EmailHeader email={email} />
-      <EmailContent content={email.content} />
-      {showAnalysis && (
-        <AnalysisPanel 
-          emailId={emailId} 
+      <EvidenceHeader evidence={evidence} />
+      <EvidenceContent content={evidence.content} />
+      {showViolationAnalysis && (
+        <ViolationAnalysisPanel 
+          evidenceId={evidenceId} 
           onComplete={onAnalysisComplete}
         />
       )}
@@ -135,18 +135,18 @@ const EmailMessage = memo(({ emailId, showAnalysis, onAnalysisComplete }: EmailM
 
 #### API Integration
 ```typescript
-// Use repository pattern for data access
-export class EmailRepository extends AbstractObjectRepository<EmailMessage> {
+// Use repository pattern for evidence data access
+export class EvidenceRepository extends AbstractObjectRepository<EvidenceMessage> {
   
-  async findWithAnalysis(filters: EmailFilters): Promise<PaginatedResultset<EmailWithAnalysis>> {
+  async findWithViolationAnalysis(filters: EvidenceFilters): Promise<PaginatedResultset<EvidenceWithAnalysis>> {
     const query = sql`
-      SELECT e.*, a.analysis_result 
-      FROM emails e 
-      LEFT JOIN email_analysis a ON e.id = a.email_id
+      SELECT e.*, a.violation_analysis_result 
+      FROM evidence e 
+      LEFT JOIN evidence_violation_analysis a ON e.id = a.evidence_id
       WHERE ${this.buildFilterConditions(filters)}
     `;
     
-    return this.executeQuery(query, this.mapToEmailWithAnalysis);
+    return this.executeQuery(query, this.mapToEvidenceWithAnalysis);
   }
 }
 ```
@@ -174,30 +174,30 @@ export class EmailRepository extends AbstractObjectRepository<EmailMessage> {
 #### Prompt Engineering
 When working with AI prompts:
 ```java
-// Use structured prompts with clear sections
-public static String buildAnalysisPrompt(DocumentContext context) {
+// Use structured prompts with clear sections for violation detection
+public static String buildViolationAnalysisPrompt(EvidenceContext context) {
     return String.format("""
         === CONTEXT ===
-        Document Type: %s
+        Evidence Type: %s
         Source: %s
         Content Length: %d characters
         
         === TASK ===
-        Analyze this document for Title IX compliance relevance.
+        Analyze this evidence for Title IX violations and institutional failures.
         
         === INSTRUCTIONS ===
-        1. Identify key compliance indicators
-        2. Assess relevance on scale 1-10
-        3. Extract actionable items
-        4. Provide specific recommendations
+        1. Identify specific policy violations and institutional failures
+        2. Assess violation severity on scale 1-10
+        3. Extract evidence of institutional misconduct
+        4. Provide specific recommendations for victim advocacy
         
         === OUTPUT FORMAT ===
-        Return structured JSON with fields: relevance_score, key_points, actions, recommendations
+        Return structured JSON with fields: violation_score, key_violations, institutional_failures, advocacy_recommendations
         
-        === DOCUMENT CONTENT ===
+        === EVIDENCE CONTENT ===
         %s
         """, 
-        context.getDocumentType(),
+        context.getEvidenceType(),
         context.getSource(),
         context.getContent().length(),
         context.getContent()
@@ -207,23 +207,23 @@ public static String buildAnalysisPrompt(DocumentContext context) {
 
 #### Tool Development
 ```java
-// Tools should be focused and single-purpose
-@Tool(name = "analyzeComplianceRisk")
-public ComplianceRiskAssessment analyzeComplianceRisk(
-    @P("Document content to analyze") String content,
+// Tools should be focused and single-purpose for advocacy
+@Tool(name = "analyzeInstitutionalFailure")
+public InstitutionalFailureAssessment analyzeInstitutionalFailure(
+    @P("Evidence content to analyze for institutional failures") String content,
     @P("Analysis scope: 'basic' or 'detailed'") String scope
 ) {
     // Validate inputs
     if (content == null || content.trim().isEmpty()) {
-        throw new IllegalArgumentException("Document content cannot be empty");
+        throw new IllegalArgumentException("Evidence content cannot be empty");
     }
     
-    // Process with clear error handling
+    // Process with clear error handling for advocacy cases
     try {
-        return riskAnalyzer.assess(content, AnalysisScope.valueOf(scope.toUpperCase()));
+        return failureAnalyzer.assess(content, AnalysisScope.valueOf(scope.toUpperCase()));
     } catch (Exception e) {
-        logger.error("Risk analysis failed", e);
-        return ComplianceRiskAssessment.failed("Analysis error: " + e.getMessage());
+        logger.error("Institutional failure analysis failed", e);
+        return InstitutionalFailureAssessment.failed("Analysis error: " + e.getMessage());
     }
 }
 ```
@@ -232,25 +232,25 @@ public ComplianceRiskAssessment analyzeComplianceRisk(
 
 #### Query Patterns
 ```java
-// Use parameterized queries consistently
-public List<DocumentUnit> findDocumentsByDateRange(LocalDate start, LocalDate end) {
+// Use parameterized queries consistently for evidence management
+public List<EvidenceUnit> findEvidenceByDateRange(LocalDate start, LocalDate end) {
     String sql = """
-        SELECT * FROM document_units 
+        SELECT * FROM evidence_units 
         WHERE created_on BETWEEN ? AND ?
         AND status = 'active'
         ORDER BY created_on DESC
     """;
     
-    return db().query(sql, this::mapToDocumentUnit, start, end);
+    return db().query(sql, this::mapToEvidenceUnit, start, end);
 }
 
-// Use transactions for complex operations
-public void processDocumentBatch(List<DocumentUnit> documents) throws SQLException {
+// Use transactions for complex operations in advocacy cases
+public void processEvidenceBatch(List<EvidenceUnit> evidence) throws SQLException {
     db().executeInTransaction(connection -> {
-        for (DocumentUnit doc : documents) {
-            saveDocument(connection, doc);
-            scheduleAnalysis(connection, doc.getId());
-            updateProcessingQueue(connection, doc.getId());
+        for (EvidenceUnit item : evidence) {
+            saveEvidence(connection, item);
+            scheduleViolationAnalysis(connection, item.getId());
+            updateProcessingQueue(connection, item.getId());
         }
         return null;
     });
@@ -259,25 +259,25 @@ public void processDocumentBatch(List<DocumentUnit> documents) throws SQLExcepti
 
 #### TypeScript Database Access
 ```typescript
-// Use Drizzle ORM for type-safe queries
-const emailsWithAnalysis = await db
+// Use Drizzle ORM for type-safe queries in advocacy cases
+const evidenceWithViolationAnalysis = await db
   .select({
-    id: emails.id,
-    subject: emails.subject,
-    sender: emails.sender,
-    analysisScore: emailAnalysis.titleIxRelevance,
-    keyPoints: emailAnalysis.keyPoints,
+    id: evidence.id,
+    subject: evidence.subject,
+    sender: evidence.sender,
+    violationScore: evidenceViolationAnalysis.titleIxViolationLevel,
+    keyViolations: evidenceViolationAnalysis.keyViolations,
   })
-  .from(emails)
-  .leftJoin(emailAnalysis, eq(emails.id, emailAnalysis.emailId))
+  .from(evidence)
+  .leftJoin(evidenceViolationAnalysis, eq(evidence.id, evidenceViolationAnalysis.evidenceId))
   .where(
     and(
-      gte(emails.sentDate, startDate),
-      lte(emails.sentDate, endDate),
-      eq(emails.processed, true)
+      gte(evidence.receivedDate, startDate),
+      lte(evidence.receivedDate, endDate),
+      eq(evidence.processed, true)
     )
   )
-  .orderBy(desc(emails.sentDate));
+  .orderBy(desc(evidence.receivedDate));
 ```
 
 ### Testing Strategies
@@ -477,24 +477,24 @@ public String analyzeDocument(String content) {
 
 ## Domain-Specific Guidance
 
-### Title IX Compliance Context
-When working on compliance-related features:
-- **Sensitivity**: Handle all data with appropriate privacy considerations
-- **Audit Trail**: Ensure all processing activities are logged and traceable
-- **Accuracy**: Prioritize precision in AI analysis to avoid false positives/negatives
-- **Timeliness**: Implement appropriate urgency levels for different compliance scenarios
+### Title IX Victim Advocacy Context
+When working on advocacy-related features:
+- **Sensitivity**: Handle all victim data with utmost privacy and security considerations
+- **Audit Trail**: Ensure all evidence processing activities are logged and traceable for legal purposes
+- **Accuracy**: Prioritize precision in AI analysis to avoid missing violations or false assessments
+- **Timeliness**: Implement appropriate urgency levels for different types of institutional failures
 
-### Educational Institution Requirements
-- **Privacy**: FERPA compliance for student data handling
-- **Accessibility**: WCAG 2.1 AA compliance for web interfaces
-- **Integration**: Consider existing campus systems and workflows
-- **Scalability**: Design for institutional scale (thousands of emails/documents)
+### Victim Support Requirements
+- **Privacy**: Enhanced privacy protections for victim data beyond standard FERPA compliance
+- **Accessibility**: WCAG 2.1 AA compliance for web interfaces to ensure accessibility for all victims
+- **Evidence Integrity**: Maintain chain of custody for digital evidence and documentation
+- **Scalability**: Design for handling large volumes of evidence in complex advocacy cases
 
-### AI Model Considerations
-- **Cost Management**: Monitor token usage and implement efficient caching
-- **Quality Control**: Implement validation layers for AI-generated content
-- **Bias Detection**: Include checks for bias in analysis results
-- **Model Updates**: Design for easy model switching and A/B testing
+### AI Model Considerations for Advocacy
+- **Cost Management**: Monitor token usage and implement efficient caching for evidence analysis
+- **Quality Control**: Implement validation layers for AI-generated violation assessments
+- **Bias Detection**: Include checks for bias in analysis results that could disadvantage victims
+- **Model Updates**: Design for easy model switching and A/B testing for advocacy effectiveness
 
 ## Debugging and Troubleshooting
 
@@ -502,58 +502,58 @@ When working on compliance-related features:
 
 #### AI Assistant Not Responding
 ```java
-// Add timeout and retry logic
+// Add timeout and retry logic for evidence analysis
 @Retryable(value = {AiServiceException.class}, maxAttempts = 3)
-public AnalysisResult analyzeWithRetry(DocumentUnit document) {
+public ViolationAnalysisResult analyzeWithRetry(EvidenceUnit evidence) {
     try {
-        return aiAssistant.analyze(document, Duration.ofMinutes(5));
+        return aiAssistant.analyzeViolations(evidence, Duration.ofMinutes(5));
     } catch (TimeoutException e) {
-        logger.warn("AI analysis timeout for document {}, retrying...", document.getId());
-        throw new AiServiceException("Analysis timeout", e);
+        logger.warn("AI violation analysis timeout for evidence {}, retrying...", evidence.getId());
+        throw new AiServiceException("Violation analysis timeout", e);
     }
 }
 ```
 
 #### Frontend Performance Issues
 ```typescript
-// Use React DevTools Profiler to identify bottlenecks
-const ProfiledEmailList = memo(({ emails }: EmailListProps) => {
-  const [visibleEmails, setVisibleEmails] = useState<Email[]>([]);
+// Use React DevTools Profiler to identify bottlenecks in evidence processing
+const ProfiledEvidenceList = memo(({ evidence }: EvidenceListProps) => {
+  const [visibleEvidence, setVisibleEvidence] = useState<Evidence[]>([]);
   
-  // Implement virtual scrolling for large lists
+  // Implement virtual scrolling for large evidence lists
   const listRef = useRef<FixedSizeList>(null);
   
   useEffect(() => {
     // Optimize rendering by only showing visible items
     const startIndex = Math.floor(scrollTop / itemHeight);
-    const endIndex = Math.min(startIndex + visibleCount, emails.length);
-    setVisibleEmails(emails.slice(startIndex, endIndex));
-  }, [emails, scrollTop]);
+    const endIndex = Math.min(startIndex + visibleCount, evidence.length);
+    setVisibleEvidence(evidence.slice(startIndex, endIndex));
+  }, [evidence, scrollTop]);
   
-  return <VirtualList ref={listRef} items={visibleEmails} />;
+  return <VirtualList ref={listRef} items={visibleEvidence} />;
 });
 ```
 
 ### Logging Best Practices
 ```java
-// Structured logging with context
-logger.info("Document analysis started", 
-    kv("documentId", document.getId()),
-    kv("documentType", document.getType()),
+// Structured logging with context for advocacy cases
+logger.info("Evidence violation analysis started", 
+    kv("evidenceId", evidence.getId()),
+    kv("evidenceType", evidence.getType()),
     kv("analysisStage", currentStage),
-    kv("userId", getCurrentUser().getId())
+    kv("advocateId", getCurrentAdvocate().getId())
 );
 
-// Performance logging
+// Performance logging for evidence processing
 try (Timer.Sample sample = Timer.start(meterRegistry)) {
-    AnalysisResult result = performAnalysis(document);
-    sample.stop(Timer.builder("document.analysis.duration")
+    ViolationAnalysisResult result = performViolationAnalysis(evidence);
+    sample.stop(Timer.builder("evidence.violation.analysis.duration")
         .tag("stage", currentStage)
         .tag("success", "true")
         .register(meterRegistry));
     return result;
 } catch (Exception e) {
-    sample.stop(Timer.builder("document.analysis.duration")
+    sample.stop(Timer.builder("evidence.violation.analysis.duration")
         .tag("stage", currentStage)
         .tag("success", "false")
         .register(meterRegistry));
@@ -581,4 +581,4 @@ try (Timer.Sample sample = Timer.start(meterRegistry)) {
 - Plan for new document types and sources
 - Consider internationalization for multi-jurisdiction compliance
 
-This instruction set provides a comprehensive foundation for AI-assisted development on the Title IX Compliance Platform. Follow these patterns and guidelines to maintain consistency, quality, and alignment with the project's architectural principles.
+This instruction set provides a comprehensive foundation for AI-assisted development on the Title IX Victim Advocacy Platform. Follow these patterns and guidelines to maintain consistency, quality, and alignment with the project's advocacy-focused architectural principles.
