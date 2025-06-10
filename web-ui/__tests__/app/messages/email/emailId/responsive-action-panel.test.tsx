@@ -69,7 +69,7 @@ describe('ResponsiveActionPanel', () => {
   it('renders responsive action details correctly', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
     
-    expect(screen.getByText('Responsive Action Details')).toBeInTheDocument();
+    expect(screen.getByText('Responsive Action')).toBeInTheDocument();
     expect(screen.getByText('Detailed response to the call to action')).toBeInTheDocument();
     expect(screen.getByText('80% Complete')).toBeInTheDocument();
   });

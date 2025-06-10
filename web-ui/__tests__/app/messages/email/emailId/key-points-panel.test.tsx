@@ -35,7 +35,7 @@ describe('KeyPointsPanel', () => {
   it('renders key point details correctly', () => {
     render(<KeyPointsPanel row={mockKeyPointsDetails} />);
     
-    expect(screen.getByText('Key Point Details')).toBeInTheDocument();
+    expect(screen.getByText('Key Point')).toBeInTheDocument();
     expect(screen.getByText('This is an important key point that requires attention')).toBeInTheDocument();
   });
 

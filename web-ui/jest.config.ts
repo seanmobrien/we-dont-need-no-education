@@ -18,6 +18,7 @@ const config: Config.InitialOptions = {
       '<rootDir>/__tests__/jest.mock-instrumentation.ts', // Mock instrumentation module
     prexit: '<rootDir>/__tests__/jest.mock-prexit.ts',
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
   },
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {

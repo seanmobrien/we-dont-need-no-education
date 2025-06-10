@@ -21,7 +21,7 @@ describe('NotesPanel', () => {
   it('renders note details correctly', () => {
     render(<NotesPanel row={mockNoteProperty} />);
     
-    expect(screen.getByText('Note Details')).toBeInTheDocument();
+    expect(screen.getByText('Note')).toBeInTheDocument();
     expect(screen.getByText(/This is a detailed note about the email content/)).toBeInTheDocument();
   });
 

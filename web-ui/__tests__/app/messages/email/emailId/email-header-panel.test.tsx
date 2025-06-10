@@ -21,7 +21,7 @@ describe('EmailHeaderPanel', () => {
   it('renders email header details correctly', () => {
     render(<EmailHeaderPanel row={mockEmailHeaderProperty} />);
     
-    expect(screen.getByText('Email Header Details')).toBeInTheDocument();
+    expect(screen.getByText('Email Header')).toBeInTheDocument();
     expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
   });
 

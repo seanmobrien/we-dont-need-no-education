@@ -99,6 +99,27 @@ const EmailHeaderPanelContent = ({ row }: { row: EmailProperty }) => {
                 </Typography>
               </Grid>
             </Grid>
+            
+            {/* Policy Basis and Tags Section */}
+            <Box>
+              <Typography variant="body2" color="textSecondary" align="left" gutterBottom>
+                Policy Basis
+              </Typography>
+              <Typography variant="body1" align="left">
+                {row.policy_basis && row.policy_basis.length > 0 
+                  ? row.policy_basis.join(', ') 
+                  : 'No policy basis specified'}
+              </Typography>
+              
+              <Typography variant="body2" color="textSecondary" align="left" gutterBottom sx={{ mt: 2 }}>
+                Tags
+              </Typography>
+              <Typography variant="body1" align="left">
+                {row.tags && row.tags.length > 0 
+                  ? row.tags.join(', ') 
+                  : 'No tags specified'}
+              </Typography>
+            </Box>
           </Stack>
         </AccordionDetails>
       </Accordion>
