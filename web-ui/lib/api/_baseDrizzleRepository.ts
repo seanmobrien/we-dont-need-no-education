@@ -50,17 +50,17 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       const num = pagination?.num ?? 10;
       const offset = (page - 1) * num;
 
+      // Build count query with any filters that subclasses may apply
+      const countQuery = this.buildCountQuery();
+
+      // Build data query with any filters that subclasses may apply  
+      const dataQuery = this.buildDataQuery();
+
       // Get total count
-      const [{ count: totalCount }] = await this.db
-        .select({ count: count() })
-        .from(this.config.table);
+      const [{ count: totalCount }] = await countQuery;
 
       // Get paginated data
-      const records = await this.db
-        .select()
-        .from(this.config.table)
-        .offset(offset)
-        .limit(num);
+      const records = await dataQuery.offset(offset).limit(num);
 
       const results = records.map(this.config.summaryMapper);
 
@@ -233,6 +233,28 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
   innerQuery<TRet>(query: (repo: BaseDrizzleRepository<T, KId>) => TRet): TRet {
     // For Drizzle repositories, we simplify this interface
     return query(this);
+  }
+
+  /**
+   * Builds the count query for list operations.
+   * Override this method in subclasses to add filtering logic.
+   * This ensures the count query uses the same filters as the data query.
+   * 
+   * @returns Count query with same filters as data query
+   */
+  protected buildCountQuery() {
+    return this.db.select({ count: count() }).from(this.config.table);
+  }
+
+  /**
+   * Builds the data query for list operations.
+   * Override this method in subclasses to add filtering logic.
+   * This ensures the data query uses the same filters as the count query.
+   * 
+   * @returns Data query with same filters as count query
+   */
+  protected buildDataQuery() {
+    return this.db.select().from(this.config.table);
   }
 
   /**
