@@ -1,16 +1,13 @@
 import { NextRequest } from 'next/server';
-import { RepositoryCrudController, AttachmentRepository } from '@/lib/api';
+import { DrizzleCrudRepositoryController, EmailAttachmentDrizzleRepository } from '@/lib/api';
 
-const repository = new AttachmentRepository();
-const controller = new RepositoryCrudController(repository);
+const repository = new EmailAttachmentDrizzleRepository();
+const controller = new DrizzleCrudRepositoryController(repository);
 
 export async function GET(req: NextRequest) {
   return controller.list(req);
 }
 
-export async function POST(
-  req: NextRequest,
-  data: { params: Promise<{ attachmentId: number }> },
-) {
-  return controller.create(req, data);
+export async function POST(req: NextRequest) {
+  return controller.create(req);
 }

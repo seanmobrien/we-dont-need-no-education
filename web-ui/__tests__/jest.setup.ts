@@ -36,6 +36,7 @@ jest.mock('@/lib/logger', () => {
     logger: Promise.resolve(logger),
     log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => cb(logger())),
     errorLogFactory: jest.fn((x) => x),
+    simpleScopedLogger: jest.fn(() => logger()),
   };
 });
 
@@ -72,6 +73,11 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 // jest.setup.ts
 import '@testing-library/jest-dom';
 import 'jest';
+
+// Polyfill TextEncoder and TextDecoder for Node.js environment
+import { TextEncoder, TextDecoder } from 'util';
+global.TextEncoder = TextEncoder;
+global.TextDecoder = TextDecoder;
 
 // Automocks
 (postgres as unknown as jest.Mock).mockImplementation((strings, ...values) => {
