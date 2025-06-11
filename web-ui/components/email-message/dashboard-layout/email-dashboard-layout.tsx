@@ -12,9 +12,7 @@ import { NavigationItem } from '@toolpad/core/AppProvider';
 import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
-import GppBadIcon from '@mui/icons-material/GppBad';
 import ReplyIcon from '@mui/icons-material/Reply';
-import AssuredWorkloadIcon from '@mui/icons-material/AssuredWorkload';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import { Session } from 'next-auth';
 import { EmailContextProvider } from '@/components/email-message/email-context';
@@ -61,16 +59,6 @@ export const EmailDashboardLayout = ({
                 segment: 'call-to-action-response',
                 icon: <ReplyIcon key="call-to-action-response-icon" />,
                 title: 'Follow-up Activity',
-              },
-              {
-                segment: 'violations',
-                icon: <GppBadIcon key="violations-icon" />,
-                title: 'Violations',
-              },
-              {
-                segment: 'compliance-scores',
-                icon: <AssuredWorkloadIcon key="compliance-scores-icon" />,
-                title: 'Compliance',
               },
               {
                 segment: 'email-header',
