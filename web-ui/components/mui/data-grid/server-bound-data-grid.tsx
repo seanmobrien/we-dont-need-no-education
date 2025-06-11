@@ -72,7 +72,10 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
     }),
     [initialStateProp],
   );
-
+  if (process.env.IS_BUILDING == '1') {
+    console.warn('is building, skipping chat panel rendering');
+    return <></>;
+  }
   return (
     <Box sx={sxWrapper}>
       {isLoading && (

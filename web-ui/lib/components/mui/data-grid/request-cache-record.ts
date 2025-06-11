@@ -68,7 +68,7 @@ export class RequestCacheRecord<TModel extends GridValidRowModel = object> {
     let record: RequestCacheRecord | undefined =
       RequestCacheRecord.#globalCache.get(key);
     if (!record) {
-      setIsLoading((v) => (v ? v : true));
+      // setIsLoading((v) => (v ? v : true));
 
       const response: Promise<Response> = getRecordData
         ? getRecordData({
