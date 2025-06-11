@@ -39,15 +39,16 @@ jobs:
 
       - name: Pull and push Neo4j image
         run: |
-          docker pull docker.io/library/neo4j:5.26.4 |          
-          docker tag docker.io/library/neo4j:5.26.4 schoollawregistry.azurecr.io/neo4j:5.26.4 |
+          docker pull neo4j:5.26.4 |          
+          docker tag neo4j:5.26.4 schoollawregistry.azurecr.io/neo4j:5.26.4 |
           docker push schoollawregistry.azurecr.io/neo4j:5.26.4 |
-          docker pull docker.io/library/ankane/pgvector:v0.5.1 |
-          docker tag docker.io/library/ankane/pgvector:v0.5.1 schoollawregistry.azurecr.io/pgvector:v0.5.1 |
-          docker push schoollawregistry.azurecr.io/pgvector:v0.5.1 |
-          docker pull docker.io/library/qdrant/qdrant:latest |schoollawregistry.azurecr.io/qdrant/qdrant:latest |
-          docker tag docker.io/library/qdrant/qdrant:latest schoollawregistry.azurecr.io/qdrant/qdrant:latest |
+          docker pull qdrant/qdrant:latest |schoollawregistry.azurecr.io/qdrant/qdrant:latest |
+          docker tag qdrant/qdrant:latest schoollawregistry.azurecr.io/qdrant/qdrant:latest |
           docker push schoollawregistry.azurecr.io/qdrant/qdrant:latest
+          docker pull ankane/pgvector:v0.5.1 |
+          docker tag  pgvector:v0.5.1 schoollawregistry.azurecr.io/pgvector:v0.5.1 |
+          docker push schoollawregistry.azurecr.io/pgvector:v0.5.1 |
+          
 
       - name: Extract metadata
         id: meta
