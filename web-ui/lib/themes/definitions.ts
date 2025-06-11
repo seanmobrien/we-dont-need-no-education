@@ -43,9 +43,13 @@ export const colorfulTheme: Theme = createTheme({
     mode: 'light',
     primary: {
       main: '#1abbf9', // (26,187,249)
+      light: '#5ecdfb',
+      dark: '#118bd6',
     },
     secondary: {
       main: '#ff79f9', // (255,121,249)
+      light: '#ffaafb',
+      dark: '#d647d6',
     },
     background: {
       default: '#ffffff', // (255,255,255)
@@ -54,6 +58,12 @@ export const colorfulTheme: Theme = createTheme({
     text: {
       primary: '#000000',
       secondary: '#666666',
+    },
+    info: {
+      main: '#1abbf9', // Use primary color for info
+    },
+    warning: {
+      main: '#f5a9b8', // (245,169,184) - Use accent color for warnings
     },
   },
   spacing: 8,
@@ -72,6 +82,26 @@ export const colorfulTheme: Theme = createTheme({
           padding: '16px',
           borderRadius: '8px',
           backgroundColor: '#ffffff',
+          border: '1px solid #f5a9b8', // Subtle accent border
+        },
+      },
+    },
+    // Add some custom styling for the colorful theme
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#1abbf9',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: '16px',
+        },
+        colorSecondary: {
+          backgroundColor: '#f5a9b8',
+          color: '#000000',
         },
       },
     },
