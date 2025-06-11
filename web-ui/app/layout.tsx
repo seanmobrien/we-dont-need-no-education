@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import MuiXLicense from '@/components/mui/MuiXLicense';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
-import { ThemeProvider } from '@mui/material/styles';
-import theme from '../theme';
+import { ThemeProvider } from '@/lib/themes/provider';
+import { ThemeSelector } from '@/components/theme/theme-selector';
+import { Box } from '@mui/material';
 import './globals.css';
 
 const geistSans = Geist({
@@ -33,7 +34,17 @@ export default function RootLayout({
       >
         <MuiXLicense />
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-          <ThemeProvider theme={theme} defaultMode="dark">
+          <ThemeProvider defaultTheme="dark">
+            <Box
+              sx={{
+                position: 'fixed',
+                top: 16,
+                right: 16,
+                zIndex: 1000,
+              }}
+            >
+              <ThemeSelector />
+            </Box>
             {children}
           </ThemeProvider>
         </AppRouterCacheProvider>
