@@ -9,6 +9,21 @@
   --foreground: #171717;
 }
 
+/* Dark theme CSS variables */
+[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+/* Colorful theme CSS variables */
+[data-theme="colorful"] {
+  --background: #ffffff;
+  --foreground: #000000;
+  --primary: #1abbf9;
+  --secondary: #ff79f9;
+  --accent: #f5a9b8;
+}
+
 
 select,
 input[type="text"],
