@@ -19,6 +19,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -31,10 +34,23 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: schoollawregistry.azurecr.io/compliance-ui
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
       - name: Build and push Docker image
-        working-directory: ./web-ui
-        run: |
-          docker build -f DOCKERFILE -t schoollawregistry.azurecr.io/compliance-ui:${{ github.sha }} .
-          docker tag schoollawregistry.azurecr.io/compliance-ui:${{ github.sha }} schoollawregistry.azurecr.io/compliance-ui:latest
-          docker push schoollawregistry.azurecr.io/compliance-ui:${{ github.sha }}
-          docker push schoollawregistry.azurecr.io/compliance-ui:latest
+        uses: docker/build-push-action@v5
+        with:
+          context: ./web-ui
+          file: ./web-ui/DOCKERFILE
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
