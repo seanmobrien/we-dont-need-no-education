@@ -41,43 +41,41 @@ export const EmailDashboardLayout = ({
             segment: `messages/email/${emailId}`,
             title: 'View Email',
             icon: <DraftsIcon key="view-email-icon" />,
-            children: [
-              {
-                segment: 'key-points',
-                icon: <KeyIcon key="key-points-icon" />,
-                title: 'Key Points',
-              },
-              {
-                segment: 'notes',
-                icon: <TextSnippetIcon key="notes-icon" />,
-                title: 'Notes',
-              },
-              {
-                segment: 'call-to-action',
-                icon: <CallToActionIcon key="call-to-action-icon" />,
-                title: 'Calls to Action',
-              },
-              {
-                segment: 'call-to-action-response',
-                icon: <ReplyIcon key="call-to-action-response-icon" />,
-                title: 'Follow-up Activity',
-              },
-              {
-                segment: 'violations',
-                icon: <GppBadIcon key="violations-icon" />,
-                title: 'Violations',
-              },
-              {
-                segment: 'compliance-scores',
-                icon: <AssuredWorkloadIcon key="compliance-scores-icon" />,
-                title: 'Compliance',
-              },
-              {
-                segment: 'email-header',
-                icon: <PrivacyTipIcon key="header-icon" />,
-                title: 'Headers',
-              },
-            ],
+          },
+          {
+            segment: `messages/email/${emailId}/key-points`,
+            icon: <KeyIcon key="key-points-icon" />,
+            title: 'Key Points',
+          },
+          {
+            segment: `messages/email/${emailId}/notes`,
+            icon: <TextSnippetIcon key="notes-icon" />,
+            title: 'Notes',
+          },
+          {
+            segment: `messages/email/${emailId}/call-to-action`,
+            icon: <CallToActionIcon key="call-to-action-icon" />,
+            title: 'Calls to Action',
+          },
+          {
+            segment: `messages/email/${emailId}/call-to-action-response`,
+            icon: <ReplyIcon key="call-to-action-response-icon" />,
+            title: 'Follow-up Activity',
+          },
+          {
+            segment: `messages/email/${emailId}/violations`,
+            icon: <GppBadIcon key="violations-icon" />,
+            title: 'Violations',
+          },
+          {
+            segment: `messages/email/${emailId}/compliance-scores`,
+            icon: <AssuredWorkloadIcon key="compliance-scores-icon" />,
+            title: 'Compliance',
+          },
+          {
+            segment: `messages/email/${emailId}/email-header`,
+            icon: <PrivacyTipIcon key="header-icon" />,
+            title: 'Headers',
           },
         ]
       : [];

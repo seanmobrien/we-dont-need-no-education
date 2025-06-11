@@ -1,4 +1,4 @@
-import { CircularProgress, Box, Typography } from '@mui/material';
+import { Card, CardContent, LinearProgress, Box, Typography } from '@mui/material';
 
 const Component = ({
   loading,
@@ -9,9 +9,14 @@ const Component = ({
 }) => {
   if (loading) {
     return (
-      <div>
-        <CircularProgress />
-      </div>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Loading...
+          </Typography>
+          <LinearProgress />
+        </CardContent>
+      </Card>
     );
   }
   if (errorMessage) {
