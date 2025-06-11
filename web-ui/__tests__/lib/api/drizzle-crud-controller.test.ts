@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Unit tests for DrizzleCrudRepositoryController
- * 
+ *
  * Note: These tests focus on the core logic and repository integration
  * without testing the Next.js HTTP response handling, which is heavily
  * dependent on Next.js runtime mocking.
@@ -26,18 +27,22 @@ class MockTestRepository extends BaseDrizzleRepository<TestModel, 'id'> {
     super({
       table: {} as any,
       idColumn: {} as any,
-      recordMapper: (record) => record as TestModel,
+      recordMapper: (record) => record as any,
       summaryMapper: (record) => record as Partial<TestModel>,
       tableName: 'test_table',
       idField: 'id',
     });
   }
 
-  protected prepareInsertData(model: Omit<TestModel, 'id'>): Record<string, unknown> {
+  protected prepareInsertData(
+    model: Omit<TestModel, 'id'>,
+  ): Record<string, unknown> {
     return model;
   }
 
-  protected prepareUpdateData(model: Partial<TestModel>): Record<string, unknown> {
+  protected prepareUpdateData(
+    model: Partial<TestModel>,
+  ): Record<string, unknown> {
     return model;
   }
 }
@@ -74,9 +79,13 @@ describe('DrizzleCrudRepositoryController Core Logic', () => {
 
       // Test the core repository delegation logic without HTTP handling
       const result = await mockRepository.list({ page: 1, num: 10, total: 0 });
-      
+
       expect(result).toEqual(mockPaginatedResult);
-      expect(mockRepository.list).toHaveBeenCalledWith({ page: 1, num: 10, total: 0 });
+      expect(mockRepository.list).toHaveBeenCalledWith({
+        page: 1,
+        num: 10,
+        total: 0,
+      });
     });
 
     it('should delegate get operations to repository', async () => {
@@ -90,8 +99,15 @@ describe('DrizzleCrudRepositoryController Core Logic', () => {
     });
 
     it('should delegate create operations to repository', async () => {
-      const mockInputData = { name: 'New Test', description: 'New Description' };
-      const mockCreatedRecord = { id: 1, name: 'New Test', description: 'New Description' };
+      const mockInputData = {
+        name: 'New Test',
+        description: 'New Description',
+      };
+      const mockCreatedRecord = {
+        id: 1,
+        name: 'New Test',
+        description: 'New Description',
+      };
 
       jest.spyOn(mockRepository, 'create').mockResolvedValue(mockCreatedRecord);
 
@@ -103,7 +119,11 @@ describe('DrizzleCrudRepositoryController Core Logic', () => {
 
     it('should delegate update operations to repository', async () => {
       const mockUpdateData = { id: 1, name: 'Updated Test' };
-      const mockUpdatedRecord = { id: 1, name: 'Updated Test', description: 'Description' };
+      const mockUpdatedRecord = {
+        id: 1,
+        name: 'Updated Test',
+        description: 'Description',
+      };
 
       jest.spyOn(mockRepository, 'update').mockResolvedValue(mockUpdatedRecord);
 
@@ -125,27 +145,42 @@ describe('DrizzleCrudRepositoryController Core Logic', () => {
 
   describe('Error Handling', () => {
     it('should propagate repository errors', async () => {
-      jest.spyOn(mockRepository, 'get').mockRejectedValue(new Error('Database error'));
+      jest
+        .spyOn(mockRepository, 'get')
+        .mockRejectedValue(new Error('Database error'));
 
       await expect(mockRepository.get(1)).rejects.toThrow('Database error');
     });
 
     it('should propagate create errors', async () => {
-      const mockInputData = { name: 'New Test', description: 'New Description' };
-      jest.spyOn(mockRepository, 'create').mockRejectedValue(new Error('Creation failed'));
+      const mockInputData = {
+        name: 'New Test',
+        description: 'New Description',
+      };
+      jest
+        .spyOn(mockRepository, 'create')
+        .mockRejectedValue(new Error('Creation failed'));
 
-      await expect(mockRepository.create(mockInputData)).rejects.toThrow('Creation failed');
+      await expect(mockRepository.create(mockInputData)).rejects.toThrow(
+        'Creation failed',
+      );
     });
 
     it('should propagate update errors', async () => {
       const mockUpdateData = { id: 1, name: 'Updated Test' };
-      jest.spyOn(mockRepository, 'update').mockRejectedValue(new Error('Update failed'));
+      jest
+        .spyOn(mockRepository, 'update')
+        .mockRejectedValue(new Error('Update failed'));
 
-      await expect(mockRepository.update(mockUpdateData)).rejects.toThrow('Update failed');
+      await expect(mockRepository.update(mockUpdateData)).rejects.toThrow(
+        'Update failed',
+      );
     });
 
     it('should propagate delete errors', async () => {
-      jest.spyOn(mockRepository, 'delete').mockRejectedValue(new Error('Delete failed'));
+      jest
+        .spyOn(mockRepository, 'delete')
+        .mockRejectedValue(new Error('Delete failed'));
 
       await expect(mockRepository.delete(1)).rejects.toThrow('Delete failed');
     });
