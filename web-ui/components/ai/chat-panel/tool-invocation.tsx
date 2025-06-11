@@ -17,7 +17,7 @@ const ToolInvocation = ({
   } else if (Array.isArray(args)) {
     argArray = args.length > 0 ? args : ['[No arguments]'];
   } else if (args && typeof args === 'object') {
-    const convertValueToString = (value: any): string => {
+    const convertValueToString = (value: unknown): string => {
       if (typeof value === 'object') {
         return !!value ? JSON.stringify(value) : 'null';
       }
