@@ -1,0 +1,40 @@
+# @format
+
+name: Web UI Docker Build and Deploy
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: ['main']
+    paths:
+      - 'web-ui/**'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to Azure Container Registry
+        uses: azure/docker-login@v2
+        with:
+          login-server: schoollawregistry.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and push Docker image
+        working-directory: ./web-ui
+        run: |
+          docker build -f DOCKERFILE -t schoollawregistry.azurecr.io/compliance-ui:${{ github.sha }} .
+          docker tag schoollawregistry.azurecr.io/compliance-ui:${{ github.sha }} schoollawregistry.azurecr.io/compliance-ui:latest
+          docker push schoollawregistry.azurecr.io/compliance-ui:${{ github.sha }}
+          docker push schoollawregistry.azurecr.io/compliance-ui:latest
