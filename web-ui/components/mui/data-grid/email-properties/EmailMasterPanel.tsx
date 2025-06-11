@@ -2,7 +2,7 @@ import { EmailProperty } from '@/data-models';
 import { Stack, Paper, Typography, Chip, Box } from '@mui/material';
 
 export const EmailMasterPanel = ({
-  row: { value, policy_basis, tags },
+  row: { value, policy_basis, tags, categoryName },
   title,
   children,
 }: {
@@ -10,18 +10,35 @@ export const EmailMasterPanel = ({
   title: string;
   children?: React.ReactNode | React.ReactNode[];
 }) => {
+  // For email headers, apply special styling to the value
+  const isEmailHeader = categoryName === 'Email Header';
+  
   return (
     <Stack
       sx={{ py: 2, height: '100%', boxSizing: 'border-box' }}
       direction="column"
     >
-      <Paper sx={{ flex: 1, mx: 'auto', width: '90%', p: 1 }}>
-        <Stack direction="column" spacing={1} sx={{ height: 1 }}>
+      <Paper sx={{ flex: 1, mx: 'auto', width: '95%', p: 2 }}>
+        <Stack direction="column" spacing={2} sx={{ height: 1 }}>
           <Typography variant="h6">{title}</Typography>
           <Typography variant="body2" color="textSecondary" align="left">
             Description
           </Typography>
-          <Typography variant="body1" color="textSecondary" align="left">
+          <Typography 
+            variant="body1" 
+            align="left" 
+            sx={{ 
+              backgroundColor: 'grey.100', 
+              p: 2, 
+              borderRadius: 1, 
+              whiteSpace: 'pre-wrap',
+              ...(isEmailHeader && {
+                fontFamily: 'monospace',
+                fontSize: '0.875rem',
+                wordBreak: 'break-all'
+              })
+            }}
+          >
             {value}
           </Typography>
           {children}
@@ -38,9 +55,13 @@ export const EmailMasterPanel = ({
               Policy Basis
             </Typography>
             <Typography variant="body1" align="left" component="div">
-              {policy_basis?.map((item) => (
-                <Chip key={item} label={item} style={{ margin: 2 }} />
-              ))}
+              {policy_basis && policy_basis.length > 0 ? (
+                policy_basis.map((item) => (
+                  <Chip key={item} label={item} style={{ margin: 2 }} />
+                ))
+              ) : (
+                'No policy basis specified'
+              )}
             </Typography>
 
             <Typography
@@ -52,9 +73,13 @@ export const EmailMasterPanel = ({
               Tags
             </Typography>
             <Typography variant="body1" align="left" component="div">
-              {tags?.map((item) => (
-                <Chip key={item} label={item} style={{ margin: 2 }} />
-              ))}
+              {tags && tags.length > 0 ? (
+                tags.map((item) => (
+                  <Chip key={item} label={item} style={{ margin: 2 }} />
+                ))
+              ) : (
+                'No tags specified'
+              )}
             </Typography>
           </Box>
         </Stack>
