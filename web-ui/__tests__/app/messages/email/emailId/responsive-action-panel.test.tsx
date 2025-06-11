@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
@@ -15,11 +16,13 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock MUI components that may cause theme issues
-jest.mock('@mui/material/LinearProgress', () => ({ 
-  value, ...props 
-}: { 
-  value?: number 
-}) => <div data-testid="linear-progress" data-value={value} {...props} />);
+jest.mock(
+  '@mui/material/LinearProgress',
+  () =>
+    ({ value, ...props }: { value?: number }) => (
+      <div data-testid="linear-progress" data-value={value} {...props} />
+    ),
+);
 
 jest.mock('@mui/material/CircularProgress', () => () => (
   <div data-testid="circular-progress" />
@@ -62,40 +65,42 @@ describe('ResponsiveActionPanel', () => {
     jest.clearAllMocks();
     mockedClient.getCallToAction.mockResolvedValue({
       results: [mockRelatedCTA],
-      pagination: { page: 1, num: 10, total: 1 },
+      pageStats: { page: 1, num: 10, total: 1 },
     });
   });
 
   it('renders responsive action details correctly', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     expect(screen.getByText('Responsive Action')).toBeInTheDocument();
-    expect(screen.getByText('Detailed response to the call to action')).toBeInTheDocument();
+    expect(
+      screen.getByText('Detailed response to the call to action'),
+    ).toBeInTheDocument();
     expect(screen.getByText('80% Complete')).toBeInTheDocument();
   });
 
   it('displays progress bar with correct value', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     const progressBar = screen.getByTestId('linear-progress');
     expect(progressBar).toHaveAttribute('data-value', '80');
   });
 
   it('shows response timestamp correctly', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     expect(screen.getByText(/Jan 5, 2023/)).toBeInTheDocument();
   });
 
   it('displays status chips correctly', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     expect(screen.getByText('Direct')).toBeInTheDocument(); // since inferred is false
   });
 
   it('shows all scores correctly', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     expect(screen.getByText('0.60')).toBeInTheDocument(); // severity
     expect(screen.getByText('0.70')).toBeInTheDocument(); // sentiment
     expect(screen.getByText('0.85')).toBeInTheDocument(); // compliance_average_chapter_13
@@ -103,7 +108,7 @@ describe('ResponsiveActionPanel', () => {
 
   it('displays policy basis and tags in metadata', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     expect(screen.getByText('FERPA')).toBeInTheDocument();
     expect(screen.getByText('COPPA')).toBeInTheDocument();
     expect(screen.getByText('response')).toBeInTheDocument();
@@ -112,7 +117,7 @@ describe('ResponsiveActionPanel', () => {
 
   it('fetches and displays related call-to-action', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     await waitFor(() => {
       expect(mockedClient.getCallToAction).toHaveBeenCalledWith({
         emailId: 'test-email-id',
@@ -123,21 +128,30 @@ describe('ResponsiveActionPanel', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Call-to-Action Details')).toBeInTheDocument();
-      expect(screen.getByText('Original call to action that this responds to')).toBeInTheDocument();
+      expect(
+        screen.getByText('Original call to action that this responds to'),
+      ).toBeInTheDocument();
     });
   });
 
   it('shows loading state while fetching related CTA', async () => {
     // Make the API call take some time
     mockedClient.getCallToAction.mockImplementation(
-      () => new Promise(resolve => setTimeout(() => resolve({
-        results: [mockRelatedCTA],
-        pagination: { page: 1, num: 10, total: 1 },
-      }), 100))
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                results: [mockRelatedCTA],
+                pageStats: { page: 1, num: 10, total: 1 },
+              }),
+            100,
+          ),
+        ) as any,
     );
 
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     expect(screen.getByTestId('circular-progress')).toBeInTheDocument();
   });
 
@@ -145,32 +159,38 @@ describe('ResponsiveActionPanel', () => {
     mockedClient.getCallToAction.mockRejectedValue(new Error('API Error'));
 
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     await waitFor(() => {
-      expect(screen.getByText('Failed to load related call-to-action')).toBeInTheDocument();
+      expect(
+        screen.getByText('Failed to load related call-to-action'),
+      ).toBeInTheDocument();
     });
   });
 
   it('handles no related CTA found', async () => {
     mockedClient.getCallToAction.mockResolvedValue({
       results: [],
-      pagination: { page: 1, num: 10, total: 0 },
+      pageStats: { page: 1, num: 10, total: 0 },
     });
 
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     await waitFor(() => {
-      expect(screen.getByText('No related call-to-action found.')).toBeInTheDocument();
+      expect(
+        screen.getByText('No related call-to-action found.'),
+      ).toBeInTheDocument();
     });
   });
 
   it('displays reasoning sections when available', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
-    
+
     expect(screen.getByText('Analysis and Reasoning')).toBeInTheDocument();
     expect(screen.getByText('Moderate severity')).toBeInTheDocument();
     expect(screen.getByText('Positive response')).toBeInTheDocument();
-    expect(screen.getByText('Meets Chapter 13 requirements')).toBeInTheDocument();
+    expect(
+      screen.getByText('Meets Chapter 13 requirements'),
+    ).toBeInTheDocument();
   });
 
   it('handles missing optional fields gracefully', async () => {
@@ -185,7 +205,7 @@ describe('ResponsiveActionPanel', () => {
     };
 
     render(<ResponsiveActionPanel row={minimalResponse} />);
-    
+
     expect(screen.getByText('Minimal response')).toBeInTheDocument();
     expect(screen.getByText('50% Complete')).toBeInTheDocument();
   });

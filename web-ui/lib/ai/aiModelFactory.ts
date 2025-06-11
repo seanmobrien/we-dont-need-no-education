@@ -26,7 +26,7 @@ const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
   return wrapLanguageModel({
     model,
     middleware: retryRateLimitMiddleware,
-  });
+  }) as LanguageModelV1;
 };
 
 export const aiModelFactory: GetAzureProjectProviderOverloads = (
@@ -53,18 +53,18 @@ export const aiModelFactory: GetAzureProjectProviderOverloads = (
         model = azureProjectProvider.completion(
           env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS'),
           options as ChatOptions,
-        );
+        ) as LanguageModelV1;
         break;
       case 'lofi':
         model = azureProjectProvider.chat(
           env('AZURE_OPENAI_DEPLOYMENT_LOFI'),
           options as ChatOptions,
-        );
+        ) as LanguageModelV1;
         break;
       case 'hifi':
         model = azureProjectProvider.chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI'), {
           ...options,
-        });
+        }) as LanguageModelV1;
         break;
       case 'embedding':
         return azureProjectProvider.textEmbeddingModel(

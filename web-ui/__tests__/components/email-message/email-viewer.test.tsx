@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
@@ -44,13 +45,15 @@ const EmailViewerWrapper = ({ emailId }: { emailId: string }) => (
 describe('EmailViewer', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock getEmail to return a cancellable promise-like object
     const mockCancellablePromise = {
       then: jest.fn().mockResolvedValue({
         emailId: 'test-email-id',
         sender: { contactId: 1, name: 'Test Sender', email: 'sender@test.com' },
-        recipients: [{ contactId: 2, name: 'Test Recipient', email: 'recipient@test.com' }],
+        recipients: [
+          { contactId: 2, name: 'Test Recipient', email: 'recipient@test.com' },
+        ],
         subject: 'Test Subject',
         body: 'Test email body content',
         sentOn: '2023-01-01T00:00:00Z',
@@ -63,19 +66,19 @@ describe('EmailViewer', () => {
       cancelled: jest.fn(),
       awaitable: Promise.resolve(),
     };
-    
-    mockGetEmail.mockReturnValue(mockCancellablePromise);
+
+    mockGetEmail.mockReturnValue(mockCancellablePromise as any);
   });
 
   it('renders loading state initially', () => {
     render(<EmailViewerWrapper emailId="test-email-id" />);
-    
+
     expect(screen.getByText('Loading Email...')).toBeInTheDocument();
   });
 
   it('renders with valid emailId prop', () => {
     render(<EmailViewerWrapper emailId="test-email-id" />);
-    
+
     // Should render the component without crashing
     expect(screen.getByText('Loading Email...')).toBeInTheDocument();
   });
