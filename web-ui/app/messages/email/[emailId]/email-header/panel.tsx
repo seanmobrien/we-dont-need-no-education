@@ -92,7 +92,7 @@ const EmailHeaderPanelContent = ({ row }: { row: EmailProperty }) => {
 
 export const EmailHeaderPanel = ({ row }: { row: EmailProperty }) => {
   return (
-    <EmailMasterPanel title="Email Header" row={row}>
+    <EmailMasterPanel title="Header Details" row={row}>
       <EmailHeaderPanelContent row={row} />
     </EmailMasterPanel>
   );

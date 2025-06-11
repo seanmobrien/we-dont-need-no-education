@@ -148,6 +148,21 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
 
       <Divider />
 
+      {/* Closure Actions */}
+      {row.closure_actions?.length && (
+        <>
+          <Box>
+            <Typography variant="h6" gutterBottom>Closure Actions</Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {row.closure_actions.map((action, index) => (
+                <Chip key={index} label={action} variant="outlined" color="primary" />
+              ))}
+            </Stack>
+          </Box>
+          <Divider />
+        </>
+      )}
+
       {/* Related Responses */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
@@ -189,7 +204,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
       {/* Expandable Reasoning Section */}
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="h6">Analysis & Reasoning</Typography>
+          <Typography variant="h6">Reasoning and Analysis</Typography>
         </AccordionSummary>
         <AccordionDetails>
           <Stack spacing={2}>
@@ -252,7 +267,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
 
 export const CallToActionPanel = ({ row }: { row: CallToActionDetails }) => {
   return (
-    <EmailMasterPanel title="Call to Action" row={row}>
+    <EmailMasterPanel title="Call to Action Details" row={row}>
       <CallToActionPanelContent row={row} />
     </EmailMasterPanel>
   );
