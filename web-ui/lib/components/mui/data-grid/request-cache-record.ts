@@ -61,6 +61,7 @@ export class RequestCacheRecord<TModel extends GridValidRowModel = object> {
     sort = [] as GridSortModel,
     filter,
     getRecordData,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     setIsLoading,
   }: GetRequestCacheRecordProps): Promise<GridGetRowsResponse> {
     console.log('RequestCacheRecord.get');

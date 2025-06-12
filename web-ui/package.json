@@ -12,14 +12,14 @@
     "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('Please use yarn instead of npm')\"",
     "bootstrap": "yarn run generate-css-types",
     "dev": "next dev",
-    "build": "next build",
+    "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "start": "next start",
     "test": "jest",
     "test:serial": "jest --runInBand",
     "test:concurrency-stress": "jest --maxWorkers=8 --maxConcurrency=10",
     "lint": "next lint",
     "generate-css-types": "tailwindcss-classnames -input tailwind.config.mjs -outputFilename tailwindcss.classnames.ts -customClassesFilename tailwind.customtypes.ts",
-    "vercel-build": "next build"
+    "vercel-build": "NODE_OPTIONS=\"--max-old-space-size=8192\" next build"
   },
   "dependencies": {
     "@ai-sdk/azure": "^1.3.23",

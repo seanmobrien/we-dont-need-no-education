@@ -70,7 +70,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req: NextRequ
   
   let signInImpl: any;
 
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
+  // Skip database adapter during build process
+  if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NEXT_PHASE !== 'phase-production-build') {
     const { sql } = await import('drizzle-orm');
     const { db, schema } = await import('@/lib/drizzle-db');
     const { DrizzleAdapter } = await import('@auth/drizzle-adapter');
@@ -92,7 +93,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req: NextRequ
         return true;
       };
   } else {
-    adapter = undefined; // No adapter for edge runtime or client
+    adapter = undefined; // No adapter for edge runtime, client, or build
     signInImpl = async () => {         
       logEvent('signIn');
       return true;
