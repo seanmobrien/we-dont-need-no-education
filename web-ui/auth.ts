@@ -101,6 +101,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(async (req: NextRequ
   }
 
   return {
+    secret: process.env.NEXTAUTH_SECRET || 'development-secret-key-change-me-in-production',
     session: { strategy: 'jwt' },
     adapter,
     providers,
