@@ -1,0 +1,35 @@
+name: Enforce Ethical License
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  check-license-compliance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Prohibited Entities List
+        run: |
+          COMMIT_EMAIL=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "${{ github.event.pull_request._links.self.href }}" \
+            | jq -r '.user.email // empty')
+
+          echo "Commit email: $COMMIT_EMAIL"
+
+          if [ -z "$COMMIT_EMAIL" ]; then
+            echo "Warning: No email found. Skipping enforcement."
+            exit 0
+          fi
+
+          DOMAIN=$(echo "$COMMIT_EMAIL" | awk -F@ '{print tolower($2)}')
+          echo "Email domain: $DOMAIN"
+
+          if grep -qi "$DOMAIN" PROHIBITED_ENTITIES.md; then
+            echo "❌ License enforcement failed: prohibited entity ($DOMAIN)"
+            exit 1
+          fi
+
+          echo "✅ License compliance check passed."
