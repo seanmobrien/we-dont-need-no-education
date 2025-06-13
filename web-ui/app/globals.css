@@ -37,22 +37,24 @@ textarea {
   @apply px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full;
 }
 
+/* Apply dark theme styles only when dark theme is explicitly selected and no specific theme is set */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
 }
 
-select,
-input[type="text"],
-input[type="email"],
-input[type="password"],
-input[type="date"],
-input[type="datetime"],
-input[type="datetime-local"],
-input[type="number"],
-textarea {
+/* Dark theme input styles */
+[data-theme="dark"] select,
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="datetime"],
+[data-theme="dark"] input[type="datetime-local"],
+[data-theme="dark"] input[type="number"],
+[data-theme="dark"] textarea {
   @apply bg-gray-800 text-gray-200 border-gray-600 focus:ring-blue-300 focus:border-blue-300;
 }
 
