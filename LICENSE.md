@@ -1,6 +1,4 @@
-<!-- @format -->
-
-Educational Justice License v1.0
+## Educational Justice License v1.0
 
 Copyright (c) 2025 Sean O'Brien
 
@@ -22,8 +20,7 @@ Permission is hereby granted to any individual or organization to use, copy, mod
      iii. Falsified, denied, or withheld access to investigative records, in violation of Title IX, FERPA, the ADA, IDEA, or equivalent state/federal laws;
      iv. Employed surveillance, obfuscation, or technical means to undermine parental or student rights in educational investigations.
 
-   b. Additionally, use is prohibited by any organization or entity listed in [PROHIBITED_ENTITIES.md] or in the publicly maintained **Prohibited Entities List**, available at:
-   https://[your-domain]/prohibited-entities
+   b. Additionally, use is prohibited by any organization or entity listed in PROHIBITED_ENTITIES.md or in the publicly maintained **Prohibited Entities List**, available [here](./PROHIBITED_ENTITIES.md).
 
 3. **Sublicensing and Derivative Restrictions**
    a. This license does not grant permission to sublicense the Software to restricted parties or to act as a conduit for circumventing these restrictions.
