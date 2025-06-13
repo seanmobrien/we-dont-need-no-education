@@ -58,8 +58,7 @@ export async function POST(
     const pdfBuffer = Buffer.concat(chunks);
 
     // Extract text from the PDF using dynamic import to prevent build issues
-    const pdfParse = (await import('pdf-parse')).default;
-    const pdfData = await pdfParse(pdfBuffer);
+    const pdfData = await import('pdf-parse').then(pdfParse => pdfParse.default(pdfBuffer));
     const extractedText = pdfData.text?.trim();
     if (!extractedText) {
       return NextResponse.json(
