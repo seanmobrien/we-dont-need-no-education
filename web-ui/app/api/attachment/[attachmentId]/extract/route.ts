@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { BlobServiceClient } from '@azure/storage-blob';
-import pdfParse from 'pdf-parse';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 import { AttachmentRepository } from '@/lib/api/attachment';
@@ -58,8 +57,8 @@ export async function POST(
     }
     const pdfBuffer = Buffer.concat(chunks);
 
-    // Extract text from the PDF
-    const pdfData = await pdfParse(pdfBuffer);
+    // Extract text from the PDF using dynamic import to prevent build issues
+    const pdfData = await import('pdf-parse').then(pdfParse => pdfParse.default(pdfBuffer));
     const extractedText = pdfData.text?.trim();
     if (!extractedText) {
       return NextResponse.json(

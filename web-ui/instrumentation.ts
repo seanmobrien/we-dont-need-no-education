@@ -27,6 +27,12 @@ export async function register() {
     console.log('Instrumentation already registered, skipping...');
     return;
   }
+
+  // Skip instrumentation during build process
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    console.log('Skipping instrumentation during build phase');
+    return;
+  }
   
   try {
     let traceExporter: SpanExporter | undefined;
