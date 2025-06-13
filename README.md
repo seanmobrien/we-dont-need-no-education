@@ -118,4 +118,4 @@ Please see [SECURITY.md](./SECURITY.md) for security guidelines and contribution
 
 ## License
 
-See [LICENSE](./LICENSE) for licensing information.
+See [LICENSE](./LICENSE.md) for licensing information.
