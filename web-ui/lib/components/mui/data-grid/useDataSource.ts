@@ -1,13 +1,14 @@
 import type {
   GridFilterModel,
   GridGetRowsParams,
+  GridGetRowsResponse,
   GridPaginationModel,
   GridSortModel,
   GridUpdateRowParams,
 } from '@mui/x-data-grid-pro';
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
 import { LoggedError } from '@/lib/react-util';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState, useCallback } from 'react';
 import { RequestCacheRecord } from './request-cache-record';
 
 /**
@@ -37,10 +38,89 @@ export const useDataSource = ({
   setError,
   url,
   getRecordData,
-}: DataSourceProps): ExtendedGridDataSource =>
-  useMemo<ExtendedGridDataSource>(
+}: DataSourceProps): ExtendedGridDataSource => {
+  // State to track the last request and its result
+  const [lastRequest, setLastRequest] = useState<{
+    key: string;
+    promise: Promise<GridGetRowsResponse>;
+    result?: GridGetRowsResponse;
+  } | null>(null);
+
+  // Helper function to create a cache key from parameters
+  const createCacheKey = useCallback((
+    page: number,
+    pageSize: number,
+    sortModel: GridSortModel,
+    filterModel: GridFilterModel
+  ): string => {
+    return JSON.stringify({ page, pageSize, sortModel, filterModel });
+  }, []);
+
+  // Memoized fetch function
+  const fetchData = useCallback(async (
+    page: number,
+    pageSize: number, 
+    sortModel: GridSortModel,
+    filterModel: GridFilterModel
+  ): Promise<GridGetRowsResponse> => {
+    const cacheKey = createCacheKey(page, pageSize, sortModel, filterModel);
+    
+    // If we already have a request for these exact parameters, return it
+    if (lastRequest && lastRequest.key === cacheKey) {
+      if (lastRequest.result) {
+        return lastRequest.result;
+      }
+      return lastRequest.promise;
+    }
+
+    // Create new request
+    const promise = (async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const result = await RequestCacheRecord.get({
+          url: String(url),
+          page,
+          pageSize,
+          sort: sortModel,
+          filter: filterModel,
+          setIsLoading,
+          getRecordData,
+        });
+        
+        // Update the cache with the result
+        setLastRequest(prev => prev?.key === cacheKey ? { ...prev, result } : prev);
+        return result;
+      } catch (err: unknown) {
+        const le = LoggedError.isTurtlesAllTheWayDownBaby(err, {
+          log: true,
+          source: 'grid::dataSource',
+        });
+        setError(le.message);
+        const emptyResult = { rows: [], rowCount: 0 };
+        // Update the cache with the error result
+        setLastRequest(prev => prev?.key === cacheKey ? { ...prev, result: emptyResult } : prev);
+        return emptyResult;
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+
+    // Store the promise immediately
+    setLastRequest({ key: cacheKey, promise });
+    return promise;
+  }, [url, getRecordData, setIsLoading, setError, createCacheKey, lastRequest]);
+
+  // Effect to fetch initial data
+  useEffect(() => {
+    // Fetch initial data with default parameters
+    fetchData(0, 10, [], { items: [] });
+  }, [fetchData]);
+
+  return useMemo<ExtendedGridDataSource>(
     () => ({
-      getRows: (
+      getRows: async (
         {
           paginationModel: {
             pageSize = 10,
@@ -49,27 +129,9 @@ export const useDataSource = ({
           sortModel = [] as GridSortModel,
           filterModel = { items: [] } as GridFilterModel,
         }: GridGetRowsParams = {} as GridGetRowsParams,
-      ) =>
-        RequestCacheRecord.get({
-          url: String(url),
-          page,
-          pageSize,
-          sort: sortModel,
-          filter: filterModel,
-          setIsLoading,
-          getRecordData,
-        })
-          .catch((err: unknown) => {
-            const le = LoggedError.isTurtlesAllTheWayDownBaby(err, {
-              log: true,
-              source: 'grid::dataSource',
-            });
-            setError(le.message);
-            return { rows: [], rowCount: 0 };
-          })
-          .finally(() => {
-            setIsLoading((v) => (v ? false : v));
-          }),
+      ) => {
+        return await fetchData(page, pageSize, sortModel, filterModel);
+      },
       updateRow: async ({ updatedRow }: GridUpdateRowParams) => {
         try {
           const response = await fetch(url, {
@@ -94,5 +156,6 @@ export const useDataSource = ({
         setError(le.message);
       },
     }),
-    [url, setIsLoading, getRecordData, setError],
+    [fetchData, url, setError],
   );
+};
