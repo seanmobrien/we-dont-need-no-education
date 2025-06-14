@@ -57,9 +57,9 @@ export type DataSourceProps = {
 };
 
 /**
- * Props for managing a cache record of a data grid request.
+ * Props containing the parameters needed to retrieve a cache record for a data grid request.
  */
-export type GetRequestCacheRecordProps = {
+export type RequestCacheRecordProps = {
   /**
    * The endpoint URL for the data request.
    */
@@ -136,6 +136,12 @@ export type GetRequestCacheRecordProps = {
    * * If not provided, no filtering will be applied.
    */
   filter?: GridFilterModel;
+};
+
+/**
+ * Props for managing or caching get request and it's parameters.
+ */
+export type GetRequestCacheRecordProps = RequestCacheRecordProps & {
   /**
    * A function to fetch record data given a URL, returning a Promise of a Response.
    */

@@ -6,18 +6,11 @@ import {
   useDataSource,
 } from '@/lib/components/mui/data-grid';
 import { simpleScopedLogger } from '@/lib/logger';
-import {
-  Box,
-  Paper,
-  Typography,
-  TableContainer,
-  CircularProgress,
-  SxProps,
-  Theme,
-} from '@mui/material';
+import Loading from '@/components/general/loading';
+import { Box, Paper, TableContainer } from '@mui/material';
 import { DataGridPro, GridValidRowModel } from '@mui/x-data-grid-pro';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ServerBoundDataGridProps } from './types';
 
 const stableGridLogger = simpleScopedLogger('KeyPointsGrid');
@@ -32,7 +25,7 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
 }: ServerBoundDataGridProps<TRowModel>) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [hasMounted, setHasMounted] = useState(false);
   const memoizedDataSource = useDataSource({
     setIsLoading,
     setError,
@@ -41,19 +34,11 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   });
   const stableGetRowId = useGetRowId(idColumn);
 
-  const sxWrapper = useMemo<SxProps<Theme>>(() => {
-    const sxRet: SxProps<Theme> = {
-      width: '100%',
-    };
-    if (error) {
-      sxRet.textAlign = 'center';
-      sxRet.color = 'error.main';
-    } else if (isLoading) {
-      sxRet.textAlign = 'center';
-      sxRet.color = 'info';
+  useEffect(() => {
+    if (!hasMounted) {
+      setHasMounted(true);
     }
-    return sxRet;
-  }, [error, isLoading]);
+  }, [hasMounted]);
 
   const initialState = useMemo(
     () => ({
@@ -77,17 +62,14 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
     return <></>;
   }
   return (
-    <Box sx={sxWrapper}>
-      {isLoading && (
-        <>
-          <CircularProgress />
-          <Typography>Loading...</Typography>
-        </>
-      )}
-      {error ? (
-        <Typography>Error: {error}</Typography>
-      ) : (
-        <Paper sx={{ width: '100%', mb: 2, overflow: 'hidden' }}>
+    <Box sx={{ width: 'auto', maxWidth: 1 }}>
+      <Loading
+        loading={!hasMounted || isLoading}
+        errorMessage={error ?? null}
+        loadingMessage="Loading data grid..."
+      />
+      {hasMounted && (
+        <Paper sx={{ width: 'auto', mb: 2, overflow: 'hidden' }}>
           <TableContainer>
             <DataGridPro<TRowModel>
               filterDebounceMs={2000}

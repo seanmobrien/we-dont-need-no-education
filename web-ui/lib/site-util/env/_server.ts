@@ -46,7 +46,9 @@ const buildRawInstance = () => ({
   AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
   REDIS_URL: process.env.REDIS_URL,
   REDIS_PASSWORD: process.env.REDIS_PASSWORD,
-  MEM0_ENDPOINT: process.env.MEM0_ENDPOINT,
+  MEM0_API_HOST: process.env.MEM0_API_HOST,
+  MEM0_UI_HOST: process.env.MEM0_UI_HOST,
+  MEM0_USERNAME: process.env.MEM0_USERNAME,
 });
 
 // Define the schema for server-side environment variables
@@ -110,7 +112,9 @@ const serverEnvSchema = z.object({
   AZURE_STORAGE_ACCOUNT_NAME: z.string().min(1),
   REDIS_URL: z.string().min(1),
   REDIS_PASSWORD: z.string().min(1),
-  MEM0_ENDPOINT: z.string().min(1),
+  MEM0_API_HOST: ZodProcessors.url(),
+  MEM0_UI_HOST: ZodProcessors.url(),
+  MEM0_USERNAME: z.string().min(1),
 });
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;

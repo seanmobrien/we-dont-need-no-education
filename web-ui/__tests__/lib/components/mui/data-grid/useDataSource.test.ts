@@ -1,11 +1,13 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
-import { RequestCacheRecord } from '@/lib/components/mui/data-grid/request-cache-record';
+import { GridRecordCache } from '@/lib/components/mui/data-grid/grid-record-cache';
 import type { DataSourceProps } from '@/lib/components/mui/data-grid/types';
 
 // Mock RequestCacheRecord
 jest.mock('@/lib/components/mui/data-grid/request-cache-record');
-const mockRequestCacheRecord = RequestCacheRecord as jest.Mocked<typeof RequestCacheRecord>;
+const mockRequestCacheRecord = GridRecordCache as jest.Mocked<
+  typeof GridRecordCache
+>;
 
 // Mock dependencies
 jest.mock('@/lib/react-util', () => ({
@@ -35,7 +37,7 @@ describe('useDataSource', () => {
     mockGetRecordData = jest.fn();
 
     // Mock RequestCacheRecord.get to return a successful response
-    mockRequestCacheRecord.get.mockResolvedValue({
+    mockRequestCacheRecord.getWithFetch.mockResolvedValue({
       rows: [
         { id: 1, name: 'Test Item 1' },
         { id: 2, name: 'Test Item 2' },
@@ -56,7 +58,7 @@ describe('useDataSource', () => {
 
     // Wait for the initial data fetch to complete
     await waitFor(() => {
-      expect(mockRequestCacheRecord.get).toHaveBeenCalledWith({
+      expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledWith({
         url: 'https://api.example.com/data',
         page: 0,
         pageSize: 10,
@@ -83,11 +85,12 @@ describe('useDataSource', () => {
 
     // Wait for initial fetch
     await waitFor(() => {
-      expect(mockRequestCacheRecord.get).toHaveBeenCalledTimes(1);
+      expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledTimes(1);
     });
 
     // Reset mock call count to track subsequent calls
-    const initialCallCount = mockRequestCacheRecord.get.mock.calls.length;
+    const initialCallCount =
+      mockRequestCacheRecord.getWithFetch.mock.calls.length;
 
     // Call getRows with the same parameters as initial fetch
     let rowsResult;
@@ -100,7 +103,9 @@ describe('useDataSource', () => {
     });
 
     // Should not make another request since parameters are the same
-    expect(mockRequestCacheRecord.get).toHaveBeenCalledTimes(initialCallCount);
+    expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledTimes(
+      initialCallCount,
+    );
     expect(rowsResult).toEqual({
       rows: [
         { id: 1, name: 'Test Item 1' },
@@ -122,11 +127,11 @@ describe('useDataSource', () => {
 
     // Wait for initial fetch
     await waitFor(() => {
-      expect(mockRequestCacheRecord.get).toHaveBeenCalledTimes(1);
+      expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledTimes(1);
     });
 
     // Mock a different response for the new parameters
-    mockRequestCacheRecord.get.mockResolvedValueOnce({
+    mockRequestCacheRecord.getWithFetch.mockResolvedValueOnce({
       rows: [
         { id: 3, name: 'Test Item 3' },
         { id: 4, name: 'Test Item 4' },
@@ -145,7 +150,7 @@ describe('useDataSource', () => {
     });
 
     // Should make a new request
-    expect(mockRequestCacheRecord.get).toHaveBeenCalledWith({
+    expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledWith({
       url: 'https://api.example.com/data',
       page: 1,
       pageSize: 10,
@@ -174,7 +179,7 @@ describe('useDataSource', () => {
 
     // Mock RequestCacheRecord.get to reject
     const testError = new Error('Network error');
-    mockRequestCacheRecord.get.mockRejectedValue(testError);
+    mockRequestCacheRecord.getWithFetch.mockRejectedValue(testError);
 
     renderHook(() => useDataSource(props));
 
@@ -203,6 +208,8 @@ describe('useDataSource', () => {
     const { result } = renderHook(() => useDataSource(props));
 
     await act(async () => {
+      expect(result.current).toBeDefined();
+      expect(result.current.updateRow).toBeDefined();
       const updateResult = await result.current.updateRow({
         updatedRow: { id: 1, name: 'Updated Item' },
       });
