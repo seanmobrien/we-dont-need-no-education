@@ -21,6 +21,7 @@ import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 /**
  * Defines the column configuration for the email message list grid.
@@ -54,7 +55,25 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
       return sender ? sender.name : 'Unknown';
     },
   },
-  { field: 'subject', headerName: 'Subject', editable: false, flex: 1 },
+  {
+    field: 'subject',
+    headerName: 'Subject',
+    editable: false,
+    flex: 1,
+    renderCell: (params) => {
+      return params.value ? (
+        <Link
+          href={siteMap.messages.email(params.row.emailId).toString()}
+          title="Open email message"
+          className="text-blue-600 hover:underline"
+        >
+          {params.value}
+        </Link>
+      ) : (
+        <></>
+      );
+    },
+  },
   {
     field: 'count_kpi',
     description: '# KPI',

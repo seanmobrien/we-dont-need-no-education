@@ -99,6 +99,8 @@ describe('useDataSource', () => {
         paginationModel: { page: 0, pageSize: 10 },
         sortModel: [],
         filterModel: { items: [] },
+        start: '',
+        end: 0,
       });
     });
 
@@ -146,6 +148,8 @@ describe('useDataSource', () => {
         paginationModel: { page: 1, pageSize: 10 },
         sortModel: [],
         filterModel: { items: [] },
+        start: '',
+        end: 0,
       });
     });
 
@@ -208,11 +212,18 @@ describe('useDataSource', () => {
     const { result } = renderHook(() => useDataSource(props));
 
     await act(async () => {
-      expect(result.current).toBeDefined();
-      expect(result.current.updateRow).toBeDefined();
-      const updateResult = await result.current.updateRow({
-        updatedRow: { id: 1, name: 'Updated Item' },
-      });
+      const current = result.current;
+      expect(current).toBeDefined();
+      expect(current.updateRow).toBeDefined();
+      if (!current.updateRow) {
+        throw new Error('updateRow is not defined');
+      }
+      const updateResult =
+        (await current.updateRow({
+          updatedRow: { id: 1, name: 'Updated Item' },
+          rowId: '',
+          previousRow: {},
+        })) ?? Promise.reject('updateRow is not defined');
       expect(updateResult).toEqual({ id: 1, name: 'Updated Item' });
     });
 

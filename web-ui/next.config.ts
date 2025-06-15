@@ -23,6 +23,22 @@ const nextConfig: NextConfig = {
   publicRuntimeConfig: {
     hostname: process.env.NEXT_PUBLIC_HOSTNAME,
   },
+  rewrites: async () => {
+    return [
+      {
+        source: '/config/memory/:path*',
+        destination: `${process.env.MEM0_UI_HOST}/:path*`,
+      },
+      {
+        source: '/api/ai/memory/tools/:path*',
+        destination: `${process.env.MEM0_API_HOST}/mcp/openmemory/sse/${process.env.MEM0_USERNAME}/:path*`,
+      },
+      {
+        source: '/api/ai/memory/v1/:path*',
+        destination: `${process.env.MEM0_API_HOST}/api/v1/:path*`,
+      },
+    ];
+  },
   serverExternalPackages: [
     '@opentelemetry/instrumentation',
     '@opentelemetry/instrumentation-pino',
