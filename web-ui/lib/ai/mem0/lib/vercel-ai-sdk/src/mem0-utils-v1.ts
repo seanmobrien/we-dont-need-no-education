@@ -190,15 +190,14 @@ const retrieveMemories = async (
         })
         .join('\n\n');
 
-      if (config?.enable_graph) {
-        memoriesText2 = memories?.relations
+      if (config?.enable_graph && memories?.relations?.length) {
+        memoriesText2 = memories.relations
           ?.map((memory: any) => {
             return `Relation: ${memory.source} -> ${memory.relationship} -> ${memory.target} \n\n`;
           })
           .join('\n\n');
         graphPrompt = `HERE ARE THE GRAPHS RELATIONS FOR THE PREFERENCES OF THE USER:\n\n ${memoriesText2}`;
       }
-      graphPrompt = `HERE ARE THE GRAPHS RELATIONS FOR THE PREFERENCES OF THE USER:\n\n ${memoriesText2}`;
     } catch (error) {
       console.error('Error while parsing memories:', error);
     }
