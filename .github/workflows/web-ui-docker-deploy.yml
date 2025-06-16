@@ -27,7 +27,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 2
       
-      - name: Check for web-ui code changes
+      - name: Check for web-ui and chat code changes
         id: changes
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
@@ -36,17 +36,17 @@ jobs:
           else
             # Get the commit that triggered the original workflow
             TRIGGER_SHA="${{ github.event.workflow_run.head_sha }}"
-            echo "Checking for web-ui code changes in commit: $TRIGGER_SHA"
+            echo "Checking for web-ui and chat code changes in commit: $TRIGGER_SHA"
             
-            # Check if any web-ui code files changed in the triggering commit
-            if git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep "^web-ui/"; then
+            # Check if any web-ui or chat code files changed in the triggering commit
+            if git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "^(web-ui|chat)/"; then
               echo "dependencies=true" >> $GITHUB_OUTPUT
-              echo "Web-ui code changed, proceeding with Docker build"
+              echo "Web-ui or chat code changed, proceeding with Docker build"
               echo "Changed files:"
-              git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep "^web-ui/"
+              git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "^(web-ui|chat)/"
             else
               echo "dependencies=false" >> $GITHUB_OUTPUT
-              echo "No web-ui code changes detected, skipping Docker build"
+              echo "No web-ui or chat code changes detected, skipping Docker build"
             fi
           fi
 
