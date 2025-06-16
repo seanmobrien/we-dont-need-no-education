@@ -17,32 +17,37 @@ on:
 jobs:
   check-dependencies:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     outputs:
       dependencies-changed: ${{ steps.changes.outputs.dependencies }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 2
       
       - name: Check for dependency changes
         id: changes
         run: |
-          # Get the commit that triggered the original workflow
-          TRIGGER_SHA="${{ github.event.workflow_run.head_sha }}"
-          echo "Checking for dependency changes in commit: $TRIGGER_SHA"
-          
-          # Check if any dependency files changed in the triggering commit
-          if git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "(pom\.xml|package\.json|yarn\.lock)$"; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "dependencies=true" >> $GITHUB_OUTPUT
-            echo "Dependencies changed, proceeding with Docker build"
-            echo "Changed files:"
-            git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "(pom\.xml|package\.json|yarn\.lock)$"
+            echo "Manual trigger detected, proceeding with Docker build"
           else
-            echo "dependencies=false" >> $GITHUB_OUTPUT
-            echo "No dependency changes detected, skipping Docker build"
+            # Get the commit that triggered the original workflow
+            TRIGGER_SHA="${{ github.event.workflow_run.head_sha }}"
+            echo "Checking for dependency changes in commit: $TRIGGER_SHA"
+            
+            # Check if any dependency files changed in the triggering commit
+            if git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "(pom\.xml|package\.json|yarn\.lock)$"; then
+              echo "dependencies=true" >> $GITHUB_OUTPUT
+              echo "Dependencies changed, proceeding with Docker build"
+              echo "Changed files:"
+              git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "(pom\.xml|package\.json|yarn\.lock)$"
+            else
+              echo "dependencies=false" >> $GITHUB_OUTPUT
+              echo "No dependency changes detected, skipping Docker build"
+            fi
           fi
 
   build-and-deploy:
@@ -57,7 +62,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
