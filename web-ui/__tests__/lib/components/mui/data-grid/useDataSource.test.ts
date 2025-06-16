@@ -4,7 +4,7 @@ import { GridRecordCache } from '@/lib/components/mui/data-grid/grid-record-cach
 import type { DataSourceProps } from '@/lib/components/mui/data-grid/types';
 
 // Mock RequestCacheRecord
-jest.mock('@/lib/components/mui/data-grid/request-cache-record');
+jest.mock('@/lib/components/mui/data-grid/grid-record-cache');
 const mockRequestCacheRecord = GridRecordCache as jest.Mocked<
   typeof GridRecordCache
 >;
