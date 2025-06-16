@@ -72,11 +72,11 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
         <Paper sx={{ width: 'auto', mb: 2, overflow: 'hidden' }}>
           <TableContainer>
             <DataGridPro<TRowModel>
-              filterDebounceMs={2000}
+              filterDebounceMs={500}
               pagination
               logger={stableGridLogger}
               loading={isLoading}
-              logLevel="debug"
+              logLevel={process.env.NODE_ENV === 'development' ? 'warn' : 'error'}
               columns={columns}
               getRowId={stableGetRowId}
               dataSource={memoizedDataSource}

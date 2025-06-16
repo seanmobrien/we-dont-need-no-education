@@ -1,38 +1,32 @@
 import EmailList from '@/components/email-message/list';
-import {
-  classnames,
-  display,
-  justifyItems,
-  minHeight,
-  padding,
-  flexDirection,
-  alignItems,
-  width,
-} from 'tailwindcss-classnames';
+import { Box } from '@mui/material';
 
 export default function Home() {
   return (
-    <div
-      className={classnames(
-        display('grid'),
-        alignItems('items-center'),
-        justifyItems('justify-items-center'),
-        minHeight('min-h-screen'),
-        padding('p-8', 'pb-20', 'sm:p-20'),
-        'font-[family-name:var(--font-geist-sans)]',
-        width('w-full'),
-      )}
+    <Box
+      sx={{
+        display: 'grid',
+        alignItems: 'center',
+        justifyItems: 'center',
+        minHeight: '100vh',
+        padding: { xs: 2, sm: 5 },
+        fontFamily: 'var(--font-geist-sans)',
+        width: '100%',
+        backgroundColor: 'var(--background)',
+        color: 'var(--foreground)',
+      }}
     >
-      <main
-        className={classnames(
-          display('flex'),
-          flexDirection('flex-col'),
-          alignItems('items-center'),
-          width('w-full'),
-        )}
+      <Box
+        component="main"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: '100%',
+        }}
       >
         <EmailList />
-      </main>
-    </div>
+      </Box>
+    </Box>
   );
 }

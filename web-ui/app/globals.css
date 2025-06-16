@@ -58,6 +58,19 @@ textarea {
   @apply bg-gray-800 text-gray-200 border-gray-600 focus:ring-blue-300 focus:border-blue-300;
 }
 
+/* Colorful theme input styles */
+[data-theme="colorful"] select,
+[data-theme="colorful"] input[type="text"],
+[data-theme="colorful"] input[type="email"],
+[data-theme="colorful"] input[type="password"],
+[data-theme="colorful"] input[type="date"],
+[data-theme="colorful"] input[type="datetime"],
+[data-theme="colorful"] input[type="datetime-local"],
+[data-theme="colorful"] input[type="number"],
+[data-theme="colorful"] textarea {
+  @apply bg-white text-gray-900 border-pink-200 focus:ring-blue-300 focus:border-blue-400;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -162,6 +175,14 @@ body {
   background-color: rgba(26, 187, 249, 0.08) !important;
 }
 
+[data-theme="colorful"] .MuiDataGrid-row.Mui-selected {
+  background-color: rgba(255, 121, 249, 0.12) !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-row.Mui-selected:hover {
+  background-color: rgba(255, 121, 249, 0.16) !important;
+}
+
 /* @toolpad/core component theming */
 
 /* Navigation drawer/sidebar theming for dark theme */
@@ -248,6 +269,24 @@ body {
   color: #ffffff !important;
 }
 
+/* Icon theming for colorful theme */
+[data-theme="colorful"] .MuiSvgIcon-root {
+  color: #1abbf9 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-root .MuiSvgIcon-root {
+  color: #ff79f9 !important;
+}
+
+[data-theme="colorful"] .MuiAppBar-root .MuiSvgIcon-root,
+[data-theme="colorful"] .MuiDrawer-paper .MuiSvgIcon-root {
+  color: #f5a9b8 !important;
+}
+
+[data-theme="colorful"] .MuiIconButton-root:not(.MuiAppBar-root .MuiIconButton-root):not(.MuiDrawer-paper .MuiIconButton-root) .MuiSvgIcon-root {
+  color: #1abbf9 !important;
+}
+
 /* Additional component theming */
 
 /* TableContainer theming */
@@ -274,6 +313,12 @@ body {
 [data-theme="dark"] .MuiChip-root {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: var(--foreground) !important;
+}
+
+[data-theme="colorful"] .MuiChip-root {
+  background-color: rgba(26, 187, 249, 0.1) !important;
+  color: #000000 !important;
+  border: 1px solid rgba(245, 169, 184, 0.3) !important;
 }
 
 [data-theme="dark"] .MuiChip-colorSecondary {
