@@ -162,6 +162,14 @@ body {
   background-color: rgba(26, 187, 249, 0.08) !important;
 }
 
+[data-theme="colorful"] .MuiDataGrid-row.Mui-selected {
+  background-color: rgba(255, 121, 249, 0.12) !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-row.Mui-selected:hover {
+  background-color: rgba(255, 121, 249, 0.16) !important;
+}
+
 /* @toolpad/core component theming */
 
 /* Navigation drawer/sidebar theming for dark theme */
@@ -246,6 +254,24 @@ body {
 
 [data-theme="colorful"] .MuiAppBar-root .MuiIconButton-root {
   color: #ffffff !important;
+}
+
+/* Icon theming for colorful theme */
+[data-theme="colorful"] .MuiSvgIcon-root {
+  color: #1abbf9 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-root .MuiSvgIcon-root {
+  color: #ff79f9 !important;
+}
+
+[data-theme="colorful"] .MuiAppBar-root .MuiSvgIcon-root,
+[data-theme="colorful"] .MuiDrawer-paper .MuiSvgIcon-root {
+  color: #f5a9b8 !important;
+}
+
+[data-theme="colorful"] .MuiIconButton-root:not(.MuiAppBar-root .MuiIconButton-root):not(.MuiDrawer-paper .MuiIconButton-root) .MuiSvgIcon-root {
+  color: #1abbf9 !important;
 }
 
 /* Additional component theming */
