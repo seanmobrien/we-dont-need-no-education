@@ -93,3 +93,71 @@ body {
     @apply bg-red-500 hover:bg-red-600 text-white;
   }
 }
+
+/* DataGrid theming for dark theme */
+[data-theme="dark"] .MuiDataGrid-root {
+  border: none !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-cell {
+  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
+  color: var(--foreground) !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-columnHeaders {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-columnHeaderTitle {
+  color: var(--foreground) !important;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .MuiDataGrid-virtualScroller {
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-footerContainer {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-top: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-row:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* DataGrid theming for colorful theme */
+[data-theme="colorful"] .MuiDataGrid-root {
+  border: 1px solid #f5a9b8 !important;
+  background-color: #ffffff !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-cell {
+  border-bottom: 1px solid rgba(245, 169, 184, 0.5) !important;
+  color: #000000 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-columnHeaders {
+  background-color: rgba(26, 187, 249, 0.1) !important;
+  border-bottom: 1px solid #f5a9b8 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-columnHeaderTitle {
+  color: #000000 !important;
+  font-weight: 600;
+}
+
+[data-theme="colorful"] .MuiDataGrid-virtualScroller {
+  background-color: #ffffff !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-footerContainer {
+  background-color: rgba(26, 187, 249, 0.05) !important;
+  border-top: 1px solid #f5a9b8 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-row:hover {
+  background-color: rgba(26, 187, 249, 0.08) !important;
+}
