@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   IconButton,
   Menu,
@@ -11,25 +11,45 @@ import { Palette as PaletteIcon } from '@mui/icons-material';
 import { useTheme } from '@/lib/themes/provider';
 import { ThemeType, themeDisplayNames } from '@/lib/themes/definitions';
 
+const availableThemes: ThemeType[] = ['dark', 'colorful'] as const;
+
 export const ThemeSelector = () => {
   const { currentTheme, setTheme } = useTheme();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
-  const handleMenuClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
-  }, []);
+  const { handleMenuClick, handleThemeSelect } = useMemo(() => {
+    const handleMenuClick = (
+      { currentTarget }: { currentTarget?: HTMLElement; data?: string } = {
+        currentTarget: undefined,
+      },
+      reason?: 'backdropClick' | 'escapeKeyDown',
+    ) => {
+      const newAnchorEl =
+        reason === 'backdropClick' ||
+        reason === 'escapeKeyDown' ||
+        !currentTarget
+          ? null
+          : currentTarget;
+      if (!Object.is(anchorEl, newAnchorEl)) {
+        setAnchorEl(newAnchorEl);
+      }
+    };
 
-  const handleClose = useCallback(() => {
-    setAnchorEl(null);
-  }, []);
-
-  const handleThemeSelect = useCallback((themeType: ThemeType) => {
-    setTheme(themeType);
-    handleClose();
-  }, [setTheme, handleClose]);
-
-  const availableThemes: ThemeType[] = ['dark', 'colorful'];
+    const handleThemeSelect = ({
+      currentTarget,
+    }: React.MouseEvent<HTMLElement>) => {
+      const themeType = currentTarget?.dataset?.theme as ThemeType;
+      if (!!themeType && currentTheme !== themeType) {
+        setTheme(themeType);
+      }
+      handleMenuClick();
+    };
+    return {
+      handleMenuClick,
+      handleThemeSelect,
+    };
+  }, [anchorEl, currentTheme, setTheme]);
 
   return (
     <>
@@ -49,7 +69,7 @@ export const ThemeSelector = () => {
         id="theme-menu"
         anchorEl={anchorEl}
         open={open}
-        onClose={handleClose}
+        onClose={handleMenuClick}
         anchorOrigin={{
           vertical: 'bottom',
           horizontal: 'right',
@@ -68,7 +88,8 @@ export const ThemeSelector = () => {
         {availableThemes.map((themeType) => (
           <MenuItem
             key={themeType}
-            onClick={() => handleThemeSelect(themeType)}
+            data-theme={themeType as string}
+            onClick={handleThemeSelect}
             selected={themeType === currentTheme}
           >
             {themeDisplayNames[themeType]}

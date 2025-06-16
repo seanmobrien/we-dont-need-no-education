@@ -1,18 +1,26 @@
-import { Card, CardContent, LinearProgress, Box, Typography } from '@mui/material';
+import {
+  Card,
+  CardContent,
+  LinearProgress,
+  Box,
+  Typography,
+} from '@mui/material';
 
-const Component = ({
+const Loading = ({
   loading,
   errorMessage,
+  loadingMessage,
 }: {
-  loading: boolean;
-  errorMessage: string | null;
+  loading?: boolean;
+  loadingMessage?: string;
+  errorMessage?: string | null;
 }) => {
   if (loading) {
     return (
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom>
-            Loading...
+            {loadingMessage ?? 'Loading...'}
           </Typography>
           <LinearProgress />
         </CardContent>
@@ -21,7 +29,7 @@ const Component = ({
   }
   if (errorMessage) {
     return (
-      <Box sx={{ color: 'red', marginBottom: 2 }}>
+      <Box sx={{ color: 'red', marginBottom: 2, textAlign: 'center' }}>
         <Typography variant="body2" color="error">
           <strong>Error:</strong> {errorMessage}
         </Typography>
@@ -30,4 +38,4 @@ const Component = ({
   }
   return <></>;
 };
-export default Component;
+export default Loading;

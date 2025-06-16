@@ -12,7 +12,6 @@ import { isAiLanguageModelType } from '@/lib/ai/core';
 import { getRetryErrorInfo } from '@/lib/ai/chat';
 import { generateChatId } from '@/lib/components/ai';
 import { toolProviderSetFactory } from '@/lib/ai/mcp';
-
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 
@@ -61,8 +60,23 @@ export async function POST(req: NextRequest) {
         ).toString(),
         headers: getMcpClientHeaders({ req, chatHistoryId }),
       },
-      { allowWrite: true, url: env('MEM0_ENDPOINT') },
+      {
+        allowWrite: true,
+        /*
+        url: new URL(
+          '/mcp/openmemory/sse/${process.env.MEM0_USERNAME}',
+          env('MEM0_API_HOST'),
+        ).toString(),
+        */
+        headers: {
+          'cache-control': 'no-cache, no-transform',
+          'content-encoding': 'none',
+        },
+        url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
+      },
     ]);
+
+    log((l) => l.info('Tools: ', toolProviders.get_tools()));
 
     let isRateLimitError = false;
     let retryAfter = 0;
