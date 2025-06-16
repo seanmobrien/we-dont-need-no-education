@@ -41,31 +41,31 @@ const Value = styled('div')({
   justifyContent: 'center',
 });
 
-const Bar = styled('div')({
+const Bar = styled('div')(({ theme }) => ({
   height: '100%',
   '&.low': {
-    backgroundColor: '#F4A6A6',
+    backgroundColor: theme.palette.mode === 'dark' ? '#F4A6A6' : '#f5a9b8', // Use colorful theme accent
   },
   '&.medium': {
-    backgroundColor: '#efbb5aa3',
+    backgroundColor: theme.palette.mode === 'dark' ? '#efbb5aa3' : 'rgba(26, 187, 249, 0.7)', // Use colorful theme primary
   },
   '&.high': {
-    backgroundColor: '#088208a3',
+    backgroundColor: theme.palette.mode === 'dark' ? '#088208a3' : 'rgba(255, 121, 249, 0.7)', // Use colorful theme secondary
   },
-});
+}));
 
-const NegativeBar = styled('div')({
+const NegativeBar = styled('div')(({ theme }) => ({
   height: '100%',
   '&.low': {
-    backgroundColor: '#E15656',
+    backgroundColor: theme.palette.mode === 'dark' ? '#E15656' : 'rgba(245, 169, 184, 0.8)',
   },
   '&.medium': {
-    backgroundColor: '#C22727',
+    backgroundColor: theme.palette.mode === 'dark' ? '#C22727' : 'rgba(26, 187, 249, 0.8)',
   },
   '&.high': {
-    backgroundColor: '#9E1A1A',
+    backgroundColor: theme.palette.mode === 'dark' ? '#9E1A1A' : 'rgba(255, 121, 249, 0.8)',
   },
-});
+}));
 
 const ProgressBar = React.memo(function ProgressBar(props: ProgressBarProps) {
   const { value } = props;

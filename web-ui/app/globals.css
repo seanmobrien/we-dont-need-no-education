@@ -58,6 +58,19 @@ textarea {
   @apply bg-gray-800 text-gray-200 border-gray-600 focus:ring-blue-300 focus:border-blue-300;
 }
 
+/* Colorful theme input styles */
+[data-theme="colorful"] select,
+[data-theme="colorful"] input[type="text"],
+[data-theme="colorful"] input[type="email"],
+[data-theme="colorful"] input[type="password"],
+[data-theme="colorful"] input[type="date"],
+[data-theme="colorful"] input[type="datetime"],
+[data-theme="colorful"] input[type="datetime-local"],
+[data-theme="colorful"] input[type="number"],
+[data-theme="colorful"] textarea {
+  @apply bg-white text-gray-900 border-pink-200 focus:ring-blue-300 focus:border-blue-400;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -300,6 +313,12 @@ body {
 [data-theme="dark"] .MuiChip-root {
   background-color: rgba(255, 255, 255, 0.1) !important;
   color: var(--foreground) !important;
+}
+
+[data-theme="colorful"] .MuiChip-root {
+  background-color: rgba(26, 187, 249, 0.1) !important;
+  color: #000000 !important;
+  border: 1px solid rgba(245, 169, 184, 0.3) !important;
 }
 
 [data-theme="dark"] .MuiChip-colorSecondary {
