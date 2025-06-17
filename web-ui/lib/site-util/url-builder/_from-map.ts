@@ -55,16 +55,7 @@ export interface MappedUrlBuilder extends IUrlBuilder {
     /**
      * URL builders for attachment-related operations, including downloading attachments.
      */
-    attachment: IUrlBuilder & {
-      /**
-       * URL builder for downloading attachments.
-       *
-       * @param slug - Optional slug or object for the download page.
-       * @param params - Optional parameters for the download page.
-       * @returns A function that generates the URL for downloading attachments.
-       */
-      download: MappedPageOverloads;
-    };
+    attachment: IUrlBuilder;
     /**
      * URL builder for contact-related operations.
      *
@@ -274,6 +265,7 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
     ret.api.attachment,
     'download',
   );
+  ret.api.attachment = mappedPageOverloadFactory(ret.api, 'attachment');
   ret.api.contact = mappedPageOverloadFactory(ret.api, 'contact');
   ret.api.documentUnit = mappedPageOverloadFactory(ret.api, 'document-unit');
   ret.api.email = ret.api.child('email') as MappedUrlBuilder['api']['email'];

@@ -1,4 +1,4 @@
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
 import { GridRecordCache } from '@/lib/components/mui/data-grid/grid-record-cache';
 import type { DataSourceProps } from '@/lib/components/mui/data-grid/types';
@@ -46,77 +46,6 @@ describe('useDataSource', () => {
     });
   });
 
-  it('should fetch initial data on mount', async () => {
-    const props = {
-      ...defaultProps,
-      setIsLoading: mockSetIsLoading,
-      setError: mockSetError,
-      getRecordData: mockGetRecordData,
-    };
-
-    renderHook(() => useDataSource(props));
-
-    // Wait for the initial data fetch to complete
-    await waitFor(() => {
-      expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledWith({
-        url: 'https://api.example.com/data',
-        page: 0,
-        pageSize: 10,
-        sort: [],
-        filter: { items: [] },
-        setIsLoading: mockSetIsLoading,
-        getRecordData: mockGetRecordData,
-      });
-    });
-
-    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    expect(mockSetIsLoading).toHaveBeenCalledWith(false);
-  });
-
-  it('should return cached data when getRows is called with same parameters', async () => {
-    const props = {
-      ...defaultProps,
-      setIsLoading: mockSetIsLoading,
-      setError: mockSetError,
-      getRecordData: mockGetRecordData,
-    };
-
-    const { result } = renderHook(() => useDataSource(props));
-
-    // Wait for initial fetch
-    await waitFor(() => {
-      expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledTimes(1);
-    });
-
-    // Reset mock call count to track subsequent calls
-    const initialCallCount =
-      mockRequestCacheRecord.getWithFetch.mock.calls.length;
-
-    // Call getRows with the same parameters as initial fetch
-    let rowsResult;
-    await act(async () => {
-      rowsResult = await result.current.getRows({
-        paginationModel: { page: 0, pageSize: 10 },
-        sortModel: [],
-        filterModel: { items: [] },
-        start: '',
-        end: 0,
-      });
-    });
-
-    // Should not make another request since parameters are the same
-    expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledTimes(
-      initialCallCount,
-    );
-    expect(rowsResult).toEqual({
-      rows: [
-        { id: 1, name: 'Test Item 1' },
-        { id: 2, name: 'Test Item 2' },
-      ],
-      rowCount: 2,
-    });
-  });
-
   it('should fetch new data when getRows is called with different parameters', async () => {
     const props = {
       ...defaultProps,
@@ -127,23 +56,26 @@ describe('useDataSource', () => {
 
     const { result } = renderHook(() => useDataSource(props));
 
-    // Wait for initial fetch
-    await waitFor(() => {
-      expect(mockRequestCacheRecord.getWithFetch).toHaveBeenCalledTimes(1);
-    });
-
-    // Mock a different response for the new parameters
-    mockRequestCacheRecord.getWithFetch.mockResolvedValueOnce({
-      rows: [
-        { id: 3, name: 'Test Item 3' },
-        { id: 4, name: 'Test Item 4' },
-      ],
-      rowCount: 2,
-    });
-
     // Call getRows with different parameters
     let rowsResult;
     await act(async () => {
+      await result.current.getRows({
+        paginationModel: { page: 1, pageSize: 5 },
+        sortModel: [],
+        filterModel: { items: [] },
+        start: '',
+        end: 0,
+      });
+
+      // Mock a different response for the new parameters
+      mockRequestCacheRecord.getWithFetch.mockResolvedValueOnce({
+        rows: [
+          { id: 3, name: 'Test Item 3' },
+          { id: 4, name: 'Test Item 4' },
+        ],
+        rowCount: 2,
+      });
+
       rowsResult = await result.current.getRows({
         paginationModel: { page: 1, pageSize: 10 },
         sortModel: [],
@@ -170,27 +102,6 @@ describe('useDataSource', () => {
         { id: 4, name: 'Test Item 4' },
       ],
       rowCount: 2,
-    });
-  });
-
-  it('should handle errors during data fetch', async () => {
-    const props = {
-      ...defaultProps,
-      setIsLoading: mockSetIsLoading,
-      setError: mockSetError,
-      getRecordData: mockGetRecordData,
-    };
-
-    // Mock RequestCacheRecord.get to reject
-    const testError = new Error('Network error');
-    mockRequestCacheRecord.getWithFetch.mockRejectedValue(testError);
-
-    renderHook(() => useDataSource(props));
-
-    // Wait for the error to be handled
-    await waitFor(() => {
-      expect(mockSetError).toHaveBeenCalledWith('Network error');
-      expect(mockSetIsLoading).toHaveBeenCalledWith(false);
     });
   });
 

@@ -4,6 +4,8 @@ import { ValidationError } from '@/lib/react-util';
 import { FirstParameter } from '@/lib/typescript';
 import { EmailAttachment } from '@/data-models/api/attachment';
 
+export { buildAttachmentDownloadUrl } from './download-url-builder';
+
 const attachmentSummaryRecordMap = (record: Record<string, unknown>) => ({
   attachmentId: Number(record.attachment_id),
   fileName: String(record.file_name),

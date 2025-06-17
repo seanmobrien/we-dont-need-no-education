@@ -1,22 +1,25 @@
-import { LanguageModelV1, ProviderV1 } from "@ai-sdk/provider";
-import { /* loadApiKey, */ withoutTrailingSlash } from "@ai-sdk/provider-utils";
-import { Mem0ChatModelId, Mem0ChatSettings, Mem0Config } from "./mem0-types";
-import { OpenAIProviderSettings } from "@ai-sdk/openai";
-import { Mem0GenericLanguageModel } from "./mem0-generic-language-model";
-import { OpenAIChatSettings } from "@ai-sdk/openai/internal";
-import { AnthropicMessagesSettings } from "@ai-sdk/anthropic/internal";
-import { AnthropicProviderSettings } from "@ai-sdk/anthropic";
-import { loadApiKey } from "../../pollyfills';
+import { LanguageModelV1, ProviderV1 } from '@ai-sdk/provider';
+import { /* loadApiKey, */ withoutTrailingSlash } from '@ai-sdk/provider-utils';
+import { Mem0ChatModelId, Mem0ChatSettings, Mem0Config } from './mem0-types';
+import { OpenAIProviderSettings } from '@ai-sdk/openai';
+import { Mem0GenericLanguageModel } from './mem0-generic-language-model';
+import { OpenAIChatSettings } from '@ai-sdk/openai/internal';
+import { AnthropicMessagesSettings } from '@ai-sdk/anthropic/internal';
+import { AnthropicProviderSettings } from '@ai-sdk/anthropic';
+import { loadApiKey } from '../../pollyfills';
 
 export interface Mem0Provider extends ProviderV1 {
   (modelId: Mem0ChatModelId, settings?: Mem0ChatSettings): LanguageModelV1;
 
   chat(modelId: Mem0ChatModelId, settings?: Mem0ChatSettings): LanguageModelV1;
-  completion(modelId: Mem0ChatModelId, settings?: Mem0ChatSettings): LanguageModelV1;
+  completion(
+    modelId: Mem0ChatModelId,
+    settings?: Mem0ChatSettings,
+  ): LanguageModelV1;
 
   languageModel(
     modelId: Mem0ChatModelId,
-    settings?: Mem0ChatSettings
+    settings?: Mem0ChatSettings,
   ): LanguageModelV1;
 }
 
@@ -41,7 +44,7 @@ export interface Mem0ProviderSettings
   mem0ApiKey?: string;
   apiKey?: string;
   provider?: string;
-  modelType?: "completion" | "chat";
+  modelType?: 'completion' | 'chat';
   mem0Config?: Mem0Config;
 
   /**
@@ -52,18 +55,18 @@ export interface Mem0ProviderSettings
 
 export function createMem0(
   options: Mem0ProviderSettings = {
-    provider: "openai",
-  }
+    provider: 'openai',
+  },
 ): Mem0Provider {
   const baseURL =
-    withoutTrailingSlash(options.baseURL) ?? "http://api.openai.com";
+    withoutTrailingSlash(options.baseURL) ?? 'http://api.openai.com';
   const getHeaders = () => ({
     ...options.headers,
   });
 
   const createGenericModel = (
     modelId: Mem0ChatModelId,
-    settings: Mem0ChatSettings = {}
+    settings: Mem0ChatSettings = {},
   ) =>
     new Mem0GenericLanguageModel(
       modelId,
@@ -72,18 +75,22 @@ export function createMem0(
         baseURL,
         fetch: options.fetch,
         headers: getHeaders(),
-        provider: options.provider || "openai",
+        provider: options.provider || 'openai',
         name: options.name,
-        mem0ApiKey: options.mem0ApiKey,
+        mem0ApiKey: loadApiKey({
+          apiKey: options.mem0ApiKey,
+          environmentVariableName: 'MEM0_API_KEY',
+          description: 'Mem0',
+        }),
         apiKey: options.apiKey,
         mem0Config: options.mem0Config,
       },
-      options.config
+      options.config,
     );
 
   const createCompletionModel = (
     modelId: Mem0ChatModelId,
-    settings: Mem0ChatSettings = {}
+    settings: Mem0ChatSettings = {},
   ) =>
     new Mem0GenericLanguageModel(
       modelId,
@@ -92,19 +99,23 @@ export function createMem0(
         baseURL,
         fetch: options.fetch,
         headers: getHeaders(),
-        provider: options.provider || "openai",
+        provider: options.provider || 'openai',
         name: options.name,
-        mem0ApiKey: options.mem0ApiKey,
+        mem0ApiKey: loadApiKey({
+          apiKey: options.mem0ApiKey,
+          environmentVariableName: 'MEM0_API_KEY',
+          description: 'Mem0',
+        }),
         apiKey: options.apiKey,
         mem0Config: options.mem0Config,
-        modelType: "completion",
+        modelType: 'completion',
       },
-      options.config
+      options.config,
     );
 
   const createChatModel = (
     modelId: Mem0ChatModelId,
-    settings: Mem0ChatSettings = {}
+    settings: Mem0ChatSettings = {},
   ) =>
     new Mem0GenericLanguageModel(
       modelId,
@@ -113,23 +124,27 @@ export function createMem0(
         baseURL,
         fetch: options.fetch,
         headers: getHeaders(),
-        provider: options.provider || "openai",
+        provider: options.provider || 'openai',
         name: options.name,
-        mem0ApiKey: options.mem0ApiKey,
+        mem0ApiKey: loadApiKey({
+          apiKey: options.mem0ApiKey,
+          environmentVariableName: 'MEM0_API_KEY',
+          description: 'Mem0',
+        }),
         apiKey: options.apiKey,
         mem0Config: options.mem0Config,
-        modelType: "completion",
+        modelType: 'completion',
       },
-      options.config
+      options.config,
     );
 
   const provider = function (
     modelId: Mem0ChatModelId,
-    settings: Mem0ChatSettings = {}
+    settings: Mem0ChatSettings = {},
   ) {
     if (new.target) {
       throw new Error(
-        "The Mem0 model function cannot be called with the new keyword."
+        'The Mem0 model function cannot be called with the new keyword.',
       );
     }
 
