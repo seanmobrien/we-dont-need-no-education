@@ -15,8 +15,29 @@ const nextConfig: NextConfig = {
   experimental: {
     //nodeMiddleware: true,
   },
+  // Build optimization to prevent hanging
+  generateBuildId: async () => {
+    // Use a simple build ID to avoid complex generation during build
+    return 'build-' + Date.now();
+  },
   publicRuntimeConfig: {
     hostname: process.env.NEXT_PUBLIC_HOSTNAME,
+  },
+  rewrites: async () => {
+    return [
+      {
+        source: '/config/memory/:path*',
+        destination: `${process.env.MEM0_UI_HOST}/:path*`,
+      },
+      {
+        source: '/api/ai/memory/tools/:path*',
+        destination: `${process.env.MEM0_API_HOST}/mcp/openmemory/sse/${process.env.MEM0_USERNAME}/:path*`,
+      },
+      {
+        source: '/api/ai/memory/v1/:path*',
+        destination: `${process.env.MEM0_API_HOST}/api/v1/:path*`,
+      },
+    ];
   },
   serverExternalPackages: [
     '@opentelemetry/instrumentation',

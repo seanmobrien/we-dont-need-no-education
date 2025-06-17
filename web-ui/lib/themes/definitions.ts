@@ -29,6 +29,24 @@ export const darkTheme: Theme = createTheme({
         },
       },
     },
+    // Add AppBar theming for dark mode
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: 'rgba(18, 18, 18, 0.9)',
+          backdropFilter: 'blur(8px)',
+        },
+      },
+    },
+    // Add navigation theming for @toolpad components
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'rgba(18, 18, 18, 0.95)',
+          borderRight: '1px solid rgba(81, 81, 81, 1)',
+        },
+      },
+    },
   },
 });
 
@@ -94,6 +112,15 @@ export const colorfulTheme: Theme = createTheme({
         },
       },
     },
+    // Add navigation theming for @toolpad components
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#ffffff',
+          borderRight: '2px solid #f5a9b8',
+        },
+      },
+    },
     MuiChip: {
       styleOverrides: {
         root: {
@@ -113,7 +140,7 @@ export type ThemeType = 'dark' | 'colorful';
 export const themes: Record<ThemeType, Theme> = {
   dark: darkTheme,
   colorful: colorfulTheme,
-};
+} as const;
 
 export const themeDisplayNames: Record<ThemeType, string> = {
   dark: 'Dark Theme',

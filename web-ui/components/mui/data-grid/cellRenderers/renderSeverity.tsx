@@ -76,13 +76,13 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
       duration: theme.transitions.duration.shorter,
     }),
     '&.low': {
-      backgroundColor: '#f44336',
+      backgroundColor: theme.palette.mode === 'dark' ? '#f44336' : '#f5a9b8', // Use colorful theme accent
     },
     '&.medium': {
-      backgroundColor: '#efbb5aa3',
+      backgroundColor: theme.palette.mode === 'dark' ? '#efbb5aa3' : 'rgba(26, 187, 249, 0.7)', // Use colorful theme primary
     },
     '&.high': {
-      backgroundColor: '#088208a3',
+      backgroundColor: theme.palette.mode === 'dark' ? '#088208a3' : 'rgba(255, 121, 249, 0.7)', // Use colorful theme secondary
     },
   },
   [`& .${sliderClasses.thumb}`]: {
@@ -90,7 +90,7 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
     width: 5,
     borderRadius: 0,
     marginTop: 0,
-    backgroundColor: alpha('#000000', 0.2),
+    backgroundColor: theme.palette.mode === 'dark' ? alpha('#000000', 0.2) : alpha('#1abbf9', 0.3),
   },
 }));
 

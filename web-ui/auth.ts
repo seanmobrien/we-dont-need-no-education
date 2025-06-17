@@ -1,13 +1,23 @@
-import NextAuth, { Session, User as NextAuthUser, Account, Profile, NextAuthConfig } from 'next-auth'; // Added NextAuthConfig
+import NextAuth, {
+  Session,
+  User as NextAuthUser,
+  Account,
+  NextAuthConfig,
+} from 'next-auth'; // Added NextAuthConfig
 import { Adapter, AdapterUser } from '@auth/core/adapters';
-import type { OAuthConfig, Provider } from '@auth/core/providers';
+import type { Provider } from '@auth/core/providers';
 import { skipCSRFCheck } from '@auth/core';
 import { NextRequest } from 'next/server';
 import { JWT } from 'next-auth/jwt';
 import Google, { GoogleProfile } from 'next-auth/providers/google';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { isRunningOnEdge, isRunningOnServer, env } from '@/lib/site-util/env';
+import { isRunningOnEdge, env } from '@/lib/site-util/env';
 import { logEvent } from '@/lib/logger';
+
+/**
+ * Extends NextAuthUser to include the account_id, which our provider helpfully sets
+ */
+type NextAuthUserWithAccountId = NextAuthUser & { account_id?: number };
 
 const hasSecretHeaderBypass = (req: Request | undefined): boolean => {
   if (!req) {
@@ -40,9 +50,17 @@ const providers: Provider[] = [
   CredentialsProvider({
     name: 'Secret Header',
     credentials: {
-      secret: { label: 'Secret', type: 'text', placeholder: 'Enter secret value' },
+      secret: {
+        label: 'Secret',
+        type: 'text',
+        placeholder: 'Enter secret value',
+      },
     },
-    authorize: async (credentials: Record<string, unknown> | undefined, req: Request): Promise<NextAuthUser | null> => { // Added Promise<NextAuthUser | null>
+    authorize: async (
+      credentials: Record<string, unknown> | undefined,
+      req: Request,
+    ): Promise<NextAuthUser | null> => {
+      // Added Promise<NextAuthUser | null>
       if (hasSecretHeaderBypass(req)) {
         return {
           id: '3',
@@ -65,70 +83,114 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth(async (req: NextRequest | undefined): Promise<NextAuthConfig> => { // Added NextAuthConfig return type
-  let adapter: Adapter | undefined;
-  
-  let signInImpl: any;
+export const { handlers, auth, signIn, signOut } = NextAuth(
+  async (req: NextRequest | undefined): Promise<NextAuthConfig> => {
+    // Added NextAuthConfig return type
+    let adapter: Adapter | undefined;
 
-  if (process.env.NEXT_RUNTIME === 'nodejs') {
-    const { sql } = await import('drizzle-orm');
-    const { db, schema } = await import('@/lib/drizzle-db');
-    const { DrizzleAdapter } = await import('@auth/drizzle-adapter');
-    adapter = DrizzleAdapter(db, {
-      usersTable: schema.users,
-      accountsTable: schema.accounts,
-      sessionsTable: schema.sessions,
-      verificationTokensTable: schema.verificationTokens,
-    });
-    signInImpl = async ({ account }: ({ account?: Account | Record<string, unknown> } | undefined) = { account: undefined }) => { 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let signInImpl: any;
+
+    // Skip database adapter during build process
+    /*if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NEXT_PHASE !== 'phase-production-build')*/
+    if (
+      process.env.NEXT_RUNTIME === 'nodejs' &&
+      typeof window === 'undefined' &&
+      !isRunningOnEdge() &&
+      process.env.NEXT_PHASE !== 'phase-production-build'
+    ) {
+      const { sql } = await import('drizzle-orm');
+      const { db, schema } = await import('@/lib/drizzle-db');
+      const { DrizzleAdapter } = await import('@auth/drizzle-adapter');
+      adapter = DrizzleAdapter(db, {
+        usersTable: schema.users,
+        accountsTable: schema.accounts,
+        sessionsTable: schema.sessions,
+        verificationTokensTable: schema.verificationTokens,
+      });
+      signInImpl = async (
+        {
+          account,
+        }: { account?: Account | Record<string, unknown> } | undefined = {
+          account: undefined,
+        },
+      ) => {
         // Ensure account is not null or undefined before accessing its properties
-        if (account && account.provider === "google" && account.refresh_token && account.access_token && account.providerAccountId) {
-          await db.update(schema.accounts).set({
-            access_token: String(account.access_token),
-            refresh_token: String(account.refresh_token),
-          }).where(sql`provider='google' AND "providerAccountId" = ${account.providerAccountId}`);
+        if (
+          account &&
+          account.provider === 'google' &&
+          account.refresh_token &&
+          account.access_token &&
+          account.providerAccountId
+        ) {
+          await db
+            .update(schema.accounts)
+            .set({
+              access_token: String(account.access_token),
+              refresh_token: String(account.refresh_token),
+            })
+            .where(
+              sql`provider='google' AND "providerAccountId" = ${account.providerAccountId}`,
+            );
         }
         logEvent('signIn');
         return true;
       };
-  } else {
-    adapter = undefined; // No adapter for edge runtime or client
-    signInImpl = async () => {         
-      logEvent('signIn');
-      return true;
-    };
-  }
+    } else {
+      adapter = undefined; // No adapter for edge runtime, client, or build
+      signInImpl = async () => {
+        logEvent('signIn');
+        return true;
+      };
+    }
 
-  return {
-    session: { strategy: 'jwt' },
-    adapter,
-    providers,
-    skipCSRFCheck: req && hasSecretHeaderBypass(req) ? skipCSRFCheck : undefined,
-    callbacks: {
-      authorized: async ({ auth }: { auth: Session | null; }) => {
-        return !!auth;
-      },
-      signIn: signInImpl,
-      jwt: async ({ token, user, account, profile }: { token: JWT; user?: NextAuthUser | AdapterUser | null; account?: Account | null; profile?: Profile | null; }) => {
-        if (user) {
-          token.id = user.id;
-          if ((user as any).account_id !== undefined) {
-            token.account_id = (user as any).account_id;
+    return {
+      session: { strategy: 'jwt' },
+      adapter,
+      providers,
+      skipCSRFCheck:
+        req && hasSecretHeaderBypass(req) ? skipCSRFCheck : undefined,
+      callbacks: {
+        authorized: async ({ auth }: { auth: Session | null }) => {
+          return !!auth;
+        },
+        signIn: signInImpl,
+        jwt: async ({
+          token,
+          user,
+        }: {
+          token: JWT;
+          user?: NextAuthUserWithAccountId | NextAuthUser | AdapterUser | null;
+        }) => {
+          if (user) {
+            token.id = user.id;
+            // Check to see if we were given an account_id, which is a custom field we set in the authorize function of the CredentialsProvider
+            if ('account_id' in user && !!user.account_id) {
+              token.account_id = user.account_id;
+            }
           }
-        }
-        return token;
-      },
-      session: async ({ session, token }: { session: Session; token: JWT; }) => {
-        if (session.user) {
-          if (token.id) {
-            session.user.id = String(token.id);
+          return token;
+        },
+        session: async ({
+          session,
+          token,
+        }: {
+          session: Session;
+          token: JWT;
+        }) => {
+          if (session.user) {
+            if (token.id) {
+              session.user.id = String(token.id);
+            }
+            if (token.account_id !== undefined) {
+              // Store account_id for use in the sesion callback
+              (session.user as NextAuthUserWithAccountId).account_id =
+                token.account_id;
+            }
           }
-          if (token.account_id !== undefined) {
-            (session.user as any).account_id = token.account_id;
-          }
-        }
-        return session;
+          return session;
+        },
       },
-    },
-  };
-});
+    };
+  },
+);

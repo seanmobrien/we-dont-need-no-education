@@ -16,7 +16,7 @@ export const logger = (): Promise<ILogger> =>
     if (!_logger) {
       if (isRunningOnServer()) {
         _logger = pino<'verbose' | 'silly', false>({
-          level: env('LOG_LEVEL_SERVER'),
+          level: env('LOG_LEVEL_SERVER') ?? 'info',
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },
@@ -34,7 +34,7 @@ export const logger = (): Promise<ILogger> =>
             };
 
         _logger = pino<'verbose' | 'silly', false>({
-          level: env('NEXT_PUBLIC_LOG_LEVEL_CLIENT'),
+          level: env('NEXT_PUBLIC_LOG_LEVEL_CLIENT') ?? 'info',
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },

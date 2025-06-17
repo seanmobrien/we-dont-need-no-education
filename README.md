@@ -1,3 +1,5 @@
+<!-- @format -->
+
 # Title IX Victim Advocacy Platform
 
 A comprehensive AI-powered platform to empower victims, families, and advocates in fighting back against educational institutions that mishandle Title IX cases through automated document analysis, email processing, and intelligent evidence gathering.
@@ -19,6 +21,7 @@ This platform combines a modern web interface with sophisticated AI-powered back
 ## Architecture
 
 ### Frontend (`/web-ui/`)
+
 - **Framework**: Next.js 15.x with TypeScript
 - **UI Library**: Material UI with data grid components
 - **Authentication**: NextAuth.js integration
@@ -26,6 +29,7 @@ This platform combines a modern web interface with sophisticated AI-powered back
 - **Styling**: TailwindCSS with custom component system
 
 ### Backend (`/chat/`)
+
 - **Language**: Java 21 with Maven multi-module architecture
 - **AI Integration**: LangChain4j with Azure OpenAI
 - **Queue Management**: Redis with Redisson
@@ -34,11 +38,13 @@ This platform combines a modern web interface with sophisticated AI-powered back
 - **Embeddings**: Custom vector embedding pipeline
 
 ### Database (`/db/`)
+
 - PostgreSQL database with comprehensive schema for evidence storage, analysis tracking, and case management
 
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 22.x
 - Java 21
 - Maven 3.8+
@@ -47,6 +53,7 @@ This platform combines a modern web interface with sophisticated AI-powered back
 - Azure OpenAI access
 
 ### Frontend Setup
+
 ```bash
 cd web-ui
 npm install
@@ -54,6 +61,7 @@ npm run dev
 ```
 
 ### Backend Setup
+
 ```bash
 cd chat
 mvn clean install
@@ -61,7 +69,9 @@ mvn exec:java -pl scb-chatbot
 ```
 
 ### Environment Configuration
+
 Create appropriate `.env` files with:
+
 - Database connection strings
 - Azure OpenAI API keys and endpoints
 - Redis connection details
@@ -99,6 +109,7 @@ Create appropriate `.env` files with:
 ## Technology Stack
 
 ### Core Technologies
+
 - **Frontend**: Next.js, TypeScript, Material UI, TailwindCSS
 - **Backend**: Java 21, Maven, LangChain4j, Spring components
 - **Database**: PostgreSQL, Drizzle ORM, HikariCP
@@ -106,6 +117,7 @@ Create appropriate `.env` files with:
 - **Infrastructure**: Redis, Docker support
 
 ### Key Dependencies
+
 - `@ai-sdk/azure` - Azure AI integration
 - `langchain4j` - Java AI framework
 - `@mui/x-data-grid-pro` - Advanced data grid components
@@ -118,4 +130,6 @@ Please see [SECURITY.md](./SECURITY.md) for security guidelines and contribution
 
 ## License
 
-See [LICENSE](./LICENSE) for licensing information.
+See [LICENSE](./LICENSE.md) for licensing information.
+
+![License: EJL-1.0](https://img.shields.io/badge/license-EJL--1.0-blueviolet)

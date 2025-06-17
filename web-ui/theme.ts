@@ -7,9 +7,11 @@ const theme = createTheme({
     fontFamily: 'var(--geist-sans) var(--font-geist-mono)',
     fontSize: 14,
   },
+  /*
   palette: {
     mode: 'dark',
   },
+  */
   spacing: 8,
   components: {
     MuiButton: {

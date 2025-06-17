@@ -4,6 +4,7 @@ import * as React from 'react';
 
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import { DashboardLayout } from '@toolpad/core/DashboardLayout';
+import { Box } from '@mui/material';
 
 import Sync from '@mui/icons-material/Sync';
 import DashboardIcon from '@mui/icons-material/Dashboard';
@@ -16,6 +17,7 @@ import ReplyIcon from '@mui/icons-material/Reply';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import { Session } from 'next-auth';
 import { EmailContextProvider } from '@/components/email-message/email-context';
+import { ThemeSelector } from '@/components/theme/theme-selector';
 import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
 
@@ -94,6 +96,16 @@ export const EmailDashboardLayout = ({
         branding={Branding}
         session={session ?? null}
       >
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 16,
+            right: 16,
+            zIndex: 1000,
+          }}
+        >
+          <ThemeSelector />
+        </Box>
         <DashboardLayout>{children}</DashboardLayout>
       </NextAppProvider>
     </EmailContextProvider>

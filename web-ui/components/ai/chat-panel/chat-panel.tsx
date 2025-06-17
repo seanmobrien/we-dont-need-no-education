@@ -10,7 +10,7 @@ import {
 import PublishIcon from '@mui/icons-material/Publish';
 import { useChat } from '@ai-sdk/react';
 import { Message, ToolCall } from 'ai';
-import { Loading } from '@/components/general/loading';
+import Loading from '@/components/general/loading';
 import { ChatMenu } from './chat-menu';
 import ChatMessage from './chat-message';
 import classnames, {
@@ -247,7 +247,10 @@ const ChatPanel = ({ page }: { page: string }) => {
       return () => timeoutIds.forEach(clearTimeout);
     }
   }, [rateLimitTimeout, reload, data, setData]);
-
+  if (process.env.IS_BUILDING == '1') {
+    console.warn('is building, skipping chat panel rendering');
+    return <></>;
+  }
   return (
     <Box
       sx={{

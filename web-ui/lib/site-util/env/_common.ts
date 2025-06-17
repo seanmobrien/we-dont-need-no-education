@@ -150,4 +150,18 @@ export const ZodProcessors = {
    */
   object: (): z.ZodDefault<z.ZodObject<z.ZodRawShape>> =>
     z.object({}).default({}),
+
+  /**
+   * Trimmed nullable string processor
+   * @returns
+   */
+  nullableString: (): z.ZodEffects<
+    z.ZodNullable<z.ZodString>,
+    string | null,
+    string | null
+  > =>
+    z
+      .string()
+      .nullable()
+      .transform((val) => (val ? val.trim() : null)),
 };

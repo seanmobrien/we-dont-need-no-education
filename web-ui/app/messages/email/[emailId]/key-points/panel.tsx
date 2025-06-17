@@ -1,8 +1,8 @@
 import React from 'react';
-import { 
-  Typography, 
-  Chip, 
-  Box, 
+import {
+  Typography,
+  Chip,
+  Box,
   Grid,
   Divider,
   Accordion,
@@ -11,7 +11,6 @@ import {
   LinearProgress,
   Rating,
   Stack,
-  Paper
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { KeyPointsDetails } from '@/data-models/api';
@@ -22,23 +21,31 @@ const formatScore = (value: number | null): string => {
   return value.toFixed(2);
 };
 
-const getScoreColor = (score: number | null): 'success' | 'warning' | 'error' | 'default' => {
-  if (score === null || score === undefined) return 'default';
+const getScoreColor = (
+  score: number | null,
+): 'success' | 'warning' | 'error' | 'primary' => {
+  if (score === null || score === undefined) return 'primary';
   if (score >= 0.8) return 'success';
   if (score >= 0.5) return 'warning';
   return 'error';
 };
 
-const KeyPointsPanelContent = ({ keyPoint }: { keyPoint: KeyPointsDetails }) => {
+const KeyPointsPanelContent = ({
+  keyPoint,
+}: {
+  keyPoint: KeyPointsDetails;
+}) => {
   return (
     <>
       {/* Status Indicators */}
       <Box>
-        <Typography variant="h6" gutterBottom>Status</Typography>
+        <Typography variant="h6" gutterBottom>
+          Status
+        </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap">
-          <Chip 
-            label={keyPoint.inferred ? "Inferred" : "Direct"} 
-            color={keyPoint.inferred ? "secondary" : "primary"}
+          <Chip
+            label={keyPoint.inferred ? 'Inferred' : 'Direct'}
+            color={keyPoint.inferred ? 'secondary' : 'primary'}
             size="small"
           />
         </Stack>
@@ -47,11 +54,13 @@ const KeyPointsPanelContent = ({ keyPoint }: { keyPoint: KeyPointsDetails }) => 
       <Divider />
 
       {/* Scores */}
-      <Typography variant="h6" gutterBottom>Assessment Scores</Typography>
-      
+      <Typography variant="h6" gutterBottom>
+        Assessment Scores
+      </Typography>
+
       <Grid container spacing={3}>
         {/* Relevance Score */}
-        <Grid item xs={12} md={4}>
+        <Grid gridColumn={{ xs: 12, md: 4 }}>
           <Box>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               Relevance Score
@@ -77,7 +86,7 @@ const KeyPointsPanelContent = ({ keyPoint }: { keyPoint: KeyPointsDetails }) => 
         </Grid>
 
         {/* Compliance Score */}
-        <Grid item xs={12} md={4}>
+        <Grid gridColumn={{ xs: 12, md: 4 }}>
           <Box>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               Compliance Score
@@ -103,7 +112,7 @@ const KeyPointsPanelContent = ({ keyPoint }: { keyPoint: KeyPointsDetails }) => 
         </Grid>
 
         {/* Severity Score */}
-        <Grid item xs={12} md={4}>
+        <Grid gridColumn={{ xs: 12, md: 4 }}>
           <Box>
             <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
               Severity Score
@@ -139,25 +148,30 @@ const KeyPointsPanelContent = ({ keyPoint }: { keyPoint: KeyPointsDetails }) => 
         <AccordionDetails>
           <Stack spacing={2}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid gridColumn={{ xs: 12, md: 6 }}>
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Created On
                 </Typography>
                 <Typography variant="body2">
-                  {keyPoint.createdOn ? new Intl.DateTimeFormat('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }).format(new Date(keyPoint.createdOn)) : 'Not specified'}
+                  {keyPoint.createdOn
+                    ? new Intl.DateTimeFormat('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      }).format(new Date(keyPoint.createdOn))
+                    : 'Not specified'}
                 </Typography>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid gridColumn={{ xs: 12, md: 6 }}>
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Property ID
                 </Typography>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                >
                   {keyPoint.propertyId}
                 </Typography>
               </Grid>

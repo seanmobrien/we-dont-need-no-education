@@ -76,8 +76,7 @@ import 'jest';
 
 // Polyfill TextEncoder and TextDecoder for Node.js environment
 import { TextEncoder, TextDecoder } from 'util';
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder;
+globalThis.TextEncoder = TextEncoder;
 
 // Automocks
 (postgres as unknown as jest.Mock).mockImplementation((strings, ...values) => {

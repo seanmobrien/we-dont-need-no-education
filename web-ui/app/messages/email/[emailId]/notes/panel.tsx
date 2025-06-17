@@ -1,14 +1,12 @@
 import React from 'react';
-import { 
-  Typography, 
-  Chip, 
-  Box, 
+import {
+  Typography,
   Grid,
   Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  Stack
+  Stack,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { EmailProperty } from '@/data-models/api';
@@ -21,20 +19,26 @@ const NotesPanelContent = ({ row }: { row: EmailProperty }) => {
 
       {/* Basic Information */}
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}>
-          <Typography variant="subtitle1" fontWeight="bold">Type</Typography>
+        <Grid gridColumn={{ xs: 12, md: 6 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Type
+          </Typography>
           <Typography variant="body2">{row.typeName || 'Note'}</Typography>
         </Grid>
-        <Grid item xs={12} md={6}>
-          <Typography variant="subtitle1" fontWeight="bold">Created On</Typography>
+        <Grid gridColumn={{ xs: 12, md: 6 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Created On
+          </Typography>
           <Typography variant="body2">
-            {row.createdOn ? new Intl.DateTimeFormat('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            }).format(new Date(row.createdOn)) : 'Not specified'}
+            {row.createdOn
+              ? new Intl.DateTimeFormat('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }).format(new Date(row.createdOn))
+              : 'Not specified'}
           </Typography>
         </Grid>
       </Grid>
@@ -47,21 +51,22 @@ const NotesPanelContent = ({ row }: { row: EmailProperty }) => {
         <AccordionDetails>
           <Stack spacing={2}>
             <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
+              <Grid gridColumn={{ xs: 12, md: 6 }}>
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Property ID
                 </Typography>
-                <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ fontFamily: 'monospace', fontSize: '0.875rem' }}
+                >
                   {row.propertyId}
                 </Typography>
               </Grid>
-              <Grid item xs={12} md={6}>
+              <Grid gridColumn={{ xs: 12, md: 6 }}>
                 <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                   Document ID
                 </Typography>
-                <Typography variant="body2">
-                  {row.documentId}
-                </Typography>
+                <Typography variant="body2">{row.documentId}</Typography>
               </Grid>
             </Grid>
           </Stack>

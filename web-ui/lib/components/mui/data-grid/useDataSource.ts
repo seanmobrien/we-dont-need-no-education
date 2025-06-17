@@ -8,7 +8,7 @@ import type {
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
 import { LoggedError } from '@/lib/react-util';
 import { useMemo } from 'react';
-import { RequestCacheRecord } from './request-cache-record';
+import { GridRecordCache } from './grid-record-cache';
 
 /**
  * Memoized data source object for a grid component, providing methods to fetch and update rows.
@@ -37,10 +37,10 @@ export const useDataSource = ({
   setError,
   url,
   getRecordData,
-}: DataSourceProps): ExtendedGridDataSource =>
-  useMemo<ExtendedGridDataSource>(
+}: DataSourceProps): ExtendedGridDataSource => {
+  return useMemo<ExtendedGridDataSource>(
     () => ({
-      getRows: (
+      getRows: async (
         {
           paginationModel: {
             pageSize = 10,
@@ -49,27 +49,38 @@ export const useDataSource = ({
           sortModel = [] as GridSortModel,
           filterModel = { items: [] } as GridFilterModel,
         }: GridGetRowsParams = {} as GridGetRowsParams,
-      ) =>
-        RequestCacheRecord.get({
-          url: String(url),
-          page,
-          pageSize,
-          sort: sortModel,
-          filter: filterModel,
-          setIsLoading,
-          getRecordData,
-        })
-          .catch((err: unknown) => {
-            const le = LoggedError.isTurtlesAllTheWayDownBaby(err, {
-              log: true,
-              source: 'grid::dataSource',
-            });
-            setError(le.message);
-            return { rows: [], rowCount: 0 };
-          })
-          .finally(() => {
-            setIsLoading((v) => (v ? false : v));
-          }),
+      ) => {
+        // Create new request
+        try {
+          setIsLoading(true);
+          setError(null);
+
+          if (!url) {            
+            return { rows: [], hasNextPage: true };
+          }
+
+          const result = await GridRecordCache.getWithFetch({
+            url: String(url),
+            page,
+            pageSize,
+            sort: sortModel,
+            filter: filterModel,
+            setIsLoading,
+            getRecordData,
+          });
+
+          return result;
+        } catch (err: unknown) {
+          const le = LoggedError.isTurtlesAllTheWayDownBaby(err, {
+            log: true,
+            source: 'grid::dataSource',
+          });
+          setError(le.message);
+          return { rows: [], rowCount: 0 };
+        } finally {
+          setIsLoading(false);
+        }
+      },
       updateRow: async ({ updatedRow }: GridUpdateRowParams) => {
         try {
           const response = await fetch(url, {
@@ -94,5 +105,6 @@ export const useDataSource = ({
         setError(le.message);
       },
     }),
-    [url, setIsLoading, getRecordData, setError],
+    [setIsLoading, setError, url, getRecordData],
   );
+};

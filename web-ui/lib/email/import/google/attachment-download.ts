@@ -1,5 +1,4 @@
 import { BlobServiceClient } from '@azure/storage-blob';
-import pdfParse from 'pdf-parse';
 import { log } from '@/lib/logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@/lib/neondb';
@@ -107,6 +106,8 @@ export const extractAttachmentText = async ({
   try {
     const pdfBuffer = Buffer.from(buffer);
 
+    // Use dynamic import to prevent build issues with pdf-parse test files
+    const pdfParse = (await import('pdf-parse')).default;
     const pdfData = await pdfParse(pdfBuffer);
     const extractedText = pdfData.text?.trim();
     if (!extractedText) {
