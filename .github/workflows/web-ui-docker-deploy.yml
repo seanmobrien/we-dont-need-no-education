@@ -7,15 +7,52 @@ permissions:
   id-token: write
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Java CI with Maven"]
+    types:
+      - completed
     branches: ['main']
-    paths:
-      - 'web-ui/**'
-      - '.github/workflows'
   workflow_dispatch:
 
 jobs:
+  check-code-changes:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    outputs:
+      code-changed: ${{ steps.changes.outputs.dependencies }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 2
+      
+      - name: Check for web-ui and chat code changes
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "dependencies=true" >> $GITHUB_OUTPUT
+            echo "Manual trigger detected, proceeding with Docker build"
+          else
+            # Get the commit that triggered the original workflow
+            TRIGGER_SHA="${{ github.event.workflow_run.head_sha }}"
+            echo "Checking for web-ui and chat code changes in commit: $TRIGGER_SHA"
+            
+            # Check if any web-ui or chat code files changed in the triggering commit
+            if git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "^(web-ui|chat)/"; then
+              echo "dependencies=true" >> $GITHUB_OUTPUT
+              echo "Web-ui or chat code changed, proceeding with Docker build"
+              echo "Changed files:"
+              git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "^(web-ui|chat)/"
+            else
+              echo "dependencies=false" >> $GITHUB_OUTPUT
+              echo "No web-ui or chat code changes detected, skipping Docker build"
+            fi
+          fi
+
   build-and-deploy:
+    needs: check-code-changes
+    if: needs.check-code-changes.outputs.code-changed == 'true'
     permissions:
       contents: read
       id-token: write
@@ -24,6 +61,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
