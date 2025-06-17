@@ -5,6 +5,20 @@ import { db } from '@/lib/drizzle-db';
 import { buildAttachmentDownloadUrl } from '@/lib/api';
 import { getAbsoluteUrl } from '@/lib/site-util/url-builder';
 
+// Helper function to extract filename from a file path or URL
+const extractFileNameFromPath = (hrefDocument?: string): string | undefined => {
+  if (!hrefDocument) return undefined;
+
+  // Remove query parameters first
+  const urlWithoutQuery = hrefDocument.split('?')[0];
+
+  // Extract filename from the path
+  const segments = urlWithoutQuery.split('/');
+  const fileName = segments[segments.length - 1];
+
+  return fileName || undefined;
+};
+
 export async function GET(
   req: NextRequest,
   withParams: { params: Promise<{ emailId: string }> },
@@ -54,18 +68,4 @@ export async function GET(
       { status: 500 },
     );
   }
-}
-
-// Helper function to extract filename from a file path or URL
-function extractFileNameFromPath(hrefDocument?: string): string | undefined {
-  if (!hrefDocument) return undefined;
-
-  // Remove query parameters first
-  const urlWithoutQuery = hrefDocument.split('?')[0];
-
-  // Extract filename from the path
-  const segments = urlWithoutQuery.split('/');
-  const fileName = segments[segments.length - 1];
-
-  return fileName || undefined;
 }
