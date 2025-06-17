@@ -76,8 +76,6 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    log((l) => l.info('Tools: ', toolProviders.get_tools()));
-
     let isRateLimitError = false;
     let retryAfter = 0;
 
