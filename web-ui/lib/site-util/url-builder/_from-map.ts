@@ -261,11 +261,6 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
   ret.api.attachment = ret.child(
     'attachment',
   ) as MappedUrlBuilder['api']['attachment'];
-  ret.api.attachment.download = mappedPageOverloadFactory(
-    ret.api.attachment,
-    'download',
-  );
-  ret.api.attachment = mappedPageOverloadFactory(ret.api, 'attachment');
   ret.api.contact = mappedPageOverloadFactory(ret.api, 'contact');
   ret.api.documentUnit = mappedPageOverloadFactory(ret.api, 'document-unit');
   ret.api.email = ret.api.child('email') as MappedUrlBuilder['api']['email'];
