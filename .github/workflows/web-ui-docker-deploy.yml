@@ -91,7 +91,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         env:
-          NEXT_PUBLIC_HOSTNAME: ${{ secrets.NEXT_PUBLIC_HOSTNAME }}
+          NEXT_PUBLIC_HOSTNAME: ${{ variables.NEXT_PUBLIC_HOSTNAME }}
           NEXT_PUBLIC_LOG_LEVEL_CLIENT: ${{ secrets.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
           NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ${{ secrets.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT }}
           NEXT_PUBLIC_DEFAULT_AI_MODEL: ${{ secrets.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
