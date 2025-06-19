@@ -1,4 +1,3 @@
-export DOCKER_BUILDKIT=1
 # These variables are required for the image to build 
 ARG NEXT_PUBLIC_HOSTNAME
 # Log level for traces on the client side
@@ -17,7 +16,6 @@ FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-export BUILDKIT_COLORS="blue"
 
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat
@@ -34,7 +32,6 @@ RUN \
 
 # Rebuild the source code only when needed
 FROM base AS builder
-export BUILDKIT_COLORS="cyan"
 
 WORKDIR /app
 
@@ -60,11 +57,11 @@ RUN \
 
 # Production image, copy all the files and run next
 FROM base AS runner
-export BUILDKIT_COLORS="yellow"
 LABEL co.obapps.vendor="OBrien Appplications"
 LABEL co.obapps.name="Compliance Tracker Web UI"
-LABEL co.obapps.description="A web UI for the Compliance Tracker application, which helps users track and manage compliance issues in educational institutions."
+LABEL org.opencontainers.image.description="A web UI for the Compliance Tracker application, which helps users track and manage compliance issues in educational institutions."
 LABEL org.opencontainers.image.authors="stopbullyingpriorlake@gmail.com"  
+LABEL org.opencontainers.image.licenses="EJL-1.0"
 WORKDIR /app
 
 ENV NODE_ENV=production
