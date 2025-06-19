@@ -51,6 +51,11 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
+        env:
+          NEXT_PUBLIC_HOSTNAME: ${{ secrets.NEXT_PUBLIC_HOSTNAME }}          
+          NEXT_PUBLIC_LOG_LEVEL_CLIENT: ${{ secrets.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}          
+          NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ${{ secrets.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT }}
+          NEXT_PUBLIC_DEFAULT_AI_MODEL: ${{ secrets.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
         with:
           context: ./web-ui
           file: ./web-ui/Dockerfile
@@ -59,3 +64,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          secrets: |            
+            "NEXT_PUBLIC_MUI_LICENSE=${{ variables.NEXT_PUBLIC_MUI_LICENSE }}"            
+            "NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING=${{ variables.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING }}"            

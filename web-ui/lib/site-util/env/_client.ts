@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { isAiLanguageModelType, AiLanguageModelType } from '@/lib/ai/client';
 import { ZodProcessors } from './_common';
 
 /**
@@ -37,7 +38,7 @@ export const clientRawInstance = {
    * @type {number | undefined}
    */
   NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT:
-    process.env.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT ?? (5 * 60 * 1000),
+    process.env.NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT ?? 5 * 60 * 1000,
   /**
    * The license key for MUI X Pro components.
    */
@@ -63,6 +64,12 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ZodProcessors.integer().default(
     5 * 60 * 1000,
   ),
+  NEXT_PUBLIC_DEFAULT_AI_MODEL: z
+    .string()
+    .transform((val) => {
+      return isAiLanguageModelType(val) ? val : ('hifi' as AiLanguageModelType);
+    })
+    .default('hifi' as AiLanguageModelType),
 });
 
 /**
