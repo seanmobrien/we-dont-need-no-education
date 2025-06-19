@@ -36,7 +36,13 @@ FROM base AS builder
 WORKDIR /app
 
 COPY --link=true --from=deps /app/node_modules ./node_modules
-COPY --link=true ./app ./components ./data-models ./drizzle ./lib ./types ./*.ts ./*.mjs ./*.json ./*.lock ./
+COPY --link=true ./app ./app
+COPY --link=true ./components ./components
+COPY --link=true ./data-models ./data-models
+COPY --link=true ./drizzle ./drizzle
+COPY --link=true ./lib ./lib
+COPY --link=true ./types ./types
+COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
 
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
