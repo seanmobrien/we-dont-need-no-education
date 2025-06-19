@@ -18,6 +18,11 @@ const TestComponent = () => (
 );
 
 describe('Theme Integration', () => {
+  beforeEach(() => {
+    // Clear any existing data-theme attributes
+    document.documentElement.removeAttribute('data-theme');
+  });
+
   it('renders ThemeSelector without crashing', () => {
     render(<TestComponent />);
     
@@ -31,6 +36,34 @@ describe('Theme Integration', () => {
     
     // The theme provider should set the data-theme attribute
     // This test ensures our changes don't break the basic theme functionality
-    expect(document.documentElement.getAttribute('data-theme')).toBeTruthy();
+    expect(document.documentElement.getAttribute('data-theme')).toBe('colorful');
+  });
+
+  it('verifies theme CSS variables are properly set', () => {
+    render(<TestComponent />);
+    
+    // Check that the document has the colorful theme attribute
+    expect(document.documentElement.getAttribute('data-theme')).toBe('colorful');
+    
+    // This verifies that our CSS rules would be applied (we can't test actual CSS in Jest,
+    // but we can verify the data attribute that triggers the CSS)
+    const style = getComputedStyle(document.documentElement);
+    // The data-theme attribute should be set which would trigger our CSS rules
+    expect(document.documentElement.hasAttribute('data-theme')).toBe(true);
+  });
+
+  it('switches to dark theme correctly', () => {
+    const DarkThemeComponent = () => (
+      <ThemeProvider defaultTheme="dark">
+        <div data-testid="dark-theme-test">
+          <ThemeSelector />
+        </div>
+      </ThemeProvider>
+    );
+
+    render(<DarkThemeComponent />);
+    
+    // Verify dark theme is applied
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });
 });

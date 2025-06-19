@@ -58,6 +58,19 @@ textarea {
   @apply bg-gray-800 text-gray-200 border-gray-600 focus:ring-blue-300 focus:border-blue-300;
 }
 
+/* Colorful theme input styles */
+[data-theme="colorful"] select,
+[data-theme="colorful"] input[type="text"],
+[data-theme="colorful"] input[type="email"],
+[data-theme="colorful"] input[type="password"],
+[data-theme="colorful"] input[type="date"],
+[data-theme="colorful"] input[type="datetime"],
+[data-theme="colorful"] input[type="datetime-local"],
+[data-theme="colorful"] input[type="number"],
+[data-theme="colorful"] textarea {
+  @apply bg-white text-gray-900 border-pink-200 focus:ring-blue-300 focus:border-blue-400;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -92,4 +105,270 @@ body {
   .btn-angry {
     @apply bg-red-500 hover:bg-red-600 text-white;
   }
+}
+
+/* DataGrid theming for dark theme */
+[data-theme="dark"] .MuiDataGrid-root {
+  border: none !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-cell {
+  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
+  color: var(--foreground) !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-columnHeaders {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-columnHeaderTitle {
+  color: var(--foreground) !important;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .MuiDataGrid-virtualScroller {
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-footerContainer {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  border-top: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="dark"] .MuiDataGrid-row:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* DataGrid theming for colorful theme */
+[data-theme="colorful"] .MuiDataGrid-root {
+  border: 1px solid #f5a9b8 !important;
+  background-color: #ffffff !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-cell {
+  border-bottom: 1px solid rgba(245, 169, 184, 0.5) !important;
+  color: #000000 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-columnHeaders {
+  background-color: rgba(26, 187, 249, 0.1) !important;
+  border-bottom: 1px solid #f5a9b8 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-columnHeaderTitle {
+  color: #000000 !important;
+  font-weight: 600;
+}
+
+[data-theme="colorful"] .MuiDataGrid-virtualScroller {
+  background-color: #ffffff !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-footerContainer {
+  background-color: rgba(26, 187, 249, 0.05) !important;
+  border-top: 1px solid #f5a9b8 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-row:hover {
+  background-color: rgba(26, 187, 249, 0.08) !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-row.Mui-selected {
+  background-color: rgba(255, 121, 249, 0.12) !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-row.Mui-selected:hover {
+  background-color: rgba(255, 121, 249, 0.16) !important;
+}
+
+/* @toolpad/core component theming */
+
+/* Navigation drawer/sidebar theming for dark theme */
+[data-theme="dark"] .MuiDrawer-paper {
+  background-color: rgba(18, 18, 18, 0.95) !important;
+  border-right: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root {
+  color: var(--foreground) !important;
+}
+
+[data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .MuiDrawer-paper .MuiListItemText-primary {
+  color: var(--foreground) !important;
+}
+
+[data-theme="dark"] .MuiDrawer-paper .MuiListSubheader-root {
+  color: var(--foreground) !important;
+  background-color: transparent !important;
+}
+
+/* Top navigation/AppBar theming for dark theme */
+[data-theme="dark"] .MuiAppBar-root {
+  background-color: rgba(18, 18, 18, 0.9) !important;
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="dark"] .MuiAppBar-root .MuiToolbar-root {
+  color: var(--foreground) !important;
+}
+
+[data-theme="dark"] .MuiAppBar-root .MuiIconButton-root {
+  color: var(--foreground) !important;
+}
+
+/* Navigation drawer/sidebar theming for colorful theme */
+[data-theme="colorful"] .MuiDrawer-paper {
+  background-color: #ffffff !important;
+  border-right: 2px solid #f5a9b8 !important;
+}
+
+[data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root {
+  color: #000000 !important;
+}
+
+[data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root:hover {
+  background-color: rgba(26, 187, 249, 0.08) !important;
+}
+
+[data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
+  background-color: rgba(26, 187, 249, 0.12) !important;
+}
+
+[data-theme="colorful"] .MuiDrawer-paper .MuiListItemText-primary {
+  color: #000000 !important;
+}
+
+[data-theme="colorful"] .MuiDrawer-paper .MuiListSubheader-root {
+  color: #000000 !important;
+  background-color: rgba(26, 187, 249, 0.05) !important;
+  font-weight: 600;
+}
+
+/* Top navigation/AppBar theming for colorful theme */
+[data-theme="colorful"] .MuiAppBar-root {
+  background-color: #1abbf9 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="colorful"] .MuiAppBar-root .MuiToolbar-root {
+  color: #ffffff !important;
+}
+
+[data-theme="colorful"] .MuiAppBar-root .MuiIconButton-root {
+  color: #ffffff !important;
+}
+
+/* Icon theming for colorful theme */
+[data-theme="colorful"] .MuiSvgIcon-root {
+  color: #1abbf9 !important;
+}
+
+[data-theme="colorful"] .MuiDataGrid-root .MuiSvgIcon-root {
+  color: #ff79f9 !important;
+}
+
+[data-theme="colorful"] .MuiAppBar-root .MuiSvgIcon-root,
+[data-theme="colorful"] .MuiDrawer-paper .MuiSvgIcon-root {
+  color: #f5a9b8 !important;
+}
+
+[data-theme="colorful"] .MuiIconButton-root:not(.MuiAppBar-root .MuiIconButton-root):not(.MuiDrawer-paper .MuiIconButton-root) .MuiSvgIcon-root {
+  color: #1abbf9 !important;
+}
+
+/* Additional component theming */
+
+/* TableContainer theming */
+[data-theme="dark"] .MuiTableContainer-root {
+  background-color: transparent !important;
+}
+
+[data-theme="colorful"] .MuiTableContainer-root {
+  background-color: #ffffff !important;
+}
+
+/* Paper component theming (for consistency) */
+[data-theme="dark"] .MuiPaper-root {
+  background-color: rgba(18, 18, 18, 0.8) !important;
+  border: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="colorful"] .MuiPaper-root {
+  background-color: #ffffff !important;
+  border: 1px solid #f5a9b8 !important;
+}
+
+/* Chip theming for better visibility */
+[data-theme="dark"] .MuiChip-root {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  color: var(--foreground) !important;
+}
+
+[data-theme="colorful"] .MuiChip-root {
+  background-color: rgba(26, 187, 249, 0.1) !important;
+  color: #000000 !important;
+  border: 1px solid rgba(245, 169, 184, 0.3) !important;
+}
+
+[data-theme="dark"] .MuiChip-colorSecondary {
+  background-color: rgba(255, 121, 249, 0.2) !important;
+  color: var(--foreground) !important;
+}
+
+[data-theme="colorful"] .MuiChip-colorSecondary {
+  background-color: #f5a9b8 !important;
+  color: #000000 !important;
+}
+
+/* Modal and Dialog theming */
+[data-theme="dark"] .MuiDialog-paper {
+  background-color: rgba(18, 18, 18, 0.95) !important;
+  border: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="colorful"] .MuiDialog-paper {
+  background-color: #ffffff !important;
+  border: 2px solid #f5a9b8 !important;
+}
+
+/* Menu theming */
+[data-theme="dark"] .MuiMenu-paper {
+  background-color: rgba(18, 18, 18, 0.95) !important;
+  border: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="colorful"] .MuiMenu-paper {
+  background-color: #ffffff !important;
+  border: 1px solid #f5a9b8 !important;
+}
+
+/* Card theming */
+[data-theme="dark"] .MuiCard-root {
+  background-color: rgba(18, 18, 18, 0.8) !important;
+  border: 1px solid rgba(81, 81, 81, 1) !important;
+}
+
+[data-theme="colorful"] .MuiCard-root {
+  background-color: #ffffff !important;
+  border: 1px solid #f5a9b8 !important;
+}
+
+/* Typography theming for consistency */
+[data-theme="dark"] .MuiTypography-root {
+  color: var(--foreground) !important;
+}
+
+[data-theme="colorful"] .MuiTypography-root {
+  color: var(--foreground) !important;
 }
