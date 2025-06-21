@@ -1,4 +1,3 @@
-export DOCKER_BUILDKIT=1
 # These variables are required for the image to build 
 ARG NEXT_PUBLIC_HOSTNAME
 # Log level for traces on the client side
@@ -17,7 +16,6 @@ FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-export BUILDKIT_COLORS="blue"
 
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat
@@ -34,12 +32,17 @@ RUN \
 
 # Rebuild the source code only when needed
 FROM base AS builder
-export BUILDKIT_COLORS="cyan"
 
 WORKDIR /app
 
 COPY --link=true --from=deps /app/node_modules ./node_modules
-COPY --link=true ./app ./components ./data-models ./drizzle ./lib ./types ./*.ts ./*.mjs ./*.json ./*.lock ./
+COPY --link=true ./app ./app
+COPY --link=true ./components ./components
+COPY --link=true ./data-models ./data-models
+COPY --link=true ./drizzle ./drizzle
+COPY --link=true ./lib ./lib
+COPY --link=true ./types ./types
+COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
 
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
@@ -60,11 +63,11 @@ RUN \
 
 # Production image, copy all the files and run next
 FROM base AS runner
-export BUILDKIT_COLORS="yellow"
 LABEL co.obapps.vendor="OBrien Appplications"
 LABEL co.obapps.name="Compliance Tracker Web UI"
-LABEL co.obapps.description="A web UI for the Compliance Tracker application, which helps users track and manage compliance issues in educational institutions."
+LABEL org.opencontainers.image.description="A web UI for the Compliance Tracker application, which helps users track and manage compliance issues in educational institutions."
 LABEL org.opencontainers.image.authors="stopbullyingpriorlake@gmail.com"  
+LABEL org.opencontainers.image.licenses="EJL-1.0"
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -85,7 +88,6 @@ EXPOSE 3000
 ENV PORT=3000
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
-ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
 ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
 ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
 ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
