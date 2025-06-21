@@ -79,10 +79,14 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
       backgroundColor: theme.palette.mode === 'dark' ? '#f44336' : '#f5a9b8', // Use colorful theme accent
     },
     '&.medium': {
-      backgroundColor: theme.palette.mode === 'dark' ? '#efbb5aa3' : 'rgba(26, 187, 249, 0.7)', // Use colorful theme primary
+      backgroundColor:
+        theme.palette.mode === 'dark' ? '#efbb5aa3' : 'rgba(26, 187, 249, 0.7)', // Use colorful theme primary
     },
     '&.high': {
-      backgroundColor: theme.palette.mode === 'dark' ? '#088208a3' : 'rgba(255, 121, 249, 0.7)', // Use colorful theme secondary
+      backgroundColor:
+        theme.palette.mode === 'dark'
+          ? '#088208a3'
+          : 'rgba(255, 121, 249, 0.7)', // Use colorful theme secondary
     },
   },
   [`& .${sliderClasses.thumb}`]: {
@@ -90,7 +94,10 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
     width: 5,
     borderRadius: 0,
     marginTop: 0,
-    backgroundColor: theme.palette.mode === 'dark' ? alpha('#000000', 0.2) : alpha('#1abbf9', 0.3),
+    backgroundColor:
+      theme.palette.mode === 'dark'
+        ? alpha('#000000', 0.2)
+        : alpha('#1abbf9', 0.3),
   },
 }));
 
@@ -170,7 +177,7 @@ const EditSeverity = <R extends GridValidRowModel = any>(
   );
 };
 
-export const renderSeverity = <
+const Severity = <
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   R extends GridValidRowModel = any,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -195,3 +202,5 @@ export const renderEditProgress = <R extends GridValidRowModel = any>(
 ) => {
   return <EditSeverity {...params} />;
 };
+
+export default Severity;

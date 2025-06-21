@@ -24,8 +24,8 @@ describe('useDataSource', () => {
   let mockGetRecordData: jest.Mock;
 
   const defaultProps: DataSourceProps = {
-    setIsLoading: jest.fn(),
-    setError: jest.fn(),
+    // setIsLoading: jest.fn(),
+    // setError: jest.fn(),
     url: 'https://api.example.com/data',
     getRecordData: jest.fn(),
   };
