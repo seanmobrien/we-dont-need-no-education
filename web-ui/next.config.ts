@@ -13,13 +13,15 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_MUI_LICENSE: process.env.NEXT_PUBLIC_MUI_LICENSE,
   },
   experimental: {
-    //nodeMiddleware: true,
+    nodeMiddleware: true,
   },
+  /*
   // Build optimization to prevent hanging
   generateBuildId: async () => {
     // Use a simple build ID to avoid complex generation during build
     return 'build-' + Date.now();
   },
+  */
   publicRuntimeConfig: {
     hostname: process.env.NEXT_PUBLIC_HOSTNAME,
   },
