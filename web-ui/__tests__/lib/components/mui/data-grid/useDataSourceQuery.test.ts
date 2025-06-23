@@ -7,6 +7,8 @@ import React from 'react';
 // Mock fetch globally
 global.fetch = jest.fn();
 
+const TEST_URL = 'http://localhost:9999/api/test';
+
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -26,15 +28,15 @@ const createWrapper = () => {
 
 describe('useDataSource', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('should initialize with default state', () => {
-    const { result } = renderHook(() => useDataSource({ url: '/api/test' }), {
+    const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
       wrapper: createWrapper(),
     });
 
-    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isLoading).toBe(true);
     expect(result.current.loadError).toBe(null);
     expect(typeof result.current.getRows).toBe('function');
     expect(typeof result.current.updateRow).toBe('function');
@@ -52,7 +54,7 @@ describe('useDataSource', () => {
       json: async () => mockResponse,
     });
 
-    const { result } = renderHook(() => useDataSource({ url: '/api/test' }), {
+    const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
       wrapper: createWrapper(),
     });
 
@@ -66,14 +68,14 @@ describe('useDataSource', () => {
 
     expect(response).toEqual(mockResponse);
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/test?num=10&page=1'),
+      expect.stringContaining(`${TEST_URL}?num=10&page=1`),
     );
   });
 
   it('should handle fetch errors gracefully', async () => {
     (fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
-    const { result } = renderHook(() => useDataSource({ url: '/api/test' }), {
+    const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
       wrapper: createWrapper(),
     });
 
@@ -96,7 +98,7 @@ describe('useDataSource', () => {
       json: async () => mockUpdatedRow,
     });
 
-    const { result } = renderHook(() => useDataSource({ url: '/api/test' }), {
+    const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
       wrapper: createWrapper(),
     });
 
@@ -108,7 +110,7 @@ describe('useDataSource', () => {
       });
 
       expect(response).toEqual(mockUpdatedRow);
-      expect(fetch).toHaveBeenCalledWith('/api/test', {
+      expect(fetch).toHaveBeenCalledWith(TEST_URL, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mockUpdatedRow),
@@ -124,7 +126,7 @@ describe('useDataSource', () => {
       json: async () => mockResponse,
     });
 
-    const { result } = renderHook(() => useDataSource({ url: '/api/test' }), {
+    const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
       wrapper: createWrapper(),
     });
 

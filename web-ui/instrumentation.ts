@@ -27,13 +27,14 @@ export async function register() {
     console.log('Instrumentation already registered, skipping...');
     return;
   }
+  instrumentationRegistered = true;
 
   // Skip instrumentation during build process
   if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log('Skipping instrumentation during build phase');
     return;
   }
-  
+
   try {
     let traceExporter: SpanExporter | undefined;
     let logRecordProcessor: LogRecordProcessor | undefined;
@@ -41,55 +42,55 @@ export async function register() {
     const instrumentations: Array<InstrumentationOptionOrName> = [];
 
     if (process.env.NEXT_RUNTIME === 'nodejs') {
-      // if (typeof window === 'undefined') {
       const {
         AzureMonitorTraceExporter,
         AzureMonitorLogExporter,
         AzureMonitorMetricExporter,
       } = await import('@azure/monitor-opentelemetry-exporter');
 
-      if (process.env.NEXT_RUNTIME === 'nodejs') {
-        const { PinoInstrumentation } = await import(
-          '@opentelemetry/instrumentation-pino'
-        );
-        const { UndiciInstrumentation } = await import(
-          '@opentelemetry/instrumentation-undici'
-        );
+      const { PinoInstrumentation } = await import(
+        '@opentelemetry/instrumentation-pino'
+      );
 
-        instrumentations.push(
-          new PinoInstrumentation({
-            disableLogSending: false,
-            // Include trace context in log records and map custom log levels
-            logHook: (span, record) => {
-              record['trace_id'] = span.spanContext().traceId;
-              record['span_id'] = span.spanContext().spanId;
-              // Map custom log levels to standard log levels
-              switch (String(record.level ?? '').toLocaleLowerCase()) {
-                case 'verbose':
-                case 'silly':
-                case 'debug':
-                  record.severity = KnownSeverityLevel.Warning;
-                  break;
-                case 'info':
-                  record.severity = KnownSeverityLevel.Warning;
-                  break;
-                case 'warn':
-                  record.severity = KnownSeverityLevel.Warning;
-                  break;
-                default:
-                  record.severity = KnownSeverityLevel.Warning; // record.level;
-                  break;
-              }
-              record.severityNumber = record.severityNumber ?? 100;
-            },
-          }),
-        );
-        instrumentations.push(
-          new UndiciInstrumentation({
-            // Undici fetch instrumentation options.
-          }),
-        );
-      }
+      instrumentations.push(
+        new PinoInstrumentation({
+          disableLogSending: false,
+          // Include trace context in log records and map custom log levels
+          logHook: (span, record) => {
+            record['trace_id'] = span.spanContext().traceId;
+            record['span_id'] = span.spanContext().spanId;
+            // Map custom log levels to standard log levels
+            switch (String(record.level ?? '').toLocaleLowerCase()) {
+              case 'verbose':
+              case 'silly':
+              case 'debug':
+                record.severity = KnownSeverityLevel.Warning;
+                break;
+              case 'info':
+                record.severity = KnownSeverityLevel.Warning;
+                break;
+              case 'warn':
+                record.severity = KnownSeverityLevel.Warning;
+                break;
+              default:
+                record.severity = KnownSeverityLevel.Warning; // record.level;
+                break;
+            }
+            record.severityNumber = record.severityNumber ?? 100;
+          },
+        }),
+      );
+
+      /*
+      const { UndiciInstrumentation } = await import(
+        '@opentelemetry/instrumentation-undici'
+      );
+      instrumentations.push(
+        new UndiciInstrumentation({
+          // Undici fetch instrumentation options.
+        }),
+      );
+      */
 
       const connectionString = env(
         'AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING',
@@ -126,26 +127,12 @@ export async function register() {
       instrumentations: instrumentations.length ? instrumentations : undefined,
       metricReader,
     });
-    /*
-    registerOTel({
-      serviceName: SERVICE_NAME,
-      attributes: {
-        'service.version': SERVICE_VERSION,
-        'service.schema_url': SCHEMA_URL,
-      },
-      traceExporter: traceExporter ?? 'auto',
-      logRecordProcessor,
-      instrumentations: instrumentations.length ? instrumentations : undefined,
-      metricReader,
-    });
-    */
 
     if (logRecordProcessor) {
       const loggerProvider = new LoggerProvider();
       loggerProvider.addLogRecordProcessor(logRecordProcessor);
       logs.setGlobalLoggerProvider(loggerProvider);
     }
-    instrumentationRegistered = true;
     if (typeof window === 'undefined') {
       console.log(
         'Instrumentation Registered for server stack [' +
@@ -158,6 +145,7 @@ export async function register() {
       );
     }
   } catch (e) {
+    instrumentationRegistered = false;
     LoggedError.isTurtlesAllTheWayDownBaby(e, { log: true });
     console.warn(
       'Instrumentation failed to register for stack ${process.env.NEXT_RUNTIME}`',
