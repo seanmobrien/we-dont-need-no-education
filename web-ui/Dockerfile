@@ -1,13 +1,13 @@
 # These variables are required for the image to build 
 ARG NEXT_PUBLIC_HOSTNAME
 # Log level for traces on the client side
-ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT=info
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT="info"
 # Data Grid cache timeout (default 5 minutes)
 ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000 
 # Data AI chat model
-ARG NEXT_PUBLIC_DEFAULT_AI_MODEL=hifi
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL="hifi"
 # The name of the service for OpenTelemetry
-ARG OTEL_SERVICE_NAME=sue-the-schools-webui
+ARG OTEL_SERVICE_NAME="sue-the-schools-webui"
 ARG OTEL_RESOURCE_ATTRIBUTES="service.name=sue-the-schools-webui,service.version=1.0.0"
 
 FROM node:22-alpine AS base
