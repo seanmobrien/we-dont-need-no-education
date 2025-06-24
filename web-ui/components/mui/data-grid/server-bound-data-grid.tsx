@@ -5,42 +5,114 @@ import {
   useGetRowId,
   useDataSource,
 } from '@/lib/components/mui/data-grid';
-import { simpleScopedLogger } from '@/lib/logger';
-import Loading from '@/components/general/loading';
-import { Box, Paper, TableContainer } from '@mui/material';
-import { DataGridPro, GridValidRowModel } from '@mui/x-data-grid-pro';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Box, Paper, TableContainer } from '@mui/material';
+import {
+  DataGridPro,
+  GridLoadingOverlayVariant,
+  GridValidRowModel,
+} from '@mui/x-data-grid-pro';
+import { z } from 'zod';
+import { useEffect, useMemo } from 'react';
 import { ServerBoundDataGridProps } from './types';
 
-const stableGridLogger = simpleScopedLogger('KeyPointsGrid');
+const ServerBoundDataGridPropsSchema = z.object({
+  columns: z
+    .array(
+      z.object({
+        field: z.string(),
+        headerName: z.string().optional(),
+        type: z.string().optional(),
+        width: z.number().optional(),
+        sortable: z.boolean().optional(),
+        filterable: z.boolean().optional(),
+        editable: z.boolean().optional(),
+        renderCell: z.function().optional(),
+        valueGetter: z.function().optional(),
+        valueFormatter: z.function().optional(),
+      }),
+    )
+    .nonempty(),
+  url: z
+    .string()
+    .url()
+    .or(
+      z.object({
+        pathname: z.string(),
+        searchParams: z.object({}).catchall(z.any()).optional(),
+        hash: z.string().optional(),
+      }),
+    )
+    .optional(),
+  // getRecordData: z.function().optional(),
+  idColumn: z.string(),
+  slotProps: z
+    .object({
+      loadingOverlay: z
+        .object({
+          variant: z
+            .enum(['circular-progress', 'skeleton', 'linear-progress'])
+            .optional(),
+          noRowsVariant: z
+            .enum(['circular-progress', 'skeleton', 'linear-progress'])
+            .optional(),
+        })
+        .optional(),
+    })
+    .catchall(z.any())
+    .optional(),
+  initialState: z
+    .object({
+      pagination: z
+        .object({
+          paginationModel: z
+            .object({ pageSize: z.number(), page: z.number() })
+            .optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+});
 
 export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   columns,
   url,
-  getRecordData,
+  // getRecordData,
   idColumn,
   initialState: initialStateProp,
+  slotProps,
   ...props
 }: ServerBoundDataGridProps<TRowModel>) => {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMounted, setHasMounted] = useState(false);
-  const memoizedDataSource = useDataSource({
-    setIsLoading,
-    setError,
+  // Validate props
+  ServerBoundDataGridPropsSchema.parse({
+    columns,
     url,
-    getRecordData,
+    // getRecordData,
+    idColumn,
+    slotProps,
+    initialState: initialStateProp,
+  });
+
+  const { isLoading, ...memoizedDataSource } = useDataSource({
+    url,
   });
   const stableGetRowId = useGetRowId(idColumn);
+  const stableSlotProps = useMemo(() => {
+    return {
+      loadingOverlay: {
+        variant: 'circular-progress' as GridLoadingOverlayVariant,
+        noRowsVariant: 'skeleton' as GridLoadingOverlayVariant,
+      },
+      ...slotProps,
+    };
+  }, [slotProps]);
 
   useEffect(() => {
-    if (!hasMounted) {
-      setHasMounted(true);
-    }
-  }, [hasMounted]);
+    // Handle dynamic changes to URL or columns
+    memoizedDataSource.clearLoadError();
+  }, [url, columns, memoizedDataSource]);
 
-  const initialState = useMemo(
+  const memoizedInitialState = useMemo(
     () => ({
       ...StableDefaultInitialState,
       ...{
@@ -57,37 +129,40 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
     }),
     [initialStateProp],
   );
+  /*
   if (process.env.IS_BUILDING == '1') {
     console.warn('is building, skipping chat panel rendering');
     return <></>;
   }
+  */
   return (
     <Box sx={{ width: 'auto', maxWidth: 1 }}>
-      <Loading
-        loading={!hasMounted || isLoading}
-        errorMessage={error ?? null}
-        loadingMessage="Loading data grid..."
-      />
-      {hasMounted && (
-        <Paper sx={{ width: 'auto', mb: 2, overflow: 'hidden' }}>
-          <TableContainer>
-            <DataGridPro<TRowModel>
-              filterDebounceMs={500}
-              pagination
-              logger={stableGridLogger}
-              loading={isLoading}
-              logLevel={process.env.NODE_ENV === 'development' ? 'warn' : 'error'}
-              columns={columns}
-              getRowId={stableGetRowId}
-              dataSource={memoizedDataSource}
-              initialState={initialState}
-              pageSizeOptions={StableDefaultPageSizeOptions}
-              onDataSourceError={memoizedDataSource.onDataSourceError}
-              {...props}
-            />
-          </TableContainer>
-        </Paper>
-      )}
+      <Paper sx={{ width: 'auto', mb: 2, overflow: 'hidden' }}>
+        <TableContainer
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            minHeight: '400px',
+            maxHeight: '75%',
+          }}
+        >
+          <DataGridPro<TRowModel>
+            autoHeight
+            filterDebounceMs={300}
+            pagination
+            loading={isLoading}
+            logLevel={process.env.NODE_ENV === 'development' ? 'warn' : 'error'}
+            columns={columns}
+            getRowId={stableGetRowId}
+            dataSource={memoizedDataSource}
+            initialState={memoizedInitialState}
+            pageSizeOptions={StableDefaultPageSizeOptions}
+            onDataSourceError={memoizedDataSource.onDataSourceError}
+            slotProps={stableSlotProps}
+            {...props}
+          />
+        </TableContainer>
+      </Paper>
     </Box>
   );
 };

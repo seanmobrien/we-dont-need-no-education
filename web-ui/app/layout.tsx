@@ -1,3 +1,4 @@
+// Add to your app root
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import MuiXLicense from '@/components/mui/MuiXLicense';

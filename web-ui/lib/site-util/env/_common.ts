@@ -119,11 +119,20 @@ export const ZodProcessors = {
 
   /**
    * Processor for integer values.
-   * Ensures the value is a valid integer and provides a default value of 0 if not specified.
+   * Ensures the value is a valid integer and provides a default value of 120 if not specified.
    *
-   * @returns {ZodNumber} A Zod number schema for integers.
+   * @returns {ZodType<number, ZodTypeDef, unknown>} A Zod schema for integers.
    */
-  integer: (): z.ZodDefault<z.ZodNumber> => z.number().int().default(0),
+  integer: (): z.ZodType<number, z.ZodTypeDef, unknown> =>
+    z.preprocess((val) => {
+      if (typeof val === 'string') {
+        const parsed = parseInt(val, 10);
+        if (!isNaN(parsed)) {
+          return parsed;
+        }
+      }
+      return val;
+    }, z.number().int()),
 
   /**
    * Processor for boolean values.

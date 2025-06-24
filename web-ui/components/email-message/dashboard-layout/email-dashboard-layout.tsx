@@ -20,6 +20,7 @@ import { EmailContextProvider } from '@/components/email-message/email-context';
 import { ThemeSelector } from '@/components/theme/theme-selector';
 import { useMemo } from 'react';
 import { useParams } from 'next/navigation';
+import { DataGridQueryProvider } from '@/lib/components/mui/data-grid';
 
 const Branding = {
   title: 'Mystery Compliance Theater 2000',
@@ -106,7 +107,9 @@ export const EmailDashboardLayout = ({
         >
           <ThemeSelector />
         </Box>
-        <DashboardLayout>{children}</DashboardLayout>
+        <DataGridQueryProvider>
+          <DashboardLayout>{children}</DashboardLayout>
+        </DataGridQueryProvider>
       </NextAppProvider>
     </EmailContextProvider>
   );

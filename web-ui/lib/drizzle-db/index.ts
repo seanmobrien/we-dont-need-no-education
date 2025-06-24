@@ -1,3 +1,33 @@
-export type * from './drizzle-types';
+export type {
+  DatabaseType,
+  SchemaType,
+  RelationsType,
+  DocumentUnitType,
+  DocumentPropertyType,
+  DocumentPropertyTypeType,
+  DocumentRelationshipType,
+  EmailType,
+  EmailAttachmentType,
+  KeyPointType,
+  CallToActionType,
+  CallToActionCategoryType,
+  CallToActionResponseType,
+  CallToActionResponsiveActionLinkType,
+  ViolationDetailsType,
+  ComplianceScoreType,
+  QueryBuilders,
+  DocumentUnitQueryShape,
+  DocumentPropertyQueryShape,
+  EmailQueryShape,
+  EmailAttachmentQueryShape,
+  KeyPointQueryShape,
+  CallToActionQueryShape,
+  CallToActionCategoryQueryShape,
+  CallToActionResponseQueryShape,
+  ViolationDetailsQueryShape,
+  ComplianceScoresDetailsQueryShape,
+  DbTransactionType,
+} from './drizzle-types';
 export * from './connection';
 export * from './db-helpers';
+export { sql } from './drizzle-sql';

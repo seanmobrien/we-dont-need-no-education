@@ -1,2 +1,4 @@
-export * from './renderArrayAsChips';
-export * from './renderProgress';
+import Progress from './progress/render';
+import Chips from './renderArrayAsChips';
+import Severity from './renderSeverity';
+export { Progress, Chips, Severity };

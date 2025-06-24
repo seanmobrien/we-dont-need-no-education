@@ -5,12 +5,20 @@ const referencedEmailShape = z.object({
   subject: z.string().describe('Subject of the email.'),
   doc: z
     .object({
-      content: z.string().describe('Content of the email.'),
+      content: z
+        .string()
+        .describe('Content of the email.')
+        .optional()
+        .nullable(),
       createdOn: z
         .string()
-        .describe('ISO-compliant date when the email was created.'),
+        .describe('ISO-compliant date when the email was created.')
+        .optional()
+        .nullable(),
       unitId: z
         .number()
+        .optional()
+        .nullable()
         .describe(
           'Unique identifier for the document associated with the email.',
         ),
@@ -18,18 +26,34 @@ const referencedEmailShape = z.object({
     .describe('Details of the document associated with the email.'),
   sender: z
     .object({
-      name: z.string().describe('Name of the sender.'),
+      name: z.string().describe('Name of the sender.').optional().nullable(),
       isDistrictStaff: z
         .boolean()
-        .describe('Indicates if the sender is district staff.'),
-      email: z.string().describe('Email address of the sender.'),
-      roleDscr: z.string().describe('Role description of the sender.'),
+        .optional()
+        .nullable()
+        .describe('Indicates if the sender is district staff.')
+        .optional()
+        .nullable(),
+      email: z
+        .string()
+        .describe('Email address of the sender.')
+        .optional()
+        .nullable(),
+      roleDscr: z
+        .string()
+        .describe('Role description of the sender.')
+        .optional()
+        .nullable(),
     })
     .describe('Details of the sender of the email.'),
   emailAttachments: z
     .array(
       z.object({
-        fileName: z.string().describe('Name of the attached file.'),
+        fileName: z
+          .string()
+          .describe('Name of the attached file.')
+          .optional()
+          .nullable(),
         extractedText: z
           .string()
           .optional()
@@ -40,11 +64,15 @@ const referencedEmailShape = z.object({
             z.object({
               unitId: z
                 .number()
+                .optional()
+                .nullable()
                 .describe(
                   'Unique identifier for the document associated with the attachment.',
                 ),
               createdOn: z
                 .string()
+                .optional()
+                .nullable()
                 .describe('ISO-compliant date when the document was created.'),
             }),
           )
@@ -57,6 +85,8 @@ const referencedEmailShape = z.object({
 export const DocumentSchema = z.object({
   unitId: z
     .number()
+    .optional()
+    .nullable()
     .describe(
       'Unique identifier for this case file.  This value can be passed into `amendCaseFileDocument` and similar tools to refer to this record.',
     ),
@@ -72,7 +102,7 @@ export const DocumentSchema = z.object({
     .describe(
       'Document property ID associated with the document.  While unitId / documentId is the preferred identifier, this value can be used to refer to this record in some tools.',
     ),
-  documentType: z.string()
+  documentType: z.string().optional().nullable()
     .describe(`Type of the document this case file describes.  Valid values include:
   - 'email': represents an email message.
   - 'attachment': represents a file attachment.
@@ -82,6 +112,7 @@ export const DocumentSchema = z.object({
   emailId: z
     .string()
     .optional()
+    .nullable()
     .describe(
       'Email ID associated with the document.  While unitId / documentId is the preferred identifier, when documentType is `email` this value can be passed to tools to refer to this record.',
     ),
@@ -92,6 +123,8 @@ export const DocumentSchema = z.object({
     .describe('Content of the document.'),
   createdOn: z
     .string()
+    .optional()
+    .nullable()
     .describe(
       'A string containing an ISO-compliant Date value, identifying when the document was sent to the parent or created.',
     ),
@@ -117,6 +150,7 @@ export const DocumentSchema = z.object({
   docProps: z
     .array(documentPropertyShape)
     .optional()
+    .nullable()
     .describe(
       'An array of document properties associated with this case file.  This is distinct from `documentProperty`, which is the singular record specifically targeted with a case file.',
     ),
@@ -134,11 +168,21 @@ export const DocumentSchema = z.object({
         .describe('Thread ID of the email.'),
       sender: z
         .object({
-          name: z.string().describe('Name of the sender of the email.'),
+          name: z
+            .string()
+            .describe('Name of the sender of the email.')
+            .optional()
+            .nullable(),
           isDistrictStaff: z
             .boolean()
+            .optional()
+            .nullable()
             .describe('Indicates if the sender is district staff.'),
-          email: z.string().describe('Email address of the sender.'),
+          email: z
+            .string()
+            .describe('Email address of the sender.')
+            .optional()
+            .nullable(),
           roleDscr: z
             .string()
             .optional()
@@ -157,18 +201,27 @@ export const DocumentSchema = z.object({
               .object({
                 name: z
                   .string()
+                  .optional()
+                  .nullable()
                   .describe('Name of the person who received the email.'),
                 isDistrictStaff: z
                   .boolean()
+                  .optional()
+                  .nullable()
                   .describe('Indicates if the recipient is district staff.'),
-                email: z.string().describe('Email address of the recipient.'),
+                email: z
+                  .string()
+                  .describe('Email address of the recipient.')
+                  .optional()
+                  .nullable(),
                 roleDscr: z
                   .string()
                   .optional()
                   .nullable()
                   .describe('Role description of the recipient.'),
               })
-              .optional(),
+              .optional()
+              .nullable(),
           }),
         )
         .nullable()
@@ -190,6 +243,8 @@ export const DocumentSchema = z.object({
                 z.object({
                   unitId: z
                     .number()
+                    .optional()
+                    .nullable()
                     .describe(
                       'Case file Id assigned to the attachment.  This value can be passed to getCaseFileDocument and similar tools to retreive attachment conntent and additional information.',
                     ),
@@ -225,12 +280,22 @@ export const DocumentSchema = z.object({
         sourceDocumentId: z.number().describe('Source document ID.'),
         description: z
           .string()
+          .optional()
+          .nullable()
           .describe(
             'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
           ),
         sourceDoc: z.object({
-          documentType: z.string().describe('Type of the source document.'),
-          content: z.string().describe('Content of the source document.'),
+          documentType: z
+            .string()
+            .describe('Type of the source document.')
+            .optional()
+            .nullable(),
+          content: z
+            .string()
+            .describe('Content of the source document.')
+            .optional()
+            .nullable(),
         }),
       })
       .describe(
@@ -240,16 +305,33 @@ export const DocumentSchema = z.object({
   docRel_sourceDoc: z
     .array(
       z.object({
-        targetDocumentId: z.number().describe('Target document ID.'),
+        targetDocumentId: z
+          .number()
+          .describe('Target document ID.')
+          .optional()
+          .nullable(),
         description: z
           .string()
+          .optional()
+          .nullable()
           .describe(
             'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
           ),
-        targetDoc: z.object({
-          documentType: z.string().describe('Type of the source document.'),
-          content: z.string().describe('Content of the source document.'),
-        }),
+        targetDoc: z
+          .object({
+            documentType: z
+              .string()
+              .describe('Type of the source document.')
+              .optional()
+              .nullable(),
+            content: z
+              .string()
+              .describe('Content of the source document.')
+              .optional()
+              .nullable(),
+          })
+          .optional()
+          .nullable(),
       }),
     )
     .describe(

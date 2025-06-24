@@ -1,4 +1,9 @@
-import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
+import {
+  GridFilterModel,
+  GridGetRowsResponse,
+  GridSortModel,
+} from '@mui/x-data-grid-pro';
+import type { CancelledFetchGridRowsResponse } from './types';
 
 /**
  * Type guard to check if a given value is a valid `GridSortModel`.
@@ -45,6 +50,41 @@ export const isGridFilterModel = (check: unknown): check is GridFilterModel => {
           'operator' in item,
       )
     );
+  }
+  return false;
+};
+
+/**
+ * Type guard to determine if a given response is a valid `GridGetRowsResponse`.
+ *
+ * Checks that the response is a non-null object containing a `rows` property,
+ * where `rows` is an array and every element in the array is a non-null object.
+ *
+ * @param response - The value to check.
+ * @returns `true` if the response matches the `GridGetRowsResponse` structure, otherwise `false`.
+ */
+export const isGetGridRowsResponse = (
+  response: unknown,
+): response is GridGetRowsResponse =>
+  typeof response === 'object' &&
+  response !== null &&
+  'rows' in response &&
+  Array.isArray(response.rows) &&
+  response.rows.every((row) => typeof row === 'object' && row !== null);
+
+/**
+ * Type guard to determine if a given response is a `CancelledFetchGridRowsResponse`.
+ *
+ * Checks if the provided `response` is an object with a `cancelled` property set to `true`.
+ *
+ * @param response - The response object to check.
+ * @returns `true` if the response is a `CancelledFetchGridRowsResponse`, otherwise `false`.
+ */
+export const isCancelledGridRowsResponse = (
+  response: unknown,
+): response is CancelledFetchGridRowsResponse => {
+  if (typeof response === 'object' && response !== null) {
+    return 'cancelled' in response && response.cancelled === true;
   }
   return false;
 };

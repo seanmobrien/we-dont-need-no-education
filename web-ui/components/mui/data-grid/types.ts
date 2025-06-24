@@ -1,5 +1,5 @@
 import { EmailMessageSummary } from '@/data-models';
-import { GetGridRecordDataProps } from '@/lib/components/mui/data-grid';
+// import { GetGridRecordDataProps } from '@/lib/components/mui/data-grid';
 import {
   DataGridProProps,
   GridColDef,
@@ -11,7 +11,7 @@ export type ServerBoundDataGridProps<
 > = {
   columns: GridColDef<TRowModel>[];
   url: string | URL;
-  getRecordData?: (props: GetGridRecordDataProps) => Promise<Response>;
+  // getRecordData?: (props: GetGridRecordDataProps) => Promise<Response>;
   idColumn: string;
 } & Omit<
   DataGridProProps<TRowModel>,

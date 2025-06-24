@@ -7,6 +7,7 @@ import type {
   GridSortModel,
   GridFilterModel,
   DataGridProProps,
+  GridGetRowsResponse,
 } from '@mui/x-data-grid-pro';
 import { MaybeRow } from 'postgres';
 import type { Dispatch, SetStateAction } from 'react';
@@ -26,6 +27,24 @@ export type ExtendedGridDataSource = GridDataSource & {
    * or a `GridUpdateRowError` when an error occurs in the data source.
    */
   onDataSourceError?: DataGridProProps['onDataSourceError'];
+  /**
+   * @property {boolean} isLoading - Indicates whether the data source is currently loading data.
+   * This can be used to show a loading indicator in the UI.
+   * @remarks
+   * This property is useful for managing the loading state of the data source, allowing you to
+   * provide feedback to the user while data is being fetched or processed.
+   */
+  isLoading: boolean;
+  /**
+   * @property {string | null} loadError - Contains an error message if an error occurs while loading data.
+   * If no error occurs, it is `null`.
+   */
+  loadError: string | null;
+  /**
+   * @property {() => void} clearLoadError - Function to clear the current load error.
+   * This can be used to reset the error state in the UI.
+   */
+  clearLoadError: () => void;
 };
 
 /**
@@ -37,14 +56,6 @@ export type ExtendedGridDataSource = GridDataSource & {
  * @property getRecordData - Optional function to fetch data from a URL. If not provided, the default `fetch` function will be used.
  */
 export type DataSourceProps = {
-  /**
-   * @property {Dispatch<SetStateAction<boolean>>} setIsLoading - Function to update the loading state of the component.
-   */
-  setIsLoading: Dispatch<SetStateAction<boolean>>;
-  /**
-   * @property {Dispatch<SetStateAction<string | null>>} setError - Function to update the error state, accepting a string message or null.
-   */
-  setError: Dispatch<SetStateAction<string | null>>;
   /**
    * @property {string} url - The endpoint URL from which to fetch data.
    */
@@ -152,6 +163,13 @@ export type GetRequestCacheRecordProps = RequestCacheRecordProps & {
    * A state setter to indicate loading status.
    */
   setIsLoading: Dispatch<SetStateAction<boolean>>;
+
+  /**
+   * An optional AbortSignal to cancel the request if needed.
+   * This can be used to abort the request if the component is unmounted or if the
+   * request is no longer needed.
+   */
+  signal?: AbortSignal;
 };
 
 /**
@@ -284,3 +302,35 @@ export type BuildQueryFilterProps = {
    */
   columnMap?: ((sourceColumnName: string) => string) | Record<string, string>;
 };
+
+/**
+ * Represents the response returned when a fetch operation for grid rows is cancelled.
+ *
+ * Extends {@link GridGetRowsResponse} and indicates that the operation was cancelled by setting `cancelled` to `true`.
+ * The `rowCount` property is omitted in this case.
+ * Optionally includes `pageInfo` with `hasNextPage` set to `true` if there are more pages available.
+ */
+export type CancelledFetchGridRowsResponse = GridGetRowsResponse & {
+  cancelled?: true;
+  rowCount?: never;
+  pageInfo?:
+    | {
+        hasNextPage: true;
+      }
+    | undefined;
+};
+
+/**
+ * Represents the response from fetching rows for a data grid.
+ *
+ * This type can either be:
+ * - A successful response extending `GridGetRowsResponse` (with an optional `cancelled` property explicitly set to `undefined`), or
+ * - A `CancelledFetchGridRowsResponse` indicating that the fetch operation was cancelled.
+ *
+ * Use this type to handle both successful and cancelled fetch scenarios in data grid operations.
+ */
+export type FetchGridRowsResponse =
+  | (GridGetRowsResponse & {
+      cancelled?: never;
+    })
+  | CancelledFetchGridRowsResponse;

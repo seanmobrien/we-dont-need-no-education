@@ -12,6 +12,7 @@ import { isAiLanguageModelType } from '@/lib/ai/core';
 import { getRetryErrorInfo } from '@/lib/ai/chat';
 import { generateChatId } from '@/lib/components/ai';
 import { toolProviderSetFactory } from '@/lib/ai/mcp';
+import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 
@@ -48,6 +49,27 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(messages) || messages.length === 0) {
     return new Response('Invalid messages format', { status: 400 });
   }
+
+  // Apply advanced tool message optimization with AI-powered summarization
+  const optimizedMessages = await optimizeMessagesWithToolSummarization(
+    messages,
+    model,
+    session?.user?.id,
+  );
+
+  // Log optimization results for monitoring
+  if (optimizedMessages.length !== messages.length) {
+    log((l) =>
+      l.info('Enterprise tool optimization applied', {
+        originalMessages: messages.length,
+        optimizedMessages: optimizedMessages.length,
+        reduction: `${Math.round(((messages.length - optimizedMessages.length) / messages.length) * 100)}%`,
+        model,
+        userId: session?.user?.id,
+      }),
+    );
+  }
+
   const chatHistoryId = newUuid();
 
   try {
@@ -76,8 +98,6 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    log((l) => l.info('Tools: ', toolProviders.get_tools()));
-
     let isRateLimitError = false;
     let retryAfter = 0;
 
@@ -85,7 +105,7 @@ export async function POST(req: NextRequest) {
       execute: (dataStream) => {
         const result = streamText({
           model: aiModelFactory(model),
-          messages,
+          messages: optimizedMessages,
           experimental_generateMessageId: () => {
             return `${threadId ?? 'not-set'}:${generateChatId().id}`;
           },

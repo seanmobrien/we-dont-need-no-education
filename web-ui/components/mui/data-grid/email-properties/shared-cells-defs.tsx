@@ -1,6 +1,7 @@
 import { GridColDef } from '@mui/x-data-grid-pro';
-import { renderArrayAsChips, renderProgress } from '../cellRenderers';
-import { renderSeverity } from '../cellRenderers/renderSeverity';
+import { Chips as renderArrayAsChips } from '../cellRenderers';
+import renderSeverity from '../cellRenderers/renderSeverity';
+import renderProgress from '../cellRenderers/progress/render';
 
 export const defineReasonsColumn = (
   {

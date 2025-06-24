@@ -6,7 +6,7 @@ import {
   valueFormatterPercentageIntegerBaseTen,
   valueGetterDate,
 } from '@/components/mui/data-grid';
-import { renderProgress } from '@/components/mui/data-grid/cellRenderers';
+import renderProgress from '@/components/mui/data-grid/cellRenderers/progress/render';
 import { CallToActionDetails } from '@/data-models';
 import type { GridColDef } from '@mui/x-data-grid/models/colDef';
 import { CallToActionPanel } from './panel';

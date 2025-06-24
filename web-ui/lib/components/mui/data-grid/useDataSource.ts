@@ -4,107 +4,411 @@ import type {
   GridPaginationModel,
   GridSortModel,
   GridUpdateRowParams,
+  GridGetRowsResponse,
+  GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
-import { LoggedError } from '@/lib/react-util';
-import { useMemo } from 'react';
-import { GridRecordCache } from './grid-record-cache';
+import { isError, LoggedError } from '@/lib/react-util';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  // QueryClient,
+} from '@tanstack/react-query';
+import { dataGridQueryClient } from './query-client';
+import { log } from '@/lib/logger';
+// import { has } from 'lodash';
 
 /**
- * Memoized data source object for a grid component, providing methods to fetch and update rows.
+ * Generates a unique query key for React Query based on the data source parameters.
+ */
+const createQueryKey = (
+  url: string,
+  page?: number,
+  pageSize?: number,
+  sortModel?: GridSortModel,
+  filterModel?: GridFilterModel,
+) => {
+  return ['dataGrid', url, page, pageSize, sortModel, filterModel] as const;
+};
+
+/**
+ * Fetches data from the API endpoint with the given parameters.
+ */
+const fetchGridData = async (
+  url: string,
+  page?: number,
+  pageSize?: number,
+  sortModel?: GridSortModel,
+  filterModel?: GridFilterModel,
+): Promise<GridGetRowsResponse> => {
+  const urlWithParams = new URL(url);
+  if (pageSize) {
+    urlWithParams.searchParams.set('num', pageSize.toString());
+  }
+  if (page) {
+    urlWithParams.searchParams.set('page', (page + 1).toString()); // API is 1-based, DataGrid is 0-based
+  }
+  console.log('in fetchGridData');
+
+  // Add sort parameters
+  if (sortModel?.length) {
+    const sortParams = sortModel
+      .map(({ field, sort }) => `${field}:${sort}`)
+      .join(',');
+    urlWithParams.searchParams.set('sort', sortParams);
+  }
+
+  // Add filter parameters
+  if (filterModel?.items?.length ?? filterModel?.quickFilterValues?.length) {
+    urlWithParams.searchParams.set('filter', JSON.stringify(filterModel));
+  }
+
+  const response = await fetch(urlWithParams.toString());
+
+  console.log('fetchGridData::response');
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch data: ${response.statusText}`);
+  }
+
+  const parsed = await response.json();
+  if (!parsed) {
+    throw new Error('No data returned from API');
+  }
+  if (typeof parsed === 'object') {
+    if ('rows' in parsed) {
+      return parsed;
+    }
+    if ('results' in parsed) {
+      const result: GridGetRowsResponse = {
+        rows: parsed.results as Array<GridValidRowModel>,
+      };
+      if (
+        'pageStats' in parsed &&
+        typeof parsed.pageStats === 'object' &&
+        !!parsed.pageStats &&
+        'total' in parsed.pageStats
+      ) {
+        result.rowCount = Number(parsed.pageStats.total);
+      }
+      return result;
+    }
+  }
+  throw new Error('Unexpected data format received from API', {
+    cause: parsed,
+  });
+};
+
+/**
+ * Custom React hook for managing a data source for a MUI Data Grid component with React Query.
  *
- * @remarks
- * - The `getRows` method retrieves paginated key points for a given email, using a cache to avoid redundant requests.
- *   It manages loading state and error handling internally.
- * - The `updateRow` method updates a specific key point row via a PUT request and handles errors appropriately.
+ * This hook provides functionality for loading, updating, and handling errors for grid data,
+ * including pagination, sorting, and filtering. It uses React Query for efficient data fetching,
+ * caching, and state management.
  *
- * @param emailId - The identifier for the email whose key points are being managed.
- * @param isLoading - Boolean indicating if a data fetch is currently in progress.
- * @param setError - Function to set error state in the parent component.
+ * @param {DataSourceProps} params - The configuration object for the data source.
+ * @param {string} params.url - The endpoint URL for fetching and updating data.
+ * @param {Function} params.getRecordData - A function to extract record data from the response.
+ * @returns {ExtendedGridDataSource} An object containing data source methods and state:
+ * - `getRows`: Fetches rows with pagination, sorting, and filtering using React Query.
+ * - `updateRow`: Updates a row in the data source.
+ * - `onDataSourceError`: Handles and logs data source errors.
+ * - `isLoading`: Indicates if a data operation is in progress.
+ * - `clearLoadError`: Clears the current load error.
+ * - `lastDataSourceError`: The current load error message, if any.
  *
- * @returns {ExtendedGridDataSource} An object implementing the grid data source interface with `getRows` and `updateRow` methods.
- *
- * @dependency
- * - Depends on `RequestCacheRecord` for caching fetch requests.
- * - Uses `siteBuilder.api.email.properties(emailId).keyPoints` for API endpoints.
- *
- * @see GridDataSource
- * @see GridGetRowsParams
- * @see GridUpdateRowParams
+ * @example
+ * const dataSource = useDataSourceWithQuery({ url: '/api/data', getRecordData });
+ * // Use dataSource.getRows, dataSource.updateRow, etc. in your grid component.
  */
 export const useDataSource = ({
-  setIsLoading,
-  setError,
   url,
-  getRecordData,
 }: DataSourceProps): ExtendedGridDataSource => {
-  return useMemo<ExtendedGridDataSource>(
-    () => ({
-      getRows: async (
-        {
+  const [lastDataSourceError, setLastDataSourceError] = useState<string | null>(
+    null,
+  );
+  const [currentQueryParams, setCurrentQueryParams] = useState<{
+    page?: number;
+    pageSize?: number;
+    sortModel?: GridSortModel;
+    filterModel?: GridFilterModel;
+  } | null>(null);
+  const hasMounted = useRef(false);
+
+  const queryClient = useQueryClient();
+
+  // Use React Query for data fetching
+  const { isLoading, error: queryError } = useQuery(
+    {
+      queryKey: currentQueryParams
+        ? createQueryKey(
+            String(url),
+            currentQueryParams?.page,
+            currentQueryParams?.pageSize,
+            currentQueryParams?.sortModel,
+            currentQueryParams?.filterModel,
+          )
+        : ['dataGrid', String(url)],
+      queryFn: async () => {
+        return await fetchGridData(
+          String(url),
+          currentQueryParams?.page,
+          currentQueryParams?.pageSize,
+          currentQueryParams?.sortModel,
+          currentQueryParams?.filterModel,
+        );
+      },
+      refetchOnWindowFocus: true,
+      enabled: !!currentQueryParams && !!url,
+      staleTime: 30 * 1000, // 30 seconds
+      gcTime: 5 * 60 * 1000, // 5 minutes
+      retry: (failureCount, error) => {
+        let willRetry = failureCount < 3;
+        if (error instanceof Error && 'status' in error) {
+          const status = (error as Error & { status: number }).status;
+          if (status >= 400 && status < 500) {
+            // Don't retry on a client error (bad request, url not found, unauthorized, etc.)
+            willRetry = false;
+          }
+        }
+        if (willRetry) {
+          log((l) =>
+            l.warn({
+              message: `An unexpected error occurred while loading data; there are ${3 - failureCount} retries remaining.  Details: ${isError(error) ? error.message : String(error)}`,
+              source: 'grid::dataSource',
+              data: error,
+            }),
+          );
+        } else {
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'grid::dataSource',
+            data: error,
+          });
+        }
+        return willRetry;
+      },
+    },
+    dataGridQueryClient,
+  );
+  if (queryError) {
+    const le = LoggedError.isTurtlesAllTheWayDownBaby(queryError, {
+      log: true,
+      source: 'grid::dataSource::query',
+      data: {
+        url,
+        currentQueryParams,
+        queryError,
+      },
+    });
+    if (!lastDataSourceError || lastDataSourceError !== le.message) {
+      setLastDataSourceError(le.message);
+    }
+  }
+  // Mutation for updating rows
+  const updateRowMutation = useMutation(
+    {
+      mutationFn: async (params: GridUpdateRowParams) => {
+        const response = await fetch(String(url), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(params.updatedRow),
+        });
+        if (!response.ok) {
+          throw new Error(`Failed to update row: ${response.statusText}`);
+        }
+        return response.json();
+      },
+      onSuccess: () => {
+        // Invalidate and refetch relevant queries
+        queryClient.invalidateQueries({
+          queryKey: ['dataGrid', String(url)],
+        });
+      },
+      onError: (error) => {
+        const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'grid::dataSource::update',
+        });
+        setLastDataSourceError(le.message);
+      },
+    },
+    dataGridQueryClient,
+  );
+
+  /**
+   * Clears the current load error state if one exists.
+   */
+  const clearLoadError = useCallback(() => {
+    if (lastDataSourceError) {
+      setLastDataSourceError(null);
+    }
+  }, [lastDataSourceError]);
+
+  /**
+   * Updates a row in the data source using React Query mutation.
+   */
+  const updateRow = useCallback(
+    async (params: GridUpdateRowParams) => {
+      // return Promise.resolve(params);
+
+      try {
+        return await updateRowMutation.mutateAsync(params);
+      } catch (err) {
+        throw err;
+      }
+    },
+    [updateRowMutation],
+  );
+
+  /**
+   * Handles errors encountered during data source operations.
+   */
+  const onDataSourceError = useCallback(
+    (error: unknown) => {
+      const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'grid::dataSource',
+      });
+      if (!lastDataSourceError) {
+        setLastDataSourceError(le.message);
+      }
+    },
+    [lastDataSourceError],
+  );
+
+  /**
+   * Fetches rows using React Query with pagination, sorting, and filtering.
+   */
+  const getRows = useCallback(
+    async (props: GridGetRowsParams) => {
+      try {
+        /*
+        if (lastDataSourceError) {
+          setLastDataSourceError(null);
+        }
+        */
+        if (!url || !props) {
+          return { rows: [], hasNextPage: true };
+        }
+
+        const {
           paginationModel: {
             pageSize = 10,
             page = 0,
           } = {} as GridPaginationModel,
           sortModel = [] as GridSortModel,
           filterModel = { items: [] } as GridFilterModel,
-        }: GridGetRowsParams = {} as GridGetRowsParams,
-      ) => {
-        // Create new request
-        try {
-          setIsLoading(true);
-          setError(null);
+        } = props;
 
-          if (!url) {            
-            return { rows: [], hasNextPage: true };
+        // Update query parameters to trigger React Query
+        setCurrentQueryParams((current) => {
+          if (
+            !current ||
+            current.page !== page ||
+            current.pageSize !== pageSize ||
+            JSON.stringify(current.sortModel) !== JSON.stringify(sortModel) ||
+            JSON.stringify(current.filterModel) !== JSON.stringify(filterModel)
+          ) {
+            return {
+              page,
+              pageSize,
+              sortModel,
+              filterModel,
+            };
           }
-
-          const result = await GridRecordCache.getWithFetch({
-            url: String(url),
-            page,
-            pageSize,
-            sort: sortModel,
-            filter: filterModel,
-            setIsLoading,
-            getRecordData,
-          });
-
-          return result;
-        } catch (err: unknown) {
-          const le = LoggedError.isTurtlesAllTheWayDownBaby(err, {
-            log: true,
-            source: 'grid::dataSource',
-          });
-          setError(le.message);
-          return { rows: [], rowCount: 0 };
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      updateRow: async ({ updatedRow }: GridUpdateRowParams) => {
-        try {
-          const response = await fetch(url, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedRow),
-          });
-          if (!response.ok) {
-            throw new Error(`Failed to update row: ${response.statusText}`);
-          }
-          return await response.json();
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Unknown error');
-          throw err;
-        }
-      },
-      onDataSourceError: (error: unknown) => {
-        const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          log: true,
-          source: 'grid::dataSource',
+          return current;
         });
-        setError(le.message);
-      },
-    }),
-    [setIsLoading, setError, url, getRecordData],
+
+        // If we have cached data for these parameters, return it immediately
+        const queryKey = createQueryKey(
+          String(url),
+          page,
+          pageSize,
+          sortModel,
+          filterModel,
+        );
+
+        const cachedData = dataGridQueryClient.getQueryData(queryKey);
+
+        if (cachedData) {
+          return cachedData as GridGetRowsResponse;
+        }
+
+        // Otherwise, trigger a fetch and wait for the result
+        const result =
+          await dataGridQueryClient.fetchQuery<GridGetRowsResponse>({
+            queryKey,
+            /*
+          queryFn: () => {
+            console.log('in queryClient queryFn');
+            return fetchGridData(
+              String(url),
+              page,
+              pageSize,
+              sortModel,
+              filterModel,
+            );
+          },
+          staleTime: 30 * 1000,
+          gcTime: 5 * 60 * 1000,
+          */
+          });
+
+        return result;
+      } catch (err: unknown) {
+        log((l) =>
+          l.verbose(
+            'getRows::error occurred - rethrowing to react query for disposition',
+            err,
+          ),
+        );
+        throw err;
+      }
+    },
+    [url],
   );
+
+  // Combine query error with local error state
+  const combinedLoadError = useMemo(() => {
+    if (lastDataSourceError) return lastDataSourceError;
+    if (queryError) {
+      const le = LoggedError.isTurtlesAllTheWayDownBaby(queryError, {
+        log: true,
+        source: 'grid::dataSource::query',
+      });
+      return le.message;
+    }
+    return null;
+  }, [lastDataSourceError, queryError]);
+
+  useEffect(() => {
+    hasMounted.current = true;
+    return () => {
+      // hasMounted.current = false;
+    };
+  }, []);
+
+  // Memoize the data source object to prevent unnecessary re-renders
+  return useMemo<ExtendedGridDataSource>(() => {
+    return {
+      getRows,
+      updateRow,
+      onDataSourceError,
+      isLoading:
+        !hasMounted.current || isLoading || updateRowMutation.isPending,
+      clearLoadError,
+      loadError: combinedLoadError,
+    };
+  }, [
+    clearLoadError,
+    getRows,
+    isLoading,
+    updateRowMutation.isPending,
+    combinedLoadError,
+    onDataSourceError,
+    updateRow,
+  ]);
 };
