@@ -120,7 +120,7 @@ export type DocumentResourceToolResult = ToolCallbackResult<DocumentResource>;
  * Represents the result of a tool operation that retrieves multiple document resources.
  */
 export type MultipleDocumentResourceToolResult = ToolCallbackResult<
-  Array<DocumentResource>
+  Array<DocumentResource | string>
 >;
 
 export type DocumentIndexResourceToolResult = ToolCallbackResult<
