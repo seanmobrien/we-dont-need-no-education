@@ -109,7 +109,7 @@ jobs:
           file: ./web-ui/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}, org.opencontainers.image.licenses: EJS-1.0
+          labels: ${{ steps.meta.outputs.labels }}
           licenses: EJS-1.0          
           cache-from: type=gha
           cache-to: type=gha,mode=max
