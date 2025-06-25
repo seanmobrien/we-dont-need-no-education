@@ -17,16 +17,26 @@ FROM node:22-alpine AS base
 # Install dependencies only when needed
 FROM base AS deps
 
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+# Skip libc6-compat installation due to network connectivity issues in some environments
+# Note: libc6-compat is typically only needed for specific native dependencies
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Install dependencies based on the preferred package manager with retry logic
 COPY --link=true package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
 RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
+  if [ -f yarn.lock ]; then \
+    for i in 1 2 3; do \
+      yarn --frozen-lockfile --network-timeout 100000 && break || sleep 10; \
+    done; \
+  elif [ -f package-lock.json ]; then \
+    for i in 1 2 3; do \
+      npm ci --prefer-offline --no-audit --no-fund && break || sleep 10; \
+    done; \
+  elif [ -f pnpm-lock.yaml ]; then \
+    corepack enable pnpm && \
+    for i in 1 2 3; do \
+      pnpm i --frozen-lockfile && break || sleep 10; \
+    done; \
   else echo "Lockfile not found." && exit 1; \
   fi
 
@@ -47,7 +57,7 @@ COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
-ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=NEXT_PUBLIC_DEFAULT_AI_MODEL
+ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV FOR_STANDALONE=1
 ENV IS_BUILDING=1
