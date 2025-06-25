@@ -12,6 +12,10 @@ ARG OTEL_RESOURCE_ATTRIBUTES="service.name=sue-the-schools-webui,service.version
 
 FROM node:22-alpine AS base
 
+# Add fallback DNS for better network connectivity
+RUN echo "nameserver 8.8.8.8" >> /etc/resolv.conf && \
+    echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+
 
 
 # Install dependencies only when needed
