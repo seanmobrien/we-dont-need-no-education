@@ -22,12 +22,10 @@ env:
   NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING }}
 
 jobs:
-  check-code-changes:
-    environment: Production
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
-    outputs:
-      deploy-production: 'true'
+#  check-code-changes:
+#    runs-on: ubuntu-latest
+#    outputs:
+#      deploy-production: 'true'
 #      code-changed: ${{ steps.changes.outputs.dependencies }}
 #    steps:
 #      - name: Checkout code
@@ -60,8 +58,8 @@ jobs:
 #          fi
 
   build-and-deploy:
-    needs: check-code-changes
-    if: needs.check-code-changes.outputs.deploy-production == 'true'
+    if: github.event_name == 'deployment' || github.event.workflow_run.conclusion == 'success'
+    environment: Production
     permissions:
       contents: read
       id-token: write
