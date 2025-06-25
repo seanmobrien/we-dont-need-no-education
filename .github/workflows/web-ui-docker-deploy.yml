@@ -22,8 +22,8 @@ env:
   NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING }}
 
 jobs:
-  environment: Production
   check-code-changes:
+    environment: Production
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     outputs:
@@ -99,20 +99,18 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
-        env:
-          NEXT_PUBLIC_HOSTNAME: ${{ vars.NEXT_PUBLIC_HOSTNAME }}
-          NEXT_PUBLIC_LOG_LEVEL_CLIENT: ${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
-          NEXT_PUBLIC_DEFAULT_AI_MODEL: ${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
-
         with:
           context: ./web-ui
           file: ./web-ui/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}, org.opencontainers.image.licenses: EJS-1.0
-          licenses: EJS-1.0          
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NEXT_PUBLIC_HOSTNAME=${{ env.NEXT_PUBLIC_HOSTNAME }}
+            NEXT_PUBLIC_LOG_LEVEL_CLIENT=${{ env.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
+            NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ env.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           secrets: |
-            NEXT_PUBLIC_MUI_LICENSE="${{ vars.NEXT_PUBLIC_MUI_LICENSE }}"
-            NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING="${{ vars.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING }}"
+            NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
+            NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING }}

@@ -1,3 +1,4 @@
+ARG NEXT_PUBLIC_HOSTNAME
 # Log level for traces on the client side
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT="info"
 # Data Grid cache timeout (default 5 minutes)
