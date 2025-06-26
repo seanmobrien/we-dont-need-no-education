@@ -119,3 +119,12 @@ export const getSentimentAnalysis = (props: Omit<ListRequestProps, 'api'>) =>
  */
 export const getViolationDetails = (props: Omit<ListRequestProps, 'api'>) =>
   listPropertyRequest<ViolationDetails>({ ...props, api: 'violationDetails' });
+
+/**
+ * Retrieves notes by making a property list request.
+ *
+ * @param props - The properties for the list request, including any necessary parameters.
+ * @returns The result of the property list request for notes.
+ */
+export const getNotes = (props: Omit<ListRequestProps, 'api'>) =>
+  listPropertyRequest({ ...props, api: 'notes' });

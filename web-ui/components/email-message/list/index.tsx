@@ -14,6 +14,7 @@ import {
   GridColDef,
   GridRowParams,
   MuiEvent,
+  DataGridProProps,
 } from '@mui/x-data-grid-pro';
 import { ContactSummary, EmailMessageSummary } from '@/data-models';
 import AttachEmailIcon from '@mui/icons-material/AttachEmail';
@@ -22,6 +23,7 @@ import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import EmailDetailPanel from './email-detail-panel';
 
 /**
  * Defines the column configuration for the email message list grid.
@@ -164,6 +166,13 @@ export const EmailList = ({
     [onRowDoubleClickProps, push],
   );
 
+  // Add detail panel support
+  const getDetailPanelContent = useCallback<
+    NonNullable<DataGridProProps['getDetailPanelContent']>
+  >(({ row }) => <EmailDetailPanel row={row} />, []);
+
+  const getDetailPanelHeight = useCallback(() => 'auto', []);
+
   return (
     <Box
       className={classnames(
@@ -179,6 +188,8 @@ export const EmailList = ({
         url={siteMap.api.email.url}
         idColumn="emailId"
         onRowDoubleClick={onRowDoubleClick}
+        getDetailPanelContent={getDetailPanelContent}
+        getDetailPanelHeight={getDetailPanelHeight}
       />
     </Box>
   );
