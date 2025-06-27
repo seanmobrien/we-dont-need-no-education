@@ -1,21 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react/display-name */
-import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { CallToActionPanel } from '@/app/messages/email/[emailId]/call-to-action/panel';
-import { CallToActionDetails } from '@/data-models/api';
-import * as client from '@/lib/api/email/properties/client';
-
 // Mock the API client
 jest.mock('@/lib/api/email/properties/client');
-const mockedClient = client as jest.Mocked<typeof client>;
-
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
-
 // Mock MUI components that may cause theme issues
 jest.mock(
   '@mui/material/LinearProgress',
@@ -28,6 +16,19 @@ jest.mock(
 jest.mock('@mui/material/CircularProgress', () => () => (
   <div data-testid="circular-progress" />
 ));
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react/display-name */
+import React from 'react';
+import { render, screen, waitFor, act } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { CallToActionPanel } from '@/app/messages/email/[emailId]/call-to-action/panel';
+import { CallToActionDetails } from '@/data-models/api';
+import { getCallToActionResponse as getCallToActionResponseFromModule } from '@/lib/api/email/properties/client';
+
+const getCallToActionResponse: jest.MockedFunction<
+  typeof getCallToActionResponseFromModule
+> = getCallToActionResponseFromModule;
 
 const mockCallToActionDetails: CallToActionDetails = {
   propertyId: 'cta-test-id',
@@ -72,7 +73,7 @@ const mockResponsiveActions = [
 describe('CallToActionPanel', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedClient.getCallToActionResponse.mockResolvedValue({
+    getCallToActionResponse.mockResolvedValue({
       results: mockResponsiveActions,
       pageStats: { page: 1, num: 10, total: 1 },
     });
@@ -85,7 +86,9 @@ describe('CallToActionPanel', () => {
 
     // Wait for async operations to complete
     await waitFor(() => {
-      expect(screen.getByText('Call to Action Details')).toBeInTheDocument();
+      expect(
+        screen.getByText('Call to Action Details (cta-test-id)'),
+      ).toBeInTheDocument();
     });
 
     expect(
@@ -148,7 +151,7 @@ describe('CallToActionPanel', () => {
     });
 
     await waitFor(() => {
-      expect(mockedClient.getCallToActionResponse).toHaveBeenCalledWith({
+      expect(getCallToActionResponse).toHaveBeenCalledWith({
         emailId: 'test-email-id',
         page: 1,
         num: 100,
@@ -164,7 +167,7 @@ describe('CallToActionPanel', () => {
 
   it('shows loading state while fetching related actions', async () => {
     // Make the API call take some time
-    mockedClient.getCallToActionResponse.mockImplementation(
+    getCallToActionResponse.mockImplementation(
       () =>
         new Promise((resolve) =>
           setTimeout(
@@ -196,9 +199,7 @@ describe('CallToActionPanel', () => {
   });
 
   it('handles API error gracefully', async () => {
-    mockedClient.getCallToActionResponse.mockRejectedValue(
-      new Error('API Error'),
-    );
+    getCallToActionResponse.mockRejectedValue(new Error('API Error'));
 
     await act(async () => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);

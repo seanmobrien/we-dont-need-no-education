@@ -13,7 +13,7 @@ import {
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 import { z } from 'zod';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ServerBoundDataGridProps } from './types';
 
 const ServerBoundDataGridPropsSchema = z.object({
@@ -74,10 +74,20 @@ const ServerBoundDataGridPropsSchema = z.object({
     .optional(),
 });
 
+const stableWrapperStyles = {
+  box: { width: 'auto', maxWidth: 1 },
+  paper: { width: 'auto', mb: 2, overflow: 'hidden' },
+  table: {
+    display: 'flex',
+    flexBasis: 'column',
+    minHeight: '400px',
+    maxHeight: '75%',
+  },
+};
+
 export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   columns,
   url,
-  // getRecordData,
   idColumn,
   initialState: initialStateProp,
   slotProps,
@@ -87,15 +97,24 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   ServerBoundDataGridPropsSchema.parse({
     columns,
     url,
-    // getRecordData,
     idColumn,
     slotProps,
     initialState: initialStateProp,
   });
-
+  // const [hasMounted, setHasMounted] = useState(false);
   const { isLoading, ...memoizedDataSource } = useDataSource({
     url,
   });
+  /*
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!hasMounted) {
+        setHasMounted(true);
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [hasMounted]);
+  */
   const stableGetRowId = useGetRowId(idColumn);
   const stableSlotProps = useMemo(() => {
     return {
@@ -136,18 +155,10 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   }
   */
   return (
-    <Box sx={{ width: 'auto', maxWidth: 1 }}>
-      <Paper sx={{ width: 'auto', mb: 2, overflow: 'hidden' }}>
-        <TableContainer
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '400px',
-            maxHeight: '75%',
-          }}
-        >
+    <Box sx={stableWrapperStyles.box}>
+      <Paper sx={stableWrapperStyles.paper}>
+        <TableContainer style={stableWrapperStyles.table}>
           <DataGridPro<TRowModel>
-            autoHeight
             filterDebounceMs={300}
             pagination
             loading={isLoading}
