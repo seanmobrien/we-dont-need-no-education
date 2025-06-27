@@ -32,8 +32,8 @@ import {
   LanguageModelV1Middleware,
   wrapLanguageModel,
 } from 'ai';
-import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis';
-import { metricsCollector } from '../../../../lib/ai/middleware/metrics';
+import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
+import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 import type { RedisClientType } from 'redis';
 
 // Mock function to simulate different response types

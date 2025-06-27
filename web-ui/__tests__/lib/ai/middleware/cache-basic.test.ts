@@ -25,8 +25,8 @@ jest.mock('../../../../lib/ai/middleware/redis-client', () => ({
 
 import { openai } from '@ai-sdk/openai';
 import { generateText, wrapLanguageModel } from 'ai';
-import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis';
-import { metricsCollector } from '../../../../lib/ai/middleware/metrics';
+import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
+import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 
 // Mock the openai model to return consistent responses for testing
 jest.mock('@ai-sdk/openai', () => ({
