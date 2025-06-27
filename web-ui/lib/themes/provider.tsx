@@ -9,7 +9,6 @@ import React, {
 } from 'react';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { ThemeType, themes } from './definitions';
-import { Skeleton } from '@mui/material';
 import Loading from '@/components/general/loading';
 
 interface ThemeContextType {
@@ -58,6 +57,7 @@ export const ThemeProvider = ({
   const setTheme = useCallback(
     (theme: ThemeType) => {
       if (theme === currentTheme) {
+        return; // Skip redundant updates
       }
       setCurrentTheme(theme);
       if (typeof window !== 'undefined') {

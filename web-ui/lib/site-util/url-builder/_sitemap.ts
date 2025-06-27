@@ -28,6 +28,6 @@ export const siteMap = {
       notes: 'notes',
       responsiveAction: 'call-to-action-response',
     },
-    thread: (threadId: string) => `/email/thread/${threadId}`,
+    thread: (threadId: string) => `/messages/email/thread/${threadId}`,
   },
 };
