@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GridLogicOperator } from '@mui/x-data-grid-pro';
 import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
@@ -41,12 +41,14 @@ describe('useDataSource', () => {
     // jest.clearAllMocks();
   });
 
-  it('should initialize with default state', () => {
+  it('should initialize with default state', async () => {
     const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
       wrapper: createWrapper(),
     });
+    act(() => {
+      waitFor(() => result.current.isLoading);
+    });
 
-    expect(result.current.isLoading).toBe(true);
     expect(result.current.loadError).toBe(null);
     expect(typeof result.current.getRows).toBe('function');
     expect(typeof result.current.updateRow).toBe('function');

@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import dotenv from 'dotenv';
 
 // Mocking modules before imports
 jest.mock('google-auth-library');
@@ -16,7 +17,29 @@ jest.mock('@/auth', () => {
   };
 });
 jest.mock('@/lib/neondb/connection', () => {});
+jest.mock('@/lib/site-util/env', () => {
+  return {
+    env: jest.fn((key: string) => {
+      return process.env[key] || '';
+    }),
+  };
+});
 
+export const createRedisClient = jest.fn(() => ({
+  connect: jest.fn().mockResolvedValue(undefined),
+  quit: jest.fn().mockResolvedValue(undefined),
+  get: jest.fn().mockResolvedValue(null),
+  set: jest.fn().mockResolvedValue('OK'),
+  setEx: jest.fn().mockResolvedValue('OK'),
+  del: jest.fn().mockResolvedValue(1),
+  flushDb: jest.fn().mockResolvedValue('OK'),
+  on: jest.fn(),
+}));
+
+// Mock Redis client for cache tests
+jest.mock('redis', () => ({
+  createClient: createRedisClient,
+}));
 const makeMockImplementation = (name: string) => {
   return (...args: unknown[]) =>
     console.log(`logger::${name} called with `, args);
@@ -71,12 +94,16 @@ import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
 // jest.setup.ts
+// If using React Testing Library
 import '@testing-library/jest-dom';
 import 'jest';
 
 // Polyfill TextEncoder and TextDecoder for Node.js environment
 import { TextEncoder, TextDecoder } from 'util';
 globalThis.TextEncoder = TextEncoder;
+
+// Mock React and React.act for testing
+// Remove the React mock to use the real React.act from @testing-library/react
 
 // Automocks
 (postgres as unknown as jest.Mock).mockImplementation((strings, ...values) => {
@@ -99,7 +126,7 @@ const DefaultEnvVariables = {
   AUTH_GOOGLE_ID: 'auth-google-id',
   AUTH_GOOGLE_SECRET: 'auth-google-secret',
   AUTH_GOOGLE_APIKEY: 'auth-google-apikey',
-  REDIS_URL: 'redis://neverurl',
+  REDIS_URL: 'redis://never-url.local:6379',
   REDIS_PASSWORD: 'redis-password',
   AZURE_OPENAI_ENDPOINT: 'https://fake-openai-endpoint.com',
   AZURE_OPENAI_KEY: 'blahblah',
@@ -114,6 +141,33 @@ const DefaultEnvVariables = {
   AZURE_STORAGE_ACCOUNT_KEY: 'azure-storage-account-key',
   AZURE_STORAGE_ACCOUNT_NAME: 'azure-storage-account-name',
 };
+let originalProcessEnv = (() => {
+  const origConfig = dotenv.parse(
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
+  );
+  return {
+    REDIS_URL: origConfig.REDIS_URL,
+    REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
+  };
+})();
+// Redis settings require  original env vars for integrtation tests
+export const withRedisConnection = () => {
+  process.env.REDIS_URL =
+    originalProcessEnv.REDIS_URL || 'redis://test-redis.local:6379';
+  if (process.env.REDIS_URL.includes('test-redis.local')) {
+    console.warn(
+      'Using test Redis URL. Ensure this is set up correctly for integration tests.',
+    );
+  }
+  process.env.REDIS_PASSWORD =
+    originalProcessEnv.REDIS_PASSWORD || 'test-redis-password';
+  if (process.env.REDIS_PASSWORD.includes('test-redis-password')) {
+    console.warn(
+      'Using test Redis password. Ensure this is set up correctly for integration tests.',
+    );
+  }
+};
 
 global.fetch = jest.fn().mockImplementation(() => {
   console.log('in mock fetch', new Error().stack);
@@ -124,12 +178,23 @@ global.fetch = jest.fn().mockImplementation(() => {
   });
 });
 
-const resetEnvVariables = () => {
+export const resetEnvVariables = () => {
   process.env = {
     ...process.env,
     ...DefaultEnvVariables,
   };
 };
+
+beforeAll(() => {
+  const origConfig = dotenv.parse(
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
+  );
+  originalProcessEnv = {
+    REDIS_URL: origConfig.REDIS_URL,
+    REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
+  };
+});
 
 beforeEach(() => {
   resetEnvVariables();
@@ -139,4 +204,7 @@ beforeEach(() => {
 afterEach(() => {
   jest.clearAllMocks();
   resetGlobalCache();
+  Object.entries(originalProcessEnv).forEach(([key, value]) => {
+    process.env[key] = value;
+  });
 });

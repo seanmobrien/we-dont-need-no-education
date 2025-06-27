@@ -3,7 +3,9 @@ import { createTheme, Theme } from '@mui/material/styles';
 
 // Dark theme (current theme)
 export const darkTheme: Theme = createTheme({
-  cssVariables: true,
+  cssVariables: {
+    colorSchemeSelector: 'data',
+  },
   typography: {
     fontFamily: 'var(--geist-sans) var(--font-geist-mono)',
     fontSize: 14,
@@ -52,7 +54,9 @@ export const darkTheme: Theme = createTheme({
 
 // Colorful theme (new theme with specified colors)
 export const colorfulTheme: Theme = createTheme({
-  cssVariables: true,
+  cssVariables: {
+    colorSchemeSelector: 'data',
+  },
   typography: {
     fontFamily: 'var(--geist-sans) var(--font-geist-mono)',
     fontSize: 14,

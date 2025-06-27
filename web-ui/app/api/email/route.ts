@@ -34,6 +34,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       (sql) =>
         sql`SELECT 
           e.email_id,
+          e.thread_id,
           e.subject,
           e.sent_timestamp,
           sender.contact_id AS senderId,
