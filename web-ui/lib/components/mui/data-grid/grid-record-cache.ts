@@ -178,6 +178,7 @@ export class GridRecordCache<TModel extends GridValidRowModel = object> {
         props.filter ?? ({} as GridFilterModel),
         response,
       );
+      GridRecordCache.#globalCache.set(key, record);
     }
     return record.chain();
   }
