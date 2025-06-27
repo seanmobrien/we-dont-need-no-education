@@ -9,7 +9,6 @@ import React, {
 } from 'react';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { ThemeType, themes } from './definitions';
-import { Skeleton } from '@mui/material';
 import Loading from '@/components/general/loading';
 
 interface ThemeContextType {
