@@ -3,8 +3,8 @@ export const StableDefaultInitialState = {
     rowCount: -1,
     paginationModel: {
       page: 0,
-      pageSize: 5,
+      pageSize: 25,
     },
   },
 };
-export const StableDefaultPageSizeOptions = [5, 10, 25];
+export const StableDefaultPageSizeOptions = [25, 50, 100];

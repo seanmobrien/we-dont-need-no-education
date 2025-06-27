@@ -254,7 +254,6 @@ export class GridRecordCache<TModel extends GridValidRowModel = object> {
     return this.#pageSize;
   }
   chain(): Promise<GridGetRowsResponse> {
-    this.#resolveTo = this.#resolveTo.then((x) => x);
     return this.#resolveTo;
   }
 

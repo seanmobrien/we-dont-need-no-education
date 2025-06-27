@@ -50,7 +50,6 @@ const fetchGridData = async (
   if (page) {
     urlWithParams.searchParams.set('page', (page + 1).toString()); // API is 1-based, DataGrid is 0-based
   }
-  console.log('in fetchGridData');
 
   // Add sort parameters
   if (sortModel?.length) {
@@ -66,8 +65,6 @@ const fetchGridData = async (
   }
 
   const response = await fetch(urlWithParams.toString());
-
-  console.log('fetchGridData::response');
 
   if (!response.ok) {
     throw new Error(`Failed to fetch data: ${response.statusText}`);
@@ -162,7 +159,7 @@ export const useDataSource = ({
       },
       refetchOnWindowFocus: true,
       enabled: !!currentQueryParams && !!url,
-      staleTime: 30 * 1000, // 30 seconds
+      staleTime: 60 * 1000, // 60 seconds - align better with cache timeout
       gcTime: 5 * 60 * 1000, // 5 minutes
       retry: (failureCount, error) => {
         let willRetry = failureCount < 3;

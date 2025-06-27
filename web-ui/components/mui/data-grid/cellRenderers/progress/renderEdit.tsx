@@ -63,7 +63,7 @@ const EditProgress = <R extends GridValidRowModel = any>(
   );
 
   const debouncedUpdateCellEditProps = React.useMemo(
-    () => debounce(updateCellEditProps, 60),
+    () => debounce(updateCellEditProps, 150),
     [updateCellEditProps],
   );
 

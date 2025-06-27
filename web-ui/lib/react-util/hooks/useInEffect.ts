@@ -67,7 +67,7 @@ export const useInEffect = () => {
           processPendingItem();
         } else {
           // If there's no pending item, we just debounce until the next tick
-          currentTimeout = setTimeout(debouncePendingItem, 20);
+          currentTimeout = setTimeout(debouncePendingItem, 100);
         }
       };
       if (!thisIsActive) {
@@ -94,7 +94,7 @@ export const useInEffect = () => {
       if (thisIsActive) {
         // If there's no more items in the queue, we set a timeout to check again later
         thisQueue.isProcessing = false;
-        currentTimeout = setTimeout(processNextItem, 100);
+        currentTimeout = setTimeout(processNextItem, 200);
       }
     };
     processPendingItem = () => {
@@ -184,9 +184,6 @@ export const useInEffect = () => {
     [],
   );
 
-  enqueue(async (c: string) => c + 'World', 'Hello, ').then((y) =>
-    console.log(y),
-  );
   return {
     enqueue,
   };
