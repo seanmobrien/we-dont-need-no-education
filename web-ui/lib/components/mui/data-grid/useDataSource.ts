@@ -430,7 +430,7 @@ export const useDataSource = ({
         throw err;
       }
     },
-    [url, setCurrentQueryParams],
+    [url, isSuccess, data],
   );
 
   // Combine query error with local error state
@@ -462,7 +462,7 @@ export const useDataSource = ({
     onDataSourceError,
     hasMounted,
     isLoading,
-    updateRowMutation.isLoading,
+    updateRowMutation.isPending,
     clearLoadError,
     combinedLoadError,
   ]);
