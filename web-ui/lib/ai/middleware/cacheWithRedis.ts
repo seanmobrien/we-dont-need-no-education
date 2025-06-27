@@ -17,7 +17,7 @@ function createCacheKey(
 ): string {
   const normalizeForKey = (value: unknown): string | undefined => {
     const type = typeof value;
-    if (type !== 'boolean' && !value) {
+    if (type !== 'boolean' && (value === null || value === undefined)) {
       return undefined;
     }
     switch (type) {
