@@ -462,7 +462,7 @@ export const useDataSource = ({
     onDataSourceError,
     hasMounted,
     isLoading,
-    updateRowMutation.isPending,
+    updateRowMutation.isLoading,
     clearLoadError,
     combinedLoadError,
   ]);
