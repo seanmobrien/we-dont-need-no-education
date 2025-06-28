@@ -1,7 +1,7 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
 import { createHash } from 'crypto';
 import { getRedisClient } from './redis-client';
-import { getCacheConfig, validateCacheConfig } from '../config';
+import { getCacheConfig, validateCacheConfig } from './config';
 import { metricsCollector } from './metrics';
 
 // Enterprise configuration and metrics

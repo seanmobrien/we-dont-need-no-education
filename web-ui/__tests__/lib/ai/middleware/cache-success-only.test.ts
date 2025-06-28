@@ -19,7 +19,7 @@ const mockRedisClient = {
 };
 
 // Mock the Redis client module
-jest.mock('../../../../lib/ai/middleware/redis-client', () => ({
+jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
   getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
   closeRedisClient: jest.fn().mockResolvedValue(undefined),
 }));

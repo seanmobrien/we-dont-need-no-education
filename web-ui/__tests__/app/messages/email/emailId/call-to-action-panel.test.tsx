@@ -26,9 +26,7 @@ import { CallToActionPanel } from '@/app/messages/email/[emailId]/call-to-action
 import { CallToActionDetails } from '@/data-models/api';
 import { getCallToActionResponse as getCallToActionResponseFromModule } from '@/lib/api/email/properties/client';
 
-const getCallToActionResponse: jest.MockedFunction<
-  typeof getCallToActionResponseFromModule
-> = getCallToActionResponseFromModule;
+const getCallToActionResponse = getCallToActionResponseFromModule as jest.Mock;
 
 const mockCallToActionDetails: CallToActionDetails = {
   propertyId: 'cta-test-id',

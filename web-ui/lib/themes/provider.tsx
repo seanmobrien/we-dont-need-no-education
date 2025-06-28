@@ -56,6 +56,7 @@ export const ThemeProvider = ({
 
   const setTheme = useCallback(
     (theme: ThemeType) => {
+      console.log('setTheme called with:', theme);
       if (theme === currentTheme) {
         return; // Skip redundant updates
       }

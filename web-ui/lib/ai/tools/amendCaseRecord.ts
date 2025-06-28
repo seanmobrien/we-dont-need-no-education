@@ -28,6 +28,40 @@ import {
   addDocumentRelations,
   addNotesToDocument,
 } from '@/lib/drizzle-db';
+import { appMeters } from '@/lib/site-util/metrics';
+
+// OpenTelemetry Metrics for AmendCaseRecord Tool
+const amendCaseRecordCounter = appMeters.createCounter(
+  'ai_tool_amend_case_record_total',
+  {
+    description: 'Total number of case record amendment operations',
+    unit: '1',
+  },
+);
+
+const amendCaseRecordDurationHistogram = appMeters.createHistogram(
+  'ai_tool_amend_case_record_duration_ms',
+  {
+    description: 'Duration of case record amendment operations',
+    unit: 'ms',
+  },
+);
+
+const amendmentRecordsHistogram = appMeters.createHistogram(
+  'ai_tool_amendment_records_count',
+  {
+    description: 'Number of records updated/inserted per amendment operation',
+    unit: '1',
+  },
+);
+
+const amendmentErrorCounter = appMeters.createCounter(
+  'ai_tool_amend_case_record_errors_total',
+  {
+    description: 'Total number of case record amendment errors',
+    unit: '1',
+  },
+);
 
 /**
  * Updates the main record in the database based on the provided document type and amendment details.
@@ -563,12 +597,32 @@ export const amendCaseRecord = async ({
 }: {
   update: CaseFileAmendment;
 }): Promise<ToolCallbackResult<AmendmentResult>> => {
+  const startTime = Date.now();
   const updatedRecords = [] as Array<Amendment>;
   const insertedRecords = [] as Array<Amendment>;
   const failedRecords = [] as Array<Amendment & { error: string }>;
   let message: string | undefined;
 
+  // Record basic metrics attributes
+  const attributes = {
+    has_notes: Boolean(notes?.length),
+    has_violations: Boolean(violations?.length),
+    has_related_documents: Boolean(addRelatedDocuments?.length),
+    has_responsive_actions: Boolean(associateResponsiveAction?.length),
+  };
+
   if (!explaination || explaination.trim().length === 0) {
+    // Record error metrics
+    amendmentErrorCounter.add(1, {
+      ...attributes,
+      error_type: 'missing_explanation',
+    });
+
+    amendCaseRecordDurationHistogram.record(Date.now() - startTime, {
+      ...attributes,
+      status: 'error',
+    });
+
     return toolCallbackResultFactory<AmendmentResult>(
       new Error('Explaination is required'),
     );
@@ -577,6 +631,17 @@ export const amendCaseRecord = async ({
   try {
     const targetDocumentId = await resolveCaseFileId(targetCaseFileId);
     if (!targetDocumentId) {
+      // Record error metrics
+      amendmentErrorCounter.add(1, {
+        ...attributes,
+        error_type: 'target_not_found',
+      });
+
+      amendCaseRecordDurationHistogram.record(Date.now() - startTime, {
+        ...attributes,
+        status: 'error',
+      });
+
       return toolCallbackResultFactory<AmendmentResult>(
         new Error('Target case file ID not found'),
       );
@@ -640,17 +705,67 @@ export const amendCaseRecord = async ({
       });
     }
   } catch (error) {
+    const duration = Date.now() - startTime;
+
+    // Record error metrics
+    amendmentErrorCounter.add(1, {
+      ...attributes,
+      error_type: 'transaction_error',
+    });
+
+    amendCaseRecordDurationHistogram.record(duration, {
+      ...attributes,
+      status: 'error',
+    });
+
     const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
       source: 'amendCaseRecord',
     });
     message = `An error occurred ammending the case record; no updates were committed.  Details: ${le.message}`;
   }
-  if (failedRecords.length > 0) {
+
+  const duration = Date.now() - startTime;
+  const totalRecords = updatedRecords.length + insertedRecords.length;
+  const hasFailures = failedRecords.length > 0;
+
+  // Record success metrics
+  amendCaseRecordCounter.add(1, {
+    ...attributes,
+    status: hasFailures ? 'partial_failure' : 'success',
+  });
+
+  amendCaseRecordDurationHistogram.record(duration, {
+    ...attributes,
+    status: hasFailures ? 'partial_failure' : 'success',
+  });
+
+  amendmentRecordsHistogram.record(totalRecords, {
+    ...attributes,
+    operation_type: 'total_records',
+  });
+
+  amendmentRecordsHistogram.record(updatedRecords.length, {
+    ...attributes,
+    operation_type: 'updated_records',
+  });
+
+  amendmentRecordsHistogram.record(insertedRecords.length, {
+    ...attributes,
+    operation_type: 'inserted_records',
+  });
+
+  if (hasFailures) {
+    amendmentRecordsHistogram.record(failedRecords.length, {
+      ...attributes,
+      operation_type: 'failed_records',
+    });
+
     message =
       message ??
       'We were unable to successfully amend the case record; no updates were committed.';
   }
+
   return toolCallbackResultFactory({
     message: message ?? 'All requested updates were successfully applied.',
     UpdatedRecords: updatedRecords,

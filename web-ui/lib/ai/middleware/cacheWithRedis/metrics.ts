@@ -1,7 +1,75 @@
 /**
  * Enterprise-grade metrics collection for AI caching middleware
  * Provides hooks for monitoring cache performance and jail behavior
+ *
+ * Features:
+ * - OpenTelemetry integration for enterprise observability
+ * - Prometheus-compatible metrics export
+ * - Real-time event streaming and hooks
+ * - Performance timing and response size tracking
+ * - Error categorization and jail behavior monitoring
  */
+
+import { appMeters } from '@/lib/site-util/metrics';
+
+// OpenTelemetry Metrics - Enterprise observability
+const cacheHitsCounter = appMeters.createCounter('ai_cache_hits_total', {
+  description: 'Total number of AI cache hits',
+  unit: '1',
+});
+
+const cacheMissesCounter = appMeters.createCounter('ai_cache_misses_total', {
+  description: 'Total number of AI cache misses',
+  unit: '1',
+});
+
+const cacheStoresCounter = appMeters.createCounter('ai_cache_stores_total', {
+  description: 'Total number of successful cache stores',
+  unit: '1',
+});
+
+const jailPromotionsCounter = appMeters.createCounter(
+  'ai_cache_jail_promotions_total',
+  {
+    description:
+      'Total number of jail promotions (problematic responses cached)',
+    unit: '1',
+  },
+);
+
+const cacheErrorsCounter = appMeters.createCounter('ai_cache_errors_total', {
+  description: 'Total number of cache operation errors',
+  unit: '1',
+});
+
+const hitRateGauge = appMeters.createUpDownCounter('ai_cache_hit_rate', {
+  description: 'Current cache hit rate (0-1)',
+  unit: '1',
+});
+
+const avgResponseSizeGauge = appMeters.createUpDownCounter(
+  'ai_cache_avg_response_size',
+  {
+    description: 'Average response size in characters',
+    unit: 'By',
+  },
+);
+
+const responseSizeHistogram = appMeters.createHistogram(
+  'ai_cache_response_size_bytes',
+  {
+    description: 'Distribution of AI response sizes',
+    unit: 'By',
+  },
+);
+
+const cacheOperationDuration = appMeters.createHistogram(
+  'ai_cache_operation_duration_ms',
+  {
+    description: 'Duration of cache operations in milliseconds',
+    unit: 'ms',
+  },
+);
 
 export interface CacheMetrics {
   /** Total cache hits */
@@ -57,6 +125,8 @@ class MetricsCollector {
    * Record a cache hit
    */
   recordHit(cacheKey: string, responseSize?: number): void {
+    const startTime = performance.now();
+
     this.metrics.cacheHits++;
     this.metrics.totalResponses++;
 
@@ -64,9 +134,38 @@ class MetricsCollector {
       this.totalResponseSize += responseSize;
       this.metrics.avgResponseSize =
         this.totalResponseSize / this.metrics.totalResponses;
+
+      // OpenTelemetry metrics
+      responseSizeHistogram.record(responseSize, {
+        operation: 'hit',
+        cache_key: this.hashCacheKey(cacheKey),
+      });
     }
 
     this.updateHitRate();
+
+    // OpenTelemetry metrics
+    cacheHitsCounter.add(1, {
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
+    // Update hit rate gauge to current value
+    hitRateGauge.add(this.metrics.hitRate, {
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
+    // Update average response size gauge to current value
+    if (responseSize !== undefined) {
+      avgResponseSizeGauge.add(this.metrics.avgResponseSize, {
+        cache_key: this.hashCacheKey(cacheKey),
+      });
+    }
+
+    cacheOperationDuration.record(performance.now() - startTime, {
+      operation: 'hit',
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
     this.addEvent({
       type: 'hit',
       cacheKey,
@@ -81,9 +180,25 @@ class MetricsCollector {
    * Record a cache miss
    */
   recordMiss(cacheKey: string): void {
+    const startTime = performance.now();
+
     this.metrics.cacheMisses++;
     this.metrics.totalResponses++;
     this.updateHitRate();
+
+    // OpenTelemetry metrics
+    cacheMissesCounter.add(1, {
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
+    hitRateGauge.add(this.metrics.hitRate, {
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
+    cacheOperationDuration.record(performance.now() - startTime, {
+      operation: 'miss',
+      cache_key: this.hashCacheKey(cacheKey),
+    });
 
     this.addEvent({
       type: 'miss',
@@ -98,7 +213,24 @@ class MetricsCollector {
    * Record a successful cache store
    */
   recordStore(cacheKey: string, responseSize: number): void {
+    const startTime = performance.now();
+
     this.metrics.successfulCaches++;
+
+    // OpenTelemetry metrics
+    cacheStoresCounter.add(1, {
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
+    responseSizeHistogram.record(responseSize, {
+      operation: 'store',
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
+    cacheOperationDuration.record(performance.now() - startTime, {
+      operation: 'store',
+      cache_key: this.hashCacheKey(cacheKey),
+    });
 
     this.addEvent({
       type: 'store',
@@ -114,7 +246,17 @@ class MetricsCollector {
    * Record a jail update
    */
   recordJailUpdate(cacheKey: string, count: number, threshold: number): void {
+    const startTime = performance.now();
+
     this.metrics.problematicResponses++;
+
+    // OpenTelemetry metrics - track jail updates
+    cacheOperationDuration.record(performance.now() - startTime, {
+      operation: 'jail_update',
+      cache_key: this.hashCacheKey(cacheKey),
+      count: count.toString(),
+      threshold: threshold.toString(),
+    });
 
     this.addEvent({
       type: 'jail_update',
@@ -130,7 +272,24 @@ class MetricsCollector {
    * Record a jail promotion
    */
   recordJailPromotion(cacheKey: string, responseSize: number): void {
+    const startTime = performance.now();
+
     this.metrics.jailPromotions++;
+
+    // OpenTelemetry metrics
+    jailPromotionsCounter.add(1, {
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
+    responseSizeHistogram.record(responseSize, {
+      operation: 'jail_promotion',
+      cache_key: this.hashCacheKey(cacheKey),
+    });
+
+    cacheOperationDuration.record(performance.now() - startTime, {
+      operation: 'jail_promotion',
+      cache_key: this.hashCacheKey(cacheKey),
+    });
 
     this.addEvent({
       type: 'jail_promotion',
@@ -146,7 +305,21 @@ class MetricsCollector {
    * Record a cache error
    */
   recordError(cacheKey: string, error: string): void {
+    const startTime = performance.now();
+
     this.metrics.cacheErrors++;
+
+    // OpenTelemetry metrics
+    cacheErrorsCounter.add(1, {
+      cache_key: this.hashCacheKey(cacheKey),
+      error_type: this.categorizeError(error),
+    });
+
+    cacheOperationDuration.record(performance.now() - startTime, {
+      operation: 'error',
+      cache_key: this.hashCacheKey(cacheKey),
+      error_type: this.categorizeError(error),
+    });
 
     this.addEvent({
       type: 'error',
@@ -221,6 +394,43 @@ class MetricsCollector {
   private updateHitRate(): void {
     const total = this.metrics.cacheHits + this.metrics.cacheMisses;
     this.metrics.hitRate = total > 0 ? this.metrics.cacheHits / total : 0;
+  }
+
+  /**
+   * Hash cache key for telemetry (avoid exposing sensitive data)
+   */
+  private hashCacheKey(cacheKey: string): string {
+    // Simple hash to avoid exposing sensitive cache keys in telemetry
+    let hash = 0;
+    for (let i = 0; i < cacheKey.length; i++) {
+      const char = cacheKey.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16).substring(0, 8);
+  }
+
+  /**
+   * Categorize error types for telemetry
+   */
+  private categorizeError(error: string): string {
+    const errorLower = error.toLowerCase();
+    if (errorLower.includes('timeout') || errorLower.includes('ttl')) {
+      return 'timeout';
+    }
+    if (errorLower.includes('connection') || errorLower.includes('network')) {
+      return 'connection';
+    }
+    if (errorLower.includes('redis') || errorLower.includes('database')) {
+      return 'redis';
+    }
+    if (errorLower.includes('parse') || errorLower.includes('json')) {
+      return 'parse';
+    }
+    if (errorLower.includes('permission') || errorLower.includes('auth')) {
+      return 'auth';
+    }
+    return 'unknown';
   }
 
   private addEvent(event: CacheEvent): void {
@@ -303,4 +513,48 @@ export function getPrometheusMetrics(): string {
     `# TYPE ai_cache_avg_response_size gauge`,
     `ai_cache_avg_response_size ${metrics.avgResponseSize}`,
   ].join('\n');
+}
+
+/**
+ * Helper function to update OpenTelemetry gauge metrics with current values
+ * Call this periodically to ensure gauges reflect current state
+ */
+export function updateOpenTelemetryGauges(): void {
+  const metrics = metricsCollector.getMetrics();
+
+  // Update gauges with current values (reset and set)
+  hitRateGauge.add(metrics.hitRate, { source: 'periodic_update' });
+  avgResponseSizeGauge.add(metrics.avgResponseSize, {
+    source: 'periodic_update',
+  });
+}
+
+/**
+ * Helper function to get OpenTelemetry metrics summary for debugging
+ */
+export function getOpenTelemetryMetricsSummary(): Record<string, unknown> {
+  const metrics = metricsCollector.getMetrics();
+  return {
+    opentelemetry_metrics: {
+      counters: {
+        ai_cache_hits_total: metrics.cacheHits,
+        ai_cache_misses_total: metrics.cacheMisses,
+        ai_cache_stores_total: metrics.successfulCaches,
+        ai_cache_jail_promotions_total: metrics.jailPromotions,
+        ai_cache_errors_total: metrics.cacheErrors,
+      },
+      gauges: {
+        ai_cache_hit_rate: metrics.hitRate,
+        ai_cache_avg_response_size: metrics.avgResponseSize,
+      },
+      histograms: {
+        ai_cache_response_size_bytes: 'tracked',
+        ai_cache_operation_duration_ms: 'tracked',
+      },
+    },
+    collection_info: {
+      total_events: metricsCollector.getEvents().length,
+      last_updated: new Date().toISOString(),
+    },
+  };
 }

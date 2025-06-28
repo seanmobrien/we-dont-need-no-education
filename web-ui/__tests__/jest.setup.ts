@@ -9,6 +9,7 @@ jest.mock('postgres');
 jest.mock('next-auth', () => {
   return jest.fn();
 });
+
 jest.mock('@/auth', () => {
   return {
     auth: jest.fn(() => ({
@@ -85,6 +86,26 @@ jest.mock('drizzle-orm/postgres-js', () => {
   };
 });
 
+jest.mock('@/lib/site-util/metrics', () => {
+  return {
+    SERVICE_NAME: 'sue-the-schools-webui',
+    SERVICE_VERSION: '1.0.0',
+    SCHEMA_URL: 'https://sue-the-schools-webui.notaurl/schema',
+    SERVICE_NAMESPACE: 'sue-the-schools-webui',
+    appMeters: jest.fn(() => ({
+      createHistogram: jest.fn(() => ({ record: jest.fn() })),
+      createCounter: jest.fn(() => ({ add: jest.fn() })),
+      createUpDownCounter: jest.fn(() => ({ add: jest.fn() })),
+      createObservableGauge: jest.fn(() => ({ add: jest.fn() })),
+      createObservableCounter: jest.fn(),
+      createObservableUpDownCounter: jest.fn(),
+      addBatchObservableCallback: jest.fn(),
+      removeBatchObservableCallback: jest.fn(),
+    }))(),
+  };
+});
+
+import { appMeters } from '@/lib/site-util/metrics';
 import NextAuth from 'next-auth';
 import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';

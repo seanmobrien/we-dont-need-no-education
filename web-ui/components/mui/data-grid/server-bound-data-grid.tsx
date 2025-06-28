@@ -160,6 +160,7 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
         <TableContainer style={stableWrapperStyles.table}>
           <DataGridPro<TRowModel>
             filterDebounceMs={300}
+            autoHeight={true}
             pagination
             loading={isLoading}
             logLevel={process.env.NODE_ENV === 'development' ? 'warn' : 'error'}
