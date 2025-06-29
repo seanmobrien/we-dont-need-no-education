@@ -23,6 +23,7 @@ The web UI serves as the primary interface for the Title IX Victim Advocacy Plat
 
 ### Evidence Analysis Interface
 - **Real-time Processing**: Live updates from AI analysis pipeline to identify institutional failures
+- **Multi-Provider AI**: Support for both Azure OpenAI and Google Gemini models for comprehensive analysis
 - **Analysis Results**: Structured display of AI-generated insights highlighting policy violations
 - **Action Item Tracking**: Monitor institutional failures to respond appropriately to reports
 - **Key Evidence Extraction**: Visual presentation of critical evidence elements for case building
@@ -121,6 +122,17 @@ NEXTAUTH_SECRET="your-secret-key"
 AZURE_AD_CLIENT_ID="your-azure-client-id"
 AZURE_AD_CLIENT_SECRET="your-azure-client-secret"
 AZURE_AD_TENANT_ID="your-azure-tenant-id"
+
+# Azure OpenAI (for AI analysis)
+AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"
+AZURE_API_KEY="your-azure-openai-api-key"
+AZURE_OPENAI_DEPLOYMENT_COMPLETIONS="your-completions-deployment"
+AZURE_OPENAI_DEPLOYMENT_LOFI="your-lofi-deployment"
+AZURE_OPENAI_DEPLOYMENT_HIFI="your-hifi-deployment"
+AZURE_OPENAI_DEPLOYMENT_EMBEDDING="your-embedding-deployment"
+
+# Google AI (for alternative AI models)
+GOOGLE_GENERATIVE_AI_API_KEY="your-google-ai-api-key"
 
 # Google APIs (for evidence gathering from Gmail)
 GOOGLE_CLIENT_ID="your-google-client-id"
@@ -249,6 +261,59 @@ const { data, status } = useRealtimeData('/api/processing-status', {
 
 // Server-sent events for violation analysis progress tracking
 const { progress } = useSSE(`/api/analysis/${evidenceId}/progress`);
+```
+
+## AI Model Support
+
+The platform supports multiple AI providers through a unified model factory that simplifies provider management and enhances analysis capabilities.
+
+### Available Models
+
+#### Azure OpenAI Models
+- **HiFi (`hifi`)**: High-fidelity analysis for detailed evidence processing
+- **LoFi (`lofi`)**: Fast analysis for bulk evidence processing  
+- **Completions (`completions`)**: Text completion and generation
+- **Embedding (`embedding`)**: Document similarity and search
+
+#### Google Gemini Models  
+- **Gemini Pro (`gemini-pro`)**: Advanced reasoning and analysis using Gemini 1.5 Pro
+- **Gemini Flash (`gemini-flash`)**: Fast analysis using Gemini 1.5 Flash
+- **Google Embedding (`google-embedding`)**: Document embeddings using text-embedding-004
+
+### Usage Examples
+
+```typescript
+import { aiModelFactory, createGoogleEmbeddingModel } from '@/lib/ai/aiModelFactory';
+
+// Use Azure models (existing functionality)
+const hifiModel = aiModelFactory('hifi');
+const azureEmbedding = aiModelFactory('embedding');
+
+// Use new Google models
+const geminiPro = aiModelFactory('gemini-pro');
+const geminiFlash = aiModelFactory('gemini-flash'); 
+const googleEmbedding = createGoogleEmbeddingModel();
+
+// Provider registry automatically handles initialization
+const result = await generateText({
+  model: geminiPro,
+  messages: [{ role: 'user', content: 'Analyze this Title IX case...' }]
+});
+```
+
+### Provider Registry
+
+The implementation uses a provider registry pattern that:
+- **Lazy Loading**: Providers are initialized only when first used
+- **Environment-Based**: Automatically configures providers from environment variables
+- **Error Handling**: Provides clear error messages for missing configuration
+- **Middleware Support**: All models work with existing caching and retry middleware
+
+```typescript
+// Provider registry manages multiple AI providers transparently
+const registry = ProviderRegistry.getInstance();
+const azureProvider = registry.getAzureProvider();
+const googleProvider = registry.getGoogleProvider();
 ```
 
 ## Authentication & Authorization
