@@ -24,7 +24,6 @@ import CallToActionIcon from '@mui/icons-material/CallToAction';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import EmailDetailPanel from './email-detail-panel';
-import { DataGridQueryProvider } from '@/lib/components/mui/data-grid/query-provider';
 
 /**
  * Defines the column configuration for the email message list grid.
@@ -181,7 +180,7 @@ export const EmailList = ({
   const getDetailPanelHeight = useCallback(() => 'auto', []);
 
   return (
-    <DataGridQueryProvider>
+    <>
       <Box
         className={classnames(
           display('flex'),
@@ -200,7 +199,7 @@ export const EmailList = ({
           getDetailPanelHeight={getDetailPanelHeight}
         />
       </Box>
-    </DataGridQueryProvider>
+    </>
   );
 };
 
