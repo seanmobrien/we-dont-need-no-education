@@ -303,17 +303,41 @@ const result = await generateText({
 
 ### Provider Registry
 
-The implementation uses a provider registry pattern that:
-- **Lazy Loading**: Providers are initialized only when first used
-- **Environment-Based**: Automatically configures providers from environment variables
-- **Error Handling**: Provides clear error messages for missing configuration
+The implementation uses Vercel AI SDK's built-in provider registry pattern that:
+- **Custom Providers**: Uses `customProvider` to create Azure and Google providers with model aliases
+- **Fallback Strategy**: Azure as primary provider with Google as fallback for high availability
+- **Model Aliases**: Consistent model naming (`hifi`, `lofi`, `embedding`) across providers
 - **Middleware Support**: All models work with existing caching and retry middleware
 
 ```typescript
-// Provider registry manages multiple AI providers transparently
-const registry = ProviderRegistry.getInstance();
-const azureProvider = registry.getAzureProvider();
-const googleProvider = registry.getGoogleProvider();
+// Custom providers with model aliases
+const azureProvider = customProvider({
+  languageModels: {
+    hifi: azureModel('gpt-4'),      // High-quality model
+    lofi: azureModel('gpt-3.5'),    // Fast, cost-effective model
+  },
+  embeddingModels: {
+    embedding: azureEmbeddingModel('text-embedding-ada-002'),
+  },
+  fallbackProvider: azureRawProvider,
+});
+
+const googleProvider = customProvider({
+  languageModels: {
+    hifi: googleModel('gemini-1.5-pro'),    // Equivalent to Azure hifi
+    lofi: googleModel('gemini-1.5-flash'),  // Equivalent to Azure lofi
+  },
+  embeddingModels: {
+    embedding: googleEmbeddingModel('text-embedding-004'),
+  },
+  fallbackProvider: googleRawProvider,
+});
+
+// Provider registry with fallback strategy
+export const providerRegistry = createProviderRegistry({
+  azure: azureProvider,  // Primary provider
+  google: googleProvider, // Fallback provider
+});
 ```
 
 ## Authentication & Authorization

@@ -56,7 +56,16 @@ jest.mock('../../../lib/ai/middleware', () => ({
 }));
 
 jest.mock('ai', () => ({
-  wrapLanguageModel: jest.fn(({ model }) => model)
+  wrapLanguageModel: jest.fn(({ model }) => model),
+  customProvider: jest.fn((config) => ({
+    languageModels: config.languageModels || {},
+    embeddingModels: config.embeddingModels || {},
+    fallbackProvider: config.fallbackProvider
+  })),
+  createProviderRegistry: jest.fn((providers) => ({
+    languageModel: jest.fn((id) => ({ modelId: id, type: 'language' })),
+    textEmbeddingModel: jest.fn((id) => ({ modelId: id, type: 'embedding' }))
+  }))
 }));
 
 describe('AI Model Types', () => {
