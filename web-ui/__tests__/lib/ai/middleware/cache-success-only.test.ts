@@ -19,7 +19,7 @@ const mockRedisClient = {
 };
 
 // Mock the Redis client module
-jest.mock('../../../../lib/ai/middleware/redis-client', () => ({
+jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
   getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
   closeRedisClient: jest.fn().mockResolvedValue(undefined),
 }));
@@ -32,8 +32,8 @@ import {
   LanguageModelV1Middleware,
   wrapLanguageModel,
 } from 'ai';
-import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis';
-import { metricsCollector } from '../../../../lib/ai/middleware/metrics';
+import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
+import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 import type { RedisClientType } from 'redis';
 
 // Mock function to simulate different response types

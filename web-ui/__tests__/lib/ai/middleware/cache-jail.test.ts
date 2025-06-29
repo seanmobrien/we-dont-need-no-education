@@ -21,16 +21,15 @@ const mockRedisClient = {
 };
 
 // Mock the Redis client module
-jest.mock('../../../../lib/ai/middleware/redis-client', () => ({
+jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
   getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
   closeRedisClient: jest.fn().mockResolvedValue(undefined),
 }));
 
 import { openai } from '@ai-sdk/openai';
 import { generateText, wrapLanguageModel } from 'ai';
-import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis';
-import { metricsCollector } from '../../../../lib/ai/middleware/metrics';
-import { getCacheConfig } from '../../../../lib/ai/middleware/config';
+import { cacheWithRedis } from '@/lib/ai/middleware/cacheWithRedis/cacheWithRedis';
+import { metricsCollector } from '@/lib/ai/middleware/cacheWithRedis/metrics';
 
 // Mock the openai model to return responses for testing
 jest.mock('@ai-sdk/openai', () => ({
@@ -50,10 +49,9 @@ describe('Cache Jail Functionality', () => {
   beforeEach(() => {
     // Reset metrics and mock calls
     metricsCollector.reset();
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockRedisClient.get.mockResolvedValue(null); // Default to no existing data
   });
-
   it('should cache response after jail threshold is exceeded', async () => {
     const model = wrapLanguageModel({
       model: openai('gpt-4o-mini'),
@@ -61,14 +59,13 @@ describe('Cache Jail Functionality', () => {
     });
 
     const testMessage = 'Test jail graduation';
-    const config = getCacheConfig();
 
     // Mock jail tracking - response has exceeded threshold
     mockRedisClient.get.mockImplementation((key: string) => {
       if (key.includes('ai-jail:')) {
         return Promise.resolve(
           JSON.stringify({
-            count: config.jailThreshold + 1, // Above threshold
+            count: 3 + 1, // Above threshold
             lastSeen: new Date().toISOString(),
           }),
         );

@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_MUI_LICENSE: process.env.NEXT_PUBLIC_MUI_LICENSE,
   },
   experimental: {
-    nodeMiddleware: true,
+    //nodeMiddleware: true,
   },
   /*
   // Build optimization to prevent hanging

@@ -9,6 +9,7 @@ jest.mock('postgres');
 jest.mock('next-auth', () => {
   return jest.fn();
 });
+
 jest.mock('@/auth', () => {
   return {
     auth: jest.fn(() => ({
@@ -142,14 +143,18 @@ const DefaultEnvVariables = {
   AZURE_STORAGE_ACCOUNT_NAME: 'azure-storage-account-name',
 };
 let originalProcessEnv = (() => {
-  const origConfig = dotenv.parse(
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
-  );
-  return {
-    REDIS_URL: origConfig.REDIS_URL,
-    REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
-  };
+  try {
+    const origConfig = dotenv.parse(
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
+    );
+    return {
+      REDIS_URL: origConfig.REDIS_URL,
+      REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
+    };
+  } catch (error) {
+    return {};
+  }
 })();
 // Redis settings require  original env vars for integrtation tests
 export const withRedisConnection = () => {
@@ -186,14 +191,18 @@ export const resetEnvVariables = () => {
 };
 
 beforeAll(() => {
-  const origConfig = dotenv.parse(
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
-  );
-  originalProcessEnv = {
-    REDIS_URL: origConfig.REDIS_URL,
-    REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
-  };
+  try {
+    const origConfig = dotenv.parse(
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
+    );
+    originalProcessEnv = {
+      REDIS_URL: origConfig.REDIS_URL,
+      REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
+    };
+  } catch (error) {
+    return {};
+  }
 });
 
 beforeEach(() => {
