@@ -1,3 +1,4 @@
+import { LoggedError } from '@/lib/react-util';
 import z from 'zod';
 
 /**
@@ -103,11 +104,19 @@ export const ZodProcessors = {
    * @returns {ZodString} A Zod string schema for URLs.
    */
   url: (): z.ZodEffects<z.ZodString, string, string> =>
-    z
-      .string()
-      .url()
-      .transform((val) => val.replace(/\/+$/, '')),
-
+    z.string().transform((val, ctx) => {
+      try {
+        const url = new URL(val);
+        // Remove trailing slash if present
+        return url.href.replace(/\/$/, '');
+      } catch (error: unknown) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Invalid URL: ${val} - ${LoggedError.isTurtlesAllTheWayDownBaby(error).message}`,
+        });
+        return z.NEVER;
+      }
+    }),
   /**
    * Processor for log level strings.
    * Provides a default value of 'info' if not specified.
