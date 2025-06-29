@@ -624,7 +624,7 @@ export const amendCaseRecord = async ({
     });
 
     return toolCallbackResultFactory<AmendmentResult>(
-      new Error('Explaination is required'),
+      new Error('Explanation is required'),
     );
   }
 
