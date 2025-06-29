@@ -50,6 +50,12 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     type: 'number',
   },
   {
+    field: 'threadId',
+    headerName: 'Thread',
+    editable: false,
+    width: 20,
+  },
+  {
     field: 'sender',
     headerName: 'From',
     editable: false,

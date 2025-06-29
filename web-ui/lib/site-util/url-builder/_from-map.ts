@@ -335,7 +335,7 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
       MappedUrlBuilder['api']['email']['properties']
     >;
   };
-  ret.email = ret.child('email') as MappedUrlBuilder['email'];
+  ret.email = ret.child('messages').child('email') as MappedUrlBuilder['email'];
   ret.email.bulkEdit = mappedPageOverloadFactory(ret.email, 'bulk-edit');
   ret.email.edit = mappedPageOverloadFactory(ret.email, 'edit');
   ret.messages = ret.child('messages') as MappedUrlBuilder['messages'];

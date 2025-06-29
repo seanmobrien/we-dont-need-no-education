@@ -2,30 +2,48 @@ import { logs } from '@opentelemetry/api-logs';
 import {
   MetricReader,
   PeriodicExportingMetricReader,
+  PushMetricExporter,
 } from '@opentelemetry/sdk-metrics';
 import type { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import {
+  BatchLogRecordProcessor,
+  LogRecordExporter,
   type LogRecordProcessor,
   LoggerProvider,
-  BatchLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
-//import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
-import { registerOTel, InstrumentationOptionOrName } from '@vercel/otel';
-import { KnownSeverityLevel } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
-import { env } from '@/lib/site-util/env';
 
-export const SERVICE_NAME = 'sue-the-schools-webui';
-export const SERVICE_VERSION = '1.0.0';
-export const SCHEMA_URL = 'https://sue-the-schools-webui.notaurl/schema';
+enum KnownSeverityLevel {
+  /** Verbose */
+  Verbose = 'Verbose',
+  /** Information */
+  Information = 'Information',
+  /** Warning */
+  Warning = 'Warning',
+  /** Error */
+  Error = 'Error',
+  /** Critical */
+  Critical = 'Critical',
+}
+
+const SERVICE_NAME = 'WebUi';
+const SERVICE_NAMESPACE = 'ObApps.ComplianceTheatre';
+const SERVICE_VERSION = '1.0.0';
+const SCHEMA_URL = 'https://opentelemetry.io/schemas/1.30.0';
+const SERVICE_ID =
+  'WebUi-' +
+  process.env.NEXT_RUNTIME +
+  '-' +
+  process.env.NEXT_PHASE +
+  '-' +
+  Math.random().toString(36).substring(2, 15);
 
 // Flag to prevent multiple registrations during hot reloads
 let instrumentationRegistered = false;
 
 export async function register() {
   if (instrumentationRegistered) {
-    console.log('Instrumentation already registered, skipping...');
-    return;
+    console.log('Instrumentation already registered, skip?');
+    //return;
   }
   instrumentationRegistered = true;
 
@@ -39,7 +57,7 @@ export async function register() {
     let traceExporter: SpanExporter | undefined;
     let logRecordProcessor: LogRecordProcessor | undefined;
     let metricReader: MetricReader | undefined;
-    const instrumentations: Array<InstrumentationOptionOrName> = [];
+    const instrumentations: Array<unknown> = ['auto'];
 
     if (process.env.NEXT_RUNTIME === 'nodejs') {
       const {
@@ -47,6 +65,29 @@ export async function register() {
         AzureMonitorLogExporter,
         AzureMonitorMetricExporter,
       } = await import('@azure/monitor-opentelemetry-exporter');
+
+      const connectionString =
+        process.env.AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING;
+
+      metricReader = new PeriodicExportingMetricReader({
+        exporter: new AzureMonitorMetricExporter({
+          connectionString,
+        }) as unknown as PushMetricExporter,
+      });
+      traceExporter = new AzureMonitorTraceExporter({
+        connectionString,
+      }) as unknown as SpanExporter;
+      logRecordProcessor = new BatchLogRecordProcessor(
+        new AzureMonitorLogExporter({
+          connectionString,
+        }) as unknown as LogRecordExporter,
+        {
+          maxQueueSize: 2048,
+          maxExportBatchSize: 512,
+          scheduledDelayMillis: 10000,
+          exportTimeoutMillis: 60000,
+        },
+      );
 
       const { PinoInstrumentation } = await import(
         '@opentelemetry/instrumentation-pino'
@@ -80,50 +121,20 @@ export async function register() {
           },
         }),
       );
-
-      /*
-      const { UndiciInstrumentation } = await import(
-        '@opentelemetry/instrumentation-undici'
-      );
-      instrumentations.push(
-        new UndiciInstrumentation({
-          // Undici fetch instrumentation options.
-        }),
-      );
-      */
-
-      const connectionString = env(
-        'AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING',
-      );
-
-      metricReader = new PeriodicExportingMetricReader({
-        exporter: new AzureMonitorMetricExporter({
-          connectionString,
-        }),
-      });
-      traceExporter = new AzureMonitorTraceExporter({
-        connectionString,
-      });
-      logRecordProcessor = new BatchLogRecordProcessor(
-        new AzureMonitorLogExporter({
-          connectionString,
-        }),
-        {
-          maxQueueSize: 2048,
-          maxExportBatchSize: 512,
-          scheduledDelayMillis: 10000,
-          exportTimeoutMillis: 60000,
-        },
-      );
     }
+
+    const { registerOTel } = await import('@vercel/otel');
     registerOTel({
       serviceName: SERVICE_NAME,
       attributes: {
+        'service.namespace': SERVICE_NAMESPACE,
+        'service.name': SERVICE_NAME,
         'service.version': SERVICE_VERSION,
         'service.schema_url': SCHEMA_URL,
+        'service.id': SERVICE_ID,
       },
-      traceExporter: traceExporter ?? 'auto',
       logRecordProcessor,
+      traceExporter: traceExporter ?? 'auto',
       instrumentations: instrumentations.length ? instrumentations : undefined,
       metricReader,
     });
@@ -145,7 +156,8 @@ export async function register() {
       );
     }
   } catch (e) {
-    instrumentationRegistered = false;
+    // instrumentationRegistered = false;
+    const { LoggedError } = await import('@/lib/react-util');
     LoggedError.isTurtlesAllTheWayDownBaby(e, { log: true });
     console.warn(
       'Instrumentation failed to register for stack ${process.env.NEXT_RUNTIME}`',
@@ -153,10 +165,3 @@ export async function register() {
     );
   }
 }
-/*
-export const appMeters: Meter = metrics.getMeter(
-  'Application: Web UI',
-  SERVICE_VERSION,
-  { schemaUrl: SCHEMA_URL },
-);
-*/

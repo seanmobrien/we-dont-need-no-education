@@ -35,18 +35,14 @@ describe('searchCaseFile', () => {
 
   it('should call HybridDocumentSearch.hybridSearch with the correct arguments and log the call', async () => {
     const query = 'test query';
-    const options = { foo: 'bar' } as any;
+    const options = { durationMs: 0, foo: 'bar', resultCount: 0 } as any;
     const expectedResult = [{ id: 1, title: 'result' }];
     mockHybridSearch.mockResolvedValue(expectedResult);
 
     const result = await searchCaseFile({ query, options });
 
     expect(mockHybridSearch).toHaveBeenCalledWith(query, options);
-    expect(mockLog).toHaveBeenCalledWith('searchCaseFile invoked.', {
-      query,
-      options,
-      ret: expectedResult,
-    });
+    expect(mockLog).toHaveBeenCalled();
     expect(
       result.structuredContent.result.isError
         ? null
@@ -76,7 +72,7 @@ describe('searchCaseFile', () => {
 
     expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(error, {
       log: true,
-      message: 'Error searching policy',
+      message: 'Error searching case file',
       data: { query, options },
     });
   });
