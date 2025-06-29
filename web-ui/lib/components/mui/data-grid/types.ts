@@ -40,11 +40,6 @@ export type ExtendedGridDataSource = GridDataSource & {
    * If no error occurs, it is `null`.
    */
   loadError: string | null;
-  /**
-   * @property {() => void} clearLoadError - Function to clear the current load error.
-   * This can be used to reset the error state in the UI.
-   */
-  clearLoadError: () => void;
 };
 
 /**

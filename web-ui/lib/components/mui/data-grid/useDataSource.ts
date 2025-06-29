@@ -50,7 +50,6 @@ const fetchGridData = async (
   if (page) {
     urlWithParams.searchParams.set('page', (page + 1).toString()); // API is 1-based, DataGrid is 0-based
   }
-  console.log('in fetchGridData');
 
   // Add sort parameters
   if (sortModel?.length) {
@@ -124,9 +123,6 @@ const fetchGridData = async (
 export const useDataSource = ({
   url,
 }: DataSourceProps): ExtendedGridDataSource => {
-  const [lastDataSourceError, setLastDataSourceError] = useState<string | null>(
-    null,
-  );
   const [currentQueryParams, setCurrentQueryParams] = useState<{
     page?: number;
     pageSize?: number;
@@ -242,20 +238,6 @@ export const useDataSource = ({
     }
   }, [isSuccess, queryError, data, url, currentQueryParams, isPending]);
 
-  if (queryError) {
-    const le = LoggedError.isTurtlesAllTheWayDownBaby(queryError, {
-      log: true,
-      source: 'grid::dataSource::query',
-      data: {
-        url,
-        currentQueryParams,
-        queryError,
-      },
-    });
-    if (!lastDataSourceError || lastDataSourceError !== le.message) {
-      setLastDataSourceError(le.message);
-    }
-  }
   // Mutation for updating rows
   const updateRowMutation = useMutation({
     mutationFn: async (params: GridUpdateRowParams) => {
@@ -277,10 +259,17 @@ export const useDataSource = ({
     },
     onError: (error) => {
       const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        log: true,
+        log: false,
         source: 'grid::dataSource::update',
       });
-      setLastDataSourceError(le.message);
+      log((l) =>
+        l.error(
+          'useDataSource::updateRowMutation::error',
+          le.message,
+          'url',
+          url,
+        ),
+      );
     },
     retry: (failureCount, error) => {
       // Don't retry mutations on 4xx errors
@@ -294,15 +283,6 @@ export const useDataSource = ({
       return failureCount < 2;
     },
   });
-
-  /**
-   * Clears the current load error state if one exists.
-   */
-  const clearLoadError = useCallback(() => {
-    if (lastDataSourceError) {
-      setLastDataSourceError(null);
-    }
-  }, [lastDataSourceError]);
 
   /**
    * Updates a row in the data source using React Query mutation.
@@ -325,15 +305,13 @@ export const useDataSource = ({
    */
   const onDataSourceError = useCallback(
     (error: unknown) => {
-      const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        log: true,
-        source: 'grid::dataSource',
-      });
-      if (!lastDataSourceError) {
-        setLastDataSourceError(le.message);
+      if (!Object.is(error, queryError)) {
+        log((l) =>
+          l.warn('onDataSourceError::error is not query error...', { error }),
+        );
       }
     },
-    [lastDataSourceError],
+    [queryError],
   );
 
   /**
@@ -433,19 +411,6 @@ export const useDataSource = ({
     [url, isSuccess, data],
   );
 
-  // Combine query error with local error state
-  const combinedLoadError = useMemo(() => {
-    if (lastDataSourceError) return lastDataSourceError;
-    if (queryError) {
-      const le = LoggedError.isTurtlesAllTheWayDownBaby(queryError, {
-        log: true,
-        source: 'grid::dataSource::query',
-      });
-      return le.message;
-    }
-    return null;
-  }, [lastDataSourceError, queryError]);
-
   // Memoize the data source object to prevent unnecessary re-renders
   return useMemo<ExtendedGridDataSource>(() => {
     return {
@@ -453,8 +418,7 @@ export const useDataSource = ({
       updateRow,
       onDataSourceError,
       isLoading: !hasMounted || isLoading || updateRowMutation.isPending,
-      clearLoadError,
-      loadError: combinedLoadError,
+      loadError: queryError ? queryError.message : null,
     };
   }, [
     getRows,
@@ -463,7 +427,6 @@ export const useDataSource = ({
     hasMounted,
     isLoading,
     updateRowMutation.isPending,
-    clearLoadError,
-    combinedLoadError,
+    queryError,
   ]);
 };
