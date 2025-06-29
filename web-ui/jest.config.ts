@@ -15,10 +15,11 @@ const config: Config.InitialOptions = {
   maxConcurrency: 5, // Limit concurrent tests to prevent resource contention
 
   moduleNameMapper: {
-    /*
     '^@/instrumentation(.*)$':
       '<rootDir>/__tests__/jest.mock-instrumentation.ts', // Mock instrumentation module
-    prexit: '<rootDir>/__tests__/jest.mock-prexit.ts',
+    '^@/lib/site-util/metrics.*$': '<rootDir>/__tests__/jest.mock-metrics.ts', // Alias for lib imports
+    /*
+      prexit: '<rootDir>/__tests__/jest.mock-prexit.ts',
     */
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
