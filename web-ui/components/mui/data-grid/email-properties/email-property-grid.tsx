@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useMemo, useState } from 'react';
+import { JSX, useCallback, useMemo, useState } from 'react';
 import { ServerBoundDataGrid } from '../server-bound-data-grid';
 import { EmailPropertyGridProps } from '../types';
 import siteBuilder from '@/lib/site-util/url-builder';
@@ -21,6 +21,18 @@ export const EmailPropertyDataGrid = <
   ...props
 }: EmailPropertyGridProps<TRowModel>): JSX.Element => {
   const [includeAttachments, setIncludeAttachments] = useState(true);
+  const onSetIncludeAttachments = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>): void => {
+      // If the switch is already in the desired state, do nothing
+      // This prevents unnecessary state updates and re-renders
+      if (includeAttachments === event.target.checked) {
+        return; // No change, do nothing
+      }
+      // Otherwise, update the state to match the switch's state
+      setIncludeAttachments(event.target.checked);
+    },
+    [includeAttachments],
+  );
   const { emailId } = useParams<{ emailId: string }>();
   const url = siteBuilder.api.email
     .properties(emailId)
@@ -37,7 +49,7 @@ export const EmailPropertyDataGrid = <
     return (
       <EmailPropertyToolbar
         includeAttachments={includeAttachments}
-        setIncludeAttachments={setIncludeAttachments}
+        setIncludeAttachments={onSetIncludeAttachments}
       />
     );
   };

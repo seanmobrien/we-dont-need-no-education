@@ -13,17 +13,83 @@ import { log } from '@/lib/logger';
 import { caseFileDocumentShape } from './caseFileDocumentQuery';
 import { aiModelFactory } from '../aiModelFactory';
 import { generateText } from 'ai';
+import { appMeters } from '@/lib/site-util/metrics';
+
+// OpenTelemetry Metrics for GetCaseFileDocument Tool
+const getCaseFileDocumentCounter = appMeters.createCounter(
+  'ai_tool_get_case_file_document_total',
+  {
+    description: 'Total number of case file document retrieval operations',
+    unit: '1',
+  },
+);
+
+const getCaseFileDocumentDurationHistogram = appMeters.createHistogram(
+  'ai_tool_get_case_file_document_duration_ms',
+  {
+    description: 'Duration of case file document retrieval operations',
+    unit: 'ms',
+  },
+);
+
+const caseFileDocumentSizeHistogram = appMeters.createHistogram(
+  'ai_tool_case_file_document_size_bytes',
+  {
+    description: 'Size of retrieved case file documents in bytes',
+    unit: 'bytes',
+  },
+);
+
+const caseFileDocumentPreprocessingCounter = appMeters.createCounter(
+  'ai_tool_case_file_preprocessing_total',
+  {
+    description: 'Total number of case file document preprocessing operations',
+    unit: '1',
+  },
+);
+
+const caseFileDocumentPreprocessingDurationHistogram =
+  appMeters.createHistogram('ai_tool_case_file_preprocessing_duration_ms', {
+    description: 'Duration of case file document preprocessing operations',
+    unit: 'ms',
+  });
+
+const caseFileDocumentErrorCounter = appMeters.createCounter(
+  'ai_tool_get_case_file_document_errors_total',
+  {
+    description: 'Total number of case file document retrieval errors',
+    unit: '1',
+  },
+);
 
 export const getCaseFileDocument = async (props: {
   caseFileId: number | string;
   goals?: Array<string>;
   reasoning?: number;
 }): Promise<DocumentResourceToolResult> => {
+  const startTime = Date.now();
   const { caseFileId, goals = [], reasoning = 0 } = props;
+
+  const attributes = {
+    has_goals: Boolean(goals.length),
+    goals_count: goals.length,
+    has_reasoning: Boolean(reasoning),
+  };
+
   try {
     // If incoming documentId is a string, check to see if we were passed an email or property identifier.
     const parsedId = await resolveCaseFileId(caseFileId);
     if (!parsedId) {
+      caseFileDocumentErrorCounter.add(1, {
+        ...attributes,
+        error_type: 'id_resolution_failed',
+      });
+
+      getCaseFileDocumentDurationHistogram.record(Date.now() - startTime, {
+        ...attributes,
+        status: 'error',
+      });
+
       throw new Error(
         `Case File ID [${caseFileId}] could not be resolved to a valid document ID`,
       );
@@ -34,24 +100,69 @@ export const getCaseFileDocument = async (props: {
       ...caseFileDocumentShape,
     });
     if (!document) {
+      caseFileDocumentErrorCounter.add(1, {
+        ...attributes,
+        error_type: 'document_not_found',
+      });
+
+      getCaseFileDocumentDurationHistogram.record(Date.now() - startTime, {
+        ...attributes,
+        status: 'error',
+      });
+
       throw new Error(
         `There is no document matching ID ${parsedId} - not found`,
       );
     }
+
+    // Calculate document size for metrics
+    const documentSize = JSON.stringify(document).length;
+    caseFileDocumentSizeHistogram.record(documentSize, {
+      ...attributes,
+      document_type: document.documentType || 'unknown',
+    });
+
     log((l) =>
       l.info(
         `getCaseFileDocument: Retrieved document with ID ${document.unitId}`,
       ),
     );
 
+    let result: DocumentResource | string = document;
+
     if (goals?.length > 0) {
-      return toolCallbackResultFactory<DocumentResource>(
-        await preprocessCaseFileDocument({ document, goals, reasoning }),
-      );
+      result = await preprocessCaseFileDocument({ document, goals, reasoning });
     }
 
-    return toolCallbackResultFactory<DocumentResource>(document);
+    const duration = Date.now() - startTime;
+
+    // Record success metrics
+    getCaseFileDocumentCounter.add(1, {
+      ...attributes,
+      document_type: document.documentType || 'unknown',
+      status: 'success',
+    });
+
+    getCaseFileDocumentDurationHistogram.record(duration, {
+      ...attributes,
+      document_type: document.documentType || 'unknown',
+      status: 'success',
+    });
+
+    return toolCallbackResultFactory<DocumentResource>(result);
   } catch (error) {
+    const duration = Date.now() - startTime;
+
+    caseFileDocumentErrorCounter.add(1, {
+      ...attributes,
+      error_type: 'general_error',
+    });
+
+    getCaseFileDocumentDurationHistogram.record(duration, {
+      ...attributes,
+      status: 'error',
+    });
+
     return toolCallbackResultFactory<DocumentResource>(
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
@@ -69,11 +180,30 @@ export const getMultipleCaseFileDocuments = async ({
   goals?: Array<string>;
   reasoning?: number;
 }): Promise<MultipleDocumentResourceToolResult> => {
+  const startTime = Date.now();
+
+  const attributes = {
+    has_goals: Boolean(goals.length),
+    goals_count: goals.length,
+    has_reasoning: Boolean(reasoning),
+    document_count: caseFileIds.length,
+  };
+
   try {
     const validIds = (await Promise.all(caseFileIds.map(resolveCaseFileId)))
       .filter(Boolean)
       .map((id) => Number(id)); // Ensure all IDs are numbers
     if (validIds.length === 0) {
+      caseFileDocumentErrorCounter.add(1, {
+        ...attributes,
+        error_type: 'no_valid_ids',
+      });
+
+      getCaseFileDocumentDurationHistogram.record(Date.now() - startTime, {
+        ...attributes,
+        status: 'error',
+      });
+
       throw new Error(
         `No valid Case File IDs could be resolved from the provided identifiers: ${caseFileIds.join(', ')}`,
       );
@@ -82,24 +212,64 @@ export const getMultipleCaseFileDocuments = async ({
       where: (du, { inArray }) => inArray(du.unitId, validIds),
       ...caseFileDocumentShape,
     });
+
+    // Calculate total document size for metrics
+    const totalDocumentSize = documents.reduce(
+      (total, doc) => total + JSON.stringify(doc).length,
+      0,
+    );
+    caseFileDocumentSizeHistogram.record(totalDocumentSize, {
+      ...attributes,
+      operation_type: 'multiple_documents',
+    });
+
     log((l) =>
       l.info(
         `getMultipleCaseFileDocuments: Retrieved ${documents.length} documents`,
       ),
     );
 
+    let result: Array<DocumentResource> | Array<string> = documents;
+
     if (goals?.length > 0) {
       // Process each document if goals are specified
-      const processedDocuments = await Promise.all(
-        documents.map(document => 
-          preprocessCaseFileDocument({ document, goals, reasoning })
-        )
+      result = await Promise.all(
+        documents.map((document) =>
+          preprocessCaseFileDocument({ document, goals, reasoning }),
+        ),
       );
-      return toolCallbackResultFactory<Array<DocumentResource>>(processedDocuments);
     }
 
-    return toolCallbackResultFactory<Array<DocumentResource>>(documents);
+    const duration = Date.now() - startTime;
+
+    // Record success metrics
+    getCaseFileDocumentCounter.add(1, {
+      ...attributes,
+      operation_type: 'multiple_documents',
+      status: 'success',
+      retrieved_count: documents.length,
+    });
+
+    getCaseFileDocumentDurationHistogram.record(duration, {
+      ...attributes,
+      operation_type: 'multiple_documents',
+      status: 'success',
+    });
+
+    return toolCallbackResultFactory<Array<DocumentResource>>(result);
   } catch (error) {
+    const duration = Date.now() - startTime;
+
+    caseFileDocumentErrorCounter.add(1, {
+      ...attributes,
+      error_type: 'general_error',
+    });
+
+    getCaseFileDocumentDurationHistogram.record(duration, {
+      ...attributes,
+      status: 'error',
+    });
+
     return toolCallbackResultFactory<Array<DocumentResource>>(
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
@@ -168,6 +338,13 @@ export const getCaseFileDocumentIndex = async ({
     | 'note'
   >;
 }): Promise<DocumentIndexResourceToolResult> => {
+  const startTime = Date.now();
+
+  const attributes = {
+    has_scope: Boolean(scopeFromProps?.length),
+    scope_count: scopeFromProps?.length || 0,
+  };
+
   try {
     const scope = (scopeFromProps ?? []).map((s) =>
       mapToDocumentType(String(s)),
@@ -193,8 +370,38 @@ export const getCaseFileDocumentIndex = async ({
           documentType: mapDocumentType(doc.documentType ?? ''),
         })),
       );
+
+    const duration = Date.now() - startTime;
+
+    // Record success metrics
+    getCaseFileDocumentCounter.add(1, {
+      ...attributes,
+      operation_type: 'index',
+      status: 'success',
+      result_count: index.length,
+    });
+
+    getCaseFileDocumentDurationHistogram.record(duration, {
+      ...attributes,
+      operation_type: 'index',
+      status: 'success',
+    });
+
     return toolCallbackResultFactory(index);
   } catch (error) {
+    const duration = Date.now() - startTime;
+
+    caseFileDocumentErrorCounter.add(1, {
+      ...attributes,
+      error_type: 'index_error',
+    });
+
+    getCaseFileDocumentDurationHistogram.record(duration, {
+      ...attributes,
+      operation_type: 'index',
+      status: 'error',
+    });
+
     return toolCallbackResultFactory<Array<DocumentResourceIndex>>(
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
@@ -214,8 +421,17 @@ const preprocessCaseFileDocument = async ({
   goals: Array<string>;
   reasoning: number;
 }): Promise<string | DocumentResource> => {
+  const preprocessingStartTime = Date.now();
   const recordContents = JSON.stringify(document, null, 2);
   const originalLength = recordContents.length;
+
+  const preprocessingAttributes = {
+    document_id: document.unitId,
+    document_type: document.documentType || 'unknown',
+    original_size_bytes: originalLength,
+    goals_count: goals.length,
+  };
+
   const PROMPT = `You are an information extraction pipeline in a multi-stage AI compliance system. Your task is to extract all information from the case file JSON record that is directly relevant to the following goals:
    -  ${goals.map((goal) => `***${goal}***`).join('\n   - ')}.
 
@@ -277,7 +493,38 @@ ___END CASE FILE___
       model,
       prompt: PROMPT,
       temperature: 0.1,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'completion-tool-case-file-preprocess',
+        metadata: {
+          documentId: document.unitId,
+          goals: goals.join(', '),
+        },
+      },
     });
+
+    const preprocessingDuration = Date.now() - preprocessingStartTime;
+
+    // Record preprocessing success metrics
+    caseFileDocumentPreprocessingCounter.add(1, {
+      ...preprocessingAttributes,
+      status: 'success',
+    });
+
+    caseFileDocumentPreprocessingDurationHistogram.record(
+      preprocessingDuration,
+      {
+        ...preprocessingAttributes,
+        status: 'success',
+      },
+    );
+
+    // Record processed size metrics
+    caseFileDocumentSizeHistogram.record(response.text.length, {
+      ...preprocessingAttributes,
+      operation_type: 'preprocessed_output',
+    });
+
     log((l) =>
       l.info(
         `getCaseFileDocument::preprocessCaseFileDocument: Processed document with ID ${document.unitId} - original length: ${originalLength}, response length: ${response.text.length}`,
@@ -285,6 +532,22 @@ ___END CASE FILE___
     );
     return response.text;
   } catch (error) {
+    const preprocessingDuration = Date.now() - preprocessingStartTime;
+
+    // Record preprocessing error metrics
+    caseFileDocumentPreprocessingCounter.add(1, {
+      ...preprocessingAttributes,
+      status: 'error',
+    });
+
+    caseFileDocumentPreprocessingDurationHistogram.record(
+      preprocessingDuration,
+      {
+        ...preprocessingAttributes,
+        status: 'error',
+      },
+    );
+
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
       source: 'getCaseFileDocument::preprocessCaseFileDocument',

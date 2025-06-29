@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_DEFAULT_AI_MODEL: process.env.NEXT_PUBLIC_DEFAULT_AI_MODEL,
   },
   experimental: {
-    nodeMiddleware: true,
+    //nodeMiddleware: true,
   },
   /*
   // Build optimization to prevent hanging

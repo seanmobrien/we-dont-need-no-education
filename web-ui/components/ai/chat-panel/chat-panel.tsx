@@ -26,6 +26,7 @@ import {
 } from '@/lib/ai/core';
 import { log } from '@/lib/logger';
 import { generateChatId } from '@/lib/components/ai';
+import { enhancedChatFetch } from '@/lib/components/ai/chat-fetch-wrapper';
 
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
@@ -167,6 +168,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     initialMessages,
     maxSteps: 5,
     api: '/api/ai/chat',
+    fetch: enhancedChatFetch,
     onToolCall: onChatToolCall,
     onFinish: stable_onFinish,
     onResponse: () => {

@@ -1,4 +1,5 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
+import { memoryClientFactory } from '../mem0';
 
 export const memoryMiddleware: LanguageModelV1Middleware = {
   wrapStream: async ({ doStream, params }) => {
@@ -34,9 +35,18 @@ export const memoryMiddleware: LanguageModelV1Middleware = {
   },
 
   transformParams: async ({ params }) => {
+    /*    
     console.log('transformParams called');
     console.log(`params: ${JSON.stringify(params, null, 2)}`);
-
+    // Create a memory client instance with the necessary configuration
+    const memoryClient = memoryClientFactory({
+      // TODO: infer userid and projectid from params
+    });
+    const memories = memoryClient.search(params.query, {
+      limit: 10,
+      enable_graph: true,
+    });
+    */
     params.prompt = [
       {
         role: 'system',

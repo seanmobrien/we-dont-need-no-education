@@ -73,15 +73,20 @@ export class AbstractLogger implements ILogger {
     let stringValue: string;
     // Error / exception messages
     if (isError(message)) {
-      const le = LoggedError.isTurtlesAllTheWayDownBaby(message);
-      stringValue =
-        le.message ?? ('body' in message ? message.body : undefined);
+      stringValue = !!message.message
+        ? typeof message.message === 'object'
+          ? 'body' in message && !!message.body
+            ? String(message.body)
+            : String(message.message)
+          : String(message.message)
+        : message.toString();
+
       record = {
         [ApplicationInsightsBaseType]: ApplicationInsightsExceptionBaseType,
-        ...le,
-        [ATTR_EXCEPTION_STACKTRACE]: le.stack,
+        ...message,
+        [ATTR_EXCEPTION_STACKTRACE]: message.stack,
         [ATTR_EXCEPTION_TYPE]:
-          'source' in le ? (le.source ?? le.name) : le.name,
+          'source' in message ? (message.source ?? message.name) : message.name,
         [ATTR_EXCEPTION_MESSAGE]: stringValue,
       };
       delete record.stack;

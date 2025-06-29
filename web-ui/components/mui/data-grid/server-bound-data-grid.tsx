@@ -9,12 +9,17 @@ import {
 import { Box, Paper, TableContainer } from '@mui/material';
 import {
   DataGridPro,
+  DataGridProProps,
+  GridGetRowsError,
+  GridGetRowsParams,
   GridLoadingOverlayVariant,
+  GridUpdateRowError,
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 import { z } from 'zod';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ServerBoundDataGridProps } from './types';
+import { useNotifications } from '@toolpad/core';
 
 const ServerBoundDataGridPropsSchema = z.object({
   columns: z
@@ -74,10 +79,20 @@ const ServerBoundDataGridPropsSchema = z.object({
     .optional(),
 });
 
+const stableWrapperStyles = {
+  box: { width: 'auto', maxWidth: 1 },
+  paper: { width: 'auto', mb: 2, overflow: 'hidden' },
+  table: {
+    display: 'flex',
+    flexBasis: 'column',
+    minHeight: '400px',
+    maxHeight: '75%',
+  },
+};
+
 export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   columns,
   url,
-  // getRecordData,
   idColumn,
   initialState: initialStateProp,
   slotProps,
@@ -87,12 +102,11 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   ServerBoundDataGridPropsSchema.parse({
     columns,
     url,
-    // getRecordData,
     idColumn,
     slotProps,
     initialState: initialStateProp,
   });
-
+  const notifications = useNotifications();
   const { isLoading, ...memoizedDataSource } = useDataSource({
     url,
   });
@@ -106,11 +120,18 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
       ...slotProps,
     };
   }, [slotProps]);
-
-  useEffect(() => {
-    // Handle dynamic changes to URL or columns
-    memoizedDataSource.clearLoadError();
-  }, [url, columns, memoizedDataSource]);
+  const onDataSourceErrorOccurred: DataGridProProps['onDataSourceError'] =
+    useCallback(
+      (error: GridGetRowsError<GridGetRowsParams> | GridUpdateRowError) => {
+        // Note the useDataSource hook already handles logging the error and returning it's value,
+        // All we need to do is decide whether to show it.
+        notifications.show(error.message, {
+          severity: 'error',
+          autoHideDuration: 60000,
+        });
+      },
+      [notifications],
+    );
 
   const memoizedInitialState = useMemo(
     () => ({
@@ -136,19 +157,12 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   }
   */
   return (
-    <Box sx={{ width: 'auto', maxWidth: 1 }}>
-      <Paper sx={{ width: 'auto', mb: 2, overflow: 'hidden' }}>
-        <TableContainer
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            minHeight: '400px',
-            maxHeight: '75%',
-          }}
-        >
+    <Box sx={stableWrapperStyles.box}>
+      <Paper sx={stableWrapperStyles.paper}>
+        <TableContainer style={stableWrapperStyles.table}>
           <DataGridPro<TRowModel>
-            autoHeight
             filterDebounceMs={300}
+            autoHeight={true}
             pagination
             loading={isLoading}
             logLevel={process.env.NODE_ENV === 'development' ? 'warn' : 'error'}
@@ -157,7 +171,7 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
             dataSource={memoizedDataSource}
             initialState={memoizedInitialState}
             pageSizeOptions={StableDefaultPageSizeOptions}
-            onDataSourceError={memoizedDataSource.onDataSourceError}
+            onDataSourceError={onDataSourceErrorOccurred}
             slotProps={stableSlotProps}
             {...props}
           />

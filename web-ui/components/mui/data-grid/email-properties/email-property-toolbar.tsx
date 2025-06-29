@@ -32,14 +32,7 @@ import AttachEmailIcon from '@mui/icons-material/AttachEmail';
 import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
 
-import {
-  Dispatch,
-  SetStateAction,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 
 const StyledQuickFilter = styled(QuickFilter)({
   display: 'grid',
@@ -76,6 +69,10 @@ const StyledQuickFilterTextField = styled(TextField)<{
   transition: theme.transitions.create(['width', 'opacity']),
 }));
 
+const stableSx = {
+  marginHalf: { mx: 0.5 },
+};
+
 const stableSlotProps = {
   exportMenu: {
     list: {
@@ -89,12 +86,118 @@ const stableOrigin: Record<string | symbol, PopoverOrigin> = {
   topRight: { vertical: 'top', horizontal: 'right' },
 };
 
+// Stable render functions for panel triggers
+const stableRenderColumnsPanelTrigger = <ToolbarButton />;
+
+const renderFilterPanelTrigger = (
+  props: React.ComponentProps<typeof ToolbarButton>,
+  state: { filterCount: number },
+) => (
+  <ToolbarButton {...props} color="default">
+    <Badge badgeContent={state.filterCount} color="primary" variant="dot">
+      <FilterListIcon fontSize="small" />
+    </Badge>
+  </ToolbarButton>
+);
+
+const renderQuickFilterTrigger = (
+  triggerProps: React.ComponentProps<typeof ToolbarButton>,
+  state: { expanded: boolean },
+) => (
+  <Tooltip title="Search" enterDelay={0}>
+    <StyledQuickFilterToolbarButton
+      {...triggerProps}
+      ownerState={{ expanded: state.expanded }}
+      color="default"
+    >
+      <SearchIcon fontSize="small" />
+    </StyledQuickFilterToolbarButton>
+  </Tooltip>
+);
+const renderQuickFilterControl = (
+  controlProps: { ref?: React.Ref<HTMLInputElement> } & Omit<
+    React.ComponentProps<typeof TextField>,
+    'ref'
+  >,
+  state: { expanded: boolean; value?: string },
+) => (
+  <StyledQuickFilterTextField
+    {...controlProps}
+    ownerState={{ expanded: state.expanded }}
+    inputRef={controlProps.ref}
+    aria-label="Search"
+    placeholder="Search..."
+    size="small"
+    slotProps={{
+      input: {
+        startAdornment: (
+          <InputAdornment position="start">
+            <SearchIcon fontSize="small" />
+          </InputAdornment>
+        ),
+        endAdornment: state.value ? (
+          <InputAdornment position="end">
+            <QuickFilterClear
+              edge="end"
+              size="small"
+              aria-label="Clear search"
+              material={{ sx: { marginRight: -0.75 } }}
+            >
+              <CancelIcon fontSize="small" />
+            </QuickFilterClear>
+          </InputAdornment>
+        ) : null,
+        ...controlProps.slotProps?.input,
+      },
+      ...controlProps.slotProps,
+    }}
+  />
+);
+
+const ToolbarColumnsAndFilters = () => {
+  const Component = React.memo(() => {
+    return (
+      <>
+        <Tooltip title="Columns">
+          <ColumnsPanelTrigger render={stableRenderColumnsPanelTrigger}>
+            <ViewColumnIcon fontSize="small" />
+          </ColumnsPanelTrigger>
+        </Tooltip>
+        <Tooltip title="Filters">
+          <FilterPanelTrigger render={renderFilterPanelTrigger} />
+        </Tooltip>
+        <Divider
+          orientation="vertical"
+          variant="middle"
+          flexItem
+          sx={stableSx.marginHalf}
+        />
+      </>
+    );
+  });
+  Component.displayName = 'ToolbarColumnsAndFilters';
+  return <Component />;
+};
+
+const ToolbarQuickFilter = () => {
+  const Component = React.memo(() => {
+    return (
+      <StyledQuickFilter>
+        <QuickFilterTrigger render={renderQuickFilterTrigger} />
+        <QuickFilterControl render={renderQuickFilterControl} />
+      </StyledQuickFilter>
+    );
+  });
+  Component.displayName = 'ToolbarQuickFilter';
+  return <Component />;
+};
+
 const EmailPropertyToolbar = ({
   includeAttachments,
   setIncludeAttachments,
 }: {
   includeAttachments: boolean;
-  setIncludeAttachments: Dispatch<SetStateAction<boolean>>;
+  setIncludeAttachments: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }) => {
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const exportMenuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -116,156 +219,67 @@ const EmailPropertyToolbar = ({
     };
   }, [exportMenuOpen]);
 
-  const onSetIncludeAttachments = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setIncludeAttachments(event.target.checked);
-    },
-    [setIncludeAttachments],
-  );
-  const memoizedAttachmentsSwitch = useMemo(
-    () => (
+  const memoizedAttachmentsSwitch = useMemo(() => {
+    return (
       <Tooltip title="Attachments">
         <FormControlLabel
           control={
             <Switch
               size="small"
               checked={includeAttachments}
-              onChange={onSetIncludeAttachments}
+              onChange={setIncludeAttachments}
             />
           }
           label={<AttachEmailIcon fontSize="small" />}
         />
       </Tooltip>
-    ),
-    [includeAttachments, onSetIncludeAttachments],
-  );
-  // Stable render functions for panel triggers
-  const renderColumnsPanelTrigger = useCallback(() => <ToolbarButton />, []);
+    );
+  }, [includeAttachments, setIncludeAttachments]);
 
-  const renderFilterPanelTrigger = useCallback(
-    (
-      props: React.ComponentProps<typeof ToolbarButton>,
-      state: { filterCount: number },
-    ) => (
-      <ToolbarButton {...props} color="default">
-        <Badge badgeContent={state.filterCount} color="primary" variant="dot">
-          <FilterListIcon fontSize="small" />
-        </Badge>
-      </ToolbarButton>
-    ),
-    [],
-  );
-
-  const renderQuickFilterTrigger = useCallback(
-    (
-      triggerProps: React.ComponentProps<typeof ToolbarButton>,
-      state: { expanded: boolean },
-    ) => (
-      <Tooltip title="Search" enterDelay={0}>
-        <StyledQuickFilterToolbarButton
-          {...triggerProps}
-          ownerState={{ expanded: state.expanded }}
-          color="default"
+  const memoizedExport = useMemo(() => {
+    return (
+      <>
+        <Tooltip title="Export">
+          <ToolbarButton
+            ref={exportMenuTriggerRef}
+            id="export-menu-trigger"
+            aria-controls="export-menu"
+            aria-haspopup="true"
+            aria-expanded={exportMenuOpen ? 'true' : undefined}
+            onClick={onSetExportMenuOpen}
+          >
+            <FileDownloadIcon fontSize="small" />
+          </ToolbarButton>
+        </Tooltip>
+        <Menu
+          id="export-menu"
+          anchorEl={exportMenuTriggerRef.current}
+          open={exportMenuOpen}
+          onClose={onSetExportMenuClosed}
+          anchorOrigin={stableOrigin.bottomRight}
+          transformOrigin={stableOrigin.topRight}
+          slotProps={stableSlotProps.exportMenu}
         >
-          <SearchIcon fontSize="small" />
-        </StyledQuickFilterToolbarButton>
-      </Tooltip>
-    ),
-    [],
-  );
-
-  const renderQuickFilterControl = useCallback(
-    (
-      controlProps: { ref?: React.Ref<HTMLInputElement> } & Omit<
-        React.ComponentProps<typeof TextField>,
-        'ref'
-      >,
-      state: { expanded: boolean; value?: string },
-    ) => (
-      <StyledQuickFilterTextField
-        {...controlProps}
-        ownerState={{ expanded: state.expanded }}
-        inputRef={controlProps.ref}
-        aria-label="Search"
-        placeholder="Search..."
-        size="small"
-        slotProps={{
-          input: {
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
-            endAdornment: state.value ? (
-              <InputAdornment position="end">
-                <QuickFilterClear
-                  edge="end"
-                  size="small"
-                  aria-label="Clear search"
-                  material={{ sx: { marginRight: -0.75 } }}
-                >
-                  <CancelIcon fontSize="small" />
-                </QuickFilterClear>
-              </InputAdornment>
-            ) : null,
-            ...controlProps.slotProps?.input,
-          },
-          ...controlProps.slotProps,
-        }}
-      />
-    ),
-    [],
-  );
+          <ExportPrint render={<MenuItem />} onClick={onSetExportMenuClosed}>
+            Print
+          </ExportPrint>
+          <ExportCsv render={<MenuItem />} onClick={onSetExportMenuClosed}>
+            Download as CSV
+          </ExportCsv>
+        </Menu>
+      </>
+    );
+  }, [
+    exportMenuOpen,
+    onSetExportMenuOpen,
+    onSetExportMenuClosed,
+    exportMenuTriggerRef,
+  ]);
 
   return (
     <Toolbar>
-      {memoizedAttachmentsSwitch}{' '}
-      <Tooltip title="Columns">
-        <ColumnsPanelTrigger render={renderColumnsPanelTrigger}>
-          <ViewColumnIcon fontSize="small" />
-        </ColumnsPanelTrigger>
-      </Tooltip>
-      <Tooltip title="Filters">
-        <FilterPanelTrigger render={renderFilterPanelTrigger} />
-      </Tooltip>
-      <Divider
-        orientation="vertical"
-        variant="middle"
-        flexItem
-        sx={{ mx: 0.5 }}
-      />
-      <Tooltip title="Export">
-        <ToolbarButton
-          ref={exportMenuTriggerRef}
-          id="export-menu-trigger"
-          aria-controls="export-menu"
-          aria-haspopup="true"
-          aria-expanded={exportMenuOpen ? 'true' : undefined}
-          onClick={onSetExportMenuOpen}
-        >
-          <FileDownloadIcon fontSize="small" />
-        </ToolbarButton>
-      </Tooltip>
-      <Menu
-        id="export-menu"
-        anchorEl={exportMenuTriggerRef.current}
-        open={exportMenuOpen}
-        onClose={onSetExportMenuClosed}
-        anchorOrigin={stableOrigin.bottomRight}
-        transformOrigin={stableOrigin.topRight}
-        slotProps={stableSlotProps.exportMenu}
-      >
-        <ExportPrint render={<MenuItem />} onClick={onSetExportMenuClosed}>
-          Print
-        </ExportPrint>
-        <ExportCsv render={<MenuItem />} onClick={onSetExportMenuClosed}>
-          Download as CSV
-        </ExportCsv>
-      </Menu>{' '}
-      <StyledQuickFilter>
-        <QuickFilterTrigger render={renderQuickFilterTrigger} />
-        <QuickFilterControl render={renderQuickFilterControl} />
-      </StyledQuickFilter>
+      {memoizedAttachmentsSwitch} <ToolbarColumnsAndFilters />
+      {memoizedExport} <ToolbarQuickFilter />
     </Toolbar>
   );
 };
