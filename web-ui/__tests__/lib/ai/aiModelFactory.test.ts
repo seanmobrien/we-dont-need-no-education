@@ -133,4 +133,121 @@ describe('AI Model Factory Integration', () => {
     const { createGoogleEmbeddingModel } = await import('../../../lib/ai/aiModelFactory');
     expect(typeof createGoogleEmbeddingModel).toBe('function');
   });
+
+  it('should define model availability control functions', async () => {
+    const {
+      disableModel,
+      enableModel,
+      disableProvider,
+      enableProvider,
+      temporarilyDisableModel,
+      isModelAvailable,
+      isProviderAvailable,
+      getModelAvailabilityStatus,
+      resetModelAvailability,
+      handleAzureRateLimit,
+      handleGoogleRateLimit
+    } = await import('../../../lib/ai/aiModelFactory');
+
+    expect(typeof disableModel).toBe('function');
+    expect(typeof enableModel).toBe('function');
+    expect(typeof disableProvider).toBe('function');
+    expect(typeof enableProvider).toBe('function');
+    expect(typeof temporarilyDisableModel).toBe('function');
+    expect(typeof isModelAvailable).toBe('function');
+    expect(typeof isProviderAvailable).toBe('function');
+    expect(typeof getModelAvailabilityStatus).toBe('function');
+    expect(typeof resetModelAvailability).toBe('function');
+    expect(typeof handleAzureRateLimit).toBe('function');
+    expect(typeof handleGoogleRateLimit).toBe('function');
+  });
+});
+
+describe('Model Availability Management', () => {
+  let modelControls: any;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    modelControls = await import('../../../lib/ai/aiModelFactory');
+    // Reset to defaults before each test
+    modelControls.resetModelAvailability();
+  });
+
+  it('should have all models available by default', async () => {
+    expect(modelControls.isModelAvailable('azure:hifi')).toBe(true);
+    expect(modelControls.isModelAvailable('google:hifi')).toBe(true);
+    expect(modelControls.isProviderAvailable('azure')).toBe(true);
+    expect(modelControls.isProviderAvailable('google')).toBe(true);
+  });
+
+  it('should be able to disable and enable specific models', async () => {
+    // Disable Azure hifi model
+    modelControls.disableModel('azure:hifi');
+    expect(modelControls.isModelAvailable('azure:hifi')).toBe(false);
+    expect(modelControls.isModelAvailable('google:hifi')).toBe(true);
+
+    // Re-enable Azure hifi model
+    modelControls.enableModel('azure:hifi');
+    expect(modelControls.isModelAvailable('azure:hifi')).toBe(true);
+  });
+
+  it('should be able to disable and enable entire providers', async () => {
+    // Disable Azure provider
+    modelControls.disableProvider('azure');
+    expect(modelControls.isModelAvailable('azure:hifi')).toBe(false);
+    expect(modelControls.isModelAvailable('azure:lofi')).toBe(false);
+    expect(modelControls.isModelAvailable('azure:embedding')).toBe(false);
+    expect(modelControls.isProviderAvailable('azure')).toBe(false);
+    
+    // Google should still be available
+    expect(modelControls.isProviderAvailable('google')).toBe(true);
+
+    // Re-enable Azure provider
+    modelControls.enableProvider('azure');
+    expect(modelControls.isProviderAvailable('azure')).toBe(true);
+  });
+
+  it('should support temporary model disabling', (done) => {
+    // Temporarily disable model for 50ms
+    modelControls.temporarilyDisableModel('azure:hifi', 50);
+    
+    expect(modelControls.isModelAvailable('azure:hifi')).toBe(false);
+
+    // After timeout, model should be re-enabled
+    setTimeout(() => {
+      expect(modelControls.isModelAvailable('azure:hifi')).toBe(true);
+      done();
+    }, 60);
+  });
+
+  it('should provide availability status for debugging', async () => {
+    modelControls.disableModel('azure:hifi');
+    modelControls.disableModel('google:embedding');
+
+    const status = modelControls.getModelAvailabilityStatus();
+    expect(status['azure:hifi']).toBe(false);
+    expect(status['google:embedding']).toBe(false);
+  });
+
+  it('should handle Azure rate limits', async () => {
+    modelControls.handleAzureRateLimit(50); // Short duration for test
+
+    expect(modelControls.isModelAvailable('azure:hifi')).toBe(false);
+    expect(modelControls.isModelAvailable('azure:lofi')).toBe(false);
+    expect(modelControls.isModelAvailable('azure:embedding')).toBe(false);
+    
+    // Google should still be available
+    expect(modelControls.isModelAvailable('google:hifi')).toBe(true);
+  });
+
+  it('should handle Google rate limits', async () => {
+    modelControls.handleGoogleRateLimit(50); // Short duration for test
+
+    expect(modelControls.isModelAvailable('google:hifi')).toBe(false);
+    expect(modelControls.isModelAvailable('google:gemini-pro')).toBe(false);
+    expect(modelControls.isModelAvailable('google:embedding')).toBe(false);
+    
+    // Azure should still be available
+    expect(modelControls.isModelAvailable('azure:hifi')).toBe(true);
+  });
 });

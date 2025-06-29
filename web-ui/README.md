@@ -314,6 +314,137 @@ The implementation uses Vercel AI SDK's built-in provider registry pattern that:
 const azureProvider = customProvider({
   languageModels: {
     hifi: azureModel('gpt-4'),      // High-quality model
+    lofi: azureModel('gpt-3.5'),    // Fast model
+    completions: azureModel('text-davinci-003')
+  },
+  embeddingModels: {
+    embedding: azureEmbedding('text-embedding-ada-002')
+  }
+});
+
+// Provider registry with Azure primary and Google fallback
+const providerRegistry = createProviderRegistry({
+  azure: azureProvider,
+  google: googleProvider
+});
+```
+
+### Programmatic Model Control
+
+The platform includes advanced model availability management for handling rate limits, provider outages, and strategic model selection:
+
+#### Core Features
+- **Per-Model Control**: Enable/disable specific models (e.g., `azure:hifi`, `google:embedding`)
+- **Provider-Level Control**: Enable/disable entire providers (Azure or Google)
+- **Temporary Disabling**: Auto-recovery after specified time periods
+- **Rate Limit Handling**: Automatic failover when providers hit rate limits
+- **Real-time Availability**: Check model availability before use
+
+#### Usage Examples
+
+```typescript
+import { 
+  disableModel, 
+  enableModel, 
+  disableProvider,
+  temporarilyDisableModel,
+  isModelAvailable,
+  handleAzureRateLimit,
+  handleGoogleRateLimit,
+  resetModelAvailability
+} from '@/lib/ai/aiModelFactory';
+
+// Disable specific models
+disableModel('azure:hifi');                    // Disable Azure hifi model
+enableModel('azure:hifi');                     // Re-enable Azure hifi model
+
+// Provider-level control
+disableProvider('azure');                      // Disable all Azure models
+enableProvider('azure');                       // Re-enable all Azure models
+
+// Temporary disabling (auto-recovery)
+temporarilyDisableModel('azure:hifi', 300000); // Disable for 5 minutes
+
+// Check availability before use
+if (isModelAvailable('azure:hifi')) {
+  const result = await aiModelFactory('hifi');
+}
+
+// Handle rate limits automatically
+handleAzureRateLimit(300000);                  // Disable Azure for 5 min
+handleGoogleRateLimit(180000);                 // Disable Google for 3 min
+
+// Reset all models to available state
+resetModelAvailability();
+```
+
+#### Rate Limit Management
+
+```typescript
+// Automatic rate limit detection and failover
+export const aiModelFactory = (modelType) => {
+  switch (modelType) {
+    case 'hifi':
+      // Try Azure first if available
+      if (isModelAvailable('azure:hifi')) {
+        try {
+          return providerRegistry.languageModel('azure:hifi');
+        } catch (error) {
+          // Auto-disable Azure on rate limit, try Google
+          temporarilyDisableModel('azure:hifi', 60000);
+          console.warn('Azure hifi rate limited, switching to Google');
+        }
+      }
+      
+      // Fallback to Google if available
+      if (isModelAvailable('google:hifi')) {
+        return providerRegistry.languageModel('google:hifi');
+      }
+      
+      throw new Error('No available providers for hifi model');
+  }
+};
+```
+
+#### Integration with Error Handling
+
+```typescript
+// Application-level rate limit handling
+export const handleProviderError = (error: any, modelKey: string) => {
+  if (error.status === 429) { // Rate limit error
+    const [provider] = modelKey.split(':');
+    
+    if (provider === 'azure') {
+      handleAzureRateLimit(300000); // 5 minutes
+    } else if (provider === 'google') {
+      handleGoogleRateLimit(180000); // 3 minutes
+    }
+    
+    // Retry with different provider
+    return aiModelFactory(modelKey.split(':')[1]);
+  }
+  
+  throw error;
+};
+```
+
+#### Available Control Functions
+
+| Function | Description | Example |
+|----------|-------------|---------|
+| `disableModel(key)` | Disable specific model | `disableModel('azure:hifi')` |
+| `enableModel(key)` | Enable specific model | `enableModel('azure:hifi')` |
+| `disableProvider(name)` | Disable all provider models | `disableProvider('azure')` |
+| `enableProvider(name)` | Enable all provider models | `enableProvider('azure')` |
+| `temporarilyDisableModel(key, ms)` | Auto-recovery disabling | `temporarilyDisableModel('azure:hifi', 300000)` |
+| `isModelAvailable(key)` | Check model availability | `isModelAvailable('azure:hifi')` |
+| `isProviderAvailable(name)` | Check provider availability | `isProviderAvailable('azure')` |
+| `handleAzureRateLimit(ms)` | Azure rate limit response | `handleAzureRateLimit(300000)` |
+| `handleGoogleRateLimit(ms)` | Google rate limit response | `handleGoogleRateLimit(300000)` |
+| `resetModelAvailability()` | Reset to defaults | `resetModelAvailability()` |
+| `getModelAvailabilityStatus()` | Debug availability state | `getModelAvailabilityStatus()` |
+
+This system ensures high availability and optimal resource usage across multiple AI providers while providing fine-grained control over model selection and failover behavior.
     lofi: azureModel('gpt-3.5'),    // Fast, cost-effective model
   },
   embeddingModels: {
