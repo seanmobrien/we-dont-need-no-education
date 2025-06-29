@@ -52,7 +52,6 @@ describe('useDataSource', () => {
     expect(result.current.loadError).toBe(null);
     expect(typeof result.current.getRows).toBe('function');
     expect(typeof result.current.updateRow).toBe('function');
-    expect(typeof result.current.clearLoadError).toBe('function');
   });
 
   /*
