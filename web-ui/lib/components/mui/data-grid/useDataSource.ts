@@ -408,7 +408,7 @@ export const useDataSource = ({
         throw err;
       }
     },
-    [url, isSuccess, data],
+    [url, isSuccess, data, setCurrentQueryParams],
   );
 
   // Memoize the data source object to prevent unnecessary re-renders
