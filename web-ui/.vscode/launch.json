@@ -1,10 +1,22 @@
-ta{
+{
     "version": "0.2.0",
     "configurations": [
         {
             "name": "Next.js: debug server-side",
             "type": "node-terminal",
             "request": "launch",
+            "env": {
+                "NODE_OPTIONS": "--inspect"
+            },
+            "command": "npm run dev"
+        },
+        {
+            "name": "Next.js: debug trace deprecation",
+            "type": "node-terminal",
+            "request": "launch",
+            "env": {
+                "NODE_OPTIONS": "--inspect --trace-deprecation --trace-warnings"
+            },
             "command": "npm run dev"
         },
         {

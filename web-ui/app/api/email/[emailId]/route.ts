@@ -1,25 +1,122 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/neondb';
 import { log } from '@/lib/logger';
-import { mapRecordToObject } from '../../../../lib/api/email/util';
 import { LoggedError } from '@/lib/react-util';
 import { extractParams } from '@/lib/nextjs-util';
+import { eq } from 'drizzle-orm';
+import { db, schema } from '@/lib/drizzle-db';
+
+/**
+ * Extracts the emailId out of the route parameters, with some magic to support document IDs if that's what we were given.
+ * @param req - The request object containing the emailId parameter.
+ * @template T - The type of the request parameters, which should include an emailId property
+ * @returns A promise that resolves to an object containing the emailId and an optional documentId
+ */
+const extractEmailId = async <T extends { emailId: string }>(req: {
+  params: T | Promise<T>;
+}): Promise<{ emailId: string | null; documentId?: number }> => {
+  const { emailId } = await extractParams<T>(req);
+  // If no email id provided, return null
+  if (!emailId) {
+    return { emailId: null };
+  }
+  // Otherwise check to see if we got a GUID
+  const guidRegex =
+    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+  if (guidRegex.test(emailId)) {
+    // If so, return it as-is
+    return { emailId };
+  }
+  // If not, see if it can be interpreted as a document id (eg a number)
+  const documentId = Number(emailId);
+  if (!documentId || Number.isNaN(documentId)) {
+    // If not, return null
+    return { emailId: null };
+  }
+  // If so try and look it up
+  const doc = await db.query.documentUnits.findFirst({
+    where: (d, { eq }) => eq(d.unitId, documentId),
+    columns: {
+      unitId: true,
+      emailId: true,
+    },
+  });
+  if (doc) {
+    // And if we found it, return the email id with the doc id for context
+    return { emailId: doc.emailId, documentId: doc.unitId };
+  }
+  // Otherwise, we have nada
+  return { emailId: null };
+};
 
 export async function GET(
   req: NextRequest,
   withParams: { params: Promise<{ emailId: string }> },
 ) {
-  const { emailId } = await extractParams(withParams);
-  const guidRegex =
-    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
-  if (!emailId || !guidRegex.test(emailId)) {
+  const { emailId, documentId } = await extractEmailId(withParams);
+  if (!emailId) {
     return NextResponse.json(
       { error: 'Email ID is required' },
       { status: 400 },
     );
   }
   try {
-    // Fetch detailed email data
+    const record = await db.query.emails.findFirst({
+      where: (e, { eq }) => eq(e.emailId, emailId),
+      with: {
+        sender: {
+          columns: {
+            contactId: true,
+            name: true,
+            email: true,
+          },
+        },
+        emailRecipients: {
+          with: {
+            recipient: {
+              columns: {
+                contactId: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+      columns: {
+        emailId: true,
+        subject: true,
+        emailContents: true,
+        sentTimestamp: true,
+        threadId: true,
+        parentId: true,
+      },
+    });
+    if (!record) {
+      return NextResponse.json({ error: 'Email not found' }, { status: 404 });
+    }
+    const result = {
+      emailId: record.emailId,
+      subject: record.subject,
+      body: record.emailContents,
+      sentOn: record.sentTimestamp,
+      threadId: record.threadId,
+      parentEmailId: record.parentId,
+      sender: {
+        contactId: record.sender.contactId,
+        name: record.sender.name,
+        email: record.sender.email,
+      },
+      recipients: (record.emailRecipients || []).map((er) => ({
+        contactId: er.recipient.contactId,
+        name: er.recipient.name,
+        email: er.recipient.email,
+      })),
+      // If they passed us a document id, include it in the response
+      ...(documentId ? { documentId } : {}),
+    };
+    return NextResponse.json(result, { status: 200 });
+    /*
+    // Fetch detailed email data        
     const result = await query(
       (sql) => sql`
         SELECT 
@@ -48,9 +145,7 @@ export async function GET(
       `,
       { transform: mapRecordToObject },
     );
-    return result.length === 0
-      ? NextResponse.json({ error: 'Email not found' }, { status: 404 })
-      : NextResponse.json(result[0], { status: 200 });
+      */
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
@@ -83,13 +178,11 @@ export async function GET(
  */
 export async function DELETE(
   req: NextRequest,
-  {
-    params,
-  }: {
+  withParams: {
     params: Promise<{ emailId: string }>;
   },
 ): Promise<NextResponse> {
-  const { emailId: emailId } = await params;
+  const { emailId } = await extractEmailId(withParams);
   if (!emailId) {
     return NextResponse.json(
       { error: 'Email ID is required' },
@@ -97,24 +190,19 @@ export async function DELETE(
     );
   }
   try {
-    // Delete associated recipients first
-    await query(
-      (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`,
-    );
-
-    // Delete the email
-    const result = await query(
-      (sql) => sql`DELETE FROM emails WHERE email_id = ${emailId} RETURNING *`,
-    );
-
-    if (result.length === 0) {
+    const records = await db
+      .delete(schema.emails)
+      .where(eq(schema.emails.emailId, emailId))
+      .returning({ emailId: schema.emails.emailId });
+    if (records.length === 0) {
       return NextResponse.json({ error: 'Email not found' }, { status: 404 });
     }
+    const { emailId: deletedEmailId } = records[0];
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email deleted:', result: result[0] }),
+      l.verbose({ msg: '[[AUDIT]] -  Email deleted:', result: deletedEmailId }),
     );
     return NextResponse.json(
-      { message: 'Email deleted successfully', email: result[0] },
+      { message: 'Email deleted successfully', email: deletedEmailId },
       { status: 200 },
     );
   } catch (error) {

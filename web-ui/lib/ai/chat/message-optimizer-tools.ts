@@ -3,6 +3,96 @@ import { aiModelFactory } from '@/lib/ai';
 import { generateText } from 'ai';
 import { log } from '@/lib/logger';
 import { createHash } from 'crypto';
+import { appMeters, hashUserId } from '@/lib/site-util/metrics';
+
+// OpenTelemetry Metrics for Message Optimization
+const optimizationCounter = appMeters.createCounter(
+  'ai_tool_message_optimization_total',
+  {
+    description: 'Total number of tool message optimization operations',
+    unit: '1',
+  },
+);
+
+const messageReductionHistogram = appMeters.createHistogram(
+  'ai_tool_message_reduction_ratio',
+  {
+    description: 'Distribution of tool message reduction ratios (0-1)',
+    unit: '1',
+  },
+);
+
+const characterReductionHistogram = appMeters.createHistogram(
+  'ai_tool_character_reduction_ratio',
+  {
+    description: 'Distribution of tool character reduction ratios (0-1)',
+    unit: '1',
+  },
+);
+
+const optimizationDurationHistogram = appMeters.createHistogram(
+  'ai_tool_optimization_duration_ms',
+  {
+    description: 'Duration of tool message optimization operations',
+    unit: 'ms',
+  },
+);
+
+const toolCallSummariesCounter = appMeters.createCounter(
+  'ai_tool_call_summaries_total',
+  {
+    description: 'Total number of tool call summaries generated',
+    unit: '1',
+  },
+);
+
+const cacheHitsCounter = appMeters.createCounter(
+  'ai_tool_summary_cache_hits_total',
+  {
+    description: 'Total number of tool summary cache hits',
+    unit: '1',
+  },
+);
+
+const cacheMissesCounter = appMeters.createCounter(
+  'ai_tool_summary_cache_misses_total',
+  {
+    description: 'Total number of tool summary cache misses',
+    unit: '1',
+  },
+);
+
+const summaryGenerationDurationHistogram = appMeters.createHistogram(
+  'ai_tool_summary_generation_duration_ms',
+  {
+    description: 'Duration of individual tool summary generation operations',
+    unit: 'ms',
+  },
+);
+
+const originalMessageCountHistogram = appMeters.createHistogram(
+  'ai_tool_original_message_count',
+  {
+    description: 'Distribution of original message counts in optimization',
+    unit: '1',
+  },
+);
+
+const optimizedMessageCountHistogram = appMeters.createHistogram(
+  'ai_tool_optimized_message_count',
+  {
+    description: 'Distribution of optimized message counts after optimization',
+    unit: '1',
+  },
+);
+
+const cacheHitRateHistogram = appMeters.createHistogram(
+  'ai_tool_summary_cache_hit_rate',
+  {
+    description: 'Distribution of cache hit rates for tool summary cache',
+    unit: '1',
+  },
+);
 
 /**
  * In-memory cache for tool call summaries
@@ -12,6 +102,14 @@ import { createHash } from 'crypto';
 const toolSummaryCache = new Map<string, string>();
 
 /**
+ * Cache statistics for hit rate tracking and OpenTelemetry metrics
+ */
+const cacheStats = {
+  hits: 0,
+  misses: 0,
+};
+
+/**
  * Cache management utilities for tool call summaries
  * These can be easily migrated to Redis in the future
  */
@@ -19,10 +117,11 @@ export const cacheManager = {
   /**
    * Get cache statistics for monitoring and debugging
    */
-  getStats(): { size: number; keys: string[] } {
+  getStats(): { size: number; keys: string[]; hitRate: number } {
     return {
       size: toolSummaryCache.size,
       keys: Array.from(toolSummaryCache.keys()).map((k) => k.substring(0, 8)), // First 8 chars for privacy
+      hitRate: this.getHitRate(),
     };
   },
 
@@ -31,6 +130,8 @@ export const cacheManager = {
    */
   clear(): void {
     toolSummaryCache.clear();
+    cacheStats.hits = 0;
+    cacheStats.misses = 0;
     log((l) => l.info('Tool summary cache cleared'));
   },
 
@@ -38,9 +139,17 @@ export const cacheManager = {
    * Get cache hit rate for the current session
    */
   getHitRate(): number {
-    // In a real implementation, you'd track hits vs misses
-    // For now, we'll return 0 as placeholder
-    return 0;
+    const total = cacheStats.hits + cacheStats.misses;
+    return total > 0 ? cacheStats.hits / total : 0;
+  },
+
+  /**
+   * Update cache hit rate metrics for OpenTelemetry
+   */
+  updateMetrics(): void {
+    cacheHitRateHistogram.record(this.getHitRate(), {
+      cache_type: 'tool_summary',
+    });
   },
 
   /**
@@ -58,7 +167,10 @@ export const cacheManager = {
     Object.entries(data).forEach(([key, value]) => {
       toolSummaryCache.set(key, value);
     });
-    log((l) => l.info('Tool summary cache imported', { size: toolSummaryCache.size }));  },
+    log((l) =>
+      l.info('Tool summary cache imported', { size: toolSummaryCache.size }),
+    );
+  },
 };
 
 /**
@@ -116,6 +228,12 @@ export async function optimizeMessagesWithToolSummarization(
   // Calculate original context size for meaningful metrics
   const originalCharacterCount = calculateMessageCharacterCount(messages);
 
+  // Record original message count for OpenTelemetry
+  originalMessageCountHistogram.record(messages.length, {
+    model,
+    user_id: userId ? hashUserId(userId) : 'anonymous',
+  });
+
   log((l) =>
     l.debug('Starting enterprise tool message optimization', {
       originalMessageCount: messages.length,
@@ -131,6 +249,20 @@ export async function optimizeMessagesWithToolSummarization(
   if (cutoffIndex === 0) {
     // No optimization needed - all messages are recent
     log((l) => l.debug('No optimization needed - all messages are recent'));
+
+    // Record metrics for no-op optimization
+    optimizationCounter.add(1, {
+      model,
+      user_id: userId ? hashUserId(userId) : 'anonymous',
+      optimization_type: 'no_optimization_needed',
+    });
+
+    optimizationDurationHistogram.record(Date.now() - startTime, {
+      model,
+      user_id: userId ? hashUserId(userId) : 'anonymous',
+      optimization_type: 'no_optimization_needed',
+    });
+
     return messages;
   }
 
@@ -140,7 +272,9 @@ export async function optimizeMessagesWithToolSummarization(
       messages,
       cutoffIndex,
       preservedToolIds,
-    ); // Step 3: Generate AI summaries for all collected tool calls
+    );
+
+  // Step 3: Generate AI summaries for all collected tool calls
   await generateToolCallSummaries(toolCallDict, messages);
   const processingTime = Date.now() - startTime;
 
@@ -153,6 +287,35 @@ export async function optimizeMessagesWithToolSummarization(
       100,
   );
 
+  const messageReduction = Math.round(
+    ((messages.length - optimizedMessages.length) / messages.length) * 100,
+  );
+
+  // Record comprehensive OpenTelemetry metrics
+  const attributes = {
+    model,
+    user_id: userId ? hashUserId(userId) : 'anonymous',
+    optimization_type: 'tool_summarization',
+  };
+
+  optimizationCounter.add(1, attributes);
+
+  optimizationDurationHistogram.record(processingTime, attributes);
+
+  optimizedMessageCountHistogram.record(optimizedMessages.length, attributes);
+
+  messageReductionHistogram.record(
+    (messages.length - optimizedMessages.length) / messages.length,
+    attributes,
+  );
+
+  characterReductionHistogram.record(
+    (originalCharacterCount - optimizedCharacterCount) / originalCharacterCount,
+    attributes,
+  );
+
+  toolCallSummariesCounter.add(toolCallDict.size, attributes);
+
   log((l) =>
     l.info('Enterprise tool optimization completed', {
       originalMessages: messages.length,
@@ -161,7 +324,7 @@ export async function optimizeMessagesWithToolSummarization(
       optimizedCharacterCount,
       characterReduction: `${characterReduction}%`,
       toolCallsProcessed: toolCallDict.size,
-      messageReduction: `${Math.round(((messages.length - optimizedMessages.length) / messages.length) * 100)}%`,
+      messageReduction: `${messageReduction}%`,
       processingTimeMs: processingTime,
       model,
       userId,
@@ -175,7 +338,9 @@ export async function optimizeMessagesWithToolSummarization(
  * Find the cutoff point by locating the last two user prompts
  * Returns the index where optimization should begin and IDs of tools to preserve
  */
-const findUserInteractionCutoff = (messages: UIMessage[]): {
+const findUserInteractionCutoff = (
+  messages: UIMessage[],
+): {
   cutoffIndex: number;
   preservedToolIds: Set<string>;
 } => {
@@ -430,12 +595,34 @@ const generateSingleToolCallSummary = async (
   // Generate cache key from the tool call sequence
   const allToolMessages = [...record.toolRequest, ...record.toolResult];
   const cacheKey = hashToolCallSequence(allToolMessages);
-    // Check cache first to avoid redundant LLM calls
+  // Check cache first to avoid redundant LLM calls
   const cachedSummary = toolSummaryCache.get(cacheKey);
   if (cachedSummary) {
-    log((l) => l.debug('Using cached tool summary', { cacheKey: cacheKey.substring(0, 8) }));
+    // Record cache hit metrics
+    cacheStats.hits++;
+    cacheHitsCounter.add(1, {
+      cache_type: 'tool_summary',
+    });
+
+    // Update gauge metrics
+    cacheManager.updateMetrics();
+
+    log((l) =>
+      l.debug('Using cached tool summary', {
+        cacheKey: cacheKey.substring(0, 8),
+      }),
+    );
     return cachedSummary;
   }
+
+  // Record cache miss metrics
+  cacheStats.misses++;
+  cacheMissesCounter.add(1, {
+    cache_type: 'tool_summary',
+  });
+
+  // Update gauge metrics
+  cacheManager.updateMetrics();
 
   // Extract key information from tool requests and responses
   const toolRequests = record.toolRequest.flatMap((msg) =>
@@ -476,9 +663,10 @@ ${JSON.stringify(
   toolResults.map((r) => ({
     tool: r.tool,
     result:
-      typeof r.result === 'string' && r.result.length > 500
-        ? r.result.substring(0, 500) + '...[truncated]'
-        : r.result,
+      typeof r.result === 'string' &&
+      /*r.result.length > 500
+         ? r.result.substring(0, 500) + '...[truncated]'
+        : */ r.result,
   })),
   null,
   2,
@@ -493,6 +681,8 @@ Create a concise summary that:
 Keep the summary under 300 characters while preserving essential meaning.
 Respond with just the summary text, no additional formatting.`;
 
+  const startSummaryTime = Date.now();
+
   try {
     const lofiModel = aiModelFactory('lofi');
 
@@ -501,26 +691,50 @@ Respond with just the summary text, no additional formatting.`;
       prompt,
       maxTokens: 150,
       temperature: 0.3,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'completion-tool-summarization',
+        metadata: {},
+      },
+    });
+
+    const summaryDuration = Date.now() - startSummaryTime;
+
+    // Record summary generation duration
+    summaryGenerationDurationHistogram.record(summaryDuration, {
+      model: 'lofi',
+      status: 'success',
     });
 
     const summary = result.text.trim();
-      // Cache the result for future use
+    // Cache the result for future use
     toolSummaryCache.set(cacheKey, summary);
-    
-    log((l) => l.debug('Generated and cached new tool summary', { 
-      cacheKey: cacheKey.substring(0, 8),
-      summaryLength: summary.length,
-      cacheSize: toolSummaryCache.size
-    }));
+
+    log((l) =>
+      l.debug('Generated and cached new tool summary', {
+        cacheKey: cacheKey.substring(0, 8),
+        summaryLength: summary.length,
+        cacheSize: toolSummaryCache.size,
+        durationMs: summaryDuration,
+      }),
+    );
 
     return summary;
   } catch (error) {
+    const summaryDuration = Date.now() - startSummaryTime;
+
+    // Record error metrics
+    summaryGenerationDurationHistogram.record(summaryDuration, {
+      model: 'lofi',
+      status: 'error',
+    });
+
     log((l) => l.error('Tool summarization failed', { error }));
 
     // Fallback to basic summary
     const toolNames = toolRequests.map((r) => r.tool).join(', ');
     const fallbackSummary = `Tool execution completed: ${toolNames}. Data processed successfully.`;
-      // Cache fallback summary too to avoid retrying failures
+    // Cache fallback summary too to avoid retrying failures
     toolSummaryCache.set(cacheKey, fallbackSummary);
     return fallbackSummary;
   }
@@ -682,6 +896,63 @@ const calculateMessageCharacterCount = (messages: UIMessage[]): number => {
       messageSize += message.toolInvocations.reduce((toolTotal, invocation) => {
         return toolTotal + JSON.stringify(invocation).length;
       }, 0);
-    }    return total + messageSize;
+    }
+    return total + messageSize;
   }, 0);
+};
+
+/**
+ * Helper functions for OpenTelemetry integration and metrics export
+ */
+
+/**
+ * Export all message optimizer metrics for Prometheus or other observability backends
+ * This can be called periodically or on-demand for metric collection
+ */
+export const exportMessageOptimizerMetrics = () => {
+  // Update gauge metrics to current values
+  cacheManager.updateMetrics();
+
+  return {
+    optimization_counters: {
+      total_optimizations: 'ai_message_optimization_total',
+      tool_summaries_generated: 'ai_tool_call_summaries_total',
+      cache_hits: 'ai_tool_summary_cache_hits_total',
+      cache_misses: 'ai_tool_summary_cache_misses_total',
+    },
+    histograms: {
+      message_reduction_ratio: 'ai_message_reduction_ratio',
+      character_reduction_ratio: 'ai_character_reduction_ratio',
+      optimization_duration: 'ai_optimization_duration_ms',
+      summary_generation_duration: 'ai_summary_generation_duration_ms',
+      original_message_count: 'ai_original_message_count',
+      optimized_message_count: 'ai_optimized_message_count',
+    },
+    gauges: {
+      cache_hit_rate: 'ai_tool_summary_cache_hit_rate',
+    },
+    cache_stats: cacheManager.getStats(),
+  };
+};
+
+/**
+ * Start periodic metrics update for gauges that need regular updates
+ * This ensures OpenTelemetry collectors get fresh gauge values
+ */
+export const startPeriodicMetricsUpdate = (intervalMs: number = 30000) => {
+  const updateInterval = setInterval(() => {
+    try {
+      cacheManager.updateMetrics();
+    } catch (error) {
+      log((l) => l.error('Failed to update periodic metrics', { error }));
+    }
+  }, intervalMs);
+
+  // Return cleanup function
+  return () => {
+    clearInterval(updateInterval);
+    log((l) =>
+      l.debug('Stopped periodic metrics updates for message optimizer'),
+    );
+  };
 };

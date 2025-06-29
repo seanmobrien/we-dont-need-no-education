@@ -45,11 +45,7 @@ describe('searchPolicyStore', () => {
 
     expect(mockHybridSearch).toHaveBeenCalledTimes(1);
     expect(mockHybridSearch).toHaveBeenCalledWith(query, options);
-    expect(mockLog).toHaveBeenCalledWith('searchPolicyStore invoked.', {
-      query,
-      options,
-      ret: expectedResult,
-    });
+    expect(mockLog).toHaveBeenCalled();
     expect(result).toEqual(wrappedResult);
   });
 

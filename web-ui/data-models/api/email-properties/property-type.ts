@@ -20,6 +20,7 @@ export type EmailPropertyCategory = {
 export type EmailPropertySummary = {
   typeId: number | EmailPropertyTypeType | EmailPropertyTypeTypeId;
   propertyId: string;
+  propertyUnitId?: number;
   documentId: number;
   createdOn: Date;
   categoryId?: number;

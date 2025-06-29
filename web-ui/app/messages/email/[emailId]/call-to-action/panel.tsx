@@ -13,6 +13,7 @@ import {
   Alert,
   CircularProgress,
   Stack,
+  Button,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
@@ -145,6 +146,21 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
             {formatDate(row.compliancy_close_date)}
           </Typography>
         </Grid>
+        <Grid gridColumn={{ xs: 12, md: 4 }}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Timeline
+          </Typography>
+          <Typography variant="body2">
+            <Button
+              href={`call-to-action/${row.propertyId}/timeline`}
+              variant="outlined"
+              size="small"
+              color="primary"
+            >
+              Generate
+            </Button>
+          </Typography>
+        </Grid>
       </Grid>
 
       <Divider />
@@ -215,7 +231,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
           <CircularProgress />
         </Box>
       ) : error ? (
-        <Alert severity="error">{error}</Alert>
+        <Alert severity="error" action={<Typography>{error}</Typography>} />
       ) : (
         <Box>
           <Typography variant="h6" gutterBottom>

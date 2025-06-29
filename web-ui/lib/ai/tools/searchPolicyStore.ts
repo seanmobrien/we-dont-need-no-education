@@ -6,6 +6,40 @@ import {
 import { AiSearchToolResult, PolicySearchOptions } from './types';
 import { LoggedError } from '@/lib/react-util';
 import { toolCallbackResultFactory } from './utility';
+import { appMeters } from '@/lib/site-util/metrics';
+
+// OpenTelemetry Metrics for SearchPolicyStore Tool
+const searchPolicyStoreCounter = appMeters.createCounter(
+  'ai_tool_search_policy_store_total',
+  {
+    description: 'Total number of policy store search operations',
+    unit: '1',
+  },
+);
+
+const searchPolicyStoreDurationHistogram = appMeters.createHistogram(
+  'ai_tool_search_policy_store_duration_ms',
+  {
+    description: 'Duration of policy store search operations',
+    unit: 'ms',
+  },
+);
+
+const searchPolicyStoreResultsHistogram = appMeters.createHistogram(
+  'ai_tool_search_policy_store_results_count',
+  {
+    description: 'Number of results returned by policy store search',
+    unit: '1',
+  },
+);
+
+const searchPolicyStoreErrorCounter = appMeters.createCounter(
+  'ai_tool_search_policy_store_errors_total',
+  {
+    description: 'Total number of policy store search errors',
+    unit: '1',
+  },
+);
 
 export const searchPolicyStore = async ({
   query,
@@ -14,12 +48,60 @@ export const searchPolicyStore = async ({
   query: string;
   options?: PolicySearchOptions;
 }): Promise<AiSearchToolResult> => {
+  const startTime = Date.now();
+
+  const attributes = {
+    has_options: Boolean(options),
+    query_length: query.length,
+    search_type: 'policy_store',
+  };
+
   try {
     const client = hybridPolicySearchFactory();
     const ret = await client.hybridSearch(query, options);
-    log((l) => l.trace('searchPolicyStore invoked.', { query, options, ret }));
+
+    const duration = Date.now() - startTime;
+    const resultCount = ret.results?.length || 0;
+
+    // Record success metrics
+    searchPolicyStoreCounter.add(1, {
+      ...attributes,
+      status: 'success',
+    });
+
+    searchPolicyStoreDurationHistogram.record(duration, {
+      ...attributes,
+      status: 'success',
+    });
+
+    searchPolicyStoreResultsHistogram.record(resultCount, {
+      ...attributes,
+    });
+
+    log((l) =>
+      l.trace('searchPolicyStore invoked.', {
+        query,
+        options,
+        resultCount,
+        durationMs: duration,
+      }),
+    );
+
     return toolCallbackResultFactory(ret);
   } catch (error) {
+    const duration = Date.now() - startTime;
+
+    // Record error metrics
+    searchPolicyStoreErrorCounter.add(1, {
+      ...attributes,
+      error_type: 'search_error',
+    });
+
+    searchPolicyStoreDurationHistogram.record(duration, {
+      ...attributes,
+      status: 'error',
+    });
+
     return toolCallbackResultFactory<AiSearchResultEnvelope>(
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,

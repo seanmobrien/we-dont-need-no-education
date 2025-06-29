@@ -17,6 +17,10 @@ export const retryRateLimitMiddleware: LanguageModelV1Middleware = {
     console.log('doStream called');
     console.log(`params: ${JSON.stringify(params, null, 2)}`);
 
+    // Here you can override the stream function to add custom behavior
+    // For example, you could log the stream parts, modify them before returning,
+    // or return a cached stream.
+
     const { stream, ...rest } = await doStream();
 
     let generatedText = '';

@@ -1,7 +1,60 @@
 /**
  * @jest-environment node
+ *
+ * Email API Route Tests
+ *
+ * This test file covers both the traditional neondb-based endpoints (/api/email)
+ * and the new Drizzle ORM-based endpoints (/api/email/[emailId]).
+ *
+ * The tests are designed to work with the mock setup from jest.setup.ts,
+ * providing comprehensive coverage for:
+ * - POST: Creating emails with validation
+ * - PUT: Updating emails with validation
+ * - GET: Listing emails (neondb) and retrieving individual emails (drizzle)
+ * - DELETE: Removing emails (drizzle)
+ *
+ * Key mocking strategies:
+ * - neondb query/queryExt functions for traditional endpoints
+ * - Drizzle db.query and db.delete chains for new endpoints
+ * - nextjs-util functions including extractParams and isLikeNextRequest
+ * - Document ID to Email ID conversion handling
  */
+
+// Define mocks before they are used
+const mockDbQuery = {
+  emails: {
+    findFirst: jest.fn(),
+  },
+  documentUnits: {
+    findFirst: jest.fn(),
+  },
+};
+
+const mockDbDelete = jest.fn();
+const mockSchema = {
+  emails: {
+    emailId: 'emailId',
+  },
+};
+
+const mockExtractParams = jest.fn();
+
+// Mock modules
 jest.mock('@/lib/neondb');
+jest.mock('@/lib/nextjs-util', () => ({
+  extractParams: mockExtractParams,
+  isLikeNextRequest: jest.fn((req) => {
+    return !!(req && typeof req === 'object' && 'url' in req);
+  }),
+}));
+
+jest.mock('@/lib/drizzle-db', () => ({
+  db: {
+    query: mockDbQuery,
+    delete: mockDbDelete,
+  },
+  schema: mockSchema,
+}));
 
 import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
@@ -12,10 +65,23 @@ const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('Email API', () => {
   beforeEach(() => {
+    // Reset neondb mocks (for main route.ts)
     (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
     (queryExt as jest.Mock).mockImplementation(() =>
       Promise.resolve({ rowCount: 0, rows: [] }),
     );
+
+    // Reset drizzle mocks (for [emailId]/route.ts)
+    mockDbQuery.emails.findFirst.mockReset();
+    mockDbQuery.documentUnits.findFirst.mockReset();
+    mockDbDelete.mockReset();
+
+    // Reset extractParams mock
+    mockExtractParams.mockReset();
+    mockExtractParams.mockImplementation(async (req) => {
+      const params = await req.params;
+      return params;
+    });
   });
 
   describe('POST /api/email', () => {
@@ -171,28 +237,32 @@ describe('Email API', () => {
   });
 
   describe('GET /api/email/id', () => {
+    beforeEach(() => {
+      // Additional setup for drizzle-based GET tests
+      mockDbQuery.documentUnits.findFirst.mockResolvedValue(null);
+    });
+
     it('should return email details if emailId is provided', async () => {
       const req = {
         url: `http://localhost/api/email/${ValidEmailId}`,
       } as unknown as NextRequest;
 
-      const mockResult = [
-        {
-          emailId: ValidEmailId,
-          subject: 'Test Subject',
-          body: 'Test Body',
-          sentOn: '2023-01-01T00:00:00Z',
-          threadId: 1,
-          parentEmailId: null,
-          sender: {
-            contactId: 1,
-            email: 'sender@example.com',
-            name: 'Sender Name',
-          },
-          recipients: [],
+      const mockEmailRecord = {
+        emailId: ValidEmailId,
+        subject: 'Test Subject',
+        emailContents: 'Test Body',
+        sentTimestamp: '2023-01-01T00:00:00Z',
+        threadId: 1,
+        parentId: null,
+        sender: {
+          contactId: 1,
+          email: 'sender@example.com',
+          name: 'Sender Name',
         },
-      ];
-      (query as jest.Mock).mockResolvedValue(mockResult);
+        emailRecipients: [],
+      };
+
+      mockDbQuery.emails.findFirst.mockResolvedValue(mockEmailRecord);
 
       const res = await GetWithId(req, {
         params: Promise.resolve({ emailId: ValidEmailId }),
@@ -200,15 +270,18 @@ describe('Email API', () => {
 
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
-        ...mockResult[0],
+        emailId: ValidEmailId,
+        subject: 'Test Subject',
+        body: 'Test Body',
+        sentOn: '2023-01-01T00:00:00Z',
+        threadId: 1,
+        parentEmailId: null,
         sender: {
           contactId: 1,
           email: 'sender@example.com',
           name: 'Sender Name',
         },
-        senderId: undefined,
-        senderName: undefined,
-        senderEmail: undefined,
+        recipients: [],
       });
     });
 
@@ -217,8 +290,7 @@ describe('Email API', () => {
         url: 'http://localhost/api/email?emailId=1',
       } as unknown as NextRequest;
 
-      (query as jest.Mock).mockResolvedValue([]);
-
+      mockDbQuery.emails.findFirst.mockResolvedValue(null);
       const res = await GetWithId(req, {
         params: Promise.resolve({ emailId: ValidEmailId }),
       });
@@ -229,6 +301,56 @@ describe('Email API', () => {
       });
     });
 
+    it('should handle document ID to email ID conversion', async () => {
+      const documentId = 12345;
+      const req = {
+        url: `http://localhost/api/email/${documentId}`,
+      } as unknown as NextRequest;
+
+      // Mock document lookup to return email ID
+      mockDbQuery.documentUnits.findFirst.mockResolvedValue({
+        unitId: documentId,
+        emailId: ValidEmailId,
+      });
+
+      const mockEmailRecord = {
+        emailId: ValidEmailId,
+        subject: 'Test Subject',
+        emailContents: 'Test Body',
+        sentTimestamp: '2023-01-01T00:00:00Z',
+        threadId: 1,
+        parentId: null,
+        sender: {
+          contactId: 1,
+          email: 'sender@example.com',
+          name: 'Sender Name',
+        },
+        emailRecipients: [],
+      };
+
+      mockDbQuery.emails.findFirst.mockResolvedValue(mockEmailRecord);
+
+      const res = await GetWithId(req, {
+        params: Promise.resolve({ emailId: documentId.toString() }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({
+        emailId: ValidEmailId,
+        subject: 'Test Subject',
+        body: 'Test Body',
+        sentOn: '2023-01-01T00:00:00Z',
+        threadId: 1,
+        parentEmailId: null,
+        sender: {
+          contactId: 1,
+          email: 'sender@example.com',
+          name: 'Sender Name',
+        },
+        recipients: [],
+        documentId: documentId,
+      });
+    });
     it('should return a list of emails if emailId is not provided', async () => {
       const req = {
         url: 'http://localhost/api/email',
@@ -244,16 +366,25 @@ describe('Email API', () => {
           sender_email: 'sender@example.com',
         },
       ];
-      (query as jest.Mock).mockResolvedValue(mockResult);
+
+      // Mock the first query call (main data) and second query call (count)
+      (query as jest.Mock)
+        .mockResolvedValueOnce(mockResult) // first call for emails
+        .mockResolvedValueOnce([{ records: 1 }]); // second call for count
 
       const res = await GET(req);
 
       expect(res.status).toBe(200);
-      expect((await res.json()).results).toEqual(mockResult);
+      const responseData = await res.json();
+      expect(responseData.results).toEqual(mockResult);
+      expect(responseData.pageStats).toEqual({
+        page: 1,
+        num: 10,
+        total: 1,
+      });
     });
 
     it('should return 400 status if emailId is invalid', async () => {
-      (query as jest.Mock).mockResolvedValue([]);
       const req = {
         url: 'http://localhost/api/email?emailId=invalid',
       } as unknown as NextRequest;
@@ -286,15 +417,12 @@ describe('Email API', () => {
 
   describe('DELETE /api/email', () => {
     it('should delete an email and return 200 status', async () => {
-      const mockResult = [
-        {
-          emailId: ValidEmailId,
-          subject: 'Test Subject',
-          body: 'Test Body',
-          sentOn: '2023-01-01T00:00:00Z',
-        },
-      ];
-      (query as jest.Mock).mockResolvedValue(mockResult);
+      const mockDeleteChain = {
+        where: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValue([{ emailId: ValidEmailId }]),
+      };
+
+      mockDbDelete.mockReturnValue(mockDeleteChain);
 
       const res = await DELETE({} as NextRequest, {
         params: Promise.resolve({ emailId: ValidEmailId }),
@@ -303,12 +431,17 @@ describe('Email API', () => {
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
         message: 'Email deleted successfully',
-        email: mockResult[0],
+        email: ValidEmailId,
       });
     });
 
     it('should return 404 status if email is not found', async () => {
-      (query as jest.Mock).mockResolvedValue([]);
+      const mockDeleteChain = {
+        where: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockResolvedValue([]),
+      };
+
+      mockDbDelete.mockReturnValue(mockDeleteChain);
 
       const res = await DELETE({} as NextRequest, {
         params: Promise.resolve({ emailId: ValidEmailId }),

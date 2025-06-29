@@ -7,6 +7,7 @@ import { AiModelTypeValue_Embedding } from '@/lib/ai/core/unions';
 
 import { wrapLanguageModel } from 'ai';
 import { retryRateLimitMiddleware } from './middleware/retryRateLimitMiddleware';
+import { cacheWithRedis } from './middleware';
 
 let azureProjectProvider: AzureOpenAIProvider | undefined;
 
@@ -25,7 +26,7 @@ interface GetAzureProjectProviderOverloads {
 const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
   return wrapLanguageModel({
     model,
-    middleware: retryRateLimitMiddleware,
+    middleware: cacheWithRedis,
   }) as LanguageModelV1;
 };
 

@@ -28,9 +28,9 @@ import {
   Checkbox,
   CircularProgress,
   Typography,
+  useTheme,
 } from '@mui/material';
 import { isError } from '@/lib/react-util';
-import theme from '@/theme';
 
 const ImportRecord: React.FC<ImportRecordProps> = ({
   importStatus: importStatusFromProps,
@@ -51,7 +51,7 @@ const ImportRecord: React.FC<ImportRecordProps> = ({
   >();
   const [errorMessage, setErrorMessage] = useState<string | undefined>();
   const itemRef = useRef<HTMLSpanElement | null>(null);
-
+  const theme = useTheme();
   // compute import status
   const { sessionLabel, jobState } = useMemo((): {
     jobState: ImportRecordJobState;
