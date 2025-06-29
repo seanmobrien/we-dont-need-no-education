@@ -28,8 +28,8 @@ export const EmailPropertyDataGrid = <
       if (includeAttachments === event.target.checked) {
         return; // No change, do nothing
       }
-      // Otherwise, toggle the state
-      setIncludeAttachments(!includeAttachments);
+      // Otherwise, update the state to match the switch's state
+      setIncludeAttachments(event.target.checked);
     },
     [includeAttachments],
   );

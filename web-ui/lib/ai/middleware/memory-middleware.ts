@@ -42,10 +42,10 @@ export const memoryMiddleware: LanguageModelV1Middleware = {
     const memoryClient = memoryClientFactory({
       // TODO: infer userid and projectid from params
     });
-    const memories = memoryClient.search(params., {
+    const memories = memoryClient.search(params.query, {
       limit: 10,
       enable_graph: true,
-    })
+    });
     */
     params.prompt = [
       {
