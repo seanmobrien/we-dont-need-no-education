@@ -68,7 +68,7 @@ export const isAnnotatedRetryMessage = (
         hint: 'notify:retry',
         message: P.string,
         data: {
-          model: P.union('hifi', 'lofi', 'completions', 'embedding'),
+          model: P.union('hifi', 'lofi', 'completions', 'embedding', 'gemini-pro', 'gemini-flash', 'google-embedding'),
           retryAt: P.string.regex(
             /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/,
           ),
@@ -88,20 +88,22 @@ export const isAiModelType = (value: unknown): value is AiModelType =>
   typeof value === 'string' && AiModelTypeValues.includes(value as AiModelType);
 
 /**
- * Type guard that checks if a given value is an `AiModelType` excluding the `'embedding'` type.
+ * Type guard that checks if a given value is an `AiModelType` excluding the embedding types.
  *
  * @param value - The value to check.
- * @returns `true` if the value is an `AiModelType` and not `'embedding'`; otherwise, `false`.
+ * @returns `true` if the value is an `AiModelType` and not `'embedding'` or `'google-embedding'`; otherwise, `false`.
  *
  * @example
  * ```typescript
  * isAiLanguageModelType('hifi'); // true
  * isAiLanguageModelType('lofi'); // true
+ * isAiLanguageModelType('gemini-pro'); // true
  * isAiLanguageModelType('embedding'); // false
+ * isAiLanguageModelType('google-embedding'); // false
  * isAiLanguageModelType('other-model'); // false
  * ```
  */
 export const isAiLanguageModelType = (
   value: unknown,
 ): value is AiLanguageModelType =>
-  isAiModelType(value) && value !== 'embedding';
+  isAiModelType(value) && value !== 'embedding' && value !== 'google-embedding';
