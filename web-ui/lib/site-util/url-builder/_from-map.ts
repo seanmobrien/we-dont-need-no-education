@@ -34,7 +34,7 @@ const mappedPageOverloadFactory = (
  *
  * @interface MappedUrlBuilder
  *
- * @property {IUrlBuilder & { attachment: IUrlBuilder & { download: MappedPageOverloads; }; contact: MappedPageOverloads; doc: MappedPageOverloads; email: IUrlBuilder & { search: MappedPageOverloads; thread: MappedPageOverloads; stats: MappedPageOverloads; import: IUrlBuilder & { google: IUrlBuilder & { message: IUrlBuilder & { status: MappedPageOverloads; }; search: MappedPageOverloads; }; list: MappedPageOverloads; }; properties: (emailId: string) => IUrlBuilder & { callToAction: MappedPageOverloads; callToActionResponse: MappedPageOverloads; complianceScores: MappedPageOverloads; keyPoints: MappedPageOverloads; sentimentAnalysis: MappedPageOverloads; violationDetails: MappedPageOverloads; emailHeader: MappedPageOverloads; }; }; }} api
+ * @property {IUrlBuilder & { attachment: IUrlBuilder & { download: MappedPageOverloads; }; contact: MappedPageOverloads; doc: MappedPageOverloads; email: IUrlBuilder & { search: MappedPageOverloads; thread: MappedPageOverloads; stats: MappedPageOverloads; import: IUrlBuilder & { google: IUrlBuilder & { message: IUrlBuilder & { status: MappedPageOverloads; }; search: MappedPageOverloads; }; list: MappedPageOverloads; }; properties: (emailId: string) => IUrlBuilder & { callToAction: MappedPageOverloads; callToActionResponse: MappedPageOverloads; complianceScores: MappedPageOverloads; keyPoints: MappedPageOverloads; sentimentAnalysis: MappedPageOverloads; violationDetails: MappedPageOverloads; emailHeader: MappedPageOverloads; notes: MappedPageOverloads; }; }; }} api
  * A nested structure for API-related URL builders, including endpoints for attachments,
  * contacts, document units, and email-related operations such as search, thread, stats,
  * and import. Email properties include additional nested builders for specific features.
@@ -88,7 +88,7 @@ export interface MappedUrlBuilder extends IUrlBuilder {
      * @param params - Optional parameters for the email page.
      * @returns A function that generates the URL for email-related operations.
      *
-     * @property {IUrlBuilder & { search: MappedPageOverloads; thread: MappedPageOverloads; stats: MappedPageOverloads; import: IUrlBuilder & { google: IUrlBuilder & { message: IUrlBuilder & { status: MappedPageOverloads; }; search: MappedPageOverloads; }; list: MappedPageOverloads; }; properties: (emailId: string) => IUrlBuilder & { callToAction: MappedPageOverloads; callToActionResponse: MappedPageOverloads; complianceScores: MappedPageOverloads; keyPoints: MappedPageOverloads; sentimentAnalysis: MappedPageOverloads; violationDetails: MappedPageOverloads; emailHeader: MappedPageOverloads; }; }} email
+     * @property {IUrlBuilder & { search: MappedPageOverloads; thread: MappedPageOverloads; stats: MappedPageOverloads; import: IUrlBuilder & { google: IUrlBuilder & { message: IUrlBuilder & { status: MappedPageOverloads; }; search: MappedPageOverloads; }; list: MappedPageOverloads; }; properties: (emailId: string) => IUrlBuilder & { callToAction: MappedPageOverloads; callToActionResponse: MappedPageOverloads; complianceScores: MappedPageOverloads; keyPoints: MappedPageOverloads; sentimentAnalysis: MappedPageOverloads; violationDetails: MappedPageOverloads; emailHeader: MappedPageOverloads; notes: MappedPageOverloads; }; }} email
      * URL builders for email-related operations, including search, thread, stats,
      * import, and properties. The properties builder takes an email ID as a parameter
      * and provides additional nested builders for specific features such as
@@ -183,6 +183,10 @@ export interface MappedUrlBuilder extends IUrlBuilder {
          * URL builder for email header properties.
          */
         emailHeader: MappedPageOverloads; // Added emailHeader
+        /**
+         * URL builder for notes properties.
+         */
+        notes: MappedPageOverloads;
       };
     };
   };
@@ -313,15 +317,19 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
     );
     properties.sentimentAnalysis = mappedPageOverloadFactory(
       properties as IUrlBuilder,
-      'setiment-analysis',
+      'sentiment-analysis',
     );
     properties.violationDetails = mappedPageOverloadFactory(
       properties as IUrlBuilder,
-      'voilation-details',
+      'violation-details',
     );
     properties.emailHeader = mappedPageOverloadFactory(
       properties as IUrlBuilder,
       'email-header',
+    );
+    properties.notes = mappedPageOverloadFactory(
+      properties as IUrlBuilder,
+      'notes',
     );
     return properties as ReturnType<
       MappedUrlBuilder['api']['email']['properties']
