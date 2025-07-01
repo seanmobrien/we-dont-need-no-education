@@ -8,7 +8,6 @@ import {
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 import { GetRequestCacheRecordProps, RequestCacheRecordProps } from './types';
-import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 
 /**
@@ -210,9 +209,12 @@ export class GridRecordCache<TModel extends GridValidRowModel = object> {
         try {
           resolve(processedResult);
         } finally {
-          setTimeout(() => {
-            GridRecordCache.#globalCache.delete(this.key);
-          }, env('NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT'));
+          setTimeout(
+            () => {
+              GridRecordCache.#globalCache.delete(this.key);
+            },
+            5 * 60 * 1000,
+          ); // Default cache timeout of 5 minutes
         }
       } catch (error) {
         if (isAbortError(error)) {

@@ -30,11 +30,11 @@ describe('UrlBuilder', () => {
     expect(pageUrl.toString()).toBe(`${hostname}/page/page-slug`);
   });
 
-  it('should create a sitemap bulder', () => {
+  it('should create a sitemap builder', () => {
     const target = mappedUrlBuilderFactory();
     expect(target).not.toBeNull();
     const bulkEdit = target.email.bulkEdit();
-    expect(bulkEdit.toString()).toBe(`${hostname}/email/bulk-edit`);
+    expect(bulkEdit.toString()).toBe(`${hostname}/messages/email/bulk-edit`);
   });
 
   describe('UrlBuilder.page', () => {

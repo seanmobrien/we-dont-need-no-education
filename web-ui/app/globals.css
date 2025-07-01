@@ -107,6 +107,40 @@ body {
   }
 }
 
+/* Default DataGrid theming (when no specific theme is set) */
+.MuiDataGrid-root {
+  border: 1px solid #e2e8f0 !important;
+  background-color: var(--background) !important;
+}
+
+.MuiDataGrid-cell {
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: var(--foreground) !important;
+}
+
+.MuiDataGrid-columnHeaders {
+  background-color: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.MuiDataGrid-columnHeaderTitle {
+  color: var(--foreground) !important;
+  font-weight: 600;
+}
+
+.MuiDataGrid-virtualScroller {
+  background-color: var(--background) !important;
+}
+
+.MuiDataGrid-footerContainer {
+  background-color: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+.MuiDataGrid-row:hover {
+  background-color: #f1f5f9 !important;
+}
+
 /* DataGrid theming for dark theme */
 [data-theme="dark"] .MuiDataGrid-root {
   border: none !important;

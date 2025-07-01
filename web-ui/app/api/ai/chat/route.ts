@@ -109,6 +109,14 @@ export async function POST(req: NextRequest) {
           experimental_generateMessageId: () => {
             return `${threadId ?? 'not-set'}:${generateChatId().id}`;
           },
+          experimental_telemetry: {
+            isEnabled: true,
+            functionId: 'my-awesome-function',
+            metadata: {
+              something: 'custom',
+              someOtherThing: 'other-value',
+            },
+          },
           providerOptions: {
             openai: {
               store: true,

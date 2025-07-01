@@ -4,10 +4,9 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import MuiXLicense from '@/components/mui/MuiXLicense';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider } from '@/lib/themes/provider';
-import { ChatQueryProvider } from '@/lib/components/ai/chat-query-provider';
-import { ThemeSelector } from '@/components/theme/theme-selector';
-import { Box } from '@mui/material';
 import './globals.css';
+import QueryProvider from '@/components/general/react-query/query-provider';
+import { InitColorSchemeScript } from '@mui/material';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -24,6 +23,15 @@ export const metadata: Metadata = {
   description: 'A tracker for school cases and incidents',
 };
 
+const stableAppRouterOptions = {
+  cache: {
+    type: 'stable',
+    maxAge: 1000 * 60 * 60, // 1 hour
+    staleWhileRevalidate: true,
+  },
+  enableCssLayer: true,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,24 +42,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <MuiXLicense />
-        <AppRouterCacheProvider options={{ enableCssLayer: true }}>
-          <ChatQueryProvider>
-            <ThemeProvider defaultTheme="dark">
-              <Box
-                sx={{
-                  position: 'fixed',
-                  top: 16,
-                  right: 16,
-                  zIndex: 1000,
-                }}
-              >
-                <ThemeSelector />
-              </Box>
-              {children}
-            </ThemeProvider>
-          </ChatQueryProvider>
-        </AppRouterCacheProvider>
+        <InitColorSchemeScript defaultMode="dark" />
+        <QueryProvider>
+          <MuiXLicense />
+          <AppRouterCacheProvider options={stableAppRouterOptions}>
+            <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
+          </AppRouterCacheProvider>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -29,6 +29,8 @@ import { getEmail } from '@/lib/api/client';
 import { log } from '@/lib/logger';
 import { isError, LoggedError } from '@/lib/react-util';
 import { AbortablePromise, ICancellablePromiseExt } from '@/lib/typescript';
+import Link from 'next/link';
+import siteBuilder from '@/lib/site-util/url-builder';
 
 interface EmailViewerProps {
   emailId: string;
@@ -56,7 +58,7 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
     if (emailId) {
       setLoading(true);
       setError('');
-      
+
       request = getEmail(emailId)
         .then((data) => {
           if (!cancelled) {
@@ -110,18 +112,20 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
           }
           throw new Error('Failed to fetch attachments');
         }
-        
+
         const data = await response.json();
-        
+
         if (!cancelled) {
           setAttachments(data || []);
         }
       } catch (error) {
         if (!cancelled) {
-          log((l) => l.error({
-            message: 'Error fetching attachments',
-            data: { emailId, error: String(error) }
-          }));
+          log((l) =>
+            l.error({
+              message: 'Error fetching attachments',
+              data: { emailId, error: String(error) },
+            }),
+          );
           // Don't set attachments error - just log it and continue
           setAttachments([]);
         }
@@ -194,7 +198,14 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
             />
           </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              mb: 2,
+              flexWrap: 'wrap',
+            }}
+          >
             <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
             <Typography variant="h6" sx={{ mr: 1 }}>
               Recipients:
@@ -228,10 +239,9 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
               Sent Timestamp:
             </Typography>
             <Typography variant="body1">
-              {email.sentOn instanceof Date 
+              {email.sentOn instanceof Date
                 ? email.sentOn.toLocaleString()
-                : new Date(email.sentOn).toLocaleString()
-              }
+                : new Date(email.sentOn).toLocaleString()}
             </Typography>
           </Box>
 
@@ -242,7 +252,9 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
                 Parent Email ID:
               </Typography>
               <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
-                {email.parentEmailId}
+                <Link href={siteBuilder.messages.email(email.parentEmailId)}>
+                  {email.parentEmailId}
+                </Link>
               </Typography>
             </Box>
           )}
@@ -267,13 +279,13 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
           </Typography>
           <Card variant="outlined">
             <CardContent>
-              <Typography 
-                variant="body1" 
-                component="pre" 
-                sx={{ 
+              <Typography
+                variant="body1"
+                component="pre"
+                sx={{
                   whiteSpace: 'pre-wrap',
                   wordBreak: 'break-word',
-                  fontFamily: 'inherit'
+                  fontFamily: 'inherit',
                 }}
               >
                 {email.body || 'No content available'}
@@ -304,7 +316,10 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
                       <AttachFileIcon />
                     </ListItemIcon>
                     <ListItemText
-                      primary={attachment.fileName || `Attachment ${attachment.attachmentId}`}
+                      primary={
+                        attachment.fileName ||
+                        `Attachment ${attachment.attachmentId}`
+                      }
                       secondary={`Attachment ID: ${attachment.attachmentId}`}
                     />
                     {attachment.hrefDocument && (

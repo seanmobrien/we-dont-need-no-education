@@ -37,7 +37,7 @@ export async function GET(
             cta.compliance_rating, cta.inferred, cta.compliance_date_enforceable, cta.reasonable_request, 
             cta.reasonable_reasons, cta.sentiment, cta.sentiment_reasons, cta.compliance_rating_reasons, 
             cta.severity, cta.severity_reason, cta.title_ix_applicable, cta.title_ix_applicable_reasons, 
-            cta.closure_actions, 
+            cta.closure_actions,
             (SELECT AVG(car.compliance_chapter_13) 
               FROM call_to_action_details_call_to_action_response car 
               WHERE car.call_to_action_id=cta.property_id

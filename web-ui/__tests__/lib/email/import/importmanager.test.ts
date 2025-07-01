@@ -7,9 +7,7 @@ jest.mock('google-auth-library');
 jest.mock('googleapis');
 jest.mock('@/lib/send-api-request');
 jest.mock('@/lib/api/email/import/google');
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-}));
+
 jest.mock('@/lib/email/import/google/managermapfactory');
 
 import { DefaultImportManager } from '@/lib/email/import/importmanager';
