@@ -4,109 +4,61 @@ import CaseFileViolationShape from './caseFileViolationShape';
 export const CaseFileAmendmentShape = z.object({
   targetCaseFileId: z
     .union([z.number(), z.string()])
-    .describe('The ID of the case file to update.'),
-  severityRating: z
-    .number()
-    .optional()
-    .describe('Severity rating of the case file amendment.'),
-  severityReasons: z
-    .array(z.string())
-    .optional()
-    .describe('Reasons for the severity rating.'),
-  notes: z
-    .array(z.string())
-    .optional()
-    .describe('Notes associated with the case file amendment.'),
-  complianceRating: z
-    .number()
-    .optional()
-    .describe('Compliance rating of the case file amendment.'),
-  complianceReasons: z
-    .array(z.string())
-    .optional()
-    .describe('Reasons for the compliance rating.'),
-  completionRating: z
-    .number()
-    .optional()
-    .describe('Completion rating of the case file amendment.'),
-  completionReasons: z
-    .array(z.string())
-    .optional()
-    .describe('Reasons for the completion rating.'),
+    .describe('Case file ID to update'),
+  severityRating: z.number().optional(),
+  severityReasons: z.array(z.string()).optional(),
+  notes: z.array(z.string()).optional(),
+  complianceRating: z.number().optional(),
+  complianceReasons: z.array(z.string()).optional(),
+  completionRating: z.number().optional(),
+  completionReasons: z.array(z.string()).optional(),
   addRelatedDocuments: z
     .array(
       z.object({
-        relatedToDocumentId: z.number().describe('ID of the related document.'),
-        relationshipType: z
-          .string()
-          .describe('Type of relationship to the related document.'),
+        relatedToDocumentId: z.number(),
+        relationshipType: z.string().describe('e.g. "supports", "responds to", "contradicts"'),
       }),
     )
     .optional()
-    .describe('Used to link two documents together.'),
+    .describe('Link documents together'),
   associateResponsiveAction: z
     .array(
       z.object({
-        relatedCtaDocumentId: z
-          .number()
-          .describe('ID of the related CTA document.'),
-        complianceChapter13: z
-          .number()
-          .describe('Compliance with Chapter 13 requirements.'),
-        complianceChapter13Reasons: z
-          .array(z.string())
-          .describe('Reasons for compliance with Chapter 13.'),
-        completionPercentage: z
-          .number()
-          .describe('Completion percentage of the responsive action.'),
-        completionReasons: z
-          .array(z.string())
-          .describe('Reasons for the completion percentage.'),
+        relatedCtaDocumentId: z.number().describe('CTA document ID'),
+        complianceChapter13: z.number().describe('Chapter 13 compliance rating'),
+        complianceChapter13Reasons: z.array(z.string()).optional(),
+        completionPercentage: z.number(),
+        completionReasons: z.array(z.string()).optional(),
       }),
     )
     .optional()
-    .describe('Used to associate responsive actions with calls to action.'),
+    .describe('Associate responsive actions with CTAs'),
   violations: z
     .array(CaseFileViolationShape)
     .optional()
-    .describe('An array of Violations to associate with the case file.'),
+    .describe('Violations to associate with case file'),
   sentimentRating: z
     .number()
     .optional()
-    .describe(
-      'New value to assign to the Sentiment rating of the case file.  If not set, the existing value will be retained.',
-    ),
-  sentimentReasons: z
-    .array(z.string())
-    .optional()
-    .describe('Reasons for the sentiment rating.'),
+    .describe('New sentiment rating (retains existing if not set)'),
+  sentimentReasons: z.array(z.string()).optional(),
   chapter13Rating: z
     .number()
     .optional()
-    .describe(
-      'New value to assign to the Chapter 13 rating of the case file.  If not set, the existing value will be retained.',
-    ),
+    .describe('New Chapter 13 rating (retains existing if not set)'),
   chapter13Reasons: z
     .array(z.string())
     .optional()
-    .describe(
-      'A list of reasons describing key factors that went into the Chapter 13 rating.  Required if chapter13Rating is set.',
-    ),
+    .describe('Required if chapter13Rating is set'),
   titleIXRating: z
     .number()
     .optional()
-    .describe(
-      'The new value to assign to to the titleIXRating field of the associated.  If not set, the existing value will be retained.',
-    ),
+    .describe('New Title IX rating (retains existing if not set)'),
   titleIXReasons: z
     .array(z.string())
     .optional()
-    .describe(
-      'A list of reasons describing key factors that went into the titleIXRating.  Required if titleIXRating is set.',
-    ),
+    .describe('Required if titleIXRating is set'),
   explaination: z
     .string()
-    .describe(
-      'A note explaining the updates being made and why they are necessary.  This is required for all amendments.',
-    ),
+    .describe('Required explanation of changes and rationale'),
 });
