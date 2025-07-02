@@ -13,6 +13,12 @@ import { getRetryErrorInfo } from '@/lib/ai/chat';
 import { generateChatId } from '@/lib/components/ai';
 import { toolProviderSetFactory } from '@/lib/ai/mcp';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+import { 
+  createChatHistoryMiddleware, 
+  initializeChatHistoryTables,
+  type ChatHistoryContext 
+} from '@/lib/ai/middleware';
+import { wrapLanguageModel } from 'ai';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 
@@ -98,13 +104,32 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
+    // Initialize chat history tables (only needs to be done once)
+    await initializeChatHistoryTables();
+
+    // Create chat history context
+    const chatHistoryContext: ChatHistoryContext = {
+      userId: session?.user?.id || 'anonymous',
+      sessionId: chatHistoryId,
+      model,
+      temperature: 0.7, // Default values, could be extracted from request
+      topP: 1.0,
+    };
+
+    // Wrap the base model with chat history middleware
+    const baseModel = aiModelFactory(model);
+    const modelWithHistory = wrapLanguageModel({
+      model: baseModel,
+      middleware: createChatHistoryMiddleware(chatHistoryContext),
+    });
+
     let isRateLimitError = false;
     let retryAfter = 0;
 
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
-          model: aiModelFactory(model),
+          model: modelWithHistory,
           messages: optimizedMessages,
           experimental_generateMessageId: () => {
             return `${threadId ?? 'not-set'}:${generateChatId().id}`;
