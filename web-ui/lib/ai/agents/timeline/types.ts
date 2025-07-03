@@ -1,6 +1,6 @@
 export type TimelineAgentProps = {
-  propertyId?: string;
-  initialDocumentId?: string;
+  propertyId: string;
+  initialDocumentId: string;
 };
 
 export enum ComplianceRating {
@@ -13,6 +13,7 @@ export enum ComplianceRating {
 
 export type DocumentMetadata = {
   documentId: string;
+  propertyId: string;
   documentType: string;
   dateSent?: string;
   dateReceived?: string;
@@ -37,6 +38,7 @@ export type TimelineEntry = {
 export type GlobalMetadata = {
   caseId: string;
   propertyId?: string;
+  communicationId?: string;
   caseType: 'FERPA' | 'MNGDPA' | 'Other';
   requestType: string;
   requestDate: string;

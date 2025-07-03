@@ -16,18 +16,18 @@ export class ComplianceTimelineProcessor {
 
   /**
    * Process a single case document according to the compliance script requirements
-   * @param caseFileId The ID of the case file to process
+   * @param case_file_id The ID of the case file to process
    * @returns The updated timeline summary
    */
-  async processCaseDocument(caseFileId: string): Promise<string> {
+  async processCaseDocument(case_file_id: string): Promise<string> {
     // Add the document to the agent if not already present
-    this.agent.addDocuments([caseFileId]);
+    this.agent.addDocuments([case_file_id]);
 
     // Process the document
     const result = await this.agent.processNextDocument();
 
     if (!result) {
-      throw new Error(`Failed to process case file ${caseFileId}`);
+      throw new Error(`Failed to process case file ${case_file_id}`);
     }
 
     // Generate the updated summary according to the script format

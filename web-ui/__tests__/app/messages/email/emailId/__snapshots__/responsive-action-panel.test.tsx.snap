@@ -1,0 +1,445 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ResponsiveActionPanel handles API error gracefully 1`] = `
+<div
+  class="MuiStack-root css-1kq55ho-MuiStack-root"
+>
+  <div
+    class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 css-avbnl1-MuiPaper-root"
+    style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+  >
+    <div
+      class="MuiStack-root css-1a7f82c-MuiStack-root"
+    >
+      <h6
+        class="MuiTypography-root MuiTypography-h6 css-1miy0lu-MuiTypography-root"
+      >
+        Responsive Action
+         
+        (response-test-id)
+      </h6>
+      <div
+        class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation2 css-1yruui0-MuiPaper-root"
+        style="--Paper-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 1px 5px 0px rgba(0,0,0,0.12);"
+      >
+        <p
+          class="MuiTypography-root MuiTypography-body1 MuiTypography-alignLeft css-10gu7ti-MuiTypography-root"
+          style="--Typography-textAlign: left;"
+        >
+          Detailed response to the call to action
+        </p>
+      </div>
+      <div
+        class="MuiGrid-root MuiGrid-container MuiGrid-direction-xs-row MuiGrid-spacing-xs-2 css-zjhuaj-MuiGrid-root"
+      >
+        <div
+          class="MuiGrid-root MuiGrid-direction-xs-row css-1gb4p1x-MuiGrid-root"
+        >
+          <h6
+            class="MuiTypography-root MuiTypography-h6 MuiTypography-gutterBottom css-1wmifpn-MuiTypography-root"
+          >
+            Completion Progress
+          </h6>
+          <div
+            class="MuiBox-root css-19idom"
+          >
+            <p
+              class="MuiTypography-root MuiTypography-body2 css-1a1whku-MuiTypography-root"
+            >
+              80%
+               Complete
+            </p>
+          </div>
+          <span
+            aria-valuemax="100"
+            aria-valuemin="0"
+            aria-valuenow="80"
+            class="MuiLinearProgress-root MuiLinearProgress-colorPrimary MuiLinearProgress-determinate css-13s5bod-MuiLinearProgress-root"
+            role="progressbar"
+          >
+            <span
+              class="MuiLinearProgress-bar MuiLinearProgress-bar1 MuiLinearProgress-barColorPrimary MuiLinearProgress-bar1Determinate css-l16vtb-MuiLinearProgress-bar1"
+              style="transform: translateX(-20%);"
+            />
+          </span>
+        </div>
+        <div
+          class="MuiGrid-root MuiGrid-direction-xs-row css-1gb4p1x-MuiGrid-root"
+        >
+          <h6
+            class="MuiTypography-root MuiTypography-h6 MuiTypography-gutterBottom css-1wmifpn-MuiTypography-root"
+          >
+            Response Timing
+          </h6>
+          <p
+            class="MuiTypography-root MuiTypography-body1 css-lhsbas-MuiTypography-root"
+          >
+            Jan 5, 2023, 10:30 AM
+          </p>
+        </div>
+      </div>
+      <div
+        class="MuiBox-root css-0"
+      >
+        <h6
+          class="MuiTypography-root MuiTypography-h6 MuiTypography-gutterBottom css-1wmifpn-MuiTypography-root"
+        >
+          Status
+        </h6>
+        <div
+          class="MuiStack-root css-ofxwhm-MuiStack-root"
+        >
+          <div
+            class="MuiChip-root MuiChip-filled MuiChip-sizeSmall MuiChip-colorPrimary MuiChip-filledPrimary css-1abuvwb-MuiChip-root"
+          >
+            <span
+              class="MuiChip-label MuiChip-labelSmall css-eccknh-MuiChip-label"
+            >
+              Direct
+            </span>
+          </div>
+        </div>
+      </div>
+      <div
+        class="MuiGrid-root MuiGrid-container MuiGrid-direction-xs-row MuiGrid-spacing-xs-2 css-zjhuaj-MuiGrid-root"
+      >
+        <div
+          class="MuiGrid-root MuiGrid-direction-xs-row css-u42tu4-MuiGrid-root"
+        >
+          <h6
+            class="MuiTypography-root MuiTypography-subtitle1 css-or3kzz-MuiTypography-root"
+          >
+            Severity Score
+          </h6>
+          <p
+            class="MuiTypography-root MuiTypography-body2 css-7ctihp-MuiTypography-root"
+          >
+            0.60
+          </p>
+        </div>
+        <div
+          class="MuiGrid-root MuiGrid-direction-xs-row css-u42tu4-MuiGrid-root"
+        >
+          <h6
+            class="MuiTypography-root MuiTypography-subtitle1 css-or3kzz-MuiTypography-root"
+          >
+            Sentiment Score
+          </h6>
+          <p
+            class="MuiTypography-root MuiTypography-body2 css-7ctihp-MuiTypography-root"
+          >
+            0.70
+          </p>
+        </div>
+        <div
+          class="MuiGrid-root MuiGrid-direction-xs-row css-u42tu4-MuiGrid-root"
+        >
+          <h6
+            class="MuiTypography-root MuiTypography-subtitle1 css-or3kzz-MuiTypography-root"
+          >
+            Chapter 13 Compliance
+          </h6>
+          <p
+            class="MuiTypography-root MuiTypography-body2 css-7ctihp-MuiTypography-root"
+          >
+            0.85
+          </p>
+        </div>
+      </div>
+      <hr
+        class="MuiDivider-root MuiDivider-fullWidth css-1jpc804-MuiDivider-root"
+      />
+      <div
+        class="MuiStack-root css-jfdv4h-MuiStack-root"
+      >
+        <div
+          class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded MuiAccordion-gutters css-1808mag-MuiPaper-root-MuiAccordion-root"
+          style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+        >
+          <h3
+            class="MuiAccordion-heading css-cy7rkm-MuiAccordion-heading"
+          >
+            <button
+              aria-expanded="false"
+              class="MuiButtonBase-root MuiAccordionSummary-root MuiAccordionSummary-gutters css-1f1pi2l-MuiButtonBase-root-MuiAccordionSummary-root"
+              tabindex="0"
+              type="button"
+            >
+              <span
+                class="MuiAccordionSummary-content MuiAccordionSummary-contentGutters css-yfrx4k-MuiAccordionSummary-content"
+              >
+                <h6
+                  class="MuiTypography-root MuiTypography-h6 css-1miy0lu-MuiTypography-root"
+                >
+                  Analysis and Reasoning
+                </h6>
+              </span>
+              <span
+                class="MuiAccordionSummary-expandIconWrapper css-1wqf3nl-MuiAccordionSummary-expandIconWrapper"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+                  data-testid="ExpandMoreIcon"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z"
+                  />
+                </svg>
+              </span>
+            </button>
+          </h3>
+          <div
+            class="MuiCollapse-root MuiCollapse-vertical MuiCollapse-hidden css-cwrbtg-MuiCollapse-root"
+            style="min-height: 0px;"
+          >
+            <div
+              class="MuiCollapse-wrapper MuiCollapse-vertical css-1x6hinx-MuiCollapse-wrapper"
+            >
+              <div
+                class="MuiCollapse-wrapperInner MuiCollapse-vertical css-1i4ywhz-MuiCollapse-wrapperInner"
+              >
+                <div
+                  class="MuiAccordion-region"
+                  role="region"
+                >
+                  <div
+                    class="MuiAccordionDetails-root css-1lj39kh-MuiAccordionDetails-root"
+                  >
+                    <div
+                      class="MuiStack-root css-1sazv7p-MuiStack-root"
+                    >
+                      <div
+                        class="MuiBox-root css-0"
+                      >
+                        <h6
+                          class="MuiTypography-root MuiTypography-subtitle1 css-or3kzz-MuiTypography-root"
+                        >
+                          Severity Reasons
+                        </h6>
+                        <div
+                          class="MuiStack-root css-ofxwhm-MuiStack-root"
+                        >
+                          <div
+                            class="MuiChip-root MuiChip-outlined MuiChip-sizeSmall MuiChip-colorDefault MuiChip-outlinedDefault css-1d2be57-MuiChip-root"
+                          >
+                            <span
+                              class="MuiChip-label MuiChip-labelSmall css-19m61dl-MuiChip-label"
+                            >
+                              Moderate severity
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        class="MuiBox-root css-0"
+                      >
+                        <h6
+                          class="MuiTypography-root MuiTypography-subtitle1 css-or3kzz-MuiTypography-root"
+                        >
+                          Sentiment Reasons
+                        </h6>
+                        <div
+                          class="MuiStack-root css-ofxwhm-MuiStack-root"
+                        >
+                          <div
+                            class="MuiChip-root MuiChip-outlined MuiChip-sizeSmall MuiChip-colorDefault MuiChip-outlinedDefault css-1d2be57-MuiChip-root"
+                          >
+                            <span
+                              class="MuiChip-label MuiChip-labelSmall css-19m61dl-MuiChip-label"
+                            >
+                              Positive response
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        class="MuiBox-root css-0"
+                      >
+                        <h6
+                          class="MuiTypography-root MuiTypography-subtitle1 css-or3kzz-MuiTypography-root"
+                        >
+                          Chapter 13 Compliance Reasons
+                        </h6>
+                        <div
+                          class="MuiStack-root css-ofxwhm-MuiStack-root"
+                        >
+                          <div
+                            class="MuiChip-root MuiChip-outlined MuiChip-sizeSmall MuiChip-colorDefault MuiChip-outlinedDefault css-1d2be57-MuiChip-root"
+                          >
+                            <span
+                              class="MuiChip-label MuiChip-labelSmall css-19m61dl-MuiChip-label"
+                            >
+                              Meets Chapter 13 requirements
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation1 MuiAccordion-root MuiAccordion-rounded MuiAccordion-gutters css-1808mag-MuiPaper-root-MuiAccordion-root"
+          style="--Paper-shadow: 0px 2px 1px -1px rgba(0,0,0,0.2),0px 1px 1px 0px rgba(0,0,0,0.14),0px 1px 3px 0px rgba(0,0,0,0.12);"
+        >
+          <h3
+            class="MuiAccordion-heading css-cy7rkm-MuiAccordion-heading"
+          >
+            <button
+              aria-expanded="false"
+              class="MuiButtonBase-root MuiAccordionSummary-root MuiAccordionSummary-gutters css-1f1pi2l-MuiButtonBase-root-MuiAccordionSummary-root"
+              tabindex="0"
+              type="button"
+            >
+              <span
+                class="MuiAccordionSummary-content MuiAccordionSummary-contentGutters css-yfrx4k-MuiAccordionSummary-content"
+              >
+                <h6
+                  class="MuiTypography-root MuiTypography-h6 css-1miy0lu-MuiTypography-root"
+                >
+                  Related Call-to-Action
+                </h6>
+              </span>
+              <span
+                class="MuiAccordionSummary-expandIconWrapper css-1wqf3nl-MuiAccordionSummary-expandIconWrapper"
+              >
+                <svg
+                  aria-hidden="true"
+                  class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-1umw9bq-MuiSvgIcon-root"
+                  data-testid="ExpandMoreIcon"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    d="M16.59 8.59 12 13.17 7.41 8.59 6 10l6 6 6-6z"
+                  />
+                </svg>
+              </span>
+            </button>
+          </h3>
+          <div
+            class="MuiCollapse-root MuiCollapse-vertical MuiCollapse-hidden css-cwrbtg-MuiCollapse-root"
+            style="min-height: 0px;"
+          >
+            <div
+              class="MuiCollapse-wrapper MuiCollapse-vertical css-1x6hinx-MuiCollapse-wrapper"
+            >
+              <div
+                class="MuiCollapse-wrapperInner MuiCollapse-vertical css-1i4ywhz-MuiCollapse-wrapperInner"
+              >
+                <div
+                  class="MuiAccordion-region"
+                  role="region"
+                >
+                  <div
+                    class="MuiAccordionDetails-root css-1lj39kh-MuiAccordionDetails-root"
+                  >
+                    <div
+                      class="MuiPaper-root MuiPaper-elevation MuiPaper-rounded MuiPaper-elevation0 MuiAlert-root MuiAlert-colorError MuiAlert-standardError MuiAlert-standard css-3lhuho-MuiPaper-root-MuiAlert-root"
+                      role="alert"
+                      style="--Paper-shadow: none;"
+                    >
+                      <div
+                        class="MuiAlert-icon css-vab54s-MuiAlert-icon"
+                      >
+                        <svg
+                          aria-hidden="true"
+                          class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit css-1ckov0h-MuiSvgIcon-root"
+                          data-testid="ErrorOutlineIcon"
+                          focusable="false"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"
+                          />
+                        </svg>
+                      </div>
+                      <div
+                        class="MuiAlert-message css-zioonp-MuiAlert-message"
+                      >
+                        Failed to load related call-to-action
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <section
+        class="MuiBox-root css-cxvo6t"
+      >
+        <p
+          class="MuiTypography-root MuiTypography-body2 MuiTypography-alignLeft css-xlaprp-MuiTypography-root"
+          style="--Typography-textAlign: left;"
+        >
+          Policy Basis
+        </p>
+        <div
+          class="MuiTypography-root MuiTypography-body1 MuiTypography-alignLeft css-1j3qii7-MuiTypography-root"
+          style="--Typography-textAlign: left;"
+        >
+          <div
+            class="MuiChip-root MuiChip-filled MuiChip-sizeMedium MuiChip-colorDefault MuiChip-filledDefault css-5c51lm-MuiChip-root"
+            style="margin: 2px;"
+          >
+            <span
+              class="MuiChip-label MuiChip-labelMedium css-1dybbl5-MuiChip-label"
+            >
+              FERPA
+            </span>
+          </div>
+          <div
+            class="MuiChip-root MuiChip-filled MuiChip-sizeMedium MuiChip-colorDefault MuiChip-filledDefault css-5c51lm-MuiChip-root"
+            style="margin: 2px;"
+          >
+            <span
+              class="MuiChip-label MuiChip-labelMedium css-1dybbl5-MuiChip-label"
+            >
+              COPPA
+            </span>
+          </div>
+        </div>
+        <p
+          class="MuiTypography-root MuiTypography-body2 MuiTypography-alignLeft css-1ctvvts-MuiTypography-root"
+          style="--Typography-textAlign: left;"
+        >
+          Tags
+        </p>
+        <div
+          class="MuiTypography-root MuiTypography-body1 MuiTypography-alignLeft css-1j3qii7-MuiTypography-root"
+          style="--Typography-textAlign: left;"
+        >
+          <div
+            class="MuiChip-root MuiChip-filled MuiChip-sizeMedium MuiChip-colorDefault MuiChip-filledDefault css-5c51lm-MuiChip-root"
+            style="margin: 2px;"
+          >
+            <span
+              class="MuiChip-label MuiChip-labelMedium css-1dybbl5-MuiChip-label"
+            >
+              response
+            </span>
+          </div>
+          <div
+            class="MuiChip-root MuiChip-filled MuiChip-sizeMedium MuiChip-colorDefault MuiChip-filledDefault css-5c51lm-MuiChip-root"
+            style="margin: 2px;"
+          >
+            <span
+              class="MuiChip-label MuiChip-labelMedium css-1dybbl5-MuiChip-label"
+            >
+              completed
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+`;

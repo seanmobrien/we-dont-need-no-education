@@ -93,7 +93,7 @@ const result = await quickStartTimelineAgent({
 // Compliance processing with multiple case files
 const complianceResult = await quickStartComplianceProcessing({
   initialDocumentId: 'ferpa-request',
-  caseFileIds: ['325', '308', '307'],
+  case_file_ids: ['325', '308', '307'],
 });
 ```
 
@@ -160,7 +160,7 @@ const processor = createComplianceProcessor(initialDocumentId);
 
 #### Key Methods
 
-**processCaseDocument(caseFileId: string): Promise<string>**
+**processCaseDocument(case_file_id: string): Promise<string>**
 
 - Processes a single case document
 - Returns updated compliance summary in required format

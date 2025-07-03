@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { act } from 'react';
+import { act } from '@/__tests__/test-utils';
 import { render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
@@ -86,7 +86,6 @@ describe('EmailViewer', () => {
         expect(screen.getByText('Loading Email...')).toBeInTheDocument();
       });
     });
-    expect(screen.getByText('Loading Email...')).toBeInTheDocument();
   });
   /*
   it('renders with valid emailId prop', () => {

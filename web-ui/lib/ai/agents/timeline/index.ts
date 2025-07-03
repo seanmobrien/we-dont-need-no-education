@@ -99,7 +99,7 @@ export async function quickStartTimelineAgent(options: {
  */
 export async function quickStartComplianceProcessing(options: {
   initialDocumentId: string;
-  caseFileIds: string[];
+  case_file_ids: string[];
 }) {
   const processor = createComplianceProcessor(options.initialDocumentId);
 
@@ -108,8 +108,8 @@ export async function quickStartComplianceProcessing(options: {
 
   // Process each case file
   let currentSummary = '';
-  for (const caseFileId of options.caseFileIds) {
-    currentSummary = await processor.processCaseDocument(caseFileId);
+  for (const case_file_id of options.case_file_ids) {
+    currentSummary = await processor.processCaseDocument(case_file_id);
   }
 
   return {

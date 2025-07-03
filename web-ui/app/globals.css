@@ -249,7 +249,8 @@ body {
 /* Top navigation/AppBar theming for dark theme */
 [data-theme="dark"] .MuiAppBar-root {
   background-color: rgba(18, 18, 18, 0.9) !important;
-  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);;
+  backdrop-filter:blur(8px);
   border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
 }
 

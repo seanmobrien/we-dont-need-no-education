@@ -14,6 +14,22 @@ export const toolProviderFactory = async (
       type: 'sse',
       url: options.url,
       headers: options.headers,
+      onerror: (error) => {
+        console.error('MCP Client SSE Error:', error);
+        // Handle reconnection logic or other error handling as needed
+      },
+      onclose: () => {
+        console.warn('MCP Client SSE Connection Closed');
+        // Handle connection closed logic if needed
+      },
+      onmessage(message) {
+        // Handle incoming messages if needed
+        console.log('MCP Client SSE Message:', message);
+      },
+    },
+    onUncaughtError: (error) => {
+      console.error('MCP Client Uncaught Error:', error);
+      // Handle uncaught errors in the MCP client
     },
   });
 

@@ -110,8 +110,8 @@ export async function POST(req: NextRequest) {
             return `${threadId ?? 'not-set'}:${generateChatId().id}`;
           },
           experimental_telemetry: {
-            isEnabled: true,
-            functionId: 'my-awesome-function',
+            isEnabled: true, // Currently a bug in the ai package processing string dates
+            functionId: 'chat-request',
             metadata: {
               something: 'custom',
               someOtherThing: 'other-value',

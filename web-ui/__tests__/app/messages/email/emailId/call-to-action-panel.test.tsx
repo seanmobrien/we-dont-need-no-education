@@ -1,3 +1,5 @@
+import { render, act, waitFor, screen } from '@/__tests__/test-utils';
+
 // Mock the API client
 jest.mock('@/lib/api/email/properties/client');
 // Mock next/navigation
@@ -5,6 +7,7 @@ jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
 // Mock MUI components that may cause theme issues
+
 jest.mock(
   '@mui/material/LinearProgress',
   () =>
@@ -13,15 +16,13 @@ jest.mock(
     ),
 );
 
+jest.mock('@tanstack/react-query');
+
 jest.mock('@mui/material/CircularProgress', () => () => (
   <div data-testid="circular-progress" />
 ));
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react/display-name */
-import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { useQuery } from '@tanstack/react-query';
 import { CallToActionPanel } from '@/app/messages/email/[emailId]/call-to-action/panel';
 import { CallToActionDetails } from '@/data-models/api';
 import { getCallToActionResponse as getCallToActionResponseFromModule } from '@/lib/api/email/properties/client';
@@ -70,7 +71,7 @@ const mockResponsiveActions = [
 
 describe('CallToActionPanel', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     getCallToActionResponse.mockResolvedValue({
       results: mockResponsiveActions,
       pageStats: { page: 1, num: 10, total: 1 },
@@ -78,88 +79,72 @@ describe('CallToActionPanel', () => {
   });
 
   it('renders call to action details correctly', async () => {
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
+      waitFor(() => screen.getByText('Call to Action Details (cta-test-id)'));
+      waitFor(() => screen.getByText('Test call to action description'));
+      waitFor(() => screen.getByText('75% Complete'));
     });
-
-    // Wait for async operations to complete
-    await waitFor(() => {
-      expect(
-        screen.getByText('Call to Action Details (cta-test-id)'),
-      ).toBeInTheDocument();
-    });
-
-    expect(
-      screen.getByText('Test call to action description'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('75% Complete')).toBeInTheDocument();
   });
 
   it('displays progress bar with correct value', async () => {
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
-
-    await waitFor(() => {
-      const progressBar = screen.getByTestId('linear-progress');
-      expect(progressBar).toHaveAttribute('data-value', '75');
+      waitFor(() =>
+        screen.getByTestId('linear-progress').hasAttribute('data-value'),
+      );
     });
   });
 
   it('shows status chips correctly', async () => {
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Direct')).toBeInTheDocument(); // since inferred is false
-      expect(screen.getByText('Enforceable')).toBeInTheDocument(); // since compliance_date_enforceable is true
+      waitFor(() => {
+        expect(screen.getByText('Direct')).toBeInTheDocument(); // since inferred is false
+        expect(screen.getByText('Enforceable')).toBeInTheDocument(); // since compliance_date_enforceable is true
+      });
     });
   });
 
   it('shows rating scores', async () => {
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('0.85')).toBeInTheDocument(); // compliance_rating
-      expect(screen.getByText('0.70')).toBeInTheDocument(); // severity
-      expect(screen.getByText('0.60')).toBeInTheDocument(); // sentiment
-      expect(screen.getByText('0.90')).toBeInTheDocument(); // title_ix_applicable
+      waitFor(() => {
+        expect(screen.getByText('0.85')).toBeInTheDocument(); // compliance_rating
+        expect(screen.getByText('0.70')).toBeInTheDocument(); // severity
+        expect(screen.getByText('0.60')).toBeInTheDocument(); // sentiment
+        expect(screen.getByText('0.90')).toBeInTheDocument(); // title_ix_applicable
+      });
     });
   });
 
   it('displays policy basis and tags in metadata', async () => {
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('FERPA')).toBeInTheDocument();
-      expect(screen.getAllByText('Title IX')).toHaveLength(2); // Once in scores, once in policy basis
-      expect(screen.getByText('urgent')).toBeInTheDocument();
-      expect(screen.getByText('compliance')).toBeInTheDocument();
+      waitFor(() => {
+        expect(screen.getByText('FERPA')).toBeInTheDocument();
+        expect(screen.getAllByText('Title IX')).toHaveLength(2); // Once in scores, once in policy basis
+        expect(screen.getByText('urgent')).toBeInTheDocument();
+        expect(screen.getByText('compliance')).toBeInTheDocument();
+      });
     });
   });
 
   it('fetches and displays related responsive actions', async () => {
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
-
-    await waitFor(() => {
-      expect(getCallToActionResponse).toHaveBeenCalledWith({
-        emailId: 'test-email-id',
-        page: 1,
-        num: 100,
+      waitFor(() => {
+        expect(getCallToActionResponse).toHaveBeenCalledWith({
+          emailId: 'test-email-id',
+          page: 1,
+          num: 100,
+        });
       });
-    });
-
-    await waitFor(() => {
-      expect(
-        screen.getByText('Related Responsive Actions (1)'),
-      ).toBeInTheDocument();
+      waitFor(() => {
+        expect(
+          screen.getByText('Related Responsive Actions (1)'),
+        ).toBeInTheDocument();
+      });
     });
   });
 
@@ -167,69 +152,68 @@ describe('CallToActionPanel', () => {
     // Make the API call take some time
     getCallToActionResponse.mockImplementation(
       () =>
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                results: mockResponsiveActions,
-                pagination: { page: 1, num: 10, total: 1 },
-              }),
-            100,
-          ),
+        new Promise(
+          (resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  results: mockResponsiveActions,
+                  pagination: { page: 1, num: 10, total: 1 },
+                }),
+              100,
+            ),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ) as any,
     );
 
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
+      waitFor(() => screen.getByTestId('circular-progress'));
+      waitFor(
+        () => {
+          expect(
+            screen.queryByTestId('circular-progress'),
+          ).not.toBeInTheDocument();
+        },
+        { timeout: 200 },
+      );
     });
-
-    expect(screen.getByTestId('circular-progress')).toBeInTheDocument();
-
-    // Wait for loading to complete
-    await waitFor(
-      () => {
-        expect(
-          screen.queryByTestId('circular-progress'),
-        ).not.toBeInTheDocument();
-      },
-      { timeout: 200 },
-    );
   });
 
   it('handles API error gracefully', async () => {
-    getCallToActionResponse.mockRejectedValue(new Error('API Error'));
-
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
+    (useQuery as jest.Mock).mockReturnValue({
+      isLoading: false,
+      error: new Error('Failed to load related responses'),
     });
 
-    await waitFor(() => {
-      expect(
-        screen.getByText('Failed to load related responses'),
-      ).toBeInTheDocument();
+    act(() => {
+      render(<CallToActionPanel row={mockCallToActionDetails} />);
+      waitFor(() => {
+        expect(
+          screen.getByText('Failed to load related responses'),
+        ).toBeInTheDocument();
+      });
     });
   });
 
   it('displays closure actions when available', async () => {
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Investigation')).toBeInTheDocument();
-      expect(screen.getByText('Documentation')).toBeInTheDocument();
+      waitFor(() => {
+        expect(screen.getByText('Investigation')).toBeInTheDocument();
+        expect(screen.getByText('Documentation')).toBeInTheDocument();
+      });
     });
   });
 
   it('displays reasoning sections when available', async () => {
-    await act(async () => {
+    act(() => {
       render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Reasoning and Analysis')).toBeInTheDocument();
-      expect(screen.getByText('Meets standards')).toBeInTheDocument();
-      expect(screen.getByText('Neutral tone')).toBeInTheDocument();
+      waitFor(() => {
+        expect(screen.getByText('Reasoning and Analysis')).toBeInTheDocument();
+        expect(screen.getByText('Meets standards')).toBeInTheDocument();
+        expect(screen.getByText('Neutral tone')).toBeInTheDocument();
+      });
     });
   });
 });

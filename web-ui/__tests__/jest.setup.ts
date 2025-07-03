@@ -1,15 +1,50 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
 
+const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
+const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+const mockDb = actualDrizzle.drizzle.mock({ actualSchema });
+const makeRecursiveMock = jest
+  .fn()
+  .mockImplementation(() => makeRecursiveMock());
+jest.mock('drizzle-orm/postgres-js', () => {
+  return {
+    ...actualDrizzle,
+    drizzle: jest.fn(() => mockDb),
+    sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
+  };
+});
+jest.mock('@/lib/neondb/connection', () => {
+  return {
+    sql: jest.fn(() => makeRecursiveMock()),
+  };
+});
+jest.mock('@/lib/drizzle-db/connection', () => {
+  return {
+    db: mockDb,
+    schema: actualSchema,
+  };
+});
+jest.mock('@/lib/drizzle-db', () => {
+  return {
+    db: mockDb,
+    schema: actualSchema,
+    sql: jest.fn(() => makeRecursiveMock()),
+  };
+});
 // Mocking modules before imports
 jest.mock('google-auth-library');
 jest.mock('googleapis');
-jest.mock('postgres');
-
+jest.mock('postgres', () => {
+  return {
+    default: jest.fn().mockImplementation((strings, ...values) => {
+      return jest.fn(() => Promise.resolve({ rows: [] }));
+    }),
+  };
+});
 jest.mock('next-auth', () => {
   return jest.fn();
 });
-
 jest.mock('@/auth', () => {
   return {
     auth: jest.fn(() => ({
@@ -17,7 +52,6 @@ jest.mock('@/auth', () => {
     })),
   };
 });
-jest.mock('@/lib/neondb/connection', () => {});
 jest.mock('@/lib/site-util/env', () => {
   return {
     env: jest.fn((key: string) => {
@@ -36,7 +70,6 @@ export const createRedisClient = jest.fn(() => ({
   flushDb: jest.fn().mockResolvedValue('OK'),
   on: jest.fn(),
 }));
-
 // Mock Redis client for cache tests
 jest.mock('redis', () => ({
   createClient: createRedisClient,
@@ -64,28 +97,6 @@ jest.mock('@/lib/logger', () => {
   };
 });
 
-jest.mock('drizzle-orm/postgres-js', () => {
-  return {
-    drizzle: jest.fn(() => ({
-      query: jest.fn(() => ({
-        select: jest.fn(() => ({
-          from: jest.fn(() => ({
-            where: jest.fn(() => ({
-              orderBy: jest.fn(() => ({
-                limit: jest.fn(() => ({
-                  offset: jest.fn(() => ({
-                    execute: jest.fn(() => Promise.resolve({ rows: [] })),
-                  })),
-                })),
-              })),
-            })),
-          })),
-        })),
-      })),
-    })),
-  };
-});
-
 import NextAuth from 'next-auth';
 import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
@@ -96,20 +107,20 @@ import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
 // jest.setup.ts
 // If using React Testing Library
-import '@testing-library/jest-dom';
+// import '@testing-library/jest-dom';
 import 'jest';
 
 // Polyfill TextEncoder and TextDecoder for Node.js environment
 import { TextEncoder, TextDecoder } from 'util';
+import { mock } from 'jest-mock-extended';
+import { sql } from 'drizzle-orm';
 globalThis.TextEncoder = TextEncoder;
 
 // Mock React and React.act for testing
 // Remove the React mock to use the real React.act from @testing-library/react
 
 // Automocks
-(postgres as unknown as jest.Mock).mockImplementation((strings, ...values) => {
-  return jest.fn(() => Promise.resolve({ rows: [] }));
-});
+
 (NextAuth as jest.Mock).mockImplementation(() => jest.fn);
 (auth as jest.Mock).mockImplementation(() => {
   return jest.fn(() => Promise.resolve({ id: 'test-id' }));

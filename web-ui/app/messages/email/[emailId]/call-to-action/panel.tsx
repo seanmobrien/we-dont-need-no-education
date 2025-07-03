@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Typography,
   Chip,
@@ -24,6 +24,24 @@ import {
 import { getCallToActionResponse } from '@/lib/api/email/properties/client';
 import { useParams } from 'next/navigation';
 import { EmailMasterPanel } from '@/components/mui/data-grid';
+import { useQuery } from '@tanstack/react-query';
+
+// Stable CSS grid configurations
+const GRID_CONFIGS = {
+  progressSection: { xs: 12, md: 6 },
+  statusSection: { xs: 12, md: 6 },
+  dateColumn: { xs: 12, md: 4 },
+  scoreColumn: { xs: 6, md: 3 },
+} as const;
+
+// Stable MUI component styles
+const COMPONENT_STYLES = {
+  progressBar: { height: 8, borderRadius: 1 },
+  centeredBox: { display: 'flex', justifyContent: 'center', py: 2 },
+  responseBox: { p: 2, border: '1px solid #e0e0e0', borderRadius: 1 },
+  linkStyle: { display: 'flex', alignItems: 'center', gap: 0.5 },
+  marginBottom: { mb: 1 },
+} as const;
 
 const formatDate = (date: Date | null): string => {
   if (!date) return 'Not set';
@@ -43,63 +61,54 @@ const formatScore = (value: number | null): string => {
 
 const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
   const { emailId } = useParams();
-  const [relatedResponses, setRelatedResponses] = useState<
-    CallToActionResponseDetails[]
-  >([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchRelatedResponses = async () => {
-      try {
-        setLoading(true);
-        const result = await getCallToActionResponse({
-          emailId: emailId as string,
-          page: 1,
-          num: 100, // Get all related responses
-        });
+  // Use TanStack React Query for data fetching
+  const {
+    data: relatedResponses = [],
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ['callToActionResponses', emailId, row.propertyId],
+    queryFn: async (): Promise<CallToActionResponseDetails[]> => {
+      const result = await getCallToActionResponse({
+        emailId: emailId as string,
+        page: 1,
+        num: 100, // Get all related responses
+      });
 
-        // Filter responses related to this call-to-action
-        const related =
-          result.results?.filter(
-            (response: CallToActionResponseDetails) =>
-              response.actionPropertyId === row.propertyId,
-          ) || [];
-        setRelatedResponses(related);
-        setError(null);
-      } catch (err) {
-        setError('Failed to load related responses');
-        console.error('Error fetching related responses:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (row.propertyId && emailId) {
-      fetchRelatedResponses();
-    }
-  }, [row.propertyId, emailId]);
+      // Filter responses related to this call-to-action
+      return (
+        result.results?.filter(
+          (response: CallToActionResponseDetails) =>
+            response.actionPropertyId === row.propertyId,
+        ) || []
+      );
+    },
+    enabled: Boolean(row.propertyId && emailId),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+  });
 
   return (
     <>
       {/* Progress and Status */}
       <Grid container spacing={2}>
-        <Grid gridColumn={{ xs: 12, md: 6 }}>
+        <Grid gridColumn={GRID_CONFIGS.progressSection}>
           <Typography variant="h6" gutterBottom>
             Completion Progress
           </Typography>
-          <Box sx={{ mb: 1 }}>
-            <Typography variant="body2" sx={{ mb: 1 }}>
+          <Box sx={COMPONENT_STYLES.marginBottom}>
+            <Typography variant="body2" sx={COMPONENT_STYLES.marginBottom}>
               {row.completion_percentage}% Complete
             </Typography>
           </Box>
           <LinearProgress
             variant="determinate"
             value={row.completion_percentage}
-            sx={{ height: 8, borderRadius: 1 }}
+            sx={COMPONENT_STYLES.progressBar}
           />
         </Grid>
-        <Grid gridColumn={{ xs: 12, md: 6 }}>
+        <Grid gridColumn={GRID_CONFIGS.statusSection}>
           <Typography variant="h6" gutterBottom>
             Status Indicators
           </Typography>
@@ -126,19 +135,19 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
 
       {/* Dates */}
       <Grid container spacing={2}>
-        <Grid gridColumn={{ xs: 12, md: 4 }}>
+        <Grid gridColumn={GRID_CONFIGS.dateColumn}>
           <Typography variant="subtitle1" fontWeight="bold">
             Opened Date
           </Typography>
           <Typography variant="body2">{formatDate(row.opened_date)}</Typography>
         </Grid>
-        <Grid gridColumn={{ xs: 12, md: 4 }}>
+        <Grid gridColumn={GRID_CONFIGS.dateColumn}>
           <Typography variant="subtitle1" fontWeight="bold">
             Closed Date
           </Typography>
           <Typography variant="body2">{formatDate(row.closed_date)}</Typography>
         </Grid>
-        <Grid gridColumn={{ xs: 12, md: 4 }}>
+        <Grid gridColumn={GRID_CONFIGS.dateColumn}>
           <Typography variant="subtitle1" fontWeight="bold">
             Compliance Due
           </Typography>
@@ -146,7 +155,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
             {formatDate(row.compliancy_close_date)}
           </Typography>
         </Grid>
-        <Grid gridColumn={{ xs: 12, md: 4 }}>
+        <Grid gridColumn={GRID_CONFIGS.dateColumn}>
           <Typography variant="subtitle1" fontWeight="bold">
             Timeline
           </Typography>
@@ -167,7 +176,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
 
       {/* Scores Section */}
       <Grid container spacing={2}>
-        <Grid gridColumn={{ xs: 6, md: 3 }}>
+        <Grid gridColumn={GRID_CONFIGS.scoreColumn}>
           <Typography variant="subtitle1" fontWeight="bold">
             Compliance Rating
           </Typography>
@@ -175,7 +184,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
             {formatScore(row.compliance_rating ?? null)}
           </Typography>
         </Grid>
-        <Grid gridColumn={{ xs: 6, md: 3 }}>
+        <Grid gridColumn={GRID_CONFIGS.scoreColumn}>
           <Typography variant="subtitle1" fontWeight="bold">
             Severity
           </Typography>
@@ -183,7 +192,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
             {formatScore(row.severity ?? null)}
           </Typography>
         </Grid>
-        <Grid gridColumn={{ xs: 6, md: 3 }}>
+        <Grid gridColumn={GRID_CONFIGS.scoreColumn}>
           <Typography variant="subtitle1" fontWeight="bold">
             Sentiment
           </Typography>
@@ -191,7 +200,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
             {formatScore(row.sentiment ?? null)}
           </Typography>
         </Grid>
-        <Grid gridColumn={{ xs: 6, md: 3 }}>
+        <Grid gridColumn={GRID_CONFIGS.scoreColumn}>
           <Typography variant="subtitle1" fontWeight="bold">
             Title IX
           </Typography>
@@ -227,11 +236,20 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
 
       {/* Related Responses */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+        <Box sx={COMPONENT_STYLES.centeredBox}>
           <CircularProgress />
         </Box>
       ) : error ? (
-        <Alert severity="error" action={<Typography>{error}</Typography>} />
+        <Alert
+          severity="error"
+          action={
+            <Typography>
+              {error instanceof Error
+                ? error.message
+                : 'Failed to load related responses'}
+            </Typography>
+          }
+        />
       ) : (
         <Box>
           <Typography variant="h6" gutterBottom>
@@ -242,7 +260,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
               {relatedResponses.map((response) => (
                 <Box
                   key={response.propertyId}
-                  sx={{ p: 2, border: '1px solid #e0e0e0', borderRadius: 1 }}
+                  sx={COMPONENT_STYLES.responseBox}
                 >
                   <Typography variant="body1" gutterBottom>
                     {response.value}
@@ -251,7 +269,7 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
                     href={`/messages/email/${emailId}/call-to-action-response?propertyId=${response.propertyId}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    sx={COMPONENT_STYLES.linkStyle}
                   >
                     View Details <OpenInNewIcon fontSize="small" />
                   </Link>

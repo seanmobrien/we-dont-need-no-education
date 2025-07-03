@@ -7,19 +7,42 @@ import {
   AiSearchResultEnvelopeSchema,
   getMultipleCaseFileDocuments,
   getCaseFileDocumentIndex,
-  DocumentSchema,
   toolCallbackResultSchemaFactory,
   toolCallbackArrayResultSchemaFactory,
   CaseFileAmendmentShape,
   AmendmentResultShape,
 } from '@/lib/ai/tools';
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
+import { caseFileRequestPropsShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import { log } from '@/lib/logger';
 import { createMcpHandler } from '@vercel/mcp-adapter';
 import { z } from 'zod';
 
 const handler = createMcpHandler(
   (server) => {
+    const oldCLose = server.server.onclose;
+    const oldInit = server.server.oninitialized;
+    const oldError = server.server.onerror;
+    const oldTransportError = server.server.transport?.onerror;
+
+    server.server.onclose = () => {
+      log((l) => l.info('MCP Server closed'));
+      return oldCLose?.call(server.server);
+    };
+    server.server.oninitialized = () => {
+      log((l) => l.info('MCP Server initialized'));
+      return oldInit?.call(server.server);
+    };
+    server.server.onerror = (c) => {
+      log((l) => l.info('MCP Server error'));
+      return oldError?.call(server.server, c);
+    };
+    if (server.server.transport) {
+      server.server.transport.onerror = (c) => {
+        log((l) => l.info('MCP Server transport error', c));
+        return oldTransportError?.call(server.server.transport, c);
+      };
+    }
     server.registerTool(
       'searchPolicyStore',
       {
@@ -76,38 +99,15 @@ const handler = createMcpHandler(
         description:
           "Retrieves the full contents of a specific case file document by it's ID.  This will include all metadata, as well as any linked case file documents, such as " +
           'extracted key points, notes, calls to action, responsive actions, or other relevant information.  Useful for performing detailed ' +
-          'analysis of the case file contents.',
+          'analysis of the case file contents.  IMPORTANT: case files are large and require a lot of context space, so pre-processing via goals is recommended.',
         inputSchema: {
-          caseFileId: z
-            .number()
-            .or(
-              z
-                .string()
-                .describe(
-                  "While the numeric 'documentId' is the preferred access mechanism, some document types - such as emails, calls to action, responsive actions, and notes - can be requested by their uuid-based unique identifier as well",
-                ),
-            )
-            .describe(
-              'A numeric unique identifier identifying the case file document to retrieve.',
-            ),
-          goals: z
-            .array(z.string())
-            .describe(
-              'An optional array of goals identifying your task or describing what information should be extracted from the case file.  When set, the document will be pre-processed and relevant information returned, when left blank you will receive the full case file.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
-            )
-            .optional(),
-          reasoning: z
-            .number()
-            .min(0)
-            .max(10)
-            .optional()
-            .describe(
-              'An optional number between 0 and 10 indicating the level of reasoning necessary to effectively identify relevant information in the pre-processing stage.  Complex tasks require higher levels of reasoning.  Defaults to 0, which uses gpt-4o-mini with default settings as the pre-processor.',
-            ),
+          ...caseFileRequestPropsShape.shape,
         },
+        /*
         outputSchema: toolCallbackResultSchemaFactory(
           z.string().or(DocumentSchema),
         ),
+        */
         annotations: {
           title: 'Get Full Case File',
           readOnlyHint: true,
@@ -124,44 +124,33 @@ const handler = createMcpHandler(
         description:
           'Retrieves the full contents of a batch of specific case file document by ID.  This will include all metadata, as well as any linked case file documents, such as ' +
           'extracted key points, notes, calls to action, responsive actions, or other relevant information.  Useful for performing detailed ' +
-          'analysis of the case file contents.  This can be used as an alternative to multiple calls to the `getCaseFileDocument` tool.',
+          'analysis of the case file contents.  This can be used as an alternative to multiple calls to the `getCaseFileDocument` tool.  IMPORTANT: case ' +
+          'files are large and require a lot of context space, so pre-processing via goals is recommended. Never attempt to load more than 5 unprocessed documents at a time.  ' +
+          'With adequate pre-processing, more documents can be processed, but you should never request more than 100 documents at once.',
         inputSchema: {
-          caseFileIds: z
-            .array(
-              z
-                .number()
-                .or(
-                  z
-                    .string()
-                    .describe(
-                      "While the numeric 'documentId' is the preferred access mechanism, some document types - such as emails, calls to action, responsive actions, and notes - can be requested by their uuid-based unique identifier as well",
-                    ),
-                )
-                .describe(
-                  'A numeric unique identifier identifying the case file document to retrieve.',
-                ),
-            )
-            .describe(
-              'An array of unique identifiers identifying the case file documents to retrieve.',
-            ),
+          requests: z
+            .array(caseFileRequestPropsShape)
+            .describe('An array of case file requests.'),
           goals: z
             .array(z.string())
             .describe(
-              'An optional array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
+              'An array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
             )
             .optional(),
-          reasoning: z
+          verbatim_fidelity: z
             .number()
-            .min(0)
-            .max(10)
+            .min(1)
+            .max(100)
             .optional()
             .describe(
-              'An optional number between 0 and 10 indicating the level of reasoning necessary to effectively identify relevant information in the pre-processing stage.  Complex tasks require higher levels of reasoning.  Defaults to 0, which uses gpt-4o-mini with default settings as the pre-processor.',
+              'Controls how closely output should match source text. 100 = exact quotes with full context;  75 = exact excerpts with minimal context; 50 = summarized excerpts with some context; 1 = full summary, exact quotes not needed.  Set here to provide a default for all requests.',
             ),
         },
+        /*S
         outputSchema: toolCallbackArrayResultSchemaFactory(
           z.string().or(DocumentSchema),
         ),
+        */
         annotations: {
           title: 'Get Multiple Case Files',
           readOnlyHint: true,
@@ -279,7 +268,7 @@ const handler = createMcpHandler(
   {
     redisUrl: process.env.REDIS_URL,
     basePath: '/api/ai/tools',
-    maxDuration: 300, // 5 minutes
+    maxDuration: 60 * 15 * 1000, // 15 minutes
     verboseLogs: true,
     onEvent: (event) => {
       log((l) => l.info('MCP Event:', event));
@@ -287,4 +276,24 @@ const handler = createMcpHandler(
   },
 );
 
-export { handler as GET, handler as POST };
+export const GET = async (req: Request) => {
+  console.log('MCP GET Request:', req.method, req.url);
+  try {
+    const ret = await handler(req);
+    return ret;
+  } catch (error) {
+    log((l) => l.error('MCP GET Request Error:', error));
+    return new Response('Internal Server Error', { status: 500 });
+  }
+};
+
+export const POST = async (req: Request) => {
+  console.log('MCP POST Request:', req.method, req.url);
+  try {
+    const ret = await handler(req);
+    return ret;
+  } catch (error) {
+    log((l) => l.error('MCP POST Request Error:', error));
+    return new Response('Internal Server Error', { status: 500 });
+  }
+};

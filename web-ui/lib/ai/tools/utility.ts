@@ -1,6 +1,10 @@
 import z, { ZodRawShape } from 'zod';
-import { ToolCallbackResult } from './types';
-import { isError } from '@/lib/react-util';
+import {
+  CaseFileRequestProps,
+  ToolCallbackResult,
+  ValidCaseFileRequestProps,
+} from './types';
+import { isError, LoggedError } from '@/lib/react-util';
 import { db } from '@/lib/drizzle-db/connection';
 
 interface ToolCallbackResultOverloads {
@@ -96,6 +100,20 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
 };
 
 /**
+ * Checks if the provided string is a valid version 4 UUID.
+ *
+ * A valid UUID v4 is in the format: xxxxxxxx-xxxx-4xxx-[8|9|A|B]xxx-xxxxxxxxxxxx,
+ * where 'x' is a hexadecimal digit.
+ *
+ * @param id - The string to validate as a UUID v4.
+ * @returns `true` if the string is a valid UUID v4, otherwise `false`.
+ */
+const isValidUuid = (id: string): boolean =>
+  /[0-9a-z]{8}-[0-9a-z]{4}-4[0-9a-z]{3}-[89ABab][0-9a-z]{3}-[0-9a-z]{12}/i.test(
+    id,
+  );
+
+/**
  * Resolves a case file's unit ID from a given document identifier.
  *
  * The function attempts to parse the provided `documentId` as a number.
@@ -111,26 +129,34 @@ export const resolveCaseFileId = async (
 ): Promise<number | undefined> => {
   let parsedId: number | undefined;
   if (typeof documentId === 'string') {
-    parsedId = /[a-f]|-/i.test(documentId) ? NaN : parseInt(documentId, 10);
-    if (isNaN(parsedId)) {
+    const isUuid = isValidUuid(documentId);
+    if (isUuid) {
       parsedId = await db.query.documentUnits
         .findFirst({
-          where: (du, { eq, and }) =>
-            and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
+          where: (du, { eq, and, or }) =>
+            or(
+              and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
+              eq(du.documentPropertyId, documentId),
+            ),
           columns: {
             unitId: true,
           },
         })
-        .then((result) => result?.unitId);
-      if (!parsedId) {
-        parsedId = await db.query.documentUnits
-          .findFirst({
-            where: (du, { eq }) => eq(du.documentPropertyId, documentId),
-            columns: {
-              unitId: true,
-            },
-          })
-          .then((result) => result?.unitId);
+        .then((result) => result?.unitId)
+        .catch((err) => {
+          LoggedError.isTurtlesAllTheWayDownBaby(err, {
+            log: true,
+            source: 'resolvecase_file_id',
+            message:
+              'Error querying for case file ID - validate document ID format',
+            include: { documentId },
+          });
+          return undefined;
+        });
+    } else {
+      parsedId = parseInt(documentId, 10);
+      if (isNaN(parsedId)) {
+        parsedId = undefined;
       }
     }
   } else if (typeof documentId === 'number') {
@@ -139,4 +165,94 @@ export const resolveCaseFileId = async (
     parsedId = undefined;
   }
   return parsedId;
+};
+
+/**
+ * Resolves a batch of case file identifiers to their corresponding numeric IDs.
+ *
+ * This function processes an array of requests, each containing a `case_file_id` that may be:
+ * - A number (already resolved)
+ * - A string representing a UUID (pending resolution)
+ * - A string that can be parsed as a number (resolved)
+ * - An invalid value (ignored)
+ *
+ * For UUIDs, the function queries the database to find matching records and resolves them to their numeric IDs.
+ * Returns an array of objects, each with a resolved numeric `case_file_id`.
+ *
+ * @param requests - An array of objects containing a `case_file_id` property, which may be a number or string.
+ * @returns A promise that resolves to an array of objects with a numeric `case_file_id`.
+ */
+export const resolveCaseFileIdBatch = async (
+  requests: Array<CaseFileRequestProps>,
+): Promise<Array<ValidCaseFileRequestProps>> => {
+  // First, split up into valid and pending sets, dropping anything so invalid we wont even try
+  const { valid, pending } = requests.reduce(
+    (acc, request) => {
+      // If input is a number then it is valid
+      if (typeof request.case_file_id === 'number') {
+        acc.valid.push({ case_file_id: request.case_file_id });
+        return acc;
+      }
+      // If input is a uuid then it is pending
+      if (isValidUuid(request.case_file_id)) {
+        acc.pending.push(request);
+        return acc;
+      }
+      // If inut is a string that can be parsed as a number, then it is valid
+      if (typeof request.case_file_id === 'string') {
+        const check = request.case_file_id.trim();
+        if (/\d+/.test(check)) {
+          const parsedId = parseInt(request.case_file_id, 10);
+          if (!isNaN(parsedId)) {
+            request.case_file_id = parsedId;
+            acc.valid.push({
+              ...request,
+              case_file_id: parsedId,
+            });
+          }
+        }
+        return acc;
+      }
+      // All other values are so hosed we just drop them
+      return acc;
+    },
+    {
+      valid: [] as Array<ValidCaseFileRequestProps>,
+      pending: [] as Array<CaseFileRequestProps>,
+    },
+  );
+  // Now lets try and look up these GUIDs
+  const guids = pending.map((r) => r.case_file_id as string);
+  const records = await db.query.documentUnits.findMany({
+    where: (du, { and, or, eq, inArray }) =>
+      or(
+        and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
+        inArray(du.documentPropertyId, guids),
+      ),
+    columns: {
+      unitId: true,
+      documentPropertyId: true,
+      emailId: true,
+    },
+  });
+  // Now use records to translate pending into valid
+  const { resolved } = pending.reduce(
+    (acc, request) => {
+      const record = records.find(
+        (r) =>
+          r.documentPropertyId === request.case_file_id ||
+          r.emailId === request.case_file_id,
+      );
+      if (record) {
+        request.case_file_id = record.unitId;
+        acc.resolved.push({
+          ...request,
+          case_file_id: record.unitId,
+        });
+      }
+      return acc;
+    },
+    { resolved: valid },
+  );
+  return resolved;
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Typography,
   Chip,
@@ -17,15 +17,18 @@ import {
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import { useQuery } from '@tanstack/react-query';
 import {
   CallToActionResponseDetails,
   CallToActionDetails,
 } from '@/data-models/api';
-import { getCallToAction } from '@/lib/api/email/properties/client';
 import { useParams } from 'next/navigation';
 import { EmailMasterPanel } from '@/components/mui/data-grid';
 
 const formatDate = (date: Date | null): string => {
+  if (typeof date === 'string') {
+    date = new Date(Date.parse(date));
+  }
   if (!date) return 'Not set';
   return new Intl.DateTimeFormat('en-US', {
     year: 'numeric',
@@ -52,39 +55,33 @@ const ResponsiveActionPanelContent = ({
   row: CallToActionResponseDetails;
 }) => {
   const { emailId } = useParams();
-  const [relatedCTA, setRelatedCTA] = useState<CallToActionDetails | null>(
-    null,
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchRelatedCTA = async () => {
-      try {
-        setLoading(true);
-        const result = await getCallToAction({
-          emailId: emailId as string,
-          page: 1,
-          num: 100, // Get all CTAs
-        });
-
-        // Find the CTA that this response is related to
-        const relatedCta = result.results.find(
-          (cta) => cta.propertyId === row.actionPropertyId,
-        );
-        setRelatedCTA(relatedCta || null);
-      } catch (err) {
-        setError('Failed to load related call-to-action');
-        console.error('Error fetching related CTA:', err);
-      } finally {
-        setLoading(false);
+  // Use React Query to fetch call-to-action data
+  const {
+    data: callToActionData,
+    isLoading: loading,
+    error,
+  } = useQuery({
+    queryKey: ['properties/call-to-action', emailId],
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/email/${emailId}/properties/call-to-action`,
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch call-to-action data');
       }
-    };
+      return response.json();
+    },
+    enabled: !!emailId,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    retry: 2,
+  });
 
-    if (row.actionPropertyId && emailId) {
-      fetchRelatedCTA();
-    }
-  }, [row.actionPropertyId, emailId]);
+  // Find the related CTA from the fetched data
+  const relatedCTA =
+    callToActionData?.results?.find(
+      (cta: CallToActionDetails) => cta.propertyId === row.actionPropertyId,
+    ) || null;
 
   return (
     <>
@@ -242,7 +239,11 @@ const ResponsiveActionPanelContent = ({
                 <CircularProgress size={24} />
               </Box>
             ) : error ? (
-              <Alert severity="error">{error}</Alert>
+              <Alert severity="error">
+                {error instanceof Error
+                  ? error.message
+                  : 'Failed to load related call-to-action'}
+              </Alert>
             ) : !relatedCTA ? (
               <Typography variant="body2" color="textSecondary">
                 No related call-to-action found.

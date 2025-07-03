@@ -577,7 +577,7 @@ const relateDocuments = async ({
  * @returns A promise that resolves with the result of the amendment process.
  * @example
  * const result = await amendCaseRecord({
- *   targetCaseFileId: 1,
+ *   targetcase_file_id: 1,
  *   notes: ['Note 1'],
  *   violations: [{ violationType: 'Type A', severityLevel: 3 }],
  *   explaination: 'Reason for amendment',

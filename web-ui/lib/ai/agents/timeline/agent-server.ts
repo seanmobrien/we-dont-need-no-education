@@ -1,3 +1,5 @@
+import { generateText } from 'ai';
+import { aiModelFactory } from '../../aiModelFactory';
 import { getCaseFileDocument } from '../../tools';
 import { ClientTimelineAgent } from './agent';
 import {
@@ -9,6 +11,12 @@ import {
   GlobalMetadata,
   SerializedTimelineAgent,
 } from './types';
+import { AiLanguageModelType } from '../../core';
+import { db } from '@/lib/drizzle-db';
+import { setupDefaultTools } from '../../mcp/setup-default-tools';
+import { NextRequest } from 'next/server';
+
+type InitializeProps = { req: NextRequest };
 
 /**
  * Represents an agent responsible for building a timeline summary for a given case record.
@@ -84,7 +92,9 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   /**
    * Initialize the agent by loading the initial document and extracting case metadata
    */
-  async initialize(): Promise<void> {
+  async initialize(
+    { req }: InitializeProps | undefined = {} as InitializeProps,
+  ): Promise<void> {
     if (this.#isInitialized) return;
 
     const initialDocId = Array.from(this.#pendingDocuments)[0];
@@ -96,15 +106,24 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       // Load initial document and extract case metadata
       const initialDocument = await this.#loadDocument(initialDocId);
       const caseMetadata = await this.#extractCaseMetadata(initialDocument);
+      if (
+        !caseMetadata ||
+        !caseMetadata.caseId ||
+        !caseMetadata.communicationId
+      ) {
+        throw new Error('Failed to extract case metadata');
+      }
       // Update global metadata
       this.#timelineState.globalMetadata = {
         ...this.#timelineState.globalMetadata,
         ...caseMetadata,
       };
-
+      this.#propertyId = caseMetadata.caseId;
       // Identify related documents
-      const relatedDocuments =
-        await this.#identifyRelatedDocuments(initialDocument);
+      const relatedDocuments = await this.#identifyRelatedDocuments({
+        req,
+        document: initialDocument,
+      });
       relatedDocuments.forEach((docId) => this.#pendingDocuments.add(docId));
 
       this.#timelineState.globalMetadata.totalDocuments =
@@ -230,43 +249,66 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   ): Promise<Partial<GlobalMetadata>> {
     const prompt = `
     Analyze the following document and extract case metadata. Return a JSON object with the following fields:
-    - caseId: string
+    - caseId: string - The ID of the request case file
+    - communicationId: string - The ID of the email or attachment the request originates from
     - caseType: "FERPA" | "MNGDPA" | "Other"
-    - requestType: string
-    - requestDate: ISO date string
-    - requesterName: string
-    - institutionName: string
-    - complianceDeadline: ISO date string
-    - currentStatus: string
+    - requestType: string - The type of requset
+    - requestDate: ISO date string - The date the request was made
+    - requesterName: string - The name of the requester
+    - institutionName: string - The name of the institution handling the request
+    - complianceDeadline: ISO date string - The nearest compliance deadline for the request
+    - currentStatus: string - The current status of the request
 
     Document:
     ${document}
     `;
 
-    const response = await super.generateResponse(prompt);
-    try {
-      return JSON.parse(response);
-    } catch {
-      // Return default metadata if parsing fails
-      return {
-        caseId: 'unknown',
-        requestDate: new Date().toISOString(),
-        currentStatus: 'In Progress',
-      };
-    }
+    const response = await this.generateResponse<GlobalMetadata>(prompt);
+    return response;
   }
-
-  async #identifyRelatedDocuments(document: string): Promise<string[]> {
+  async #identifyRelatedDocuments({
+    req,
+    document,
+  }: {
+    req: NextRequest;
+    document: string;
+  }): Promise<string[]> {
+    const callToActionRecord = await db.query.documentProperty.findFirst({
+      where: (property, { eq }) =>
+        eq(property.propertyId, this.#propertyId ?? ''),
+    });
+    if (!callToActionRecord) {
+      throw new Error(
+        `Failed to find call to action record for document ${this.#propertyId ?? 'null'}`,
+      );
+    }
+    const ctaText = callToActionRecord.propertyValue || '';
     const prompt = `
-    Analyze the following document and identify all related document IDs, attachment IDs, 
-    or case file references that should be included in the timeline analysis.
-    Return a JSON array of document IDs.
+    You are the document retrieval pipeline that supports an AI compliance review system.  You will be provided with -
+    1) A specific call to action made by a citizen to a responsible authority.
+    2) The contents and metadata of the communication in when the citizen made the request.
+    Your goal is to identify all email or attachment case files that reference this call to action specifically, or speak 
+    to a similar or related request.  To do that, you will -
+    ☐ Analyze the call to action, document content, and metadata.
+    ☐ Identify search terms and keywords that would retrieve relevant documents.  It is critical that we identify all related
+        case files, so a comprehensive set of queries should be identified - including synonyms, related terms, related concepts, and rephrased queries.
+    ☐ Use the case file search tool to retrieve all emails and attachment records that reference this call to action or related requests.
+    ☐ Retrieve a summarized version of retrieved case files confirming their relevance.
+        - The summarized document should also include the date it was sent as well as any document or attachment case file ID's that are associated.
+    ☐ For any related case files not already identified, pull summarized content to confirm relevance and identify any additional documents, etc.
 
-    Document:
+    Results should be returned in JSON format, and include both the document ID and the Date Sent for each identified value,
+    It should also return the total number of eligible documents, the number of documents that have been identified, and the
+    number of documents still pending analysis.
+    
+    Target Call to Action:
+    Case File Id: ${this.#propertyId}
+    Text: ${ctaText}
+    Source Document and Metadata:
     ${document}
     `;
 
-    const response = await this.generateResponse(prompt);
+    const response = await this.generateResponse(prompt, { req });
     try {
       const documentIds = JSON.parse(response);
       return Array.isArray(documentIds) ? documentIds : [];
@@ -305,17 +347,20 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     Focus on compliance aspects, timeline accuracy, and any actions or inactions that affect the case.
     `;
 
-    const response = await this.generateResponse(prompt);
-
+    const response = await this.generateResponse<ProcessingResult>(prompt);
+    if (!response || typeof response !== 'object') {
+      throw new Error(
+        `Failed to process document ${documentId}: Invalid response format`,
+      );
+    }
     try {
-      const result = JSON.parse(response);
       return {
         documentId,
-        timelineEntry: result.timelineEntry || {},
-        additionalDocuments: result.additionalDocuments || [],
-        notes: result.notes || [],
-        complianceImpact: result.complianceImpact || {},
-        verbatimStatements: result.verbatimStatements || [],
+        timelineEntry: response.timelineEntry,
+        additionalDocuments: response.additionalDocuments || [],
+        notes: response.notes || [],
+        complianceImpact: response.complianceImpact || {},
+        verbatimStatements: response.verbatimStatements || [],
       };
     } catch (error) {
       return {
@@ -356,34 +401,20 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     ${document}
     `;
 
-    const response = await this.generateResponse(prompt);
-
-    try {
-      const metadata = JSON.parse(response);
-      return {
+    const response = await this.generateResponse<DocumentMetadata>(prompt);
+    return (
+      response ?? {
         documentId,
-        documentType: metadata.documentType || 'Unknown',
-        dateSent: metadata.dateSent,
-        dateReceived: metadata.dateReceived,
-        sender: metadata.sender || '',
-        recipient: metadata.recipient || '',
-        subject: metadata.subject || '',
-        attachmentCount: metadata.attachmentCount || 0,
-        priority: metadata.priority || 'Medium',
-      };
-    } catch {
-      return {
-        documentId,
+        propertyId: this.propertyId || '',
         documentType: 'Unknown',
         sender: '',
         recipient: '',
         subject: '',
         attachmentCount: 0,
         priority: 'Medium',
-      };
-    }
+      }
+    );
   }
-
   #updateTimelineState(result: ProcessingResult): void {
     // Add the timeline entry
     if (result.timelineEntry) {
@@ -465,6 +496,42 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     this.#timelineState.complianceRatings.accuracy = ComplianceRating.Good;
     this.#timelineState.complianceRatings.transparency = ComplianceRating.Good;
   }
+  // Common methods and properties for all agents can be defined here
+  protected async generateResponse<TResultType extends string | object>(
+    input: string,
+    {
+      model = 'lofi',
+      req,
+    }: { model?: AiLanguageModelType; req?: NextRequest } = {},
+  ): Promise<TResultType> {
+    const hal = aiModelFactory(model ?? 'lofi');
+    const tools = await setupDefaultTools({ req });
+    try {
+      const ret = await generateText({
+        model: hal,
+        prompt: input,
+        tools: tools.get_tools(),
+        maxSteps: 10,
+        //experimental_continueSteps: true,
+      });
+
+      // If we have structured output available, use it.  Note our fancy middleware will automatically parse
+      // recognizable JSON content for us
+      if (
+        ret &&
+        ret.providerMetadata &&
+        'structuredOutputs' in ret.providerMetadata &&
+        !!ret.providerMetadata.structuredOutputs
+      ) {
+        // If we were able to parse structured output, return it directly
+        return ret.providerMetadata.structuredOutputs as TResultType;
+      }
+      // Otherwise, return the text response
+      return ret.text as TResultType;
+    } finally {
+      tools.dispose();
+    }
+  }
 }
 
 const TimelineAgentFactory = (
@@ -473,5 +540,5 @@ const TimelineAgentFactory = (
   return new ServerTimelineAgent(props);
 };
 
-export default TimelineAgentFactory;
+export { TimelineAgentFactory };
 export { ServerTimelineAgent };

@@ -45,6 +45,7 @@ import {
 } from '@/lib/ai/agents/timeline/types';
 import { log } from '@/lib/logger';
 import { ClientTimelineAgent } from '@/lib/ai/agents/timeline/agent';
+import { useNotifications } from '@toolpad/core/useNotifications';
 
 interface TimelineAgentInterfaceProps {
   initialDocumentId: string;
@@ -94,6 +95,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
   initialDocumentId,
   caseId,
 }) => {
+  const notifications = useNotifications();
   const [state, setState] = useState<AgentState>({
     agent: null,
     isInitialized: false,
@@ -322,7 +324,10 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           log((l) => l.info('Agent initialized successfully'));
         } else {
           if (isError) {
-            alert(mutationError);
+            notifications.show(mutationError.message, {
+              severity: 'error',
+              autoHideDuration: 60000,
+            });
           } else {
             mutate();
           }
@@ -330,7 +335,10 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
       }
     } else {
       if (isError) {
-        alert(mutationError);
+        notifications.show(mutationError.message, {
+          severity: 'error',
+          autoHideDuration: 60000,
+        });
       } else {
         //no-op?
       }
@@ -344,6 +352,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
     isSuccess,
     mutationError,
     isError,
+    notifications,
   ]);
 
   const documentCounts = state.agent?.getDocumentCounts() || {

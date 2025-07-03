@@ -1,5 +1,10 @@
 import { log } from '@/lib/logger';
 import {
+  RequestHandlerExtra,
+  ServerNotification,
+  ServerRequest,
+} from '@modelcontextprotocol/sdk';
+import {
   AiSearchResultEnvelope,
   hybridDocumentSearchFactory,
 } from '../services/search';
@@ -41,13 +46,16 @@ const searchCaseFileErrorCounter = appMeters.createCounter(
   },
 );
 
-export const searchCaseFile = async ({
-  query,
-  options,
-}: {
-  query: string;
-  options?: CaseFileSearchOptions;
-}): Promise<AiSearchToolResult> => {
+export const searchCaseFile = async (
+  {
+    query,
+    options,
+  }: {
+    query: string;
+    options?: CaseFileSearchOptions;
+  },
+  extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
+): Promise<AiSearchToolResult> => {
   const startTime = Date.now();
 
   const attributes = {

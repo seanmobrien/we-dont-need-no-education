@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ResponsiveActionPanel } from '@/app/messages/email/[emailId]/call-to-action-response/panel';
 import { CallToActionResponseDetails } from '@/data-models/api';
@@ -15,7 +15,7 @@ jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
 
-// Mock MUI components that may cause theme issues
+/*
 jest.mock(
   '@mui/material/LinearProgress',
   () =>
@@ -27,7 +27,7 @@ jest.mock(
 jest.mock('@mui/material/CircularProgress', () => () => (
   <div data-testid="circular-progress" />
 ));
-
+*/
 const mockResponseDetails: CallToActionResponseDetails = {
   propertyId: 'response-test-id',
   documentId: 1,
@@ -62,7 +62,6 @@ const mockRelatedCTA = {
 
 describe('ResponsiveActionPanel', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
     mockedClient.getCallToAction.mockResolvedValue({
       results: [mockRelatedCTA],
       pageStats: { page: 1, num: 10, total: 1 },
@@ -70,8 +69,12 @@ describe('ResponsiveActionPanel', () => {
   });
 
   it('renders responsive action details correctly', async () => {
-    render(<ResponsiveActionPanel row={mockResponseDetails} />);
-
+    act(() => {
+      render(<ResponsiveActionPanel row={mockResponseDetails} />);
+      waitFor(() =>
+        screen.getByText('Detailed response to the call to action'),
+      );
+    });
     expect(
       screen.getByText('Responsive Action (response-test-id)'),
     ).toBeInTheDocument();
@@ -82,7 +85,10 @@ describe('ResponsiveActionPanel', () => {
   });
 
   it('displays progress bar with correct value', async () => {
-    render(<ResponsiveActionPanel row={mockResponseDetails} />);
+    await act(() => {
+      render(<ResponsiveActionPanel row={mockResponseDetails} />);
+      waitFor(() => screen.getByTestId('linear-progress'));
+    });
 
     const progressBar = screen.getByTestId('linear-progress');
     expect(progressBar).toHaveAttribute('data-value', '80');
@@ -160,13 +166,18 @@ describe('ResponsiveActionPanel', () => {
   it('handles API error gracefully', async () => {
     mockedClient.getCallToAction.mockRejectedValue(new Error('API Error'));
 
-    render(<ResponsiveActionPanel row={mockResponseDetails} />);
-
-    await waitFor(() => {
-      expect(
-        screen.getByText('Failed to load related call-to-action'),
-      ).toBeInTheDocument();
+    const { container } = render(
+      <ResponsiveActionPanel row={mockResponseDetails} />,
+    );
+    act(() => {
+      waitFor(() => screen.getByText('Failed to load related call-to-action'));
     });
+
+    expect(
+      screen.getByText('Failed to load related call-to-action'),
+    ).toBeInTheDocument();
+    // Take snapshot after error state is rendered
+    expect(container.firstChild).toMatchSnapshot();
   });
 
   it('handles no related CTA found', async () => {

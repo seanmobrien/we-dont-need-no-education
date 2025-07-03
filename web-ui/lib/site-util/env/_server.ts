@@ -18,6 +18,7 @@ const buildRawInstance = () => ({
   AZURE_OPENAI_DEPLOYMENT_EMBEDDING:
     process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING,
   AZURE_OPENAI_ENDPOINT_EMBEDDING: process.env.AZURE_OPENAI_ENDPOINT,
+  AZURE_OPENAI_KEY_EMBEDDING: process.env.AZURE_OPENAI_KEY_EMBEDDING,
   AZURE_OPENAI_DEPLOYMENT_COMPLETIONS:
     process.env.AZURE_OPENAI_DEPLOYMENT_COMPLETIONS,
   AZURE_OPENAI_ENDPOINT_COMPLETIONS:
@@ -90,6 +91,9 @@ const serverEnvSchema = z.object({
   AZURE_OPENAI_ENDPOINT_EMBEDDING: z
     .string()
     .default(process.env.AZURE_OPENAI_ENDPOINT ?? ''),
+  AZURE_OPENAI_KEY_EMBEDDING: z
+    .string()
+    .default(process.env.AZURE_OPENAI_KEY ?? ''),
   AZURE_OPENAI_DEPLOYMENT_HIFI: z.string().default('gpt-4.1'),
   AZURE_OPENAI_DEPLOYMENT_LOFI: z.string().default('gpt-4o-mini'),
   AZURE_OPENAI_DEPLOYMENT_COMPLETIONS: z.string().default('gpt-4o-mini'),

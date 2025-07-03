@@ -15,7 +15,7 @@ export async function GET(
 ) {
   try {
     const { unitId } = await extractParams(args);
-    const document = await getCaseFileDocument({ caseFileId: unitId });
+    const document = await getCaseFileDocument({ case_file_id: unitId });
 
     const valid = toolCallbackResultSchemaFactory(
       DocumentSchema,
@@ -39,7 +39,7 @@ export async function PUT(
 ) {
   const { unitId } = await extractParams(args);
   const data = (await req.json()) as CaseFileAmendment;
-  if (data.targetCaseFileId !== Number(unitId)) {
+  if (data.targetcase_file_id !== Number(unitId)) {
     return NextResponse.json(
       { error: 'Target case file ID does not match the unit ID.' },
       { status: 400 },

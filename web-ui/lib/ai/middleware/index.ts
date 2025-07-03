@@ -1,5 +1,6 @@
 // Enterprise-grade AI middleware exports
 export { retryRateLimitMiddleware } from './retryRateLimitMiddleware';
+export { setNormalizedDefaultsMiddleware } from './set-normalized-defaults';
 export {
   cacheWithRedis,
   getRedisClient,
