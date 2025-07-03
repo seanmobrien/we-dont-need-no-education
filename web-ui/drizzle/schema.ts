@@ -37,6 +37,23 @@ export const importStageType = pgEnum('import_stage_type', [
 ]);
 export const recipientType = pgEnum('recipient_type', ['to', 'cc', 'bcc']);
 
+// Chat history enums
+export const messageStatusType = pgEnum('message_status_type', [
+  'streaming',
+  'complete',
+]);
+export const turnStatusType = pgEnum('turn_status_type', [
+  'waiting',
+  'complete',
+  'error',
+]);
+export const chatMessageRoleType = pgEnum('chat_message_role_type', [
+  'user',
+  'assistant',
+  'tool',
+  'system',
+]);
+
 export const callToActionExpectedResponse = pgTable(
   'call_to_action_expected_response',
   {
@@ -224,6 +241,63 @@ export const threads = pgTable('threads', {
     sql`CURRENT_TIMESTAMP`,
   ),
   externalId: varchar('external_id', { length: 255 }),
+});
+
+// Chat history lookup tables
+export const messageStatuses = pgTable('message_statuses', {
+  id: serial('id').primaryKey(),
+  code: text('code').unique().notNull(),
+  description: text('description'),
+});
+
+export const turnStatuses = pgTable('turn_statuses', {
+  id: serial('id').primaryKey(),
+  code: text('code').unique().notNull(),
+  description: text('description'),
+});
+
+// Main chat history tables
+export const chats = pgTable('chats', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => users.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  title: text('title'),
+  metadata: jsonb('metadata'),
+});
+
+export const chatTurns = pgTable('chat_turns', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  chatId: uuid('chat_id').notNull().references(() => chats.id, { onDelete: 'cascade' }),
+  statusId: serial('status_id').notNull().references(() => turnStatuses.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  completedAt: timestamp('completed_at', { withTimezone: true }),
+  modelName: text('model_name'),
+  temperature: doublePrecision('temperature'),
+  topP: doublePrecision('top_p'),
+  latencyMs: integer('latency_ms'),
+  warnings: text('warnings').array(),
+  errors: text('errors').array(),
+  metadata: jsonb('metadata'),
+});
+
+export const chatMessages = pgTable('chat_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  chatId: uuid('chat_id').notNull().references(() => chats.id, { onDelete: 'cascade' }),
+  turnId: uuid('turn_id').references(() => chatTurns.id, { onDelete: 'cascade' }),
+  role: chatMessageRoleType('role').notNull(),
+  content: text('content'),
+  toolName: text('tool_name'),
+  functionCall: jsonb('function_call'),
+  messageOrder: integer('message_order').notNull(),
+  statusId: serial('status_id').notNull().references(() => messageStatuses.id),
+});
+
+export const tokenUsage = pgTable('token_usage', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  turnId: uuid('turn_id').notNull().references(() => chatTurns.id, { onDelete: 'cascade' }),
+  promptTokens: integer('prompt_tokens'),
+  completionTokens: integer('completion_tokens'),
+  totalTokens: integer('total_tokens'),
 });
 
 export const chatHistory = pgTable(
