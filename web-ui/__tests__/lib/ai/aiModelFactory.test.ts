@@ -85,6 +85,10 @@ describe('AI Model Types', () => {
       'google-embedding',
       'azure:lofi',
       'azure:hifi',
+      'azure:completions',
+      'azure:embedding',
+      'google:completions',
+      'google:embedding',
     ]);
   });
 
@@ -125,7 +129,7 @@ describe('AI Model Type Guards', () => {
 
 describe('AI Model Factory Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('should be importable without errors', async () => {
@@ -176,7 +180,7 @@ describe('Model Availability Management', () => {
   let modelControls: any;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     modelControls = await import('../../../lib/ai/aiModelFactory');
     // Reset to defaults before each test
     modelControls.resetModelAvailability();

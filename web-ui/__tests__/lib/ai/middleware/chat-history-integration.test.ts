@@ -43,11 +43,14 @@ jest.mock('@/lib/logger', () => ({
 }));
 
 import { wrapLanguageModel } from 'ai';
-import { createChatHistoryMiddleware, type ChatHistoryContext } from '@/lib/ai/middleware/chat-history-middleware';
+import {
+  createChatHistoryMiddleware,
+  type ChatHistoryContext,
+} from '@/lib/ai/middleware/chat-history-middleware';
 
 describe('Chat History Middleware Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('should integrate with AI SDK wrapLanguageModel', async () => {
@@ -61,13 +64,13 @@ describe('Chat History Middleware Integration', () => {
           start(controller) {
             controller.enqueue({ type: 'text-delta', textDelta: 'Hello' });
             controller.enqueue({ type: 'text-delta', textDelta: ' world!' });
-            controller.enqueue({ 
-              type: 'finish', 
+            controller.enqueue({
+              type: 'finish',
               finishReason: 'stop',
-              usage: { promptTokens: 5, completionTokens: 10 }
+              usage: { promptTokens: 5, completionTokens: 10 },
             });
             controller.close();
-          }
+          },
         }),
         finishReason: 'stop',
         usage: { promptTokens: 5, completionTokens: 10 },
@@ -93,7 +96,17 @@ describe('Chat History Middleware Integration', () => {
 
     // Test streaming with the wrapped model
     const streamResult = await wrappedModel.doStream({
-      prompt: [{ role: 'user', content: 'Test message' }],
+      prompt: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Hello, how are you today?',
+            },
+          ],
+        },
+      ],
       seed: undefined,
       maxTokens: undefined,
       temperature: undefined,
@@ -102,6 +115,9 @@ describe('Chat History Middleware Integration', () => {
       frequencyPenalty: undefined,
       presencePenalty: undefined,
       stopSequences: undefined,
+
+      mode: { type: 'regular' },
+      inputFormat: 'messages',
     });
 
     expect(streamResult).toBeDefined();
@@ -110,7 +126,7 @@ describe('Chat History Middleware Integration', () => {
     // Read from the stream to trigger middleware
     const reader = streamResult.stream.getReader();
     const chunks = [];
-    
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -121,10 +137,10 @@ describe('Chat History Middleware Integration', () => {
     expect(chunks).toHaveLength(3);
     expect(chunks[0]).toEqual({ type: 'text-delta', textDelta: 'Hello' });
     expect(chunks[1]).toEqual({ type: 'text-delta', textDelta: ' world!' });
-    expect(chunks[2]).toEqual({ 
-      type: 'finish', 
+    expect(chunks[2]).toEqual({
+      type: 'finish',
       finishReason: 'stop',
-      usage: { promptTokens: 5, completionTokens: 10 }
+      usage: { promptTokens: 5, completionTokens: 10 },
     });
 
     // Verify database operations were called
@@ -136,25 +152,30 @@ describe('Chat History Middleware Integration', () => {
       specificationVersion: 'v1' as const,
       provider: 'test',
       modelId: 'test-model',
+      mode: { type: 'regular' },
+      inputFormat: 'messages',
       doStream: jest.fn().mockResolvedValue({
         stream: new ReadableStream({
           start(controller) {
-            controller.enqueue({ 
+            controller.enqueue({
               type: 'tool-call',
               toolCallId: 'call-123',
               toolName: 'searchCaseFile',
-              args: { query: 'policy violation' }
+              args: { query: 'policy violation' },
             });
-            controller.enqueue({ type: 'text-delta', textDelta: 'Based on the search...' });
-            controller.enqueue({ 
-              type: 'finish', 
+            controller.enqueue({
+              type: 'text-delta',
+              textDelta: 'Based on the search...',
+            });
+            controller.enqueue({
+              type: 'finish',
               finishReason: 'stop',
-              usage: { promptTokens: 15, completionTokens: 25 }
+              usage: { promptTokens: 15, completionTokens: 25 },
             });
             controller.close();
-          }
+          },
         }),
-      }),
+      }) as never,
       doGenerate: jest.fn(),
     };
 
@@ -170,7 +191,17 @@ describe('Chat History Middleware Integration', () => {
     });
 
     const streamResult = await wrappedModel.doStream({
-      prompt: [{ role: 'user', content: 'Search for policy violations' }],
+      prompt: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Search for policy violations',
+            },
+          ],
+        },
+      ],
       seed: undefined,
       maxTokens: undefined,
       temperature: undefined,
@@ -179,12 +210,14 @@ describe('Chat History Middleware Integration', () => {
       frequencyPenalty: undefined,
       presencePenalty: undefined,
       stopSequences: undefined,
+      mode: { type: 'regular' },
+      inputFormat: 'messages',
     });
 
     // Read stream
     const reader = streamResult.stream.getReader();
     const chunks = [];
-    
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -202,7 +235,7 @@ describe('Chat History Middleware Integration', () => {
       expect.objectContaining({
         role: 'tool',
         toolName: 'searchCaseFile',
-      })
+      }),
     );
   });
 
@@ -221,7 +254,7 @@ describe('Chat History Middleware Integration', () => {
           start(controller) {
             controller.enqueue({ type: 'text-delta', textDelta: 'Hello' });
             controller.close();
-          }
+          },
         }),
       }),
       doGenerate: jest.fn(),
@@ -240,7 +273,17 @@ describe('Chat History Middleware Integration', () => {
     });
 
     const streamResult = await wrappedModel.doStream({
-      prompt: [{ role: 'user', content: 'Test' }],
+      prompt: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Test',
+            },
+          ],
+        },
+      ],
       seed: undefined,
       maxTokens: undefined,
       temperature: undefined,
@@ -249,6 +292,9 @@ describe('Chat History Middleware Integration', () => {
       frequencyPenalty: undefined,
       presencePenalty: undefined,
       stopSequences: undefined,
+
+      mode: { type: 'regular' },
+      inputFormat: 'messages',
     });
 
     expect(streamResult).toBeDefined();
@@ -266,12 +312,18 @@ describe('Chat History Middleware Integration', () => {
       specificationVersion: 'v1' as const,
       provider: 'test',
       modelId: 'test-model',
+
+      mode: { type: 'regular' },
+      inputFormat: 'messages',
       doStream: jest.fn().mockResolvedValue({
         stream: new ReadableStream({
           start(controller) {
-            controller.enqueue({ type: 'text-delta', textDelta: 'Original behavior' });
+            controller.enqueue({
+              type: 'text-delta',
+              textDelta: 'Original behavior',
+            });
             controller.close();
-          }
+          },
         }),
         finishReason: 'stop',
         usage: { promptTokens: 3, completionTokens: 7 },
@@ -282,7 +334,17 @@ describe('Chat History Middleware Integration', () => {
     // Test without middleware first
     const originalModel = createMockModel();
     const originalResult = await originalModel.doStream({
-      prompt: [{ role: 'user', content: 'Test' }],
+      prompt: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Test',
+            },
+          ],
+        },
+      ],
       seed: undefined,
       maxTokens: undefined,
       temperature: undefined,
@@ -309,7 +371,17 @@ describe('Chat History Middleware Integration', () => {
     });
 
     const wrappedResult = await wrappedModel.doStream({
-      prompt: [{ role: 'user', content: 'Test' }],
+      prompt: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Test',
+            },
+          ],
+        },
+      ],
       seed: undefined,
       maxTokens: undefined,
       temperature: undefined,
@@ -318,6 +390,8 @@ describe('Chat History Middleware Integration', () => {
       frequencyPenalty: undefined,
       presencePenalty: undefined,
       stopSequences: undefined,
+      mode: { type: 'regular' },
+      inputFormat: 'messages',
     });
 
     const wrappedReader = wrappedResult.stream.getReader();
@@ -325,6 +399,9 @@ describe('Chat History Middleware Integration', () => {
 
     // Stream content should be identical
     expect(wrappedValue).toEqual(originalValue);
-    expect(wrappedValue).toEqual({ type: 'text-delta', textDelta: 'Original behavior' });
+    expect(wrappedValue).toEqual({
+      type: 'text-delta',
+      textDelta: 'Original behavior',
+    });
   });
 });

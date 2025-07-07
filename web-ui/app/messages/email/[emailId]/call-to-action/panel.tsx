@@ -384,9 +384,13 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
 };
 
 export const CallToActionPanel = ({ row }: { row: CallToActionDetails }) => {
+  console.log('in cta panel', row);
+
   return (
-    <EmailMasterPanel title="Call to Action Details" row={row}>
-      <CallToActionPanelContent row={row} />
-    </EmailMasterPanel>
+    <div>
+      <EmailMasterPanel title="Call to Action Details" row={row}>
+        <CallToActionPanelContent row={row} />
+      </EmailMasterPanel>
+    </div>
   );
 };

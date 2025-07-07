@@ -5,7 +5,7 @@ import {
   ValidCaseFileRequestProps,
 } from './types';
 import { isError, LoggedError } from '@/lib/react-util';
-import { db } from '@/lib/drizzle-db/connection';
+import { db } from '@/lib/drizzle-db';
 
 interface ToolCallbackResultOverloads {
   <T>(result: T): ToolCallbackResult<T>;
@@ -146,7 +146,7 @@ export const resolveCaseFileId = async (
         .catch((err) => {
           LoggedError.isTurtlesAllTheWayDownBaby(err, {
             log: true,
-            source: 'resolvecase_file_id',
+            source: 'resolveCaseFileId',
             message:
               'Error querying for case file ID - validate document ID format',
             include: { documentId },
@@ -170,17 +170,17 @@ export const resolveCaseFileId = async (
 /**
  * Resolves a batch of case file identifiers to their corresponding numeric IDs.
  *
- * This function processes an array of requests, each containing a `case_file_id` that may be:
+ * This function processes an array of requests, each containing a `caseFileId` that may be:
  * - A number (already resolved)
  * - A string representing a UUID (pending resolution)
  * - A string that can be parsed as a number (resolved)
  * - An invalid value (ignored)
  *
  * For UUIDs, the function queries the database to find matching records and resolves them to their numeric IDs.
- * Returns an array of objects, each with a resolved numeric `case_file_id`.
+ * Returns an array of objects, each with a resolved numeric `caseFileId`.
  *
- * @param requests - An array of objects containing a `case_file_id` property, which may be a number or string.
- * @returns A promise that resolves to an array of objects with a numeric `case_file_id`.
+ * @param requests - An array of objects containing a `caseFileId` property, which may be a number or string.
+ * @returns A promise that resolves to an array of objects with a numeric `caseFileId`.
  */
 export const resolveCaseFileIdBatch = async (
   requests: Array<CaseFileRequestProps>,
@@ -189,25 +189,26 @@ export const resolveCaseFileIdBatch = async (
   const { valid, pending } = requests.reduce(
     (acc, request) => {
       // If input is a number then it is valid
-      if (typeof request.case_file_id === 'number') {
-        acc.valid.push({ case_file_id: request.case_file_id });
+      if (typeof request.caseFileId === 'number') {
+        acc.valid.push({ caseFileId: request.caseFileId });
         return acc;
       }
-      // If input is a uuid then it is pending
-      if (isValidUuid(request.case_file_id)) {
-        acc.pending.push(request);
-        return acc;
-      }
-      // If inut is a string that can be parsed as a number, then it is valid
-      if (typeof request.case_file_id === 'string') {
-        const check = request.case_file_id.trim();
-        if (/\d+/.test(check)) {
-          const parsedId = parseInt(request.case_file_id, 10);
+      // If input is a string, check if it's a UUID or numeric string
+      if (typeof request.caseFileId === 'string') {
+        // First check if it's a valid UUID
+        if (isValidUuid(request.caseFileId)) {
+          acc.pending.push(request);
+          return acc;
+        }
+
+        // Then check if it's a valid numeric string
+        const check = request.caseFileId.trim();
+        if (/^-?\d+$/.test(check)) {
+          const parsedId = parseInt(request.caseFileId, 10);
           if (!isNaN(parsedId)) {
-            request.case_file_id = parsedId;
             acc.valid.push({
               ...request,
-              case_file_id: parsedId,
+              caseFileId: parsedId,
             });
           }
         }
@@ -222,7 +223,10 @@ export const resolveCaseFileIdBatch = async (
     },
   );
   // Now lets try and look up these GUIDs
-  const guids = pending.map((r) => r.case_file_id as string);
+  const guids = pending.map((r) => r.caseFileId as string);
+  if (!guids.length) {
+    return valid;
+  }
   const records = await db.query.documentUnits.findMany({
     where: (du, { and, or, eq, inArray }) =>
       or(
@@ -240,14 +244,14 @@ export const resolveCaseFileIdBatch = async (
     (acc, request) => {
       const record = records.find(
         (r) =>
-          r.documentPropertyId === request.case_file_id ||
-          r.emailId === request.case_file_id,
+          r.documentPropertyId === request.caseFileId ||
+          r.emailId === request.caseFileId,
       );
       if (record) {
-        request.case_file_id = record.unitId;
+        request.caseFileId = record.unitId;
         acc.resolved.push({
           ...request,
-          case_file_id: record.unitId,
+          caseFileId: record.unitId,
         });
       }
       return acc;

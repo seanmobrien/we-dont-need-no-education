@@ -27,6 +27,8 @@ import {
 import { log } from '@/lib/logger';
 import { generateChatId } from '@/lib/components/ai';
 import { enhancedChatFetch } from '@/lib/components/ai/chat-fetch-wrapper';
+import { getReactPlugin } from '@/instrument/browser';
+import { withAITracking } from '@microsoft/applicationinsights-react-js';
 
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
@@ -255,6 +257,7 @@ const ChatPanel = ({ page }: { page: string }) => {
   }
   return (
     <Box
+      id={`chat-panel-${threadId}`}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -356,4 +359,4 @@ const ChatPanel = ({ page }: { page: string }) => {
   );
 };
 
-export default ChatPanel;
+export default withAITracking(getReactPlugin(), ChatPanel);

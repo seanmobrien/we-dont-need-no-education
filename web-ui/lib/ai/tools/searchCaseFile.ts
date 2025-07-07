@@ -1,10 +1,5 @@
 import { log } from '@/lib/logger';
 import {
-  RequestHandlerExtra,
-  ServerNotification,
-  ServerRequest,
-} from '@modelcontextprotocol/sdk';
-import {
   AiSearchResultEnvelope,
   hybridDocumentSearchFactory,
 } from '../services/search';
@@ -12,6 +7,11 @@ import { AiSearchToolResult, CaseFileSearchOptions } from './types';
 import { LoggedError } from '@/lib/react-util';
 import { toolCallbackResultFactory } from './utility';
 import { appMeters } from '@/lib/site-util/metrics';
+import type {
+  ServerNotification,
+  ServerRequest,
+} from '@modelcontextprotocol/sdk/types.js';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 
 // OpenTelemetry Metrics for SearchCaseFile Tool
 const searchCaseFileCounter = appMeters.createCounter(
@@ -46,6 +46,18 @@ const searchCaseFileErrorCounter = appMeters.createCounter(
   },
 );
 
+export const localSearchCaseFile = (props: {
+  query: string;
+  options?: CaseFileSearchOptions;
+}) =>
+  searchCaseFile(
+    props,
+    undefined as unknown as RequestHandlerExtra<
+      ServerRequest,
+      ServerNotification
+    >,
+  );
+
 export const searchCaseFile = async (
   {
     query,
@@ -56,6 +68,7 @@ export const searchCaseFile = async (
   },
   extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
 ): Promise<AiSearchToolResult> => {
+  console.log('extra is', extra);
   const startTime = Date.now();
 
   const attributes = {

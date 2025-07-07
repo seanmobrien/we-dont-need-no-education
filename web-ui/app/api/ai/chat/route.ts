@@ -13,10 +13,10 @@ import { getRetryErrorInfo } from '@/lib/ai/chat';
 import { generateChatId } from '@/lib/components/ai';
 import { toolProviderSetFactory } from '@/lib/ai/mcp';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
-import { 
-  createChatHistoryMiddleware, 
+import {
+  createChatHistoryMiddleware,
   initializeChatHistoryTables,
-  type ChatHistoryContext 
+  type ChatHistoryContext,
 } from '@/lib/ai/middleware';
 import { wrapLanguageModel } from 'ai';
 // Allow streaming responses up to 180 seconds
@@ -88,20 +88,16 @@ export async function POST(req: NextRequest) {
         ).toString(),
         headers: getMcpClientHeaders({ req, chatHistoryId }),
       },
+      /*
       {
-        allowWrite: true,
-        /*
-        url: new URL(
-          '/mcp/openmemory/sse/${process.env.MEM0_USERNAME}',
-          env('MEM0_API_HOST'),
-        ).toString(),
-        */
+        allowWrite: true,        
         headers: {
           'cache-control': 'no-cache, no-transform',
           'content-encoding': 'none',
         },
         url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
       },
+      */
     ]);
 
     // Initialize chat history tables (only needs to be done once)
@@ -129,7 +125,7 @@ export async function POST(req: NextRequest) {
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
-          model: modelWithHistory,
+          model: baseModel,
           messages: optimizedMessages,
           experimental_generateMessageId: () => {
             return `${threadId ?? 'not-set'}:${generateChatId().id}`;

@@ -1,3 +1,7 @@
+const shouldWriteToConsole = jest
+  .requireActual('@/lib/react-util')
+  .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
 
@@ -74,9 +78,12 @@ export const createRedisClient = jest.fn(() => ({
 jest.mock('redis', () => ({
   createClient: createRedisClient,
 }));
+
 const makeMockImplementation = (name: string) => {
   return (...args: unknown[]) =>
-    console.log(`logger::${name} called with `, args);
+    shouldWriteToConsole
+      ? console.log(`logger::${name} called with `, args)
+      : () => {};
 };
 const logger = () => ({
   warn: jest.fn(makeMockImplementation('warn')),
@@ -90,7 +97,15 @@ const logger = () => ({
 
 jest.mock('@/lib/logger', () => {
   return {
-    logger: Promise.resolve(logger),
+    logger: Promise.resolve(() => ({
+      warn: jest.fn(makeMockImplementation('warn')),
+      error: jest.fn(makeMockImplementation('error')),
+      info: jest.fn(makeMockImplementation('info')),
+      debug: jest.fn(makeMockImplementation('debug')),
+      silly: jest.fn(makeMockImplementation('silly')),
+      verbose: jest.fn(makeMockImplementation('verbose')),
+      log: jest.fn(makeMockImplementation('log')),
+    })),
     log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => cb(logger())),
     errorLogFactory: jest.fn((x) => x),
     simpleScopedLogger: jest.fn(() => logger()),
@@ -107,7 +122,7 @@ import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
 // jest.setup.ts
 // If using React Testing Library
-// import '@testing-library/jest-dom';
+import '@testing-library/jest-dom';
 import 'jest';
 
 // Polyfill TextEncoder and TextDecoder for Node.js environment
@@ -116,8 +131,30 @@ import { mock } from 'jest-mock-extended';
 import { sql } from 'drizzle-orm';
 globalThis.TextEncoder = TextEncoder;
 
-// Mock React and React.act for testing
-// Remove the React mock to use the real React.act from @testing-library/react
+// React 19 + React Testing Library 16 compatibility setup
+/*
+import React from 'react';
+import { act } from 'react';
+
+// Set up React.act environment for React 19 concurrent features
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(global as any).IS_REACT_ACT_ENVIRONMENT = true;
+*/
+
+/*
+// Set React.act on the global React object to ensure compatibility
+// This is the correct way to handle React 19 with React Testing Library 16
+if (typeof React.act === 'undefined') {
+  React.act = act;
+}
+
+// Also make act available globally for React Testing Library
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof (global as any).act === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (global as any).act = act;
+}
+*/
 
 // Automocks
 
@@ -128,7 +165,7 @@ globalThis.TextEncoder = TextEncoder;
 
 const DefaultEnvVariables = {
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
-  AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
+  NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
   NEXT_PUBLIC_HOSTNAME: `http://test-run.localhost`,
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: `silly`,

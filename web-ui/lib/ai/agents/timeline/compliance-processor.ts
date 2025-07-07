@@ -16,18 +16,18 @@ export class ComplianceTimelineProcessor {
 
   /**
    * Process a single case document according to the compliance script requirements
-   * @param case_file_id The ID of the case file to process
+   * @param caseFileId The ID of the case file to process
    * @returns The updated timeline summary
    */
-  async processCaseDocument(case_file_id: string): Promise<string> {
+  async processCaseDocument(caseFileId: string): Promise<string> {
     // Add the document to the agent if not already present
-    this.agent.addDocuments([case_file_id]);
+    this.agent.addDocuments([caseFileId]);
 
     // Process the document
     const result = await this.agent.processNextDocument();
 
     if (!result) {
-      throw new Error(`Failed to process case file ${case_file_id}`);
+      throw new Error(`Failed to process case file ${caseFileId}`);
     }
 
     // Generate the updated summary according to the script format
@@ -307,9 +307,9 @@ export class ComplianceTimelineProcessor {
  * Factory function to create a compliance processor
  */
 export function createComplianceProcessor(
-  initialDocumentId: string,
+  propertyId: string,
 ): ComplianceTimelineProcessor {
-  const agent = TimelineAgentFactory({ initialDocumentId });
+  const agent = TimelineAgentFactory({ propertyId });
   return new ComplianceTimelineProcessor(agent);
 }
 

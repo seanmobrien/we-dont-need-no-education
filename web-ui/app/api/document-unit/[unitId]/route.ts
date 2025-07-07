@@ -15,7 +15,7 @@ export async function GET(
 ) {
   try {
     const { unitId } = await extractParams(args);
-    const document = await getCaseFileDocument({ case_file_id: unitId });
+    const document = await getCaseFileDocument({ caseFileId: unitId });
 
     const valid = toolCallbackResultSchemaFactory(
       DocumentSchema,

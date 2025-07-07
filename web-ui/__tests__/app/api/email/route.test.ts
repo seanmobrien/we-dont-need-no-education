@@ -60,6 +60,7 @@ import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { query, queryExt } from '@/lib/neondb';
+import { auth } from '@/auth';
 
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
@@ -82,6 +83,9 @@ describe('Email API', () => {
       const params = await req.params;
       return params;
     });
+
+    // Reset auth mock
+    (auth as jest.Mock).mockReset();
   });
 
   describe('POST /api/email', () => {
@@ -461,6 +465,52 @@ describe('Email API', () => {
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
         error: 'Email ID is required',
+      });
+    });
+  });
+  describe('Auth Session API', () => {
+    describe('GET /api/auth/session', () => {
+      beforeEach(() => {
+        // Reset all mocks before each test
+        // jest.clearAllMocks();
+        (auth as jest.Mock).mockReset();
+      });
+
+      it('should return authenticated status and session data if session exists', async () => {
+        const mockSession = { user: { id: 1, name: 'Test User' } };
+        (auth as jest.Mock).mockResolvedValue(mockSession);
+
+        // Import the route function fresh
+        const { GET } = await import('@/app/api/auth/session/route');
+        const { NextResponse } = await import('next/server');
+
+        const res = await GET();
+        expect(res instanceof NextResponse).toBe(true);
+        expect(res.status).toBe(200);
+        const json = await res.json();
+
+        expect(json).toEqual({
+          status: 'authenticated',
+          data: mockSession,
+        });
+      });
+
+      it('should return unauthenticated status and null data if no session', async () => {
+        (auth as jest.Mock).mockResolvedValue(null);
+
+        // Import the route function fresh
+        const { GET } = await import('@/app/api/auth/session/route');
+        const { NextResponse } = await import('next/server');
+
+        const res = await GET();
+        expect(res instanceof NextResponse).toBe(true);
+        expect(res.status).toBe(200);
+        const json = await res.json();
+
+        expect(json).toEqual({
+          status: 'unauthenticated',
+          data: null,
+        });
       });
     });
   });

@@ -3,6 +3,13 @@ import { EmailDashboardLayout } from '@/components/email-message/dashboard-layou
 import { Box } from '@mui/material';
 import { EmailHeaderGrid } from './grid';
 import { ChatPanel } from '@/components/ai/chat-panel';
+import { Metadata } from 'next';
+
+export const generateMetadata = async (): Promise<Metadata> => {
+  return {
+    title: 'Email Headers',
+  };
+};
 
 const Home = async () => {
   const session = await auth();

@@ -110,7 +110,7 @@ describe('BaseDrizzleRepository', () => {
   ) => Partial<TestModel>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Mock database
     mockDb = {

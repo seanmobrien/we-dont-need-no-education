@@ -50,7 +50,7 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
 const EditProgress = <R extends GridValidRowModel = any>(
   props: GridRenderEditCellParams<R, number>,
 ) => {
-  const { id, value, field } = props;
+  const { id, value, field } = props ?? { id: '', value: 0, field: '' };
   const [valueState, setValueState] = React.useState(Number(value));
 
   const apiRef = useGridApiContext();

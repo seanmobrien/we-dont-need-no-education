@@ -80,7 +80,7 @@ import { preprocessCaseFileDocument } from './preprocessCaseFileDocument';
  * @example
  * ```typescript
  * const result = await getCaseFileDocument({
- *   case_file_id: 12345,
+ *   caseFileId: 12345,
  *   goals: ['compliance-check', 'policy-review'],
  *   verbatim_fidelity: 75
  * });
@@ -147,27 +147,27 @@ export const getCaseFileDocument = async (
  * // Basic usage with multiple documents
  * const results = await getMultipleCaseFileDocuments({
  *   requests: [
- *     { case_file_id: 123, goals: ['compliance-check'], verbatim_fidelity: 80 },
- *     { case_file_id: 456, goals: ['policy-review'], verbatim_fidelity: 60 }
+ *     { caseFileId: 123, goals: ['compliance-check'], verbatim_fidelity: 80 },
+ *     { caseFileId: 456, goals: ['policy-review'], verbatim_fidelity: 60 }
  *   ]
  * });
  *
  * // Using global goals applied to all documents
  * const results = await getMultipleCaseFileDocuments({
  *   requests: [
- *     { case_file_id: 123 },
- *     { case_file_id: 456 }
+ *     { caseFileId: 123 },
+ *     { caseFileId: 456 }
  *   ],
  *   goals: ['security-audit', 'compliance-check'],
- *   verbatim_fidelity: 75
+ *   verbatimFidelity: 75
  * });
  *
  * // Documents with identical goals will be processed together for efficiency
  * const results = await getMultipleCaseFileDocuments({
  *   requests: [
- *     { case_file_id: 123, goals: ['policy-review', 'compliance'] },
- *     { case_file_id: 456, goals: ['compliance', 'policy-review'] }, // Same goals, different order
- *     { case_file_id: 789, goals: ['security-audit'] } // Different goals, separate processing
+ *     { caseFileId: 123, goals: ['policy-review', 'compliance'] },
+ *     { caseFileId: 456, goals: ['compliance', 'policy-review'] }, // Same goals, different order
+ *     { caseFileId: 789, goals: ['security-audit'] } // Different goals, separate processing
  *   ]
  * });
  * ```
@@ -186,7 +186,7 @@ export const getMultipleCaseFileDocuments = async ({
   const resolvedRequests = (await resolveCaseFileIdBatch(requests)).map(
     (x: ValidCaseFileRequestProps) => ({
       ...x,
-      verbatim_fidelity: x.verbatim_fidelity ?? verbatim_fidelity ?? 75,
+      verbatim_fidelity: x.verbatimFidelity ?? verbatim_fidelity ?? 75,
       goals: [...new Set<string>([...(x.goals ?? []), ...globalGoals])],
     }),
   );
@@ -201,7 +201,7 @@ export const getMultipleCaseFileDocuments = async ({
   };
 
   try {
-    const validIds = resolvedRequests.map((x) => x.case_file_id);
+    const validIds = resolvedRequests.map((x) => x.caseFileId);
     if (validIds.length === 0) {
       caseFileDocumentErrorCounter.add(1, {
         ...attributes,
@@ -214,7 +214,7 @@ export const getMultipleCaseFileDocuments = async ({
       });
 
       throw new Error(
-        `No valid Case File IDs could be resolved from the provided identifiers: ${requests.map((r) => r.case_file_id).join(', ')}`,
+        `No valid Case File IDs could be resolved from the provided identifiers: ${requests.map((r) => r.caseFileId).join(', ')}`,
       );
     }
     const documents = await db.query.documentUnits.findMany({
@@ -238,11 +238,11 @@ export const getMultipleCaseFileDocuments = async ({
       ),
     );
 
-    // Join documents with resolvedRequests based on unitId = case_file_id
+    // Join documents with resolvedRequests based on unitId = caseFileId
     // This creates a unified dataset where each document is paired with its analysis requirements
     const joinedData = documents.map((document) => {
       const matchingRequest = resolvedRequests.find(
-        (req) => req.case_file_id === document.unitId,
+        (req) => req.caseFileId === document.unitId,
       );
       return {
         document,

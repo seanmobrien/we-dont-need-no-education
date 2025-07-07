@@ -212,33 +212,33 @@ export type ResponsiveActionAssociation = {
 /**
  * Represents the properties for a case file request.
  *
- * @property case_file_id - The case file identifier (can be any type, typically number or string)
+ * @property caseFileId - The case file identifier (can be any type, typically number or string)
  * @property goals - Optional array of goals or objectives for the case file analysis
  * @property verbatim_fidelity - Optional numeric value indicating the level of verbatim fidelity required (0-100)
  */
 export type CaseFileRequestProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  case_file_id?: any;
+  caseFileId?: any;
   goals?: Array<string>;
-  verbatim_fidelity?: number;
+  verbatimFidelity?: number;
 };
 
 /**
- * Represents validated case file request properties with guaranteed numeric case_file_id.
+ * Represents validated case file request properties with guaranteed numeric caseFileId.
  *
  * @remarks
- * This type ensures that the case_file_id has been validated and converted to a number,
+ * This type ensures that the caseFileId has been validated and converted to a number,
  * removing the ambiguity of the original CaseFileRequestProps type.
  *
- * @property case_file_id - The validated numeric case file identifier
+ * @property caseFileId - The validated numeric case file identifier
  * @property goals - Optional array of goals or objectives for the case file analysis
  * @property verbatim_fidelity - Optional numeric value indicating the level of verbatim fidelity required (0-100)
  */
 export type ValidCaseFileRequestProps = Omit<
   CaseFileRequestProps,
-  'case_file_id'
+  'caseFileId'
 > & {
-  case_file_id: number; // Ensure case_file_id is always a number
+  caseFileId: number; // Ensure caseFileId is always a number
 };
 
 /**

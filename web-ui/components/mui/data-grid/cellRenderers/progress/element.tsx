@@ -11,7 +11,7 @@ const Element = (props: PropsWithChildren) => {
     borderRadius: 2,
   }));
 
-  return <Wrapper>{props.children}</Wrapper>;
+  return <Wrapper>{props?.children ?? <></>}</Wrapper>;
 };
 
 export default Element;

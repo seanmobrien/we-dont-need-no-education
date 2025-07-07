@@ -145,7 +145,7 @@ export class ClientTimelineAgent extends AgentBase {
 
       this.timelineState.lastUpdated = new Date().toISOString();
 
-      return {} as any;
+      return {} as ProcessingResult; // Placeholder for actual processing result
     } catch (error) {
       throw new Error(`Failed to process document ${nextDocId}: ${error}`);
     }

@@ -15,34 +15,60 @@ import {
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { caseFileRequestPropsShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 import { createMcpHandler } from '@vercel/mcp-adapter';
 import { z } from 'zod';
 
 const handler = createMcpHandler(
   (server) => {
-    const oldCLose = server.server.onclose;
+    /*
+    const oldClose = server.server.onclose;
     const oldInit = server.server.oninitialized;
     const oldError = server.server.onerror;
     const oldTransportError = server.server.transport?.onerror;
 
-    server.server.onclose = () => {
-      log((l) => l.info('MCP Server closed'));
-      return oldCLose?.call(server.server);
+    server.server.onclose = (...args: any[]) => {
+      log((l) => l.info('MCP Server closed', server, args));
+      return oldClose?.call(server.server);
     };
-    server.server.oninitialized = () => {
-      log((l) => l.info('MCP Server initialized'));
+    server.server.oninitialized = (...args: any[]) => {
+      debugger;
+      log((l) => l.info('MCP Server initialized', server, args));
       return oldInit?.call(server.server);
     };
-    server.server.onerror = (c) => {
-      log((l) => l.info('MCP Server error'));
-      return oldError?.call(server.server, c);
+    server.server.onerror = (error, ...args: any[]) => {
+      debugger;
+      log((l) => l.info('MCP Server error', server, args));
+      let ret = oldError?.call(server.server, error);
+      if (ret) {
+        log((l) => l.info('MCP Server error handled', server, args));
+        return ret;
+      }
+      return {
+        role: 'assistant',
+        content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
+      };
     };
+    */
+    /*
     if (server.server.transport) {
-      server.server.transport.onerror = (c) => {
-        log((l) => l.info('MCP Server transport error', c));
-        return oldTransportError?.call(server.server.transport, c);
+      server.server.transport.onerror = (error) => {
+        debugger;
+        log((l) => l.info('MCP Server transport error', server, error));
+        let ret = oldTransportError?.call(server.server.transport, error);
+        if (ret) {
+          log((l) =>
+            l.info('MCP Server transport error handled', server, error),
+          );
+          return ret;
+        }
+        return {
+          role: 'assistant',
+          content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
+        };
       };
     }
+    */
     server.registerTool(
       'searchPolicyStore',
       {
@@ -93,6 +119,7 @@ const handler = createMcpHandler(
       },
       searchCaseFile,
     );
+    /*
     server.registerTool(
       'getCaseFileDocument',
       {
@@ -102,12 +129,10 @@ const handler = createMcpHandler(
           'analysis of the case file contents.  IMPORTANT: case files are large and require a lot of context space, so pre-processing via goals is recommended.',
         inputSchema: {
           ...caseFileRequestPropsShape.shape,
-        },
-        /*
+        },        
         outputSchema: toolCallbackResultSchemaFactory(
           z.string().or(DocumentSchema),
-        ),
-        */
+        ),        
         annotations: {
           title: 'Get Full Case File',
           readOnlyHint: true,
@@ -118,6 +143,7 @@ const handler = createMcpHandler(
       },
       getCaseFileDocument,
     );
+    */
     server.registerTool(
       'getMultipleCaseFileDocuments',
       {
@@ -259,6 +285,64 @@ const handler = createMcpHandler(
       },
       amendCaseRecord,
     );
+    /*
+    if ('use' in server.server && typeof server.server.use === 'function') {
+      // Register a middleware to log all requests
+      server.server.use(async (context: any, next: () => Promise<void>) => {
+        try {
+          await next();
+        } catch (error) {
+          debugger;
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'mcp:tools',
+            severity: 'error',
+            data: {
+              request: context.request,
+              metadata: context.metadata,
+            },
+          });
+          // Optionally add an assistant message for debugging
+          context.addMessage({
+            role: 'assistant',
+            content: '⚠️ Tool failed, but I can continue.',
+          });
+          // Mark tool as "failed" in metadata so you can skip downstream
+          context.metadata.failed_tool = true;
+        }
+      });
+    } else if (
+      server.server.transport &&
+      'use' in server.server.transport &&
+      typeof server.server.transport.use === 'function'
+    ) {
+      server.server.transport.use(
+        async (req: any, res: any, next: () => Promise<void>) => {
+          log((l) =>
+            l.info(
+              `MCP Transport Request: ${req.method} ${req.url} - Headers: ${JSON.stringify(
+                req.headers,
+              )}`,
+            ),
+          );
+          try {
+            await next();
+          } catch (error) {
+            LoggedError.isTurtlesAllTheWayDownBaby(error, {
+              log: true,
+              source: 'mcp:tools',
+              severity: 'error',
+              data: {},
+            });
+          }
+        },
+      );
+    } else {
+      log((l) =>
+        l.warn('MCP Server does not support middleware or transport use'),
+      );
+    }
+    */
   },
   {
     capabilities: {
@@ -268,32 +352,13 @@ const handler = createMcpHandler(
   {
     redisUrl: process.env.REDIS_URL,
     basePath: '/api/ai/tools',
-    maxDuration: 60 * 15 * 1000, // 15 minutes
+    maxDuration: 60 * 5 * 1000, // 15 minutes
     verboseLogs: true,
-    onEvent: (event) => {
-      log((l) => l.info('MCP Event:', event));
+    /*
+    onEvent: (event, ...args: any[]) => {
+       log((l) => l.info('MCP Event:', event, ...args));
     },
+    */
   },
 );
-
-export const GET = async (req: Request) => {
-  console.log('MCP GET Request:', req.method, req.url);
-  try {
-    const ret = await handler(req);
-    return ret;
-  } catch (error) {
-    log((l) => l.error('MCP GET Request Error:', error));
-    return new Response('Internal Server Error', { status: 500 });
-  }
-};
-
-export const POST = async (req: Request) => {
-  console.log('MCP POST Request:', req.method, req.url);
-  try {
-    const ret = await handler(req);
-    return ret;
-  } catch (error) {
-    log((l) => l.error('MCP POST Request Error:', error));
-    return new Response('Internal Server Error', { status: 500 });
-  }
-};
+export { handler as GET, handler as POST };

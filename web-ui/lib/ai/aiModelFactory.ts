@@ -3,11 +3,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { env } from '@/lib/site-util/env';
 import { EmbeddingModelV1, LanguageModelV1 } from '@ai-sdk/provider';
 import { ChatOptions, EmbeddingOptions } from './types';
-import {
-  isAiModelType,
-  AiModelType,
-  isAiLanguageModelType,
-} from '@/lib/ai/core';
+import { AiModelType, isAiLanguageModelType } from '@/lib/ai/core';
 import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
@@ -154,9 +150,13 @@ const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
   });
 };
 
+/*
 const wrapProvider = (
   provider: ReturnType<typeof customProvider>,
-): ReturnType<typeof customProvider> => {};
+): ReturnType<typeof customProvider> => {
+  throw new Error('Not implemented yet');
+};
+*/
 
 /**
  * Azure custom provider with model aliases for our existing model names
@@ -258,14 +258,70 @@ export const providerRegistry = createProviderRegistry({
   google: googleProvider,
 });
 
+/**
+ * Overloaded function signature for normalizing model keys based on the provider and model type.
+ *
+ * @param provider - The AI service provider, either `'azure'` or `'google'`.
+ * @param modelType - The type of AI model to normalize the key for.
+ * @returns A normalized model key string prefixed with the provider name (e.g., `azure:modelName` or `google:modelName`).
+ */
+interface NormalizeModelKeyForProviderOverloads {
+  (provider: 'azure', modelType: AiModelType): `azure:${string}`;
+  (provider: 'google', modelType: AiModelType): `google:${string}`;
+}
+
+/**
+ * Normalizes the model key for a given provider by ensuring it is prefixed with the provider name.
+ *
+ * If the `modelType` already starts with the provider prefix (e.g., "provider:model"), it is returned as-is.
+ * If `modelType` contains a colon, the substring after the colon is used and prefixed with the provider.
+ * Otherwise, the entire `modelType` is prefixed with the provider.
+ *
+ * @param provider - The name of the AI model provider.
+ * @param modelType - The model type string, which may or may not be prefixed with a provider.
+ * @returns The normalized model key in the format "provider:model".
+ */
+const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  provider: any,
+  modelType: AiModelType,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any => {
+  if (modelType.startsWith(provider + ':')) {
+    return modelType;
+  }
+  const idx = modelType.indexOf(':');
+  if (idx > -1) {
+    return `${provider}:${modelType.substring(idx + 1)}`;
+  }
+  return `${provider}:${modelType}`;
+};
+
+/**
+ * Overloads for the AI model provider factory function.
+ *
+ * @remarks
+ * This interface defines the various call signatures for obtaining different types of AI model providers.
+ *
+ * @overload
+ * Returns the default Azure provider when called with no arguments.
+ *
+ * @overload
+ * Returns an embedding model when called with a deployment ID of `'embedding'` or `'google-embedding'` and optional embedding options.
+ * @param deploymentId - The deployment identifier for the embedding model.
+ * @param options - Optional configuration for the embedding model.
+ * @returns An instance of `EmbeddingModelV1<string>`.
+ *
+ * @overload
+ * Returns a language model when called with any other deployment ID and optional chat options.
+ * @param deploymentId - The deployment identifier for the language model, excluding embedding types.
+ * @param options - Optional configuration for the language model.
+ * @returns An instance of `LanguageModelV1`.
+ */
 interface GetAiModelProviderOverloads {
   (): typeof azureProvider;
   (
-    deploymentId: 'embedding',
-    options?: EmbeddingOptions,
-  ): EmbeddingModelV1<string>;
-  (
-    deploymentId: 'google-embedding',
+    deploymentId: 'embedding' | 'google-embedding',
     options?: EmbeddingOptions,
   ): EmbeddingModelV1<string>;
   (
@@ -275,25 +331,46 @@ interface GetAiModelProviderOverloads {
 }
 
 /**
+ * Checks if the model type starts with the given prefix.  This is used to short-circuit
+ * model case statements by matching on the provider prefix only.
+ * @param prefix The prefix to check
+ * @param modelType The model type to check against the prefix
+ * @returns The model type if it starts with the prefix, otherwise 'not-a-match' - which, obviosly, won't match :)
+ */
+const caseProviderMatch = (
+  prefix: string,
+  modelType: AiModelType,
+): AiModelType => {
+  if (modelType.startsWith(prefix)) {
+    return modelType as AiModelType;
+  }
+  return 'not-a-match' as AiModelType;
+};
+
+/**
  * Main factory function that provides backward compatibility with existing usage
  * while using the new provider registry internally with availability control
  */
 export const aiModelFactory: GetAiModelProviderOverloads = (
   modelType?: AiModelType,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   options?: ChatOptions | EmbeddingOptions,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any => {
   if (typeof modelType === 'undefined') {
     return azureProvider;
   }
+  const azureModelKey = normalizeModelKeyForProvider('azure', modelType);
+  const googleModelKey = normalizeModelKeyForProvider('google', modelType);
+
   if (isAiLanguageModelType(modelType)) {
     switch (modelType) {
       case 'completions':
       case 'lofi':
-      case 'hifi': {
+      case 'hifi':
+      case caseProviderMatch('azure:', modelType): {
+        // Matches any string starting with 'azure:'
         // Check availability and try Azure first if available, fallback to Google
-        const azureModelKey: string = `azure:${modelType}`;
-        const googleModelKey: string = `google:${modelType}`;
         if (modelAvailabilityManager.isModelAvailable(azureModelKey)) {
           try {
             return providerRegistry.languageModel(azureModelKey);
@@ -318,137 +395,53 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
       }
 
       case 'gemini-pro':
-      case 'gemini-flash': {
+      case 'gemini-flash':
+      case caseProviderMatch('google:', modelType): {
+        // Matches any string starting with 'google:'
         // Google-specific models
-        const googleModelKey = `google:${modelType}`;
-
         if (!modelAvailabilityManager.isModelAvailable(googleModelKey)) {
           throw new Error(`Google model ${modelType} is currently disabled`);
         }
-
         return providerRegistry.languageModel(googleModelKey);
       }
 
       default:
         if (modelAvailabilityManager.isModelAvailable(modelType)) {
-          if (modelType.toString().indexOf('embed') == -1) {
-            const chat = providerRegistry.languageModel(modelType);
-            if (chat == null) {
-              throw new Error('Invalid AiModelType provided: ' + modelType);
-            }
-            return chat;
-          }
-          const embed = providerRegistry.textEmbeddingModel(modelType);
-          if (embed == null) {
+          const chat = providerRegistry.languageModel(modelType);
+          if (chat == null) {
             throw new Error('Invalid AiModelType provided: ' + modelType);
           }
-          return embed;
+          return chat;
         }
     }
   } else {
-  }
-  if (isAiModelType(modelType)) {
     switch (modelType) {
-      case 'completions':
-      case 'lofi':
-      case 'hifi': {
-        // Check availability and try Azure first if available, fallback to Google
-        const azureModelKey = `azure:${modelType}`;
-        const googleModelKey = `google:${modelType}`;
-
-        if (modelAvailabilityManager.isModelAvailable(azureModelKey)) {
-          try {
-            return providerRegistry.languageModel(azureModelKey);
-          } catch (error) {
-            // If Azure fails, temporarily disable it and try Google
-            modelAvailabilityManager.temporarilyDisableModel(
-              azureModelKey,
-              60000,
-            ); // 1 minute
-            console.warn(
-              `Azure model ${modelType} failed, temporarily disabled:`,
-              error,
-            );
-          }
-        }
-
-        if (modelAvailabilityManager.isModelAvailable(googleModelKey)) {
-          return providerRegistry.languageModel(googleModelKey);
-        }
-
-        throw new Error(`No available providers for model type: ${modelType}`);
-      }
-
-      case 'gemini-pro':
-      case 'gemini-flash': {
-        // Google-specific models
-        const googleModelKey = `google:${modelType}`;
-
-        if (!modelAvailabilityManager.isModelAvailable(googleModelKey)) {
-          throw new Error(`Google model ${modelType} is currently disabled`);
-        }
-
-        return providerRegistry.languageModel(googleModelKey);
-      }
-
-      case 'embedding': {
-        // Try Azure first if available, fallback to Google
-        const azureModelKey = 'azure:embedding';
-        const googleModelKey = 'google:embedding';
-
-        if (modelAvailabilityManager.isModelAvailable(azureModelKey)) {
-          try {
-            return providerRegistry.textEmbeddingModel(azureModelKey);
-          } catch (error) {
-            // If Azure fails, temporarily disable it and try Google
-            modelAvailabilityManager.temporarilyDisableModel(
-              azureModelKey,
-              60000,
-            ); // 1 minute
-            console.warn(
-              `Azure embedding model failed, temporarily disabled:`,
-              error,
-            );
-          }
-        }
-
-        if (modelAvailabilityManager.isModelAvailable(googleModelKey)) {
-          return providerRegistry.textEmbeddingModel(googleModelKey);
-        }
-
-        throw new Error(`No available providers for embedding model`);
-      }
-
-      case 'google-embedding': {
-        // Google-specific embedding
-        const googleModelKey = 'google:google-embedding';
-
-        if (!modelAvailabilityManager.isModelAvailable(googleModelKey)) {
-          throw new Error(`Google embedding model is currently disabled`);
-        }
-
-        return providerRegistry.textEmbeddingModel(googleModelKey);
-      }
-
-      default:
-        if (modelAvailabilityManager.isModelAvailable(modelType)) {
-          if (modelType.toString().indexOf('embed') == -1) {
-            const chat = providerRegistry.languageModel(modelType);
-            if (chat == null) {
-              throw new Error('Invalid AiModelType provided: ' + modelType);
-            }
-            return chat;
-          }
-          const embed = providerRegistry.textEmbeddingModel(modelType);
-          if (embed == null) {
-            throw new Error('Invalid AiModelType provided: ' + modelType);
-          }
+      case 'embedding':
+      case caseProviderMatch('azure:', modelType): // Matches any string starting with 'azure
+        const embed = providerRegistry.textEmbeddingModel(azureModelKey);
+        if (embed != null) {
           return embed;
         }
+        break;
+      case 'google-embedding':
+      case caseProviderMatch('google:', modelType): // Matches any string starting with 'google:'
+        const googleEmbed = providerRegistry.textEmbeddingModel(googleModelKey);
+        if (googleEmbed != null) {
+          return googleEmbed;
+        }
+        break; // Continue to handle embedding models below
+      default:
+        break;
     }
   }
-
-  throw new Error('Invalid model type provided');
+  // If we make it all the way here we were given a bad model string
+  throw new TypeError(
+    `Invalid AiModelType provided (${modelType}).  Expected one of the aliased names: $'hifi', 'lofi', \
+      'completions']} or a provider-prefixed model name like 'azure:chatgtp-4o-minni' or 'google:gemini-flash-2.0'.`,
+    {
+      cause: modelType,
+    },
+  );
 };
 
 /**

@@ -1,37 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import '@testing-library/jest-dom';
+import { waitFor, act } from '@testing-library/react';
+import { render, screen } from '@/__tests__/test-utils';
 import { ResponsiveActionPanel } from '@/app/messages/email/[emailId]/call-to-action-response/panel';
 import { CallToActionResponseDetails } from '@/data-models/api';
-import * as client from '@/lib/api/email/properties/client';
-
-// Mock the API client
-jest.mock('@/lib/api/email/properties/client');
-const mockedClient = client as jest.Mocked<typeof client>;
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
 
-/*
-jest.mock(
-  '@mui/material/LinearProgress',
-  () =>
-    ({ value, ...props }: { value?: number }) => (
-      <div data-testid="linear-progress" data-value={value} {...props} />
-    ),
-);
-
-jest.mock('@mui/material/CircularProgress', () => () => (
-  <div data-testid="circular-progress" />
-));
-*/
+// Mock global fetch
+const mockFetch = jest.fn();
+global.fetch = mockFetch;
 const mockResponseDetails: CallToActionResponseDetails = {
   propertyId: 'response-test-id',
   documentId: 1,
   createdOn: new Date('2023-01-05'),
+  categoryId: 1,
+  categoryName: 'Call to Action Response',
+  typeName: 'CTA Response',
   actionPropertyId: 'cta-test-id',
   completionPercentage: 80,
   responseTimestamp: new Date('2023-01-05T10:30:00'),
@@ -62,19 +50,23 @@ const mockRelatedCTA = {
 
 describe('ResponsiveActionPanel', () => {
   beforeEach(() => {
-    mockedClient.getCallToAction.mockResolvedValue({
-      results: [mockRelatedCTA],
-      pageStats: { page: 1, num: 10, total: 1 },
+    mockFetch.mockClear();
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [mockRelatedCTA],
+        pageStats: { page: 1, num: 10, total: 1 },
+      }),
     });
   });
 
   it('renders responsive action details correctly', async () => {
-    act(() => {
-      render(<ResponsiveActionPanel row={mockResponseDetails} />);
-      waitFor(() =>
-        screen.getByText('Detailed response to the call to action'),
-      );
-    });
+    render(<ResponsiveActionPanel row={mockResponseDetails} />);
+
+    await waitFor(() =>
+      screen.getByText('Detailed response to the call to action'),
+    );
+
     expect(
       screen.getByText('Responsive Action (response-test-id)'),
     ).toBeInTheDocument();
@@ -85,13 +77,12 @@ describe('ResponsiveActionPanel', () => {
   });
 
   it('displays progress bar with correct value', async () => {
-    await act(() => {
-      render(<ResponsiveActionPanel row={mockResponseDetails} />);
-      waitFor(() => screen.getByTestId('linear-progress'));
-    });
+    render(<ResponsiveActionPanel row={mockResponseDetails} />);
+
+    await waitFor(() => screen.getByTestId('linear-progress'));
 
     const progressBar = screen.getByTestId('linear-progress');
-    expect(progressBar).toHaveAttribute('data-value', '80');
+    expect(progressBar).toHaveAttribute('aria-valuenow', '80');
   });
 
   it('shows response timestamp correctly', async () => {
@@ -127,11 +118,20 @@ describe('ResponsiveActionPanel', () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
 
     await waitFor(() => {
-      expect(mockedClient.getCallToAction).toHaveBeenCalledWith({
-        emailId: 'test-email-id',
-        page: 1,
-        num: 100,
-      });
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/email/test-email-id/properties/call-to-action',
+      );
+    });
+
+    // Wait for the Related Call-to-Action accordion to be present
+    await waitFor(() => {
+      expect(screen.getByText('Related Call-to-Action')).toBeInTheDocument();
+    });
+
+    // Click on the accordion to expand it (wrapped in act to avoid warnings)
+    const accordionButton = screen.getByText('Related Call-to-Action');
+    await act(async () => {
+      accordionButton.click();
     });
 
     await waitFor(() => {
@@ -144,14 +144,17 @@ describe('ResponsiveActionPanel', () => {
 
   it('shows loading state while fetching related CTA', async () => {
     // Make the API call take some time
-    mockedClient.getCallToAction.mockImplementation(
+    mockFetch.mockImplementation(
       () =>
         new Promise((resolve) =>
           setTimeout(
             () =>
               resolve({
-                results: [mockRelatedCTA],
-                pageStats: { page: 1, num: 10, total: 1 },
+                ok: true,
+                json: async () => ({
+                  results: [mockRelatedCTA],
+                  pageStats: { page: 1, num: 10, total: 1 },
+                }),
               }),
             100,
           ),
@@ -164,29 +167,56 @@ describe('ResponsiveActionPanel', () => {
   });
 
   it('handles API error gracefully', async () => {
-    mockedClient.getCallToAction.mockRejectedValue(new Error('API Error'));
+    mockFetch.mockClear();
+    mockFetch.mockImplementation(() => Promise.reject(new Error('API Error')));
 
-    const { container } = render(
-      <ResponsiveActionPanel row={mockResponseDetails} />,
-    );
-    act(() => {
-      waitFor(() => screen.getByText('Failed to load related call-to-action'));
+    render(<ResponsiveActionPanel row={mockResponseDetails} />);
+
+    // Wait for the Related Call-to-Action accordion to be present
+    await waitFor(() => {
+      expect(screen.getByText('Related Call-to-Action')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText('Failed to load related call-to-action'),
-    ).toBeInTheDocument();
-    // Take snapshot after error state is rendered
-    expect(container.firstChild).toMatchSnapshot();
+    // Click on the accordion to expand it (wrapped in act to avoid warnings)
+    const accordionButton = screen.getByRole('button', {
+      name: 'Related Call-to-Action',
+    });
+    await act(async () => {
+      accordionButton.click();
+    });
+
+    // Wait for the error state to be displayed by checking for alert role
+    await waitFor(
+      () => {
+        const alert = screen.getByRole('alert');
+        expect(alert).toBeInTheDocument();
+        expect(alert).toHaveTextContent('API Error');
+      },
+      { timeout: 3000 },
+    );
   });
 
   it('handles no related CTA found', async () => {
-    mockedClient.getCallToAction.mockResolvedValue({
-      results: [],
-      pageStats: { page: 1, num: 10, total: 0 },
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: [],
+        pageStats: { page: 1, num: 10, total: 0 },
+      }),
     });
 
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
+
+    // Wait for the Related Call-to-Action accordion to be present
+    await waitFor(() => {
+      expect(screen.getByText('Related Call-to-Action')).toBeInTheDocument();
+    });
+
+    // Click on the accordion to expand it (wrapped in act to avoid warnings)
+    const accordionButton = screen.getByText('Related Call-to-Action');
+    await act(async () => {
+      accordionButton.click();
+    });
 
     await waitFor(() => {
       expect(
@@ -211,6 +241,9 @@ describe('ResponsiveActionPanel', () => {
       propertyId: 'response-minimal',
       documentId: 1,
       createdOn: new Date('2023-01-05'),
+      categoryId: 1,
+      categoryName: 'Call to Action Response',
+      typeName: 'CTA Response',
       actionPropertyId: 'cta-test-id',
       completionPercentage: 50,
       responseTimestamp: new Date('2023-01-05'),

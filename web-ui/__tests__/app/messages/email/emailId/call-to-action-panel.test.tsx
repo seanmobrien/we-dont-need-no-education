@@ -1,4 +1,4 @@
-import { render, act, waitFor, screen } from '@/__tests__/test-utils';
+import { render, screen, waitFor } from '@/__tests__/test-utils';
 
 // Mock the API client
 jest.mock('@/lib/api/email/properties/client');
@@ -6,23 +6,31 @@ jest.mock('@/lib/api/email/properties/client');
 jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
+
 // Mock MUI components that may cause theme issues
+jest.mock('@mui/material/LinearProgress', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const MockLinearProgress = (props: any) => (
+    <div data-testid="linear-progress" data-value={props.value} {...props} />
+  );
+  return MockLinearProgress;
+});
 
-jest.mock(
-  '@mui/material/LinearProgress',
-  () =>
-    ({ value, ...props }: { value?: number }) => (
-      <div data-testid="linear-progress" data-value={value} {...props} />
-    ),
-);
+jest.mock('@mui/material/CircularProgress', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const MockCircularProgress = (props: any) => (
+    <div data-testid="circular-progress" {...props} />
+  );
+  return MockCircularProgress;
+});
 
-jest.mock('@tanstack/react-query');
+// Mock React Query useQuery hook
+const mockUseQuery = jest.fn();
+jest.mock('@tanstack/react-query', () => ({
+  ...jest.requireActual('@tanstack/react-query'),
+  useQuery: () => mockUseQuery(),
+}));
 
-jest.mock('@mui/material/CircularProgress', () => () => (
-  <div data-testid="circular-progress" />
-));
-
-import { useQuery } from '@tanstack/react-query';
 import { CallToActionPanel } from '@/app/messages/email/[emailId]/call-to-action/panel';
 import { CallToActionDetails } from '@/data-models/api';
 import { getCallToActionResponse as getCallToActionResponseFromModule } from '@/lib/api/email/properties/client';
@@ -36,6 +44,7 @@ const mockCallToActionDetails: CallToActionDetails = {
   value: 'Test call to action description',
   policy_basis: ['FERPA', 'Title IX'],
   tags: ['urgent', 'compliance'],
+  categoryName: 'Call to Action',
   opened_date: new Date('2023-01-01'),
   closed_date: null,
   compliancy_close_date: new Date('2023-02-01'),
@@ -76,144 +85,138 @@ describe('CallToActionPanel', () => {
       results: mockResponsiveActions,
       pageStats: { page: 1, num: 10, total: 1 },
     });
+
+    // Mock useQuery for all tests by default
+    mockUseQuery.mockReturnValue({
+      data: mockResponsiveActions,
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('renders call to action details correctly', async () => {
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => screen.getByText('Call to Action Details (cta-test-id)'));
-      waitFor(() => screen.getByText('Test call to action description'));
-      waitFor(() => screen.getByText('75% Complete'));
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Call to Action Details (cta-test-id)'),
+      ).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText('Test call to action description'),
+      ).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('75% Complete')).toBeInTheDocument();
     });
   });
 
   it('displays progress bar with correct value', async () => {
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() =>
-        screen.getByTestId('linear-progress').hasAttribute('data-value'),
-      );
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    await waitFor(() => {
+      const progressBar = screen.getByTestId('linear-progress');
+      expect(progressBar).toHaveAttribute('data-value', '75');
     });
   });
 
   it('shows status chips correctly', async () => {
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => {
-        expect(screen.getByText('Direct')).toBeInTheDocument(); // since inferred is false
-        expect(screen.getByText('Enforceable')).toBeInTheDocument(); // since compliance_date_enforceable is true
-      });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Direct')).toBeInTheDocument(); // since inferred is false
+      expect(screen.getByText('Enforceable')).toBeInTheDocument(); // since compliance_date_enforceable is true
     });
   });
 
   it('shows rating scores', async () => {
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => {
-        expect(screen.getByText('0.85')).toBeInTheDocument(); // compliance_rating
-        expect(screen.getByText('0.70')).toBeInTheDocument(); // severity
-        expect(screen.getByText('0.60')).toBeInTheDocument(); // sentiment
-        expect(screen.getByText('0.90')).toBeInTheDocument(); // title_ix_applicable
-      });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('0.85')).toBeInTheDocument(); // compliance_rating
+      expect(screen.getByText('0.70')).toBeInTheDocument(); // severity
+      expect(screen.getByText('0.60')).toBeInTheDocument(); // sentiment
+      expect(screen.getByText('0.90')).toBeInTheDocument(); // title_ix_applicable
     });
   });
 
   it('displays policy basis and tags in metadata', async () => {
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => {
-        expect(screen.getByText('FERPA')).toBeInTheDocument();
-        expect(screen.getAllByText('Title IX')).toHaveLength(2); // Once in scores, once in policy basis
-        expect(screen.getByText('urgent')).toBeInTheDocument();
-        expect(screen.getByText('compliance')).toBeInTheDocument();
-      });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('FERPA')).toBeInTheDocument();
+      expect(screen.getAllByText('Title IX')).toHaveLength(2); // Once in scores, once in policy basis
+      expect(screen.getByText('urgent')).toBeInTheDocument();
+      expect(screen.getByText('compliance')).toBeInTheDocument();
     });
   });
 
   it('fetches and displays related responsive actions', async () => {
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => {
-        expect(getCallToActionResponse).toHaveBeenCalledWith({
-          emailId: 'test-email-id',
-          page: 1,
-          num: 100,
-        });
-      });
-      waitFor(() => {
-        expect(
-          screen.getByText('Related Responsive Actions (1)'),
-        ).toBeInTheDocument();
-      });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    // Since we're mocking useQuery directly, the component should display the mocked data
+    await waitFor(() => {
+      expect(
+        screen.getByText('Related Responsive Actions (1)'),
+      ).toBeInTheDocument();
+    });
+
+    // Check that the response data is displayed
+    await waitFor(() => {
+      expect(
+        screen.getByText('Initial response to the call to action'),
+      ).toBeInTheDocument();
     });
   });
 
   it('shows loading state while fetching related actions', async () => {
-    // Make the API call take some time
-    getCallToActionResponse.mockImplementation(
-      () =>
-        new Promise(
-          (resolve) =>
-            setTimeout(
-              () =>
-                resolve({
-                  results: mockResponsiveActions,
-                  pagination: { page: 1, num: 10, total: 1 },
-                }),
-              100,
-            ),
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ) as any,
-    );
+    // Override the default mock to show loading state
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
+    });
 
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => screen.getByTestId('circular-progress'));
-      waitFor(
-        () => {
-          expect(
-            screen.queryByTestId('circular-progress'),
-          ).not.toBeInTheDocument();
-        },
-        { timeout: 200 },
-      );
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    // Should show loading initially
+    await waitFor(() => {
+      expect(screen.getByTestId('circular-progress')).toBeInTheDocument();
     });
   });
 
   it('handles API error gracefully', async () => {
-    (useQuery as jest.Mock).mockReturnValue({
+    mockUseQuery.mockReturnValue({
       isLoading: false,
       error: new Error('Failed to load related responses'),
     });
 
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => {
-        expect(
-          screen.getByText('Failed to load related responses'),
-        ).toBeInTheDocument();
-      });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Failed to load related responses'),
+      ).toBeInTheDocument();
     });
   });
 
   it('displays closure actions when available', async () => {
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => {
-        expect(screen.getByText('Investigation')).toBeInTheDocument();
-        expect(screen.getByText('Documentation')).toBeInTheDocument();
-      });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Investigation')).toBeInTheDocument();
+      expect(screen.getByText('Documentation')).toBeInTheDocument();
     });
   });
 
   it('displays reasoning sections when available', async () => {
-    act(() => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-      waitFor(() => {
-        expect(screen.getByText('Reasoning and Analysis')).toBeInTheDocument();
-        expect(screen.getByText('Meets standards')).toBeInTheDocument();
-        expect(screen.getByText('Neutral tone')).toBeInTheDocument();
-      });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Reasoning and Analysis')).toBeInTheDocument();
+      expect(screen.getByText('Meets standards')).toBeInTheDocument();
+      expect(screen.getByText('Neutral tone')).toBeInTheDocument();
     });
   });
 });

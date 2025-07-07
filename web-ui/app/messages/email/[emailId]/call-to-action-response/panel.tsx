@@ -100,6 +100,7 @@ const ResponsiveActionPanelContent = ({
             variant="determinate"
             value={row.completionPercentage || 0}
             sx={{ height: 8, borderRadius: 1 }}
+            data-testid="linear-progress"
           />
         </Grid>
         <Grid gridColumn={{ xs: 12, md: 6 }}>
@@ -236,7 +237,7 @@ const ResponsiveActionPanelContent = ({
           <AccordionDetails>
             {loading ? (
               <Box display="flex" justifyContent="center" p={2}>
-                <CircularProgress size={24} />
+                <CircularProgress size={24} data-testid="circular-progress" />
               </Box>
             ) : error ? (
               <Alert severity="error">

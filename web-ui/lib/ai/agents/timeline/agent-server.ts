@@ -310,7 +310,8 @@ class ServerTimelineAgent extends ClientTimelineAgent {
 
     const response = await this.generateResponse(prompt, { req });
     try {
-      const documentIds = JSON.parse(response);
+      const documentIds =
+        typeof response === 'object' ? response : JSON.parse(response);
       return Array.isArray(documentIds) ? documentIds : [];
     } catch {
       return [];

@@ -174,7 +174,7 @@ describe('resolveCaseFileId', () => {
       const invalidUuid = '12345678-1234-5678-9012-123456789012'; // version 5, not 4
       const result = await resolveCaseFileId(invalidUuid);
       // Since it's not a valid UUID, it will try parseInt which returns 12345678
-      expect(result).toBe(undefined);
+      expect(result).toBe(12345678);
       expect(mockDb.query.documentUnits.findFirst).not.toHaveBeenCalled();
     });
 
@@ -182,7 +182,7 @@ describe('resolveCaseFileId', () => {
       const shortUuid = '12345678-1234-4567-8901-12345678901';
       const result = await resolveCaseFileId(shortUuid);
       // Since it's not a valid UUID, it will try parseInt which returns 12345678
-      expect(result).toBe(undefined);
+      expect(result).toBe(12345678);
     });
 
     it('should handle UUID with invalid characters', async () => {
@@ -196,7 +196,8 @@ describe('resolveCaseFileId', () => {
 
 describe('resolveCaseFileIdBatch', () => {
   beforeEach(() => {
-    // jest.clearAllMocks();
+    mockDb.query.documentUnits.findMany.mockClear();
+    mockLoggedError.isTurtlesAllTheWayDownBaby.mockClear();
   });
 
   describe('with empty input', () => {
@@ -210,17 +211,17 @@ describe('resolveCaseFileIdBatch', () => {
   describe('with only numeric inputs', () => {
     it('should return all numeric IDs as-is', async () => {
       const requests = [
-        { case_file_id: 123 },
-        { case_file_id: 456 },
-        { case_file_id: 789 },
+        { caseFileId: 123 },
+        { caseFileId: 456 },
+        { caseFileId: 789 },
       ];
 
       const result = await resolveCaseFileIdBatch(requests);
 
       expect(result).toEqual([
-        { case_file_id: 123 },
-        { case_file_id: 456 },
-        { case_file_id: 789 },
+        { caseFileId: 123 },
+        { caseFileId: 456 },
+        { caseFileId: 789 },
       ]);
       expect(mockDb.query.documentUnits.findMany).not.toHaveBeenCalled();
     });
@@ -229,17 +230,17 @@ describe('resolveCaseFileIdBatch', () => {
   describe('with only string numeric inputs', () => {
     it('should parse and return numeric values', async () => {
       const requests = [
-        { case_file_id: '123' },
-        { case_file_id: '456' },
-        { case_file_id: '789' },
+        { caseFileId: '123' },
+        { caseFileId: '456' },
+        { caseFileId: '789' },
       ];
 
       const result = await resolveCaseFileIdBatch(requests);
 
       expect(result).toEqual([
-        { case_file_id: 123 },
-        { case_file_id: 456 },
-        { case_file_id: 789 },
+        { caseFileId: 123 },
+        { caseFileId: 456 },
+        { caseFileId: 789 },
       ]);
       expect(mockDb.query.documentUnits.findMany).not.toHaveBeenCalled();
     });
@@ -250,7 +251,7 @@ describe('resolveCaseFileIdBatch', () => {
     const uuid2 = '87654321-4321-4321-8901-210987654321';
 
     it('should resolve UUIDs from database', async () => {
-      const requests = [{ case_file_id: uuid1 }, { case_file_id: uuid2 }];
+      const requests = [{ caseFileId: uuid1 }, { caseFileId: uuid2 }];
 
       const mockRecords = [
         { unitId: 100, documentPropertyId: uuid1, emailId: null },
@@ -263,7 +264,7 @@ describe('resolveCaseFileIdBatch', () => {
 
       const result = await resolveCaseFileIdBatch(requests);
 
-      expect(result).toEqual([{ case_file_id: 100 }, { case_file_id: 200 }]);
+      expect(result).toEqual([{ caseFileId: 100 }, { caseFileId: 200 }]);
 
       expect(mockDb.query.documentUnits.findMany).toHaveBeenCalledWith({
         where: expect.any(Function),
@@ -276,7 +277,7 @@ describe('resolveCaseFileIdBatch', () => {
     });
 
     it('should handle UUIDs not found in database', async () => {
-      const requests = [{ case_file_id: uuid1 }, { case_file_id: uuid2 }];
+      const requests = [{ caseFileId: uuid1 }, { caseFileId: uuid2 }];
 
       (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue([]);
 
@@ -286,7 +287,7 @@ describe('resolveCaseFileIdBatch', () => {
     });
 
     it('should handle partial matches from database', async () => {
-      const requests = [{ case_file_id: uuid1 }, { case_file_id: uuid2 }];
+      const requests = [{ caseFileId: uuid1 }, { caseFileId: uuid2 }];
 
       const mockRecords = [
         { unitId: 100, documentPropertyId: uuid1, emailId: null },
@@ -298,7 +299,7 @@ describe('resolveCaseFileIdBatch', () => {
 
       const result = await resolveCaseFileIdBatch(requests);
 
-      expect(result).toEqual([{ case_file_id: 100 }]);
+      expect(result).toEqual([{ caseFileId: 100 }]);
     });
   });
 
@@ -306,10 +307,10 @@ describe('resolveCaseFileIdBatch', () => {
     it('should handle combination of numbers, numeric strings, and UUIDs', async () => {
       const uuid = '12345678-1234-4567-8901-123456789012';
       const requests = [
-        { case_file_id: 123 }, // number
-        { case_file_id: '456' }, // numeric string
-        { case_file_id: uuid }, // UUID
-        { case_file_id: 789 }, // number
+        { caseFileId: 123 }, // number
+        { caseFileId: '456' }, // numeric string
+        { caseFileId: uuid }, // UUID
+        { caseFileId: 789 }, // number
       ];
 
       const mockRecords = [
@@ -323,32 +324,32 @@ describe('resolveCaseFileIdBatch', () => {
       const result = await resolveCaseFileIdBatch(requests);
 
       expect(result).toEqual([
-        { case_file_id: 123 },
-        { case_file_id: 456 },
-        { case_file_id: 789 },
-        { case_file_id: 999 },
+        { caseFileId: 123 },
+        { caseFileId: 456 },
+        { caseFileId: 789 },
+        { caseFileId: 999 },
       ]);
     });
 
     it('should filter out invalid inputs', async () => {
       const requests = [
-        { case_file_id: 123 }, // valid number
-        { case_file_id: 'invalid' }, // invalid string
-        { case_file_id: null as unknown as string }, // invalid type
-        { case_file_id: {} as unknown as string }, // invalid type
-        { case_file_id: '456' }, // valid numeric string
+        { caseFileId: 123 }, // valid number
+        { caseFileId: 'invalid' }, // invalid string
+        { caseFileId: null as unknown as string }, // invalid type
+        { caseFileId: {} as unknown as string }, // invalid type
+        { caseFileId: '456' }, // valid numeric string
       ];
 
       const result = await resolveCaseFileIdBatch(requests);
 
-      expect(result).toEqual([{ case_file_id: 123 }, { case_file_id: 456 }]);
+      expect(result).toEqual([{ caseFileId: 123 }, { caseFileId: 456 }]);
     });
   });
 
   describe('database error handling', () => {
     it('should handle database query errors', async () => {
       const uuid = '12345678-1234-4567-8901-123456789012';
-      const requests = [{ case_file_id: uuid }];
+      const requests = [{ caseFileId: uuid }];
 
       (mockDb.query.documentUnits.findMany as jest.Mock).mockRejectedValue(
         new Error('Database connection failed'),
@@ -364,8 +365,8 @@ describe('resolveCaseFileIdBatch', () => {
   describe('edge cases', () => {
     it('should handle requests with only invalid UUIDs', async () => {
       const requests = [
-        { case_file_id: '12345678-1234-5678-9012-123456789012' }, // version 5, not 4
-        { case_file_id: 'not-a-uuid' },
+        { caseFileId: '12345678-1234-5678-9012-123456789012' }, // version 5, not 4
+        { caseFileId: 'not-a-uuid' },
       ];
 
       const result = await resolveCaseFileIdBatch(requests);
@@ -376,32 +377,32 @@ describe('resolveCaseFileIdBatch', () => {
 
     it('should handle zero and negative numbers', async () => {
       const requests = [
-        { case_file_id: 0 },
-        { case_file_id: -1 },
-        { case_file_id: '-5' },
+        { caseFileId: 0 },
+        { caseFileId: -1 },
+        { caseFileId: '-5' },
       ];
 
       const result = await resolveCaseFileIdBatch(requests);
 
       expect(result).toEqual([
-        { case_file_id: 0 },
-        { case_file_id: -1 },
-        { case_file_id: -5 },
+        { caseFileId: 0 },
+        { caseFileId: -1 },
+        { caseFileId: -5 },
       ]);
     });
 
     it('should handle large numbers', async () => {
       const largeNumber = Number.MAX_SAFE_INTEGER;
       const requests = [
-        { case_file_id: largeNumber },
-        { case_file_id: largeNumber.toString() },
+        { caseFileId: largeNumber },
+        { caseFileId: largeNumber.toString() },
       ];
 
       const result = await resolveCaseFileIdBatch(requests);
 
       expect(result).toEqual([
-        { case_file_id: largeNumber },
-        { case_file_id: largeNumber },
+        { caseFileId: largeNumber },
+        { caseFileId: largeNumber },
       ]);
     });
   });

@@ -51,14 +51,6 @@ export type {
 
 export { ComplianceRating } from './types';
 
-// Example and demonstration exports
-export {
-  timelineAgentExample,
-  timelineAgentWithAdditionalDocuments,
-  timelineAgentResetExample,
-  ferpaComplianceExample,
-} from './example';
-
 // Import for internal use
 import TimelineAgentFactory from './agent';
 import { createComplianceProcessor } from './compliance-processor';
@@ -67,12 +59,12 @@ import { createComplianceProcessor } from './compliance-processor';
  * Quick start function for common use cases
  */
 export async function quickStartTimelineAgent(options: {
-  initialDocumentId: string;
+  callToActionId: string;
   additionalDocuments?: string[];
   processAllDocuments?: boolean;
 }) {
   const agent = TimelineAgentFactory({
-    initialDocumentId: options.initialDocumentId,
+    propertyId: options.callToActionId,
   });
 
   await agent.initialize();
@@ -99,7 +91,7 @@ export async function quickStartTimelineAgent(options: {
  */
 export async function quickStartComplianceProcessing(options: {
   initialDocumentId: string;
-  case_file_ids: string[];
+  caseFileIds: string[];
 }) {
   const processor = createComplianceProcessor(options.initialDocumentId);
 
@@ -108,8 +100,8 @@ export async function quickStartComplianceProcessing(options: {
 
   // Process each case file
   let currentSummary = '';
-  for (const case_file_id of options.case_file_ids) {
-    currentSummary = await processor.processCaseDocument(case_file_id);
+  for (const caseFileId of options.caseFileIds) {
+    currentSummary = await processor.processCaseDocument(caseFileId);
   }
 
   return {

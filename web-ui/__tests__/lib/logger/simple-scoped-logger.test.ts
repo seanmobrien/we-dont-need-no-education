@@ -19,7 +19,7 @@ describe('simpleScopedLogger', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     (log as jest.Mock).mockImplementation((cb) => cb(mockLogger));
     Object.values(mockLogger).forEach((fn) => (fn as jest.Mock).mockClear());
   });

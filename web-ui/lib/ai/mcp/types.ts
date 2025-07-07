@@ -34,7 +34,7 @@ export type ConnectableToolProvider = {
   get_isConnected: () => boolean;
   get_tools: () => ToolSet;
   dispose: () => Promise<void>;
-  connect: ({}: { allowWrite?: boolean }) => Promise<void>;
+  connect: ({}: { allowWrite?: boolean }) => Promise<ConnectableToolProvider>;
 };
 
 /**
