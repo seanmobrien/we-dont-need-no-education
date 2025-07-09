@@ -249,6 +249,15 @@ const ChatPanel = ({ page }: { page: string }) => {
     },
     [handleInputChange, input, messages, onSendClick],
   );
+
+  const onFloat = useCallback(() => {
+    setIsFloating(true);
+  }, []);
+
+  const onCloseFloat = useCallback(() => {
+    setIsFloating(false);
+  }, []);
+
   const stableChatInputSlotProps = React.useMemo(() => {
     return {
       input: {
@@ -281,14 +290,6 @@ const ChatPanel = ({ page }: { page: string }) => {
       },
     };
   }, [onSendClick, activeModel, setMessages]);
-
-  const onFloat = useCallback(() => {
-    setIsFloating(true);
-  }, []);
-
-  const onCloseFloat = useCallback(() => {
-    setIsFloating(false);
-  }, []);
 
   useEffect(() => {
     const timeoutIds: Array<NodeJS.Timeout | number> = [];
