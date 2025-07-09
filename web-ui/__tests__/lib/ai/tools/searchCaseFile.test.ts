@@ -10,7 +10,7 @@ jest.mock('@/lib/ai/services/search');
 // jest.mock('@/lib/ai/services/search/HybridDocumentSearch');
 jest.mock('@/lib/logger');
 
-import { searchCaseFile } from '@/lib/ai/tools/searchCaseFile';
+import { localSearchCaseFile } from '@/lib/ai/tools/searchCaseFile';
 import {
   HybridDocumentSearch,
   hybridDocumentSearchFactory,
@@ -39,7 +39,7 @@ describe('searchCaseFile', () => {
     const expectedResult = [{ id: 1, title: 'result' }];
     mockHybridSearch.mockResolvedValue(expectedResult);
 
-    const result = await searchCaseFile({ query, options });
+    const result = await localSearchCaseFile({ query, options });
 
     expect(mockHybridSearch).toHaveBeenCalledWith(query, options);
     expect(mockLog).toHaveBeenCalled();
@@ -62,7 +62,7 @@ describe('searchCaseFile', () => {
       loggedError,
     );
 
-    const result = await searchCaseFile({ query, options });
+    const result = await localSearchCaseFile({ query, options });
     expect(result.structuredContent.result.isError).toBe(true);
     expect(
       result.structuredContent.result.isError

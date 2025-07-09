@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TimelineAgentFactory, TimelineAgent } from '@/lib/ai/agents/timeline';
+
+import {
+  TimelineAgentFactory,
+  ServerTimelineAgent as TimelineAgent,
+} from '@/lib/ai/agents/timeline/agent-server';
 
 /**
  * API endpoint for Timeline Agent operations
@@ -20,11 +24,9 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const agent = TimelineAgentFactory({ initialDocumentId });
-        if (propertyId) {
-          agent.propertyId = propertyId;
-        }
-        await agent.initialize();
+        const agent = TimelineAgentFactory({ initialDocumentId, propertyId });
+
+        await agent.initialize({ req: request });
 
         const summary = agent.generateSummary();
         const counts = agent.getDocumentCounts();
@@ -68,25 +70,6 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
-      }
-
-      case 'serialize': {
-        // This endpoint would typically work with an existing agent instance
-        // For demo purposes, create a new one and serialize it
-        const agent = TimelineAgentFactory({
-          initialDocumentId: initialDocumentId || 'demo-doc',
-        });
-        if (propertyId) {
-          agent.propertyId = propertyId;
-        }
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            snapshot: agent.createSnapshot(),
-            serializedState: agent.serialize(),
-          },
-        });
       }
 
       case 'process': {

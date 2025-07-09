@@ -120,3 +120,57 @@ export const isTypeBranded = <TResult>(
   check !== null &&
   TypeBrandSymbol in check &&
   check[TypeBrandSymbol] === brand;
+
+type CategorizedPromiseResult<T> = {
+  fulfilled: Array<T>;
+  rejected: Array<unknown>;
+  pending: Array<Promise<T>>;
+};
+
+/**
+ * Waits for all promises to settle and categorizes their results.
+ *
+ * @param promises - An array of promises to wait for.
+ * @param timeoutMs - The timeout duration in milliseconds.
+ * @returns An object categorizing the promises into fulfilled, rejected, and pending.
+ */
+export const getResolvedPromises = async <T>(
+  promises: Promise<T>[],
+  timeoutMs: number = 60 * 1000,
+): Promise<CategorizedPromiseResult<T>> => {
+  // Use a unique symbol to identify timeouts
+  const TIMEOUT_SYMBOL = Symbol('timeout');
+
+  // Race each promise against a timeout that RESOLVES with the symbol
+  const racedPromises = promises.map((promise) =>
+    Promise.race([
+      promise,
+      new Promise<typeof TIMEOUT_SYMBOL>((resolve) =>
+        setTimeout(() => resolve(TIMEOUT_SYMBOL), timeoutMs),
+      ),
+    ]),
+  );
+
+  // Wait for all races to complete
+  const results = await Promise.allSettled(racedPromises);
+
+  // Categorize results with clear logic
+  return results.reduce(
+    (acc, result, index) => {
+      if (result.status === 'fulfilled') {
+        if (result.value === TIMEOUT_SYMBOL) {
+          // This promise timed out, still pending
+          acc.pending.push(promises[index]);
+        } else {
+          // This promise resolved (even if value is null/undefined)
+          acc.fulfilled.push(result.value);
+        }
+      } else {
+        // This promise rejected
+        acc.rejected.push(result.reason);
+      }
+      return acc;
+    },
+    { fulfilled: [], rejected: [], pending: [] } as CategorizedPromiseResult<T>,
+  );
+};

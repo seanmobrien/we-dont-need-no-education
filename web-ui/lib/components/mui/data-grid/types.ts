@@ -8,6 +8,7 @@ import type {
   GridFilterModel,
   DataGridProProps,
   GridGetRowsResponse,
+  GridFilterItem,
 } from '@mui/x-data-grid-pro';
 import { MaybeRow } from 'postgres';
 import type { Dispatch, SetStateAction } from 'react';
@@ -296,6 +297,11 @@ export type BuildQueryFilterProps = {
    * A mapping or function to translate source column names to database column names.
    */
   columnMap?: ((sourceColumnName: string) => string) | Record<string, string>;
+  /**
+   * An optional set of additional filters that should be applied to the query.
+   * This can include any additional criteria that are not part of the main filter model.
+   */
+  additional?: Record<string, Omit<GridFilterItem, 'field'>>;
 };
 
 /**

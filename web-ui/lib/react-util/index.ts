@@ -6,3 +6,4 @@
  */
 export * from './_utility-methods';
 export * from './errors';
+export * from './hooks';

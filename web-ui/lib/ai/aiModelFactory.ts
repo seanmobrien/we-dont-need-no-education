@@ -3,16 +3,14 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { env } from '@/lib/site-util/env';
 import { EmbeddingModelV1, LanguageModelV1 } from '@ai-sdk/provider';
 import { ChatOptions, EmbeddingOptions } from './types';
-import { isAiModelType, AiModelType } from '@/lib/ai/core';
-import { AiModelTypeValue_Embedding, AiModelTypeValue_GoogleEmbedding } from '@/lib/ai/core/unions';
+import { AiModelType, isAiLanguageModelType } from '@/lib/ai/core';
+import {
+  AiModelTypeValue_Embedding,
+  AiModelTypeValue_GoogleEmbedding,
+} from '@/lib/ai/core/unions';
 
-import { 
-  customProvider, 
-  createProviderRegistry, 
-  wrapLanguageModel,
-  type LanguageModel 
-} from 'ai';
-import { cacheWithRedis } from './middleware';
+import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
+import { cacheWithRedis, setNormalizedDefaultsMiddleware } from './middleware';
 
 /**
  * Model availability manager for programmatic control of model enabling/disabling
@@ -44,12 +42,13 @@ class ModelAvailabilityManager {
    * Check if a provider is available (checks if any model for that provider is available)
    */
   isProviderAvailable(provider: 'azure' | 'google'): boolean {
-    const providerModels = Array.from(this.availabilityMap.keys())
-      .filter(key => key.startsWith(`${provider}:`));
-    
+    const providerModels = Array.from(this.availabilityMap.keys()).filter(
+      (key) => key.startsWith(`${provider}:`),
+    );
+
     if (providerModels.length === 0) return true; // No explicit settings, assume available
-    
-    return providerModels.some(key => this.availabilityMap.get(key) === true);
+
+    return providerModels.some((key) => this.availabilityMap.get(key) === true);
   }
 
   /**
@@ -71,12 +70,18 @@ class ModelAvailabilityManager {
    */
   disableProvider(provider: 'azure' | 'google'): void {
     const modelTypes = ['hifi', 'lofi', 'completions', 'embedding'];
-    const googleSpecificModels = ['gemini-pro', 'gemini-flash', 'google-embedding'];
-    
+    const googleSpecificModels = [
+      'gemini-pro',
+      'gemini-flash',
+      'google-embedding',
+    ];
+
     if (provider === 'azure') {
-      modelTypes.forEach(model => this.disableModel(`azure:${model}`));
+      modelTypes.forEach((model) => this.disableModel(`azure:${model}`));
     } else if (provider === 'google') {
-      [...modelTypes, ...googleSpecificModels].forEach(model => this.disableModel(`google:${model}`));
+      [...modelTypes, ...googleSpecificModels].forEach((model) =>
+        this.disableModel(`google:${model}`),
+      );
     }
   }
 
@@ -85,12 +90,18 @@ class ModelAvailabilityManager {
    */
   enableProvider(provider: 'azure' | 'google'): void {
     const modelTypes = ['hifi', 'lofi', 'completions', 'embedding'];
-    const googleSpecificModels = ['gemini-pro', 'gemini-flash', 'google-embedding'];
-    
+    const googleSpecificModels = [
+      'gemini-pro',
+      'gemini-flash',
+      'google-embedding',
+    ];
+
     if (provider === 'azure') {
-      modelTypes.forEach(model => this.enableModel(`azure:${model}`));
+      modelTypes.forEach((model) => this.enableModel(`azure:${model}`));
     } else if (provider === 'google') {
-      [...modelTypes, ...googleSpecificModels].forEach(model => this.enableModel(`google:${model}`));
+      [...modelTypes, ...googleSpecificModels].forEach((model) =>
+        this.enableModel(`google:${model}`),
+      );
     }
   }
 
@@ -131,10 +142,21 @@ const modelAvailabilityManager = ModelAvailabilityManager.getInstance();
  */
 const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
   return wrapLanguageModel({
-    model,
-    middleware: cacheWithRedis,
-  }) as LanguageModelV1;
+    model: wrapLanguageModel({
+      model,
+      middleware: cacheWithRedis,
+    }),
+    middleware: setNormalizedDefaultsMiddleware,
+  });
 };
+
+/*
+const wrapProvider = (
+  provider: ReturnType<typeof customProvider>,
+): ReturnType<typeof customProvider> => {
+  throw new Error('Not implemented yet');
+};
+*/
 
 /**
  * Azure custom provider with model aliases for our existing model names
@@ -147,25 +169,25 @@ const azureProvider = customProvider({
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
-      }).chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI'))
+      }).chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI')),
     ),
     lofi: setupMiddleware(
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
-      }).chat(env('AZURE_OPENAI_DEPLOYMENT_LOFI'))
+      }).chat(env('AZURE_OPENAI_DEPLOYMENT_LOFI')),
     ),
     completions: setupMiddleware(
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
-      }).completion(env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS'))
+      }).completion(env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS')),
     ),
   },
-  embeddingModels: {
+  textEmbeddingModels: {
     embedding: createAzure({
-      baseURL: env('AZURE_OPENAI_ENDPOINT'),
-      apiKey: env('AZURE_API_KEY'),
+      baseURL: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
+      apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
     }).textEmbeddingModel(env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING')),
   },
   // Fallback to the raw Azure provider for any models not explicitly defined
@@ -185,32 +207,39 @@ const googleProvider = customProvider({
     hifi: setupMiddleware(
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-1.5-pro')  // High-quality model equivalent to Azure hifi
+      }).chat('gemini-2.0-pro'), // High-quality model equivalent to Azure hifi
     ),
     lofi: setupMiddleware(
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-1.5-flash')  // Fast model equivalent to Azure lofi
+      }).chat('gemini-2.0-flash'), // Fast model equivalent to Azure lofi
     ),
     // Google-specific model aliases
     'gemini-pro': setupMiddleware(
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-1.5-pro')
+      }).chat('gemini-2.0-pro'),
     ),
     'gemini-flash': setupMiddleware(
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-1.5-flash')
+      }).chat('gemini-1.5-flash'),
+    ),
+    'gemini-2.5-pro': setupMiddleware(
+      createGoogleGenerativeAI({
+        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
+      }).chat('gemini-2.5-pro'),
+    ),
+    'gemini-2.5-flash': setupMiddleware(
+      createGoogleGenerativeAI({
+        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
+      }).chat('gemini-2.5-flash'),
     ),
   },
-  embeddingModels: {
+  textEmbeddingModels: {
     embedding: createGoogleGenerativeAI({
       apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-    }).textEmbeddingModel('text-embedding-004'),  // Google embedding equivalent to Azure embedding
-    'google-embedding': createGoogleGenerativeAI({
-      apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-    }).textEmbeddingModel('text-embedding-004'),
+    }).textEmbeddingModel('text-embedding-004'), // Google embedding equivalent to Azure embedding
   },
   // Fallback to the raw Google provider for any models not explicitly defined
   fallbackProvider: createGoogleGenerativeAI({
@@ -225,18 +254,74 @@ const googleProvider = customProvider({
 export const providerRegistry = createProviderRegistry({
   // Azure is primary provider
   azure: azureProvider,
-  // Google is fallback provider  
+  // Google is fallback provider
   google: googleProvider,
 });
 
+/**
+ * Overloaded function signature for normalizing model keys based on the provider and model type.
+ *
+ * @param provider - The AI service provider, either `'azure'` or `'google'`.
+ * @param modelType - The type of AI model to normalize the key for.
+ * @returns A normalized model key string prefixed with the provider name (e.g., `azure:modelName` or `google:modelName`).
+ */
+interface NormalizeModelKeyForProviderOverloads {
+  (provider: 'azure', modelType: AiModelType): `azure:${string}`;
+  (provider: 'google', modelType: AiModelType): `google:${string}`;
+}
+
+/**
+ * Normalizes the model key for a given provider by ensuring it is prefixed with the provider name.
+ *
+ * If the `modelType` already starts with the provider prefix (e.g., "provider:model"), it is returned as-is.
+ * If `modelType` contains a colon, the substring after the colon is used and prefixed with the provider.
+ * Otherwise, the entire `modelType` is prefixed with the provider.
+ *
+ * @param provider - The name of the AI model provider.
+ * @param modelType - The model type string, which may or may not be prefixed with a provider.
+ * @returns The normalized model key in the format "provider:model".
+ */
+const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  provider: any,
+  modelType: AiModelType,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): any => {
+  if (modelType.startsWith(provider + ':')) {
+    return modelType;
+  }
+  const idx = modelType.indexOf(':');
+  if (idx > -1) {
+    return `${provider}:${modelType.substring(idx + 1)}`;
+  }
+  return `${provider}:${modelType}`;
+};
+
+/**
+ * Overloads for the AI model provider factory function.
+ *
+ * @remarks
+ * This interface defines the various call signatures for obtaining different types of AI model providers.
+ *
+ * @overload
+ * Returns the default Azure provider when called with no arguments.
+ *
+ * @overload
+ * Returns an embedding model when called with a deployment ID of `'embedding'` or `'google-embedding'` and optional embedding options.
+ * @param deploymentId - The deployment identifier for the embedding model.
+ * @param options - Optional configuration for the embedding model.
+ * @returns An instance of `EmbeddingModelV1<string>`.
+ *
+ * @overload
+ * Returns a language model when called with any other deployment ID and optional chat options.
+ * @param deploymentId - The deployment identifier for the language model, excluding embedding types.
+ * @param options - Optional configuration for the language model.
+ * @returns An instance of `LanguageModelV1`.
+ */
 interface GetAiModelProviderOverloads {
   (): typeof azureProvider;
   (
-    deploymentId: 'embedding',
-    options?: EmbeddingOptions,
-  ): EmbeddingModelV1<string>;
-  (
-    deploymentId: 'google-embedding',
+    deploymentId: 'embedding' | 'google-embedding',
     options?: EmbeddingOptions,
   ): EmbeddingModelV1<string>;
   (
@@ -246,95 +331,117 @@ interface GetAiModelProviderOverloads {
 }
 
 /**
+ * Checks if the model type starts with the given prefix.  This is used to short-circuit
+ * model case statements by matching on the provider prefix only.
+ * @param prefix The prefix to check
+ * @param modelType The model type to check against the prefix
+ * @returns The model type if it starts with the prefix, otherwise 'not-a-match' - which, obviosly, won't match :)
+ */
+const caseProviderMatch = (
+  prefix: string,
+  modelType: AiModelType,
+): AiModelType => {
+  if (modelType.startsWith(prefix)) {
+    return modelType as AiModelType;
+  }
+  return 'not-a-match' as AiModelType;
+};
+
+/**
  * Main factory function that provides backward compatibility with existing usage
  * while using the new provider registry internally with availability control
  */
 export const aiModelFactory: GetAiModelProviderOverloads = (
   modelType?: AiModelType,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   options?: ChatOptions | EmbeddingOptions,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any => {
   if (typeof modelType === 'undefined') {
     return azureProvider;
   }
-  
-  if (isAiModelType(modelType)) {
+  const azureModelKey = normalizeModelKeyForProvider('azure', modelType);
+  const googleModelKey = normalizeModelKeyForProvider('google', modelType);
+
+  if (isAiLanguageModelType(modelType)) {
     switch (modelType) {
       case 'completions':
       case 'lofi':
-      case 'hifi': {
+      case 'hifi':
+      case caseProviderMatch('azure:', modelType): {
+        // Matches any string starting with 'azure:'
         // Check availability and try Azure first if available, fallback to Google
-        const azureModelKey = `azure:${modelType}`;
-        const googleModelKey = `google:${modelType}`;
-        
         if (modelAvailabilityManager.isModelAvailable(azureModelKey)) {
           try {
             return providerRegistry.languageModel(azureModelKey);
           } catch (error) {
             // If Azure fails, temporarily disable it and try Google
-            modelAvailabilityManager.temporarilyDisableModel(azureModelKey, 60000); // 1 minute
-            console.warn(`Azure model ${modelType} failed, temporarily disabled:`, error);
+            modelAvailabilityManager.temporarilyDisableModel(
+              azureModelKey,
+              60000,
+            ); // 1 minute
+            console.warn(
+              `Azure model ${modelType} failed, temporarily disabled:`,
+              error,
+            );
           }
         }
-        
+
         if (modelAvailabilityManager.isModelAvailable(googleModelKey)) {
           return providerRegistry.languageModel(googleModelKey);
         }
-        
+
         throw new Error(`No available providers for model type: ${modelType}`);
       }
-      
+
       case 'gemini-pro':
-      case 'gemini-flash': {
+      case 'gemini-flash':
+      case caseProviderMatch('google:', modelType): {
+        // Matches any string starting with 'google:'
         // Google-specific models
-        const googleModelKey = `google:${modelType}`;
-        
         if (!modelAvailabilityManager.isModelAvailable(googleModelKey)) {
           throw new Error(`Google model ${modelType} is currently disabled`);
         }
-        
         return providerRegistry.languageModel(googleModelKey);
       }
-      
-      case 'embedding': {
-        // Try Azure first if available, fallback to Google
-        const azureModelKey = 'azure:embedding';
-        const googleModelKey = 'google:embedding';
-        
-        if (modelAvailabilityManager.isModelAvailable(azureModelKey)) {
-          try {
-            return providerRegistry.textEmbeddingModel(azureModelKey);
-          } catch (error) {
-            // If Azure fails, temporarily disable it and try Google
-            modelAvailabilityManager.temporarilyDisableModel(azureModelKey, 60000); // 1 minute
-            console.warn(`Azure embedding model failed, temporarily disabled:`, error);
-          }
-        }
-        
-        if (modelAvailabilityManager.isModelAvailable(googleModelKey)) {
-          return providerRegistry.textEmbeddingModel(googleModelKey);
-        }
-        
-        throw new Error(`No available providers for embedding model`);
-      }
-      
-      case 'google-embedding': {
-        // Google-specific embedding
-        const googleModelKey = 'google:google-embedding';
-        
-        if (!modelAvailabilityManager.isModelAvailable(googleModelKey)) {
-          throw new Error(`Google embedding model is currently disabled`);
-        }
-        
-        return providerRegistry.textEmbeddingModel(googleModelKey);
-      }
-      
+
       default:
-        throw new Error('Invalid AiModelType provided: ' + modelType);
+        if (modelAvailabilityManager.isModelAvailable(modelType)) {
+          const chat = providerRegistry.languageModel(modelType);
+          if (chat == null) {
+            throw new Error('Invalid AiModelType provided: ' + modelType);
+          }
+          return chat;
+        }
+    }
+  } else {
+    switch (modelType) {
+      case 'embedding':
+      case caseProviderMatch('azure:', modelType): // Matches any string starting with 'azure
+        const embed = providerRegistry.textEmbeddingModel(azureModelKey);
+        if (embed != null) {
+          return embed;
+        }
+        break;
+      case 'google-embedding':
+      case caseProviderMatch('google:', modelType): // Matches any string starting with 'google:'
+        const googleEmbed = providerRegistry.textEmbeddingModel(googleModelKey);
+        if (googleEmbed != null) {
+          return googleEmbed;
+        }
+        break; // Continue to handle embedding models below
+      default:
+        break;
     }
   }
-  
-  throw new Error('Invalid model type provided');
+  // If we make it all the way here we were given a bad model string
+  throw new TypeError(
+    `Invalid AiModelType provided (${modelType}).  Expected one of the aliased names: $'hifi', 'lofi', \
+      'completions']} or a provider-prefixed model name like 'azure:chatgtp-4o-minni' or 'google:gemini-flash-2.0'.`,
+    {
+      cause: modelType,
+    },
+  );
 };
 
 /**
@@ -394,7 +501,10 @@ export const enableProvider = (provider: 'azure' | 'google'): void => {
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  * @param durationMs - Duration in milliseconds to disable the model
  */
-export const temporarilyDisableModel = (modelKey: string, durationMs: number): void => {
+export const temporarilyDisableModel = (
+  modelKey: string,
+  durationMs: number,
+): void => {
   modelAvailabilityManager.temporarilyDisableModel(modelKey, durationMs);
 };
 
@@ -443,8 +553,14 @@ export const handleAzureRateLimit = (durationMs: number = 300000): void => {
   console.warn('Azure rate limit detected, temporarily disabling Azure models');
   modelAvailabilityManager.temporarilyDisableModel('azure:hifi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel('azure:lofi', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel('azure:completions', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel('azure:embedding', durationMs);
+  modelAvailabilityManager.temporarilyDisableModel(
+    'azure:completions',
+    durationMs,
+  );
+  modelAvailabilityManager.temporarilyDisableModel(
+    'azure:embedding',
+    durationMs,
+  );
 };
 
 /**
@@ -452,11 +568,25 @@ export const handleAzureRateLimit = (durationMs: number = 300000): void => {
  * @param durationMs - Duration in milliseconds to disable Google (default: 5 minutes)
  */
 export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
-  console.warn('Google rate limit detected, temporarily disabling Google models');
+  console.warn(
+    'Google rate limit detected, temporarily disabling Google models',
+  );
   modelAvailabilityManager.temporarilyDisableModel('google:hifi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel('google:lofi', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel('google:embedding', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel('google:gemini-pro', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel('google:gemini-flash', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel('google:google-embedding', durationMs);
+  modelAvailabilityManager.temporarilyDisableModel(
+    'google:embedding',
+    durationMs,
+  );
+  modelAvailabilityManager.temporarilyDisableModel(
+    'google:gemini-pro',
+    durationMs,
+  );
+  modelAvailabilityManager.temporarilyDisableModel(
+    'google:gemini-flash',
+    durationMs,
+  );
+  modelAvailabilityManager.temporarilyDisableModel(
+    'google:google-embedding',
+    durationMs,
+  );
 };

@@ -1,3 +1,4 @@
+```
 /**
  * Timeline Agent Demo Component
  *
@@ -348,3 +349,4 @@ export const TimelineAgentDemo: React.FC = () => {
     </Box>
   );
 };
+```

@@ -28,8 +28,8 @@ const Page = async ({ params }: PageProps) => {
         }}
       >
         <TimelineAgentInterface
-          initialDocumentId={propertyId}
-          caseId={emailId}
+          initialDocumentId={emailId}
+          caseId={propertyId}
         />
       </Box>
     </EmailDashboardLayout>

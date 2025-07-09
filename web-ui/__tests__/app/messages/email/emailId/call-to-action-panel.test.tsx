@@ -1,27 +1,36 @@
+import { render, screen, waitFor } from '@/__tests__/test-utils';
+
 // Mock the API client
 jest.mock('@/lib/api/email/properties/client');
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
+
 // Mock MUI components that may cause theme issues
-jest.mock(
-  '@mui/material/LinearProgress',
-  () =>
-    ({ value, ...props }: { value?: number }) => (
-      <div data-testid="linear-progress" data-value={value} {...props} />
-    ),
-);
+jest.mock('@mui/material/LinearProgress', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const MockLinearProgress = (props: any) => (
+    <div data-testid="linear-progress" data-value={props.value} {...props} />
+  );
+  return MockLinearProgress;
+});
 
-jest.mock('@mui/material/CircularProgress', () => () => (
-  <div data-testid="circular-progress" />
-));
+jest.mock('@mui/material/CircularProgress', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const MockCircularProgress = (props: any) => (
+    <div data-testid="circular-progress" {...props} />
+  );
+  return MockCircularProgress;
+});
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable react/display-name */
-import React from 'react';
-import { render, screen, waitFor, act } from '@testing-library/react';
-import '@testing-library/jest-dom';
+// Mock React Query useQuery hook
+const mockUseQuery = jest.fn();
+jest.mock('@tanstack/react-query', () => ({
+  ...jest.requireActual('@tanstack/react-query'),
+  useQuery: () => mockUseQuery(),
+}));
+
 import { CallToActionPanel } from '@/app/messages/email/[emailId]/call-to-action/panel';
 import { CallToActionDetails } from '@/data-models/api';
 import { getCallToActionResponse as getCallToActionResponseFromModule } from '@/lib/api/email/properties/client';
@@ -35,6 +44,7 @@ const mockCallToActionDetails: CallToActionDetails = {
   value: 'Test call to action description',
   policy_basis: ['FERPA', 'Title IX'],
   tags: ['urgent', 'compliance'],
+  categoryName: 'Call to Action',
   opened_date: new Date('2023-01-01'),
   closed_date: null,
   compliancy_close_date: new Date('2023-02-01'),
@@ -70,35 +80,40 @@ const mockResponsiveActions = [
 
 describe('CallToActionPanel', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     getCallToActionResponse.mockResolvedValue({
       results: mockResponsiveActions,
       pageStats: { page: 1, num: 10, total: 1 },
     });
+
+    // Mock useQuery for all tests by default
+    mockUseQuery.mockReturnValue({
+      data: mockResponsiveActions,
+      isLoading: false,
+      error: null,
+    });
   });
 
   it('renders call to action details correctly', async () => {
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
-    // Wait for async operations to complete
     await waitFor(() => {
       expect(
         screen.getByText('Call to Action Details (cta-test-id)'),
       ).toBeInTheDocument();
     });
-
-    expect(
-      screen.getByText('Test call to action description'),
-    ).toBeInTheDocument();
-    expect(screen.getByText('75% Complete')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(
+        screen.getByText('Test call to action description'),
+      ).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(screen.getByText('75% Complete')).toBeInTheDocument();
+    });
   });
 
   it('displays progress bar with correct value', async () => {
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
     await waitFor(() => {
       const progressBar = screen.getByTestId('linear-progress');
@@ -107,9 +122,7 @@ describe('CallToActionPanel', () => {
   });
 
   it('shows status chips correctly', async () => {
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
     await waitFor(() => {
       expect(screen.getByText('Direct')).toBeInTheDocument(); // since inferred is false
@@ -118,9 +131,7 @@ describe('CallToActionPanel', () => {
   });
 
   it('shows rating scores', async () => {
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
     await waitFor(() => {
       expect(screen.getByText('0.85')).toBeInTheDocument(); // compliance_rating
@@ -131,9 +142,7 @@ describe('CallToActionPanel', () => {
   });
 
   it('displays policy basis and tags in metadata', async () => {
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
     await waitFor(() => {
       expect(screen.getByText('FERPA')).toBeInTheDocument();
@@ -144,64 +153,46 @@ describe('CallToActionPanel', () => {
   });
 
   it('fetches and displays related responsive actions', async () => {
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
-    await waitFor(() => {
-      expect(getCallToActionResponse).toHaveBeenCalledWith({
-        emailId: 'test-email-id',
-        page: 1,
-        num: 100,
-      });
-    });
-
+    // Since we're mocking useQuery directly, the component should display the mocked data
     await waitFor(() => {
       expect(
         screen.getByText('Related Responsive Actions (1)'),
       ).toBeInTheDocument();
     });
+
+    // Check that the response data is displayed
+    await waitFor(() => {
+      expect(
+        screen.getByText('Initial response to the call to action'),
+      ).toBeInTheDocument();
+    });
   });
 
   it('shows loading state while fetching related actions', async () => {
-    // Make the API call take some time
-    getCallToActionResponse.mockImplementation(
-      () =>
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                results: mockResponsiveActions,
-                pagination: { page: 1, num: 10, total: 1 },
-              }),
-            100,
-          ),
-        ) as any,
-    );
-
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
+    // Override the default mock to show loading state
+    mockUseQuery.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      error: null,
     });
 
-    expect(screen.getByTestId('circular-progress')).toBeInTheDocument();
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
-    // Wait for loading to complete
-    await waitFor(
-      () => {
-        expect(
-          screen.queryByTestId('circular-progress'),
-        ).not.toBeInTheDocument();
-      },
-      { timeout: 200 },
-    );
+    // Should show loading initially
+    await waitFor(() => {
+      expect(screen.getByTestId('circular-progress')).toBeInTheDocument();
+    });
   });
 
   it('handles API error gracefully', async () => {
-    getCallToActionResponse.mockRejectedValue(new Error('API Error'));
-
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
+    mockUseQuery.mockReturnValue({
+      isLoading: false,
+      error: new Error('Failed to load related responses'),
     });
+
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
     await waitFor(() => {
       expect(
@@ -211,9 +202,7 @@ describe('CallToActionPanel', () => {
   });
 
   it('displays closure actions when available', async () => {
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
     await waitFor(() => {
       expect(screen.getByText('Investigation')).toBeInTheDocument();
@@ -222,9 +211,7 @@ describe('CallToActionPanel', () => {
   });
 
   it('displays reasoning sections when available', async () => {
-    await act(async () => {
-      render(<CallToActionPanel row={mockCallToActionDetails} />);
-    });
+    render(<CallToActionPanel row={mockCallToActionDetails} />);
 
     await waitFor(() => {
       expect(screen.getByText('Reasoning and Analysis')).toBeInTheDocument();

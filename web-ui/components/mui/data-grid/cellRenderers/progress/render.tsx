@@ -17,7 +17,7 @@ interface ProgressBarProps {
 }
 
 const ProgressBar = React.memo(function ProgressBar(props: ProgressBarProps) {
-  const { value } = props;
+  const { value } = props ?? { value: 0 };
   const rawValueInPercent = value * 100;
   const valueInPercent = Math.abs(rawValueInPercent);
 
@@ -44,13 +44,14 @@ const Progress = <
 >(
   params: GridRenderCellParams<R, number, N>,
 ): React.JSX.Element | '' => {
-  if (params.value == null) {
-    return '';
+  const value = params?.value;
+  if (typeof value === 'undefined' || value === null) {
+    return <></>;
   }
 
   return (
     <Center>
-      <ProgressBar value={params.value} />
+      <ProgressBar value={value} />
     </Center>
   );
 };

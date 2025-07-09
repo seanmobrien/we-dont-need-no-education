@@ -10,6 +10,7 @@ import React, {
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import { ThemeType, themes } from './definitions';
 import Loading from '@/components/general/loading';
+import { log } from '../logger';
 
 interface ThemeContextType {
   currentTheme: ThemeType;
@@ -56,9 +57,7 @@ export const ThemeProvider = ({
 
   const setTheme = useCallback(
     (theme: ThemeType) => {
-      if (DEBUG) {
-        console.log('setTheme called with:', theme);
-      }
+      log((l) => l.debug(`setTheme called with: ${theme}`));
       if (theme === currentTheme) {
         return; // Skip redundant updates
       }

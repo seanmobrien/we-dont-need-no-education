@@ -1,4 +1,8 @@
-import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
+import {
+  GridFilterItem,
+  GridFilterModel,
+  GridSortModel,
+} from '@mui/x-data-grid-pro';
 import { isGridFilterModel, isGridSortModel } from './guards';
 
 /**
@@ -15,9 +19,32 @@ import { isGridFilterModel, isGridSortModel } from './guards';
  */
 export const parseFilterOptions = (
   req: URL | URLSearchParams | (GridFilterModel | undefined),
+  additional?: Record<string, Omit<GridFilterItem, 'field'>>,
 ): GridFilterModel | undefined => {
+  const appendAdditional = (
+    x: GridFilterModel,
+  ): GridFilterModel | undefined => {
+    const addKeys = Object.keys(additional ?? {});
+    return x.items.length === 0
+      ? addKeys.length > 0
+        ? {
+            ...x,
+            items: addKeys.map((key) => ({ field: key, ...additional![key] })),
+          }
+        : undefined
+      : addKeys.length > 0
+        ? {
+            ...x,
+            items: [
+              ...(x.items || []),
+              ...addKeys.map((key) => ({ field: key, ...additional![key] })),
+            ],
+          }
+        : x;
+  };
+
   if (isGridFilterModel(req)) {
-    return req.items.length === 0 ? undefined : req;
+    return appendAdditional(req);
   }
   if (req instanceof URL) {
     req = req.searchParams;
@@ -27,13 +54,13 @@ export const parseFilterOptions = (
     return undefined;
   }
   const filterParam = req.get('filter');
-  if (!filterParam) return undefined;
+  if (!filterParam) return appendAdditional({ items: [] });
   const check = JSON.parse(filterParam);
   if (isGridFilterModel(check)) {
     check.items = check.items.filter((x) => x.field && x.operator && x.value);
-    return check.items.length === 0 ? undefined : check;
+    return appendAdditional(check);
   }
-  return undefined;
+  return appendAdditional({ items: [] });
 };
 
 /**

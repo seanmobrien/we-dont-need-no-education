@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useEffect, useRef } from 'react';
 import { LoggedError } from '../errors';
 import { isError } from '../_utility-methods';

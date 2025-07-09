@@ -62,7 +62,7 @@ const wrapMockMiddleware = (
 describe('Cache Success-Only Functionality', () => {
   beforeEach(() => {
     metricsCollector.reset();
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockRedisClient.get.mockResolvedValue(null); // Default to no existing data
   });
 

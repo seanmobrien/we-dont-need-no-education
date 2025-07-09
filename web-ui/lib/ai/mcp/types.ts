@@ -17,6 +17,7 @@ export type ToolProviderFactoryOptions = {
   url: string;
   headers?: Record<string, string>;
   allowWrite?: boolean;
+  traceable?: boolean;
 };
 
 /**
@@ -34,7 +35,7 @@ export type ConnectableToolProvider = {
   get_isConnected: () => boolean;
   get_tools: () => ToolSet;
   dispose: () => Promise<void>;
-  connect: ({}: { allowWrite?: boolean }) => Promise<void>;
+  connect: ({}: { allowWrite?: boolean }) => Promise<ConnectableToolProvider>;
 };
 
 /**

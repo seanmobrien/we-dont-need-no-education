@@ -258,17 +258,24 @@ export const turnStatuses = pgTable('turn_statuses', {
 
 // Main chat history tables
 export const chats = pgTable('chats', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: text('user_id').notNull().references(() => users.id),
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   title: text('title'),
   metadata: jsonb('metadata'),
 });
 
 export const chatTurns = pgTable('chat_turns', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  chatId: uuid('chat_id').notNull().references(() => chats.id, { onDelete: 'cascade' }),
-  statusId: serial('status_id').notNull().references(() => turnStatuses.id),
+  turnId: numeric('turn_id').primaryKey(),
+  chatId: text('chat_id')
+    .primaryKey()
+    .notNull()
+    .references(() => chats.id, { onDelete: 'cascade' }),
+  statusId: serial('status_id')
+    .notNull()
+    .references(() => turnStatuses.id),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   completedAt: timestamp('completed_at', { withTimezone: true }),
   modelName: text('model_name'),
@@ -281,20 +288,28 @@ export const chatTurns = pgTable('chat_turns', {
 });
 
 export const chatMessages = pgTable('chat_messages', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  chatId: uuid('chat_id').notNull().references(() => chats.id, { onDelete: 'cascade' }),
-  turnId: uuid('turn_id').references(() => chatTurns.id, { onDelete: 'cascade' }),
+  messageId: numeric('message_id').primaryKey(),
+  chatId: text('chat_id')
+    .primaryKey()
+    .references(() => chats.id, { onDelete: 'cascade' }),
+  turnId: numeric('turn_id')
+    .primaryKey()
+    .references(() => chatTurns.turnId, { onDelete: 'cascade' }),
   role: chatMessageRoleType('role').notNull(),
   content: text('content'),
   toolName: text('tool_name'),
   functionCall: jsonb('function_call'),
   messageOrder: integer('message_order').notNull(),
-  statusId: serial('status_id').notNull().references(() => messageStatuses.id),
+  statusId: serial('status_id')
+    .notNull()
+    .references(() => messageStatuses.id),
 });
 
 export const tokenUsage = pgTable('token_usage', {
   id: uuid('id').primaryKey().defaultRandom(),
-  turnId: uuid('turn_id').notNull().references(() => chatTurns.id, { onDelete: 'cascade' }),
+  turnId: numeric('turn_id')
+    .notNull()
+    .references(() => chatTurns.turnId, { onDelete: 'cascade' }),
   promptTokens: integer('prompt_tokens'),
   completionTokens: integer('completion_tokens'),
   totalTokens: integer('total_tokens'),
@@ -556,34 +571,28 @@ export const stagingMessage = pgTable(
   ],
 );
 
-export const users = pgTable(
-  'users',
-  {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    name: text('name'),
-    email: text('email').notNull(),
-    emailVerified: timestamp('emailVerified', {
-      mode: 'date',
-      withTimezone: true,
-    }),
-    image: text('image'),
-    created_at: timestamp('created_at', {
-      // custom field
-      mode: 'date',
-      withTimezone: true,
-    }).defaultNow(),
-    updated_at: timestamp('updated_at', {
-      // custom field
-      mode: 'date',
-      withTimezone: true,
-    }).$onUpdate(() => new Date()),
-  },
-  (table) => ({
-    // custom index
+export const users = pgTable('users', {
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  name: text('name'),
+  email: text('email').notNull(),
+  emailVerified: timestamp('emailVerified', {
+    mode: 'date',
+    withTimezone: true,
   }),
-);
+  image: text('image'),
+  created_at: timestamp('created_at', {
+    // custom field
+    mode: 'date',
+    withTimezone: true,
+  }).defaultNow(),
+  updated_at: timestamp('updated_at', {
+    // custom field
+    mode: 'date',
+    withTimezone: true,
+  }).$onUpdate(() => new Date()),
+});
 
 export const legalReferences = pgTable(
   'legal_references',

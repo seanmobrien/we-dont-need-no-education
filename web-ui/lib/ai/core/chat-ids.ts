@@ -12,6 +12,23 @@ const seededRandom = (seed: number): (() => number) => {
 };
 
 /**
+ * This function generates a simple hash by iterating over each character in the string.
+ * It uses a basic algorithm that shifts the hash value and adds the character's ASCII code.
+ * This is not a cryptographic hash and should not be used for security purposes.
+ * It is intended for generating a consistent hash value for a given string, such as for use in identifiers or keys.
+ * @param str - The string to hash.
+ * @returns The generated hash as a string.
+ */
+export const notCryptoSafeKeyHash = (str: string): string => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return hash.toString();
+};
+
+/**
  * Generates a chat ID using a simple seeded random function.
  * The generated ID is an 8-character string consisting of lowercase letters, digits, and special characters.
  * If a seed is provided, the same ID will be generated for the same seed.

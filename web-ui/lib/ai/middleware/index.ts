@@ -1,10 +1,11 @@
 // Enterprise-grade AI middleware exports
 export { retryRateLimitMiddleware } from './retryRateLimitMiddleware';
-export { 
-  createChatHistoryMiddleware, 
+export {
+  createChatHistoryMiddleware,
   initializeChatHistoryTables,
-  type ChatHistoryContext 
+  type ChatHistoryContext,
 } from './chat-history-middleware';
+export { setNormalizedDefaultsMiddleware } from './set-normalized-defaults';
 export {
   cacheWithRedis,
   getRedisClient,

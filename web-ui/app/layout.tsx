@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/lib/themes/provider';
 import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
 import { InitColorSchemeScript } from '@mui/material';
+import { TrackWithAppInsight } from '@/components/general/telemetry';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -39,11 +40,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <InitColorSchemeScript defaultMode="dark" />
         <QueryProvider>
+          <TrackWithAppInsight />
           <MuiXLicense />
           <AppRouterCacheProvider options={stableAppRouterOptions}>
             <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>

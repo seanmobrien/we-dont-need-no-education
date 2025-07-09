@@ -692,7 +692,7 @@ Respond with just the summary text, no additional formatting.`;
       maxTokens: 150,
       temperature: 0.3,
       experimental_telemetry: {
-        isEnabled: true,
+        isEnabled: true, // Currently a bug in the ai package processing string dates
         functionId: 'completion-tool-summarization',
         metadata: {},
       },

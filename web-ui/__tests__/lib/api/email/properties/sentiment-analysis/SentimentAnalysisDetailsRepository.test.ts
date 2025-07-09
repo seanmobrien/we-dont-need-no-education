@@ -19,7 +19,7 @@ describe('SentimentAnalysisDetailsRepository', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('validate', () => {

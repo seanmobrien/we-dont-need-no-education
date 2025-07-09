@@ -10,23 +10,18 @@ import {
 import PublishIcon from '@mui/icons-material/Publish';
 import { useChat } from '@ai-sdk/react';
 import { Message, ToolCall } from 'ai';
-import Loading from '@/components/general/loading';
 import { ChatMenu } from './chat-menu';
-import ChatMessage from './chat-message';
-import classnames, {
-  alignItems,
-  display,
-  flexDirection,
-  width,
-} from '@/tailwindcss.classnames';
 import {
   AiModelType,
   AnnotatedRetryMessage,
   isAnnotatedRetryMessage,
+  generateChatId,
 } from '@/lib/ai/core';
 import { log } from '@/lib/logger';
-import { generateChatId } from '@/lib/components/ai';
 import { enhancedChatFetch } from '@/lib/components/ai/chat-fetch-wrapper';
+import { getReactPlugin } from '@/instrument/browser';
+import { withAITracking } from '@microsoft/applicationinsights-react-js';
+import { ChatWindow } from './chat-window';
 
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
@@ -93,6 +88,20 @@ const generateChatMessageId = (): string => {
   const { id: messageId } = generateChatId();
   return `${threadId}:${messageId}`;
 };
+
+const stable_sx = {
+  container: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 2,
+    width: '100%',
+    height: '100vh', // Ensure container fills viewport
+    boxSizing: 'border-box',
+  } as const,
+  chatInput: { marginBottom: 2 } as const,
+  stack: { flexGrow: 1, overflow: 'hidden' } as const,
+} as const;
 
 const ChatPanel = ({ page }: { page: string }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -183,12 +192,6 @@ const ChatPanel = ({ page }: { page: string }) => {
     onError: onChatError,
     experimental_throttle: 100,
   });
-  const onResetSession = useCallback(() => {
-    sessionStorage.removeItem('chatActiveId');
-    setThreadId(generateChatId().id);
-    setInitialMessages(undefined);
-    setMessages([]);
-  }, [setMessages]);
   const onSendClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>, model?: AiModelType) => {
       if (id) {
@@ -209,11 +212,72 @@ const ChatPanel = ({ page }: { page: string }) => {
         headers: {
           'x-active-model': withModel,
           'x-active-page': page,
+          //'x-traceable': 'false',
         },
       });
     },
     [activeModel, handleSubmit, id, messages, page],
   );
+  const handleInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
+        e.preventDefault();
+        onSendClick(e as unknown as React.MouseEvent<HTMLButtonElement>);
+      } else if (e.key === 'ArrowUp' && input === '') {
+        // If the input is empty, allow the user to navigate through previous messages
+        e.preventDefault();
+        if (messages && messages.length > 0) {
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === 'user') {
+              const messageText = messages[i].parts
+                ?.filter((x) => x.type === 'text')
+                .map((x) => x.text)
+                .join(' ')
+                .trim();
+              if (messageText) {
+                handleInputChange({
+                  target: { value: messageText },
+                } as React.ChangeEvent<HTMLInputElement>);
+                break;
+              }
+            }
+          }
+        }
+      }
+    },
+    [handleInputChange, input, messages, onSendClick],
+  );
+  const stableChatInputSlotProps = React.useMemo(() => {
+    return {
+      input: {
+        endAdornment: (
+          <InputAdornment position="end">
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
+              <IconButton edge="end" onClick={onSendClick}>
+                <PublishIcon />
+              </IconButton>
+              <ChatMenu
+                activeModel={activeModel}
+                setActiveModel={setActiveModel}
+                onResetSession={() => {
+                  sessionStorage.removeItem('chatActiveId');
+                  setThreadId(generateChatId().id);
+                  setInitialMessages(undefined);
+                  setMessages([]);
+                }}
+              />
+            </Box>
+          </InputAdornment>
+        ),
+      },
+    };
+  }, [onSendClick, activeModel, setMessages]);
 
   useEffect(() => {
     const timeoutIds: Array<NodeJS.Timeout | number> = [];
@@ -249,21 +313,9 @@ const ChatPanel = ({ page }: { page: string }) => {
       return () => timeoutIds.forEach(clearTimeout);
     }
   }, [rateLimitTimeout, reload, data, setData]);
-  if (process.env.IS_BUILDING == '1') {
-    console.warn('is building, skipping chat panel rendering');
-    return <></>;
-  }
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: 2,
-        width: '96%',
-      }}
-    >
-      <Stack className="w-full" spacing={2}>
+    <Box id={`chat-panel-${threadId}`} sx={stable_sx.container}>
+      <Stack className="w-full" spacing={2} sx={stable_sx.stack}>
         <TextField
           multiline
           rows={5}
@@ -272,88 +324,18 @@ const ChatPanel = ({ page }: { page: string }) => {
           placeholder="Type your message here..."
           value={input}
           onChange={handleInputChange}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
-              e.preventDefault();
-              onSendClick(e as unknown as React.MouseEvent<HTMLButtonElement>);
-            } else if (e.key === 'ArrowUp' && input === '') {
-              // If the input is empty, allow the user to navigate through previous messages
-              e.preventDefault();
-              if (messages && messages.length > 0) {
-                for (let i = messages.length - 1; i >= 0; i--) {
-                  if (messages[i].role === 'user') {
-                    const messageText = messages[i].parts
-                      ?.filter((x) => x.type === 'text')
-                      .map((x) => x.text)
-                      .join(' ')
-                      .trim();
-                    if (messageText) {
-                      handleInputChange({
-                        target: { value: messageText },
-                      } as React.ChangeEvent<HTMLInputElement>);
-                      break;
-                    }
-                  }
-                }
-              }
-            }
-          }}
-          sx={{ marginBottom: 2 }}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                  }}
-                >
-                  <IconButton edge="end" onClick={onSendClick}>
-                    <PublishIcon />
-                  </IconButton>
-                  <ChatMenu
-                    activeModel={activeModel}
-                    setActiveModel={setActiveModel}
-                    onResetSession={onResetSession}
-                  />
-                </Box>
-              </InputAdornment>
-            ),
-          }}
+          onKeyDown={handleInputKeyDown}
+          sx={stable_sx.chatInput}
+          slotProps={stableChatInputSlotProps}
         />
-        <Box
-          sx={{
-            marginTop: 2,
-            padding: 2,
-            border: '1px solid #ccc',
-            borderRadius: 4,
-            backgroundColor: '--color-gray-800',
-            maxHeight: '450px',
-            overflowY: 'auto',
-          }}
-          className={classnames(
-            width('w-full'),
-            flexDirection('flex-col'),
-            display('flex'),
-            alignItems('items-start'),
-          )}
-        >
-          <Loading
-            loading={status === 'submitted'}
-            errorMessage={errorMessage}
-          />
-          {messages?.length &&
-            messages
-              .slice(0, messages.length)
-              .reverse()
-              .map((message) => (
-                <ChatMessage message={message} key={message.id} />
-              ))}
-        </Box>
+        <ChatWindow
+          messages={messages}
+          loading={status === 'submitted'}
+          errorMessage={errorMessage}
+        />
       </Stack>
     </Box>
   );
 };
 
-export default ChatPanel;
+export default withAITracking(getReactPlugin(), ChatPanel);

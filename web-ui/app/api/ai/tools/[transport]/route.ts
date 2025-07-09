@@ -7,19 +7,94 @@ import {
   AiSearchResultEnvelopeSchema,
   getMultipleCaseFileDocuments,
   getCaseFileDocumentIndex,
-  DocumentSchema,
   toolCallbackResultSchemaFactory,
   toolCallbackArrayResultSchemaFactory,
   CaseFileAmendmentShape,
   AmendmentResultShape,
+  toolCallbackResultFactory,
+  DocumentSchema,
 } from '@/lib/ai/tools';
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
+import { caseFileRequestPropsShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 import { createMcpHandler } from '@vercel/mcp-adapter';
 import { z } from 'zod';
 
 const handler = createMcpHandler(
   (server) => {
+    server.registerTool(
+      'playPingPong',
+      {
+        description:
+          "You say ping, I say pong, we go back and forth until someone misses the ball and scores a point.  Repeat that like 15 times and you've finished a match.  When a user prompt includes a ping, call this tool with your planned response.  " +
+          "The tool will analyize the user's ping, your pong, and round history to determin if the user missed (eg you scored a point), you missed (eg the user scored a point), or a successful return (eg no-one scored, user must respond or you score a point).  " +
+          'IMPORTANT if the user sends a ping and you do not respond send it to this tool with a pong, the user automatically gets a point.',
+        inputSchema: {
+          userPing: z
+            .string()
+            .describe(
+              'The exact verbiage the user used to initiate the round - could be ping or pong of course, but more casual terms like "nudge" "buzz", "tap", or even "echo drop" are good as well.',
+            ),
+          assistantPong: z
+            .string()
+            .describe(
+              'The exact verbiage you are using to respond to the ping.  It should be close to the vector of the ping (so you hit), but creative and surprising enough to put some spin on the ball so you can score.',
+            ),
+          roundHistory: z
+            .array(z.array(z.string()))
+            .describe(
+              'An array of arrays containingt the pings and pongs that make up the current round.  This is used to keep track of the game state and assign outcome multipliers - for example, the same term used multiple times is more likely to result in a bonus multiplier when hit back, as the player is familiar with that shot.',
+            ),
+        },
+        outputSchema: toolCallbackResultSchemaFactory(
+          z.object({
+            result: z
+              .number()
+              .describe(
+                'The outcome of the exchange; if below zero the user missed and you scored a point, if above zero you missed and the user scored a point, when zero both you and the user hit and youmove on to the next exchange',
+              ),
+          }),
+        ),
+        annotations: {
+          title: 'Ping and Pong',
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+      },
+      ({
+        userPing,
+        assistantPong,
+        roundHistory,
+      }: {
+        userPing: string;
+        assistantPong: string;
+        roundHistory: string[][];
+      }) => {
+        log((l) =>
+          l.info(
+            'Ping Pong Tool called with userPing:' +
+              userPing +
+              ', assistantPong:' +
+              assistantPong +
+              ', roundHistory:' +
+              JSON.stringify(roundHistory),
+          ),
+        );
+        const rand = Math.random();
+        let result: number;
+        if (rand < 0.4) {
+          result = 0;
+        } else if (rand < 0.65) {
+          result = -1;
+        } else {
+          result = 1;
+        }
+        return toolCallbackResultFactory({ result });
+      },
+    );
     server.registerTool(
       'searchPolicyStore',
       {
@@ -76,34 +151,9 @@ const handler = createMcpHandler(
         description:
           "Retrieves the full contents of a specific case file document by it's ID.  This will include all metadata, as well as any linked case file documents, such as " +
           'extracted key points, notes, calls to action, responsive actions, or other relevant information.  Useful for performing detailed ' +
-          'analysis of the case file contents.',
+          'analysis of the case file contents.  IMPORTANT: case files are large and require a lot of context space, so pre-processing via goals is recommended.',
         inputSchema: {
-          caseFileId: z
-            .number()
-            .or(
-              z
-                .string()
-                .describe(
-                  "While the numeric 'documentId' is the preferred access mechanism, some document types - such as emails, calls to action, responsive actions, and notes - can be requested by their uuid-based unique identifier as well",
-                ),
-            )
-            .describe(
-              'A numeric unique identifier identifying the case file document to retrieve.',
-            ),
-          goals: z
-            .array(z.string())
-            .describe(
-              'An optional array of goals identifying your task or describing what information should be extracted from the case file.  When set, the document will be pre-processed and relevant information returned, when left blank you will receive the full case file.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
-            )
-            .optional(),
-          reasoning: z
-            .number()
-            .min(0)
-            .max(10)
-            .optional()
-            .describe(
-              'An optional number between 0 and 10 indicating the level of reasoning necessary to effectively identify relevant information in the pre-processing stage.  Complex tasks require higher levels of reasoning.  Defaults to 0, which uses gpt-4o-mini with default settings as the pre-processor.',
-            ),
+          ...caseFileRequestPropsShape.shape,
         },
         outputSchema: toolCallbackResultSchemaFactory(
           z.string().or(DocumentSchema),
@@ -118,45 +168,33 @@ const handler = createMcpHandler(
       },
       getCaseFileDocument,
     );
+
     server.registerTool(
       'getMultipleCaseFileDocuments',
       {
         description:
           'Retrieves the full contents of a batch of specific case file document by ID.  This will include all metadata, as well as any linked case file documents, such as ' +
           'extracted key points, notes, calls to action, responsive actions, or other relevant information.  Useful for performing detailed ' +
-          'analysis of the case file contents.  This can be used as an alternative to multiple calls to the `getCaseFileDocument` tool.',
+          'analysis of the case file contents.  This can be used as an alternative to multiple calls to the `getCaseFileDocument` tool.  IMPORTANT: case ' +
+          'files are large and require a lot of context space, so pre-processing via goals is recommended. Never attempt to load more than 5 unprocessed documents at a time.  ' +
+          'With adequate pre-processing, more documents can be processed, but you should never request more than 100 documents at once.',
         inputSchema: {
-          caseFileIds: z
-            .array(
-              z
-                .number()
-                .or(
-                  z
-                    .string()
-                    .describe(
-                      "While the numeric 'documentId' is the preferred access mechanism, some document types - such as emails, calls to action, responsive actions, and notes - can be requested by their uuid-based unique identifier as well",
-                    ),
-                )
-                .describe(
-                  'A numeric unique identifier identifying the case file document to retrieve.',
-                ),
-            )
-            .describe(
-              'An array of unique identifiers identifying the case file documents to retrieve.',
-            ),
+          requests: z
+            .array(caseFileRequestPropsShape)
+            .describe('An array of case file requests.'),
           goals: z
             .array(z.string())
             .describe(
-              'An optional array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
+              'An array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
             )
             .optional(),
-          reasoning: z
+          verbatim_fidelity: z
             .number()
-            .min(0)
-            .max(10)
+            .min(1)
+            .max(100)
             .optional()
             .describe(
-              'An optional number between 0 and 10 indicating the level of reasoning necessary to effectively identify relevant information in the pre-processing stage.  Complex tasks require higher levels of reasoning.  Defaults to 0, which uses gpt-4o-mini with default settings as the pre-processor.',
+              'Controls how closely output should match source text. 100 = exact quotes with full context;  75 = exact excerpts with minimal context; 50 = summarized excerpts with some context; 1 = full summary, exact quotes not needed.  Set here to provide a default for all requests.',
             ),
         },
         outputSchema: toolCallbackArrayResultSchemaFactory(
@@ -270,19 +308,103 @@ const handler = createMcpHandler(
       },
       amendCaseRecord,
     );
+
+    const oldClose = server.server.onclose;
+    const oldInit = server.server.oninitialized;
+    const oldError = server.server.onerror;
+    const oldTransportError = server.server.transport?.onerror;
+    /*
+
+    const makeErrorHandler = (
+      oldHandler: (error: unknown, ...args: any[]) => void | undefined,
+      dscr: string,
+    ) => {
+      return (error: unknown, ...args: any[]) => {
+        const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'mcp:tools',
+          severity: 'error',
+          data: {
+            details: `MCP ${dscr}::onerror handler fired`,
+            server,
+            args,
+          },
+        });
+        let ret: unknown = oldHandler?.(server.server, le, ...args);
+        if (ret) {
+          log((l) =>
+            l.debug('Error was handled by existing subscriber', server, args),
+          );
+        } else {
+          log((l) =>
+            l.error('supressing MCP Server error', server, error, args),
+          );
+          ret = {
+            role: 'assistant',
+            content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
+          };
+        }
+        return ret;
+      };
+    };
+
+    server.server.onclose = (...args: any[]) => {
+      log((l) =>
+        l.info({
+          message: 'MCP Server closed',
+          data: {
+            server,
+            args,
+          },
+        }),
+      );
+      return oldClose?.call(...args);
+    };
+    server.server.oninitialized = (...args: any[]) => {
+      log((l) =>
+        l.info({
+          message: 'MCP Server initialized',
+          data: {
+            server,
+            args,
+          },
+        }),
+      );
+      return oldInit?.call(...args);
+    };
+    server.server.onerror = makeErrorHandler(oldError, 'server');
+    if (server.server.transport) {
+      server.server.transport.onerror = makeErrorHandler(
+        oldError,
+        'transport',
+      );
+    }
+    */
+    /*
+
+    server.server.onerror = makeErrorHandler(oldError, 'server');
+    if (server.server.transport) {
+      server.server.transport.onerror = makeErrorHandler(
+        oldTransportError,
+        'transport',
+      );
+  }
+      */
   },
   {
+    /*
     capabilities: {
       resources: {},
     },
+    */
   },
   {
     redisUrl: process.env.REDIS_URL,
     basePath: '/api/ai/tools',
-    maxDuration: 300, // 5 minutes
+    maxDuration: 60 * 5 * 1000, // 15 minutes
     verboseLogs: true,
-    onEvent: (event) => {
-      log((l) => l.info('MCP Event:', event));
+    onEvent: (event, ...args: any[]) => {
+      log((l) => l.info('MCP Event:', event, ...args));
     },
   },
 );

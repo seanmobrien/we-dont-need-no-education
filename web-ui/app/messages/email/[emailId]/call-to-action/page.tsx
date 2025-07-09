@@ -3,6 +3,13 @@ import CtaGrid from './grid';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import { auth } from '@/auth';
 import { ChatPanel } from '@/components/ai/chat-panel';
+import { Metadata } from 'next';
+
+export const generateMetadata = async (): Promise<Metadata> => {
+  return {
+    title: 'Call to Action',
+  };
+};
 
 const Page = async () => {
   const session = await auth();

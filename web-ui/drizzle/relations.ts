@@ -228,9 +228,12 @@ export const chatHistoryRelations = relations(chatHistory, ({ one }) => ({
 }));
 
 // New chat history relations
-export const messageStatusesRelations = relations(messageStatuses, ({ many }) => ({
-  chatMessages: many(chatMessages),
-}));
+export const messageStatusesRelations = relations(
+  messageStatuses,
+  ({ many }) => ({
+    chatMessages: many(chatMessages),
+  }),
+);
 
 export const turnStatusesRelations = relations(turnStatuses, ({ many }) => ({
   chatTurns: many(chatTurns),
@@ -265,7 +268,7 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   }),
   turn: one(chatTurns, {
     fields: [chatMessages.turnId],
-    references: [chatTurns.id],
+    references: [chatTurns.turnId],
   }),
   status: one(messageStatuses, {
     fields: [chatMessages.statusId],
@@ -276,7 +279,7 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 export const tokenUsageRelations = relations(tokenUsage, ({ one }) => ({
   turn: one(chatTurns, {
     fields: [tokenUsage.turnId],
-    references: [chatTurns.id],
+    references: [chatTurns.turnId],
   }),
 }));
 
