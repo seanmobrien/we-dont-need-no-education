@@ -20,7 +20,6 @@ const contactCacheClass = jest.fn(() => {
 const contactCacheInstance = new contactCacheClass();
 
 const globalContactCache = (): ContactCache => {
-  console.log('in mocked contact cache accessor');
   return contactCacheInstance;
 };
 const contactCacheFactory = (): ContactCache => contactCacheInstance;

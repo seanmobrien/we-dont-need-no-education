@@ -17,6 +17,7 @@ export type ToolProviderFactoryOptions = {
   url: string;
   headers?: Record<string, string>;
   allowWrite?: boolean;
+  traceable?: boolean;
 };
 
 /**

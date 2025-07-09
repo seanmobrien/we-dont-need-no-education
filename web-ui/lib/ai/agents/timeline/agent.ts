@@ -380,6 +380,23 @@ export class ClientTimelineAgent extends AgentBase {
   }
 
   /**
+   * Assert that the given property ID is valid
+   * @param value The property ID to validate
+   */
+  protected assertPropertyId(value: string) {
+    if (!value) {
+      throw new Error('Property ID is required');
+    }
+    if (!this.#propertyId) {
+      this.#propertyId = value;
+    } else if (this.#propertyId !== value) {
+      throw new Error(
+        `Property ID mismatch: expected ${this.#propertyId}, got ${value}`,
+      );
+    }
+  }
+
+  /**
    * Restore agent from a JSON snapshot string
    */
   static fromSnapshot(snapshot: string): ClientTimelineAgent {

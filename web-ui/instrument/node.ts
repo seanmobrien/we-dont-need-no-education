@@ -59,7 +59,7 @@ export default function instrumentServer() {
     resource: new Resource({
       ...config.attributes,
     }),
-    spanProcessor: new BatchSpanProcessor(traceExporter),
+    spanProcessors: [new BatchSpanProcessor(traceExporter)],
     metricReader: new PeriodicExportingMetricReader({
       exporter: metricExporter,
     }),

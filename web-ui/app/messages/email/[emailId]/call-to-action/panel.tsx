@@ -376,6 +376,23 @@ const CallToActionPanelContent = ({ row }: { row: CallToActionDetails }) => {
                 </Stack>
               </Box>
             )}
+            {row.compliance_chapter_13_reasons?.length && (
+              <Box>
+                <Typography variant="subtitle1" fontWeight="bold">
+                  Chapt 13 Reasons
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  {row.compliance_chapter_13_reasons.map((reason, index) => (
+                    <Chip
+                      key={index}
+                      label={reason}
+                      variant="outlined"
+                      size="small"
+                    />
+                  ))}
+                </Stack>
+              </Box>
+            )}
           </Stack>
         </AccordionDetails>
       </Accordion>

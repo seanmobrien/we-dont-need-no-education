@@ -76,7 +76,6 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     lastUpdated: new Date().toISOString(),
   };
   #isInitialized = false;
-  #propertyId: string | null = null;
 
   constructor(props: TimelineAgentProps | SerializedTimelineAgent) {
     super(props);
@@ -98,13 +97,15 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     if (this.#isInitialized) return;
 
     const initialDocId = Array.from(this.#pendingDocuments)[0];
-    if (!initialDocId) {
+    if (!(this.propertyId ?? initialDocId)) {
       throw new Error('No initial document provided');
     }
 
     try {
       // Load initial document and extract case metadata
-      const initialDocument = await this.#loadDocument(initialDocId);
+      const initialDocument = await this.#loadDocument(
+        this.propertyId ?? initialDocId,
+      );
       const caseMetadata = await this.#extractCaseMetadata(initialDocument);
       if (
         !caseMetadata ||
@@ -118,7 +119,8 @@ class ServerTimelineAgent extends ClientTimelineAgent {
         ...this.#timelineState.globalMetadata,
         ...caseMetadata,
       };
-      this.#propertyId = caseMetadata.caseId;
+      // Set propertyId for future reference
+      this.assertPropertyId(caseMetadata.caseId);
       // Identify related documents
       const relatedDocuments = await this.#identifyRelatedDocuments({
         req,
@@ -275,11 +277,11 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   }): Promise<string[]> {
     const callToActionRecord = await db.query.documentProperty.findFirst({
       where: (property, { eq }) =>
-        eq(property.propertyId, this.#propertyId ?? ''),
+        eq(property.propertyId, this.propertyId ?? ''),
     });
     if (!callToActionRecord) {
       throw new Error(
-        `Failed to find call to action record for document ${this.#propertyId ?? 'null'}`,
+        `Failed to find call to action record for document ${this.propertyId ?? 'null'}`,
       );
     }
     const ctaText = callToActionRecord.propertyValue || '';
@@ -302,7 +304,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     number of documents still pending analysis.
     
     Target Call to Action:
-    Case File Id: ${this.#propertyId}
+    Case File Id: ${this.propertyId}
     Text: ${ctaText}
     Source Document and Metadata:
     ${document}

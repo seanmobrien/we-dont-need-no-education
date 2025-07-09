@@ -4,46 +4,54 @@
  */
 
 import { cacheManager } from '@/lib/ai/chat/message-optimizer-tools';
+import { log } from '@/lib/logger';
 
-// Mock console to track activity
-const originalLog = console.log;
-const logOutput: string[] = [];
-console.log = (...args) => {
-  logOutput.push(args.join(' '));
-  originalLog(...args);
-};
+// Mock the logger using Jest
+jest.mock('@/lib/logger', () => ({
+  log: jest.fn((callback) => {
+    const mockLogger = {
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+    };
+    if (callback) callback(mockLogger);
+    return mockLogger;
+  }),
+}));
+
+const mockLog = log as jest.MockedFunction<typeof log>;
 
 async function testCaching() {
-  console.log('🧪 Testing Tool Call Caching Implementation');
-  
+  mockLog((l) => l.info('🧪 Testing Tool Call Caching Implementation'));
+
   // Check initial cache state
   const initialStats = cacheManager.getStats();
-  console.log('Initial cache size:', initialStats.size);
-  
+  mockLog((l) => l.info('Initial cache size:', initialStats.size));
+
   // Test cache export/import
   const testData = {
-    'test_key_1': 'Test summary 1',
-    'test_key_2': 'Test summary 2'
+    test_key_1: 'Test summary 1',
+    test_key_2: 'Test summary 2',
   };
-  
+
   cacheManager.import(testData);
   const importedStats = cacheManager.getStats();
-  console.log('Cache size after import:', importedStats.size);
-  
+  mockLog((l) => l.info('Cache size after import:', importedStats.size));
+
   // Test cache export
   const exported = cacheManager.export();
-  console.log('Exported keys:', Object.keys(exported));
-  
+  mockLog((l) => l.info('Exported keys:', Object.keys(exported)));
+
   // Test cache clear
   cacheManager.clear();
   const clearedStats = cacheManager.getStats();
-  console.log('Cache size after clear:', clearedStats.size);
-  
-  console.log('✅ Caching infrastructure test completed');
-  console.log('💡 Next steps: Implement client/server protocol optimization');
-  
-  // Restore console
-  console.log = originalLog;
+  mockLog((l) => l.info('Cache size after clear:', clearedStats.size));
+
+  mockLog((l) => l.info('✅ Caching infrastructure test completed'));
+  mockLog((l) =>
+    l.info('💡 Next steps: Implement client/server protocol optimization'),
+  );
 }
 
 // Export for potential usage

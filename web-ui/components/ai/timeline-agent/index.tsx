@@ -400,43 +400,51 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           {state.error && <Alert severity="error">{state.error}</Alert>}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Save Agent State">
-              <IconButton
-                onClick={saveSnapshot}
-                disabled={!state.isInitialized || isPending}
-              >
-                <Save />
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={saveSnapshot}
+                  disabled={!state.isInitialized || isPending}
+                >
+                  <Save />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Load Agent State">
-              <IconButton
-                component="label"
-                disabled={state.isProcessing || isPending}
-              >
-                <input
-                  type="file"
-                  accept=".json"
-                  hidden
-                  onChange={handleFileInputChange}
-                  aria-label="Load agent state file"
-                />
-                <Upload />
-              </IconButton>
+              <span>
+                <IconButton
+                  component="label"
+                  disabled={state.isProcessing || isPending}
+                >
+                  <input
+                    type="file"
+                    accept=".json"
+                    hidden
+                    onChange={handleFileInputChange}
+                    aria-label="Load agent state file"
+                  />
+                  <Upload />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Refresh Summary">
-              <IconButton
-                onClick={refreshSummary}
-                disabled={!state.isInitialized || isPending}
-              >
-                <Refresh />
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={refreshSummary}
+                  disabled={!state.isInitialized || isPending}
+                >
+                  <Refresh />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Reset Agent">
-              <IconButton
-                onClick={resetAgent}
-                disabled={state.isProcessing || isPending}
-              >
-                <RestartAlt />
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={resetAgent}
+                  disabled={state.isProcessing || isPending}
+                >
+                  <RestartAlt />
+                </IconButton>
+              </span>
             </Tooltip>
           </Box>
         </Box>

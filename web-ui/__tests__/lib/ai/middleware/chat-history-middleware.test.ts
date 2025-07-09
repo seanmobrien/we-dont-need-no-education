@@ -179,8 +179,8 @@ describe('Chat History Middleware', () => {
             controller.enqueue({ type: 'text-delta', textDelta: 'Hello' });
             controller.close();
           },
-        }),
-      });
+        }) as any,
+      }) as any;
 
       const mockParams = {
         prompt: [{ role: 'user', content: 'Test' }],

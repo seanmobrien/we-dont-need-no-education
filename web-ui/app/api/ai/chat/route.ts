@@ -15,7 +15,6 @@ import { toolProviderSetFactory } from '@/lib/ai/mcp';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
 import {
   createChatHistoryMiddleware,
-  initializeChatHistoryTables,
   type ChatHistoryContext,
 } from '@/lib/ai/middleware';
 import { wrapLanguageModel } from 'ai';
@@ -87,6 +86,7 @@ export async function POST(req: NextRequest) {
           env('NEXT_PUBLIC_HOSTNAME'),
         ).toString(),
         headers: getMcpClientHeaders({ req, chatHistoryId }),
+        traceable: req.headers.get('x-traceable') !== 'false',
       },
       /*
       {
@@ -101,12 +101,13 @@ export async function POST(req: NextRequest) {
     ]);
 
     // Initialize chat history tables (only needs to be done once)
-    await initializeChatHistoryTables();
+    // await initializeChatHistoryTables();
 
     // Create chat history context
     const chatHistoryContext: ChatHistoryContext = {
       userId: session?.user?.id || 'anonymous',
       sessionId: chatHistoryId,
+      chatId: threadId,
       model,
       temperature: 0.7, // Default values, could be extracted from request
       topP: 1.0,
@@ -125,7 +126,7 @@ export async function POST(req: NextRequest) {
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
-          model: baseModel,
+          model: modelWithHistory,
           messages: optimizedMessages,
           experimental_generateMessageId: () => {
             return `${threadId ?? 'not-set'}:${generateChatId().id}`;

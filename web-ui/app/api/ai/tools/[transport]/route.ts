@@ -11,6 +11,8 @@ import {
   toolCallbackArrayResultSchemaFactory,
   CaseFileAmendmentShape,
   AmendmentResultShape,
+  toolCallbackResultFactory,
+  DocumentSchema,
 } from '@/lib/ai/tools';
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { caseFileRequestPropsShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
@@ -21,54 +23,78 @@ import { z } from 'zod';
 
 const handler = createMcpHandler(
   (server) => {
-    /*
-    const oldClose = server.server.onclose;
-    const oldInit = server.server.oninitialized;
-    const oldError = server.server.onerror;
-    const oldTransportError = server.server.transport?.onerror;
-
-    server.server.onclose = (...args: any[]) => {
-      log((l) => l.info('MCP Server closed', server, args));
-      return oldClose?.call(server.server);
-    };
-    server.server.oninitialized = (...args: any[]) => {
-      debugger;
-      log((l) => l.info('MCP Server initialized', server, args));
-      return oldInit?.call(server.server);
-    };
-    server.server.onerror = (error, ...args: any[]) => {
-      debugger;
-      log((l) => l.info('MCP Server error', server, args));
-      let ret = oldError?.call(server.server, error);
-      if (ret) {
-        log((l) => l.info('MCP Server error handled', server, args));
-        return ret;
-      }
-      return {
-        role: 'assistant',
-        content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
-      };
-    };
-    */
-    /*
-    if (server.server.transport) {
-      server.server.transport.onerror = (error) => {
-        debugger;
-        log((l) => l.info('MCP Server transport error', server, error));
-        let ret = oldTransportError?.call(server.server.transport, error);
-        if (ret) {
-          log((l) =>
-            l.info('MCP Server transport error handled', server, error),
-          );
-          return ret;
+    server.registerTool(
+      'playPingPong',
+      {
+        description:
+          "You say ping, I say pong, we go back and forth until someone misses the ball and scores a point.  Repeat that like 15 times and you've finished a match.  When a user prompt includes a ping, call this tool with your planned response.  " +
+          "The tool will analyize the user's ping, your pong, and round history to determin if the user missed (eg you scored a point), you missed (eg the user scored a point), or a successful return (eg no-one scored, user must respond or you score a point).  " +
+          'IMPORTANT if the user sends a ping and you do not respond send it to this tool with a pong, the user automatically gets a point.',
+        inputSchema: {
+          userPing: z
+            .string()
+            .describe(
+              'The exact verbiage the user used to initiate the round - could be ping or pong of course, but more casual terms like "nudge" "buzz", "tap", or even "echo drop" are good as well.',
+            ),
+          assistantPong: z
+            .string()
+            .describe(
+              'The exact verbiage you are using to respond to the ping.  It should be close to the vector of the ping (so you hit), but creative and surprising enough to put some spin on the ball so you can score.',
+            ),
+          roundHistory: z
+            .array(z.array(z.string()))
+            .describe(
+              'An array of arrays containingt the pings and pongs that make up the current round.  This is used to keep track of the game state and assign outcome multipliers - for example, the same term used multiple times is more likely to result in a bonus multiplier when hit back, as the player is familiar with that shot.',
+            ),
+        },
+        outputSchema: toolCallbackResultSchemaFactory(
+          z.object({
+            result: z
+              .number()
+              .describe(
+                'The outcome of the exchange; if below zero the user missed and you scored a point, if above zero you missed and the user scored a point, when zero both you and the user hit and youmove on to the next exchange',
+              ),
+          }),
+        ),
+        annotations: {
+          title: 'Ping and Pong',
+          readOnlyHint: true,
+          destructiveHint: false,
+          idempotentHint: true,
+          openWorldHint: false,
+        },
+      },
+      ({
+        userPing,
+        assistantPong,
+        roundHistory,
+      }: {
+        userPing: string;
+        assistantPong: string;
+        roundHistory: string[][];
+      }) => {
+        log((l) =>
+          l.info(
+            'Ping Pong Tool called with userPing:' +
+              userPing +
+              ', assistantPong:' +
+              assistantPong +
+              ', roundHistory:' +
+              JSON.stringify(roundHistory),
+          ),
+        );
+        const rand = Math.random();
+        let result: number;
+        if (rand < 0.4) {
+          result = 0;
+        } else if (rand < 0.65) {
+          result = -1;
+        } else {
+          result = 1;
         }
-        return {
-          role: 'assistant',
-          content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
-        };
-      };
-    }
-    */
+        return toolCallbackResultFactory({ result });
+      },
+    );
     server.registerTool(
       'searchPolicyStore',
       {
@@ -119,7 +145,6 @@ const handler = createMcpHandler(
       },
       searchCaseFile,
     );
-    /*
     server.registerTool(
       'getCaseFileDocument',
       {
@@ -129,10 +154,10 @@ const handler = createMcpHandler(
           'analysis of the case file contents.  IMPORTANT: case files are large and require a lot of context space, so pre-processing via goals is recommended.',
         inputSchema: {
           ...caseFileRequestPropsShape.shape,
-        },        
+        },
         outputSchema: toolCallbackResultSchemaFactory(
           z.string().or(DocumentSchema),
-        ),        
+        ),
         annotations: {
           title: 'Get Full Case File',
           readOnlyHint: true,
@@ -143,7 +168,7 @@ const handler = createMcpHandler(
       },
       getCaseFileDocument,
     );
-    */
+
     server.registerTool(
       'getMultipleCaseFileDocuments',
       {
@@ -172,11 +197,9 @@ const handler = createMcpHandler(
               'Controls how closely output should match source text. 100 = exact quotes with full context;  75 = exact excerpts with minimal context; 50 = summarized excerpts with some context; 1 = full summary, exact quotes not needed.  Set here to provide a default for all requests.',
             ),
         },
-        /*S
         outputSchema: toolCallbackArrayResultSchemaFactory(
           z.string().or(DocumentSchema),
         ),
-        */
         annotations: {
           title: 'Get Multiple Case Files',
           readOnlyHint: true,
@@ -285,80 +308,105 @@ const handler = createMcpHandler(
       },
       amendCaseRecord,
     );
+
+    const oldClose = server.server.onclose;
+    const oldInit = server.server.oninitialized;
+    const oldError = server.server.onerror;
+    const oldTransportError = server.server.transport?.onerror;
     /*
-    if ('use' in server.server && typeof server.server.use === 'function') {
-      // Register a middleware to log all requests
-      server.server.use(async (context: any, next: () => Promise<void>) => {
-        try {
-          await next();
-        } catch (error) {
-          debugger;
-          LoggedError.isTurtlesAllTheWayDownBaby(error, {
-            log: true,
-            source: 'mcp:tools',
-            severity: 'error',
-            data: {
-              request: context.request,
-              metadata: context.metadata,
-            },
-          });
-          // Optionally add an assistant message for debugging
-          context.addMessage({
-            role: 'assistant',
-            content: '⚠️ Tool failed, but I can continue.',
-          });
-          // Mark tool as "failed" in metadata so you can skip downstream
-          context.metadata.failed_tool = true;
-        }
-      });
-    } else if (
-      server.server.transport &&
-      'use' in server.server.transport &&
-      typeof server.server.transport.use === 'function'
-    ) {
-      server.server.transport.use(
-        async (req: any, res: any, next: () => Promise<void>) => {
+
+    const makeErrorHandler = (
+      oldHandler: (error: unknown, ...args: any[]) => void | undefined,
+      dscr: string,
+    ) => {
+      return (error: unknown, ...args: any[]) => {
+        const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'mcp:tools',
+          severity: 'error',
+          data: {
+            details: `MCP ${dscr}::onerror handler fired`,
+            server,
+            args,
+          },
+        });
+        let ret: unknown = oldHandler?.(server.server, le, ...args);
+        if (ret) {
           log((l) =>
-            l.info(
-              `MCP Transport Request: ${req.method} ${req.url} - Headers: ${JSON.stringify(
-                req.headers,
-              )}`,
-            ),
+            l.debug('Error was handled by existing subscriber', server, args),
           );
-          try {
-            await next();
-          } catch (error) {
-            LoggedError.isTurtlesAllTheWayDownBaby(error, {
-              log: true,
-              source: 'mcp:tools',
-              severity: 'error',
-              data: {},
-            });
-          }
-        },
-      );
-    } else {
+        } else {
+          log((l) =>
+            l.error('supressing MCP Server error', server, error, args),
+          );
+          ret = {
+            role: 'assistant',
+            content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
+          };
+        }
+        return ret;
+      };
+    };
+
+    server.server.onclose = (...args: any[]) => {
       log((l) =>
-        l.warn('MCP Server does not support middleware or transport use'),
+        l.info({
+          message: 'MCP Server closed',
+          data: {
+            server,
+            args,
+          },
+        }),
+      );
+      return oldClose?.call(...args);
+    };
+    server.server.oninitialized = (...args: any[]) => {
+      log((l) =>
+        l.info({
+          message: 'MCP Server initialized',
+          data: {
+            server,
+            args,
+          },
+        }),
+      );
+      return oldInit?.call(...args);
+    };
+    server.server.onerror = makeErrorHandler(oldError, 'server');
+    if (server.server.transport) {
+      server.server.transport.onerror = makeErrorHandler(
+        oldError,
+        'transport',
       );
     }
     */
+    /*
+
+    server.server.onerror = makeErrorHandler(oldError, 'server');
+    if (server.server.transport) {
+      server.server.transport.onerror = makeErrorHandler(
+        oldTransportError,
+        'transport',
+      );
+  }
+      */
   },
   {
+    /*
     capabilities: {
       resources: {},
     },
+    */
   },
   {
     redisUrl: process.env.REDIS_URL,
     basePath: '/api/ai/tools',
     maxDuration: 60 * 5 * 1000, // 15 minutes
     verboseLogs: true,
-    /*
     onEvent: (event, ...args: any[]) => {
-       log((l) => l.info('MCP Event:', event, ...args));
+      log((l) => l.info('MCP Event:', event, ...args));
     },
-    */
   },
 );
+
 export { handler as GET, handler as POST };

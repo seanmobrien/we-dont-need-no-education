@@ -42,17 +42,62 @@ const sql = (() => {
 
 // Singleton pattern to prevent multiple prexit handler registrations during hot reloads
 let prexitHandlerRegistered = false;
+let cleanupHandler: (() => void) | null = null;
+
+// Store handlers globally to manage them across hot reloads
+const globalHandlers = globalThis as typeof globalThis & {
+  __neondb_prexit_handlers?: Set<() => Promise<void>>;
+};
+
+// Initialize global handlers set if it doesn't exist
+if (!globalHandlers.__neondb_prexit_handlers) {
+  globalHandlers.__neondb_prexit_handlers = new Set();
+}
+
+// Clean up previous handler if module is being reloaded (webpack HMR)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof module !== 'undefined' && (module as any).hot) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (module as any).hot.dispose(() => {
+    if (cleanupHandler) {
+      cleanupHandler();
+      cleanupHandler = null;
+    }
+    prexitHandlerRegistered = false;
+  });
+}
+
+// Alternative cleanup for environments without HMR
+// Check if we already have a handler registered globally
+const existingHandlers = globalHandlers.__neondb_prexit_handlers;
+if (existingHandlers.size > 0) {
+  // Clear existing handlers to prevent duplicates
+  existingHandlers.clear();
+  prexitHandlerRegistered = false;
+}
 
 if (process.env.NEXT_RUNTIME === 'nodejs' && !prexitHandlerRegistered) {
   prexitHandlerRegistered = true;
   await import('prexit')
     .then((x) => x.default)
     .then((prexit) => {
-      prexit(async () => {
+      const exitHandler = async () => {
         console.log('Closing database connection.');
         await (sql?.end({ timeout: 5 }) ?? Promise.resolve());
         console.log('Cleanly closed database connection.');
-      });
+      };
+
+      // Register the exit handler
+      prexit(exitHandler);
+
+      // Store the handler globally for cleanup tracking
+      globalHandlers.__neondb_prexit_handlers!.add(exitHandler);
+
+      // Store cleanup function to remove the handler
+      cleanupHandler = () => {
+        globalHandlers.__neondb_prexit_handlers!.delete(exitHandler);
+        console.log('Cleaning up prexit handler.');
+      };
     });
 }
 

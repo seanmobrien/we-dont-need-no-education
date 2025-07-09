@@ -17,7 +17,8 @@ import type {
 import { experimental_createMCPClient as createMCPClient } from 'ai';
 import { ToolSet } from 'ai';
 import { getResolvedPromises, isError, LoggedError } from '@/lib/react-util';
-import { InstrumentedSseTransport } from './traceable-transport';
+import { InstrumentedSseTransport } from './traceable-transport-client';
+import { FirstParameter } from '@/lib/typescript';
 
 /**
  * Creates a single Model Context Protocol (MCP) client connection.
@@ -68,12 +69,13 @@ import { InstrumentedSseTransport } from './traceable-transport';
  *
  * @since 1.0.0
  */
-export const toolProviderFactory = async (
-  options: ToolProviderFactoryOptions,
-): Promise<ConnectableToolProvider> => {
+export const toolProviderFactory = async ({
+  traceable = true,
+  ...options
+}: ToolProviderFactoryOptions): Promise<ConnectableToolProvider> => {
   try {
-    // Create instrumented SSE transport with comprehensive error handling
-    const transport = new InstrumentedSseTransport(new URL(options.url), {
+    type MCPClientConfig = FirstParameter<typeof createMCPClient>;
+    const tx: MCPClientConfig['transport'] = {
       type: 'sse',
       url: options.url,
       headers: options.headers,
@@ -84,6 +86,7 @@ export const toolProviderFactory = async (
        */
       onerror: (error: unknown) => {
         log((l) => l.error('MCP Client SSE Error:', error));
+
         return {
           role: 'assistant',
           content: `An error occurred while connecting to the MCP server: ${isError(error) ? error.message : String(error)}. Please try again later.`,
@@ -111,7 +114,10 @@ export const toolProviderFactory = async (
           log((l) => l.error('MCP Client SSE Message Error:', e));
         }
       },
-    });
+    };
+
+    // Create instrumented SSE transport with comprehensive error handling
+    const transport = traceable ? new InstrumentedSseTransport(tx) : tx;
 
     // Create MCP client with transport and error handling
     let mcpClient = await createMCPClient({
