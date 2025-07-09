@@ -12,10 +12,12 @@ export const ChatMenu = ({
   onResetSession,
   activeModel,
   setActiveModel,
+  onFloat,
 }: {
   onResetSession?: () => void;
   activeModel: string;
   setActiveModel: Dispatch<SetStateAction<string>>;
+  onFloat?: () => void;
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -42,6 +44,11 @@ export const ChatMenu = ({
     onResetSession?.();
   }, [handleClose, onResetSession]);
 
+  const onFloatClick = useCallback(() => {
+    handleClose();
+    onFloat?.();
+  }, [handleClose, onFloat]);
+
   return (
     <>
       <IconButton edge="end" onClick={onMenuClick} id="chat-menu-button">
@@ -59,6 +66,7 @@ export const ChatMenu = ({
         }}
       >
         <MenuItem onClick={onResetSessionClick}>Reset chat session</MenuItem>
+        <MenuItem onClick={onFloatClick}>Float</MenuItem>
         <Divider />
         <ListSubheader>{`Active Model: ${activeModelDisplayName}`}</ListSubheader>
         {availableModels.map((model) => (

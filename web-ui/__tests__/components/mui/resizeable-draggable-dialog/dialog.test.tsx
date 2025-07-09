@@ -47,7 +47,6 @@ jest.mock(
 describe('ResizableDraggableDialog', () => {
   const defaultProps: ResizeableDraggableDialogProps = {
     isOpenState: [true, jest.fn()],
-    open: true,
     title: 'Test Dialog',
     children: <div>Dialog Content</div>,
   };

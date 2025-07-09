@@ -22,6 +22,7 @@ import { enhancedChatFetch } from '@/lib/components/ai/chat-fetch-wrapper';
 import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
+import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
 
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
@@ -113,6 +114,7 @@ const ChatPanel = ({ page }: { page: string }) => {
   const [rateLimitTimeout, setRateLimitTimeout] = useState<
     Map<AiModelType, Date>
   >(new Map<AiModelType, Date>());
+  const [isFloating, setIsFloating] = useState(false);
 
   if (!initialMessages) {
     const messages = loadCurrentMessageState();
@@ -265,6 +267,7 @@ const ChatPanel = ({ page }: { page: string }) => {
               <ChatMenu
                 activeModel={activeModel}
                 setActiveModel={setActiveModel}
+                onFloat={onFloat}
                 onResetSession={() => {
                   sessionStorage.removeItem('chatActiveId');
                   setThreadId(generateChatId().id);
@@ -278,6 +281,14 @@ const ChatPanel = ({ page }: { page: string }) => {
       },
     };
   }, [onSendClick, activeModel, setMessages]);
+
+  const onFloat = useCallback(() => {
+    setIsFloating(true);
+  }, []);
+
+  const onCloseFloat = useCallback(() => {
+    setIsFloating(false);
+  }, []);
 
   useEffect(() => {
     const timeoutIds: Array<NodeJS.Timeout | number> = [];
@@ -313,27 +324,55 @@ const ChatPanel = ({ page }: { page: string }) => {
       return () => timeoutIds.forEach(clearTimeout);
     }
   }, [rateLimitTimeout, reload, data, setData]);
+
+  // Create chat content component
+  const chatContent = (
+    <Stack className="w-full" spacing={2} sx={stable_sx.stack}>
+      <TextField
+        multiline
+        rows={5}
+        className="w-full"
+        variant="outlined"
+        placeholder="Type your message here..."
+        value={input}
+        onChange={handleInputChange}
+        onKeyDown={handleInputKeyDown}
+        sx={stable_sx.chatInput}
+        slotProps={stableChatInputSlotProps}
+      />
+      <ChatWindow
+        messages={messages}
+        loading={status === 'submitted'}
+        errorMessage={errorMessage}
+      />
+    </Stack>
+  );
+
+  if (isFloating) {
+    return (
+      <>
+        {/* Placeholder for inline position */}
+        <Box sx={{ padding: 2, textAlign: 'center', color: 'text.secondary' }}>
+          Chat panel is floating
+        </Box>
+        {/* Floating dialog */}
+        <ResizableDraggableDialog
+          isOpenState={[isFloating, setIsFloating]}
+          title={`Chat - ${page}`}
+          modal={false}
+          initialWidth={600}
+          initialHeight={500}
+          onClose={onCloseFloat}
+        >
+          {chatContent}
+        </ResizableDraggableDialog>
+      </>
+    );
+  }
+
   return (
     <Box id={`chat-panel-${threadId}`} sx={stable_sx.container}>
-      <Stack className="w-full" spacing={2} sx={stable_sx.stack}>
-        <TextField
-          multiline
-          rows={5}
-          className="w-full"
-          variant="outlined"
-          placeholder="Type your message here..."
-          value={input}
-          onChange={handleInputChange}
-          onKeyDown={handleInputKeyDown}
-          sx={stable_sx.chatInput}
-          slotProps={stableChatInputSlotProps}
-        />
-        <ChatWindow
-          messages={messages}
-          loading={status === 'submitted'}
-          errorMessage={errorMessage}
-        />
-      </Stack>
+      {chatContent}
     </Box>
   );
 };

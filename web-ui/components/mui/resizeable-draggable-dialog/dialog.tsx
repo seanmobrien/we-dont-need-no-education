@@ -17,6 +17,11 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { PaperProps } from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
 import { useCallback, useId, useState, useRef, useMemo } from 'react';
+import { IconButton } from '@mui/material';
+import MinimizeIcon from '@mui/icons-material/Minimize';
+import MaximizeIcon from '@mui/icons-material/CropSquare';
+import RestoreIcon from '@mui/icons-material/FilterNone';
+import CloseIcon from '@mui/icons-material/Close';
 import ResizeableDraggablePaper from './resizeable-draggable-paper';
 import { ResizeableDraggableDialogProps } from './types';
 
@@ -43,6 +48,7 @@ const DraggableHandle = styled('div')`
   min-height: 24px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 
   &:focus {
     outline: 2px solid ${({ theme }) => theme.palette.primary.main};
@@ -54,6 +60,15 @@ const DraggableHandle = styled('div')`
     outline: 2px solid ${({ theme }) => theme.palette.primary.main};
     outline-offset: 2px;
   }
+`;
+
+/**
+ * Container for window control buttons (minimize, maximize, close)
+ */
+const WindowControls = styled('div')`
+  display: flex;
+  align-items: center;
+  gap: 4px;
 `;
 
 /**
@@ -138,6 +153,11 @@ const ResizableDraggableDialog = ({
   });
   const dragHandleRef = useRef<HTMLDivElement>(null);
 
+  // State for maximize/minimize functionality
+  const [isMaximized, setIsMaximized] = useState(false);
+  const [isMinimized, setIsMinimized] = useState(false);
+  const [previousSize, setPreviousSize] = useState({ width: initialWidth, height: initialHeight });
+
   /**
    * Type definition for the handleClose function overloads.
    * Supports both simple close events and close events with reasons.
@@ -195,6 +215,41 @@ const ResizableDraggableDialog = ({
   );
 
   /**
+   * Handle minimize button click
+   */
+  const handleMinimize = useCallback(() => {
+    setIsMinimized(true);
+    setIsMaximized(false);
+  }, []);
+
+  /**
+   * Handle maximize button click
+   */
+  const handleMaximize = useCallback(() => {
+    if (isMaximized) {
+      // Restore to previous size
+      setIsMaximized(false);
+      setIsMinimized(false);
+    } else {
+      // Store current size before maximizing
+      const dialogElement = dragHandleRef.current?.closest('[role="dialog"]') as HTMLElement;
+      if (dialogElement) {
+        const rect = dialogElement.getBoundingClientRect();
+        setPreviousSize({ width: rect.width, height: rect.height });
+      }
+      setIsMaximized(true);
+      setIsMinimized(false);
+    }
+  }, [isMaximized]);
+
+  /**
+   * Handle close button click
+   */
+  const handleCloseClick = useCallback((evt: React.MouseEvent<HTMLButtonElement>) => {
+    handleClose(evt as any);
+  }, [handleClose]);
+
+  /**
    * Memoized render function for the resizable draggable paper component.
    *
    * This component serves as the custom Paper component for the Material-UI Dialog,
@@ -206,12 +261,25 @@ const ResizableDraggableDialog = ({
    */
   const RenderResizeableDraggablePaper = useCallback(
     (muiPaperProps: PaperProps) => {
+      let dialogHeight = initialHeight;
+      let dialogWidth = initialWidth;
+      
+      if (isMaximized) {
+        // Use viewport dimensions for maximized state
+        dialogHeight = window.innerHeight - 100; // Leave some margin
+        dialogWidth = window.innerWidth - 100;
+      } else if (isMinimized) {
+        // Use minimal size for minimized state
+        dialogHeight = 40; // Just show title bar
+        dialogWidth = 300;
+      }
+      
       return (
         <ResizeableDraggablePaper
           {...(paperProps ?? {})}
           {...muiPaperProps}
-          height={initialHeight}
-          width={initialWidth}
+          height={dialogHeight}
+          width={dialogWidth}
           setRefineSizeProps={setRefineSizeProps}
           dialogId={dialogDraggableHandleId}
         />
@@ -223,6 +291,8 @@ const ResizableDraggableDialog = ({
       initialWidth,
       setRefineSizeProps,
       dialogDraggableHandleId,
+      isMaximized,
+      isMinimized,
     ],
   );
 
@@ -396,12 +466,41 @@ const ResizableDraggableDialog = ({
           onKeyDown={handleKeyboardDrag}
           onFocus={handleDragHandleFocus}
         >
-          &nbsp;
-          {/* Spacer to allow dragging -> Maximize/Minimize/Close buttons can go here */}
+          <div style={{ flex: 1 }}>&nbsp;</div>
+          <WindowControls>
+            <IconButton 
+              size="small" 
+              onClick={handleMinimize}
+              aria-label="Minimize dialog"
+              sx={{ padding: '2px' }}
+            >
+              <MinimizeIcon fontSize="small" />
+            </IconButton>
+            <IconButton 
+              size="small" 
+              onClick={handleMaximize}
+              aria-label={isMaximized ? "Restore dialog" : "Maximize dialog"}
+              sx={{ padding: '2px' }}
+            >
+              {isMaximized ? <RestoreIcon fontSize="small" /> : <MaximizeIcon fontSize="small" />}
+            </IconButton>
+            <IconButton 
+              size="small" 
+              onClick={handleCloseClick}
+              aria-label="Close dialog"
+              sx={{ padding: '2px' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </WindowControls>
         </DraggableHandle>
         <DialogTitle id={dialogTitleId}>{title}</DialogTitle>
-        <DialogContent>{children}</DialogContent>
-        {dialogActions && dialogActions({})}
+        {!isMinimized && (
+          <>
+            <DialogContent>{children}</DialogContent>
+            {dialogActions && dialogActions({})}
+          </>
+        )}
       </Dialog>
     </React.Fragment>
   );
