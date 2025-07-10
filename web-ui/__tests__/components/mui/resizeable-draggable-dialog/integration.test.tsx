@@ -135,8 +135,10 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       expect(screen.getByTestId('dialog-content')).toBeInTheDocument();
       expect(screen.getByTestId('test-input')).toBeInTheDocument();
 
-      // Check for drag handle
-      const dragHandle = screen.getByRole('button');
+      // Check for drag handle - use a more specific selector
+      const dragHandle = screen.getByRole('button', {
+        name: /drag to move dialog/i
+      });
       expect(dragHandle).toHaveAttribute(
         'aria-label',
         expect.stringContaining('Drag to move dialog'),
@@ -214,7 +216,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const dragHandle = screen.getByRole('button');
+      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
       const dialog = screen.getByRole('dialog');
 
       // Mock the closest method to return the dialog element
@@ -251,7 +253,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const dragHandle = screen.getByRole('button');
+      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
       const dialog = screen.getByRole('dialog');
 
       jest.spyOn(dragHandle, 'closest').mockReturnValue(dialog);
@@ -279,7 +281,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const dragHandle = screen.getByRole('button');
+      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
 
       act(() => {
         fireEvent.focus(dragHandle);
@@ -350,7 +352,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const dragHandle = screen.getByRole('button');
+      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
       const dialog = screen.getByRole('dialog');
 
       jest.spyOn(dragHandle, 'closest').mockReturnValue(dialog);
@@ -393,7 +395,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const dragHandle = screen.getByRole('button');
+      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
 
       // Mock closest to return null (simulating missing dialog)
       jest.spyOn(dragHandle, 'closest').mockReturnValue(null);
@@ -439,7 +441,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       });
 
       const dialog = screen.getByRole('dialog');
-      const dragHandle = screen.getByRole('button');
+      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
 
       // Check ARIA labeling
       expect(dialog).toHaveAttribute('aria-labelledby');
@@ -454,7 +456,9 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const dragHandle = screen.getByRole('button');
+      const dragHandle = screen.getByRole('button', {
+        name: /drag to move dialog/i
+      });
       const testInput = screen.getByTestId('test-input');
 
       // Focus drag handle
@@ -525,12 +529,16 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      // Trigger close via escape
+      // Trigger close via close button
+      const closeButton = screen.getByRole('button', { name: /close dialog/i });
       act(() => {
-        fireEvent.keyDown(document, { key: 'Escape' });
+        fireEvent.click(closeButton);
       });
 
-      expect(mockOnClose).toHaveBeenCalled();
+      // Give it time to process and check if mockOnClose was called
+      await waitFor(() => {
+        expect(mockOnClose).toHaveBeenCalled();
+      });
     });
   });
 

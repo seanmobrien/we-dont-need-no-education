@@ -47,7 +47,6 @@ jest.mock(
 describe('ResizableDraggableDialog', () => {
   const defaultProps: ResizeableDraggableDialogProps = {
     isOpenState: [true, jest.fn()],
-    open: true,
     title: 'Test Dialog',
     children: <div>Dialog Content</div>,
   };
@@ -91,7 +90,7 @@ describe('ResizableDraggableDialog', () => {
     it('renders drag handle with accessibility attributes', () => {
       renderDialog();
 
-      const handle = screen.getByRole('button');
+      const handle = screen.getByLabelText(/Drag to move dialog/);
       expect(handle).toHaveAttribute('tabIndex', '0');
       expect(handle).toHaveAttribute('aria-label');
 

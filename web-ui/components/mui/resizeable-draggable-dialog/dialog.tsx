@@ -17,8 +17,22 @@ import DialogTitle from '@mui/material/DialogTitle';
 import { PaperProps } from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
 import { useCallback, useId, useState, useRef, useMemo } from 'react';
+import { IconButton } from '@mui/material';
+import MinimizeIcon from '@mui/icons-material/Minimize';
+import MaximizeIcon from '@mui/icons-material/CropSquare';
+import RestoreIcon from '@mui/icons-material/FilterNone';
+import CloseIcon from '@mui/icons-material/Close';
 import ResizeableDraggablePaper from './resizeable-draggable-paper';
 import { ResizeableDraggableDialogProps } from './types';
+
+/**
+ * Enum for dialog window state
+ */
+enum WindowState {
+  Normal = 'normal',
+  Minimized = 'minimized',
+  Maximized = 'maximized',
+}
 
 /**
  * Styled component for the draggable handle area at the top of the dialog.
@@ -43,6 +57,7 @@ const DraggableHandle = styled('div')`
   min-height: 24px;
   display: flex;
   align-items: center;
+  justify-content: space-between;
 
   &:focus {
     outline: 2px solid ${({ theme }) => theme.palette.primary.main};
@@ -54,6 +69,15 @@ const DraggableHandle = styled('div')`
     outline: 2px solid ${({ theme }) => theme.palette.primary.main};
     outline-offset: 2px;
   }
+`;
+
+/**
+ * Container for window control buttons (minimize, maximize, close)
+ */
+const WindowControls = styled('div')`
+  display: flex;
+  align-items: center;
+  gap: 4px;
 `;
 
 /**
@@ -119,6 +143,7 @@ const ResizableDraggableDialog = ({
   dialogActions,
   setRefineSizeProps,
   onClose,
+  onResize,
   minConstraints = [300, 200],
   maxConstraints = [800, 600],
 }: ResizeableDraggableDialogProps) => {
@@ -137,6 +162,9 @@ const ResizableDraggableDialog = ({
     y: 0,
   });
   const dragHandleRef = useRef<HTMLDivElement>(null);
+
+  // State for window functionality
+  const [windowState, setWindowState] = useState<WindowState>(WindowState.Normal);
 
   /**
    * Type definition for the handleClose function overloads.
@@ -195,6 +223,32 @@ const ResizableDraggableDialog = ({
   );
 
   /**
+   * Handle minimize button click
+   */
+  const handleMinimize = useCallback(() => {
+    setWindowState(WindowState.Minimized);
+  }, []);
+
+  /**
+   * Handle maximize button click
+   */
+  const handleMaximize = useCallback(() => {
+    if (windowState === WindowState.Maximized) {
+      // Restore to normal state
+      setWindowState(WindowState.Normal);
+    } else {
+      setWindowState(WindowState.Maximized);
+    }
+  }, [windowState]);
+
+  /**
+   * Handle close button click
+   */
+  const handleCloseClick = useCallback((evt: React.MouseEvent<HTMLButtonElement>) => {
+    handleClose(evt as React.MouseEvent<HTMLAnchorElement>);
+  }, [handleClose]);
+
+  /**
    * Memoized render function for the resizable draggable paper component.
    *
    * This component serves as the custom Paper component for the Material-UI Dialog,
@@ -206,14 +260,28 @@ const ResizableDraggableDialog = ({
    */
   const RenderResizeableDraggablePaper = useCallback(
     (muiPaperProps: PaperProps) => {
+      let dialogHeight = initialHeight;
+      let dialogWidth = initialWidth;
+      
+      if (windowState === WindowState.Maximized) {
+        // Use viewport dimensions for maximized state
+        dialogHeight = window.innerHeight - 100; // Leave some margin
+        dialogWidth = window.innerWidth - 100;
+      } else if (windowState === WindowState.Minimized) {
+        // Use minimal size for minimized state
+        dialogHeight = 40; // Just show title bar
+        dialogWidth = 300;
+      }
+      
       return (
         <ResizeableDraggablePaper
           {...(paperProps ?? {})}
           {...muiPaperProps}
-          height={initialHeight}
-          width={initialWidth}
+          height={dialogHeight}
+          width={dialogWidth}
           setRefineSizeProps={setRefineSizeProps}
           dialogId={dialogDraggableHandleId}
+          onResize={onResize}
         />
       );
     },
@@ -223,6 +291,8 @@ const ResizableDraggableDialog = ({
       initialWidth,
       setRefineSizeProps,
       dialogDraggableHandleId,
+      windowState,
+      onResize,
     ],
   );
 
@@ -375,8 +445,6 @@ const ResizableDraggableDialog = ({
     }
   }, [initialHeight, initialWidth, minConstraints, maxConstraints]);
 
-  const Component = dialogActions;
-
   return (
     <React.Fragment>
       <Dialog
@@ -396,12 +464,41 @@ const ResizableDraggableDialog = ({
           onKeyDown={handleKeyboardDrag}
           onFocus={handleDragHandleFocus}
         >
-          &nbsp;
-          {/* Spacer to allow dragging -> Maximize/Minimize/Close buttons can go here */}
+          <div style={{ flex: 1 }}>&nbsp;</div>
+          <WindowControls>
+            <IconButton 
+              size="small" 
+              onClick={handleMinimize}
+              aria-label="Minimize dialog"
+              sx={{ padding: '2px' }}
+            >
+              <MinimizeIcon fontSize="small" />
+            </IconButton>
+            <IconButton 
+              size="small" 
+              onClick={handleMaximize}
+              aria-label={windowState === WindowState.Maximized ? "Restore dialog" : "Maximize dialog"}
+              sx={{ padding: '2px' }}
+            >
+              {windowState === WindowState.Maximized ? <RestoreIcon fontSize="small" /> : <MaximizeIcon fontSize="small" />}
+            </IconButton>
+            <IconButton 
+              size="small" 
+              onClick={handleCloseClick}
+              aria-label="Close dialog"
+              sx={{ padding: '2px' }}
+            >
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </WindowControls>
         </DraggableHandle>
         <DialogTitle id={dialogTitleId}>{title}</DialogTitle>
-        <DialogContent>{children}</DialogContent>
-        {dialogActions && dialogActions({})}
+        {windowState !== WindowState.Minimized && (
+          <>
+            <DialogContent>{children}</DialogContent>
+            {dialogActions && dialogActions({})}
+          </>
+        )}
       </Dialog>
     </React.Fragment>
   );
