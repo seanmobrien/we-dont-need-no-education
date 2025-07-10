@@ -27,6 +27,7 @@ import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dial
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
 const activeThreadStorageKey = 'chatActiveId';
+const chatDialogSizeStorageKey = 'chatDialogSize';
 
 const getInitialThreadId = (): string => {
   if (typeof sessionStorage !== 'undefined') {
@@ -51,6 +52,27 @@ const loadCurrentMessageState = (): Message[] | undefined => {
     return undefined;
   }
   return JSON.parse(messages) as Array<Message> | undefined;
+};
+
+const getStoredDialogSize = (): { width: number; height: number } => {
+  if (typeof localStorage === 'undefined') {
+    return { width: 600, height: 500 };
+  }
+  const stored = localStorage.getItem(chatDialogSizeStorageKey);
+  if (!stored) {
+    return { width: 600, height: 500 };
+  }
+  try {
+    return JSON.parse(stored) as { width: number; height: number };
+  } catch {
+    return { width: 600, height: 500 };
+  }
+};
+
+const saveDialogSize = (width: number, height: number): void => {
+  if (typeof localStorage !== 'undefined') {
+    localStorage.setItem(chatDialogSizeStorageKey, JSON.stringify({ width, height }));
+  }
 };
 
 const stable_onFinish = (message: Message) => {
@@ -115,6 +137,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     Map<AiModelType, Date>
   >(new Map<AiModelType, Date>());
   const [isFloating, setIsFloating] = useState(false);
+  const [dialogSize, setDialogSize] = useState(() => getStoredDialogSize());
 
   if (!initialMessages) {
     const messages = loadCurrentMessageState();
@@ -258,6 +281,11 @@ const ChatPanel = ({ page }: { page: string }) => {
     setIsFloating(false);
   }, []);
 
+  const onDialogResize = useCallback((width: number, height: number) => {
+    setDialogSize({ width, height });
+    saveDialogSize(width, height);
+  }, []);
+
   const stableChatInputSlotProps = React.useMemo(() => {
     return {
       input: {
@@ -289,7 +317,7 @@ const ChatPanel = ({ page }: { page: string }) => {
         ),
       },
     };
-  }, [onSendClick, activeModel, setMessages]);
+  }, [onSendClick, activeModel, setMessages, onFloat]);
 
   useEffect(() => {
     const timeoutIds: Array<NodeJS.Timeout | number> = [];
@@ -361,9 +389,10 @@ const ChatPanel = ({ page }: { page: string }) => {
           isOpenState={[isFloating, setIsFloating]}
           title={`Chat - ${page}`}
           modal={false}
-          initialWidth={600}
-          initialHeight={500}
+          initialWidth={dialogSize.width}
+          initialHeight={dialogSize.height}
           onClose={onCloseFloat}
+          onResize={onDialogResize}
         >
           {chatContent}
         </ResizableDraggableDialog>

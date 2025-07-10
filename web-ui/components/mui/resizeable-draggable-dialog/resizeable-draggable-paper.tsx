@@ -113,6 +113,7 @@ const ResizeableDraggablePaper = ({
   maxConstraints,
   dialogId,
   children,
+  onResize,
   ...props
 }: ResizeableDraggablePaperProps) => {
   const nodeRef = React.useRef<HTMLDivElement>(null);
@@ -147,8 +148,12 @@ const ResizeableDraggablePaper = ({
       if (newHeight !== height) {
         setHeight(newHeight);
       }
+      // Trigger the onResize callback if provided
+      if (onResize) {
+        onResize(newWidth, newHeight);
+      }
     },
-    [height, width],
+    [height, width, onResize],
   );
 
   /**

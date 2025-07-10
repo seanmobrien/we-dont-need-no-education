@@ -26,6 +26,15 @@ import ResizeableDraggablePaper from './resizeable-draggable-paper';
 import { ResizeableDraggableDialogProps } from './types';
 
 /**
+ * Enum for dialog window state
+ */
+enum WindowState {
+  Normal = 'normal',
+  Minimized = 'minimized',
+  Maximized = 'maximized',
+}
+
+/**
  * Styled component for the draggable handle area at the top of the dialog.
  * Uses Material-UI's styled API for consistent theming integration.
  *
@@ -134,6 +143,7 @@ const ResizableDraggableDialog = ({
   dialogActions,
   setRefineSizeProps,
   onClose,
+  onResize,
   minConstraints = [300, 200],
   maxConstraints = [800, 600],
 }: ResizeableDraggableDialogProps) => {
@@ -153,10 +163,8 @@ const ResizableDraggableDialog = ({
   });
   const dragHandleRef = useRef<HTMLDivElement>(null);
 
-  // State for maximize/minimize functionality
-  const [isMaximized, setIsMaximized] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [previousSize, setPreviousSize] = useState({ width: initialWidth, height: initialHeight });
+  // State for window functionality
+  const [windowState, setWindowState] = useState<WindowState>(WindowState.Normal);
 
   /**
    * Type definition for the handleClose function overloads.
@@ -218,35 +226,26 @@ const ResizableDraggableDialog = ({
    * Handle minimize button click
    */
   const handleMinimize = useCallback(() => {
-    setIsMinimized(true);
-    setIsMaximized(false);
+    setWindowState(WindowState.Minimized);
   }, []);
 
   /**
    * Handle maximize button click
    */
   const handleMaximize = useCallback(() => {
-    if (isMaximized) {
-      // Restore to previous size
-      setIsMaximized(false);
-      setIsMinimized(false);
+    if (windowState === WindowState.Maximized) {
+      // Restore to normal state
+      setWindowState(WindowState.Normal);
     } else {
-      // Store current size before maximizing
-      const dialogElement = dragHandleRef.current?.closest('[role="dialog"]') as HTMLElement;
-      if (dialogElement) {
-        const rect = dialogElement.getBoundingClientRect();
-        setPreviousSize({ width: rect.width, height: rect.height });
-      }
-      setIsMaximized(true);
-      setIsMinimized(false);
+      setWindowState(WindowState.Maximized);
     }
-  }, [isMaximized]);
+  }, [windowState]);
 
   /**
    * Handle close button click
    */
   const handleCloseClick = useCallback((evt: React.MouseEvent<HTMLButtonElement>) => {
-    handleClose(evt as any);
+    handleClose(evt as React.MouseEvent<HTMLAnchorElement>);
   }, [handleClose]);
 
   /**
@@ -264,11 +263,11 @@ const ResizableDraggableDialog = ({
       let dialogHeight = initialHeight;
       let dialogWidth = initialWidth;
       
-      if (isMaximized) {
+      if (windowState === WindowState.Maximized) {
         // Use viewport dimensions for maximized state
         dialogHeight = window.innerHeight - 100; // Leave some margin
         dialogWidth = window.innerWidth - 100;
-      } else if (isMinimized) {
+      } else if (windowState === WindowState.Minimized) {
         // Use minimal size for minimized state
         dialogHeight = 40; // Just show title bar
         dialogWidth = 300;
@@ -282,6 +281,7 @@ const ResizableDraggableDialog = ({
           width={dialogWidth}
           setRefineSizeProps={setRefineSizeProps}
           dialogId={dialogDraggableHandleId}
+          onResize={onResize}
         />
       );
     },
@@ -291,8 +291,8 @@ const ResizableDraggableDialog = ({
       initialWidth,
       setRefineSizeProps,
       dialogDraggableHandleId,
-      isMaximized,
-      isMinimized,
+      windowState,
+      onResize,
     ],
   );
 
@@ -445,8 +445,6 @@ const ResizableDraggableDialog = ({
     }
   }, [initialHeight, initialWidth, minConstraints, maxConstraints]);
 
-  const Component = dialogActions;
-
   return (
     <React.Fragment>
       <Dialog
@@ -479,10 +477,10 @@ const ResizableDraggableDialog = ({
             <IconButton 
               size="small" 
               onClick={handleMaximize}
-              aria-label={isMaximized ? "Restore dialog" : "Maximize dialog"}
+              aria-label={windowState === WindowState.Maximized ? "Restore dialog" : "Maximize dialog"}
               sx={{ padding: '2px' }}
             >
-              {isMaximized ? <RestoreIcon fontSize="small" /> : <MaximizeIcon fontSize="small" />}
+              {windowState === WindowState.Maximized ? <RestoreIcon fontSize="small" /> : <MaximizeIcon fontSize="small" />}
             </IconButton>
             <IconButton 
               size="small" 
@@ -495,7 +493,7 @@ const ResizableDraggableDialog = ({
           </WindowControls>
         </DraggableHandle>
         <DialogTitle id={dialogTitleId}>{title}</DialogTitle>
-        {!isMinimized && (
+        {windowState !== WindowState.Minimized && (
           <>
             <DialogContent>{children}</DialogContent>
             {dialogActions && dialogActions({})}

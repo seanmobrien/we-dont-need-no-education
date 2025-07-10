@@ -111,6 +111,7 @@ export type ResizeableDraggablePaperProps = PaperProps & {
   maxConstraints?: [number, number];
   setRefineSizeProps?: SetRefineSizeFunction;
   dialogId?: string;
+  onResize?: (width: number, height: number) => void;
 };
 
 /**
@@ -163,6 +164,7 @@ export type ResizeableDraggableDialogProps = PropsWithChildren<
     initialWidth?: number;
     minConstraints?: [number, number];
     maxConstraints?: [number, number];
+    onResize?: (width: number, height: number) => void;
   }
 >;
 

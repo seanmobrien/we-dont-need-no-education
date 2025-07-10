@@ -90,7 +90,7 @@ describe('ResizableDraggableDialog', () => {
     it('renders drag handle with accessibility attributes', () => {
       renderDialog();
 
-      const handle = screen.getByRole('button');
+      const handle = screen.getByLabelText(/Drag to move dialog/);
       expect(handle).toHaveAttribute('tabIndex', '0');
       expect(handle).toHaveAttribute('aria-label');
 
