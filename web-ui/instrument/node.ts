@@ -44,6 +44,12 @@ export default function instrumentServer() {
   const connStr =
     process.env.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING;
 
+  // Skip instrumentation in development if no valid connection string
+  if (process.env.NODE_ENV === 'development' && (!connStr || connStr === 'test' || connStr.includes('InstrumentationKey=test'))) {
+    console.log('[otel] Skipping Azure Monitor in development mode');
+    return;
+  }
+
   const traceExporter = new AzureMonitorTraceExporter({
     connectionString: connStr,
   });
