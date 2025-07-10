@@ -25,7 +25,7 @@ const Home = async () => {
         }}
       >
         <KpiGrid />
-        <ChatPanel page="email-key-points" />
+        <ChatPanel page="email-key-points" isDashboardLayout={true} />
       </Box>
     </EmailDashboardLayout>
   );

@@ -25,7 +25,7 @@ const Home = async () => {
         }}
       >
         <CtaResponseGrid />
-        <ChatPanel page="email-responsive-action" />
+        <ChatPanel page="email-responsive-action" isDashboardLayout={true} />
       </Box>
     </EmailDashboardLayout>
   );

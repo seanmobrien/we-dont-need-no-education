@@ -25,7 +25,7 @@ const Home = async () => {
         }}
       >
         <EmailHeaderGrid />
-        <ChatPanel page="email-headers" />
+        <ChatPanel page="email-headers" isDashboardLayout={true} />
       </Box>
     </EmailDashboardLayout>
   );

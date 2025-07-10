@@ -114,6 +114,8 @@ const ResizeableDraggablePaper = ({
   dialogId,
   children,
   onResize,
+  onDragStart,
+  onDragStop,
   ...props
 }: ResizeableDraggablePaperProps) => {
   const nodeRef = React.useRef<HTMLDivElement>(null);
@@ -213,6 +215,8 @@ const ResizeableDraggablePaper = ({
       nodeRef={nodeRef as React.RefObject<HTMLDivElement>}
       handle={`#${dialogId ?? 'draggable-dialog'}`}
       cancel={'[class*="MuiDialogContent-root"]'}
+      onStart={onDragStart}
+      onStop={onDragStop}
     >
       <div ref={nodeRef}>
         <ResizableBox

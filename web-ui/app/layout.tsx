@@ -8,6 +8,7 @@ import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
 import { InitColorSchemeScript } from '@mui/material';
 import { TrackWithAppInsight } from '@/components/general/telemetry';
+import { ChatPanelProvider } from '@/components/ai/chat-panel';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -46,11 +47,13 @@ export default function RootLayout({
       >
         <InitColorSchemeScript defaultMode="dark" />
         <QueryProvider>
-          <TrackWithAppInsight />
-          <MuiXLicense />
-          <AppRouterCacheProvider options={stableAppRouterOptions}>
-            <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
-          </AppRouterCacheProvider>
+          <ChatPanelProvider>
+            <TrackWithAppInsight />
+            <MuiXLicense />
+            <AppRouterCacheProvider options={stableAppRouterOptions}>
+              <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
+            </AppRouterCacheProvider>
+          </ChatPanelProvider>
         </QueryProvider>
       </body>
     </html>

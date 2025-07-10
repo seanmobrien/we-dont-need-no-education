@@ -4,20 +4,30 @@ import {
   ListSubheader,
   Menu,
   MenuItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import OpenInFullIcon from '@mui/icons-material/OpenInFull';
+import DockIcon from '@mui/icons-material/Dock';
+import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
+import { DockPosition } from './chat-panel-context';
 
 export const ChatMenu = ({
   onResetSession,
   activeModel,
   setActiveModel,
   onFloat,
+  onDock,
+  currentPosition = 'inline',
 }: {
   onResetSession?: () => void;
   activeModel: string;
   setActiveModel: Dispatch<SetStateAction<string>>;
   onFloat?: () => void;
+  onDock?: (position: DockPosition) => void;
+  currentPosition?: DockPosition;
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -49,6 +59,19 @@ export const ChatMenu = ({
     onFloat?.();
   }, [handleClose, onFloat]);
 
+  const onDockClick = useCallback((position: DockPosition) => {
+    handleClose();
+    onDock?.(position);
+  }, [handleClose, onDock]);
+
+  // Docking options configuration
+  const dockingOptions = [
+    { position: 'left' as DockPosition, label: 'Dock Left', icon: <ViewSidebarIcon /> },
+    { position: 'right' as DockPosition, label: 'Dock Right', icon: <ViewSidebarIcon sx={{ transform: 'scaleX(-1)' }} /> },
+    { position: 'top' as DockPosition, label: 'Dock Top', icon: <DockIcon sx={{ transform: 'rotate(90deg)' }} /> },
+    { position: 'bottom' as DockPosition, label: 'Dock Bottom', icon: <DockIcon sx={{ transform: 'rotate(-90deg)' }} /> },
+  ];
+
   return (
     <>
       <IconButton edge="end" onClick={onMenuClick} id="chat-menu-button">
@@ -66,7 +89,25 @@ export const ChatMenu = ({
         }}
       >
         <MenuItem onClick={onResetSessionClick}>Reset chat session</MenuItem>
-        <MenuItem onClick={onFloatClick}>Float</MenuItem>
+        <Divider />
+        <MenuItem onClick={onFloatClick}>
+          <ListItemIcon>
+            <OpenInFullIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Float</ListItemText>
+        </MenuItem>
+        {dockingOptions.map((option) => (
+          <MenuItem 
+            key={option.position}
+            onClick={() => onDockClick(option.position)}
+            selected={currentPosition === option.position}
+          >
+            <ListItemIcon>
+              {option.icon}
+            </ListItemIcon>
+            <ListItemText>{option.label}</ListItemText>
+          </MenuItem>
+        ))}
         <Divider />
         <ListSubheader>{`Active Model: ${activeModelDisplayName}`}</ListSubheader>
         {availableModels.map((model) => (
