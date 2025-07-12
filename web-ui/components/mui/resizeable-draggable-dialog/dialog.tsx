@@ -164,7 +164,9 @@ const ResizableDraggableDialog = ({
   const dragHandleRef = useRef<HTMLDivElement>(null);
 
   // State for window functionality
-  const [windowState, setWindowState] = useState<WindowState>(WindowState.Normal);
+  const [windowState, setWindowState] = useState<WindowState>(
+    WindowState.Normal,
+  );
 
   /**
    * Type definition for the handleClose function overloads.
@@ -177,14 +179,14 @@ const ResizableDraggableDialog = ({
      * Handle close event without reason
      * @param {React.MouseEvent<HTMLAnchorElement>} evt - The mouse event
      */
-    (evt: React.MouseEvent<HTMLAnchorElement>): void;
+    (evt: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>): void;
     /**
      * Handle close event with reason
      * @param {React.MouseEvent<HTMLAnchorElement>} evt - The mouse event
      * @param {'backdropClick' | 'escapeKeyDown'} reason - The reason for closing
      */
     (
-      evt: React.MouseEvent<HTMLAnchorElement>,
+      evt: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
       reason: 'backdropClick' | 'escapeKeyDown',
     ): void;
   }
@@ -202,7 +204,7 @@ const ResizableDraggableDialog = ({
    */
   const handleClose = useCallback<HandleCloseOverloads>(
     (
-      evt: React.MouseEvent<HTMLAnchorElement>,
+      evt: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
       reason?: 'backdropClick' | 'escapeKeyDown',
     ) => {
       if (!open) {
@@ -212,11 +214,17 @@ const ResizableDraggableDialog = ({
         onClose(evt, reason as 'backdropClick' | 'escapeKeyDown');
         return;
       }
-
+      if (modal) {
+        if (!open) {
+          setOpen(false);
+          return;
+        }
+      }
       // For modal dialogs, allow all close reasons
       // For non-modal dialogs, ignore backdrop clicks
-      if (modal === true || reason !== 'backdropClick') {
+      if (reason !== 'backdropClick') {
         setOpen(false);
+        return;
       }
     },
     [open, onClose, modal, setOpen],
@@ -244,9 +252,12 @@ const ResizableDraggableDialog = ({
   /**
    * Handle close button click
    */
-  const handleCloseClick = useCallback((evt: React.MouseEvent<HTMLButtonElement>) => {
-    handleClose(evt as React.MouseEvent<HTMLAnchorElement>);
-  }, [handleClose]);
+  const handleCloseClick = useCallback(
+    (evt: React.MouseEvent<HTMLButtonElement>) => {
+      handleClose(evt as React.MouseEvent<HTMLButtonElement>);
+    },
+    [handleClose],
+  );
 
   /**
    * Memoized render function for the resizable draggable paper component.
@@ -262,7 +273,7 @@ const ResizableDraggableDialog = ({
     (muiPaperProps: PaperProps) => {
       let dialogHeight = initialHeight;
       let dialogWidth = initialWidth;
-      
+
       if (windowState === WindowState.Maximized) {
         // Use viewport dimensions for maximized state
         dialogHeight = window.innerHeight - 100; // Leave some margin
@@ -272,7 +283,7 @@ const ResizableDraggableDialog = ({
         dialogHeight = 40; // Just show title bar
         dialogWidth = 300;
       }
-      
+
       return (
         <ResizeableDraggablePaper
           {...(paperProps ?? {})}
@@ -466,24 +477,32 @@ const ResizableDraggableDialog = ({
         >
           <div style={{ flex: 1 }}>&nbsp;</div>
           <WindowControls>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={handleMinimize}
               aria-label="Minimize dialog"
               sx={{ padding: '2px' }}
             >
               <MinimizeIcon fontSize="small" />
             </IconButton>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={handleMaximize}
-              aria-label={windowState === WindowState.Maximized ? "Restore dialog" : "Maximize dialog"}
+              aria-label={
+                windowState === WindowState.Maximized
+                  ? 'Restore dialog'
+                  : 'Maximize dialog'
+              }
               sx={{ padding: '2px' }}
             >
-              {windowState === WindowState.Maximized ? <RestoreIcon fontSize="small" /> : <MaximizeIcon fontSize="small" />}
+              {windowState === WindowState.Maximized ? (
+                <RestoreIcon fontSize="small" />
+              ) : (
+                <MaximizeIcon fontSize="small" />
+              )}
             </IconButton>
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               onClick={handleCloseClick}
               aria-label="Close dialog"
               sx={{ padding: '2px' }}

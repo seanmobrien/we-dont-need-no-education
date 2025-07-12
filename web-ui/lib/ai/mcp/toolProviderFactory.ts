@@ -117,7 +117,15 @@ export const toolProviderFactory = async ({
     };
 
     // Create instrumented SSE transport with comprehensive error handling
-    const transport = traceable ? new InstrumentedSseTransport(tx) : tx;
+    const transport = traceable
+      ? new InstrumentedSseTransport({
+          url: options.url,
+          onerror: (error: unknown) => {
+            log((l) => l.error('InstrumentedSseTransport Error:', error));
+          },
+          ...tx,
+        })
+      : tx;
 
     // Create MCP client with transport and error handling
     let mcpClient = await createMCPClient({

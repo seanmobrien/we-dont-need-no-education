@@ -167,7 +167,7 @@ type InstrumentedSseTransportOptions = {
   headers?: Record<string, string>;
   onclose?: () => void;
   onmessage?: (message: JSONRPCMessage) => void;
-  onerror: (error: unknown) => void;
+  onerror: ((error: unknown) => void) | ((error: Error) => void);
 };
 
 /**
@@ -254,7 +254,13 @@ export class InstrumentedSseTransport extends SseMCPTransport {
 
       this.#onclose = opts.onclose;
       this.#onmessage = opts.onmessage;
-      this.#onerror = this.#safeErrorHandler(opts.onerror);
+      this.#onerror = this.#safeErrorHandler((e: unknown) => {
+        if (isError(e)) {
+          opts.onerror(e);
+        } else {
+          opts.onerror(new Error(String(e)));
+        }
+      });
 
       // Override base callbacks with instrumented versions
       super.onclose = this.#safeAsyncWrapper(

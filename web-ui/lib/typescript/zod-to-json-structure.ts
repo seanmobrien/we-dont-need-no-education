@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ZodTypeAny,
   ZodObject,
@@ -18,7 +19,7 @@ export function zodToStructure(schema: ZodTypeAny): any {
     schema instanceof ZodDefault ||
     schema instanceof ZodOptional
   ) {
-    return zodToStructure(schema._def.schema);
+    return zodToStructure('schema' in schema._def ? schema._def.schema : {});
   }
 
   if (schema instanceof ZodObject) {

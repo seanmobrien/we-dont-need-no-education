@@ -4,9 +4,21 @@ const shouldWriteToConsole = jest
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
+import { mockDeep } from 'jest-mock-extended';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+
+const DatabaseTypeFn = () => actualDrizzle.drizzle.mock({ actualSchema });
+export type DatabaseType = ReturnType<typeof DatabaseTypeFn>;
+
+export const makeMockDb = (): DatabaseType => {
+  // Using drizzle.mock we can quickly spin up a mock database that matches our schema, no driver or db connection required.
+  // Use jest-mock-extended's deepMock to create a fully mocked database object
+  const ret = mockDeep<DatabaseType>();
+  return ret;
+};
+
 const mockDb = actualDrizzle.drizzle.mock({ actualSchema });
 const makeRecursiveMock = jest
   .fn()
@@ -129,6 +141,7 @@ import 'jest';
 import { TextEncoder, TextDecoder } from 'util';
 import { mock } from 'jest-mock-extended';
 import { sql } from 'drizzle-orm';
+import { FormatAlignCenterSharp } from '@mui/icons-material';
 globalThis.TextEncoder = TextEncoder;
 
 // React 19 + React Testing Library 16 compatibility setup

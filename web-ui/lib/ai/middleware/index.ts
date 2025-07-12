@@ -4,7 +4,7 @@ export {
   createChatHistoryMiddleware,
   initializeChatHistoryTables,
   type ChatHistoryContext,
-} from './chat-history-middleware';
+} from './chat-history';
 export { setNormalizedDefaultsMiddleware } from './set-normalized-defaults';
 export {
   cacheWithRedis,

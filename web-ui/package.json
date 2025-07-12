@@ -110,6 +110,7 @@
     "@types/pg": "^8.15.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/react-resizable": "^3.0.8",
     "dotenv": "^16.5.0",
     "drizzle-kit": "^0.31.1",
     "eslint": "^9",

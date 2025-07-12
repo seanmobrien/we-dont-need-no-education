@@ -3,7 +3,6 @@ import {
   CaseFileSearchOptionsSchema,
   searchCaseFile,
   searchPolicyStore,
-  getCaseFileDocument,
   AiSearchResultEnvelopeSchema,
   getMultipleCaseFileDocuments,
   getCaseFileDocumentIndex,
@@ -145,6 +144,7 @@ const handler = createMcpHandler(
       },
       searchCaseFile,
     );
+    /*
     server.registerTool(
       'getCaseFileDocument',
       {
@@ -168,7 +168,7 @@ const handler = createMcpHandler(
       },
       getCaseFileDocument,
     );
-
+    */
     server.registerTool(
       'getMultipleCaseFileDocuments',
       {
@@ -309,16 +309,19 @@ const handler = createMcpHandler(
       amendCaseRecord,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const oldClose = server.server.onclose;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const oldInit = server.server.oninitialized;
     const oldError = server.server.onerror;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const oldTransportError = server.server.transport?.onerror;
-    /*
 
     const makeErrorHandler = (
-      oldHandler: (error: unknown, ...args: any[]) => void | undefined,
+      oldHandler: ((error: Error) => void) | undefined,
       dscr: string,
     ) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (error: unknown, ...args: any[]) => {
         const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
@@ -330,7 +333,10 @@ const handler = createMcpHandler(
             args,
           },
         });
-        let ret: unknown = oldHandler?.(server.server, le, ...args);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let ret: any = oldHandler
+          ? oldHandler.call(server.server, le)
+          : undefined;
         if (ret) {
           log((l) =>
             l.debug('Error was handled by existing subscriber', server, args),
@@ -347,6 +353,11 @@ const handler = createMcpHandler(
         return ret;
       };
     };
+
+    server.server.onerror = makeErrorHandler(oldError, 'server');
+    /*
+
+
 
     server.server.onclose = (...args: any[]) => {
       log((l) =>
@@ -372,7 +383,6 @@ const handler = createMcpHandler(
       );
       return oldInit?.call(...args);
     };
-    server.server.onerror = makeErrorHandler(oldError, 'server');
     if (server.server.transport) {
       server.server.transport.onerror = makeErrorHandler(
         oldError,
@@ -403,6 +413,7 @@ const handler = createMcpHandler(
     basePath: '/api/ai/tools',
     maxDuration: 60 * 5 * 1000, // 15 minutes
     verboseLogs: true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onEvent: (event, ...args: any[]) => {
       log((l) => l.info('MCP Event:', event, ...args));
     },
