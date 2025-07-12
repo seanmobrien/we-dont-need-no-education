@@ -258,11 +258,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
         jwt: async ({
           token,
           user,
-          trigger,
         }: {
           token: JWT;
           user?: NextAuthUserWithAccountId | NextAuthUser | AdapterUser | null;
-          trigger?: string;
         }) => {
           // Handle local dev bypass - create a token for the bypass user if needed
           if (!user && !token.id && shouldUseLocalDevBypass(undefined)) {

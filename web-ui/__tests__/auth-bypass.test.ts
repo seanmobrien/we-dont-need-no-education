@@ -6,6 +6,7 @@ import { jest } from '@jest/globals';
 import { Request } from 'node-fetch';
 
 // Polyfill Request for Node.js test environment
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 global.Request = Request as any;
 global.URL = URL;
 
@@ -47,7 +48,7 @@ jest.mock('@auth/drizzle-adapter', () => ({
 }));
 
 // Import the helper functions directly since they're just utility functions
-import { env } from '@/lib/site-util/env';
+// import { env } from '@/lib/site-util/env'; // Not actually used in tests
 
 /**
  * Validates that the application is running on localhost for local development auth bypass.
@@ -157,7 +158,7 @@ describe('Local Development Auth Bypass', () => {
       });
 
       // Mock a request to localhost
-      const mockRequest = new Request('http://localhost:3000/test') as any;
+      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
 
       expect(() => validateLocalhost(mockRequest)).not.toThrow();
     });
@@ -169,7 +170,7 @@ describe('Local Development Auth Bypass', () => {
         return undefined;
       });
 
-      const mockRequest = new Request('https://production.com/test') as any;
+      const mockRequest = new Request('https://production.com/test') as unknown as Request;
 
       expect(() => validateLocalhost(mockRequest)).toThrow(/CRITICAL SECURITY WARNING/);
       expect(() => validateLocalhost(mockRequest)).toThrow(/LOCAL_DEV_AUTH_BYPASS_USER_ID/);
@@ -182,7 +183,7 @@ describe('Local Development Auth Bypass', () => {
         return undefined;
       });
 
-      const mockRequest = new Request('https://production.com/test') as any;
+      const mockRequest = new Request('https://production.com/test') as unknown as Request;
 
       expect(() => validateLocalhost(mockRequest)).not.toThrow();
     });
@@ -203,7 +204,7 @@ describe('Local Development Auth Bypass', () => {
       });
 
       for (const pattern of localhostPatterns) {
-        const mockRequest = new Request(pattern + '/test') as any;
+        const mockRequest = new Request(pattern + '/test') as unknown as Request;
         expect(() => validateLocalhost(mockRequest)).not.toThrow();
       }
     });
@@ -217,7 +218,7 @@ describe('Local Development Auth Bypass', () => {
         return undefined;
       });
 
-      const mockRequest = new Request('http://localhost:3000/test') as any;
+      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
 
       expect(shouldUseLocalDevBypass(mockRequest)).toBe(true);
     });
@@ -228,7 +229,7 @@ describe('Local Development Auth Bypass', () => {
         return undefined;
       });
 
-      const mockRequest = new Request('http://localhost:3000/test') as any;
+      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
 
       expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
     });
@@ -239,7 +240,7 @@ describe('Local Development Auth Bypass', () => {
         return undefined;
       });
 
-      const mockRequest = new Request('http://localhost:3000/test') as any;
+      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
 
       expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
     });
@@ -251,7 +252,7 @@ describe('Local Development Auth Bypass', () => {
         return undefined;
       });
 
-      const mockRequest = new Request('https://production.com/test') as any;
+      const mockRequest = new Request('https://production.com/test') as unknown as Request;
 
       expect(() => shouldUseLocalDevBypass(mockRequest)).toThrow(/CRITICAL SECURITY WARNING/);
     });
@@ -265,7 +266,7 @@ describe('Local Development Auth Bypass', () => {
         return undefined;
       });
 
-      const mockRequest = new Request('http://localhost:3000/test') as any;
+      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
       const user = createLocalDevBypassUser(mockRequest);
 
       expect(user).toEqual({
@@ -283,7 +284,7 @@ describe('Local Development Auth Bypass', () => {
         return undefined;
       });
 
-      const mockRequest = new Request('http://localhost:3000/test') as any;
+      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
       const user = createLocalDevBypassUser(mockRequest);
 
       expect(user).toBeNull();
