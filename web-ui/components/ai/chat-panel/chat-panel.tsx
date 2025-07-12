@@ -394,17 +394,16 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
 
   // Create chat content component
   const chatContent = (
-    <Stack className="w-full" spacing={2} sx={stable_sx.stack}>
+    <Stack spacing={2} sx={{ ...stable_sx.stack, width: '100%' }}>
       <TextField
         multiline
         rows={5}
-        className="w-full"
         variant="outlined"
         placeholder="Type your message here..."
         value={input}
         onChange={handleInputChange}
         onKeyDown={handleInputKeyDown}
-        sx={stable_sx.chatInput}
+        sx={{ ...stable_sx.chatInput, width: '100%' }}
         slotProps={stableChatInputSlotProps}
       />
       <ChatWindow

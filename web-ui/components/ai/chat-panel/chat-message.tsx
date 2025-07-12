@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { Paper, Box } from '@mui/material';
 import { Message } from 'ai';
 import MuiMarkdown from 'mui-markdown';
@@ -9,29 +8,34 @@ import { useMemo } from 'react';
 const ChatMessage = ({ message }: { message: Message }) => {
   const { role = 'user', parts = [] } = message ?? {};
 
-  const cssJustify = role === 'user' ? 'justify-items-end' : 'justify-items-start';
-  const cssAlign = role === 'user' ? 'text-right' : 'text-left';
-  const cssMargin = clsx('mb-2', {
-    'mr-8': role !== 'user',
-    'ml-auto': role === 'user',
-  });
+  const containerSx = {
+    width: '100%',
+    paddingLeft: role === 'user' ? '2rem' : 0,
+    paddingRight: role !== 'user' ? '2rem' : 0,
+  };
 
-  const cssContainerPadding = role === 'user' ? 'pl-8' : 'pr-8';
-  const cssContainer = clsx('w-full', cssContainerPadding);
+  const paperSx = {
+    display: 'grid',
+    justifyItems: role === 'user' ? 'end' : 'start',
+    textAlign: role === 'user' ? 'right' : 'left',
+    marginBottom: '0.5rem',
+    marginRight: role !== 'user' ? '2rem' : 0,
+    marginLeft: role === 'user' ? 'auto' : 0,
+    width: 'fit-content',
+  };
+
+  const boxSx = {
+    padding: '0.5rem',
+  };
 
   return useMemo(
     () => (
-      <div className={cssContainer}>
+      <div style={containerSx}>
         <Paper
           elevation={6}
-          className={clsx(
-            cssJustify,
-            cssAlign,
-            cssMargin,
-            'w-fit',
-          )}
+          sx={paperSx}
         >
-          <Box className="p-2">
+          <Box sx={boxSx}>
             {parts
               .map((part, idx) =>
                 part.type === 'text' ? (
@@ -48,7 +52,7 @@ const ChatMessage = ({ message }: { message: Message }) => {
         </Paper>
       </div>
     ),
-    [parts, cssAlign, cssJustify, cssMargin, cssContainer],
+    [parts, containerSx, paperSx, boxSx],
   );
 };
 
