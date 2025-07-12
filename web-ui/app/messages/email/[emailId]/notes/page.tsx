@@ -25,7 +25,7 @@ const Home = async () => {
       >
         <Stack>
           <NoteGrid />
-          <ChatPanel page="email-notes" />
+          <ChatPanel page="email-notes" isDashboardLayout={true} />
         </Stack>
       </Box>
     </EmailDashboardLayout>

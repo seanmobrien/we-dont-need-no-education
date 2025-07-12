@@ -25,7 +25,7 @@ const Page = async () => {
         }}
       >
         <CtaGrid />
-        <ChatPanel page="email-cta" />
+        <ChatPanel page="email-cta" isDashboardLayout={true} />
       </Box>
     </EmailDashboardLayout>
   );

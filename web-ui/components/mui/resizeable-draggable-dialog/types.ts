@@ -112,6 +112,8 @@ export type ResizeableDraggablePaperProps = PaperProps & {
   setRefineSizeProps?: SetRefineSizeFunction;
   dialogId?: string;
   onResize?: (width: number, height: number) => void;
+  onDragStart?: () => void;
+  onDragStop?: () => void;
 };
 
 /**

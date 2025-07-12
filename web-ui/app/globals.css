@@ -407,3 +407,96 @@ body {
 [data-theme="colorful"] .MuiTypography-root {
   color: var(--foreground) !important;
 }
+
+/* React-resizable handle styles */
+.react-resizable {
+  position: relative;
+}
+
+.react-resizable-handle {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-origin: content-box;
+  box-sizing: border-box;
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNiIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgNiA2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxnIGZpbGw9IiM5OTkiPjxjaXJjbGUgY3g9IjMiIGN5PSIzIiByPSIxLjUiLz48L2c+PC9zdmc+');
+  background-size: contain;
+  z-index: 1000;
+}
+
+.react-resizable-handle-se {
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  width: 20px;
+  height: 20px;
+}
+
+.react-resizable-handle-s {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: s-resize;
+  width: 20px;
+  height: 10px;
+}
+
+.react-resizable-handle-n {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  cursor: n-resize;
+  width: 20px;
+  height: 10px;
+}
+
+.react-resizable-handle-e {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: e-resize;
+  width: 10px;
+  height: 20px;
+}
+
+.react-resizable-handle-w {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: w-resize;
+  width: 10px;
+  height: 20px;
+}
+
+.react-resizable-handle-ne {
+  top: 0;
+  right: 0;
+  cursor: ne-resize;
+  width: 20px;
+  height: 20px;
+}
+
+.react-resizable-handle-nw {
+  top: 0;
+  left: 0;
+  cursor: nw-resize;
+  width: 20px;
+  height: 20px;
+}
+
+.react-resizable-handle-sw {
+  bottom: 0;
+  left: 0;
+  cursor: sw-resize;
+  width: 20px;
+  height: 20px;
+}
+
+/* Dark theme styles for resizable handles */
+[data-theme="dark"] .react-resizable-handle {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNiIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgNiA2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxnIGZpbGw9IiNmZmYiPjxjaXJjbGUgY3g9IjMiIGN5PSIzIiByPSIxLjUiLz48L2c+PC9zdmc+');
+}
+
+/* Colorful theme styles for resizable handles */
+[data-theme="colorful"] .react-resizable-handle {
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNiIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgNiA2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxnIGZpbGw9IiMxYWJiZjkiPjxjaXJjbGUgY3g9IjMiIGN5PSIzIiByPSIxLjUiLz48L2c+PC9zdmc+');
+}

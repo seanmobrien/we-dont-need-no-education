@@ -23,6 +23,9 @@ import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
+import { DockPosition, useChatPanelContext } from './chat-panel-context';
+import { DockingOverlay, useDocking } from './docking-overlay';
+import { DockedPanel } from './docked-panel';
 
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
@@ -126,7 +129,7 @@ const stable_sx = {
   stack: { flexGrow: 1, overflow: 'hidden' } as const,
 } as const;
 
-const ChatPanel = ({ page }: { page: string }) => {
+const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashboardLayout?: boolean }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string>(getInitialThreadId());
   const [initialMessages, setInitialMessages] = useState<Message[] | undefined>(
@@ -136,8 +139,28 @@ const ChatPanel = ({ page }: { page: string }) => {
   const [rateLimitTimeout, setRateLimitTimeout] = useState<
     Map<AiModelType, Date>
   >(new Map<AiModelType, Date>());
+  
+  // Use chat panel context for docking state
+  const { config, setPosition, setSize } = useChatPanelContext();
+  const { isDragging, startDragging, stopDragging } = useDocking();
+  
+  // Legacy floating state for backward compatibility
   const [isFloating, setIsFloating] = useState(false);
   const [dialogSize, setDialogSize] = useState(() => getStoredDialogSize());
+
+  // Listen for drag events from the dialog
+  useEffect(() => {
+    const handleDragStart = () => startDragging();
+    const handleDragStop = () => stopDragging();
+
+    window.addEventListener('chatPanelDragStart', handleDragStart);
+    window.addEventListener('chatPanelDragStop', handleDragStop);
+
+    return () => {
+      window.removeEventListener('chatPanelDragStart', handleDragStart);
+      window.removeEventListener('chatPanelDragStop', handleDragStop);
+    };
+  }, [startDragging, stopDragging]);
 
   if (!initialMessages) {
     const messages = loadCurrentMessageState();
@@ -274,17 +297,30 @@ const ChatPanel = ({ page }: { page: string }) => {
   );
 
   const onFloat = useCallback(() => {
+    setPosition('floating');
     setIsFloating(true);
-  }, []);
+  }, [setPosition]);
+
+  const onDock = useCallback((position: DockPosition) => {
+    setPosition(position);
+    setIsFloating(false);
+  }, [setPosition]);
+
+  const onUndock = useCallback(() => {
+    setPosition('inline');
+    setIsFloating(false);
+  }, [setPosition]);
 
   const onCloseFloat = useCallback(() => {
+    setPosition('inline');
     setIsFloating(false);
-  }, []);
+  }, [setPosition]);
 
   const onDialogResize = useCallback((width: number, height: number) => {
     setDialogSize({ width, height });
+    setSize(width, height);
     saveDialogSize(width, height);
-  }, []);
+  }, [setSize]);
 
   const stableChatInputSlotProps = React.useMemo(() => {
     return {
@@ -305,6 +341,8 @@ const ChatPanel = ({ page }: { page: string }) => {
                 activeModel={activeModel}
                 setActiveModel={setActiveModel}
                 onFloat={onFloat}
+                onDock={onDock}
+                currentPosition={config.position}
                 onResetSession={() => {
                   sessionStorage.removeItem('chatActiveId');
                   setThreadId(generateChatId().id);
@@ -317,7 +355,7 @@ const ChatPanel = ({ page }: { page: string }) => {
         ),
       },
     };
-  }, [onSendClick, activeModel, setMessages, onFloat]);
+  }, [onSendClick, activeModel, setMessages, onFloat, onDock, config.position]);
 
   useEffect(() => {
     const timeoutIds: Array<NodeJS.Timeout | number> = [];
@@ -377,7 +415,35 @@ const ChatPanel = ({ page }: { page: string }) => {
     </Stack>
   );
 
-  if (isFloating) {
+  // Handle docked positions
+  if (config.position !== 'inline' && config.position !== 'floating') {
+    return (
+      <>
+        {/* Placeholder for inline position */}
+        <Box sx={{ padding: 2, textAlign: 'center', color: 'text.secondary' }}>
+          Chat panel is docked to {config.position}
+        </Box>
+        {/* Docked panel */}
+        <DockedPanel
+          position={config.position}
+          onUndock={onUndock}
+          onFloat={onFloat}
+          title={`Chat - ${page}`}
+        >
+          {chatContent}
+        </DockedPanel>
+        {/* Docking overlay when dragging */}
+        <DockingOverlay
+          isActive={isDragging}
+          onDock={onDock}
+          isDashboardLayout={isDashboardLayout}
+        />
+      </>
+    );
+  }
+
+  // Handle floating state
+  if (config.position === 'floating' || isFloating) {
     return (
       <>
         {/* Placeholder for inline position */}
@@ -396,6 +462,12 @@ const ChatPanel = ({ page }: { page: string }) => {
         >
           {chatContent}
         </ResizableDraggableDialog>
+        {/* Docking overlay when dragging */}
+        <DockingOverlay
+          isActive={isDragging}
+          onDock={onDock}
+          isDashboardLayout={isDashboardLayout}
+        />
       </>
     );
   }

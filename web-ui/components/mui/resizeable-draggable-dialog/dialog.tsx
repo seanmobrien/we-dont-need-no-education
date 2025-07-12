@@ -282,6 +282,18 @@ const ResizableDraggableDialog = ({
           setRefineSizeProps={setRefineSizeProps}
           dialogId={dialogDraggableHandleId}
           onResize={onResize}
+          onDragStart={() => {
+            // Notify parent that dragging has started
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('chatPanelDragStart'));
+            }
+          }}
+          onDragStop={() => {
+            // Notify parent that dragging has stopped
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('chatPanelDragStop'));
+            }
+          }}
         />
       );
     },

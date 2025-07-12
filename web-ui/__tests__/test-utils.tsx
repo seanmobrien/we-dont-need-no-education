@@ -4,6 +4,7 @@ import React, { PropsWithChildren } from 'react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/lib/themes/provider';
+import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import '@testing-library/jest-dom';
 
 // Create a test QueryClient with disabled retries and logs
@@ -24,7 +25,9 @@ const AllTheProviders = ({ children }: PropsWithChildren) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>{children}</ThemeProvider>
+      <ChatPanelProvider>
+        <ThemeProvider>{children}</ThemeProvider>
+      </ChatPanelProvider>
     </QueryClientProvider>
   );
 };
