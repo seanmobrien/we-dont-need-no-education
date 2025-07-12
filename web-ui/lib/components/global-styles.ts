@@ -1,64 +1,58 @@
-import classnames, {
-  alignItems,
-  backgroundColor,
-  borderRadius,
-  borderWidth,
-  boxShadow,
-  display,
-  flexDirection,
-  gap,
-  gridColumn,
-  justifyItems,
-  margin,
-  maxWidth,
-  minHeight,
-  opacity,
-  outlineStyle,
-  padding,
-  ringColor,
-  ringWidth,
-  spacing,
-  textDecoration,
-  textUnderlineOffset,
-  transitionProperty,
-  typography,
-  width,
-} from 'tailwindcss-classnames';
+import { css } from '@emotion/react';
 
-const inputClass = classnames(
-  width('w-full'),
-  borderWidth('border'),
-  borderRadius('rounded'),
-  spacing('p-2'),
-  outlineStyle('focus:outline-none'),
-  ringWidth('focus:ring'),
-  ringColor('focus:ring-blue-300')
-);
-const labelClass = classnames(
-  display('block'),
-  typography('font-medium'),
-  margin('mb-1')
-);
-const buttonClass = classnames(
-  width('w-full'),
-  spacing('p-2'),
-  borderRadius('rounded'),
-  typography('text-white'),
-  opacity('hover:opacity-80'),
-  transitionProperty('transition')
-);
-const containerClass = classnames(
-  maxWidth('max-w-lg'),
-  margin('mx-auto'),
-  spacing('p-6'),
-  borderRadius('rounded-lg'),
-  boxShadow('shadow-md')
-);
-const baseHeader = classnames(typography('font-semibold'), margin('mb-4'));
-const linkClass = classnames(
-  textDecoration('hover:underline'),
-  textUnderlineOffset('hover:underline-offset-4')
-);
+// Emotion-based utility styles
+const inputClass = css`
+  width: 100%;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  outline: none;
+  
+  &:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px #93c5fd;
+  }
+`;
+
+const labelClass = css`
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+`;
+
+const buttonClass = css`
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  color: #ffffff;
+  transition: opacity 0.2s;
+  
+  &:hover {
+    opacity: 0.8;
+  }
+`;
+
+const containerClass = css`
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+`;
+
+const baseHeader = css`
+  font-weight: 600;
+  margin-bottom: 1rem;
+`;
+
+const linkClass = css`
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+`;
+
 const globalStyles = {
   container: {
     base: containerClass,
@@ -67,76 +61,116 @@ const globalStyles = {
     input: {
       base: inputClass,
       label: labelClass,
-      text: classnames(inputClass, margin('mb-4')),
+      text: css`
+        ${inputClass}
+        margin-bottom: 1rem;
+      `,
     },
     button: {
       base: buttonClass,
-      primary: classnames(
-        buttonClass,
-        backgroundColor(
-          'bg-blue-500',
-          'hover:bg-blue-600',
-          'disabled:bg-gray-400'
-        )
-      ),
-      secondary: classnames(
-        buttonClass,
-        backgroundColor(
-          'bg-gray-500',
-          'hover:bg-gray-600',
-          'disabled:bg-gray-300'
-        )
-      ),
+      primary: css`
+        ${buttonClass}
+        background-color: #3b82f6;
+        
+        &:hover {
+          background-color: #2563eb;
+        }
+        
+        &:disabled {
+          background-color: #9ca3af;
+        }
+      `,
+      secondary: css`
+        ${buttonClass}
+        background-color: #6b7280;
+        
+        &:hover {
+          background-color: #4b5563;
+        }
+        
+        &:disabled {
+          background-color: #d1d5db;
+        }
+      `,
     },
   },
   page: {
     link: linkClass,
   },
   grid: {
-    page: classnames(
-      display('grid'),
-      alignItems('items-center'),
-      justifyItems('justify-items-center'),
-      minHeight('min-h-screen'),
-      padding('p-8', 'pb-20', 'sm:p-20'),
-      gap('gap-16'),
-      'font-[family-name:var(--font-geist-sans)]'
-    ),
-    main: classnames(
-      display('flex'),
-      flexDirection('flex-col'),
-      gap('gap-8'),
-      alignItems('items-center', 'sm:items-start')
-    ),
-    mainWrapper: classnames(
-      display('flex'),
-      alignItems('items-center'),
-      gap('gap-2'),
-      gridColumn('col-span-12')
-    ),
+    page: css`
+      display: grid;
+      align-items: center;
+      justify-items: center;
+      min-height: 100vh;
+      padding: 2rem;
+      gap: 4rem;
+      font-family: var(--font-geist-sans);
+      
+      @media (min-width: 640px) {
+        padding: 5rem;
+      }
+    `,
+    main: css`
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      align-items: center;
+      
+      @media (min-width: 640px) {
+        align-items: flex-start;
+      }
+    `,
+    mainWrapper: css`
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      grid-column: span 12;
+    `,
   },
   headers: {
     default: {
       base: baseHeader,
     },
-    h2: classnames(baseHeader, typography('text-2xl')),
-    h3: classnames(baseHeader, typography('text-xl')),
-    h4: classnames(baseHeader, typography('text-lg')),
-    h5: classnames(baseHeader, typography('text-base')),
+    h2: css`
+      ${baseHeader}
+      font-size: 1.5rem;
+      line-height: 2rem;
+    `,
+    h3: css`
+      ${baseHeader}
+      font-size: 1.25rem;
+      line-height: 1.75rem;
+    `,
+    h4: css`
+      ${baseHeader}
+      font-size: 1.125rem;
+      line-height: 1.75rem;
+    `,
+    h5: css`
+      ${baseHeader}
+      font-size: 1rem;
+      line-height: 1.5rem;
+    `,
   },
   footer: {
-    container: classnames(
-      display('flex'),
-      flexDirection('flex-col', 'sm:flex-row'),
-      gap('gap-4'),
-      alignItems('items-center')
-    ),
-    link: classnames(
-      linkClass,
-      display('flex'),
-      alignItems('items-center'),
-      gap('gap-2')
-    ),
+    container: css`
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+      
+      @media (min-width: 640px) {
+        flex-direction: row;
+      }
+    `,
+    link: css`
+      ${linkClass}
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    `,
   },
 };
+
 export default globalStyles;

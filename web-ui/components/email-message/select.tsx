@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { debounce } from 'lodash';
 import { EmailMessageSummary } from '@/data-models';
-import classnames, { margin } from '@/tailwindcss.classnames';
+import classnames, { margin } from "clsx";
 
 const EmailSelect: React.FC<{
   id?: string;

@@ -6,7 +6,7 @@ import classnames, {
   display,
   flexDirection,
   width,
-} from '@/tailwindcss.classnames';
+} from "clsx";
 import { Box } from '@mui/material';
 import { EmailGridProps } from '@/components/mui/data-grid/types';
 import {

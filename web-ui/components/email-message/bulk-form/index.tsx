@@ -13,20 +13,6 @@ import {
   isRecordDirty,
   RecordWithDirtyState,
 } from '@/lib/typescript';
-import {
-  classnames,
-  spacing,
-  borders,
-  typography,
-  backgrounds,
-  margin,
-  boxShadow,
-  display,
-  width,
-  fontWeight,
-  minWidth,
-  verticalAlign,
-} from 'tailwindcss-classnames';
 import ContactDropdown from '@/components/contact/contact-dropdown';
 import { log } from '@/lib/logger';
 import React from 'react';

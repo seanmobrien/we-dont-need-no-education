@@ -8,7 +8,7 @@ import classnames, {
   display,
   flexDirection,
   maxWidth,
-} from '@/tailwindcss.classnames';
+} from "clsx";
 import { Box } from '@mui/material';
 import EmailPropertyToolbar from './email-property-toolbar';
 import { GridValidRowModel } from '@mui/x-data-grid-pro';

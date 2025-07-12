@@ -4,7 +4,7 @@ import classnames, {
   padding,
   textAlign,
   width,
-} from '@/tailwindcss.classnames';
+} from "clsx";
 import { Paper, Box } from '@mui/material';
 import { Message } from 'ai';
 import MuiMarkdown from 'mui-markdown';
