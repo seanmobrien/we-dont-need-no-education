@@ -123,6 +123,19 @@ const ResizeableDraggablePaper = ({
   const [height, setHeight] = useState(initialHeight ?? 300);
   const [width, setWidth] = useState(initialWidth ?? 400);
 
+  // Update state when props change (e.g., maximize/minimize)
+  React.useEffect(() => {
+    if (initialHeight !== undefined && initialHeight !== height) {
+      setHeight(initialHeight);
+    }
+  }, [initialHeight, height]);
+
+  React.useEffect(() => {
+    if (initialWidth !== undefined && initialWidth !== width) {
+      setWidth(initialWidth);
+    }
+  }, [initialWidth, width]);
+
   /**
    * Handles resize events from the ResizableBox component.
    *
