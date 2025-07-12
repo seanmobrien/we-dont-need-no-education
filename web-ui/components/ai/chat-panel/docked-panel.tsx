@@ -42,6 +42,7 @@ const DockedContainer = styled(Paper, {
         top: 0,
         left: 0,
         right: 0,
+        maxHeight: '50vh', // Constrain height to half viewport
         borderBottom: `1px solid ${theme.palette.divider}`,
       };
     case 'bottom':
@@ -50,6 +51,7 @@ const DockedContainer = styled(Paper, {
         bottom: 0,
         left: 0,
         right: 0,
+        maxHeight: '50vh', // Constrain height to half viewport
         borderTop: `1px solid ${theme.palette.divider}`,
       };
     case 'left':
@@ -120,9 +122,10 @@ const DockedHeader = styled(Box)(({ theme }) => ({
 
 const DockedContent = styled(Box)({
   flex: 1,
-  overflow: 'hidden',
+  overflow: 'auto', // Allow scrolling within the docked panel
   display: 'flex',
   flexDirection: 'column',
+  minHeight: 0, // Ensure flex shrinking works properly
 });
 
 const HeaderControls = styled(Box)({

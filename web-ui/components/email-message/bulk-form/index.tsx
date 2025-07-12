@@ -212,49 +212,51 @@ const BulkEmailForm: React.FC = () => {
   return (
     <div
       className={classnames(
-        margin('mx-auto'),
-        spacing('p-6', 'mx-8'),
-        width('w-full'),
-        borders('rounded-lg'),
-        boxShadow('shadow-md'),
+        'mx-auto',
+        'p-6',
+        'w-full',
+        'rounded-lg',
+        'shadow-md',
       )}
+      style={{ maxWidth: '100%', width: '100%' }}
     >
       <h2
         className={classnames(
-          typography('text-xl', 'font-semibold'),
-          margin('mb-4'),
+          'text-xl',
+          'font-semibold',
+          'mb-4',
         )}
       >
         Bulk Add Emails
       </h2>
       {error && (
-        <p className={classnames(typography('text-red-500'), margin('mb-2'))}>
+        <p className={classnames('text-red-500', 'mb-2')}>
           {error}
         </p>
       )}
       {loading ? (
-        <p className={classnames(typography('text-gray-600'))}>
+        <p className={classnames('text-gray-600')}>
           Loading emails...
         </p>
       ) : bulkUpdateOperation ? (
-        <p className={classnames(typography('text-gray-600'))}>
+        <p className={classnames('text-gray-600')}>
           Saving emails...
         </p>
       ) : (
         <div>
-          <table className={classnames(display('table'), width('w-full'))}>
+          <table className={classnames('table', 'w-full')} style={{ width: '100%' }}>
             <thead>
               <tr>
-                <th className={classnames(borders('border'), spacing('p-2'))}>
+                <th className={classnames('border', 'p-2')}>
                   Sender
                 </th>
-                <th className={classnames(borders('border'), spacing('p-2'))}>
+                <th className={classnames('border', 'p-2')}>
                   Recipients
                 </th>
-                <th className={classnames(borders('border'), spacing('p-2'))}>
+                <th className={classnames('border', 'p-2')}>
                   Sent On
                 </th>
-                <th className={classnames(borders('border'), spacing('p-2'))}>
+                <th className={classnames('border', 'p-2')}>
                   Actions
                 </th>
               </tr>
@@ -267,12 +269,12 @@ const BulkEmailForm: React.FC = () => {
                   <tr data-row-index={index}>
                     <td
                       className={classnames(
-                        borders('border-t', 'border-l'),
-                        spacing('p-2'),
+                        'border-t border-l',
+                        'p-2',
                       )}
                     >
                       <ContactDropdown
-                        className={classnames(minWidth('min-w-max'))}
+                        className={classnames('min-w-max')}
                         displayValue="name"
                         contact={email.sender}
                         setValue={(value) =>
@@ -286,8 +288,8 @@ const BulkEmailForm: React.FC = () => {
                     </td>
                     <td
                       className={classnames(
-                        borders('border-t'),
-                        spacing('p-2'),
+                        'border-t',
+                        'p-2',
                       )}
                     >
                       <ContactRecipients
@@ -303,8 +305,8 @@ const BulkEmailForm: React.FC = () => {
                     </td>
                     <td
                       className={classnames(
-                        borders('border-t'),
-                        spacing('p-2'),
+                        'border-t',
+                        'p-2',
                       )}
                     >
                       <input
@@ -317,8 +319,8 @@ const BulkEmailForm: React.FC = () => {
                     </td>
                     <td
                       className={classnames(
-                        borders('border-y', 'border-r'),
-                        spacing('p-2'),
+                        'border-y border-r',
+                        'p-2',
                       )}
                       rowSpan={4}
                     >
@@ -350,10 +352,10 @@ const BulkEmailForm: React.FC = () => {
                           }
                         }}
                         className={classnames(
-                          spacing('p-2'),
-                          backgrounds('bg-red-500', 'hover:bg-red-600'),
-                          typography('text-white'),
-                          borders('rounded'),
+                          'p-2',
+                          'bg-red-500 hover:bg-red-600',
+                          'text-white',
+                          'rounded',
                         )}
                       >
                         Delete
@@ -364,16 +366,16 @@ const BulkEmailForm: React.FC = () => {
                   <tr data-row-index={index}>
                     <td
                       className={classnames(
-                        borders('border-l'),
-                        spacing('p-2'),
-                        fontWeight('font-semibold'),
-                        verticalAlign('align-top'),
+                        'border-l',
+                        'p-2',
+                        'font-semibold',
+                        'align-top',
                       )}
                     >
                       Parent Email
                     </td>
 
-                    <td colSpan={2} className={classnames(spacing('p-2'))}>
+                    <td colSpan={2} className={classnames('p-2')}>
                       <EmailSelect
                         selectedEmail={email.parentEmailId}
                         onEmailSelect={(newParentId: string | null) => {
@@ -390,15 +392,15 @@ const BulkEmailForm: React.FC = () => {
                   <tr data-row-index={index}>
                     <td
                       className={classnames(
-                        borders('border-l'),
-                        spacing('p-2'),
-                        fontWeight('font-semibold'),
+                        'border-l',
+                        'p-2',
+                        'font-semibold',
                       )}
                     >
                       Subject
                     </td>
 
-                    <td colSpan={2} className={classnames(spacing('p-2'))}>
+                    <td colSpan={2} className={classnames('p-2')}>
                       <input
                         aria-label="Subject"
                         type="text"
@@ -412,9 +414,9 @@ const BulkEmailForm: React.FC = () => {
                   <tr data-row-index={index}>
                     <td
                       className={classnames(
-                        borders('border-b', 'border-l'),
-                        spacing('p-2'),
-                        fontWeight('font-semibold'),
+                        'border-b border-l',
+                        'p-2',
+                        'font-semibold',
                       )}
                     >
                       Body
@@ -422,15 +424,15 @@ const BulkEmailForm: React.FC = () => {
                     <td
                       colSpan={2}
                       className={classnames(
-                        borders('border-b'),
-                        spacing('p-2'),
+                        'border-b',
+                        'p-2',
                       )}
                     >
                       <textarea
                         aria-label="Body"
                         className={classnames(
-                          width('w-full'),
-                          borders('border'),
+                          'w-full',
+                          'border',
                         )}
                         rows={4}
                         data-field="body"
@@ -443,16 +445,16 @@ const BulkEmailForm: React.FC = () => {
               ))}
             </tbody>
           </table>
-          <div className={classnames(display('flex'), margin('mt-4'))}></div>
+          <div className={classnames('flex', 'mt-4')}></div>
           <button
             onClick={() => handlePageChange(pageStats.page - 1)}
             disabled={pageStats.page === 1}
             className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-              typography('text-white'),
-              borders('rounded'),
-              margin('mr-2'),
+              'p-2',
+              'bg-blue-500 hover:bg-blue-600',
+              'text-white',
+              'rounded',
+              'mr-2',
             )}
           >
             Previous
@@ -460,11 +462,11 @@ const BulkEmailForm: React.FC = () => {
           <button
             onClick={handleAddRow}
             className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-              typography('text-white'),
-              borders('rounded'),
-              margin('mt-4'),
+              'p-2',
+              'bg-blue-500 hover:bg-blue-600',
+              'text-white',
+              'rounded',
+              'mt-4',
             )}
           >
             Add Row
@@ -472,11 +474,11 @@ const BulkEmailForm: React.FC = () => {
           <button
             onClick={handleSave}
             className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-green-500', 'hover:bg-green-600'),
-              typography('text-white'),
-              borders('rounded'),
-              margin('mt-4', 'ml-2'),
+              'p-2',
+              'bg-green-500 hover:bg-green-600',
+              'text-white',
+              'rounded',
+              'mt-4 ml-2',
             )}
           >
             Save
@@ -485,10 +487,10 @@ const BulkEmailForm: React.FC = () => {
             onClick={() => handlePageChange(pageStats.page + 1)}
             disabled={pageStats.page * pageStats.num >= pageStats.total}
             className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-              typography('text-white'),
-              borders('rounded'),
+              'p-2',
+              'bg-blue-500 hover:bg-blue-600',
+              'text-white',
+              'rounded',
             )}
           >
             Next

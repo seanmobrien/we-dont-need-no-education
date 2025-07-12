@@ -33,7 +33,8 @@ const pageStyles = {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    grid-column: span 12;
+    width: 100%;
+    max-width: 100%;
   `,
   buttonContainer: css`
     display: flex;

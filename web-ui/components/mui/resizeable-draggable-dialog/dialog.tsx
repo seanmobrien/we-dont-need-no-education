@@ -145,7 +145,7 @@ const ResizableDraggableDialog = ({
   onClose,
   onResize,
   minConstraints = [300, 200],
-  maxConstraints = [800, 600],
+  maxConstraints = [1920, 1080], // Large enough for most screens
 }: ResizeableDraggableDialogProps) => {
   const thisItemId = useId();
   const { dialogTitleId, dialogDraggableHandleId } = useMemo(
@@ -264,9 +264,9 @@ const ResizableDraggableDialog = ({
       let dialogWidth = initialWidth;
       
       if (windowState === WindowState.Maximized) {
-        // Use viewport dimensions for maximized state
-        dialogHeight = window.innerHeight - 100; // Leave some margin
-        dialogWidth = window.innerWidth - 100;
+        // Use full viewport dimensions for maximized state  
+        dialogHeight = window.innerHeight - 20; // Minimal margin
+        dialogWidth = window.innerWidth - 20;
       } else if (windowState === WindowState.Minimized) {
         // Use minimal size for minimized state
         dialogHeight = 40; // Just show title bar
@@ -281,6 +281,11 @@ const ResizableDraggableDialog = ({
           width={dialogWidth}
           setRefineSizeProps={setRefineSizeProps}
           dialogId={dialogDraggableHandleId}
+          minConstraints={minConstraints}
+          maxConstraints={[
+            Math.max(maxConstraints[0], window.innerWidth - 20),
+            Math.max(maxConstraints[1], window.innerHeight - 20)
+          ]}
           onResize={onResize}
           onDragStart={() => {
             // Notify parent that dragging has started

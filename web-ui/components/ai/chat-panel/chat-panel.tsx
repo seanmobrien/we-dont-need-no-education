@@ -123,11 +123,16 @@ const stable_sx = {
     alignItems: 'center',
     padding: 2,
     width: '100%',
-    height: '100vh', // Ensure container fills viewport
+    height: '100%', // Fill available height instead of viewport
     boxSizing: 'border-box',
   } as const,
   chatInput: { marginBottom: 2 } as const,
-  stack: { flexGrow: 1, overflow: 'hidden' } as const,
+  stack: { 
+    flexGrow: 1, 
+    overflow: 'hidden',
+    width: '100%',
+    minHeight: 0, // Allow flex shrinking
+  } as const,
 } as const;
 
 const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashboardLayout?: boolean }) => {
@@ -395,7 +400,15 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
 
   // Create chat content component
   const chatContent = (
-    <Stack spacing={2} sx={{ ...stable_sx.stack, width: '100%' }}>
+    <Stack 
+      spacing={2} 
+      sx={{ 
+        ...stable_sx.stack, 
+        width: '100%',
+        height: '100%',
+        maxHeight: '100%',
+      }}
+    >
       <TextField
         multiline
         rows={5}
@@ -404,14 +417,16 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
         value={input}
         onChange={handleInputChange}
         onKeyDown={handleInputKeyDown}
-        sx={{ ...stable_sx.chatInput, width: '100%' }}
+        sx={{ ...stable_sx.chatInput, width: '100%', flexShrink: 0 }}
         slotProps={stableChatInputSlotProps}
       />
-      <ChatWindow
-        messages={messages}
-        loading={status === 'submitted'}
-        errorMessage={errorMessage}
-      />
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <ChatWindow
+          messages={messages}
+          loading={status === 'submitted'}
+          errorMessage={errorMessage}
+        />
+      </Box>
     </Stack>
   );
 
