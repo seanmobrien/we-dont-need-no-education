@@ -13,23 +13,12 @@ import {
   ForwardRefRenderFunction,
   useId,
 } from 'react';
-import classnames, {
-  spacing,
-  typography,
-  backgroundColor,
-  width,
-  maxWidth,
-  margin,
-  outlineStyle,
-  ringWidth,
-  display,
-  borderRadius,
-  ringColor,
-  boxShadow,
-  transitionProperty,
-  opacity,
-  borderWidth,
-} from 'tailwindcss-classnames';
+
+// Simple replacement for removed classnames function
+const classnames = (...classes: (string | undefined)[]): string => {
+  return classes.filter(Boolean).join(' ');
+};
+
 import { EmailMessage } from '@/data-models/api/email-message';
 import ContactDropdown from '@/components/contact/contact-dropdown';
 import {

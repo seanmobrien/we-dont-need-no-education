@@ -1,4 +1,3 @@
-import classnames, { padding } from '@/tailwindcss.classnames';
 import { Box } from '@mui/material';
 import { ToolInvocation as ToolInvocationProps } from 'ai';
 
@@ -32,7 +31,7 @@ const ToolInvocation = ({
   }
   return (
     <Box>
-      <strong className={classnames(padding('pr-2'))}>Tool Call:</strong>
+      <strong className="pr-2">Tool Call:</strong>
       {`${toolName} (${argArray.join(', ')})`}
     </Box>
   );

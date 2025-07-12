@@ -1,12 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import ContactDropdown from './contact-dropdown';
 import { ContactSummary } from '@/data-models/api/contact';
-import classnames, {
-  display,
-  alignItems,
-  justifyContent,
-  padding,
-} from 'tailwindcss-classnames';
+import { css } from '@emotion/react';
 import fastEqual from 'fast-deep-equal';
 import Modal from '../general/modal';
 
@@ -14,6 +9,15 @@ type ContactRecipientsProps = {
   id?: string;
   contacts: ContactSummary[];
   onContactsUpdate: (updatedContacts: ContactSummary[]) => void;
+};
+
+const styles = {
+  contactItem: css`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+  `,
 };
 
 const ContactRecipients: React.FC<ContactRecipientsProps> = ({
@@ -27,7 +31,7 @@ const ContactRecipients: React.FC<ContactRecipientsProps> = ({
   const [currentContacts, setCurrentContacts] =
     useState<ContactSummary[]>(contacts);
   const enableEditMode = useCallback(() => setIsEditing(true), [setIsEditing]);
-  const disableEditMode = useCallback(() => setIsEditing(true), [setIsEditing]);
+  const disableEditMode = useCallback(() => setIsEditing(false), [setIsEditing]);
   const filterContacts = useCallback(
     (contact: ContactSummary) =>
       currentContacts.findIndex((c) => c.contactId === contact.contactId) ===
@@ -68,7 +72,7 @@ const ContactRecipients: React.FC<ContactRecipientsProps> = ({
           .join('; ')}
         <button
           aria-haspopup="dialog"
-          className={classnames('btn', 'btn-primary')}
+          className="btn btn-primary"
           onClick={enableEditMode}
           id={ariaTargetId}
         >
@@ -82,20 +86,12 @@ const ContactRecipients: React.FC<ContactRecipientsProps> = ({
         title="Edit Recipients"
       >
         {currentContacts.map((contact) => (
-          <div
-            key={contact.contactId}
-            className={classnames(
-              display('flex'),
-              justifyContent('justify-between'),
-              alignItems('items-center'),
-              padding('py-2')
-            )}
-          >
+          <div key={contact.contactId} css={styles.contactItem}>
             <span>
               {contact.name} ({contact.email})
             </span>
             <button
-              className={classnames('btn', 'btn-angry')}
+              className="btn btn-angry"
               data-target={contact.contactId.toString()}
               onClick={handleRemoveContact}
             >
