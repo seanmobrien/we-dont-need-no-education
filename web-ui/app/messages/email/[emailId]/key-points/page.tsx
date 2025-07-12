@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import { Box } from '@mui/material';
 import KpiGrid from './grid';
-import { ChatPanel } from '@/components/ai/chat-panel';
+import { ChatPanel, ChatPanelLayout } from '@/components/ai/chat-panel';
 import { Metadata } from 'next';
 
 export const generateMetadata = async (): Promise<Metadata> => {
@@ -16,17 +16,19 @@ const Home = async () => {
 
   return (
     <EmailDashboardLayout session={session}>
-      <Box
-        sx={{
-          width: '100%',
-          '& > :not(style)': {
-            m: 1,
-          },
-        }}
-      >
-        <KpiGrid />
-        <ChatPanel page="email-key-points" isDashboardLayout={true} />
-      </Box>
+      <ChatPanelLayout isDashboardLayout={true}>
+        <Box
+          sx={{
+            width: '100%',
+            '& > :not(style)': {
+              m: 1,
+            },
+          }}
+        >
+          <KpiGrid />
+          <ChatPanel page="email-key-points" isDashboardLayout={true} />
+        </Box>
+      </ChatPanelLayout>
     </EmailDashboardLayout>
   );
 };

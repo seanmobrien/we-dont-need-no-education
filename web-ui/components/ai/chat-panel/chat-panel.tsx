@@ -1,5 +1,6 @@
 'use client';
 import React, { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Box,
   TextField,
@@ -422,15 +423,18 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
         <Box sx={{ padding: 2, textAlign: 'center', color: 'text.secondary' }}>
           Chat panel is docked to {config.position}
         </Box>
-        {/* Docked panel */}
-        <DockedPanel
-          position={config.position}
-          onUndock={onUndock}
-          onFloat={onFloat}
-          title={`Chat - ${page}`}
-        >
-          {chatContent}
-        </DockedPanel>
+        {/* Docked panel - render using portal to escape layout context */}
+        {typeof document !== 'undefined' && createPortal(
+          <DockedPanel
+            position={config.position}
+            onUndock={onUndock}
+            onFloat={onFloat}
+            title={`Chat - ${page}`}
+          >
+            {chatContent}
+          </DockedPanel>,
+          document.body
+        )}
         {/* Docking overlay when dragging */}
         <DockingOverlay
           isActive={isDragging}
