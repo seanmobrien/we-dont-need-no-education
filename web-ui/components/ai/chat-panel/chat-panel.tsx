@@ -28,6 +28,7 @@ import { DockPosition, useChatPanelContext } from './chat-panel-context';
 import { DockingOverlay, useDocking } from './docking-overlay';
 import { DockedPanel } from './docked-panel';
 
+// Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
 const activeThreadStorageKey = 'chatActiveId';
@@ -116,7 +117,8 @@ const generateChatMessageId = (): string => {
   return `${threadId}:${messageId}`;
 };
 
-const stable_sx = {
+// Stable style objects
+const stableStyles = {
   container: {
     display: 'flex',
     flexDirection: 'column',
@@ -126,12 +128,31 @@ const stable_sx = {
     height: '100%', // Fill available height instead of viewport
     boxSizing: 'border-box',
   } as const,
-  chatInput: { marginBottom: 2 } as const,
+  chatInput: { 
+    marginBottom: 2,
+    flexShrink: 0,
+  } as const,
   stack: { 
     flexGrow: 1, 
     overflow: 'hidden',
     width: '100%',
     minHeight: 0, // Allow flex shrinking
+    maxHeight: '100%',
+  } as const,
+  chatBox: {
+    flex: 1,
+    minHeight: 0,
+    overflow: 'hidden',
+  } as const,
+  placeholderBox: {
+    padding: 2,
+    textAlign: 'center',
+    color: 'text.secondary',
+  } as const,
+  inputAdornmentBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
   } as const,
 } as const;
 
@@ -328,18 +349,12 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
     saveDialogSize(width, height);
   }, [setSize]);
 
-  const stableChatInputSlotProps = React.useMemo(() => {
+  const stableChatInputSlotProps = useMemo(() => {
     return {
       input: {
         endAdornment: (
           <InputAdornment position="end">
-            <Box
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
+            <Box sx={stableStyles.inputAdornmentBox}>
               <IconButton edge="end" onClick={onSendClick}>
                 <PublishIcon />
               </IconButton>
@@ -399,15 +414,10 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
   }, [rateLimitTimeout, reload, data, setData]);
 
   // Create chat content component
-  const chatContent = (
+  const chatContent = useMemo(() => (
     <Stack 
       spacing={2} 
-      sx={{ 
-        ...stable_sx.stack, 
-        width: '100%',
-        height: '100%',
-        maxHeight: '100%',
-      }}
+      sx={stableStyles.stack}
     >
       <TextField
         multiline
@@ -417,10 +427,10 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
         value={input}
         onChange={handleInputChange}
         onKeyDown={handleInputKeyDown}
-        sx={{ ...stable_sx.chatInput, width: '100%', flexShrink: 0 }}
+        sx={{ ...stableStyles.chatInput, width: '100%' }}
         slotProps={stableChatInputSlotProps}
       />
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <Box sx={stableStyles.chatBox}>
         <ChatWindow
           messages={messages}
           loading={status === 'submitted'}
@@ -428,7 +438,7 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
         />
       </Box>
     </Stack>
-  );
+  ), [input, handleInputChange, handleInputKeyDown, stableChatInputSlotProps, messages, status, errorMessage]);
 
   // Handle docked positions
   if (config.position !== 'inline' && config.position !== 'floating') {
@@ -491,7 +501,7 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
   }
 
   return (
-    <Box id={`chat-panel-${threadId}`} sx={stable_sx.container}>
+    <Box id={`chat-panel-${threadId}`} sx={stableStyles.container}>
       {chatContent}
     </Box>
   );

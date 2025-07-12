@@ -4,46 +4,116 @@ export const cn = (...classes: (string | undefined | null | false)[]): string =>
   return classes.filter(Boolean).join(' ');
 };
 
-// Simple class name mappings for commonly used Tailwind classes
+// Note: This file contains legacy Tailwind class mappings that should be 
+// replaced with proper CSS-in-JS or Material-UI styling.
+// These styles are kept temporarily for compatibility but should be 
+// migrated to emotion or Material-UI sx prop usage.
+
+// Simple class name mappings for commonly used styles  
 export const styles = {
   // Layout
-  container: 'mx-auto p-6 w-full rounded-lg shadow-md',
-  table: 'table w-full',
+  container: {
+    margin: '0 auto',
+    padding: '1.5rem',
+    width: '100%',
+    borderRadius: '0.5rem',
+    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse' as const,
+  },
   
   // Typography
-  title: 'text-xl font-semibold mb-4',
-  error: 'text-red-500 mb-2',
-  loading: 'text-gray-600',
+  title: {
+    fontSize: '1.25rem',
+    fontWeight: 600,
+    marginBottom: '1rem',
+  },
+  error: {
+    marginBottom: '0.5rem',
+    color: '#ef4444',
+  },
+  loading: {
+    color: '#6b7280',
+  },
   
   // Forms
-  input: 'w-full border rounded p-2 focus:outline-none focus:ring focus:ring-blue-300',
-  textarea: 'w-full border',
+  input: {
+    width: '100%',
+    border: '1px solid #d1d5db',
+    borderRadius: '0.375rem',
+    padding: '0.5rem',
+    '&:focus': {
+      outline: 'none',
+      boxShadow: '0 0 0 3px rgb(59 130 246 / 0.3)',
+    },
+  },
+  textarea: {
+    width: '100%',
+    border: '1px solid #d1d5db',
+  },
   
   // Buttons
-  button: 'p-2 text-white rounded',
-  buttonPrimary: 'bg-blue-500 hover:bg-blue-600',
-  buttonSecondary: 'bg-green-500 hover:bg-green-600',
-  buttonDanger: 'bg-red-500 hover:bg-red-600',
+  button: {
+    padding: '0.5rem',
+    color: 'white',
+    borderRadius: '0.375rem',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease-in-out',
+  },
+  buttonPrimary: {
+    backgroundColor: '#3b82f6',
+    '&:hover': {
+      backgroundColor: '#2563eb',
+    },
+  },
+  buttonSecondary: {
+    backgroundColor: '#10b981',
+    '&:hover': {
+      backgroundColor: '#059669',
+    },
+  },
+  buttonDanger: {
+    backgroundColor: '#ef4444',
+    '&:hover': {
+      backgroundColor: '#dc2626',
+    },
+  },
   
   // Table
-  tableCell: 'border p-2',
-  tableCellTop: 'border-t p-2',
-  tableCellLeft: 'border-t border-l p-2',
-  tableCellBottom: 'border-b p-2',
-  tableCellFull: 'border-y border-r p-2',
+  tableCell: {
+    border: '1px solid #d1d5db',
+    padding: '0.5rem',
+  },
   
   // Spacing
-  marginTop: 'mt-4',
-  marginRight: 'mr-2',
-  marginLeft: 'ml-2',
+  marginTop: {
+    marginTop: '1rem',
+  },
+  marginRight: {
+    marginRight: '0.5rem',
+  },
+  marginLeft: {
+    marginLeft: '0.5rem',
+  },
   
   // Display
-  flex: 'flex',
+  flex: {
+    display: 'flex',
+  },
   
   // Text
-  fontSemibold: 'font-semibold',
-  alignTop: 'align-top',
+  fontSemibold: {
+    fontWeight: 600,
+  },
+  alignTop: {
+    verticalAlign: 'top',
+  },
   
   // Width
-  minWidthMax: 'min-w-max',
-};
+  minWidthMax: {
+    minWidth: 'max-content',
+  },
+} as const;

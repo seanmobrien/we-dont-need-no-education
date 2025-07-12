@@ -51,8 +51,12 @@ export const EmailPropertyDataGrid = <
 
   return (
     <Box
-      className="flex flex-col max-w-full"
-      sx={containerSx}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        maxWidth: '100%',
+        ...containerSx,
+      }}
     >
       <ServerBoundDataGrid<TRowModel>
         {...props}
