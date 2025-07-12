@@ -33,6 +33,76 @@ const hasSecretHeaderBypass = (req: Request | undefined): boolean => {
   return headerValue === checkHeaderValue;
 };
 
+/**
+ * Validates that the application is running on localhost for local development auth bypass.
+ * Throws a scary error if not running on localhost to prevent accidental production use.
+ */
+const validateLocalhost = (req: Request | undefined): void => {
+  const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+  if (!bypassUserId) {
+    return; // No bypass configured, nothing to validate
+  }
+
+  // Extract hostname from various possible sources
+  let hostname = '';
+  
+  if (req) {
+    // Try to get hostname from the request
+    const url = new URL(req.url);
+    hostname = url.hostname;
+  } else {
+    // Fallback to environment variable
+    const publicHostname = env('NEXT_PUBLIC_HOSTNAME');
+    if (publicHostname) {
+      hostname = new URL(publicHostname).hostname;
+    }
+  }
+
+  // Check if running on localhost
+  const isLocalhost = hostname === 'localhost' || 
+                     hostname === '127.0.0.1' || 
+                     hostname.startsWith('192.168.') ||
+                     hostname.startsWith('10.') ||
+                     hostname.startsWith('172.16.') ||
+                     hostname.endsWith('.local');
+
+  if (!isLocalhost) {
+    throw new Error(`
+🚨🚨🚨 CRITICAL SECURITY WARNING 🚨🚨🚨
+
+LOCAL_DEV_AUTH_BYPASS_USER_ID is set but you're not running on localhost!
+Current hostname: ${hostname}
+
+This environment variable MUST NEVER be set in production or any non-local environment.
+If you see this error:
+1. IMMEDIATELY remove LOCAL_DEV_AUTH_BYPASS_USER_ID from your environment
+2. Check your .env files and remove any reference to this variable
+3. NEVER commit code with this variable set to any value
+
+Continuing with this variable set in a non-localhost environment could compromise 
+the security of your entire application and expose user data.
+
+Remember: We don't threaten to fire people for exposing secrets - we make threats 
+against things people actually care about. Don't make us test that theory.
+
+🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
+    `);
+  }
+};
+
+/**
+ * Checks if local development auth bypass is enabled and validates environment
+ */
+const shouldUseLocalDevBypass = (req: Request | undefined): boolean => {
+  const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+  if (!bypassUserId || bypassUserId.trim() === '') {
+    return false;
+  }
+  
+  validateLocalhost(req);
+  return true;
+};
+
 const providers: Provider[] = [
   Google<GoogleProfile>({
     clientId: process.env.GOOGLE_CLIENT_ID as string, // Added type assertion
@@ -71,6 +141,32 @@ const providers: Provider[] = [
         } as NextAuthUser & { account_id: number }; // Type assertion for custom field
       }
       return null; // Authentication failed
+    },
+  }),
+  CredentialsProvider({
+    name: 'Local Dev Bypass',
+    credentials: {
+      bypass: {
+        label: 'Local Development Bypass',
+        type: 'hidden',
+        value: 'true',
+      },
+    },
+    authorize: async (
+      credentials: Record<string, unknown> | undefined,
+      req: Request,
+    ): Promise<NextAuthUser | null> => {
+      if (shouldUseLocalDevBypass(req)) {
+        const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+        return {
+          id: bypassUserId,
+          account_id: parseInt(bypassUserId!) || 1, // Parse user ID or default to 1
+          image: '',
+          name: `Local Dev User ${bypassUserId}`,
+          email: `localdev-${bypassUserId}@localhost.dev`,
+        } as NextAuthUser & { account_id: number };
+      }
+      return null;
     },
   }),
 ];
@@ -151,17 +247,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
       skipCSRFCheck:
         req && hasSecretHeaderBypass(req) ? skipCSRFCheck : undefined,
       callbacks: {
-        authorized: async ({ auth }: { auth: Session | null }) => {
+        authorized: async ({ auth, request }: { auth: Session | null; request?: Request }) => {
+          // Check if we should use local dev bypass
+          if (shouldUseLocalDevBypass(request)) {
+            return true; // Always authorize when local dev bypass is enabled
+          }
           return !!auth;
         },
         signIn: signInImpl,
         jwt: async ({
           token,
           user,
+          trigger,
         }: {
           token: JWT;
           user?: NextAuthUserWithAccountId | NextAuthUser | AdapterUser | null;
+          trigger?: string;
         }) => {
+          // Handle local dev bypass - create a token for the bypass user if needed
+          if (!user && !token.id && shouldUseLocalDevBypass(undefined)) {
+            const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+            token.id = bypassUserId;
+            token.account_id = parseInt(bypassUserId!) || 1;
+            token.name = `Local Dev User ${bypassUserId}`;
+            token.email = `localdev-${bypassUserId}@localhost.dev`;
+          }
+          
           if (user) {
             token.id = user.id;
             // Check to see if we were given an account_id, which is a custom field we set in the authorize function of the CredentialsProvider
@@ -178,9 +289,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
           session: Session;
           token: JWT;
         }) => {
+          // Handle local dev bypass session creation
+          if (shouldUseLocalDevBypass(undefined) && (!session.user || !session.user.id)) {
+            const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+            session.user = {
+              id: bypassUserId!,
+              name: `Local Dev User ${bypassUserId}`,
+              email: `localdev-${bypassUserId}@localhost.dev`,
+              image: '',
+            };
+            (session.user as NextAuthUserWithAccountId).account_id = parseInt(bypassUserId!) || 1;
+          }
+          
           if (session.user) {
             if (token.id) {
               session.user.id = String(token.id);
+            }
+            if (token.name && !session.user.name) {
+              session.user.name = String(token.name);
+            }
+            if (token.email && !session.user.email) {
+              session.user.email = String(token.email);
             }
             if (token.account_id !== undefined) {
               // Store account_id for use in the sesion callback
