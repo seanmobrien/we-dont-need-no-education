@@ -2,11 +2,6 @@
 import { JSX, useMemo, useCallback } from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
-import classnames, {
-  display,
-  flexDirection,
-  width,
-} from "clsx";
 import { Box } from '@mui/material';
 import { EmailGridProps } from '@/components/mui/data-grid/types';
 import {
@@ -182,11 +177,7 @@ export const EmailList = ({
   return (
     <>
       <Box
-        className={classnames(
-          display('flex'),
-          flexDirection('flex-col'),
-          width('w-full'),
-        )}
+        className="flex flex-col w-full"
         sx={containerSx}
       >
         <ServerBoundDataGrid<EmailMessageSummary>

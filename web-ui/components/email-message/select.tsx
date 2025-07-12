@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { debounce } from 'lodash';
 import { EmailMessageSummary } from '@/data-models';
-import classnames, { margin } from "clsx";
+
+// Simple replacement for removed classnames function
+const classnames = (...classes: (string | undefined)[]): string => {
+  return classes.filter(Boolean).join(' ');
+};
 
 const EmailSelect: React.FC<{
   id?: string;

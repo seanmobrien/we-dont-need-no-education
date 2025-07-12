@@ -1,3 +1,5 @@
+'use client';
+
 import BulkEmailForm from '@/components/email-message/bulk-form';
 import Image from 'next/image';
 import { css } from '@emotion/react';

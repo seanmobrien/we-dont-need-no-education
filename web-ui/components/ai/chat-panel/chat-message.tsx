@@ -1,10 +1,4 @@
-import classnames, {
-  justifyItems,
-  margin,
-  padding,
-  textAlign,
-  width,
-} from "clsx";
+import clsx from 'clsx';
 import { Paper, Box } from '@mui/material';
 import { Message } from 'ai';
 import MuiMarkdown from 'mui-markdown';
@@ -15,39 +9,29 @@ import { useMemo } from 'react';
 const ChatMessage = ({ message }: { message: Message }) => {
   const { role = 'user', parts = [] } = message ?? {};
 
-  const cssJustify = justifyItems({
-    'justify-items-end': role === 'user',
-    'justify-items-start': role !== 'user',
-  });
-  const cssAlign = textAlign({
-    'text-right': role === 'user',
-    'text-left': role !== 'user',
-  });
-  const cssMargin = margin({
-    'mb-2': true,
+  const cssJustify = role === 'user' ? 'justify-items-end' : 'justify-items-start';
+  const cssAlign = role === 'user' ? 'text-right' : 'text-left';
+  const cssMargin = clsx('mb-2', {
     'mr-8': role !== 'user',
     'ml-auto': role === 'user',
   });
 
-  const cssContainerPadding = padding({
-    'pl-8': role === 'user',
-    'pr-8': role !== 'user',
-  });
-  const cssContainer = classnames(width('w-full'), cssContainerPadding);
+  const cssContainerPadding = role === 'user' ? 'pl-8' : 'pr-8';
+  const cssContainer = clsx('w-full', cssContainerPadding);
 
   return useMemo(
     () => (
       <div className={cssContainer}>
         <Paper
           elevation={6}
-          className={classnames(
+          className={clsx(
             cssJustify,
             cssAlign,
             cssMargin,
-            width('w-fit'),
+            'w-fit',
           )}
         >
-          <Box className={classnames(padding('p-2'))}>
+          <Box className="p-2">
             {parts
               .map((part, idx) =>
                 part.type === 'text' ? (

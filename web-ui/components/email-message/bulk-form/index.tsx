@@ -20,6 +20,11 @@ import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';
 import { LoggedError } from '@/lib/react-util';
 
+// Simple replacement for removed classnames function
+const classnames = (...classes: (string | undefined)[]): string => {
+  return classes.filter(Boolean).join(' ');
+};
+
 type BulkUpdateOperationRecord = {
   record: RecordWithDirtyState<EmailMessage>;
   successful?: boolean;

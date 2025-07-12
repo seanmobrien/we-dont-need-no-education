@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { Box } from '@mui/material';
 import { ToolInvocation as ToolInvocationProps } from 'ai';
 
