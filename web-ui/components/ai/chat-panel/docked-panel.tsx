@@ -34,15 +34,18 @@ const DockedContainer = styled(Paper, {
     flexDirection: 'column' as const,
   };
 
-  // Position-specific styles
+  // Position-specific styles  
+  // Account for header height (approximately 64px for MUI AppBar)
+  const headerHeight = 64;
+  
   switch (dockPosition) {
     case 'top':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         left: 0,
         right: 0,
-        maxHeight: '50vh', // Constrain height to half viewport
+        maxHeight: `calc(50vh - ${headerHeight}px)`, // Constrain height accounting for header
         borderBottom: `1px solid ${theme.palette.divider}`,
       };
     case 'bottom':
@@ -57,7 +60,7 @@ const DockedContainer = styled(Paper, {
     case 'left':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         left: 0,
         bottom: 0,
         borderRight: `1px solid ${theme.palette.divider}`,
@@ -65,7 +68,7 @@ const DockedContainer = styled(Paper, {
     case 'right':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         right: 0,
         bottom: 0,
         borderLeft: `1px solid ${theme.palette.divider}`,
@@ -73,7 +76,7 @@ const DockedContainer = styled(Paper, {
     case 'top-left':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         left: 0,
         borderBottom: `1px solid ${theme.palette.divider}`,
         borderRight: `1px solid ${theme.palette.divider}`,
@@ -81,7 +84,7 @@ const DockedContainer = styled(Paper, {
     case 'top-right':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         right: 0,
         borderBottom: `1px solid ${theme.palette.divider}`,
         borderLeft: `1px solid ${theme.palette.divider}`,
