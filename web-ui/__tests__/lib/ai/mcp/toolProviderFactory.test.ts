@@ -25,7 +25,7 @@ jest.mock('ai', () => ({
   ToolSet: {},
 }));
 
-jest.mock('@/lib/ai/mcp/traceable-transport', () => ({
+jest.mock('@/lib/ai/mcp/traceable-transport-client.ts', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
 }));
 
