@@ -103,6 +103,9 @@ const shouldUseLocalDevBypass = (req: Request | undefined): boolean => {
   return true;
 };
 
+const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+
+
 const providers: Provider[] = [
   Google<GoogleProfile>({
     clientId: process.env.GOOGLE_CLIENT_ID as string, // Added type assertion
@@ -116,21 +119,28 @@ const providers: Provider[] = [
           'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/gmail.readonly', //
       },
     },
-  }),
-  CredentialsProvider({
-    name: 'Secret Header',
+  }),    
+  ...(bypassUserId ? [CredentialsProvider({
+    id: 'local-dev-bypass', // Unique for the provider
+    name: 'Local Dev Bypass',
     credentials: {
       secret: {
-        label: 'Secret',
-        type: 'text',
-        placeholder: 'Enter secret value',
+        label: '',
+        type: 'hidden',
       },
+      ...(bypassUserId ? {
+        bypass: {
+        label: 'Local Development Bypass',
+        type: 'hidden',
+        value: 'true',
+      },      
+      } : {}),      
     },
     authorize: async (
       credentials: Record<string, unknown> | undefined,
       req: Request,
     ): Promise<NextAuthUser | null> => {
-      // Added Promise<NextAuthUser | null>
+      // Check to see if this is our chatbot doing secret chatbot stuff
       if (hasSecretHeaderBypass(req)) {
         return {
           id: '3',
@@ -140,24 +150,8 @@ const providers: Provider[] = [
           email: 'secret-header@notadomain.org',
         } as NextAuthUser & { account_id: number }; // Type assertion for custom field
       }
-      return null; // Authentication failed
-    },
-  }),
-  CredentialsProvider({
-    name: 'Local Dev Bypass',
-    credentials: {
-      bypass: {
-        label: 'Local Development Bypass',
-        type: 'hidden',
-        value: 'true',
-      },
-    },
-    authorize: async (
-      credentials: Record<string, unknown> | undefined,
-      req: Request,
-    ): Promise<NextAuthUser | null> => {
+      // Check to see if local development bypass is an option
       if (shouldUseLocalDevBypass(req)) {
-        const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
         return {
           id: bypassUserId,
           account_id: parseInt(bypassUserId!) || 1, // Parse user ID or default to 1
@@ -166,9 +160,9 @@ const providers: Provider[] = [
           email: `localdev-${bypassUserId}@localhost.dev`,
         } as NextAuthUser & { account_id: number };
       }
-      return null;
+      return null; // Authentication failed
     },
-  }),
+  })] : []) as Provider[] // Only add if bypassUserId is set,
 ];
 
 export const providerMap = providers.map((provider) => {
@@ -187,8 +181,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let signInImpl: any;
 
-    // Skip database adapter during build process
-    /*if (process.env.NEXT_RUNTIME === 'nodejs' && process.env.NEXT_PHASE !== 'phase-production-build')*/
+    // Skip database adapter during build process, on edge, or client-side (which should never happen)
     if (
       process.env.NEXT_RUNTIME === 'nodejs' &&
       typeof window === 'undefined' &&
@@ -236,22 +229,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
       adapter = undefined; // No adapter for edge runtime, client, or build
       signInImpl = async () => {
         logEvent('signIn');
-        return true;
+        return false;
       };
     }
 
     return {
-      session: { strategy: 'jwt' },
       adapter,
-      providers,
-      skipCSRFCheck:
-        req && hasSecretHeaderBypass(req) ? skipCSRFCheck : undefined,
       callbacks: {
-        authorized: async ({ auth, request }: { auth: Session | null; request?: Request }) => {
-          // Check if we should use local dev bypass
-          if (shouldUseLocalDevBypass(request)) {
-            return true; // Always authorize when local dev bypass is enabled
-          }
+        authorized: async ({ auth }: { auth: Session | null; request?: Request }) => {          
           return !!auth;
         },
         signIn: signInImpl,
@@ -262,15 +247,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
           token: JWT;
           user?: NextAuthUserWithAccountId | NextAuthUser | AdapterUser | null;
         }) => {
-          // Handle local dev bypass - create a token for the bypass user if needed
-          if (!user && !token.id && shouldUseLocalDevBypass(undefined)) {
-            const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
-            token.id = bypassUserId;
-            token.account_id = parseInt(bypassUserId!) || 1;
-            token.name = `Local Dev User ${bypassUserId}`;
-            token.email = `localdev-${bypassUserId}@localhost.dev`;
-          }
-          
           if (user) {
             token.id = user.id;
             // Check to see if we were given an account_id, which is a custom field we set in the authorize function of the CredentialsProvider
@@ -287,18 +263,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
           session: Session;
           token: JWT;
         }) => {
-          // Handle local dev bypass session creation
-          if (shouldUseLocalDevBypass(undefined) && (!session.user || !session.user.id)) {
-            const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
-            session.user = {
-              id: bypassUserId!,
-              name: `Local Dev User ${bypassUserId}`,
-              email: `localdev-${bypassUserId}@localhost.dev`,
-              image: '',
-            };
-            (session.user as NextAuthUserWithAccountId).account_id = parseInt(bypassUserId!) || 1;
-          }
-          
           if (session.user) {
             if (token.id) {
               session.user.id = String(token.id);
@@ -318,6 +282,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
           return session;
         },
       },
+      providers,
+      session: { strategy: 'jwt' },
+      skipCSRFCheck:
+        req && hasSecretHeaderBypass(req) ? skipCSRFCheck : undefined,
+      theme: {
+        colorScheme: 'auto', // 'auto' for system preference, 'light' or 'dark'
+        logo: '/logo-dark.png',
+        brandColor: '#1898a8', // Custom brand color        
+      }
     };
   },
 );
