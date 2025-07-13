@@ -7,28 +7,20 @@
  */
 
 import { jest } from '@jest/globals';
+import { makeMockDb } from '@/__tests__/jest.setup';
 
-// Mock all dependencies
-const mockDb = {
-  insert: jest.fn().mockReturnValue({
-    values: jest.fn().mockReturnValue({
-      returning: jest.fn().mockResolvedValue([{ id: 'test-chat-123' }]),
-      onConflictDoNothing: jest.fn().mockResolvedValue(undefined),
-    }),
-  }),
-  update: jest.fn().mockReturnValue({
-    set: jest.fn().mockReturnValue({
-      where: jest.fn().mockResolvedValue(undefined),
-    }),
-  }),
-  query: {
-    chats: {
-      findFirst: jest.fn().mockResolvedValue({ title: null }),
-    },
-  },
+const setupMockDb = () => {
+  const theDb = makeMockDb();
+  let seq = 1;
+  (theDb.execute as jest.Mock).mockImplementation(() => {
+    return [seq++, seq++, seq++, seq++];
+  });
+  return theDb;
 };
 
+let mockDb = setupMockDb();
 jest.mock('@/lib/drizzle-db/connection', () => ({ db: mockDb }));
+
 jest.mock('drizzle-orm', () => ({ eq: jest.fn() }));
 jest.mock('@/drizzle/schema', () => ({
   chats: { id: 'chats.id' },
@@ -38,28 +30,229 @@ jest.mock('@/drizzle/schema', () => ({
   messageStatuses: {},
   turnStatuses: {},
 }));
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn((fn) => fn({ info: jest.fn(), error: jest.fn() })),
-}));
 
-import { wrapLanguageModel } from 'ai';
+import {
+  LanguageModelV1,
+  LanguageModelV1Prompt,
+  LanguageModelV1StreamPart,
+  streamText,
+  wrapLanguageModel,
+} from 'ai';
 import {
   createChatHistoryMiddleware,
   type ChatHistoryContext,
-} from '@/lib/ai/middleware/chat-history-middleware';
+} from '@/lib/ai/middleware/chat-history';
+
+const setupStreamingMockModel = ({
+  startStream,
+  rawCall,
+}: {
+  startStream: UnderlyingDefaultSource<LanguageModelV1StreamPart>['start'];
+  rawCall?: Record<string, unknown>;
+}): LanguageModelV1 =>
+  /*  new MockLanguageModelV1({
+    doGenerate: async () => ({
+      rawCall: { rawPrompt: null, rawSettings: {} },
+      finishReason: 'stop',
+      usage: { promptTokens: 10, completionTokens: 20 },
+      text: `Hello, world!`,
+    }),
+  });*/
+
+  ({
+    specificationVersion: 'v1',
+    provider: 'test',
+    modelId: 'test-model',
+    defaultObjectGenerationMode: 'json',
+    doStream: jest.fn<LanguageModelV1['doStream']>().mockResolvedValue({
+      stream: new ReadableStream({
+        start: startStream,
+      }),
+      rawCall: {
+        rawPrompt: undefined,
+        rawSettings: {},
+        ...(rawCall ?? {}),
+      },
+    }),
+    doGenerate: jest.fn<LanguageModelV1['doGenerate']>(),
+  });
+
+const runStreamableTest = async ({
+  context,
+  prompt,
+  ...props
+}:
+  | {
+      model: LanguageModelV1;
+      context?: Partial<ChatHistoryContext>;
+      prompt?: LanguageModelV1Prompt;
+    }
+  | {
+      context?: Partial<ChatHistoryContext>;
+      prompt?: LanguageModelV1Prompt;
+      startStream: UnderlyingDefaultSource<LanguageModelV1StreamPart>['start'];
+      rawCall?: Record<string, unknown>;
+    }) => {
+  const model =
+    'model' in props
+      ? props.model
+      : setupStreamingMockModel({
+          startStream: props.startStream,
+          rawCall: props.rawCall,
+        });
+  // Create wrapped model with chat history middleware
+  const wrappedModel = wrapLanguageModel({
+    model,
+    middleware: createChatHistoryMiddleware({
+      userId: 'test-user',
+      sessionId: 'test-session',
+      ...(context ?? {}),
+    }),
+  });
+
+  // Use doStream to test streaming behavior
+  const streamResult = await streamText({
+    // await wrappedModel.doStream({
+    model: wrappedModel,
+    messages: prompt
+      ? prompt
+      : [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Try and make the world a a better place.',
+              },
+            ],
+          },
+        ],
+    //seed: undefined,
+    //maxTokens: undefined,
+    //temperature: undefined,
+    //topP: undefined,
+    //topK: undefined,
+    //frequencyPenalty: undefined,
+    //presencePenalty: undefined,
+    //stopSequences: undefined,
+    // mode: { type: 'regular' },
+    //inputFormat: 'messages',
+  });
+
+  /*
+  expect(streamResult).toBeDefined();
+  expect(streamResult.stream).toBeInstanceOf(ReadableStream);
+
+  // Read from the stream to trigger middleware
+  const reader = streamResult.stream.getReader();
+  const chunks: Array<LanguageModelV1StreamPart> = [];
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (value) {
+      chunks.push(value);
+    }
+    if (done) {
+      break;
+    }
+  }
+
+  // Verify we received the expected chunks
+  return chunks;
+  */
+  // Read from the stream to trigger middleware and collect all chunks as a string
+  return await streamResult.text;
+};
 
 describe('Chat History Middleware Integration', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
+    mockDb = setupMockDb();
+  });
+
+  it('should integrate with AI SDK wrapLanguageModel', async () => {
+    const chunks = await runStreamableTest({
+      startStream: (controller) => {
+        controller.enqueue({ type: 'text-delta', textDelta: 'Hello' });
+        controller.enqueue({ type: 'text-delta', textDelta: ' world!' });
+        controller.enqueue({
+          type: 'finish',
+          finishReason: 'stop',
+          usage: { promptTokens: 5, completionTokens: 10 },
+        });
+        controller.close();
+      },
+    });
+
+    /*
+       expect(wrappedModel).toBeDefined();
+    expect(wrappedModel.provider).toBe('test');
+    expect(wrappedModel.modelId).toBe('test-model');
+
+    // Test streaming with the wrapped model
+    const streamResult = await wrappedModel.doStream({
+      prompt: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Hello, how are you today?',
+            },
+          ],
+        },
+      ],
+      seed: undefined,
+      maxTokens: undefined,
+      temperature: undefined,
+      topP: undefined,
+      topK: undefined,
+      frequencyPenalty: undefined,
+      presencePenalty: undefined,
+      stopSequences: undefined,
+
+      mode: { type: 'regular' },
+      inputFormat: 'messages',
+    });
+
+    expect(streamResult).toBeDefined();
+    expect(streamResult.stream).toBeInstanceOf(ReadableStream);
+
+    // Read from the stream to trigger middleware
+    const reader = streamResult.stream.getReader();
+    const chunks = [];
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+    */
+    expect(chunks).toEqual('Hello, World!');
+
+    /*
+    // Verify we received the expected chunks
+    expect(chunks).toHaveLength(3);
+    expect(chunks[0]).toEqual({ type: 'text-delta', textDelta: 'Hello' });
+    expect(chunks[1]).toEqual({ type: 'text-delta', textDelta: ' world!' });
+    expect(chunks[2]).toEqual({
+      type: 'finish',
+      finishReason: 'stop',
+      usage: { promptTokens: 5, completionTokens: 10 },
+    });
+*/
+    // Verify database operations were called
+    expect(mockDb.insert).toHaveBeenCalled();
   });
 
   it('should integrate with AI SDK wrapLanguageModel', async () => {
     // Mock base language model
     const mockBaseModel = {
       specificationVersion: 'v1' as const,
+      defaultObjectGenerationMode: 'json',
       provider: 'test',
       modelId: 'test-model',
-      doStream: jest.fn().mockResolvedValue({
+      doStream: jest.fn<LanguageModelV1['doStream']>().mockResolvedValue({
         stream: new ReadableStream({
           start(controller) {
             controller.enqueue({ type: 'text-delta', textDelta: 'Hello' });
@@ -72,11 +265,13 @@ describe('Chat History Middleware Integration', () => {
             controller.close();
           },
         }),
-        finishReason: 'stop',
-        usage: { promptTokens: 5, completionTokens: 10 },
+        rawCall: {
+          rawPrompt: undefined,
+          rawSettings: {},
+        },
       }),
       doGenerate: jest.fn(),
-    };
+    } as LanguageModelV1;
 
     const context: ChatHistoryContext = {
       userId: 'test-user',
@@ -148,20 +343,20 @@ describe('Chat History Middleware Integration', () => {
   });
 
   it('should handle tool calls in streaming context', async () => {
-    const mockBaseModel = {
-      specificationVersion: 'v1' as const,
+    const mockBaseModel: LanguageModelV1 = {
+      specificationVersion: 'v1',
       provider: 'test',
       modelId: 'test-model',
-      mode: { type: 'regular' },
-      inputFormat: 'messages',
-      doStream: jest.fn().mockResolvedValue({
+      defaultObjectGenerationMode: 'json',
+      doStream: jest.fn<LanguageModelV1['doStream']>().mockResolvedValue({
         stream: new ReadableStream({
           start(controller) {
             controller.enqueue({
               type: 'tool-call',
+              toolCallType: 'function',
               toolCallId: 'call-123',
               toolName: 'searchCaseFile',
-              args: { query: 'policy violation' },
+              args: JSON.stringify({ query: 'policy violation' }),
             });
             controller.enqueue({
               type: 'text-delta',
@@ -175,8 +370,12 @@ describe('Chat History Middleware Integration', () => {
             controller.close();
           },
         }),
-      }) as never,
-      doGenerate: jest.fn(),
+        rawCall: {
+          rawPrompt: undefined,
+          rawSettings: {},
+        },
+      }),
+      doGenerate: jest.fn<LanguageModelV1['doGenerate']>(),
     };
 
     const context: ChatHistoryContext = {
@@ -226,8 +425,8 @@ describe('Chat History Middleware Integration', () => {
 
     // Verify tool call was handled
     expect(chunks).toHaveLength(3);
-    expect(chunks[0].type).toBe('tool-call');
-    expect(chunks[0].toolName).toBe('searchCaseFile');
+    expect(chunks[0]).toHaveProperty('type', 'tool-call');
+    expect(chunks[0]).toHaveProperty('toolName', 'searchCaseFile');
 
     // Verify database operations included tool call storage
     expect(mockDb.insert).toHaveBeenCalled();
@@ -245,19 +444,24 @@ describe('Chat History Middleware Integration', () => {
       throw new Error('Database connection failed');
     });
 
-    const mockBaseModel = {
-      specificationVersion: 'v1' as const,
+    const mockBaseModel: LanguageModelV1 = {
+      specificationVersion: 'v1',
       provider: 'test',
       modelId: 'test-model',
-      doStream: jest.fn().mockResolvedValue({
+      defaultObjectGenerationMode: 'json',
+      doStream: jest.fn<LanguageModelV1['doStream']>().mockResolvedValue({
         stream: new ReadableStream({
           start(controller) {
             controller.enqueue({ type: 'text-delta', textDelta: 'Hello' });
             controller.close();
           },
         }),
+        rawCall: {
+          rawPrompt: undefined,
+          rawSettings: {},
+        },
       }),
-      doGenerate: jest.fn(),
+      doGenerate: jest.fn<LanguageModelV1['doGenerate']>(),
     };
 
     const context: ChatHistoryContext = {
@@ -308,14 +512,12 @@ describe('Chat History Middleware Integration', () => {
 
   it('should preserve original stream behavior when middleware is bypassed', async () => {
     // Create a fresh mock for each test case
-    const createMockModel = () => ({
-      specificationVersion: 'v1' as const,
+    const createMockModel = (): LanguageModelV1 => ({
+      specificationVersion: 'v1',
       provider: 'test',
       modelId: 'test-model',
-
-      mode: { type: 'regular' },
-      inputFormat: 'messages',
-      doStream: jest.fn().mockResolvedValue({
+      defaultObjectGenerationMode: 'json',
+      doStream: jest.fn<LanguageModelV1['doStream']>().mockResolvedValue({
         stream: new ReadableStream({
           start(controller) {
             controller.enqueue({
@@ -325,10 +527,12 @@ describe('Chat History Middleware Integration', () => {
             controller.close();
           },
         }),
-        finishReason: 'stop',
-        usage: { promptTokens: 3, completionTokens: 7 },
+        rawCall: {
+          rawPrompt: undefined,
+          rawSettings: {},
+        },
       }),
-      doGenerate: jest.fn(),
+      doGenerate: jest.fn<LanguageModelV1['doGenerate']>(),
     });
 
     // Test without middleware first
@@ -353,6 +557,12 @@ describe('Chat History Middleware Integration', () => {
       frequencyPenalty: undefined,
       presencePenalty: undefined,
       stopSequences: undefined,
+      inputFormat: 'messages',
+      mode: {
+        type: 'regular',
+        tools: undefined,
+        toolChoice: undefined,
+      },
     });
 
     const originalReader = originalResult.stream.getReader();

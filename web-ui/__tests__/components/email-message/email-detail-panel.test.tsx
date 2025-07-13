@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Test to verify EmailDetailPanel component works correctly
  * This includes comprehensive tests for loading states, fully loaded email, and expandable property panels
@@ -23,6 +24,7 @@ import {
   getNotes,
 } from '../../../lib/api/email/properties/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { KeyPointsDetails } from '@/data-models/api';
 
 // Mock the API functions
 jest.mock('../../../lib/api/client');
@@ -104,13 +106,16 @@ const mockNotes = [
   },
 ];
 
-const mockKeyPoints = [
+const mockKeyPoints: KeyPointsDetails[] = [
   {
     propertyId: 'kp-1',
     documentId: 1,
     createdOn: new Date('2023-01-01'),
     value: 'Key point about compliance requirements',
-    description: 'Key point about compliance requirements',
+    relevance: null,
+    compliance: null,
+    severity: null,
+    inferred: false,
   },
 ];
 
@@ -132,7 +137,7 @@ describe('EmailDetailPanel', () => {
     promise.awaitable = Promise.resolve(data);
     return promise;
   };
-
+  /*
   const createFailedPromise = (error: Error) => {
     const promise: any = {};
     promise.then = jest.fn().mockReturnValue({
@@ -144,7 +149,7 @@ describe('EmailDetailPanel', () => {
           }),
         };
       }),
-    });
+    });    
     promise.catch = jest.fn().mockImplementation((onError) => {
       setTimeout(() => onError(error), 10);
       return {
@@ -159,17 +164,27 @@ describe('EmailDetailPanel', () => {
     promise.awaitable = Promise.reject(error);
     return promise;
   };
-
+*/
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Default successful email loading mock
-    mockGetEmail.mockReturnValue(createSuccessfulPromise(mockFullEmail) as any);
-    mockGetKeyPoints.mockResolvedValue({ results: [] });
-    mockGetCallToAction.mockResolvedValue({ results: [] });
-    mockGetCallToActionResponse.mockResolvedValue({ results: [] });
-    mockGetSentimentAnalysis.mockResolvedValue({ results: [] });
-    mockGetNotes.mockResolvedValue({ results: [] });
+    mockGetEmail.mockReturnValue(createSuccessfulPromise(mockFullEmail));
+    mockGetKeyPoints.mockReturnValue(
+      createSuccessfulPromise({ results: mockKeyPoints }),
+    );
+    mockGetCallToAction.mockReturnValue(
+      createSuccessfulPromise({ results: [] }),
+    );
+    mockGetCallToActionResponse.mockReturnValue(
+      createSuccessfulPromise({ results: [] }),
+    );
+    mockGetSentimentAnalysis.mockReturnValue(
+      createSuccessfulPromise({ results: [] }),
+    );
+    mockGetNotes.mockReturnValue(
+      createSuccessfulPromise({ results: mockNotes }),
+    );
   });
 
   it('renders without crashing and shows loading state initially', () => {
@@ -257,7 +272,10 @@ describe('EmailDetailPanel', () => {
     mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
 
     // Mock successful notes loading
-    mockGetNotes.mockResolvedValue({ results: mockNotes });
+    mockGetNotes.mockResolvedValue({
+      results: mockNotes,
+      pageStats: { total: 1, page: 1, num: 1 },
+    });
 
     // First render in summary mode (no full email loaded)
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
@@ -307,7 +325,10 @@ describe('EmailDetailPanel', () => {
     mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
 
     // Mock successful key points loading
-    mockGetKeyPoints.mockResolvedValue({ results: mockKeyPoints });
+    mockGetKeyPoints.mockResolvedValue({
+      results: mockKeyPoints,
+      pageStats: { total: 2, page: 1, num: 100 },
+    });
 
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
 
@@ -378,10 +399,11 @@ describe('EmailDetailPanel', () => {
 
     // Check if we can find loading state, but don't fail if it's not there
     // React Query may resolve too quickly in tests
-    let foundLoadingState = false;
+    // let foundLoadingState = false;
     try {
       screen.getByRole('progressbar');
-      foundLoadingState = true;
+      // foundLoadingState = true;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       // Loading state might have resolved too quickly
     }
