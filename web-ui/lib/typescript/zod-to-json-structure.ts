@@ -19,7 +19,10 @@ export function zodToStructure(schema: ZodTypeAny): any {
     schema instanceof ZodDefault ||
     schema instanceof ZodOptional
   ) {
-    return zodToStructure('schema' in schema._def ? schema._def.schema : {});
+    if (!('schema' in schema._def)) {
+      throw new Error("Missing 'schema' in schema._def. Ensure the schema is properly defined.");
+    }
+    return zodToStructure(schema._def.schema);
   }
 
   if (schema instanceof ZodObject) {
