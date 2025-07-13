@@ -26,6 +26,7 @@ jest.mock(
         }, [setRefineSizeProps, width, height]);
 
         // Filter out non-DOM props
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { dragHandleId, dialogId, ...domProps } = otherProps;
 
         return (
@@ -81,7 +82,7 @@ describe('ResizableDraggableDialog', () => {
     });
 
     it('does not render dialog when closed', () => {
-      renderDialog({ isOpenState: [false, jest.fn()], open: false });
+      renderDialog({ isOpenState: [false, jest.fn()] });
 
       expect(screen.queryByText('Test Dialog')).not.toBeInTheDocument();
       expect(screen.queryByText('Dialog Content')).not.toBeInTheDocument();
@@ -185,7 +186,6 @@ describe('ResizableDraggableDialog', () => {
       // This test verifies that the component accepts all defined props
       const allProps: ResizeableDraggableDialogProps = {
         isOpenState: [true, jest.fn()],
-        open: true,
         title: 'Test',
         children: <div>Content</div>,
         initialHeight: 400,

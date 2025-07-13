@@ -1,5 +1,16 @@
-import { createDataStreamResponse, streamText } from 'ai';
-import { aiModelFactory, ChatRequestMessage } from '@/lib/ai';
+import { createDataStreamResponse, wrapLanguageModel, streamText } from 'ai';
+import {
+  aiModelFactory,
+  ChatRequestMessage,
+  isAiLanguageModelType,
+  getRetryErrorInfo,
+  optimizeMessagesWithToolSummarization,
+  toolProviderSetFactory,
+  type ChatHistoryContext,
+} from '@/lib/ai';
+import {
+  createChatHistoryMiddleware,
+} from '@/lib/ai/middleware/chat-history';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,16 +19,7 @@ import { db } from '@/lib/drizzle-db/connection';
 import { chatHistory } from '@/drizzle/schema';
 import { newUuid } from '@/lib/typescript';
 import { LoggedError } from '@/lib/react-util';
-import { isAiLanguageModelType } from '@/lib/ai/core';
-import { getRetryErrorInfo } from '@/lib/ai/chat';
 import { generateChatId } from '@/lib/components/ai';
-import { toolProviderSetFactory } from '@/lib/ai/mcp';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
-import {
-  createChatHistoryMiddleware,
-  type ChatHistoryContext,
-} from '@/lib/ai/middleware';
-import { wrapLanguageModel } from 'ai';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 

@@ -191,11 +191,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
       const { sql } = await import('drizzle-orm');
       const { db, schema } = await import('@/lib/drizzle-db');
       const { DrizzleAdapter } = await import('@auth/drizzle-adapter');
+
       adapter = DrizzleAdapter(db, {
-        usersTable: schema.users,
-        accountsTable: schema.accounts,
-        sessionsTable: schema.sessions,
-        verificationTokensTable: schema.verificationTokens,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        usersTable: schema.users as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        accountsTable: schema.accounts as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        sessionsTable: schema.sessions as any,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        verificationTokensTable: schema.verificationTokens as any,
       });
       signInImpl = async (
         {
@@ -215,8 +220,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
           await db
             .update(schema.accounts)
             .set({
-              access_token: String(account.access_token),
-              refresh_token: String(account.refresh_token),
+              accessToken: String(account.access_token),
+              refreshToken: String(account.refresh_token),
             })
             .where(
               sql`provider='google' AND "providerAccountId" = ${account.providerAccountId}`,

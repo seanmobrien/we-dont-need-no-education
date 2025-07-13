@@ -3,7 +3,6 @@ import {
   CaseFileSearchOptionsSchema,
   searchCaseFile,
   searchPolicyStore,
-  getCaseFileDocument,
   AiSearchResultEnvelopeSchema,
   getMultipleCaseFileDocuments,
   getCaseFileDocumentIndex,
@@ -145,6 +144,7 @@ const handler = createMcpHandler(
       },
       searchCaseFile,
     );
+    /*
     server.registerTool(
       'getCaseFileDocument',
       {
@@ -168,16 +168,16 @@ const handler = createMcpHandler(
       },
       getCaseFileDocument,
     );
-
+    */
     server.registerTool(
       'getMultipleCaseFileDocuments',
       {
         description:
-          'Retrieves the full contents of a batch of specific case file document by ID.  This will include all metadata, as well as any linked case file documents, such as ' +
+          'Retrieves and pre-processes the full contents of a batch of specific case file documents by ID.  This will include all metadata, as well as any linked case file documents, such as ' +
           'extracted key points, notes, calls to action, responsive actions, or other relevant information.  Useful for performing detailed ' +
-          'analysis of the case file contents.  This can be used as an alternative to multiple calls to the `getCaseFileDocument` tool.  IMPORTANT: case ' +
+          'analysis of the case file contents.  IMPORTANT: case ' +
           'files are large and require a lot of context space, so pre-processing via goals is recommended. Never attempt to load more than 5 unprocessed documents at a time.  ' +
-          'With adequate pre-processing, more documents can be processed, but you should never request more than 100 documents at once.',
+          'With adequate summarization goals, more documents can be processed, but you should never request more than 100 documents at once.',
         inputSchema: {
           requests: z
             .array(caseFileRequestPropsShape)
@@ -309,44 +309,70 @@ const handler = createMcpHandler(
       amendCaseRecord,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const oldClose = server.server.onclose;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const oldInit = server.server.oninitialized;
     const oldError = server.server.onerror;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const oldTransportError = server.server.transport?.onerror;
-    /*
 
     const makeErrorHandler = (
-      oldHandler: (error: unknown, ...args: any[]) => void | undefined,
+      oldHandler: ((error: Error) => void) | undefined,
       dscr: string,
     ) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (error: unknown, ...args: any[]) => {
-        const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          log: true,
-          source: 'mcp:tools',
-          severity: 'error',
-          data: {
-            details: `MCP ${dscr}::onerror handler fired`,
-            server,
-            args,
-          },
-        });
-        let ret: unknown = oldHandler?.(server.server, le, ...args);
-        if (ret) {
+        try{        
+          const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'mcp:tools',
+            severity: 'error',
+            data: {
+              details: `MCP ${dscr}::onerror handler fired`,
+              server,
+              args,
+            },
+          });
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let ret: any = oldHandler
+            ? oldHandler.call(server.server, le)
+            : undefined;
+          if (ret) {
+            log((l) =>
+              l.debug('Error was handled by existing subscriber', server, args),
+            );
+          } else {
+            log((l) =>
+              l.error('supressing MCP Server error', server, error, args),
+            );
+            ret = {
+              role: 'assistant',
+              content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
+            };
+          }
+          return ret;
+        } catch (e) {
           log((l) =>
-            l.debug('Error was handled by existing subscriber', server, args),
+            l.error('Error in MCP Server error handler', {
+              error: e,
+              originalError: error,
+              server,
+              args,
+            }),
           );
-        } else {
-          log((l) =>
-            l.error('supressing MCP Server error', server, error, args),
-          );
-          ret = {
+          return {
             role: 'assistant',
-            content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
+            content: `A critical error occurred while processing your request: ${e instanceof Error ? e.message : String(e)}. Please try again later.`,
           };
-        }
-        return ret;
+        } 
       };
     };
+
+    server.server.onerror = makeErrorHandler(oldError, 'server');
+    /*
+
+
 
     server.server.onclose = (...args: any[]) => {
       log((l) =>
@@ -372,7 +398,6 @@ const handler = createMcpHandler(
       );
       return oldInit?.call(...args);
     };
-    server.server.onerror = makeErrorHandler(oldError, 'server');
     if (server.server.transport) {
       server.server.transport.onerror = makeErrorHandler(
         oldError,
@@ -403,6 +428,7 @@ const handler = createMcpHandler(
     basePath: '/api/ai/tools',
     maxDuration: 60 * 5 * 1000, // 15 minutes
     verboseLogs: true,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onEvent: (event, ...args: any[]) => {
       log((l) => l.info('MCP Event:', event, ...args));
     },

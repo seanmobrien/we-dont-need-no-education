@@ -37,27 +37,37 @@ import type {
   Size,
 } from './types';
 import 'react-resizable/css/styles.css';
+import { ResizeHandle } from 'react-resizable';
 
 /**
  * Default resize handles configuration for the resizable component.
  * Includes all 8 directional handles: corners and edges.
  * @constant {string[]}
  */
-const stableResizeHandles = ['sw', 'se', 'nw', 'ne', 'w', 'e', 'n', 's'];
+const stableResizeHandles: ResizeHandle[] = [
+  'sw',
+  'se',
+  'nw',
+  'ne',
+  'w',
+  'e',
+  'n',
+  's',
+];
 
 /**
  * Default minimum size constraints [width, height] in pixels.
  * Ensures the dialog remains usable at small sizes.
  * @constant {[number, number]}
  */
-const defaultMinConstraints = [300, 200];
+const defaultMinConstraints = undefined; //[300, 200];
 
 /**
  * Default maximum size constraints [width, height] in pixels.
  * Prevents the dialog from becoming too large on small screens.
  * @constant {[number, number]}
  */
-const defaultMaxConstraints = [800, 600];
+const defaultMaxConstraints = undefined; //[800, 600];
 
 /**
  * A resizable and draggable paper component that extends Material-UI Paper functionality.

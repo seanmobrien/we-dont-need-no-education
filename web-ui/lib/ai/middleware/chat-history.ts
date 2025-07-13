@@ -1,5 +1,4 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
-import { db } from '@/lib/drizzle-db/connection';
 import {
   chats,
   chatTurns,
@@ -11,7 +10,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { log } from '@/lib/logger';
 import { generateChatId } from '../core';
-import { sql } from '@/lib/neondb';
+import { db } from '@/lib/drizzle-db';
 
 export interface ChatHistoryContext {
   userId: string;
@@ -26,44 +25,55 @@ const getNextSequence = async ({
   chatId,
   tableName,
   count = 1,
-}: {
-  chatId: string;
-  tableName: string;
-  count?: number;
-}) => {
+  ...props
+}:
+  | {
+      chatId: string;
+      tableName: 'chat_turns';
+      count?: number;
+    }
+  | {
+      chatId: string;
+      tableName: 'chat_messages';
+      turnId: number;
+      count?: number;
+    }) => {
+  const turnId = 'turnId' in props ? props.turnId : 0;
   const scopedIds = await db.execute(
-    `SELECT * FROM allocate_scoped_ids(${sql`${tableName}`}, ${chatId}, ${count})`,
+    `SELECT * FROM allocate_scoped_ids('${tableName}', '${chatId}', ${turnId}, ${count})`,
   );
+  console.log('scopedIds returns', scopedIds);
   return [...scopedIds.map((x) => x.scoped_id as number)];
 };
 
 export function createChatHistoryMiddleware(
   context: ChatHistoryContext,
 ): LanguageModelV1Middleware {
-  let chatId: string | null = null;
+  console.log('create chat history');
+  const chatId =
+    typeof context.chatId === 'string'
+      ? (context.chatId ?? generateChatId().id)
+      : generateChatId(context.chatId ?? 1).id;
+  let turnId: number | undefined;
   let currentMessageOrder = 0;
   let generatedText = '';
   const startTime: number = Date.now();
 
   return {
-    wrapStream: async ({ doStream, params }) => {
-      try {
+    wrapStream: async ({ doStream, params }) => {      
+      try {        
         // Create or get chat
         // Upsert chat: if chatId exists, ensure it exists in DB or insert if new
-        chatId =
-          typeof context.chatId === 'string'
-            ? (context.chatId ?? generateChatId().id)
-            : generateChatId(context.chatId ?? 1).id;
         const existingChat = await db.query.chats.findFirst({
           where: eq(chats.id, chatId),
         });
-
+        log((l) => l.debug('Checking for existing Chat', existingChat));
         if (!existingChat) {
           await db.insert(chats).values({
             id: chatId!,
-            userId: context.userId,
+            userId: Number(context.userId),
             title: null, // Will be set later based on first message
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
             metadata: {
               model: context.model,
               temperature: context.temperature,
@@ -71,43 +81,82 @@ export function createChatHistoryMiddleware(
               sessionId: context.sessionId,
             },
           });
+          log(l => l.debug('Created new chat:', chatId));
         }
-        const [turnId] = await getNextSequence({
-          tableName: 'chat_turns',
-          chatId: chatId!,
-        });
-        // Create new turn
-        await db.insert(chatTurns).values([
-          {
-            turnId: String(turnId),
-            chatId,
-            statusId: 1, // waiting status
-            modelName: context.model,
-            createdAt: new Date(),
-            temperature: context.temperature,
-            topP: context.topP,
-            latencyMs: 0,
-            warnings: [],
-            errors: [],
-            metadata: {
-              sessionId: context.sessionId,
-            },
+        // Reserve a chat turn sequence id
+        if (!turnId) {
+          turnId = await getNextSequence({
+            tableName: 'chat_turns',
+            chatId: chatId,
+          }).then((ids) => ids[0]);
+        }
+        if (!turnId) {
+          throw new Error('Unexpected failure retrieving next turn sequence for chat id ' + chatId);
+        }
+        const thisTurnId = turnId;
+        // Then use it to create a new chat turn record
+        log((l) =>
+          l.debug(
+            `Initializing storage for chat [${chatId}] turn [${turnId}].`,
+          ),
+        );
+        await db.insert(chatTurns).values({
+          turnId: thisTurnId,
+          chatId: chatId,
+          statusId: 1, // waiting status
+          modelName: context.model,
+          createdAt: new Date().toISOString(),
+          temperature: context.temperature,
+          topP: context.topP,
+          latencyMs: 0,
+          warnings: [],
+          errors: [],
+          metadata: {
+            sessionId: context.sessionId,
           },
-        ]);
-        // Save user messages from the request
+        });
+        log((l) =>
+          l.debug(
+            `Successfully initialized storage for chat  [${chatId}] turn [${thisTurnId}].`,
+          ),
+        );
+        // Read messages from previous turns
+        const previousMessages = await db.query.chatMessages.findMany({
+          where: eq(chatMessages.chatId, chatId),
+          orderBy: (chatMessages, { asc }) => [asc(chatMessages.turnId), asc(chatMessages.messageOrder)],
+          with: {
+            turn: true,
+          },
+        });        
 
+        // Save input in this request
+        console.log('Saving user messages for turn', thisTurnId);
         const messageIds = await getNextSequence({
           tableName: 'chat_messages',
-          chatId: chatId!,
+          chatId: chatId,
+          turnId: thisTurnId,
           count: params.prompt.length + 1,
         });
 
         await db.insert(chatMessages).values(
           params.prompt.map((prompt, i) => {
+            let providerId: string | null = null;
+            // IMPORTANT: This logic does not scale to support parallel tool calling correctly.            
+            if (prompt.role === 'tool') {
+              if (Array.isArray(prompt.content) && prompt.content.length > 0) {
+                providerId = prompt.content[0].toolCallId;
+              }
+            } else if (prompt.role === 'assistant') {
+              const toolCall = prompt.content.find(x => x.type === 'tool-call');
+              if (toolCall) {
+                providerId = toolCall.toolCallId;
+              }
+            }
             return {
-              chatId: chatId!,
-              turnId: String(turnId),
-              messageId: String(messageIds[i]),
+              chatId: chatId,
+              turnId: thisTurnId,
+              messageId: messageIds[i],        
+              providerId,
               role: prompt.role as 'user' | 'assistant' | 'tool' | 'system',
               content:
                 typeof prompt.content === 'string'
@@ -119,12 +168,13 @@ export function createChatHistoryMiddleware(
           }),
         );
 
+
         const { stream, ...rest } = await doStream();
         // Create assistant message placeholder
         const assistantMessageId = messageIds[messageIds.length - 1];
         await db.insert(chatMessages).values({
           chatId: chatId,
-          turnId: turnId,
+          turnId: thisTurnId,
           messageId: assistantMessageId,
           role: 'assistant',
           content: '',
@@ -149,7 +199,7 @@ export function createChatHistoryMiddleware(
                       content: generatedText,
                       statusId: 1, // still streaming
                     })
-                    .where(eq(chatMessages.id, assistantMessageId));
+                    .where(eq(chatMessages.messageId, assistantMessageId));
                 }
               } else if (chunk.type === 'tool-call') {
                 // Save tool call message
@@ -157,6 +207,12 @@ export function createChatHistoryMiddleware(
                   chatId: chatId!,
                   turnId: turnId!,
                   role: 'tool',
+                  messageId: await getNextSequence({
+                    tableName: 'chat_messages',
+                    chatId: chatId!,
+                    turnId: turnId!,
+                    count: 1,
+                  }).then((ids) => ids[0]),
                   toolName: chunk.toolName,
                   functionCall: chunk.args,
                   messageOrder: currentMessageOrder++,
@@ -166,6 +222,7 @@ export function createChatHistoryMiddleware(
                 // Save token usage if available
                 if (chunk.usage && turnId) {
                   await db.insert(tokenUsage).values({
+                    chatId: chatId!,
                     turnId,
                     promptTokens: chunk.usage.promptTokens,
                     completionTokens: chunk.usage.completionTokens,
@@ -204,7 +261,7 @@ export function createChatHistoryMiddleware(
                   .where(
                     and(
                       eq(chatMessages.chatId, chatId!),
-                      eq(chatMessages.turnId, String(turnId)),
+                      eq(chatMessages.turnId, turnId!),
                       eq(chatMessages.messageId, assistantMessageId),
                     ),
                   );
@@ -216,7 +273,7 @@ export function createChatHistoryMiddleware(
                   .update(chatTurns)
                   .set({
                     statusId: 2, // complete status
-                    completedAt: new Date(),
+                    completedAt: new Date().toISOString(),
                     latencyMs,
                   })
                   .where(
@@ -268,7 +325,7 @@ export function createChatHistoryMiddleware(
                     .update(chatTurns)
                     .set({
                       statusId: 3, // error status
-                      completedAt: new Date(),
+                      completedAt: new Date().toISOString(),
                       errors: [
                         error instanceof Error ? error.message : String(error),
                       ],
