@@ -21,6 +21,9 @@ export const mapEmailPropertyRecordToObject = (
   categoryId: !!record.email_property_category_id
     ? Number(record.email_property_category_id)
     : undefined,
+  propertyUnitId: !!record.property_unit_id
+    ? Number(record.property_unit_id)
+    : undefined,
   createdOn:
     record.created_on instanceof Date
       ? record.created_on

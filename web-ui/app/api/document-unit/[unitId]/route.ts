@@ -24,7 +24,7 @@ export async function GET(
       console.log(valid.error);
       throw valid.error;
     }
-    return NextResponse.json(document);
+    return NextResponse.json(document.structuredContent.result);
   } catch (error) {
     return NextResponse.json(
       { error: isError(error) ? error.message : error, data: error },

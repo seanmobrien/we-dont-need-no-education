@@ -90,8 +90,24 @@ const handler = createMcpHandler(
             .describe(
               'A numeric unique identifier identifying the case file document to retrieve.',
             ),
+          goals: z
+            .array(z.string())
+            .describe(
+              'An optional array of goals identifying your task or describing what information should be extracted from the case file.  When set, the document will be pre-processed and relevant information returned, when left blank you will receive the full case file.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
+            )
+            .optional(),
+          reasoning: z
+            .number()
+            .min(0)
+            .max(10)
+            .optional()
+            .describe(
+              'An optional number between 0 and 10 indicating the level of reasoning necessary to effectively identify relevant information in the pre-processing stage.  Complex tasks require higher levels of reasoning.  Defaults to 0, which uses gpt-4o-mini with default settings as the pre-processor.',
+            ),
         },
-        outputSchema: toolCallbackResultSchemaFactory(DocumentSchema),
+        outputSchema: toolCallbackResultSchemaFactory(
+          z.string().or(DocumentSchema),
+        ),
         annotations: {
           title: 'Get Full Case File',
           readOnlyHint: true,
@@ -128,8 +144,24 @@ const handler = createMcpHandler(
             .describe(
               'An array of unique identifiers identifying the case file documents to retrieve.',
             ),
+          goals: z
+            .array(z.string())
+            .describe(
+              'An optional array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
+            )
+            .optional(),
+          reasoning: z
+            .number()
+            .min(0)
+            .max(10)
+            .optional()
+            .describe(
+              'An optional number between 0 and 10 indicating the level of reasoning necessary to effectively identify relevant information in the pre-processing stage.  Complex tasks require higher levels of reasoning.  Defaults to 0, which uses gpt-4o-mini with default settings as the pre-processor.',
+            ),
         },
-        outputSchema: toolCallbackArrayResultSchemaFactory(DocumentSchema),
+        outputSchema: toolCallbackArrayResultSchemaFactory(
+          z.string().or(DocumentSchema),
+        ),
         annotations: {
           title: 'Get Multiple Case Files',
           readOnlyHint: true,

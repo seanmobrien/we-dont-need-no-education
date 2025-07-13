@@ -48,7 +48,10 @@ export const toolCallbackResultFactory: ToolCallbackResultOverloads = <T>(
 };
 
 export const toolCallbackResultSchemaFactory = <T extends ZodRawShape>(
-  resultSchema: z.ZodObject<T>,
+  resultSchema:
+    | z.ZodObject<T>
+    | z.ZodString
+    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>,
 ) => {
   const error = z.object({
     isError: z.literal(true),
@@ -69,7 +72,10 @@ export const toolCallbackResultSchemaFactory = <T extends ZodRawShape>(
   };
 };
 export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
-  resultSchema: z.ZodObject<T>,
+  resultSchema:
+    | z.ZodObject<T>
+    | z.ZodString
+    | z.ZodUnion<[z.ZodString, z.ZodObject<T>]>,
 ) => {
   const error = z.object({
     isError: z.literal(true),
