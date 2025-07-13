@@ -6,6 +6,9 @@ export const register = async () => {
     return;
   }
   instrumentationRegistered = true;
+  // Temporarily disabled for development
+  console.log('[otel] Instrumentation disabled for development');
+  /*
   if (typeof window === 'undefined') {
     // This is a server-side environment (Node.js or edge runtime)
     if (process.env.NEXT_RUNTIME === 'nodejs') {
@@ -19,4 +22,5 @@ export const register = async () => {
     const { default: instrumentBrowser } = await import('@/instrument/browser');
     instrumentBrowser();
   }
+  */
 };

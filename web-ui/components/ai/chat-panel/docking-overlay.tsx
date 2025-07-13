@@ -62,7 +62,7 @@ const ZONE_LABELS = {
 /**
  * Get docking zone rect based on current window dimensions
  */
-const getDockZoneRect = (zoneName: keyof typeof DOCK_ZONES, windowWidth: number, windowHeight: number) => {
+const getDockZoneRect = (zoneName: keyof typeof ZONE_LABELS, windowWidth: number, windowHeight: number) => {
   switch (zoneName) {
     case 'top':
       return { left: 0, top: 0, width: windowWidth, height: 100 };
