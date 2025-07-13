@@ -22,7 +22,7 @@ export const caseFileRequestPropsShape = z.object({
   goals: z
     .array(z.string())
     .describe(
-      'An array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
+      'An array of goals used to pre-process the results.  Values set here are specific to the case file and override the value passed at the request level.',
     )
     .optional(),
   verbatimFidelity: z
@@ -31,7 +31,7 @@ export const caseFileRequestPropsShape = z.object({
     .max(100)
     .optional()
     .describe(
-      'Controls how closely output should match source text. 100 = exact quotes with full context;  75 = exact excerpts with minimal context; 50 = summarized excerpts with some context; 1 = full summary, exact quotes not needed.  Set here to provide a default for all requests.',
+      'Controls how closely output should match source text. Values set here are specific to the case file and override the value passed at the request level.',
     ),
 });
 
@@ -47,17 +47,17 @@ export const CaseFileResponseShape = z.object({
     .optional()
     .nullable()
     .describe(
-      'The full case file document, retuned if no summary is requested.',
+      'The full case file document, retuned if no goals were provided for pre-processing.',
     ),
   summary: SummarizedDocumentSchema.extend({})
     .optional()
     .nullable()
-    .describe('The summarized document, returned if a summary is requested.'),
+    .describe('The summarized document, returned when goals are provided to pre-process the result.'),
   text: z
     .string()
     .optional()
     .nullable()
     .describe(
-      'Raw content of the document, if structured output is not available.',
+      'Raw content of the document - only returned when no pre-processing goals were provided but the file cannot be extracted as valid structured output.',
     ),
 });

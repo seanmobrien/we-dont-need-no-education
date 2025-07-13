@@ -1206,6 +1206,7 @@ export const chatMessages = pgTable(
     providerId: text('provider_id'),
     metadata: jsonb(),
     toolInstanceId: uuid('tool_instance_id'),
+    optimizedContent: text('optimized_content'),
   },
   (table) => [
     index('idx_messages_provider_id').using(
@@ -1263,6 +1264,9 @@ export const chatTurns = pgTable(
     errors: text().array(),
     metadata: jsonb(),
     providerId: text('provider_id'),
+    optimizedPromtpAssistant: text('optimized_prompt_assistant'),
+    optimizedPromptUser: text('optimized_prompt_user'),
+    optimizedToolResults: text('optimized_tool_results'),
   },
   (table) => [
     index('idx_turns_created_at').using(

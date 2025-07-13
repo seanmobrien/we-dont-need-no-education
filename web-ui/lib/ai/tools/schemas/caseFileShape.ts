@@ -225,6 +225,8 @@ export const DocumentSchema = z.object({
             .nullable(),
         }),
       })
+      .nullable()
+      .optional()
       .describe(
         'Relationships to other documents, where this document is the target.',
       ),
@@ -261,6 +263,8 @@ export const DocumentSchema = z.object({
           .nullable(),
       }),
     )
+    .nullable()
+    .optional()
     .describe(
       'Relationships to other documents, where this document is the source.',
     ),

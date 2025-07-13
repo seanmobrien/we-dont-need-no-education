@@ -5,10 +5,12 @@ import {
   isAiLanguageModelType,
   getRetryErrorInfo,
   optimizeMessagesWithToolSummarization,
-  createChatHistoryMiddleware,
   toolProviderSetFactory,
   type ChatHistoryContext,
 } from '@/lib/ai';
+import {
+  createChatHistoryMiddleware,
+} from '@/lib/ai/middleware/chat-history';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
