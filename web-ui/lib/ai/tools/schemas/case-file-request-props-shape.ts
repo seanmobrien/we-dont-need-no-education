@@ -47,7 +47,7 @@ export const CaseFileResponseShape = z.object({
     .optional()
     .nullable()
     .describe(
-      'The full case file document, retuned if no goals were provided for pre-processing.',
+      'The full case file document, returned if no goals were provided for pre-processing.',
     ),
   summary: SummarizedDocumentSchema.extend({})
     .optional()
