@@ -62,6 +62,8 @@ const getAppInsights = () => {
             clickEvents: true, // Enable click events tracking
             dropInvalidEvents: true,
             urlCollectQuery: false,
+            customDataPrefix: 'data-ai-',
+            useDefaultContentNameOrId: true, // Allow using standard HTML attributes for contentName and id
           },
         },
       },
