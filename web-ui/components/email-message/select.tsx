@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { debounce } from 'lodash';
 import { EmailMessageSummary } from '@/data-models';
-import classnames, { margin } from '@/tailwindcss.classnames';
+
+// Simple replacement for removed classnames function
+const classnames = (...classes: (string | undefined)[]): string => {
+  return classes.filter(Boolean).join(' ');
+};
 
 const EmailSelect: React.FC<{
   id?: string;
@@ -95,14 +99,14 @@ const EmailSelect: React.FC<{
               id={ariaTargetId}
               href="#"
               onClick={() => setInEditMode(true)}
-              className={classnames(margin('mr-2'))}
+              className={classnames('mr-2')}
             >
               Edit
             </a>
             <a
               href="#"
               onClick={() => onEmailSelect(null)}
-              className={classnames(margin('ml-2'))}
+              className={classnames('ml-2')}
             >
               Clear
             </a>

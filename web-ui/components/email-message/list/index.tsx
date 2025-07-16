@@ -2,11 +2,6 @@
 import { JSX, useMemo, useCallback } from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
-import classnames, {
-  display,
-  flexDirection,
-  width,
-} from '@/tailwindcss.classnames';
 import { Box } from '@mui/material';
 import { EmailGridProps } from '@/components/mui/data-grid/types';
 import {
@@ -73,7 +68,12 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
         <Link
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
-          className="text-blue-600 hover:underline"
+          style={{
+            color: '#2563eb',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
+          onMouseLeave={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
         >
           {params.value}
         </Link>
@@ -182,12 +182,12 @@ export const EmailList = ({
   return (
     <>
       <Box
-        className={classnames(
-          display('flex'),
-          flexDirection('flex-col'),
-          width('w-full'),
-        )}
-        sx={containerSx}
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%',
+          ...containerSx,
+        }}
       >
         <ServerBoundDataGrid<EmailMessageSummary>
           {...props}

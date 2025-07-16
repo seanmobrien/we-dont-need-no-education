@@ -6,13 +6,17 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
+  SlotProps,
+  MenuListProps,
+  MenuListSlotPropsOverrides,
+  MenuOwnerState,
 } from '@mui/material';
 import { Dispatch, SetStateAction, useCallback, useState } from 'react';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import DockIcon from '@mui/icons-material/Dock';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
-import { DockPosition } from './chat-panel-context';
+import { DockPosition } from './types';
 
 export const ChatMenu = ({
   onResetSession,
@@ -74,23 +78,24 @@ export const ChatMenu = ({
 
   return (
     <>
-      <IconButton edge="end" onClick={onMenuClick} id="chat-menu-button">
+      <IconButton edge="end" onClick={onMenuClick} id="chat-menu-button" data-id='button-chat-menu'>
         <MoreVertIcon />
       </IconButton>
       <Menu
         id="basic-menu"
         anchorEl={anchorEl}
         open={open}
-        onClose={handleClose}
+        onClose={handleClose}        
         slotProps={{
           list: {
+            'data-id': 'chat-menu-list',
             'aria-labelledby': 'chat-menu-button',
-          },
+          } as SlotProps<React.ElementType<MenuListProps>, MenuListSlotPropsOverrides, MenuOwnerState>,
         }}
       >
-        <MenuItem onClick={onResetSessionClick}>Reset chat session</MenuItem>
+        <MenuItem onClick={onResetSessionClick} data-id='menu-item-reset'>Reset chat session</MenuItem>
         <Divider />
-        <MenuItem onClick={onFloatClick}>
+        <MenuItem onClick={onFloatClick} data-id='menu-item-float'>
           <ListItemIcon>
             <OpenInFullIcon fontSize="small" />
           </ListItemIcon>
@@ -100,6 +105,7 @@ export const ChatMenu = ({
           <MenuItem 
             key={option.position}
             onClick={() => onDockClick(option.position)}
+            data-id={`menu-item-dock-${option.position}`}
             selected={currentPosition === option.position}
           >
             <ListItemIcon>
@@ -112,6 +118,7 @@ export const ChatMenu = ({
         <ListSubheader>{`Active Model: ${activeModelDisplayName}`}</ListSubheader>
         {availableModels.map((model) => (
           <MenuItem
+            data-id={`menu-item-model-${model.id}`}
             key={model.id}
             onClick={() => {
               setActiveModel(model.id);

@@ -347,7 +347,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         notifications.show(otherMutationProps.error.message, {
           severity: 'error',
           autoHideDuration: 60000,
-        });
+        });        
       } else {
         //no-op?
       }

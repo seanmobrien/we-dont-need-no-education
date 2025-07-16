@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, styled } from '@mui/material';
-import { DockPosition } from './chat-panel-context';
+import type { DockPosition } from './types';
 
 /**
  * Docking zone data
@@ -46,57 +46,59 @@ const DockZoneOverlay = styled(Box, {
 }));
 
 /**
- * Docking zone positions and their configurations
+ * Zone labels for display
  */
-const DOCK_ZONES = {
-  // Edge zones
-  top: { top: 0, left: 0, right: 0, height: 80, label: 'Dock Top' },
-  bottom: { bottom: 0, left: 0, right: 0, height: 80, label: 'Dock Bottom' },
-  left: { top: 80, bottom: 80, left: 0, width: 80, label: 'Dock Left' },
-  right: { top: 80, bottom: 80, right: 0, width: 80, label: 'Dock Right' },
-  
-  // Corner zones
-  'top-left': { top: 0, left: 0, width: 80, height: 80, label: 'Top Left' },
-  'top-right': { top: 0, right: 0, width: 80, height: 80, label: 'Top Right' },
-  'bottom-left': { bottom: 0, left: 0, width: 80, height: 80, label: 'Bottom Left' },
-  'bottom-right': { bottom: 0, right: 0, width: 80, height: 80, label: 'Bottom Right' },
+const ZONE_LABELS = {
+  top: 'Dock Top',
+  bottom: 'Dock Bottom', 
+  left: 'Dock Left',
+  right: 'Dock Right',
+  'top-left': 'Top Left',
+  'top-right': 'Top Right',
+  'bottom-left': 'Bottom Left',
+  'bottom-right': 'Bottom Right',
 } as const;
 
 /**
- * Calculate if a point is within a dock zone
+ * Get docking zone rect based on current window dimensions
  */
-const isPointInZone = (x: number, y: number, zone: typeof DOCK_ZONES[keyof typeof DOCK_ZONES]): boolean => {
-  const { innerWidth, innerHeight } = window;
-  
-  const left = 'left' in zone ? zone.left : ('right' in zone ? innerWidth - zone.right - (zone.width || 0) : 0);
-  const top = 'top' in zone ? zone.top : ('bottom' in zone ? innerHeight - zone.bottom - (zone.height || 0) : 0);
-  const width = zone.width || ('right' in zone ? zone.right + (zone.width || 0) : innerWidth - left);
-  const height = zone.height || ('bottom' in zone ? zone.bottom + (zone.height || 0) : innerHeight - top);
-  
-  return x >= left && x <= left + width && y >= top && y <= top + height;
+const getDockZoneRect = (zoneName: keyof typeof ZONE_LABELS, windowWidth: number, windowHeight: number) => {
+  switch (zoneName) {
+    case 'top':
+      return { left: 0, top: 0, width: windowWidth, height: 100 };
+    case 'bottom':
+      return { left: 0, top: windowHeight - 100, width: windowWidth, height: 100 };
+    case 'left':
+      return { left: 0, top: 100, width: 100, height: windowHeight - 200 };
+    case 'right':
+      return { left: windowWidth - 100, top: 100, width: 100, height: windowHeight - 200 };
+    case 'top-left':
+      return { left: 0, top: 0, width: 100, height: 100 };
+    case 'top-right':
+      return { left: windowWidth - 100, top: 0, width: 100, height: 100 };
+    case 'bottom-left':
+      return { left: 0, top: windowHeight - 100, width: 100, height: 100 };
+    case 'bottom-right':
+      return { left: windowWidth - 100, top: windowHeight - 100, width: 100, height: 100 };
+    default:
+      return { left: 0, top: 0, width: 0, height: 0 };
+  }
 };
+
 
 /**
  * Calculate zone bounds for dashboard layout
  */
-const getDashboardZoneBounds = (zone: typeof DOCK_ZONES[keyof typeof DOCK_ZONES], dashboardRect: DOMRect) => {
-  const bounds = { ...zone };
+const getDashboardZoneBounds = (zone: { getRect: () => { left: number; top: number; width: number; height: number }, label: string }, dashboardRect: DOMRect) => {
+  const rect = zone.getRect();
   
   // For dashboard layout, adjust zones to be relative to dashboard container
-  if ('left' in bounds && bounds.left === 0) {
-    bounds.left = dashboardRect.left;
-  }
-  if ('right' in bounds && bounds.right === 0) {
-    bounds.right = window.innerWidth - dashboardRect.right;
-  }
-  if ('top' in bounds && bounds.top === 0) {
-    bounds.top = dashboardRect.top;
-  }
-  if ('bottom' in bounds && bounds.bottom === 0) {
-    bounds.bottom = window.innerHeight - dashboardRect.bottom;
-  }
-  
-  return bounds;
+  return {
+    left: Math.max(rect.left, dashboardRect.left),
+    top: Math.max(rect.top, dashboardRect.top),
+    width: Math.min(rect.width, dashboardRect.width),
+    height: Math.min(rect.height, dashboardRect.height),
+  };
 };
 
 /**
@@ -108,7 +110,22 @@ export const DockingOverlay: React.FC<DockingOverlayProps> = ({
   isDashboardLayout = false 
 }) => {
   const [highlightedZone, setHighlightedZone] = useState<DockPosition | null>(null);
+  const [windowDimensions, setWindowDimensions] = useState({ width: 0, height: 0 });
   const dashboardRef = useRef<HTMLElement | null>(null);
+
+  // Update window dimensions
+  useEffect(() => {
+    const updateDimensions = () => {
+      setWindowDimensions({ width: window.innerWidth, height: window.innerHeight });
+    };
+    
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    
+    return () => {
+      window.removeEventListener('resize', updateDimensions);
+    };
+  }, []);
 
   // Find dashboard container when in dashboard layout
   useEffect(() => {
@@ -123,27 +140,30 @@ export const DockingOverlay: React.FC<DockingOverlayProps> = ({
 
   // Handle mouse movement to determine highlighted zone
   const handleMouseMove = useCallback((event: MouseEvent) => {
-    if (!isActive) return;
+    if (!isActive || windowDimensions.width === 0 || windowDimensions.height === 0) return;
 
     const { clientX: x, clientY: y } = event;
-    setMousePosition({ x, y });
 
     // Check which zone the mouse is in
     let foundZone: DockPosition | null = null;
     
-    for (const [position, zone] of Object.entries(DOCK_ZONES)) {
-      const zoneBounds = isDashboardLayout && dashboardRef.current
-        ? getDashboardZoneBounds(zone, dashboardRef.current.getBoundingClientRect())
-        : zone;
+    for (const zoneName of Object.keys(ZONE_LABELS) as Array<keyof typeof ZONE_LABELS>) {
+      let rect;
+      if (isDashboardLayout && dashboardRef.current) {
+        const baseRect = getDockZoneRect(zoneName, windowDimensions.width, windowDimensions.height);
+        rect = getDashboardZoneBounds({ getRect: () => baseRect, label: ZONE_LABELS[zoneName] }, dashboardRef.current.getBoundingClientRect());
+      } else {
+        rect = getDockZoneRect(zoneName, windowDimensions.width, windowDimensions.height);
+      }
         
-      if (isPointInZone(x, y, zoneBounds)) {
-        foundZone = position as DockPosition;
+      if (x >= rect.left && x <= rect.left + rect.width && y >= rect.top && y <= rect.top + rect.height) {
+        foundZone = zoneName as DockPosition;
         break;
       }
     }
 
     setHighlightedZone(foundZone);
-  }, [isActive, isDashboardLayout]);
+  }, [isActive, isDashboardLayout, windowDimensions.width, windowDimensions.height]);
 
   // Handle mouse up to trigger docking
   const handleMouseUp = useCallback(() => {
@@ -175,27 +195,31 @@ export const DockingOverlay: React.FC<DockingOverlayProps> = ({
 
   return (
     <>
-      {Object.entries(DOCK_ZONES).map(([position, zone]) => {
-        const dockPosition = position as DockPosition;
+      {Object.keys(ZONE_LABELS).map((zoneName) => {
+        const dockPosition = zoneName as keyof typeof ZONE_LABELS;
         const isHighlighted = highlightedZone === dockPosition;
         
         // Calculate final zone bounds
-        const zoneBounds = isDashboardLayout && dashboardRef.current
-          ? getDashboardZoneBounds(zone, dashboardRef.current.getBoundingClientRect())
-          : zone;
+        let rect;
+        if (isDashboardLayout && dashboardRef.current) {
+          const baseRect = getDockZoneRect(dockPosition, windowDimensions.width, windowDimensions.height);
+          rect = getDashboardZoneBounds({ getRect: () => baseRect, label: ZONE_LABELS[dockPosition] }, dashboardRef.current.getBoundingClientRect());
+        } else {
+          rect = getDockZoneRect(dockPosition, windowDimensions.width, windowDimensions.height);
+        }
 
         return (
           <DockZoneOverlay
-            key={position}
+            key={zoneName}
             isHighlighted={isHighlighted}
             sx={{
-              ...zoneBounds,
-              // Convert zone bounds to CSS properties
-              ...(zoneBounds.width && { width: zoneBounds.width }),
-              ...(zoneBounds.height && { height: zoneBounds.height }),
+              left: rect.left,
+              top: rect.top,
+              width: rect.width,
+              height: rect.height,
             }}
           >
-            {isHighlighted && zone.label}
+            {isHighlighted && ZONE_LABELS[dockPosition]}
           </DockZoneOverlay>
         );
       })}

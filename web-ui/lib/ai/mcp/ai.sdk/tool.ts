@@ -38,10 +38,10 @@ import { z } from 'zod';
 import { CoreMessage } from 'ai';
 import { ToolResultContent } from './tool-result-content';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 export type ToolParameters = z.ZodTypeAny | Schema<any>;
 export type inferParameters<PARAMETERS extends ToolParameters> =
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   PARAMETERS extends Schema<any>
     ? PARAMETERS['_type']
     : PARAMETERS extends z.ZodTypeAny

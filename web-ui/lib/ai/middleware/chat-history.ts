@@ -121,6 +121,7 @@ export function createChatHistoryMiddleware(
           ),
         );
         // Read messages from previous turns
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const previousMessages = await db.query.chatMessages.findMany({
           where: eq(chatMessages.chatId, chatId),
           orderBy: (chatMessages, { asc }) => [asc(chatMessages.turnId), asc(chatMessages.messageOrder)],

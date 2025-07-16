@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box } from '@mui/material';
 import { Message } from 'ai';
@@ -6,6 +6,7 @@ import Loading from '@/components/general/loading';
 import { ChatMessageV2 } from './chat-message-v2';
 import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
 import { log } from '@/lib/logger';
+import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
 
 const elementMeasurer = createElementMeasurer();
 
@@ -19,6 +20,18 @@ export const ChatWindow = ({
   errorMessage?: string | null;
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
+  const {config: { size: { height } }} = useChatPanelContext();
+  useEffect(() => {
+    if (!parentRef.current) {
+      return;
+    }
+    const availableHeight = height - parentRef.current.getBoundingClientRect().x;
+    parentRef.current.style.maxHeight = `${availableHeight - 25}px`;
+
+
+  }, [height]);
+
+
 
   const rowVirtualizer = useVirtualizer({
     count: messages.length,
@@ -33,7 +46,7 @@ export const ChatWindow = ({
       if (parentRef.current === null) {
         // Handle case where parentRef is not yet available
         log((l) =>
-          l.warn(
+          l.verbose(
             'Measurement attempted before parentRef is available to provide width',
           ),
         );
@@ -80,15 +93,15 @@ export const ChatWindow = ({
 
   const items = [...messages].reverse(); // For inverted render
 
-  return (
-    <Box
+  return (    
+    <Box      
       ref={parentRef}
       sx={{
-        height: '450px',
+        height: '100%',
         width: '100%',
         border: '1px solid #ccc',
         marginTop: 2,
-        backgroundColor: '--color-gray-800',
+        backgroundColor: '#8f8f8f',
         borderRadius: 4,
         p: 2,
         display: 'flex',
@@ -117,7 +130,7 @@ export const ChatWindow = ({
 
           return (
             <ChatMessageV2
-              key={virtualRow.key}
+              key={messageId}
               message={{
                 parts,
                 role,
@@ -126,10 +139,10 @@ export const ChatWindow = ({
               }}
               virtualRow={virtualRow}
               onMeasureElement={(node) => rowVirtualizer.measureElement(node)}
-            />
+            />            
           );
         })}
       </Box>
-    </Box>
+    </Box>    
   );
 };

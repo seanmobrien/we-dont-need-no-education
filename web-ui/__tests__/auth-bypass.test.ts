@@ -1,26 +1,16 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment node
  */
 
 import { jest } from '@jest/globals';
-import { Request } from 'node-fetch';
-
+fetch('http://localhost'); // Polyfill fetch for Node.js test environment
 // Polyfill Request for Node.js test environment
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 global.Request = Request as any;
 global.URL = URL;
 
 // Mock the environment utilities
-const mockEnv = jest.fn();
-jest.mock('@/lib/site-util/env', () => ({
-  env: mockEnv,
-  isRunningOnEdge: jest.fn(() => false),
-}));
 
-// Mock logger
-jest.mock('@/lib/logger', () => ({
-  logEvent: jest.fn(),
-}));
 
 // Mock drizzle-orm and related database imports
 jest.mock('drizzle-orm', () => ({
@@ -48,14 +38,15 @@ jest.mock('@auth/drizzle-adapter', () => ({
 }));
 
 // Import the helper functions directly since they're just utility functions
-// import { env } from '@/lib/site-util/env'; // Not actually used in tests
+import { env } from '@/lib/site-util/env'; // Not actually used in tests
+import { resetEnvVariables } from '@/__tests__/jest.setup';
 
 /**
  * Validates that the application is running on localhost for local development auth bypass.
  * Throws a scary error if not running on localhost to prevent accidental production use.
  */
 const validateLocalhost = (req: Request | undefined): void => {
-  const bypassUserId = mockEnv('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+  const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
   if (!bypassUserId) {
     return; // No bypass configured, nothing to validate
   }
@@ -69,7 +60,7 @@ const validateLocalhost = (req: Request | undefined): void => {
     hostname = url.hostname;
   } else {
     // Fallback to environment variable
-    const publicHostname = mockEnv('NEXT_PUBLIC_HOSTNAME');
+    const publicHostname = env('NEXT_PUBLIC_HOSTNAME');
     if (publicHostname) {
       hostname = new URL(publicHostname).hostname;
     }
@@ -111,7 +102,7 @@ against things people actually care about. Don't make us test that theory.
  * Checks if local development auth bypass is enabled and validates environment
  */
 const shouldUseLocalDevBypass = (req: Request | undefined): boolean => {
-  const bypassUserId = mockEnv('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+  const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
   if (!bypassUserId || bypassUserId.trim() === '') {
     return false;
   }
@@ -127,8 +118,8 @@ const createLocalDevBypassUser = (req: Request | undefined) => {
   if (!shouldUseLocalDevBypass(req)) {
     return null;
   }
-  
-  const bypassUserId = mockEnv('LOCAL_DEV_AUTH_BYPASS_USER_ID');
+
+  const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
   return {
     id: bypassUserId!,
     account_id: parseInt(bypassUserId!) || 1,
@@ -144,45 +135,34 @@ process.env.NEXT_PHASE = 'development';
 
 describe('Local Development Auth Bypass', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     // Reset environment variables
-    delete process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID;
+    resetEnvVariables();
   });
 
   describe('validateLocalhost', () => {
-    it('should pass validation when running on localhost', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return '123';
-        if (key === 'NEXT_PUBLIC_HOSTNAME') return 'http://localhost:3000';
-        return undefined;
-      });
-
+    it('should pass validation when running on localhost', async () => {      
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
+      process.env.NEXT_PUBLIC_HOSTNAME = 'http://localhost:3000';
       // Mock a request to localhost
       const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
 
       expect(() => validateLocalhost(mockRequest)).not.toThrow();
     });
 
-    it('should throw error when bypass is set but not on localhost', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return '123';
-        if (key === 'NEXT_PUBLIC_HOSTNAME') return 'https://production.com';
-        return undefined;
-      });
-
+    it('should throw error when bypass is set but not on localhost', async () => {      
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
+      process.env.NEXT_PUBLIC_HOSTNAME = 'https://production.com';
+      // Mock a request to production      
       const mockRequest = new Request('https://production.com/test') as unknown as Request;
 
       expect(() => validateLocalhost(mockRequest)).toThrow(/CRITICAL SECURITY WARNING/);
       expect(() => validateLocalhost(mockRequest)).toThrow(/LOCAL_DEV_AUTH_BYPASS_USER_ID/);
     });
 
-    it('should pass when bypass is not set', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return undefined;
-        if (key === 'NEXT_PUBLIC_HOSTNAME') return 'https://production.com';
-        return undefined;
-      });
-
+    it('should pass when bypass is not set', async () => {      
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = undefined;
+      process.env.NEXT_PUBLIC_HOSTNAME = 'https://production.com';
       const mockRequest = new Request('https://production.com/test') as unknown as Request;
 
       expect(() => validateLocalhost(mockRequest)).not.toThrow();
@@ -197,11 +177,7 @@ describe('Local Development Auth Bypass', () => {
         'http://172.16.0.1:3000',
         'http://myapp.local:3000',
       ];
-
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return '123';
-        return undefined;
-      });
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = undefined;
 
       for (const pattern of localhostPatterns) {
         const mockRequest = new Request(pattern + '/test') as unknown as Request;
@@ -211,12 +187,9 @@ describe('Local Development Auth Bypass', () => {
   });
 
   describe('shouldUseLocalDevBypass', () => {
-    it('should return true when bypass user ID is set and on localhost', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return '123';
-        if (key === 'NEXT_PUBLIC_HOSTNAME') return 'http://localhost:3000';
-        return undefined;
-      });
+    it('should return true when bypass user ID is set and on localhost', async () => { 
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
+      process.env.NEXT_PUBLIC_HOSTNAME = 'http://localhost:3000';
 
       const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
 
@@ -224,10 +197,7 @@ describe('Local Development Auth Bypass', () => {
     });
 
     it('should return false when bypass user ID is not set', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return undefined;
-        return undefined;
-      });
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = undefined;
 
       const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
 
@@ -235,9 +205,12 @@ describe('Local Development Auth Bypass', () => {
     });
 
     it('should return false when bypass user ID is empty string', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return '';
-        return undefined;
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '';
+      process.env.NEXT_PUBLIC_HOSTNAME = 'http://localhost:3000';
+
+      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
+
+      expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
       });
 
       const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
@@ -246,12 +219,8 @@ describe('Local Development Auth Bypass', () => {
     });
 
     it('should throw error when bypass is set but not on localhost', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return '123';
-        if (key === 'NEXT_PUBLIC_HOSTNAME') return 'https://production.com';
-        return undefined;
-      });
-
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
+      process.env.NEXT_PUBLIC_HOSTNAME = 'https://production.com';
       const mockRequest = new Request('https://production.com/test') as unknown as Request;
 
       expect(() => shouldUseLocalDevBypass(mockRequest)).toThrow(/CRITICAL SECURITY WARNING/);
@@ -260,11 +229,8 @@ describe('Local Development Auth Bypass', () => {
 
   describe('Local Dev Bypass Provider', () => {
     it('should create user when bypass is enabled', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return '456';
-        if (key === 'NEXT_PUBLIC_HOSTNAME') return 'http://localhost:3000';
-        return undefined;
-      });
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '456';
+      process.env.NEXT_PUBLIC_HOSTNAME = 'http://localhost:3000';
 
       const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
       const user = createLocalDevBypassUser(mockRequest);
@@ -279,10 +245,7 @@ describe('Local Development Auth Bypass', () => {
     });
 
     it('should return null when bypass is not enabled', async () => {
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'LOCAL_DEV_AUTH_BYPASS_USER_ID') return undefined;
-        return undefined;
-      });
+      process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = undefined;
 
       const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
       const user = createLocalDevBypassUser(mockRequest);
@@ -290,7 +253,6 @@ describe('Local Development Auth Bypass', () => {
       expect(user).toBeNull();
     });
   });
-});
 
 describe('Environment File Validation', () => {
   it('should ensure .env files do not contain LOCAL_DEV_AUTH_BYPASS_USER_ID', async () => {

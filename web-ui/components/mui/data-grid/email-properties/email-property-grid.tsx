@@ -4,11 +4,6 @@ import { ServerBoundDataGrid } from '../server-bound-data-grid';
 import { EmailPropertyGridProps } from '../types';
 import siteBuilder from '@/lib/site-util/url-builder';
 import { useParams } from 'next/navigation';
-import classnames, {
-  display,
-  flexDirection,
-  maxWidth,
-} from '@/tailwindcss.classnames';
 import { Box } from '@mui/material';
 import EmailPropertyToolbar from './email-property-toolbar';
 import { GridValidRowModel } from '@mui/x-data-grid-pro';
@@ -56,12 +51,12 @@ export const EmailPropertyDataGrid = <
 
   return (
     <Box
-      className={classnames(
-        display('flex'),
-        flexDirection('flex-col'),
-        maxWidth('max-w-full'),
-      )}
-      sx={containerSx}
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        maxWidth: '100%',
+        ...containerSx,
+      }}
     >
       <ServerBoundDataGrid<TRowModel>
         {...props}
