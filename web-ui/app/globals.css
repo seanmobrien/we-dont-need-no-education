@@ -9,6 +9,31 @@
 [data-theme="dark"] {
   --background: #0a0a0a;
   --foreground: #ededed;
+  
+  /* Highlight Yellow colors */
+  --highlight-yellow-1: #ffda3e;
+  --highlight-yellow-2: #ffd73f;
+  --highlight-yellow-3: #e4ca43;
+  --highlight-yellow-4: #ffda3d;
+  --highlight-yellow-5: #e4ca42;
+  --highlight-yellow-6: #ffda40;
+  --highlight-yellow-7: #ffd73d;
+  --highlight-yellow-8: #ffd73e;
+  
+  /* Accent Pink colors */
+  --accent-pink-1: #d05697;
+  --accent-pink-2: #d05799;
+  
+  /* Primary Neon Blue colors */
+  --primary-neon-blue-1: #19bfcf;
+  --primary-neon-blue-2: #19c4ce;
+  --primary-neon-blue-3: #18b9b6;
+  --primary-neon-blue-4: #1898a8;
+  --primary-neon-blue-dark-1: #23393d;
+  --primary-neon-blue-dark-2: #23393e;
+  --primary-neon-blue-dark-3: #234541;
+  --primary-neon-blue-dark-4: #234148;
+  --primary-neon-blue-dark-5: #23324b;
 }
 
 /* Colorful theme CSS variables */
@@ -59,6 +84,12 @@ textarea:focus {
   :root:not([data-theme]) {
     --background: #0a0a0a;
     --foreground: #ededed;
+    
+    /* Apply new color palette for auto dark mode too */
+    --highlight-yellow-1: #ffda3e;
+    --primary-neon-blue-1: #19bfcf;
+    --primary-neon-blue-dark-1: #23393d;
+    --accent-pink-1: #d05697;
   }
 }
 
@@ -72,9 +103,9 @@ textarea:focus {
 [data-theme="dark"] input[type="datetime-local"],
 [data-theme="dark"] input[type="number"],
 [data-theme="dark"] textarea {
-  background-color: #1f2937;
+  background-color: var(--primary-neon-blue-dark-1);
   color: #e5e7eb;
-  border-color: #4b5563;
+  border-color: var(--primary-neon-blue-3);
 }
 
 [data-theme="dark"] select:focus,
@@ -86,8 +117,8 @@ textarea:focus {
 [data-theme="dark"] input[type="datetime-local"]:focus,
 [data-theme="dark"] input[type="number"]:focus,
 [data-theme="dark"] textarea:focus {
-  box-shadow: 0 0 0 2px #93c5fd;
-  border-color: #93c5fd;
+  box-shadow: 0 0 0 2px var(--highlight-yellow-1);
+  border-color: var(--highlight-yellow-1);
 }
 
 /* Colorful theme input styles */
@@ -142,21 +173,21 @@ input[type="datetime-local"] {
 }
 
 .btn-primary {
-  background-color: #3b82f6;
+  background-color: var(--primary-neon-blue-1);
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: #2563eb;
+  background-color: var(--primary-neon-blue-4);
 }
 
 .btn-secondary {
-  background-color: #10b981;
+  background-color: var(--accent-pink-1);
   color: #ffffff;
 }
 
 .btn-secondary:hover {
-  background-color: #059669;
+  background-color: var(--accent-pink-2);
 }
 
 .btn-angry {
@@ -204,18 +235,18 @@ input[type="datetime-local"] {
 
 /* DataGrid theming for dark theme */
 [data-theme="dark"] .MuiDataGrid-root {
-  border: none !important;
+  border: 1px solid var(--primary-neon-blue-3) !important;
   background-color: transparent !important;
 }
 
 [data-theme="dark"] .MuiDataGrid-cell {
-  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
+  border-bottom: 1px solid var(--primary-neon-blue-dark-3) !important;
   color: var(--foreground) !important;
 }
 
 [data-theme="dark"] .MuiDataGrid-columnHeaders {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
+  background-color: var(--primary-neon-blue-dark-2) !important;
+  border-bottom: 1px solid var(--primary-neon-blue-3) !important;
 }
 
 [data-theme="dark"] .MuiDataGrid-columnHeaderTitle {
@@ -228,12 +259,12 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiDataGrid-footerContainer {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border-top: 1px solid rgba(81, 81, 81, 1) !important;
+  background-color: var(--primary-neon-blue-dark-1) !important;
+  border-top: 1px solid var(--primary-neon-blue-3) !important;
 }
 
 [data-theme="dark"] .MuiDataGrid-row:hover {
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  background-color: var(--primary-neon-blue-dark-3) !important;
 }
 
 /* DataGrid theming for colorful theme */
@@ -282,8 +313,8 @@ input[type="datetime-local"] {
 
 /* Navigation drawer/sidebar theming for dark theme */
 [data-theme="dark"] .MuiDrawer-paper {
-  background-color: rgba(18, 18, 18, 0.95) !important;
-  border-right: 1px solid rgba(81, 81, 81, 1) !important;
+  background-color: var(--primary-neon-blue-dark-2) !important;
+  border-right: 1px solid var(--primary-neon-blue-1) !important;
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root {
@@ -291,11 +322,11 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root:hover {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: var(--primary-neon-blue-dark-3) !important;
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
-  background-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: var(--primary-neon-blue-dark-4) !important;
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListItemText-primary {
@@ -303,16 +334,16 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListSubheader-root {
-  color: var(--foreground) !important;
+  color: var(--highlight-yellow-1) !important;
   background-color: transparent !important;
 }
 
 /* Top navigation/AppBar theming for dark theme */
 [data-theme="dark"] .MuiAppBar-root {
-  background-color: rgba(18, 18, 18, 0.9) !important;
+  background-color: var(--primary-neon-blue-dark-1) !important;
   -webkit-backdrop-filter: blur(8px);;
   backdrop-filter:blur(8px);
-  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
+  border-bottom: 1px solid var(--primary-neon-blue-1) !important;
 }
 
 [data-theme="dark"] .MuiAppBar-root .MuiToolbar-root {
@@ -320,7 +351,7 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiAppBar-root .MuiIconButton-root {
-  color: var(--foreground) !important;
+  color: var(--highlight-yellow-1) !important;
 }
 
 /* Navigation drawer/sidebar theming for colorful theme */
@@ -396,8 +427,8 @@ input[type="datetime-local"] {
 
 /* Paper component theming (for consistency) */
 [data-theme="dark"] .MuiPaper-root {
-  background-color: rgba(18, 18, 18, 0.8) !important;
-  border: 1px solid rgba(81, 81, 81, 1) !important;
+  background-color: var(--primary-neon-blue-dark-1) !important;
+  border: 1px solid var(--primary-neon-blue-3) !important;
 }
 
 [data-theme="colorful"] .MuiPaper-root {
@@ -407,8 +438,9 @@ input[type="datetime-local"] {
 
 /* Chip theming for better visibility */
 [data-theme="dark"] .MuiChip-root {
-  background-color: rgba(255, 255, 255, 0.1) !important;
+  background-color: var(--primary-neon-blue-dark-3) !important;
   color: var(--foreground) !important;
+  border: 1px solid var(--primary-neon-blue-1) !important;
 }
 
 [data-theme="colorful"] .MuiChip-root {
@@ -418,7 +450,7 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiChip-colorSecondary {
-  background-color: rgba(255, 121, 249, 0.2) !important;
+  background-color: var(--accent-pink-1) !important;
   color: var(--foreground) !important;
 }
 
@@ -429,8 +461,8 @@ input[type="datetime-local"] {
 
 /* Modal and Dialog theming */
 [data-theme="dark"] .MuiDialog-paper {
-  background-color: rgba(18, 18, 18, 0.95) !important;
-  border: 1px solid rgba(81, 81, 81, 1) !important;
+  background-color: var(--primary-neon-blue-dark-1) !important;
+  border: 1px solid var(--primary-neon-blue-1) !important;
 }
 
 [data-theme="colorful"] .MuiDialog-paper {
@@ -440,8 +472,8 @@ input[type="datetime-local"] {
 
 /* Menu theming */
 [data-theme="dark"] .MuiMenu-paper {
-  background-color: rgba(18, 18, 18, 0.95) !important;
-  border: 1px solid rgba(81, 81, 81, 1) !important;
+  background-color: var(--primary-neon-blue-dark-2) !important;
+  border: 1px solid var(--primary-neon-blue-1) !important;
 }
 
 [data-theme="colorful"] .MuiMenu-paper {
@@ -451,8 +483,8 @@ input[type="datetime-local"] {
 
 /* Card theming */
 [data-theme="dark"] .MuiCard-root {
-  background-color: rgba(18, 18, 18, 0.8) !important;
-  border: 1px solid rgba(81, 81, 81, 1) !important;
+  background-color: var(--primary-neon-blue-dark-1) !important;
+  border: 1px solid var(--primary-neon-blue-3) !important;
 }
 
 [data-theme="colorful"] .MuiCard-root {
@@ -470,7 +502,7 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .react-resizable-handle {
-background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6' style='background-color:%23ffffff00' x='0px' y='0px' width='6px' height='6px'%3E%3Cg opacity='0.302'%3E%3Cpath d='M 6 6 L 0 6 L 0 4.2 L 4 4.2 L 4.2 4.2 L 4.2 0 L 6 0 L 6 6 L 6 6 Z' fill='%23ffd73e'/%3E%3C/g%3E%3C/svg%3E");
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6' style='background-color:%23ffffff00' x='0px' y='0px' width='6px' height='6px'%3E%3Cg opacity='0.302'%3E%3Cpath d='M 6 6 L 0 6 L 0 4.2 L 4 4.2 L 4.2 4.2 L 4.2 0 L 6 0 L 6 6 L 6 6 Z' fill='%23ffda3e'/%3E%3C/g%3E%3C/svg%3E");
 }
 /*
 .react-resizable-handle-sw,
