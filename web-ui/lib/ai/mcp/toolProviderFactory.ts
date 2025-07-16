@@ -73,6 +73,16 @@ export const toolProviderFactory = async ({
   traceable = true,
   ...options
 }: ToolProviderFactoryOptions): Promise<ConnectableToolProvider> => {
+
+  const onerror = ((error: unknown) => {
+    log((l) => l.error('MCP Client SSE Error:', error));
+
+    return {
+      role: 'assistant',
+      content: `An error occurred while connecting to the MCP server: ${isError(error) ? error.message : String(error)}. Please try again later.`,
+    }
+  }) as unknown as ((error:unknown) => void);
+
   try {
     type MCPClientConfig = FirstParameter<typeof createMCPClient>;
     const tx: MCPClientConfig['transport'] = {
@@ -117,7 +127,13 @@ export const toolProviderFactory = async ({
     };
 
     // Create instrumented SSE transport with comprehensive error handling
-    const transport = traceable ? new InstrumentedSseTransport(tx) : tx;
+    const transport = traceable
+      ? new InstrumentedSseTransport({
+          url: options.url,
+          onerror,
+          ...tx,
+        })
+      : tx;
 
     // Create MCP client with transport and error handling
     let mcpClient = await createMCPClient({

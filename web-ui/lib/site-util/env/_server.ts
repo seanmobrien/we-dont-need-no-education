@@ -54,6 +54,7 @@ const buildRawInstance = () => ({
   MEM0_ORG_ID: process.env.MEM0_ORG_ID,
   MEM0_PROJECT_ID: process.env.MEM0_PROJECT_ID,
   MEM0_API_KEY: process.env.MEM0_API_KEY,
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,
 });
 
 // Define the schema for server-side environment variables
@@ -129,6 +130,7 @@ const serverEnvSchema = z.object({
   MEM0_ORG_ID: ZodProcessors.nullableString().default(null),
   MEM0_PROJECT_ID: ZodProcessors.nullableString().default(null),
   MEM0_API_KEY: z.string().optional().default('SKYNET'),
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: z.string().optional(),
 });
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;

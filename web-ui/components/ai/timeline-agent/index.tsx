@@ -113,7 +113,8 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
     isSuccess,
     isError,
     data,
-    error: mutationError,
+    ...otherMutationProps
+    // error: mutationError,
   } = useMutation({
     mutationFn: async () => {
       const response = await fetch('/api/ai/agents/timeline', {
@@ -323,8 +324,12 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         if (isSuccess) {
           log((l) => l.info('Agent initialized successfully'));
         } else {
-          if (isError) {
-            notifications.show(mutationError.message, {
+          if (
+            isError &&
+            'error' in otherMutationProps &&
+            otherMutationProps.error
+          ) {
+            notifications.show(otherMutationProps.error.message, {
               severity: 'error',
               autoHideDuration: 60000,
             });
@@ -334,10 +339,12 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         }
       }
     } else {
-      if (isError) {        
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        notifications.show((mutationError as any).message, {
+      if (
+        isError &&
+        'error' in otherMutationProps &&
+        otherMutationProps.error
+      ) {
+        notifications.show(otherMutationProps.error.message, {
           severity: 'error',
           autoHideDuration: 60000,
         });        
@@ -352,7 +359,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
     isPending,
     data,
     isSuccess,
-    mutationError,
+    otherMutationProps,
     isError,
     notifications,
   ]);

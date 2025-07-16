@@ -28,27 +28,31 @@ const LayoutContainer = styled(Box, {
 
 
 
-  // For regular layouts, adjust viewport-wide
+  // For regular layouts, use viewport-based adjustments
   switch (chatPanelPosition) {
     case 'left':
       return {
         ...baseStyles,
-        paddingLeft: `${chatPanelSize}px`,
+        width: `calc(100vw - ${chatPanelSize}px)`,
+        marginLeft: `${chatPanelSize}px`,
       };
     case 'right':
       return {
         ...baseStyles,
-        paddingRight: `${chatPanelSize}px`,
+        width: `calc(100vw - ${chatPanelSize}px)`,
+        marginRight: `${chatPanelSize}px`,
       };
     case 'top':
       return {
         ...baseStyles,
-        paddingTop: `${chatPanelSize}px`,
+        height: `calc(100vh - ${chatPanelSize}px)`,
+        marginTop: `${chatPanelSize}px`,
       };
     case 'bottom':
       return {
         ...baseStyles,
-        paddingBottom: `${chatPanelSize}px`,
+        height: `calc(100vh - ${chatPanelSize}px)`,
+        marginBottom: `${chatPanelSize}px`,
       };
     default:
       return baseStyles;

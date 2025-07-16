@@ -24,6 +24,7 @@ import {
   getNotes,
 } from '../../../lib/api/email/properties/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { KeyPointsDetails } from '@/data-models/api';
 
 // Mock the API functions
 jest.mock('../../../lib/api/client');
@@ -105,7 +106,7 @@ const mockNotes = [
   },
 ];
 
-const mockKeyPoints = [
+const mockKeyPoints: KeyPointsDetails[] = [
   {
     propertyId: 'kp-1',
     documentId: 1,
@@ -150,7 +151,7 @@ describe('EmailDetailPanel', () => {
           }),
         };
       }),
-    });
+    });    
     promise.catch = jest.fn().mockImplementation((onError) => {
       setTimeout(() => onError(error), 10);
       return {
@@ -165,7 +166,7 @@ describe('EmailDetailPanel', () => {
     promise.awaitable = Promise.reject(error);
     return promise;
   };
-
+*/
   beforeEach(() => {
     jest.clearAllMocks();
 

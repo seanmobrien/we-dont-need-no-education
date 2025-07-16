@@ -1,7 +1,6 @@
 export type {
   DatabaseType,
   SchemaType,
-  RelationsType,
   DocumentUnitType,
   DocumentPropertyType,
   DocumentPropertyTypeType,

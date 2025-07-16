@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @jest-environment jsdom
  */
@@ -17,6 +18,7 @@ import {
   isAiModelType,
   isAiLanguageModelType,
 } from '../../../lib/ai/core/guards';
+import { EmbeddingModel, LanguageModel, Provider } from 'ai';
 
 // Mock environment variables
 jest.mock('@/lib/site-util/env', () => ({
@@ -60,12 +62,18 @@ jest.mock('../../../lib/ai/middleware', () => ({
 
 jest.mock('ai', () => ({
   wrapLanguageModel: jest.fn(({ model }) => model),
-  customProvider: jest.fn((config) => ({
-    languageModels: config.languageModels || {},
-    embeddingModels: config.embeddingModels || {},
-    fallbackProvider: config.fallbackProvider,
-  })),
-  createProviderRegistry: jest.fn((providers) => ({
+  customProvider: jest.fn(
+    (config: {
+      languageModels?: Record<string, LanguageModel>;
+      embeddingModels?: Record<string, EmbeddingModel<string>>;
+      fallbackProvider?: Provider;
+    }) => ({
+      languageModels: config.languageModels || {},
+      embeddingModels: config.embeddingModels || {},
+      fallbackProvider: config.fallbackProvider,
+    }),
+  ),
+  createProviderRegistry: jest.fn(() => ({
     languageModel: jest.fn((id) => ({ modelId: id, type: 'language' })),
     textEmbeddingModel: jest.fn((id) => ({ modelId: id, type: 'embedding' })),
   })),
