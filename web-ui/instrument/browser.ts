@@ -60,7 +60,7 @@ const getAppInsights = () => {
           [appInsightState.clickPlugin.identifier]: {
             autoCapture: true, // Enable automatic capture of click events
             clickEvents: true, // Enable click events tracking
-            dropInvalidEvents: true,
+            dropInvalidEvents: false,
             urlCollectQuery: false,
             customDataPrefix: 'data-ai-',
             useDefaultContentNameOrId: true, // Allow using standard HTML attributes for contentName and id
