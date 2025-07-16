@@ -112,7 +112,6 @@ const mockKeyPoints: KeyPointsDetails[] = [
     documentId: 1,
     createdOn: new Date('2023-01-01'),
     value: 'Key point about compliance requirements',
-    description: 'Key point about compliance requirements',
     relevance: null,
     compliance: null,
     severity: null,
@@ -166,7 +165,6 @@ describe('EmailDetailPanel', () => {
     promise.awaitable = Promise.reject(error);
     return promise;
   };
-*/
   beforeEach(() => {
     jest.clearAllMocks();
 

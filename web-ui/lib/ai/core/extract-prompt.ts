@@ -15,6 +15,7 @@ export const extractPromptText = ({
 
   // Filter only user/assistant messages
   const filtered = messages.filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (msg: any) => msg.role === 'user' || msg.role === 'assistant',
   );
 

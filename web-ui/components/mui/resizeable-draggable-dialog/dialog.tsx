@@ -198,11 +198,6 @@ const ResizableDraggableDialog = ({
       if (!open) {
         return;
       }
-      if (onClose) {
-        onClose(evt, reason as 'backdropClick' | 'escapeKeyDown');
-        return;
-      }
-
       // For modal dialogs, allow all close reasons
       // For non-modal dialogs, ignore backdrop clicks
       if (modal === true || reason !== 'backdropClick') {

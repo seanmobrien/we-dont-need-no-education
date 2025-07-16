@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { useDynamicWidth } from '@/lib/react-util';
 
 // Enhanced canvas-based text measurement utilities
@@ -290,6 +291,7 @@ export const createAdaptiveSizeEstimator = () => {
         sizeCache.set(messageId, actualHeight);
 
         // Learn from the difference to improve future estimates
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const ratio = actualHeight / estimated;
         // You could use this ratio to adjust future estimates
       }
