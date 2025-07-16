@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Box, styled } from '@mui/material';
-import { DockPosition } from './chat-panel-context';
+import type { DockPosition } from './types';
 
 /**
  * Docking zone data
@@ -196,7 +196,7 @@ export const DockingOverlay: React.FC<DockingOverlayProps> = ({
   return (
     <>
       {Object.keys(ZONE_LABELS).map((zoneName) => {
-        const dockPosition = zoneName as DockPosition;
+        const dockPosition = zoneName as keyof typeof ZONE_LABELS;
         const isHighlighted = highlightedZone === dockPosition;
         
         // Calculate final zone bounds

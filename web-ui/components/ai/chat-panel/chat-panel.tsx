@@ -24,15 +24,14 @@ import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
-import { DockPosition, useChatPanelContext } from './chat-panel-context';
-import { DockingOverlay, useDocking } from './docking-overlay';
+import type {DockPosition} from './types';
+import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
   `chatMessages-${threadId}`;
 const activeThreadStorageKey = 'chatActiveId';
-const chatDialogSizeStorageKey = 'chatDialogSize';
 
 const getInitialThreadId = (): string => {
   if (typeof sessionStorage !== 'undefined') {
@@ -57,27 +56,6 @@ const loadCurrentMessageState = (): Message[] | undefined => {
     return undefined;
   }
   return JSON.parse(messages) as Array<Message> | undefined;
-};
-
-const getStoredDialogSize = (): { width: number; height: number } => {
-  if (typeof localStorage === 'undefined') {
-    return { width: 600, height: 500 };
-  }
-  const stored = localStorage.getItem(chatDialogSizeStorageKey);
-  if (!stored) {
-    return { width: 600, height: 500 };
-  }
-  try {
-    return JSON.parse(stored) as { width: number; height: number };
-  } catch {
-    return { width: 600, height: 500 };
-  }
-};
-
-const saveDialogSize = (width: number, height: number): void => {
-  if (typeof localStorage !== 'undefined') {
-    localStorage.setItem(chatDialogSizeStorageKey, JSON.stringify({ width, height }));
-  }
 };
 
 const stable_onFinish = (message: Message) => {
@@ -131,6 +109,7 @@ const stableStyles = {
   chatInput: { 
     marginBottom: 2,
     flexShrink: 0,
+    width: '100%',
   } as const,
   stack: { 
     flexGrow: 1, 
@@ -156,7 +135,7 @@ const stableStyles = {
   } as const,
 } as const;
 
-const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashboardLayout?: boolean }) => {
+const ChatPanel = ({ page }: { page: string }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string>(getInitialThreadId());
   const [initialMessages, setInitialMessages] = useState<Message[] | undefined>(
@@ -168,26 +147,7 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
   >(new Map<AiModelType, Date>());
   
   // Use chat panel context for docking state
-  const { config, setPosition, setSize } = useChatPanelContext();
-  const { isDragging, startDragging, stopDragging } = useDocking();
-  
-  // Legacy floating state for backward compatibility
-  const [isFloating, setIsFloating] = useState(false);
-  const [dialogSize, setDialogSize] = useState(() => getStoredDialogSize());
-
-  // Listen for drag events from the dialog
-  useEffect(() => {
-    const handleDragStart = () => startDragging();
-    const handleDragStop = () => stopDragging();
-
-    window.addEventListener('chatPanelDragStart', handleDragStart);
-    window.addEventListener('chatPanelDragStop', handleDragStop);
-
-    return () => {
-      window.removeEventListener('chatPanelDragStart', handleDragStart);
-      window.removeEventListener('chatPanelDragStop', handleDragStop);
-    };
-  }, [startDragging, stopDragging]);
+  const { dockPanel, config, setPosition, isFloating, setFloating, debounced: { setSize: debouncedSetSize } } = useChatPanelContext();
 
   if (!initialMessages) {
     const messages = loadCurrentMessageState();
@@ -322,61 +282,56 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
     },
     [handleInputChange, input, messages, onSendClick],
   );
-
+  
   const onFloat = useCallback(() => {
-    setPosition('floating');
-    setIsFloating(true);
-  }, [setPosition]);
-
+    // set isFloating to true
+    setFloating(true);
+  }, [setFloating]);
+  
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const onDock = useCallback((position: DockPosition) => {
     setPosition(position);
-    setIsFloating(false);
   }, [setPosition]);
 
-  const onUndock = useCallback(() => {
+  const onInline = useCallback(() => {
     setPosition('inline');
-    setIsFloating(false);
   }, [setPosition]);
 
-  const onCloseFloat = useCallback(() => {
-    setPosition('inline');
-    setIsFloating(false);
-  }, [setPosition]);
 
-  const onDialogResize = useCallback((width: number, height: number) => {
-    setDialogSize({ width, height });
-    setSize(width, height);
-    saveDialogSize(width, height);
-  }, [setSize]);
+
+
 
   const stableChatInputSlotProps = useMemo(() => {
+    const onResetSession = () => {
+      sessionStorage.removeItem('chatActiveId');
+      setThreadId(generateChatId().id);
+      setInitialMessages(undefined);
+      setMessages([]);
+    };
+
     return {
       input: {
         endAdornment: (
           <InputAdornment position="end">
             <Box sx={stableStyles.inputAdornmentBox}>
-              <IconButton edge="end" onClick={onSendClick}>
+              <IconButton edge="end" onClick={onSendClick} data-id="ChatMessageSend">
                 <PublishIcon />
               </IconButton>
               <ChatMenu
+                data-id="ChatMessageMenu"
                 activeModel={activeModel}
                 setActiveModel={setActiveModel}
                 onFloat={onFloat}
-                onDock={onDock}
+                onDock={setPosition}
                 currentPosition={config.position}
-                onResetSession={() => {
-                  sessionStorage.removeItem('chatActiveId');
-                  setThreadId(generateChatId().id);
-                  setInitialMessages(undefined);
-                  setMessages([]);
-                }}
+                onResetSession={onResetSession}
               />
             </Box>
           </InputAdornment>
         ),
       },
     };
-  }, [onSendClick, activeModel, setMessages, onFloat, onDock, config.position]);
+  }, [onSendClick, activeModel, onFloat, setPosition, config.position, setMessages]);
 
   useEffect(() => {
     const timeoutIds: Array<NodeJS.Timeout | number> = [];
@@ -427,7 +382,7 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
         value={input}
         onChange={handleInputChange}
         onKeyDown={handleInputKeyDown}
-        sx={{ ...stableStyles.chatInput, width: '100%' }}
+        sx={stableStyles.chatInput}
         slotProps={stableChatInputSlotProps}
       />
       <Box sx={stableStyles.chatBox}>
@@ -452,26 +407,20 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
         {typeof document !== 'undefined' && createPortal(
           <DockedPanel
             position={config.position}
-            onUndock={onUndock}
+            onUndock={onInline}
             onFloat={onFloat}
             title={`Chat - ${page}`}
           >
             {chatContent}
           </DockedPanel>,
-          document.body
-        )}
-        {/* Docking overlay when dragging */}
-        <DockingOverlay
-          isActive={isDragging}
-          onDock={onDock}
-          isDashboardLayout={isDashboardLayout}
-        />
+          dockPanel ?? document.body
+        )}       
       </>
     );
   }
 
   // Handle floating state
-  if (config.position === 'floating' || isFloating) {
+  if (config.position === 'floating') {
     return (
       <>
         {/* Placeholder for inline position */}
@@ -480,22 +429,16 @@ const ChatPanel = ({ page, isDashboardLayout = false }: { page: string; isDashbo
         </Box>
         {/* Floating dialog */}
         <ResizableDraggableDialog
-          isOpenState={[isFloating, setIsFloating]}
+          isOpenState={isFloating}
           title={`Chat - ${page}`}
           modal={false}
-          initialWidth={dialogSize.width}
-          initialHeight={dialogSize.height}
-          onClose={onCloseFloat}
-          onResize={onDialogResize}
+          width={config.size.width}
+          height={config.size.height}
+          onClose={onInline}
+          onResize={debouncedSetSize}
         >
           {chatContent}
         </ResizableDraggableDialog>
-        {/* Docking overlay when dragging */}
-        <DockingOverlay
-          isActive={isDragging}
-          onDock={onDock}
-          isDashboardLayout={isDashboardLayout}
-        />
       </>
     );
   }

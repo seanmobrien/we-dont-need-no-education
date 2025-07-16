@@ -5,7 +5,8 @@ import { Box, IconButton, Paper, styled } from '@mui/material';
 import { Resizable } from 'react-resizable';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
-import { DockPosition, useChatPanelContext } from './chat-panel-context';
+import { useChatPanelContext } from './chat-panel-context';
+import type { DockPosition } from './types';
 
 /**
  * Props for the DockedPanel component

@@ -16,7 +16,7 @@ const Page = async () => {
 
   return (
     <EmailDashboardLayout session={session}>
-      <ChatPanelLayout isDashboardLayout={true}>
+      <ChatPanelLayout >
         <Box
           sx={{
             width: '100%',
@@ -26,7 +26,7 @@ const Page = async () => {
           }}
         >
           <CtaGrid />
-          <ChatPanel page="email-cta" isDashboardLayout={true} />
+          <ChatPanel page="email-cta"  />
         </Box>
       </ChatPanelLayout>
     </EmailDashboardLayout>

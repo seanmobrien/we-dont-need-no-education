@@ -47,6 +47,7 @@ export function createChatHistoryMiddleware(
 
   return {
     wrapStream: async ({ doStream, params }) => {
+      debugger;
       try {
         // Create or get chat
         // Upsert chat: if chatId exists, ensure it exists in DB or insert if new

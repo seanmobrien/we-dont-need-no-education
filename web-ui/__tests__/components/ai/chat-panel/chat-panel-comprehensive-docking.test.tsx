@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Comprehensive tests for chat panel docking functionality
  * Tests all docking positions: top, left, right, bottom, maximized, and float
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
 import { ChatPanelProvider } from '@/components/ai/chat-panel/chat-panel-context';
 import ChatPanel from '@/components/ai/chat-panel/chat-panel';
 import { ChatPanelLayout } from '@/components/ai/chat-panel/chat-panel-layout';
@@ -62,9 +63,8 @@ jest.mock('@/components/mui/resizeable-draggable-dialog', () => {
     isOpenState, 
     onClose, 
     onResize 
-  }: any) {
-    const [isOpen] = isOpenState;
-    return isOpen ? (
+  }: any) {    
+    return isOpenState ? (
       <div data-testid="floating-dialog" role="dialog" aria-label={title}>
         <div data-testid="dialog-title">{title}</div>
         <div data-testid="dialog-content">{children}</div>
@@ -88,13 +88,13 @@ jest.mock('react-resizable', () => ({
 const ChatPanelTestWrapper: React.FC<{ 
   isDashboardLayout?: boolean;
   children?: React.ReactNode;
-}> = ({ isDashboardLayout = false, children }) => (
+}> = ({  children }) => (
   <ChatPanelProvider>
-    <ChatPanelLayout isDashboardLayout={isDashboardLayout}>
+    <ChatPanelLayout>
       <div data-testid="main-content">Main Content</div>
       {children}
     </ChatPanelLayout>
-    <ChatPanel page="test" isDashboardLayout={isDashboardLayout} />
+    <ChatPanel page="test"  />
   </ChatPanelProvider>
 );
 
@@ -203,7 +203,6 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
       });
       
       // The input field should be moved to portal content, not in main area
-      const mainInputs = screen.queryAllByPlaceholderText(/Type your message here/);
       const portalInputs = screen.queryAllByTestId('portal-content');
       
       // Should have portal content for docked panel

@@ -99,14 +99,14 @@ const EmailSelect: React.FC<{
               id={ariaTargetId}
               href="#"
               onClick={() => setInEditMode(true)}
-              className={classnames(margin('mr-2'))}
+              className={classnames('mr-2')}
             >
               Edit
             </a>
             <a
               href="#"
               onClick={() => onEmailSelect(null)}
-              className={classnames(margin('ml-2'))}
+              className={classnames('ml-2')}
             >
               Clear
             </a>

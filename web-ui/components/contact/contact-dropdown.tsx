@@ -1,3 +1,4 @@
+/** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from 'react';
 import ContactForm from './contact-form';
 import { Contact, ContactSummary } from '@/data-models/api/contact';
@@ -11,6 +12,7 @@ interface ContactDropdownProps {
   setValue: (value: ContactSummary) => void;
   filter?: (contact: ContactSummary) => boolean;
   className?: SerializedStyles;
+  style?: React.CSSProperties;
 }
 
 const dropdownStyles = {
@@ -27,6 +29,7 @@ const ContactDropdown = ({
   contact,
   setValue,
   filter = () => true,
+  style
 }: ContactDropdownProps) => {
   const [contacts, setContacts] = useState<ContactSummary[]>([]);
   const [showContactForm, setShowContactForm] = useState(false);
@@ -91,7 +94,7 @@ const ContactDropdown = ({
   };
 
   return (
-    <div css={className}>
+    <div css={className} style={style}>
       <select
         title="Select contact"
         value={contactId}

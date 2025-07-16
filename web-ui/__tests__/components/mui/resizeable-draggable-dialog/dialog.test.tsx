@@ -26,6 +26,7 @@ jest.mock(
         }, [setRefineSizeProps, width, height]);
 
         // Filter out non-DOM props
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { dragHandleId, dialogId, ...domProps } = otherProps;
 
         return (
@@ -46,7 +47,9 @@ jest.mock(
 
 describe('ResizableDraggableDialog', () => {
   const defaultProps: ResizeableDraggableDialogProps = {
-    isOpenState: [true, jest.fn()],
+    isOpenState: true,
+    onResize: jest.fn(),
+    onClose: jest.fn(),
     title: 'Test Dialog',
     children: <div>Dialog Content</div>,
   };
@@ -81,7 +84,7 @@ describe('ResizableDraggableDialog', () => {
     });
 
     it('does not render dialog when closed', () => {
-      renderDialog({ isOpenState: [false, jest.fn()], open: false });
+      renderDialog({ isOpenState: false });
 
       expect(screen.queryByText('Test Dialog')).not.toBeInTheDocument();
       expect(screen.queryByText('Dialog Content')).not.toBeInTheDocument();
@@ -102,13 +105,6 @@ describe('ResizableDraggableDialog', () => {
   });
 
   describe('Props Integration', () => {
-    it('exposes size control function when setRefineSizeProps is provided', () => {
-      const mockSetRefineSizeProps = jest.fn();
-
-      renderDialog({ setRefineSizeProps: mockSetRefineSizeProps });
-
-      expect(mockSetRefineSizeProps).toHaveBeenCalled();
-    });
 
     it('renders dialog actions when provided', () => {
       const mockDialogActions = () => (
@@ -184,8 +180,8 @@ describe('ResizableDraggableDialog', () => {
     it('accepts all expected props without TypeScript errors', () => {
       // This test verifies that the component accepts all defined props
       const allProps: ResizeableDraggableDialogProps = {
-        isOpenState: [true, jest.fn()],
-        open: true,
+        isOpenState: true,
+        onResize: jest.fn(),
         title: 'Test',
         children: <div>Content</div>,
         initialHeight: 400,
@@ -195,7 +191,6 @@ describe('ResizableDraggableDialog', () => {
         modal: true,
         onClose: jest.fn(),
         paperProps: { elevation: 4 },
-        setRefineSizeProps: jest.fn(),
         dialogActions: () => {
           const Actions = () => <div>Actions</div>;
           return Actions as any;

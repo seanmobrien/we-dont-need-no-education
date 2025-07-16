@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Test to verify EmailDetailPanel component works correctly
  * This includes comprehensive tests for loading states, fully loaded email, and expandable property panels
@@ -111,6 +112,10 @@ const mockKeyPoints = [
     createdOn: new Date('2023-01-01'),
     value: 'Key point about compliance requirements',
     description: 'Key point about compliance requirements',
+    relevance: null,
+    compliance: null,
+    severity: null,
+    inferred: false,
   },
 ];
 
@@ -133,6 +138,7 @@ describe('EmailDetailPanel', () => {
     return promise;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const createFailedPromise = (error: Error) => {
     const promise: any = {};
     promise.then = jest.fn().mockReturnValue({
@@ -165,11 +171,11 @@ describe('EmailDetailPanel', () => {
 
     // Default successful email loading mock
     mockGetEmail.mockReturnValue(createSuccessfulPromise(mockFullEmail) as any);
-    mockGetKeyPoints.mockResolvedValue({ results: [] });
-    mockGetCallToAction.mockResolvedValue({ results: [] });
-    mockGetCallToActionResponse.mockResolvedValue({ results: [] });
-    mockGetSentimentAnalysis.mockResolvedValue({ results: [] });
-    mockGetNotes.mockResolvedValue({ results: [] });
+    mockGetKeyPoints.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetCallToAction.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetCallToActionResponse.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetSentimentAnalysis.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetNotes.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
   });
 
   it('renders without crashing and shows loading state initially', () => {
@@ -257,7 +263,7 @@ describe('EmailDetailPanel', () => {
     mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
 
     // Mock successful notes loading
-    mockGetNotes.mockResolvedValue({ results: mockNotes });
+    mockGetNotes.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: mockNotes });
 
     // First render in summary mode (no full email loaded)
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
@@ -307,7 +313,7 @@ describe('EmailDetailPanel', () => {
     mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
 
     // Mock successful key points loading
-    mockGetKeyPoints.mockResolvedValue({ results: mockKeyPoints });
+    mockGetKeyPoints.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: mockKeyPoints });
 
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
 
@@ -378,10 +384,9 @@ describe('EmailDetailPanel', () => {
 
     // Check if we can find loading state, but don't fail if it's not there
     // React Query may resolve too quickly in tests
-    let foundLoadingState = false;
     try {
       screen.getByRole('progressbar');
-      foundLoadingState = true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       // Loading state might have resolved too quickly
     }

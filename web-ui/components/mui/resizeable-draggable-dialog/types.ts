@@ -105,15 +105,12 @@ export type SetRefineSizeFunction = React.Dispatch<
  * ```
  */
 export type ResizeableDraggablePaperProps = PaperProps & {
-  height?: number;
-  width?: number;
+  height: number;
+  width: number;
   minConstraints?: [number, number];
   maxConstraints?: [number, number];
-  setRefineSizeProps?: SetRefineSizeFunction;
   dialogId?: string;
   onResize?: (width: number, height: number) => void;
-  onDragStart?: () => void;
-  onDragStop?: () => void;
 };
 
 /**
@@ -148,8 +145,8 @@ export type ResizeableDraggablePaperProps = PaperProps & {
  * ```
  */
 export type ResizeableDraggableDialogProps = PropsWithChildren<
-  Omit<DialogProps, 'open' | 'hideBackdrop' | 'disableEnforceFocus'> & {
-    isOpenState: [boolean, React.Dispatch<React.SetStateAction<boolean>>];
+  Omit<DialogProps, 'open' | 'hideBackdrop' | 'disableEnforceFocus' | 'onClose'> & {    
+    isOpenState: boolean;
     paperProps?: Omit<
       ResizeableDraggablePaperProps,
       | 'setRefineSizeProps'
@@ -160,15 +157,34 @@ export type ResizeableDraggableDialogProps = PropsWithChildren<
       | 'dialogId'
     >;
     modal?: boolean;
-    dialogActions?: (props: DialogActionProps) => JSX.Element;
-    setRefineSizeProps?: SetRefineSizeFunction;
+    dialogActions?: (props: DialogActionProps) => JSX.Element;    
+    /**
+     * @deprecated I dont know if we want to set this from here?
+     */
     initialHeight?: number;
+    /**
+     * @deprecated I dont know if we want to set this from here?
+     */
     initialWidth?: number;
+    height?: number;
+    width?: number;
     minConstraints?: [number, number];
     maxConstraints?: [number, number];
-    onResize?: (width: number, height: number) => void;
+    /**
+     * Called to notify parent of new height/width
+     * @param width {number} The new width.
+     * @param height {number} The new height.     
+     */
+    onResize: (width: number, height: number) => void;
+    /**
+     * Called to notify parent of a dialog close event
+     * @param evt {Event} The event that triggered the close.
+     * @param reason {string} The reason for the close, such as 'backdropClick' or 'escapeKeyDown'.
+     */
+    onClose: (evt: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, reason: 'backdropClick' | 'escapeKeyDown' | '') => void;
   }
 >;
+
 
 /**
  * Runtime validation function for Size type.

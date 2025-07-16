@@ -469,7 +469,33 @@ input[type="datetime-local"] {
   color: var(--foreground) !important;
 }
 
-/* React-resizable handle styles */
+[data-theme="dark"] .react-resizable-handle {
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6' style='background-color:%23ffffff00' x='0px' y='0px' width='6px' height='6px'%3E%3Cg opacity='0.302'%3E%3Cpath d='M 6 6 L 0 6 L 0 4.2 L 4 4.2 L 4.2 4.2 L 4.2 0 L 6 0 L 6 6 L 6 6 Z' fill='%23ffd73e'/%3E%3C/g%3E%3C/svg%3E");
+}
+/*
+.react-resizable-handle-sw,
+.react-resizable-handle-s,
+.react-resizable-handle-se {
+  margin-bottom: 4px;
+}
+.react-resizable-handle-nw,
+.react-resizable-handle-n,
+.react-resizable-handle-ne {
+  margin-top: 4px;
+}
+.react-resizable-handle-nw,
+.react-resizable-handle-w,
+.react-resizable-handle-sw {
+  margin-left: 4px;
+}
+.react-resizable-handle-ne,
+.react-resizable-handle-e,
+.react-resizable-handle-se {
+  margin-right: 4px;
+}
+*/
+
+/* React-resizable handle styles 
 .react-resizable {
   position: relative;
 }
@@ -552,12 +578,13 @@ input[type="datetime-local"] {
   height: 20px;
 }
 
-/* Dark theme styles for resizable handles */
+/ * Dark theme styles for resizable handles * /
 [data-theme="dark"] .react-resizable-handle {
   background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNiIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgNiA2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxnIGZpbGw9IiNmZmYiPjxjaXJjbGUgY3g9IjMiIGN5PSIzIiByPSIxLjUiLz48L2c+PC9zdmc+');
 }
 
-/* Colorful theme styles for resizable handles */
+/ * Colorful theme styles for resizable handles * /
 [data-theme="colorful"] .react-resizable-handle {
   background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNiIgaGVpZ2h0PSI2IiB2aWV3Qm94PSIwIDAgNiA2IiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxnIGZpbGw9IiMxYWJiZjkiPjxjaXJjbGUgY3g9IjMiIGN5PSIzIiByPSIxLjUiLz48L2c+PC9zdmc+');
 }
+*/

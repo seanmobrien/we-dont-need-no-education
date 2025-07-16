@@ -1,3 +1,5 @@
+/** @jsxImportSource @emotion/react */
+
 import React, { useCallback, useState } from 'react';
 import ContactDropdown from './contact-dropdown';
 import { ContactSummary } from '@/data-models/api/contact';

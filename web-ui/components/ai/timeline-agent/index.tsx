@@ -334,11 +334,13 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         }
       }
     } else {
-      if (isError) {
-        notifications.show(mutationError.message, {
+      if (isError) {        
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        notifications.show((mutationError as any).message, {
           severity: 'error',
           autoHideDuration: 60000,
-        });
+        });        
       } else {
         //no-op?
       }

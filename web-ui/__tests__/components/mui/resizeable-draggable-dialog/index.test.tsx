@@ -170,13 +170,12 @@ describe('ResizableDraggableDialog Index Module', () => {
       // Test that TypeScript can infer types correctly
       const mockSetState = jest.fn();
       const testProps: Partial<ResizeableDraggableDialogProps> = {
-        isOpenState: [true, mockSetState],
+        isOpenState: true,
         title: 'Test Dialog',
         modal: false,
       };
 
-      expect(testProps.isOpenState?.[0]).toBe(true);
-      expect(testProps.isOpenState?.[1]).toBe(mockSetState);
+      expect(testProps.isOpenState).toBe(true);      
       expect(testProps.title).toBe('Test Dialog');
       expect(testProps.modal).toBe(false);
     });

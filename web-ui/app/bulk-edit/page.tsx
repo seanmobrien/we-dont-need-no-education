@@ -1,3 +1,4 @@
+/** @jsxImportSource @emotion/react */
 'use client';
 
 import BulkEmailForm from '@/components/email-message/bulk-form';
@@ -81,9 +82,10 @@ export default function Home() {
       <footer css={pageStyles.footer}>
         <a
           css={pageStyles.link}
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
+          href="/"
           target="_blank"
           rel="noopener noreferrer"
+          data-id="link-examples"
         >
           <Image
             aria-hidden
@@ -99,6 +101,7 @@ export default function Home() {
           href="https://education.mn.gov/MDE/index.htm"
           target="_blank"
           rel="noopener noreferrer"
+          data-id="link-mn-dept-of-ed"
         >
           <Image
             aria-hidden

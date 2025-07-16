@@ -15,7 +15,7 @@ const Home = async () => {
 
   return (
     <EmailDashboardLayout session={session}>
-      <ChatPanelLayout isDashboardLayout={true}>
+      <ChatPanelLayout >
         <Box
           sx={{
             width: '100%',
@@ -26,7 +26,7 @@ const Home = async () => {
         >
           <Stack>
             <NoteGrid />
-            <ChatPanel page="email-notes" isDashboardLayout={true} />
+            <ChatPanel page="email-notes"  />
           </Stack>
         </Box>
       </ChatPanelLayout>
