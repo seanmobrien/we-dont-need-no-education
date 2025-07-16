@@ -71,7 +71,7 @@ describe('ChatPanel Docking Functionality', () => {
   });
 
   it('handles dashboard layout flag', async () => {
-    render(<ChatPanel page="test" isDashboardLayout={true} />);
+    render(<ChatPanel page="test" />);
     
     // Component should render without errors with dashboard layout flag
     expect(screen.getByPlaceholderText(/Type your message here/)).toBeInTheDocument();

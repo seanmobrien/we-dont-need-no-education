@@ -37,6 +37,7 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
         transform: `translateY(${virtualRow.start}px)`,
         p: 0.5,
       }}
+      data-index={virtualRow.index}
     >
       <Stack
         direction="row"
@@ -68,8 +69,6 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
               marginLeft: isUser ? 'auto' : 0,
               marginBottom: 2,
               display: 'inline-block',
-              // bgcolor: isUser ? 'primary.main' : 'grey.200',
-              // color: isUser ? 'white' : 'black',
               borderRadius: 2,
             }}
           >

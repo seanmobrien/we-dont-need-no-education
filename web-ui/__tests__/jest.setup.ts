@@ -202,6 +202,7 @@ const DefaultEnvVariables = {
   AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: '1000',
   AZURE_STORAGE_ACCOUNT_KEY: 'azure-storage-account-key',
   AZURE_STORAGE_ACCOUNT_NAME: 'azure-storage-account-name',
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: '',
 };
 let originalProcessEnv = (() => {
   try {

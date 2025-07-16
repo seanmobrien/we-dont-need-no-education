@@ -5,7 +5,8 @@ import { Box, IconButton, Paper, styled } from '@mui/material';
 import { Resizable } from 'react-resizable';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
-import { DockPosition, useChatPanelContext } from './chat-panel-context';
+import { useChatPanelContext } from './chat-panel-context';
+import type { DockPosition } from './types';
 
 /**
  * Props for the DockedPanel component
@@ -34,14 +35,18 @@ const DockedContainer = styled(Paper, {
     flexDirection: 'column' as const,
   };
 
-  // Position-specific styles
+  // Position-specific styles  
+  // Account for header height (approximately 64px for MUI AppBar)
+  const headerHeight = 64;
+  
   switch (dockPosition) {
     case 'top':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         left: 0,
         right: 0,
+        maxHeight: `calc(50vh - ${headerHeight}px)`, // Constrain height accounting for header
         borderBottom: `1px solid ${theme.palette.divider}`,
       };
     case 'bottom':
@@ -50,12 +55,13 @@ const DockedContainer = styled(Paper, {
         bottom: 0,
         left: 0,
         right: 0,
+        maxHeight: '50vh', // Constrain height to half viewport
         borderTop: `1px solid ${theme.palette.divider}`,
       };
     case 'left':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         left: 0,
         bottom: 0,
         borderRight: `1px solid ${theme.palette.divider}`,
@@ -63,7 +69,7 @@ const DockedContainer = styled(Paper, {
     case 'right':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         right: 0,
         bottom: 0,
         borderLeft: `1px solid ${theme.palette.divider}`,
@@ -71,7 +77,7 @@ const DockedContainer = styled(Paper, {
     case 'top-left':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         left: 0,
         borderBottom: `1px solid ${theme.palette.divider}`,
         borderRight: `1px solid ${theme.palette.divider}`,
@@ -79,7 +85,7 @@ const DockedContainer = styled(Paper, {
     case 'top-right':
       return {
         ...baseStyles,
-        top: 0,
+        top: headerHeight,
         right: 0,
         borderBottom: `1px solid ${theme.palette.divider}`,
         borderLeft: `1px solid ${theme.palette.divider}`,
@@ -120,9 +126,10 @@ const DockedHeader = styled(Box)(({ theme }) => ({
 
 const DockedContent = styled(Box)({
   flex: 1,
-  overflow: 'hidden',
+  overflow: 'auto', // Allow scrolling within the docked panel
   display: 'flex',
   flexDirection: 'column',
+  minHeight: 0, // Ensure flex shrinking works properly
 });
 
 const HeaderControls = styled(Box)({

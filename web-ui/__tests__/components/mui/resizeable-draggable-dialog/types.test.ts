@@ -219,7 +219,6 @@ describe('Type definitions', () => {
         width: 600,
         minConstraints: [200, 150],
         maxConstraints: [800, 600],
-        setRefineSizeProps: jest.fn(),
         dialogId: 'test-dialog',
       };
 
@@ -233,7 +232,7 @@ describe('Type definitions', () => {
     it('should define ResizeableDraggableDialogProps with required properties', () => {
       // Test that the type accepts all expected properties
       const dialogProps: Partial<ResizeableDraggableDialogProps> = {
-        isOpenState: [true, jest.fn()],
+        isOpenState: true,
         title: 'Test Dialog',
         modal: false,
         initialWidth: 600,

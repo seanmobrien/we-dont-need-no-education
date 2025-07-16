@@ -29,45 +29,33 @@
 import * as React from 'react';
 import Paper from '@mui/material/Paper';
 import Draggable from 'react-draggable';
-import { ResizableBox } from 'react-resizable';
-import { useCallback, useState } from 'react';
+import { ResizableBox, ResizeHandle } from 'react-resizable';
+import { useCallback } from 'react';
 import type {
-  RefineSizeFunction,
   ResizeableDraggablePaperProps,
-  Size,
 } from './types';
 import 'react-resizable/css/styles.css';
-import { ResizeHandle } from 'react-resizable';
 
 /**
  * Default resize handles configuration for the resizable component.
  * Includes all 8 directional handles: corners and edges.
  * @constant {string[]}
  */
-const stableResizeHandles: ResizeHandle[] = [
-  'sw',
-  'se',
-  'nw',
-  'ne',
-  'w',
-  'e',
-  'n',
-  's',
-];
+const stableResizeHandles: ResizeHandle[] = ['sw', 'se', 'nw', 'ne', 'w', 'e', 'n', 's'] as const;
 
 /**
  * Default minimum size constraints [width, height] in pixels.
  * Ensures the dialog remains usable at small sizes.
  * @constant {[number, number]}
  */
-const defaultMinConstraints = undefined; //[300, 200];
+const defaultMinConstraints: [number, number] | undefined = [200, 200] as const;
 
 /**
  * Default maximum size constraints [width, height] in pixels.
  * Prevents the dialog from becoming too large on small screens.
  * @constant {[number, number]}
  */
-const defaultMaxConstraints = undefined; //[800, 600];
+const defaultMaxConstraints: [number, number] | undefined = undefined;
 
 /**
  * A resizable and draggable paper component that extends Material-UI Paper functionality.
@@ -93,14 +81,18 @@ const defaultMaxConstraints = undefined; //[800, 600];
  * />
  *
  * // With size control callback
- * const [refineSizeFunction, setRefineSizeFunction] = useState();
+ * const [height, setHeight] = useState(400);
+ * const [width, setWidth] = useState(600);
+ * const onResize = useCallback((height: number, width: number) => {
+ *   setHeight(height);
+ *   setWidth(width);
+ * });
  *
  * <ResizeableDraggablePaper
  *   height={400}
  *   width={600}
- *   setRefineSizeProps={setRefineSizeFunction}
+ *   onResize={onResize}
  *   minConstraints={[200, 150]}
- *   maxConstraints={[1200, 800]}
  * />
  * ```
  *
@@ -116,23 +108,21 @@ const defaultMaxConstraints = undefined; //[800, 600];
  * @returns {JSX.Element} The rendered resizable draggable paper component
  */
 const ResizeableDraggablePaper = ({
+  height,
+  width,
+  /*
   height: initialHeight,
   width: initialWidth,
   setRefineSizeProps,
+  */
   minConstraints,
   maxConstraints,
   dialogId,
   children,
   onResize,
-  onDragStart,
-  onDragStop,
   ...props
 }: ResizeableDraggablePaperProps) => {
   const nodeRef = React.useRef<HTMLDivElement>(null);
-
-  const [height, setHeight] = useState(initialHeight ?? 300);
-  const [width, setWidth] = useState(initialWidth ?? 400);
-
   /**
    * Handles resize events from the ResizableBox component.
    *
@@ -154,79 +144,18 @@ const ResizeableDraggablePaper = ({
         size: { width: newWidth, height: newHeight },
       }: { size: { width: number; height: number } },
     ) => {
-      if (newWidth !== width) {
-        setWidth(newWidth);
-      }
-      if (newHeight !== height) {
-        setHeight(newHeight);
-      }
-      // Trigger the onResize callback if provided
-      if (onResize) {
-        onResize(newWidth, newHeight);
-      }
+      // Trigger the onResize callback to notify parent
+      // of resize request; note parent maintains state through
+      // this callback, we may want to consider making it non-optional
+      onResize?.(newWidth, newHeight);
     },
-    [height, width, onResize],
+    [onResize],
   );
-
-  /**
-   * Provides external access to the component's size state and control.
-   *
-   * This function serves dual purposes:
-   * 1. When called with a Size parameter, it updates the component's internal size state
-   * 2. When called without parameters, it returns the current size state
-   *
-   * This enables external components to both read and control the dialog size
-   * programmatically, which is useful for features like "restore size" or
-   * "maximize/minimize" functionality.
-   *
-   * @function refineSize
-   * @param {Size} [size] - Optional size to set. If provided, updates internal state
-   * @param {number} size.width - Width in pixels
-   * @param {number} size.height - Height in pixels
-   * @returns {Size|void} Current size if no parameter provided, void if setting size
-   *
-   * @example
-   * ```tsx
-   * // Get current size
-   * const currentSize = refineSize();
-   *
-   * // Set new size
-   * refineSize({ width: 600, height: 400 });
-   * ```
-   */
-  const refineSize = useCallback<RefineSizeFunction>(
-    (size?: Size) => {
-      if (size) {
-        if (height !== size.height) {
-          setHeight(size.height);
-        }
-        if (width !== size.width) {
-          setWidth(size.width);
-        }
-      } else {
-        return {
-          height,
-          width,
-        };
-      }
-    },
-    [height, width],
-  );
-
-  // Use useEffect to avoid setState during render
-  React.useEffect(() => {
-    if (setRefineSizeProps) {
-      setRefineSizeProps(() => refineSize);
-    }
-  }, [setRefineSizeProps, refineSize]);
-
+  
   return (
     <Draggable
       nodeRef={nodeRef as React.RefObject<HTMLDivElement>}
       handle={`#${dialogId ?? 'draggable-dialog'}`}
-      cancel={'[class*="MuiDialogContent-root"]'}
-      onStart={onDragStart}
-      onStop={onDragStop}
     >
       <div ref={nodeRef}>
         <ResizableBox
@@ -244,6 +173,7 @@ const ResizeableDraggablePaper = ({
               height: `${height}px`,
               width: `${width}px`,
               maxHeight: '100%',
+              maxWidth: '100%',
               margin: 0,
             }}
           >

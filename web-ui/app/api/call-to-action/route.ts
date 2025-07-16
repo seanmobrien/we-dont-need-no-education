@@ -3,7 +3,6 @@ import {
   RepositoryCrudController,
   CallToActionDetailsRepository,
 } from '@/lib/api';
-import { extractParams } from '@/lib/nextjs-util';
 import { CallToActionDetails, parsePaginationStats } from '@/data-models';
 import { db } from '@/lib/neondb';
 import {

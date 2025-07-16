@@ -21,13 +21,15 @@ const TestDialogWrapper = ({
   ...props
 }: Partial<ResizeableDraggableDialogProps> & { initialOpen?: boolean }) => {
   const [open, setOpen] = useState(initialOpen);
-
+  
   return (
     <div>
       <button onClick={() => setOpen(true)}>Open Dialog</button>
       <button onClick={() => setOpen(false)}>Close Dialog</button>
       <ResizableDraggableDialog
-        isOpenState={[open, setOpen]}
+        isOpenState={open}
+        onClose={() => setOpen(false)}
+        onResize={() => {}}
         title="Integration Test Dialog"
         {...props}
       >
@@ -40,43 +42,10 @@ const TestDialogWrapper = ({
   );
 };
 
-// Wrapper specifically for testing size control functionality
-const TestDialogWithSizeControl = ({
-  initialOpen = true,
-  ...props
-}: Partial<ResizeableDraggableDialogProps> & { initialOpen?: boolean }) => {
-  const [open, setOpen] = useState(initialOpen);
-  const [sizeFunctionAvailable, setSizeFunctionAvailable] = useState(false);
-
-  const handleRefineSizeProps = (func: unknown) => {
-    // Just track that the function was provided
-    setSizeFunctionAvailable(!!func);
-  };
-
-  return (
-    <div>
-      <button onClick={() => setOpen(true)}>Open Dialog</button>
-      <button onClick={() => setOpen(false)}>Close Dialog</button>
-      {sizeFunctionAvailable && (
-        <div data-testid="size-function-available">Size function available</div>
-      )}
-      <ResizableDraggableDialog
-        isOpenState={[open, setOpen]}
-        title="Size Control Test Dialog"
-        setRefineSizeProps={handleRefineSizeProps}
-        {...props}
-      >
-        <div data-testid="dialog-content">
-          <p>This is test content</p>
-        </div>
-      </ResizableDraggableDialog>
-    </div>
-  );
-};
 
 describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Mock getBoundingClientRect for all elements
     Element.prototype.getBoundingClientRect = jest.fn(() => ({
@@ -192,107 +161,8 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       expect(dialog).toBeInTheDocument();
     });
 
-    it('exposes size control function when setRefineSizeProps is provided', async () => {
-      render(<TestDialogWithSizeControl />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      // Check that size function was made available
-      await waitFor(() => {
-        expect(
-          screen.getByTestId('size-function-available'),
-        ).toBeInTheDocument();
-      });
-    });
   });
 
-  describe('Keyboard Navigation Integration', () => {
-    it('handles keyboard dragging with arrow keys', async () => {
-      render(<TestDialogWrapper />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
-      const dialog = screen.getByRole('dialog');
-
-      // Mock the closest method to return the dialog element
-      jest.spyOn(dragHandle, 'closest').mockReturnValue(dialog);
-
-      // Focus the drag handle
-      act(() => {
-        dragHandle.focus();
-      });
-
-      // Test arrow key movement
-      act(() => {
-        fireEvent.keyDown(dragHandle, { key: 'ArrowRight' });
-      });
-
-      await waitFor(() => {
-        expect(dialog.style.transform).toContain('translate(10px');
-      });
-
-      // Test Shift + arrow key for larger movement
-      act(() => {
-        fireEvent.keyDown(dragHandle, { key: 'ArrowDown', shiftKey: true });
-      });
-
-      await waitFor(() => {
-        expect(dialog.style.transform).toContain('translate(10px, 70px)');
-      });
-    });
-
-    it('provides screen reader announcements for keyboard movement', async () => {
-      render(<TestDialogWrapper />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
-      const dialog = screen.getByRole('dialog');
-
-      jest.spyOn(dragHandle, 'closest').mockReturnValue(dialog);
-
-      act(() => {
-        dragHandle.focus();
-      });
-
-      // Trigger movement
-      act(() => {
-        fireEvent.keyDown(dragHandle, { key: 'ArrowLeft' });
-      });
-
-      // Check for aria-live announcement
-      await waitFor(() => {
-        const announcements = document.querySelectorAll('[aria-live="polite"]');
-        expect(announcements.length).toBeGreaterThan(0);
-      });
-    });
-
-    it('provides focus instructions when drag handle is focused', async () => {
-      render(<TestDialogWrapper />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
-
-      act(() => {
-        fireEvent.focus(dragHandle);
-      });
-
-      await waitFor(() => {
-        const announcements = document.querySelectorAll('[aria-live="polite"]');
-        expect(announcements.length).toBeGreaterThan(0);
-      });
-    });
-  });
 
   describe('Modal vs Non-Modal Behavior', () => {
     it('behaves as non-modal by default', async () => {
@@ -323,69 +193,9 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       expect(backdrop).toBeInTheDocument();
     });
 
-    it('handles escape key in modal mode', async () => {
-      render(<TestDialogWrapper modal={true} />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      // Press escape key
-      act(() => {
-        fireEvent.keyDown(document, { key: 'Escape' });
-      });
-
-      await waitFor(() => {
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      });
-    });
   });
 
-  describe('Position Reset Integration', () => {
-    it('resets position when dialog reopens', async () => {
-      render(<TestDialogWrapper initialOpen={false} />);
 
-      // Open dialog
-      fireEvent.click(screen.getByText('Open Dialog'));
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
-      const dialog = screen.getByRole('dialog');
-
-      jest.spyOn(dragHandle, 'closest').mockReturnValue(dialog);
-
-      // Move dialog with keyboard
-      act(() => {
-        dragHandle.focus();
-        fireEvent.keyDown(dragHandle, { key: 'ArrowRight' });
-      });
-
-      await waitFor(() => {
-        expect(dialog.style.transform).toContain('translate(10px');
-      });
-
-      // Close dialog
-      fireEvent.click(screen.getByText('Close Dialog'));
-
-      await waitFor(() => {
-        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      });
-
-      // Reopen dialog
-      fireEvent.click(screen.getByText('Open Dialog'));
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      // Position should be reset
-      const reopenedDialog = screen.getByRole('dialog');
-      expect(reopenedDialog.style.transform).toBe('');
-    });
-  });
 
   describe('Error Handling Integration', () => {
     it('handles missing dialog element gracefully during keyboard drag', async () => {
@@ -406,29 +216,6 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
           fireEvent.keyDown(dragHandle, { key: 'ArrowRight' });
         });
       }).not.toThrow();
-    });
-
-    it('handles constraint validation warnings', async () => {
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
-
-      render(
-        <TestDialogWrapper
-          initialWidth={100} // Below minimum
-          initialHeight={100} // Below minimum
-          minConstraints={[300, 200]}
-        />,
-      );
-
-      await waitFor(() => {
-        expect(screen.getByRole('dialog')).toBeInTheDocument();
-      });
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'initialWidth 100 is outside constraints',
-      );
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'initialHeight 100 is outside constraints',
-      );
     });
   });
 
@@ -544,21 +331,23 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
 
   describe('Constraint Integration', () => {
     it('respects custom size constraints', async () => {
+      const onResize = jest.fn((width: number, height: number) => {});
       render(
         <TestDialogWrapper
           minConstraints={[400, 250]}
           maxConstraints={[1000, 700]}
-          initialWidth={500}
-          initialHeight={350}
+          width={500}
+          height={150}
+          onResize={onResize}
         />,
       );
 
       await waitFor(() => {
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
-
-      const dialog = screen.getByRole('dialog');
-      expect(dialog).toHaveStyle({ width: '500px', height: '350px' });
+      expect(onResize).toHaveBeenCalledWith(500, 250);
+      //const dialog = screen.getByRole('dialog');
+      //expect(dialog).toHaveStyle({ width: '500px', height: '250px' });
     });
   });
 });

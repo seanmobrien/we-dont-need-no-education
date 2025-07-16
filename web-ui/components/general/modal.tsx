@@ -1,28 +1,86 @@
+/** @jsxImportSource @emotion/react */
 import React from 'react';
-import {
-  classnames,
-  inset,
-  display,
-  overflow,
-  padding,
-  spacing,
-  backgroundColor,
-  zIndex,
-  position,
-  backgroundOpacity,
-  alignItems,
-  justifyContent,
-  textColor,
-  borderRadius,
-  boxShadow,
-  width,
-  borderColor,
-  borderWidth,
-  fontWeight,
-  fontSize,
-} from 'tailwindcss-classnames';
+import { css } from '@emotion/react';
 import type { SaveModalEventArgs, ModalProps } from './_types';
 export type { SaveModalEventArgs, ModalProps };
+
+const modalStyles = {
+  overlay: css`
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+  `,
+  content: css`
+    background-color: #1f2937;
+    color: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    width: 91.666667%;
+    
+    @media (min-width: 768px) {
+      width: 50%;
+    }
+    
+    @media (min-width: 1024px) {
+      width: 33.333333%;
+    }
+  `,
+  header: css`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #374151;
+  `,
+  title: css`
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    font-weight: 600;
+  `,
+  closeButton: css`
+    color: #9ca3af;
+    
+    &:hover {
+      color: #e5e7eb;
+    }
+  `,
+  body: css`
+    padding: 1rem;
+  `,
+  footer: css`
+    display: flex;
+    justify-content: flex-end;
+    padding: 1rem;
+    border-top: 1px solid #374151;
+  `,
+  saveButton: css`
+    background-color: #059669;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    
+    &:hover {
+      background-color: #047857;
+    }
+  `,
+  closeFooterButton: css`
+    background-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    margin-right: 0.5rem;
+    
+    &:hover {
+      background-color: #1d4ed8;
+    }
+  `,
+};
 
 const Modal: React.FC<ModalProps> = ({
   isOpen,
@@ -35,90 +93,22 @@ const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className={classnames(
-        inset('inset-0'),
-        zIndex('z-50'),
-        display('flex'),
-        alignItems('items-center'),
-        justifyContent('justify-center'),
-        backgroundColor('bg-black'),
-        position('fixed'),
-        backgroundOpacity('bg-opacity-50')
-      )}
-    >
-      <div
-        className={classnames(
-          backgroundColor('bg-gray-800'),
-          textColor('text-white'),
-          borderRadius('rounded-lg'),
-          boxShadow('shadow-lg'),
-          overflow('overflow-hidden'),
-          width('w-11/12', 'md:w-1/2', 'lg:w-1/3')
-        )}
-      >
-        <div
-          className={classnames(
-            display('flex'),
-            justifyContent('justify-between'),
-            alignItems('items-center'),
-            spacing('p-4'),
-            borderWidth('border-b'),
-            borderColor('border-gray-700')
-          )}
-        >
-          <h2
-            className={classnames(
-              fontSize('text-xl'),
-              fontWeight('font-semibold')
-            )}
-          >
-            {title}
-          </h2>
-          <button
-            className={classnames(
-              textColor('text-gray-400', 'hover:text-gray-200')
-            )}
-            onClick={onClose}
-          >
+    <div css={modalStyles.overlay}>
+      <div css={modalStyles.content}>
+        <div css={modalStyles.header}>
+          <h2 css={modalStyles.title}>{title}</h2>
+          <button css={modalStyles.closeButton} onClick={onClose}>
             &times;
           </button>
         </div>
-        <div className={classnames(spacing('p-4'))}>{children}</div>
-        <div
-          className={classnames(
-            display('flex'),
-            justifyContent('justify-end'),
-            spacing('p-4'),
-            borderWidth('border-t'),
-            borderColor('border-gray-700')
-          )}
-        >
+        <div css={modalStyles.body}>{children}</div>
+        <div css={modalStyles.footer}>
           {onSave && (
-            <button
-              className={classnames(
-                backgroundColor('bg-green-600', 'hover:bg-green-700'),
-                textColor('text-white'),
-                fontWeight('font-semibold'),
-                padding('py-2', 'px-4'),
-                spacing('mr-2')
-              )}
-              onClick={onSave}
-            >
+            <button css={modalStyles.saveButton} onClick={onSave}>
               Save
             </button>
           )}
-          <button
-            className={classnames(
-              backgroundColor('bg-blue-600'),
-              backgroundColor('bg-blue-600', 'hover:bg-blue-700'),
-              textColor('text-white'),
-              fontWeight('font-semibold'),
-              padding('py-2', 'px-4'),
-              spacing('mr-2')
-            )}
-            onClick={onClose}
-          >
+          <button css={modalStyles.closeFooterButton} onClick={onClose}>
             {closeButtonText}
           </button>
         </div>

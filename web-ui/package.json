@@ -10,7 +10,6 @@
   },
   "scripts": {
     "preinstall": "node -e \"if(process.env.npm_execpath.indexOf('yarn') === -1) throw new Error('Please use yarn instead of npm')\"",
-    "bootstrap": "yarn run generate-css-types",
     "dev": "next dev",
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "start": "next start",
@@ -18,7 +17,6 @@
     "test:serial": "jest --runInBand",
     "test:concurrency-stress": "jest --maxWorkers=8 --maxConcurrency=10",
     "lint": "next lint",
-    "generate-css-types": "tailwindcss-classnames -input tailwind.config.mjs -outputFilename tailwindcss.classnames.ts -customClassesFilename tailwind.customtypes.ts",
     "vercel-build": "NODE_OPTIONS=\"--max-old-space-size=8192\" next build"
   },
   "dependencies": {
@@ -59,6 +57,7 @@
     "@tanstack/react-query": "^5.80.10",
     "@tanstack/react-virtual": "^3.13.12",
     "@toolpad/core": "^0.15.0",
+    "@types/react-resizable": "^3.0.8",
     "@vercel/mcp-adapter": "^0.7.3",
     "ai": "^4.3.16",
     "axios": "^1.10.0",
@@ -85,8 +84,6 @@
     "react-draggable": "^4.5.0",
     "react-resizable": "^3.0.5",
     "redis": "^4.6.13",
-    "tailwindcss": "^4.1.7",
-    "tailwindcss-classnames": "^3.2.0",
     "ts-node": "^10.9.2",
     "ts-pattern": "^5.7.1",
     "tslib": ">= 1.0.0",
@@ -98,7 +95,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@jest/globals": "^29.0.0",
-    "@tailwindcss/postcss": "^4.1.7",
     "@tanstack/react-query-devtools": "^5.80.10",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",

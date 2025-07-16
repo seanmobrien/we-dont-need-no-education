@@ -9,7 +9,6 @@ import { useChatPanelContext } from './chat-panel-context';
  */
 export interface ChatPanelLayoutProps {
   children: React.ReactNode;
-  isDashboardLayout?: boolean;
 }
 
 /**
@@ -20,63 +19,40 @@ const LayoutContainer = styled(Box, {
 })<{ 
   chatPanelPosition: string;
   chatPanelSize: number;
-  isDashboardLayout: boolean;
-}>(({ chatPanelPosition, chatPanelSize, isDashboardLayout }) => {
+}>(({ chatPanelPosition, chatPanelSize }) => {
   const baseStyles = {
     width: '100%',
     height: '100%',
     transition: 'all 0.3s ease-in-out',
   };
 
-  // For dashboard layouts, adjust based on sidebar position
-  if (isDashboardLayout) {
-    switch (chatPanelPosition) {
-      case 'left':
-        return {
-          ...baseStyles,
-          marginLeft: `${chatPanelSize}px`,
-        };
-      case 'right':
-        return {
-          ...baseStyles,
-          marginRight: `${chatPanelSize}px`,
-        };
-      case 'top':
-        return {
-          ...baseStyles,
-          marginTop: `${chatPanelSize}px`,
-        };
-      case 'bottom':
-        return {
-          ...baseStyles,
-          marginBottom: `${chatPanelSize}px`,
-        };
-      default:
-        return baseStyles;
-    }
-  }
 
-  // For regular layouts, adjust viewport-wide
+
+  // For regular layouts, use viewport-based adjustments
   switch (chatPanelPosition) {
     case 'left':
       return {
         ...baseStyles,
-        paddingLeft: `${chatPanelSize}px`,
+        width: `calc(100vw - ${chatPanelSize}px)`,
+        marginLeft: `${chatPanelSize}px`,
       };
     case 'right':
       return {
         ...baseStyles,
-        paddingRight: `${chatPanelSize}px`,
+        width: `calc(100vw - ${chatPanelSize}px)`,
+        marginRight: `${chatPanelSize}px`,
       };
     case 'top':
       return {
         ...baseStyles,
-        paddingTop: `${chatPanelSize}px`,
+        height: `calc(100vh - ${chatPanelSize}px)`,
+        marginTop: `${chatPanelSize}px`,
       };
     case 'bottom':
       return {
         ...baseStyles,
-        paddingBottom: `${chatPanelSize}px`,
+        height: `calc(100vh - ${chatPanelSize}px)`,
+        marginBottom: `${chatPanelSize}px`,
       };
     default:
       return baseStyles;
@@ -88,19 +64,19 @@ const LayoutContainer = styled(Box, {
  */
 export const ChatPanelLayout: React.FC<ChatPanelLayoutProps> = ({ 
   children, 
-  isDashboardLayout = false 
 }) => {
-  const { config } = useChatPanelContext();
+  
+  const { config, setDockPanel } = useChatPanelContext();
   
   // Only apply spacing adjustments for docked positions
   const isDocked = config.position !== 'inline' && config.position !== 'floating';
   const chatPanelSize = isDocked ? (config.dockSize || 300) : 0;
 
   return (
-    <LayoutContainer
+    <LayoutContainer      
+      ref={(node) => setDockPanel(node as HTMLDivElement)}
       chatPanelPosition={config.position}
       chatPanelSize={chatPanelSize}
-      isDashboardLayout={isDashboardLayout}
     >
       {children}
     </LayoutContainer>
