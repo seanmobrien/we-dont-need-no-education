@@ -13,26 +13,26 @@ export const darkTheme: Theme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#19bfcf', // primary-neon-blue-1
-      light: '#19c4ce', // primary-neon-blue-2
-      dark: '#1898a8', // primary-neon-blue-4
+      main: '#19bfcf', // color-primary-main
+      light: '#19c4ce', // color-primary-light
+      dark: '#1898a8', // color-primary-dark
     },
     secondary: {
-      main: '#d05697', // accent-pink-1
-      light: '#d05799', // accent-pink-2
-      dark: '#a8456f',
+      main: '#d05697', // color-secondary-main
+      light: '#d05799', // color-secondary-light
+      dark: '#a8456f', // color-secondary-dark
     },
     warning: {
-      main: '#ffda3e', // highlight-yellow-1
-      light: '#ffd73f', // highlight-yellow-2
-      dark: '#e4ca43', // highlight-yellow-3
+      main: '#ffda3e', // color-highlight-main
+      light: '#ffd73f', // color-highlight-light
+      dark: '#e4ca43', // color-highlight-dark
     },
     info: {
-      main: '#18b9b6', // primary-neon-blue-3
+      main: '#18b9b6', // color-primary-accent
     },
     background: {
       default: '#0a0a0a',
-      paper: '#23393d', // primary-neon-blue-dark-1
+      paper: '#23393d', // color-surface-primary
     },
   },
   spacing: 8,
@@ -57,7 +57,7 @@ export const darkTheme: Theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#23393d', // primary-neon-blue-dark-1
+          backgroundColor: '#23393d', // color-surface-primary
           backdropFilter: 'blur(8px)',
         },
       },
@@ -66,8 +66,8 @@ export const darkTheme: Theme = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#23393e', // primary-neon-blue-dark-2
-          borderRight: '1px solid #19bfcf', // primary-neon-blue-1
+          backgroundColor: '#23393e', // color-surface-secondary
+          borderRight: '1px solid #19bfcf', // color-border-main
         },
       },
     },

@@ -10,36 +10,79 @@
   --background: #0a0a0a;
   --foreground: #ededed;
   
-  /* Highlight Yellow colors */
-  --highlight-yellow-1: #ffda3e;
-  --highlight-yellow-2: #ffd73f;
-  --highlight-yellow-3: #e4ca43;
-  --highlight-yellow-4: #ffda3d;
-  --highlight-yellow-5: #e4ca42;
-  --highlight-yellow-6: #ffda40;
-  --highlight-yellow-7: #ffd73d;
-  --highlight-yellow-8: #ffd73e;
+  /* Primary colors (main brand/UI elements) */
+  --color-primary-main: #19bfcf;
+  --color-primary-light: #19c4ce;
+  --color-primary-accent: #18b9b6;
+  --color-primary-dark: #1898a8;
   
-  /* Accent Pink colors */
-  --accent-pink-1: #d05697;
-  --accent-pink-2: #d05799;
+  /* Secondary colors (alternative actions/elements) */
+  --color-secondary-main: #d05697;
+  --color-secondary-light: #d05799;
+  --color-secondary-dark: #a8456f;
   
-  /* Primary Neon Blue colors */
-  --primary-neon-blue-1: #19bfcf;
-  --primary-neon-blue-2: #19c4ce;
-  --primary-neon-blue-3: #18b9b6;
-  --primary-neon-blue-4: #1898a8;
-  --primary-neon-blue-dark-1: #23393d;
-  --primary-neon-blue-dark-2: #23393e;
-  --primary-neon-blue-dark-3: #234541;
-  --primary-neon-blue-dark-4: #234148;
-  --primary-neon-blue-dark-5: #23324b;
+  /* Highlight colors (focus states, important callouts) */
+  --color-highlight-main: #ffda3e;
+  --color-highlight-light: #ffd73f;
+  --color-highlight-dark: #e4ca43;
+  --color-highlight-alt-1: #ffda3d;
+  --color-highlight-alt-2: #e4ca42;
+  --color-highlight-alt-3: #ffda40;
+  --color-highlight-alt-4: #ffd73d;
+  --color-highlight-alt-5: #ffd73e;
+  
+  /* Surface colors (backgrounds, cards, papers) */
+  --color-surface-primary: #23393d;
+  --color-surface-secondary: #23393e;
+  --color-surface-tertiary: #234541;
+  --color-surface-elevated: #234148;
+  --color-surface-overlay: #23324b;
+  
+  /* Border colors */
+  --color-border-main: #19bfcf;
+  --color-border-secondary: #18b9b6;
+  --color-border-subtle: #234541;
 }
 
 /* Colorful theme CSS variables */
 [data-theme="colorful"] {
   --background: #ffffff;
   --foreground: #000000;
+  
+  /* Primary colors (main brand/UI elements) */
+  --color-primary-main: #1abbf9;
+  --color-primary-light: #5ecdfb;
+  --color-primary-accent: #1abbf9;
+  --color-primary-dark: #118bd6;
+  
+  /* Secondary colors (alternative actions/elements) */
+  --color-secondary-main: #ff79f9;
+  --color-secondary-light: #ffaafb;
+  --color-secondary-dark: #d647d6;
+  
+  /* Highlight colors (focus states, important callouts) */
+  --color-highlight-main: #1abbf9;
+  --color-highlight-light: #5ecdfb;
+  --color-highlight-dark: #118bd6;
+  --color-highlight-alt-1: #1abbf9;
+  --color-highlight-alt-2: #5ecdfb;
+  --color-highlight-alt-3: #1abbf9;
+  --color-highlight-alt-4: #5ecdfb;
+  --color-highlight-alt-5: #1abbf9;
+  
+  /* Surface colors (backgrounds, cards, papers) */
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: rgba(26, 187, 249, 0.05);
+  --color-surface-tertiary: rgba(26, 187, 249, 0.08);
+  --color-surface-elevated: rgba(26, 187, 249, 0.1);
+  --color-surface-overlay: rgba(26, 187, 249, 0.12);
+  
+  /* Border colors */
+  --color-border-main: #f5a9b8;
+  --color-border-secondary: rgba(245, 169, 184, 0.5);
+  --color-border-subtle: rgba(245, 169, 184, 0.3);
+  
+  /* Legacy variables for backward compatibility */
   --primary: #1abbf9;
   --secondary: #ff79f9;
   --accent: #f5a9b8;
@@ -86,10 +129,10 @@ textarea:focus {
     --foreground: #ededed;
     
     /* Apply new color palette for auto dark mode too */
-    --highlight-yellow-1: #ffda3e;
-    --primary-neon-blue-1: #19bfcf;
-    --primary-neon-blue-dark-1: #23393d;
-    --accent-pink-1: #d05697;
+    --color-highlight-main: #ffda3e;
+    --color-primary-main: #19bfcf;
+    --color-surface-primary: #23393d;
+    --color-secondary-main: #d05697;
   }
 }
 
@@ -103,9 +146,9 @@ textarea:focus {
 [data-theme="dark"] input[type="datetime-local"],
 [data-theme="dark"] input[type="number"],
 [data-theme="dark"] textarea {
-  background-color: var(--primary-neon-blue-dark-1);
+  background-color: var(--color-surface-primary);
   color: #e5e7eb;
-  border-color: var(--primary-neon-blue-3);
+  border-color: var(--color-primary-accent);
 }
 
 [data-theme="dark"] select:focus,
@@ -117,8 +160,8 @@ textarea:focus {
 [data-theme="dark"] input[type="datetime-local"]:focus,
 [data-theme="dark"] input[type="number"]:focus,
 [data-theme="dark"] textarea:focus {
-  box-shadow: 0 0 0 2px var(--highlight-yellow-1);
-  border-color: var(--highlight-yellow-1);
+  box-shadow: 0 0 0 2px var(--color-highlight-main);
+  border-color: var(--color-highlight-main);
 }
 
 /* Colorful theme input styles */
@@ -131,9 +174,9 @@ textarea:focus {
 [data-theme="colorful"] input[type="datetime-local"],
 [data-theme="colorful"] input[type="number"],
 [data-theme="colorful"] textarea {
-  background-color: #ffffff;
+  background-color: var(--color-surface-primary);
   color: #111827;
-  border-color: #fce7f3;
+  border-color: var(--color-border-subtle);
 }
 
 [data-theme="colorful"] select:focus,
@@ -145,8 +188,8 @@ textarea:focus {
 [data-theme="colorful"] input[type="datetime-local"]:focus,
 [data-theme="colorful"] input[type="number"]:focus,
 [data-theme="colorful"] textarea:focus {
-  box-shadow: 0 0 0 2px #93c5fd;
-  border-color: #60a5fa;
+  box-shadow: 0 0 0 2px var(--color-highlight-light);
+  border-color: var(--color-highlight-main);
 }
 
 body {
@@ -173,21 +216,21 @@ input[type="datetime-local"] {
 }
 
 .btn-primary {
-  background-color: var(--primary-neon-blue-1);
+  background-color: var(--color-primary-main);
   color: #ffffff;
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-neon-blue-4);
+  background-color: var(--color-primary-dark);
 }
 
 .btn-secondary {
-  background-color: var(--accent-pink-1);
+  background-color: var(--color-secondary-main);
   color: #ffffff;
 }
 
 .btn-secondary:hover {
-  background-color: var(--accent-pink-2);
+  background-color: var(--color-secondary-dark);
 }
 
 .btn-angry {
@@ -235,18 +278,18 @@ input[type="datetime-local"] {
 
 /* DataGrid theming for dark theme */
 [data-theme="dark"] .MuiDataGrid-root {
-  border: 1px solid var(--primary-neon-blue-3) !important;
+  border: 1px solid var(--color-primary-accent) !important;
   background-color: transparent !important;
 }
 
 [data-theme="dark"] .MuiDataGrid-cell {
-  border-bottom: 1px solid var(--primary-neon-blue-dark-3) !important;
+  border-bottom: 1px solid var(--color-surface-tertiary) !important;
   color: var(--foreground) !important;
 }
 
 [data-theme="dark"] .MuiDataGrid-columnHeaders {
-  background-color: var(--primary-neon-blue-dark-2) !important;
-  border-bottom: 1px solid var(--primary-neon-blue-3) !important;
+  background-color: var(--color-surface-secondary) !important;
+  border-bottom: 1px solid var(--color-primary-accent) !important;
 }
 
 [data-theme="dark"] .MuiDataGrid-columnHeaderTitle {
@@ -259,62 +302,62 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiDataGrid-footerContainer {
-  background-color: var(--primary-neon-blue-dark-1) !important;
-  border-top: 1px solid var(--primary-neon-blue-3) !important;
+  background-color: var(--color-surface-primary) !important;
+  border-top: 1px solid var(--color-primary-accent) !important;
 }
 
 [data-theme="dark"] .MuiDataGrid-row:hover {
-  background-color: var(--primary-neon-blue-dark-3) !important;
+  background-color: var(--color-surface-tertiary) !important;
 }
 
 /* DataGrid theming for colorful theme */
 [data-theme="colorful"] .MuiDataGrid-root {
-  border: 1px solid #f5a9b8 !important;
-  background-color: #ffffff !important;
+  border: 1px solid var(--color-border-main) !important;
+  background-color: var(--color-surface-primary) !important;
 }
 
 [data-theme="colorful"] .MuiDataGrid-cell {
-  border-bottom: 1px solid rgba(245, 169, 184, 0.5) !important;
-  color: #000000 !important;
+  border-bottom: 1px solid var(--color-border-secondary) !important;
+  color: var(--foreground) !important;
 }
 
 [data-theme="colorful"] .MuiDataGrid-columnHeaders {
-  background-color: rgba(26, 187, 249, 0.1) !important;
-  border-bottom: 1px solid #f5a9b8 !important;
+  background-color: var(--color-surface-secondary) !important;
+  border-bottom: 1px solid var(--color-border-main) !important;
 }
 
 [data-theme="colorful"] .MuiDataGrid-columnHeaderTitle {
-  color: #000000 !important;
+  color: var(--foreground) !important;
   font-weight: 600;
 }
 
 [data-theme="colorful"] .MuiDataGrid-virtualScroller {
-  background-color: #ffffff !important;
+  background-color: var(--color-surface-primary) !important;
 }
 
 [data-theme="colorful"] .MuiDataGrid-footerContainer {
-  background-color: rgba(26, 187, 249, 0.05) !important;
-  border-top: 1px solid #f5a9b8 !important;
+  background-color: var(--color-surface-secondary) !important;
+  border-top: 1px solid var(--color-border-main) !important;
 }
 
 [data-theme="colorful"] .MuiDataGrid-row:hover {
-  background-color: rgba(26, 187, 249, 0.08) !important;
+  background-color: var(--color-surface-tertiary) !important;
 }
 
 [data-theme="colorful"] .MuiDataGrid-row.Mui-selected {
-  background-color: rgba(255, 121, 249, 0.12) !important;
+  background-color: var(--color-surface-elevated) !important;
 }
 
 [data-theme="colorful"] .MuiDataGrid-row.Mui-selected:hover {
-  background-color: rgba(255, 121, 249, 0.16) !important;
+  background-color: var(--color-surface-overlay) !important;
 }
 
 /* @toolpad/core component theming */
 
 /* Navigation drawer/sidebar theming for dark theme */
 [data-theme="dark"] .MuiDrawer-paper {
-  background-color: var(--primary-neon-blue-dark-2) !important;
-  border-right: 1px solid var(--primary-neon-blue-1) !important;
+  background-color: var(--color-surface-secondary) !important;
+  border-right: 1px solid var(--color-border-main) !important;
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root {
@@ -322,11 +365,11 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root:hover {
-  background-color: var(--primary-neon-blue-dark-3) !important;
+  background-color: var(--color-surface-tertiary) !important;
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
-  background-color: var(--primary-neon-blue-dark-4) !important;
+  background-color: var(--color-surface-elevated) !important;
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListItemText-primary {
@@ -334,16 +377,16 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiDrawer-paper .MuiListSubheader-root {
-  color: var(--highlight-yellow-1) !important;
+  color: var(--color-highlight-main) !important;
   background-color: transparent !important;
 }
 
 /* Top navigation/AppBar theming for dark theme */
 [data-theme="dark"] .MuiAppBar-root {
-  background-color: var(--primary-neon-blue-dark-1) !important;
+  background-color: var(--color-surface-primary) !important;
   -webkit-backdrop-filter: blur(8px);;
   backdrop-filter:blur(8px);
-  border-bottom: 1px solid var(--primary-neon-blue-1) !important;
+  border-bottom: 1px solid var(--color-border-main) !important;
 }
 
 [data-theme="dark"] .MuiAppBar-root .MuiToolbar-root {
@@ -351,40 +394,40 @@ input[type="datetime-local"] {
 }
 
 [data-theme="dark"] .MuiAppBar-root .MuiIconButton-root {
-  color: var(--highlight-yellow-1) !important;
+  color: var(--color-highlight-main) !important;
 }
 
 /* Navigation drawer/sidebar theming for colorful theme */
 [data-theme="colorful"] .MuiDrawer-paper {
-  background-color: #ffffff !important;
-  border-right: 2px solid #f5a9b8 !important;
+  background-color: var(--color-surface-primary) !important;
+  border-right: 2px solid var(--color-border-main) !important;
 }
 
 [data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root {
-  color: #000000 !important;
+  color: var(--foreground) !important;
 }
 
 [data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root:hover {
-  background-color: rgba(26, 187, 249, 0.08) !important;
+  background-color: var(--color-surface-tertiary) !important;
 }
 
 [data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
-  background-color: rgba(26, 187, 249, 0.12) !important;
+  background-color: var(--color-surface-elevated) !important;
 }
 
 [data-theme="colorful"] .MuiDrawer-paper .MuiListItemText-primary {
-  color: #000000 !important;
+  color: var(--foreground) !important;
 }
 
 [data-theme="colorful"] .MuiDrawer-paper .MuiListSubheader-root {
-  color: #000000 !important;
-  background-color: rgba(26, 187, 249, 0.05) !important;
+  color: var(--foreground) !important;
+  background-color: var(--color-surface-secondary) !important;
   font-weight: 600;
 }
 
 /* Top navigation/AppBar theming for colorful theme */
 [data-theme="colorful"] .MuiAppBar-root {
-  background-color: #1abbf9 !important;
+  background-color: var(--color-primary-main) !important;
   color: #ffffff !important;
 }
 
@@ -398,20 +441,20 @@ input[type="datetime-local"] {
 
 /* Icon theming for colorful theme */
 [data-theme="colorful"] .MuiSvgIcon-root {
-  color: #1abbf9 !important;
+  color: var(--color-primary-main) !important;
 }
 
 [data-theme="colorful"] .MuiDataGrid-root .MuiSvgIcon-root {
-  color: #ff79f9 !important;
+  color: var(--color-secondary-main) !important;
 }
 
 [data-theme="colorful"] .MuiAppBar-root .MuiSvgIcon-root,
 [data-theme="colorful"] .MuiDrawer-paper .MuiSvgIcon-root {
-  color: #f5a9b8 !important;
+  color: var(--color-border-main) !important;
 }
 
 [data-theme="colorful"] .MuiIconButton-root:not(.MuiAppBar-root .MuiIconButton-root):not(.MuiDrawer-paper .MuiIconButton-root) .MuiSvgIcon-root {
-  color: #1abbf9 !important;
+  color: var(--color-primary-main) !important;
 }
 
 /* Additional component theming */
@@ -422,74 +465,74 @@ input[type="datetime-local"] {
 }
 
 [data-theme="colorful"] .MuiTableContainer-root {
-  background-color: #ffffff !important;
+  background-color: var(--color-surface-primary) !important;
 }
 
 /* Paper component theming (for consistency) */
 [data-theme="dark"] .MuiPaper-root {
-  background-color: var(--primary-neon-blue-dark-1) !important;
-  border: 1px solid var(--primary-neon-blue-3) !important;
+  background-color: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-primary-accent) !important;
 }
 
 [data-theme="colorful"] .MuiPaper-root {
-  background-color: #ffffff !important;
-  border: 1px solid #f5a9b8 !important;
+  background-color: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-border-main) !important;
 }
 
 /* Chip theming for better visibility */
 [data-theme="dark"] .MuiChip-root {
-  background-color: var(--primary-neon-blue-dark-3) !important;
+  background-color: var(--color-surface-tertiary) !important;
   color: var(--foreground) !important;
-  border: 1px solid var(--primary-neon-blue-1) !important;
+  border: 1px solid var(--color-border-main) !important;
 }
 
 [data-theme="colorful"] .MuiChip-root {
-  background-color: rgba(26, 187, 249, 0.1) !important;
-  color: #000000 !important;
-  border: 1px solid rgba(245, 169, 184, 0.3) !important;
+  background-color: var(--color-surface-secondary) !important;
+  color: var(--foreground) !important;
+  border: 1px solid var(--color-border-subtle) !important;
 }
 
 [data-theme="dark"] .MuiChip-colorSecondary {
-  background-color: var(--accent-pink-1) !important;
+  background-color: var(--color-secondary-main) !important;
   color: var(--foreground) !important;
 }
 
 [data-theme="colorful"] .MuiChip-colorSecondary {
-  background-color: #f5a9b8 !important;
-  color: #000000 !important;
+  background-color: var(--color-border-main) !important;
+  color: var(--foreground) !important;
 }
 
 /* Modal and Dialog theming */
 [data-theme="dark"] .MuiDialog-paper {
-  background-color: var(--primary-neon-blue-dark-1) !important;
-  border: 1px solid var(--primary-neon-blue-1) !important;
+  background-color: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-border-main) !important;
 }
 
 [data-theme="colorful"] .MuiDialog-paper {
-  background-color: #ffffff !important;
-  border: 2px solid #f5a9b8 !important;
+  background-color: var(--color-surface-primary) !important;
+  border: 2px solid var(--color-border-main) !important;
 }
 
 /* Menu theming */
 [data-theme="dark"] .MuiMenu-paper {
-  background-color: var(--primary-neon-blue-dark-2) !important;
-  border: 1px solid var(--primary-neon-blue-1) !important;
+  background-color: var(--color-surface-secondary) !important;
+  border: 1px solid var(--color-border-main) !important;
 }
 
 [data-theme="colorful"] .MuiMenu-paper {
-  background-color: #ffffff !important;
-  border: 1px solid #f5a9b8 !important;
+  background-color: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-border-main) !important;
 }
 
 /* Card theming */
 [data-theme="dark"] .MuiCard-root {
-  background-color: var(--primary-neon-blue-dark-1) !important;
-  border: 1px solid var(--primary-neon-blue-3) !important;
+  background-color: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-primary-accent) !important;
 }
 
 [data-theme="colorful"] .MuiCard-root {
-  background-color: #ffffff !important;
-  border: 1px solid #f5a9b8 !important;
+  background-color: var(--color-surface-primary) !important;
+  border: 1px solid var(--color-border-main) !important;
 }
 
 /* Typography theming for consistency */
