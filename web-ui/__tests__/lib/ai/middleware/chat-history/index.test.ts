@@ -406,22 +406,6 @@ describe('Chat History Middleware', () => {
     });
   });
 
-  describe('Console Logging', () => {
-    it('should log middleware creation', () => {
-      // Arrange
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-
-      // Act
-      createChatHistoryMiddleware(mockContext);
-
-      // Assert
-      expect(consoleSpy).toHaveBeenCalledWith('create chat history');
-
-      // Cleanup
-      consoleSpy.mockRestore();
-    });
-  });
-
   describe('Context Variations', () => {
     it('should handle minimal context', () => {
       // Arrange

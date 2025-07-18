@@ -66,9 +66,9 @@ export const searchCaseFile = async (
     query: string;
     options?: CaseFileSearchOptions;
   },
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   extra: RequestHandlerExtra<ServerRequest, ServerNotification>,
 ): Promise<AiSearchToolResult> => {
-  console.log('extra is', extra);
   const startTime = Date.now();
 
   const attributes = {

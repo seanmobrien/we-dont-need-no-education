@@ -10,6 +10,7 @@ import {
 import { cacheSuccessfulResponse, handleCacheJail } from './cacheOperations';
 import { getCacheConfig } from './config';
 import type { getRedisClient } from './redis-client';
+import { log } from '@/lib/logger';
 
 const config = getCacheConfig();
 
@@ -37,9 +38,9 @@ export const handleResponseCaching = async (
   } else {
     // Log why we're not caching
     if (config.enableLogging) {
-      console.log(
+      log(l => l.warn(
         `❌ Not caching ${context}response (finishReason: ${response.finishReason}, hasText: ${!!(response.text && response.text.length > 0)}) for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-      );
+      ));
     }
   }
 };

@@ -238,7 +238,6 @@ export const withRedisConnection = () => {
 };
 
 global.fetch = jest.fn().mockImplementation(() => {
-  console.log('in mock fetch', new Error().stack);
   return Promise.resolve({
     ok: false,
     status: 500,

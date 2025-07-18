@@ -438,7 +438,7 @@ const associateResponsiveActions = async ({
       'The source document id must have a document property ID to associate with a CTA.',
     );
   }
-  // Load up target documents and ensure they are valid
+  
   const targetActions = (
     await tx.query.documentUnits.findMany({
       where: (documentUnits, { inArray, eq, and }) =>

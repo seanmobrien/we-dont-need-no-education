@@ -154,7 +154,7 @@ describe('toolProviderFactory', () => {
         content: [
           {
             type: 'text',
-            text: 'A critical error occurred while processing your request. Please try again later.',
+            text: 'An error occurred while processing your request: Test MCP error. Please try again later.',
           },
         ],
       });
@@ -190,7 +190,7 @@ describe('toolProviderFactory', () => {
         content: [
           {
             type: 'text',
-            text: 'A critical error occurred while processing your request. Please try again later.',
+            text: 'An error occurred while processing your request: Test MCP error. Please try again later.',
           },
         ],
       });

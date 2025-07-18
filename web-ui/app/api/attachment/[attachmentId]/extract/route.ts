@@ -45,8 +45,6 @@ export async function POST(
     const containerName = fileUrlParts[fileUrlParts.length - 2];
     const blobName = decodeURIComponent(fileUrlParts[fileUrlParts.length - 1]);
     const containerClient = blobServiceClient.getContainerClient(containerName);
-    const blobs = await containerClient.listBlobsFlat();
-    console.log('blobs', blobs, blobName);
     const blobClient = containerClient.getBlobClient(blobName);
 
     // Download the PDF file from Azure Blob Storage

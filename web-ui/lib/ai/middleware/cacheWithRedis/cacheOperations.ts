@@ -7,6 +7,8 @@ import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
 import { createJailKey } from './cacheKeys';
 import type { getRedisClient } from './redis-client';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 
 const config = getCacheConfig();
 
@@ -47,19 +49,23 @@ export const cacheSuccessfulResponse = async (
     }
 
     if (config.enableLogging) {
-      console.log(
+      log( l => l.verbose(
         `💾 Cached successful ${context}response for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-      );
+      ));
     }
   } catch (cacheStoreError) {
     if (config.enableMetrics) {
       metricsCollector.recordError(cacheKey, String(cacheStoreError));
     }
     if (config.enableLogging) {
-      console.error(
-        `Error storing ${context}response in cache:`,
-        cacheStoreError,
-      );
+      LoggedError.isTurtlesAllTheWayDownBaby(cacheStoreError, {
+        message: `Error storing ${context}response in cache`,
+        data: {
+          cacheKey,
+        },
+        source: 'cacheWithRedis',
+        log: true,
+      });      
     }
   }
 };
@@ -109,17 +115,17 @@ export const handleCacheJail = async (
     }
 
     if (config.enableLogging) {
-      console.log(
+      log(l => l.verbose(
         `🏪 ${context}cache jail updated for key ${cacheKey.substring(0, config.maxKeyLogLength)}... (count: ${jailEntry.count}/${config.jailThreshold})`,
-      );
+      ));
     }
 
     // Check if we've hit the threshold
     if (jailEntry.count >= config.jailThreshold) {
       if (config.enableLogging) {
-        console.log(
+      log(l => l.verbose(        
           `🔓 ${context}cache jail threshold reached for key ${cacheKey.substring(0, config.maxKeyLogLength)}... - promoting to cache`,
-        );
+        ));
       }
 
       // Promote to cache

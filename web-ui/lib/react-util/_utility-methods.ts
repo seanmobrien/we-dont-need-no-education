@@ -4,6 +4,9 @@
  * A collection of utility methods for use in React applications.
  */
 
+import { log } from "../logger";
+import { LoggedError } from "./errors";
+
 
 /**
  * Generates a unique identifier string.
@@ -226,9 +229,17 @@ export const debounce = <R, T extends (...args: any[]) => R>(
     });
     when.catch((reason) => {
       if (isError(reason)) {
-        console.error('Debounced function failed:', reason);                
+        LoggedError.isTurtlesAllTheWayDownBaby(reason, {
+          message: 'Debounced function failed',
+          context: {
+            functionName: func.name,
+            args,
+            wait,
+          },
+          log: true,
+        });
       }else {
-        console.log('Debounced function timed out or was deferred:', reason);
+        log(l => l.silly('Debounced function timed out or was deferred:', reason));
       }
     });
     return when;

@@ -5,7 +5,6 @@ describe('zod-to-json-structure', () => {
   it('should convert DocumentSchema schema to JSON structure', () => {
     const schema = DocumentSchema;
     const jsonStructure = zodToStructure(schema);
-    console.log(jsonStructure);
     // Check if the output matches the expected structure
     expect(jsonStructure).not.toEqual('');
     expect(jsonStructure).toMatch(/subject:[\s\t]+\<string\>,\s*\n/g);

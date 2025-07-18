@@ -3,6 +3,7 @@ import {
   foreignKey,
   uuid,
   text,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type AnyPgColumn,
   index,
   check,

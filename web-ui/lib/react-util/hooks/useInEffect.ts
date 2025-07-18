@@ -185,10 +185,6 @@ export const useInEffect = () => {
     },
     [],
   );
-
-  enqueue(async (c: string) => c + 'World', 'Hello, ').then((y) =>
-    console.log(y),
-  );
   return {
     enqueue,
   };
