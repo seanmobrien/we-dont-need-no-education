@@ -24,9 +24,16 @@ export type {
   CallToActionCategoryQueryShape,
   CallToActionResponseQueryShape,
   ViolationDetailsQueryShape,
-  ComplianceScoresDetailsQueryShape,
-  DbTransactionType,
+  ComplianceScoresDetailsQueryShape,  
+  Types
 } from './drizzle-types';
+export type {
+  DbFullSchemaType,
+  DbSchemaType,
+  DbDatabaseType,
+  DbQueryResultHKT,
+  DbTransactionType,  
+} from './schema';
 export * from './connection';
 export * from './db-helpers';
 export { sql } from './drizzle-sql';

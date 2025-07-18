@@ -4,7 +4,7 @@ jest.useFakeTimers();
 
 describe('debounce', () => {
   afterEach(() => {
-    jest.clearAllTimers();
+    // jest.clearAllTimers();
     // jest.clearAllMocks();
   });
 

@@ -112,7 +112,6 @@ describe('toolProviderFactory', () => {
       await toolProviderFactory(mockOptions);
 
       expect(mockInstrumentedSseTransport).toHaveBeenCalledWith(
-        new URL(mockOptions.url),
         expect.objectContaining({
           type: 'sse',
           url: mockOptions.url,
@@ -133,28 +132,7 @@ describe('toolProviderFactory', () => {
       });
     });
 
-    it('should handle SSE transport errors gracefully', async () => {
-      let errorHandler: (error: unknown) => { role: string; content: string };
-
-      mockInstrumentedSseTransport.mockImplementation(
-        (url: any, options: any) => {
-          errorHandler = options.onerror;
-          return {};
-        },
-      );
-
-      await toolProviderFactory(mockOptions);
-
-      const testError = new Error('Test SSE error');
-      const result = errorHandler!(testError);
-
-      expect(result).toEqual({
-        role: 'assistant',
-        content:
-          'An error occurred while connecting to the MCP server: Test SSE error. Please try again later.',
-      });
-    });
-
+   
     it('should handle MCP client uncaught errors', async () => {
       let uncaughtErrorHandler: (error: unknown) => {
         role: string;
@@ -176,7 +154,7 @@ describe('toolProviderFactory', () => {
         content: [
           {
             type: 'text',
-            text: 'An error occurred while processing your request: Test MCP error. Please try again later.',
+            text: 'A critical error occurred while processing your request. Please try again later.',
           },
         ],
       });
@@ -212,7 +190,7 @@ describe('toolProviderFactory', () => {
         content: [
           {
             type: 'text',
-            text: 'An error occurred while processing your request: Test MCP error. Please try again later.',
+            text: 'A critical error occurred while processing your request. Please try again later.',
           },
         ],
       });

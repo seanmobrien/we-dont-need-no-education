@@ -19,7 +19,7 @@ import { db } from '@/lib/drizzle-db/connection';
 import { chatHistory } from '@/drizzle/schema';
 import { newUuid } from '@/lib/typescript';
 import { LoggedError } from '@/lib/react-util';
-import { generateChatId } from '@/lib/components/ai';
+import { generateChatId } from '@/lib/ai/core';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 

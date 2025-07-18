@@ -166,7 +166,7 @@ describe('EmailDetailPanel', () => {
     return promise;
   };
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Default successful email loading mock
     mockGetEmail.mockReturnValue(createSuccessfulPromise(mockFullEmail) as any);

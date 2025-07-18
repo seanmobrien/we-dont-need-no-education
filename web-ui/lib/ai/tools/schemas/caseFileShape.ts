@@ -48,7 +48,10 @@ export const DocumentSchema = z.object({
     .nullable()
     .optional()
     .describe('Alt document property ID for some tools'),
-  documentType: z.string().optional().nullable()
+  documentType: z
+    .string()
+    .optional()
+    .nullable()
     .describe('Document type: email, attachment, key_point, cta, cta_response'),
   emailId: z
     .string()
@@ -201,9 +204,9 @@ export const DocumentSchema = z.object({
     .nullable()
     .optional()
     .describe('Details about the email this case file specifically describes.'),
-  docRel_targetDoc: z.array(
-    z
-      .object({
+  docRel_targetDoc: z
+    .array(
+      z.object({
         sourceDocumentId: z.number().describe('Source document ID.'),
         description: z
           .string()
@@ -224,13 +227,13 @@ export const DocumentSchema = z.object({
             .optional()
             .nullable(),
         }),
-      })
-      .nullable()
-      .optional()
-      .describe(
-        'Relationships to other documents, where this document is the target.',
-      ),
-  ),
+      }),
+    )
+    .nullable()
+    .optional()
+    .describe(
+      'Relationships to other documents, where this document is the target.',
+    ),
   docRel_sourceDoc: z
     .array(
       z.object({

@@ -71,7 +71,9 @@ export default function instrumentServer() {
     }),
     instrumentations: [
       //new FetchInstrumentation(config.instrumentationConfig.fetch),
-      new UndiciInstrumentation(),
+      new UndiciInstrumentation({
+        
+      }),
       new PinoInstrumentation({
         disableLogSending: false,
         logHook: (span, record) => {
