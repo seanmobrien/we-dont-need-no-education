@@ -321,6 +321,26 @@ const ResizableDraggableDialog = ({
         hideBackdrop={modal === false} // Hide backdrop for non-modal, show for modal
         disableEnforceFocus={modal === false} // Allow focus outside for non-modal
         aria-labelledby={dialogTitleId}
+        slotProps={{
+          root: {
+            style: {
+              // Allow pointer events to pass through when non-modal
+              pointerEvents: modal === false ? 'none' : 'auto',
+            },
+          },
+        }}
+        sx={{
+          // Additional styling if needed
+          ...(modal === false && {
+            '& .MuiDialog-container': {
+              pointerEvents: 'none',
+            },
+            '& .MuiDialog-paper': {
+              // Ensure the dialog paper itself still receives pointer events
+              pointerEvents: 'auto !important',
+            },
+          }),
+        }}
       >
         <DraggableHandle
           ref={dragHandleRef}
