@@ -12,6 +12,28 @@ export const darkTheme: Theme = createTheme({
   },
   palette: {
     mode: 'dark',
+    primary: {
+      main: '#19bfcf', // color-primary-main
+      light: '#19c4ce', // color-primary-light
+      dark: '#1898a8', // color-primary-dark
+    },
+    secondary: {
+      main: '#d05697', // color-secondary-main
+      light: '#d05799', // color-secondary-light
+      dark: '#a8456f', // color-secondary-dark
+    },
+    warning: {
+      main: '#ffda3e', // color-highlight-main
+      light: '#ffd73f', // color-highlight-light
+      dark: '#e4ca43', // color-highlight-dark
+    },
+    info: {
+      main: '#18b9b6', // color-primary-accent
+    },
+    background: {
+      default: '#0a0a0a',
+      paper: '#23393d', // color-surface-primary
+    },
   },
   spacing: 8,
   components: {
@@ -35,7 +57,7 @@ export const darkTheme: Theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: 'rgba(18, 18, 18, 0.9)',
+          backgroundColor: '#23393d', // color-surface-primary
           backdropFilter: 'blur(8px)',
         },
       },
@@ -44,8 +66,8 @@ export const darkTheme: Theme = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: 'rgba(18, 18, 18, 0.95)',
-          borderRight: '1px solid rgba(81, 81, 81, 1)',
+          backgroundColor: '#23393e', // color-surface-secondary
+          borderRight: '1px solid #19bfcf', // color-border-main
         },
       },
     },
