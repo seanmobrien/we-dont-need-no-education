@@ -211,7 +211,6 @@ const ResizableDraggableDialog = ({
    * Handle minimize button click
    */
   const handleMinimize = useCallback(() => {
-    console.log('Minimizing dialog');
     setWindowState(WindowState.Minimized);
   }, [setWindowState]);
 
@@ -219,8 +218,6 @@ const ResizableDraggableDialog = ({
    * Handle maximize button click
    */
   const handleMaximize = useCallback(() => {
-    console.log('Maximizing dialog');
-
     if (windowState === WindowState.Maximized) {
       // Restore to normal state
       setWindowState(WindowState.Normal);

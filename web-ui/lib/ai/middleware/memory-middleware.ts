@@ -1,15 +1,14 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { memoryClientFactory } from '../mem0';
+import { log } from '@/lib/logger';
 
 export const memoryMiddleware: LanguageModelV1Middleware = {
-  wrapStream: async ({ doStream, params }) => {
-    console.log('doStream called');
-    console.log(`params: ${JSON.stringify(params, null, 2)}`);
+  wrapStream: async ({ doStream }) => {
 
     const { stream, ...rest } = await doStream();
 
-    let generatedText = '';
+    // let generatedText = '';
 
     const transformStream = new TransformStream<
       LanguageModelV1StreamPart,
@@ -17,15 +16,14 @@ export const memoryMiddleware: LanguageModelV1Middleware = {
     >({
       transform(chunk, controller) {
         if (chunk.type === 'text-delta') {
-          generatedText += chunk.textDelta;
+          // generatedText += chunk.textDelta;
         }
 
         controller.enqueue(chunk);
       },
 
       flush() {
-        console.log('doStream finished');
-        console.log(`generated text: ${generatedText}`);
+        log(l => l.verbose('Memory middleware stream flushed'));
       },
     });
 
@@ -37,8 +35,6 @@ export const memoryMiddleware: LanguageModelV1Middleware = {
 
   transformParams: async ({ params }) => {
     /*    
-    console.log('transformParams called');
-    console.log(`params: ${JSON.stringify(params, null, 2)}`);
     // Create a memory client instance with the necessary configuration
     const memoryClient = memoryClientFactory({
       // TODO: infer userid and projectid from params

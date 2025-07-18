@@ -25,7 +25,7 @@
  */
 
 import * as tables from '@/drizzle/schema';
-import * as relations from '@/drizzle/custom-relations';
+import * as dbRelations from '@/drizzle/custom-relations';
 import { PgTransaction } from 'drizzle-orm/pg-core';
 import { drizzle } from 'drizzle-orm/postgres-js';
 
@@ -51,9 +51,10 @@ import { drizzle } from 'drizzle-orm/postgres-js';
  * @constant
  * @type {object}
  */
-const schema = { ...tables, ...relations };
+const schema = { ...tables, ...dbRelations };
 
-/**
+export const relations = dbRelations;
+ /**
  * Complete type definition for the entire database schema.
  * 
  * This type represents the full schema object including all tables, relations,
@@ -75,42 +76,8 @@ const schema = { ...tables, ...relations };
  */
 export type DbFullSchemaType = typeof schema;
 
-/**
- * Filtered schema type containing only entities with relation configurations.
- * 
- * This utility type extracts only the schema entities that have relation
- * configurations defined. It's useful when you need to work specifically
- * with related data and want to ensure type safety for relational operations.
- * 
- * The type uses conditional type mapping to include only entities where:
- * - The entity has a `config` property
- * - The `config` property contains a `relations` field
- * 
- * This is particularly useful for:
- * - Relational queries with joins
- * - Type-safe relation access
- * - Filtering out standalone tables without relationships
- * 
- * @typedef {object} DbSchemaType
- * 
- * @example
- * ```typescript
- * import type { DbSchemaType } from '@/lib/drizzle-db/schema';
- * 
- * function queryWithRelations(relationalSchema: DbSchemaType) {
- *   // Only tables with relations are available
- *   // This ensures you're working with entities that support joins
- *   const usersWithRelations = relationalSchema.users;
- * }
- * ```
- */
-export type DbSchemaType = {
-  [K in keyof DbFullSchemaType as DbFullSchemaType[K] extends {    
-    config: { relations: unknown };
-  }
-    ? K
-    : never]: DbFullSchemaType[K];
-};
+
+
 
 /**
  * Helper function used to infer the type of our database schema.
@@ -226,6 +193,56 @@ export type DbQueryResultHKT = DbTransactionParam extends (
 ) => unknown
   ? TQueryResult
   : never;
+
+
+/**
+ * Filtered schema type containing only entities with relation configurations.
+ * 
+ * This utility type extracts only the schema entities that have relation
+ * configurations defined. It's useful when you need to work specifically
+ * with related data and want to ensure type safety for relational operations.
+ * 
+ * The type uses conditional type mapping to include only entities where:
+ * - The entity has a `config` property
+ * - The `config` property contains a `relations` field
+ * 
+ * This is particularly useful for:
+ * - Relational queries with joins
+ * - Type-safe relation access
+ * - Filtering out standalone tables without relationships
+ * 
+ * @typedef {object} DbSchemaType
+ * 
+ * @example
+ * ```typescript
+ * import type { DbSchemaType } from '@/lib/drizzle-db/schema';
+ * 
+ * function queryWithRelations(relationalSchema: DbSchemaType) {
+ *   // Only tables with relations are available
+ *   // This ensures you're working with entities that support joins
+ *   const usersWithRelations = relationalSchema.users;
+ * }
+ * ```
+ */
+/*
+export type DbSchemaType = {
+  [K in keyof DbFullSchemaType as DbFullSchemaType[K] extends {    
+    config: { relations: unknown };
+  }
+    ? K
+    : never]: DbFullSchemaType[K];
+};
+*/
+
+export type DbSchemaType = DbTransactionParam extends (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  tx: PgTransaction<any, any, infer TQueryResult>,
+) => unknown
+  ? TQueryResult
+  : never;
+
+
+
 
 /**
  * Type definition for database transactions with full schema support.

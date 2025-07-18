@@ -30,7 +30,6 @@ export async function GET(req: NextRequest) {
         .object(toolCallbackArrayResultSchemaFactory(DocumentSchema))
         .safeParse(rawRecords.structuredContent);
       if (!parsedRecords.success) {
-        console.log(parsedRecords.error);
         throw { error: parsedRecords.error, data: rawRecords };
       }
       return NextResponse.json(parsedRecords.data);

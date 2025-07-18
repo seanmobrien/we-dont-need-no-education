@@ -257,7 +257,6 @@ const ImportSession: React.FC<{ concurrentSessions?: number }> = ({
       );
       switch (evt.target?.id) {
         case 'import-from-email':
-          console.log('updating query');
           setQuery(evt.target.value);
           break;
         default:

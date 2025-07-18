@@ -17,8 +17,7 @@ export type { ChatHistoryContext } from './types';
 
 export function createChatHistoryMiddleware(
   context: ChatHistoryContext,
-): LanguageModelV1Middleware {
-  console.log('create chat history');
+): LanguageModelV1Middleware {  
   const chatId =
     typeof context.chatId === 'string'
       ? (context.chatId ?? generateChatId().id)

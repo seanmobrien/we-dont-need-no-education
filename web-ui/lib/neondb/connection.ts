@@ -82,9 +82,7 @@ if (process.env.NEXT_RUNTIME === 'nodejs' && !prexitHandlerRegistered) {
     .then((x) => x.default)
     .then((prexit) => {
       const exitHandler = async () => {
-        console.log('Closing database connection.');
         await (sql?.end({ timeout: 5 }) ?? Promise.resolve());
-        console.log('Cleanly closed database connection.');
       };
 
       // Register the exit handler

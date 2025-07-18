@@ -1,29 +1,21 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
 
 export const retryRateLimitMiddleware: LanguageModelV1Middleware = {
-  wrapGenerate: async ({ doGenerate, params }) => {
-    console.log('doGenerate called');
-    console.log(`params: ${JSON.stringify(params, null, 2)}`);
+  wrapGenerate: async ({ doGenerate }) => {
 
     const result = await doGenerate();
-
-    console.log('doGenerate finished');
-    console.log(`generated text: ${result.text}`);
 
     return result;
   },
 
-  wrapStream: async ({ doStream, params }) => {
-    console.log('doStream called');
-    console.log(`params: ${JSON.stringify(params, null, 2)}`);
-
+  wrapStream: async ({ doStream }) => {
     // Here you can override the stream function to add custom behavior
     // For example, you could log the stream parts, modify them before returning,
     // or return a cached stream.
 
     const { stream, ...rest } = await doStream();
 
-    let generatedText = '';
+    // let generatedText = '';
 
     const transformStream = new TransformStream<
       LanguageModelV1StreamPart,
@@ -31,15 +23,14 @@ export const retryRateLimitMiddleware: LanguageModelV1Middleware = {
     >({
       transform(chunk, controller) {
         if (chunk.type === 'text-delta') {
-          generatedText += chunk.textDelta;
+          // generatedText += chunk.textDelta;
         }
 
         controller.enqueue(chunk);
       },
 
       flush() {
-        console.log('doStream finished');
-        console.log(`generated text: ${generatedText}`);
+       
       },
     });
 
@@ -50,9 +41,7 @@ export const retryRateLimitMiddleware: LanguageModelV1Middleware = {
   },
 
   transformParams: async ({ params }) => {
-    console.log('transformParams called');
-    console.log(`params: ${JSON.stringify(params, null, 2)}`);
-
+    
     // Here you can modify the params if needed
     // For example, you could add a custom header or modify the model parameters
 
