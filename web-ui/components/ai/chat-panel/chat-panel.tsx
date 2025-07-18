@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Box,
@@ -149,6 +149,10 @@ const ChatPanel = ({ page }: { page: string }) => {
   // Use chat panel context for docking state
   const { dockPanel, config, setPosition, isFloating, setFloating, debounced: { setSize: debouncedSetSize } } = useChatPanelContext();
 
+  // Ref for the TextField input to preserve focus in floating mode
+  const textFieldRef = useRef<HTMLInputElement>(null);
+  const shouldRestoreFocus = useRef<boolean>(false);
+
   if (!initialMessages) {
     const messages = loadCurrentMessageState();
     if (messages) {
@@ -227,6 +231,39 @@ const ChatPanel = ({ page }: { page: string }) => {
     onError: onChatError,
     experimental_throttle: 100,
   });
+
+  // Enhanced input change handler that preserves focus in floating mode
+  const handleInputChangeWithFocusPreservation = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      // Track if we should restore focus after the input change
+      const isFloatingMode = config.position === 'floating';
+      const inputElement = textFieldRef.current;
+      const wasFocused = document.activeElement === inputElement;
+      
+      if (isFloatingMode && wasFocused) {
+        shouldRestoreFocus.current = true;
+      }
+      
+      // Call the original input change handler
+      handleInputChange(event);
+    },
+    [handleInputChange, config.position],
+  );
+
+  // Effect to restore focus in floating mode after re-renders
+  useEffect(() => {
+    if (shouldRestoreFocus.current && config.position === 'floating' && textFieldRef.current) {
+      // Use a small timeout to ensure the DOM has been updated
+      const timeoutId = setTimeout(() => {
+        if (textFieldRef.current && shouldRestoreFocus.current) {
+          textFieldRef.current.focus();
+          shouldRestoreFocus.current = false;
+        }
+      }, 0);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [input, config.position]); // Trigger on input changes and position changes
   const onSendClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>, model?: AiModelType) => {
       if (id) {
@@ -375,12 +412,13 @@ const ChatPanel = ({ page }: { page: string }) => {
       sx={stableStyles.stack}
     >
       <TextField
+        inputRef={textFieldRef}
         multiline
         rows={5}
         variant="outlined"
         placeholder="Type your message here..."
         value={input}
-        onChange={handleInputChange}
+        onChange={handleInputChangeWithFocusPreservation}
         onKeyDown={handleInputKeyDown}
         sx={stableStyles.chatInput}
         slotProps={stableChatInputSlotProps}
@@ -393,7 +431,7 @@ const ChatPanel = ({ page }: { page: string }) => {
         />
       </Box>
     </Stack>
-  ), [input, handleInputChange, handleInputKeyDown, stableChatInputSlotProps, messages, status, errorMessage]);
+  ), [input, handleInputChangeWithFocusPreservation, handleInputKeyDown, stableChatInputSlotProps, messages, status, errorMessage]);
 
   // Handle docked positions
   if (config.position !== 'inline' && config.position !== 'floating') {

@@ -6,8 +6,12 @@ export const register = async () => {
     return;
   }
   instrumentationRegistered = true;
-  // Temporarily disabled for development
-  //console.log('[otel] Instrumentation disabled for development');
+  
+  // Skip instrumentation in local development if no connection string
+  if (process.env.NODE_ENV === 'development' && !process.env.AZURE_MONITOR_CONNECTION_STRING) {
+    console.log('[otel] Instrumentation disabled for local development');
+    return;
+  }
   
   if (typeof window === 'undefined') {
     // This is a server-side environment (Node.js or edge runtime)
