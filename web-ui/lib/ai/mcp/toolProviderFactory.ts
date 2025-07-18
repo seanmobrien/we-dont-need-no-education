@@ -158,7 +158,7 @@ export const toolProviderFactory = async ({
        */
       onUncaughtError: (error) => {
         try {
-           LoggedError.isTurtlesAllTheWayDownBaby(e, {
+           LoggedError.isTurtlesAllTheWayDownBaby(error, {
              log: true,
              source: 'MCPClientMessageHandler',
              message: 'MCP Client SSE Uncaught Error',
