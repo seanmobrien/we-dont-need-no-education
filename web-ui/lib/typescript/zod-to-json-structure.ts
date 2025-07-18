@@ -47,7 +47,7 @@ const stampIsOptional = ({schema, input}: {schema: ZodTypeAny; input: string}): 
     const commentsAt = input.indexOf('//');
     if (commentsAt === -1)
     {
-      return `${input ?? ""} // ${stamp}`; // optional';
+      return `${input ?? ""} // ${stamp}`;
     }
     return `${input.slice(0, commentsAt)} // ${stamp}: ${input.slice(commentsAt + 2)}`;
   }
