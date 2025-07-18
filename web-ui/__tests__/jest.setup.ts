@@ -5,12 +5,12 @@ const shouldWriteToConsole = jest
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
+import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
+
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
-
-const DatabaseTypeFn = () => actualDrizzle.drizzle.mock({ actualSchema });
-export type DatabaseType = ReturnType<typeof DatabaseTypeFn>;
+type DatabaseType = DbDatabaseType;
 
 export const makeMockDb = (): DatabaseType => {
   // Using drizzle.mock we can quickly spin up a mock database that matches our schema, no driver or db connection required.
@@ -37,13 +37,13 @@ jest.mock('@/lib/neondb/connection', () => {
 });
 jest.mock('@/lib/drizzle-db/connection', () => {
   return {
-    db: mockDb,
+    db: makeMockDb(),
     schema: actualSchema,
   };
 });
 jest.mock('@/lib/drizzle-db', () => {
   return {
-    db: mockDb,
+    db: makeMockDb(),
     schema: actualSchema,
     sql: jest.fn(() => makeRecursiveMock()),
   };
@@ -132,6 +132,7 @@ import { sendApiRequest } from '@/lib/send-api-request';
 import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { db } from '@/lib/drizzle-db';
 // jest.setup.ts
 // If using React Testing Library
 import '@testing-library/jest-dom';

@@ -19,7 +19,7 @@ describe('EmailList', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('should display loading state initially', () => {

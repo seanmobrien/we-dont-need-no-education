@@ -108,8 +108,13 @@ export const toolProviderFactory = async ({
       onclose: () => {
         try {
           log((l) => l.warn('MCP Client SSE Connection Closed'));
-        } catch (e) {
-          log((l) => l.error('MCP Client SSE Close Error:', e));
+        } catch (e) {          
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+             log: true,
+             source: 'MCPClientMessageHandler',
+             message: 'MCP Client SSE Close Error',
+            critical: true,
+           });
         }
       },
       /**
@@ -121,7 +126,15 @@ export const toolProviderFactory = async ({
           // Handle incoming messages if needed for debugging/monitoring
           log((l) => l.info('MCP Client SSE Message:', message));
         } catch (e) {
-          log((l) => l.error('MCP Client SSE Message Error:', e));
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+             log: true,
+             source: 'MCPClientMessageHandler',
+             message: 'MCP Client SSE Message Error',
+             critical: true,
+             data: {
+               message
+             },
+           });          
         }
       },
     };
@@ -145,13 +158,12 @@ export const toolProviderFactory = async ({
        */
       onUncaughtError: (error) => {
         try {
-          log((l) =>
-            l.error(
-              'MCP Client Uncaught Error:',
-              error,
-              isError(error) ? error.stack : {},
-            ),
-          );
+           LoggedError.isTurtlesAllTheWayDownBaby(error, {
+             log: true,
+             source: 'MCPClientMessageHandler',
+             message: 'MCP Client SSE Uncaught Error',
+             critical: true,             
+           });          
           return {
             role: 'assistant',
             content: [

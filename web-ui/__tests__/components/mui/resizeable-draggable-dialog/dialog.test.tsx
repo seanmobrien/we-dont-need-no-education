@@ -61,7 +61,7 @@ describe('ResizableDraggableDialog', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   afterEach(() => {

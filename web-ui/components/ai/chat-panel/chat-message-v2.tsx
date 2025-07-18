@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Box, Paper, Typography, Avatar, Stack } from '@mui/material';
 import { Message } from 'ai';
 import { VirtualItem } from '@tanstack/react-virtual';
@@ -25,42 +25,32 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
   const { parts = [], role, id: messageId, createdAt } = message;
   const isUser = role === 'user';
 
-  return (
-    <Box
-      key={virtualRow.key}
-      ref={(node: Element) => onMeasureElement(node)}
-      sx={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        transform: `translateY(${virtualRow.start}px)`,
-        p: 0.5,
-      }}
-      data-index={virtualRow.index}
-    >
-      <Stack
-        direction="row"
-        spacing={1}
-        alignItems={isUser ? 'flex-end' : 'flex-start'}
-      >
-        <Box sx={{ width: '100%', textAlign: isUser ? 'right' : 'left' }}>
-          {!isUser && (
-            <Avatar
-              sx={{
-                width: 24,
-                height: 24,
-                float: 'left',
-                marginRight: '1em',
-                marginTop: '1em',
-              }}
-            >
-              A
-            </Avatar>
-          )}
-          <Paper
-            elevation={6}
-            sx={{
+  const measureElementCallback = useCallback((node: Element) => {
+    if(node) {
+      onMeasureElement(node);
+    }
+  }, [onMeasureElement]);
+  const stableSx = useMemo(() => ({
+    container: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      width: '100%',
+      transform: `translateY(${virtualRow.start}px)`,
+      p: 0.5,
+    },
+    stackWrapper: {
+      width: '100%', 
+      textAlign: isUser ? 'right' : 'left' 
+    },
+    avatar: {
+      width: 24,
+      height: 24,
+      float: 'left',
+      marginRight: '1em',
+      marginTop: '1em',
+    },
+    paper: {
               p: 2,
               maxWidth: '70%',
               justifyItems: isUser ? 'flex-end' : 'flex-start',
@@ -70,7 +60,33 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
               marginBottom: 2,
               display: 'inline-block',
               borderRadius: 2,
-            }}
+            },
+            dateline: { display: 'block', textAlign: 'right', mt: 0.5 }
+  }), [virtualRow.start, isUser])
+
+  return (
+    <Box
+      key={virtualRow.key}
+      ref={measureElementCallback}
+      sx={stableSx.container}
+      data-index={virtualRow.index}
+    >
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems={isUser ? 'flex-end' : 'flex-start'}
+      >
+        <Box sx={stableSx.stackWrapper}>
+          {!isUser && (
+            <Avatar
+              sx={stableSx.avatar}
+            >
+              A
+            </Avatar>
+          )}
+          <Paper
+            elevation={6}
+            sx={stableSx.paper}
           >
             <Box>
               {parts
@@ -93,7 +109,7 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
             {createdAt && (
               <Typography
                 variant="caption"
-                sx={{ display: 'block', textAlign: 'right', mt: 0.5 }}
+                sx={stableSx.dateline}
               >
                 {createdAt.toLocaleString()}
               </Typography>

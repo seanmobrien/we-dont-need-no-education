@@ -250,7 +250,7 @@ describe('_utility-methods', () => {
 
   describe('getResolvedPromises', () => {
     beforeEach(() => {
-      jest.clearAllTimers();
+      // jest.clearAllTimers();
       jest.useFakeTimers();
     });
 

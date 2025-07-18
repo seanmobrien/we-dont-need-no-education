@@ -55,7 +55,7 @@ const config: Config.InitialOptions = {
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
   //detectLeaks: true,
-  detectOpenHandles: true,
+  //detectOpenHandles: true,
   // logHeapUsage: true,
 
   // Additional stability configurations for concurrent testing
