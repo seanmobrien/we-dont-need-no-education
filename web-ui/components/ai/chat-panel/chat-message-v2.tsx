@@ -61,7 +61,7 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
               display: 'inline-block',
               borderRadius: 2,
             },
-            dateline:{ display: 'block', textAlign: 'right', mt: 0.5 }
+            dateline: { display: 'block', textAlign: 'right', mt: 0.5 }
   }), [virtualRow.start, isUser])
 
   return (
