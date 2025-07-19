@@ -257,7 +257,7 @@ export const addNotesToDocument = async <
   if (!record) {
     throw new Error('Email ID not found for the document');
   }
-  const { emailId, attachmentId, documentType, docProp } = record
+  const { emailId, attachmentId, documentType, docProp } = record;
   const documentId =
     documentType === 'email' || documentType === 'attachment'
       ? documentIdFromProps

@@ -224,16 +224,6 @@ export type DbQueryResultHKT = DbTransactionParam extends (
  * }
  * ```
  */
-/*
-export type DbSchemaType = {
-  [K in keyof DbFullSchemaType as DbFullSchemaType[K] extends {    
-    config: { relations: unknown };
-  }
-    ? K
-    : never]: DbFullSchemaType[K];
-};
-*/
-
 export type DbSchemaType = DbTransactionParam extends (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tx: PgTransaction<any, any, infer TQueryResult>,
