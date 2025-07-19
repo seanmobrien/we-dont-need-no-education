@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   ZodTypeAny,
   ZodObject,
@@ -12,47 +11,6 @@ import {
   ZodDate,
 } from 'zod';
 
-
-
-/*
-type WrappedNullableType<T extends ZodTypeAny> = T extends ZodNullable<infer U>
-  ? ZodNullable<U>
-  : T extends ZodEffects<infer U>
-  ? ZodEffects<U>
-  : T extends ZodString
-  ? ZodString
-  : T extends ZodNumber
-  ? ZodNumber
-  : T extends ZodDate
-  ? ZodDate
-  : T extends ZodBoolean
-  ? ZodBoolean
-  : T extends ZodObject<any>
-  ? ZodObject<any>
-  : T extends ZodArray<infer U>
-  ? ZodArray<U>
-  : T extends ZodOptional<infer U>
-  ? ZodOptional<U>
-  : T extends ZodDefault<infer U>
-  ? ZodDefault<U>  
-  : ZodTypeAny;
-*/
-const stampIsOptional = ({schema, input}: {schema: ZodTypeAny; input: string}): string => {  
-  if (    
-    schema instanceof ZodDefault ||
-    schema instanceof ZodOptional ||
-    schema instanceof ZodNullable
-  ) {
-    const stamp = "[optional]";
-    const commentsAt = input.indexOf('//');
-    if (commentsAt === -1)
-    {
-      return `${input ?? ""} // ${stamp}`;
-    }
-    return `${input.slice(0, commentsAt)} // ${stamp}: ${input.slice(commentsAt + 2)}`;
-  }
-  return input;
-};
 
 interface SchemaFieldToString {
   (): string;
@@ -121,7 +79,7 @@ const zodToSchemaField = (schema: ZodTypeAny): SchemaField => {
     }
     return zodToSchemaField(schema._def.innerType);
   };
-  if (schema instanceof ZodOptional) {
+  if (schema instanceof ZodOptional || schema instanceof ZodDefault) {
     ret = unwrapType();
     ret.optional = true;
   } else if (schema instanceof ZodNullable) {

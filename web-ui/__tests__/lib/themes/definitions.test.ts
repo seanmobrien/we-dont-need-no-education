@@ -1,22 +1,22 @@
 import { describe, it, expect } from '@jest/globals';
-import { themes, darkTheme, colorfulTheme, ThemeType } from '@/lib/themes/definitions';
+import { themes, darkTheme, colorfulTheme } from '@/lib/themes/definitions';
 
 describe('Theme Definitions', () => {
-  it('should have dark and colorful themes available', () => {
+  it('should have dark and light themes available', () => {
     expect(themes).toBeDefined();
     expect(themes.dark).toBeDefined();
-    expect(themes.colorful).toBeDefined();
+    expect(themes.light).toBeDefined();
   });
 
   it('should have dark theme with dark mode', () => {
     expect(darkTheme.palette.mode).toBe('dark');
   });
 
-  it('should have colorful theme with light mode', () => {
+  it('should have light theme with light mode', () => {
     expect(colorfulTheme.palette.mode).toBe('light');
   });
 
-  it('should have colorful theme with specified colors', () => {
+  it('should have light theme with specified colors', () => {
     expect(colorfulTheme.palette.primary.main).toBe('#1abbf9');
     expect(colorfulTheme.palette.secondary.main).toBe('#ff79f9');
     expect(colorfulTheme.palette.background?.default).toBe('#ffffff');

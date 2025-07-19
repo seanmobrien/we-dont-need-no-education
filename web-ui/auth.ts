@@ -293,7 +293,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
         req && hasSecretHeaderBypass(req) ? skipCSRFCheck : undefined,
       theme: {
         colorScheme: 'auto', // 'auto' for system preference, 'light' or 'dark'
-        logo: '/logo-dark.png',
+        logo: '/static/logo/logo-dark.png',
         brandColor: '#1898a8', // Custom brand color        
       }
     };
