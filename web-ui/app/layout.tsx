@@ -6,9 +6,9 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider } from '@/lib/themes/provider';
 import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
-import { InitColorSchemeScript } from '@mui/material';
 import { TrackWithAppInsight } from '@/components/general/telemetry';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
+import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',

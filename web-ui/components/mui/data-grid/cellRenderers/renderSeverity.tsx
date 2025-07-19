@@ -76,17 +76,17 @@ const StyledSlider = styled(Slider)(({ theme }) => ({
       duration: theme.transitions.duration.shorter,
     }),
     '&.low': {
-      backgroundColor: theme.palette.mode === 'dark' ? '#f44336' : '#f5a9b8', // Use colorful theme accent
+      backgroundColor: theme.palette.mode === 'dark' ? '#f44336' : '#f5a9b8', // Use light theme accent
     },
     '&.medium': {
       backgroundColor:
-        theme.palette.mode === 'dark' ? '#efbb5aa3' : 'rgba(26, 187, 249, 0.7)', // Use colorful theme primary
+        theme.palette.mode === 'dark' ? '#efbb5aa3' : 'rgba(26, 187, 249, 0.7)', // Use light theme primary
     },
     '&.high': {
       backgroundColor:
         theme.palette.mode === 'dark'
           ? '#088208a3'
-          : 'rgba(255, 121, 249, 0.7)', // Use colorful theme secondary
+          : 'rgba(255, 121, 249, 0.7)', // Use light theme secondary
     },
   },
   [`& .${sliderClasses.thumb}`]: {

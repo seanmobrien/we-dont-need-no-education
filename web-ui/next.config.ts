@@ -13,14 +13,36 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     //nodeMiddleware: true,
+    optimizePackageImports: [
+      '@mui/icons-material',
+      '@mui/material',
+      '@mui/material-nextjs',
+      '@mui/system',
+      '@mui/x-data-grid',
+      '@mui/x-data-grid-pro',
+      '@mui/x-license',
+      // '@microsoft/applicationinsights-web',
+      // '@microsoft/applicationinsights-react-js',
+      // '@microsoft/applicationinsights-clickanalytics-js',
+      '@modelcontextprotocol/sdk',
+      '@toolpad/core',
+      // '@opentelemetry/api',
+      '@opentelemetry/api-logs',
+      '@opentelemetry/core',
+      // '@opentelemetry/instrumentation',
+      // '@opentelemetry/instrumentation-pino',
+      '@opentelemetry/instrumentation-undici',
+      '@opentelemetry/resources',
+      '@opentelemetry/sdk-logs',
+      '@opentelemetry/sdk-metrics',
+      // '@opentelemetry/sdk-node',
+      '@opentelemetry/sdk-trace-base',
+      '@opentelemetry/sdk-trace-node',
+      '@opentelemetry/semantic-conventions',
+    ],
+    webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID'],
+    useLightningcss: true,
   },
-  /*
-  // Build optimization to prevent hanging
-  generateBuildId: async () => {
-    // Use a simple build ID to avoid complex generation during build
-    return 'build-' + Date.now();
-  },
-  */
   publicRuntimeConfig: {
     hostname: process.env.NEXT_PUBLIC_HOSTNAME,
   },
@@ -28,7 +50,6 @@ const nextConfig: NextConfig = {
     '@opentelemetry/instrumentation',
     '@opentelemetry/instrumentation-pino',
     '@azure/monitor-opentelemetry-exporter',
-
     '@azure/monitor-opentelemetry',
     '@azure/opentelemetry-instumentation-azure-sdk',
     '@microsoft/applicationinsights-web',
@@ -54,5 +75,9 @@ const nextConfig: NextConfig = {
     return config;
   },
 };
-
-export default nextConfig;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+  openAnalyzer: false,
+});
+export default withBundleAnalyzer(nextConfig);

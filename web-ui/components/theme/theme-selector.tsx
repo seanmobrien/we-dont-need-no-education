@@ -8,10 +8,9 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Palette as PaletteIcon } from '@mui/icons-material';
-import { useTheme } from '@/lib/themes/provider';
-import { ThemeType, themeDisplayNames } from '@/lib/themes/definitions';
+import { type ThemeType, themeDisplayNames, useTheme } from '@/lib/themes';
 
-const availableThemes: ThemeType[] = ['dark', 'colorful'] as const;
+const availableThemes: ThemeType[] = ['dark', 'light'] as const;
 
 export const ThemeSelector = () => {
   const { currentTheme, setTheme } = useTheme();
@@ -57,6 +56,7 @@ export const ThemeSelector = () => {
         <IconButton
           edge="end"
           onClick={handleMenuClick}
+          data-id="theme-selector-button"
           id="theme-selector-button"
           aria-controls={open ? 'theme-menu' : undefined}
           aria-haspopup="true"
@@ -67,6 +67,7 @@ export const ThemeSelector = () => {
       </Tooltip>
       <Menu
         id="theme-menu"
+        data-id="menu-theme-selector"
         anchorEl={anchorEl}
         open={open}
         onClose={handleMenuClick}
@@ -87,6 +88,7 @@ export const ThemeSelector = () => {
         <ListSubheader>{`Current: ${themeDisplayNames[currentTheme]}`}</ListSubheader>
         {availableThemes.map((themeType) => (
           <MenuItem
+            data-id={`menu-id-theme-selector-${themeType}`}
             key={themeType}
             data-theme={themeType as string}
             onClick={handleThemeSelect}

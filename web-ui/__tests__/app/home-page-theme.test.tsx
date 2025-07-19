@@ -17,9 +17,9 @@ describe('Home Page Theme Support', () => {
     document.documentElement.removeAttribute('data-theme');
   });
 
-  it('renders home page with colorful theme support', () => {
+  it('renders home page with light theme support', () => {
     const ColorfulHomePage = () => (
-      <ThemeProvider defaultTheme="colorful">
+      <ThemeProvider defaultTheme="light">
         <HomePage />
       </ThemeProvider>
     );
@@ -28,7 +28,7 @@ describe('Home Page Theme Support', () => {
 
     // Verify the theme attribute is set
     expect(document.documentElement.getAttribute('data-theme')).toBe(
-      'colorful',
+      'light',
     );
 
     // Verify the page renders without crashing
@@ -57,7 +57,7 @@ describe('Home Page Theme Support', () => {
 
   it('home page uses MUI Box for theme-aware styling', () => {
     const ThemedHomePage = () => (
-      <ThemeProvider defaultTheme="colorful">
+      <ThemeProvider defaultTheme="light">
         <HomePage />
       </ThemeProvider>
     );

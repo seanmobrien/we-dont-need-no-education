@@ -32,9 +32,6 @@
       "@/*": [
         "./*"
       ],
-      "tailwindcss-classnames": [
-        "./tailwindcss.classnames"
-      ]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
