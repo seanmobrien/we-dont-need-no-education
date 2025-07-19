@@ -36,7 +36,7 @@ export const Branding: BrandingConfig = {
   logo: (
     <>
       <Image
-        src="/static/logo/badge_40x40.png"
+        src={require("@/public/static/logo/badge_40x40.png")}
         alt="Mystery Compliance Theater 2000 Logo"
         width={40}
         height={40}
