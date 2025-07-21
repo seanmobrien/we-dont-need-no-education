@@ -62,6 +62,10 @@ const config: Config.InitialOptions = {
   testTimeout: 10000, // Increase timeout to 10 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
   forceExit: false, // Don't force exit to allow proper cleanup
+  
+  // Mock configuration
+  clearMocks: true, // Clear mock calls between tests
+  resetMocks: false, // Don't reset mock implementations between tests (we want our setup to persist)
 };
 
 export default config;

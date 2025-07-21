@@ -49,10 +49,10 @@ jest.mock('@/lib/nextjs-util', () => ({
 }));
 
 jest.mock('@/lib/drizzle-db', () => ({
-  db: {
+  drizDb: jest.fn(() => ({
     query: mockDbQuery,
     delete: mockDbDelete,
-  },
+  })),
   schema: mockSchema,
 }));
 
@@ -61,6 +61,7 @@ import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { query, queryExt } from '@/lib/neondb';
 import { auth } from '@/auth';
+import { drizDb } from '@/lib/drizzle-db';
 
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 

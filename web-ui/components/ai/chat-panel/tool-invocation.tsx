@@ -98,7 +98,7 @@ const ConfirmationPrompt = <TResult extends object>({
         setIsSubmitting(false);
       }
     }    
-  }, [addToolResult, callId, isSubmitting]);
+  }, [addToolResult, callId, isSubmitting, notifications]);
   const handleSelectChange = useCallback((e:  { target: { value: string; name: string; }; }) => {
     const selectedOption = e.target.value as string;
     setSelectedOption((current:string | null) => selectedOption === current ? current : selectedOption);

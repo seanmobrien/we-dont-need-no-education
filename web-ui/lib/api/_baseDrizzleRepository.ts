@@ -1,4 +1,4 @@
-import { db, type Database } from '@/lib/drizzle-db';
+import { drizDb, type DatabaseType } from '@/lib/drizzle-db';
 import { ObjectRepository, DrizzleRepositoryConfig, IObjectRepositoryExt } from './_types';
 import { PaginatedResultset, PaginationStats } from '@/data-models';
 import { PartialExceptFor } from '@/lib/typescript';
@@ -62,14 +62,14 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
 export abstract class BaseDrizzleRepository<T extends object, KId extends keyof T>
   implements ObjectRepository<T, KId>
 {
-  protected readonly db: Database;
+  protected readonly db: DatabaseType;
   protected readonly config: DrizzleRepositoryConfig<T, KId>;
   protected readonly idColumn: PgColumn;
   protected readonly idField: KId;
   protected readonly tableName: string;
 
   constructor(config: DrizzleRepositoryConfig<T, KId>) {
-    this.db = db;
+    this.db = drizDb();
     this.config = config;
     
     // Auto-detect table name if not provided

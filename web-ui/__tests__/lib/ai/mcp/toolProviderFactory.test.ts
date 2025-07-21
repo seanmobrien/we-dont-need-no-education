@@ -25,7 +25,7 @@ jest.mock('ai', () => ({
   ToolSet: {},
 }));
 
-jest.mock('@/lib/ai/mcp/traceable-transport-client.ts', () => ({
+jest.mock('@/lib/ai/mcp/instrumented-sse-transport', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
 }));
 jest.mock('@/lib/ai/mcp/client-tool-provider', () => ({
@@ -442,7 +442,7 @@ describe('toolProviderSetFactory', () => {
     it('should handle mixed success/failure scenarios', async () => {
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
-      expect(providerSet.providers).toHaveLength(1);
+      expect(providerSet.providers).toHaveLength(2);
       expect(mockLoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
         expect.any(AggregateError),
         expect.objectContaining({
@@ -528,7 +528,7 @@ describe('toolProviderSetFactory', () => {
 
       const providerSet = await toolProviderSetFactory([]);
 
-      expect(providerSet.providers).toHaveLength(0);
+      expect(providerSet.providers).toHaveLength(1);
       expect(providerSet.get_tools()).toEqual({});
     });
 
@@ -541,7 +541,7 @@ describe('toolProviderSetFactory', () => {
 
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
-      expect(providerSet.providers).toHaveLength(0);
+      expect(providerSet.providers).toHaveLength(1);
       expect(providerSet.get_tools()).toEqual({});
     });
   });
@@ -582,7 +582,7 @@ describe('integration scenarios', () => {
       15000,
     );
 
-    expect(providerSet.providers).toHaveLength(1);
+    expect(providerSet.providers).toHaveLength(2);
     expect(providerSet.get_tools()).toEqual({
       'file-tool': {},
       'search-tool': {},

@@ -11,24 +11,56 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
-import { db } from '@/lib/drizzle-db';
-import type { DbTransactionType } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
+import type { DbDatabaseType, DbTransactionType } from '@/lib/drizzle-db';
+import { SQLWrapper } from 'drizzle-orm';
+import { PgRaw } from 'drizzle-orm/pg-core/query-builders/raw';
+import { RowList } from 'postgres';
 
-// Mock the database
-jest.mock('@/lib/drizzle-db');
+let mockDb: jest.Mocked<DbDatabaseType>;
 
-const mockDb = db as jest.Mocked<typeof db>;
 const mockTx = {
   execute: jest.fn(),
 } as unknown as jest.Mocked<DbTransactionType>;
 
 describe('Chat History Utility Functions', () => {
+  let idCounter = 0;
+  
   beforeEach(() => {
     // jest.clearAllMocks();
+    mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
+    
+    /*
+    mockDb.execute.mockImplementation((query: string | SQLWrapper) => {
+      // Mock implementation to return a predictable sequence of IDs      
+      const match = String(query).match(/allocate_scoped_ids\('(\w+)', '(\w+)', (\d+), (\d+)\)/);
+      if (match) {
+        const count = parseInt(match[4], 10);
+        const ret = Array.from({ length: count }, () => ({
+          allocate_scoped_ids: ++idCounter,
+        })) as any;
+        ret.find = jest.fn();
+        const check = jest.fn(() =>));
+        return Promise.resolve(
+          ret as PgRaw<RowList<Record<string, unknown>[]>>
+        );
+      }
+      return Promise.reject(new Error('Invalid query'));
+    });
+    */
   });
 
   describe('getNextSequence', () => {
+  
+    beforeEach(() => {
+      mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
+      mockDb.execute.mockResolvedValue([
+        { allocate_scoped_ids: 1 },
+      ] as any);
+    });
+
     describe('chat_turns table', () => {
+      
       it('should generate single turn ID', async () => {
         // Arrange
         const chatId = 'chat-123';

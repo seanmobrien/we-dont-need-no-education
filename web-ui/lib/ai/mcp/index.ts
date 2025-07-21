@@ -8,3 +8,5 @@ export {
   toolProviderFactory,
   toolProviderSetFactory,
 } from './toolProviderFactory';
+
+export * from './instrumented-sse-transport';

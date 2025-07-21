@@ -1,4 +1,4 @@
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util';
 import { DocumentResourceIndex } from '../documentResource';
 import { DocumentIndexResourceToolResult } from '../types';
@@ -130,7 +130,7 @@ export const getCaseFileDocumentIndex = async ({
     const scope = (scopeFromProps ?? []).map((s) =>
       mapToDocumentType(String(s)),
     );
-    const index = await db.query.documentUnits
+    const index = await drizDb().query.documentUnits
       .findMany({
         ...(scope.length > 0
           ? { where: (du, { inArray }) => inArray(du.documentType, scope) }

@@ -1,5 +1,5 @@
 import { eq, lte, gte, and, or, isNull } from 'drizzle-orm';
-import { db, DatabaseType, schema, type UserPublicKeysType } from '@/lib/drizzle-db';
+import { drizDb, DatabaseType, schema, type UserPublicKeysType } from '@/lib/drizzle-db';
 import { auth } from '@/auth';
 
 /**
@@ -9,7 +9,7 @@ import { auth } from '@/auth';
  * @param db - Drizzle database instance (must be provided by caller)
  */
 export async function getActiveUserPublicKeys({db: database, effectiveDate, userId: userIdFromProps } : { userId: number; effectiveDate?: string | Date; db?: DatabaseType; }): Promise<string[]> {
-  const dbInstance = database ?? db;
+  const dbInstance = database ?? drizDb();
   const date = typeof effectiveDate === 'undefined' 
     ? new Date() 
     : (typeof effectiveDate === 'string' ? new Date(effectiveDate) : effectiveDate);

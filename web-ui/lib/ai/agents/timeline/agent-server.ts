@@ -12,7 +12,7 @@ import {
   SerializedTimelineAgent,
 } from './types';
 import { AiLanguageModelType } from '../../core';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { setupDefaultTools } from '../../mcp/setup-default-tools';
 import { NextRequest } from 'next/server';
 
@@ -275,7 +275,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     req: NextRequest;
     document: string;
   }): Promise<string[]> {
-    const callToActionRecord = await db.query.documentProperty.findFirst({
+    const callToActionRecord = await drizDb().query.documentProperty.findFirst({
       where: (property, { eq }) =>
         eq(property.propertyId, this.propertyId ?? ''),
     });

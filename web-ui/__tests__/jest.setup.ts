@@ -12,14 +12,28 @@ const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
 type DatabaseType = DbDatabaseType;
 
+
+let mockDb = mockDeep<DatabaseType>();
+
 export const makeMockDb = (): DatabaseType => {
-  // Using drizzle.mock we can quickly spin up a mock database that matches our schema, no driver or db connection required.
-  // Use jest-mock-extended's deepMock to create a fully mocked database object
-  const ret = mockDeep<DatabaseType>();
-  return ret;
+  // Return the same mock instance to ensure test isolation but consistency within a test
+  // The mock will be reset between test files by Jest's resetMocks option
+  
+  // Ensure the query structure is properly mocked with the expected methods
+  if (mockDb.query && mockDb.query.documentUnits) {
+    // Set default behaviors - tests can override these
+    if (!(mockDb.query.documentUnits.findMany as jest.Mock).getMockImplementation()) {
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue([]);
+    }
+    if (!(mockDb.query.documentUnits.findFirst as jest.Mock).getMockImplementation()) {
+      (mockDb.query.documentUnits.findFirst as jest.Mock).mockResolvedValue(null);
+    }
+  }
+  
+  return mockDb;
 };
 
-const mockDb = actualDrizzle.drizzle.mock({ actualSchema });
+// const oldMockDb = actualDrizzle.drizzle.mock({ actualSchema });
 const makeRecursiveMock = jest
   .fn()
   .mockImplementation(() => makeRecursiveMock());
@@ -37,13 +51,29 @@ jest.mock('@/lib/neondb/connection', () => {
 });
 jest.mock('@/lib/drizzle-db/connection', () => {
   return {
-    db: makeMockDb(),
+    drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
+      const mockDbInstance = makeMockDb();
+      if (fn) {
+        const result = fn(mockDbInstance);
+        return Promise.resolve(result);
+      }
+      return mockDbInstance;
+    }),
+    drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
     schema: actualSchema,
   };
 });
 jest.mock('@/lib/drizzle-db', () => {
   return {
-    db: makeMockDb(),
+    drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
+      const mockDbInstance = makeMockDb();
+      if (fn) {
+        const result = fn(mockDbInstance);
+        return Promise.resolve(result);
+      }
+      return mockDbInstance;
+    }),
+    drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
     schema: actualSchema,
     sql: jest.fn(() => makeRecursiveMock()),
   };
@@ -75,6 +105,20 @@ jest.mock('@/lib/site-util/env', () => {
     }),
   };
 });
+
+// Mock Next.js router
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+  })),
+  usePathname: jest.fn(() => '/test'),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
+}));
 
 export const createRedisClient = jest.fn(() => ({
   connect: jest.fn().mockResolvedValue(undefined),
@@ -132,7 +176,7 @@ import { sendApiRequest } from '@/lib/send-api-request';
 import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 // jest.setup.ts
 // If using React Testing Library
 import '@testing-library/jest-dom';
@@ -269,11 +313,12 @@ beforeAll(() => {
 
 beforeEach(() => {
   resetEnvVariables();
-  resetGlobalCache();
+  resetGlobalCache();  
 });
 
 afterEach(() => {
   jest.clearAllMocks();
+  mockDb = mockDeep<DatabaseType>();
   resetGlobalCache();
   Object.entries(originalProcessEnv).forEach(([key, value]) => {
     process.env[key] = value;

@@ -46,7 +46,7 @@
  * @since 1.0.0
  */
 
-import { db } from '@/lib/drizzle-db/connection';
+import { drizDb } from '@/lib/drizzle-db/connection';
 import { resolveCaseFileIdBatch, toolCallbackResultFactory } from '../utility';
 import {
   CaseFileRequestProps,
@@ -217,7 +217,7 @@ export const getMultipleCaseFileDocuments = async ({
         `No valid Case File IDs could be resolved from the provided identifiers: ${requests.map((r) => r.caseFileId).join(', ')}`,
       );
     }
-    const documents = await db.query.documentUnits.findMany({
+    const documents = await drizDb().query.documentUnits.findMany({
       where: (du, { inArray }) => inArray(du.unitId, validIds),
       ...caseFileDocumentShape,
     });

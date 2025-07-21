@@ -6,7 +6,7 @@ import {
   ResponsiveActionAssociation,
   ToolCallbackResult,
 } from './types';
-import { db } from '@/lib/drizzle-db/connection';
+import { drizDb } from '@/lib/drizzle-db/connection';
 import { resolveCaseFileId } from './utility';
 import {
   callToActionDetails,
@@ -647,7 +647,7 @@ export const amendCaseRecord = async ({
       );
     }
 
-    const target = await db.query.documentUnits.findFirst({
+    const target = await drizDb().query.documentUnits.findFirst({
       where: (documentUnits, { eq }) =>
         eq(documentUnits.unitId, targetDocumentId),
       columns: {
@@ -658,7 +658,7 @@ export const amendCaseRecord = async ({
       },
     });
     if (target) {
-      await db.transaction(async (tx) => {
+      await drizDb().transaction(async (tx) => {
         // NOTE: Technically I could run these in parallel, but I want to ensure
         // but lest have some success with it as-is first.
         // Apply updates to the main record

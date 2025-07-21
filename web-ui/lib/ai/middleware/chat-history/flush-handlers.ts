@@ -12,7 +12,7 @@
 
 import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
 
@@ -57,7 +57,7 @@ export async function finalizeAssistantMessage(context: FlushContext): Promise<v
   }
 
   try {
-    await db
+    await drizDb()
       .update(chatMessages)
       .set({
         content: context.generatedText,
@@ -121,7 +121,7 @@ export async function completeChatTurn(
   }
 
   try {
-    await db
+    await drizDb()
       .update(chatTurns)
       .set({
         statusId: 2, // complete status
@@ -184,7 +184,7 @@ export async function generateChatTitle(
 
   try {
     // Check if chat already has a title
-    const existingTitle = await db.query.chats.findFirst({
+    const existingTitle = await drizDb().query.chats.findFirst({
       where: eq(chats.id, context.chatId),
       columns: { title: true },
     });
@@ -204,7 +204,7 @@ export async function generateChatTitle(
     const title = words.join(' ').substring(0, config.maxTitleLength);
 
     if (title.trim()) {
-      await db
+      await drizDb()
         .update(chats)
         .set({ title })
         .where(eq(chats.id, context.chatId));
@@ -258,7 +258,7 @@ export async function markTurnAsError(
   }
 
   try {
-    await db
+    await drizDb()
       .update(chatTurns)
       .set({
         statusId: 3, // error status

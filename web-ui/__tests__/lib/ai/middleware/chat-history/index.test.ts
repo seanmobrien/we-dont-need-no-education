@@ -18,7 +18,7 @@ import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-i
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { handleFlush } from '@/lib/ai/middleware/chat-history/flush-handlers';
 import { generateChatId } from '@/lib/ai/core';
-import { db } from '@/lib/drizzle-db';
+import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 import { messageStatuses, turnStatuses } from '@/drizzle/schema';
@@ -53,7 +53,7 @@ const mockImportIncomingMessage = importIncomingMessage as jest.MockedFunction<t
 const mockProcessingQueue = ProcessingQueue as jest.MockedClass<typeof ProcessingQueue>;
 const mockHandleFlush = handleFlush as jest.MockedFunction<typeof handleFlush>;
 const mockGenerateChatId = generateChatId as jest.MockedFunction<typeof generateChatId>;
-const mockDb = db as jest.Mocked<typeof db>;
+let mockDb: jest.Mocked<DbDatabaseType>;
 const mockLog = log as jest.MockedFunction<typeof log>;
 //const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 
@@ -64,7 +64,7 @@ describe('Chat History Middleware', () => {
 
   beforeEach(() => {
     // jest.clearAllMocks();
-
+    mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
     // Mock context
     mockContext = {
       userId: 'user-123',
@@ -224,7 +224,8 @@ describe('Chat History Middleware', () => {
           });
           controller.close();
         },
-      });      mockDoStream = jest.fn().mockResolvedValue({
+      });      
+      mockDoStream = jest.fn().mockResolvedValue({
         stream: mockStream,
         rawCall: { rawPrompt: mockParams.prompt },
         rawResponse: { headers: {} },
@@ -448,6 +449,7 @@ describe('initializeChatHistoryTables', () => {
 
   beforeEach(() => {
     // jest.clearAllMocks();
+    mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
 
     mockOnConflictDoNothing = jest.fn().mockResolvedValue(undefined);
     mockInsert = jest.fn().mockReturnValue({

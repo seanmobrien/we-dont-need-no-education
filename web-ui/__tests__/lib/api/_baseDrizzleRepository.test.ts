@@ -2,13 +2,19 @@
 // @ts-nocheck
 // it's not worth the effort to try and fix types for all these mocks
 // Mock the dependencies
+
+let mockDb: Record<string, unknown> | undefined;
+
+
+
 jest.mock('@/lib/drizzle-db', () => ({
-  db: {
-    select: jest.fn(),
-    insert: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
+  drizDb: () =>
+    (mockDb = mockDb ?? {
+      select: jest.fn(),
+      insert: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+    }),
 }));
 
 jest.mock('@/lib/logger', () => ({

@@ -13,7 +13,7 @@
 import type { LanguageModelV1StreamPart } from 'ai';
 import { chatMessages, tokenUsage } from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import { getNextSequence } from './utility';
 import { StreamHandlerContext, StreamHandlerResult } from './types';
@@ -54,7 +54,7 @@ export async function handleTextDelta(
 
     // Update the assistant message with accumulated text
     if (context.messageId) {
-      await db
+      await drizDb()
         .update(chatMessages)
         .set({
           content: updatedText,
@@ -129,7 +129,7 @@ export async function handleToolCall(
     }).then((ids) => ids[0]);
 
     // Save tool call message
-    await db.insert(chatMessages).values({
+    await drizDb().insert(chatMessages).values({
       chatId: context.chatId,
       turnId: context.turnId,
       role: 'tool',
@@ -205,7 +205,7 @@ export async function handleFinish(
       chunk.usage.promptTokens > 0 ||
       chunk.usage.completionTokens > 0
     )) {
-      await db.insert(tokenUsage).values({
+      await drizDb().insert(tokenUsage).values({
         chatId: context.chatId,
         turnId: context.turnId,
         promptTokens: chunk.usage.promptTokens,

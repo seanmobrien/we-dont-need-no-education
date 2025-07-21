@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractParams } from '@/lib/nextjs-util';
 import { LoggedError } from '@/lib/react-util';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { buildAttachmentDownloadUrl } from '@/lib/api';
 import { getAbsoluteUrl } from '@/lib/site-util/url-builder';
 
@@ -33,7 +33,7 @@ export async function GET(
   }
 
   try {
-    return await db.query.emailAttachments
+    return await drizDb().query.emailAttachments
       .findMany({
         where: (emailAttachments, { eq }) =>
           eq(emailAttachments.emailId, emailId),
