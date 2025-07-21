@@ -1,45 +1,119 @@
 import postgres from 'postgres';
 import { env, isRunningOnEdge } from '@/lib/site-util/env';
 
-const sql = (() => {
-  // If running in a test environment, return a mock implementation
-  if (
-    process.env.NODE_ENV === 'test' ||
-    process.env.JEST_WORKER_ID !== undefined
-  ) {
-    return jest.fn().mockImplementation(() => {
-      console.warn('How did you get here?', new Error().stack);
-      return {
-        end: jest.fn().mockResolvedValue(undefined),
-        query: jest.fn().mockResolvedValue({}),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as unknown as postgres.Sql<any>;
-    });
-  }
-  // If running on the edge, return a no-op implementation
-  if (isRunningOnEdge()) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const fnNoOp: (...args: any[]) => any = () => {
-      console.warn(
-        'No database connection avialable.  This is likely because you are running in a test environment or on the edge.',
-      );
-      return Promise.resolve(fnNoOp);
-    };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (fnNoOp as any).end = fnNoOp;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (fnNoOp as any).query = fnNoOp;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return fnNoOp as postgres.Sql<any>;
-  }
-  // In all other cases, create a new postgres connection
-  return postgres(env('DATABASE_URL'), {
-    ssl: 'verify-full',
-    max: 3,
-    debug: true,
-  });
-})() as postgres.Sql;
+let _pgDbPromise: Promise<postgres.Sql> | undefined;
+let _pgDb: postgres.Sql | undefined;
+let procExitRegistered = false;
 
+const stopPgDb = async () => {
+  if (_pgDb) {
+    try {
+      await _pgDb.end({ timeout: 5 });
+      /*
+      _pgDb = undefined;
+      _pgDbPromise = undefined;
+      */
+    } catch (error) {
+      console.error('Error during database cleanup:', error);
+    }
+  }
+};
+
+export const pgDbWithInit = async () => {
+  if (_pgDb !== undefined) {
+    return _pgDb;
+  }
+  if (!_pgDbPromise) {
+    _pgDbPromise = (async () => {
+      // This function creates the actual database.  Isolated from the rest of the code
+      // in order to delay postgres import until we know we need it.
+      const createActualDb = async () => {
+        // In all other cases, create a new postgres connection
+        const postgres = await (import('postgres').then(x => x.default));
+        const theDb = postgres(env('DATABASE_URL'), {
+          ssl: 'verify-full',
+          max: 3,
+          debug: true,
+        });
+        // A second singleton guard to prevent multiple prexit registrations in the 
+        // same process (e.g., during hot reloads in development)
+        if (!procExitRegistered) {
+          procExitRegistered = true;
+          await (import('prexit')
+            .then((x) => x.default)
+            .then((prexit) => {                          
+              // Register the exit handler
+              prexit(stopPgDb);
+          }));
+              /* Lets see if the second singleton doesn't let us ditch all this crazy
+              global handler stuff...                
+              // Store the handler globally for cleanup tracking
+              globalHandlers.__neondb_prexit_handlers!.add(exitHandler);
+              // Store cleanup function to remove the handler
+              cleanupHandler = () => {
+                globalHandlers.__neondb_prexit_handlers!.delete(exitHandler);
+                console.log('Cleaning up prexit handler.');
+              };
+              */
+        }
+        return theDb;
+      };
+      const createNoOpDb = () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const fnNoOp: (...args: any[]) => any = () => {
+          console.warn(
+            'No database connection available.  This is likely because you are running in a test environment or on the edge.',
+          );
+          return Promise.resolve(fnNoOp);
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (fnNoOp as any).end = fnNoOp;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (fnNoOp as any).query = fnNoOp;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return fnNoOp as postgres.Sql<any>;
+      };
+      // If running in a test environment, return a mock implementation
+      if (
+        process.env.NODE_ENV === 'test' ||
+        process.env.JEST_WORKER_ID !== undefined
+      ) {
+        console.warn("Hmm looks like we're running in a test environment?  Really shouldn't be " +
+          "hitting this codebase :(")
+        return createNoOpDb();
+      }
+      // If running on the edge, return a no-op implementation
+      if (isRunningOnEdge()) {
+        return createNoOpDb();
+      }
+      return await createActualDb();      
+    })();
+    _pgDbPromise.then(
+      (value) => (_pgDb = value),
+      () => (_pgDbPromise = undefined),
+    );
+  }
+  return _pgDbPromise;
+};
+
+export const pgDb = () => {
+  if (_pgDb === undefined) {
+    throw new Error(
+      'Database not initialized. Please call pgDbWithInit() first.',
+    );
+  }
+  return _pgDb;
+};
+
+exports.pgDbWithInit = pgDbWithInit;
+exports.pgDb = pgDb;
+// Export the default connection for legacy retrieval
+Object.defineProperty(exports, 'default', {
+  get: () => pgDb(),
+  configurable: true,
+});
+
+/* so much cleanup and we still oversubscribe!
 // Singleton pattern to prevent multiple prexit handler registrations during hot reloads
 let prexitHandlerRegistered = false;
 let cleanupHandler: (() => void) | null = null;
@@ -98,5 +172,7 @@ if (process.env.NEXT_RUNTIME === 'nodejs' && !prexitHandlerRegistered) {
       };
     });
 }
-
 export default sql;
+
+*/
+

@@ -1,48 +1,6 @@
-import { eq, lte, gte, and, or, isNull } from 'drizzle-orm';
-import { drizDb, DatabaseType, schema, type UserPublicKeysType } from '@/lib/drizzle-db';
-import { auth } from '@/auth';
 
-/**
- * Returns all public keys for a user that were active at a given date.
- * @param userId - The user's id (number)
- * @param effectiveDate - ISO string or Date for the point in time
- * @param db - Drizzle database instance (must be provided by caller)
- */
-export async function getActiveUserPublicKeys({db: database, effectiveDate, userId: userIdFromProps } : { userId: number; effectiveDate?: string | Date; db?: DatabaseType; }): Promise<string[]> {
-  const dbInstance = database ?? drizDb();
-  const date = typeof effectiveDate === 'undefined' 
-    ? new Date() 
-    : (typeof effectiveDate === 'string' ? new Date(effectiveDate) : effectiveDate);
-  let userId: number;
-  if (userIdFromProps) {
-    userId = userIdFromProps;
-  } else {
-    const session = await auth();
-    if (!session || !session.user || !session.user.id) {
-      throw new Error('User is not authenticated or user ID is missing');
-    }
-    userId = typeof session.user.id === 'number' ? session.user.id : parseInt(session.user.id, 10);
-    if (isNaN(userId)) {
-      throw new Error('Invalid user ID format');  
-    }
-  }
-  // Query userPublicKeys for keys where:
-  // userId matches, effectiveDate <= date, and (expirationDate is null or expirationDate > date)
-  const keys = await dbInstance
-    .select()
-    .from(schema.userPublicKeys)
-    .where(
-      and(
-        eq(schema.userPublicKeys.userId, userId),
-        gte(schema.userPublicKeys.effectiveDate, date.toISOString()),
-        or(
-          isNull(schema.userPublicKeys.expirationDate),
-          lte(schema.userPublicKeys.expirationDate, date.toISOString()),
-        ),
-      ),
-    );
-  return keys.map((k: UserPublicKeysType) => k.publicKey);
-}
+
+
 /**
  * Key pair management for user signing
  */

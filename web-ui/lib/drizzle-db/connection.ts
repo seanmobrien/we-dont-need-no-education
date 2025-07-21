@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import schema, { DbDatabaseType } from './schema';
-import { isPromise } from 'util/types';
+import { isPromise } from "@/lib/typescript"
 
 export { schema };
 
@@ -13,12 +13,16 @@ export const drizDbWithInit = async () => {
   }
   if (!_drizDbPromise) {
     _drizDbPromise = (async () => {
-      const sql = (await import('../neondb/connection')).default;
-      return drizzle({
-        client: sql,
-        casing: 'snake_case',
-        schema,
-      });
+      const pgDbWithInit = await (import('../neondb/connection').then(
+        (x) => x.pgDbWithInit,
+      ));
+      const theDb = (await pgDbWithInit()
+        .then((sql) => drizzle({
+            client: sql,
+            casing: 'snake_case',
+            schema,
+          })));
+      return theDb;
     })();
     _drizDbPromise.then(
       (value) => (_drizDb = value),
