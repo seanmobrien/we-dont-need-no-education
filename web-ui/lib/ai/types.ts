@@ -44,11 +44,14 @@ export type ChatOptions = {
 
 export type ChatRequestMessage = {
   messages: UIMessage[];
+  id?: string;
   data?: {
     [key: string]: unknown;
     model: AiModelType;
     page: string;
     threadId: string;
+    messageId?: string;
     writeEnabled?: boolean;
+    memoryDisabled?: boolean;
   };
 };

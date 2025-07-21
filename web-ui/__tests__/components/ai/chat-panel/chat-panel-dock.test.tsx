@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Tests for the chat panel docking functionality
  */
@@ -30,7 +31,7 @@ jest.mock('@/lib/logger', () => ({
 }));
 
 jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
-  enhancedChatFetch: jest.fn(),
+    useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
 }));
 
 jest.mock('@/instrument/browser', () => ({
@@ -40,6 +41,9 @@ jest.mock('@/instrument/browser', () => ({
 jest.mock('@microsoft/applicationinsights-react-js', () => ({
   withAITracking: (plugin: any, Component: any) => Component,
 }));
+
+
+
 
 describe('ChatPanel Docking Functionality', () => {
   it('shows docking options in menu', async () => {

@@ -28,7 +28,17 @@ jest.mock('ai', () => ({
 jest.mock('@/lib/ai/mcp/traceable-transport-client.ts', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
 }));
-
+jest.mock('@/lib/ai/mcp/client-tool-provider', () => ({
+  clientToolProviderFactory: jest.fn(() => ({
+    url: 'https://server3.com/api',
+    allowWrite: false,
+    get_mcpClient: jest.fn().mockReturnValue({}),
+    get_isConnected: jest.fn().mockReturnValue(true),
+    get_tools: jest.fn().mockReturnValue({}),
+    dispose: jest.fn().mockResolvedValue(undefined as unknown as never),
+    connect: jest.fn().mockResolvedValue({} as unknown as never),
+  })),
+}));
 // Import after mocking
 import {
   toolProviderFactory,
@@ -345,7 +355,7 @@ describe('toolProviderSetFactory', () => {
     it('should create provider set with all successful connections', async () => {
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
-      expect(providerSet.providers).toHaveLength(3);
+      expect(providerSet.providers).toHaveLength(4);
       expect(mockGetResolvedPromises).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.any(Promise),

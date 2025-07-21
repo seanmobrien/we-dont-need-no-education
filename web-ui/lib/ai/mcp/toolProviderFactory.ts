@@ -19,6 +19,7 @@ import { ToolSet } from 'ai';
 import { getResolvedPromises, isError, LoggedError } from '@/lib/react-util';
 import { InstrumentedSseTransport } from './traceable-transport-client';
 import { FirstParameter } from '@/lib/typescript';
+import { clientToolProviderFactory } from './client-tool-provider';
 
 /**
  * Creates a single Model Context Protocol (MCP) client connection.
@@ -480,10 +481,10 @@ export const toolProviderSetFactory = async (
     providers.map((options) => toolProviderFactory(options)),
     timeoutMs,
   );
-
+  const allProviders = [clientToolProviderFactory(), ...resolvedProviders];
   return {
     /** @type {ConnectableToolProvider[]} Array of successfully connected providers */
-    providers: resolvedProviders,
+    providers: allProviders,
 
     /**
      * Aggregates tools from all connected providers into a single ToolSet.
@@ -494,7 +495,7 @@ export const toolProviderSetFactory = async (
      * offer tools with the same name, the last provider's tool will take precedence.
      */
     get_tools: () => {
-      return resolvedProviders.reduce((acc, provider) => {
+      return allProviders.reduce((acc, provider) => {
         return { ...acc, ...provider.get_tools() };
       }, {} as ToolSet);
     },
@@ -511,7 +512,7 @@ export const toolProviderSetFactory = async (
      */
     dispose: async () => {
       await Promise.any([
-        Promise.all(resolvedProviders.map((provider) => provider.dispose())),
+        Promise.all(allProviders.map((provider) => provider.dispose())),
         new Promise((resolve) => setTimeout(resolve, 15 * 1000)), // Wait 15 seconds max for disposal
       ]);
     },

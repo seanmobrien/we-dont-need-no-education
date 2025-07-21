@@ -24,6 +24,7 @@ out/
 # misc
 .DS_Store
 *.pem
+com.chrome.devtools.json
 
 # debug
 npm-debug.log*

@@ -67,6 +67,7 @@
     "google-auth-library": "^9.15.1",
     "googleapis": "^148.0.0",
     "history": ">= 4.10.1",
+    "js-tiktoken": "^1.0.20",
     "lodash": "^4.17.21",
     "markdown-to-jsx": "^7.7.6",
     "mui-markdown": "^2.0.1",

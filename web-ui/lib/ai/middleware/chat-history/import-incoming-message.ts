@@ -46,7 +46,8 @@ export const importIncomingMessage = async ({
         model: context.model,
         temperature: context.temperature,
         topP: context.topP,
-        sessionId: context.sessionId,
+        threadId: context.chatId,
+        firstRequestId: context.requestId,
       },
     });
   }
@@ -68,6 +69,7 @@ export const importIncomingMessage = async ({
   await tx.insert(schema.chatTurns).values({
     chatId: String(chatId),
     turnId: Number(thisTurnId),
+    providerId: context.requestId,
     statusId: 1, // waiting status
     modelName: context.model,
     createdAt: new Date().toISOString(),
@@ -77,7 +79,7 @@ export const importIncomingMessage = async ({
     warnings: [],
     errors: [],
     metadata: {
-      sessionId: context.sessionId,
+      requestId: context.requestId,
     },
   });
   log((l) =>

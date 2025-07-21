@@ -71,7 +71,7 @@ describe('Chat History Middleware', () => {
       chatId: 'chat-456',
       model: 'gpt-4o',
       temperature: 0.7,
-      sessionId: 'session-789',
+      requestId: 'session-789',
     };
 
     // Mock params
@@ -426,7 +426,7 @@ describe('Chat History Middleware', () => {
       const fullContext: ChatHistoryContext = {
         userId: 'user-full',
         chatId: 'chat-full',
-        sessionId: 'session-full',
+        requestId: 'session-full',
         model: 'gpt-4-turbo',
         temperature: 0.9,
         topP: 0.95,

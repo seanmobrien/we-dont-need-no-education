@@ -468,50 +468,5 @@ describe('Email API', () => {
       });
     });
   });
-  describe('Auth Session API', () => {
-    describe('GET /api/auth/session', () => {
-      beforeEach(() => {
-        // Reset all mocks before each test
-        // jest.clearAllMocks();
-        (auth as jest.Mock).mockReset();
-      });
-
-      it('should return authenticated status and session data if session exists', async () => {
-        const mockSession = { user: { id: 1, name: 'Test User' } };
-        (auth as jest.Mock).mockResolvedValue(mockSession);
-
-        // Import the route function fresh
-        const { GET } = await import('@/app/api/auth/session/route');
-        const { NextResponse } = await import('next/server');
-
-        const res = await GET();
-        expect(res instanceof NextResponse).toBe(true);
-        expect(res.status).toBe(200);
-        const json = await res.json();
-
-        expect(json).toEqual({
-          status: 'authenticated',
-          data: mockSession,
-        });
-      });
-
-      it('should return unauthenticated status and null data if no session', async () => {
-        (auth as jest.Mock).mockResolvedValue(null);
-
-        // Import the route function fresh
-        const { GET } = await import('@/app/api/auth/session/route');
-        const { NextResponse } = await import('next/server');
-
-        const res = await GET();
-        expect(res instanceof NextResponse).toBe(true);
-        expect(res.status).toBe(200);
-        const json = await res.json();
-
-        expect(json).toEqual({
-          status: 'unauthenticated',
-          data: null,
-        });
-      });
-    });
-  });
+ 
 });

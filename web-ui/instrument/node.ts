@@ -72,7 +72,13 @@ export default function instrumentServer() {
     instrumentations: [
       //new FetchInstrumentation(config.instrumentationConfig.fetch),
       new UndiciInstrumentation({
-        
+        ignoreRequestHook: (request) => {
+          // Ignore requests to auth session endpoint, too spammy
+          if (request.path.includes('/api/auth/session')) {
+            return true;
+          }
+          return false;
+        },
       }),
       new PinoInstrumentation({
         disableLogSending: false,

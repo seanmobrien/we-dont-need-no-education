@@ -19,7 +19,7 @@ import {
   generateChatId,
 } from '@/lib/ai/core';
 import { log } from '@/lib/logger';
-import { enhancedChatFetch } from '@/lib/components/ai/chat-fetch-wrapper';
+import { /*enhancedChatFetch, */ useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
 import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
@@ -27,6 +27,7 @@ import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dial
 import type {DockPosition} from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
+import { onClientToolRequest } from '@/lib/ai/client';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -58,30 +59,48 @@ const loadCurrentMessageState = (): Message[] | undefined => {
   return JSON.parse(messages) as Array<Message> | undefined;
 };
 
+
+const splitIds = (id: string): [string, string | undefined] => {
+  if (!id) {
+    log(l => l.warn('No ID provided to splitIds, returning emtpy values.'));
+    return ['', undefined];
+  }  
+  const splitIndex = id.indexOf(':');
+  if (splitIndex === -1) {
+    log(l => l.warn('No ":" found in ID, returning as is.'));
+    return [id, undefined];
+  }
+  if (splitIndex === 0 || splitIndex === id.length - 1) {
+    log(l => l.warn('Invalid ID format, returning empty values.'));
+    return ['', undefined];
+  }
+  return [id.slice(0, splitIndex), id.slice(splitIndex + 1)];
+}
+
 const stable_onFinish = (message: Message) => {
-  let threadId: string;
-  let messageId = message.id;
-  if (messageId) {
-    const parts = messageId.split(':');
-    if (parts.length < 2) {
-      console.warn('warning - unable to extract current thread id');
-      messageId = '1';
-      threadId = generateChatId().id;
-    } else {
-      threadId = parts[0];
-      messageId = parts[1];
-    }
-  } else {
-    const newId = generateChatId().id;
-    messageId = `${newId}:1`;
-    threadId = newId;
+  let [threadId, messageId] = splitIds(message.id);
+  if (!threadId) {    
+    threadId = generateChatId().id;    
+  }
+  if (!messageId) {
+    messageId = generateChatId().id;
   }
   if (typeof sessionStorage !== 'undefined') {
     sessionStorage.setItem(activeThreadStorageKey, threadId);
   }
   if (typeof localStorage !== 'undefined') {
-    const messages = loadCurrentMessageState();
-    const newMessages = [...(messages ?? []), message];
+    const messages = loadCurrentMessageState() ?? [];
+    // This may be a revisised message, so first we check if it exists
+    const indexOfExisting = messages.findIndex(
+      (m) => m.id === message.id,
+    );
+    let newMessages: Message[];
+    if (indexOfExisting !== undefined && indexOfExisting >= 0) {
+      // Replace the existing message      
+      newMessages = [...messages.splice(0, indexOfExisting), message, ...messages.splice(indexOfExisting + 1)];
+    } else {
+      newMessages = [...messages, message];
+    }
     localStorage.setItem(
       getThreadStorageKey(threadId),
       JSON.stringify(newMessages),
@@ -137,7 +156,7 @@ const stableStyles = {
 
 const ChatPanel = ({ page }: { page: string }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [threadId, setThreadId] = useState<string>(getInitialThreadId());
+  const [threadId, setThreadId] = useState<string>(getInitialThreadId);
   const [initialMessages, setInitialMessages] = useState<Message[] | undefined>(
     undefined,
   );
@@ -152,6 +171,7 @@ const ChatPanel = ({ page }: { page: string }) => {
   // Ref for the TextField input to preserve focus in floating mode
   const textFieldRef = useRef<HTMLInputElement>(null);
   const shouldRestoreFocus = useRef<boolean>(false);
+  const {chatFetch} = useChatFetchWrapper();
 
   if (!initialMessages) {
     const messages = loadCurrentMessageState();
@@ -168,15 +188,6 @@ const ChatPanel = ({ page }: { page: string }) => {
       );
     },
     [setErrorMessage],
-  );
-  const onChatToolCall = useCallback(
-    async ({ toolCall }: { toolCall: ToolCall<string, unknown> }) => {
-      if (toolCall.toolName === 'getLocation') {
-        const cities = ['New York', 'Los Angeles', 'Chicago', 'San Francisco'];
-        return cities[Math.floor(Math.random() * cities.length)];
-      }
-    },
-    [],
   );
 
   const onModelTimeout = useCallback(
@@ -199,6 +210,8 @@ const ChatPanel = ({ page }: { page: string }) => {
     [setRateLimitTimeout],
   );
 
+  
+
   const {
     id,
     messages,
@@ -210,18 +223,21 @@ const ChatPanel = ({ page }: { page: string }) => {
     setData,
     reload,
     setMessages,
+    addToolResult,
   } = useChat({
-    id: threadId,
+    // id: threadId,
     generateId: generateChatMessageId,
     initialMessages,
     maxSteps: 5,
     api: '/api/ai/chat',
-    fetch: enhancedChatFetch,
-    onToolCall: onChatToolCall,
+    fetch: chatFetch,
+    onToolCall: async ({ toolCall }: { toolCall: ToolCall<string, unknown> }) => {
+      onClientToolRequest({toolCall, addToolResult });
+    },
     onFinish: stable_onFinish,
     onResponse: () => {
       (data ?? []).forEach((item) => {
-        if (isAnnotatedRetryMessage(item)) {
+        if (isAnnotatedRetryMessage(item)) {          
           onModelTimeout(item);
         } else {
           log((l) => l.warn('Unhandled item type:', item));
@@ -266,10 +282,16 @@ const ChatPanel = ({ page }: { page: string }) => {
   }, [input, config.position]); // Trigger on input changes and position changes
   const onSendClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>, model?: AiModelType) => {
+      let threadPartOfId = threadId;
       if (id) {
-        sessionStorage.setItem('chatActiveId', id);
+        // Get the thread part of the id
+        threadPartOfId = id.split(':')[0];
+        if (threadPartOfId !== threadId) {
+          setThreadId(threadPartOfId);
+        }
+        sessionStorage.setItem('chatActiveId', threadPartOfId);
         if (messages && messages.length) {
-          localStorage.setItem(`chatMessages-${id}`, JSON.stringify(messages));
+          localStorage.setItem(`chatMessages-${threadPartOfId}`, JSON.stringify(messages));
         }
       }
       setErrorMessage(null);
@@ -279,16 +301,15 @@ const ChatPanel = ({ page }: { page: string }) => {
         data: {
           model: withModel,
           page,
-          threadId: id,
+          threadId: threadPartOfId,
         },
         headers: {
           'x-active-model': withModel,
-          'x-active-page': page,
-          //'x-traceable': 'false',
+          'x-active-page': page, 
         },
       });
     },
-    [activeModel, handleSubmit, id, messages, page],
+    [activeModel, handleSubmit, id, messages, page, threadId],
   );
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -428,10 +449,11 @@ const ChatPanel = ({ page }: { page: string }) => {
           messages={messages}
           loading={status === 'submitted'}
           errorMessage={errorMessage}
+          addToolResult={addToolResult}
         />
       </Box>
     </Stack>
-  ), [input, handleInputChangeWithFocusPreservation, handleInputKeyDown, stableChatInputSlotProps, messages, status, errorMessage]);
+  ), [input, handleInputChangeWithFocusPreservation, handleInputKeyDown, addToolResult, stableChatInputSlotProps, messages, status, errorMessage]);
 
   // Handle docked positions
   if (config.position !== 'inline' && config.position !== 'floating') {
