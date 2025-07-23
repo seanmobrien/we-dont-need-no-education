@@ -101,10 +101,12 @@ Advanced tool system for AI interactions:
 - Timeout: 10 seconds for slower tests
 
 ### Key Testing Patterns
+- IMPORTANT: **Always** load ```__tests__/jest.config``` and ```__tests__/jest.setup.ts``` and analyze them to gain a comprehensive undestanding of the test environment **before** writing or fixing tests. 
 - Component testing with React Testing Library
 - API route testing with node-mocks-http
 - Mock implementations for external services (Google APIs, Azure services)
 - Snapshot testing for complex UI components
+- Tests are located in the __tests__ folder mirroring their site location.  eg, ```lib/module-1/test-module.tsx``` would be tested by  ```__tests__/lib/module-1/test-module.test.tsx```. 
 
 ## Environment Configuration
 

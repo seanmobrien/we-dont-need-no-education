@@ -33,7 +33,7 @@ export async function GET(
   }
 
   try {
-    return await drizDb().query.emailAttachments
+    return await (drizDb().query.emailAttachments
       .findMany({
         where: (emailAttachments, { eq }) =>
           eq(emailAttachments.emailId, emailId),
@@ -44,7 +44,7 @@ export async function GET(
             },
           },
         },
-      })
+      }))
       .then((attachments) => {
         // Transform the results to match the expected format
         const result = attachments.map((attachment) => ({

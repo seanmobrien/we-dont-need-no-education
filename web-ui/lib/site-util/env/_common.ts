@@ -1,4 +1,5 @@
-import { isTruthy, LoggedError } from '@/lib/react-util';
+import { isTruthy } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import z from 'zod';
 
 /**

@@ -1,5 +1,6 @@
 import postgres from 'postgres';
 import { env, isRunningOnEdge } from '@/lib/site-util/env';
+import { LoggedError } from '../react-util/errors/logged-error';
 
 let _pgDbPromise: Promise<postgres.Sql> | undefined;
 let _pgDb: postgres.Sql | undefined;
@@ -19,9 +20,10 @@ const stopPgDb = async () => {
   }
 };
 
-export const pgDbWithInit = async () => {
-  if (_pgDb !== undefined) {
-    return _pgDb;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const pgDbWithInit = async <TRecord extends Record<string, unknown> = any>() => {
+  if (_pgDb) {
+    return Promise.resolve(_pgDb as postgres.Sql<TRecord>);
   }
   if (!_pgDbPromise) {
     _pgDbPromise = (async () => {
@@ -34,29 +36,20 @@ export const pgDbWithInit = async () => {
           ssl: 'verify-full',
           max: 3,
           debug: true,
-        });
-        // A second singleton guard to prevent multiple prexit registrations in the 
+        }) as postgres.Sql<TRecord>;
+        // A second singleton guard to prevent multiple prexit registrations in the
         // same process (e.g., during hot reloads in development)
         if (!procExitRegistered) {
           procExitRegistered = true;
           await (import('prexit')
             .then((x) => x.default)
-            .then((prexit) => {                          
+            .then((prexit) => {
+              process.setMaxListeners(12);
               // Register the exit handler
               prexit(stopPgDb);
-          }));
-              /* Lets see if the second singleton doesn't let us ditch all this crazy
-              global handler stuff...                
-              // Store the handler globally for cleanup tracking
-              globalHandlers.__neondb_prexit_handlers!.add(exitHandler);
-              // Store cleanup function to remove the handler
-              cleanupHandler = () => {
-                globalHandlers.__neondb_prexit_handlers!.delete(exitHandler);
-                console.log('Cleaning up prexit handler.');
-              };
-              */
+          }));                   
         }
-        return theDb;
+        return theDb as postgres.Sql<TRecord>;
       };
       const createNoOpDb = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,8 +63,7 @@ export const pgDbWithInit = async () => {
         (fnNoOp as any).end = fnNoOp;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (fnNoOp as any).query = fnNoOp;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return fnNoOp as postgres.Sql<any>;
+        return fnNoOp as postgres.Sql<TRecord>;
       };
       // If running in a test environment, return a mock implementation
       if (
@@ -93,25 +85,47 @@ export const pgDbWithInit = async () => {
       () => (_pgDbPromise = undefined),
     );
   }
-  return _pgDbPromise;
+  return _pgDbPromise as Promise<postgres.Sql<TRecord>>;
 };
 
-export const pgDb = () => {
-  if (_pgDb === undefined) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const pgDb = <TRecord extends Record<string, unknown> = any>() => {
+  if (!_pgDb) {
+    // Queue up intialization if not already, otherwise get a promise
+    // we can tack onto enqueue
+    const dbWithInit = pgDbWithInit<TRecord>();
+    dbWithInit.catch((err) => {
+      LoggedError.isTurtlesAllTheWayDownBaby(err, {
+        log: true,
+        message: 'Error initializing Postgres DB',
+        extra: {
+          cause: err,
+        },
+        source: 'pgDb initialize',
+      });
+      return Promise.resolve();
+    });
     throw new Error(
-      'Database not initialized. Please call pgDbWithInit() first.',
+      'Postgres DB is being initialized; please try your call again later.',
+      {
+        cause: {
+          code: 'DB_INITIALIZING',
+          retry: true,
+          enqueue: dbWithInit.then,
+        },
+      },
     );
-  }
+  }  
   return _pgDb;
 };
 
-exports.pgDbWithInit = pgDbWithInit;
-exports.pgDb = pgDb;
 // Export the default connection for legacy retrieval
-Object.defineProperty(exports, 'default', {
+Object.defineProperty(module.exports, 'default', {
   get: () => pgDb(),
   configurable: true,
 });
+
+
 
 /* so much cleanup and we still oversubscribe!
 // Singleton pattern to prevent multiple prexit handler registrations during hot reloads

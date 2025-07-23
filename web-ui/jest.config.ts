@@ -29,6 +29,7 @@ const config: Config.InitialOptions = {
       prexit: '<rootDir>/__tests__/jest.mock-prexit.ts',
     */
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
+    '~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
   },
   transform: {
@@ -43,14 +44,14 @@ const config: Config.InitialOptions = {
     // '^.+\\.(js|jsx)$': 'babel-jest', // Transform JavaScript files using babel-jest
   },
   transformIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next'], // Ignore node_modules
-  // collectCoverage: true, // Enable coverage collection
-  collectCoverage: false, // Enable coverage collection
+  collectCoverage: true, // Enable coverage collection
+  //collectCoverage: false, // Enable coverage collection
   collectCoverageFrom: [
-    // '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
-    //'!**/*.d.ts', // Exclude type declaration files
-    //'!__(tests|mocks)__/**/*.*', // Exclude type declaration files
+    '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
+    '!**/*.d.ts', // Exclude type declaration files
+    '!__(tests|mocks)__/**/*.*', // Exclude type declaration files
     //'!**/*.{jsx,tsx}', // Exclude JSX-based
-    //'!<rootDir>/.next', // Exclude JSX-based
+    '!<rootDir>/.next', // Exclude next build files
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
@@ -59,10 +60,10 @@ const config: Config.InitialOptions = {
   // logHeapUsage: true,
 
   // Additional stability configurations for concurrent testing
-  testTimeout: 10000, // Increase timeout to 10 seconds for slower tests
+  testTimeout: 10000, // Increase timeout to 30 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
-  forceExit: false, // Don't force exit to allow proper cleanup
-  
+  forceExit: true, // Don't force exit to allow proper cleanup
+
   // Mock configuration
   clearMocks: true, // Clear mock calls between tests
   resetMocks: false, // Don't reset mock implementations between tests (we want our setup to persist)

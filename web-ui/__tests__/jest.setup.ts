@@ -33,10 +33,9 @@ export const makeMockDb = (): DatabaseType => {
   return mockDb;
 };
 
-// const oldMockDb = actualDrizzle.drizzle.mock({ actualSchema });
 const makeRecursiveMock = jest
   .fn()
-  .mockImplementation(() => makeRecursiveMock());
+  .mockImplementation(() => jest.fn(() => jest.fn(makeRecursiveMock)));
 jest.mock('drizzle-orm/postgres-js', () => {
   return {
     ...actualDrizzle,
@@ -45,8 +44,11 @@ jest.mock('drizzle-orm/postgres-js', () => {
   };
 });
 jest.mock('@/lib/neondb/connection', () => {
+  const pgDb = jest.fn(() => makeRecursiveMock());
   return {
-    sql: jest.fn(() => makeRecursiveMock()),
+    pgDbWithInit: jest.fn(() => Promise.resolve(makeRecursiveMock())),
+    pgDb,
+    sql: jest.fn(() => pgDb()),
   };
 });
 jest.mock('@/lib/drizzle-db/connection', () => {

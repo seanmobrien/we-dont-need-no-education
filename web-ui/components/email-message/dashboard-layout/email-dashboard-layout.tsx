@@ -27,6 +27,8 @@ import { useTheme } from '@/lib/themes';
 import { CustomEmailPageItem } from './custom-email-page-item';
 import { EmailDashboardToolbarAction } from './email-dashboard-toolbar-action';
 import { Branding } from './branding';
+import { NotificationsProvider } from '@toolpad/core';
+import { KeyRefreshNotifyWrapper } from '@/components/auth/key-refresh-notify/wrapper';
 
 
 
@@ -151,7 +153,6 @@ export const EmailDashboardLayout = ({
     },
     [emailId],
   );
-
   return (
     <EmailContextProvider>
       <NextAppProvider
@@ -160,13 +161,13 @@ export const EmailDashboardLayout = ({
         branding={Branding}
         session={session ?? null}
       >
-
         <DashboardLayout
-          renderPageItem={renderPageItem}          
+          renderPageItem={renderPageItem}
           slots={stableDashboardSlots}
           sx={stableDashboardSx}
         >
-          {children}
+          <KeyRefreshNotifyWrapper />
+          <NotificationsProvider>{children}</NotificationsProvider>
         </DashboardLayout>
       </NextAppProvider>
     </EmailContextProvider>

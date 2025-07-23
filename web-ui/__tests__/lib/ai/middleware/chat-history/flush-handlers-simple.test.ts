@@ -20,7 +20,7 @@ import type { FlushContext, FlushConfig } from '@/lib/ai/middleware/chat-history
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 
 let mockDbInstance: DbDatabaseType;
-let mockDb = drizDb as jest.MockedFunction<DbDatabaseTypeb>;
+let mockDb = drizDb as jest.MockedFunction<typeof drizDb>;
 
 describe('Flush Handlers - Compilation Fix Test', () => {
   let mockContext: FlushContext;

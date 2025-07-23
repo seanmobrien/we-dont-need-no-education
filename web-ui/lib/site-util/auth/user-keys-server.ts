@@ -1,5 +1,5 @@
 import { eq, lte, gte, and, or, isNull } from 'drizzle-orm';
-import { drizDb, DatabaseType, schema, type UserPublicKeysType } from '@/lib/drizzle-db';
+import { DatabaseType, schema, type UserPublicKeysType, drizDbWithInit } from '@/lib/drizzle-db';
 import { auth } from '@/auth';
 
 
@@ -18,7 +18,7 @@ export const getActiveUserPublicKeys = async ({
   effectiveDate?: string | Date;
   db?: DatabaseType;
 }): Promise<string[]> =>  {
-  const dbInstance = database ?? drizDb();
+  const dbInstance = await (database ? Promise.resolve(database) : drizDbWithInit());
   const date =
     typeof effectiveDate === 'undefined'
       ? new Date()
@@ -48,10 +48,10 @@ export const getActiveUserPublicKeys = async ({
     .where(
       and(
         eq(schema.userPublicKeys.userId, userId),
-        gte(schema.userPublicKeys.effectiveDate, date.toISOString()),
+        lte(schema.userPublicKeys.effectiveDate, date.toISOString()),
         or(
           isNull(schema.userPublicKeys.expirationDate),
-          lte(schema.userPublicKeys.expirationDate, date.toISOString()),
+          gte(schema.userPublicKeys.expirationDate, date.toISOString()),
         ),
       ),
     );
