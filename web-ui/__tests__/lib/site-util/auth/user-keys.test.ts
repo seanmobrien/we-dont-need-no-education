@@ -14,46 +14,6 @@ import {
   getUserPublicKey,
   getUserPrivateKey,
 } from '@/lib/site-util/auth/user-keys';
-import { TimeoutError } from '@opentelemetry/core';
-import { mockDeep } from 'jest-mock-extended';
-
-// Mock db get promise
-let mockDbGet: (PromiseWithResolvers<any> & { mockTimeout?: number | NodeJS.Timeout;} ) = Promise.withResolvers<any>();
-
-// Mock IndexedDB
-const mockIDBDatabase = {
-  transaction: jest.fn(),
-  createObjectStore: jest.fn(),
-  objectStoreNames: {
-    contains: jest.fn(),
-  },
-};
-
-const mockIDBTransaction = {
-  objectStore: jest.fn(),
-  onsuccess: null as any,
-  onerror: null as any,
-};
-
-const mockIDBObjectStore = {
-  put: jest.fn(),
-  get: jest.fn(),
-};
-
-const mockIDBRequest = {
-  result: null as any,
-  error: null as any,
-  onsuccess: null as any,
-  onerror: null as any,
-};
-
-const mockIndexedDb = mockDeep<IDBIndex>();
-// Mock IndexedDB globally
-Object.defineProperty(window, 'indexedDB', {
-  value: {
-    open: jest.fn(),
-  },
-});
 
 // Mock Web Crypto API
 const mockCryptoSubtle = {
@@ -71,124 +31,164 @@ Object.defineProperty(window, 'crypto', {
 global.btoa = jest.fn();
 global.atob = jest.fn();
 
+// Create a factory for mock requests to avoid conflicts
+const createMockRequest = (result: any = null, error: any = null) => ({
+  result,
+  error,
+  onsuccess: null as any,
+  onerror: null as any,
+});
+
+// Mock IndexedDB
+let mockRequests: ReturnType<typeof createMockRequest>[] = [];
+let requestIndex = 0;
+
+const mockIDBObjectStore = {
+  put: jest.fn(),
+  get: jest.fn(),
+};
+
+const mockIDBTransaction = {
+  objectStore: jest.fn().mockReturnValue(mockIDBObjectStore),
+};
+
+const mockIDBDatabase = {
+  transaction: jest.fn().mockReturnValue(mockIDBTransaction),
+  createObjectStore: jest.fn(),
+  objectStoreNames: {
+    contains: jest.fn().mockReturnValue(false),
+  },
+};
+
+const mockIDBOpenRequest = {
+  result: mockIDBDatabase,
+  error: null,
+  onsuccess: null as any,
+  onerror: null as any,
+  onupgradeneeded: null as any,
+};
+
+Object.defineProperty(window, 'indexedDB', {
+  value: {
+    open: jest.fn().mockReturnValue(mockIDBOpenRequest),
+  },
+});
+
 describe('UserKeyManager Enhancements', () => {
   beforeEach(() => {
-    //jest.clearAllMocks();
+    jest.clearAllMocks();
+    mockRequests = [];
+    requestIndex = 0;
     
-    // Reset mock implementations
-    mockIDBDatabase.transaction.mockReturnValue(mockIDBTransaction);
-    mockIDBTransaction.objectStore.mockReturnValue(mockIDBObjectStore);
-    mockIDBObjectStore.put.mockReturnValue(mockIDBRequest);
-    mockIDBObjectStore.get.mockReturnValue(mockIDBRequest);
-    mockDbGet = Promise.withResolvers<any>();
-    if (mockIDBRequest.mockTimeout) {
-      clearTimeout(mockIDBRequest.mockTimeout);
-
-    // Mock IndexedDB open to return successful connection
+    // Mock the get method to return new request objects
+    mockIDBObjectStore.get.mockImplementation(() => {
+      const request = createMockRequest();
+      mockRequests.push(request);
+      return request;
+    });
+    
+    // Mock the put method to return new request objects
+    mockIDBObjectStore.put.mockImplementation(() => {
+      const request = createMockRequest();
+      mockRequests.push(request);
+      return request;
+    });
+    
+    // Mock IndexedDB open to handle multiple database openings
     (window.indexedDB.open as jest.Mock).mockImplementation(() => {
       const request = {
         result: mockIDBDatabase,
         error: null,
-        onsuccess: null as (() => void) | null,
+        onsuccess: null as any,
         onerror: null as any,
         onupgradeneeded: null as any,
       };
-      jest.spyOn(request, 'onsuccess', 'set').mockImplementation((event) => {
-        if (!event) return;
-        mockDbGet.then((x) => {
-          event();
-          return x;
-        });
-        if (!mockDbGet.mockTimeout) {          
-          mockDbGet.mockTimeout = setTimeout(() => {
-            mockDbGet.reject(new Error('KABOOOOOOOOM!'));
-          }, 5000);
+      
+      // Immediately trigger success for database opening
+      setTimeout(() => {
+        if (request.onsuccess) {
+          request.onsuccess({} as any);
         }
-      });
-      afterEach(() => {
-        if (mockDbGet.mockTimeout) {
-          clearTimeout(mockDbGet.mockTimeout);
-          mockDbGet.mockTimeout = undefined;
-        }
-
-      });
-      jest.spyOn(request, 'onerror', 'set').mockImplementation((event) => {
-        if (!event) return;
-        mockDbGet.promise.catch(() => event());        
-        mockDbGet.mockTimeout = setTimeout(() => {          
-            mockDbGet.reject(new Error('KABOOOOOOOOM!'));         
-        }, 5000);        
-      });
-      jest.spyOn(request, 'result', 'set').mockImplementation((event) => {
-        mockDbGet.resolve(event);
-        if (mockDbGet.mockTimeout) {
-          clearTimeout(mockDbGet.mockTimeout);
-          mockDbGet.mockTimeout = undefined;  
-        }
-      });
-
+      }, 0);
+      
       return request;
     });
   });
 
   describe('hasValidLocalKeys', () => {
     it('should return true when both public and private keys exist', async () => {
-      // Mock successful key retrieval
-      mockIDBRequest.result = {
+      const keyData = {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
       
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get requests to return immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(keyData);
+        // Trigger success immediately
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await hasValidLocalKeys();
       expect(result).toBe(true);
     });
 
     it('should return false when no keys exist', async () => {
-      // Mock no keys found
-      mockIDBRequest.result = null;
-      
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get requests to return null immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(null);
+        // Trigger success immediately
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await hasValidLocalKeys();
       expect(result).toBe(false);
     });
 
     it('should return false when only public key exists', async () => {
-      // Mock only public key exists
-      mockIDBRequest.result = {
+      const publicKeyData = {
         publicKey: {} as CryptoKey,
         privateKey: null,
       };
       
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get requests to return data with null private key
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(publicKeyData);
+        // Trigger success immediately
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await hasValidLocalKeys();
       expect(result).toBe(false);
     });
 
     it('should handle database errors gracefully', async () => {
-      // Mock database error
-      mockIDBRequest.error = new Error('Database error');
-      
-      setTimeout(() => {
-        if (mockIDBRequest.onerror) {
-          mockIDBRequest.onerror({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to trigger an error
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(null, new Error('Database error'));
+        // Trigger error immediately
+        setTimeout(() => {
+          if (request.onerror) {
+            request.onerror({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await hasValidLocalKeys();
       expect(result).toBe(false);
@@ -200,9 +200,7 @@ describe('UserKeyManager Enhancements', () => {
 
     it('should return true when local key matches server key', async () => {
       const testLocalKey = 'server-key-2'; // Matches second server key
-      
-      // Mock successful key retrieval
-      mockIDBRequest.result = {
+      const keyData = {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
@@ -211,11 +209,16 @@ describe('UserKeyManager Enhancements', () => {
       mockCryptoSubtle.exportKey.mockResolvedValue(new Uint8Array([1, 2, 3]));
       (global.btoa as jest.Mock).mockReturnValue(testLocalKey);
       
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to return key data immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(keyData);
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await validateUserKeysAgainstServer(testServerKeys);
       expect(result).toBe(true);
@@ -223,9 +226,7 @@ describe('UserKeyManager Enhancements', () => {
 
     it('should return false when local key does not match any server key', async () => {
       const testLocalKey = 'different-key'; // Does not match any server key
-      
-      // Mock successful key retrieval
-      mockIDBRequest.result = {
+      const keyData = {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
@@ -234,50 +235,77 @@ describe('UserKeyManager Enhancements', () => {
       mockCryptoSubtle.exportKey.mockResolvedValue(new Uint8Array([1, 2, 3]));
       (global.btoa as jest.Mock).mockReturnValue(testLocalKey);
       
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to return key data immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(keyData);
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await validateUserKeysAgainstServer(testServerKeys);
       expect(result).toBe(false);
     });
 
     it('should return false when no local key exists', async () => {
-      // Mock no keys found
-      mockIDBRequest.result = null;
-      
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to return null immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(null);
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await validateUserKeysAgainstServer(testServerKeys);
       expect(result).toBe(false);
     });
 
     it('should handle crypto export errors gracefully', async () => {
-      // Mock successful key retrieval but failed export
-      mockIDBRequest.result = {
+      const keyData = {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
       
       mockCryptoSubtle.exportKey.mockRejectedValue(new Error('Export failed'));
       
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to return key data immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(keyData);
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await validateUserKeysAgainstServer(testServerKeys);
       expect(result).toBe(false);
     });
 
     it('should handle empty server keys array', async () => {
+      // Even with empty server keys, the function still tries to get the local key
+      // So we need to mock the database request
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest({ publicKey: {} as CryptoKey, privateKey: {} as CryptoKey });
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
+      
+      // Mock crypto export
+      mockCryptoSubtle.exportKey.mockResolvedValue(new Uint8Array([1, 2, 3]));
+      (global.btoa as jest.Mock).mockReturnValue('some-key');
+      
       const result = await validateUserKeysAgainstServer([]);
       expect(result).toBe(false);
     });
@@ -294,14 +322,17 @@ describe('UserKeyManager Enhancements', () => {
       mockCryptoSubtle.generateKey.mockResolvedValue(mockKeyPair);
       
       // Mock successful storage
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      mockIDBObjectStore.put.mockImplementation(() => {
+        const request = createMockRequest();
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await generateUserKeyPair();
-      
       expect(result).toEqual(mockKeyPair);
       expect(mockCryptoSubtle.generateKey).toHaveBeenCalledWith(
         {
@@ -328,11 +359,15 @@ describe('UserKeyManager Enhancements', () => {
       mockCryptoSubtle.generateKey.mockResolvedValue(mockKeyPair);
       
       // Mock storage error
-      setTimeout(() => {
-        if (mockIDBRequest.onerror) {
-          mockIDBRequest.onerror({ target: { error: new Error('Storage failed') } });
-        }
-      }, 0);
+      mockIDBObjectStore.put.mockImplementation(() => {
+        const request = createMockRequest(null, new Error('Storage failed'));
+        setTimeout(() => {
+          if (request.onerror) {
+            request.onerror({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       await expect(generateUserKeyPair()).rejects.toThrow();
     });
@@ -341,36 +376,53 @@ describe('UserKeyManager Enhancements', () => {
   describe('getUserPublicKey', () => {
     it('should retrieve public key from storage', async () => {
       const mockPublicKey = {} as CryptoKey;
-      
-      mockIDBRequest.result = {
+      const keyData = {
         publicKey: mockPublicKey,
         privateKey: {} as CryptoKey,
       };
 
+      // Mock the get request to return key data immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(keyData);
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await getUserPublicKey();
       expect(result).toBe(mockPublicKey);
     });
 
     it('should return null when no key exists', async () => {
-      mockIDBRequest.result = null;
-      
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to return null immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(null);
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await getUserPublicKey();
       expect(result).toBeNull();
     });
 
     it('should handle database errors gracefully', async () => {
-      setTimeout(() => {
-        if (mockIDBRequest.onerror) {
-          mockIDBRequest.onerror({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to trigger an error
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(null, new Error('Database error'));
+        setTimeout(() => {
+          if (request.onerror) {
+            request.onerror({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await getUserPublicKey();
       expect(result).toBeNull();
@@ -380,41 +432,53 @@ describe('UserKeyManager Enhancements', () => {
   describe('getUserPrivateKey', () => {
     it('should retrieve private key from storage', async () => {
       const mockPrivateKey = {} as CryptoKey;
-      
-      mockIDBRequest.result = {
+      const keyData = {
         publicKey: {} as CryptoKey,
         privateKey: mockPrivateKey,
       };
       
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to return key data immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(keyData);
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await getUserPrivateKey();
       expect(result).toBe(mockPrivateKey);
     });
 
     it('should return null when no key exists', async () => {
-      mockIDBRequest.result = null;
-      
-      setTimeout(() => {
-        if (mockIDBRequest.onsuccess) {
-          mockIDBRequest.onsuccess({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to return null immediately
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(null);
+        setTimeout(() => {
+          if (request.onsuccess) {
+            request.onsuccess({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await getUserPrivateKey();
       expect(result).toBeNull();
     });
 
     it('should handle database errors gracefully', async () => {
-      setTimeout(() => {
-        if (mockIDBRequest.onerror) {
-          mockIDBRequest.onerror({ target: mockIDBRequest });
-        }
-      }, 0);
+      // Mock the get request to trigger an error
+      mockIDBObjectStore.get.mockImplementation(() => {
+        const request = createMockRequest(null, new Error('Database error'));
+        setTimeout(() => {
+          if (request.onerror) {
+            request.onerror({ target: request } as any);
+          }
+        }, 0);
+        return request;
+      });
       
       const result = await getUserPrivateKey();
       expect(result).toBeNull();

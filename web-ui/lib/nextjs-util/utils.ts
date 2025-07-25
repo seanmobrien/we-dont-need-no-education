@@ -152,6 +152,7 @@ export const extractParams = async <T extends object>(req: {
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+/*
 export const deprecate =  <T extends (...args: any[]) => any>(fn: T, message = `The ${fn.name} function is deprecated.`, code = 'DEP000') => {
   const deprecatedFn = function (
     this: ThisParameterType<T>,
@@ -166,8 +167,9 @@ export const deprecate =  <T extends (...args: any[]) => any>(fn: T, message = `
   
   // Add a JSDoc @deprecated tag dynamically for IDE recognition
   Object.defineProperty(deprecatedFn, 'toString', {
-    value: () => `/** @deprecated ${message} */\n${fn.toString()}`,
+    value: () => `/ ** @deprecated ${message} * /\n${fn.toString()}`,
   });
   
   return deprecatedFn;
 }
+  */

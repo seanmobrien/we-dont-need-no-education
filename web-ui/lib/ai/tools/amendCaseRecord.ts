@@ -6,7 +6,7 @@ import {
   ResponsiveActionAssociation,
   ToolCallbackResult,
 } from './types';
-import { drizDb } from '@/lib/drizzle-db/connection';
+import { drizDb } from '@/lib/drizzle-db';
 import { resolveCaseFileId } from './utility';
 import {
   callToActionDetails,

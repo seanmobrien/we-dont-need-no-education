@@ -46,7 +46,7 @@
  * @since 1.0.0
  */
 
-import { drizDb } from '@/lib/drizzle-db/connection';
+import { drizDb } from '@/lib/drizzle-db';
 import { resolveCaseFileIdBatch, toolCallbackResultFactory } from '../utility';
 import {
   CaseFileRequestProps,

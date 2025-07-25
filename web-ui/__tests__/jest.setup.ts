@@ -1,12 +1,71 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const shouldWriteToConsole = jest
   .requireActual('@/lib/react-util')
   .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
+
+/*
+*/
+
+jest.mock('react-error-boundary', () => {
+ class ErrorBoundary extends Component {
+   #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
+   #children: React.ReactNode;
+   #onReset?: () => void;
+   constructor(props: {
+     children?: React.ReactNode;
+     fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
+     onReset?: () => void;
+   }) {
+     super(props);
+     const { fallbackRender, onReset } = props;
+     this.#fallbackRender = fallbackRender;
+     this.#onReset = onReset;
+     this.#children = props.children;
+     this.state = { hasError: false, error: null as Error | null };
+   }
+
+   static getDerivedStateFromError(error: any) {
+     return { hasError: !!error, error };
+   }
+
+   componentDidCatch(error: any/*, errorInfo: any*/) {
+     console.error(error);
+   }
+
+   render() {
+     if ('hasError' in this.state && this.state.hasError) {
+       const error =
+         'error' in this.state && !!this.state.error
+           ? this.state.error
+           : new Error('An error occurred');
+       
+       if (this.#fallbackRender) {
+         return this.#fallbackRender({ 
+           error, 
+           resetErrorBoundary: () => {
+             this.setState({ hasError: false, error: null });
+             this.#onReset?.();
+           }
+         });
+       }
+       
+       return React.createElement('div', { role: 'alert' }, String(error));
+     }
+     return this.#children;
+   }
+ }
+  return {
+  ErrorBoundary,
+  FallbackComponent: ({ error }: { error?: Error }) => {
+    return React.createElement('div', { role: 'alert' }, error?.message);
+  },
+};
+});
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
 import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
-
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
@@ -189,6 +248,7 @@ import { TextEncoder, TextDecoder } from 'util';
 import { mock } from 'jest-mock-extended';
 import { sql } from 'drizzle-orm';
 import { FormatAlignCenterSharp } from '@mui/icons-material';
+import React, { Component } from 'react';
 globalThis.TextEncoder = TextEncoder;
 
 // React 19 + React Testing Library 16 compatibility setup

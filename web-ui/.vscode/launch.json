@@ -1,14 +1,29 @@
 {
     "version": "0.2.0",
-    "configurations": [
+    "configurations": [  
         {
             "name": "Next.js: debug server-side",
             "type": "node-terminal",
             "request": "launch",
+            "smartStep": false,
+            "sourceMapPathOverrides": {
+                "webpack:///./~/*": "${workspaceFolder}/node_modules/*",
+                "webpack://?:*/*": "${workspaceFolder}/*",
+                "/(rsc)/*": "${workspaceFolder}/*"
+            },
+            "skipFiles": [
+                "${workspaceFolder}/node_modules/**",
+                "<node_internals>/**",
+                "!${workspaceFolder}/node_modules/ai/**",
+                "!${workspaceFolder}/local/**",
+                "!${workspaceFolder}/lib/ai/**",
+                "!/(rsc)/local/**",
+                "!**/$KNOWN_TOOLS$/**",
+            ],            
             "env": {
                 "NODE_OPTIONS": "--inspect"
             },
-            "command": "npm run dev"
+            "command": "npm run dev",
         },
         {
             "name": "Next.js: debug trace deprecation",
@@ -24,19 +39,6 @@
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:3000"
-        },
-        {
-            "name": "Next.js: debug client-side (Firefox)",
-            "type": "firefox",
-            "request": "launch",
-            "url": "http://localhost:3000",
-            "reAttach": true,
-            "pathMappings": [
-                {
-                    "url": "webpack://_N_E",
-                    "path": "${workspaceFolder}"
-                }
-            ]
         },
         {
             "name": "Next.js: debug full stack",

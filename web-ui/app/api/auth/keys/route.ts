@@ -63,7 +63,6 @@ function validatePublicKeyFormat(publicKeyBase64: string): boolean {
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    console.log('POST /api/auth/keys called');
     // Verify user authentication
     const session = await auth();
     if (!session?.user?.id) {
@@ -107,11 +106,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     
     // Check if this public key already exists for this user
     const existingKey = await drizDb().query.userPublicKeys.findFirst({
-      where: (keys, { eq, and, isNull, gte }) => and(
+      where: (keys, { eq, and, isNull, gte, or }) => and(
         eq(keys.userId, userId),
         eq(keys.publicKey, requestBody.publicKey),
         // Key is still active (not expired)
-        isNull(keys.expirationDate) ? undefined : gte(keys.expirationDate, new Date().toISOString())
+        or(
+          isNull(keys.expirationDate),
+          gte(keys.expirationDate, new Date().toISOString())
+        )
       ),
     });
     
@@ -203,10 +205,13 @@ export async function GET(): Promise<NextResponse> {
     
     // Get all active public keys for the user
     const userKeys = await drizDb().query.userPublicKeys.findMany({
-      where: (keys, { eq, and, isNull, gte }) => and(
+      where: (keys, { eq, and, isNull, gte, or }) => and(
         eq(keys.userId, userId),
         // Key is still active (not expired)
-        isNull(keys.expirationDate) ? undefined : gte(keys.expirationDate, new Date().toISOString())
+        or(
+          isNull(keys.expirationDate),
+          gte(keys.expirationDate, new Date().toISOString())
+        )
       ),
       columns: {
         id: true,

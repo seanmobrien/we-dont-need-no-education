@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { extractParams } from '@/lib/nextjs-util';
 import { LoggedError } from '@/lib/react-util';
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@/lib/drizzle-db';
 import { buildAttachmentDownloadUrl } from '@/lib/api';
 import { getAbsoluteUrl } from '@/lib/site-util/url-builder';
 
@@ -33,8 +33,8 @@ export async function GET(
   }
 
   try {
-    return await (drizDb().query.emailAttachments
-      .findMany({
+    return await (drizDbWithInit().then(
+      db => db.query.emailAttachments.findMany({
         where: (emailAttachments, { eq }) =>
           eq(emailAttachments.emailId, emailId),
         with: {
@@ -44,7 +44,7 @@ export async function GET(
             },
           },
         },
-      }))
+      })
       .then((attachments) => {
         // Transform the results to match the expected format
         const result = attachments.map((attachment) => ({
@@ -55,7 +55,8 @@ export async function GET(
           hrefApi: getAbsoluteUrl(`/api/attachment/${attachment.attachmentId}`),
         }));
         return NextResponse.json(result, { status: 200 });
-      });
+      })
+    ));
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,

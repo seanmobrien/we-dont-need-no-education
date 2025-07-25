@@ -1,6 +1,7 @@
+/* @jest-environment node */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
- * @jest-environment node
+ *
  * @fileoverview Tests for the auth keys API endpoint
  * 
  * Tests the POST and GET endpoints for managing user public keys,
@@ -16,9 +17,19 @@ import { drizDb } from '@/lib/drizzle-db';
 
 // Mock dependencies
 jest.mock('@/auth');
-jest.mock('@/lib/drizzle-db');
+jest.mock('@/lib/drizzle-db', () => {
+  const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+  return {
+    drizDb: jest.fn(),
+    schema: actualSchema.schema,
+  };
+});
 jest.mock('@/lib/logger');
-jest.mock('@/lib/react-util');
+jest.mock('@/lib/react-util', () => ({
+  LoggedError: {
+    isTurtlesAllTheWayDownBaby: jest.fn((error) => error),
+  },
+}));
 
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockDrizDb = drizDb as jest.MockedFunction<typeof drizDb>;
@@ -42,7 +53,8 @@ describe('/api/auth/keys', () => {
   });
 
   describe('POST - Upload public key', () => {
-    const validPublicKey = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA1234567890'; // Mock valid base64
+    // A proper RSA public key in SPKI format (base64 encoded) - valid 512-bit test key
+    const validPublicKey = 'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALWGOW2ovUQ2hlsk+LbLFV/q3tNF4vAnCvaBVqqLsVlaZ8ZcWlpr59aj2J0zFGpqLBWtjZl/FgXWWlZHMa+o73sCAwEAAQ==';
 
     const createMockRequest = (body: any) => {
       return {
@@ -59,19 +71,21 @@ describe('/api/auth/keys', () => {
       // Mock no existing key
       mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue(null);
 
-      // Mock successful insertion
-      const insertMock = jest.fn().mockReturnValue({
-        returning: jest.fn().mockResolvedValue([{
-          id: 1,
-          effectiveDate: '2024-01-01T00:00:00Z',
-          expirationDate: '2025-01-01T00:00:00Z',
-        }]),
+      // Mock successful insertion - proper Drizzle chain: insert(table).values(data).returning(cols)
+      const returningMock = jest.fn().mockResolvedValue([{
+        id: 1,
+        effectiveDate: '2024-01-01T00:00:00Z',
+        expirationDate: '2025-01-01T00:00:00Z',
+      }]);
+      
+      const valuesMock = jest.fn().mockReturnValue({
+        returning: returningMock,
       });
-      mockDbInstance.insert.mockReturnValue({
-        values: jest.fn().mockReturnValue({
-          returning: insertMock,
-        }),
-      });
+      
+      // Mock insert as a function that accepts a table parameter and returns the values chain
+      mockDbInstance.insert.mockImplementation(() => ({
+        values: valuesMock,
+      }));
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
@@ -206,18 +220,19 @@ describe('/api/auth/keys', () => {
 
       mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue(null);
 
-      const insertMock = jest.fn().mockReturnValue({
-        returning: jest.fn().mockResolvedValue([{
-          id: 1,
-          effectiveDate: '2024-01-01T00:00:00Z',
-          expirationDate: '2024-06-01T00:00:00Z',
-        }]),
+      const returningMock = jest.fn().mockResolvedValue([{
+        id: 1,
+        effectiveDate: '2024-01-01T00:00:00Z',
+        expirationDate: '2024-06-01T00:00:00Z',
+      }]);
+      
+      const valuesMock = jest.fn().mockReturnValue({
+        returning: returningMock,
       });
-      mockDbInstance.insert.mockReturnValue({
-        values: jest.fn().mockReturnValue({
-          returning: insertMock,
-        }),
-      });
+      
+      mockDbInstance.insert.mockImplementation(() => ({
+        values: valuesMock,
+      }));
 
       const customExpirationDate = '2024-06-01T00:00:00Z';
       const request = createMockRequest({ 

@@ -19,7 +19,8 @@ import { CommandMeta, IResultset } from './types';
 import { isTypeBranded, TypeBrandSymbol } from '../react-util';
 import { ExcludeExactMatch } from '../typescript';
 import { log } from '../logger';
-import { deprecate } from '@/lib/nextjs-util';
+//import { deprecate } from '../nextjs-util';
+//import { deprecate } from '@/lib/nextjs-util';
 
 
 
@@ -504,19 +505,14 @@ export const queryExt = async <ResultType extends object = Record<string, unknow
 export type SqlDb<TRecord extends Record<string, unknown> = any> =
   postgres.Sql<TRecord>;
 
-export const queryRaw = deprecate(
+export const queryRaw =
 <RecordType extends Record<string, unknown> = any>(
   cb: (sql: SqlDb<RecordType>) => PendingQuery<Array<RecordType>>,
-): PendingQuery<Array<RecordType>> => cb(pgDb() as SqlDb<RecordType>), 
-"The `queryRaw` function is deprecated. Use `safeQueryRaw` instead, which ensures the database connection is initialized before executing the query.", 'DEP002',
-);
+): PendingQuery<Array<RecordType>> => cb(pgDb() as SqlDb<RecordType>);
 
 export const safeQueryRaw = async <RecordType extends Record<string, unknown> = any>(
   cb: (sql: SqlDb<RecordType>) => PendingQuery<Array<RecordType>>,
 ): Promise<PendingQuery<Array<RecordType>>> => cb(await pgDbWithInit() as SqlDb<RecordType>);
-
-
-
 
 export const db = async <
   ResultType extends Record<string, unknown> = any,
@@ -564,8 +560,12 @@ export type DbQueryFunction<
 > = ISqlNeonAdapter;
 // Update module exports to use module.exports format and provide a getter for sql
 
+export const sql = () => pgDb();
+
+/*
 Object.defineProperty(module.exports, 'sql', {
   enumerable: true,
   configurable: true,
   get: deprecate(() => pgDb(), "The `sql` export is deprecated. Use `pgDb()` instead; or better yet upgrade to drizzle.", 'DEP001'),
 });
+*/

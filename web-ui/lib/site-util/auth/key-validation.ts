@@ -53,8 +53,7 @@ export interface KeySyncResult {
  */
 export function isKeyValidationDue(): boolean {
   try {
-    console.log('check validation');
-    const lastValidation = localStorage.getItem(KEY_VALIDATION_STORAGE_KEY);
+    const lastValidation = globalThis.localStorage && globalThis.localStorage.getItem(KEY_VALIDATION_STORAGE_KEY);
     if (!lastValidation) {
       return true; // Never validated before
     }
@@ -285,7 +284,6 @@ export async function performKeyValidationWorkflow(
       updateKeyValidationTimestamp();
       return { validated: true, synchronized: false };
     }
-    console.log('generate new key');
     // If validation failed, try to synchronize
     if (
       validationResult.action === 'upload_key'

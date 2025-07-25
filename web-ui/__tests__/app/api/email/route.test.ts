@@ -1,5 +1,5 @@
-/**
- * @jest-environment node
+/* @jest-environment node */
+/** 
  *
  * Email API Route Tests
  *
@@ -61,7 +61,6 @@ import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { query, queryExt } from '@/lib/neondb';
 import { auth } from '@/auth';
-import { drizDb } from '@/lib/drizzle-db';
 
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
@@ -469,5 +468,4 @@ describe('Email API', () => {
       });
     });
   });
- 
 });

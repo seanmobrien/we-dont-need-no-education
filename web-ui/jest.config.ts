@@ -43,7 +43,10 @@ const config: Config.InitialOptions = {
     ], // Transform TypeScript files using ts-jest
     // '^.+\\.(js|jsx)$': 'babel-jest', // Transform JavaScript files using babel-jest
   },
-  transformIgnorePatterns: ['<rootDir>/node_modules/', '<rootDir>/.next'], // Ignore node_modules
+  transformIgnorePatterns: [
+    '<rootDir>/node_modules/(?!(react-error-boundary)/)',
+    '<rootDir>/.next'
+  ],
   collectCoverage: true, // Enable coverage collection
   //collectCoverage: false, // Enable coverage collection
   collectCoverageFrom: [

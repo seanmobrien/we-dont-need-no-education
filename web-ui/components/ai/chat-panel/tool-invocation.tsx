@@ -13,7 +13,6 @@ const ShowToolCall = ({
   toolName: string;
   args: string | Array<string> | Record<string, unknown>;
 }) => {
-  console.log('in show tool call');
   if (!toolName) {
     return <></>;
   }  
@@ -180,7 +179,6 @@ const ToolInvocation = <TResult extends object>({
   result?: TResult;
   addToolResult: <TResult>({}: { toolCallId: string; result: TResult }) => void;
 }) => {
-  console.log('ToolInvocation:', toolInvocation);
   if (!toolInvocation) {
     return <></>;
   }
