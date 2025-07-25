@@ -97,7 +97,7 @@ const stable_onFinish = (message: Message) => {
     let newMessages: Message[];
     if (indexOfExisting !== undefined && indexOfExisting >= 0) {
       // Replace the existing message      
-      newMessages = [...messages.splice(0, indexOfExisting), message, ...messages.splice(indexOfExisting + 1)];
+      newMessages = [...messages.slice(0, indexOfExisting), message, ...messages.slice(indexOfExisting + 1)];
     } else {
       newMessages = [...messages, message];
     }
