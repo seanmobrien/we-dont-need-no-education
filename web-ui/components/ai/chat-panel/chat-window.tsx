@@ -3,7 +3,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box } from '@mui/material';
 import { Message } from 'ai';
 import Loading from '@/components/general/loading';
-import { ChatMessageV2 } from './chat-message-v2';
+import { ChatMessageV2 } from './chat-message';
 import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
 import { log } from '@/lib/logger';
 import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
@@ -14,10 +14,12 @@ export const ChatWindow = ({
   messages,
   loading,
   errorMessage,
+  addToolResult,
 }: {
   messages: Array<Message>;
   loading: boolean;
   errorMessage?: string | null;
+  addToolResult: <TResult>({}: { toolCallId: string; result: TResult }) => void;
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const {config: { size: { height } }} = useChatPanelContext();
@@ -101,7 +103,7 @@ export const ChatWindow = ({
         width: '100%',
         border: '1px solid #ccc',
         marginTop: 2,
-        backgroundColor: '#8f8f8f',
+        backgroundColor: 'var(--color-surface-overlay)',
         borderRadius: 4,
         p: 2,
         display: 'flex',
@@ -138,7 +140,8 @@ export const ChatWindow = ({
                 createdAt,
               }}
               virtualRow={virtualRow}
-              onMeasureElement={(node) => rowVirtualizer.measureElement(node)}
+              addToolResult={addToolResult}
+              onMeasureElement={rowVirtualizer.measureElement}
             />            
           );
         })}

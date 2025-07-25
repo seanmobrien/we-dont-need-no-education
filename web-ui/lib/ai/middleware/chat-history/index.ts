@@ -5,7 +5,7 @@ import {
 } from '@/drizzle/schema';
 import { log } from '@/lib/logger';
 import { generateChatId } from '@/lib/ai/core';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util';
 import type { ChatHistoryContext, StreamHandlerContext, FlushContext } from './types';
 import { importIncomingMessage } from './import-incoming-message';
@@ -40,7 +40,7 @@ export function createChatHistoryMiddleware(
           chatId,
           turnId,
           messageId,
-        } = await db.transaction(async (tx) => importIncomingMessage({
+        } = await drizDb().transaction(async (tx) => importIncomingMessage({
           tx,
           context,
           params,
@@ -152,7 +152,7 @@ export function createChatHistoryMiddleware(
 export async function initializeChatHistoryTables() {
   try {
     // Insert message statuses if they don't exist
-    await db
+    await drizDb()
       .insert(messageStatuses)
       .values([
         { id: 1, code: 'streaming', description: 'Message is being generated' },
@@ -169,7 +169,7 @@ export async function initializeChatHistoryTables() {
   }
   try {
     // Insert turn statuses if they don't exist
-    await db
+    await drizDb()
       .insert(turnStatuses)
       .values([
         {

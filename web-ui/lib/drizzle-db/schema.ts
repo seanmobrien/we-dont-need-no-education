@@ -136,14 +136,14 @@ const makeMockDb = () => drizzle.mock({
  * const users = await db.select().from(schema.users);
  * ```
  */
-export type DbDatabaseType = ReturnType<typeof makeMockDb>;
+export type DbDatabaseType = Omit<ReturnType<typeof makeMockDb>, '$client'>;
 
 
 export type DbTransactionParam = Parameters<
   ReturnType<typeof makeMockDb>['transaction']
 >[0];
 
-/**
+/** 
  * Higher-Kinded Type (HKT) representing the query result interface for database operations.
  * 
  * This advanced TypeScript type extracts the query result type from Drizzle's transaction

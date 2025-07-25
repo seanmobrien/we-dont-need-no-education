@@ -25,10 +25,20 @@ jest.mock('ai', () => ({
   ToolSet: {},
 }));
 
-jest.mock('@/lib/ai/mcp/traceable-transport-client.ts', () => ({
+jest.mock('@/lib/ai/mcp/instrumented-sse-transport', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
 }));
-
+jest.mock('@/lib/ai/mcp/client-tool-provider', () => ({
+  clientToolProviderFactory: jest.fn(() => ({
+    url: 'https://server3.com/api',
+    allowWrite: false,
+    get_mcpClient: jest.fn().mockReturnValue({}),
+    get_isConnected: jest.fn().mockReturnValue(true),
+    get_tools: jest.fn().mockReturnValue({}),
+    dispose: jest.fn().mockResolvedValue(undefined as unknown as never),
+    connect: jest.fn().mockResolvedValue({} as unknown as never),
+  })),
+}));
 // Import after mocking
 import {
   toolProviderFactory,
@@ -345,7 +355,7 @@ describe('toolProviderSetFactory', () => {
     it('should create provider set with all successful connections', async () => {
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
-      expect(providerSet.providers).toHaveLength(3);
+      expect(providerSet.providers).toHaveLength(4);
       expect(mockGetResolvedPromises).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.any(Promise),
@@ -432,7 +442,7 @@ describe('toolProviderSetFactory', () => {
     it('should handle mixed success/failure scenarios', async () => {
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
-      expect(providerSet.providers).toHaveLength(1);
+      expect(providerSet.providers).toHaveLength(2);
       expect(mockLoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
         expect.any(AggregateError),
         expect.objectContaining({
@@ -518,7 +528,7 @@ describe('toolProviderSetFactory', () => {
 
       const providerSet = await toolProviderSetFactory([]);
 
-      expect(providerSet.providers).toHaveLength(0);
+      expect(providerSet.providers).toHaveLength(1);
       expect(providerSet.get_tools()).toEqual({});
     });
 
@@ -531,7 +541,7 @@ describe('toolProviderSetFactory', () => {
 
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
-      expect(providerSet.providers).toHaveLength(0);
+      expect(providerSet.providers).toHaveLength(1);
       expect(providerSet.get_tools()).toEqual({});
     });
   });
@@ -572,7 +582,7 @@ describe('integration scenarios', () => {
       15000,
     );
 
-    expect(providerSet.providers).toHaveLength(1);
+    expect(providerSet.providers).toHaveLength(2);
     expect(providerSet.get_tools()).toEqual({
       'file-tool': {},
       'search-tool': {},

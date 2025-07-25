@@ -12,6 +12,7 @@ export type {
   CallToActionCategoryType,
   CallToActionResponseType,
   CallToActionResponsiveActionLinkType,
+  UserPublicKeysType,
   ViolationDetailsType,
   ComplianceScoreType,
   QueryBuilders,

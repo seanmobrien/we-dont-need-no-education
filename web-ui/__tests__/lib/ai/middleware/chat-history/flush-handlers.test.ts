@@ -18,7 +18,7 @@ import {
 } from '@/lib/ai/middleware/chat-history/flush-handlers';
 import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import type { FlushContext, FlushConfig } from '@/lib/ai/middleware/chat-history/types';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 
 const mockLog = log as jest.MockedFunction<typeof log>;
@@ -41,8 +41,8 @@ describe('Flush Handlers', () => {
       generatedText: 'Hello, how can I help you?',
       startTime: Date.now() - 1000, // 1 second ago
     };
-    mockUpdate = db.update as jest.Mock;    
-    mockQuery.chats.findFirst = db.query.chats.findFirst as jest.Mock;
+    mockUpdate = drizDb().update as jest.Mock;    
+    mockQuery.chats.findFirst = drizDb().query.chats.findFirst as jest.Mock;
 
     // Setup default database mocks
     mockUpdate.mockReturnValue({

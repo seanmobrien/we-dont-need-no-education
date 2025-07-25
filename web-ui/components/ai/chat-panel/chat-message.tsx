@@ -14,6 +14,7 @@ interface ChatMessageV2Props {
     createdAt?: Date;
   };
   virtualRow: VirtualItem;
+  addToolResult: <TResult>({}:{ toolCallId: string; result: TResult }) => void;
   onMeasureElement: (node: Element) => void;
 }
 
@@ -21,6 +22,7 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
   message,
   virtualRow,
   onMeasureElement,
+  addToolResult,
 }) => {
   const { parts = [], role, id: messageId, createdAt } = message;
   const isUser = role === 'user';
@@ -101,6 +103,7 @@ export const ChatMessageV2: React.FC<ChatMessageV2Props> = ({
                     <ToolInovocation
                       key={`${messageId}-tool-${part.toolInvocation.toolCallId}-${part.toolInvocation.state}`}
                       toolInvocation={part.toolInvocation}
+                      addToolResult={addToolResult}
                     />
                   ) : null;
                 })

@@ -15,7 +15,7 @@ package-lock.json
 coverage
 
 # next.js
-.next/
+**/.next/**
 out/
 
 # production
@@ -24,6 +24,7 @@ out/
 # misc
 .DS_Store
 *.pem
+com.chrome.devtools.json
 
 # debug
 npm-debug.log*
@@ -40,11 +41,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+.buildinfo
 
 # vs code
-/.vscode
+.vscode
+**/.vscode
 **/.vscode
 .vs
+.vs/**
 
 *.lilith
 logs

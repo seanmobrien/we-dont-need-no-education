@@ -33,14 +33,14 @@ describe('Chat History Types', () => {
       const context: ChatHistoryContext = {
         userId: 'user-123',
         chatId: 'chat-456',
-        sessionId: 'session-789',
+        requestId: 'session-789',
         model: 'gpt-4o',
         temperature: 0.7,
         topP: 0.9,
       };
 
       expect(context.chatId).toBe('chat-456');
-      expect(context.sessionId).toBe('session-789');
+      expect(context.requestId).toBe('session-789');
       expect(context.model).toBe('gpt-4o');
       expect(context.temperature).toBe(0.7);
       expect(context.topP).toBe(0.9);
@@ -52,7 +52,7 @@ describe('Chat History Types', () => {
       };
 
       expect(context.chatId).toBeUndefined();
-      expect(context.sessionId).toBeUndefined();
+      expect(context.requestId).toBeUndefined();
       expect(context.model).toBeUndefined();
       expect(context.temperature).toBeUndefined();
       expect(context.topP).toBeUndefined();

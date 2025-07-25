@@ -189,10 +189,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
       process.env.NEXT_PHASE !== 'phase-production-build'
     ) {
       const { sql } = await import('drizzle-orm');
-      const { db, schema } = await import('@/lib/drizzle-db');
+      const { drizDbWithInit, schema } = await import('@/lib/drizzle-db');
       const { DrizzleAdapter } = await import('@auth/drizzle-adapter');
 
-      adapter = DrizzleAdapter(db, {
+      adapter = DrizzleAdapter(await drizDbWithInit(), {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         usersTable: schema.users as any,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -217,7 +217,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
           account.access_token &&
           account.providerAccountId
         ) {
-          await db
+          await (drizDbWithInit()
+            .then(db => db
             .update(schema.accounts)
             .set({
               accessToken: String(account.access_token),
@@ -225,7 +226,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
             })
             .where(
               sql`provider='google' AND "providerAccountId" = ${account.providerAccountId}`,
-            );
+            )));
         }
         logEvent('signIn');
         return true;

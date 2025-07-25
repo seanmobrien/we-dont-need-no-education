@@ -3,7 +3,7 @@ import { LanguageModelV1StreamPart } from "ai";
 export interface ChatHistoryContext {
   userId: string;
   chatId?: string;
-  sessionId?: string;
+  requestId?: string;
   model?: string;
   temperature?: number;
   topP?: number;

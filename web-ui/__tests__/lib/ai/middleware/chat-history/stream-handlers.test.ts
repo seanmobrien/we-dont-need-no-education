@@ -13,7 +13,7 @@ import {
   handleFinish,
   processStreamChunk,
 } from '@/lib/ai/middleware/chat-history/stream-handlers';
-import { db } from '@/lib/drizzle-db';
+import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { chatMessages, tokenUsage } from '@/drizzle/schema';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { log } from '@/lib/logger';
@@ -25,7 +25,7 @@ jest.mock('@/lib/drizzle-db');
 jest.mock('@/lib/ai/middleware/chat-history/utility');
 jest.mock('@/lib/logger');
 
-const mockDb = db as jest.Mocked<typeof db>;
+let mockDb: jest.Mocked<DbDatabaseType>;
 const mockGetNextSequence = getNextSequence as jest.MockedFunction<typeof getNextSequence>;
 const mockLog = log as jest.MockedFunction<typeof log>;
 
@@ -34,6 +34,7 @@ describe('Stream Handlers', () => {
 
   beforeEach(() => {
     // jest.clearAllMocks();
+        mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
     
     mockContext = {
       chatId: 'chat-123',

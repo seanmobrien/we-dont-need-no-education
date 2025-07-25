@@ -79,7 +79,7 @@ describe('Import Incoming Message', () => {
       model: 'gpt-4o',
       temperature: 0.7,
       topP: 0.9,
-      sessionId: 'session-789',
+      requestId: 'session-789',
     };
 
     // Mock params
@@ -456,7 +456,7 @@ describe('Import Incoming Message', () => {
       const fullContext: ChatHistoryContext = {
         userId: 'user-full',
         chatId: 'chat-full',
-        sessionId: 'session-full',
+        requestId: 'session-full',
         model: 'gpt-4-turbo',
         temperature: 0.8,
         topP: 0.95,

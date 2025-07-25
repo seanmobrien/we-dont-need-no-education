@@ -84,8 +84,9 @@ export const CustomEmailPageItem = React.memo(
               {item.icon!}
             </IconButton>
           ) : (
-            <ListItemButton sx={{ paddingRight: 0 }} data-id={itemId}>
+            <ListItemButton sx={{ paddingRight: 0 }} >
               <Link
+              data-id={itemId}
                 href={siteBuilder.messages.email(emailId).toString()}
                 sx={(theme) => ({
                   color: theme.palette.secondary.main,
