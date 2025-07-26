@@ -10,10 +10,9 @@ const stopPgDb = async () => {
   if (_pgDb) {
     try {
       await _pgDb.end({ timeout: 5 });
-      /*
+      // Reset the database connection and promise variables after successful cleanup
       _pgDb = undefined;
       _pgDbPromise = undefined;
-      */
     } catch (error) {
       console.error('Error during database cleanup:', error);
     }
