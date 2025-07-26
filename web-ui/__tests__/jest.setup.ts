@@ -308,7 +308,7 @@ if (typeof (global as any).act === 'undefined') {
 
 const DefaultEnvVariables = {
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
-  NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
+  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
   NEXT_PUBLIC_HOSTNAME: `http://test-run.localhost`,
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: `silly`,

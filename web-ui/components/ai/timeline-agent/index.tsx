@@ -395,13 +395,17 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
             mb: 2,
           }}
         >
-          <Typography variant="h4" component="h1">
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{ color: 'var(--color-secondary-light' }}
+          >
             Timeline Analysis Agent
             {!isPending && state.isInitialized && !state.isProcessing && (
               <Chip
                 label="Ready"
                 color="success"
-                variant="outlined"
+                variant="filled"
                 sx={{ ml: 3 }}
               />
             )}
@@ -458,8 +462,13 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           </Box>
         </Box>
 
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-          Case ID: {caseId} | Initial Document: {initialDocumentId}
+        <Typography variant="subtitle1" gutterBottom>
+          <Typography sx={{ color: 'var(--color-primary-dark)' }}>Case ID:</Typography>
+          <Typography sx={{ color: 'var(--color-highlight-alt-3)' }}>{caseId}</Typography>|
+          <Typography sx={{ color: 'var(--color-primary-dark)' }}>
+            Initial Document:
+          </Typography>
+          <Typography sx={{ color: 'var(--color-highlight-alt-3)' }}>{initialDocumentId}</Typography>
         </Typography>
 
         {/* Progress Indicator */}

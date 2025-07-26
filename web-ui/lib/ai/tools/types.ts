@@ -135,7 +135,7 @@ export type DocumentIndexResourceToolResult = ToolCallbackResult<
  * @property chapter13Reasons - Optional array of reasons for Chapter 13 rating
  * @property titleIXRating - Optional numeric Title IX compliance rating
  * @property titleIXReasons - Optional array of reasons for Title IX rating
- * @property explaination - Required explanation of all changes and rationale
+ * @property explanation - Required explanation of all changes and rationale
  */
 export type CaseFileAmendment = {
   targetCaseFileId: number | string;
@@ -159,7 +159,7 @@ export type CaseFileAmendment = {
   chapter13Reasons?: Array<string>;
   titleIXRating?: number;
   titleIXReasons?: Array<string>;
-  explaination: string;
+  explanation: string;
 };
 
 /**

@@ -311,7 +311,7 @@ export const addViolations = async ({
   insertedRecords,
   failedRecords,
   target: { unitId: emailDocumentId, emailId },
-}: Omit<CaseFileAmendment, 'targetCaseFileId' | 'explaination'> & {
+}: Omit<CaseFileAmendment, 'targetCaseFileId' | 'explanation'> & {
   tx: DbTransactionType;
   target: { unitId: number; emailId: string | null };
   insertedRecords: Array<Amendment>;
@@ -580,7 +580,7 @@ const relateDocuments = async ({
  *   targetcase_file_id: 1,
  *   notes: ['Note 1'],
  *   violations: [{ violationType: 'Type A', severityLevel: 3 }],
- *   explaination: 'Reason for amendment',
+ *   explanation: 'Reason for amendment',
  *   addRelatedDocuments: [{ relatedToDocumentId: 2, relationshipType: 'typeA' }]
  * });
  */
@@ -589,7 +589,7 @@ export const amendCaseRecord = async ({
     targetCaseFileId,
     notes,
     violations,
-    explaination,
+    explanation,
     addRelatedDocuments,
     associateResponsiveAction,
     ...props
@@ -611,7 +611,7 @@ export const amendCaseRecord = async ({
     has_responsive_actions: Boolean(associateResponsiveAction?.length),
   };
 
-  if (!explaination || explaination.trim().length === 0) {
+  if (!explanation || explanation.trim().length === 0) {
     // Record error metrics
     amendmentErrorCounter.add(1, {
       ...attributes,
@@ -695,7 +695,7 @@ export const amendCaseRecord = async ({
           db: tx,
           documentId: target.unitId,
           notes: [
-            `${explaination}\n\nUpdated values: ${JSON.stringify(updatedRecords)}\nInserted values: ${JSON.stringify(insertedRecords)}`,
+            `${explanation}\n\nUpdated values: ${JSON.stringify(updatedRecords)}\nInserted values: ${JSON.stringify(insertedRecords)}`,
           ],
         });
       });
