@@ -58,5 +58,5 @@ export const CaseFileAmendmentShape = z
       .describe('Reason amendment is being made - required.'),
   })
   .describe(
-    'Describes the changes to make to a case file.  Proper`ties that are not set will maintain current values.  When updating a Rating field the associated Reasons field must contain at least 3 values - eg changing the severityRanking value necessitates passing 3 or more strings in the severityReasons property.',
+    'Describes the changes to make to a case file.  Properties that are not set will maintain current values.  When updating a Rating field the associated Reasons field must contain at least 3 values - eg changing the severityRating value necessitates passing 3 or more strings in the severityReasons property.',
   );
