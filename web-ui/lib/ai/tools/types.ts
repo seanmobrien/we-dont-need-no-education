@@ -215,12 +215,14 @@ export type ResponsiveActionAssociation = {
  * @property caseFileId - The case file identifier (can be any type, typically number or string)
  * @property goals - Optional array of goals or objectives for the case file analysis
  * @property verbatim_fidelity - Optional numeric value indicating the level of verbatim fidelity required (0-100)
+ * @property max_response_tokens - maximum number of response tokens to return.  If not set, default of 1000 is used.
  */
 export type CaseFileRequestProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   caseFileId?: any;
   goals?: Array<string>;
   verbatimFidelity?: number;
+  max_response_tokens?: number; 
 };
 
 /**

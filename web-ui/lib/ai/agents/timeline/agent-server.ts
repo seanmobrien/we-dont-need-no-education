@@ -1,4 +1,4 @@
-import { generateText } from 'ai';
+import { generateText, wrapLanguageModel } from 'ai';
 import { aiModelFactory } from '../../aiModelFactory';
 import { getCaseFileDocument } from '../../tools';
 import { ClientTimelineAgent } from './agent';
@@ -11,10 +11,11 @@ import {
   GlobalMetadata,
   SerializedTimelineAgent,
 } from './types';
-import { AiLanguageModelType } from '../../core';
+import { AiLanguageModelType, generateChatId } from '../../core';
 import { drizDb } from '@/lib/drizzle-db';
 import { setupDefaultTools } from '../../mcp/setup-default-tools';
 import { NextRequest } from 'next/server';
+import { ChatHistoryContext, createChatHistoryMiddleware } from '../../middleware';
 
 type InitializeProps = { req: NextRequest };
 
@@ -499,6 +500,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     this.#timelineState.complianceRatings.accuracy = ComplianceRating.Good;
     this.#timelineState.complianceRatings.transparency = ComplianceRating.Good;
   }
+  #chatHistoryContext: ChatHistoryContext | undefined;
   // Common methods and properties for all agents can be defined here
   protected async generateResponse<TResultType extends string | object>(
     input: string,
@@ -506,15 +508,27 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       model = 'lofi',
       req,
     }: { model?: AiLanguageModelType; req?: NextRequest } = {},
-  ): Promise<TResultType> {
-    const hal = aiModelFactory(model ?? 'lofi');
+  ): Promise<TResultType> {      
+      this.#chatHistoryContext = this.#chatHistoryContext ?? {
+        userId: '-1',
+        requestId: generateChatId(Math.random() * 1000).id,
+        chatId: generateChatId(Math.random() * 1000).id,
+        temperature: 0.7, // Default values, could be extracted from request
+        topP: 1.0,
+      };
+      
+    const baseModel = aiModelFactory(model ?? 'lofi');
+    const hal = wrapLanguageModel({
+        model: baseModel,
+        middleware: createChatHistoryMiddleware({...this.#chatHistoryContext, model: baseModel.modelId }),
+      })
     const tools = await setupDefaultTools({ req });
     try {
       const ret = await generateText({
         model: hal,
         prompt: input,
         tools: tools.get_tools(),
-        maxSteps: 10,
+        maxSteps: 20,
         //experimental_continueSteps: true,
       });
 

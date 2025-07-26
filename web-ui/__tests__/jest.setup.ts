@@ -3,8 +3,28 @@ const shouldWriteToConsole = jest
   .requireActual('@/lib/react-util')
   .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
 
-/*
-*/
+jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
+  TrackWithAppInsight: jest.fn((props: any) => {
+    const { children, ...rest } = props;
+    return React.createElement('div', rest, children);
+  })
+}));
+
+jest.mock('@/instrument/browser', () => ({
+  getReactPlugin: jest.fn(() => ({
+    trackEvent: jest.fn(),
+    trackPageView: jest.fn(),
+  })),
+  getClickPlugin: jest.fn(() => ({
+    trackEvent: jest.fn(),
+    trackPageView: jest.fn(),
+  })),
+  getAppInsights: jest.fn(() => ({
+    trackEvent: jest.fn(),
+    trackPageView: jest.fn(),
+  })),
+  instrument: jest.fn()
+}));
 
 jest.mock('react-error-boundary', () => {
  class ErrorBoundary extends Component {
@@ -238,6 +258,7 @@ import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { drizDb } from '@/lib/drizzle-db';
+
 // jest.setup.ts
 // If using React Testing Library
 import '@testing-library/jest-dom';
@@ -249,6 +270,8 @@ import { mock } from 'jest-mock-extended';
 import { sql } from 'drizzle-orm';
 import { FormatAlignCenterSharp } from '@mui/icons-material';
 import React, { Component } from 'react';
+import { TrackWithAppInsight } from '@/components/general/telemetry';
+import instrument, { getAppInsights } from '@/instrument/browser';
 globalThis.TextEncoder = TextEncoder;
 
 // React 19 + React Testing Library 16 compatibility setup

@@ -5,7 +5,7 @@ import {
   ValidCaseFileRequestProps,
 } from './types';
 import { isError, LoggedError } from '@/lib/react-util';
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDb,drizDbWithInit } from '@/lib/drizzle-db';
 
 interface ToolCallbackResultOverloads {
   <T>(result: T): ToolCallbackResult<T>;
@@ -227,17 +227,19 @@ export const resolveCaseFileIdBatch = async (
   if (!guids.length) {
     return valid;
   }
-  const records = await drizDb().query.documentUnits.findMany({
-    where: (du, { and, or, eq, inArray }) =>
-      or(
-        and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
-        inArray(du.documentPropertyId, guids),
-      ),
-    columns: {
-      unitId: true,
-      documentPropertyId: true,
-      emailId: true,
-    },
+  const records = await drizDbWithInit(db => {
+      return db.query.documentUnits.findMany({
+        where: (du, { and, or, eq, inArray }) =>
+          or(
+            and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
+            inArray(du.documentPropertyId, guids),
+          ),
+      columns: {
+        unitId: true,
+        documentPropertyId: true,
+        emailId: true,
+      },
+    }).execute();
   });
   // Now use records to translate pending into valid
   const { resolved } = pending.reduce(

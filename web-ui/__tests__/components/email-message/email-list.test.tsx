@@ -10,7 +10,7 @@ describe('EmailList', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     global.fetch = mockFetch;
   });
 

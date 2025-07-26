@@ -8,16 +8,29 @@ export { schema };
 let _drizDbPromise: Promise<DbDatabaseType> | undefined;
 let _drizDb: DbDatabaseType | undefined;
 
-export const drizDbWithInit = async () => {
+interface DrizDbInitOverloads {
+  (): Promise<DbDatabaseType>;
+  <T>(then: (db: DbDatabaseType) => T): T extends Promise<infer R> ? Promise<R> : Promise<T>;
+};
+
+export const  drizDbWithInit: DrizDbInitOverloads = <T>(cb?: (db: DbDatabaseType) => T) => {
+  const resolver = async (db: DbDatabaseType) => {
+    if (cb) {
+      const fnRet = cb(db);
+      const pRet = isPromise<T>(fnRet) ? await fnRet : fnRet;
+      return pRet;
+    }
+    return Promise.resolve(db) as T;
+  };
   if (!!_drizDb) {
-    return Promise.resolve(_drizDb);
+    return Promise.resolve(_drizDb).then(resolver);
   }
   if (!_drizDbPromise) {
     _drizDbPromise = (async () => {
       const pgDbWithInit = await (import('../neondb/connection').then(
         (x) => x.pgDbWithInit,
       ));
-      const theDb = (await pgDbWithInit()
+      const theDb = pgDbWithInit()
         .then((sql) => drizzle({
             client: sql,
             casing: 'snake_case',
@@ -25,7 +38,7 @@ export const drizDbWithInit = async () => {
           })).then((value) => {
             _drizDb = value;
             return value;
-          }));
+          });
       return theDb;
     })();
     _drizDbPromise.catch(      
@@ -42,7 +55,8 @@ export const drizDbWithInit = async () => {
         throw le;
       });
   }
-  return _drizDbPromise;
+  return _drizDbPromise.then
+    (resolver) as Promise<T>;
 };
 
 interface DrizDbOverloads {

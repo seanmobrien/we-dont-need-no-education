@@ -14,6 +14,7 @@ import type { LanguageModelV1StreamPart } from 'ai';
 import { log } from '@/lib/logger';
 import { processStreamChunk } from './stream-handlers';
 import type { QueuedTask, StreamHandlerContext, StreamHandlerResult } from './types';
+import { recordQueueOperation } from './instrumentation';
 
 
 
@@ -66,6 +67,10 @@ export class ProcessingQueue {
       };
 
       this.queue.push(task);
+      
+      // Record queue metrics
+      recordQueueOperation('enqueue', true, this.queue.length);
+      
       this.processQueue();
     });
   }
@@ -81,12 +86,15 @@ export class ProcessingQueue {
       const result = await processStreamChunk(task.chunk, task.context);
       
       if (!result.success) {
+        recordQueueOperation('process', false, this.queue.length);
         throw new Error(`Processing failed for chunk type: ${task.chunk.type}`);
       }
 
       // Store result on the task for later application
       task.result = result;
+      recordQueueOperation('process', true, this.queue.length);
     } catch (error) {
+      recordQueueOperation('process', false, this.queue.length);
       log((l) =>
         l.error('Task processing failed', {
           error,
@@ -127,7 +135,9 @@ export class ProcessingQueue {
           }
 
           task.resolve();
+          recordQueueOperation('complete', true, this.queue.length - 1);
         } catch (error) {
+          recordQueueOperation('complete', false, this.queue.length - 1);
           task.reject(error instanceof Error ? error : new Error(String(error)));
         }
 

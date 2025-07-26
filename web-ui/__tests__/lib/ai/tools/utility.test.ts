@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // Mock the database connection
 
-import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
+import { DbDatabaseType, drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 /*
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
@@ -259,11 +259,21 @@ describe('resolveCaseFileIdBatch', () => {
     const setupMockRecords = (source: Array<{ unitId: number; documentPropertyId?: string | null; emailId?: string | null }>) => {
       mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
       const mockRecords = [...source];
-      mockRecords.find = jest.fn((cb) => {
-        const matches = mockRecords.filter(cb);
-        return matches.length ? matches[0] : undefined;
-      });        
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(mockRecords);
+      
+      // Mock drizDbWithInit to return the mockDb and resolve with the records
+      (drizDbWithInit as jest.Mock).mockImplementation((cb?: (db: DbDatabaseType) => any) => {
+        if (cb) {
+          const result = cb(mockDb);
+          return Promise.resolve(result);
+        }
+        return Promise.resolve(mockDb);
+      });
+      
+      // Setup the findMany mock on the mockDb
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockReturnValue({
+        execute: jest.fn().mockResolvedValue(mockRecords)
+      });
+      
       return mockRecords;
     }
 
@@ -305,14 +315,6 @@ describe('resolveCaseFileIdBatch', () => {
       setupMockRecords([
         { unitId: 100, documentPropertyId: uuid1, emailId: null },
       ]);
-      const mockRecords = [
-        { unitId: 100, documentPropertyId: uuid1, emailId: null },
-      ];
-      mockRecords.find = jest.fn((cb) => mockRecords.filter(cb)[0]);
-            
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(
-        mockRecords,
-      );
 
       const result = await resolveCaseFileIdBatch(requests);
 
@@ -331,16 +333,25 @@ describe('resolveCaseFileIdBatch', () => {
         { caseFileId: '456' }, // numeric string
         { caseFileId: uuid }, // UUID
         { caseFileId: 789 }, // number
-        ///{ caseFileId: 999 }, // number
+        { caseFileId: 999 }, // number
       ];
+
+      // Mock drizDbWithInit for this test
+      (drizDbWithInit as jest.Mock).mockImplementation((cb?: (db: DbDatabaseType) => any) => {
+        if (cb) {
+          const result = cb(mockDb);
+          return Promise.resolve(result);
+        }
+        return Promise.resolve(mockDb);
+      });
 
       const mockRecords = [
         { unitId: 999, documentPropertyId: uuid, emailId: null },
       ];
 
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(
-        mockRecords,
-      );
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockReturnValue({
+        execute: jest.fn().mockResolvedValue(mockRecords)
+      });
 
       const result = await resolveCaseFileIdBatch(requests);
 
@@ -348,7 +359,8 @@ describe('resolveCaseFileIdBatch', () => {
         { caseFileId: 123 },
         { caseFileId: 456 },
         { caseFileId: 789 },
-        { caseFileId: 999 },
+        { caseFileId: 999 }, // Last 999 is original number, UUID resolves to 999 too
+        { caseFileId: 999 }, // UUID resolved to 999
       ]);
     });
 
@@ -375,7 +387,8 @@ describe('resolveCaseFileIdBatch', () => {
       const uuid = '12345678-1234-4567-8901-123456789012';
       const requests = [{ caseFileId: uuid }];
 
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockRejectedValue(
+      // Mock drizDbWithInit to reject with the error
+      (drizDbWithInit as jest.Mock).mockRejectedValue(
         new Error('Database connection failed'),
       );
 

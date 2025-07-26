@@ -16,6 +16,7 @@
     "test": "jest",
     "test:serial": "jest --runInBand",
     "test:concurrency-stress": "jest --maxWorkers=8 --maxConcurrency=10",
+    "typecheck": "tsc --noEmit",
     "lint": "next lint",
     "vercel-build": "NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
     "build:slow": "NODE_OPTIONS=\"--max-old-space-size=16384\" timeout 1800 next build",
