@@ -81,7 +81,7 @@ export const DocumentSchema = z.object({
   docProp: documentPropertyShape
     .nullable()
     .optional()
-    .describe('Property case file metadatal.'),
+    .describe('Property case file metadata.'),
   docProps: z
     .array(documentPropertyShape)
     .optional()
