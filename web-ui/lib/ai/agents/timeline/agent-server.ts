@@ -16,6 +16,9 @@ import { drizDb } from '@/lib/drizzle-db';
 import { setupDefaultTools } from '../../mcp/setup-default-tools';
 import { NextRequest } from 'next/server';
 import { ChatHistoryContext, createChatHistoryMiddleware } from '../../middleware';
+import { LoggedError } from '@/lib/react-util';
+import { ToolProviderSet } from '../..';
+import { log } from '@/lib/logger';
 
 type InitializeProps = { req: NextRequest };
 
@@ -509,21 +512,22 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       req,
     }: { model?: AiLanguageModelType; req?: NextRequest } = {},
   ): Promise<TResultType> {      
-      this.#chatHistoryContext = this.#chatHistoryContext ?? {
-        userId: '-1',
-        requestId: generateChatId(Math.random() * 1000).id,
-        chatId: generateChatId(Math.random() * 1000).id,
-        temperature: 0.7, // Default values, could be extracted from request
-        topP: 1.0,
-      };
-      
-    const baseModel = aiModelFactory(model ?? 'lofi');
-    const hal = wrapLanguageModel({
-        model: baseModel,
-        middleware: createChatHistoryMiddleware({...this.#chatHistoryContext, model: baseModel.modelId }),
-      })
-    const tools = await setupDefaultTools({ req });
+    let tools: ToolProviderSet | undefined = undefined;
     try {
+        this.#chatHistoryContext = this.#chatHistoryContext ?? {
+          userId: '-1',
+          requestId: generateChatId(Math.random() * 1000).id,
+          chatId: generateChatId(Math.random() * 1000).id,
+          temperature: 0.7, // Default values, could be extracted from request
+          topP: 1.0,
+        };
+        
+      const baseModel = aiModelFactory(model ?? 'lofi');
+      const hal = wrapLanguageModel({
+          model: baseModel,
+          middleware: createChatHistoryMiddleware({...this.#chatHistoryContext, model: baseModel.modelId }),
+        })
+      tools = await setupDefaultTools({ req });
       const ret = await generateText({
         model: hal,
         prompt: input,
@@ -545,8 +549,27 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       }
       // Otherwise, return the text response
       return ret.text as TResultType;
+    } catch (error) {
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error,{
+        log: true,
+        source: 'TimelineAgent',
+        message: 'Error generating response',
+        critical: true,
+        data: {
+          input,
+          model,
+          userId: this.#chatHistoryContext?.userId,
+          chatId: this.#chatHistoryContext?.chatId,
+        },
+      });
     } finally {
-      tools.dispose();
+      if (tools){
+        try{
+          tools.dispose();
+        }catch(e){
+          log(l => l.error('Error disposing tools', e));
+        }
+      }
     }
   }
 }

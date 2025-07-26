@@ -30,7 +30,7 @@ export const  drizDbWithInit: DrizDbInitOverloads = <T>(cb?: (db: DbDatabaseType
       const pgDbWithInit = await (import('../neondb/connection').then(
         (x) => x.pgDbWithInit,
       ));
-      const theDb = pgDbWithInit()
+      const theDb = await (pgDbWithInit()
         .then((sql) => drizzle({
             client: sql,
             casing: 'snake_case',
@@ -38,7 +38,7 @@ export const  drizDbWithInit: DrizDbInitOverloads = <T>(cb?: (db: DbDatabaseType
           })).then((value) => {
             _drizDb = value;
             return value;
-          });
+          }));
       return theDb;
     })();
     _drizDbPromise.catch(      
