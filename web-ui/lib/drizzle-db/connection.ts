@@ -13,7 +13,7 @@ interface DrizDbInitOverloads {
   <T>(then: (db: DbDatabaseType) => T): T extends Promise<infer R> ? Promise<R> : Promise<T>;
 };
 
-export const  drizDbWithInit: DrizDbInitOverloads = <T>(cb?: (db: DbDatabaseType) => T) => {
+export const drizDbWithInit: DrizDbInitOverloads = <T>(cb?: (db: DbDatabaseType) => T) => {
   const resolver = async (db: DbDatabaseType) => {
     if (cb) {
       const fnRet = cb(db);
