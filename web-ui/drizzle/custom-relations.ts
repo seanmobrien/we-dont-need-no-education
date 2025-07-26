@@ -12,6 +12,12 @@ import {
   analysisStage,
   users,
   chatHistory,
+  messageStatuses,
+  turnStatuses,
+  chats,
+  chatTurns,
+  chatMessages,
+  tokenUsage,
   accounts,
   sessions,
   sessionsExt,
@@ -24,6 +30,7 @@ import {
   emailSentimentAnalysisDetails,
   keyPointsDetails,
   policyTypes,
+  userPublicKeys,
   violationDetails,
   callToActionCategory,
   documentPropertyCallToActionCategory,
@@ -234,12 +241,69 @@ export const chatHistoryRelations = relations(chatHistory, ({ one }) => ({
   }),
 }));
 
+// New chat history relations
+export const messageStatusesRelations = relations(
+  messageStatuses,
+  ({ many }) => ({
+    chatMessages: many(chatMessages),
+  }),
+);
+
+export const turnStatusesRelations = relations(turnStatuses, ({ many }) => ({
+  chatTurns: many(chatTurns),
+}));
+
+export const chatsRelations = relations(chats, ({ one, many }) => ({
+  user: one(users, {
+    fields: [chats.userId],
+    references: [users.id],
+  }),
+  chatTurns: many(chatTurns),
+  chatMessages: many(chatMessages),
+}));
+
+export const chatTurnsRelations = relations(chatTurns, ({ one, many }) => ({
+  chat: one(chats, {
+    fields: [chatTurns.chatId],
+    references: [chats.id],
+  }),
+  status: one(turnStatuses, {
+    fields: [chatTurns.statusId],
+    references: [turnStatuses.id],
+  }),
+  chatMessages: many(chatMessages),
+  tokenUsage: many(tokenUsage),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  chat: one(chats, {
+    fields: [chatMessages.chatId],
+    references: [chats.id],
+  }),
+  turn: one(chatTurns, {
+    fields: [chatMessages.turnId],
+    references: [chatTurns.turnId],
+  }),
+  status: one(messageStatuses, {
+    fields: [chatMessages.statusId],
+    references: [messageStatuses.id],
+  }),
+}));
+
+export const tokenUsageRelations = relations(tokenUsage, ({ one }) => ({
+  turn: one(chatTurns, {
+    fields: [tokenUsage.turnId],
+    references: [chatTurns.turnId],
+  }),
+}));
+
 export const usersRelations = relations(users, ({ many }) => ({
   chatHistories: many(chatHistory),
   stagingMessages: many(stagingMessage),
   accounts: many(accounts, {
     relationName: 'accounts_userId_users_id',
   }),
+  userPublicKeys: many(userPublicKeys),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one, many }) => ({

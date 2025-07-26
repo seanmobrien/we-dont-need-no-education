@@ -307,9 +307,9 @@ export class ComplianceTimelineProcessor {
  * Factory function to create a compliance processor
  */
 export function createComplianceProcessor(
-  initialDocumentId: string,
+  propertyId: string,
 ): ComplianceTimelineProcessor {
-  const agent = TimelineAgentFactory({ initialDocumentId });
+  const agent = TimelineAgentFactory({ propertyId });
   return new ComplianceTimelineProcessor(agent);
 }
 
@@ -328,13 +328,9 @@ export async function demonstrateComplianceProcessing() {
   // Add the specific documents mentioned in the script
   processor['agent'].addDocuments(['325', '308', '307']);
 
-  console.log('Processing initial request...');
   let summary = await processor.processCaseDocument('325');
-  console.log('Initial Summary Generated');
 
-  console.log('\nProcessing follow-up communication...');
   summary = await processor.processCaseDocument('308');
-  console.log('Updated Summary Generated');
 
   console.log('\nProcessing next record (307)...');
   summary = await processor.processCaseDocument('307');

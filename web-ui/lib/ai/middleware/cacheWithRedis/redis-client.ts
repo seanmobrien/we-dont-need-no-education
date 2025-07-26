@@ -1,6 +1,7 @@
 import { createClient, RedisClientType } from 'redis';
 import { env } from '@/lib/site-util/env';
-import { isError } from '@/lib/react-util';
+import { isError, LoggedError } from '@/lib/react-util';
+import { log } from '@/lib/logger';
 
 let redisClient: RedisClientType | null = null;
 
@@ -16,19 +17,26 @@ export async function getRedisClient(): Promise<RedisClientType> {
     });
 
     redisClient.on('error', (err) => {
-      console.error('Redis Client Error:', err);
+      LoggedError.isTurtlesAllTheWayDownBaby(err, {
+        message: 'Redis client error',
+        data: {
+          redisUrl: env('REDIS_URL'),
+        },
+        source: 'redis-client',
+        log: true,
+      });      
     });
 
     redisClient.on('connect', () => {
-      console.log('Redis client connected');
+      log(l => l.info('Redis client connected'));
     });
 
     redisClient.on('reconnecting', () => {
-      console.log('Redis client reconnecting');
+      log(l => l.warn('Redis client reconnecting'));
     });
 
     redisClient.on('ready', () => {
-      console.log('Redis client ready');
+      log(l => l.info('Redis client ready'));
     });
 
     await redisClient.connect();

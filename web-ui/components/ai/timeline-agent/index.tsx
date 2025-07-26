@@ -45,6 +45,7 @@ import {
 } from '@/lib/ai/agents/timeline/types';
 import { log } from '@/lib/logger';
 import { ClientTimelineAgent } from '@/lib/ai/agents/timeline/agent';
+import { useNotifications } from '@toolpad/core/useNotifications';
 
 interface TimelineAgentInterfaceProps {
   initialDocumentId: string;
@@ -94,6 +95,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
   initialDocumentId,
   caseId,
 }) => {
+  const notifications = useNotifications();
   const [state, setState] = useState<AgentState>({
     agent: null,
     isInitialized: false,
@@ -111,7 +113,8 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
     isSuccess,
     isError,
     data,
-    error: mutationError,
+    ...otherMutationProps
+    // error: mutationError,
   } = useMutation({
     mutationFn: async () => {
       const response = await fetch('/api/ai/agents/timeline', {
@@ -321,16 +324,30 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         if (isSuccess) {
           log((l) => l.info('Agent initialized successfully'));
         } else {
-          if (isError) {
-            alert(mutationError);
+          if (
+            isError &&
+            'error' in otherMutationProps &&
+            otherMutationProps.error
+          ) {
+            notifications.show(otherMutationProps.error.message, {
+              severity: 'error',
+              autoHideDuration: 60000,
+            });
           } else {
             mutate();
           }
         }
       }
     } else {
-      if (isError) {
-        alert(mutationError);
+      if (
+        isError &&
+        'error' in otherMutationProps &&
+        otherMutationProps.error
+      ) {
+        notifications.show(otherMutationProps.error.message, {
+          severity: 'error',
+          autoHideDuration: 60000,
+        });        
       } else {
         //no-op?
       }
@@ -342,8 +359,9 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
     isPending,
     data,
     isSuccess,
-    mutationError,
+    otherMutationProps,
     isError,
+    notifications,
   ]);
 
   const documentCounts = state.agent?.getDocumentCounts() || {
@@ -391,43 +409,51 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           {state.error && <Alert severity="error">{state.error}</Alert>}
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Tooltip title="Save Agent State">
-              <IconButton
-                onClick={saveSnapshot}
-                disabled={!state.isInitialized || isPending}
-              >
-                <Save />
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={saveSnapshot}
+                  disabled={!state.isInitialized || isPending}
+                >
+                  <Save />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Load Agent State">
-              <IconButton
-                component="label"
-                disabled={state.isProcessing || isPending}
-              >
-                <input
-                  type="file"
-                  accept=".json"
-                  hidden
-                  onChange={handleFileInputChange}
-                  aria-label="Load agent state file"
-                />
-                <Upload />
-              </IconButton>
+              <span>
+                <IconButton
+                  component="label"
+                  disabled={state.isProcessing || isPending}
+                >
+                  <input
+                    type="file"
+                    accept=".json"
+                    hidden
+                    onChange={handleFileInputChange}
+                    aria-label="Load agent state file"
+                  />
+                  <Upload />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Refresh Summary">
-              <IconButton
-                onClick={refreshSummary}
-                disabled={!state.isInitialized || isPending}
-              >
-                <Refresh />
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={refreshSummary}
+                  disabled={!state.isInitialized || isPending}
+                >
+                  <Refresh />
+                </IconButton>
+              </span>
             </Tooltip>
             <Tooltip title="Reset Agent">
-              <IconButton
-                onClick={resetAgent}
-                disabled={state.isProcessing || isPending}
-              >
-                <RestartAlt />
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={resetAgent}
+                  disabled={state.isProcessing || isPending}
+                >
+                  <RestartAlt />
+                </IconButton>
+              </span>
             </Tooltip>
           </Box>
         </Box>

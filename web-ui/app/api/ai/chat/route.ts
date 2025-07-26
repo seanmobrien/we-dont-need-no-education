@@ -1,18 +1,22 @@
-import { createDataStreamResponse, streamText } from 'ai';
-import { aiModelFactory, ChatRequestMessage } from '@/lib/ai';
+import { createDataStreamResponse, wrapLanguageModel, streamText } from 'ai';
+import {
+  aiModelFactory,
+  ChatRequestMessage,
+  isAiLanguageModelType,
+  getRetryErrorInfo,
+  optimizeMessagesWithToolSummarization,
+  toolProviderSetFactory,
+  type ChatHistoryContext,
+} from '@/lib/ai';
+import {
+  createChatHistoryMiddleware,
+} from '@/lib/ai/middleware/chat-history';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
-import { db } from '@/lib/drizzle-db/connection';
-import { chatHistory } from '@/drizzle/schema';
-import { newUuid } from '@/lib/typescript';
 import { LoggedError } from '@/lib/react-util';
-import { isAiLanguageModelType } from '@/lib/ai/core';
-import { getRetryErrorInfo } from '@/lib/ai/chat';
-import { generateChatId } from '@/lib/components/ai';
-import { toolProviderSetFactory } from '@/lib/ai/mcp';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+import { generateChatId } from '@/lib/ai/core';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 
@@ -40,7 +44,8 @@ export async function POST(req: NextRequest) {
   }
   const {
     messages,
-    data: { model: modelFromRequest, threadId, writeEnabled = false } = {},
+    id,
+    data: { model: modelFromRequest, threadId, writeEnabled = false, memoryDisabled } = {},
   } = ((await req.json()) as ChatRequestMessage) ?? {};
   const model = isAiLanguageModelType(modelFromRequest)
     ? modelFromRequest
@@ -70,7 +75,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const chatHistoryId = newUuid();
+  const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
 
   try {
     const toolProviders = await toolProviderSetFactory([
@@ -81,22 +86,36 @@ export async function POST(req: NextRequest) {
           env('NEXT_PUBLIC_HOSTNAME'),
         ).toString(),
         headers: getMcpClientHeaders({ req, chatHistoryId }),
+        traceable: req.headers.get('x-traceable') !== 'false',
       },
-      {
-        allowWrite: true,
-        /*
-        url: new URL(
-          '/mcp/openmemory/sse/${process.env.MEM0_USERNAME}',
-          env('MEM0_API_HOST'),
-        ).toString(),
-        */
-        headers: {
-          'cache-control': 'no-cache, no-transform',
-          'content-encoding': 'none',
-        },
-        url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
-      },
+      ...(memoryDisabled !== true && env('MEM0_DISABLED') ? [] : [
+          {
+            allowWrite: true,        
+            headers: {
+              'cache-control': 'no-cache, no-transform',
+              'content-encoding': 'none',
+            },
+            url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
+          },
+        ]),
     ]);
+
+    // Create chat history context
+    const chatHistoryContext: ChatHistoryContext = {
+      userId: session?.user?.id || 'anonymous',
+      requestId: chatHistoryId,
+      chatId: threadId,
+      model,
+      temperature: 0.7, // Default values, could be extracted from request
+      topP: 1.0,
+    };
+
+    // Wrap the base model with chat history middleware
+    const baseModel = aiModelFactory(model);
+    const modelWithHistory = wrapLanguageModel({
+      model: baseModel,
+      middleware: createChatHistoryMiddleware(chatHistoryContext),
+    });
 
     let isRateLimitError = false;
     let retryAfter = 0;
@@ -104,25 +123,25 @@ export async function POST(req: NextRequest) {
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
-          model: aiModelFactory(model),
+          model: modelWithHistory,
           messages: optimizedMessages,
           experimental_generateMessageId: () => {
             return `${threadId ?? 'not-set'}:${generateChatId().id}`;
           },
           experimental_telemetry: {
-            isEnabled: true,
-            functionId: 'my-awesome-function',
+            isEnabled: true, // Currently a bug in the ai package processing string dates
+            functionId: 'chat-request',
             metadata: {
-              something: 'custom',
-              someOtherThing: 'other-value',
+              userId: session?.user?.id || 'anonymous',
+              requestId: chatHistoryId,
+              chatId: threadId || 'no-thread',
             },
           },
           providerOptions: {
             openai: {
               store: true,
               user: session.user ? `user-${session.user.id}` : `user-anon`,
-            } /*  I swear this existed at some point, but it seems to have been removed from the ai package.
-            satisfies OpenAIResponsesProviderOptions */,
+            },
           },
           maxSteps: 100,
           onError: async (error) => {
@@ -173,24 +192,8 @@ export async function POST(req: NextRequest) {
               await mcpCloseTask;
             }
           },
-          onFinish: async ({ request: { body: requestBody }, ...evt }) => {
-            console.warn('onFinish callback called');
-            const response = JSON.stringify(evt, (key, value) => {
-              if (key === 'request' || key.startsWith('x-')) {
-                return undefined;
-              }
-              if (Array.isArray(value) && value.length === 0) {
-                return undefined;
-              }
-              return value;
-            });
+          onFinish: async ({ /*request: { body: requestBody }, ...evt */ }) => {            
             try {
-              const task = db.insert(chatHistory).values({
-                chatHistoryId,
-                userId: Number(session?.user?.id) ?? 0,
-                request: requestBody ?? '',
-                result: response,
-              });
               log((l) =>
                 l.verbose({
                   source: 'route:ai:chat onFinish',
@@ -205,7 +208,6 @@ export async function POST(req: NextRequest) {
                 }),
               );
               await toolProviders.dispose();
-              await task;
             } catch (error) {
               LoggedError.isTurtlesAllTheWayDownBaby(error, {
                 log: true,
@@ -231,6 +233,9 @@ export async function POST(req: NextRequest) {
         if (isRateLimitError) {
           error = new Error(
             `Rate limit exceeded. Please try again later. Retry after: ${retryAfter} seconds.`,
+            {
+              cause: { reason: 'RateLimit', retryAfter },
+            }
           );
         }
         // Log the error for debugging purposes

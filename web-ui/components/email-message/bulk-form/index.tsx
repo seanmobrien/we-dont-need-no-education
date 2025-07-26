@@ -13,26 +13,112 @@ import {
   isRecordDirty,
   RecordWithDirtyState,
 } from '@/lib/typescript';
-import {
-  classnames,
-  spacing,
-  borders,
-  typography,
-  backgrounds,
-  margin,
-  boxShadow,
-  display,
-  width,
-  fontWeight,
-  minWidth,
-  verticalAlign,
-} from 'tailwindcss-classnames';
 import ContactDropdown from '@/components/contact/contact-dropdown';
 import { log } from '@/lib/logger';
 import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';
 import { LoggedError } from '@/lib/react-util';
+
+// Define stable style objects outside component to avoid re-renders
+const stableStyles = {
+  container: {
+    margin: '0 auto',
+    padding: '1.5rem',
+    width: '100%',
+    borderRadius: '0.5rem',
+    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    maxWidth: '100%',
+  } as const,
+  title: {
+    fontSize: '1.25rem',
+    fontWeight: 600,
+    marginBottom: '1rem',
+  } as const,
+  errorText: {
+    color: '#ef4444',
+    marginBottom: '0.5rem',
+  } as const,
+  loadingText: {
+    color: '#6b7280',
+  } as const,
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse' as const,
+  },
+  tableCell: {
+    border: '1px solid #d1d5db',
+    padding: '0.5rem',
+  } as const,
+  tableCellTop: {
+    borderTop: '1px solid #d1d5db',
+    borderLeft: '1px solid #d1d5db',
+    padding: '0.5rem',
+  } as const,
+  tableCellTopOnly: {
+    borderTop: '1px solid #d1d5db',
+    padding: '0.5rem',
+  } as const,
+  tableCellBottom: {
+    borderBottom: '1px solid #d1d5db',
+    borderLeft: '1px solid #d1d5db',
+    padding: '0.5rem',
+  } as const,
+  tableCellBottomSpan: {
+    borderBottom: '1px solid #d1d5db',
+    padding: '0.5rem',
+  } as const,
+  tableCellFull: {
+    borderTop: '1px solid #d1d5db',
+    borderRight: '1px solid #d1d5db',
+    borderBottom: '1px solid #d1d5db',
+    padding: '0.5rem',
+  } as const,
+  minWidthMax: {
+    minWidth: 'max-content',
+  } as const,
+  fontSemibold: {
+    fontWeight: 600,
+  } as const,
+  alignTop: {
+    verticalAlign: 'top',
+  } as const,
+  textareaFull: {
+    width: '100%',
+    border: '1px solid #d1d5db',
+  } as const,
+  buttonContainer: {
+    display: 'flex',
+    marginTop: '1rem',
+  } as const,
+  button: {
+    padding: '0.5rem',
+    color: 'white',
+    borderRadius: '0.375rem',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.15s ease-in-out',
+    marginRight: '0.5rem',
+  } as const,
+  buttonBlue: {
+    backgroundColor: '#3b82f6',
+    '&:hover': {
+      backgroundColor: '#2563eb',
+    },
+  } as const,
+  buttonGreen: {
+    backgroundColor: '#10b981',
+    '&:hover': {
+      backgroundColor: '#059669',
+    },
+  } as const,
+  buttonRed: {
+    backgroundColor: '#ef4444',
+    '&:hover': {
+      backgroundColor: '#dc2626',
+    },
+  } as const,
+} as const;
 
 type BulkUpdateOperationRecord = {
   record: RecordWithDirtyState<EmailMessage>;
@@ -219,51 +305,38 @@ const BulkEmailForm: React.FC = () => {
   };
 
   return (
-    <div
-      className={classnames(
-        margin('mx-auto'),
-        spacing('p-6', 'mx-8'),
-        width('w-full'),
-        borders('rounded-lg'),
-        boxShadow('shadow-md'),
-      )}
-    >
-      <h2
-        className={classnames(
-          typography('text-xl', 'font-semibold'),
-          margin('mb-4'),
-        )}
-      >
+    <div style={stableStyles.container}>
+      <h2 style={stableStyles.title}>
         Bulk Add Emails
       </h2>
       {error && (
-        <p className={classnames(typography('text-red-500'), margin('mb-2'))}>
+        <p style={stableStyles.errorText}>
           {error}
         </p>
       )}
       {loading ? (
-        <p className={classnames(typography('text-gray-600'))}>
+        <p style={stableStyles.loadingText}>
           Loading emails...
         </p>
       ) : bulkUpdateOperation ? (
-        <p className={classnames(typography('text-gray-600'))}>
+        <p style={stableStyles.loadingText}>
           Saving emails...
         </p>
       ) : (
         <div>
-          <table className={classnames(display('table'), width('w-full'))}>
+          <table style={stableStyles.table}>
             <thead>
               <tr>
-                <th className={classnames(borders('border'), spacing('p-2'))}>
+                <th style={stableStyles.tableCell}>
                   Sender
                 </th>
-                <th className={classnames(borders('border'), spacing('p-2'))}>
+                <th style={stableStyles.tableCell}>
                   Recipients
                 </th>
-                <th className={classnames(borders('border'), spacing('p-2'))}>
+                <th style={stableStyles.tableCell}>
                   Sent On
                 </th>
-                <th className={classnames(borders('border'), spacing('p-2'))}>
+                <th style={stableStyles.tableCell}>
                   Actions
                 </th>
               </tr>
@@ -274,14 +347,9 @@ const BulkEmailForm: React.FC = () => {
                   key={email.emailId !== '' ? email.emailId : getUuid(email)}
                 >
                   <tr data-row-index={index}>
-                    <td
-                      className={classnames(
-                        borders('border-t', 'border-l'),
-                        spacing('p-2'),
-                      )}
-                    >
+                    <td style={stableStyles.tableCellTop}>
                       <ContactDropdown
-                        className={classnames(minWidth('min-w-max'))}
+                        style={stableStyles.minWidthMax}
                         displayValue="name"
                         contact={email.sender}
                         setValue={(value) =>
@@ -293,12 +361,7 @@ const BulkEmailForm: React.FC = () => {
                         }
                       />
                     </td>
-                    <td
-                      className={classnames(
-                        borders('border-t'),
-                        spacing('p-2'),
-                      )}
-                    >
+                    <td style={stableStyles.tableCellTopOnly}>
                       <ContactRecipients
                         contacts={email.recipients}
                         onContactsUpdate={(updatedContacts) =>
@@ -310,12 +373,7 @@ const BulkEmailForm: React.FC = () => {
                         }
                       />
                     </td>
-                    <td
-                      className={classnames(
-                        borders('border-t'),
-                        spacing('p-2'),
-                      )}
-                    >
+                    <td style={stableStyles.tableCellTopOnly}>
                       <input
                         aria-label="Sent On"
                         type="datetime-local"
@@ -325,10 +383,7 @@ const BulkEmailForm: React.FC = () => {
                       />
                     </td>
                     <td
-                      className={classnames(
-                        borders('border-y', 'border-r'),
-                        spacing('p-2'),
-                      )}
+                      style={stableStyles.tableCellFull}
                       rowSpan={4}
                     >
                       <button
@@ -358,12 +413,10 @@ const BulkEmailForm: React.FC = () => {
                             );
                           }
                         }}
-                        className={classnames(
-                          spacing('p-2'),
-                          backgrounds('bg-red-500', 'hover:bg-red-600'),
-                          typography('text-white'),
-                          borders('rounded'),
-                        )}
+                        style={{
+                          ...stableStyles.button,
+                          ...stableStyles.buttonRed,
+                        }}
                       >
                         Delete
                       </button>
@@ -371,18 +424,15 @@ const BulkEmailForm: React.FC = () => {
                   </tr>
 
                   <tr data-row-index={index}>
-                    <td
-                      className={classnames(
-                        borders('border-l'),
-                        spacing('p-2'),
-                        fontWeight('font-semibold'),
-                        verticalAlign('align-top'),
-                      )}
-                    >
+                    <td style={{
+                      ...stableStyles.tableCellTop,
+                      ...stableStyles.fontSemibold,
+                      ...stableStyles.alignTop,
+                    }}>
                       Parent Email
                     </td>
 
-                    <td colSpan={2} className={classnames(spacing('p-2'))}>
+                    <td colSpan={2} style={stableStyles.tableCellTopOnly}>
                       <EmailSelect
                         selectedEmail={email.parentEmailId}
                         onEmailSelect={(newParentId: string | null) => {
@@ -397,17 +447,14 @@ const BulkEmailForm: React.FC = () => {
                   </tr>
 
                   <tr data-row-index={index}>
-                    <td
-                      className={classnames(
-                        borders('border-l'),
-                        spacing('p-2'),
-                        fontWeight('font-semibold'),
-                      )}
-                    >
+                    <td style={{
+                      ...stableStyles.tableCellTop,
+                      ...stableStyles.fontSemibold,
+                    }}>
                       Subject
                     </td>
 
-                    <td colSpan={2} className={classnames(spacing('p-2'))}>
+                    <td colSpan={2} style={stableStyles.tableCellTopOnly}>
                       <input
                         aria-label="Subject"
                         type="text"
@@ -419,28 +466,19 @@ const BulkEmailForm: React.FC = () => {
                   </tr>
 
                   <tr data-row-index={index}>
-                    <td
-                      className={classnames(
-                        borders('border-b', 'border-l'),
-                        spacing('p-2'),
-                        fontWeight('font-semibold'),
-                      )}
-                    >
+                    <td style={{
+                      ...stableStyles.tableCellBottom,
+                      ...stableStyles.fontSemibold,
+                    }}>
                       Body
                     </td>
                     <td
                       colSpan={2}
-                      className={classnames(
-                        borders('border-b'),
-                        spacing('p-2'),
-                      )}
+                      style={stableStyles.tableCellBottomSpan}
                     >
                       <textarea
                         aria-label="Body"
-                        className={classnames(
-                          width('w-full'),
-                          borders('border'),
-                        )}
+                        style={stableStyles.textareaFull}
                         rows={4}
                         data-field="body"
                         value={email.body}
@@ -452,56 +490,46 @@ const BulkEmailForm: React.FC = () => {
               ))}
             </tbody>
           </table>
-          <div className={classnames(display('flex'), margin('mt-4'))}></div>
-          <button
-            onClick={() => handlePageChange(pageStats.page - 1)}
-            disabled={pageStats.page === 1}
-            className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-              typography('text-white'),
-              borders('rounded'),
-              margin('mr-2'),
-            )}
-          >
-            Previous
-          </button>
-          <button
-            onClick={handleAddRow}
-            className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-              typography('text-white'),
-              borders('rounded'),
-              margin('mt-4'),
-            )}
-          >
-            Add Row
-          </button>
-          <button
-            onClick={handleSave}
-            className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-green-500', 'hover:bg-green-600'),
-              typography('text-white'),
-              borders('rounded'),
-              margin('mt-4', 'ml-2'),
-            )}
-          >
-            Save
-          </button>
-          <button
-            onClick={() => handlePageChange(pageStats.page + 1)}
-            disabled={pageStats.page * pageStats.num >= pageStats.total}
-            className={classnames(
-              spacing('p-2'),
-              backgrounds('bg-blue-500', 'hover:bg-blue-600'),
-              typography('text-white'),
-              borders('rounded'),
-            )}
-          >
-            Next
-          </button>
+          <div style={stableStyles.buttonContainer}>
+            <button
+              onClick={() => handlePageChange(pageStats.page - 1)}
+              disabled={pageStats.page === 1}
+              style={{
+                ...stableStyles.button,
+                ...stableStyles.buttonBlue,
+              }}
+            >
+              Previous
+            </button>
+            <button
+              onClick={handleAddRow}
+              style={{
+                ...stableStyles.button,
+                ...stableStyles.buttonBlue,
+              }}
+            >
+              Add Row
+            </button>
+            <button
+              onClick={handleSave}
+              style={{
+                ...stableStyles.button,
+                ...stableStyles.buttonGreen,
+              }}
+            >
+              Save
+            </button>
+            <button
+              onClick={() => handlePageChange(pageStats.page + 1)}
+              disabled={pageStats.page * pageStats.num >= pageStats.total}
+              style={{
+                ...stableStyles.button,
+                ...stableStyles.buttonBlue,
+              }}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>

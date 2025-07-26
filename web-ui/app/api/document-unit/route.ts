@@ -21,14 +21,15 @@ export async function GET(req: NextRequest) {
     if (!!id) {
       const parsedId = Array.isArray(id) ? id : String(id).split(',');
       const rawRecords = await getMultipleCaseFileDocuments({
-        caseFileIds: parsedId,
+        requests: parsedId.map((id) => ({
+          caseFileId: id,
+        })),
       });
 
       const parsedRecords = z
         .object(toolCallbackArrayResultSchemaFactory(DocumentSchema))
         .safeParse(rawRecords.structuredContent);
       if (!parsedRecords.success) {
-        console.log(parsedRecords.error);
         throw { error: parsedRecords.error, data: rawRecords };
       }
       return NextResponse.json(parsedRecords.data);

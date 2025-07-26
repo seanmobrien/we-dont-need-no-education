@@ -2,24 +2,33 @@ import { Box } from '@mui/material';
 import CtaGrid from './grid';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import { auth } from '@/auth';
-import { ChatPanel } from '@/components/ai/chat-panel';
+import { ChatPanel, ChatPanelLayout } from '@/components/ai/chat-panel';
+import { Metadata } from 'next';
+
+export const generateMetadata = async (): Promise<Metadata> => {
+  return {
+    title: 'Call to Action',
+  };
+};
 
 const Page = async () => {
   const session = await auth();
 
   return (
     <EmailDashboardLayout session={session}>
-      <Box
-        sx={{
-          width: '100%',
-          '& > :not(style)': {
-            m: 1,
-          },
-        }}
-      >
-        <CtaGrid />
-        <ChatPanel page="email-cta" />
-      </Box>
+      <ChatPanelLayout >
+        <Box
+          sx={{
+            width: '100%',
+            '& > :not(style)': {
+              m: 1,
+            },
+          }}
+        >
+          <CtaGrid />
+          <ChatPanel page="email-cta"  />
+        </Box>
+      </ChatPanelLayout>
     </EmailDashboardLayout>
   );
 };

@@ -1,8 +1,4 @@
-@import "tailwindcss";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Removed Tailwind CSS imports as part of Tailwind removal */
 
 :root {
   --background: #ffffff;
@@ -13,15 +9,85 @@
 [data-theme="dark"] {
   --background: #0a0a0a;
   --foreground: #ededed;
+  
+  /* Primary colors (main brand/UI elements) */
+  --color-primary-main: #19bfcf;
+  --color-primary-light: #19c4ce;
+  --color-primary-accent: #18b9b6;
+  --color-primary-dark: #1898a8;
+  
+  /* Secondary colors (alternative actions/elements) */
+  --color-secondary-main: #d05697;
+  --color-secondary-light: #d05799;
+  --color-secondary-dark: #a8456f;
+  
+  /* Highlight colors (focus states, important callouts) */
+  --color-highlight-main: #ffda3e;
+  --color-highlight-light: #ffd73f;
+  --color-highlight-dark: #e4ca43;
+  --color-highlight-alt-1: #ffda3d;
+  --color-highlight-alt-2: #e4ca42;
+  --color-highlight-alt-3: #ffda40;
+  --color-highlight-alt-4: #ffd73d;
+  --color-highlight-alt-5: #ffd73e;
+  
+  /* Surface colors (backgrounds, cards, papers) */
+  --color-surface-primary: #000000;
+  /*--color-surface-primary: #23393d;*/
+  --color-surface-secondary: #23393e;
+  --color-surface-tertiary: #234541;
+  --color-surface-elevated: #234148;
+  --color-surface-overlay: #23324b;
+  
+  /* Border colors */
+  --color-border-main: #19bfcf;
+  --color-border-secondary: #ffaafb;
+  --color-border-subtle: #234541;
 }
 
-/* Colorful theme CSS variables */
-[data-theme="colorful"] {
+/* light theme CSS variables */
+[data-theme="light"] {
   --background: #ffffff;
   --foreground: #000000;
+  
+  /* Primary colors (main brand/UI elements) */
+  --color-primary-main: #1abbf9;
+  --color-primary-light: #5ecdfb;
+  --color-primary-accent: #1abbf9;
+  --color-primary-dark: #118bd6;
+  
+  /* Secondary colors (alternative actions/elements) */
+  --color-secondary-main: #ff79f9;
+  --color-secondary-light: #ffaafb;
+  --color-secondary-dark: #d647d6;
+  
+  /* Highlight colors (focus states, important callouts) */
+  --color-highlight-main: #1abbf9;
+  --color-highlight-light: #5ecdfb;
+  --color-highlight-dark: #118bd6;
+  --color-highlight-alt-1: #1abbf9;
+  --color-highlight-alt-2: #5ecdfb;
+  --color-highlight-alt-3: #1abbf9;
+  --color-highlight-alt-4: #5ecdfb;
+  --color-highlight-alt-5: #1abbf9;
+  
+  /* Surface colors (backgrounds, cards, papers) */
+  --color-surface-primary: #ffffff;
+  --color-surface-secondary: #ffaafb;
+  --color-surface-tertiary: #5ecdfb;
+  --color-surface-elevated: #ededed;
+  --color-surface-overlay: rgba(26, 187, 249, 0.12);
+  
+  /* Border colors */
+  --color-border-main: #f5a9b8;
+  --color-border-secondary: rgba(245, 169, 184, 0.5);
+  --color-border-subtle: rgba(245, 169, 184, 0.3);
+  
+  /* Legacy variables for backward compatibility */
   --primary: #1abbf9;
   --secondary: #ff79f9;
   --accent: #f5a9b8;
+
 }
 
 
@@ -34,16 +100,30 @@ input[type="datetime"],
 input[type="datetime-local"],
 input[type="number"],
 textarea {
-  @apply px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  background-color: #ffffff;
+  color: #374151;
+  outline: none;
+  width: 100%;
 }
 
-/* Apply dark theme styles only when dark theme is explicitly selected and no specific theme is set */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme]) {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+select:focus,
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="date"]:focus,
+input[type="datetime"]:focus,
+input[type="datetime-local"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #3b82f6;
+  border-color: #3b82f6;
 }
+
 
 /* Dark theme input styles */
 [data-theme="dark"] select,
@@ -55,20 +135,50 @@ textarea {
 [data-theme="dark"] input[type="datetime-local"],
 [data-theme="dark"] input[type="number"],
 [data-theme="dark"] textarea {
-  @apply bg-gray-800 text-gray-200 border-gray-600 focus:ring-blue-300 focus:border-blue-300;
+  background-color: var(--color-surface-primary);
+  color: #e5e7eb;
+  border-color: var(--color-primary-accent);
 }
 
-/* Colorful theme input styles */
-[data-theme="colorful"] select,
-[data-theme="colorful"] input[type="text"],
-[data-theme="colorful"] input[type="email"],
-[data-theme="colorful"] input[type="password"],
-[data-theme="colorful"] input[type="date"],
-[data-theme="colorful"] input[type="datetime"],
-[data-theme="colorful"] input[type="datetime-local"],
-[data-theme="colorful"] input[type="number"],
-[data-theme="colorful"] textarea {
-  @apply bg-white text-gray-900 border-pink-200 focus:ring-blue-300 focus:border-blue-400;
+[data-theme="dark"] select:focus,
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="email"]:focus,
+[data-theme="dark"] input[type="password"]:focus,
+[data-theme="dark"] input[type="date"]:focus,
+[data-theme="dark"] input[type="datetime"]:focus,
+[data-theme="dark"] input[type="datetime-local"]:focus,
+[data-theme="dark"] input[type="number"]:focus,
+[data-theme="dark"] textarea:focus {
+  box-shadow: 0 0 0 2px var(--color-highlight-main);
+  border-color: var(--color-highlight-main);
+}
+
+/* light theme input styles */
+[data-theme="light"] select,
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="email"],
+[data-theme="light"] input[type="password"],
+[data-theme="light"] input[type="date"],
+[data-theme="light"] input[type="datetime"],
+[data-theme="light"] input[type="datetime-local"],
+[data-theme="light"] input[type="number"],
+[data-theme="light"] textarea {
+  background-color: var(--color-surface-primary);
+  color: #111827;
+  border-color: var(--color-border-subtle);
+}
+
+[data-theme="light"] select:focus,
+[data-theme="light"] input[type="text"]:focus,
+[data-theme="light"] input[type="email"]:focus,
+[data-theme="light"] input[type="password"]:focus,
+[data-theme="light"] input[type="date"]:focus,
+[data-theme="light"] input[type="datetime"]:focus,
+[data-theme="light"] input[type="datetime-local"]:focus,
+[data-theme="light"] input[type="number"]:focus,
+[data-theme="light"] textarea:focus {
+  box-shadow: 0 0 0 2px var(--color-highlight-light);
+  border-color: var(--color-highlight-main);
 }
 
 body {
@@ -81,328 +191,47 @@ body {
   color: var(--background)
 }
 
-@layer components {
-
-  input[type="datetime-local"]
-  {
-    max-width: 240px;
-  }
-
-
-
-  .btn {
-    @apply px-4 py-2 mt-4 rounded-md mx-2;
-  }
-
-  .btn-primary {
-    @apply bg-blue-500 text-white hover:bg-blue-600;
-  }
-
-  .btn-secondary {
-    @apply bg-green-500 hover:bg-green-600 text-white;
-  }
-
-  .btn-angry {
-    @apply bg-red-500 hover:bg-red-600 text-white;
-  }
+/* Button components */
+input[type="datetime-local"] {
+  max-width: 240px;
 }
 
-/* Default DataGrid theming (when no specific theme is set) */
-.MuiDataGrid-root {
-  border: 1px solid #e2e8f0 !important;
-  background-color: var(--background) !important;
+.btn {
+  padding: 0.5rem 1rem;
+  margin-top: 1rem;
+  border-radius: 0.375rem;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
 }
 
-.MuiDataGrid-cell {
-  border-bottom: 1px solid #e2e8f0 !important;
-  color: var(--foreground) !important;
+.btn-primary {
+  background-color: var(--color-primary-main);
+  color: #ffffff;
 }
 
-.MuiDataGrid-columnHeaders {
-  background-color: #f8fafc !important;
-  border-bottom: 1px solid #e2e8f0 !important;
+.btn-primary:hover {
+  background-color: var(--color-primary-dark);
 }
 
-.MuiDataGrid-columnHeaderTitle {
-  color: var(--foreground) !important;
-  font-weight: 600;
+.btn-secondary {
+  background-color: var(--color-secondary-main);
+  color: #ffffff;
 }
 
-.MuiDataGrid-virtualScroller {
-  background-color: var(--background) !important;
+.btn-secondary:hover {
+  background-color: var(--color-secondary-dark);
 }
 
-.MuiDataGrid-footerContainer {
-  background-color: #f8fafc !important;
-  border-top: 1px solid #e2e8f0 !important;
+.btn-angry {
+  background-color: #ef4444;
+  color: #ffffff;
 }
 
-.MuiDataGrid-row:hover {
-  background-color: #f1f5f9 !important;
+.btn-angry:hover {
+  background-color: #dc2626;
 }
 
-/* DataGrid theming for dark theme */
-[data-theme="dark"] .MuiDataGrid-root {
-  border: none !important;
-  background-color: transparent !important;
-}
 
-[data-theme="dark"] .MuiDataGrid-cell {
-  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
-  color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .MuiDataGrid-columnHeaders {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
-}
-
-[data-theme="dark"] .MuiDataGrid-columnHeaderTitle {
-  color: var(--foreground) !important;
-  font-weight: 600;
-}
-
-[data-theme="dark"] .MuiDataGrid-virtualScroller {
-  background-color: transparent !important;
-}
-
-[data-theme="dark"] .MuiDataGrid-footerContainer {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-  border-top: 1px solid rgba(81, 81, 81, 1) !important;
-}
-
-[data-theme="dark"] .MuiDataGrid-row:hover {
-  background-color: rgba(255, 255, 255, 0.05) !important;
-}
-
-/* DataGrid theming for colorful theme */
-[data-theme="colorful"] .MuiDataGrid-root {
-  border: 1px solid #f5a9b8 !important;
-  background-color: #ffffff !important;
-}
-
-[data-theme="colorful"] .MuiDataGrid-cell {
-  border-bottom: 1px solid rgba(245, 169, 184, 0.5) !important;
-  color: #000000 !important;
-}
-
-[data-theme="colorful"] .MuiDataGrid-columnHeaders {
-  background-color: rgba(26, 187, 249, 0.1) !important;
-  border-bottom: 1px solid #f5a9b8 !important;
-}
-
-[data-theme="colorful"] .MuiDataGrid-columnHeaderTitle {
-  color: #000000 !important;
-  font-weight: 600;
-}
-
-[data-theme="colorful"] .MuiDataGrid-virtualScroller {
-  background-color: #ffffff !important;
-}
-
-[data-theme="colorful"] .MuiDataGrid-footerContainer {
-  background-color: rgba(26, 187, 249, 0.05) !important;
-  border-top: 1px solid #f5a9b8 !important;
-}
-
-[data-theme="colorful"] .MuiDataGrid-row:hover {
-  background-color: rgba(26, 187, 249, 0.08) !important;
-}
-
-[data-theme="colorful"] .MuiDataGrid-row.Mui-selected {
-  background-color: rgba(255, 121, 249, 0.12) !important;
-}
-
-[data-theme="colorful"] .MuiDataGrid-row.Mui-selected:hover {
-  background-color: rgba(255, 121, 249, 0.16) !important;
-}
-
-/* @toolpad/core component theming */
-
-/* Navigation drawer/sidebar theming for dark theme */
-[data-theme="dark"] .MuiDrawer-paper {
-  background-color: rgba(18, 18, 18, 0.95) !important;
-  border-right: 1px solid rgba(81, 81, 81, 1) !important;
-}
-
-[data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root {
-  color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root:hover {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-[data-theme="dark"] .MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-[data-theme="dark"] .MuiDrawer-paper .MuiListItemText-primary {
-  color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .MuiDrawer-paper .MuiListSubheader-root {
-  color: var(--foreground) !important;
-  background-color: transparent !important;
-}
-
-/* Top navigation/AppBar theming for dark theme */
-[data-theme="dark"] .MuiAppBar-root {
-  background-color: rgba(18, 18, 18, 0.9) !important;
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(81, 81, 81, 1) !important;
-}
-
-[data-theme="dark"] .MuiAppBar-root .MuiToolbar-root {
-  color: var(--foreground) !important;
-}
-
-[data-theme="dark"] .MuiAppBar-root .MuiIconButton-root {
-  color: var(--foreground) !important;
-}
-
-/* Navigation drawer/sidebar theming for colorful theme */
-[data-theme="colorful"] .MuiDrawer-paper {
-  background-color: #ffffff !important;
-  border-right: 2px solid #f5a9b8 !important;
-}
-
-[data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root {
-  color: #000000 !important;
-}
-
-[data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root:hover {
-  background-color: rgba(26, 187, 249, 0.08) !important;
-}
-
-[data-theme="colorful"] .MuiDrawer-paper .MuiListItemButton-root.Mui-selected {
-  background-color: rgba(26, 187, 249, 0.12) !important;
-}
-
-[data-theme="colorful"] .MuiDrawer-paper .MuiListItemText-primary {
-  color: #000000 !important;
-}
-
-[data-theme="colorful"] .MuiDrawer-paper .MuiListSubheader-root {
-  color: #000000 !important;
-  background-color: rgba(26, 187, 249, 0.05) !important;
-  font-weight: 600;
-}
-
-/* Top navigation/AppBar theming for colorful theme */
-[data-theme="colorful"] .MuiAppBar-root {
-  background-color: #1abbf9 !important;
-  color: #ffffff !important;
-}
-
-[data-theme="colorful"] .MuiAppBar-root .MuiToolbar-root {
-  color: #ffffff !important;
-}
-
-[data-theme="colorful"] .MuiAppBar-root .MuiIconButton-root {
-  color: #ffffff !important;
-}
-
-/* Icon theming for colorful theme */
-[data-theme="colorful"] .MuiSvgIcon-root {
-  color: #1abbf9 !important;
-}
-
-[data-theme="colorful"] .MuiDataGrid-root .MuiSvgIcon-root {
-  color: #ff79f9 !important;
-}
-
-[data-theme="colorful"] .MuiAppBar-root .MuiSvgIcon-root,
-[data-theme="colorful"] .MuiDrawer-paper .MuiSvgIcon-root {
-  color: #f5a9b8 !important;
-}
-
-[data-theme="colorful"] .MuiIconButton-root:not(.MuiAppBar-root .MuiIconButton-root):not(.MuiDrawer-paper .MuiIconButton-root) .MuiSvgIcon-root {
-  color: #1abbf9 !important;
-}
-
-/* Additional component theming */
-
-/* TableContainer theming */
-[data-theme="dark"] .MuiTableContainer-root {
-  background-color: transparent !important;
-}
-
-[data-theme="colorful"] .MuiTableContainer-root {
-  background-color: #ffffff !important;
-}
-
-/* Paper component theming (for consistency) */
-[data-theme="dark"] .MuiPaper-root {
-  background-color: rgba(18, 18, 18, 0.8) !important;
-  border: 1px solid rgba(81, 81, 81, 1) !important;
-}
-
-[data-theme="colorful"] .MuiPaper-root {
-  background-color: #ffffff !important;
-  border: 1px solid #f5a9b8 !important;
-}
-
-/* Chip theming for better visibility */
-[data-theme="dark"] .MuiChip-root {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  color: var(--foreground) !important;
-}
-
-[data-theme="colorful"] .MuiChip-root {
-  background-color: rgba(26, 187, 249, 0.1) !important;
-  color: #000000 !important;
-  border: 1px solid rgba(245, 169, 184, 0.3) !important;
-}
-
-[data-theme="dark"] .MuiChip-colorSecondary {
-  background-color: rgba(255, 121, 249, 0.2) !important;
-  color: var(--foreground) !important;
-}
-
-[data-theme="colorful"] .MuiChip-colorSecondary {
-  background-color: #f5a9b8 !important;
-  color: #000000 !important;
-}
-
-/* Modal and Dialog theming */
-[data-theme="dark"] .MuiDialog-paper {
-  background-color: rgba(18, 18, 18, 0.95) !important;
-  border: 1px solid rgba(81, 81, 81, 1) !important;
-}
-
-[data-theme="colorful"] .MuiDialog-paper {
-  background-color: #ffffff !important;
-  border: 2px solid #f5a9b8 !important;
-}
-
-/* Menu theming */
-[data-theme="dark"] .MuiMenu-paper {
-  background-color: rgba(18, 18, 18, 0.95) !important;
-  border: 1px solid rgba(81, 81, 81, 1) !important;
-}
-
-[data-theme="colorful"] .MuiMenu-paper {
-  background-color: #ffffff !important;
-  border: 1px solid #f5a9b8 !important;
-}
-
-/* Card theming */
-[data-theme="dark"] .MuiCard-root {
-  background-color: rgba(18, 18, 18, 0.8) !important;
-  border: 1px solid rgba(81, 81, 81, 1) !important;
-}
-
-[data-theme="colorful"] .MuiCard-root {
-  background-color: #ffffff !important;
-  border: 1px solid #f5a9b8 !important;
-}
-
-/* Typography theming for consistency */
-[data-theme="dark"] .MuiTypography-root {
-  color: var(--foreground) !important;
-}
-
-[data-theme="colorful"] .MuiTypography-root {
-  color: var(--foreground) !important;
+[data-theme="dark"] .react-resizable-handle {
+background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 6' style='background-color:%23ffffff00' x='0px' y='0px' width='6px' height='6px'%3E%3Cg opacity='0.302'%3E%3Cpath d='M 6 6 L 0 6 L 0 4.2 L 4 4.2 L 4.2 4.2 L 4.2 0 L 6 0 L 6 6 L 6 6 Z' fill='%23ffda3e'/%3E%3C/g%3E%3C/svg%3E");
 }

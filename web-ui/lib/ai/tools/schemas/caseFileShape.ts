@@ -196,9 +196,9 @@ export const DocumentSchema = z.object({
     .nullable()
     .optional()
     .describe('Details about the email this case file specifically describes.'),
-  docRel_targetDoc: z.array(
-    z
-      .object({
+  docRel_targetDoc: z
+    .array(
+      z.object({
         sourceDocumentId: z.number().describe('Source document ID.'),
         description: z
           .string()
@@ -219,11 +219,13 @@ export const DocumentSchema = z.object({
             .optional()
             .nullable(),
         }),
-      })
-      .describe(
-        'Relationships to other documents, where this document is the target.',
-      ),
-  ),
+      }),
+    )
+    .nullable()
+    .optional()
+    .describe(
+      'Relationships to other documents, where this document is the target.',
+    ),
   docRel_sourceDoc: z
     .array(
       z.object({
@@ -256,6 +258,8 @@ export const DocumentSchema = z.object({
           .nullable(),
       }),
     )
+    .nullable()
+    .optional()
     .describe(
       'Relationships to other documents, where this document is the source.',
     ),

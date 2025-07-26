@@ -1,15 +1,157 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const shouldWriteToConsole = jest
+  .requireActual('@/lib/react-util')
+  .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
+
+/*
+*/
+
+jest.mock('react-error-boundary', () => {
+ class ErrorBoundary extends Component {
+   #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
+   #children: React.ReactNode;
+   #onReset?: () => void;
+   constructor(props: {
+     children?: React.ReactNode;
+     fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
+     onReset?: () => void;
+   }) {
+     super(props);
+     const { fallbackRender, onReset } = props;
+     this.#fallbackRender = fallbackRender;
+     this.#onReset = onReset;
+     this.#children = props.children;
+     this.state = { hasError: false, error: null as Error | null };
+   }
+
+   static getDerivedStateFromError(error: any) {
+     return { hasError: !!error, error };
+   }
+
+   componentDidCatch(error: any/*, errorInfo: any*/) {
+     console.error(error);
+   }
+
+   render() {
+     if ('hasError' in this.state && this.state.hasError) {
+       const error =
+         'error' in this.state && !!this.state.error
+           ? this.state.error
+           : new Error('An error occurred');
+       
+       if (this.#fallbackRender) {
+         return this.#fallbackRender({ 
+           error, 
+           resetErrorBoundary: () => {
+             this.setState({ hasError: false, error: null });
+             this.#onReset?.();
+           }
+         });
+       }
+       
+       return React.createElement('div', { role: 'alert' }, String(error));
+     }
+     return this.#children;
+   }
+ }
+  return {
+  ErrorBoundary,
+  FallbackComponent: ({ error }: { error?: Error }) => {
+    return React.createElement('div', { role: 'alert' }, error?.message);
+  },
+};
+});
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
+import { mockDeep } from 'jest-mock-extended';
+import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 
+const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
+const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+type DatabaseType = DbDatabaseType;
+
+
+let mockDb = mockDeep<DatabaseType>();
+
+export const makeMockDb = (): DatabaseType => {
+  // Return the same mock instance to ensure test isolation but consistency within a test
+  // The mock will be reset between test files by Jest's resetMocks option
+  
+  // Ensure the query structure is properly mocked with the expected methods
+  if (mockDb.query && mockDb.query.documentUnits) {
+    // Set default behaviors - tests can override these
+    if (!(mockDb.query.documentUnits.findMany as jest.Mock).getMockImplementation()) {
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue([]);
+    }
+    if (!(mockDb.query.documentUnits.findFirst as jest.Mock).getMockImplementation()) {
+      (mockDb.query.documentUnits.findFirst as jest.Mock).mockResolvedValue(null);
+    }
+  }
+  
+  return mockDb;
+};
+
+const makeRecursiveMock = jest
+  .fn()
+  .mockImplementation(() => jest.fn(() => jest.fn(makeRecursiveMock)));
+jest.mock('drizzle-orm/postgres-js', () => {
+  return {
+    ...actualDrizzle,
+    drizzle: jest.fn(() => mockDb),
+    sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
+  };
+});
+jest.mock('@/lib/neondb/connection', () => {
+  const pgDb = jest.fn(() => makeRecursiveMock());
+  return {
+    pgDbWithInit: jest.fn(() => Promise.resolve(makeRecursiveMock())),
+    pgDb,
+    sql: jest.fn(() => pgDb()),
+  };
+});
+jest.mock('@/lib/drizzle-db/connection', () => {
+  return {
+    drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
+      const mockDbInstance = makeMockDb();
+      if (fn) {
+        const result = fn(mockDbInstance);
+        return Promise.resolve(result);
+      }
+      return mockDbInstance;
+    }),
+    drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
+    schema: actualSchema,
+  };
+});
+jest.mock('@/lib/drizzle-db', () => {
+  return {
+    drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
+      const mockDbInstance = makeMockDb();
+      if (fn) {
+        const result = fn(mockDbInstance);
+        return Promise.resolve(result);
+      }
+      return mockDbInstance;
+    }),
+    drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
+    schema: actualSchema,
+    sql: jest.fn(() => makeRecursiveMock()),
+  };
+});
 // Mocking modules before imports
 jest.mock('google-auth-library');
 jest.mock('googleapis');
-jest.mock('postgres');
-
+jest.mock('postgres', () => {
+  return {
+    default: jest.fn().mockImplementation((strings, ...values) => {
+      return jest.fn(() => Promise.resolve({ rows: [] }));
+    }),
+  };
+});
 jest.mock('next-auth', () => {
   return jest.fn();
 });
-
 jest.mock('@/auth', () => {
   return {
     auth: jest.fn(() => ({
@@ -17,7 +159,6 @@ jest.mock('@/auth', () => {
     })),
   };
 });
-jest.mock('@/lib/neondb/connection', () => {});
 jest.mock('@/lib/site-util/env', () => {
   return {
     env: jest.fn((key: string) => {
@@ -25,6 +166,20 @@ jest.mock('@/lib/site-util/env', () => {
     }),
   };
 });
+
+// Mock Next.js router
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+  })),
+  usePathname: jest.fn(() => '/test'),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
+}));
 
 export const createRedisClient = jest.fn(() => ({
   connect: jest.fn().mockResolvedValue(undefined),
@@ -36,14 +191,16 @@ export const createRedisClient = jest.fn(() => ({
   flushDb: jest.fn().mockResolvedValue('OK'),
   on: jest.fn(),
 }));
-
 // Mock Redis client for cache tests
 jest.mock('redis', () => ({
   createClient: createRedisClient,
 }));
+
 const makeMockImplementation = (name: string) => {
   return (...args: unknown[]) =>
-    console.log(`logger::${name} called with `, args);
+    shouldWriteToConsole
+      ? console.log(`logger::${name} called with `, args)
+      : () => {};
 };
 const logger = () => ({
   warn: jest.fn(makeMockImplementation('warn')),
@@ -57,32 +214,18 @@ const logger = () => ({
 
 jest.mock('@/lib/logger', () => {
   return {
-    logger: Promise.resolve(logger),
+    logger: Promise.resolve(() => ({
+      warn: jest.fn(makeMockImplementation('warn')),
+      error: jest.fn(makeMockImplementation('error')),
+      info: jest.fn(makeMockImplementation('info')),
+      debug: jest.fn(makeMockImplementation('debug')),
+      silly: jest.fn(makeMockImplementation('silly')),
+      verbose: jest.fn(makeMockImplementation('verbose')),
+      log: jest.fn(makeMockImplementation('log')),
+    })),
     log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => cb(logger())),
     errorLogFactory: jest.fn((x) => x),
     simpleScopedLogger: jest.fn(() => logger()),
-  };
-});
-
-jest.mock('drizzle-orm/postgres-js', () => {
-  return {
-    drizzle: jest.fn(() => ({
-      query: jest.fn(() => ({
-        select: jest.fn(() => ({
-          from: jest.fn(() => ({
-            where: jest.fn(() => ({
-              orderBy: jest.fn(() => ({
-                limit: jest.fn(() => ({
-                  offset: jest.fn(() => ({
-                    execute: jest.fn(() => Promise.resolve({ rows: [] })),
-                  })),
-                })),
-              })),
-            })),
-          })),
-        })),
-      })),
-    })),
   };
 });
 
@@ -94,6 +237,7 @@ import { sendApiRequest } from '@/lib/send-api-request';
 import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { drizDb } from '@/lib/drizzle-db';
 // jest.setup.ts
 // If using React Testing Library
 import '@testing-library/jest-dom';
@@ -101,15 +245,39 @@ import 'jest';
 
 // Polyfill TextEncoder and TextDecoder for Node.js environment
 import { TextEncoder, TextDecoder } from 'util';
+import { mock } from 'jest-mock-extended';
+import { sql } from 'drizzle-orm';
+import { FormatAlignCenterSharp } from '@mui/icons-material';
+import React, { Component } from 'react';
 globalThis.TextEncoder = TextEncoder;
 
-// Mock React and React.act for testing
-// Remove the React mock to use the real React.act from @testing-library/react
+// React 19 + React Testing Library 16 compatibility setup
+/*
+import React from 'react';
+import { act } from 'react';
+
+// Set up React.act environment for React 19 concurrent features
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(global as any).IS_REACT_ACT_ENVIRONMENT = true;
+*/
+
+/*
+// Set React.act on the global React object to ensure compatibility
+// This is the correct way to handle React 19 with React Testing Library 16
+if (typeof React.act === 'undefined') {
+  React.act = act;
+}
+
+// Also make act available globally for React Testing Library
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+if (typeof (global as any).act === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (global as any).act = act;
+}
+*/
 
 // Automocks
-(postgres as unknown as jest.Mock).mockImplementation((strings, ...values) => {
-  return jest.fn(() => Promise.resolve({ rows: [] }));
-});
+
 (NextAuth as jest.Mock).mockImplementation(() => jest.fn);
 (auth as jest.Mock).mockImplementation(() => {
   return jest.fn(() => Promise.resolve({ id: 'test-id' }));
@@ -117,7 +285,7 @@ globalThis.TextEncoder = TextEncoder;
 
 const DefaultEnvVariables = {
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
-  AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
+  NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
   NEXT_PUBLIC_HOSTNAME: `http://test-run.localhost`,
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: `silly`,
@@ -141,6 +309,7 @@ const DefaultEnvVariables = {
   AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: '1000',
   AZURE_STORAGE_ACCOUNT_KEY: 'azure-storage-account-key',
   AZURE_STORAGE_ACCOUNT_NAME: 'azure-storage-account-name',
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: '',
 };
 let originalProcessEnv = (() => {
   try {
@@ -175,7 +344,6 @@ export const withRedisConnection = () => {
 };
 
 global.fetch = jest.fn().mockImplementation(() => {
-  console.log('in mock fetch', new Error().stack);
   return Promise.resolve({
     ok: false,
     status: 500,
@@ -207,11 +375,12 @@ beforeAll(() => {
 
 beforeEach(() => {
   resetEnvVariables();
-  resetGlobalCache();
+  resetGlobalCache();  
 });
 
 afterEach(() => {
   jest.clearAllMocks();
+  mockDb = mockDeep<DatabaseType>();
   resetGlobalCache();
   Object.entries(originalProcessEnv).forEach(([key, value]) => {
     process.env[key] = value;

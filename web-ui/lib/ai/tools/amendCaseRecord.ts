@@ -6,7 +6,7 @@ import {
   ResponsiveActionAssociation,
   ToolCallbackResult,
 } from './types';
-import { db } from '@/lib/drizzle-db/connection';
+import { drizDb } from '@/lib/drizzle-db';
 import { resolveCaseFileId } from './utility';
 import {
   callToActionDetails,
@@ -438,7 +438,7 @@ const associateResponsiveActions = async ({
       'The source document id must have a document property ID to associate with a CTA.',
     );
   }
-  // Load up target documents and ensure they are valid
+  
   const targetActions = (
     await tx.query.documentUnits.findMany({
       where: (documentUnits, { inArray, eq, and }) =>
@@ -577,7 +577,7 @@ const relateDocuments = async ({
  * @returns A promise that resolves with the result of the amendment process.
  * @example
  * const result = await amendCaseRecord({
- *   targetCaseFileId: 1,
+ *   targetcase_file_id: 1,
  *   notes: ['Note 1'],
  *   violations: [{ violationType: 'Type A', severityLevel: 3 }],
  *   explaination: 'Reason for amendment',
@@ -647,7 +647,7 @@ export const amendCaseRecord = async ({
       );
     }
 
-    const target = await db.query.documentUnits.findFirst({
+    const target = await drizDb().query.documentUnits.findFirst({
       where: (documentUnits, { eq }) =>
         eq(documentUnits.unitId, targetDocumentId),
       columns: {
@@ -658,7 +658,7 @@ export const amendCaseRecord = async ({
       },
     });
     if (target) {
-      await db.transaction(async (tx) => {
+      await drizDb().transaction(async (tx) => {
         // NOTE: Technically I could run these in parallel, but I want to ensure
         // but lest have some success with it as-is first.
         // Apply updates to the main record

@@ -13,14 +13,16 @@ import postgres, {
   ResultMeta,
   Statement,
 } from 'postgres';
-import sql from './connection';
+import { pgDb, pgDbWithInit } from './connection';
 import { isDbError } from './_guards';
 import { CommandMeta, IResultset } from './types';
 import { isTypeBranded, TypeBrandSymbol } from '../react-util';
 import { ExcludeExactMatch } from '../typescript';
 import { log } from '../logger';
+//import { deprecate } from '../nextjs-util';
+//import { deprecate } from '@/lib/nextjs-util';
 
-export { sql };
+
 
 export type QueryProps<ResultType extends object = Record<string, unknown>> = {
   transform?: <RecordType extends Record<string, unknown>>(
@@ -478,11 +480,12 @@ export const asSql = <
  * @param cb - A callback function that receives a postgres Sql instance and returns a Promise of RowList.
  * @returns A Promise that resolves to the query results.
  */
-export const query = <ResultType extends object = Record<string, unknown>>(
+export const query = async <ResultType extends object = Record<string, unknown>>(
   cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
   props: QueryProps<ResultType> = {},
 ): Promise<Array<ResultType>> => {
-  return applyTransform<ResultType>(cb(sqlNeonAdapter(sql)), props);
+  const sql_1 = await pgDbWithInit();
+  return await applyTransform<ResultType>(cb(sqlNeonAdapter(sql_1)), props);
 };
 
 /**
@@ -491,21 +494,27 @@ export const query = <ResultType extends object = Record<string, unknown>>(
  * @param cb - A callback function that receives a postgres Sql instance and returns a Promise of RowList with full query results.
  * @returns A Promise that resolves to the full query results.
  */
-export const queryExt = <ResultType extends object = Record<string, unknown>>(
+export const queryExt = async <ResultType extends object = Record<string, unknown>>(
   cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
   props: QueryProps<ResultType> = {},
 ): Promise<TransformedFullQueryResults<ResultType>> => {
-  return applyResultsetTransform(cb(sqlNeonAdapter(sql)), props);
+  const sql_1 = await pgDbWithInit();
+  return applyResultsetTransform(cb(sqlNeonAdapter(sql_1)), props);
 };
 
 export type SqlDb<TRecord extends Record<string, unknown> = any> =
   postgres.Sql<TRecord>;
 
-export const queryRaw = <RecordType extends Record<string, unknown> = any>(
+export const queryRaw =
+<RecordType extends Record<string, unknown> = any>(
   cb: (sql: SqlDb<RecordType>) => PendingQuery<Array<RecordType>>,
-): PendingQuery<Array<RecordType>> => cb(sql as SqlDb<RecordType>);
+): PendingQuery<Array<RecordType>> => cb(pgDb() as SqlDb<RecordType>);
 
-export const db = <
+export const safeQueryRaw = async <RecordType extends Record<string, unknown> = any>(
+  cb: (sql: SqlDb<RecordType>) => PendingQuery<Array<RecordType>>,
+): Promise<PendingQuery<Array<RecordType>>> => cb(await pgDbWithInit() as SqlDb<RecordType>);
+
+export const db = async <
   ResultType extends Record<string, unknown> = any,
   RecordType extends Record<string, unknown> = ResultType, // ExcludeExactMatch<Record<string, unknown>, ResultType> = any,
 >(
@@ -549,3 +558,14 @@ export type DbQueryFunction<
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   Y extends boolean,
 > = ISqlNeonAdapter;
+// Update module exports to use module.exports format and provide a getter for sql
+
+export const sql = () => pgDb();
+
+/*
+Object.defineProperty(module.exports, 'sql', {
+  enumerable: true,
+  configurable: true,
+  get: deprecate(() => pgDb(), "The `sql` export is deprecated. Use `pgDb()` instead; or better yet upgrade to drizzle.", 'DEP001'),
+});
+*/

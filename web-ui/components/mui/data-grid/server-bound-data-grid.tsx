@@ -16,68 +16,11 @@ import {
   GridUpdateRowError,
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
-import { z } from 'zod';
 import { useCallback, useMemo } from 'react';
 import { ServerBoundDataGridProps } from './types';
 import { useNotifications } from '@toolpad/core';
 
-const ServerBoundDataGridPropsSchema = z.object({
-  columns: z
-    .array(
-      z.object({
-        field: z.string(),
-        headerName: z.string().optional(),
-        type: z.string().optional(),
-        width: z.number().optional(),
-        sortable: z.boolean().optional(),
-        filterable: z.boolean().optional(),
-        editable: z.boolean().optional(),
-        renderCell: z.function().optional(),
-        valueGetter: z.function().optional(),
-        valueFormatter: z.function().optional(),
-      }),
-    )
-    .nonempty(),
-  url: z
-    .string()
-    .url()
-    .or(
-      z.object({
-        pathname: z.string(),
-        searchParams: z.object({}).catchall(z.any()).optional(),
-        hash: z.string().optional(),
-      }),
-    )
-    .optional(),
-  // getRecordData: z.function().optional(),
-  idColumn: z.string(),
-  slotProps: z
-    .object({
-      loadingOverlay: z
-        .object({
-          variant: z
-            .enum(['circular-progress', 'skeleton', 'linear-progress'])
-            .optional(),
-          noRowsVariant: z
-            .enum(['circular-progress', 'skeleton', 'linear-progress'])
-            .optional(),
-        })
-        .optional(),
-    })
-    .catchall(z.any())
-    .optional(),
-  initialState: z
-    .object({
-      pagination: z
-        .object({
-          paginationModel: z
-            .object({ pageSize: z.number(), page: z.number() })
-            .optional(),
-        })
-        .optional(),
-    })
-    .optional(),
-});
+import ServerBoundDataGridPropsSchema from './server-bound-data-grid-props-schema';
 
 const stableWrapperStyles = {
   box: { width: 'auto', maxWidth: 1 },
@@ -117,9 +60,12 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
         variant: 'circular-progress' as GridLoadingOverlayVariant,
         noRowsVariant: 'skeleton' as GridLoadingOverlayVariant,
       },
+      row: {
+        'data-parentid': `bound-grid-row-${encodeURI(String(url))}-${stableGetRowId}`,
+      },
       ...slotProps,
     };
-  }, [slotProps]);
+  }, [slotProps, url, stableGetRowId]);
   const onDataSourceErrorOccurred: DataGridProProps['onDataSourceError'] =
     useCallback(
       (error: GridGetRowsError<GridGetRowsParams> | GridUpdateRowError) => {
@@ -150,20 +96,19 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
     }),
     [initialStateProp],
   );
-  /*
-  if (process.env.IS_BUILDING == '1') {
-    console.warn('is building, skipping chat panel rendering');
-    return <></>;
-  }
-  */
+
   return (
-    <Box sx={stableWrapperStyles.box}>
+    <Box
+      className="server-bound-data-grid"
+      data-id={`server-bound-data-grid-${encodeURI(String(url))}`}
+      data-parent-id={`server-bound-data-grid-${encodeURI(String(url))}`}
+      sx={stableWrapperStyles.box}
+    >
       <Paper sx={stableWrapperStyles.paper}>
         <TableContainer style={stableWrapperStyles.table}>
           <DataGridPro<TRowModel>
             filterDebounceMs={300}
             autoHeight={true}
-            pagination
             loading={isLoading}
             logLevel={process.env.NODE_ENV === 'development' ? 'warn' : 'error'}
             columns={columns}
@@ -173,7 +118,9 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
             pageSizeOptions={StableDefaultPageSizeOptions}
             onDataSourceError={onDataSourceErrorOccurred}
             slotProps={stableSlotProps}
+            {...StableDefaultInitialState}
             {...props}
+            pagination={true}
           />
         </TableContainer>
       </Paper>

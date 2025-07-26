@@ -9,7 +9,7 @@ jest.mock('next/navigation', () => ({
 
 // Simple test component to verify theme functionality
 const TestComponent = () => (
-  <ThemeProvider defaultTheme="colorful">
+  <ThemeProvider defaultTheme="light">
     <div data-testid="theme-test">
       <ThemeSelector />
       <div>Test content</div>
@@ -35,7 +35,7 @@ describe('Theme Integration', () => {
     expect(screen.getByLabelText('Change Theme')).toBeInTheDocument();
   });
 
-  it('applies colorful theme data attribute correctly', () => {
+  it('applies light theme data attribute correctly', () => {
     render(<TestComponent />);
     act(() => {
       waitFor(() => screen.getByLabelText('Change Theme'));
@@ -43,7 +43,7 @@ describe('Theme Integration', () => {
     // The theme provider should set the data-theme attribute
     // This test ensures our changes don't break the basic theme functionality
     expect(document.documentElement.getAttribute('data-theme')).toBe(
-      'colorful',
+      'light',
     );
   });
 

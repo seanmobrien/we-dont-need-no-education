@@ -1,3 +1,4 @@
+import { eq, and } from 'drizzle-orm';
 import {
   documentRelationship,
   documentRelationshipReason,
@@ -10,6 +11,7 @@ import type {
   DocumentPropertyType,
   DocumentRelationshipType,
 } from './drizzle-types';
+import { schema } from './schema';
 import { log } from '@/lib/logger';
 import { LoggedError } from '../react-util';
 import { newUuid } from '../typescript';
@@ -53,13 +55,20 @@ export const getDocumentRelationReason = async ({
   if (!isNaN(alreadyNumber)) {
     return alreadyNumber;
   }
-  const { relationReasonId } =
-    (await db.query.documentRelationshipReason.findFirst({
-      where: (table, { eq }) => eq(table.description, normalized),
-      columns: { relationReasonId: true },
-    })) ?? {};
-  if (relationReasonId || !add) {
-    return relationReasonId;
+  const rows =
+    (await db
+      .select({
+        relationReasonId: schema.documentRelationshipReason.relationReasonId,
+      })
+      .from(schema.documentRelationshipReason)
+      .where(eq(schema.documentRelationshipReason.description, normalized))
+      .limit(1)
+      .execute()) ?? [];
+  if (rows.length > 0) {
+    const { relationReasonId } = rows[0];
+    if (relationReasonId || !add) {
+      return relationReasonId;
+    }     
   }
   const [{ relationReasonId: newRelationReasonId } = {}] = await db
     .insert(documentRelationshipReason)
@@ -128,24 +137,29 @@ export const addDocumentRelations = async ({
                     throw new Error('Failed to get relationship reason ID');
                   }
                   // Check if the relationship already exists
-                  const exists = await db.query.documentRelationship.findFirst({
-                    where: (documentRelationship, { and, eq }) =>
+                  
+                  const exists = await db
+                    .select()
+                    .from(schema.documentRelationship)
+                    .where(
                       and(
                         eq(
-                          documentRelationship.sourceDocumentId,
+                          schema.documentRelationship.sourceDocumentId,
                           sourceDocumentId,
                         ),
                         eq(
-                          documentRelationship.targetDocumentId,
+                          schema.documentRelationship.targetDocumentId,
                           targetDocumentId,
                         ),
                         eq(
-                          documentRelationship.relationshipReasonId,
+                          schema.documentRelationship.relationshipReasonId,
                           relationshipReasonId,
                         ),
                       ),
-                  });
-                  if (exists) {
+                    )
+                    .limit(1)
+                    .execute();
+                  if (exists && exists.length > 0) {
                     log((l) =>
                       l.warn(
                         'Document relationship already exists - skipping',
@@ -217,23 +231,33 @@ export const addNotesToDocument = async <
   notes: TNotes;
   documentId: number;
 }): Promise<AddNoteRetVal<TNotes>> => {
-  // lookup email id if not passed in
-  const { emailId, attachmentId, documentType, docProp } =
-    (await db.query.documentUnits.findFirst({
-      where: (documentUnits, { eq }) =>
-        eq(documentUnits.unitId, documentIdFromProps),
-      columns: { emailId: true, attachmentId: true, documentType: true },
-      with: {
-        docProp: {
-          columns: {
-            documentId: true,
+  if (!('documentUnits' in db.query)) {
+    throw new Error(
+      'Invalid database instance - must be a transaction or query builder',
+    );
+  }    
+  // If db is a query builder, we need to get the actual db instance
+    const record = await db.query.documentUnits.findFirst(
+      {
+        where: eq(schema.documentUnits.unitId, documentIdFromProps),
+        columns: {
+          emailId: true,
+          attachmentId: true,
+          documentType: true,
+        },
+        with: {
+          docProp: {
+            columns: {
+              documentId: true, // Ensure we get the document ID
+            },
           },
         },
       },
-    })) ?? {};
-  if (!emailId) {
+  );
+  if (!record) {
     throw new Error('Email ID not found for the document');
   }
+  const { emailId, attachmentId, documentType, docProp } = record;
   const documentId =
     documentType === 'email' || documentType === 'attachment'
       ? documentIdFromProps

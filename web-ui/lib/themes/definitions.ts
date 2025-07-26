@@ -1,17 +1,14 @@
 'use client';
 import { createTheme, Theme } from '@mui/material/styles';
+import { ThemeType } from './types';
 
-// Dark theme (current theme)
-export const darkTheme: Theme = createTheme({
+const defaults = {
   cssVariables: {
     colorSchemeSelector: 'data',
   },
   typography: {
     fontFamily: 'var(--geist-sans) var(--font-geist-mono)',
     fontSize: 14,
-  },
-  palette: {
-    mode: 'dark',
   },
   spacing: 8,
   components: {
@@ -35,32 +32,161 @@ export const darkTheme: Theme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: 'rgba(18, 18, 18, 0.9)',
           backdropFilter: 'blur(8px)',
+          backgroundColor: 'var(--color-surface-primary)',
         },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: '16px',
+        },    
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: 'var(--color-surface-secondary)',
+          borderRight: '1px solid var(--color-border-main)',
+        },
+      },
+    },
+    MuiListItemIcon: {
+      styleOverrides: {
+        root: {
+          color: 'var(--color-primary-main)',
+        },
+      },
+    },
+    MuiSvgIcon: {
+      styleOverrides: {
+        root: {
+          color: 'var(--color-primary-main) !important',
+        },
+      },
+    },
+  },
+};
+
+// Dark theme (current theme)
+export const darkTheme: Theme = createTheme({
+  ...defaults,
+  palette: {
+    mode: 'dark',
+    primary: {
+      main: '#19bfcf', // color-primary-main
+      light: '#19c4ce', // color-primary-light
+      dark: '#1898a8', // color-primary-dark
+    },
+    secondary: {
+      main: '#d05697', // color-secondary-main
+      light: '#d05799', // color-secondary-light
+      dark: '#a8456f', // color-secondary-dark
+    },
+    warning: {
+      main: '#ffda3e', // color-highlight-main
+      light: '#ffd73f', // color-highlight-light
+      dark: '#e4ca43', // color-highlight-dark
+    },
+    info: {
+      main: '#18b9b6', // color-primary-accent
+    },
+    background: {
+      default: '#0a0a0a',
+      paper: '#23393d', // color-surface-primary
+    },
+    action: {
+      active: '#1898a8',
+      /*
+      hover: string;
+      hoverOpacity: number;
+      selected: string;
+      selectedOpacity: number;
+      disabled: string;
+      disabledOpacity: number;
+      disabledBackground: string;
+      focus: string;
+      focusOpacity: number;
+      activatedOpacity: number;
+      */
+    },
+  },
+  components: {
+    ...defaults.components,
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          ...defaults.components.MuiButton.styleOverrides.root,
+          textTransform: 'none',
+        },
+      },
+    },
+    MuiPaper: {
+      ...defaults.components.MuiPaper,
+      styleOverrides: {
+        ...defaults.components.MuiPaper.styleOverrides,
+        root: {
+          ...defaults.components.MuiPaper.styleOverrides.root,
+        },
+      },
+    },
+    // Add AppBar theming for dark mode
+    MuiAppBar: {
+      ...defaults.components.MuiAppBar,
+      styleOverrides: {
+        ...defaults.components.MuiAppBar.styleOverrides,
+        root: {
+          ...defaults.components.MuiAppBar.styleOverrides.root,
+          // backgroundColor: '#23393d', // color-surface-primary
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          ...defaults.components.MuiChip.styleOverrides.root,
+        },        
       },
     },
     // Add navigation theming for @toolpad components
     MuiDrawer: {
+      ...defaults.components.MuiDrawer,
       styleOverrides: {
+        ...defaults.components.MuiDrawer.styleOverrides,
         paper: {
-          backgroundColor: 'rgba(18, 18, 18, 0.95)',
-          borderRight: '1px solid rgba(81, 81, 81, 1)',
+          ...defaults.components.MuiDrawer.styleOverrides.paper,
+          // backgroundColor: 'var(--color-surface-secondary)',
+          // borderRight: '1px solid var(--color-border-main)',
+        },
+      },
+    },
+    MuiListItemIcon: {
+      ...defaults.components.MuiListItemIcon,
+      styleOverrides: {
+        ...defaults.components.MuiListItemIcon.styleOverrides,
+        root: {
+          ...defaults.components.MuiListItemIcon.styleOverrides.root,
+          // color: '#19bfcf', // color-primary-main
+        },
+      },
+    },
+    MuiSvgIcon: {
+      ...defaults.components.MuiSvgIcon,
+      styleOverrides: {
+        ...defaults.components.MuiSvgIcon.styleOverrides,
+        root: {
+          ...defaults.components.MuiSvgIcon.styleOverrides.root,
+          // color: '#19bfcf !important', // color-primary-main
         },
       },
     },
   },
 });
 
-// Colorful theme (new theme with specified colors)
+// light theme (new theme with specified colors)
 export const colorfulTheme: Theme = createTheme({
-  cssVariables: {
-    colorSchemeSelector: 'data',
-  },
-  typography: {
-    fontFamily: 'var(--geist-sans) var(--font-geist-mono)',
-    fontSize: 14,
-  },
+  ...defaults,
   palette: {
     mode: 'light',
     primary: {
@@ -75,8 +201,8 @@ export const colorfulTheme: Theme = createTheme({
     },
     background: {
       default: '#ffffff', // (255,255,255)
-      paper: '#ffffff',
-    },
+      paper: '#ffffff',            
+    },    
     text: {
       primary: '#000000',
       secondary: '#666666',
@@ -88,12 +214,12 @@ export const colorfulTheme: Theme = createTheme({
       main: '#f5a9b8', // (245,169,184) - Use accent color for warnings
     },
   },
-  spacing: 8,
   components: {
+    ...defaults.components,
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
+          ...defaults.components.MuiButton.styleOverrides.root,        
           textTransform: 'none',
         },
       },
@@ -101,18 +227,18 @@ export const colorfulTheme: Theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          padding: '16px',
-          borderRadius: '8px',
+          ...defaults.components.MuiPaper.styleOverrides.root,          
           backgroundColor: '#ffffff',
           border: '1px solid #f5a9b8', // Subtle accent border
         },
       },
     },
-    // Add some custom styling for the colorful theme
+    // Add some custom styling for the light theme
     MuiAppBar: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1abbf9',
+          ...defaults.components.MuiAppBar.styleOverrides.root,
+          // backgroundColor: '#1abbf9',
         },
       },
     },
@@ -120,15 +246,16 @@ export const colorfulTheme: Theme = createTheme({
     MuiDrawer: {
       styleOverrides: {
         paper: {
-          backgroundColor: '#ffffff',
-          borderRight: '2px solid #f5a9b8',
+          ...defaults.components.MuiDrawer.styleOverrides.paper,
+          // backgroundColor: '#ffffff',
+          // borderRight: '2px solid #f5a9b8',
         },
       },
     },
     MuiChip: {
       styleOverrides: {
         root: {
-          borderRadius: '16px',
+          ...defaults.components.MuiChip.styleOverrides.root,
         },
         colorSecondary: {
           backgroundColor: '#f5a9b8',
@@ -139,14 +266,12 @@ export const colorfulTheme: Theme = createTheme({
   },
 });
 
-export type ThemeType = 'dark' | 'colorful';
-
 export const themes: Record<ThemeType, Theme> = {
   dark: darkTheme,
-  colorful: colorfulTheme,
+  light: colorfulTheme,
 } as const;
 
 export const themeDisplayNames: Record<ThemeType, string> = {
   dark: 'Dark Theme',
-  colorful: 'Colorful Theme',
+  light: 'Colourful Theme',
 };

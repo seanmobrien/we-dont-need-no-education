@@ -1,4 +1,3 @@
-import { getCaseFileDocument } from '../../tools';
 import AgentBase from '../agent-base';
 import {
   TimelineAgentProps,
@@ -6,7 +5,6 @@ import {
   TimelineSummary,
   ProcessingResult,
   ComplianceRating,
-  GlobalMetadata,
   TimelineAgentState,
   SerializedTimelineAgent,
 } from './types';
@@ -38,11 +36,11 @@ import {
  * ```
  */
 export class ClientTimelineAgent extends AgentBase {
-  readonly #pendingDocuments = new Set<string>();
-  readonly #processedDocuments = new Set<string>();
-  readonly #documentMetadata = new Map<string, DocumentMetadata>();
-  readonly #documentContent = new Map<string, string>();
-  #timelineState: TimelineSummary = {
+  protected readonly pendingDocuments = new Set<string>();
+  protected readonly processedDocuments = new Set<string>();
+  protected readonly documentMetadata = new Map<string, DocumentMetadata>();
+  protected readonly documentContent = new Map<string, string>();
+  protected timelineState: TimelineSummary = {
     globalMetadata: {
       caseId: '',
       caseType: 'FERPA',
@@ -67,7 +65,7 @@ export class ClientTimelineAgent extends AgentBase {
     recommendations: [],
     lastUpdated: new Date().toISOString(),
   };
-  #isInitialized = false;
+  protected isInitialized = false;
   #propertyId: string | null = null;
 
   constructor(props: TimelineAgentProps | SerializedTimelineAgent) {
@@ -76,21 +74,21 @@ export class ClientTimelineAgent extends AgentBase {
       this.attach(props);
       this.#propertyId = props.state.propertyId || null;
       props.state.pendingDocumentIds.forEach((id) =>
-        this.#pendingDocuments.add(id),
+        this.pendingDocuments.add(id),
       );
       props.state.processedDocumentIds.forEach((id) =>
-        this.#processedDocuments.add(id),
+        this.processedDocuments.add(id),
       );
       if (props.state.metadata) {
         Object.entries(props.state.metadata).forEach(([id, meta]) => {
-          this.#documentMetadata.set(id, meta);
+          this.documentMetadata.set(id, meta);
         });
       }
     } else {
       // Initialize with provided properties
       this.#propertyId = props.propertyId || null;
       if (props.initialDocumentId) {
-        this.#pendingDocuments.add(props.initialDocumentId);
+        this.pendingDocuments.add(props.initialDocumentId);
       }
     }
   }
@@ -103,55 +101,25 @@ export class ClientTimelineAgent extends AgentBase {
   }
 
   /**
-   * Set the property ID
-   */
-  set propertyId(id: string | null) {
-    this.#propertyId = id;
-  }
-
-  /**
    * Get the currently active document ID being processed
    */
   getCurrentDocumentId(): string | null {
-    const pendingDocs = Array.from(this.#pendingDocuments);
+    const pendingDocs = Array.from(this.pendingDocuments);
     if (pendingDocs.length === 0) return null;
 
     // Return the first document in chronological order
-    return this.#getNextDocumentToProcess();
+    return this.getNextDocumentToProcess();
   }
 
   /**
    * Initialize the agent by loading the initial document and extracting case metadata
    */
   async initialize(): Promise<void> {
-    if (this.#isInitialized) return;
+    if (this.isInitialized) return;
 
-    const initialDocId = Array.from(this.#pendingDocuments)[0];
+    const initialDocId = Array.from(this.pendingDocuments)[0];
     if (!initialDocId) {
       throw new Error('No initial document provided');
-    }
-
-    try {
-      // Load initial document and extract case metadata
-      const initialDocument = await this.#loadDocument(initialDocId);
-      const caseMetadata = await this.#extractCaseMetadata(initialDocument);
-
-      // Update global metadata
-      this.#timelineState.globalMetadata = {
-        ...this.#timelineState.globalMetadata,
-        ...caseMetadata,
-      };
-
-      // Identify related documents
-      const relatedDocuments =
-        await this.#identifyRelatedDocuments(initialDocument);
-      relatedDocuments.forEach((docId) => this.#pendingDocuments.add(docId));
-
-      this.#timelineState.globalMetadata.totalDocuments =
-        this.#pendingDocuments.size;
-      this.#isInitialized = true;
-    } catch (error) {
-      throw new Error(`Failed to initialize ClientTimelineAgent: ${error}`);
     }
   }
 
@@ -159,47 +127,25 @@ export class ClientTimelineAgent extends AgentBase {
    * Process the next document in chronological order
    */
   async processNextDocument(): Promise<ProcessingResult | null> {
-    if (!this.#isInitialized) {
+    if (!this.isInitialized) {
       throw new Error('Agent must be initialized before processing documents');
     }
 
-    const nextDocId = this.#getNextDocumentToProcess();
+    const nextDocId = this.getNextDocumentToProcess();
     if (!nextDocId) {
       return null; // No more documents to process
     }
 
     try {
-      const document = await this.#loadDocument(nextDocId);
-      const result = await this.#processDocument(nextDocId, document);
-
-      // Update timeline state
-      this.#updateTimelineState(result);
-
-      // Move document from pending to processed
-      this.#pendingDocuments.delete(nextDocId);
-      this.#processedDocuments.add(nextDocId);
-
-      // Add any additional documents identified during processing
-      if (result.additionalDocuments) {
-        result.additionalDocuments.forEach((docId) => {
-          if (
-            !this.#processedDocuments.has(docId) &&
-            !this.#pendingDocuments.has(docId)
-          ) {
-            this.#pendingDocuments.add(docId);
-          }
-        });
-      }
-
       // Update counters
-      this.#timelineState.globalMetadata.processedDocuments =
-        this.#processedDocuments.size;
-      this.#timelineState.globalMetadata.totalDocuments =
-        this.#processedDocuments.size + this.#pendingDocuments.size;
+      this.timelineState.globalMetadata.processedDocuments =
+        this.processedDocuments.size;
+      this.timelineState.globalMetadata.totalDocuments =
+        this.processedDocuments.size + this.pendingDocuments.size;
 
-      this.#timelineState.lastUpdated = new Date().toISOString();
+      this.timelineState.lastUpdated = new Date().toISOString();
 
-      return result;
+      return {} as ProcessingResult; // Placeholder for actual processing result
     } catch (error) {
       throw new Error(`Failed to process document ${nextDocId}: ${error}`);
     }
@@ -211,15 +157,15 @@ export class ClientTimelineAgent extends AgentBase {
   addDocuments(documentIds: string[]): void {
     documentIds.forEach((docId) => {
       if (
-        !this.#processedDocuments.has(docId) &&
-        !this.#pendingDocuments.has(docId)
+        !this.processedDocuments.has(docId) &&
+        !this.pendingDocuments.has(docId)
       ) {
-        this.#pendingDocuments.add(docId);
+        this.pendingDocuments.add(docId);
       }
     });
 
-    this.#timelineState.globalMetadata.totalDocuments =
-      this.#processedDocuments.size + this.#pendingDocuments.size;
+    this.timelineState.globalMetadata.totalDocuments =
+      this.processedDocuments.size + this.pendingDocuments.size;
   }
 
   /**
@@ -227,10 +173,10 @@ export class ClientTimelineAgent extends AgentBase {
    */
   generateSummary(): TimelineSummary {
     // Update compliance ratings based on current state
-    this.#updateComplianceRatings();
+    this.updateComplianceRatings();
 
     return {
-      ...this.#timelineState,
+      ...this.timelineState,
       lastUpdated: new Date().toISOString(),
     };
   }
@@ -239,7 +185,7 @@ export class ClientTimelineAgent extends AgentBase {
    * Check if there are more documents to process
    */
   hasMoreDocuments(): boolean {
-    return this.#pendingDocuments.size > 0;
+    return this.pendingDocuments.size > 0;
   }
 
   /**
@@ -247,9 +193,9 @@ export class ClientTimelineAgent extends AgentBase {
    */
   getDocumentCounts(): { pending: number; processed: number; total: number } {
     return {
-      pending: this.#pendingDocuments.size,
-      processed: this.#processedDocuments.size,
-      total: this.#pendingDocuments.size + this.#processedDocuments.size,
+      pending: this.pendingDocuments.size,
+      processed: this.processedDocuments.size,
+      total: this.pendingDocuments.size + this.processedDocuments.size,
     };
   }
 
@@ -257,14 +203,14 @@ export class ClientTimelineAgent extends AgentBase {
    * Reset the agent to its initial state
    */
   reset(): void {
-    this.#pendingDocuments.clear();
-    this.#processedDocuments.clear();
-    this.#documentMetadata.clear();
-    this.#documentContent.clear();
-    this.#isInitialized = false;
+    this.pendingDocuments.clear();
+    this.processedDocuments.clear();
+    this.documentMetadata.clear();
+    this.documentContent.clear();
+    this.isInitialized = false;
 
     // Reset timeline state
-    this.#timelineState = {
+    this.timelineState = {
       globalMetadata: {
         caseId: '',
         caseType: 'FERPA',
@@ -293,107 +239,13 @@ export class ClientTimelineAgent extends AgentBase {
 
   // Private helper methods
 
-  async #loadDocument(documentId: string): Promise<string> {
-    // Check cache first
-    if (this.#documentContent.has(documentId)) {
-      return this.#documentContent.get(documentId)!;
-    }
-    /*
-    - caseId: string
-    - caseType: "FERPA" | "MNGDPA" | "Other"
-    - requestType: string
-    - requestDate: ISO date string
-    - requesterName: string
-    - institutionName: string
-    - complianceDeadline: ISO date string
-    - currentStatus: string
-*/
-
-    const docRequest = await getCaseFileDocument({
-      caseFileId: documentId,
-      goals: [
-        `Create detailed timeline for call to action ${documentId}`,
-        `Locate related case file documents and attachments for ${documentId}`,
-        `Identify metadata such as Request Date, Requester Name, Requested Item, and Compliance Deadline for ${documentId}`,
-        `Include verbatim statements regarding specific item(s) requested in ${documentId}`,
-      ],
-    });
-    const result = docRequest?.structuredContent?.result;
-    if (!result) {
-      throw new Error(
-        `Failed to load document ${documentId}: No content found`,
-      );
-    }
-    if (result.isError === true) {
-      throw new Error(
-        `Failed to load document ${documentId}: ${result.message}`,
-      );
-    }
-    const content =
-      typeof result.value === 'string'
-        ? result.value
-        : JSON.stringify(result.value, null, 2);
-    this.#documentContent.set(documentId, content);
-    return content;
-  }
-
-  async #extractCaseMetadata(
-    document: string,
-  ): Promise<Partial<GlobalMetadata>> {
-    const prompt = `
-    Analyze the following document and extract case metadata. Return a JSON object with the following fields:
-    - caseId: string
-    - caseType: "FERPA" | "MNGDPA" | "Other"
-    - requestType: string
-    - requestDate: ISO date string
-    - requesterName: string
-    - institutionName: string
-    - complianceDeadline: ISO date string
-    - currentStatus: string
-
-    Document:
-    ${document}
-    `;
-
-    const response = await this.generateResponse(prompt);
-    try {
-      return JSON.parse(response);
-    } catch {
-      // Return default metadata if parsing fails
-      return {
-        caseId: 'unknown',
-        requestDate: new Date().toISOString(),
-        currentStatus: 'In Progress',
-      };
-    }
-  }
-
-  async #identifyRelatedDocuments(document: string): Promise<string[]> {
-    const prompt = `
-    Analyze the following document and identify all related document IDs, attachment IDs, 
-    or case file references that should be included in the timeline analysis.
-    Return a JSON array of document IDs.
-
-    Document:
-    ${document}
-    `;
-
-    const response = await this.generateResponse(prompt);
-    try {
-      const documentIds = JSON.parse(response);
-      return Array.isArray(documentIds) ? documentIds : [];
-    } catch {
-      return [];
-    }
-  }
-
-  #getNextDocumentToProcess(): string | null {
-    if (this.#pendingDocuments.size === 0) return null;
+  getNextDocumentToProcess(): string | null {
+    if (this.pendingDocuments.size === 0) return null;
 
     // Sort pending documents by chronological order based on metadata
-    const sortedDocs = Array.from(this.#pendingDocuments).sort((a, b) => {
-      const metaA = this.#documentMetadata.get(a);
-      const metaB = this.#documentMetadata.get(b);
+    const sortedDocs = Array.from(this.pendingDocuments).sort((a, b) => {
+      const metaA = this.documentMetadata.get(a);
+      const metaB = this.documentMetadata.get(b);
 
       if (!metaA && !metaB) return 0;
       if (!metaA) return 1;
@@ -408,175 +260,37 @@ export class ClientTimelineAgent extends AgentBase {
     return sortedDocs[0];
   }
 
-  async #processDocument(
-    documentId: string,
-    document: string,
-  ): Promise<ProcessingResult> {
-    // First, extract document metadata
-    const metadata = await this.#extractDocumentMetadata(documentId, document);
-    this.#documentMetadata.set(documentId, metadata);
-
-    // Process the document with current timeline context
-    const prompt = `
-    You are processing a document as part of a compliance timeline analysis for a data request case.
-    
-    Current Timeline State:
-    ${JSON.stringify(this.#timelineState, null, 2)}
-    
-    Document to Process:
-    ID: ${documentId}
-    Metadata: ${JSON.stringify(metadata, null, 2)}
-    Content: ${document}
-    
-    Please analyze this document and return a JSON object with:
-    - timelineEntry: Object describing this document's place in the timeline
-    - additionalDocuments: Array of additional document IDs discovered (if any)
-    - notes: Array of string notes about issues, concerns, or questions
-    - complianceImpact: Object describing how this document affects compliance ratings
-    - verbatimStatements: Array of critical verbatim quotes from the document
-    
-    Focus on compliance aspects, timeline accuracy, and any actions or inactions that affect the case.
-    `;
-
-    const response = await this.generateResponse(prompt);
-
-    try {
-      const result = JSON.parse(response);
-      return {
-        documentId,
-        timelineEntry: result.timelineEntry || {},
-        additionalDocuments: result.additionalDocuments || [],
-        notes: result.notes || [],
-        complianceImpact: result.complianceImpact || {},
-        verbatimStatements: result.verbatimStatements || [],
-      };
-    } catch (error) {
-      return {
-        documentId,
-        timelineEntry: {
-          documentId,
-          date:
-            metadata.dateReceived ||
-            metadata.dateSent ||
-            new Date().toISOString(),
-          summary: `Failed to process document: ${error}`,
-        },
-        additionalDocuments: [],
-        notes: [`Error processing document: ${error}`],
-        complianceImpact: {},
-        verbatimStatements: [],
-      };
-    }
-  }
-
-  async #extractDocumentMetadata(
-    documentId: string,
-    document: string,
-  ): Promise<DocumentMetadata> {
-    const prompt = `
-    Extract metadata from the following document. Return a JSON object with:
-    - documentId: string
-    - documentType: string
-    - dateSent: ISO date string (if applicable)
-    - dateReceived: ISO date string (if applicable)
-    - sender: string
-    - recipient: string
-    - subject: string
-    - attachmentCount: number
-    - priority: "Low" | "Medium" | "High" | "Critical"
-    
-    Document:
-    ${document}
-    `;
-
-    const response = await this.generateResponse(prompt);
-
-    try {
-      const metadata = JSON.parse(response);
-      return {
-        documentId,
-        documentType: metadata.documentType || 'Unknown',
-        dateSent: metadata.dateSent,
-        dateReceived: metadata.dateReceived,
-        sender: metadata.sender || '',
-        recipient: metadata.recipient || '',
-        subject: metadata.subject || '',
-        attachmentCount: metadata.attachmentCount || 0,
-        priority: metadata.priority || 'Medium',
-      };
-    } catch {
-      return {
-        documentId,
-        documentType: 'Unknown',
-        sender: '',
-        recipient: '',
-        subject: '',
-        attachmentCount: 0,
-        priority: 'Medium',
-      };
-    }
-  }
-
-  #updateTimelineState(result: ProcessingResult): void {
-    // Add the timeline entry
-    if (result.timelineEntry) {
-      this.#timelineState.sequentialActions.push(result.timelineEntry);
-    }
-
-    // Add notes as critical issues if they indicate problems
-    if (result.notes && result.notes.length > 0) {
-      result.notes.forEach((note) => {
-        if (
-          note.toLowerCase().includes('concern') ||
-          note.toLowerCase().includes('issue') ||
-          note.toLowerCase().includes('problem')
-        ) {
-          this.#timelineState.criticalIssues.push(note);
-        }
-      });
-    }
-
-    // Sort sequential actions by date
-    this.#timelineState.sequentialActions.sort((a, b) => {
-      const dateA = new Date(a.date || '');
-      const dateB = new Date(b.date || '');
-      return dateA.getTime() - dateB.getTime();
-    });
-  }
-
-  #updateComplianceRatings(): void {
+  protected updateComplianceRatings(): void {
     // This would implement sophisticated compliance rating logic
     // For now, provide a basic implementation
-    const totalDocs = this.#timelineState.globalMetadata.totalDocuments;
-    const processedDocs = this.#timelineState.globalMetadata.processedDocuments;
-    const issueCount = this.#timelineState.criticalIssues.length;
+    const totalDocs = this.timelineState.globalMetadata.totalDocuments;
+    const processedDocs = this.timelineState.globalMetadata.processedDocuments;
+    const issueCount = this.timelineState.criticalIssues.length;
 
     // Completeness rating based on document processing
     if (processedDocs === totalDocs && totalDocs > 0) {
-      this.#timelineState.complianceRatings.completeness =
-        ComplianceRating.Good;
+      this.timelineState.complianceRatings.completeness = ComplianceRating.Good;
     } else if (processedDocs / totalDocs > 0.8) {
-      this.#timelineState.complianceRatings.completeness =
+      this.timelineState.complianceRatings.completeness =
         ComplianceRating.Satisfactory;
     } else {
-      this.#timelineState.complianceRatings.completeness =
-        ComplianceRating.Poor;
+      this.timelineState.complianceRatings.completeness = ComplianceRating.Poor;
     }
 
     // Overall rating based on issues
     if (issueCount === 0) {
-      this.#timelineState.complianceRatings.overall = ComplianceRating.Good;
+      this.timelineState.complianceRatings.overall = ComplianceRating.Good;
     } else if (issueCount < 3) {
-      this.#timelineState.complianceRatings.overall =
+      this.timelineState.complianceRatings.overall =
         ComplianceRating.Satisfactory;
     } else {
-      this.#timelineState.complianceRatings.overall = ComplianceRating.Poor;
+      this.timelineState.complianceRatings.overall = ComplianceRating.Poor;
     }
 
     // Set other ratings to unknown for now - would be implemented based on specific analysis
-    this.#timelineState.complianceRatings.timeliness = ComplianceRating.Unknown;
-    this.#timelineState.complianceRatings.accuracy = ComplianceRating.Unknown;
-    this.#timelineState.complianceRatings.transparency =
+    this.timelineState.complianceRatings.timeliness = ComplianceRating.Unknown;
+    this.timelineState.complianceRatings.accuracy = ComplianceRating.Unknown;
+    this.timelineState.complianceRatings.transparency =
       ComplianceRating.Unknown;
   }
 
@@ -587,15 +301,15 @@ export class ClientTimelineAgent extends AgentBase {
   serialize(): SerializedTimelineAgent {
     const state: TimelineAgentState = {
       propertyId: this.propertyId || '',
-      pendingDocumentIds: Array.from(this.#pendingDocuments),
-      processedDocumentIds: Array.from(this.#processedDocuments),
+      pendingDocumentIds: Array.from(this.pendingDocuments),
+      processedDocumentIds: Array.from(this.processedDocuments),
       currentDocumentId: this.getCurrentDocumentId(),
-      summary: this.#timelineState,
-      metadata: Object.fromEntries(this.#documentMetadata),
+      summary: this.timelineState,
+      metadata: Object.fromEntries(this.documentMetadata),
       createdAt:
-        this.#timelineState.globalMetadata.requestDate ||
+        this.timelineState.globalMetadata.requestDate ||
         new Date().toISOString(),
-      lastUpdated: this.#timelineState.lastUpdated,
+      lastUpdated: this.timelineState.lastUpdated,
     };
 
     return {
@@ -609,23 +323,23 @@ export class ClientTimelineAgent extends AgentBase {
     const { state } = agent;
     this.reset();
     // Restore internal state
-    this.#pendingDocuments.clear();
+    this.pendingDocuments.clear();
     state.pendingDocumentIds.forEach((id: string) =>
-      this.#pendingDocuments.add(id),
+      this.pendingDocuments.add(id),
     );
 
-    this.#processedDocuments.clear();
+    this.processedDocuments.clear();
     state.processedDocumentIds.forEach((id: string) =>
-      this.#processedDocuments.add(id),
+      this.processedDocuments.add(id),
     );
 
-    this.#documentMetadata.clear();
+    this.documentMetadata.clear();
     Object.entries(state.metadata).forEach(([id, metadata]) =>
-      this.#documentMetadata.set(id, metadata as DocumentMetadata),
+      this.documentMetadata.set(id, metadata as DocumentMetadata),
     );
 
     if (state.summary) {
-      this.#timelineState = state.summary;
+      this.timelineState = state.summary;
     }
 
     // Set propertyId if available
@@ -634,7 +348,7 @@ export class ClientTimelineAgent extends AgentBase {
     }
 
     // Mark as initialized if it has processed any documents or has summary data
-    this.#isInitialized =
+    this.isInitialized =
       state.processedDocumentIds.length > 0 ||
       (state.summary?.globalMetadata.caseId?.length ?? 0) > 0;
   }
@@ -650,7 +364,8 @@ export class ClientTimelineAgent extends AgentBase {
 
     // Create a new agent instance
     const agent = new ClientTimelineAgent({
-      initialDocumentId: state.pendingDocumentIds[0] || undefined,
+      initialDocumentId: state.pendingDocumentIds[0]!,
+      propertyId: state.propertyId!,
     });
 
     return agent;
@@ -662,6 +377,23 @@ export class ClientTimelineAgent extends AgentBase {
    */
   createSnapshot(): string {
     return JSON.stringify(this.serialize(), null, 2);
+  }
+
+  /**
+   * Assert that the given property ID is valid
+   * @param value The property ID to validate
+   */
+  protected assertPropertyId(value: string) {
+    if (!value) {
+      throw new Error('Property ID is required');
+    }
+    if (!this.#propertyId) {
+      this.#propertyId = value;
+    } else if (this.#propertyId !== value) {
+      throw new Error(
+        `Property ID mismatch: expected ${this.#propertyId}, got ${value}`,
+      );
+    }
   }
 
   /**

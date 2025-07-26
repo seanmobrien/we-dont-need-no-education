@@ -2,11 +2,6 @@
 import { JSX, useMemo, useCallback } from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
-import classnames, {
-  display,
-  flexDirection,
-  width,
-} from '@/tailwindcss.classnames';
 import { Box } from '@mui/material';
 import { EmailGridProps } from '@/components/mui/data-grid/types';
 import {
@@ -14,6 +9,7 @@ import {
   GridColDef,
   GridRowParams,
   MuiEvent,
+  DataGridProProps,
 } from '@mui/x-data-grid-pro';
 import { ContactSummary, EmailMessageSummary } from '@/data-models';
 import AttachEmailIcon from '@mui/icons-material/AttachEmail';
@@ -22,6 +18,7 @@ import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import EmailDetailPanel from './email-detail-panel';
 
 /**
  * Defines the column configuration for the email message list grid.
@@ -71,7 +68,12 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
         <Link
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
-          className="text-blue-600 hover:underline"
+          style={{
+            color: '#2563eb',
+            textDecoration: 'none',
+          }}
+          onMouseEnter={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
+          onMouseLeave={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
         >
           {params.value}
         </Link>
@@ -170,23 +172,34 @@ export const EmailList = ({
     [onRowDoubleClickProps, push],
   );
 
+  // Add detail panel support
+  const getDetailPanelContent = useCallback<
+    NonNullable<DataGridProProps['getDetailPanelContent']>
+  >(({ row }) => <EmailDetailPanel row={row} />, []);
+
+  const getDetailPanelHeight = useCallback(() => 'auto', []);
+
   return (
-    <Box
-      className={classnames(
-        display('flex'),
-        flexDirection('flex-col'),
-        width('w-full'),
-      )}
-      sx={containerSx}
-    >
-      <ServerBoundDataGrid<EmailMessageSummary>
-        {...props}
-        columns={stableColumns}
-        url={siteMap.api.email.url}
-        idColumn="emailId"
-        onRowDoubleClick={onRowDoubleClick}
-      />
-    </Box>
+    <>
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%',
+          ...containerSx,
+        }}
+      >
+        <ServerBoundDataGrid<EmailMessageSummary>
+          {...props}
+          columns={stableColumns}
+          url={siteMap.api.email.url}
+          idColumn="emailId"
+          onRowDoubleClick={onRowDoubleClick}
+          getDetailPanelContent={getDetailPanelContent}
+          getDetailPanelHeight={getDetailPanelHeight}
+        />
+      </Box>
+    </>
   );
 };
 

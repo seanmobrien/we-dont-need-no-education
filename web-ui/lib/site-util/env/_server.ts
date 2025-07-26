@@ -18,6 +18,7 @@ const buildRawInstance = () => ({
   AZURE_OPENAI_DEPLOYMENT_EMBEDDING:
     process.env.AZURE_OPENAI_DEPLOYMENT_EMBEDDING,
   AZURE_OPENAI_ENDPOINT_EMBEDDING: process.env.AZURE_OPENAI_ENDPOINT,
+  AZURE_OPENAI_KEY_EMBEDDING: process.env.AZURE_OPENAI_KEY_EMBEDDING,
   AZURE_OPENAI_DEPLOYMENT_COMPLETIONS:
     process.env.AZURE_OPENAI_DEPLOYMENT_COMPLETIONS,
   AZURE_OPENAI_ENDPOINT_COMPLETIONS:
@@ -38,8 +39,8 @@ const buildRawInstance = () => ({
   AUTH_GOOGLE_APIKEY: process.env.AUTH_GOOGLE_APIKEY,
   AUTH_HEADER_BYPASS_KEY: process.env.AUTH_HEADER_BYPASS_KEY,
   AUTH_HEADER_BYPASS_VALUE: process.env.AUTH_HEADER_BYPASS_VALUE,
-  AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
-    process.env.AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,
+  NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
+    process.env.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,
   AZURE_STORAGE_CONNECTION_STRING: process.env.AZURE_STORAGE_CONNECTION_STRING,
   AZURE_STORAGE_ACCOUNT_KEY: process.env.AZURE_STORAGE_ACCOUNT_KEY,
   AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
@@ -47,12 +48,14 @@ const buildRawInstance = () => ({
   GOOGLE_GENERATIVE_AI_BASE_URL: process.env.GOOGLE_GENERATIVE_AI_BASE_URL,
   REDIS_URL: process.env.REDIS_URL,
   REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+  MEM0_DISABLED: process.env.MEM0_DISABLED,
   MEM0_API_HOST: process.env.MEM0_API_HOST,
   MEM0_UI_HOST: process.env.MEM0_UI_HOST,
   MEM0_USERNAME: process.env.MEM0_USERNAME,
   MEM0_ORG_ID: process.env.MEM0_ORG_ID,
   MEM0_PROJECT_ID: process.env.MEM0_PROJECT_ID,
   MEM0_API_KEY: process.env.MEM0_API_KEY,
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,
 });
 
 // Define the schema for server-side environment variables
@@ -90,6 +93,9 @@ const serverEnvSchema = z.object({
   AZURE_OPENAI_ENDPOINT_EMBEDDING: z
     .string()
     .default(process.env.AZURE_OPENAI_ENDPOINT ?? ''),
+  AZURE_OPENAI_KEY_EMBEDDING: z
+    .string()
+    .default(process.env.AZURE_OPENAI_KEY ?? ''),
   AZURE_OPENAI_DEPLOYMENT_HIFI: z.string().default('gpt-4.1'),
   AZURE_OPENAI_DEPLOYMENT_LOFI: z.string().default('gpt-4o-mini'),
   AZURE_OPENAI_DEPLOYMENT_COMPLETIONS: z.string().default('gpt-4o-mini'),
@@ -110,7 +116,6 @@ const serverEnvSchema = z.object({
   AUTH_GOOGLE_APIKEY: z.string(),
   AUTH_HEADER_BYPASS_KEY: z.string().optional(),
   AUTH_HEADER_BYPASS_VALUE: z.string().optional(),
-  AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: z.string().optional(),
   AZURE_STORAGE_CONNECTION_STRING: z.string().min(1),
   AZURE_STORAGE_ACCOUNT_KEY: z.string().min(1),
   AZURE_STORAGE_ACCOUNT_NAME: z.string().min(1),
@@ -120,12 +125,14 @@ const serverEnvSchema = z.object({
   ),
   REDIS_URL: z.string().min(1),
   REDIS_PASSWORD: z.string().min(1),
+  MEM0_DISABLED: ZodProcessors.truthy(false),
   MEM0_API_HOST: ZodProcessors.url(),
   MEM0_UI_HOST: ZodProcessors.url(),
   MEM0_USERNAME: z.string().min(1),
   MEM0_ORG_ID: ZodProcessors.nullableString().default(null),
   MEM0_PROJECT_ID: ZodProcessors.nullableString().default(null),
   MEM0_API_KEY: z.string().optional().default('SKYNET'),
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: z.string().optional(),
 });
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;

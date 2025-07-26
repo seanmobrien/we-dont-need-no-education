@@ -1,3 +1,5 @@
+'use client';
+
 import { useCallback, useEffect, useRef } from 'react';
 import { LoggedError } from '../errors';
 import { isError } from '../_utility-methods';
@@ -182,10 +184,6 @@ export const useInEffect = () => {
       }
     },
     [],
-  );
-
-  enqueue(async (c: string) => c + 'World', 'Hello, ').then((y) =>
-    console.log(y),
   );
   return {
     enqueue,

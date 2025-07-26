@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@/__tests__/test-utils';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import Loading from '@/components/general/loading';
@@ -20,10 +20,10 @@ const LoadingWrapper = ({
 
 describe('Loading Component Updates', () => {
   it('renders loading state with Card-based UI pattern', () => {
-    render(<LoadingWrapper loading={true} errorMessage={null} />);
-
-    // Check that we're now using the Card-based pattern from email-viewer
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    act(() => {
+      render(<LoadingWrapper loading={true} errorMessage={null} />);
+      waitFor(() => screen.getByText('Loading...'));
+    });
 
     // Verify we have the card structure
     const cardContent = document.querySelector('.MuiCardContent-root');

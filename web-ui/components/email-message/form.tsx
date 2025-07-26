@@ -13,23 +13,7 @@ import {
   ForwardRefRenderFunction,
   useId,
 } from 'react';
-import classnames, {
-  spacing,
-  typography,
-  backgroundColor,
-  width,
-  maxWidth,
-  margin,
-  outlineStyle,
-  ringWidth,
-  display,
-  borderRadius,
-  ringColor,
-  boxShadow,
-  transitionProperty,
-  opacity,
-  borderWidth,
-} from 'tailwindcss-classnames';
+
 import { EmailMessage } from '@/data-models/api/email-message';
 import ContactDropdown from '@/components/contact/contact-dropdown';
 import {
@@ -64,40 +48,62 @@ interface EmailFormProps {
   withButtons: boolean;
 }
 
-// Define reusable class names using category-based functions
-const inputClass = classnames(
-  width('w-full'),
-  borderWidth('border'),
-  borderRadius('rounded'),
-  spacing('p-2'),
-  outlineStyle('focus:outline-none'),
-  ringWidth('focus:ring'),
-  ringColor('focus:ring-blue-300'),
-);
-const labelClass = classnames(
-  display('block'),
-  typography('font-medium'),
-  margin('mb-1'),
-);
-const buttonClass = classnames(
-  width('w-full'),
-  spacing('p-2'),
-  borderRadius('rounded'),
-  typography('text-white'),
-  opacity('hover:opacity-80'),
-  transitionProperty('transition'),
-);
-const primaryButton = classnames(
-  buttonClass,
-  backgroundColor('bg-blue-500', 'hover:bg-blue-600', 'disabled:bg-gray-400'),
-);
-const containerClass = classnames(
-  maxWidth('max-w-lg'),
-  margin('mx-auto'),
-  spacing('p-6'),
-  borderRadius('rounded-lg'),
-  boxShadow('shadow-md'),
-);
+// Define stable style objects outside component to avoid re-renders
+const stableStyles = {
+  container: {
+    maxWidth: '512px',
+    margin: '0 auto',
+    padding: '1.5rem',
+    borderRadius: '0.5rem',
+    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+  } as const,
+  input: {
+    width: '100%',
+    border: '1px solid #d1d5db',
+    borderRadius: '0.375rem',
+    padding: '0.5rem',
+    '&:focus': {
+      outline: 'none',
+      boxShadow: '0 0 0 3px rgb(59 130 246 / 0.3)',
+    },
+  } as const,
+  label: {
+    display: 'block',
+    fontWeight: 500,
+    marginBottom: '0.25rem',
+  } as const,
+  button: {
+    width: '100%',
+    padding: '0.5rem',
+    borderRadius: '0.375rem',
+    color: 'white',
+    transition: 'opacity 0.15s ease-in-out',
+    backgroundColor: '#3b82f6',
+    border: 'none',
+    cursor: 'pointer',
+    '&:hover': {
+      backgroundColor: '#2563eb',
+    },
+    '&:disabled': {
+      backgroundColor: '#9ca3af',
+      cursor: 'not-allowed',
+    },
+  } as const,
+  errorText: {
+    marginBottom: '0.5rem',
+    color: '#ef4444',
+  } as const,
+  formContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '1rem',
+  } as const,
+  title: {
+    marginBottom: '1rem',
+    fontSize: '1.25rem',
+    fontWeight: 600,
+  } as const,
+} as const;
 
 const useElementUpdateDispatchCallback = <
   TElementType extends HTMLElement = HTMLElement,
@@ -209,7 +215,6 @@ const EmailForm: ForwardRefRenderFunction<
     return writeEmailRecord(emailData)
       .then((result) => {
         if (isNewEmail) {
-          console.log('in new email save', result);
           routerReplace(siteMap.email.edit(result.emailId).toString());
         } else {
           switch (afterSaveBehavior) {
@@ -281,26 +286,21 @@ const EmailForm: ForwardRefRenderFunction<
   );
 
   return (
-    <div className={containerClass}>
-      <h2
-        className={classnames(
-          margin('mb-4'),
-          typography('text-xl', 'font-semibold'),
-        )}
-      >
+    <div style={stableStyles.container}>
+      <h2 style={stableStyles.title}>
         {emailId ? 'Edit Email' : 'Create Email'}
       </h2>
       {message && (
-        <p className={classnames(margin('mb-2'), typography('text-red-500'))}>
+        <p style={stableStyles.errorText}>
           {message}
         </p>
       )}
-      <div className={spacing('space-y-4')}>
+      <div style={stableStyles.formContainer}>
         <div>
           <label
             id={generateCombinedId('senderIdLabel')}
             htmlFor={generateCombinedId('senderId')}
-            className={labelClass}
+            style={stableStyles.label}
           >
             Sent By
           </label>
@@ -310,7 +310,7 @@ const EmailForm: ForwardRefRenderFunction<
           <label
             id={generateCombinedId('recipientsIdLabel')}
             htmlFor={generateCombinedId('recipientsId')}
-            className={labelClass}
+            style={stableStyles.label}
           >
             Recipients
           </label>
@@ -324,7 +324,7 @@ const EmailForm: ForwardRefRenderFunction<
           <label
             htmlFor={generateCombinedId('subject')}
             id={generateCombinedId('subjectLabel')}
-            className={labelClass}
+            style={stableStyles.label}
           >
             Subject
           </label>
@@ -333,7 +333,7 @@ const EmailForm: ForwardRefRenderFunction<
             type="text"
             value={subject ?? ''}
             onChange={setSubjectCallback}
-            className={inputClass}
+            style={stableStyles.input}
             aria-labelledby={generateCombinedId('subjectLabel')}
             required
           />
@@ -342,7 +342,7 @@ const EmailForm: ForwardRefRenderFunction<
           <label
             id={generateCombinedId('sentTimestampLabel')}
             htmlFor={generateCombinedId('sentTimestamp')}
-            className={labelClass}
+            style={stableStyles.label}
           >
             Sent Timestamp
           </label>
@@ -351,7 +351,7 @@ const EmailForm: ForwardRefRenderFunction<
             type="datetime-local"
             value={normalizeDateAndTime(sentTimestamp)}
             onChange={setSentTimestampCallback}
-            className={inputClass}
+            style={stableStyles.input}
             aria-labelledby={generateCombinedId('sentTimestampLabel')}
             required
           />
@@ -360,7 +360,7 @@ const EmailForm: ForwardRefRenderFunction<
           <label
             htmlFor={generateCombinedId('parentEmailId')}
             id={generateCombinedId('parentEmailIdLabel')}
-            className={labelClass}
+            style={stableStyles.label}
           >
             Parent Email ID (optional)
           </label>
@@ -374,7 +374,7 @@ const EmailForm: ForwardRefRenderFunction<
           <label
             htmlFor={generateCombinedId('threadId')}
             id={generateCombinedId('threadIdLabel')}
-            className={labelClass}
+            style={stableStyles.label}
           >
             Thread ID (updated by parent email)
           </label>
@@ -384,7 +384,7 @@ const EmailForm: ForwardRefRenderFunction<
             readOnly={true}
             disabled={true}
             value={threadId ?? ''}
-            className={inputClass}
+            style={stableStyles.input}
             aria-labelledby={generateCombinedId('threadIdLabel')}
             aria-readonly="true"
             aria-disabled="true"
@@ -394,7 +394,7 @@ const EmailForm: ForwardRefRenderFunction<
           <label
             htmlFor={generateCombinedId('emailContents')}
             id={generateCombinedId('emailContentsLabel')}
-            className={labelClass}
+            style={stableStyles.label}
           >
             Email Contents
           </label>
@@ -402,7 +402,7 @@ const EmailForm: ForwardRefRenderFunction<
             id={generateCombinedId('emailContents')}
             value={emailContents ?? ''}
             onChange={setEmailContentsCallback}
-            className={inputClass}
+            style={stableStyles.input}
             aria-labelledby={generateCombinedId('emailContentsLabel')}
             required
           />
@@ -410,7 +410,7 @@ const EmailForm: ForwardRefRenderFunction<
         {withButtons ? (
           <button
             type="button"
-            className={primaryButton}
+            style={stableStyles.button}
             disabled={!!loading}
             aria-roledescription="Submit Form"
             onClick={handleSubmit}

@@ -1,5 +1,5 @@
-/**
- * @jest-environment node
+/* @jest-environment node */
+/** 
  *
  * Email API Route Tests
  *
@@ -49,10 +49,10 @@ jest.mock('@/lib/nextjs-util', () => ({
 }));
 
 jest.mock('@/lib/drizzle-db', () => ({
-  db: {
+  drizDb: jest.fn(() => ({
     query: mockDbQuery,
     delete: mockDbDelete,
-  },
+  })),
   schema: mockSchema,
 }));
 
@@ -60,6 +60,7 @@ import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
 import { query, queryExt } from '@/lib/neondb';
+import { auth } from '@/auth';
 
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
@@ -82,6 +83,9 @@ describe('Email API', () => {
       const params = await req.params;
       return params;
     });
+
+    // Reset auth mock
+    (auth as jest.Mock).mockReset();
   });
 
   describe('POST /api/email', () => {

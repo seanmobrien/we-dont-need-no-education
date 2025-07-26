@@ -1,7 +1,7 @@
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 import { isDocumentUnitType } from '@/data-models';
 import { documentProperty, documentUnits } from '@/drizzle/schema';
-import { db } from '@/lib/drizzle-db/connection';
+import { drizDb } from '@/lib/drizzle-db';
 import { newUuid } from '@/lib/typescript';
 import { log } from '@/lib/logger';
 import { eq } from 'drizzle-orm';
@@ -57,9 +57,9 @@ export const createDocumentProperty = async ({
     data.propertyId = newUuid();
   }
   // First, insert document property record
-  await db.insert(documentProperty).values(data).execute();
+  await drizDb().insert(documentProperty).values(data).execute();
   // Then create document
-  const [{ documentId }] = await db
+  const [{ documentId }] = await drizDb()
     .insert(documentUnits)
     .values({
       documentPropertyId: data.propertyId,
@@ -70,7 +70,7 @@ export const createDocumentProperty = async ({
     })
     .returning({ documentId: documentUnits.unitId });
   // Finally, update our record with the document ID
-  await db
+  await drizDb()
     .update(documentProperty)
     .set({ documentId })
     .where(eq(documentProperty.propertyId, data.propertyId))
