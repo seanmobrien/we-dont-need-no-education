@@ -16,7 +16,7 @@ const referencedEmailShape = z.object({
     .describe('Email record metadata.'),
   sender: z.object({
     name: z.string().optional().nullable(),
-    isDistrictStaff: z.boolean().optional().nullable().optional().nullable(),
+    isDistrictStaff: z.boolean().optional().nullable(),
     email: z.string().optional().nullable(),
     roleDscr: z.string().describe('Senders Role').optional().nullable(),
   }),
