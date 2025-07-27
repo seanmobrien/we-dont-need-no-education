@@ -35,7 +35,7 @@ const defaults = {
     colorTextLinkActiveMain: '#19bfcf', // color-text-link-active-main
     colorTextLinkActiveLight: '#19c4ce', // color-text-link-active-light
     colorTextLinkActiveDark: '#1898a8', // color-text-link-active-dark
-    colorTextLinkActiveAccent: '#18b9b6', // color-text-link-active-accent      
+    colorTextLinkActiveAccent: '#18b9b6', // color-text-link-active-accent
   },
   typography: {
     fontFamily: 'var(--geist-sans) var(--font-geist-mono)',
