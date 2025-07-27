@@ -135,7 +135,7 @@ export type DocumentIndexResourceToolResult = ToolCallbackResult<
  * @property chapter13Reasons - Optional array of reasons for Chapter 13 rating
  * @property titleIXRating - Optional numeric Title IX compliance rating
  * @property titleIXReasons - Optional array of reasons for Title IX rating
- * @property explaination - Required explanation of all changes and rationale
+ * @property explanation - Required explanation of all changes and rationale
  */
 export type CaseFileAmendment = {
   targetCaseFileId: number | string;
@@ -159,7 +159,7 @@ export type CaseFileAmendment = {
   chapter13Reasons?: Array<string>;
   titleIXRating?: number;
   titleIXReasons?: Array<string>;
-  explaination: string;
+  explanation: string;
 };
 
 /**
@@ -215,12 +215,14 @@ export type ResponsiveActionAssociation = {
  * @property caseFileId - The case file identifier (can be any type, typically number or string)
  * @property goals - Optional array of goals or objectives for the case file analysis
  * @property verbatim_fidelity - Optional numeric value indicating the level of verbatim fidelity required (0-100)
+ * @property max_response_tokens - maximum number of response tokens to return.  If not set, default of 1000 is used.
  */
 export type CaseFileRequestProps = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   caseFileId?: any;
   goals?: Array<string>;
   verbatimFidelity?: number;
+  max_response_tokens?: number;
 };
 
 /**

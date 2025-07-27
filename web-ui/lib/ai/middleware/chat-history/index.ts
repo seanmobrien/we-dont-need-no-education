@@ -1,30 +1,59 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
-import {
-  messageStatuses,
-  turnStatuses,
-} from '@/drizzle/schema';
+
 import { log } from '@/lib/logger';
-import { generateChatId } from '@/lib/ai/core';
-import { drizDb } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util';
-import type { ChatHistoryContext, StreamHandlerContext, FlushContext } from './types';
-import { importIncomingMessage } from './import-incoming-message';
+import type { ChatHistoryContext, StreamHandlerContext } from './types';
 import { ProcessingQueue } from './processing-queue';
-import { handleFlush } from './flush-handlers';
+import { 
+  safeInitializeMessagePersistence, 
+  safeCompleteMessagePersistence 
+} from './message-persistence';
 export type { ChatHistoryContext } from './types';
+export { 
+  instrumentFlushOperation,
+  instrumentStreamChunk,
+  instrumentMiddlewareInit,
+  recordQueueOperation,
+  createChatHistoryError
+} from './instrumentation';
 
-
-
-export function createChatHistoryMiddleware(
+/**
+ * Creates a middleware for chat history management that wraps language model streaming and generation operations.
+ * 
+ * This middleware is responsible for:
+ * - Initializing message persistence for each chat turn.
+ * - Maintaining FIFO order of streamed message chunks using a processing queue.
+ * - Persisting generated text and message metadata upon completion of streaming or generation.
+ * - Logging and suppressing errors to ensure chat operations continue even if persistence fails.
+ * 
+ * The middleware exposes three hooks:
+ * - `wrapStream`: Wraps the streaming operation, enqueues each chunk for ordered processing, and persists the final message.
+ * - `wrapGenerate`: Wraps the text generation operation, persists the generated message, and handles errors gracefully.
+ * - `transformParams`: Allows for transformation of parameters before processing (currently a passthrough).
+ * 
+ * @param context - The chat history context containing persistence and logging utilities.
+ * @returns A middleware object implementing `LanguageModelV1Middleware` for chat history management.
+ * 
+ * @remarks
+ * - If message persistence initialization fails, the middleware falls back to the original stream/generation.
+ * - Errors during chunk processing or message persistence are logged but do not interrupt the chat flow.
+ * - The middleware is designed to be transparent and robust, ensuring chat history is reliably persisted without impacting user experience.
+ * 
+ * @example
+ * ```typescript
+ * import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+ * import { myChatHistoryContext } from './my-context';
+ * 
+ * const chatHistoryMiddleware = createChatHistoryMiddleware(myChatHistoryContext);
+ * 
+ * // Use with your language model pipeline
+ * const model = wrapModel(aiModelFactory('hifi'), [ chatHistoryMiddleware ]);
+ * 
+ * ```
+ */
+export const createChatHistoryMiddleware = (
   context: ChatHistoryContext,
-): LanguageModelV1Middleware {  
-  const chatId =
-    typeof context.chatId === 'string'
-      ? (context.chatId ?? generateChatId().id)
-      : context.chatId
-        ? generateChatId(Number(context.chatId)).id
-        : generateChatId().id;
-  let turnId: number | undefined;
+): LanguageModelV1Middleware => {
   let currentMessageOrder = 0;
   let generatedText = '';
   const startTime: number = Date.now();
@@ -34,18 +63,16 @@ export function createChatHistoryMiddleware(
 
   return {
     wrapStream: async ({ doStream, params }) => {      
-      try {        
-        // Create or get chat
-        const  {
-          chatId,
-          turnId,
-          messageId,
-        } = await drizDb().transaction(async (tx) => importIncomingMessage({
-          tx,
-          context,
-          params,
-        }));
+      // Initialize message persistence
+      const persistenceInit = await safeInitializeMessagePersistence(context, params);
+      if (!persistenceInit) {
+        // If persistence initialization fails, continue with original stream
+        return doStream();
+      }
 
+      const { chatId, turnId, messageId } = persistenceInit;
+
+      try {
         const { stream, ...rest } = await doStream();        
         
         const transformStream = new TransformStream<
@@ -88,34 +115,14 @@ export function createChatHistoryMiddleware(
           },
 
           async flush() {
-            try {
-              // Create flush context for utility function
-              const flushContext: FlushContext = {
-                chatId: chatId!,
-                turnId,
-                messageId,
-                generatedText,
-                startTime,
-              };
-
-              // Handle flush using extracted utility function
-              const result = await handleFlush(flushContext);
-
-              if (!result.success && result.error) {
-                throw result.error;
-              }
-            } catch (error) {
-              log((l) =>
-                l.error('Error in chat history flush', {
-                  error,
-                  turnId,
-                  chatId,
-                }),
-              );
-
-              // The flush handler already attempts to mark turn as error
-              // If that fails, this is our last resort logging
-            }
+            // Complete message persistence using shared utility
+            await safeCompleteMessagePersistence({
+              chatId,
+              turnId,
+              messageId,
+              generatedText,
+              startTime,
+            });
           },
         });
 
@@ -128,7 +135,7 @@ export function createChatHistoryMiddleware(
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
           source: 'ChatHistoryMiddleware',
-          message: 'Error initializing chat history middleware',
+          message: 'Error in streaming chat history middleware',
           critical: true,
           data: {
             chatId,
@@ -141,54 +148,54 @@ export function createChatHistoryMiddleware(
       }
     },
 
+    wrapGenerate: async ({ doGenerate, params }) => {
+      // Initialize message persistence
+      const persistenceInit = await safeInitializeMessagePersistence(context, params);
+      if (!persistenceInit) {
+        // If persistence initialization fails, continue with original generation
+        return doGenerate();
+      }
+
+      const { chatId, turnId, messageId } = persistenceInit;
+
+      try {
+        // Execute the text generation
+        const result = await doGenerate();
+
+        // Extract the generated text from the result
+        const finalText = result.text || '';
+
+        // Complete message persistence using shared utility
+        await safeCompleteMessagePersistence({
+          chatId,
+          turnId,
+          messageId,
+          generatedText: finalText,
+          startTime,
+        });
+
+        return result;
+      } catch (error) {
+        // Log then suppress error - don't break the generation
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'ChatHistoryMiddleware',
+          message: 'Error in text generation chat history middleware',
+          critical: true,
+          data: {
+            chatId,
+            turnId,
+            context,
+          }
+        });
+        // If middleware setup fails, still continue with the original generation
+        return doGenerate();
+      }
+    },
+
     transformParams: async ({ params }) => {
       // We can add any parameter transformations here if needed
       return params;
     },
   };
-}
-
-// Utility function to initialize the lookup tables with default values
-export async function initializeChatHistoryTables() {
-  try {
-    // Insert message statuses if they don't exist
-    await drizDb()
-      .insert(messageStatuses)
-      .values([
-        { id: 1, code: 'streaming', description: 'Message is being generated' },
-        { id: 2, code: 'complete', description: 'Message is fully completed' },
-      ])
-      .onConflictDoNothing();
- } catch (error) {
-     LoggedError.isTurtlesAllTheWayDownBaby(error, {
-       log: true,
-       source: 'ChatHistoryMiddleware',
-       message: 'Failed to initialize chat message status table',
-       critical: true,
-     });    
-  }
-  try {
-    // Insert turn statuses if they don't exist
-    await drizDb()
-      .insert(turnStatuses)
-      .values([
-        {
-          id: 1,
-          code: 'waiting',
-          description: 'Waiting for model or tool response',
-        },
-        { id: 2, code: 'complete', description: 'Turn is complete' },
-        { id: 3, code: 'error', description: 'Turn completed with error' },
-      ])
-      .onConflictDoNothing();
-
-    log((l) => l.info('Chat history lookup tables initialized'));
-  } catch (error) {
-     LoggedError.isTurtlesAllTheWayDownBaby(error, {
-       log: true,
-       source: 'ChatHistoryMiddleware',
-       message: 'Failed to initialize chat turn status table',
-       critical: true,
-     });    
-  }
 }

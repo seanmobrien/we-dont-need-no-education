@@ -1,5 +1,6 @@
 import { errorLogFactory, log } from '@/lib/logger';
 import { isAbortError, isError } from '../_utility-methods';
+import { getStackTrace } from '@/lib/nextjs-util';
 
 /**
  * A unique symbol used to brand the `LoggedError` class instances.
@@ -115,6 +116,7 @@ export class LoggedError implements Error {
           error: e,
           source,
           message,
+          stack: getStackTrace({ skip: 2 }),
           ...itsRecusionMan,
         });
         log((l) => l.error(logObject.message ?? 'Error occurred', logObject));

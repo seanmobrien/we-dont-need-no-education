@@ -4,7 +4,7 @@
 
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import React from 'react';
-import { renderHook } from '@testing-library/react';
+import { renderHook } from '@/__tests__/test-utils';
 import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
 
 // Polyfill ReadableStream for Node.js test environment
@@ -73,7 +73,7 @@ const createTestWrapper = () => {
 
 describe('TanStack React Query Chat Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     global.fetch = mockFetch;
   });
 

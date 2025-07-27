@@ -6,10 +6,10 @@ import {
 import { RepositoryCrudController, DocumentUnitRepository } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
 import { NextRequest, NextResponse } from 'next/server';
-import { DocumentSchema } from '@/lib/ai/tools';
 import { isError } from '@/lib/react-util';
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { log } from '@/lib/logger';
+import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ unitId: number }> },
@@ -19,7 +19,7 @@ export async function GET(
     const document = await getCaseFileDocument({ caseFileId: unitId });
 
     const valid = toolCallbackResultSchemaFactory(
-      DocumentSchema,
+      CaseFileResponseShape,
     ).result.safeParse(document.structuredContent.result);
     if (!valid.success) {
       log(l => l.error({

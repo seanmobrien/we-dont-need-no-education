@@ -31,7 +31,7 @@ const getClickPlugin = () => {
 
 const getAppInsights = () => {
   if (
-    env('NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING') &&
+    env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING') &&
     typeof window !== 'undefined' &&
     (!appInsightState.appInsightInstance ||
       !appInsightState.appInsightInstance?.core?.isInitialized)
@@ -45,7 +45,7 @@ const getAppInsights = () => {
       config: {
         appId: config.serviceName,
         connectionString: env(
-          'NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING',
+          'NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING',
         ),
         enableDebug: true,
         enableAutoRouteTracking: true,

@@ -19,6 +19,7 @@
   /* Secondary colors (alternative actions/elements) */
   --color-secondary-main: #d05697;
   --color-secondary-light: #d05799;
+  --color-secondary-accent: #ff7ac4;
   --color-secondary-dark: #a8456f;
   
   /* Highlight colors (focus states, important callouts) */

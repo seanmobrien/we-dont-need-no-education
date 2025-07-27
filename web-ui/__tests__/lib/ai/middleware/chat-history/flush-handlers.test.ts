@@ -412,7 +412,7 @@ describe('Flush Handlers', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.latencyMs).toBeGreaterThan(0);
+      expect(result.processingTimeMs).toBeGreaterThan(0);
       expect(result.textLength).toBe(mockContext.generatedText.length);
       expect(result.error).toBeUndefined();
 
@@ -449,7 +449,7 @@ describe('Flush Handlers', () => {
       // Assert
       expect(result.success).toBe(false);
       expect(result.error).toBe(dbError);
-      expect(result.latencyMs).toBeGreaterThan(0);
+      expect(result.processingTimeMs).toBeGreaterThan(0);
       expect(result.textLength).toBe(mockContext.generatedText.length);
 
       expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
@@ -464,8 +464,8 @@ describe('Flush Handlers', () => {
       const result = await handleFlush(contextWithPastTime);
 
       // Assert
-      expect(result.latencyMs).toBeGreaterThanOrEqual(2500);
-      expect(result.latencyMs).toBeLessThan(3000); // Allow some tolerance
+      expect(result.processingTimeMs).toBeGreaterThanOrEqual(2500);
+      expect(result.processingTimeMs).toBeLessThan(3000); // Allow some tolerance
     });
 
     it('should handle zero-length generated text', async () => {
@@ -535,7 +535,7 @@ describe('Flush Handlers', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.latencyMs).toBeGreaterThanOrEqual(1500);
+      expect(result.processingTimeMs).toBeGreaterThanOrEqual(1500);
       expect(result.textLength).toBe(fullContext.generatedText.length);
 
       // Verify all operations were called

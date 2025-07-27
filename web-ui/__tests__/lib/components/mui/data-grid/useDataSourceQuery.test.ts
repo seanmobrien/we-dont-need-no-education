@@ -1,4 +1,4 @@
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@/__tests__/test-utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GridLogicOperator } from '@mui/x-data-grid-pro';
 import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
@@ -53,62 +53,7 @@ describe('useDataSource', () => {
     expect(typeof result.current.getRows).toBe('function');
     expect(typeof result.current.updateRow).toBe('function');
   });
-
-  /*
-
-  it('should fetch data when getRows is called', async () => {
-    const mockResponse = {
-      rows: [{ id: 1, name: 'Test' }],
-      rowCount: 1,
-    };
-
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
-
-    const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
-      wrapper: createWrapper(),
-    });
-    await act(async () => {
-      const response = await result.current.getRows({
-        paginationModel: { page: 0, pageSize: 10 },
-        sortModel: [],
-        filterModel: { items: [] },
-        start: 0,
-        end: 10,
-      });
-
-      return response;
-    });
-
-    expect(response).toEqual(mockResponse);
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining(`${TEST_URL}?num=10&page=1`),
-    );
-  });
-
-  it('should handle fetch errors gracefully', async () => {
-    (fetch as jest.Mock).mockClear();
-    (fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
-
-    const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
-      wrapper: createWrapper(),
-    });
-
-    const response = await result.current.getRows({
-      paginationModel: { page: 0, pageSize: 10 },
-      sortModel: [],
-      filterModel: { items: [] },
-      start: 0,
-      end: 10,
-    });
-
-    expect(response).toEqual({ rows: [], rowCount: 0 });
-  });
-
-  */
-
+  
   it('should update row via PUT request', async () => {
     const mockUpdatedRow = { id: 1, name: 'Updated Test' };
 

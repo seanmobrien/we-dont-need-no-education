@@ -77,7 +77,7 @@ describe('EmailAttachmentDrizzleRepository', () => {
   let mockDb: Record<string, unknown>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Mock database
     mockDb = {

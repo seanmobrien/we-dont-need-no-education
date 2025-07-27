@@ -34,8 +34,8 @@ export const clientRawInstance = {
   NEXT_PUBLIC_LOG_LEVEL_CLIENT:
     process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT ?? 'silly',
 
-  NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
-    process.env.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,
+  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
+    process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
   /**
    * The cache timeout for client-side data grids.
    * @type {number | undefined}
@@ -64,7 +64,7 @@ const clientEnvSchema = z.object({
   NEXT_PUBLIC_HOSTNAME: ZodProcessors.url().default('http://localhost:3000'),
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: ZodProcessors.logLevel().default('silly'),
   NEXT_PUBLIC_MUI_LICENSE: z.string().default(''),
-  NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: z
+  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING: z
     .string()
     .optional(),
   NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT: ZodProcessors.integer().default(

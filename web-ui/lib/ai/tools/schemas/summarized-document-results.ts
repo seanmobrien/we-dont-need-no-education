@@ -27,17 +27,18 @@ import z from 'zod';
  * @property omissionsOrGaps - Array of identified omissions or gaps in compliance.
  */
 export const SummarizedDocumentSchema = z.object({
-  documentId: z.string().describe('Unique identifier for the document'),
+  documentId: z.string().or(z.number()).describe('Unique identifier for the document'),
   documentType: z
     .string()
     .describe('Type of document (e.g., email, attachment)'),
   createdOn: z.string().describe('Creation date and time of the document'),
-  sender: z.string().describe('Name and email of the document sender'),
+  sender: z.string().nullable().describe('Name and email of the document sender'),
   relatedDocuments: z
     .array(
       z.object({
         documentId: z
           .string()
+          .or(z.number())
           .describe('Unique identifier for the related document'),
         relationshipType: z
           .string()
@@ -51,8 +52,10 @@ export const SummarizedDocumentSchema = z.object({
           ),
         excerpt: z
           .string()
+          .optional()
+          .nullable()
           .describe('Short excerpt or summary of the related document'),
-      }),
+      }).passthrough(),
     )
     .describe('Array of related document identifiers'),
   policyReferences: z
@@ -71,7 +74,9 @@ export const SummarizedDocumentSchema = z.object({
           .describe('Location in document (e.g., paragraph, line number)'),
         complianceTags: z
           .array(z.string())
-          .describe('Compliance tags specific to this passage'),
+          .describe('Compliance tags specific to this passage')
+          .optional()
+          .nullable(),
         scores: z
           .array(
             z.object({
@@ -84,10 +89,13 @@ export const SummarizedDocumentSchema = z.object({
             }),
           )
           .describe('Array of scores associated with this passage'),
-      }),
+      }).passthrough(),
     )
+    .optional()
     .describe('Array of extracted passages with metadata'),
   omissionsOrGaps: z
     .array(z.string())
-    .describe('Array of identified omissions or gaps in compliance'),
-});
+    .describe('Array of identified omissions or gaps in compliance')
+    .optional()
+    .nullable(),
+}).passthrough();
