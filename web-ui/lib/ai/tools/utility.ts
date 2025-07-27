@@ -240,7 +240,6 @@ export const resolveCaseFileIdBatch = async (
         emailId: true,
       },
       });
-      return query.execute();
   });
   // Now use records to translate pending into valid
   const { resolved } = pending.reduce(
