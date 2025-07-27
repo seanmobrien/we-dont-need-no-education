@@ -55,8 +55,7 @@ export const drizDbWithInit: DrizDbInitOverloads = <T>(cb?: (db: DbDatabaseType)
         throw le;
       });
   }
-  return _drizDbPromise.then
-    (resolver) as Promise<T>;
+  return _drizDbPromise.then(resolver) as Promise<T>;
 };
 
 interface DrizDbOverloads {
