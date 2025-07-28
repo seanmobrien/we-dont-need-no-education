@@ -222,7 +222,7 @@ export type CaseFileRequestProps = {
   caseFileId?: any;
   goals?: Array<string>;
   verbatimFidelity?: number;
-  max_response_tokens?: number; 
+  max_response_tokens?: number;
 };
 
 /**
