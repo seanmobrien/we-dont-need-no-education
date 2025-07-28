@@ -327,14 +327,14 @@ export async function handleFlush(
 ): Promise<FlushResult> {
   return await instrumentFlushOperation(context, async () => {
     const startFlush = Date.now();
-    const latencyMs = startFlush - context.startTime;
+    const processingTimeMs = startFlush - context.startTime;
 
     try {
       // Step 1: Finalize the assistant message
       await finalizeAssistantMessage(context);
 
       // Step 2: Complete the turn with metrics
-      await completeChatTurn(context, latencyMs);
+      await completeChatTurn(context, processingTimeMs);
 
       // Step 3: Generate chat title if needed
       await generateChatTitle(context, config);
@@ -344,7 +344,7 @@ export async function handleFlush(
         l.info('Chat turn completed successfully', {
           chatId: context.chatId,
           turnId: context.turnId,
-          latencyMs,
+          processingTimeMs,
           generatedTextLength: context.generatedText.length,
           flushDurationMs: Date.now() - startFlush,
         }),
@@ -352,7 +352,7 @@ export async function handleFlush(
 
       return {
         success: true,
-        processingTimeMs: latencyMs,
+        processingTimeMs,
         textLength: context.generatedText.length,
       };
     } catch (error) {
@@ -371,7 +371,7 @@ export async function handleFlush(
 
       return {
         success: false,
-        processingTimeMs: latencyMs,
+        processingTimeMs,
         textLength: context.generatedText.length,
         error: flushError,
       };

@@ -73,17 +73,26 @@ export interface PostgresResultMeta<T = number> {
 }
 
 /**
+ * Represents a column in a PostgreSQL result set.
+ * Equivalent to postgres.Column<T> from 'postgres' package.
+ * 
+ * @template T - The name of the column
+ */
+export interface PostgresColumn<T extends string> {
+  name: T;
+  type: number;
+  table: number;
+  number: number;
+  parser?: ((raw: string) => unknown) | undefined;
+}
+
+
+/**
  * Represents column information from a PostgreSQL result.
  * Equivalent to postgres.ColumnList<T> from 'postgres' package.
  */
-export type PostgresColumnList<T = string> = Array<{
-  /** Column name */
-  name: T;
-  /** Column type OID */
-  type: number;
-  /** Parser function for the column type */
-  parser: (value: string) => unknown;
-}>;
+export type PostgresColumnList<T> = (T extends string ? PostgresColumn<T> : never)[];
+
 
 /**
  * Represents a row of data that may or may not exist.
@@ -91,20 +100,47 @@ export type PostgresColumnList<T = string> = Array<{
  */
 export type PostgresMaybeRow = Record<string, unknown> | undefined;
 
+interface PostgresResultQueryMeta<T extends number | null, U>
+  extends PostgresResultMeta<T> {
+  columns: PostgresColumnList<U>;
+}
+
+export type PostgresExecutionResult<T> = [] &
+  PostgresResultQueryMeta<number, keyof NonNullable<T>>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type PostgresValuesRowList<T extends readonly any[]> =
+  T[number][keyof T[number]][][] &
+    PostgresResultQueryMeta<T['length'], keyof T[number]>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type PostgresRawRowList<T extends readonly any[]> = Buffer[][] &
+    Iterable<Buffer[][]> &
+    PostgresResultQueryMeta<T['length'], keyof T[number]>;
+  
+  
+/**
+ * Represents a list of rows returned from a query.
+ * Equivalent to postgres.RowList<T> from 'postgres' package.*/
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type PostgresRowList<T extends readonly any[]> = T &
+    Iterable<NonNullable<T[number]>> &
+    PostgresResultQueryMeta<T['length'], keyof T[number]>;
+
+
 /**
  * Represents a list of rows returned from a query.
  * Equivalent to postgres.RowList<T> from 'postgres' package.
- */
 export interface PostgresRowList<T extends Record<string, unknown> = Record<string, unknown>> extends Array<T> {
-  /** Query execution command metadata */
+  /** Query execution command metadata * /
   command: string;
-  /** Number of rows returned */
+  /** Number of rows returned * /
   count: number;
-  /** Column information */
+  /** Column information * /
   columns: PostgresColumnList<keyof T>;
-  /** Statement that was executed */
-  statement: PostgresResultMeta<number>;
+  /** Statement that was executed * /
+  statement: PostgresStatement | string;
 }
+ */
+
 
 /**
  * Represents a parameter or SQL fragment that can be used in queries.
@@ -145,11 +181,11 @@ export interface PostgresHelper<T = unknown> {
  * Represents a pending database query.
  * Equivalent to postgres.PendingQuery<T> from 'postgres' package.
  */
-export interface PostgresPendingQuery<T extends Record<string, unknown> = Record<string, unknown>> extends Promise<PostgresRowList<T>> {
+export interface PostgresPendingQuery<T = Record<string, unknown>> extends Promise<PostgresRowList<T[]>> {
   /** The SQL statement */
   statement: PostgresStatement;
   /** Execute the query */
-  execute(): Promise<PostgresRowList<T>>;
+  execute(): Promise<PostgresRowList<T[]>>;
   /** Describe the query */
   describe(): Promise<{
     columns: PostgresColumnList<keyof T>;
@@ -175,7 +211,7 @@ export interface PostgresStatement {
   /** Parameter types */
   types: number[];
   /** Columns returned by statement */
-  columns: PostgresColumnList;
+  columns: PostgresColumnList<string>;
   /** Statement metadata */
   [key: string]: unknown;
 }
@@ -258,15 +294,15 @@ export interface PostgresTransaction<T extends Record<string, unknown> = Record<
  * Tagged template function for SQL queries.
  * Core interface for executing PostgreSQL queries with type safety.
  */
-export interface PostgresSqlTemplate<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface PostgresSqlTemplate<T = Record<string, unknown>> {
   /** Execute a parameterized query using template literals */
-  <R extends Record<string, unknown> = T>(
+  <R = T>(
     template: TemplateStringsArray,
     ...parameters: PostgresParameterOrFragment[]
   ): PostgresPendingQuery<R>;
 
   /** Execute a query with string and parameters */
-  <R extends Record<string, unknown> = T>(
+  <R  = T>(
     query: string,
     parameters?: PostgresParameterOrFragment[]
   ): PostgresPendingQuery<R>;
@@ -410,7 +446,7 @@ export interface PostgresReservedConnection extends PostgresSqlTemplate {
  * await sql`${insertUsers(userArray)}`;
  * ```
  */
-export interface PostgresSql<T extends Record<string, unknown> = Record<string, unknown>>
+export interface PostgresSql<T >
   extends PostgresSqlTemplate<T>,
           PostgresUtilities {
 
@@ -459,19 +495,19 @@ export interface PostgresSql<T extends Record<string, unknown> = Record<string, 
   // =============================================================================
 
   /** Create a prepared statement */
-  prepare<R extends Record<string, unknown> = T>(
+  prepare<R  = T>(
     name: string,
     query: string,
     types?: number[]
   ): {
     /** Execute the prepared statement */
-    <P extends Record<string, unknown> = R>(
+    <P  = R>(
       ...parameters: PostgresParameterOrFragment[]
     ): PostgresPendingQuery<P>;
   };
 
   /** Execute an unsafe query (bypasses escaping) */
-  unsafe<R extends Record<string, unknown> = T>(
+  unsafe<R  = T>(
     query: string,
     parameters?: unknown[]
   ): PostgresPendingQuery<R>;
@@ -481,7 +517,7 @@ export interface PostgresSql<T extends Record<string, unknown> = Record<string, 
   // =============================================================================
 
   /** Load and execute SQL from a file */
-  file<R extends Record<string, unknown> = T>(
+  file<R  = T>(
     path: string,
     parameters?: PostgresParameterOrFragment[]
   ): PostgresPendingQuery<R>;
@@ -587,9 +623,9 @@ export type {
   PostgresHelper as Helper,
   PostgresPendingQuery as PendingQuery,
   PostgresStatement as Statement,
-  PostgresError as PostgresError,
+  //PostgresError as PostgresError,
   PostgresTransaction as Transaction,
-  PostgresSql as Sql,
+  //PostgresSql as Sql,
   PostgresFactory as Postgres,
 };
 

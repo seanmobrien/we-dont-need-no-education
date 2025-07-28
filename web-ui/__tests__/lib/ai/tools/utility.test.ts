@@ -22,7 +22,6 @@ import {
 } from '@/lib/ai/tools/utility';
 // import { db } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util';
-import { array } from 'zod';
 
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 
@@ -269,10 +268,8 @@ describe('resolveCaseFileIdBatch', () => {
         return Promise.resolve(mockDb);
       });
       
-      // Setup the findMany mock on the mockDb
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockReturnValue({
-        execute: jest.fn().mockResolvedValue(mockRecords)
-      });
+      // Setup the findMany mock on the mockDb to return records directly
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockReturnValue(mockRecords);
       
       return mockRecords;
     }
@@ -349,9 +346,7 @@ describe('resolveCaseFileIdBatch', () => {
         { unitId: 999, documentPropertyId: uuid, emailId: null },
       ];
 
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockReturnValue({
-        execute: jest.fn().mockResolvedValue(mockRecords)
-      });
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockReturnValue(mockRecords);
 
       const result = await resolveCaseFileIdBatch(requests);
 

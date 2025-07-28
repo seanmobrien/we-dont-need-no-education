@@ -24,12 +24,16 @@ export async function GET(
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
 ) {
+
+
+
+  
   return controller.listFromRepository(async (r) => {
     const { emailId } = await extractParams<{ emailId: string }>(args);
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db<CallToActionDetails, Record<string, unknown>>(
+          db<Partial<CallToActionDetails>, Record<string, unknown>>(
             (
               sql,
             ) => sql`SELECT ep.*, ept.property_name,epc.description, epc.email_property_category_id,

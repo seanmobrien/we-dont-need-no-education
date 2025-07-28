@@ -28,7 +28,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         () =>
-          db<EmailProperty, Record<string, unknown>>(
+          db<Partial<EmailProperty>, Record<string, unknown>>(
             (
               sql,
             ) => sql`SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id

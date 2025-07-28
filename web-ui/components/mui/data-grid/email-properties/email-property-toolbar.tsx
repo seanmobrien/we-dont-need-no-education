@@ -100,6 +100,11 @@ const renderFilterPanelTrigger = (
   </ToolbarButton>
 );
 
+const StableOwnerExpandedState = {
+  expanded: { expanded: true },
+  default: { expanded: false },
+} as const;
+
 const renderQuickFilterTrigger = (
   triggerProps: React.ComponentProps<typeof ToolbarButton>,
   state: { expanded: boolean },
@@ -107,52 +112,62 @@ const renderQuickFilterTrigger = (
   <Tooltip title="Search" enterDelay={0}>
     <StyledQuickFilterToolbarButton
       {...triggerProps}
-      ownerState={{ expanded: state.expanded }}
+      ownerState={state.expanded ? StableOwnerExpandedState.expanded : StableOwnerExpandedState.default}
       color="default"
     >
       <SearchIcon fontSize="small" />
     </StyledQuickFilterToolbarButton>
   </Tooltip>
 );
-const renderQuickFilterControl = (
+const RenderQuickFilterControl = (
   controlProps: { ref?: React.Ref<HTMLInputElement> } & Omit<
     React.ComponentProps<typeof TextField>,
     'ref'
   >,
   state: { expanded: boolean; value?: string },
-) => (
-  <StyledQuickFilterTextField
-    {...controlProps}
-    ownerState={{ expanded: state.expanded }}
-    inputRef={controlProps.ref}
-    aria-label="Search"
-    placeholder="Search..."
-    size="small"
-    slotProps={{
-      input: {
-        startAdornment: (
-          <InputAdornment position="start">
-            <SearchIcon fontSize="small" />
-          </InputAdornment>
-        ),
-        endAdornment: state.value ? (
-          <InputAdornment position="end">
-            <QuickFilterClear
-              edge="end"
-              size="small"
-              aria-label="Clear search"
-              material={{ sx: { marginRight: -0.75 } }}
-            >
-              <CancelIcon fontSize="small" />
-            </QuickFilterClear>
-          </InputAdornment>
-        ) : null,
-        ...controlProps.slotProps?.input,
+) => {
+  const serializedSlotProps = JSON.stringify(controlProps?.slotProps ?? {});
+  const { ownerState, slotProps } = useMemo(() => {
+    const hydratedSlotProps = JSON.parse(serializedSlotProps);
+    return {
+      ownerState: { expanded: state.expanded },
+      slotProps: {
+        input: {
+          startAdornment: (
+            <InputAdornment position="start">
+              <SearchIcon fontSize="small" />
+            </InputAdornment>
+          ),
+          endAdornment: state.value ? (
+            <InputAdornment position="end">
+              <QuickFilterClear
+                edge="end"
+                size="small"
+                aria-label="Clear search"
+                material={{ sx: { marginRight: -0.75 } }}
+              >
+                <CancelIcon fontSize="small" />
+              </QuickFilterClear>
+            </InputAdornment>
+          ) : null,
+          ...(hydratedSlotProps.input ?? {}),
+        },
+        ...hydratedSlotProps,
       },
-      ...controlProps.slotProps,
-    }}
-  />
-);
+    };
+  }, [state.expanded, state.value, serializedSlotProps]);
+  return (  
+    <StyledQuickFilterTextField
+      {...controlProps}
+      ownerState={ownerState}
+      inputRef={controlProps.ref}
+      aria-label="Search"
+      placeholder="Search..."
+      size="small"
+      slotProps={slotProps}
+    />
+  );
+}
 
 const ToolbarColumnsAndFilters = () => {
   const Component = React.memo(() => {
@@ -184,7 +199,7 @@ const ToolbarQuickFilter = () => {
     return (
       <StyledQuickFilter>
         <QuickFilterTrigger render={renderQuickFilterTrigger} />
-        <QuickFilterControl render={renderQuickFilterControl} />
+        <QuickFilterControl render={RenderQuickFilterControl} />
       </StyledQuickFilter>
     );
   });
@@ -230,7 +245,7 @@ const EmailPropertyToolbar = ({
               onChange={setIncludeAttachments}
             />
           }
-          label={<AttachEmailIcon fontSize="small" />}
+          label={<AttachEmailIcon fontSize="small" sx={{ verticalAlign: 'middle' }} />}
         />
       </Tooltip>
     );

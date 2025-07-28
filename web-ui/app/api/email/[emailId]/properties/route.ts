@@ -1,4 +1,5 @@
 import { parsePaginationStats } from '@/data-models';
+import { EmailProperty } from '@/data-models';
 import {
   RepositoryCrudController,
   EmailPropertyRepository,
@@ -22,7 +23,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db(
+          db<Partial<EmailProperty>>(
             (sql) =>
               sql`SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id
             FROM document_property ep

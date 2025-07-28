@@ -255,19 +255,17 @@ const insertChatTurn = async (
   context: ChatHistoryContext
 ) => {
   await tx.insert(schema.chatTurns).values({
-    chatId: String(chatId),
-    turnId: Number(turnId),
-    providerId: context.requestId,
-    statusId: 1,
-    modelName: context.model,
+    chatId: chatId,
+    turnId: turnId,
+    statusId: 1, // Waiting/in-progress
     createdAt: new Date().toISOString(),
     temperature: context.temperature,
     topP: context.topP,
-    latencyMs: 0,
     warnings: [],
     errors: [],
     metadata: {
       requestId: context.requestId,
+      model: context.model,
     },
   });
 };

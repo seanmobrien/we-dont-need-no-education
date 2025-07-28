@@ -4,21 +4,36 @@
  * This module provides a connection to the Neon database using the postgres.js driver.
  */
 
-import postgres, {
-  Sql,
-  RowList,
-  ParameterOrFragment,
-  PendingQuery,
-  ColumnList,
-  ResultMeta,
-  Statement,
-} from 'postgres';
+// import {  Sql,
+// RowList,
+// ParameterOrFragment,
+// PendingQuery,
+// ColumnList,
+// ResultMeta,
+// Statement,
+// } from 'postgres';
 import { pgDb, pgDbWithInit } from './connection';
 import { isDbError } from './_guards';
 import { CommandMeta, IResultset } from './types';
 import { isTypeBranded, TypeBrandSymbol } from '../react-util';
 import { ExcludeExactMatch } from '../typescript';
 import { log } from '../logger';
+import {
+  PostgresSql,
+  PostgresRowList as RowList,
+  PostgresParameterOrFragment as ParameterOrFragment,
+  PostgresPendingQuery as PendingQuery,
+  PostgresColumnList as ColumnList,
+  PostgresResultMeta as ResultMeta,
+  PostgresStatement as Statement,
+  PostgresStatement,
+} from './postgres';
+
+
+
+
+type Sql<T extends Record<string, unknown>> = PostgresSql<T>;
+
 //import { deprecate } from '../nextjs-util';
 //import { deprecate } from '@/lib/nextjs-util';
 
@@ -34,7 +49,7 @@ export type QueryProps<ResultType extends object = Record<string, unknown>> = {
 export type TransformedFullQueryResults<
   ResultType extends object = Record<string, unknown>,
 > = {
-  statement: string;
+  statement: string | PostgresStatement;
   fields: string[];
   command: string;
   rowCount: number;
@@ -94,29 +109,29 @@ const recordsetInitBrand: unique symbol = Symbol(
   'TypeBrand::RecordsetInitProps',
 );
 
-type RecordsetBaseInitProps<T extends Record<string, unknown>> = {
+type RecordsetBaseInitProps<T extends readonly any[]> = {
   statement: string;
   command: CommandMeta;
   fields: ColumnList<keyof T>;
   [TypeBrandSymbol]: typeof recordsetInitBrand;
 };
 
-type RecordsetInitOptionalProps<T extends Record<string, unknown>> =
+type RecordsetInitOptionalProps<T extends readonly any[]> =
   | { count: number }
   | { records: ArrayLike<T | Array<any>> };
 
-type RecordsetInitProps<T extends Record<string, unknown>> =
+type RecordsetInitProps<T extends readonly any[]> =
   RecordsetBaseInitProps<T> & RecordsetInitOptionalProps<T>;
 
 type RecordsetInitWithTransformProps<
-  T extends Record<string, unknown>,
+  T extends readonly any[],
   TOtherRecord extends ExcludeExactMatch<Record<string, unknown>, T>,
 > = RecordsetBaseInitProps<T> & {
-  records: ArrayLike<TOtherRecord | Array<any>>;
+  records: ArrayLike<TOtherRecord & Array<any>>;
   transform: (source: TOtherRecord) => T;
 };
 
-class RecordsetInitPropsBaseImpl<T extends Record<string, unknown>>
+class RecordsetInitPropsBaseImpl<T extends readonly any[]>
   implements RecordsetBaseInitProps<T>
 {
   readonly statement: string;
@@ -135,7 +150,7 @@ class RecordsetInitPropsBaseImpl<T extends Record<string, unknown>>
     this[TypeBrandSymbol] = recordsetInitBrand;
   }
 }
-class RecordsetInitPropsImpl<T extends Record<string, unknown>>
+class RecordsetInitPropsImpl<T extends readonly any[]>
   extends RecordsetInitPropsBaseImpl<T>
   implements RecordsetBaseInitProps<T>
 {
@@ -171,7 +186,7 @@ class RecordsetInitPropsImpl<T extends Record<string, unknown>>
   }
 }
 class RecordsetInitWithTransformPropsImpl<
-    T extends Record<string, unknown>,
+    T extends readonly any[],
     TOtherRecord extends ExcludeExactMatch<
       Record<string, unknown>,
       T
@@ -180,14 +195,14 @@ class RecordsetInitWithTransformPropsImpl<
   extends RecordsetInitPropsBaseImpl<T>
   implements RecordsetInitWithTransformProps<T, TOtherRecord>
 {
-  readonly records: ArrayLike<TOtherRecord | any[]>;
+  readonly records: ArrayLike<TOtherRecord & Array<any>>;
   readonly transform: (x: TOtherRecord) => T;
 
   constructor(
     statement: string | Statement,
     command: CommandMeta,
     fields: ColumnList<keyof T>,
-    records: ArrayLike<TOtherRecord | any[]>,
+    records: ArrayLike<TOtherRecord & any[]>,
     transform: (x: TOtherRecord) => T,
   ) {
     super(statement, command, fields);
@@ -197,13 +212,13 @@ class RecordsetInitWithTransformPropsImpl<
   }
 }
 
-const isRecordsetInitProps = <T extends Record<string, unknown>>(
+const isRecordsetInitProps = <T extends readonly any[]>(
   check: unknown,
 ): check is RecordsetInitProps<T> =>
   isTypeBranded<RecordsetInitProps<T>>(check, recordsetInitBrand);
 
 const isRecordsetInitWithTransformProps = <
-  T extends Record<string, unknown>,
+  T extends readonly any[],
   TOtherRecord extends ExcludeExactMatch<
     Record<string, unknown>,
     T
@@ -216,14 +231,12 @@ const isRecordsetInitWithTransformProps = <
   'transform' in check &&
   typeof check.transform === 'function';
 
-export class Resultset<
-    T extends Record<string, unknown> = Record<string, unknown>,
-  >
-  extends Array<T>
-  implements IResultset<T>
+export class Resultset<T extends readonly any[] = readonly any[]>
+extends Array<any>  
+implements IResultset<T>
 {
   static isResultset<
-    TRow extends Record<string, unknown> = Record<string, unknown>,
+    TRow extends readonly any[] = readonly any[],
   >(check: unknown): check is IResultset<TRow> {
     if (!Array.isArray(check)) {
       return false;
@@ -246,7 +259,7 @@ export class Resultset<
     // No go
     return false;
   }
-  static isRowList<TRow>(check: unknown): check is RowList<Array<TRow>> {
+  static isRowList<TRow extends readonly any[]>(check: unknown): check is RowList<TRow> {
     if (!Array.isArray(check)) {
       return false;
     }
@@ -264,7 +277,7 @@ export class Resultset<
 
     return true;
   }
-  static #makeRecordFromArray<TRecord extends Record<string, unknown>>(
+  static #makeRecordFromArray<TRecord extends readonly any[]>(
     result: TRecord | any[],
     fields?: ColumnList<keyof TRecord>,
   ): TRecord {
@@ -282,8 +295,8 @@ export class Resultset<
     }, {} as TRecord);
   }
   static #mapRecord = <
-    TRecord extends Record<string, unknown>,
-    TSource extends Record<string, unknown>,
+    TRecord extends readonly any[],
+    TSource extends readonly any[] = TRecord,
   >(
     result: TSource | any[],
     fields?: ColumnList<keyof TRecord>,
@@ -291,7 +304,7 @@ export class Resultset<
   ): TRecord => {
     if (Array.isArray(result)) {
       log((l) => l.warn('Make sure transformed arrays actually work'));
-      return Resultset.#makeRecordFromArray(result, fields);
+      return Resultset.#makeRecordFromArray<TRecord>(result, fields);
     }
     if (transform) {
       return transform(result);
@@ -302,12 +315,12 @@ export class Resultset<
 
   readonly #fields: ColumnList<keyof T>;
   readonly #command: ResultMeta<number>['command'];
-  readonly #statement: string;
+  readonly #statement: string | PostgresStatement;
   constructor(props: RecordsetBaseInitProps<T>);
-  constructor(resultset: RowList<Array<T>>);
+  constructor(resultset: RowList<T>);
   constructor(resultset: IResultset<T>);
   constructor(
-    resultset: RowList<Array<T>> | IResultset<T> | RecordsetBaseInitProps<T>,
+    resultset: RowList<T> | IResultset<T> | RecordsetBaseInitProps<T>,
   ) {
     if (isRecordsetInitWithTransformProps<T>(resultset)) {
       const mappedRecords = Array.from(resultset.records).map((x) =>
@@ -367,6 +380,7 @@ export class Resultset<
       cause: resultset,
     });
   }
+  
 
   get fields(): ColumnList<keyof T> {
     return this.#fields;
@@ -375,7 +389,7 @@ export class Resultset<
     return this.#command;
   }
   get statement(): string {
-    return this.#statement;
+    return String(this.#statement);
   }
   get count(): number {
     return this.length;
@@ -502,23 +516,23 @@ export const queryExt = async <ResultType extends object = Record<string, unknow
   return applyResultsetTransform(cb(sqlNeonAdapter(sql_1)), props);
 };
 
-export type SqlDb<TRecord extends Record<string, unknown> = any> =
-  postgres.Sql<TRecord>;
+export type SqlDb<TRecord = any> =
+  PostgresSql<TRecord>;
 
 export const queryRaw =
-<RecordType extends Record<string, unknown> = any>(
-  cb: (sql: SqlDb<RecordType>) => PendingQuery<Array<RecordType>>,
-): PendingQuery<Array<RecordType>> => cb(pgDb() as SqlDb<RecordType>);
+<RecordType = any>(
+  cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
+): PendingQuery<RecordType> => cb(pgDb<RecordType>());
 
 export const safeQueryRaw = async <RecordType extends Record<string, unknown> = any>(
-  cb: (sql: SqlDb<RecordType>) => PendingQuery<Array<RecordType>>,
-): Promise<PendingQuery<Array<RecordType>>> => cb(await pgDbWithInit() as SqlDb<RecordType>);
+  cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
+): Promise<PendingQuery<RecordType>> => cb(await pgDbWithInit<RecordType>());
 
 export const db = async <
-  ResultType extends Record<string, unknown> = any,
+  ResultType extends (readonly any[] & Record<string, unknown>)  = any,
   RecordType extends Record<string, unknown> = ResultType, // ExcludeExactMatch<Record<string, unknown>, ResultType> = any,
 >(
-  cb: (sql: SqlDb<RecordType>) => PendingQuery<Array<RecordType>>,
+  cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
   { transform }: QueryProps<ResultType> = {},
 ): Promise<IResultset<ResultType>> => {
   const query = queryRaw(cb).then((result) => {
@@ -531,10 +545,10 @@ export const db = async <
     return query.then((result) => {
       return new Resultset<ResultType>(
         new RecordsetInitWithTransformPropsImpl(
-          result.statement,
+          result.statement as string | PostgresStatement,
           result.command,
           result.columns as ColumnList<keyof ResultType>,
-          result as RowList<ExcludeExactMatch<RecordType, ResultType>[]>,
+          result as unknown as ArrayLike<ExcludeExactMatch<Record<string, unknown>, ResultType> & any[]>,
           transform,
         ),
       );
@@ -544,10 +558,10 @@ export const db = async <
     (result) =>
       new Resultset<ResultType>(
         new RecordsetInitPropsImpl<ResultType>(
-          result.statement,
+          result.statement as string | Statement,
           result.command,
           result.columns as ColumnList<keyof ResultType>,
-          result as ArrayLike<ResultType | Array<any>>,
+          result as unknown as ArrayLike<ResultType | Array<any>>,
         ),
       ),
   );

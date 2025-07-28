@@ -23,7 +23,8 @@ import {
 import { generateChatId } from '@/lib/ai/core';
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util';
-import type { LanguageModelV1CallOptions, LanguageModelV1StreamPart } from 'ai';
+import type { LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
+import { LanguageModelV1FunctionToolCall, LanguageModelV1FinishReason, LanguageModelV1CallWarning, LanguageModelV1ProviderMetadata, LanguageModelV1Source, LanguageModelV1LogProbs } from '@ai-sdk/provider';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/import-incoming-message');
@@ -428,11 +429,27 @@ describe('Chat History Middleware', () => {
       });
     });
 
-    const callWrapGenerate = async (middleware: ReturnType<typeof createChatHistoryMiddleware>) => {
-      return await middleware.wrapGenerate!({
+    const callWrapGenerate = async (middleware: LanguageModelV1Middleware) => {
+      return middleware.wrapGenerate ? await middleware.wrapGenerate({
         doGenerate: mockDoGenerate,
+        doStream: jest.fn(),
         params: mockParams,
-      });
+        model: {
+          specificationVersion: 'v1',
+          provider: '',
+          modelId: '',
+          defaultObjectGenerationMode: undefined,
+          supportsImageUrls: undefined,
+          supportsStructuredOutputs: undefined,
+          supportsUrl: undefined,
+          doGenerate: function (): PromiseLike<{ text?: string; reasoning?: string | Array<{ type: 'text'; text: string; signature?: string; } | { type: 'redacted'; data: string; }>; files?: Array<{ data: string | Uint8Array; mimeType: string; }>; toolCalls?: Array<LanguageModelV1FunctionToolCall>; finishReason: LanguageModelV1FinishReason; usage: { promptTokens: number; completionTokens: number; }; rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown>; }; rawResponse?: { headers?: Record<string, string>; body?: unknown; }; request?: { body?: string; }; response?: { id?: string; timestamp?: Date; modelId?: string; }; warnings?: LanguageModelV1CallWarning[]; providerMetadata?: LanguageModelV1ProviderMetadata; sources?: LanguageModelV1Source[]; logprobs?: LanguageModelV1LogProbs; }> {
+            throw new Error('Function not implemented.');
+          },
+          doStream: function (): PromiseLike<{ stream: ReadableStream<LanguageModelV1StreamPart>; rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown>; }; rawResponse?: { headers?: Record<string, string>; }; request?: { body?: string; }; warnings?: Array<LanguageModelV1CallWarning>; }> {
+            throw new Error('Function not implemented.');
+          }
+        }
+      }) : undefined;
     };
 
     it('should initialize message persistence for text generation', async () => {

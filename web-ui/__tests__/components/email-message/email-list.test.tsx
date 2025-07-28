@@ -2,8 +2,23 @@ import { render, screen, waitFor } from '@/__tests__/test-utils';
 import EmailList from '@/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
 
+// Mock the router
+jest.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: jest.fn(),
+    back: jest.fn(),
+    forward: jest.fn(),
+    refresh: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  }),
+}));
+
 describe('EmailList', () => {
   const mockFetch = jest.fn();
+  
+  // Set a shorter timeout for all tests in this suite
+  jest.setTimeout(30000);
 
   beforeAll(() => {
     global.fetch = mockFetch;

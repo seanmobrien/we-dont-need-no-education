@@ -31,8 +31,8 @@ export const drizDbWithInit: DrizDbInitOverloads = <T>(cb?: (db: DbDatabaseType)
         (x) => x.pgDbWithInit,
       ));
       const theDb = await (pgDbWithInit()
-        .then((sql) => drizzle({
-            client: sql,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .then((sql) => drizzle(sql as any, {
             casing: 'snake_case',
             schema,
           })).then((value) => {

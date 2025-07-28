@@ -21,7 +21,8 @@ export const isDbError = (error: unknown): error is PostgresError =>
  * @param check - The value to be checked.
  * @returns `true` if the value is an instance of `IResultset<T>`, otherwise `false`.
  */
-export const isResultset = <T extends Record<string, unknown>>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isResultset = <T extends readonly any[]>(
   check: unknown,
 ): check is IResultset<T> => Resultset.isResultset<T>(check);
 
@@ -32,6 +33,7 @@ export const isResultset = <T extends Record<string, unknown>>(
  * @param check - The value to check.
  * @returns `true` if the value is a RowList of type T, otherwise `false`.
  */
-export const isRowList = <T extends Record<string, unknown>>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const isRowList = <T extends readonly any[]>(
   check: unknown,
-): check is RowList<Array<T>> => Resultset.isRowList<T>(check);
+): check is RowList<T> => Resultset.isRowList<T>(check);

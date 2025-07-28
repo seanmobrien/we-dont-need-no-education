@@ -255,6 +255,16 @@ export const darkTheme: Theme = createTheme({
         },
       },
     },
+    MuiFormLabel: {
+      styleOverrides: {
+        root: {
+          '&.Mui-focused.MuiInputLabel-outlined.Mui-focused': {
+            color: 'var(--color-secondary-accent)',
+            marginTop: '-6px',
+          },
+        },
+      },
+    },
   },
 });
 

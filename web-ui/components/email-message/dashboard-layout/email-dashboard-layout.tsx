@@ -29,6 +29,7 @@ import { EmailDashboardToolbarAction } from './email-dashboard-toolbar-action';
 import { Branding } from './branding';
 import { NotificationsProvider } from '@toolpad/core';
 import { KeyRefreshNotifyWrapper } from '@/components/auth/key-refresh-notify/wrapper';
+import ServerSafeErrorManager from '@/components/error-boundaries/ServerSafeErrorManager';
 
 
 
@@ -155,6 +156,7 @@ export const EmailDashboardLayout = ({
   );
   return (
     <EmailContextProvider>
+      <ServerSafeErrorManager />      
       <NextAppProvider
         theme={theme}
         navigation={dashboardNavigation}

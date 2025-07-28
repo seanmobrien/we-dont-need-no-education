@@ -234,13 +234,12 @@ export const resolveCaseFileIdBatch = async (
             and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
             inArray(du.documentPropertyId, guids),
           ),
-      columns: {
-        unitId: true,
-        documentPropertyId: true,
-        emailId: true,
-      },
+        columns: {
+          unitId: true,
+          documentPropertyId: true,
+          emailId: true,
+        },
       });
-      return query.execute();
   });
   // Now use records to translate pending into valid
   const { resolved } = pending.reduce(

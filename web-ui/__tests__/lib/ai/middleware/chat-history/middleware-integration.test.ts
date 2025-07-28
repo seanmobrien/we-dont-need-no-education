@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Integration tests for chat history middleware supporting both streaming and text completions
  */
@@ -97,9 +99,9 @@ describe('Chat History Middleware Integration', () => {
 
       // Act
       const result = await middleware.wrapGenerate!({
-        doGenerate: mockDoGenerate,
+        doGenerate: mockDoGenerate as any,
         params: mockParams as any,
-      });
+      } as any);
 
       // Assert
       expect(result).toBeDefined();
@@ -133,10 +135,10 @@ describe('Chat History Middleware Integration', () => {
       };
 
       // Act
-      const result = await middleware.wrapStream({
-        doStream: mockDoStream,
+      const result = await middleware.wrapStream!({
+        doStream: mockDoStream as any,
         params: mockParams as any,
-      });
+      } as any);
 
       // Assert
       expect(result).toBeDefined();
@@ -148,8 +150,8 @@ describe('Chat History Middleware Integration', () => {
   describe('Error Handling', () => {
     it('should gracefully handle database errors in wrapGenerate', async () => {
       // Arrange - Mock transaction to fail
-      const mockDb = require('@/lib/drizzle-db');
-      mockDb.drizDb.mockImplementationOnce(() => ({
+      const mockDb = await import('@/lib/drizzle-db');
+      (mockDb.drizDb as jest.Mock).mockImplementationOnce(() => ({
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),
       }));
 
@@ -166,9 +168,9 @@ describe('Chat History Middleware Integration', () => {
 
       // Act & Assert - Should not throw
       const result = await middleware.wrapGenerate!({
-        doGenerate: mockDoGenerate,
+        doGenerate: mockDoGenerate as any,
         params: mockParams as any,
-      });
+      } as any);
 
       expect(result.text).toBe('Response despite error');
       expect(mockDoGenerate).toHaveBeenCalled();
@@ -203,10 +205,10 @@ describe('Chat History Middleware Integration', () => {
       };
 
       // Act & Assert - Should not throw
-      const result = await middleware.wrapStream({
-        doStream: mockDoStream,
+      const result = await middleware.wrapStream!({
+        doStream: mockDoStream as any,
         params: mockParams as any,
-      });
+      } as any);
 
       expect(result.stream).toBeDefined();
       expect(mockDoStream).toHaveBeenCalled();

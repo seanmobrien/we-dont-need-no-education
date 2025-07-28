@@ -105,6 +105,7 @@ import { LanguageModelV1StreamPart } from "ai";
  * ```
  */
 export interface ChatHistoryContext {
+  processingTimeMs?: number;
   /** 
    * Unique identifier for the user initiating the chat.
    * Used for access control, data isolation, and audit trails.
@@ -566,7 +567,6 @@ export interface FlushContext {
  * @property contentLength Length of the content that was persisted during the flush.
  * @property finalMessageId Database ID of the final persisted message record.
  * @property retryRecommended Indicates whether a retry of the operation is recommended.
- * @property latencyMs Total latency in milliseconds for the flush operation.
  * @property metadata Additional metadata about the flush operation.
  * @property textLength Length of the final generated text content.
  */

@@ -123,7 +123,6 @@ export const completeMessagePersistence = async (
           messageId: completionContext.messageId,
           textLength: completionContext.generatedText.length,
 
-          latencyMs: flushResult.processingTimeMs,
           processingTimeMs: flushResult.processingTimeMs,
         }),
       );
@@ -185,7 +184,7 @@ export const safeCompleteMessagePersistence = async (
     // Return a failure result instead of throwing
     return {
       success: false,
-      latencyMs: Date.now() - completionContext.startTime,
+      processingTimeMs: Date.now() - completionContext.startTime,
       textLength: completionContext.generatedText.length,
       error: new Error('Message persistence completion failed'),
     };

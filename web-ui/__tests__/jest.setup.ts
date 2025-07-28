@@ -27,51 +27,69 @@ jest.mock('@/instrument/browser', () => ({
 }));
 
 jest.mock('react-error-boundary', () => {
- class ErrorBoundary extends Component {
+ class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
    #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
    #children: React.ReactNode;
    #onReset?: () => void;
+   #onError?: (error: Error, errorInfo: { componentStack: string }) => void;
+   
    constructor(props: {
      children?: React.ReactNode;
      fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
      onReset?: () => void;
+     onError?: (error: Error, errorInfo: { componentStack: string }) => void;
    }) {
      super(props);
-     const { fallbackRender, onReset } = props;
+     const { fallbackRender, onReset, onError } = props;
      this.#fallbackRender = fallbackRender;
      this.#onReset = onReset;
+     this.#onError = onError;
      this.#children = props.children;
      this.state = { hasError: false, error: null as Error | null };
    }
 
    static getDerivedStateFromError(error: any) {
-     return { hasError: !!error, error };
+     return { hasError: true, error };
    }
 
-   componentDidCatch(error: any/*, errorInfo: any*/) {
-     console.error(error);
+   componentDidCatch(error: any, errorInfo: any) {
+     if (this.#onError) {
+       this.#onError(error, errorInfo || { componentStack: 'test-component-stack' });
+     }
    }
 
    render() {
-     if ('hasError' in this.state && this.state.hasError) {
-       const error =
-         'error' in this.state && !!this.state.error
-           ? this.state.error
-           : new Error('An error occurred');
-       
-       if (this.#fallbackRender) {
-         return this.#fallbackRender({ 
-           error, 
-           resetErrorBoundary: () => {
-             this.setState({ hasError: false, error: null });
-             this.#onReset?.();
-           }
-         });
+     try {
+       if ('hasError' in this.state && this.state.hasError) {
+         const error =
+           'error' in this.state && !!this.state.error
+             ? this.state.error
+             : new Error('An error occurred');
+         
+         if (this.#fallbackRender) {
+           const FallbackWrapper = () => this.#fallbackRender!({ 
+             error, 
+             resetErrorBoundary: () => {
+               this.setState({ hasError: false, error: null });
+               this.#onReset?.();
+             }
+           });
+           return React.createElement(FallbackWrapper);
+         }
+         
+         return React.createElement('div', { role: 'alert' }, String(error));
        }
-       
+       return this.#children;
+     } catch (error) {
+       // Catch errors during render and trigger error boundary behavior
+       if (!this.state.hasError) {
+         this.setState({ hasError: true, error: error as Error });
+         if (this.#onError) {
+           this.#onError(error as Error, { componentStack: 'test-component-stack' });
+         }
+       }
        return React.createElement('div', { role: 'alert' }, String(error));
      }
-     return this.#children;
    }
  }
   return {
@@ -106,6 +124,14 @@ export const makeMockDb = (): DatabaseType => {
     }
     if (!(mockDb.query.documentUnits.findFirst as jest.Mock).getMockImplementation()) {
       (mockDb.query.documentUnits.findFirst as jest.Mock).mockResolvedValue(null);
+    }
+    if (!(mockDb.$count as jest.Mock).getMockImplementation()) {
+      (mockDb.$count as jest.Mock).mockResolvedValue(1);
+    }
+    if (
+      !(mockDb.select as jest.Mock).getMockImplementation()
+    ) {
+      (mockDb.select as jest.Mock).mockResolvedValue(mockDb);
     }
   }
   

@@ -5,6 +5,7 @@ import {
 } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
 import { parsePaginationStats } from '@/data-models';
+import { EmailSentimentAnalysisDetails } from '@/data-models';
 import { db } from '@/lib/neondb';
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 
@@ -20,7 +21,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db(
+          db<Partial<EmailSentimentAnalysisDetails>>(
             (
               sql,
             ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,

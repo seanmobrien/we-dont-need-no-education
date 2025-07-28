@@ -5,9 +5,9 @@ import AfterManager from '../site-util/after';
 
 type TPgDbRecordType = Record<string, unknown>;
 
-class PgDbDriver<TQueryRecord extends TPgDbRecordType> {
+class PgDbDriver<TQueryRecord> {
   static #instance: PgDbDriver<TPgDbRecordType> | undefined;
-  static Instance<TRecord extends TPgDbRecordType>(): PgDbDriver<TRecord> {
+  static Instance<TRecord>(): PgDbDriver<TRecord> {
     if (this.#instance) {
       return this.#instance as unknown as PgDbDriver<TRecord>;
     }
@@ -28,10 +28,13 @@ class PgDbDriver<TQueryRecord extends TPgDbRecordType> {
     AfterManager.getInstance().remove('teardown', PgDbDriver.teardown);
   }
 
-  #sql: PostgresSql | undefined;
-  readonly #theSqlThatWasPromised: Promise<PostgresSql>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  #sql: PostgresSql<any> | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly #theSqlThatWasPromised: Promise<PostgresSql<any>>;
   private constructor() {
-    this.#theSqlThatWasPromised = new Promise<PostgresSql>(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.#theSqlThatWasPromised = new Promise<PostgresSql<any>>(
       async (resolve, reject) => {
         AfterManager.getInstance().add('teardown', PgDbDriver.teardown);
         try {
@@ -45,7 +48,8 @@ class PgDbDriver<TQueryRecord extends TPgDbRecordType> {
               });
               return db;
             });
-          this.#sql = sql as unknown as PostgresSql;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          this.#sql = sql as unknown as PostgresSql<any>;
           resolve(this.#sql);
         } catch (error) {
           // If we fail to initialize the database, we should reject the promise
@@ -71,7 +75,7 @@ class PgDbDriver<TQueryRecord extends TPgDbRecordType> {
       (x) => x as PostgresSql<TQueryRecord>,
     );
   }
-  public db(): PostgresSql {
+  public db(): PostgresSql<TQueryRecord> {
     if (!this.#sql) {
       throw new Error(
         'Postgres DB is not initialized yet. Use getDb for async callbacks.',
@@ -83,10 +87,10 @@ class PgDbDriver<TQueryRecord extends TPgDbRecordType> {
 
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const pgDbWithInit = async <TRecord extends Record<string, unknown> = any>() =>
+export const pgDbWithInit = async <TRecord = any>() =>
   PgDbDriver.Instance<TRecord>().getDb();;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const pgDb = <TRecord extends Record<string, unknown> = any>() =>
+export const pgDb = <TRecord  = any>() =>
   PgDbDriver.Instance<TRecord>().db();
 
