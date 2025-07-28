@@ -46,7 +46,7 @@
  * @since 1.0.0
  */
 
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@/lib/drizzle-db';
 import { resolveCaseFileIdBatch, toolCallbackResultFactory } from '../utility';
 import {
   CaseFileRequestProps,
@@ -217,10 +217,10 @@ export const getMultipleCaseFileDocuments = async ({
         `No valid Case File IDs could be resolved from the provided identifiers: ${requests.map((r) => r.caseFileId).join(', ')}`,
       );
     }
-    const documents = await drizDb().query.documentUnits.findMany({
+    const documents = await drizDbWithInit(db => db.query.documentUnits.findMany({
       where: (du, { inArray }) => inArray(du.unitId, validIds),
       ...caseFileDocumentShape,
-    });
+    }));
 
     // Calculate total document size for metrics
     const totalDocumentSize = documents.reduce(
@@ -325,7 +325,16 @@ export const getMultipleCaseFileDocuments = async ({
     );
 
     // Flatten the processed groups into a unified result array
-    const result: CaseFileResponse[] = processedGroups.flat();
+    const result: CaseFileResponse[] = processedGroups.flat().map(x => {
+      if (x && 'document' in x) {
+        const { document: case_file, ...rest } = x;
+        return {
+          ...rest,
+          case_file,
+        };
+      }
+      return x as CaseFileResponse;
+    });
 
     const duration = Date.now() - startTime;
 

@@ -175,7 +175,7 @@ export type ResizeableDraggableDialogProps = PropsWithChildren<
      * @param width {number} The new width.
      * @param height {number} The new height.     
      */
-    onResize: (width: number, height: number) => void;
+    onResize?: (width: number, height: number) => void;
     /**
      * Called to notify parent of a dialog close event
      * @param evt {Event} The event that triggered the close.

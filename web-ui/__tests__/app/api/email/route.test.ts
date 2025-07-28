@@ -85,7 +85,7 @@ describe('Email API', () => {
     });
 
     // Reset auth mock
-    (auth as jest.Mock).mockReset();
+    //(auth as jest.Mock).mockReset();
   });
 
   describe('POST /api/email', () => {

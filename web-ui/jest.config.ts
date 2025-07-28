@@ -45,7 +45,7 @@ const config: Config.InitialOptions = {
   },
   transformIgnorePatterns: [
     '<rootDir>/node_modules/(?!(react-error-boundary)/)',
-    '<rootDir>/.next'
+    '<rootDir>/.next',
   ],
   collectCoverage: true, // Enable coverage collection
   //collectCoverage: false, // Enable coverage collection

@@ -40,7 +40,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db<KeyPointsDetails, Record<string, unknown>>(
+          db<Partial<KeyPointsDetails>, Record<string, unknown>>(
             (sql) => sql`SELECT * FROM "KeyPoints"
             ${buildAttachmentOrEmailFilter({
               email_id: emailId,

@@ -179,7 +179,7 @@ describe('Flush Handlers - Compilation Fix Test', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.latencyMs).toBeGreaterThan(0);
+      expect(result.processingTimeMs).toBeGreaterThan(0);
       expect(result.textLength).toBe(mockContext.generatedText.length);
       expect(result.error).toBeUndefined();
     });

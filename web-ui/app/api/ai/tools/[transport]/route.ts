@@ -11,10 +11,9 @@ import {
   CaseFileAmendmentShape,
   AmendmentResultShape,
   toolCallbackResultFactory,
-  DocumentSchema,
 } from '@/lib/ai/tools';
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
-import { caseFileRequestPropsShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
+import { caseFileRequestPropsShape, CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 import { createMcpHandler } from '@vercel/mcp-adapter';
@@ -198,7 +197,7 @@ const handler = createMcpHandler(
             ),
         },
         outputSchema: toolCallbackArrayResultSchemaFactory(
-          z.string().or(DocumentSchema),
+          z.string().or(CaseFileResponseShape),
         ),
         annotations: {
           title: 'Get Multiple Case Files',

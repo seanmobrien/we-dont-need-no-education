@@ -16,7 +16,7 @@ import { LoadingAttachments } from "./loading";
 import { QueryErrorResetBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import React from "react";
-import { renderErrorBoundary } from "./error-boundary-render";
+import { RenderErrorBoundaryFallback } from "../../error-boundaries/renderFallback";
 import { EmailAttachment } from "./types";
 
 
@@ -34,7 +34,7 @@ export const Attachments: React.FC<EmailViewerProps> = ({ emailId }) => {
     <QueryErrorResetBoundary>
         {({ reset }) => (
           <ErrorBoundary
-            fallbackRender={renderErrorBoundary}
+            fallbackRender={RenderErrorBoundaryFallback}
             onReset={reset}
           >
             <React.Suspense fallback={<LoadingAttachments />}>

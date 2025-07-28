@@ -76,7 +76,7 @@ Object.defineProperty(window, 'indexedDB', {
 
 describe('UserKeyManager Enhancements', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockRequests = [];
     requestIndex = 0;
     

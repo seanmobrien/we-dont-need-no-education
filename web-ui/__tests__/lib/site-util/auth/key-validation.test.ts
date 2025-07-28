@@ -35,7 +35,7 @@ jest.mock('@/lib/logger', () => ({
 
 describe('Key Validation Utilities', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockLocalStorage.getItem.mockClear();
     mockLocalStorage.setItem.mockClear();
   });

@@ -9,7 +9,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { EmailViewerProps } from './types';
 import { LoadingEmail } from './loading'
 import { EmailBody } from './email-body';
-import { renderErrorBoundary } from './error-boundary-render';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
 
 const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
 
@@ -19,7 +19,7 @@ const EmailViewer: React.FC<EmailViewerProps> = ({ emailId }) => {
         <QueryErrorResetBoundary>
         {({ reset }) => (
         <ErrorBoundary
-          fallbackRender={renderErrorBoundary}
+          fallbackRender={RenderErrorBoundaryFallback}
           onReset={reset}
         >
           <React.Suspense fallback={<LoadingEmail />}>

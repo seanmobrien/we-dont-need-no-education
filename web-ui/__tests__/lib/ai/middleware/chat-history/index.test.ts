@@ -11,23 +11,26 @@
 
 import {
   createChatHistoryMiddleware,
-  initializeChatHistoryTables,
   type ChatHistoryContext,
 } from '@/lib/ai/middleware/chat-history';
 import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { handleFlush } from '@/lib/ai/middleware/chat-history/flush-handlers';
+import { 
+  safeInitializeMessagePersistence, 
+  safeCompleteMessagePersistence 
+} from '@/lib/ai/middleware/chat-history/message-persistence';
 import { generateChatId } from '@/lib/ai/core';
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
-import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
-import { messageStatuses, turnStatuses } from '@/drizzle/schema';
-import type { LanguageModelV1CallOptions, LanguageModelV1StreamPart } from 'ai';
+import type { LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
+import { LanguageModelV1FunctionToolCall, LanguageModelV1FinishReason, LanguageModelV1CallWarning, LanguageModelV1ProviderMetadata, LanguageModelV1Source, LanguageModelV1LogProbs } from '@ai-sdk/provider';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/import-incoming-message');
 jest.mock('@/lib/ai/middleware/chat-history/processing-queue');
 jest.mock('@/lib/ai/middleware/chat-history/flush-handlers');
+jest.mock('@/lib/ai/middleware/chat-history/message-persistence');
 jest.mock('@/lib/ai/core');
 jest.mock('@/lib/drizzle-db');
 jest.mock('@/lib/logger');
@@ -52,10 +55,10 @@ jest.mock('@/lib/react-util', () => {
 const mockImportIncomingMessage = importIncomingMessage as jest.MockedFunction<typeof importIncomingMessage>;
 const mockProcessingQueue = ProcessingQueue as jest.MockedClass<typeof ProcessingQueue>;
 const mockHandleFlush = handleFlush as jest.MockedFunction<typeof handleFlush>;
+const mockSafeInitializeMessagePersistence = safeInitializeMessagePersistence as jest.MockedFunction<typeof safeInitializeMessagePersistence>;
+const mockSafeCompleteMessagePersistence = safeCompleteMessagePersistence as jest.MockedFunction<typeof safeCompleteMessagePersistence>;
 const mockGenerateChatId = generateChatId as jest.MockedFunction<typeof generateChatId>;
 let mockDb: jest.Mocked<DbDatabaseType>;
-const mockLog = log as jest.MockedFunction<typeof log>;
-//const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 
 describe('Chat History Middleware', () => {
   let mockContext: ChatHistoryContext;
@@ -101,6 +104,18 @@ describe('Chat History Middleware', () => {
     mockProcessingQueue.mockImplementation(() => mockQueueInstance);
 
     // Setup default mocks
+    mockSafeInitializeMessagePersistence.mockResolvedValue({
+      chatId: 'chat-456',
+      turnId: 1,
+      messageId: 100,
+    });
+
+    mockSafeCompleteMessagePersistence.mockResolvedValue({
+      success: true,
+      processingTimeMs: 100,
+      textLength: 50,
+    });
+
     mockImportIncomingMessage.mockResolvedValue({
       chatId: 'chat-456',
       turnId: 1,
@@ -126,12 +141,11 @@ describe('Chat History Middleware', () => {
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });
     mockHandleFlush.mockResolvedValue({ 
       success: true, 
-      latencyMs: 100, 
+      processingTimeMs: 100, 
       textLength: 50 
     });
     (LoggedError.isTurtlesAllTheWayDownBaby as jest.Mock)
       .mockClear();
-    // mockLoggedError.isTurtlesAllTheWayDownBaby = jest.fn();
     
 
     // Mock db.transaction
@@ -148,29 +162,34 @@ describe('Chat History Middleware', () => {
       // Assert
       expect(middleware).toBeDefined();
       expect(middleware.wrapStream).toBeDefined();
+      expect(middleware.wrapGenerate).toBeDefined();
       expect(middleware.transformParams).toBeDefined();
     });
 
-    it('should generate chatId when not provided', () => {
+    it('should create middleware without generating chatId in constructor', () => {
       // Arrange
       const contextWithoutChatId = { ...mockContext, chatId: undefined };
 
       // Act
-      createChatHistoryMiddleware(contextWithoutChatId);
+      const middleware = createChatHistoryMiddleware(contextWithoutChatId);
 
       // Assert
-      expect(mockGenerateChatId).toHaveBeenCalledWith();
+      expect(middleware).toBeDefined();
+      // chatId generation happens in importIncomingMessage, not in constructor
+      expect(mockGenerateChatId).not.toHaveBeenCalled();
     });
 
-    it('should generate chatId from numeric value', () => {
+    it('should create middleware without immediate chatId processing', () => {
       // Arrange
       const contextWithNumericChatId = { ...mockContext, chatId: 123 as unknown as string };
 
       // Act
-      createChatHistoryMiddleware(contextWithNumericChatId);
+      const middleware = createChatHistoryMiddleware(contextWithNumericChatId);
 
       // Assert
-      expect(mockGenerateChatId).toHaveBeenCalledWith(123);
+      expect(middleware).toBeDefined();
+      // chatId processing happens in importIncomingMessage, not in constructor
+      expect(mockGenerateChatId).not.toHaveBeenCalled();
     });
 
     it('should use string chatId directly', () => {
@@ -242,17 +261,15 @@ describe('Chat History Middleware', () => {
       });
     };
 
-    it('should initialize chat through transaction', async () => {
+    it('should initialize message persistence', async () => {
       // Act
       await callWrapStream(middleware);
 
       // Assert
-      expect(mockDb.transaction).toHaveBeenCalled();
-      expect(mockImportIncomingMessage).toHaveBeenCalledWith({
-        tx: expect.anything(),
-        context: mockContext,
-        params: mockParams,
-      });
+      expect(mockSafeInitializeMessagePersistence).toHaveBeenCalledWith(
+        mockContext,
+        mockParams
+      );
     });
 
     it('should return transformed stream', async () => {
@@ -264,24 +281,16 @@ describe('Chat History Middleware', () => {
       expect(result?.stream).toBeInstanceOf(ReadableStream);
     });
 
-    it('should handle stream transformation errors gracefully', async () => {
+    it('should handle initialization errors gracefully', async () => {
       // Arrange
-      mockImportIncomingMessage.mockRejectedValue(new Error('Import failed'));
+      mockSafeInitializeMessagePersistence.mockResolvedValue(null); // Simulate failure
 
       // Act
       const result = await callWrapStream(middleware);
 
       // Assert
-      expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          log: true,
-          source: 'ChatHistoryMiddleware',
-          message: 'Error initializing chat history middleware',
-          critical: true,
-        })
-      );
       expect(result?.stream).toBeDefined(); // Should still return original stream
+      expect(mockSafeInitializeMessagePersistence).toHaveBeenCalled();
     });
 
     it('should process chunks through queue', async () => {
@@ -305,21 +314,21 @@ describe('Chat History Middleware', () => {
       // Error should be logged but not propagated
     });
 
-    it('should handle flush operation', async () => {
+    it('should handle completion operation', async () => {
       // Act
       const result = await callWrapStream(middleware);
 
-      // The flush is called internally, we verify the mock was set up correctly
-      expect(mockHandleFlush).toBeDefined();
+      // The completion is handled by the safe utilities
+      expect(mockSafeCompleteMessagePersistence).toBeDefined();
       expect(result).toBeDefined();
     });
 
-    it('should handle flush errors gracefully', async () => {
+    it('should handle completion errors gracefully', async () => {
       // Arrange
-      mockHandleFlush.mockResolvedValue({
+      mockSafeCompleteMessagePersistence.mockResolvedValue({
         success: false,
-        error: new Error('Flush failed'),
-        latencyMs: 100,
+        error: new Error('Completion failed'),
+        processingTimeMs: 100,
         textLength: 50,
       });
 
@@ -331,9 +340,9 @@ describe('Chat History Middleware', () => {
       // Error should be logged but stream should continue
     });
 
-    it('should handle flush exception gracefully', async () => {
+    it('should handle completion exception gracefully', async () => {
       // Arrange
-      mockHandleFlush.mockRejectedValue(new Error('Flush exception'));
+      mockSafeCompleteMessagePersistence.mockRejectedValue(new Error('Completion exception'));
 
       // Act
       const result = await callWrapStream(middleware);
@@ -407,6 +416,108 @@ describe('Chat History Middleware', () => {
     });
   });
 
+  describe('wrapGenerate', () => {
+    let middleware: ReturnType<typeof createChatHistoryMiddleware>;
+    let mockDoGenerate: jest.Mock;
+
+    beforeEach(() => {
+      middleware = createChatHistoryMiddleware(mockContext);
+      mockDoGenerate = jest.fn().mockResolvedValue({
+        text: 'Generated text response',
+        finishReason: 'stop',
+        usage: { totalTokens: 20 },
+      });
+    });
+
+    const callWrapGenerate = async (middleware: LanguageModelV1Middleware) => {
+      return middleware.wrapGenerate ? await middleware.wrapGenerate({
+        doGenerate: mockDoGenerate,
+        doStream: jest.fn(),
+        params: mockParams,
+        model: {
+          specificationVersion: 'v1',
+          provider: '',
+          modelId: '',
+          defaultObjectGenerationMode: undefined,
+          supportsImageUrls: undefined,
+          supportsStructuredOutputs: undefined,
+          supportsUrl: undefined,
+          doGenerate: function (): PromiseLike<{ text?: string; reasoning?: string | Array<{ type: 'text'; text: string; signature?: string; } | { type: 'redacted'; data: string; }>; files?: Array<{ data: string | Uint8Array; mimeType: string; }>; toolCalls?: Array<LanguageModelV1FunctionToolCall>; finishReason: LanguageModelV1FinishReason; usage: { promptTokens: number; completionTokens: number; }; rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown>; }; rawResponse?: { headers?: Record<string, string>; body?: unknown; }; request?: { body?: string; }; response?: { id?: string; timestamp?: Date; modelId?: string; }; warnings?: LanguageModelV1CallWarning[]; providerMetadata?: LanguageModelV1ProviderMetadata; sources?: LanguageModelV1Source[]; logprobs?: LanguageModelV1LogProbs; }> {
+            throw new Error('Function not implemented.');
+          },
+          doStream: function (): PromiseLike<{ stream: ReadableStream<LanguageModelV1StreamPart>; rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown>; }; rawResponse?: { headers?: Record<string, string>; }; request?: { body?: string; }; warnings?: Array<LanguageModelV1CallWarning>; }> {
+            throw new Error('Function not implemented.');
+          }
+        }
+      }) : undefined;
+    };
+
+    it('should initialize message persistence for text generation', async () => {
+      // Act
+      await callWrapGenerate(middleware);
+
+      // Assert
+      expect(mockSafeInitializeMessagePersistence).toHaveBeenCalledWith(
+        mockContext,
+        mockParams
+      );
+    });
+
+    it('should complete message persistence after generation', async () => {
+      // Act
+      await callWrapGenerate(middleware);
+
+      // Assert
+      expect(mockSafeCompleteMessagePersistence).toHaveBeenCalledWith(
+        expect.objectContaining({
+          chatId: 'chat-456',
+          turnId: 1,
+          messageId: 100,
+          generatedText: 'Generated text response',
+          startTime: expect.any(Number),
+        })
+      );
+    });
+
+    it('should return generated result', async () => {
+      // Act
+      const result = await callWrapGenerate(middleware);
+
+      // Assert
+      expect(result).toEqual({
+        text: 'Generated text response',
+        finishReason: 'stop',
+        usage: { totalTokens: 20 },
+      });
+      expect(mockDoGenerate).toHaveBeenCalled();
+    });
+
+    it('should handle initialization failure gracefully', async () => {
+      // Arrange
+      mockSafeInitializeMessagePersistence.mockResolvedValue(null);
+
+      // Act
+      const result = await callWrapGenerate(middleware);
+
+      // Assert
+      expect(result).toEqual({
+        text: 'Generated text response',
+        finishReason: 'stop',
+        usage: { totalTokens: 20 },
+      });
+      expect(mockDoGenerate).toHaveBeenCalled();
+    });
+
+    it('should handle generation errors', async () => {
+      // Arrange
+      const generationError = new Error('Generation failed');
+      mockDoGenerate.mockRejectedValue(generationError);
+
+      // Act & Assert
+      await expect(callWrapGenerate(middleware)).rejects.toThrow('Generation failed');
+    });
+  });
+
   describe('Context Variations', () => {
     it('should handle minimal context', () => {
       // Arrange
@@ -419,7 +530,8 @@ describe('Chat History Middleware', () => {
 
       // Assert
       expect(middleware).toBeDefined();
-      expect(mockGenerateChatId).toHaveBeenCalled();
+      // chatId generation happens in message persistence, not in constructor
+      expect(mockGenerateChatId).not.toHaveBeenCalled();
     });
 
     it('should handle full context', () => {
@@ -440,176 +552,5 @@ describe('Chat History Middleware', () => {
       expect(middleware).toBeDefined();
       expect(mockGenerateChatId).not.toHaveBeenCalled();
     });
-  });
-});
-
-describe('initializeChatHistoryTables', () => {
-  let mockInsert: jest.Mock;
-  let mockOnConflictDoNothing: jest.Mock;
-
-  beforeEach(() => {
-    // jest.clearAllMocks();
-    mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-
-    mockOnConflictDoNothing = jest.fn().mockResolvedValue(undefined);
-    mockInsert = jest.fn().mockReturnValue({
-      values: jest.fn().mockReturnValue({
-        onConflictDoNothing: mockOnConflictDoNothing,
-      }),
-    });
-
-    mockDb.insert = mockInsert;
-  });
-
-  it('should initialize message statuses', async () => {
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    expect(mockInsert).toHaveBeenCalledWith(messageStatuses);
-    expect(mockInsert.mock.calls[0][0]).toBe(messageStatuses);
-  });
-
-  it('should initialize turn statuses', async () => {
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    expect(mockInsert).toHaveBeenCalledWith(turnStatuses);
-    expect(mockInsert.mock.calls[1][0]).toBe(turnStatuses);
-  });
-
-  it('should insert correct message status values', async () => {
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    const messageStatusCall = mockInsert.mock.calls.find(call => call[0] === messageStatuses);
-    expect(messageStatusCall).toBeDefined();
-    
-    const valuesCall = mockInsert().values.mock.calls[0][0];
-    expect(valuesCall).toEqual([
-      { id: 1, code: 'streaming', description: 'Message is being generated' },
-      { id: 2, code: 'complete', description: 'Message is fully completed' },
-    ]);
-  });
-
-  it('should insert correct turn status values', async () => {
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    const turnStatusCall = mockInsert.mock.calls.find(call => call[0] === turnStatuses);
-    expect(turnStatusCall).toBeDefined();
-    
-    const valuesCall = mockInsert().values.mock.calls[1][0];
-    expect(valuesCall).toEqual([
-      { id: 1, code: 'waiting', description: 'Waiting for model or tool response' },
-      { id: 2, code: 'complete', description: 'Turn is complete' },
-      { id: 3, code: 'error', description: 'Turn completed with error' },
-    ]);
-  });
-
-  it('should use onConflictDoNothing for both inserts', async () => {
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    expect(mockOnConflictDoNothing).toHaveBeenCalledTimes(2);
-  });
-
-  it('should log successful initialization', async () => {
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
-  });
-
-  it('should handle database errors gracefully', async () => {
-    // Arrange
-    const dbError = new Error('Database connection failed');
-    mockOnConflictDoNothing.mockRejectedValue(dbError);
-
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
-      dbError,
-      expect.objectContaining({
-        log: true,
-        source: 'ChatHistoryMiddleware',
-        message:
-          'Failed to initialize chat message status table',
-        critical: true,
-      }),
-    );
-  });
-
-  it('should handle insert errors for message statuses', async () => {
-    // Arrange
-    mockInsert.mockImplementationOnce(() => {
-      throw new Error('Insert failed');
-    });
-
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        source: 'ChatHistoryMiddleware',
-        message: 'Failed to initialize chat message status table',
-      }),
-    );
-  });
-
-  it('should handle insert errors for turn statuses', async () => {
-    // Arrange
-    let callCount = 0;
-    mockInsert.mockImplementation(() => {
-      callCount++;
-      if (callCount === 2) {
-        throw new Error('Turn status insert failed');
-      }
-      return {
-        values: jest.fn().mockReturnValue({
-          onConflictDoNothing: jest.fn().mockResolvedValue(undefined),
-        }),
-      };
-    });
-
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        source: 'ChatHistoryMiddleware',
-        message: 'Failed to initialize chat turn status table',
-      }),
-    );
-  });
-
-  it('should continue initialization even if first insert fails', async () => {
-    // Arrange
-    let callCount = 0;
-    mockOnConflictDoNothing.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        throw new Error('First insert failed');
-      }
-      return Promise.resolve(undefined);
-    });
-
-    // Act
-    await initializeChatHistoryTables();
-
-    // Assert
-    expect(mockInsert).toHaveBeenCalledTimes(2);
-    expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalled();
   });
 });

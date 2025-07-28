@@ -32,7 +32,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db<CallToActionResponseDetails, Record<string, unknown>>(
+          db<Partial<CallToActionResponseDetails>, Record<string, unknown>>(
             (sql) => sql`SELECT ep.*, ctar.response_timestamp,
             ctar.severity, ctar.inferred, ctar.sentiment, ctar.sentiment_reasons, ctar.severity_reasons, 
             (SELECT AVG(car.compliance_chapter_13) 

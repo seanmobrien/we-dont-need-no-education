@@ -69,7 +69,7 @@ RUN printf "NEXT_PUBLIC_HOSTNAME=%s\r\nNEXT_PUBLIC_LOG_LEVEL_CLIENT=%s\r\nNEXT_P
 
 RUN \
   --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE,env=NEXT_PUBLIC_MUI_LICENSE \
-  --mount=type=secret,id=NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING,env=NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING \
+  --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,env=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \

@@ -16,7 +16,8 @@ import { eq } from 'drizzle-orm';
 import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import { getNextSequence } from './utility';
-import { StreamHandlerContext, StreamHandlerResult } from './types';
+import type { StreamHandlerContext, StreamHandlerResult } from './types';
+import { instrumentStreamChunk } from './instrumentation';
 
 
 /**
@@ -263,22 +264,24 @@ export async function processStreamChunk(
   chunk: LanguageModelV1StreamPart,
   context: StreamHandlerContext,
 ): Promise<StreamHandlerResult> {
-  switch (chunk.type) {
-    case 'text-delta':
-      return handleTextDelta(chunk, context);
-    
-    case 'tool-call':
-      return handleToolCall(chunk, context);
-    
-    case 'finish':
-      return handleFinish(chunk, context);
-    
-    default:
-      // For unhandled chunk types, just return the current context unchanged
-      return {
-        currentMessageOrder: context.currentMessageOrder,
-        generatedText: context.generatedText,
-        success: true,
-      };
-  }
+  return await instrumentStreamChunk(chunk.type, context, async () => {
+    switch (chunk.type) {
+      case 'text-delta':
+        return handleTextDelta(chunk, context);
+      
+      case 'tool-call':
+        return handleToolCall(chunk, context);
+      
+      case 'finish':
+        return handleFinish(chunk, context);
+      
+      default:
+        // For unhandled chunk types, just return the current context unchanged
+        return {
+          currentMessageOrder: context.currentMessageOrder,
+          generatedText: context.generatedText,
+          success: true,
+        };
+    }
+  });
 }

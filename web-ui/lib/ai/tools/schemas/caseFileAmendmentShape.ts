@@ -21,7 +21,7 @@ import CaseFileViolationShape from './caseFileViolationShape';
  * @property chapter13Reasons - Optional array of reasons for Chapter 13 rating (required if chapter13Rating is set).
  * @property titleIXRating - Optional new Title IX rating (retains existing if not set).
  * @property titleIXReasons - Optional array of reasons for Title IX rating (required if titleIXRating is set).
- * @property explaination - Required explanation of changes and rationale.
+ * @property explanation - Required explanation of changes and rationale.
  */
 export const CaseFileAmendmentShape = z
   .object({

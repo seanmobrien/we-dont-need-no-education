@@ -246,12 +246,12 @@ describe('Chat History Types', () => {
     it('should have all required fields for success', () => {
       const result: FlushResult = {
         success: true,
-        latencyMs: 1250,
+        processingTimeMs: 1250,
         textLength: 25,
       };
 
       expect(result.success).toBe(true);
-      expect(result.latencyMs).toBe(1250);
+      expect(result.processingTimeMs).toBe(1250);
       expect(result.textLength).toBe(25);
       expect(result.error).toBeUndefined();
     });
@@ -260,7 +260,7 @@ describe('Chat History Types', () => {
       const error = new Error('Database connection failed');
       const result: FlushResult = {
         success: false,
-        latencyMs: 500,
+        processingTimeMs: 500,
         textLength: 0,
         error,
       };
@@ -272,11 +272,11 @@ describe('Chat History Types', () => {
     it('should handle zero values correctly', () => {
       const result: FlushResult = {
         success: true,
-        latencyMs: 0,
+        processingTimeMs: 0,
         textLength: 0,
       };
 
-      expect(result.latencyMs).toBe(0);
+      expect(result.processingTimeMs).toBe(0);
       expect(result.textLength).toBe(0);
     });
   });
@@ -349,7 +349,7 @@ describe('Chat History Types', () => {
 
       const flushResult: FlushResult = {
         success: true,
-        latencyMs: 1000,
+        processingTimeMs: 1000,
         textLength: flushContext.generatedText.length,
       };
 

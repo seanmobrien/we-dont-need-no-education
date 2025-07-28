@@ -20,7 +20,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db(
+          db<Partial<ComplianceScoresDetails>>(
             (
               sql,
             ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,

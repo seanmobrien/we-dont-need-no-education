@@ -115,8 +115,22 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
     data,
     ...otherMutationProps
     // error: mutationError,
-  } = useMutation({
-    mutationFn: async () => {
+  } = useMutation<
+    {
+      data: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        snapshot: any;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        summary: any;
+        test: string;
+      };
+    },
+    Error,
+    string
+  >({
+    mutationKey: ['initialize', { initialDocumentId, caseId }],
+    scope: { id: 'timeline-agent-init' },
+    mutationFn: async (test: string) => {
       const response = await fetch('/api/ai/agents/timeline', {
         method: 'POST',
         headers: {
@@ -126,6 +140,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           action: 'initialize',
           initialDocumentId,
           propertyId: caseId,
+          test,
         }),
       });
 
@@ -134,7 +149,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         throw new Error(errorData.error || 'Failed to initialize agent');
       }
 
-      return response.json();
+      return await response.json();
     },
     onSuccess: (data) => {
       try {
@@ -197,9 +212,8 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
   });
 
   // Initialize the agent using server-side API
-  const initializeAgent = useCallback(async () => {
-    // setState((prev) => ({ ...prev, isProcessing: true, error: null }));
-    mutate();
+  const initializeAgent = useCallback(async () => {    
+    mutate('test-1');
   }, [mutate]);
 
   // Process next document
@@ -334,7 +348,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
               autoHideDuration: 60000,
             });
           } else {
-            mutate();
+            mutate('test-1');
           }
         }
       }
@@ -352,17 +366,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         //no-op?
       }
     }
-  }, [
-    initializeAgent,
-    state,
-    mutate,
-    isPending,
-    data,
-    isSuccess,
-    otherMutationProps,
-    isError,
-    notifications,
-  ]);
+  }, [initializeAgent, state, mutate, isPending, data, isSuccess, otherMutationProps, isError, notifications, initialDocumentId, caseId]);
 
   const documentCounts = state.agent?.getDocumentCounts() || {
     pending: 0,
@@ -395,13 +399,17 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
             mb: 2,
           }}
         >
-          <Typography variant="h4" component="h1">
+          <Typography
+            variant="h4"
+            component="h1"
+            color="var(--color-secondary-accent)"
+          >
             Timeline Analysis Agent
             {!isPending && state.isInitialized && !state.isProcessing && (
               <Chip
                 label="Ready"
                 color="success"
-                variant="outlined"
+                variant="filled"
                 sx={{ ml: 3 }}
               />
             )}
@@ -458,8 +466,26 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           </Box>
         </Box>
 
-        <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-          Case ID: {caseId} | Initial Document: {initialDocumentId}
+        <Typography variant="subtitle1" gutterBottom>
+          <Typography component="span" color="var(--color-primary-accent)">
+            Case ID:
+          </Typography>
+          <Typography component="span" color="var(--color-highlight-alt-3)">
+            {caseId}
+          </Typography>
+          <Typography
+            component="span"
+            color="var(--color-secondary-accent)"
+            paddingX={1}
+          >
+            |
+          </Typography>
+          <Typography component="span" color="var(--color-primary-accent)">
+            Initial Document:
+          </Typography>
+          <Typography component="span" color="var(--color-highlight-alt-3)">
+            {initialDocumentId}
+          </Typography>
         </Typography>
 
         {/* Progress Indicator */}
@@ -518,7 +544,11 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           {/* Current Document */}
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography
+                variant="h6"
+                gutterBottom
+                color="var(--color-highlight-dark)"
+              >
                 Current Document
               </Typography>
               {state.currentDocument ? (
@@ -539,7 +569,11 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           {/* Controls */}
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography
+                variant="h6"
+                gutterBottom
+                color="var(--color-highlight-dark)"
+              >
                 Controls
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -584,7 +618,11 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
           {/* Document Queue */}
           <Card sx={{ flexGrow: 1 }}>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography
+                variant="h6"
+                gutterBottom
+                color="var(--color-highlight-dark)"
+              >
                 Document Queue
               </Typography>
               <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
@@ -623,7 +661,11 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
             <CardContent
               sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
             >
-              <Typography variant="h6" gutterBottom>
+              <Typography
+                variant="h6"
+                gutterBottom
+                color="var(--color-highlight-dark)"
+              >
                 Timeline Summary
               </Typography>
 
@@ -632,7 +674,12 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                   {/* Global Metadata */}
                   <Accordion defaultExpanded>
                     <AccordionSummary expandIcon={<ExpandMore />}>
-                      <Typography variant="subtitle1">Case Overview</Typography>
+                      <Typography
+                        variant="subtitle1"
+                        color="var(--color-primary-accent)"
+                      >
+                        Case Overview
+                      </Typography>
                     </AccordionSummary>
                     <AccordionDetails>
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
@@ -676,7 +723,10 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                   {/* Compliance Ratings */}
                   <Accordion>
                     <AccordionSummary expandIcon={<ExpandMore />}>
-                      <Typography variant="subtitle1">
+                      <Typography
+                        variant="subtitle1"
+                        color="var(--color-primary-accent)"
+                      >
                         Compliance Ratings
                       </Typography>
                     </AccordionSummary>
@@ -704,7 +754,10 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
                   {/* Sequential Actions */}
                   <Accordion>
                     <AccordionSummary expandIcon={<ExpandMore />}>
-                      <Typography variant="subtitle1">
+                      <Typography
+                        variant="subtitle1"
+                        color="var(--color-primary-accent)"
+                      >
                         Timeline Actions (
                         {state.summary.sequentialActions.length})
                       </Typography>

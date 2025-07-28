@@ -182,7 +182,7 @@ describe('EmailDashboardLayout', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     // Reset params to default
     mockParams.emailId = 'test-email-123';
   });

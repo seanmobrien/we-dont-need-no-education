@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { ColumnList, ResultMeta } from 'postgres';
 
 export type CommandMeta = ResultMeta<number>['command'];
@@ -13,7 +14,7 @@ export type CommandMeta = ResultMeta<number>['command'];
  * @property {number} count - The number of rows in the result set.
  * @property {Array<T>} rows - The rows in the result set.
  */
-export type IResultset<T extends Record<string, unknown>> = Array<T> & {
+export type IResultset<T extends readonly any[] = readonly any[]> = ReadonlyArray<any> & {
   /**
    * @property {string} statement The SQL statement that was executed.
    */

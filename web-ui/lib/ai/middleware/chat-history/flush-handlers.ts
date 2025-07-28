@@ -15,6 +15,7 @@ import { and, eq } from 'drizzle-orm';
 import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
+import { instrumentFlushOperation } from './instrumentation';
 
 /**
  * Default configuration for flush operations.
@@ -324,56 +325,58 @@ export async function handleFlush(
   context: FlushContext,
   config: FlushConfig = DEFAULT_FLUSH_CONFIG,
 ): Promise<FlushResult> {
-  const startFlush = Date.now();
-  const latencyMs = startFlush - context.startTime;
+  return await instrumentFlushOperation(context, async () => {
+    const startFlush = Date.now();
+    const processingTimeMs = startFlush - context.startTime;
 
-  try {
-    // Step 1: Finalize the assistant message
-    await finalizeAssistantMessage(context);
+    try {
+      // Step 1: Finalize the assistant message
+      await finalizeAssistantMessage(context);
 
-    // Step 2: Complete the turn with metrics
-    await completeChatTurn(context, latencyMs);
+      // Step 2: Complete the turn with metrics
+      await completeChatTurn(context, processingTimeMs);
 
-    // Step 3: Generate chat title if needed
-    await generateChatTitle(context, config);
+      // Step 3: Generate chat title if needed
+      await generateChatTitle(context, config);
 
-    // Step 4: Log successful completion
-    log((l) =>
-      l.info('Chat turn completed successfully', {
-        chatId: context.chatId,
-        turnId: context.turnId,
-        latencyMs,
-        generatedTextLength: context.generatedText.length,
-        flushDurationMs: Date.now() - startFlush,
-      }),
-    );
+      // Step 4: Log successful completion
+      log((l) =>
+        l.info('Chat turn completed successfully', {
+          chatId: context.chatId,
+          turnId: context.turnId,
+          processingTimeMs,
+          generatedTextLength: context.generatedText.length,
+          flushDurationMs: Date.now() - startFlush,
+        }),
+      );
 
-    return {
-      success: true,
-      latencyMs,
-      textLength: context.generatedText.length,
-    };
-  } catch (error) {
-    const flushError = error instanceof Error ? error : new Error(String(error));
+      return {
+        success: true,
+        processingTimeMs,
+        textLength: context.generatedText.length,
+      };
+    } catch (error) {
+      const flushError = error instanceof Error ? error : new Error(String(error));
 
-    log((l) =>
-      l.error('Error during flush operation', {
+      log((l) =>
+        l.error('Error during flush operation', {
+          error: flushError,
+          chatId: context.chatId,
+          turnId: context.turnId,
+        }),
+      );
+
+      // Try to mark turn as error
+      await markTurnAsError(context, flushError);
+
+      return {
+        success: false,
+        processingTimeMs,
+        textLength: context.generatedText.length,
         error: flushError,
-        chatId: context.chatId,
-        turnId: context.turnId,
-      }),
-    );
-
-    // Try to mark turn as error
-    await markTurnAsError(context, flushError);
-
-    return {
-      success: false,
-      latencyMs,
-      textLength: context.generatedText.length,
-      error: flushError,
-    };
-  }
+      };
+    }
+  });
 }
 
 /**

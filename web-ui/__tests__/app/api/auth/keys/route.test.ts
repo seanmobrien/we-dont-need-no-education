@@ -49,7 +49,7 @@ mockDrizDb.mockReturnValue(mockDbInstance as any);
 
 describe('/api/auth/keys', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('POST - Upload public key', () => {

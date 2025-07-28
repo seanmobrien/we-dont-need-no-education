@@ -110,6 +110,18 @@ export const extractParams = async <T extends object>(req: {
 };
 
 /**
+ * Retrieves the current stack trace as a string, optionally skipping a specified number of stack frames.
+ *
+ * @param options - An optional object to configure stack trace retrieval.
+ * @param options.skip - The number of stack frames to skip from the top (default is 1).
+ * @returns The stack trace as a string, with the specified number of frames skipped.
+ */
+export const getStackTrace = ({ skip = 1 } : { skip?: number } = {} ): string => {
+  const stack = new Error().stack?.split('\n').slice(skip + 1);
+  return stack ? stack.join('\n') : '';
+};
+
+/**
  * Creates a deprecated wrapper around a function that emits Node.js deprecation warnings.
  * 
  * This utility function wraps an existing function to emit deprecation warnings when called,
@@ -152,7 +164,6 @@ export const extractParams = async <T extends object>(req: {
  * ```
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-/*
 export const deprecate =  <T extends (...args: any[]) => any>(fn: T, message = `The ${fn.name} function is deprecated.`, code = 'DEP000') => {
   const deprecatedFn = function (
     this: ThisParameterType<T>,
@@ -171,5 +182,5 @@ export const deprecate =  <T extends (...args: any[]) => any>(fn: T, message = `
   });
   
   return deprecatedFn;
-}
-  */
+};
+
