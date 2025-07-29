@@ -1138,6 +1138,69 @@ export const tokenUsage = pgTable(
   ],
 );
 
+// New tables for token consumption statistics and quota management
+
+export const modelQuotas = pgTable(
+  'model_quotas',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    provider: text().notNull(), // 'azure', 'google', etc.
+    modelName: text('model_name').notNull(), // 'hifi', 'lofi', 'gemini-pro', etc.
+    maxTokensPerMessage: integer('max_tokens_per_message'), // Per-message limit
+    maxTokensPerMinute: integer('max_tokens_per_minute'), // Rate limit
+    maxTokensPerDay: integer('max_tokens_per_day'), // Daily quota
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    isActive: boolean('is_active').default(true).notNull(),
+  },
+  (table) => [
+    // Ensure unique quota configuration per provider/model combination
+    unique('model_quotas_provider_model_unique').on(table.provider, table.modelName),
+    index('idx_model_quotas_provider').using('btree', table.provider.asc().nullsLast().op('text_ops')),
+    index('idx_model_quotas_model_name').using('btree', table.modelName.asc().nullsLast().op('text_ops')),
+    index('idx_model_quotas_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
+  ],
+);
+
+export const tokenConsumptionStats = pgTable(
+  'token_consumption_stats',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    provider: text().notNull(),
+    modelName: text('model_name').notNull(),
+    windowStart: timestamp('window_start', { withTimezone: true, mode: 'string' }).notNull(),
+    windowEnd: timestamp('window_end', { withTimezone: true, mode: 'string' }).notNull(),
+    windowType: text('window_type').notNull(), // 'minute', 'hour', 'day'
+    promptTokens: integer('prompt_tokens').default(0).notNull(),
+    completionTokens: integer('completion_tokens').default(0).notNull(),
+    totalTokens: integer('total_tokens').default(0).notNull(),
+    requestCount: integer('request_count').default(0).notNull(),
+    lastUpdated: timestamp('last_updated', { withTimezone: true, mode: 'string' }).defaultNow(),
+  },
+  (table) => [
+    // Ensure unique stats per provider/model/window combination
+    unique('token_stats_provider_model_window_unique').on(
+      table.provider, 
+      table.modelName, 
+      table.windowStart, 
+      table.windowType
+    ),
+    index('idx_token_stats_provider_model').using(
+      'btree', 
+      table.provider.asc().nullsLast().op('text_ops'),
+      table.modelName.asc().nullsLast().op('text_ops')
+    ),
+    index('idx_token_stats_window_start').using('btree', table.windowStart.asc().nullsLast().op('timestamptz_ops')),
+    index('idx_token_stats_window_type').using('btree', table.windowType.asc().nullsLast().op('text_ops')),
+    index('idx_token_stats_last_updated').using('btree', table.lastUpdated.asc().nullsLast().op('timestamptz_ops')),
+    // Check constraint for valid window types
+    check(
+      'token_stats_window_type_check',
+      sql`window_type IN ('minute', 'hour', 'day')`,
+    ),
+  ],
+);
+
 export const documentUnitAnalysisFunctionAudit = pgTable(
   'document_unit_analysis_function_audit',
   {

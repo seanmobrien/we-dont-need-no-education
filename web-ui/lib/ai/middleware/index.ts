@@ -18,3 +18,14 @@ export {
   type CacheMetrics,
   type CacheEvent,
 } from './cacheWithRedis';
+export {
+  tokenStatsService,
+  tokenStatsMiddleware,
+  tokenStatsWithQuotaMiddleware,
+  tokenStatsLoggingOnlyMiddleware,
+  type TokenUsageData,
+  type ModelQuota,
+  type TokenStats,
+  type QuotaCheckResult,
+  type TokenStatsMiddlewareConfig,
+} from './tokenStatsTracking';
