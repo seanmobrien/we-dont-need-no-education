@@ -31,14 +31,15 @@ export async function GET(
       createdOn: schema.documentProperty.createdOn,
       policyBasis: schema.documentProperty.policyBasis,
       tags: schema.documentProperty.tags,
-      
+
       // From email_property_type (ept)
       propertyName: schema.emailPropertyType.propertyName,
-      
+
       // From email_property_category (epc)
       description: schema.emailPropertyCategory.description,
-      emailPropertyCategoryId: schema.emailPropertyCategory.emailPropertyCategoryId,
-      
+      emailPropertyCategoryId:
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+
       // From compliance_scores_details (csd)
       actionPropertyId: schema.complianceScoresDetails.actionPropertyId,
       complianceScore: schema.complianceScoresDetails.complianceScore,
@@ -50,21 +51,34 @@ export async function GET(
     .from(schema.documentProperty)
     .innerJoin(
       schema.complianceScoresDetails,
-      eq(schema.complianceScoresDetails.propertyId, schema.documentProperty.propertyId)
+      eq(
+        schema.complianceScoresDetails.propertyId,
+        schema.documentProperty.propertyId,
+      ),
     )
     .innerJoin(
       schema.emailPropertyType,
-      eq(schema.emailPropertyType.documentPropertyTypeId, schema.documentProperty.documentPropertyTypeId)
+      eq(
+        schema.emailPropertyType.documentPropertyTypeId,
+        schema.documentProperty.documentPropertyTypeId,
+      ),
     )
     .innerJoin(
       schema.emailPropertyCategory,
-      eq(schema.emailPropertyCategory.emailPropertyCategoryId, schema.emailPropertyType.emailPropertyCategoryId)
+      eq(
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+        schema.emailPropertyType.emailPropertyCategoryId,
+      ),
+    )
+    .innerJoin(
+      schema.documentUnits,
+      eq(schema.documentUnits.unitId, schema.documentProperty.documentId),
     )
     .where(
       and(
-        eq(schema.documentProperty.emailId, emailId),
-        eq(schema.emailPropertyType.emailPropertyCategoryId, 6)
-      )
+        eq(schema.documentUnits.emailId, emailId),
+        eq(schema.emailPropertyType.emailPropertyCategoryId, 6),
+      ),
     );
 
   // Column getter function for filtering and sorting
@@ -112,6 +126,7 @@ export async function GET(
   const result = await selectForGrid<Partial<ComplianceScoresDetails>>({
     req,
     emailId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: baseQuery as any,
     getColumn,
     columnMap,

@@ -49,8 +49,8 @@ export async function GET(
       case 'relevance': return schema.keyPoints.relevance;
       case 'compliance': return schema.keyPoints.compliance;
       case 'severity_ranking': return schema.keyPoints.severityRanking;
-      case 'value': return schema.keyPoints.value;
-      case 'created_on': return schema.keyPoints.createdOn;
+      case 'value': return schema.keyPoints.propertyValue;
+      case 'created_on': return schema.keyPoints.sentTimestamp;
       default: return undefined;
     }
   };
@@ -73,6 +73,7 @@ export async function GET(
   const result = await selectForGrid<Partial<KeyPointsDetails>>({
     req,
     emailId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: baseQuery as any,
     getColumn,
     columnMap: keyPointColumnMap,

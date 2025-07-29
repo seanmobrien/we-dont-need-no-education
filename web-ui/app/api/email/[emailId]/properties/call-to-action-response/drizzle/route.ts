@@ -95,7 +95,7 @@ export async function GET(
       inferred: record.inferred as boolean,
       sentiment: record.sentiment as number | undefined,
       sentiment_reasons: record.sentimentReasons as string[],
-      severityReasons: record.severityReasons as string[],
+      severity_reasons: record.severityReasons as string[],
       value: record.propertyValue as string, // Map propertyValue to value field
     };
   };
@@ -104,6 +104,7 @@ export async function GET(
   const result = await selectForGrid<Partial<CallToActionResponseDetails>>({
     req,
     emailId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: baseQuery as any,
     getColumn,
     columnMap,

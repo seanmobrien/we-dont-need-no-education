@@ -1,5 +1,4 @@
 import { parsePaginationStats } from '@/data-models';
-import { EmailProperty } from '@/data-models';
 import {
   RepositoryCrudController,
   EmailPropertyRepository,
@@ -23,7 +22,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db<Partial<EmailProperty>>(
+          db(
             (sql) =>
               sql`SELECT ep.* ,ept.property_name,epc.description, epc.email_property_category_id
             FROM document_property ep
@@ -34,13 +33,16 @@ export async function GET(
             WHERE e.email_id=${emailId} 
             ${buildOrderBy({ sql, source: req })}
             LIMIT ${num} OFFSET ${offset}`,
-            { transform: mapEmailPropertyRecordToObject },
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { transform: mapEmailPropertyRecordToObject as any },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         () =>
           db(
             (sql) =>
               sql`SELECT COUNT(*) AS total FROM document_property WHERE document_property_email(document_property.property_id)=${emailId}`,
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         parsePaginationStats(new URL(req.url)),
       ),
     );

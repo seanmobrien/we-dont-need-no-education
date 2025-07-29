@@ -31,28 +31,42 @@ export async function GET(
       createdOn: schema.documentProperty.createdOn,
       policyBasis: schema.documentProperty.policyBasis,
       tags: schema.documentProperty.tags,
-      
+
       // From email_property_type (ept)
       propertyName: schema.emailPropertyType.propertyName,
-      
+
       // From email_property_category (epc)
       description: schema.emailPropertyCategory.description,
-      emailPropertyCategoryId: schema.emailPropertyCategory.emailPropertyCategoryId,
+      emailPropertyCategoryId:
+        schema.emailPropertyCategory.emailPropertyCategoryId,
     })
     .from(schema.documentProperty)
     .innerJoin(
       schema.emailPropertyType,
-      eq(schema.emailPropertyType.documentPropertyTypeId, schema.documentProperty.documentPropertyTypeId)
+      eq(
+        schema.emailPropertyType.documentPropertyTypeId,
+        schema.documentProperty.documentPropertyTypeId,
+      ),
     )
     .innerJoin(
       schema.emailPropertyCategory,
-      eq(schema.emailPropertyCategory.emailPropertyCategoryId, schema.emailPropertyType.emailPropertyCategoryId)
+      eq(
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+        schema.emailPropertyType.emailPropertyCategoryId,
+      ),
+    )
+    .innerJoin(
+      schema.documentUnits,
+      eq(
+        schema.documentUnits.unitId,
+        schema.documentProperty.documentId,
+      ),
     )
     .where(
       and(
-        eq(schema.documentProperty.emailId, emailId),
-        eq(schema.emailPropertyType.emailPropertyCategoryId, 1)
-      )
+        eq(schema.documentUnits.emailId, emailId),
+        eq(schema.emailPropertyType.emailPropertyCategoryId, 1),
+      ),
     );
 
   // Column getter function for filtering and sorting
@@ -87,7 +101,8 @@ export async function GET(
   // Use selectForGrid to apply filtering, sorting, and pagination
   const result = await selectForGrid<Partial<EmailProperty>>({
     req,
-    emailId,
+    emailId, 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: baseQuery as any,
     getColumn,
     columnMap,
