@@ -307,9 +307,9 @@ export class ComplianceTimelineProcessor {
  * Factory function to create a compliance processor
  */
 export function createComplianceProcessor(
-  initialDocumentId: string,
+  propertyId: string,
 ): ComplianceTimelineProcessor {
-  const agent = TimelineAgentFactory({ initialDocumentId });
+  const agent = TimelineAgentFactory({ propertyId });
   return new ComplianceTimelineProcessor(agent);
 }
 

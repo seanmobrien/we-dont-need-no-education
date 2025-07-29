@@ -135,13 +135,14 @@ export const buildItemFilter = ({
       return sql`${sql(mappedField)} <= ${item.value}`;
     case 'isBetween':
       return sql`${sql(mappedField)} BETWEEN ${item.value[0]} AND ${item.value[1]}`;
-
     case 'isNotBetween':
       return sql`${sql(mappedField)} NOT BETWEEN ${item.value[0]} AND ${item.value[1]}`;
     case 'isNull':
       return sql`${sql(mappedField)} IS NULL`;
     case 'isNotNull':
       return sql`${sql(mappedField)} IS NOT NULL`;
+    case 'in':
+      return sql`ANY${sql(mappedField)}) = ${sql`${item.value}`}`;
     default:
       throw new Error(`Unsupported operator: ${item.operator}`, {
         cause: item,
@@ -155,6 +156,7 @@ export const buildQueryFilter = ({
   defaultFilter,
   append = false,
   columnMap: columnMapFromProps = {},
+  additional,
 }: BuildQueryFilterProps) => {
   const sql = isSqlNeonAdapter(sqlFromProps)
     ? unwrapAdapter(sqlFromProps)
@@ -163,7 +165,7 @@ export const buildQueryFilter = ({
 
   if (isLikeNextRequest(source)) {
     const thisUrl = new URL(source.url!);
-    source = parseFilterOptions(thisUrl.searchParams);
+    source = parseFilterOptions(thisUrl.searchParams, additional);
   }
   if (source === undefined) {
     if (defaultFilter === undefined) {
@@ -171,7 +173,7 @@ export const buildQueryFilter = ({
     }
     if (isLikeNextRequest(defaultFilter)) {
       const thisUrl = new URL(defaultFilter.url!);
-      source = parseFilterOptions(thisUrl.searchParams);
+      source = parseFilterOptions(thisUrl.searchParams, additional);
     } else {
       source = defaultFilter;
     }

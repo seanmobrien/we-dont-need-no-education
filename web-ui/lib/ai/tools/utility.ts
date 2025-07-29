@@ -1,7 +1,11 @@
 import z, { ZodRawShape } from 'zod';
-import { ToolCallbackResult } from './types';
-import { isError } from '@/lib/react-util';
-import { db } from '@/lib/drizzle-db/connection';
+import {
+  CaseFileRequestProps,
+  ToolCallbackResult,
+  ValidCaseFileRequestProps,
+} from './types';
+import { isError, LoggedError } from '@/lib/react-util';
+import { db } from '@/lib/drizzle-db';
 
 interface ToolCallbackResultOverloads {
   <T>(result: T): ToolCallbackResult<T>;
@@ -96,6 +100,20 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
 };
 
 /**
+ * Checks if the provided string is a valid version 4 UUID.
+ *
+ * A valid UUID v4 is in the format: xxxxxxxx-xxxx-4xxx-[8|9|A|B]xxx-xxxxxxxxxxxx,
+ * where 'x' is a hexadecimal digit.
+ *
+ * @param id - The string to validate as a UUID v4.
+ * @returns `true` if the string is a valid UUID v4, otherwise `false`.
+ */
+const isValidUuid = (id: string): boolean =>
+  /[0-9a-z]{8}-[0-9a-z]{4}-4[0-9a-z]{3}-[89ABab][0-9a-z]{3}-[0-9a-z]{12}/i.test(
+    id,
+  );
+
+/**
  * Resolves a case file's unit ID from a given document identifier.
  *
  * The function attempts to parse the provided `documentId` as a number.
@@ -111,26 +129,34 @@ export const resolveCaseFileId = async (
 ): Promise<number | undefined> => {
   let parsedId: number | undefined;
   if (typeof documentId === 'string') {
-    parsedId = /[a-f]|-/i.test(documentId) ? NaN : parseInt(documentId, 10);
-    if (isNaN(parsedId)) {
+    const isUuid = isValidUuid(documentId);
+    if (isUuid) {
       parsedId = await db.query.documentUnits
         .findFirst({
-          where: (du, { eq, and }) =>
-            and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
+          where: (du, { eq, and, or }) =>
+            or(
+              and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
+              eq(du.documentPropertyId, documentId),
+            ),
           columns: {
             unitId: true,
           },
         })
-        .then((result) => result?.unitId);
-      if (!parsedId) {
-        parsedId = await db.query.documentUnits
-          .findFirst({
-            where: (du, { eq }) => eq(du.documentPropertyId, documentId),
-            columns: {
-              unitId: true,
-            },
-          })
-          .then((result) => result?.unitId);
+        .then((result) => result?.unitId)
+        .catch((err) => {
+          LoggedError.isTurtlesAllTheWayDownBaby(err, {
+            log: true,
+            source: 'resolveCaseFileId',
+            message:
+              'Error querying for case file ID - validate document ID format',
+            include: { documentId },
+          });
+          return undefined;
+        });
+    } else {
+      parsedId = parseInt(documentId, 10);
+      if (isNaN(parsedId)) {
+        parsedId = undefined;
       }
     }
   } else if (typeof documentId === 'number') {
@@ -139,4 +165,98 @@ export const resolveCaseFileId = async (
     parsedId = undefined;
   }
   return parsedId;
+};
+
+/**
+ * Resolves a batch of case file identifiers to their corresponding numeric IDs.
+ *
+ * This function processes an array of requests, each containing a `caseFileId` that may be:
+ * - A number (already resolved)
+ * - A string representing a UUID (pending resolution)
+ * - A string that can be parsed as a number (resolved)
+ * - An invalid value (ignored)
+ *
+ * For UUIDs, the function queries the database to find matching records and resolves them to their numeric IDs.
+ * Returns an array of objects, each with a resolved numeric `caseFileId`.
+ *
+ * @param requests - An array of objects containing a `caseFileId` property, which may be a number or string.
+ * @returns A promise that resolves to an array of objects with a numeric `caseFileId`.
+ */
+export const resolveCaseFileIdBatch = async (
+  requests: Array<CaseFileRequestProps>,
+): Promise<Array<ValidCaseFileRequestProps>> => {
+  // First, split up into valid and pending sets, dropping anything so invalid we wont even try
+  const { valid, pending } = requests.reduce(
+    (acc, request) => {
+      // If input is a number then it is valid
+      if (typeof request.caseFileId === 'number') {
+        acc.valid.push({ caseFileId: request.caseFileId });
+        return acc;
+      }
+      // If input is a string, check if it's a UUID or numeric string
+      if (typeof request.caseFileId === 'string') {
+        // First check if it's a valid UUID
+        if (isValidUuid(request.caseFileId)) {
+          acc.pending.push(request);
+          return acc;
+        }
+
+        // Then check if it's a valid numeric string
+        const check = request.caseFileId.trim();
+        if (/^-?\d+$/.test(check)) {
+          const parsedId = parseInt(request.caseFileId, 10);
+          if (!isNaN(parsedId)) {
+            acc.valid.push({
+              ...request,
+              caseFileId: parsedId,
+            });
+          }
+        }
+        return acc;
+      }
+      // All other values are so hosed we just drop them
+      return acc;
+    },
+    {
+      valid: [] as Array<ValidCaseFileRequestProps>,
+      pending: [] as Array<CaseFileRequestProps>,
+    },
+  );
+  // Now lets try and look up these GUIDs
+  const guids = pending.map((r) => r.caseFileId as string);
+  if (!guids.length) {
+    return valid;
+  }
+  const records = await db.query.documentUnits.findMany({
+    where: (du, { and, or, eq, inArray }) =>
+      or(
+        and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
+        inArray(du.documentPropertyId, guids),
+      ),
+    columns: {
+      unitId: true,
+      documentPropertyId: true,
+      emailId: true,
+    },
+  });
+  // Now use records to translate pending into valid
+  const { resolved } = pending.reduce(
+    (acc, request) => {
+      const record = records.find(
+        (r) =>
+          r.documentPropertyId === request.caseFileId ||
+          r.emailId === request.caseFileId,
+      );
+      if (record) {
+        request.caseFileId = record.unitId;
+        acc.resolved.push({
+          ...request,
+          caseFileId: record.unitId,
+        });
+      }
+      return acc;
+    },
+    { resolved: valid },
+  );
+  return resolved;
 };

@@ -1,5 +1,16 @@
-import { createDataStreamResponse, streamText } from 'ai';
-import { aiModelFactory, ChatRequestMessage } from '@/lib/ai';
+import { createDataStreamResponse, wrapLanguageModel, streamText } from 'ai';
+import {
+  aiModelFactory,
+  ChatRequestMessage,
+  isAiLanguageModelType,
+  getRetryErrorInfo,
+  optimizeMessagesWithToolSummarization,
+  toolProviderSetFactory,
+  type ChatHistoryContext,
+} from '@/lib/ai';
+import {
+  createChatHistoryMiddleware,
+} from '@/lib/ai/middleware/chat-history';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,11 +19,7 @@ import { db } from '@/lib/drizzle-db/connection';
 import { chatHistory } from '@/drizzle/schema';
 import { newUuid } from '@/lib/typescript';
 import { LoggedError } from '@/lib/react-util';
-import { isAiLanguageModelType } from '@/lib/ai/core';
-import { getRetryErrorInfo } from '@/lib/ai/chat';
-import { generateChatId } from '@/lib/components/ai';
-import { toolProviderSetFactory } from '@/lib/ai/mcp';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+import { generateChatId } from '@/lib/ai/core';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 
@@ -81,22 +88,39 @@ export async function POST(req: NextRequest) {
           env('NEXT_PUBLIC_HOSTNAME'),
         ).toString(),
         headers: getMcpClientHeaders({ req, chatHistoryId }),
+        traceable: req.headers.get('x-traceable') !== 'false',
       },
+      /*
       {
-        allowWrite: true,
-        /*
-        url: new URL(
-          '/mcp/openmemory/sse/${process.env.MEM0_USERNAME}',
-          env('MEM0_API_HOST'),
-        ).toString(),
-        */
+        allowWrite: true,        
         headers: {
           'cache-control': 'no-cache, no-transform',
           'content-encoding': 'none',
         },
         url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
       },
+      */
     ]);
+
+    // Initialize chat history tables (only needs to be done once)
+    // await initializeChatHistoryTables();
+
+    // Create chat history context
+    const chatHistoryContext: ChatHistoryContext = {
+      userId: session?.user?.id || 'anonymous',
+      sessionId: chatHistoryId,
+      chatId: threadId,
+      model,
+      temperature: 0.7, // Default values, could be extracted from request
+      topP: 1.0,
+    };
+
+    // Wrap the base model with chat history middleware
+    const baseModel = aiModelFactory(model);
+    const modelWithHistory = wrapLanguageModel({
+      model: baseModel,
+      middleware: createChatHistoryMiddleware(chatHistoryContext),
+    });
 
     let isRateLimitError = false;
     let retryAfter = 0;
@@ -104,14 +128,14 @@ export async function POST(req: NextRequest) {
     return createDataStreamResponse({
       execute: (dataStream) => {
         const result = streamText({
-          model: aiModelFactory(model),
+          model: modelWithHistory,
           messages: optimizedMessages,
           experimental_generateMessageId: () => {
             return `${threadId ?? 'not-set'}:${generateChatId().id}`;
           },
           experimental_telemetry: {
-            isEnabled: true,
-            functionId: 'my-awesome-function',
+            isEnabled: true, // Currently a bug in the ai package processing string dates
+            functionId: 'chat-request',
             metadata: {
               something: 'custom',
               someOtherThing: 'other-value',

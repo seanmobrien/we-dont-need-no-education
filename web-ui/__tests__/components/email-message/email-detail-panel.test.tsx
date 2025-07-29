@@ -1,22 +1,30 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Test to verify EmailDetailPanel component works correctly
  * This includes comprehensive tests for loading states, fully loaded email, and expandable property panels
  */
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  act,
+} from '@testing-library/react';
 import '@testing-library/jest-dom';
 import EmailDetailPanel from '../../../components/email-message/list/email-detail-panel';
 import { EmailMessageSummary } from '../../../data-models/api/email-message';
 import { getEmail } from '../../../lib/api/client';
-import { 
-  getKeyPoints, 
-  getCallToAction, 
+import {
+  getKeyPoints,
+  getCallToAction,
   getCallToActionResponse,
   getSentimentAnalysis,
-  getNotes 
+  getNotes,
 } from '../../../lib/api/email/properties/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { KeyPointsDetails } from '@/data-models/api';
 
 // Mock the API functions
 jest.mock('../../../lib/api/client');
@@ -45,16 +53,14 @@ const createTestQueryClient = () => {
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const queryClient = createTestQueryClient();
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 };
 
 const mockEmailSummary: EmailMessageSummary = {
   emailId: 'test-email-123',
   sender: {
-    contactId: '1',
+    contactId: 1,
     name: 'Test Sender',
     email: 'sender@test.com',
   },
@@ -72,7 +78,7 @@ const mockFullEmail = {
   emailId: 'test-email-123',
   sender: { contactId: '1', name: 'Test Sender', email: 'sender@test.com' },
   recipients: [
-    { contactId: '2', name: 'Test Recipient', email: 'recipient@test.com' }
+    { contactId: '2', name: 'Test Recipient', email: 'recipient@test.com' },
   ],
   subject: 'Test Email Subject',
   sentOn: new Date('2023-01-01T10:00:00Z'),
@@ -91,23 +97,26 @@ const mockNotes = [
     tags: ['important'],
   },
   {
-    propertyId: 'note-2', 
+    propertyId: 'note-2',
     documentId: 1,
     createdOn: new Date('2023-01-02'),
     value: 'Another note with additional context',
     policy_basis: ['Title IX'],
     tags: ['context'],
-  }
+  },
 ];
 
-const mockKeyPoints = [
+const mockKeyPoints: KeyPointsDetails[] = [
   {
     propertyId: 'kp-1',
     documentId: 1,
     createdOn: new Date('2023-01-01'),
     value: 'Key point about compliance requirements',
-    description: 'Key point about compliance requirements',
-  }
+    relevance: null,
+    compliance: null,
+    severity: null,
+    inferred: false,
+  },
 ];
 
 describe('EmailDetailPanel', () => {
@@ -129,6 +138,7 @@ describe('EmailDetailPanel', () => {
     return promise;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const createFailedPromise = (error: Error) => {
     const promise: any = {};
     promise.then = jest.fn().mockReturnValue({
@@ -137,16 +147,16 @@ describe('EmailDetailPanel', () => {
         return {
           finally: jest.fn().mockImplementation((onFinally) => {
             setTimeout(() => onFinally(), 15);
-          })
+          }),
         };
-      })
-    });
+      }),
+    });    
     promise.catch = jest.fn().mockImplementation((onError) => {
       setTimeout(() => onError(error), 10);
       return {
         finally: jest.fn().mockImplementation((onFinally) => {
           setTimeout(() => onFinally(), 15);
-        })
+        }),
       };
     });
     promise.finally = jest.fn();
@@ -155,22 +165,23 @@ describe('EmailDetailPanel', () => {
     promise.awaitable = Promise.reject(error);
     return promise;
   };
-
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Default successful email loading mock
     mockGetEmail.mockReturnValue(createSuccessfulPromise(mockFullEmail) as any);
-    mockGetKeyPoints.mockResolvedValue({ results: [] });
-    mockGetCallToAction.mockResolvedValue({ results: [] });
-    mockGetCallToActionResponse.mockResolvedValue({ results: [] });
-    mockGetSentimentAnalysis.mockResolvedValue({ results: [] });
-    mockGetNotes.mockResolvedValue({ results: [] });
+    mockGetKeyPoints.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetCallToAction.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetCallToActionResponse.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetSentimentAnalysis.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetNotes.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
   });
 
   it('renders without crashing and shows loading state initially', () => {
-    render(<EmailDetailPanel row={mockEmailSummary} />, { wrapper: TestWrapper });
-    
+    render(<EmailDetailPanel row={mockEmailSummary} />, {
+      wrapper: TestWrapper,
+    });
+
     // Component should render and show loading state initially
     expect(screen.getByText('Loading Email Details...')).toBeInTheDocument();
   });
@@ -183,9 +194,11 @@ describe('EmailDetailPanel', () => {
     };
 
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
-    
+
     // Since there's no emailId, it should not show loading and go directly to summary
-    expect(screen.queryByText('Loading Email Details...')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Loading Email Details...'),
+    ).not.toBeInTheDocument();
 
     // Should show email summary content
     expect(screen.getByText('Email Summary')).toBeInTheDocument();
@@ -196,24 +209,42 @@ describe('EmailDetailPanel', () => {
   it('shows fully loaded email details when email data is successfully loaded', async () => {
     // Use default successful mock (already set up in beforeEach)
     await act(async () => {
-      render(<EmailDetailPanel row={mockEmailSummary} />, { wrapper: TestWrapper });
+      render(<EmailDetailPanel row={mockEmailSummary} />, {
+        wrapper: TestWrapper,
+      });
     });
 
     // Wait for loading to complete first
-    await waitFor(() => {
-      expect(screen.queryByText('Loading Email Details...')).not.toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(
+          screen.queryByText('Loading Email Details...'),
+        ).not.toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
     // Then wait for email to load
-    await waitFor(() => {
-      expect(screen.getByText('Email Details')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Email Details')).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
     // Check that full email details are displayed
     expect(screen.getByText('Test Email Subject')).toBeInTheDocument();
-    expect(screen.getByText('Test Sender (sender@test.com)')).toBeInTheDocument();
-    expect(screen.getByText('Test Recipient (recipient@test.com)')).toBeInTheDocument();
-    expect(screen.getByText('This is the full email body content with detailed information.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Test Sender (sender@test.com)'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Test Recipient (recipient@test.com)'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'This is the full email body content with detailed information.',
+      ),
+    ).toBeInTheDocument();
 
     // Verify email content section exists
     expect(screen.getByText('Email Content')).toBeInTheDocument();
@@ -229,16 +260,18 @@ describe('EmailDetailPanel', () => {
     // Mock email loading to not set the email state (return undefined/null)
     const mockNoEmailPromise = createSuccessfulPromise(null);
     mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
-    
+
     // Mock successful notes loading
-    mockGetNotes.mockResolvedValue({ results: mockNotes });
+    mockGetNotes.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: mockNotes });
 
     // First render in summary mode (no full email loaded)
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
-    
+
     // Wait for component to settle in summary mode
     await waitFor(() => {
-      expect(screen.queryByText('Loading Email Details...')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Loading Email Details...'),
+      ).not.toBeInTheDocument();
     });
 
     // Find and click the notes accordion
@@ -253,13 +286,17 @@ describe('EmailDetailPanel', () => {
     expect(mockGetNotes).toHaveBeenCalledWith({
       emailId: 'test-email-123',
       page: 1,
-      num: 100
+      num: 100,
     });
 
     // Wait for notes to load and display
     await waitFor(() => {
-      expect(screen.getByText('This is an important note about the email')).toBeInTheDocument();
-      expect(screen.getByText('Another note with additional context')).toBeInTheDocument();
+      expect(
+        screen.getByText('This is an important note about the email'),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('Another note with additional context'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -273,19 +310,23 @@ describe('EmailDetailPanel', () => {
     // Mock email loading to not set the email state
     const mockNoEmailPromise = createSuccessfulPromise(null);
     mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
-    
+
     // Mock successful key points loading
-    mockGetKeyPoints.mockResolvedValue({ results: mockKeyPoints });
+    mockGetKeyPoints.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: mockKeyPoints });
 
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
-    
+
     // Wait for component to settle
     await waitFor(() => {
-      expect(screen.queryByText('Loading Email Details...')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Loading Email Details...'),
+      ).not.toBeInTheDocument();
     });
 
     // Find and click the key points accordion
-    const keyPointsAccordion = screen.getByRole('button', { name: /Key Points \(2\)/ });
+    const keyPointsAccordion = screen.getByRole('button', {
+      name: /Key Points \(2\)/,
+    });
     expect(keyPointsAccordion).toBeInTheDocument();
 
     await act(async () => {
@@ -294,14 +335,16 @@ describe('EmailDetailPanel', () => {
 
     // Verify API was called
     expect(mockGetKeyPoints).toHaveBeenCalledWith({
-      emailId: 'test-email-123', 
+      emailId: 'test-email-123',
       page: 1,
-      num: 100
+      num: 100,
     });
 
     // Wait for key points to load and display
     await waitFor(() => {
-      expect(screen.getByText('Key point about compliance requirements')).toBeInTheDocument();
+      expect(
+        screen.getByText('Key point about compliance requirements'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -324,24 +367,25 @@ describe('EmailDetailPanel', () => {
     mockGetNotes.mockReturnValue(slowNotesPromise as any);
 
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
-    
+
     await waitFor(() => {
-      expect(screen.queryByText('Loading Email Details...')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Loading Email Details...'),
+      ).not.toBeInTheDocument();
     });
 
     // Click notes accordion to trigger loading
     const notesAccordion = screen.getByRole('button', { name: /Notes \(1\)/ });
-    
+
     await act(async () => {
       fireEvent.click(notesAccordion);
     });
 
     // Check if we can find loading state, but don't fail if it's not there
     // React Query may resolve too quickly in tests
-    let foundLoadingState = false;
     try {
       screen.getByRole('progressbar');
-      foundLoadingState = true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       // Loading state might have resolved too quickly
     }
@@ -354,7 +398,9 @@ describe('EmailDetailPanel', () => {
     // Content should appear regardless of whether we saw loading state
     await waitFor(() => {
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-      expect(screen.getByText('This is an important note about the email')).toBeInTheDocument();
+      expect(
+        screen.getByText('This is an important note about the email'),
+      ).toBeInTheDocument();
     });
   });
 
@@ -377,9 +423,11 @@ describe('EmailDetailPanel', () => {
     };
 
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
-    
+
     // Since there's no emailId, it should go directly to summary
-    expect(screen.queryByText('Loading Email Details...')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText('Loading Email Details...'),
+    ).not.toBeInTheDocument();
     expect(screen.getByText('Email Summary')).toBeInTheDocument();
 
     // Check that count badges are displayed correctly

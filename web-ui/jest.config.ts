@@ -3,6 +3,13 @@ import type { Config } from '@jest/types';
 const config: Config.InitialOptions = {
   preset: 'ts-jest', // Use ts-jest preset for TypeScript support
   testEnvironment: 'jsdom', // Set the test environment to jsdom
+  testEnvironmentOptions: {
+    // Configure jsdom for React 19 concurrent features
+    features: {
+      FetchExternalResources: false,
+      ProcessExternalResources: false,
+    },
+  },
   setupFilesAfterEnv: ['<rootDir>/__tests__/jest.setup.ts'], // Setup file for global imports
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled
   testMatch: [
@@ -48,7 +55,7 @@ const config: Config.InitialOptions = {
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
   //detectLeaks: true,
-  detectOpenHandles: true,
+  //detectOpenHandles: true,
   // logHeapUsage: true,
 
   // Additional stability configurations for concurrent testing

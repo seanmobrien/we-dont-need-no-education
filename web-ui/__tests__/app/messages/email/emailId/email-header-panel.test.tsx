@@ -1,6 +1,6 @@
+import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import { EmailHeaderPanel } from '@/app/messages/email/[emailId]/email-header/panel';
 import { EmailProperty } from '@/data-models/api';
 
@@ -20,48 +20,52 @@ const mockEmailHeaderProperty: EmailProperty = {
 describe('EmailHeaderPanel', () => {
   it('renders email header details correctly', () => {
     render(<EmailHeaderPanel row={mockEmailHeaderProperty} />);
-    
+
     expect(screen.getByText('Email Header')).toBeInTheDocument();
     expect(screen.getByText('john.doe@example.com')).toBeInTheDocument();
   });
 
   it('displays header name and value', () => {
     render(<EmailHeaderPanel row={mockEmailHeaderProperty} />);
-    
+
     expect(screen.getByText('From')).toBeInTheDocument(); // header name
     expect(screen.getByText('john.doe@example.com')).toBeInTheDocument(); // header value
   });
 
   it('displays formatted creation date', () => {
     render(<EmailHeaderPanel row={mockEmailHeaderProperty} />);
-    
+
     expect(screen.getByText(/Jan 1, 2023/)).toBeInTheDocument();
   });
 
   it('displays category information', () => {
     render(<EmailHeaderPanel row={mockEmailHeaderProperty} />);
-    
+
     expect(screen.getByText('Email Header')).toBeInTheDocument();
   });
 
   it('displays property ID and document ID in metadata', () => {
     render(<EmailHeaderPanel row={mockEmailHeaderProperty} />);
-    
+
     expect(screen.getByText('header-test-id')).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument(); // document ID
   });
 
   it('displays policy basis and tags in metadata', () => {
     render(<EmailHeaderPanel row={mockEmailHeaderProperty} />);
-    
+
     expect(screen.getByText('FERPA')).toBeInTheDocument();
     expect(screen.getByText('sender')).toBeInTheDocument();
   });
 
   it('shows email address interpretation for From header', () => {
     render(<EmailHeaderPanel row={mockEmailHeaderProperty} />);
-    
-    expect(screen.getByText(/This header contains email address information for the from field/)).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /This header contains email address information for the from field/,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('shows email address interpretation for To header', () => {
@@ -72,8 +76,12 @@ describe('EmailHeaderPanel', () => {
     };
 
     render(<EmailHeaderPanel row={toHeader} />);
-    
-    expect(screen.getByText(/This header contains email address information for the to field/)).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /This header contains email address information for the to field/,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('shows email address interpretation for Cc header', () => {
@@ -84,8 +92,12 @@ describe('EmailHeaderPanel', () => {
     };
 
     render(<EmailHeaderPanel row={ccHeader} />);
-    
-    expect(screen.getByText(/This header contains email address information for the cc field/)).toBeInTheDocument();
+
+    expect(
+      screen.getByText(
+        /This header contains email address information for the cc field/,
+      ),
+    ).toBeInTheDocument();
   });
 
   it('does not show email interpretation for other header types', () => {
@@ -96,8 +108,10 @@ describe('EmailHeaderPanel', () => {
     };
 
     render(<EmailHeaderPanel row={subjectHeader} />);
-    
-    expect(screen.queryByText(/This header contains email address information/)).not.toBeInTheDocument();
+
+    expect(
+      screen.queryByText(/This header contains email address information/),
+    ).not.toBeInTheDocument();
   });
 
   it('handles missing optional fields gracefully', () => {
@@ -110,7 +124,7 @@ describe('EmailHeaderPanel', () => {
     };
 
     render(<EmailHeaderPanel row={minimalHeader} />);
-    
+
     expect(screen.getByText('test@example.com')).toBeInTheDocument();
     expect(screen.getByText('Unknown Header')).toBeInTheDocument(); // default header name
     expect(screen.getByText('No policy basis specified')).toBeInTheDocument();
@@ -120,11 +134,12 @@ describe('EmailHeaderPanel', () => {
   it('handles long header values with word break', () => {
     const longValueHeader: EmailProperty = {
       ...mockEmailHeaderProperty,
-      value: 'very.long.email.address.that.should.break.properly@very.long.domain.name.example.com',
+      value:
+        'very.long.email.address.that.should.break.properly@very.long.domain.name.example.com',
     };
 
     render(<EmailHeaderPanel row={longValueHeader} />);
-    
+
     const valueElement = screen.getByText(longValueHeader.value);
     expect(valueElement).toHaveStyle('word-break: break-all');
     expect(valueElement).toHaveStyle('font-family: monospace');
@@ -137,7 +152,7 @@ describe('EmailHeaderPanel', () => {
     };
 
     render(<EmailHeaderPanel row={headerWithoutDate} />);
-    
+
     expect(screen.getByText('Not specified')).toBeInTheDocument();
   });
 
@@ -149,7 +164,7 @@ describe('EmailHeaderPanel', () => {
     };
 
     render(<EmailHeaderPanel row={headerWithEmptyArrays} />);
-    
+
     expect(screen.getByText('No policy basis specified')).toBeInTheDocument();
     expect(screen.getByText('No tags specified')).toBeInTheDocument();
   });

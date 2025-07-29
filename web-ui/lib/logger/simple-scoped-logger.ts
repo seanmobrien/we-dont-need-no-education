@@ -110,6 +110,23 @@ export const simpleScopedLogger: SimpleScopedLoggerOverloads = (
       ? scopedLoggerConfig.format(msg)
       : msg;
 
+    if (valueToLog) {
+      Array.from(Object.entries(valueToLog)).forEach(([key, value]) => {
+        // Remove empty arrays or objects from the log - this should get rid of the
+        // 'invalid attribute value set for key....' log noise.
+        if (typeof value === 'object' && value !== null) {
+          if (Array.isArray(value)) {
+            if (!value.length) {
+              delete valueToLog[key as keyof typeof valueToLog];
+            }
+          } else if (Object.keys(value).length === 0) {
+            delete valueToLog[key as keyof typeof valueToLog];
+          }
+        }
+      });
+    }
+
+
     log((l) => action(l, valueToLog));
   };
   /**

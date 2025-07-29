@@ -2,84 +2,38 @@ import { z } from 'zod';
 import documentPropertyShape from './documentPropertyShape';
 
 const referencedEmailShape = z.object({
-  subject: z.string().describe('Subject of the email.'),
+  subject: z.string(),
   doc: z
     .object({
-      content: z
-        .string()
-        .describe('Content of the email.')
-        .optional()
-        .nullable(),
-      createdOn: z
-        .string()
-        .describe('ISO-compliant date when the email was created.')
-        .optional()
-        .nullable(),
-      unitId: z
-        .number()
-        .optional()
-        .nullable()
-        .describe(
-          'Unique identifier for the document associated with the email.',
-        ),
+      content: z.string().optional().nullable(),
+      createdOn: z.string().optional().nullable().describe('ISO date created'),
+      unitId: z.number().optional().nullable().describe('Associated document unit ID'),
     })
-    .describe('Details of the document associated with the email.'),
+    .describe('Email document details'),
   sender: z
     .object({
-      name: z.string().describe('Name of the sender.').optional().nullable(),
-      isDistrictStaff: z
-        .boolean()
-        .optional()
-        .nullable()
-        .describe('Indicates if the sender is district staff.')
-        .optional()
-        .nullable(),
-      email: z
-        .string()
-        .describe('Email address of the sender.')
-        .optional()
-        .nullable(),
-      roleDscr: z
-        .string()
-        .describe('Role description of the sender.')
-        .optional()
-        .nullable(),
+      name: z.string().optional().nullable(),
+      isDistrictStaff: z.boolean().optional().nullable().describe('Is sender district staff'),
+      email: z.string().optional().nullable(),
+      roleDscr: z.string().optional().nullable().describe('Sender role description'),
     })
-    .describe('Details of the sender of the email.'),
+    .describe('Email sender details'),
   emailAttachments: z
     .array(
       z.object({
-        fileName: z
-          .string()
-          .describe('Name of the attached file.')
-          .optional()
-          .nullable(),
-        extractedText: z
-          .string()
-          .optional()
-          .nullable()
-          .describe('Extracted text content from the attachment.'),
+        fileName: z.string().optional().nullable(),
+        extractedText: z.string().optional().nullable().describe('Text extracted from attachment'),
         docs: z
           .array(
             z.object({
-              unitId: z
-                .number()
-                .optional()
-                .nullable()
-                .describe(
-                  'Unique identifier for the document associated with the attachment.',
-                ),
-              createdOn: z
-                .string()
-                .optional()
-                .nullable()
-                .describe('ISO-compliant date when the document was created.'),
+              unitId: z.number().optional().nullable().describe('Associated document unit ID'),
+              createdOn: z.string().optional().nullable().describe('ISO date created'),
             }),
           )
-          .describe('Documents associated with the attachment.'),
+          .describe('Associated documents'),
       }),
     )
-    .describe('Attachments associated with the email.'),
+    .describe('Email attachments'),
 });
 
 export const DocumentSchema = z.object({
@@ -87,28 +41,18 @@ export const DocumentSchema = z.object({
     .number()
     .optional()
     .nullable()
-    .describe(
-      'Unique identifier for this case file.  This value can be passed into `amendCaseFileDocument` and similar tools to refer to this record.',
-    ),
-  attachmentId: z
-    .number()
-    .nullable()
-    .optional()
-    .describe('Attachment ID associated with the document.'),
+    .describe('Case file ID (use with amendCaseFileDocument)'),
+  attachmentId: z.number().nullable().optional(),
   documentPropertyId: z
     .string()
     .nullable()
     .optional()
-    .describe(
-      'Document property ID associated with the document.  While unitId / documentId is the preferred identifier, this value can be used to refer to this record in some tools.',
-    ),
-  documentType: z.string().optional().nullable()
-    .describe(`Type of the document this case file describes.  Valid values include:
-  - 'email': represents an email message.
-  - 'attachment': represents a file attachment.
-  - 'key_point': represents a key point extracted from the case file.
-  - 'cta': Identifies a case file as specifically targeting an individual call to action.
-  - 'cta_response': represents an action taken at least purportedly in response to a call to action.`),
+    .describe('Alt document property ID for some tools'),
+  documentType: z
+    .string()
+    .optional()
+    .nullable()
+    .describe('Document type: email, attachment, key_point, cta, cta_response'),
   emailId: z
     .string()
     .optional()
@@ -116,44 +60,30 @@ export const DocumentSchema = z.object({
     .describe(
       'Email ID associated with the document.  While unitId / documentId is the preferred identifier, when documentType is `email` this value can be passed to tools to refer to this record.',
     ),
-  content: z
-    .string()
-    .optional()
-    .nullable()
-    .describe('Content of the document.'),
+  content: z.string().optional().nullable(),
   createdOn: z
     .string()
     .optional()
     .nullable()
-    .describe(
-      'A string containing an ISO-compliant Date value, identifying when the document was sent to the parent or created.',
-    ),
+    .describe('ISO date when document was sent/created'),
   emailAttachment: z
     .object({
-      // Not sending attachmentId here as it's available in the parent object
-      // attachmentId: z.number().describe('Attachment ID.'),
-      fileName: z.string().describe('Name of the file.'),
-      size: z.number().describe('Size of the file in bytes.'),
-      mimeType: z.string().describe('MIME type of the file.'),
+      fileName: z.string(),
+      size: z.number().describe('File size in bytes'),
+      mimeType: z.string(),
     })
     .nullable()
     .optional()
-    .describe(
-      'Describes the attachment this case file specifically describes.',
-    ),
+    .describe('Attachment details if this case file describes an attachment'),
   docProp: documentPropertyShape
     .nullable()
     .optional()
-    .describe(
-      'Details about the document property this case file specifically describes.',
-    ),
+    .describe('Document property details for this case file'),
   docProps: z
     .array(documentPropertyShape)
     .optional()
     .nullable()
-    .describe(
-      'An array of document properties associated with this case file.  This is distinct from `documentProperty`, which is the singular record specifically targeted with a case file.',
-    ),
+    .describe('Array of associated document properties'),
   email: z
     .object({
       subject: z
@@ -274,9 +204,9 @@ export const DocumentSchema = z.object({
     .nullable()
     .optional()
     .describe('Details about the email this case file specifically describes.'),
-  docRel_targetDoc: z.array(
-    z
-      .object({
+  docRel_targetDoc: z
+    .array(
+      z.object({
         sourceDocumentId: z.number().describe('Source document ID.'),
         description: z
           .string()
@@ -297,11 +227,13 @@ export const DocumentSchema = z.object({
             .optional()
             .nullable(),
         }),
-      })
-      .describe(
-        'Relationships to other documents, where this document is the target.',
-      ),
-  ),
+      }),
+    )
+    .nullable()
+    .optional()
+    .describe(
+      'Relationships to other documents, where this document is the target.',
+    ),
   docRel_sourceDoc: z
     .array(
       z.object({
@@ -334,6 +266,8 @@ export const DocumentSchema = z.object({
           .nullable(),
       }),
     )
+    .nullable()
+    .optional()
     .describe(
       'Relationships to other documents, where this document is the source.',
     ),

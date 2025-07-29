@@ -1,4 +1,5 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { memoryClientFactory } from '../mem0';
 
 export const memoryMiddleware: LanguageModelV1Middleware = {

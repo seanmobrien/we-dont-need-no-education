@@ -19,7 +19,7 @@ describe('EmailHeaderDetailsRepository', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('validate', () => {

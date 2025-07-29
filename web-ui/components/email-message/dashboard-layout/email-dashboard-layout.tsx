@@ -35,10 +35,33 @@ import { useParams } from 'next/navigation';
 import siteBuilder from '@/lib/site-util/url-builder';
 import { Account } from '@toolpad/core/Account';
 
+
+
+/**
+ * Branding information for the dashboard layout.
+ * @type {{ title: string; logo: React.ComponentType<object> }}
+ */
 const Branding = {
   title: 'Mystery Compliance Theater 2000',
-};
+  // eslint-disable-next-line @next/next/no-img-element
+  logo: <><img
+    src="/badge_40x40.png"
+    alt="Mystery Compliance Theater 2000 Logo"
+    style={{ width: '40px', height: '40px' }} /></>,
+} as const;
 
+/**
+ * Props for CustomEmailPageItem component.
+ * @typedef {Object} CustomEmailPageItemProps
+ * @property {NavigationPageItem} item - The navigation item to render.
+ * @property {boolean} mini - Whether the sidebar is in mini mode.
+ * @property {string} emailId - The current email ID.
+ */
+/**
+ * CustomEmailPageItem renders a navigation item for an email, including its children.
+ * @param {CustomEmailPageItemProps} props
+ * @returns {JSX.Element}
+ */
 const CustomEmailPageItem = React.memo(
   ({
     item: { children = [], ...item },
@@ -48,9 +71,10 @@ const CustomEmailPageItem = React.memo(
     item: NavigationPageItem;
     mini: boolean;
     emailId: string;
-  }) => {
+  }): React.JSX.Element => {
     return (
       <>
+        {/* ...existing code... */}
         <ListItem
           sx={(theme) => ({
             color: theme.palette.primary.main,
@@ -130,13 +154,18 @@ const CustomEmailPageItem = React.memo(
             })}
           </List>
         </ListItem>
+        {/* ...existing code... */}
       </>
     );
   },
 );
 CustomEmailPageItem.displayName = 'CustomEmailPageItem';
 
-const EmailDashboardToolbarAction = React.memo(() => {
+/**
+ * EmailDashboardToolbarAction renders the toolbar actions (theme selector and account).
+ * @returns {JSX.Element}
+ */
+const EmailDashboardToolbarAction = React.memo((): React.JSX.Element => {
   return (
     <Stack direction="row">
       <ThemeSelector />
@@ -146,17 +175,32 @@ const EmailDashboardToolbarAction = React.memo(() => {
 });
 EmailDashboardToolbarAction.displayName = 'EmailDashboardToolbarAction';
 
+/**
+ * Slots for the dashboard layout, such as toolbar actions.
+ * @type {{ toolbarActions: typeof EmailDashboardToolbarAction }}
+ */
 const stableDashboardSlots = {
   toolbarActions: EmailDashboardToolbarAction,
 };
 
+/**
+ * Props for EmailDashboardLayout component.
+ * @typedef {Object} EmailDashboardLayoutProps
+ * @property {React.ReactNode} children - The child components to render inside the layout.
+ * @property {Session | null} session - The current user session.
+ */
+/**
+ * EmailDashboardLayout is the main layout component for the email dashboard pages.
+ * @param {EmailDashboardLayoutProps} props
+ * @returns {JSX.Element}
+ */
 export const EmailDashboardLayout = ({
   children,
   session,
 }: {
   children: React.ReactNode;
   session: Session | null;
-}) => {
+}): React.JSX.Element => {
   const { emailId } = useParams<{ emailId: string }>();
 
   const dashboardNavigation = useMemo<NavigationItem[]>(() => {
@@ -165,31 +209,31 @@ export const EmailDashboardLayout = ({
           {
             segment: `messages/email/${emailId}`,
             title: 'View Email',
-            icon: <DraftsIcon key="view-email-icon" />,
+            icon: <DraftsIcon key="view-email-icon" />, 
             children: [
               {
                 segment: 'key-points',
-                icon: <KeyIcon key="key-points-icon" />,
+                icon: <KeyIcon key="key-points-icon" />, 
                 title: 'Key Points',
               },
               {
                 segment: 'notes',
-                icon: <TextSnippetIcon key="notes-icon" />,
+                icon: <TextSnippetIcon key="notes-icon" />, 
                 title: 'Notes',
               },
               {
                 segment: 'call-to-action',
-                icon: <CallToActionIcon key="call-to-action-icon" />,
+                icon: <CallToActionIcon key="call-to-action-icon" />, 
                 title: 'Calls to Action',
               },
               {
                 segment: 'call-to-action-response',
-                icon: <ReplyIcon key="call-to-action-response-icon" />,
+                icon: <ReplyIcon key="call-to-action-response-icon" />, 
                 title: 'Follow-up Activity',
               },
               {
                 segment: 'email-header',
-                icon: <PrivacyTipIcon key="header-icon" />,
+                icon: <PrivacyTipIcon key="header-icon" />, 
                 title: 'Headers',
               },
             ],
@@ -200,7 +244,7 @@ export const EmailDashboardLayout = ({
       { kind: 'header', title: 'Available Records' },
       {
         title: 'List Emails',
-        icon: <DashboardIcon key="list-emails-icon" />,
+        icon: <DashboardIcon key="list-emails-icon" />, 
         segment: 'messages',
       },
       ...viewEmailNavigation,
@@ -209,12 +253,18 @@ export const EmailDashboardLayout = ({
       {
         segment: 'messages/import',
         title: 'Import Emails',
-        icon: <Sync key="import-emails-icon" />,
+        icon: <Sync key="import-emails-icon" />, 
       },
     ];
   }, [emailId]);
+  /**
+   * Renders a navigation page item in the sidebar.
+   * @param {NavigationPageItem} item - The navigation item to render.
+   * @param {{ mini: boolean }} options - Sidebar options.
+   * @returns {JSX.Element | null}
+   */
   const renderPageItem = useCallback(
-    (item: NavigationPageItem, { mini }: { mini: boolean }) => {
+    (item: NavigationPageItem, { mini }: { mini: boolean }): React.JSX.Element | null => {
       const emailChildren = [
         'key-points',
         'notes',

@@ -202,6 +202,28 @@ export const useDataSource = ({
     if (isPending) {
       return;
     }
+    const cancelQueries = (error: unknown) => {
+      log((l) =>
+        l.verbose(
+          'Cleaning up pending queries',
+          'error',
+          error,
+          'url',
+          url,
+          'currentQueryParams',
+          currentQueryParams,
+        ),
+      );
+      pendingQueries.current.forEach(([, reject]) => {
+        try {
+          reject(error);
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (noOp) {
+          // Already logged failure
+        }
+      });
+      pendingQueries.current = [];
+    };
     if (isSuccess && data) {
       // If we have data, resolve any pending queries
       log((l) =>
@@ -219,23 +241,16 @@ export const useDataSource = ({
       return;
     }
     if (queryError && pendingQueries.current.length > 0) {
-      pendingQueries.current.forEach(([, reject]) => {
-        log((l) =>
-          l.verbose(
-            'useDataSource::query error occurred',
-            'error',
-            queryError,
-            'url',
-            url,
-            'currentQueryParams',
-            currentQueryParams,
-          ),
-        );
-        reject(queryError);
-      });
-      pendingQueries.current = [];
+      cancelQueries(queryError);
       return;
     }
+    return () => {
+      // Cleanup function to clear pending queries on unmount or when query state changes
+      if (!pendingQueries.current?.length) {
+        return;
+      }
+      cancelQueries(new Error('Component unmounted or query state changed'));
+    };
   }, [isSuccess, queryError, data, url, currentQueryParams, isPending]);
 
   // Mutation for updating rows
@@ -358,34 +373,43 @@ export const useDataSource = ({
 
         return new Promise<GridGetRowsResponse>((resolve, reject) => {
           const timeout = setTimeout(() => {
-            if (isSuccess) {
+            try {
+              if (isSuccess) {
+                log((l) =>
+                  l.warn(
+                    'getRows::query timed out - resolving with last known good data to prevent promise memory leak',
+                    'queryKey',
+                    queryKey,
+                    'url',
+                    url,
+                  ),
+                );
+                resolve(data);
+              }
+
               log((l) =>
                 l.warn(
-                  'getRows::query timed out - resolving with last known good data to prevent promise memory leak',
+                  'getRows::query timed out - rejecting promise',
                   'queryKey',
                   queryKey,
                   'url',
                   url,
                 ),
               );
-              resolve(data);
+              // Reject the promise if it takes too long
+              reject(
+                new Error(
+                  `Query for ${queryKey.join(', ')} timed out after 30 seconds`,
+                ),
+              );
+            } catch (err) {
+              log((l) =>
+                l.warn(
+                  'Unexpected error caught in getRows proxy resolution.',
+                  err,
+                ),
+              );
             }
-
-            log((l) =>
-              l.warn(
-                'getRows::query timed out - rejecting promise',
-                'queryKey',
-                queryKey,
-                'url',
-                url,
-              ),
-            );
-            // Reject the promise if it takes too long
-            reject(
-              new Error(
-                `Query for ${queryKey.join(', ')} timed out after 30 seconds`,
-              ),
-            );
           }, 60 * 1000); // 60 seconds timeout
           const wrapCleanup = <X, Y>(cb: (y: X) => Y): ((y: X) => Y) => {
             return (arg: X) => {
@@ -417,14 +441,14 @@ export const useDataSource = ({
       getRows,
       updateRow,
       onDataSourceError,
-      isLoading: !hasMounted || isLoading || updateRowMutation.isPending,
+      isLoading: /*!hasMounted || */ isLoading || updateRowMutation.isPending,
       loadError: queryError ? queryError.message : null,
     };
   }, [
     getRows,
     updateRow,
     onDataSourceError,
-    hasMounted,
+    // hasMounted,
     isLoading,
     updateRowMutation.isPending,
     queryError,

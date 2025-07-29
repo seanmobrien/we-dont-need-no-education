@@ -1,29 +1,35 @@
+/** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from 'react';
 import ContactForm from './contact-form';
 import { Contact, ContactSummary } from '@/data-models/api/contact';
 import { createContactSummary } from '@/data-models/api';
 import { log } from '@/lib/logger';
-import classnames, {
-  TArg as TTailwindArg,
-  width,
-} from 'tailwindcss-classnames';
+import { css, SerializedStyles } from '@emotion/react';
 
 interface ContactDropdownProps {
   displayValue?: 'name' | 'email' | 'both';
   contact: number | ContactSummary;
   setValue: (value: ContactSummary) => void;
   filter?: (contact: ContactSummary) => boolean;
-  className?: TTailwindArg;
+  className?: SerializedStyles;
+  style?: React.CSSProperties;
 }
+
+const dropdownStyles = {
+  select: css`
+    width: 100%;
+  `,
+};
 
 const emptyContact = createContactSummary();
 
 const ContactDropdown = ({
   displayValue = 'name',
-  className = null,
+  className,
   contact,
   setValue,
   filter = () => true,
+  style
 }: ContactDropdownProps) => {
   const [contacts, setContacts] = useState<ContactSummary[]>([]);
   const [showContactForm, setShowContactForm] = useState(false);
@@ -88,12 +94,12 @@ const ContactDropdown = ({
   };
 
   return (
-    <div className={classnames(className)}>
+    <div css={className} style={style}>
       <select
         title="Select contact"
         value={contactId}
         onChange={handleSelectChange}
-        className={classnames(width('w-full'))}
+        css={dropdownStyles.select}
       >
         <option value="-1">Select...</option>
         {contacts.filter(filter).map((contact) => (

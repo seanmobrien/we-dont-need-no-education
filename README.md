@@ -77,6 +77,41 @@ Create appropriate `.env` files with:
 - Redis connection details
 - Authentication secrets
 
+### Local Development Authentication Bypass
+
+⚠️ **CRITICAL SECURITY WARNING** ⚠️
+
+For local development convenience, this application supports bypassing authentication. This feature is **EXTREMELY DANGEROUS** and must be used with caution:
+
+#### Setup
+
+1. Set the `LOCAL_DEV_AUTH_BYPASS_USER_ID` environment variable to any user ID (e.g., "1", "123")
+2. The application will automatically authenticate all requests as this user
+3. JWT tokens are automatically minted for the bypass user
+
+#### Security Safeguards
+
+- **Localhost Only**: The bypass only works when running on localhost, 127.0.0.1, or local network addresses
+- **Automatic Validation**: The application validates the hostname and throws a scary error if not running locally
+- **No Production Use**: The bypass is completely disabled in production environments
+
+#### Example `.env.local` (for local development only)
+
+```bash
+# DANGER: Only use in local development!
+LOCAL_DEV_AUTH_BYPASS_USER_ID=123
+```
+
+#### ⚠️ NEVER DO THESE THINGS ⚠️
+
+- **NEVER** commit this variable set to any value in `.env` files
+- **NEVER** deploy with this variable set in production
+- **NEVER** set this variable on any non-localhost environment
+
+The application will detect and prevent misuse with aggressive error messages designed to protect against accidental production deployment.
+
+For more security information, see [SECURITY.md](./SECURITY.md).
+
 ## Project Structure
 
 ```

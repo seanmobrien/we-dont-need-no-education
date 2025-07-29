@@ -10,6 +10,12 @@ export type {
   ModelFailoverConfig 
 } from './key-rate-limiter/types';
 export {
+  createChatHistoryMiddleware,
+  initializeChatHistoryTables,
+  type ChatHistoryContext,
+} from './chat-history';
+export { setNormalizedDefaultsMiddleware } from './set-normalized-defaults';
+export {
   cacheWithRedis,
   getRedisClient,
   closeRedisClient,

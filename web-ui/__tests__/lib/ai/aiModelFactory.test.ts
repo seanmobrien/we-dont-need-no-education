@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @jest-environment jsdom
  */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { 
+import {
   AiModelTypeValues,
   AiModelTypeValue_LoFi,
   AiModelTypeValue_HiFi,
@@ -11,24 +12,28 @@ import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GeminiPro,
   AiModelTypeValue_GeminiFlash,
-  AiModelTypeValue_GoogleEmbedding
+  AiModelTypeValue_GoogleEmbedding,
 } from '../../../lib/ai/core/unions';
-import { isAiModelType, isAiLanguageModelType } from '../../../lib/ai/core/guards';
+import {
+  isAiModelType,
+  isAiLanguageModelType,
+} from '../../../lib/ai/core/guards';
+import { EmbeddingModel, LanguageModel, Provider } from 'ai';
 
 // Mock environment variables
 jest.mock('@/lib/site-util/env', () => ({
   env: jest.fn((key: string) => {
     const mockEnvVars: Record<string, string> = {
-      'AZURE_OPENAI_ENDPOINT': 'https://test.openai.azure.com/',
-      'AZURE_API_KEY': 'test-azure-key',
-      'AZURE_OPENAI_DEPLOYMENT_COMPLETIONS': 'test-completions',
-      'AZURE_OPENAI_DEPLOYMENT_LOFI': 'test-lofi',
-      'AZURE_OPENAI_DEPLOYMENT_HIFI': 'test-hifi',
-      'AZURE_OPENAI_DEPLOYMENT_EMBEDDING': 'test-embedding',
-      'GOOGLE_GENERATIVE_AI_API_KEY': 'test-google-key'
+      AZURE_OPENAI_ENDPOINT: 'https://test.openai.azure.com/',
+      AZURE_API_KEY: 'test-azure-key',
+      AZURE_OPENAI_DEPLOYMENT_COMPLETIONS: 'test-completions',
+      AZURE_OPENAI_DEPLOYMENT_LOFI: 'test-lofi',
+      AZURE_OPENAI_DEPLOYMENT_HIFI: 'test-hifi',
+      AZURE_OPENAI_DEPLOYMENT_EMBEDDING: 'test-embedding',
+      GOOGLE_GENERATIVE_AI_API_KEY: 'test-google-key',
     };
     return mockEnvVars[key] || '';
-  })
+  }),
 }));
 
 // Mock Azure SDK
@@ -36,36 +41,42 @@ jest.mock('@ai-sdk/azure', () => ({
   createAzure: jest.fn(() => ({
     completion: jest.fn(() => ({ modelType: 'azure-completions' })),
     chat: jest.fn(() => ({ modelType: 'azure-chat' })),
-    textEmbeddingModel: jest.fn(() => ({ modelType: 'azure-embedding' }))
+    textEmbeddingModel: jest.fn(() => ({ modelType: 'azure-embedding' })),
   })),
-  AzureOpenAIProvider: jest.fn()
+  AzureOpenAIProvider: jest.fn(),
 }));
 
 // Mock Google SDK
 jest.mock('@ai-sdk/google', () => ({
   createGoogleGenerativeAI: jest.fn(() => ({
     chat: jest.fn(() => ({ modelType: 'google-chat' })),
-    textEmbeddingModel: jest.fn(() => ({ modelType: 'google-embedding' }))
+    textEmbeddingModel: jest.fn(() => ({ modelType: 'google-embedding' })),
   })),
-  GoogleGenerativeAIProvider: jest.fn()
+  GoogleGenerativeAIProvider: jest.fn(),
 }));
 
 // Mock middleware
 jest.mock('../../../lib/ai/middleware', () => ({
-  cacheWithRedis: jest.fn()
+  cacheWithRedis: jest.fn(),
 }));
 
 jest.mock('ai', () => ({
   wrapLanguageModel: jest.fn(({ model }) => model),
-  customProvider: jest.fn((config) => ({
-    languageModels: config.languageModels || {},
-    embeddingModels: config.embeddingModels || {},
-    fallbackProvider: config.fallbackProvider
-  })),
-  createProviderRegistry: jest.fn((providers) => ({
+  customProvider: jest.fn(
+    (config: {
+      languageModels?: Record<string, LanguageModel>;
+      embeddingModels?: Record<string, EmbeddingModel<string>>;
+      fallbackProvider?: Provider;
+    }) => ({
+      languageModels: config.languageModels || {},
+      embeddingModels: config.embeddingModels || {},
+      fallbackProvider: config.fallbackProvider,
+    }),
+  ),
+  createProviderRegistry: jest.fn(() => ({
     languageModel: jest.fn((id) => ({ modelId: id, type: 'language' })),
-    textEmbeddingModel: jest.fn((id) => ({ modelId: id, type: 'embedding' }))
-  }))
+    textEmbeddingModel: jest.fn((id) => ({ modelId: id, type: 'embedding' })),
+  })),
 }));
 
 describe('AI Model Types', () => {
@@ -73,11 +84,19 @@ describe('AI Model Types', () => {
     expect(AiModelTypeValues).toEqual([
       'lofi',
       'hifi',
+      'google:lofi',
+      'google:hifi',
       'completions',
       'embedding',
       'gemini-pro',
       'gemini-flash',
-      'google-embedding'
+      'google-embedding',
+      'azure:lofi',
+      'azure:hifi',
+      'azure:completions',
+      'azure:embedding',
+      'google:completions',
+      'google:embedding',
     ]);
   });
 
@@ -118,7 +137,7 @@ describe('AI Model Type Guards', () => {
 
 describe('AI Model Factory Integration', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('should be importable without errors', async () => {
@@ -130,7 +149,9 @@ describe('AI Model Factory Integration', () => {
   });
 
   it('should define createGoogleEmbeddingModel function', async () => {
-    const { createGoogleEmbeddingModel } = await import('../../../lib/ai/aiModelFactory');
+    const { createGoogleEmbeddingModel } = await import(
+      '../../../lib/ai/aiModelFactory'
+    );
     expect(typeof createGoogleEmbeddingModel).toBe('function');
   });
 
@@ -146,7 +167,7 @@ describe('AI Model Factory Integration', () => {
       getModelAvailabilityStatus,
       resetModelAvailability,
       handleAzureRateLimit,
-      handleGoogleRateLimit
+      handleGoogleRateLimit,
     } = await import('../../../lib/ai/aiModelFactory');
 
     expect(typeof disableModel).toBe('function');
@@ -167,7 +188,7 @@ describe('Model Availability Management', () => {
   let modelControls: any;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     modelControls = await import('../../../lib/ai/aiModelFactory');
     // Reset to defaults before each test
     modelControls.resetModelAvailability();
@@ -198,7 +219,7 @@ describe('Model Availability Management', () => {
     expect(modelControls.isModelAvailable('azure:lofi')).toBe(false);
     expect(modelControls.isModelAvailable('azure:embedding')).toBe(false);
     expect(modelControls.isProviderAvailable('azure')).toBe(false);
-    
+
     // Google should still be available
     expect(modelControls.isProviderAvailable('google')).toBe(true);
 
@@ -210,7 +231,7 @@ describe('Model Availability Management', () => {
   it('should support temporary model disabling', (done) => {
     // Temporarily disable model for 50ms
     modelControls.temporarilyDisableModel('azure:hifi', 50);
-    
+
     expect(modelControls.isModelAvailable('azure:hifi')).toBe(false);
 
     // After timeout, model should be re-enabled
@@ -235,7 +256,7 @@ describe('Model Availability Management', () => {
     expect(modelControls.isModelAvailable('azure:hifi')).toBe(false);
     expect(modelControls.isModelAvailable('azure:lofi')).toBe(false);
     expect(modelControls.isModelAvailable('azure:embedding')).toBe(false);
-    
+
     // Google should still be available
     expect(modelControls.isModelAvailable('google:hifi')).toBe(true);
   });
@@ -246,7 +267,7 @@ describe('Model Availability Management', () => {
     expect(modelControls.isModelAvailable('google:hifi')).toBe(false);
     expect(modelControls.isModelAvailable('google:gemini-pro')).toBe(false);
     expect(modelControls.isModelAvailable('google:embedding')).toBe(false);
-    
+
     // Azure should still be available
     expect(modelControls.isModelAvailable('azure:hifi')).toBe(true);
   });

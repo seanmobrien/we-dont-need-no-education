@@ -4,10 +4,10 @@ import { TimelineAgentInterface } from '@/components/ai/timeline-agent';
 import { Box } from '@mui/system';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     emailId: string;
     propertyId: string;
-  };
+  }>;
 }
 
 const Page = async ({ params }: PageProps) => {
@@ -28,8 +28,8 @@ const Page = async ({ params }: PageProps) => {
         }}
       >
         <TimelineAgentInterface
-          initialDocumentId={propertyId}
-          caseId={emailId}
+          initialDocumentId={emailId}
+          caseId={propertyId}
         />
       </Box>
     </EmailDashboardLayout>

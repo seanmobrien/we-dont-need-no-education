@@ -21,7 +21,9 @@ export async function GET(req: NextRequest) {
     if (!!id) {
       const parsedId = Array.isArray(id) ? id : String(id).split(',');
       const rawRecords = await getMultipleCaseFileDocuments({
-        caseFileIds: parsedId,
+        requests: parsedId.map((id) => ({
+          caseFileId: id,
+        })),
       });
 
       const parsedRecords = z

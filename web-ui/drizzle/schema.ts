@@ -3,29 +3,32 @@ import {
   foreignKey,
   uuid,
   text,
+  type AnyPgColumn,
   index,
   check,
   serial,
   integer,
   varchar,
   timestamp,
+  jsonb,
   uniqueIndex,
   vector,
-  boolean,
-  jsonb,
   unique,
+  smallint,
+  boolean,
   bigint,
   doublePrecision,
   date,
   numeric,
   primaryKey,
   time,
+  real,
   pgView,
   interval,
   pgMaterializedView,
   pgEnum,
 } from 'drizzle-orm/pg-core';
-import { SQL, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 export const importStageType = pgEnum('import_stage_type', [
   'staged',
@@ -86,25 +89,82 @@ export const documentUnits = pgTable(
       table.emailId.asc().nullsLast().op('uuid_ops'),
     ),
     foreignKey({
-      columns: [table.emailId],
-      foreignColumns: [emails.emailId],
-      name: 'document_units_email_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
       columns: [table.attachmentId],
       foreignColumns: [emailAttachments.attachmentId],
       name: 'document_units_attachment_id_fkey',
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.emailId],
+      foreignColumns: [emails.emailId],
+      name: 'document_units_email_id_fkey',
+    }).onDelete('cascade'),
     /* I don't understand drizzle well enough to know why yet, but this FK fucks everything up
-  foreignKey({
-			columns: [table.documentPropertyId],
-			foreignColumns: [documentProperty.propertyId],
-			name: "document_units_email_property_id_fkey1"
-		}).onDelete("cascade"),
+    foreignKey({
+      columns: [table.documentPropertyId],
+      foreignColumns: [documentProperty.propertyId],
+      name: 'document_units_email_property_id_fkey1',
+    }).onDelete('cascade'),
   */
     check(
       'document_type_check_allowed_values',
       sql`(document_type)::text = ANY (ARRAY[('email'::character varying)::text, ('attachment'::character varying)::text, ('note'::character varying)::text, ('key_point'::character varying)::text, ('cta_response'::character varying)::text, ('cta'::character varying)::text, ('sentiment'::character varying)::text, ('pending_upload'::character varying)::text, ('compliance'::character varying)::text]))) NOT VALID`,
+    ),
+  ],
+);
+
+export const chats = pgTable(
+  'chats',
+  {
+    id: text().primaryKey().notNull(),
+    userId: integer('user_id').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    title: text(),
+    metadata: jsonb(),
+  },
+  (table) => [
+    index('idx_chats_created_at').using(
+      'btree',
+      table.createdAt.asc().nullsLast().op('timestamptz_ops'),
+    ),
+    index('idx_chats_user_id').using(
+      'btree',
+      table.userId.asc().nullsLast().op('int4_ops'),
+    ),
+  ],
+);
+
+export const mcpSessions = pgTable(
+  'mcp_sessions',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    chatId: text('chat_id').notNull(),
+    turnId: integer('turn_id').notNull(),
+    providerId: text('provider_id'),
+    startedAt: timestamp('started_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    endedAt: timestamp('ended_at', { withTimezone: true, mode: 'string' }),
+    status: text(),
+    error: text(),
+    metadata: jsonb(),
+  },
+  (table) => [
+    index('idx_mcp_sessions_provider_id').using(
+      'btree',
+      table.providerId.asc().nullsLast().op('text_ops'),
+    ),
+    foreignKey({
+      columns: [table.chatId, table.turnId],
+      foreignColumns: [chatTurns.chatId, chatTurns.turnId],
+      name: 'mcp_sessions_chat_id_turn_id_fkey',
+    }).onDelete('cascade'),
+    check(
+      'mcp_sessions_status_check',
+      sql`status = ANY (ARRAY['active'::text, 'completed'::text, 'error'::text])`,
     ),
   ],
 );
@@ -172,6 +232,91 @@ export const callToActionCategory = pgTable('call_to_action_category', {
   ctaCategoryTextEmbeddingModel: text('cta_category_text_embedding_model'),
 });
 
+export const turnStatuses = pgTable(
+  'turn_statuses',
+  {
+    id: smallint().primaryKey().notNull(),
+    code: text().notNull(),
+    description: text(),
+  },
+  (table) => [unique('turn_statuses_code_key').on(table.code)],
+);
+
+export const mcpEvents = pgTable(
+  'mcp_events',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    sessionId: uuid('session_id').notNull(),
+    toolInstanceId: uuid('tool_instance_id'),
+    eventType: text('event_type'),
+    message: text(),
+    eventTime: timestamp('event_time', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    metadata: jsonb(),
+  },
+  (table) => [
+    index('idx_mcp_events_tool_instance_id').using(
+      'btree',
+      table.toolInstanceId.asc().nullsLast().op('uuid_ops'),
+    ),
+    foreignKey({
+      columns: [table.sessionId],
+      foreignColumns: [mcpSessions.id],
+      name: 'mcp_events_session_id_fkey',
+    }).onDelete('cascade'),
+  ],
+);
+
+export const messageStatuses = pgTable(
+  'message_statuses',
+  {
+    id: smallint().primaryKey().notNull(),
+    code: text().notNull(),
+    description: text(),
+  },
+  (table) => [unique('message_statuses_code_key').on(table.code)],
+);
+
+export const intermediateLlmRequestLogs = pgTable(
+  'intermediate_llm_request_logs',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    chatId: text('chat_id').notNull(),
+    turnId: integer('turn_id').notNull(),
+    toolInstanceId: uuid('tool_instance_id'),
+    providerId: text('provider_id'),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    prompt: jsonb(),
+    response: jsonb(),
+    promptTokens: integer('prompt_tokens'),
+    completionTokens: integer('completion_tokens'),
+    totalTokens: integer('total_tokens'),
+    latencyMs: integer('latency_ms'),
+    error: text(),
+    warnings: text().array(),
+  },
+  (table) => [
+    index('idx_llm_logs_provider_id').using(
+      'btree',
+      table.providerId.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_llm_logs_tool_instance_id').using(
+      'btree',
+      table.toolInstanceId.asc().nullsLast().op('uuid_ops'),
+    ),
+    foreignKey({
+      columns: [table.chatId, table.turnId],
+      foreignColumns: [chatTurns.chatId, chatTurns.turnId],
+      name: 'intermediate_llm_request_logs_chat_id_turn_id_fkey',
+    }).onDelete('cascade'),
+  ],
+);
+
 export const analysisStage = pgTable('analysis_stage', {
   analysisStageId: integer('analysis_stage_id').primaryKey().notNull(),
   description: text(),
@@ -205,17 +350,22 @@ export const documentUnitAnalysisStageAudit = pgTable(
   },
   (table) => [
     foreignKey({
-      columns: [table.documentId],
-      foreignColumns: [documentUnits.unitId],
-      name: 'document_unit_analysis_audt_document_fk',
-    }).onDelete('cascade'),
-    foreignKey({
       columns: [table.analysisStageId],
       foreignColumns: [analysisStage.analysisStageId],
       name: 'document_unit_analysis_audit_stage_fk',
     }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.documentId],
+      foreignColumns: [documentUnits.unitId],
+      name: 'document_unit_analysis_audt_document_fk',
+    }).onDelete('cascade'),
   ],
 );
+
+export const chatTurnSequences = pgTable('chat_turn_sequences', {
+  chatId: text('chat_id').primaryKey().notNull(),
+  lastTurnId: integer('last_turn_id').default(0).notNull(),
+});
 
 export const threads = pgTable('threads', {
   threadId: serial('thread_id').primaryKey().notNull(),
@@ -256,44 +406,45 @@ export const chatHistory = pgTable(
 export const accounts = pgTable(
   'accounts',
   {
-    userId: text('userId')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    type: text('type').$type<'oauth' | 'oidc' | 'email'>().notNull(),
-    provider: text('provider').notNull(),
-    providerAccountId: text('providerAccountId').notNull(),
-    refresh_token: text('refresh_token'),
-    access_token: text('access_token'),
-    expires_at: integer('expires_at'),
-    token_type: text('token_type'),
-    scope: text('scope'),
-    id_token: text('id_token'),
-    session_state: text('session_state'),
+    id: serial().primaryKey().notNull(),
+    userId: integer().notNull(),
+    type: varchar({ length: 255 }).notNull(),
+    provider: varchar({ length: 255 }).notNull(),
+    providerAccountId: varchar({ length: 255 }).notNull(),
+    refreshToken: text('refresh_token'),
+    accessToken: text('access_token'),
+    // You can use { mode: "bigint" } if numbers are exceeding js number limitations
+    expiresAt: bigint('expires_at', { mode: 'number' }),
+    tokenType: text('token_type'),
+    scope: text(),
+    idToken: text('id_token'),
+    sessionState: text('session_state'),
   },
-  (account) => ({
-    compoundKey: primaryKey({
-      columns: [account.provider, account.providerAccountId],
-    }),
-    userIdIdx: index('accounts_userId_idx').on(account.userId),
-  }),
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'accounts_userId_idx',
+    }).onDelete('cascade'),
+    unique('constraint_userId').on(table.userId),
+  ],
 );
 
 export const sessions = pgTable(
   'sessions',
   {
-    id: serial('id').primaryKey().notNull(),
-    sessionToken: text('sessionToken').notNull().primaryKey(),
-    userId: text('userId')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    expires: timestamp('expires', {
-      mode: 'date',
-      withTimezone: true,
-    }).notNull(),
+    id: serial().primaryKey().notNull(),
+    sessionToken: varchar({ length: 255 }).notNull(),
+    userId: integer().notNull(),
+    expires: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
   },
-  (session) => ({
-    userIdIdx: index('sessions_userId_idx').on(session.userId),
-  }),
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [accounts.userId],
+      name: 'FK_account',
+    }),
+  ],
 );
 
 export const sessionsExt = pgTable(
@@ -307,64 +458,14 @@ export const sessionsExt = pgTable(
       maxValue: 2147483647,
       cache: 1,
     }),
-    sessionToken: text('session_token'), // Added to reference sessions.sessionToken
     tokenGmail: varchar('token_gmail', { length: 255 }),
   },
   (table) => [
     foreignKey({
-      columns: [table.sessionToken],
-      foreignColumns: [sessions.sessionToken], // Corrected to reference sessionToken
+      columns: [table.sessionId],
+      foreignColumns: [sessions.id],
       name: 'FK_sessions_ext_sessions',
     }).onDelete('cascade'),
-  ],
-);
-
-export const emails = pgTable(
-  'emails',
-  {
-    senderId: integer('sender_id').notNull(),
-    threadId: integer('thread_id'),
-    subject: text().notNull(),
-    emailContents: text('email_contents').notNull(),
-    sentTimestamp: timestamp('sent_timestamp', { mode: 'string' }).default(
-      sql`CURRENT_TIMESTAMP`,
-    ),
-    importedFromId: varchar('imported_from_id', { length: 20 }),
-    globalMessageId: varchar('global_message_id', { length: 255 }),
-    emailId: uuid('email_id').defaultRandom().primaryKey().notNull(),
-    parentId: uuid('parent_id'),
-    documentType: varchar('document_type', { length: 50 }).generatedAlwaysAs(
-      (): SQL => sql`email`,
-    ),
-  },
-  (table) => [
-    index('fki_fk_emails_parent_email').using(
-      'btree',
-      table.parentId.asc().nullsLast().op('uuid_ops'),
-    ),
-    index('idx_emails_parent').using(
-      'btree',
-      table.parentId.asc().nullsLast().op('uuid_ops'),
-    ),
-    uniqueIndex('idx_emails_unique_desc').using(
-      'btree',
-      table.threadId.desc().nullsFirst().op('uuid_ops'),
-      table.senderId.desc().nullsFirst().op('uuid_ops'),
-      table.parentId.desc().nullsFirst().op('int4_ops'),
-      table.emailId.desc().nullsFirst().op('uuid_ops'),
-    ),
-    foreignKey({
-      columns: [table.senderId],
-      foreignColumns: [contacts.contactId],
-      name: 'emails_relation_1',
-    }),
-    foreignKey({
-      columns: [table.parentId],
-      foreignColumns: [table.emailId],
-      name: 'fk_emails_parent_email',
-    })
-      .onUpdate('cascade')
-      .onDelete('set null'),
   ],
 );
 
@@ -388,8 +489,7 @@ export const emailAttachments = pgTable(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),
     ),
-    // no vector support in drizzle yet :(
-    // index("idx_attachment_search").using("gin", table.extractedTextTsv.asc().nullsLast().op("tsvector_ops")),
+    //index("idx_attachment_search").using("gin", table.extractedTextTsv.asc().nullsLast().op("tsvector_ops")),
     index('idx_email_attachments_email_id').using(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),
@@ -463,7 +563,7 @@ export const stagingMessage = pgTable(
     stage: importStageType(),
     id: uuid().primaryKey().notNull(),
     // TODO: failed to parse database type 'email_message_type'
-    // message: ("message"),
+    // message: unknown('message'),
     userId: integer(),
   },
   (table) => [
@@ -480,35 +580,6 @@ export const stagingMessage = pgTable(
       .onDelete('cascade'),
     unique('staging_message_external_id_key').on(table.externalId),
   ],
-);
-
-export const users = pgTable(
-  'users',
-  {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    name: text('name'),
-    email: text('email').notNull(),
-    emailVerified: timestamp('emailVerified', {
-      mode: 'date',
-      withTimezone: true,
-    }),
-    image: text('image'),
-    created_at: timestamp('created_at', {
-      // custom field
-      mode: 'date',
-      withTimezone: true,
-    }).defaultNow(),
-    updated_at: timestamp('updated_at', {
-      // custom field
-      mode: 'date',
-      withTimezone: true,
-    }).$onUpdate(() => new Date()),
-  },
-  (table) => ({
-    // custom index
-  }),
 );
 
 export const legalReferences = pgTable(
@@ -568,14 +639,14 @@ export const complianceScoresDetails = pgTable(
       name: 'compliance_scores_attachment_fk',
     }).onDelete('cascade'),
     foreignKey({
-      columns: [table.propertyId],
-      foreignColumns: [documentProperty.propertyId],
-      name: 'compliance_scores_details_property_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
       columns: [table.actionPropertyId],
       foreignColumns: [documentProperty.propertyId],
       name: 'compliance_scores_details_action_property_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.propertyId],
+      foreignColumns: [documentProperty.propertyId],
+      name: 'compliance_scores_details_property_id_fkey',
     }).onDelete('cascade'),
   ],
 );
@@ -615,22 +686,50 @@ export const emailSentimentAnalysisDetails = pgTable(
   ],
 );
 
-export const keyPointsDetails = pgTable(
-  'key_points_details',
+export const emails = pgTable(
+  'emails',
   {
-    propertyId: uuid('property_id').primaryKey().notNull(),
-    relevance: doublePrecision().notNull(),
-    compliance: doublePrecision().notNull(),
-    complianceReasons: text('compliance_reasons').array(),
-    severityRanking: integer('severity_ranking').default(sql`'-1'`),
-    inferred: boolean().default(false).notNull(),
+    senderId: integer('sender_id').notNull(),
+    threadId: integer('thread_id'),
+    subject: text().notNull(),
+    emailContents: text('email_contents').notNull(),
+    sentTimestamp: timestamp('sent_timestamp', { mode: 'string' }).default(
+      sql`CURRENT_TIMESTAMP`,
+    ),
+    importedFromId: varchar('imported_from_id', { length: 20 }),
+    globalMessageId: varchar('global_message_id', { length: 255 }),
+    emailId: uuid('email_id').defaultRandom().primaryKey().notNull(),
+    parentId: uuid('parent_id'),
+    documentType: text('document_type').generatedAlwaysAs(sql`'email'::text`),
   },
   (table) => [
+    index('fki_fk_emails_parent_email').using(
+      'btree',
+      table.parentId.asc().nullsLast().op('uuid_ops'),
+    ),
+    index('idx_emails_parent').using(
+      'btree',
+      table.parentId.asc().nullsLast().op('uuid_ops'),
+    ),
+    uniqueIndex('idx_emails_unique_desc').using(
+      'btree',
+      table.threadId.desc().nullsFirst().op('uuid_ops'),
+      table.senderId.desc().nullsFirst().op('uuid_ops'),
+      table.parentId.desc().nullsFirst().op('int4_ops'),
+      table.emailId.desc().nullsFirst().op('uuid_ops'),
+    ),
     foreignKey({
-      columns: [table.propertyId],
-      foreignColumns: [documentProperty.propertyId],
-      name: 'key_points_details_property_id_fkey',
-    }).onDelete('cascade'),
+      columns: [table.senderId],
+      foreignColumns: [contacts.contactId],
+      name: 'emails_relation_1',
+    }),
+    foreignKey({
+      columns: [table.parentId],
+      foreignColumns: [table.emailId],
+      name: 'fk_emails_parent_email',
+    })
+      .onUpdate('cascade')
+      .onDelete('set null'),
   ],
 );
 
@@ -652,6 +751,43 @@ export const policiesStatutes = pgTable(
       name: 'policies_statutes_policy_type_id_fkey',
     }).onDelete('cascade'),
     unique('indexed_file_id_unique').on(table.indexedFileId),
+  ],
+);
+
+export const violationDetails = pgTable(
+  'violation_details',
+  {
+    propertyId: uuid('property_id').primaryKey().notNull(),
+    emailDocumentId: integer('email_document_id').notNull(),
+    violationType: text('violation_type').notNull(),
+    severityLevel: integer('severity_level').notNull(),
+    detectedBy: varchar('detected_by', { length: 255 })
+      .default('AI-System')
+      .notNull(),
+    detectedOn: timestamp('detected_on', { mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    violationReasons: text('violation_reasons').array().notNull(),
+    titleIxRelevancy: doublePrecision('title_ix_relevancy').notNull(),
+    chapt13Relevancy: doublePrecision('chapt_13_relevancy').notNull(),
+    ferpaRelevancy: doublePrecision('ferpa_relevancy').notNull(),
+    otherRelevancy: jsonb('other_relevancy'),
+    severityReasons: text('severity_reasons').array(),
+  },
+  (table) => [
+    index('idx_violation_details_attachment_id').using(
+      'btree',
+      table.emailDocumentId.asc().nullsLast().op('int4_ops'),
+    ),
+    index('idx_violation_details_detected_on').using(
+      'btree',
+      table.detectedOn.asc().nullsLast().op('timestamp_ops'),
+    ),
+    foreignKey({
+      columns: [table.emailDocumentId],
+      foreignColumns: [documentUnits.unitId],
+      name: 'violation_email',
+    }).onDelete('cascade'),
   ],
 );
 
@@ -695,39 +831,21 @@ export const callToActionDetails = pgTable(
   ],
 );
 
-export const violationDetails = pgTable(
-  'violation_details',
+export const keyPointsDetails = pgTable(
+  'key_points_details',
   {
     propertyId: uuid('property_id').primaryKey().notNull(),
-    emailDocumentId: integer('email_document_id').notNull(),
-    violationType: text('violation_type').notNull(),
-    severityLevel: integer('severity_level').notNull(),
-    severityReasons: text('severity_reasons').array().notNull(),
-    detectedBy: varchar('detected_by', { length: 255 })
-      .default('AI-System')
-      .notNull(),
-    detectedOn: timestamp('detected_on', { mode: 'string' })
-      .default(sql`CURRENT_TIMESTAMP`)
-      .notNull(),
-    violationReasons: text('violation_reasons').array().notNull(),
-    titleIxRelevancy: doublePrecision('title_ix_relevancy').notNull(),
-    chapt13Relevancy: doublePrecision('chapt_13_relevancy').notNull(),
-    ferpaRelevancy: doublePrecision('ferpa_relevancy').notNull(),
-    otherRelevancy: jsonb('other_relevancy'),
+    relevance: doublePrecision().notNull(),
+    compliance: doublePrecision().notNull(),
+    severityRanking: integer('severity_ranking').default(sql`'-1'`),
+    inferred: boolean().default(false).notNull(),
+    complianceReasons: text('compliance_reasons').array(),
   },
   (table) => [
-    index('idx_violation_details_attachment_id').using(
-      'btree',
-      table.emailDocumentId.asc().nullsLast().op('int4_ops'),
-    ),
-    index('idx_violation_details_detected_on').using(
-      'btree',
-      table.detectedOn.asc().nullsLast().op('timestamp_ops'),
-    ),
     foreignKey({
-      columns: [table.emailDocumentId],
-      foreignColumns: [documentUnits.unitId],
-      name: 'violation_email',
+      columns: [table.propertyId],
+      foreignColumns: [documentProperty.propertyId],
+      name: 'key_points_details_property_id_fkey',
     }).onDelete('cascade'),
   ],
 );
@@ -762,6 +880,16 @@ export const callToActionResponseDetails = pgTable(
   ],
 );
 
+export const users = pgTable('users', {
+  id: serial().primaryKey().notNull(),
+  name: varchar({ length: 255 }),
+  email: varchar({ length: 255 }),
+  emailVerified: timestamp({ withTimezone: true, mode: 'string' }),
+  image: text(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }),
+});
+
 export const documentPropertyCallToActionCategory = pgTable(
   'document_property_call_to_action_category',
   {
@@ -794,6 +922,21 @@ export const documentPropertyCallToActionCategory = pgTable(
   ],
 );
 
+export const chatTurnMessageSequences = pgTable(
+  'chat_turn_message_sequences',
+  {
+    chatId: text('chat_id').notNull(),
+    turnId: integer('turn_id').notNull(),
+    lastMessageId: integer('last_message_id').default(0).notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.chatId, table.turnId],
+      name: 'chat_turn_message_sequences_pkey',
+    }),
+  ],
+);
+
 export const documentUnitAnalysisStageIgnore = pgTable(
   'document_unit_analysis_stage_ignore',
   {
@@ -810,18 +953,18 @@ export const documentUnitAnalysisStageIgnore = pgTable(
 );
 
 export const verificationTokens = pgTable(
-  'verificationToken',
+  'verification_tokens',
   {
-    identifier: text('identifier').notNull(),
-    token: text('token').notNull(),
-    expires: timestamp('expires', {
-      mode: 'date',
-      withTimezone: true,
-    }).notNull(),
+    identifier: text().notNull(),
+    token: text().notNull(),
+    expires: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
   },
-  (vt) => ({
-    compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
-  }),
+  (table) => [
+    primaryKey({
+      columns: [table.identifier, table.token],
+      name: 'verification_tokens_pkey',
+    }),
+  ],
 );
 
 export const emailRecipients = pgTable(
@@ -855,7 +998,6 @@ export const emailRecipients = pgTable(
   ],
 );
 
-/*
 export const documentPropertyRelatedDocumentOld = pgTable(
   'document_property_related_document_old',
   {
@@ -890,13 +1032,12 @@ export const documentPropertyRelatedDocumentOld = pgTable(
     }),
   ],
 );
-*/
+
 export const documentUnitEmbeddings = pgTable(
   'document_unit_embeddings',
   {
     documentId: integer('document_id').notNull(),
     index: integer().notNull(),
-    // No vector support in drizzle yet :(
     // vector: vector().notNull(),
     createdOn: time('created_on').default(sql`CURRENT_TIMESTAMP`),
   },
@@ -925,9 +1066,9 @@ export const documentRelationship = pgTable(
   },
   (table) => [
     foreignKey({
-      columns: [table.targetDocumentId],
-      foreignColumns: [documentUnits.unitId],
-      name: 'fk_target',
+      columns: [table.relationshipReasonId],
+      foreignColumns: [documentRelationshipReason.relationReasonId],
+      name: 'fk_relation',
     }).onDelete('cascade'),
     foreignKey({
       columns: [table.sourceDocumentId],
@@ -935,9 +1076,9 @@ export const documentRelationship = pgTable(
       name: 'fk_source',
     }).onDelete('cascade'),
     foreignKey({
-      columns: [table.relationshipReasonId],
-      foreignColumns: [documentRelationshipReason.relationReasonId],
-      name: 'fk_relation',
+      columns: [table.targetDocumentId],
+      foreignColumns: [documentUnits.unitId],
+      name: 'fk_target',
     }).onDelete('cascade'),
     primaryKey({
       columns: [
@@ -946,6 +1087,28 @@ export const documentRelationship = pgTable(
         table.relationshipReasonId,
       ],
       name: 'document_relationship_pkey',
+    }),
+  ],
+);
+
+export const tokenUsage = pgTable(
+  'token_usage',
+  {
+    chatId: text('chat_id').notNull(),
+    turnId: integer('turn_id').notNull(),
+    promptTokens: integer('prompt_tokens'),
+    completionTokens: integer('completion_tokens'),
+    totalTokens: integer('total_tokens'),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.chatId, table.turnId],
+      foreignColumns: [chatTurns.chatId, chatTurns.turnId],
+      name: 'token_usage_chat_id_turn_id_fkey',
+    }).onDelete('cascade'),
+    primaryKey({
+      columns: [table.chatId, table.turnId],
+      name: 'token_usage_pkey',
     }),
   ],
 );
@@ -1024,6 +1187,113 @@ export const stagingAttachment = pgTable(
     primaryKey({
       columns: [table.stagingMessageId, table.partId],
       name: 'pk_staging_attachment',
+    }),
+  ],
+);
+
+export const chatMessages = pgTable(
+  'chat_messages',
+  {
+    chatId: text('chat_id').notNull(),
+    turnId: integer('turn_id').notNull(),
+    messageId: integer('message_id').notNull(),
+    role: text().notNull(),
+    content: text(),
+    toolName: text('tool_name'),
+    functionCall: jsonb('function_call'),
+    messageOrder: integer('message_order').notNull(),
+    statusId: smallint('status_id').notNull(),
+    providerId: text('provider_id'),
+    metadata: jsonb(),
+    toolInstanceId: uuid('tool_instance_id'),
+    optimizedContent: text('optimized_content'),
+  },
+  (table) => [
+    index('idx_messages_provider_id').using(
+      'btree',
+      table.providerId.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_messages_status_id').using(
+      'btree',
+      table.statusId.asc().nullsLast().op('int2_ops'),
+    ),
+    index('idx_messages_tool_instance_id').using(
+      'btree',
+      table.toolInstanceId.asc().nullsLast().op('uuid_ops'),
+    ),
+    foreignKey({
+      columns: [table.chatId, table.turnId],
+      foreignColumns: [chatTurns.chatId, chatTurns.turnId],
+      name: 'chat_messages_chat_id_turn_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.statusId],
+      foreignColumns: [messageStatuses.id],
+      name: 'chat_messages_status_id_fkey',
+    }),
+    primaryKey({
+      columns: [table.chatId, table.turnId, table.messageId],
+      name: 'chat_messages_pkey',
+    }),
+    check(
+      'chat_messages_role_check',
+      sql`role = ANY (ARRAY['user'::text, 'assistant'::text, 'tool'::text, 'system'::text])`,
+    ),
+  ],
+);
+
+export const chatTurns = pgTable(
+  'chat_turns',
+  {
+    chatId: text('chat_id').notNull(),
+    turnId: integer('turn_id').notNull(),
+    statusId: smallint('status_id').notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    completedAt: timestamp('completed_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    modelName: text('model_name'),
+    temperature: real(),
+    topP: real('top_p'),
+    latencyMs: integer('latency_ms'),
+    warnings: text().array(),
+    errors: text().array(),
+    metadata: jsonb(),
+    providerId: text('provider_id'),
+    optimizedPromtpAssistant: text('optimized_prompt_assistant'),
+    optimizedPromptUser: text('optimized_prompt_user'),
+    optimizedToolResults: text('optimized_tool_results'),
+  },
+  (table) => [
+    index('idx_turns_created_at').using(
+      'btree',
+      table.createdAt.asc().nullsLast().op('timestamptz_ops'),
+    ),
+    index('idx_turns_provider_id').using(
+      'btree',
+      table.providerId.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_turns_status_id').using(
+      'btree',
+      table.statusId.asc().nullsLast().op('int2_ops'),
+    ),
+    foreignKey({
+      columns: [table.chatId],
+      foreignColumns: [chats.id],
+      name: 'chat_turns_chat_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.statusId],
+      foreignColumns: [turnStatuses.id],
+      name: 'chat_turns_status_id_fkey',
+    }),
+    primaryKey({
+      columns: [table.chatId, table.turnId],
+      name: 'chat_turns_pkey',
     }),
   ],
 );
