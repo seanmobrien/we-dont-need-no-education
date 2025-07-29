@@ -109,7 +109,10 @@ describe('Import Incoming Message', () => {
       .mockResolvedValueOnce([10, 11, 12]); // Message IDs
 
     // Mock getNewMessages to return all messages as new by default (backwards compatible)
-    mockGetNewMessages.mockResolvedValue(mockParams.prompt);
+    // This will be overridden by specific tests as needed
+    mockGetNewMessages.mockImplementation((_tx, _chatId, incomingMessages) => 
+      Promise.resolve(incomingMessages)
+    );
 
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });
   });
