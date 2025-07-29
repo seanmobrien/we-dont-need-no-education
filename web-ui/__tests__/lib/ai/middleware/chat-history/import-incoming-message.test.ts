@@ -9,7 +9,7 @@
 
 import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
 import { schema } from '@/lib/drizzle-db';
-import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
+import { getNextSequence, getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
 import { generateChatId } from '@/lib/ai/core';
 import { log } from '@/lib/logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
@@ -36,6 +36,7 @@ jest.mock('@/lib/drizzle-db', () => ({
 }));
 
 const mockGetNextSequence = getNextSequence as jest.MockedFunction<typeof getNextSequence>;
+const mockGetNewMessages = getNewMessages as jest.MockedFunction<typeof getNewMessages>;
 const mockGenerateChatId = generateChatId as jest.MockedFunction<typeof generateChatId>;
 const mockLog = log as jest.MockedFunction<typeof log>;
 
@@ -52,10 +53,14 @@ describe('Import Incoming Message', () => {
       select: jest.fn().mockReturnValue({
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
+            orderBy: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue([]), // For getLastMessageOrder
+            }),
             limit: jest.fn().mockReturnValue({
               execute: jest.fn().mockResolvedValue([]),
             }),
           }),
+          orderBy: jest.fn().mockResolvedValue([]), // For getNewMessages
         }),
       }),
       insert: jest.fn().mockReturnValue({
@@ -102,6 +107,12 @@ describe('Import Incoming Message', () => {
     mockGetNextSequence
       .mockResolvedValueOnce([1]) // Turn ID
       .mockResolvedValueOnce([10, 11, 12]); // Message IDs
+
+    // Mock getNewMessages to return all messages as new by default (backwards compatible)
+    // This will be overridden by specific tests as needed
+    mockGetNewMessages.mockImplementation((_tx, _chatId, incomingMessages) => 
+      Promise.resolve(incomingMessages)
+    );
 
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });
   });
