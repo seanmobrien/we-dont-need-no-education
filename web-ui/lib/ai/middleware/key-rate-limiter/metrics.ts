@@ -1,5 +1,4 @@
 import { metrics } from '@opentelemetry/api';
-import type { RateLimitMetrics } from './types';
 
 const meter = metrics.getMeter('key-rate-limiter', '1.0.0');
 

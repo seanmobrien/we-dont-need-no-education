@@ -1,15 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { rateLimitMetrics } from '@/lib/ai/middleware/key-rate-limiter/metrics';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { generateText } from 'ai';
+import type { LanguageModelV1, CoreMessage } from 'ai';
 import type { RateLimitedRequest, ProcessedResponse, ModelClassification } from '@/lib/ai/middleware/key-rate-limiter/types';
+import type { AiModelType } from '@/lib/ai/core';
 
 const MAX_PROCESSING_TIME_MS = 4 * 60 * 1000; // 4 minutes
 const REQUEST_TIMEOUT_MS = 10 * 1000; // 10 seconds per request
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const startTime = Date.now();
   let processedCount = 0;
   
@@ -60,8 +62,9 @@ export async function GET(req: NextRequest) {
           const modelKey = azureAvailable ? azureModelKey : googleModelKey;
           console.log(`Processing request ${request.id} with model ${modelKey}`);
           
-          // Create model instance
-          const model = aiModelFactory(classification as any);
+          // Create model instance (ensure we don't use embedding models for text generation)
+          const modelInstance = classification === 'embedding' ? aiModelFactory('hifi') : aiModelFactory(classification as AiModelType);
+          const model = modelInstance as unknown as LanguageModelV1;
           
           // Process the request (simplified - in real implementation would handle streaming)
           const timeoutPromise = new Promise((_, reject) => {
@@ -70,7 +73,7 @@ export async function GET(req: NextRequest) {
           
           const generatePromise = generateText({
             model,
-            messages: request.request.messages as any || [],
+            messages: (request.request.messages as CoreMessage[]) || [],
             maxTokens: 1000, // reasonable limit
           });
           
@@ -170,8 +173,8 @@ export async function GET(req: NextRequest) {
         console.log(`Processing gen-2 request ${request.id} for ${classification}`);
         
         try {
-          const modelKey = azureAvailable ? azureModelKey : googleModelKey;
-          const model = aiModelFactory(classification as any);
+          const modelInstance = classification === 'embedding' ? aiModelFactory('hifi') : aiModelFactory(classification as AiModelType);
+          const model = modelInstance as unknown as LanguageModelV1;
           
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT_MS);
@@ -179,7 +182,7 @@ export async function GET(req: NextRequest) {
           
           const generatePromise = generateText({
             model,
-            messages: request.request.messages as any || [],
+            messages: (request.request.messages as CoreMessage[]) || [],
             maxTokens: 1000,
           });
           

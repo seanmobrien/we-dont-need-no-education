@@ -1,3 +1,5 @@
+import { LanguageModelV1, LanguageModelV1Middleware } from "ai";
+
 export interface RateLimitedRequest {
   id: string;
   modelClassification: string;
@@ -36,5 +38,18 @@ export type ModelClassification = 'hifi' | 'lofi' | 'completions' | 'embedding';
 export interface ModelFailoverConfig {
   primaryProvider: 'azure' | 'google';
   fallbackProvider: 'azure' | 'google';
-  modelClassification: ModelClassification;
+  // modelClassification: ModelClassification;
 }
+
+export type RateLimitRetryContext = {
+  modelClass: ModelClassification;
+  failover: ModelFailoverConfig;
+};
+
+export type RetryRateLimitMiddlewareType = LanguageModelV1Middleware & {
+  rateLimitContext: () => RateLimitRetryContext | undefined;
+};
+
+export type RateLimitFactoryOptions = {
+  model: LanguageModelV1;
+};
