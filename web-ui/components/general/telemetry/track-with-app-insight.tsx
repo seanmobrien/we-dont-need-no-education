@@ -1,7 +1,7 @@
 'use client';
 
 import { getAppInsights } from '@/instrument/browser';
-import { useSession } from '@/lib/react-util/hooks/use-session';
+import { useSession } from '@/components/auth/session-provider';
 import { Session } from 'next-auth';
 import { usePathname } from 'next/dist/client/components/navigation';
 import { useEffect } from 'react';

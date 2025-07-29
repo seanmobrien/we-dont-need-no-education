@@ -17,7 +17,10 @@ import {
 } from '@/lib/ai/middleware/chat-history/flush-handlers';
 import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import type { FlushContext, FlushConfig } from '@/lib/ai/middleware/chat-history/types';
-import { db } from '@/lib/drizzle-db';
+import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
+
+let mockDbInstance: DbDatabaseType;
+let mockDb = drizDb as jest.MockedFunction<typeof drizDb>;
 
 describe('Flush Handlers - Compilation Fix Test', () => {
   let mockContext: FlushContext;
@@ -29,6 +32,7 @@ describe('Flush Handlers - Compilation Fix Test', () => {
   };
   beforeEach(() => {
     // jest.clearAllMocks();
+    mockDbInstance = mockDb();
     
     mockContext = {
       chatId: 'chat-123',
@@ -39,14 +43,14 @@ describe('Flush Handlers - Compilation Fix Test', () => {
     };
     
     // Setup default database mocks
-    mockUpdate = db.update as jest.Mock;    
+    mockUpdate = mockDbInstance.update as jest.Mock;    
     mockUpdate.mockReturnValue({
       set: jest.fn().mockReturnValue({
         where: jest.fn().mockResolvedValue(undefined),
       }),
     });
 
-    mockQuery.chats.findFirst = db.query.chats.findFirst as jest.Mock;
+    mockQuery.chats.findFirst = mockDbInstance.query.chats.findFirst as jest.Mock;
     mockQuery.chats.findFirst.mockResolvedValue(null);
   });
 
@@ -175,7 +179,7 @@ describe('Flush Handlers - Compilation Fix Test', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.latencyMs).toBeGreaterThan(0);
+      expect(result.processingTimeMs).toBeGreaterThan(0);
       expect(result.textLength).toBe(mockContext.generatedText.length);
       expect(result.error).toBeUndefined();
     });

@@ -11,6 +11,11 @@ import {
 } from './types';
 import { LoggedError } from '@/lib/react-util';
 
+
+type SearchMeta = {
+  attributes: Array<{ key: string; value: unknown }>;
+};
+
 /**
  * Abstract base class, parameterized by your scope‐type (e.g. policyTypeId).
  */
@@ -130,10 +135,10 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       });
     }
   }
-
-  //
-  //
-  //
+  protected parseId(metadata: SearchMeta): string | undefined {
+    const found = metadata?.attributes?.find(m => m.key === 'id')?.value;
+    return found ? String(found) : undefined;
+  }
 
   /**
    * INTERNAL: parse the raw JSON into our AiSearchResultEnvelope
@@ -178,7 +183,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
         .map((doc: Record<string, unknown>, idx: number) => {
           try {
             return {
-              id: doc.id,
+              id: this.parseId(doc.metadata as SearchMeta) ?? doc.id,
               content: doc.content,
               metadata: doc.metadata,
               score: doc['@search.rerankerScore'] ?? doc['@search.score'] ?? 0,

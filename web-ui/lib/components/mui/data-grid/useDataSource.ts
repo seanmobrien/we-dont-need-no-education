@@ -8,7 +8,7 @@ import type {
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
-import { isError, LoggedError } from '@/lib/react-util';
+import { isError, isTruthy, LoggedError } from '@/lib/react-util';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   useQuery,
@@ -121,7 +121,7 @@ const fetchGridData = async (
  * // Use dataSource.getRows, dataSource.updateRow, etc. in your grid component.
  */
 export const useDataSource = ({
-  url,
+  url: urlFromProps,
 }: DataSourceProps): ExtendedGridDataSource => {
   const [currentQueryParams, setCurrentQueryParams] = useState<{
     page?: number;
@@ -129,6 +129,19 @@ export const useDataSource = ({
     sortModel?: GridSortModel;
     filterModel?: GridFilterModel;
   } | null>(null);
+
+  let url: string | URL = urlFromProps; // Initialize with default value
+  if (typeof window !== 'undefined') {
+    const searchParams = new URLSearchParams(window.location.search);
+    const isDrizzle = isTruthy(searchParams.get('drizzle'));
+    if (isDrizzle) {
+      const baseUrl = new URL(urlFromProps, window.location.origin);
+      url = new URL(new URL(baseUrl.pathname + '/drizzle', window.location.origin));
+    } else {
+      url = urlFromProps;
+    }
+  }
+
   const [hasMounted, setHasMounted] = useState(false);
   const pendingQueries = useRef<
     Array<[(x: GridGetRowsResponse) => void, (Error: unknown) => void]>

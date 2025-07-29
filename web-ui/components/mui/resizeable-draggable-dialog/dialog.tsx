@@ -15,7 +15,7 @@ import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import { PaperProps } from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
-import { useCallback, useId, useState, useRef } from 'react';
+import { useCallback, useId, useState, useRef, useMemo } from 'react';
 import { IconButton, Typography } from '@mui/material';
 import MinimizeIcon from '@mui/icons-material/Minimize';
 import MaximizeIcon from '@mui/icons-material/CropSquare';
@@ -211,7 +211,6 @@ const ResizableDraggableDialog = ({
    * Handle minimize button click
    */
   const handleMinimize = useCallback(() => {
-    console.log('Minimizing dialog');
     setWindowState(WindowState.Minimized);
   }, [setWindowState]);
 
@@ -219,8 +218,6 @@ const ResizableDraggableDialog = ({
    * Handle maximize button click
    */
   const handleMaximize = useCallback(() => {
-    console.log('Maximizing dialog');
-
     if (windowState === WindowState.Maximized) {
       // Restore to normal state
       setWindowState(WindowState.Normal);
@@ -315,6 +312,36 @@ const ResizableDraggableDialog = ({
     onResize?.(newWidth, newHeight);
   }, [height, width, minConstraints, onResize]);
 
+  /**
+   * Memoized slotProps for Dialog component to prevent unnecessary re-renders.
+   * Only updates when modal prop changes.
+   */
+  const dialogSlotProps = useMemo(() => ({
+    root: {
+      style: {
+        // Allow pointer events to pass through when non-modal
+        pointerEvents: modal === false ? ('none' as const) : ('auto' as const),
+      },
+    },
+  }), [modal]);
+
+  /**
+   * Memoized sx styles for Dialog component to prevent unnecessary re-renders.
+   * Only updates when modal prop changes.
+   */
+  const dialogSx = useMemo(() => ({
+    // Additional styling if needed
+    ...(modal === false && {
+      '& .MuiDialog-container': {
+        pointerEvents: 'none',
+      },
+      '& .MuiDialog-paper': {
+        // Ensure the dialog paper itself still receives pointer events
+        pointerEvents: 'auto !important',
+      },
+    }),
+  }), [modal]);
+
   return (
     <React.Fragment>
       <Dialog
@@ -324,6 +351,8 @@ const ResizableDraggableDialog = ({
         hideBackdrop={modal === false} // Hide backdrop for non-modal, show for modal
         disableEnforceFocus={modal === false} // Allow focus outside for non-modal
         aria-labelledby={dialogTitleId}
+        slotProps={dialogSlotProps}
+        sx={dialogSx}
       >
         <DraggableHandle
           ref={dragHandleRef}

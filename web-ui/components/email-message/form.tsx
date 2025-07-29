@@ -215,7 +215,6 @@ const EmailForm: ForwardRefRenderFunction<
     return writeEmailRecord(emailData)
       .then((result) => {
         if (isNewEmail) {
-          console.log('in new email save', result);
           routerReplace(siteMap.email.edit(result.emailId).toString());
         } else {
           switch (afterSaveBehavior) {

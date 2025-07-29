@@ -16,8 +16,7 @@ import {
 } from '@azure/monitor-opentelemetry-exporter';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
-// import { FetchInstrumentation } from '@opentelemetry/instrumentation-fetch';
-import prexit from 'prexit';
+import AfterManager from '@/lib/site-util/after';
 import { config } from './common';
 enum KnownSeverityLevel {
   Verbose = 'Verbose',
@@ -28,6 +27,14 @@ enum KnownSeverityLevel {
 }
 let nodeSdk: NodeSDK | undefined;
 let registered = false;
+async function cleanup() {
+  if (nodeSdk) {
+    await nodeSdk.shutdown().catch((error) => {
+      console.error('Error during OTel SDK shutdown:', error);
+    });
+    nodeSdk = undefined;
+  }
+} 
 export default function instrumentServer() {
   if (registered) {
     console.warn('OTel SDK already registered, skipping.');
@@ -42,7 +49,7 @@ export default function instrumentServer() {
   }
 
   const connStr =
-    process.env.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING;
+    process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
 
   // Skip instrumentation in development if no valid connection string
   if (process.env.NODE_ENV === 'development' && (!connStr || connStr === 'test' || connStr.includes('InstrumentationKey=test'))) {
@@ -72,7 +79,13 @@ export default function instrumentServer() {
     instrumentations: [
       //new FetchInstrumentation(config.instrumentationConfig.fetch),
       new UndiciInstrumentation({
-        
+        ignoreRequestHook: (request) => {
+          // Ignore requests to auth session endpoint, too spammy
+          if (request.path.includes('/api/auth/session')) {
+            return true;
+          }
+          return false;
+        },
       }),
       new PinoInstrumentation({
         disableLogSending: false,
@@ -111,19 +124,9 @@ export default function instrumentServer() {
     sdk.start();
     console.log('✅ OTel SDK started on NodeJS Server');
     nodeSdk = sdk;
+    AfterManager.processExit(cleanup);
   } catch (error) {
     console.error('❌ OTel SDK failed to start:', error);
     registered = false;
   }
-
-  prexit(() => {
-    try {
-      sdk.shutdown();
-      console.log('✅ OTel SDK shutdown cleanly');
-      nodeSdk = undefined;
-      registered = false;
-    } catch (error) {
-      console.error('❌ OTel SDK failed to shutdown:', error);
-    }
-  });
 }

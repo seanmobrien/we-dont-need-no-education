@@ -4,7 +4,7 @@ import {
   KeyPointsDetailsRepository,
 } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { KeyPointsDetails, parsePaginationStats } from '@/data-models';
+import { parsePaginationStats } from '@/data-models';
 import { db } from '@/lib/neondb';
 import {
   buildOrderBy,
@@ -40,7 +40,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db<KeyPointsDetails, Record<string, unknown>>(
+          db(
             (sql) => sql`SELECT * FROM "KeyPoints"
             ${buildAttachmentOrEmailFilter({
               email_id: emailId,
@@ -56,9 +56,11 @@ export async function GET(
             ${buildOrderBy({ sql, source: req, columnMap: keyPointColumnMap })} 
              LIMIT ${num} OFFSET ${offset}`,
             {
-              transform: r.mapRecordToObject,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              transform: r.mapRecordToObject as any,
             },
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         () =>
           db(
             (sql) => sql`SELECT COUNT(*)
@@ -75,7 +77,8 @@ export async function GET(
             })} 
             ${buildQueryFilter({ sql, source: req, append: true, columnMap: keyPointColumnMap })} 
             `,
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         parsePaginationStats(new URL(req.url)),
       ),
     );

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RepositoryCrudController, DocumentUnitRepository } from '@/lib/api';
 import { isTruthy } from '@/lib/react-util';
-import { DocumentSchema } from '@/lib/ai/tools';
 
 import {
   getMultipleCaseFileDocuments,
   toolCallbackArrayResultSchemaFactory,
 } from '@/lib/ai/tools';
 import z from 'zod';
+import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
@@ -27,10 +27,9 @@ export async function GET(req: NextRequest) {
       });
 
       const parsedRecords = z
-        .object(toolCallbackArrayResultSchemaFactory(DocumentSchema))
+        .object(toolCallbackArrayResultSchemaFactory(CaseFileResponseShape))
         .safeParse(rawRecords.structuredContent);
       if (!parsedRecords.success) {
-        console.log(parsedRecords.error);
         throw { error: parsedRecords.error, data: rawRecords };
       }
       return NextResponse.json(parsedRecords.data);

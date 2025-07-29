@@ -33,13 +33,16 @@ export async function GET(
             WHERE e.email_id=${emailId} 
             ${buildOrderBy({ sql, source: req })}
             LIMIT ${num} OFFSET ${offset}`,
-            { transform: mapEmailPropertyRecordToObject },
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { transform: mapEmailPropertyRecordToObject as any },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         () =>
           db(
             (sql) =>
               sql`SELECT COUNT(*) AS total FROM document_property WHERE document_property_email(document_property.property_id)=${emailId}`,
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         parsePaginationStats(new URL(req.url)),
       ),
     );

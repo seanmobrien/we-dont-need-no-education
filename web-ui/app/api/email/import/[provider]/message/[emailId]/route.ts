@@ -111,7 +111,6 @@ export const PUT = async (
     message: result.raw,
     userId: result.userId,
   });
-  console.log(payload);
   const records = await queryExt((sql) =>
     sql(
       "INSERT INTO staging_message SELECT * FROM  \

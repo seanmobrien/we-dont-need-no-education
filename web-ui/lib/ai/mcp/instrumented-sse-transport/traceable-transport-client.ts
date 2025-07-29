@@ -57,8 +57,8 @@
  */
 
 import { trace, Span, SpanStatusCode, metrics } from '@opentelemetry/api';
-import { SseMCPTransport } from './ai.sdk';
-import type { JSONRPCMessage } from './ai.sdk';
+import { SseMCPTransport } from '../ai.sdk';
+import type { JSONRPCMessage } from '../ai.sdk';
 
 import { LoggedError, isError } from '@/lib/react-util';
 import { log } from '@/lib/logger';

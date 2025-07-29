@@ -30,7 +30,8 @@ jest.mock('@/lib/logger', () => ({
 }));
 
 jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
-  enhancedChatFetch: jest.fn(),
+    useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
+
 }));
 
 jest.mock('@/instrument/browser', () => ({

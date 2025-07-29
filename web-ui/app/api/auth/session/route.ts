@@ -8,8 +8,10 @@
  * The route is configured to be dynamic using the `force-dynamic` export, ensuring that the session
  * is evaluated on each request.
  */
+
 import { auth } from '@/auth';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getActiveUserPublicKeys } from '@/lib/site-util/auth/user-keys-server';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,10 +24,29 @@ export const dynamic = 'force-dynamic';
  *
  * @returns {Promise<NextResponse>} A JSON response with the authentication status and session data.
  */
-export async function GET() {
+export const GET = async (req: NextRequest): Promise<NextResponse> => {
+  // Get the current request (Next.js 13+ API route)
+  // Use globalThis.request if available, otherwise fallback to NextRequest
+  // (Next.js 14+ passes the request as a parameter, but for compatibility, use URL)
+  const { nextUrl } = req;
+
   const session = await auth();
+  let keys: string[] | undefined = undefined;
+  if (nextUrl) {
+    const getKeys = nextUrl.searchParams.get('get-keys');
+    if (getKeys && session?.user?.id) {
+      // getActiveUserPublicKeys expects userId (number) and date
+      // If session.id is not a number, try to parseInt, else skip
+      const userId =
+        typeof session.user.id === 'number' ? session.user.id : parseInt(session.user.id, 10);
+      if (!isNaN(userId)) {
+        keys = await getActiveUserPublicKeys({ userId });
+      }
+    }
+  }
   return NextResponse.json({
     status: session ? 'authenticated' : 'unauthenticated',
     data: session ?? null,
+    publicKeys: keys,
   });
-}
+};

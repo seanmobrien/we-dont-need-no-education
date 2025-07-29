@@ -5,14 +5,25 @@
 // @ts-check
 
 // Mock the dependencies
-jest.mock('@/lib/drizzle-db', () => ({
-  db: {
-    select: jest.fn(),
-    insert: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-}));
+jest.mock('@/lib/drizzle-db', () => {
+  const { mockDeep } = require('jest-mock-extended');
+  
+  // Create a mock database instance that supports all drizzle operations
+  const makeMockDb = () => mockDeep();
+  
+  return {
+    drizDb: jest.fn((fn) => {
+      const mockDbInstance = makeMockDb();
+      if (fn) {
+        const result = fn(mockDbInstance);
+        return Promise.resolve(result);
+      }
+      return mockDbInstance;
+    }),
+    drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
+    schema: {},
+  };
+});
 
 jest.mock('@/drizzle/schema', () => {
   const { Table } = require('drizzle-orm');
@@ -66,7 +77,7 @@ describe('EmailAttachmentDrizzleRepository', () => {
   let mockDb: Record<string, unknown>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Mock database
     mockDb = {

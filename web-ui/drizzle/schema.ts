@@ -3,6 +3,7 @@ import {
   foreignKey,
   uuid,
   text,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   type AnyPgColumn,
   index,
   check,
@@ -29,6 +30,30 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+
+// New table: user_public_keys
+export const userPublicKeys = pgTable(
+  'user_public_keys',
+  {
+    id: serial('id').primaryKey().notNull(),
+    userId: integer('user_id').notNull(),
+    publicKey: text('public_key').notNull(), // base64-encoded public key
+    effectiveDate: timestamp('effective_date', { mode: 'string' }).notNull(),
+    expirationDate: timestamp('expiration_date', { mode: 'string' }),
+    createdAt: timestamp('created_at', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'fk_user_public_keys_user_id',
+    }).onDelete('cascade'),
+    index('idx_user_public_keys_user_id').using('btree', table.userId.asc().nullsLast().op('int4_ops')),
+    index('idx_user_public_keys_effective').using('btree', table.effectiveDate.asc().nullsLast().op('timestamp_ops')),
+    index('idx_user_public_keys_expiration').using('btree', table.expirationDate.asc().nullsLast().op('timestamp_ops')),
+  ]
+);
 
 export const importStageType = pgEnum('import_stage_type', [
   'staged',

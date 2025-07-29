@@ -30,6 +30,7 @@ import {
   emailSentimentAnalysisDetails,
   keyPointsDetails,
   policyTypes,
+  userPublicKeys,
   violationDetails,
   callToActionCategory,
   documentPropertyCallToActionCategory,
@@ -302,6 +303,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts, {
     relationName: 'accounts_userId_users_id',
   }),
+  userPublicKeys: many(userPublicKeys),
 }));
 
 export const sessionsRelations = relations(sessions, ({ one, many }) => ({

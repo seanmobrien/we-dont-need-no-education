@@ -6,6 +6,7 @@ import { jest } from '@jest/globals';
 fetch('http://localhost'); // Polyfill fetch for Node.js test environment
 // Polyfill Request for Node.js test environment
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 global.Request = Request as any;
 global.URL = URL;
 
@@ -18,13 +19,15 @@ jest.mock('drizzle-orm', () => ({
 }));
 
 jest.mock('@/lib/drizzle-db', () => ({
-  db: {
-    update: jest.fn(() => ({
-      set: jest.fn(() => ({
-        where: jest.fn(),
+  drizDbWithInit: jest.fn(() =>
+    Promise.resolve({
+      update: jest.fn(() => ({
+        set: jest.fn(() => ({
+          where: jest.fn(),
+        })),
       })),
-    })),
-  },
+    }),
+  ),
   schema: {
     users: {},
     accounts: {},

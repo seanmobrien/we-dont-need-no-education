@@ -12,9 +12,10 @@
 
 import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
+import { instrumentFlushOperation } from './instrumentation';
 
 /**
  * Default configuration for flush operations.
@@ -57,7 +58,7 @@ export async function finalizeAssistantMessage(context: FlushContext): Promise<v
   }
 
   try {
-    await db
+    await drizDb()
       .update(chatMessages)
       .set({
         content: context.generatedText,
@@ -121,7 +122,7 @@ export async function completeChatTurn(
   }
 
   try {
-    await db
+    await drizDb()
       .update(chatTurns)
       .set({
         statusId: 2, // complete status
@@ -184,7 +185,7 @@ export async function generateChatTitle(
 
   try {
     // Check if chat already has a title
-    const existingTitle = await db.query.chats.findFirst({
+    const existingTitle = await drizDb().query.chats.findFirst({
       where: eq(chats.id, context.chatId),
       columns: { title: true },
     });
@@ -204,7 +205,7 @@ export async function generateChatTitle(
     const title = words.join(' ').substring(0, config.maxTitleLength);
 
     if (title.trim()) {
-      await db
+      await drizDb()
         .update(chats)
         .set({ title })
         .where(eq(chats.id, context.chatId));
@@ -258,7 +259,7 @@ export async function markTurnAsError(
   }
 
   try {
-    await db
+    await drizDb()
       .update(chatTurns)
       .set({
         statusId: 3, // error status
@@ -324,56 +325,58 @@ export async function handleFlush(
   context: FlushContext,
   config: FlushConfig = DEFAULT_FLUSH_CONFIG,
 ): Promise<FlushResult> {
-  const startFlush = Date.now();
-  const latencyMs = startFlush - context.startTime;
+  return await instrumentFlushOperation(context, async () => {
+    const startFlush = Date.now();
+    const processingTimeMs = startFlush - context.startTime;
 
-  try {
-    // Step 1: Finalize the assistant message
-    await finalizeAssistantMessage(context);
+    try {
+      // Step 1: Finalize the assistant message
+      await finalizeAssistantMessage(context);
 
-    // Step 2: Complete the turn with metrics
-    await completeChatTurn(context, latencyMs);
+      // Step 2: Complete the turn with metrics
+      await completeChatTurn(context, processingTimeMs);
 
-    // Step 3: Generate chat title if needed
-    await generateChatTitle(context, config);
+      // Step 3: Generate chat title if needed
+      await generateChatTitle(context, config);
 
-    // Step 4: Log successful completion
-    log((l) =>
-      l.info('Chat turn completed successfully', {
-        chatId: context.chatId,
-        turnId: context.turnId,
-        latencyMs,
-        generatedTextLength: context.generatedText.length,
-        flushDurationMs: Date.now() - startFlush,
-      }),
-    );
+      // Step 4: Log successful completion
+      log((l) =>
+        l.info('Chat turn completed successfully', {
+          chatId: context.chatId,
+          turnId: context.turnId,
+          processingTimeMs,
+          generatedTextLength: context.generatedText.length,
+          flushDurationMs: Date.now() - startFlush,
+        }),
+      );
 
-    return {
-      success: true,
-      latencyMs,
-      textLength: context.generatedText.length,
-    };
-  } catch (error) {
-    const flushError = error instanceof Error ? error : new Error(String(error));
+      return {
+        success: true,
+        processingTimeMs,
+        textLength: context.generatedText.length,
+      };
+    } catch (error) {
+      const flushError = error instanceof Error ? error : new Error(String(error));
 
-    log((l) =>
-      l.error('Error during flush operation', {
+      log((l) =>
+        l.error('Error during flush operation', {
+          error: flushError,
+          chatId: context.chatId,
+          turnId: context.turnId,
+        }),
+      );
+
+      // Try to mark turn as error
+      await markTurnAsError(context, flushError);
+
+      return {
+        success: false,
+        processingTimeMs,
+        textLength: context.generatedText.length,
         error: flushError,
-        chatId: context.chatId,
-        turnId: context.turnId,
-      }),
-    );
-
-    // Try to mark turn as error
-    await markTurnAsError(context, flushError);
-
-    return {
-      success: false,
-      latencyMs,
-      textLength: context.generatedText.length,
-      error: flushError,
-    };
-  }
+      };
+    }
+  });
 }
 
 /**

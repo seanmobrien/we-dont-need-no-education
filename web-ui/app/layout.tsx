@@ -6,9 +6,11 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider } from '@/lib/themes/provider';
 import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
-import { InitColorSchemeScript } from '@mui/material';
 import { TrackWithAppInsight } from '@/components/general/telemetry';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
+import { SessionProvider } from '@/components/auth/session-provider';
+import { KeyRefreshNotify } from '@/components/auth/key-refresh-notify';
+import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -47,13 +49,16 @@ export default function RootLayout({
       >
         <InitColorSchemeScript defaultMode="dark" />
         <QueryProvider>
-          <ChatPanelProvider>
-            <TrackWithAppInsight />
-            <MuiXLicense />
-            <AppRouterCacheProvider options={stableAppRouterOptions}>
-              <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
-            </AppRouterCacheProvider>
-          </ChatPanelProvider>
+          <SessionProvider>
+            <ChatPanelProvider>
+              <TrackWithAppInsight />
+              <KeyRefreshNotify />
+              <MuiXLicense />
+              <AppRouterCacheProvider options={stableAppRouterOptions}>
+                <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
+              </AppRouterCacheProvider>
+            </ChatPanelProvider>
+          </SessionProvider>
         </QueryProvider>
       </body>
     </html>

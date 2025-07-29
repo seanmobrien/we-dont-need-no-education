@@ -67,9 +67,7 @@ export const handleCacheHit = (
   }
 
   if (config.enableLogging) {
-    console.log(
-      `🎯 ${context}Cache HIT for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-    );
+    log((l) => l.verbose(`🎯 ${context}Cache HIT for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`));
   }
 };
 
@@ -89,8 +87,8 @@ export const handleCacheMiss = (
   }
 
   if (config.enableLogging) {
-    console.log(
+    log(l => l.verbose(
       `🔍 ${context}Cache MISS for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-    );
+    ));
   }
 };

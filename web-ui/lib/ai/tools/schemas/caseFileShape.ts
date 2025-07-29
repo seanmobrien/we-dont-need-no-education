@@ -6,34 +6,42 @@ const referencedEmailShape = z.object({
   doc: z
     .object({
       content: z.string().optional().nullable(),
-      createdOn: z.string().optional().nullable().describe('ISO date created'),
-      unitId: z.number().optional().nullable().describe('Associated document unit ID'),
+      createdOn: z.string().optional().nullable(),
+      unitId: z
+        .number()
+        .optional()
+        .nullable()
+        .describe('Case file for email record.'),
     })
-    .describe('Email document details'),
-  sender: z
-    .object({
-      name: z.string().optional().nullable(),
-      isDistrictStaff: z.boolean().optional().nullable().describe('Is sender district staff'),
-      email: z.string().optional().nullable(),
-      roleDscr: z.string().optional().nullable().describe('Sender role description'),
-    })
-    .describe('Email sender details'),
-  emailAttachments: z
-    .array(
-      z.object({
-        fileName: z.string().optional().nullable(),
-        extractedText: z.string().optional().nullable().describe('Text extracted from attachment'),
-        docs: z
-          .array(
-            z.object({
-              unitId: z.number().optional().nullable().describe('Associated document unit ID'),
-              createdOn: z.string().optional().nullable().describe('ISO date created'),
-            }),
-          )
-          .describe('Associated documents'),
-      }),
-    )
-    .describe('Email attachments'),
+    .describe('Email record metadata.'),
+  sender: z.object({
+    name: z.string().optional().nullable(),
+    isDistrictStaff: z.boolean().optional().nullable(),
+    email: z.string().optional().nullable(),
+    roleDscr: z.string().describe('Senders Role').optional().nullable(),
+  }),
+  emailAttachments: z.array(
+    z.object({
+      fileName: z.string().optional().nullable(),
+      extractedText: z
+        .string()
+        .optional()
+        .nullable()
+        .describe('Extracted attachment content'),
+      docs: z
+        .array(
+          z.object({
+            unitId: z
+              .number()
+              .optional()
+              .nullable()
+              .describe('Case File ID for a related record.'),
+            createdOn: z.string().optional().nullable(),
+          }),
+        )
+        .describe('Documents associated with the attachment.'),
+    }),
+  ),
 });
 
 export const DocumentSchema = z.object({
@@ -41,49 +49,44 @@ export const DocumentSchema = z.object({
     .number()
     .optional()
     .nullable()
-    .describe('Case file ID (use with amendCaseFileDocument)'),
+    .describe('Identifies this case file.'),
   attachmentId: z.number().nullable().optional(),
   documentPropertyId: z
     .string()
     .nullable()
     .optional()
-    .describe('Alt document property ID for some tools'),
-  documentType: z
-    .string()
-    .optional()
-    .nullable()
-    .describe('Document type: email, attachment, key_point, cta, cta_response'),
-  emailId: z
-    .string()
-    .optional()
-    .nullable()
     .describe(
-      'Email ID associated with the document.  While unitId / documentId is the preferred identifier, when documentType is `email` this value can be passed to tools to refer to this record.',
+      'Document property ID associated with the document.  While unitId / documentId is the preferred identifier, this value can be used to refer to this record in some tools.',
     ),
+  documentType: z.string().optional().nullable()
+    .describe(`Type of the document this case file describes.  Valid values include:
+  - 'email': represents an email message.
+  - 'attachment': represents a file attachment.
+  - 'key_point': represents a key point extracted from the case file.
+  - 'cta': Identifies a case file as specifically targeting an individual call to action.
+  - 'cta_response': represents an action taken at least purportedly in response to a call to action.`),
+  emailId: z.string().optional().nullable(),
   content: z.string().optional().nullable(),
-  createdOn: z
-    .string()
-    .optional()
-    .nullable()
-    .describe('ISO date when document was sent/created'),
+  createdOn: z.string().optional().nullable(),
   emailAttachment: z
     .object({
+      // Not sending attachmentId here as it's available in the parent object
+      // attachmentId: z.number().describe('Attachment ID.'),
       fileName: z.string(),
-      size: z.number().describe('File size in bytes'),
+      size: z.number(),
       mimeType: z.string(),
     })
     .nullable()
-    .optional()
-    .describe('Attachment details if this case file describes an attachment'),
+    .optional(),
   docProp: documentPropertyShape
     .nullable()
     .optional()
-    .describe('Document property details for this case file'),
+    .describe('Property case file metadata.'),
   docProps: z
     .array(documentPropertyShape)
     .optional()
     .nullable()
-    .describe('Array of associated document properties'),
+    .describe('Document Properties- related case file records.'),
   email: z
     .object({
       subject: z
@@ -117,28 +120,17 @@ export const DocumentSchema = z.object({
             .string()
             .optional()
             .nullable()
-            .describe(
-              'The role the contact holds (parent, superintendent, teacher, etc.).',
-            ),
+            .describe('parent, superintendent, teacher, etc.'),
         })
         .nullable()
-        .optional()
-        .describe('Contact information of the person who sent the email.'),
+        .optional(),
       emailRecipients: z
         .array(
           z.object({
             recipient: z
               .object({
-                name: z
-                  .string()
-                  .optional()
-                  .nullable()
-                  .describe('Name of the person who received the email.'),
-                isDistrictStaff: z
-                  .boolean()
-                  .optional()
-                  .nullable()
-                  .describe('Indicates if the recipient is district staff.'),
+                name: z.string().optional().nullable(),
+                isDistrictStaff: z.boolean().optional().nullable(),
                 email: z
                   .string()
                   .describe('Email address of the recipient.')

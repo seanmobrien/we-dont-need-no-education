@@ -368,6 +368,28 @@ export type CallToActionResponsiveActionLinkType =
   TableSelectTypes['callToActionDetailsCallToActionResponse'];
 
 /**
+ * Type definition for call-to-action response link entities.
+ * 
+ * This type represents the linking table between call-to-actions and their responses,
+ * enabling many-to-many relationships and complex response tracking.
+ * 
+ * @typedef {TableSelectTypes['callToActionDetailsCallToActionResponse']} CallToActionResponsiveActionLinkType
+ * 
+ * @example
+ * ```typescript
+ * import type { UserPublicKeysType } from '@/lib/drizzle-db';
+ * 
+ * function getUserPublicKeys(keys: UserPublicKeysType[]) {
+ *   keys.forEach(key => {
+ *     console.log(`User ID: ${key.userId}, Public Key: ${key.publicKey}`);
+ *   });
+ * }
+ * ```
+ */
+export type UserPublicKeysType =
+  TableSelectTypes['userPublicKeys'];
+
+/**
  * Type definition for violation detail entities.
  * 
  * Violation details represent compliance issues, policy violations, or regulatory

@@ -18,7 +18,7 @@ import {
 } from '@/lib/ai/middleware/chat-history/flush-handlers';
 import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import type { FlushContext, FlushConfig } from '@/lib/ai/middleware/chat-history/types';
-import { db } from '@/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 
 const mockLog = log as jest.MockedFunction<typeof log>;
@@ -41,8 +41,8 @@ describe('Flush Handlers', () => {
       generatedText: 'Hello, how can I help you?',
       startTime: Date.now() - 1000, // 1 second ago
     };
-    mockUpdate = db.update as jest.Mock;    
-    mockQuery.chats.findFirst = db.query.chats.findFirst as jest.Mock;
+    mockUpdate = drizDb().update as jest.Mock;    
+    mockQuery.chats.findFirst = drizDb().query.chats.findFirst as jest.Mock;
 
     // Setup default database mocks
     mockUpdate.mockReturnValue({
@@ -412,7 +412,7 @@ describe('Flush Handlers', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.latencyMs).toBeGreaterThan(0);
+      expect(result.processingTimeMs).toBeGreaterThan(0);
       expect(result.textLength).toBe(mockContext.generatedText.length);
       expect(result.error).toBeUndefined();
 
@@ -449,7 +449,7 @@ describe('Flush Handlers', () => {
       // Assert
       expect(result.success).toBe(false);
       expect(result.error).toBe(dbError);
-      expect(result.latencyMs).toBeGreaterThan(0);
+      expect(result.processingTimeMs).toBeGreaterThan(0);
       expect(result.textLength).toBe(mockContext.generatedText.length);
 
       expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
@@ -464,8 +464,8 @@ describe('Flush Handlers', () => {
       const result = await handleFlush(contextWithPastTime);
 
       // Assert
-      expect(result.latencyMs).toBeGreaterThanOrEqual(2500);
-      expect(result.latencyMs).toBeLessThan(3000); // Allow some tolerance
+      expect(result.processingTimeMs).toBeGreaterThanOrEqual(2500);
+      expect(result.processingTimeMs).toBeLessThan(3000); // Allow some tolerance
     });
 
     it('should handle zero-length generated text', async () => {
@@ -535,7 +535,7 @@ describe('Flush Handlers', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(result.latencyMs).toBeGreaterThanOrEqual(1500);
+      expect(result.processingTimeMs).toBeGreaterThanOrEqual(1500);
       expect(result.textLength).toBe(fullContext.generatedText.length);
 
       // Verify all operations were called

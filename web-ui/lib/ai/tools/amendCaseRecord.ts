@@ -6,7 +6,7 @@ import {
   ResponsiveActionAssociation,
   ToolCallbackResult,
 } from './types';
-import { db } from '@/lib/drizzle-db/connection';
+import { drizDb } from '@/lib/drizzle-db';
 import { resolveCaseFileId } from './utility';
 import {
   callToActionDetails,
@@ -311,7 +311,7 @@ export const addViolations = async ({
   insertedRecords,
   failedRecords,
   target: { unitId: emailDocumentId, emailId },
-}: Omit<CaseFileAmendment, 'targetCaseFileId' | 'explaination'> & {
+}: Omit<CaseFileAmendment, 'targetCaseFileId' | 'explanation'> & {
   tx: DbTransactionType;
   target: { unitId: number; emailId: string | null };
   insertedRecords: Array<Amendment>;
@@ -438,7 +438,7 @@ const associateResponsiveActions = async ({
       'The source document id must have a document property ID to associate with a CTA.',
     );
   }
-  // Load up target documents and ensure they are valid
+  
   const targetActions = (
     await tx.query.documentUnits.findMany({
       where: (documentUnits, { inArray, eq, and }) =>
@@ -580,7 +580,7 @@ const relateDocuments = async ({
  *   targetcase_file_id: 1,
  *   notes: ['Note 1'],
  *   violations: [{ violationType: 'Type A', severityLevel: 3 }],
- *   explaination: 'Reason for amendment',
+ *   explanation: 'Reason for amendment',
  *   addRelatedDocuments: [{ relatedToDocumentId: 2, relationshipType: 'typeA' }]
  * });
  */
@@ -589,7 +589,7 @@ export const amendCaseRecord = async ({
     targetCaseFileId,
     notes,
     violations,
-    explaination,
+    explanation,
     addRelatedDocuments,
     associateResponsiveAction,
     ...props
@@ -611,7 +611,7 @@ export const amendCaseRecord = async ({
     has_responsive_actions: Boolean(associateResponsiveAction?.length),
   };
 
-  if (!explaination || explaination.trim().length === 0) {
+  if (!explanation || explanation.trim().length === 0) {
     // Record error metrics
     amendmentErrorCounter.add(1, {
       ...attributes,
@@ -647,7 +647,7 @@ export const amendCaseRecord = async ({
       );
     }
 
-    const target = await db.query.documentUnits.findFirst({
+    const target = await drizDb().query.documentUnits.findFirst({
       where: (documentUnits, { eq }) =>
         eq(documentUnits.unitId, targetDocumentId),
       columns: {
@@ -658,7 +658,7 @@ export const amendCaseRecord = async ({
       },
     });
     if (target) {
-      await db.transaction(async (tx) => {
+      await drizDb().transaction(async (tx) => {
         // NOTE: Technically I could run these in parallel, but I want to ensure
         // but lest have some success with it as-is first.
         // Apply updates to the main record
@@ -695,7 +695,7 @@ export const amendCaseRecord = async ({
           db: tx,
           documentId: target.unitId,
           notes: [
-            `${explaination}\n\nUpdated values: ${JSON.stringify(updatedRecords)}\nInserted values: ${JSON.stringify(insertedRecords)}`,
+            `${explanation}\n\nUpdated values: ${JSON.stringify(updatedRecords)}\nInserted values: ${JSON.stringify(insertedRecords)}`,
           ],
         });
       });

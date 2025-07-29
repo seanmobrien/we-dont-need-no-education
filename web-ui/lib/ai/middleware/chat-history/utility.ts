@@ -1,4 +1,4 @@
-import { type DbTransactionType, db } from "@/lib/drizzle-db";
+import { type DbTransactionType, drizDbWithInit } from "@/lib/drizzle-db";
 
 export const getNextSequence = async ({
   chatId,
@@ -25,9 +25,9 @@ export const getNextSequence = async ({
   // this keeps turnId a number type and sumplifies use of the value
   // downstream.
   const turnId = 'turnId' in props ? props.turnId : 0;
-  const scopedIds = await (tx ? tx : db).execute(
+  const scopedIds = await (tx ? Promise.resolve(tx) : drizDbWithInit()).then(db => db.execute<{ allocate_scoped_ids: number }>(
     `SELECT * FROM allocate_scoped_ids('${tableName}', '${chatId}', ${turnId}, ${count})`,
-  );
+  ));
   const ret: Array<number> = scopedIds.map(
     (x) => x.allocate_scoped_ids as number,
   );

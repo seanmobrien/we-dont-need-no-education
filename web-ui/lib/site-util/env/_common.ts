@@ -1,4 +1,5 @@
-import { LoggedError } from '@/lib/react-util';
+import { isTruthy } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import z from 'zod';
 
 /**
@@ -150,6 +151,23 @@ export const ZodProcessors = {
    * @returns {ZodBoolean} A Zod boolean schema.
    */
   boolean: (): z.ZodDefault<z.ZodBoolean> => z.boolean().default(false),
+
+  /**
+   * Processor for truthy boolean values.
+   * Ensures the value is a valid boolean and provides a default value if not specified.
+   *
+   * @returns {ZodBoolean} A Zod boolean schema.
+   */
+  truthy: (
+    defaultValue = false,
+  ): z.ZodType<boolean, z.ZodEffectsDef<z.ZodBoolean>, unknown> =>
+    z.preprocess((val: unknown) => {
+      return typeof val === undefined ||
+        val === null ||
+        (typeof val === 'string' && val.trim() === '')
+        ? !!defaultValue
+        : isTruthy(val);
+    }, z.boolean(), z.boolean()),
 
   /**
    * Processor for array values.

@@ -150,14 +150,6 @@ const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
   });
 };
 
-/*
-const wrapProvider = (
-  provider: ReturnType<typeof customProvider>,
-): ReturnType<typeof customProvider> => {
-  throw new Error('Not implemented yet');
-};
-*/
-
 /**
  * Azure custom provider with model aliases for our existing model names
  * Maps hifi, lofi, embedding to Azure-hosted models

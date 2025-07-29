@@ -32,8 +32,8 @@
       "@/*": [
         "./*"
       ],
-      "tailwindcss-classnames": [
-        "./tailwindcss.classnames"
+      "~@/*": [
+        "./__tests__/*"
       ]
     },
     "resolveJsonModule": true,
@@ -48,7 +48,6 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "tailwind.config.mjs",
   ],
   "exclude": [
     "node_modules"

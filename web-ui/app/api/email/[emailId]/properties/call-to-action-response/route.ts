@@ -5,7 +5,6 @@ import {
 } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
 import {
-  CallToActionResponseDetails,
   parsePaginationStats,
 } from '@/data-models';
 import { db } from '@/lib/neondb';
@@ -32,7 +31,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db<CallToActionResponseDetails, Record<string, unknown>>(
+          db(
             (sql) => sql`SELECT ep.*, ctar.response_timestamp,
             ctar.severity, ctar.inferred, ctar.sentiment, ctar.sentiment_reasons, ctar.severity_reasons, 
             (SELECT AVG(car.compliance_chapter_13) 
@@ -61,8 +60,10 @@ export async function GET(
             ${buildQueryFilter({ sql, source: req, append: true, columnMap })} 
             ${buildOrderBy({ sql, source: req, columnMap })}             
              LIMIT ${num} OFFSET ${offset}`,
-            { transform: r.mapRecordToObject },
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { transform: r.mapRecordToObject as any },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         () =>
           db(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
@@ -81,7 +82,8 @@ export async function GET(
               document_id_column: 'document_id',
             })} 
             ${buildQueryFilter({ sql, source: req, append: true, columnMap })}`,
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         parsePaginationStats(new URL(req.url)),
       ),
     );

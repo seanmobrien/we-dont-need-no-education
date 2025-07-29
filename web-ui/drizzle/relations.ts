@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm/relations";
-import { callToActionDetails, callToActionExpectedResponse, callToActionResponseDetails, emailAttachments, documentUnits, emails, documentProperty, chatTurns, mcpSessions, emailPropertyType, mcpEvents, intermediateLlmRequestLogs, analysisStage, documentUnitAnalysisStageAudit, users, chatHistory, accounts, sessions, sessionsExt, policiesStatutes, emailPropertyCategory, stagingMessage, legalReferences, complianceScoresDetails, emailSentimentAnalysisDetails, contacts, policyTypes, violationDetails, keyPointsDetails, callToActionCategory, documentPropertyCallToActionCategory, emailRecipients, documentPropertyRelatedDocumentOld, documentRelationshipReason, documentUnitEmbeddings, documentRelationship, tokenUsage, documentUnitAnalysisFunctionAudit, callToActionDetailsCallToActionResponse, stagingAttachment, chatMessages, messageStatuses, chats, turnStatuses } from "./schema";
+import { callToActionDetails, callToActionExpectedResponse, callToActionResponseDetails, emailAttachments, documentUnits, emails, documentProperty, chatTurns, mcpSessions, emailPropertyType, mcpEvents, intermediateLlmRequestLogs, analysisStage, documentUnitAnalysisStageAudit, users, chatHistory, accounts, sessions, sessionsExt, policiesStatutes, emailPropertyCategory, stagingMessage, legalReferences, complianceScoresDetails, emailSentimentAnalysisDetails, contacts, policyTypes, violationDetails, keyPointsDetails, callToActionCategory, documentPropertyCallToActionCategory, emailRecipients, documentPropertyRelatedDocumentOld, documentRelationshipReason, documentUnitEmbeddings, documentRelationship, tokenUsage, documentUnitAnalysisFunctionAudit, callToActionDetailsCallToActionResponse, stagingAttachment, chatMessages, messageStatuses, chats, turnStatuses,	userPublicKeys } from "./schema";
+
 
 export const callToActionExpectedResponseRelations = relations(callToActionExpectedResponse, ({one}) => ({
 	callToActionDetail: one(callToActionDetails, {
@@ -188,9 +189,10 @@ export const chatHistoryRelations = relations(chatHistory, ({one}) => ({
 }));
 
 export const usersRelations = relations(users, ({many}) => ({
-	chatHistories: many(chatHistory),
-	accounts: many(accounts),
-	stagingMessages: many(stagingMessage),
+  chatHistories: many(chatHistory),
+  accounts: many(accounts),
+  stagingMessages: many(stagingMessage),
+  userPublicKeys: many(userPublicKeys),
 }));
 
 export const accountsRelations = relations(accounts, ({one, many}) => ({
