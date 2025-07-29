@@ -1,15 +1,10 @@
-ARG NEXT_PUBLIC_HOSTNAME
-# Log level for traces on the client side
-ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT="info"
-# Data Grid cache timeout (default 5 minutes)
-ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000 
-# Data AI chat model
-ARG NEXT_PUBLIC_DEFAULT_AI_MODEL="hifi"
-# The name of the service for OpenTelemetry
-ARG OTEL_SERVICE_NAME="sue-the-schools-webui"
-ARG OTEL_RESOURCE_ATTRIBUTES="service.name=sue-the-schools-webui,service.version=1.0.0"
+# Rate retry configuration
+ARG RATE_RETRY_INTERVAL_MINUTES=5
 
 FROM node:22-alpine AS base
+
+# Install cron for rate retry processing
+RUN apk add --no-cache libc6-compat dcron curl
 
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
@@ -17,12 +12,13 @@ ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
 ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
 ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
+ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
 
 # Install dependencies only when needed
 FROM base AS deps
 
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat dcron curl
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -104,6 +100,18 @@ COPY --link=true --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/public ./public
 
+# Copy rate retry script
+COPY --link=true --from=builder --chown=nextjs:nodejs /app/scripts/rate-retry-client.sh ./scripts/
+RUN chmod +x ./scripts/rate-retry-client.sh
+
+# Set up cron for rate retry processing
+ENV RATE_RETRY_INTERVAL_MINUTES=${RATE_RETRY_INTERVAL_MINUTES:-5}
+RUN echo "*/${RATE_RETRY_INTERVAL_MINUTES} * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs
+RUN crontab -u nextjs /etc/crontabs/nextjs
+
+# Ensure log directory exists
+RUN mkdir -p /var/log && chown nextjs:nodejs /var/log
+
 USER nextjs
 
 EXPOSE 3000
@@ -117,4 +125,6 @@ ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
 ENV HOSTNAME="0.0.0.0"
-CMD ["node", "server.js"]
+
+# Start cron daemon and then start the Next.js server
+CMD ["sh", "-c", "crond -f -d 8 & node server.js"]
