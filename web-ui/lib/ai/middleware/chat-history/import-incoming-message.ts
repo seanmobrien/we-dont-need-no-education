@@ -49,9 +49,9 @@
 import { schema } from "@/lib/drizzle-db";
 import { DbTransactionType } from "@/lib/drizzle-db";
 import { ChatHistoryContext } from "./types";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { log } from "@/lib/logger";
-import { getNextSequence } from "./utility";
+import { getNextSequence, getNewMessages } from "./utility";
 import { generateChatId } from "@/lib/ai/core";
 import { LanguageModelV1CallOptions } from "ai";
 
@@ -398,9 +398,11 @@ const insertPromptMessages = async (
         }
       } else if (p.role === 'assistant') {
         // Assistant message with tool calls - extract call ID for linking
-        const toolCall = p.content.find(x => x.type === 'tool-call');
-        if (toolCall) {
-          providerId = toolCall.toolCallId;
+        if (Array.isArray(p.content)) {
+          const toolCall = p.content.find(x => x.type === 'tool-call');
+          if (toolCall) {
+            providerId = toolCall.toolCallId;
+          }
         }
       }
       
@@ -488,6 +490,29 @@ const insertPendingAssistantMessage = async (
 // ============================================================================
 // Main Export Function
 // ============================================================================
+
+/**
+ * Gets the highest message order for a chat to ensure proper sequencing of new messages.
+ *
+ * @remarks
+ * This function queries the database to find the highest message order number
+ * for a specific chat session. This is essential for maintaining proper message
+ * sequencing when adding new messages to existing conversations.
+ *
+ * @param tx - Active database transaction for consistency
+ * @param chatId - The chat ID to query for message order
+ * @returns Promise resolving to the highest message order (0 if no messages exist)
+ */
+const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promise<number> => {
+  const result = await tx
+    .select({ maxOrder: schema.chatMessages.messageOrder })
+    .from(schema.chatMessages)
+    .where(eq(schema.chatMessages.chatId, chatId))
+    .orderBy(desc(schema.chatMessages.messageOrder))
+    .limit(1);
+
+  return result.length > 0 ? result[0].maxOrder : 0;
+};
 
 /**
  * Imports and persists incoming chat messages within a transactional database context.
@@ -637,6 +662,59 @@ export const importIncomingMessage = async ({
   // Ensure chat session exists with proper metadata
   await upsertChat(tx, chatId, context);
 
+  // Filter out messages that have already been saved in previous turns
+  const newMessages = await getNewMessages(tx, chatId, prompt);
+  
+  log((l) =>
+    l.debug(`Filtered messages for chat ${chatId}: ${prompt.length} total, ${newMessages?.length || 0} new`),
+  );
+
+  // If no new messages to process, we still need to prepare for assistant response
+  if (!newMessages || newMessages.length === 0) {
+    // Reserve unique turn ID for this conversation cycle
+    const thisTurnId = await reserveTurnId(tx, chatId);
+    log((l) =>
+      l.debug(`Reserved chat turn id: ${thisTurnId} for chat: ${chatId} (no new messages)`),
+    );
+
+    // Initialize turn record with comprehensive tracking information
+    await insertChatTurn(tx, chatId, thisTurnId, context);
+
+    // Get the current highest message order for proper sequencing
+    // Since we have no new messages, we need to find where to place the assistant response
+    let currentMessageOrder = 0;
+    try {
+      const lastMessageOrder = await getLastMessageOrder(tx, chatId);
+      // For new chats (no existing messages), start at 0
+      // For existing chats, start after the last message
+      currentMessageOrder = lastMessageOrder === 0 ? 0 : lastMessageOrder + 1;
+    } catch {
+      // If we can't get the last message order, default to 0
+      currentMessageOrder = 0;
+    }
+
+    // Reserve message ID for pending assistant response only
+    const messageIds = await reserveMessageIds(tx, chatId, thisTurnId, 1);
+    const assistantMessageId = messageIds[0];
+
+    // Prepare pending assistant message for streaming response
+    const pending = await insertPendingAssistantMessage(
+      tx,
+      chatId,
+      thisTurnId,
+      assistantMessageId,
+      currentMessageOrder,
+    );
+
+    return {
+      chatId,
+      turnId: thisTurnId,
+      messageId: assistantMessageId,
+      pendingMessage: pending[0],
+      nextMessageOrder: currentMessageOrder + 1,
+    };
+  }
+
   // Reserve unique turn ID for this conversation cycle
   const thisTurnId = await reserveTurnId(tx, chatId);
   log((l) =>
@@ -648,31 +726,44 @@ export const importIncomingMessage = async ({
 
   log((l) =>
     l.debug(
-      `Successfully initialized storage for chat  [${chatId}] turn [${thisTurnId}]; importing messages for this request.`,
+      `Successfully initialized storage for chat  [${chatId}] turn [${thisTurnId}]; importing ${newMessages.length} new messages for this request.`,
     ),
   );
 
-  // Reserve sequential message IDs for batch insertion (prompt + assistant response)
+  // Get the current highest message order for proper sequencing
+  let lastMessageOrder = 0;
+  try {
+    lastMessageOrder = await getLastMessageOrder(tx, chatId);
+  } catch {
+    // If we can't get the last message order, default to 0
+    lastMessageOrder = 0;
+  }
+  
+  // For new chats (no existing messages), start at 0
+  // For existing chats, start after the last message
+  currentMessageOrder = lastMessageOrder === 0 ? 0 : lastMessageOrder + 1;
+
+  // Reserve sequential message IDs for batch insertion (new messages + assistant response)
   const messageIds = await reserveMessageIds(
     tx,
     chatId,
     thisTurnId,
-    prompt.length + 1, // +1 for pending assistant response
+    newMessages.length + 1, // +1 for pending assistant response
   );
   
-  // Insert all prompt messages in a single batch operation
+  // Insert only the new prompt messages in a single batch operation
   await insertPromptMessages(
     tx,
     chatId,
     thisTurnId,
     messageIds,
-    prompt,
+    newMessages, // Only insert new messages, not duplicates
     currentMessageOrder,
   );
 
   // Prepare pending assistant message for streaming response
   const assistantMessageId = messageIds[messageIds.length - 1];
-  currentMessageOrder += prompt.length;
+  currentMessageOrder += newMessages.length;
 
   const pending = await insertPendingAssistantMessage(
     tx,
