@@ -4,7 +4,7 @@ import {
   CallToActionDetailsRepository,
 } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { CallToActionDetails, parsePaginationStats } from '@/data-models';
+import { parsePaginationStats } from '@/data-models';
 import { db } from '@/lib/neondb';
 import {
   buildOrderBy,
@@ -33,7 +33,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db<Partial<CallToActionDetails>, Record<string, unknown>>(
+          db(
             (
               sql,
             ) => sql`SELECT ep.*, ept.property_name,epc.description, epc.email_property_category_id,
@@ -70,8 +70,10 @@ export async function GET(
                   ${buildQueryFilter({ sql, source: req, append: true, columnMap })} 
                   ${buildOrderBy({ sql, source: req, columnMap })} 
              LIMIT ${num} OFFSET ${offset}`,
-            { transform: r.mapRecordToObject },
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            { transform: r.mapRecordToObject as any },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         () =>
           db(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
@@ -93,7 +95,8 @@ export async function GET(
                   })} 
                   ${buildQueryFilter({ sql, source: req, append: true, columnMap })} 
              `,
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         parsePaginationStats(new URL(req.url)),
       ),
     );

@@ -20,7 +20,7 @@ export async function GET(
     return r.innerQuery((q) =>
       q.list(
         (num, page, offset) =>
-          db<Partial<EmailProperty>>(
+          db(
             (
               sql,
             ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id
@@ -30,7 +30,8 @@ export async function GET(
              WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=1 
              ${buildOrderBy({ sql, source: req })}
              LIMIT ${num} OFFSET ${offset}`,
-          ),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         () =>
           db(
             (sql) => sql`SELECT COUNT(ep.*) AS records 
@@ -38,7 +39,8 @@ export async function GET(
              JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
              JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
              WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=1`,
-          ),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ) as any,
         parsePaginationStats(new URL(req.url)),
       ),
     );

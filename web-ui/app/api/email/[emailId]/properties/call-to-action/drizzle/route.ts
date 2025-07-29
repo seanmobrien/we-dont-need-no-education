@@ -4,7 +4,7 @@ import { CallToActionDetails } from '@/data-models';
 import { eq, and, sql, SQL } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
-import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { DrizzleSelectQuery, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
 import { PgColumn } from 'drizzle-orm/pg-core';
@@ -179,7 +179,7 @@ export async function GET(
   const result = await selectForGrid<Partial<CallToActionDetails>>({
     req,
     emailId,
-    query: baseQuery as any,
+    query: baseQuery as unknown as DrizzleSelectQuery,
     getColumn,
     columnMap,
     recordMapper,

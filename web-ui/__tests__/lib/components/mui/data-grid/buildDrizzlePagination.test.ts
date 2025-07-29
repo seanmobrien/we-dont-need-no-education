@@ -1,4 +1,7 @@
 /**
+ * @jest-environment node
+ */
+/**
  * @fileoverview Unit tests for Drizzle pagination builder functions
  * 
  * This file contains comprehensive tests for the buildDrizzlePagination function,
