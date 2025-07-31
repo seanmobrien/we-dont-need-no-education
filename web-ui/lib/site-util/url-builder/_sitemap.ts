@@ -15,6 +15,11 @@ export const siteMap = {
         list: '',
       },
     },
+    ai: {
+      chat: {
+        history: '',
+      },
+    },
   },
   email: {
     bulkEdit: 'bulk-edit',
@@ -29,5 +34,8 @@ export const siteMap = {
       responsiveAction: 'call-to-action-response',
     },
     thread: (threadId: string) => `/messages/email/thread/${threadId}`,
+  },
+  chat: {
+    detail: (chatId: string) => `/chat/${chatId}`,
   },
 };
