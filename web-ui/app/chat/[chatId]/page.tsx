@@ -3,7 +3,9 @@ import { notFound } from 'next/navigation';
 import { Box, Typography, Card, CardContent, Chip } from '@mui/material';
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
-import { query } from '@/lib/neondb';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
+import { eq } from 'drizzle-orm';
 
 interface ChatMessage {
   turnId: number;
@@ -12,6 +14,13 @@ interface ChatMessage {
   content: string | null;
   messageOrder: number;
   toolName: string | null;
+  // Additional message-level metadata fields
+  functionCall: any | null;
+  statusId: number;
+  providerId: string | null;
+  metadata: any | null;
+  toolInstanceId: string | null;
+  optimizedContent: string | null;
 }
 
 interface ChatTurn {
@@ -20,6 +29,14 @@ interface ChatTurn {
   completedAt: string | null;
   modelName: string | null;
   messages: ChatMessage[];
+  // Additional turn properties for optional display
+  statusId: number;
+  temperature: number | null;
+  topP: number | null;
+  latencyMs: number | null;
+  warnings: string[] | null;
+  errors: string[] | null;
+  metadata: any | null;
 }
 
 interface ChatDetails {
@@ -31,66 +48,98 @@ interface ChatDetails {
 
 async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
   try {
-    // Get chat basic info
-    const chatResult = await query(
-      (sql) =>
-        sql`SELECT id, title, created_at
-        FROM chats 
-        WHERE id = ${chatId}`,
-    );
+    const db = await drizDbWithInit();
+
+    // Get chat basic info using drizzle
+    const chatResult = await db
+      .select({
+        id: schema.chats.id,
+        title: schema.chats.title,
+        createdAt: schema.chats.createdAt,
+      })
+      .from(schema.chats)
+      .where(eq(schema.chats.id, chatId))
+      .limit(1);
 
     if (chatResult.length === 0) {
       return null;
     }
 
-    const chat = chatResult[0] as {
-      id: string;
-      title: string | null;
-      created_at: string;
-    };
+    const chat = chatResult[0];
 
-    // Get chat turns and messages
-    const turnsResult = await query(
-      (sql) =>
-        sql`SELECT 
-          t.turn_id,
-          t.created_at,
-          t.completed_at,
-          t.model_name,
-          m.message_id,
-          m.role,
-          m.content,
-          m.message_order,
-          m.tool_name
-        FROM chat_turns t
-        LEFT JOIN chat_messages m ON t.chat_id = m.chat_id AND t.turn_id = m.turn_id
-        WHERE t.chat_id = ${chatId}
-        ORDER BY t.turn_id, m.message_order`,
-    );
+    // Get chat turns and messages using drizzle with joins
+    const turnsAndMessagesResult = await db
+      .select({
+        // Turn fields
+        turnId: schema.chatTurns.turnId,
+        createdAt: schema.chatTurns.createdAt,
+        completedAt: schema.chatTurns.completedAt,
+        modelName: schema.chatTurns.modelName,
+        turnStatusId: schema.chatTurns.statusId,
+        temperature: schema.chatTurns.temperature,
+        topP: schema.chatTurns.topP,
+        latencyMs: schema.chatTurns.latencyMs,
+        warnings: schema.chatTurns.warnings,
+        errors: schema.chatTurns.errors,
+        turnMetadata: schema.chatTurns.metadata,
+        // Message fields
+        messageId: schema.chatMessages.messageId,
+        role: schema.chatMessages.role,
+        content: schema.chatMessages.content,
+        messageOrder: schema.chatMessages.messageOrder,
+        toolName: schema.chatMessages.toolName,
+        functionCall: schema.chatMessages.functionCall,
+        messageStatusId: schema.chatMessages.statusId,
+        providerId: schema.chatMessages.providerId,
+        messageMetadata: schema.chatMessages.metadata,
+        toolInstanceId: schema.chatMessages.toolInstanceId,
+        optimizedContent: schema.chatMessages.optimizedContent,
+      })
+      .from(schema.chatTurns)
+      .leftJoin(
+        schema.chatMessages,
+        eq(schema.chatTurns.chatId, schema.chatMessages.chatId) &&
+        eq(schema.chatTurns.turnId, schema.chatMessages.turnId)
+      )
+      .where(eq(schema.chatTurns.chatId, chatId))
+      .orderBy(schema.chatTurns.turnId, schema.chatMessages.messageOrder);
 
     // Group messages by turn
     const turnsMap = new Map<number, ChatTurn>();
     
-    turnsResult.forEach((row: any) => {
-      if (!turnsMap.has(row.turn_id)) {
-        turnsMap.set(row.turn_id, {
-          turnId: row.turn_id,
-          createdAt: row.created_at,
-          completedAt: row.completed_at,
-          modelName: row.model_name,
+    turnsAndMessagesResult.forEach((row: any) => {
+      if (!turnsMap.has(row.turnId)) {
+        turnsMap.set(row.turnId, {
+          turnId: row.turnId,
+          createdAt: row.createdAt,
+          completedAt: row.completedAt,
+          modelName: row.modelName,
+          statusId: row.turnStatusId,
+          temperature: row.temperature,
+          topP: row.topP,
+          latencyMs: row.latencyMs,
+          warnings: row.warnings,
+          errors: row.errors,
+          metadata: row.turnMetadata,
           messages: [],
         });
       }
 
-      if (row.message_id) {
-        const turn = turnsMap.get(row.turn_id)!;
+      if (row.messageId) {
+        const turn = turnsMap.get(row.turnId)!;
         turn.messages.push({
-          turnId: row.turn_id,
-          messageId: row.message_id,
+          turnId: row.turnId,
+          messageId: row.messageId,
           role: row.role,
           content: row.content,
-          messageOrder: row.message_order,
-          toolName: row.tool_name,
+          messageOrder: row.messageOrder,
+          toolName: row.toolName,
+          functionCall: row.functionCall,
+          statusId: row.messageStatusId,
+          providerId: row.providerId,
+          metadata: row.messageMetadata,
+          toolInstanceId: row.toolInstanceId,
+          optimizedContent: row.optimizedContent,
         });
       }
     });
@@ -98,7 +147,7 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
     return {
       id: chat.id,
       title: chat.title,
-      createdAt: chat.created_at,
+      createdAt: chat.createdAt,
       turns: Array.from(turnsMap.values()),
     };
   } catch (error) {
