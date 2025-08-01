@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { notFound } from 'next/navigation';
-import { Box, Typography, Card, CardContent, Chip } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { eq } from 'drizzle-orm';
+import { VirtualizedChatDisplay } from '@/components/chat';
 
 interface ChatMessage {
   turnId: number;
@@ -15,10 +16,10 @@ interface ChatMessage {
   messageOrder: number;
   toolName: string | null;
   // Additional message-level metadata fields
-  functionCall: any | null;
+  functionCall: Record<string, unknown> | null;
   statusId: number;
   providerId: string | null;
-  metadata: any | null;
+  metadata: Record<string, unknown> | null;
   toolInstanceId: string | null;
   optimizedContent: string | null;
 }
@@ -36,7 +37,7 @@ interface ChatTurn {
   latencyMs: number | null;
   warnings: string[] | null;
   errors: string[] | null;
-  metadata: any | null;
+  metadata: Record<string, unknown> | null;
 }
 
 interface ChatDetails {
@@ -107,7 +108,7 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
     // Group messages by turn
     const turnsMap = new Map<number, ChatTurn>();
     
-    turnsAndMessagesResult.forEach((row: any) => {
+    turnsAndMessagesResult.forEach((row: Record<string, unknown>) => {
       if (!turnsMap.has(row.turnId)) {
         turnsMap.set(row.turnId, {
           turnId: row.turnId,
@@ -180,67 +181,10 @@ export default async function ChatDetailPage({
         </Typography>
 
         <Box sx={{ mt: 3 }}>
-          {chatDetails.turns.map((turn) => (
-            <Card key={turn.turnId} sx={{ mb: 2 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <Chip 
-                    label={`Turn ${turn.turnId}`} 
-                    variant="outlined" 
-                    size="small"
-                    sx={{ mr: 2 }}
-                  />
-                  {turn.modelName && (
-                    <Chip 
-                      label={turn.modelName} 
-                      variant="outlined" 
-                      size="small"
-                      color="primary"
-                    />
-                  )}
-                </Box>
-                
-                {turn.messages.map((message) => (
-                  <Box 
-                    key={`${message.turnId}-${message.messageId}`}
-                    sx={{ 
-                      mb: 2, 
-                      p: 2, 
-                      bgcolor: message.role === 'user' ? 'action.hover' : 'background.paper',
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: 'divider'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Chip 
-                        label={message.role} 
-                        size="small"
-                        color={message.role === 'user' ? 'secondary' : 'primary'}
-                        sx={{ mr: 1 }}
-                      />
-                      {message.toolName && (
-                        <Chip 
-                          label={`Tool: ${message.toolName}`} 
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
-                    </Box>
-                    <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-                      {message.content || '<no content>'}
-                    </Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-          
-          {chatDetails.turns.length === 0 && (
-            <Typography variant="body1" color="text.secondary">
-              No messages found in this chat.
-            </Typography>
-          )}
+          <VirtualizedChatDisplay 
+            turns={chatDetails.turns}
+            height={800}
+          />
         </Box>
       </Box>
     </EmailDashboardLayout>
