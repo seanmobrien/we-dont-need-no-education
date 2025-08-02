@@ -99,8 +99,10 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
       .from(schema.chatTurns)
       .leftJoin(
         schema.chatMessages,
-        eq(schema.chatTurns.chatId, schema.chatMessages.chatId) &&
-        eq(schema.chatTurns.turnId, schema.chatMessages.turnId)
+        and(
+          eq(schema.chatTurns.chatId, schema.chatMessages.chatId),
+          eq(schema.chatTurns.turnId, schema.chatMessages.turnId)
+        )
       )
       .where(eq(schema.chatTurns.chatId, chatId))
       .orderBy(schema.chatTurns.turnId, schema.chatMessages.messageOrder);
