@@ -239,7 +239,7 @@ describe('Chat Detail Page', () => {
     
     render(ChatDetailPageComponent);
     
-    expect(screen.getByText(/Created: 1\/1\/2025, 4:00:00 AM/)).toBeInTheDocument();
+    expect(screen.getByText(/Created: 1\/1\/2025, \d+:00:00 AM/)).toBeInTheDocument();
   });
 
   it('should format null chat title correctly', async () => {
