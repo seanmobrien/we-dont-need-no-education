@@ -107,15 +107,6 @@ import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
-
-// Mock drizzle-orm query functions that are commonly used
-jest.mock('drizzle-orm', () => ({
-  ...jest.requireActual('drizzle-orm'),
-  eq: jest.fn((field, value) => ({ type: 'eq', field, value })),
-  and: jest.fn((...conditions) => ({ type: 'and', conditions })),
-  or: jest.fn((...conditions) => ({ type: 'or', conditions })),
-}));
-
 type DatabaseType = DbDatabaseType;
 
 

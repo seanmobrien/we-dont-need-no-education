@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* @jest-environment jsdom */
+
+// Mock drizzle-orm functions specifically for this test - must be before imports
+jest.mock('drizzle-orm', () => ({
+  ...jest.requireActual('drizzle-orm'),
+  eq: jest.fn((field, value) => ({ type: 'eq', field, value })),
+  and: jest.fn((...conditions) => ({ type: 'and', conditions })),
+}));
+
 import { render, screen } from '@/__tests__/test-utils';
 import ChatDetailPage from '@/app/chat/[chatId]/page';
 import { notFound } from 'next/navigation';
