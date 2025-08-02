@@ -78,6 +78,7 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
             size="small"
             onClick={() => setMetadataExpanded(!metadataExpanded)}
             sx={{ ml: 'auto' }}
+            aria-label={metadataExpanded ? 'Hide metadata' : 'Show more metadata'}
           >
             <InfoIcon fontSize="small" />
           </IconButton>
@@ -112,37 +113,37 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
               Message Metadata
             </Typography>
             <Grid container spacing={1}>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="caption" display="block">
                   Message ID: {message.messageId}
                 </Typography>
               </Grid>
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="caption" display="block">
                   Order: {message.messageOrder}
                 </Typography>
               </Grid>
               {message.providerId && (
-                <Grid item xs={6}>
+                <Grid size={6}>
                   <Typography variant="caption" display="block">
                     Provider: {message.providerId}
                   </Typography>
                 </Grid>
               )}
-              <Grid item xs={6}>
+              <Grid size={6}>
                 <Typography variant="caption" display="block">
                   Status ID: {message.statusId}
                 </Typography>
               </Grid>
               {message.toolInstanceId && (
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Typography variant="caption" display="block">
                     Tool Instance: {message.toolInstanceId}
                   </Typography>
                 </Grid>
               )}
               {message.functionCall && (
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Typography variant="caption" display="block">
                     Function Call:
                   </Typography>
@@ -162,7 +163,7 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
                 </Grid>
               )}
               {message.metadata && (
-                <Grid item xs={12}>
+                <Grid size={12}>
                   <Typography variant="caption" display="block">
                     Metadata:
                   </Typography>

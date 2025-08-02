@@ -42,6 +42,10 @@ describe('ChatMessageDisplay', () => {
   it('should display message ID in metadata', () => {
     render(<ChatMessageDisplay message={mockChatMessage} showMetadata={true} />);
     
+    // Click expand button to show metadata
+    const expandButton = screen.getByRole('button');
+    fireEvent.click(expandButton);
+    
     // Check for message ID in metadata section
     expect(screen.getByText(/Message ID:/)).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
@@ -50,6 +54,10 @@ describe('ChatMessageDisplay', () => {
   it('should display message order in metadata', () => {
     render(<ChatMessageDisplay message={mockChatMessage} showMetadata={true} />);
     
+    // Click expand button to show metadata
+    const expandButton = screen.getByRole('button');
+    fireEvent.click(expandButton);
+    
     expect(screen.getByText(/Order:/)).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
   });
@@ -57,12 +65,20 @@ describe('ChatMessageDisplay', () => {
   it('should display provider ID in metadata', () => {
     render(<ChatMessageDisplay message={mockChatMessage} showMetadata={true} />);
     
-    expect(screen.getByText(/Provider ID:/)).toBeInTheDocument();
+    // Click expand button to show metadata
+    const expandButton = screen.getByRole('button');
+    fireEvent.click(expandButton);
+    
+    expect(screen.getByText(/Provider:/)).toBeInTheDocument();
     expect(screen.getByText('test-provider')).toBeInTheDocument();
   });
 
   it('should display status ID in metadata', () => {
     render(<ChatMessageDisplay message={mockChatMessage} showMetadata={true} />);
+    
+    // Click expand button to show metadata
+    const expandButton = screen.getByRole('button');
+    fireEvent.click(expandButton);
     
     expect(screen.getByText(/Status ID:/)).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
@@ -78,8 +94,12 @@ describe('ChatMessageDisplay', () => {
   it('should display tool instance ID when present', () => {
     render(<ChatMessageDisplay message={mockToolMessage} showMetadata={true} />);
     
+    // Click expand button to show metadata
+    const expandButton = screen.getByRole('button');
+    fireEvent.click(expandButton);
+    
     // mockToolMessage has toolInstanceId
-    expect(screen.getByText(/Tool Instance ID:/)).toBeInTheDocument();
+    expect(screen.getByText(/Tool Instance:/)).toBeInTheDocument();
     expect(screen.getByText('tool-123')).toBeInTheDocument();
   });
 
@@ -87,7 +107,7 @@ describe('ChatMessageDisplay', () => {
     render(<ChatMessageDisplay message={mockToolMessage} showMetadata={true} />);
     
     // mockToolMessage has optimizedContent different from content
-    expect(screen.getByText(/Optimized Content:/)).toBeInTheDocument();
+    expect(screen.getByText('Optimized Content')).toBeInTheDocument();
     expect(screen.getByText('Optimized tool content')).toBeInTheDocument();
   });
 

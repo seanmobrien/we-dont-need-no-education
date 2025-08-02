@@ -3,18 +3,20 @@ import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-displ
 import { mockChatTurn, mockChatTurnWithTool, mockEmptyChat } from '../chat.mock-data';
 
 // Mock the @tanstack/react-virtual library
-const mockUseVirtualizer = jest.fn();
 jest.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: mockUseVirtualizer,
+  useVirtualizer: jest.fn(),
 }));
 
 // Mock ChatTurnDisplay component
 jest.mock('@/components/chat/chat-turn-display', () => ({
-  ChatTurnDisplay: ({ turn, showTurnProperties, showMessageMetadata }: any) => (
-    <div data-testid={`turn-${turn.turnId}`} data-show-properties={showTurnProperties} data-show-metadata={showMessageMetadata}>
-      Turn {turn.turnId} - {turn.modelName}
-    </div>
-  ),
+  ChatTurnDisplay: ({ turn, showTurnProperties, showMessageMetadata }: any) => {
+    if (!turn) return null;
+    return (
+      <div data-testid={`turn-${turn.turnId}`} data-show-properties={showTurnProperties} data-show-metadata={showMessageMetadata}>
+        Turn {turn.turnId} - {turn.modelName}
+      </div>
+    );
+  },
 }));
 
 describe('VirtualizedChatDisplay', () => {
@@ -32,7 +34,8 @@ describe('VirtualizedChatDisplay', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseVirtualizer.mockReturnValue(mockRowVirtualizer);
+    const { useVirtualizer } = jest.requireMock('@tanstack/react-virtual');
+    useVirtualizer.mockReturnValue(mockRowVirtualizer);
     mockRowVirtualizer.getVirtualItems.mockReturnValue([mockVirtualItem]);
   });
 
@@ -50,7 +53,8 @@ describe('VirtualizedChatDisplay', () => {
     expect(screen.getByLabelText(/Show Message Metadata/)).toBeInTheDocument();
     
     // Check that virtualizer was called with correct configuration
-    expect(mockUseVirtualizer).toHaveBeenCalledWith({
+    const { useVirtualizer } = jest.requireMock('@tanstack/react-virtual');
+    expect(useVirtualizer).toHaveBeenCalledWith({
       count: 1,
       getScrollElement: expect.any(Function),
       estimateSize: expect.any(Function),
@@ -118,7 +122,8 @@ describe('VirtualizedChatDisplay', () => {
     
     render(<VirtualizedChatDisplay turns={turns} />);
     
-    expect(mockUseVirtualizer).toHaveBeenCalledWith({
+    const { useVirtualizer } = jest.requireMock('@tanstack/react-virtual');
+    expect(useVirtualizer).toHaveBeenCalledWith({
       count: 2,
       getScrollElement: expect.any(Function),
       estimateSize: expect.any(Function),
@@ -138,7 +143,7 @@ describe('VirtualizedChatDisplay', () => {
     render(<VirtualizedChatDisplay turns={turns} />);
     
     // Get the estimateSize function from the useVirtualizer call
-    const virtualizerCall = mockUseVirtualizer.mock.calls[0][0];
+    const virtualizerCall = jest.requireMock('@tanstack/react-virtual').useVirtualizer.mock.calls[0][0];
     const estimateSize = virtualizerCall.estimateSize;
     
     // Test size estimation for a turn
@@ -155,7 +160,7 @@ describe('VirtualizedChatDisplay', () => {
     // Enable turn properties
     fireEvent.click(screen.getByLabelText(/Show Turn Properties/));
     
-    const virtualizerCall = mockUseVirtualizer.mock.calls[0][0];
+    const virtualizerCall = jest.requireMock('@tanstack/react-virtual').useVirtualizer.mock.calls[0][0];
     const estimateSize = virtualizerCall.estimateSize;
     
     const estimatedSize = estimateSize(0);
@@ -165,7 +170,7 @@ describe('VirtualizedChatDisplay', () => {
   it('should handle invalid turn index in size estimation', () => {
     render(<VirtualizedChatDisplay turns={[mockChatTurn]} />);
     
-    const virtualizerCall = mockUseVirtualizer.mock.calls[0][0];
+    const virtualizerCall = jest.requireMock('@tanstack/react-virtual').useVirtualizer.mock.calls[0][0];
     const estimateSize = virtualizerCall.estimateSize;
     
     // Test with invalid index
@@ -184,7 +189,7 @@ describe('VirtualizedChatDisplay', () => {
     
     render(<VirtualizedChatDisplay turns={[turnWithLongContent]} />);
     
-    const virtualizerCall = mockUseVirtualizer.mock.calls[0][0];
+    const virtualizerCall = jest.requireMock('@tanstack/react-virtual').useVirtualizer.mock.calls[0][0];
     const estimateSize = virtualizerCall.estimateSize;
     
     const estimatedSize = estimateSize(0);
