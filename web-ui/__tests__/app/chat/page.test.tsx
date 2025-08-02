@@ -1,12 +1,6 @@
 import { render, screen } from '@/__tests__/test-utils';
 import ChatPage from '@/app/chat/page';
-
-// Mock the auth module
-/*
-jest.mock('@/auth', () => ({
-  auth: jest.fn(),
-}));
-*/
+import React from 'react';
 
 // Mock the ChatList component
 jest.mock('@/components/chat/list', () => {
@@ -15,16 +9,20 @@ jest.mock('@/components/chat/list', () => {
   };
 });
 
+
+
 // Mock the EmailDashboardLayout component
 jest.mock('@/components/email-message/dashboard-layout/email-dashboard-layout', () => ({
-  EmailDashboardLayout: ({ children, session }: any) => (
+  EmailDashboardLayout: ({ children, session }: React.PropsWithChildren<{ session: unknown }>) => (
     <div data-testid="email-dashboard-layout" data-session={JSON.stringify(session)}>
       {children}
     </div>
   ),
 }));
 
-//import { auth } from '@/auth';
+import { auth } from '@/auth';
+
+let authSpy: jest.SpyInstance<typeof auth>;
 
 describe('Chat List Page', () => {
   const mockSession = {
@@ -35,8 +33,10 @@ describe('Chat List Page', () => {
     },
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // jest.clearAllMocks();
+    const authMod = await import('@/auth');
+    jest.spyOn(authMod, 'auth').mockResolvedValue(mockSession);
     // (auth as jest.Mock).mockResolvedValue(mockSession);
   });
 

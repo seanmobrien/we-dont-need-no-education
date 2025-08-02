@@ -238,13 +238,13 @@ describe('Recovery Actions', () => {
       expect(defaultAction?.id).toBe('refresh-page');
     });
 
-    it('should return first action if no default is specified', () => {
+    it('should return first action if no default is specified', async () => {
       // Find a strategy without a default action
       const strategyWithoutDefault = recoveryStrategies.find(s => !s.defaultAction);
       
       if (strategyWithoutDefault) {
         // Mock the error to match this strategy
-        jest.spyOn(require('@/lib/error-monitoring/recovery-strategies'), 'classifyError')
+        jest.spyOn(await import('@/lib/error-monitoring/recovery-strategies'), 'classifyError')
           .mockReturnValue(strategyWithoutDefault.errorType);
         
         const error = new Error('Test error');
@@ -306,7 +306,7 @@ describe('Recovery Action Execution', () => {
         writable: true,
       });
 
-      loginAction?.action();
+      act(() => loginAction?.action());
       // Note: In a real test, we'd check that window.location.href was set
       // For now, we just verify the action exists and is configured correctly
       expect(loginAction?.automatic).toBe(true);
@@ -438,7 +438,7 @@ describe('Automatic Recovery', () => {
 
     it('should return false for errors without default actions', async () => {
       // Mock an error that has no default action
-      jest.spyOn(require('@/lib/error-monitoring/recovery-strategies'), 'getDefaultRecoveryAction')
+      jest.spyOn(await import('@/lib/error-monitoring/recovery-strategies'), 'getDefaultRecoveryAction')
         .mockReturnValue(null);
       
       const unknownError = new Error('No default action');
