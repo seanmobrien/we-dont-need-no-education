@@ -34,8 +34,11 @@ const AllTheProviders = ({ children }: PropsWithChildren) => {
   );
 };
 
-const customRender = (ui: any, options: any = {}) => {
-  let ret: any = undefined;
+const customRender = (
+  ui: React.ReactElement,
+  options: RenderOptions = {}
+) => {
+  let ret: ReturnType<typeof render> | undefined = undefined;
   act(() => {
     ret = render(ui, { wrapper: AllTheProviders, ...options });
   });

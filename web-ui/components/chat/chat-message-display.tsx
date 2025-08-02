@@ -113,37 +113,37 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
               Message Metadata
             </Typography>
             <Grid container spacing={1}>
-              <Grid size={6}>
+              <Grid xs={6}>
                 <Typography variant="caption" display="block">
                   Message ID: {message.messageId}
                 </Typography>
               </Grid>
-              <Grid size={6}>
+              <Grid xs={6}>
                 <Typography variant="caption" display="block">
                   Order: {message.messageOrder}
                 </Typography>
               </Grid>
               {message.providerId && (
-                <Grid size={6}>
+                <Grid xs={6}>
                   <Typography variant="caption" display="block">
                     Provider: {message.providerId}
                   </Typography>
                 </Grid>
               )}
-              <Grid size={6}>
+              <Grid xs={6}>
                 <Typography variant="caption" display="block">
                   Status ID: {message.statusId}
                 </Typography>
               </Grid>
               {message.toolInstanceId && (
-                <Grid size={12}>
+                <Grid xs={12}>
                   <Typography variant="caption" display="block">
                     Tool Instance: {message.toolInstanceId}
                   </Typography>
                 </Grid>
               )}
               {message.functionCall && (
-                <Grid size={12}>
+                <Grid xs={12}>
                   <Typography variant="caption" display="block">
                     Function Call:
                   </Typography>
