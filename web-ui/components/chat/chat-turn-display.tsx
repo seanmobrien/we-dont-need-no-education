@@ -136,44 +136,44 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                 Turn Properties
               </Typography>
               <Grid container spacing={2}>
-                <Grid item xs={6} md={3}>
+                <Grid size={{ xs: 6, md: 3 }}>
                   <Typography variant="caption" display="block">
                     Status ID: {turn.statusId}
                   </Typography>
                 </Grid>
-                <Grid item xs={6} md={3}>
+                <Grid size={{ xs: 6, md: 3 }}>
                   <Typography variant="caption" display="block">
                     Created: {new Date(turn.createdAt).toLocaleString()}
                   </Typography>
                 </Grid>
                 {turn.completedAt && (
-                  <Grid item xs={6} md={3}>
+                  <Grid size={{ xs: 6, md: 3 }}>
                     <Typography variant="caption" display="block">
                       Completed: {new Date(turn.completedAt).toLocaleString()}
                     </Typography>
                   </Grid>
                 )}
-                <Grid item xs={6} md={3}>
+                <Grid size={{ xs: 6, md: 3 }}>
                   <Typography variant="caption" display="block">
                     Duration: {formatDuration(turn.createdAt, turn.completedAt)}
                   </Typography>
                 </Grid>
                 {turn.temperature !== null && (
-                  <Grid item xs={6} md={3}>
+                  <Grid size={{ xs: 6, md: 3 }}>
                     <Typography variant="caption" display="block">
                       Temperature: {turn.temperature}
                     </Typography>
                   </Grid>
                 )}
                 {turn.topP !== null && (
-                  <Grid item xs={6} md={3}>
+                  <Grid size={{ xs: 6, md: 3 }}>
                     <Typography variant="caption" display="block">
                       Top P: {turn.topP}
                     </Typography>
                   </Grid>
                 )}
                 {turn.latencyMs !== null && (
-                  <Grid item xs={6} md={3}>
+                  <Grid size={{ xs: 6, md: 3 }}>
                     <Typography variant="caption" display="block">
                       Latency: {turn.latencyMs}ms
                     </Typography>
