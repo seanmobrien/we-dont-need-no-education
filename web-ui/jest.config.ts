@@ -60,13 +60,13 @@ const config: Config.InitialOptions = {
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
   //detectLeaks: true,
-  //detectOpenHandles: true,
+  detectOpenHandles: true, // Enable detection of async operations that prevent Jest from exiting
   // logHeapUsage: true,
 
   // Additional stability configurations for concurrent testing
   testTimeout: 10000, // Increase timeout to 30 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
-  forceExit: true, // Don't force exit to allow proper cleanup
+  forceExit: false, // Don't force exit to allow proper cleanup
 
   // Mock configuration
   clearMocks: true, // Clear mock calls between tests
