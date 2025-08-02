@@ -42,46 +42,42 @@ describe('ChatMessageDisplay', () => {
   it('should display message ID in metadata', () => {
     render(<ChatMessageDisplay message={mockChatMessage} showMetadata={true} />);
     
-    // Click expand button to show metadata
-    const expandButton = screen.getByRole('button');
+    // Click the metadata expand button
+    const expandButton = screen.getByLabelText('Show more metadata');
     fireEvent.click(expandButton);
     
-    // Check for message ID in metadata section
-    expect(screen.getByText(/Message ID:/)).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    // Check for message ID in metadata section - look for the whole text
+    expect(screen.getByText('Message ID: 1')).toBeInTheDocument();
   });
 
   it('should display message order in metadata', () => {
     render(<ChatMessageDisplay message={mockChatMessage} showMetadata={true} />);
     
-    // Click expand button to show metadata
-    const expandButton = screen.getByRole('button');
+    // Click the metadata expand button
+    const expandButton = screen.getByLabelText('Show more metadata');
     fireEvent.click(expandButton);
     
-    expect(screen.getByText(/Order:/)).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('Order: 1')).toBeInTheDocument();
   });
 
   it('should display provider ID in metadata', () => {
     render(<ChatMessageDisplay message={mockChatMessage} showMetadata={true} />);
     
-    // Click expand button to show metadata
-    const expandButton = screen.getByRole('button');
+    // Click the metadata expand button
+    const expandButton = screen.getByLabelText('Show more metadata');
     fireEvent.click(expandButton);
     
-    expect(screen.getByText(/Provider:/)).toBeInTheDocument();
-    expect(screen.getByText('test-provider')).toBeInTheDocument();
+    expect(screen.getByText('Provider: test-provider')).toBeInTheDocument();
   });
 
   it('should display status ID in metadata', () => {
     render(<ChatMessageDisplay message={mockChatMessage} showMetadata={true} />);
     
-    // Click expand button to show metadata
-    const expandButton = screen.getByRole('button');
+    // Click the metadata expand button
+    const expandButton = screen.getByLabelText('Show more metadata');
     fireEvent.click(expandButton);
     
-    expect(screen.getByText(/Status ID:/)).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText('Status ID: 1')).toBeInTheDocument();
   });
 
   it('should display function call data when present', () => {
@@ -94,13 +90,12 @@ describe('ChatMessageDisplay', () => {
   it('should display tool instance ID when present', () => {
     render(<ChatMessageDisplay message={mockToolMessage} showMetadata={true} />);
     
-    // Click expand button to show metadata
-    const expandButton = screen.getByRole('button');
+    // Click the metadata expand button (specifically by aria-label)
+    const expandButton = screen.getByLabelText('Show more metadata');
     fireEvent.click(expandButton);
     
     // mockToolMessage has toolInstanceId
-    expect(screen.getByText(/Tool Instance:/)).toBeInTheDocument();
-    expect(screen.getByText('tool-123')).toBeInTheDocument();
+    expect(screen.getByText('Tool Instance: tool-123')).toBeInTheDocument();
   });
 
   it('should display optimized content when different from regular content', () => {
