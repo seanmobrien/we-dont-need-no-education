@@ -291,7 +291,7 @@ export const toolProviderFactory = async ({
        * Stub implementation - returns empty tool set for failed connections.
        * @returns {ToolSet} Empty tool set
        */
-      get_tools: () => ({}) as ToolSet,
+      get_tools: () => (({}) as ToolSet),
 
       /**
        * Stub implementation - no-op disposal for failed connections.

@@ -125,7 +125,7 @@ class UserKeyManager {
   static async exportPublicKeyForServer({
     publicKey,
   }: { publicKey?: CryptoKey | undefined } | undefined = {}): Promise<string | null> {
-    const key = publicKey ?? await this.getPublicKey();
+    const key = publicKey ?? (await this.getPublicKey());
     if (!key) return null;
 
     const exported = await crypto.subtle.exportKey('spki', key);

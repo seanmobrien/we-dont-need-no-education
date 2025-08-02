@@ -26,6 +26,10 @@ jest.mock('@/instrument/browser', () => ({
   instrument: jest.fn()
 }));
 
+jest.mock('@microsoft/applicationinsights-react-js', () => ({
+  withAITracking: (plugin: any, Component: any) => Component,
+}));
+
 jest.mock('react-error-boundary', () => {
  class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
    #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;

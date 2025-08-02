@@ -1,58 +1,119 @@
 import { NextRequest } from 'next/server';
-import {
-  RepositoryCrudController,
-  ComplianceScoresDetailsRepository,
-} from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { parsePaginationStats } from '@/data-models';
-import { db } from '@/lib/neondb';
-import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
+import { ComplianceScoresDetails } from '@/data-models';
+import { eq, and } from 'drizzle-orm';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
+import { getEmailColumn, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
+import { PgColumn } from 'drizzle-orm/pg-core';
 
-const repository = new ComplianceScoresDetailsRepository();
-const controller = new RepositoryCrudController(repository);
+const columnMap = {
+  ...DefaultEmailColumnMap,
+} as const;
 
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
 ) {
-  return controller.listFromRepository(async (r) => {
-    const { emailId } = await extractParams<{ emailId: string }>(args);
-    return r.innerQuery((q) =>
-      q.list(
-        (num, page, offset) =>
-          db(
-            (
-              sql,
-            ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
-            csd.action_property_id, csd.compliance_score, csd.violations_found, csd.response_delay_days, csd.overall_grade, csd.evaluated_on
-            FROM document_property ep 
-             JOIN compliance_scores_details csd ON csd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=6 
-             ${buildOrderBy({ sql, source: req })}
-             LIMIT ${num} OFFSET ${offset}`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        () =>
-          db(
-            (sql) => sql`SELECT COUNT(ep.*) AS records 
-             FROM document_property ep 
-             JOIN compliance_scores_details csd ON csd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=6`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        parsePaginationStats(new URL(req.url)),
+  const { emailId } = await extractParams<{ emailId: string }>(args);
+
+  const db = await drizDbWithInit();
+
+  // Define the base query that matches the original SQL structure
+  const baseQuery = db
+    .select({
+      // From document_property (ep)
+      propertyId: schema.documentProperty.propertyId,
+      propertyValue: schema.documentProperty.propertyValue,
+      documentPropertyTypeId: schema.documentProperty.documentPropertyTypeId,
+      documentId: schema.documentProperty.documentId,
+      createdOn: schema.documentProperty.createdOn,
+      policyBasis: schema.documentProperty.policyBasis,
+      tags: schema.documentProperty.tags,
+
+      // From email_property_type (ept)
+      propertyName: schema.emailPropertyType.propertyName,
+
+      // From email_property_category (epc)
+      description: schema.emailPropertyCategory.description,
+      emailPropertyCategoryId:
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+
+      // From compliance_scores_details (csd)
+      actionPropertyId: schema.complianceScoresDetails.actionPropertyId,
+      complianceScore: schema.complianceScoresDetails.complianceScore,
+      violationsFound: schema.complianceScoresDetails.violationsFound,
+      responseDelayDays: schema.complianceScoresDetails.responseDelayDays,
+      overallGrade: schema.complianceScoresDetails.overallGrade,
+      evaluatedOn: schema.complianceScoresDetails.evaluatedOn,
+    })
+    .from(schema.documentProperty)
+    .innerJoin(
+      schema.complianceScoresDetails,
+      eq(
+        schema.complianceScoresDetails.propertyId,
+        schema.documentProperty.propertyId,
+      ),
+    )
+    .innerJoin(
+      schema.emailPropertyType,
+      eq(
+        schema.emailPropertyType.documentPropertyTypeId,
+        schema.documentProperty.documentPropertyTypeId,
+      ),
+    )
+    .innerJoin(
+      schema.emailPropertyCategory,
+      eq(
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+        schema.emailPropertyType.emailPropertyCategoryId,
+      ),
+    )
+    .innerJoin(
+      schema.documentUnits,
+      eq(schema.documentUnits.unitId, schema.documentProperty.documentId),
+    )
+    .where(
+      and(
+        eq(schema.documentUnits.emailId, emailId),
+        eq(schema.emailPropertyType.emailPropertyCategoryId, 6),
       ),
     );
-  });
-}
 
-export async function POST(
-  req: NextRequest,
-  args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
-  return controller.create(req, args);
+  // Column getter function for filtering and sorting
+  const getColumn = (columnName: string): PgColumn | undefined => {
+    return getEmailColumn({ columnName, table: schema.complianceScoresDetails });    
+  };
+
+  // Record mapper to transform database records to ComplianceScoresDetails objects
+  const recordMapper = (record: Record<string, unknown>): Partial<ComplianceScoresDetails> => {
+    return {
+      propertyId: record.propertyId as string,
+      documentId: record.documentId as number,
+      createdOn: new Date(Date.parse(record.createdOn as string)),
+      policy_basis: record.policyBasis as string[],
+      tags: record.tags as string[],
+      actionPropertyId: record.actionPropertyId as string | null,
+      complianceScore: record.complianceScore as number | null,
+      violationsFound: record.violationsFound as number,
+      responseDelayDays: record.responseDelayDays as number,
+      overallGrade: record.overallGrade as string | null,
+      evaluatedOn: new Date(Date.parse(record.evaluatedOn as string)),
+      value: record.propertyValue as string, // Map propertyValue to value field
+    };
+  };
+
+  // Use selectForGrid to apply filtering, sorting, and pagination
+  const result = await selectForGrid<Partial<ComplianceScoresDetails>>({
+    req,
+    emailId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query: baseQuery as any,
+    getColumn,
+    columnMap,
+    recordMapper,
+  });
+
+  return Response.json(result);
 }
