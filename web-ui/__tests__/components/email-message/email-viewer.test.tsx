@@ -8,7 +8,7 @@ global.fetch = mockFetch;
 
 describe('EmailViewer', () => {
   beforeEach(() => {
-    mockFetch.mockClear();
+    // mockFetch.mockClear();
   });
 
   it('renders loading state initially', async () => {

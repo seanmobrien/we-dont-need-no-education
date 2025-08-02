@@ -36,7 +36,7 @@ describe('ErrorReporter', () => {
   /*
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue('[]');
     
     // Reset singleton instance

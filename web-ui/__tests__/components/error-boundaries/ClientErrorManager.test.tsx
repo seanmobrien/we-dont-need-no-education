@@ -25,7 +25,7 @@ const mockPreventDefault = jest.fn();
 
 describe('ClientErrorManager', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockConsoleError.mockClear();
     
     // Reset global error handlers

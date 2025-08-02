@@ -15,6 +15,7 @@ const config: Config.InitialOptions = {
   testMatch: [
     '**/__tests__/**/*.test.(ts|tsx)',
     '**/?(*.)+(spec|test).(ts|tsx)',
+    '!/.next/**'
   ], // Test file patterns
 
   // Concurrency configuration to prevent hanging issues
@@ -54,7 +55,7 @@ const config: Config.InitialOptions = {
     '!**/*.d.ts', // Exclude type declaration files
     '!__(tests|mocks)__/**/*.*', // Exclude type declaration files
     //'!**/*.{jsx,tsx}', // Exclude JSX-based
-    '!<rootDir>/.next', // Exclude next build files
+    '!.next/**/*.*', // Exclude next build files
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
