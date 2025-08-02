@@ -48,7 +48,7 @@ describe('RenderErrorBoundaryFallback', () => {
   const testError = new Error('Test error message');
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');

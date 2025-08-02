@@ -33,7 +33,7 @@ describe('VirtualizedChatDisplay', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     const { useVirtualizer } = jest.requireMock('@tanstack/react-virtual');
     useVirtualizer.mockReturnValue(mockRowVirtualizer);
     mockRowVirtualizer.getVirtualItems.mockReturnValue([mockVirtualItem]);

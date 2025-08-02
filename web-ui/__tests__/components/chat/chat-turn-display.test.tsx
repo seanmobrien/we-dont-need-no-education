@@ -1,11 +1,11 @@
-import { render, screen, fireEvent } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, act } from '@/__tests__/test-utils';
 import { ChatTurnDisplay } from '@/components/chat/chat-turn-display';
 import { mockChatTurn, mockChatTurnWithTool } from '../chat.mock-data';
 
 // Mock ChatMessageDisplay component
 jest.mock('@/components/chat/chat-message-display', () => ({
-  ChatMessageDisplay: ({ message, showMessageMetadata }: any) => (
-    <div data-testid={`message-${message.messageId}`} data-show-metadata={showMessageMetadata}>
+  ChatMessageDisplay: ({ message, showMetadata }: any) => (
+    <div data-testid={`message-${message.messageId}`} data-show-metadata={String(showMetadata)}>
       Message {message.messageId} - {message.role}: {message.content}
     </div>
   ),
@@ -42,8 +42,12 @@ describe('ChatTurnDisplay', () => {
     expect(screen.queryByText(/Latency:/)).not.toBeInTheDocument();
   });
 
-  it('should show turn properties when showTurnProperties is true', () => {
+  it('should show turn properties when showTurnProperties is true and expanded', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
+    
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
     
     // Should show turn properties section
     expect(screen.getByText(/Temperature:/)).toBeInTheDocument();
@@ -54,12 +58,20 @@ describe('ChatTurnDisplay', () => {
   it('should display warnings when present', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
     
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
+    
     // mockChatTurn has warnings
     expect(screen.getByText('Test warning')).toBeInTheDocument();
   });
 
   it('should display errors when present', () => {
     render(<ChatTurnDisplay turn={mockChatTurnWithTool} showTurnProperties={true} />);
+    
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
     
     // mockChatTurnWithTool has errors
     expect(screen.getByText('Test error')).toBeInTheDocument();
@@ -68,18 +80,28 @@ describe('ChatTurnDisplay', () => {
   it('should format temperature correctly', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
     
-    expect(screen.getByText('0.7')).toBeInTheDocument();
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
+    
+    // Look for Temperature: 0.7 as it appears in the component
+    expect(screen.getByText(/Temperature:.*0\.7/)).toBeInTheDocument();
   });
 
   it('should format top P correctly', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
     
-    expect(screen.getByText('0.9')).toBeInTheDocument();
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
+    
+    expect(screen.getByText(/Top P:.*0\.9/)).toBeInTheDocument();
   });
 
   it('should format latency in milliseconds', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
     
+    // Latency should be visible in the header chips, not just in expanded properties
     expect(screen.getByText('5000ms')).toBeInTheDocument();
   });
 
@@ -122,12 +144,20 @@ describe('ChatTurnDisplay', () => {
   it('should display metadata when available and properties are shown', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
     
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
+    
     // mockChatTurn has metadata: { model_version: '4.0' }
     expect(screen.getByText(/model_version/)).toBeInTheDocument();
   });
 
   it('should format completion duration correctly', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
+    
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
     
     // Should calculate duration between createdAt and completedAt
     // mockChatTurn: created at 10:00:00, completed at 10:00:05 = 5000ms
@@ -142,15 +172,26 @@ describe('ChatTurnDisplay', () => {
     
     render(<ChatTurnDisplay turn={incompleteTurn} showTurnProperties={true} />);
     
-    expect(screen.getByText('In progress...')).toBeInTheDocument();
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
+
+    expect(screen.getByText(/In\sprogress\.\.\./g)).toBeInTheDocument();
   });
 
   it('should expand and collapse properties section', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
     
-    // Should have an expand button or clickable area
-    // The exact implementation may vary, but we can test the presence of expandable content
-    expect(screen.getByText(/Temperature:/)).toBeInTheDocument();
+    // Should have an expand button
+    const settingsButton = screen.getByRole('button');
+    expect(settingsButton).toBeInTheDocument();
+    
+    // Temperature should not be visible initially
+    expect(screen.queryByText(/Temperature:/)).not.toBeVisible();
+    
+    // Click to expand
+    act(() => fireEvent.click(settingsButton));
+    expect(screen.getByText(/Temperature:/)).toBeVisible();    
   });
 
   it('should render turn with multiple message types', () => {
@@ -186,6 +227,10 @@ describe('ChatTurnDisplay', () => {
   it('should display proper timestamps', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
     
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
+    
     // Should display formatted timestamps
     expect(screen.getByText(/Created:/)).toBeInTheDocument();
     expect(screen.getByText(/Completed:/)).toBeInTheDocument();
@@ -206,9 +251,12 @@ describe('ChatTurnDisplay', () => {
   it('should display status information when properties are shown', () => {
     render(<ChatTurnDisplay turn={mockChatTurn} showTurnProperties={true} />);
     
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
+    
     // Should show status ID
-    expect(screen.getByText(/Status ID:/)).toBeInTheDocument();
-    expect(screen.getByText('1')).toBeInTheDocument();
+    expect(screen.getByText(/Status ID:.*1/g)).toBeInTheDocument();
   });
 
   it('should handle warnings array properly', () => {
@@ -218,6 +266,10 @@ describe('ChatTurnDisplay', () => {
     };
     
     render(<ChatTurnDisplay turn={turnWithMultipleWarnings} showTurnProperties={true} />);
+    
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
     
     expect(screen.getByText('Warning 1')).toBeInTheDocument();
     expect(screen.getByText('Warning 2')).toBeInTheDocument();
@@ -231,6 +283,10 @@ describe('ChatTurnDisplay', () => {
     };
     
     render(<ChatTurnDisplay turn={turnWithMultipleErrors} showTurnProperties={true} />);
+    
+    // Need to click the settings icon to expand properties
+    const settingsButton = screen.getByRole('button');
+    fireEvent.click(settingsButton);
     
     expect(screen.getByText('Error 1')).toBeInTheDocument();
     expect(screen.getByText('Error 2')).toBeInTheDocument();

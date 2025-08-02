@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { PropsWithChildren } from 'react';
+import React, { act, PropsWithChildren } from 'react';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/lib/themes/provider';
@@ -34,8 +34,14 @@ const AllTheProviders = ({ children }: PropsWithChildren) => {
   );
 };
 
-const customRender = (ui: any, options: any = {}) =>
-  render(ui, { wrapper: AllTheProviders, ...options });
+const customRender = (ui: any, options: any = {}) => {
+  let ret: any = undefined;
+  act(() => {
+    ret = render(ui, { wrapper: AllTheProviders, ...options });
+  });
+  return ret; 
+};
+  
 
 // re-export everything
 export * from '@testing-library/react';

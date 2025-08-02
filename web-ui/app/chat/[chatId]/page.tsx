@@ -153,7 +153,7 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
     };
   } catch (error) {
     console.error('Error fetching chat details:', error);
-    return null;
+    throw error;
   }
 }
 

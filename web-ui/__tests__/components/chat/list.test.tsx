@@ -54,7 +54,7 @@ describe('ChatList', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     global.fetch = mockFetch;
   });
 

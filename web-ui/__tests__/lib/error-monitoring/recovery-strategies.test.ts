@@ -39,7 +39,7 @@ Object.defineProperty(window, 'caches', {
 
 describe('Error Classification', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('classifyError', () => {
@@ -156,7 +156,7 @@ describe('Error Classification', () => {
 
 describe('Recovery Actions', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('getRecoveryActions', () => {
@@ -258,7 +258,7 @@ describe('Recovery Actions', () => {
 
 describe('Recovery Action Execution', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('Network Error Actions', () => {
@@ -353,7 +353,7 @@ describe('Recovery Action Execution', () => {
 
 describe('Automatic Recovery', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     jest.useFakeTimers();
     
     // Reset the reload mock

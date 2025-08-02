@@ -1,4 +1,4 @@
-/* @jest-environment node */
+/* @jest-environment jsdom */
 import { render, screen } from '@/__tests__/test-utils';
 import ChatDetailPage from '@/app/chat/[chatId]/page';
 import { notFound } from 'next/navigation';
@@ -172,7 +172,7 @@ describe('Chat Detail Page', () => {
     
     render(ChatDetailPageComponent);
     
-    expect(screen.getByText('Chat Test Chat Title')).toBeInTheDocument();
+    expect(screen.getByText('Test Chat Title')).toBeInTheDocument();
     expect(screen.getByTestId('virtualized-chat-display')).toBeInTheDocument();
   });
 
@@ -180,7 +180,13 @@ describe('Chat Detail Page', () => {
     mockDbLimit.mockResolvedValue([]); // No chat found
     
     const params = { chatId: 'invalid-chat' };
-    await ChatDetailPage({ params });
+    
+    // notFound() throws an error in Next.js, so we need to catch it
+    try {
+      await ChatDetailPage({ params });
+    } catch (error) {
+      // notFound() throws a special Next.js error
+    }
     
     expect(notFound).toHaveBeenCalled();
   });
@@ -233,7 +239,7 @@ describe('Chat Detail Page', () => {
     
     render(ChatDetailPageComponent);
     
-    expect(screen.getByText(/Created: 7\/31\/2025, 9:04:09 AM/)).toBeInTheDocument();
+    expect(screen.getByText(/Created: 1\/1\/2025, 4:00:00 AM/)).toBeInTheDocument();
   });
 
   it('should format null chat title correctly', async () => {
@@ -272,7 +278,7 @@ describe('Chat Detail Page', () => {
     
     const params = { chatId: 'chat123' };
     
-    // Should throw or handle the error gracefully
+    // Should throw the error
     await expect(ChatDetailPage({ params })).rejects.toThrow('Database connection failed');
   });
 

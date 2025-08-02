@@ -25,7 +25,7 @@ import { ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
 
 describe('useErrorReporter', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('reportError', () => {

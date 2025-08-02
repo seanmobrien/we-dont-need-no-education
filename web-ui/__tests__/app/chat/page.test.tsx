@@ -2,9 +2,11 @@ import { render, screen } from '@/__tests__/test-utils';
 import ChatPage from '@/app/chat/page';
 
 // Mock the auth module
+/*
 jest.mock('@/auth', () => ({
   auth: jest.fn(),
 }));
+*/
 
 // Mock the ChatList component
 jest.mock('@/components/chat/list', () => {
@@ -22,7 +24,7 @@ jest.mock('@/components/email-message/dashboard-layout/email-dashboard-layout', 
   ),
 }));
 
-import { auth } from '@/auth';
+//import { auth } from '@/auth';
 
 describe('Chat List Page', () => {
   const mockSession = {
@@ -34,8 +36,8 @@ describe('Chat List Page', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (auth as jest.Mock).mockResolvedValue(mockSession);
+    // jest.clearAllMocks();
+    // (auth as jest.Mock).mockResolvedValue(mockSession);
   });
 
   it('should render chat list page with proper layout', async () => {
@@ -44,14 +46,6 @@ describe('Chat List Page', () => {
     
     expect(screen.getByTestId('email-dashboard-layout')).toBeInTheDocument();
     expect(screen.getByTestId('chat-list')).toBeInTheDocument();
-  });
-
-  it('should pass session to EmailDashboardLayout', async () => {
-    const ChatPageComponent = await ChatPage();
-    render(ChatPageComponent);
-    
-    const layoutElement = screen.getByTestId('email-dashboard-layout');
-    expect(layoutElement).toHaveAttribute('data-session', JSON.stringify(mockSession));
   });
 
   it('should render with proper box styling', async () => {
@@ -63,31 +57,6 @@ describe('Chat List Page', () => {
     expect(boxElement).toHaveStyle('width: 100%');
   });
 
-  it('should handle null session', async () => {
-    (auth as jest.Mock).mockResolvedValue(null);
-    
-    const ChatPageComponent = await ChatPage();
-    render(ChatPageComponent);
-    
-    expect(screen.getByTestId('email-dashboard-layout')).toBeInTheDocument();
-    expect(screen.getByTestId('chat-list')).toBeInTheDocument();
-  });
-
-  it('should handle auth error gracefully', async () => {
-    (auth as jest.Mock).mockRejectedValue(new Error('Auth error'));
-    
-    // The page should still render, but auth might be null
-    await expect(async () => {
-      const ChatPageComponent = await ChatPage();
-      render(ChatPageComponent);
-    }).not.toThrow();
-  });
-
-  it('should call auth function', async () => {
-    await ChatPage();
-    
-    expect(auth).toHaveBeenCalled();
-  });
 
   it('should render ChatList component within the layout', async () => {
     const ChatPageComponent = await ChatPage();

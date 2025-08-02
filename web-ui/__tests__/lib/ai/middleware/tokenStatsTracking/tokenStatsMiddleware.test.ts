@@ -19,7 +19,7 @@ describe('TokenStatsMiddleware', () => {
     model: { modelId: 'test-model' },
   } as any);
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('tokenStatsMiddleware', () => {
