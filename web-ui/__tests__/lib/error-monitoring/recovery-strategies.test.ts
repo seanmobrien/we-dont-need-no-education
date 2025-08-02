@@ -1,6 +1,7 @@
 /**
  * @jest-environment jsdom
  */
+import { act } from '@testing-library/react';
 import {
   classifyError,
   getRecoveryActions,
