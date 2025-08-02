@@ -3,13 +3,8 @@
 import { render, screen } from '@/__tests__/test-utils';
 import ChatDetailPage from '@/app/chat/[chatId]/page';
 import { notFound } from 'next/navigation';
-import { mockChatDetails, mockEmptyChat } from '@/__tests__/components/chat.mock-data';
 
-// Mock drizzle-orm functions
-jest.mock('drizzle-orm', () => ({
-  ...jest.requireActual('drizzle-orm'),
-  and: jest.fn((...conditions) => ({ type: 'and', conditions })),
-}));
+import { mockChatDetails, mockEmptyChat } from '@/__tests__/components/chat.mock-data';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
