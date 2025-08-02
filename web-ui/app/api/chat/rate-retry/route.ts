@@ -6,7 +6,8 @@ import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { generateText } from 'ai';
 import type { LanguageModelV1, CoreMessage } from 'ai';
 import type { RateLimitedRequest, ProcessedResponse, ModelClassification } from '@/lib/ai/middleware/key-rate-limiter/types';
-import type { AiModelType } from '@/lib/ai/core';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 
 const MAX_PROCESSING_TIME_MS = 4 * 60 * 1000; // 4 minutes
 const REQUEST_TIMEOUT_MS = 10 * 1000; // 10 seconds per request
@@ -16,7 +17,7 @@ export async function GET() {
   let processedCount = 0;
   
   try {
-    console.log('Rate retry processing started');
+    log(l => l.verbose('Rate retry processing started'));
     rateLimitMetrics.recordMessageProcessed('system', 1);
     
     const modelClassifications: ModelClassification[] = ['hifi', 'lofi', 'completions', 'embedding'];
@@ -25,7 +26,7 @@ export async function GET() {
     for (const classification of modelClassifications) {
       const processingTimeElapsed = Date.now() - startTime;
       if (processingTimeElapsed >= MAX_PROCESSING_TIME_MS) {
-        console.log('Max processing time reached, stopping');
+        log(l => l.warn('Max processing time reached, stopping'));
         break;
       }
       
@@ -37,7 +38,7 @@ export async function GET() {
       const googleAvailable = isModelAvailable(googleModelKey);
       
       if (!azureAvailable && !googleAvailable) {
-        console.log(`No available models for ${classification}, skipping`);
+        log(l => l.warn(`No available models for ${classification}, skipping`));
         continue;
       }
       
@@ -46,13 +47,13 @@ export async function GET() {
       rateLimitMetrics.updateQueueSize(queueSize, classification, 1);
       
       if (queueSize === 0) {
-        console.log(`No gen-1 requests for ${classification}`);
+        log(l => l.verbose(`No gen-1 requests for ${classification}`));
         continue;
       }
       
       // Process requests from gen-1 queue
       const requests = await rateLimitQueueManager.dequeueRequests(1, classification, 10);
-      console.log(`Processing ${requests.length} gen-1 requests for ${classification}`);
+      log(l => l.verbose(`Processing ${requests.length} gen-1 requests for ${classification}`));
       
       for (const request of requests) {
         const requestStartTime = Date.now();
@@ -60,10 +61,14 @@ export async function GET() {
         try {
           // Choose available model (Azure first, then Google)
           const modelKey = azureAvailable ? azureModelKey : googleModelKey;
-          console.log(`Processing request ${request.id} with model ${modelKey}`);
+          log(l => l.verbose(`Processing request ${request.id} with model ${modelKey}`));
           
           // Create model instance (ensure we don't use embedding models for text generation)
-          const modelInstance = classification === 'embedding' ? aiModelFactory('hifi') : aiModelFactory(classification as AiModelType);
+          const modelInstance = classification === 'embedding' 
+            ? aiModelFactory(classification)
+            : classification === 'hifi' || classification === 'lofi'
+              ? aiModelFactory(classification)
+              : aiModelFactory('lofi');
           const model = modelInstance as unknown as LanguageModelV1;
           
           // Process the request (simplified - in real implementation would handle streaming)
@@ -93,11 +98,11 @@ export async function GET() {
           rateLimitMetrics.recordMessageProcessed(classification, 1);
           
           processedCount++;
-          console.log(`Successfully processed request ${request.id}`);
-          
+          log(l => l.verbose(`Successfully processed request ${request.id}`));
+
         } catch (error) {
-          console.error(`Error processing request ${request.id}:`, error);
-          
+          log(l => l.error(`Error processing request ${request.id}:`, error));
+
           // Check if it's another rate limit
           if (error instanceof Error && error.message.includes('rate limit')) {
             // Move to gen-2 queue
@@ -129,7 +134,7 @@ export async function GET() {
         // Check time limit
         const totalElapsed = Date.now() - startTime;
         if (totalElapsed >= MAX_PROCESSING_TIME_MS) {
-          console.log('Max processing time reached during gen-1 processing');
+          log(l => l.error(new Error('Max processing time reached during gen-1 processing')));
           break;
         }
       }
@@ -170,10 +175,14 @@ export async function GET() {
         }
         
         const request = requests[0];
-        console.log(`Processing gen-2 request ${request.id} for ${classification}`);
-        
+        log(l => l.verbose(`Processing gen-2 request ${request.id} for ${classification}`));
+
         try {
-          const modelInstance = classification === 'embedding' ? aiModelFactory('hifi') : aiModelFactory(classification as AiModelType);
+          const modelInstance =  classification === 'embedding' 
+            ? aiModelFactory(classification)
+            : classification === 'hifi' || classification === 'lofi'
+              ? aiModelFactory(classification)
+              : aiModelFactory('lofi');
           const model = modelInstance as unknown as LanguageModelV1;
           
           const timeoutPromise = new Promise((_, reject) => {
@@ -199,8 +208,8 @@ export async function GET() {
           processedCount++;
           
         } catch (error) {
-          console.error(`Gen-2 request ${request.id} failed:`, error);
-          
+          log(l => l.error(`Gen-2 request ${request.id} failed:`, error));
+
           // Gen-2 failures are critical - mark as will not retry
           const errorResponse: ProcessedResponse = {
             id: request.id,
@@ -218,8 +227,8 @@ export async function GET() {
     }
     
     const totalDuration = Date.now() - startTime;
-    console.log(`Rate retry processing completed. Processed: ${processedCount}, Duration: ${totalDuration}ms`);
-    
+    log(l => l.verbose(`Rate retry processing completed. Processed: ${processedCount}, Duration: ${totalDuration}ms`));
+
     return NextResponse.json({
       success: true,
       processed: processedCount,
@@ -228,7 +237,12 @@ export async function GET() {
     });
     
   } catch (error) {
-    console.error('Rate retry processing error:', error);
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'Rate Retry API',
+      message: 'Error processing rate retry requests',
+      extra: { processedCount, duration: Date.now() - startTime },
+    });
     rateLimitMetrics.recordError('processing_system_error', 'system');
     
     return NextResponse.json({

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Demonstration test showing the chat history enhancement in action
  * 
@@ -6,6 +7,7 @@
  */
 
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
+import { LanguageModelV1MessageExt } from '@/lib/ai/types';
 
 // Mock database schema
 jest.mock('@/lib/drizzle-db', () => ({
@@ -47,43 +49,36 @@ describe('Chat History Enhancement Demonstration', () => {
     
     // Simulate existing messages from Turn 1
     const existingMessages = [
-      { role: 'user', content: 'Hello', messageOrder: 0 },
-      { role: 'assistant', content: 'Hi there!', messageOrder: 1 }
+      { role: 'user', content: [ { type: 'text', text: 'Hello' } ], messageOrder: 0 },
+      { role: 'assistant', content: [ { type: 'text', text: 'Hi there!' } ], messageOrder: 1 }
     ];
 
     // Simulate Turn 2 incoming messages (conversation history + new message)
-    const turn2Messages = [
-      { role: 'user', content: 'Hello' },           // DUPLICATE from Turn 1
-      { role: 'assistant', content: 'Hi there!' },  // DUPLICATE from Turn 1  
-      { role: 'user', content: 'How can you help me?' } // NEW message
+    const turn2Messages: LanguageModelV1MessageExt = [
+      { role: 'user', content: [ { type: 'text', text: 'Hello' } ]},           // DUPLICATE from Turn 1
+      { role: 'assistant', content: [ { type: 'text', text: 'Hello' } ] },  // DUPLICATE from Turn 1  
+      { role: 'user', content: [ { type: 'text', text: 'Hello' } ] } // NEW message
     ];
 
     // Mock database to return existing messages
     mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
 
     // Act - Filter messages using the enhancement
-    const newMessages = await getNewMessages(mockTx, 'chat-123', turn2Messages);
+    const newMessages:any = await getNewMessages(mockTx, 'chat-123', turn2Messages);
 
     // Assert - Only the truly new message should be returned
     expect(newMessages).toHaveLength(1);
     expect(newMessages[0]).toEqual({
-      role: 'user', 
-      content: 'How can you help me?'
+      role: 'user',
+      content: [ { type: 'text', text: 'How can you help me?' } ]
     });
-
-    // Verify the enhancement impact
-    console.log('\n🎯 ENHANCEMENT IMPACT:');
-    console.log(`📥 Turn 2 incoming messages: ${turn2Messages.length}`);
-    console.log(`💾 Messages already saved: ${existingMessages.length}`);  
-    console.log(`✨ New messages to save: ${newMessages.length}`);
-    console.log(`🚀 Database writes reduced by: ${((turn2Messages.length - newMessages.length) / turn2Messages.length * 100).toFixed(1)}%`);
   });
 
   it('shows the enhancement gracefully handles empty and new chats', async () => {
     // Scenario: Brand new chat with no existing messages
-    const newChatMessages = [
-      { role: 'user', content: 'First message ever' },
-      { role: 'assistant', content: 'Welcome! How can I help?' }
+    const newChatMessages: LanguageModelV1MessageExt = [
+      { role: 'user', content: [ { type: 'text', text: 'First message ever' } ] },
+      { role: 'assistant', content: [ { type: 'text',  text: 'Welcome! How can I help?' } ] }
     ];
 
     // Mock empty chat (no existing messages)
@@ -96,10 +91,6 @@ describe('Chat History Enhancement Demonstration', () => {
     expect(newMessages).toHaveLength(2);
     expect(newMessages).toEqual(newChatMessages);
 
-    console.log('\n🆕 NEW CHAT BEHAVIOR:');
-    console.log(`📥 First messages: ${newChatMessages.length}`);
-    console.log(`✨ All messages saved: ${newMessages.length}`);
-    console.log('✅ Enhancement maintains backward compatibility');
   });
 
   it('validates the enhancement is content and role aware', async () => {
@@ -108,15 +99,14 @@ describe('Chat History Enhancement Demonstration', () => {
       { role: 'user', content: 'Hello world', messageOrder: 0 }
     ];
 
-    const mixedMessages = [
-      { role: 'user', content: 'Hello world' },      // EXACT duplicate
-      { role: 'assistant', content: 'Hello world' }, // Same content, different role - NEW
-      { role: 'user', content: 'Hello World' },      // Case difference - NEW
-      { role: 'user', content: 'Hello world!' }      // Punctuation difference - NEW
+    const mixedMessages:LanguageModelV1MessageExt = [
+      { role: 'user', content: [{type: 'text', text: 'Hello world' }]},      // EXACT duplicate
+      { role: 'assistant', content: [{type: 'text', text: 'Hello world' }]}, // Same content, different role - NEW
+      { role: 'user', content: [{type: 'text', text: 'Hello World' }]},      // Case difference - NEW
+      { role: 'user', content: [{type: 'text', text: 'Hello world!' }]},      // Punctuation difference - NEW
     ];
 
     mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
-
     // Act  
     const newMessages = await getNewMessages(mockTx, 'chat-789', mixedMessages);
 
@@ -128,10 +118,5 @@ describe('Chat History Enhancement Demonstration', () => {
       'user:Hello world!'
     ]);
 
-    console.log('\n🔍 PRECISION MATCHING:');
-    console.log('✅ Exact duplicates filtered out');
-    console.log('✅ Role differences preserved');
-    console.log('✅ Case sensitivity maintained');
-    console.log('✅ Content precision ensured');
   });
 });

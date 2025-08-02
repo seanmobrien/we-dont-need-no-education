@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* @jest-environment jsdom */
 import { render, screen } from '@/__tests__/test-utils';
 import ChatDetailPage from '@/app/chat/[chatId]/page';
@@ -102,8 +103,8 @@ describe('Chat Detail Page', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (auth as jest.Mock).mockResolvedValue(mockSession);
+    //jest.clearAllMocks();
+    //(auth as jest.Mock).mockResolvedValue(mockSession);
     (drizDbWithInit as jest.Mock).mockResolvedValue(mockDb);
     
     // Setup default mock chain
@@ -184,7 +185,7 @@ describe('Chat Detail Page', () => {
     // notFound() throws an error in Next.js, so we need to catch it
     try {
       await ChatDetailPage({ params });
-    } catch (error) {
+    } catch (error: unknown) {
       // notFound() throws a special Next.js error
     }
     
@@ -283,6 +284,10 @@ describe('Chat Detail Page', () => {
   });
 
   it('should pass session to EmailDashboardLayout', async () => {
+    
+    const { auth } = await import('@/auth');
+    (auth as jest.Mock).mockResolvedValue(mockSession);
+    
     const mockTurnsQuery = {
       from: jest.fn().mockReturnValue({
         leftJoin: mockDbLeftJoin,
