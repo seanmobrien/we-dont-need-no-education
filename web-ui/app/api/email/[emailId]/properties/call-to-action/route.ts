@@ -9,11 +9,10 @@ import { db } from '@/lib/neondb';
 import {
   buildOrderBy,
   DefaultEmailColumnMap,
-} from '@/lib/components/mui/data-grid/server';
-import {
   buildAttachmentOrEmailFilter,
   buildQueryFilter,
-} from '@/lib/components/mui/data-grid/buildQueryFilter';
+} from '@/lib/components/mui/data-grid/queryHelpers/postgres';
+
 
 const repository = new CallToActionDetailsRepository();
 const controller = new RepositoryCrudController(repository);

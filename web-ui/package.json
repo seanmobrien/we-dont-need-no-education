@@ -78,6 +78,7 @@
     "next": "^15.3.4",
     "next-auth": "^5.0.0-beta.25",
     "node-html-parser": "^7.0.1",
+    "openai": "^5.10.2",
     "openai-chat-tokens": "^0.2.8",
     "pdf-parse": "^1.1.1",
     "pino": "^9.6.0",

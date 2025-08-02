@@ -41,6 +41,9 @@ import {
   documentUnitAnalysisFunctionAudit,
   callToActionDetailsCallToActionResponse,
   stagingAttachment,
+  models,
+  modelQuotas,
+  tokenConsumptionStats,
 } from './schema';
 
 export const callToActionExpectedResponseRelations = relations(
@@ -549,3 +552,24 @@ export const stagingAttachmentRelations = relations(
     }),
   }),
 );
+
+
+// Relations for the new normalized model tables
+export const modelsRelations = relations(models, ({many}) => ({
+  modelQuotas: many(modelQuotas),
+  tokenConsumptionStats: many(tokenConsumptionStats),
+}));
+
+export const modelQuotasRelations = relations(modelQuotas, ({one}) => ({
+  model: one(models, {
+    fields: [modelQuotas.modelId],
+    references: [models.id]
+  }),
+}));
+
+export const tokenConsumptionStatsRelations = relations(tokenConsumptionStats, ({one}) => ({
+  model: one(models, {
+    fields: [tokenConsumptionStats.modelId],
+    references: [models.id]
+  }),
+}));

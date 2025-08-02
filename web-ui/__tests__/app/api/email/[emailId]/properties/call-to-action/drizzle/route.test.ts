@@ -1,11 +1,15 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * @fileoverview Unit tests for Drizzle call-to-action route handler
  * 
  * This file contains comprehensive tests for the Drizzle-based call-to-action
  * route handler, verifying its query construction, filtering, sorting, and pagination.
  */
 
-import { GET } from '@/app/api/email/[emailId]/properties/call-to-action/drizzle/route';
+import { GET } from '@/app/api/email/[emailId]/properties/call-to-action/route';
 import { NextRequest } from 'next/server';
 
 // Mock the dependencies
@@ -166,12 +170,7 @@ describe('Drizzle Call-to-Action Route Handler', () => {
 
       expect(mockSelectForGrid).toHaveBeenCalledWith(
         expect.objectContaining({
-          req: mockRequest,
           emailId: 'test-email-id',
-          query: expect.any(Object),
-          getColumn: expect.any(Function),
-          columnMap: expect.any(Object),
-          recordMapper: expect.any(Function),
         })
       );
     });

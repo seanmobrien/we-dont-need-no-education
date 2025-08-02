@@ -88,16 +88,16 @@ describe('Message Deduplication Integration', () => {
 
     // Mock functions
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });
-    mockLog.mockImplementation(() => {});
+    mockLog.mockImplementation((cb: any) => cb({ verbose: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }));
   });
 
   describe('First conversation turn (all messages new)', () => {
     it('should save all messages in the first turn', async () => {
       // Arrange - First conversation turn
       const firstTurnMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Hello, how are you?' },
-        { role: 'assistant', content: 'I am doing well, thank you!' },
-        { role: 'user', content: 'What can you help me with?' }
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello, how are you?' }] },
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'I am doing well, thank you!' }] },
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'What can you help me with?' }] }
       ];
 
       const mockParams: LanguageModelV1CallOptions = {
@@ -141,14 +141,14 @@ describe('Message Deduplication Integration', () => {
     it('should only save new messages in subsequent turns', async () => {
       // Arrange - Second turn with conversation history included
       const secondTurnMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Hello, how are you?' },        // Duplicate from turn 1
-        { role: 'assistant', content: 'I am doing well, thank you!' },  // Duplicate from turn 1
-        { role: 'user', content: 'What can you help me with?' }, // Duplicate from turn 1
-        { role: 'user', content: 'Can you write a poem?' }       // NEW message
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello, how are you?' }] },        // Duplicate from turn 1
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'I am doing well, thank you!' }] },  // Duplicate from turn 1
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'What can you help me with?' }] }, // Duplicate from turn 1
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Can you write a poem?' }] }       // NEW message
       ];
 
       const newMessages = [
-        { role: 'user', content: 'Can you write a poem?' } // Only the new message
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Can you write a poem?' }] } // Only the new message
       ];
 
       const mockParams: LanguageModelV1CallOptions = {
@@ -192,10 +192,10 @@ describe('Message Deduplication Integration', () => {
     it('should handle turns with no new user messages', async () => {
       // Arrange - Turn with only existing messages (e.g., retry scenario)
       const thirdTurnMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Hello, how are you?' },        // Duplicate
-        { role: 'assistant', content: 'I am doing well, thank you!' },  // Duplicate
-        { role: 'user', content: 'What can you help me with?' }, // Duplicate
-        { role: 'user', content: 'Can you write a poem?' }       // Duplicate
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello, how are you?' }] },        // Duplicate
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'I am doing well, thank you!' }] },  // Duplicate
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'What can you help me with?' }] }, // Duplicate
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Can you write a poem?' }] }       // Duplicate
       ];
 
       const newMessages: LanguageModelV1CallOptions['prompt'] = []; // No new messages

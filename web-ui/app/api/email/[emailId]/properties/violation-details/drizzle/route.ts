@@ -5,11 +5,11 @@ import { eq, and } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
-import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
+import { DefaultDrizzleEmailColumnMap } from '@/lib/components/mui/data-grid/server';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
 const columnMap = {
-  ...DefaultEmailColumnMap,
+  ...DefaultDrizzleEmailColumnMap,
 } as const;
 
 export async function GET(

@@ -1140,12 +1140,59 @@ export const tokenUsage = pgTable(
 
 // New tables for token consumption statistics and quota management
 
+// Providers table to centralize AI provider information
+export const providers = pgTable(
+  'providers',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    name: text().notNull(), // 'azure', 'google', 'openai', etc.
+    displayName: text('display_name').notNull(), // 'Azure OpenAI', 'Google AI', etc.
+    description: text(), // Optional provider description
+    baseUrl: text('base_url'), // Optional base URL for API calls
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+  },
+  (table) => [
+    // Ensure unique provider names
+    unique('providers_name_unique').on(table.name),
+    index('idx_providers_name').using('btree', table.name.asc().nullsLast().op('text_ops')),
+    index('idx_providers_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
+  ],
+);
+
+// Normalized models table to centralize provider+model combinations
+export const models = pgTable(
+  'models',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    providerId: uuid('provider_id').notNull(), // Reference to providers table
+    modelName: text('model_name').notNull(), // 'hifi', 'lofi', 'gemini-pro', etc.
+    displayName: text('display_name'), // Optional human-readable name
+    description: text(), // Optional model description
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+  },
+  (table) => [
+    // Ensure unique provider/model combination
+    unique('models_provider_model_unique').on(table.providerId, table.modelName),
+    index('idx_models_provider_id').using('btree', table.providerId.asc().nullsLast().op('uuid_ops')),
+    index('idx_models_model_name').using('btree', table.modelName.asc().nullsLast().op('text_ops')),
+    index('idx_models_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
+    foreignKey({
+      columns: [table.providerId],
+      foreignColumns: [providers.id],
+      name: 'models_provider_id_fkey',
+    }).onDelete('cascade'),
+  ],
+);
+
 export const modelQuotas = pgTable(
   'model_quotas',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    provider: text().notNull(), // 'azure', 'google', etc.
-    modelName: text('model_name').notNull(), // 'hifi', 'lofi', 'gemini-pro', etc.
+    modelId: uuid('model_id').notNull(), // Reference to models table
     maxTokensPerMessage: integer('max_tokens_per_message'), // Per-message limit
     maxTokensPerMinute: integer('max_tokens_per_minute'), // Rate limit
     maxTokensPerDay: integer('max_tokens_per_day'), // Daily quota
@@ -1154,11 +1201,15 @@ export const modelQuotas = pgTable(
     isActive: boolean('is_active').default(true).notNull(),
   },
   (table) => [
-    // Ensure unique quota configuration per provider/model combination
-    unique('model_quotas_provider_model_unique').on(table.provider, table.modelName),
-    index('idx_model_quotas_provider').using('btree', table.provider.asc().nullsLast().op('text_ops')),
-    index('idx_model_quotas_model_name').using('btree', table.modelName.asc().nullsLast().op('text_ops')),
+    // Ensure unique quota configuration per model
+    unique('model_quotas_model_unique').on(table.modelId),
+    index('idx_model_quotas_model_id').using('btree', table.modelId.asc().nullsLast().op('uuid_ops')),
     index('idx_model_quotas_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
+    foreignKey({
+      columns: [table.modelId],
+      foreignColumns: [models.id],
+      name: 'model_quotas_model_id_fkey',
+    }).onDelete('cascade'),
   ],
 );
 
@@ -1166,8 +1217,7 @@ export const tokenConsumptionStats = pgTable(
   'token_consumption_stats',
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    provider: text().notNull(),
-    modelName: text('model_name').notNull(),
+    modelId: uuid('model_id').notNull(), // Reference to models table
     windowStart: timestamp('window_start', { withTimezone: true, mode: 'string' }).notNull(),
     windowEnd: timestamp('window_end', { withTimezone: true, mode: 'string' }).notNull(),
     windowType: text('window_type').notNull(), // 'minute', 'hour', 'day'
@@ -1178,18 +1228,13 @@ export const tokenConsumptionStats = pgTable(
     lastUpdated: timestamp('last_updated', { withTimezone: true, mode: 'string' }).defaultNow(),
   },
   (table) => [
-    // Ensure unique stats per provider/model/window combination
-    unique('token_stats_provider_model_window_unique').on(
-      table.provider, 
-      table.modelName, 
+    // Ensure unique stats per model/window combination
+    unique('token_stats_model_window_unique').on(
+      table.modelId, 
       table.windowStart, 
       table.windowType
     ),
-    index('idx_token_stats_provider_model').using(
-      'btree', 
-      table.provider.asc().nullsLast().op('text_ops'),
-      table.modelName.asc().nullsLast().op('text_ops')
-    ),
+    index('idx_token_stats_model_id').using('btree', table.modelId.asc().nullsLast().op('uuid_ops')),
     index('idx_token_stats_window_start').using('btree', table.windowStart.asc().nullsLast().op('timestamptz_ops')),
     index('idx_token_stats_window_type').using('btree', table.windowType.asc().nullsLast().op('text_ops')),
     index('idx_token_stats_last_updated').using('btree', table.lastUpdated.asc().nullsLast().op('timestamptz_ops')),
@@ -1198,6 +1243,11 @@ export const tokenConsumptionStats = pgTable(
       'token_stats_window_type_check',
       sql`window_type IN ('minute', 'hour', 'day')`,
     ),
+    foreignKey({
+      columns: [table.modelId],
+      foreignColumns: [models.id],
+      name: 'token_consumption_stats_model_id_fkey',
+    }).onDelete('cascade'),
   ],
 );
 

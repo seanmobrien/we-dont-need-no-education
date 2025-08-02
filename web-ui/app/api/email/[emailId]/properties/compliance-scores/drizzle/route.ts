@@ -4,7 +4,7 @@ import { ComplianceScoresDetails } from '@/data-models';
 import { eq, and } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
-import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { getEmailColumn, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
@@ -83,25 +83,7 @@ export async function GET(
 
   // Column getter function for filtering and sorting
   const getColumn = (columnName: string): PgColumn | undefined => {
-    switch (columnName) {
-      case 'property_id': return schema.documentProperty.propertyId;
-      case 'property_value': return schema.documentProperty.propertyValue;
-      case 'document_property_type_id': return schema.documentProperty.documentPropertyTypeId;
-      case 'document_id': return schema.documentProperty.documentId;
-      case 'created_on': return schema.documentProperty.createdOn;
-      case 'policy_basis': return schema.documentProperty.policyBasis;
-      case 'tags': return schema.documentProperty.tags;
-      case 'property_name': return schema.emailPropertyType.propertyName;
-      case 'description': return schema.emailPropertyCategory.description;
-      case 'email_property_category_id': return schema.emailPropertyCategory.emailPropertyCategoryId;
-      case 'action_property_id': return schema.complianceScoresDetails.actionPropertyId;
-      case 'compliance_score': return schema.complianceScoresDetails.complianceScore;
-      case 'violations_found': return schema.complianceScoresDetails.violationsFound;
-      case 'response_delay_days': return schema.complianceScoresDetails.responseDelayDays;
-      case 'overall_grade': return schema.complianceScoresDetails.overallGrade;
-      case 'evaluated_on': return schema.complianceScoresDetails.evaluatedOn;
-      default: return undefined;
-    }
+    return getEmailColumn({ columnName, table: schema.complianceScoresDetails });    
   };
 
   // Record mapper to transform database records to ComplianceScoresDetails objects

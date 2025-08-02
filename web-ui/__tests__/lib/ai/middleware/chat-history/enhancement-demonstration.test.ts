@@ -53,9 +53,9 @@ describe('Chat History Enhancement Demonstration', () => {
 
     // Simulate Turn 2 incoming messages (conversation history + new message)
     const turn2Messages = [
-      { role: 'user', content: 'Hello' },           // DUPLICATE from Turn 1
-      { role: 'assistant', content: 'Hi there!' },  // DUPLICATE from Turn 1  
-      { role: 'user', content: 'How can you help me?' } // NEW message
+      { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello' }] },           // DUPLICATE from Turn 1
+      { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Hi there!' }] },  // DUPLICATE from Turn 1  
+      { role: 'user' as const, content: [{ type: 'text' as const, text: 'How can you help me?' }] } // NEW message
     ];
 
     // Mock database to return existing messages
@@ -68,7 +68,7 @@ describe('Chat History Enhancement Demonstration', () => {
     expect(newMessages).toHaveLength(1);
     expect(newMessages[0]).toEqual({
       role: 'user', 
-      content: 'How can you help me?'
+      content: [{ type: 'text', text: 'How can you help me?' }]
     });
 
     // Verify the enhancement impact
@@ -82,8 +82,8 @@ describe('Chat History Enhancement Demonstration', () => {
   it('shows the enhancement gracefully handles empty and new chats', async () => {
     // Scenario: Brand new chat with no existing messages
     const newChatMessages = [
-      { role: 'user', content: 'First message ever' },
-      { role: 'assistant', content: 'Welcome! How can I help?' }
+      { role: 'user' as const, content: [{ type: 'text' as const, text: 'First message ever' }] },
+      { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Welcome! How can I help?' }] }
     ];
 
     // Mock empty chat (no existing messages)
@@ -109,10 +109,10 @@ describe('Chat History Enhancement Demonstration', () => {
     ];
 
     const mixedMessages = [
-      { role: 'user', content: 'Hello world' },      // EXACT duplicate
-      { role: 'assistant', content: 'Hello world' }, // Same content, different role - NEW
-      { role: 'user', content: 'Hello World' },      // Case difference - NEW
-      { role: 'user', content: 'Hello world!' }      // Punctuation difference - NEW
+      { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello world' }] },      // EXACT duplicate
+      { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Hello world' }] }, // Same content, different role - NEW
+      { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello World' }] },      // Case difference - NEW
+      { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello world!' }] }      // Punctuation difference - NEW
     ];
 
     mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
@@ -122,7 +122,12 @@ describe('Chat History Enhancement Demonstration', () => {
 
     // Assert - Only exact matches are filtered out
     expect(newMessages).toHaveLength(3);
-    expect(newMessages.map(m => `${m.role}:${m.content}`)).toEqual([
+    expect(newMessages.map(m => {
+      const textContent = Array.isArray(m.content) 
+        ? m.content.filter(part => part.type === 'text').map(part => part.text).join('')
+        : m.content;
+      return `${m.role}:${textContent}`;
+    })).toEqual([
       'assistant:Hello world',
       'user:Hello World', 
       'user:Hello world!'

@@ -26,17 +26,17 @@ jest.mock('@/lib/drizzle-db', () => ({
 
 describe('Message Deduplication', () => {
   let mockTx: jest.Mocked<DbTransactionType>;
+  let mockOrderBy: jest.Mock;
 
   beforeEach(() => {
     // Mock transaction with chainable query methods
+    mockOrderBy = jest.fn().mockResolvedValue([]);
+    const mockWhere = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
+    const mockFrom = jest.fn().mockReturnValue({ where: mockWhere });
+    const mockSelect = jest.fn().mockReturnValue({ from: mockFrom });
+    
     mockTx = {
-      select: jest.fn().mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            orderBy: jest.fn().mockReturnValue([]), // Return empty array by default
-          }),
-        }),
-      }),
+      select: mockSelect,
     } as unknown as jest.Mocked<DbTransactionType>;
   });
 
@@ -45,12 +45,12 @@ describe('Message Deduplication', () => {
       // Arrange
       const chatId = 'chat-123';
       const incomingMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Hello' },
-        { role: 'assistant', content: 'Hi there!' }
+        { role: 'user', content: [{ type: 'text', text: 'Hello'}] },
+        { role: 'assistant', content: [{ type: 'text', text: 'Hi there!' }] }
       ];
 
       // Mock empty existing messages (new chat)
-      mockTx.select().from().where().orderBy.mockResolvedValue([]);
+      mockOrderBy.mockResolvedValue([]);
 
       // Act
       const result = await getNewMessages(mockTx, chatId, incomingMessages);
@@ -64,9 +64,9 @@ describe('Message Deduplication', () => {
       // Arrange
       const chatId = 'chat-123';
       const incomingMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Hello' },           // Existing message
-        { role: 'assistant', content: 'Hi there!' },  // Existing message
-        { role: 'user', content: 'How are you?' }     // New message
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello' }] },           // Existing message
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Hi there!' }] },  // Existing message
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'How are you?' }] }     // New message
       ];
 
       // Mock existing messages in database
@@ -74,23 +74,23 @@ describe('Message Deduplication', () => {
         { role: 'user', content: 'Hello', messageOrder: 1 },
         { role: 'assistant', content: 'Hi there!', messageOrder: 2 }
       ];
-      mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
+      mockOrderBy.mockResolvedValue(existingMessages);
 
       // Act
       const result = await getNewMessages(mockTx, chatId, incomingMessages);
 
       // Assert
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({ role: 'user', content: 'How are you?' });
+      expect(result[0]).toEqual({ role: 'user', content: [{ type: 'text', text: 'How are you?' }] });
     });
 
     it('should handle complex content structures', async () => {
       // Arrange
       const chatId = 'chat-123';
-      const complexContent = [{ type: 'text', text: 'Hello with metadata' }];
+      const complexContent = [{ type: 'text' as const, text: 'Hello with metadata' }];
       const incomingMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: complexContent },
-        { role: 'user', content: 'Simple text message' }
+        { role: 'user' as const, content: complexContent },
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Simple text message' }] }
       ];
 
       // Mock existing message with complex content
@@ -101,22 +101,22 @@ describe('Message Deduplication', () => {
           messageOrder: 1 
         }
       ];
-      mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
+      mockOrderBy.mockResolvedValue(existingMessages);
 
       // Act
       const result = await getNewMessages(mockTx, chatId, incomingMessages);
 
       // Assert
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({ role: 'user', content: 'Simple text message' });
+      expect(result[0]).toEqual({ role: 'user', content: [{ type: 'text', text: 'Simple text message' }] });
     });
 
     it('should return empty array when all messages already exist', async () => {
       // Arrange
       const chatId = 'chat-123';
       const incomingMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Hello' },
-        { role: 'assistant', content: 'Hi there!' }
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello' }] },
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Hi there!' }] }
       ];
 
       // Mock existing messages that match all incoming messages
@@ -124,7 +124,7 @@ describe('Message Deduplication', () => {
         { role: 'user', content: 'Hello', messageOrder: 1 },
         { role: 'assistant', content: 'Hi there!', messageOrder: 2 }
       ];
-      mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
+      mockOrderBy.mockResolvedValue(existingMessages);
 
       // Act
       const result = await getNewMessages(mockTx, chatId, incomingMessages);
@@ -138,9 +138,9 @@ describe('Message Deduplication', () => {
       // Arrange
       const chatId = 'chat-123';
       const incomingMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Text message' },                    // String content
-        { role: 'assistant', content: [{ type: 'text', text: 'Complex' }] }, // Complex content
-        { role: 'user', content: 'New message' }                      // New message
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Text message' }] },                    // String content
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Complex' }] }, // Complex content
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'New message' }] }                      // New message
       ];
 
       // Mock existing messages with mixed content types
@@ -148,58 +148,58 @@ describe('Message Deduplication', () => {
         { role: 'user', content: 'Text message', messageOrder: 1 },
         { role: 'assistant', content: '[{"type":"text","text":"Complex"}]', messageOrder: 2 }
       ];
-      mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
+      mockOrderBy.mockResolvedValue(existingMessages);
 
       // Act
       const result = await getNewMessages(mockTx, chatId, incomingMessages);
 
       // Assert
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({ role: 'user', content: 'New message' });
+      expect(result[0]).toEqual({ role: 'user', content: [{ type: 'text', text: 'New message' }] });
     });
 
     it('should be case sensitive for content comparison', async () => {
       // Arrange
       const chatId = 'chat-123';
       const incomingMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Hello' },
-        { role: 'user', content: 'hello' }  // Different case
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello' }] },
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'hello' }] }  // Different case
       ];
 
       // Mock existing message with different case
       const existingMessages = [
         { role: 'user', content: 'Hello', messageOrder: 1 }
       ];
-      mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
+      mockOrderBy.mockResolvedValue(existingMessages);
 
       // Act
       const result = await getNewMessages(mockTx, chatId, incomingMessages);
 
       // Assert
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({ role: 'user', content: 'hello' });
+      expect(result[0]).toEqual({ role: 'user', content: [{ type: 'text', text: 'hello' }] });
     });
 
     it('should handle role differences correctly', async () => {
       // Arrange
       const chatId = 'chat-123';
       const incomingMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user', content: 'Hello' },
-        { role: 'assistant', content: 'Hello' }  // Same content, different role
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello' }] },
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'Hello' }] }  // Same content, different role
       ];
 
       // Mock existing message with same content but different role
       const existingMessages = [
         { role: 'user', content: 'Hello', messageOrder: 1 }
       ];
-      mockTx.select().from().where().orderBy.mockResolvedValue(existingMessages);
+      mockOrderBy.mockResolvedValue(existingMessages);
 
       // Act
       const result = await getNewMessages(mockTx, chatId, incomingMessages);
 
       // Assert
       expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({ role: 'assistant', content: 'Hello' });
+      expect(result[0]).toEqual({ role: 'assistant', content: [{ type: 'text', text: 'Hello' }] });
     });
   });
 });

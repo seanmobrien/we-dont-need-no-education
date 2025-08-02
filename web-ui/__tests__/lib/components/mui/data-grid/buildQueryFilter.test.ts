@@ -2,7 +2,7 @@
 import {
   buildAttachmentOrEmailFilter,
   buildQueryFilter,
-} from '@/lib/components/mui/data-grid/buildQueryFilter';
+} from '@/lib/components/mui/data-grid/queryHelpers/postgres';
 import { GridFilterModel } from '@mui/x-data-grid-pro';
 import { sqlNeonAdapter } from '@/lib/neondb/index-postgres';
 
@@ -88,7 +88,7 @@ describe('buildQueryFilter', () => {
       items: [{ field: 'foo', operator: 'equals', value: 'bar' }],
     };
     const result = buildQueryFilter({ sql, source: filter });
-    expect(result).toContain('WHERE foo = bar');
+    expect(result).toContain(`WHERE  (foo = 'bar')`);
   });
 
   it('returns AND with append true', () => {
@@ -96,7 +96,7 @@ describe('buildQueryFilter', () => {
       items: [{ field: 'foo', operator: 'equals', value: 'bar' }],
     };
     const result = buildQueryFilter({ sql, source: filter, append: true });
-    expect(result).toContain('AND foo = bar');
+    expect(result).toContain(`AND  (foo = 'bar')`);
   });
 
   it('returns empty string for filter with empty items', () => {
@@ -113,6 +113,6 @@ describe('buildQueryFilter', () => {
       source: undefined,
       defaultFilter: filter,
     });
-    expect(result).toContain('WHERE foo = bar');
+    expect(result).toContain(`WHERE  (foo = 'bar')`);
   });
 });

@@ -47,15 +47,18 @@
 export {
   tokenStatsService,
   TokenStatsService,
+} from './tokenStatsService';
+
+export {
   type TokenUsageData,
   type ModelQuota,
   type TokenStats,
   type QuotaCheckResult,
-} from './tokenStatsService';
+  type TokenStatsMiddlewareConfig,
+} from './types';
 
 export {
   tokenStatsMiddleware,
   tokenStatsWithQuotaMiddleware,
   tokenStatsLoggingOnlyMiddleware,
-  type TokenStatsMiddlewareConfig,
 } from './tokenStatsMiddleware';

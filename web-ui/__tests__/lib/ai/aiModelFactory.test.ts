@@ -13,11 +13,11 @@ import {
   AiModelTypeValue_GeminiPro,
   AiModelTypeValue_GeminiFlash,
   AiModelTypeValue_GoogleEmbedding,
-} from '../../../lib/ai/core/unions';
+} from '@/lib/ai/core/unions';
 import {
   isAiModelType,
   isAiLanguageModelType,
-} from '../../../lib/ai/core/guards';
+} from '@/lib/ai/core/guards';
 import { EmbeddingModel, LanguageModel, Provider } from 'ai';
 
 // Mock environment variables
@@ -189,7 +189,7 @@ describe('Model Availability Management', () => {
 
   beforeEach(async () => {
     // jest.clearAllMocks();
-    modelControls = await import('../../../lib/ai/aiModelFactory');
+    modelControls = await import('@/lib/ai/aiModelFactory');
     // Reset to defaults before each test
     modelControls.resetModelAvailability();
   });

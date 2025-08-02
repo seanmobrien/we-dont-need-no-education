@@ -260,7 +260,7 @@ const logger = () => ({
 
 jest.mock('@/lib/logger', () => {
   return {
-    logger: Promise.resolve(() => ({
+    logger: jest.fn(() => Promise.resolve({
       warn: jest.fn(makeMockImplementation('warn')),
       error: jest.fn(makeMockImplementation('error')),
       info: jest.fn(makeMockImplementation('info')),
@@ -269,9 +269,28 @@ jest.mock('@/lib/logger', () => {
       verbose: jest.fn(makeMockImplementation('verbose')),
       log: jest.fn(makeMockImplementation('log')),
     })),
-    log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => cb(logger())),
+    log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => {
+      const mockLogger = {
+        warn: jest.fn(makeMockImplementation('warn')),
+        error: jest.fn(makeMockImplementation('error')),
+        info: jest.fn(makeMockImplementation('info')),
+        debug: jest.fn(makeMockImplementation('debug')),
+        silly: jest.fn(makeMockImplementation('silly')),
+        verbose: jest.fn(makeMockImplementation('verbose')),
+        log: jest.fn(makeMockImplementation('log')),
+      };
+      return Promise.resolve(cb(mockLogger));
+    }),
     errorLogFactory: jest.fn((x) => x),
-    simpleScopedLogger: jest.fn(() => logger()),
+    simpleScopedLogger: jest.fn(() => ({
+      warn: jest.fn(makeMockImplementation('warn')),
+      error: jest.fn(makeMockImplementation('error')),
+      info: jest.fn(makeMockImplementation('info')),
+      debug: jest.fn(makeMockImplementation('debug')),
+      silly: jest.fn(makeMockImplementation('silly')),
+      verbose: jest.fn(makeMockImplementation('verbose')),
+      log: jest.fn(makeMockImplementation('log')),
+    })),
   };
 });
 

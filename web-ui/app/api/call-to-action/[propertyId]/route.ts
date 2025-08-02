@@ -4,90 +4,169 @@ import {
   CallToActionDetailsRepository,
 } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { parsePaginationStats } from '@/data-models';
-import { db } from '@/lib/neondb';
-import {
-  buildOrderBy,
-  DefaultEmailColumnMap,
-} from '@/lib/components/mui/data-grid/server';
-import {
-  buildAttachmentOrEmailFilter,
-  buildQueryFilter,
-} from '@/lib/components/mui/data-grid/buildQueryFilter';
+
+import { eq, and, sql } from 'drizzle-orm';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { DrizzleSelectQuery,buildDrizzleAttachmentOrEmailFilter,  getEmailColumn, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { CallToActionDetails } from '@/data-models';
 
 const repository = new CallToActionDetailsRepository();
 const controller = new RepositoryCrudController(repository);
-const columnMap = {
-  ...DefaultEmailColumnMap,
-} as const;
+
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
 ) {
-  return controller.listFromRepository(async (r) => {
-    const { emailId } = await extractParams<{ emailId: string }>(args);
-    return r.innerQuery((q) =>
-      q.list(
-        (num, page, offset) =>
-          db(
-            (
-              sql,
-            ) => sql`SELECT ep.*, ept.property_name,epc.description, epc.email_property_category_id,
-            cta.opened_date, cta.closed_date, cta.compliancy_close_date, cta.completion_percentage, 
-            cta.compliance_rating, cta.inferred, cta.compliance_date_enforceable, cta.reasonable_request, 
-            cta.reasonable_reasons, cta.sentiment, cta.sentiment_reasons, cta.compliance_rating_reasons, 
-            cta.severity, cta.severity_reason, cta.title_ix_applicable, cta.title_ix_applicable_reasons, 
-            cta.closure_actions,
-            (SELECT AVG(car.compliance_chapter_13) 
-              FROM call_to_action_details_call_to_action_response car 
-              WHERE car.call_to_action_id=cta.property_id
-            ) AS compliance_average_chapter_13,
-            (SELECT array_agg(reasons_raw_chapter_13) AS compliance_chapter_13_reasons FROM (
-              SELECT UNNEST(car.compliance_chapter_13_reasons) AS reasons_raw_chapter_13
-              FROM call_to_action_details_call_to_action_response car
-              WHERE car.call_to_action_id=cta.property_id
-            ) sub) AS compliance_chapter_13_reasons
-            FROM document_property ep 
-             JOIN call_to_action_details cta ON cta.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             JOIN document_units du ON du.unit_id = ep.document_id
-             WHERE ep.document_property_type_id=4  
-                  ${buildQueryFilter({ sql, source: req, append: true, columnMap })} 
-                  ${buildOrderBy({ sql, source: req, columnMap })} 
-             LIMIT ${num} OFFSET ${offset}`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            { transform: r.mapRecordToObject as any },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        () =>
-          db(
-            (sql) => sql`SELECT COUNT(ep.*) AS records 
-             FROM document_property ep 
-             JOIN call_to_action_details cta ON cta.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             JOIN document_units du ON du.unit_id = ep.document_id
-             WHERE ep.document_property_type_id=4 
-                  ${buildAttachmentOrEmailFilter({
-                    email_id: emailId,
-                    sql,
-                    attachments: req,
-                    append: true,
-                    email_id_table: 'du',
-                    email_id_column: 'email_id',
-                    document_id_table: 'ep',
-                    document_id_column: 'document_id',
-                  })} 
-                  ${buildQueryFilter({ sql, source: req, append: true, columnMap })} 
-             `,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        parsePaginationStats(new URL(req.url)),
+  const { emailId } = await extractParams<{ emailId: string }>(args);
+
+  const db = await drizDbWithInit();
+
+  // Define the base query that matches the original SQL structure
+  const baseQuery = db
+    .select({
+      // From document_property (ep)
+      propertyId: schema.documentProperty.propertyId,
+      propertyValue: schema.documentProperty.propertyValue,
+      documentPropertyTypeId: schema.documentProperty.documentPropertyTypeId,
+      documentId: schema.documentProperty.documentId,
+      createdOn: schema.documentProperty.createdOn,
+      policyBasis: schema.documentProperty.policyBasis,
+      tags: schema.documentProperty.tags,
+
+      // From email_property_type (ept)
+      propertyName: schema.emailPropertyType.propertyName,
+
+      // From email_property_category (epc)
+      description: schema.emailPropertyCategory.description,
+      emailPropertyCategoryId:
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+
+      // From call_to_action_details (cta)
+      openedDate: schema.callToActionDetails.openedDate,
+      closedDate: schema.callToActionDetails.closedDate,
+      compliancyCloseDate: schema.callToActionDetails.compliancyCloseDate,
+      completionPercentage: schema.callToActionDetails.completionPercentage,
+      complianceRating: schema.callToActionDetails.complianceRating,
+      inferred: schema.callToActionDetails.inferred,
+      complianceDateEnforceable:
+        schema.callToActionDetails.complianceDateEnforceable,
+      reasonableRequest: schema.callToActionDetails.reasonableRequest,
+      reasonableReasons: schema.callToActionDetails.reasonableReasons,
+      sentiment: schema.callToActionDetails.sentiment,
+      sentimentReasons: schema.callToActionDetails.sentimentReasons,
+      complianceRatingReasons:
+        schema.callToActionDetails.complianceRatingReasons,
+      severity: schema.callToActionDetails.severity,
+      severityReason: schema.callToActionDetails.severityReason,
+      titleIxApplicable: schema.callToActionDetails.titleIxApplicable,
+      titleIxApplicableReasons:
+        schema.callToActionDetails.titleIxApplicableReasons,
+      closureActions: schema.callToActionDetails.closureActions,
+
+      // Subqueries for compliance averages and reasons
+      compliance_average_chapter_13: sql<number | null>`(
+        SELECT AVG(${schema.callToActionDetailsCallToActionResponse.complianceChapter13}) 
+        FROM ${schema.callToActionDetailsCallToActionResponse} 
+        WHERE ${schema.callToActionDetailsCallToActionResponse.callToActionId} = ${schema.callToActionDetails.propertyId}
+      )`.as('compliance_average_chapter_13'),
+
+      compliance_chapter_13_reasons: sql<string[] | null>`(
+        SELECT array_agg(reasons_raw_chapter_13) AS compliance_chapter_13_reasons 
+        FROM (
+          SELECT UNNEST(${schema.callToActionDetailsCallToActionResponse.complianceChapter13Reasons}) AS reasons_raw_chapter_13
+          FROM ${schema.callToActionDetailsCallToActionResponse}
+          WHERE ${schema.callToActionDetailsCallToActionResponse.callToActionId} = ${schema.callToActionDetails.propertyId}
+        ) sub
+      )`.as('compliance_chapter_13_reasons'),
+    })
+    .from(schema.documentProperty)
+    .innerJoin(
+      schema.callToActionDetails,
+      eq(
+        schema.callToActionDetails.propertyId,
+        schema.documentProperty.propertyId,
+      ),
+    )
+    .innerJoin(
+      schema.emailPropertyType,
+      eq(
+        schema.emailPropertyType.documentPropertyTypeId,
+        schema.documentProperty.documentPropertyTypeId,
+      ),
+    )
+    .innerJoin(
+      schema.emailPropertyCategory,
+      eq(
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+        schema.emailPropertyType.emailPropertyCategoryId,
+      ),
+    )
+    .innerJoin(
+      schema.documentUnits,
+      eq(schema.documentUnits.unitId, schema.documentProperty.documentId),
+    )
+    .where(
+      and(
+        eq(schema.documentProperty.documentPropertyTypeId, 4),
+        buildDrizzleAttachmentOrEmailFilter({
+          attachments: req,
+          email_id: emailId,
+          email_id_column: schema.documentUnits.emailId,
+          document_id_column: schema.documentProperty.documentId,
+        }),
       ),
     );
+
+  // Record mapper to transform database records to CallToActionDetails objects
+  const recordMapper = (record: Record<string, unknown>): Partial<CallToActionDetails> => {
+    return {
+      propertyId: record.propertyId as string,
+      documentId: record.documentId as number,
+      createdOn: new Date(Date.parse(record.createdOn as string)),
+      policy_basis: record.policyBasis as string[],
+      tags: record.tags as string[],
+      opened_date: record.openedDate as Date | null,
+      closed_date: record.closedDate as Date | null,
+      compliancy_close_date: record.compliancyCloseDate as Date | null,
+      completion_percentage: Number(record.completionPercentage),
+      compliance_rating: record.complianceRating as number | null,
+      inferred: record.inferred as boolean,
+      compliance_date_enforceable: record.complianceDateEnforceable as boolean,
+      reasonable_request: record.reasonableRequest as number | null,
+      reasonable_reasons: record.reasonableReasons as string[] | null,
+      sentiment: record.sentiment as number | null,
+      sentiment_reasons: record.sentimentReasons as string[] | null,
+      compliance_rating_reasons: record.complianceRatingReasons as
+        | string[]
+        | null,
+      severity: record.severity as number | null,
+      severity_reason: record.severityReason as string[] | null,
+      title_ix_applicable: record.titleIxApplicable as number | null,
+      title_ix_applicable_reasons: record.titleIxApplicableReasons as
+        | string[]
+        | null,
+      closure_actions: record.closureActions as string[] | null,
+      value: record.propertyValue as string, // Map propertyValue to value field
+      compliance_average_chapter_13: record.compliance_average_chapter_13 as
+        | number
+        | null,
+      compliance_chapter_13_reasons: record.compliance_chapter_13_reasons as
+        | string[]
+        | null,
+    };
+  };
+
+  // Use selectForGrid to apply filtering, sorting, and pagination
+  const result = await selectForGrid<Partial<CallToActionDetails>>({
+    req,
+    emailId,
+    query: baseQuery as unknown as DrizzleSelectQuery,
+    getColumn: (columnName: string) => getEmailColumn({columnName, table: schema.callToActionDetails}),
+    recordMapper,
   });
-}
+
+  return Response.json(result);
+};
 
 export async function POST(
   req: NextRequest,

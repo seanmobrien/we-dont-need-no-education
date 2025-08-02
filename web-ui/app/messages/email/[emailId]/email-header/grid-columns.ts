@@ -1,11 +1,12 @@
 import type { GridColDef } from '@mui/x-data-grid/models/colDef';
 
 const stableColumns: GridColDef[] = [
-  { field: 'property_name', headerName: 'Header', editable: false },
+  { field: 'typeName', headerName: 'Header', editable: false, width: 200 },
   {
-    field: 'property_value',
+    field: 'value',
     headerName: 'Value',
     editable: false,
+    flex: 1
   },
 ] as const;
 

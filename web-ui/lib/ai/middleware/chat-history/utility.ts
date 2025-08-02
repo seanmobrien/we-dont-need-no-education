@@ -97,22 +97,49 @@ export const getNewMessages = async (
     return incomingMessages;
   }
 
+  // Helper function to normalize content for comparison
+  const normalizeContentForComparison = (content: any): string => {
+    if (typeof content === 'string') {
+      // Check if the string is a JSON representation of content array
+      try {
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed)) {
+          // Extract text from parsed content parts and join them
+          return parsed
+            .filter(part => part.type === 'text')
+            .map(part => part.text)
+            .join('');
+        }
+      } catch {
+        // Not valid JSON, treat as plain string
+      }
+      return content;
+    }
+    
+    // Handle LanguageModelV1 content format: array of content parts
+    if (Array.isArray(content)) {
+      // Extract text from content parts and join them
+      return content
+        .filter(part => part.type === 'text')
+        .map(part => part.text)
+        .join('');
+    }
+    
+    // Fallback to JSON string for other formats
+    return JSON.stringify(content);
+  };
+
   // Create a normalized representation of existing messages for comparison
   const existingMessageSignatures = new Set(
     existingMessages.map(msg => {
-      const normalizedContent = typeof msg.content === 'string' 
-        ? msg.content 
-        : JSON.stringify(msg.content);
+      const normalizedContent = normalizeContentForComparison(msg.content);
       return `${msg.role}:${normalizedContent}`;
     })
   );
 
   // Filter incoming messages to only include those not already persisted
   const newMessages = incomingMessages.filter(incomingMsg => {
-    const normalizedIncomingContent = typeof incomingMsg.content === 'string'
-      ? incomingMsg.content
-      : JSON.stringify(incomingMsg.content);
-    
+    const normalizedIncomingContent = normalizeContentForComparison(incomingMsg.content);
     const incomingSignature = `${incomingMsg.role}:${normalizedIncomingContent}`;
     
     return !existingMessageSignatures.has(incomingSignature);
