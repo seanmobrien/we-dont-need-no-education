@@ -4,6 +4,7 @@ import {
   TimelineAgentFactory,
   ServerTimelineAgent as TimelineAgent,
 } from '@/lib/ai/agents/timeline/agent-server';
+import { LoggedError } from '@/lib/react-util';
 
 /**
  * API endpoint for Timeline Agent operations
@@ -108,7 +109,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
-    console.error('Timeline Agent API error:', error);
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'Timeline Agent API',
+      message: 'Error processing Timeline Agent request',
+      extra: { action: request.method, url: request.url },
+    })    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

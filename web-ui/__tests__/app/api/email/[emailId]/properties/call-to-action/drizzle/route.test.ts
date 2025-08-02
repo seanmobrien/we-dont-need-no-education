@@ -112,7 +112,7 @@ describe('Drizzle Call-to-Action Route Handler', () => {
   let mockQueryBuilder: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Setup mock request
     mockRequest = {

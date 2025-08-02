@@ -189,6 +189,29 @@ export interface MappedUrlBuilder extends IUrlBuilder {
         notes: MappedPageOverloads;
       };
     };
+    /**
+     * URL builders for AI-related operations, including chat history.
+     */
+    ai: IUrlBuilder & {
+      /**
+       * URL builders for chat-related operations.
+       */
+      chat: IUrlBuilder & {
+        /**
+         * URL builder for chat history.
+         */
+        history: MappedPageOverloads;
+      };
+    };
+  };
+  /**
+   * URL builders for chat-related pages.
+   */
+  chat: IUrlBuilder & {
+    /**
+     * URL builder for individual chat details.
+     */
+    detail: MappedPageOverloads;
   };
   /**
    * URL builders for email-related pages, including bulk editing and editing individual emails.
@@ -335,6 +358,15 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
       MappedUrlBuilder['api']['email']['properties']
     >;
   };
+  
+  // Add AI chat builders
+  ret.api.ai = ret.api.child('ai') as MappedUrlBuilder['api']['ai'];
+  ret.api.ai.chat = ret.api.ai.child('chat') as MappedUrlBuilder['api']['ai']['chat'];
+  ret.api.ai.chat.history = mappedPageOverloadFactory(ret.api.ai.chat, 'history');
+  
+  ret.chat = ret.child('chat') as MappedUrlBuilder['chat'];
+  ret.chat.detail = mappedPageOverloadFactory(ret.chat, '');
+  
   ret.email = ret.child('messages').child('email') as MappedUrlBuilder['email'];
   ret.email.bulkEdit = mappedPageOverloadFactory(ret.email, 'bulk-edit');
   ret.email.edit = mappedPageOverloadFactory(ret.email, 'edit');

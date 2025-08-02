@@ -113,7 +113,7 @@ describe('buildDrizzleOrderBy', () => {
   let mockQuery: MockQuery;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     console.warn = mockConsoleWarn;
     mockQuery = createMockQuery();
   });

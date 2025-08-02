@@ -1,7 +1,7 @@
 import { type DbTransactionType, drizDbWithInit } from "@/lib/drizzle-db";
 import { schema } from "@/lib/drizzle-db";
 import { eq, desc } from "drizzle-orm";
-import { LanguageModelV1CallOptions } from "ai";
+import { LanguageModelV1MessageExt } from "@/lib/ai/types";
 
 export const getNextSequence = async ({
   chatId,
@@ -74,8 +74,8 @@ export const getNextSequence = async ({
 export const getNewMessages = async (
   tx: DbTransactionType,
   chatId: string,
-  incomingMessages: LanguageModelV1CallOptions['prompt']
-): Promise<LanguageModelV1CallOptions['prompt']> => {
+  incomingMessages: LanguageModelV1MessageExt
+): Promise<LanguageModelV1MessageExt> => {
   // Handle null/undefined incomingMessages gracefully
   if (!incomingMessages || incomingMessages.length === 0) {
     return [];

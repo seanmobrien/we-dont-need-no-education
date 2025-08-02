@@ -43,7 +43,7 @@ const mockDb = {
 };
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  // jest.clearAllMocks();
   (getRedisClient as jest.Mock).mockResolvedValue(mockRedisClient);
   (drizDbWithInit as jest.Mock).mockImplementation((fn) => fn(mockDb));
 });

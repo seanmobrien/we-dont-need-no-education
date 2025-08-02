@@ -153,7 +153,7 @@ const mockSQLExpressions = {
 
 describe('buildDrizzleAttachmentOrEmailFilter', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     console.warn = mockConsoleWarn;
   });
 
@@ -291,7 +291,7 @@ describe('buildDrizzleAttachmentOrEmailFilter', () => {
       const truthyValues = ['true', '1', 'yes', 'y'];
 
       falsyValues.forEach((value) => {
-        jest.clearAllMocks();
+        // jest.clearAllMocks();
         const url = new URL(`https://example.com?attachments=${value}`);
         
         buildDrizzleAttachmentOrEmailFilter({
@@ -305,7 +305,7 @@ describe('buildDrizzleAttachmentOrEmailFilter', () => {
       });
 
       truthyValues.forEach((value) => {
-        jest.clearAllMocks();
+        // jest.clearAllMocks();
         const url = new URL(`https://example.com?attachments=${value}`);
         
         buildDrizzleAttachmentOrEmailFilter({
@@ -341,7 +341,7 @@ describe('buildDrizzleItemFilter', () => {
   const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     console.warn = mockConsoleWarn;
   });
 
@@ -572,7 +572,7 @@ describe('buildDrizzleQueryFilter', () => {
   const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     console.warn = mockConsoleWarn;
     mockQuery = createMockQuery();
   });
@@ -901,7 +901,7 @@ describe('Integration tests', () => {
   let mockQuery: MockQuery;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockQuery = createMockQuery();
   });
 

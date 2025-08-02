@@ -28,7 +28,7 @@ describe('buildDrizzlePagination', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     
     // Create a mock query object that supports method chaining
     mockQuery = {
