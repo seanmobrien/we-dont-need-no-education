@@ -298,6 +298,7 @@ import { FormatAlignCenterSharp } from '@mui/icons-material';
 import React, { Component } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry';
 import instrument, { getAppInsights } from '@/instrument/browser';
+
 globalThis.TextEncoder = TextEncoder;
 
 // React 19 + React Testing Library 16 compatibility setup

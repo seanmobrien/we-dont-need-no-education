@@ -216,11 +216,6 @@ describe('Local Development Auth Bypass', () => {
       expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
       });
 
-      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
-
-      expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
-    });
-
     it('should throw error when bypass is set but not on localhost', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
       process.env.NEXT_PUBLIC_HOSTNAME = 'https://production.com';
