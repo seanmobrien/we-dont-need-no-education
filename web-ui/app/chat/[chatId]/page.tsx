@@ -7,7 +7,6 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
 import { VirtualizedChatDisplay } from '@/components/chat';
-import { StringCheckGrader } from 'openai/resources/graders/grader-models.mjs';
 
 interface ChatMessage {
   turnId: number;
