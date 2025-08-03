@@ -112,7 +112,6 @@ describe('Chat History Enhancement Demonstration', () => {
 
     // Assert - Only exact matches are filtered out
     expect(newMessages).toHaveLength(3);
-    expect(newMessages.map(m => `${m.role}:${m.content[0].text}`)).toEqual([
     expect(newMessages.map(m => {
       const textContent = Array.isArray(m.content) 
         ? m.content.filter(part => part.type === 'text').map(part => part.text).join('')

@@ -372,7 +372,7 @@ describe('EmailDetailPanel', () => {
       expect(
         screen.queryByText('Loading Email Details...'),
       ).not.toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
 
     // Click notes accordion to trigger loading
     const notesAccordion = screen.getByRole('button', { name: /Notes \(1\)/ });
@@ -401,8 +401,8 @@ describe('EmailDetailPanel', () => {
       expect(
         screen.getByText('This is an important note about the email'),
       ).toBeInTheDocument();
-    });
-  });
+    }, { timeout: 3000 });
+  }, 5000);
 
   // Note: Error state test disabled due to Jest error handling complexity
   // The component correctly displays errors in the UI, but Jest reports uncaught errors

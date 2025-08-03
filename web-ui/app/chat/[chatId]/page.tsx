@@ -115,35 +115,35 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
       if (!turnsMap.has(Number(row.turnId))) {
         turnsMap.set(Number(row.turnId), {
           turnId: Number(row.turnId),
-          createdAt: row.createdAt,
-          completedAt: row.completedAt,
-          modelName: row.modelName,
-          statusId: row.turnStatusId,
-          temperature: row.temperature,
-          topP: row.topP,
-          latencyMs: row.latencyMs,
-          warnings: row.warnings,
-          errors: row.errors,
-          metadata: row.turnMetadata,
+          createdAt: String(row.createdAt),
+          completedAt: String(row.completedAt),
+          modelName: String(row.modelName),
+          statusId: Number(row.turnStatusId),
+          temperature: Number(row.temperature),
+          topP: Number(row.topP),
+          latencyMs: Number(row.latencyMs),
+          warnings: Array.isArray(row.warnings) ? row.warnings : [],
+          errors: Array.isArray(row.errors) ? row.errors : [],
+          metadata: row.turnMetadata as Record<string, unknown>,
           messages: [],
         });
       }
 
       if (row.messageId) {
-        const turn = turnsMap.get(row.turnId)!;
+        const turn = turnsMap.get(Number(row.turnId))!;
         turn.messages.push({
-          turnId: row.turnId,
-          messageId: row.messageId,
-          role: row.role,
-          content: row.content,
-          messageOrder: row.messageOrder,
-          toolName: row.toolName,
-          functionCall: row.functionCall,
-          statusId: row.messageStatusId,
-          providerId: row.providerId,
-          metadata: row.messageMetadata,
-          toolInstanceId: row.toolInstanceId,
-          optimizedContent: row.optimizedContent,
+          turnId: Number(row.turnId),
+          messageId: Number(row.messageId),
+          role: String(row.role),
+          content: String(row.content),
+          messageOrder: Number(row.messageOrder),
+          toolName: String(row.toolName),
+          functionCall: row.functionCall as Record<string, unknown> | null,
+          statusId: Number(row.messageStatusId),
+          providerId: String(row.providerId),
+          metadata: row.messageMetadata as Record<string, unknown>,
+          toolInstanceId: String(row.toolInstanceId),
+          optimizedContent: row.optimizedContent as string | null,
         });
       }
     });
@@ -151,7 +151,7 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
     return {
       id: chat.id,
       title: chat.title,
-      createdAt: chat.createdAt,
+      createdAt: chat.createdAt ?? new Date().toISOString(),
       turns: Array.from(turnsMap.values()),
     };
   } catch (error) {

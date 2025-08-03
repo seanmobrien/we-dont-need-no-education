@@ -15,6 +15,10 @@ Object.defineProperty(window, 'history', {
   value: { back: mockBack },
 });
 Object.defineProperty(window, 'open', { value: mockOpen });
+Object.defineProperty(window, 'location', {
+  value: { reload: mockReload },
+  writable: true,
+});
 Object.defineProperty(navigator, 'onLine', { value: true, writable: true });
 
 // Now import the module after setting up mocks
