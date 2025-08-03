@@ -64,7 +64,7 @@ const config: Config.InitialOptions = {
   // logHeapUsage: true,
 
   // Additional stability configurations for concurrent testing
-  testTimeout: 10000, // Increase timeout to 30 seconds for slower tests
+  testTimeout: 1000, // Increase timeout to 30 seconds for slower tests
   openHandlesTimeout: 1000, // Allow 1 second for open handles cleanup
   forceExit: false, // Don't force exit to allow proper cleanup
 

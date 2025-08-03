@@ -25,6 +25,8 @@ jest.mock('@/lib/error-monitoring', () => ({
   },
 }));
 
+const mockReload = jest.fn();
+
 jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
   getRecoveryActions: jest.fn(),
   getDefaultRecoveryAction: jest.fn(),
@@ -37,13 +39,12 @@ const mockGetDefaultRecoveryAction = require('@/lib/error-monitoring/recovery-st
 const mockClassifyError = require('@/lib/error-monitoring/recovery-strategies').classifyError;
 
 // Mock window methods
-const mockReload = jest.fn();
 const mockAlert = jest.fn();
-Object.defineProperty(window, 'location', {
-  value: { reload: mockReload },
-  writable: true,
+
+Object.defineProperty(window, 'alert', { 
+  value: mockAlert,
+  configurable: true, 
 });
-Object.defineProperty(window, 'alert', { value: mockAlert });
 
 // Test theme
 const testTheme = createTheme({
@@ -66,8 +67,20 @@ describe('Error Flow Integration Tests', () => {
     
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');
-    mockGetRecoveryActions.mockReturnValue([]);
-    mockGetDefaultRecoveryAction.mockReturnValue(null);
+    mockGetRecoveryActions.mockReturnValue([
+      {
+        id: 'retry',
+        label: 'Try Again',
+        description: 'Retry the operation',
+        action: mockReload,
+      },
+    ]);
+    mockGetDefaultRecoveryAction.mockReturnValue({
+      id: 'retry',
+      label: 'Try Again',
+      description: 'Retry the operation',
+      action: mockReload,
+    });
     
     // Reset window event listeners
     window.addEventListener = jest.fn();

@@ -1,7 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const shouldWriteToConsole = jest
-  .requireActual('@/lib/react-util')
-  .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
+const {
+  shouldWriteToConsole,
+  muiLicenseKey,
+  nodeEnv,
+  isReactActEnvironment
+ } = {
+  shouldWriteToConsole:jest.requireActual('@/lib/react-util')
+    .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE),
+  muiLicenseKey: process.env.NEXT_PUBLIC_MUI_LICENSE || 'test-mui-license-key',
+  nodeEnv: process.env.NODE_ENV || 'test',
+  isReactActEnvironment: true
+};
 
 jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
   TrackWithAppInsight: jest.fn((props: any) => {
@@ -9,7 +18,6 @@ jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
     return React.createElement('div', rest, children);
   })
 }));
-
 jest.mock('@/instrument/browser', () => ({
   getReactPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
@@ -25,8 +33,8 @@ jest.mock('@/instrument/browser', () => ({
   })),
   instrument: jest.fn()
 }));
-
 jest.mock('react-error-boundary', () => {
+ // eslint-disable-next-line @typescript-eslint/no-empty-object-type
  class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
    #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
    #children: React.ReactNode;
@@ -99,10 +107,19 @@ jest.mock('react-error-boundary', () => {
   },
 };
 });
+jest.mock('@/lib/nextjs-util/fetch', () => ({
+  fetch: jest.fn((url: string) => {
+    console.log('mocked fetch called with URL:', url);
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
+  }),
+}));
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
-import { mockDeep } from 'jest-mock-extended';
+import { mockDeep, mockClear as mockDeepClear } from 'jest-mock-extended';
 import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
@@ -284,6 +301,7 @@ import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { drizDb } from '@/lib/drizzle-db';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 // jest.setup.ts
 // If using React Testing Library
@@ -300,32 +318,7 @@ import { TrackWithAppInsight } from '@/components/general/telemetry';
 import instrument, { getAppInsights } from '@/instrument/browser';
 
 globalThis.TextEncoder = TextEncoder;
-
-// React 19 + React Testing Library 16 compatibility setup
-/*
-import React from 'react';
-import { act } from 'react';
-
-// Set up React.act environment for React 19 concurrent features
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(global as any).IS_REACT_ACT_ENVIRONMENT = true;
-*/
-
-/*
-// Set React.act on the global React object to ensure compatibility
-// This is the correct way to handle React 19 with React Testing Library 16
-if (typeof React.act === 'undefined') {
-  React.act = act;
-}
-
-// Also make act available globally for React Testing Library
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-if (typeof (global as any).act === 'undefined') {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (global as any).act = act;
-}
-*/
-
+(globalThis as unknown as {IS_REACT_ACT_ENVIRONMENT: boolean}).IS_REACT_ACT_ENVIRONMENT=true;
 // Automocks
 
 (NextAuth as jest.Mock).mockImplementation(() => jest.fn);
@@ -334,6 +327,9 @@ if (typeof (global as any).act === 'undefined') {
 });
 
 const DefaultEnvVariables = {
+  NODE_ENV: nodeEnv,
+  NEXT_PUBLIC_MUI_LICENSE: muiLicenseKey,
+
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
   NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
@@ -393,46 +389,261 @@ export const withRedisConnection = () => {
   }
 };
 
-global.fetch = jest.fn().mockImplementation(() => {
-  return Promise.resolve({
-    ok: false,
-    status: 500,
-    json: () => Promise.resolve({ response: 'error' }),
-  });
-});
+const theFetch = jest.fn();
 
 export const resetEnvVariables = () => {
   process.env = {
     ...process.env,
     ...DefaultEnvVariables,
+    NEXT_PUBLIC_MUI_LICENSE: muiLicenseKey,
+    NODE_ENV: nodeEnv,
   };
+  (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+  (global as any).IS_REACT_ACT_ENVIRONMENT=true;
 };
 
 beforeAll(() => {
   try {
-    const origConfig = dotenv.parse(
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
-    );
-    originalProcessEnv = {
-      REDIS_URL: origConfig.REDIS_URL,
-      REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
-    };
+    if (!originalProcessEnv || !originalProcessEnv.REDIS_URL) {
+      const origConfig = dotenv.parse(
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
+      );
+      originalProcessEnv = {
+        REDIS_URL: origConfig.REDIS_URL,
+        REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
+      };
+    }
   } catch (error) {
     return {};
   }
 });
 
 beforeEach(() => {
+  jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
+    TrackWithAppInsight: jest.fn((props: any) => {
+      const { children, ...rest } = props;
+      return React.createElement('div', rest, children);
+    })
+  }));
+  jest.mock('@/instrument/browser', () => ({
+    getReactPlugin: jest.fn(() => ({
+      trackEvent: jest.fn(),
+      trackPageView: jest.fn(),
+    })),
+    getClickPlugin: jest.fn(() => ({
+      trackEvent: jest.fn(),
+      trackPageView: jest.fn(),
+    })),
+    getAppInsights: jest.fn(() => ({
+      trackEvent: jest.fn(),
+      trackPageView: jest.fn(),
+    })),
+    instrument: jest.fn()
+  }));
+  jest.mock('react-error-boundary', () => {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
+    #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
+    #children: React.ReactNode;
+    #onReset?: () => void;
+    #onError?: (error: Error, errorInfo: { componentStack: string }) => void;
+    
+    constructor(props: {
+      children?: React.ReactNode;
+      fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
+      onReset?: () => void;
+      onError?: (error: Error, errorInfo: { componentStack: string }) => void;
+    }) {
+      super(props);
+      const { fallbackRender, onReset, onError } = props;
+      this.#fallbackRender = fallbackRender;
+      this.#onReset = onReset;
+      this.#onError = onError;
+      this.#children = props.children;
+      this.state = { hasError: false, error: null as Error | null };
+    }
+
+    static getDerivedStateFromError(error: any) {
+      return { hasError: true, error };
+    }
+
+    componentDidCatch(error: any, errorInfo: any) {
+      if (this.#onError) {
+        this.#onError(error, errorInfo || { componentStack: 'test-component-stack' });
+      }
+    }
+
+    render() {
+      try {
+        if ('hasError' in this.state && this.state.hasError) {
+          const error =
+            'error' in this.state && !!this.state.error
+              ? this.state.error
+              : new Error('An error occurred');
+          
+          if (this.#fallbackRender) {
+            const FallbackWrapper = () => this.#fallbackRender!({ 
+              error, 
+              resetErrorBoundary: () => {
+                this.setState({ hasError: false, error: null });
+                this.#onReset?.();
+              }
+            });
+            return React.createElement(FallbackWrapper);
+          }
+          
+          return React.createElement('div', { role: 'alert' }, String(error));
+        }
+        return this.#children;
+      } catch (error) {
+        // Catch errors during render and trigger error boundary behavior
+        if (!this.state.hasError) {
+          this.setState({ hasError: true, error: error as Error });
+          if (this.#onError) {
+            this.#onError(error as Error, { componentStack: 'test-component-stack' });
+          }
+        }
+        return React.createElement('div', { role: 'alert' }, String(error));
+      }
+    }
+  }
+    return {
+    ErrorBoundary,
+    FallbackComponent: ({ error }: { error?: Error }) => {
+      return React.createElement('div', { role: 'alert' }, error?.message);
+    },
+  };
+  });
+  jest.mock('drizzle-orm/postgres-js', () => {
+    return {
+      ...actualDrizzle,
+      drizzle: jest.fn(() => mockDb),
+      sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
+    };
+  });
+  jest.mock('@/lib/neondb/connection', () => {
+    const pgDb = jest.fn(() => makeRecursiveMock());
+    return {
+      pgDbWithInit: jest.fn(() => Promise.resolve(makeRecursiveMock())),
+      pgDb,
+      sql: jest.fn(() => pgDb()),
+    };
+  });
+  jest.mock('@/lib/drizzle-db/connection', () => {
+    return {
+      drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
+        const mockDbInstance = makeMockDb();
+        if (fn) {
+          const result = fn(mockDbInstance);
+          return Promise.resolve(result);
+        }
+        return mockDbInstance;
+      }),
+      drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
+      schema: actualSchema,
+    };
+  });
+  jest.mock('@/lib/drizzle-db', () => {
+    return {
+      drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
+        const mockDbInstance = makeMockDb();
+        if (fn) {
+          const result = fn(mockDbInstance);
+          return Promise.resolve(result);
+        }
+        return mockDbInstance;
+      }),
+      drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
+      schema: actualSchema,
+      sql: jest.fn(() => makeRecursiveMock()),
+    };
+  });
+  jest.mock('postgres', () => {
+    return {
+      default: jest.fn().mockImplementation((strings, ...values) => {
+        return jest.fn(() => Promise.resolve({ rows: [] }));
+      }),
+    };
+  });
+  jest.mock('next-auth', () => {
+    return jest.fn();
+  });
+  jest.mock('@/auth', () => {
+    return {
+      auth: jest.fn(() => ({
+        id: 'fdsdfs',
+      })),
+    };
+  });
+  jest.mock('@/lib/site-util/env', () => {
+    return {
+      env: jest.fn((key: string) => {
+        return process.env[key] || '';
+      }),
+    };
+  });
+  jest.mock('next/navigation', () => ({
+    useRouter: jest.fn(() => ({
+      push: jest.fn(),
+      replace: jest.fn(),
+      prefetch: jest.fn(),
+      back: jest.fn(),
+      forward: jest.fn(),
+      refresh: jest.fn(),
+    })),
+    usePathname: jest.fn(() => '/test'),
+    useSearchParams: jest.fn(() => new URLSearchParams()),
+  }));
   resetEnvVariables();
   resetGlobalCache();  
+  theFetch.mockReset().mockImplementation(() => {
+    return Promise.resolve({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ response: 'error' }),
+    });
+  });
+  global.fetch = theFetch;
+  /*
+  (NextAuth as jest.Mock).mockImplementation(() => jest.fn);
+  (auth as jest.Mock).mockImplementation(() => {
+    return jest.fn(() => Promise.resolve({ id: 'test-id' }));
+  });
+  */
+  jest.mock('@/lib/logger', () => {
+    return {
+      logger: Promise.resolve(() => ({
+        warn: jest.fn(makeMockImplementation('warn')),
+        error: jest.fn(makeMockImplementation('error')),
+        info: jest.fn(makeMockImplementation('info')),
+        debug: jest.fn(makeMockImplementation('debug')),
+        silly: jest.fn(makeMockImplementation('silly')),
+        verbose: jest.fn(makeMockImplementation('verbose')),
+        log: jest.fn(makeMockImplementation('log')),
+      })),
+      log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => cb(logger())),
+      errorLogFactory: jest.fn((x) => x),
+      simpleScopedLogger: jest.fn(() => logger()),
+    };
+  });
+  jest.mock('redis', () => ({
+    createClient: createRedisClient,
+  }));
 });
 
 afterEach(() => {
   jest.clearAllMocks();
-  mockDb = mockDeep<DatabaseType>();
+  mockDeepClear(mockDb);
   resetGlobalCache();
-  Object.entries(originalProcessEnv).forEach(([key, value]) => {
+  Object.entries({
+      ...(originalProcessEnv ?? {}),
+      NODE_ENV: nodeEnv,
+      NEXT_PUBLIC_MUI_LICENSE: muiLicenseKey,
+      IS_REACT_ACT_ENVIRONMENT: isReactActEnvironment ? 'true' : 'false',
+    }
+  ).forEach(([key, value]) => {
     process.env[key] = value;
   });
+  mockDb = mockDeep<DatabaseType>();
 });

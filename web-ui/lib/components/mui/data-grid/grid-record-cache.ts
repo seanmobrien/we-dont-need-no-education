@@ -9,6 +9,7 @@ import {
 } from '@mui/x-data-grid-pro';
 import { GetRequestCacheRecordProps, RequestCacheRecordProps } from './types';
 import { log } from '@/lib/logger';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 /**
  * A cache manager for paginated, sorted, and filtered data grid records.

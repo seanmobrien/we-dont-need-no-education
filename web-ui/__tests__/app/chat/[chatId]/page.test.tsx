@@ -12,11 +12,13 @@ import { render, screen } from '@/__tests__/test-utils';
 import ChatDetailPage from '@/app/chat/[chatId]/page';
 import { notFound } from 'next/navigation';
 
-import { mockChatDetails, mockEmptyChat } from '@/__tests__/components/chat.mock-data';
+// import { mockChatDetails, mockEmptyChat } from '@/__tests__/components/chat.mock-data';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
-  notFound: jest.fn(),
+  notFound: jest.fn(() => {
+    throw new Error('NEXT_NOT_FOUND');
+  }),
 }));
 
 // Mock the auth module
@@ -40,45 +42,18 @@ jest.mock('@/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn(),
 }));
 
-jest.mock('@/lib/drizzle-db/schema', () => ({
-  schema: {
-    chats: {
-      id: 'chats.id',
-      title: 'chats.title',
-      createdAt: 'chats.createdAt',
-    },
-    chatTurns: {
-      turnId: 'chatTurns.turnId',
-      createdAt: 'chatTurns.createdAt',
-      completedAt: 'chatTurns.completedAt',
-      modelName: 'chatTurns.modelName',
-      statusId: 'chatTurns.statusId',
-      temperature: 'chatTurns.temperature',
-      topP: 'chatTurns.topP',
-      latencyMs: 'chatTurns.latencyMs',
-      warnings: 'chatTurns.warnings',
-      errors: 'chatTurns.errors',
-      metadata: 'chatTurns.metadata',
-    },
-    chatMessages: {
-      messageId: 'chatMessages.messageId',
-      role: 'chatMessages.role',
-      content: 'chatMessages.content',
-      messageOrder: 'chatMessages.messageOrder',
-      toolName: 'chatMessages.toolName',
-      functionCall: 'chatMessages.functionCall',
-      statusId: 'chatMessages.statusId',
-      providerId: 'chatMessages.providerId',
-      metadata: 'chatMessages.metadata',
-      toolInstanceId: 'chatMessages.toolInstanceId',
-      optimizedContent: 'chatMessages.optimizedContent',
-    },
-  },
-}));
+jest.mock('@/lib/drizzle-db/schema', () => { 
+  const orig = jest.requireActual('@/lib/drizzle-db/schema');  
+  return {
+    schema: orig.schema
+  };
+});
+
 
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn((field, value) => ({ field, value, type: 'eq' })),
   asc: jest.fn((field) => ({ field, direction: 'asc' })),
+  and: jest.fn((...conditions) => ({ type: 'and', conditions })),
 }));
 
 // Mock the VirtualizedChatDisplay component
@@ -194,8 +169,12 @@ describe('Chat Detail Page', () => {
     // notFound() throws an error in Next.js, so we need to catch it
     try {
       await ChatDetailPage({ params });
+      // If we reach here, the test should fail
+      expect(true).toBe(false);
     } catch (error: unknown) {
       // notFound() throws a special Next.js error
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe('NEXT_NOT_FOUND');
     }
     
     expect(notFound).toHaveBeenCalled();

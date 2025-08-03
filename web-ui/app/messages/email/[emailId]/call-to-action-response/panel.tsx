@@ -24,6 +24,7 @@ import {
 } from '@/data-models/api';
 import { useParams } from 'next/navigation';
 import { EmailMasterPanel } from '@/components/mui/data-grid';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 const formatDate = (date: Date | null): string => {
   if (typeof date === 'string') {
@@ -82,7 +83,6 @@ const ResponsiveActionPanelContent = ({
     callToActionData?.results?.find(
       (cta: CallToActionDetails) => cta.propertyId === row.actionPropertyId,
     ) || null;
-
   return (
     <>
       {/* Progress and Timing */}
@@ -240,11 +240,13 @@ const ResponsiveActionPanelContent = ({
                 <CircularProgress size={24} data-testid="circular-progress" />
               </Box>
             ) : error ? (
+              <>
               <Alert severity="error">
-                {error instanceof Error
+                {typeof error === 'object' && !!error && 'message' in error
                   ? error.message
                   : 'Failed to load related call-to-action'}
               </Alert>
+              </>
             ) : !relatedCTA ? (
               <Typography variant="body2" color="textSecondary">
                 No related call-to-action found.

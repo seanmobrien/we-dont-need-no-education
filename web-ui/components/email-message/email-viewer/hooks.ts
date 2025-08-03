@@ -7,6 +7,7 @@ import {
   TResponseMap,
   EmailAttachment,
 } from './types';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 export const emailMessageQuery = async ({queryKey}: { queryKey: ['email-message', string] }) => {  
   if (queryKey.length < 2) {

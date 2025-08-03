@@ -10,6 +10,7 @@ import {
   AiSearchResultEnvelope,
 } from './types';
 import { LoggedError } from '@/lib/react-util';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 
 type SearchMeta = {

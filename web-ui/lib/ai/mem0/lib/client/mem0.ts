@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
+import { fetch } from '@/lib/nextjs-util/fetch';
 import {
   AllUsers,
   ProjectOptions,

@@ -10,6 +10,7 @@ import type {
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
 import { isError, isTruthy, LoggedError } from '@/lib/react-util';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { fetch } from '@/lib/nextjs-util/fetch';
 import {
   useQuery,
   useMutation,
