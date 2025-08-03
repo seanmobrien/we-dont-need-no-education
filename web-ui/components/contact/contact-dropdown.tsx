@@ -5,6 +5,7 @@ import { Contact, ContactSummary } from '@/data-models/api/contact';
 import { createContactSummary } from '@/data-models/api';
 import { log } from '@/lib/logger';
 import { css, SerializedStyles } from '@emotion/react';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 interface ContactDropdownProps {
   displayValue?: 'name' | 'email' | 'both';

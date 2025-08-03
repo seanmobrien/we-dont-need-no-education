@@ -13,6 +13,7 @@ import {
   generateUserKeyPair,
   getUserPublicKeyForServer
 } from '@/lib/site-util/auth/user-keys';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 export const SessionContext = createContext<SessionContextType<object> | null>(null);
 

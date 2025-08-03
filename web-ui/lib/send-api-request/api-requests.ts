@@ -11,6 +11,7 @@ import type {
 import { ApiRequestError } from './api-request-error';
 import { LoggedError } from '../react-util/errors/logged-error';
 import { getHeaderValue } from '../nextjs-util';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 /**
  * Sends an API request with the specified parameters.

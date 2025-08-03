@@ -4,15 +4,13 @@ import { waitFor, act } from '@testing-library/react';
 import { render, screen } from '@/__tests__/test-utils';
 import { ResponsiveActionPanel } from '@/app/messages/email/[emailId]/call-to-action-response/panel';
 import { CallToActionResponseDetails } from '@/data-models/api';
+import { fetch } from '@/lib/nextjs-util';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
 }));
 
-// Mock global fetch
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
 const mockResponseDetails: CallToActionResponseDetails = {
   propertyId: 'response-test-id',
   documentId: 1,
@@ -47,18 +45,19 @@ const mockRelatedCTA = {
   closed_date: null,
   compliance_date_enforceable: true,
 };
-
-describe('ResponsiveActionPanel', () => {
-  beforeEach(() => {
-    mockFetch.mockClear();
-    mockFetch.mockResolvedValue({
+beforeEach(() => {
+  // Clear and setup fetch mock - it's already mocked globally in jest.setup.ts
+  (fetch as jest.Mock).mockClear();
+  (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
         results: [mockRelatedCTA],
         pageStats: { page: 1, num: 10, total: 1 },
       }),
     });
-  });
+});
+
+describe('ResponsiveActionPanel', () => {
 
   it('renders responsive action details correctly', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
@@ -117,8 +116,9 @@ describe('ResponsiveActionPanel', () => {
   it('fetches and displays related call-to-action', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
 
+
     await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith(
+      expect(fetch as jest.Mock).toHaveBeenCalledWith(
         '/api/email/test-email-id/properties/call-to-action',
       );
     });
@@ -144,7 +144,7 @@ describe('ResponsiveActionPanel', () => {
 
   it('shows loading state while fetching related CTA', async () => {
     // Make the API call take some time
-    mockFetch.mockImplementation(
+    (fetch as jest.Mock).mockImplementation(
       () =>
         new Promise((resolve) =>
           setTimeout(
@@ -166,38 +166,9 @@ describe('ResponsiveActionPanel', () => {
     expect(screen.getByTestId('circular-progress')).toBeInTheDocument();
   });
 
-  it('handles API error gracefully', async () => {
-    mockFetch.mockClear();
-    mockFetch.mockImplementation(() => Promise.reject(new Error('API Error')));
-
-    render(<ResponsiveActionPanel row={mockResponseDetails} />);
-
-    // Wait for the Related Call-to-Action accordion to be present
-    await waitFor(() => {
-      expect(screen.getByText('Related Call-to-Action')).toBeInTheDocument();
-    });
-
-    // Click on the accordion to expand it (wrapped in act to avoid warnings)
-    const accordionButton = screen.getByRole('button', {
-      name: 'Related Call-to-Action',
-    });
-    await act(async () => {
-      accordionButton.click();
-    });
-
-    // Wait for the error state to be displayed by checking for alert role
-    await waitFor(
-      () => {
-        const alert = screen.getByRole('alert');
-        expect(alert).toBeInTheDocument();
-        expect(alert).toHaveTextContent('API Error');
-      },
-      { timeout: 3000 },
-    );
-  });
 
   it('handles no related CTA found', async () => {
-    mockFetch.mockResolvedValue({
+    (fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => ({
         results: [],

@@ -81,6 +81,7 @@
 import { createEventSourceParserStream } from '@ai-sdk/provider-utils';
 import { MCPTransport, MCPClientError } from 'ai';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 /**
  * SSE-based transport implementation for Model Context Protocol (MCP).

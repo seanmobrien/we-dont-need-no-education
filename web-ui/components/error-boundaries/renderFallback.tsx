@@ -22,6 +22,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import { getRecoveryActions, getDefaultRecoveryAction, classifyError } from '@/lib/error-monitoring/recovery-strategies';
 import type { RecoveryAction } from '@/lib/error-monitoring/recovery-strategies';
+import { dumpError } from '@/lib/react-util';
 
 export const RenderErrorBoundaryFallback = (
   {error, resetErrorBoundary}: {
@@ -34,7 +35,7 @@ export const RenderErrorBoundaryFallback = (
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorMessage = dumpError(error); // error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : undefined;
   const errorObj = error instanceof Error ? error : new Error(String(error));
   

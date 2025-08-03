@@ -9,6 +9,8 @@ import { createTheme } from '@mui/material/styles';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
 
 // Mock the recovery strategies
+const mockReload = jest.fn();
+
 jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
   getRecoveryActions: jest.fn(),
   getDefaultRecoveryAction: jest.fn(),
@@ -19,12 +21,6 @@ const mockGetRecoveryActions = require('@/lib/error-monitoring/recovery-strategi
 const mockGetDefaultRecoveryAction = require('@/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
 const mockClassifyError = require('@/lib/error-monitoring/recovery-strategies').classifyError;
 
-// Mock window.location.reload
-const mockReload = jest.fn();
-Object.defineProperty(window, 'location', {
-  value: { reload: mockReload },
-  writable: true,
-});
 
 // Create a test theme
 const testTheme = createTheme({
@@ -48,12 +44,24 @@ describe('RenderErrorBoundaryFallback', () => {
   const testError = new Error('Test error message');
 
   beforeEach(() => {
-    // jest.clearAllMocks();
+    jest.clearAllMocks();
     
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');
-    mockGetRecoveryActions.mockReturnValue([]);
-    mockGetDefaultRecoveryAction.mockReturnValue(null);
+    mockGetRecoveryActions.mockReturnValue([
+      {
+        id: 'retry',
+        label: 'Try Again',
+        description: 'Retry the operation',
+        action: mockReload,
+      },
+    ]);
+    mockGetDefaultRecoveryAction.mockReturnValue({
+      id: 'retry',
+      label: 'Try Again',
+      description: 'Retry the operation',
+      action: mockReload,
+    });
   });
 
   const renderComponent = (error = testError, resetFn = mockResetErrorBoundary) => {
