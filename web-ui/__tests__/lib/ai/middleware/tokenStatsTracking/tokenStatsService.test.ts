@@ -1,8 +1,6 @@
 import { tokenStatsService, TokenUsageData } from '@/lib/ai/middleware/tokenStatsTracking';
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { modelQuotas, tokenConsumptionStats } from '@/drizzle/schema';
-import { eq, and } from 'drizzle-orm';
 
 // Mock Redis for testing
 jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
@@ -53,11 +51,15 @@ describe('TokenStatsService', () => {
     it('should handle provider:model format', async () => {
       // When modelName contains ':', it overrides provider and extracts both from modelName
       const result = await tokenStatsService.getTokenStats('ignored', 'azure:hifi');
-      expect(mockRedisClient.get).toHaveBeenCalledWith('token_stats:azure:hifi:minute');
+      expect(result).not.toBeNull();
+      expect(mockRedisClient.get).toHaveBeenCalledWith(
+        'token_stats:azure:hifi:minute',
+      );
     });
 
     it('should handle separate provider and model', async () => {
       const result = await tokenStatsService.getTokenStats('google', 'gemini-pro');
+      expect(result).not.toBeNull();
       expect(mockRedisClient.get).toHaveBeenCalledWith('token_stats:google:gemini-pro:minute');
     });
   });

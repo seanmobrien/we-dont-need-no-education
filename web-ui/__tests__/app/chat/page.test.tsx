@@ -20,9 +20,13 @@ jest.mock('@/components/email-message/dashboard-layout/email-dashboard-layout', 
   ),
 }));
 
-import { auth } from '@/auth';
+// Mock auth module
+jest.mock('@/auth', () => ({
+  auth: jest.fn().mockImplementation(() => Promise.resolve(null)),
+}));
 
-let authSpy: jest.SpyInstance<typeof auth>;
+import { auth } from '@/auth';
+import type { Session } from 'next-auth';
 
 describe('Chat List Page', () => {
   const mockSession = {
@@ -30,14 +34,14 @@ describe('Chat List Page', () => {
       id: 'user123',
       email: 'test@example.com',
       name: 'Test User',
+      image: '',
     },
-  };
+    expires: '2024-12-31T23:59:59.999Z',
+  } as Session;
 
   beforeEach(async () => {
     // jest.clearAllMocks();
-    const authMod = await import('@/auth');
-    jest.spyOn(authMod, 'auth').mockResolvedValue(mockSession);
-    // (auth as jest.Mock).mockResolvedValue(mockSession);
+    (auth as any).mockResolvedValue(mockSession);
   });
 
   it('should render chat list page with proper layout', async () => {

@@ -57,33 +57,18 @@ const mockCallToActionData = [
   }
 ];
 
-// Get references to the mocked instances for test assertions
-let mockController: any;
-let mockRepository: any;
 
 describe('Call-to-Action API Route', () => {
   let mockRequest: NextRequest;
-  let mockParams: { params: Promise<{ emailId: string }> };
+  let mockParams: { params: Promise<{ emailId: string; propertyId: string }> };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    
-    // Get the mocked constructor instances
-    const MockedRepositoryCrudController = RepositoryCrudController as jest.MockedClass<typeof RepositoryCrudController>;
-    const MockedCallToActionDetailsRepository = CallToActionDetailsRepository as jest.MockedClass<typeof CallToActionDetailsRepository>;
-    
-    // Get the mock instances that were created when the route module was imported
-    if (MockedRepositoryCrudController.mock.instances.length > 0) {
-      mockController = MockedRepositoryCrudController.mock.instances[0];
-    }
-    if (MockedCallToActionDetailsRepository.mock.instances.length > 0) {
-      mockRepository = MockedCallToActionDetailsRepository.mock.instances[0];
-    }
-    
+    jest.clearAllMocks();  
+   
     // Setup mock request
     mockRequest = new NextRequest('http://localhost:3000/api/email/test-email-123/properties/call-to-action?page=1&num=20');
     mockParams = {
-      params: Promise.resolve({ emailId: mockEmailId })
+      params: Promise.resolve({ emailId: mockEmailId, propertyId: 'property-123' })
     };
   });
 

@@ -757,7 +757,7 @@ export const importIncomingMessage = async ({
     chatId,
     thisTurnId,
     messageIds,
-    newMessages, // Only insert new messages, not duplicates
+    newMessages as LanguageModelV1CallOptions['prompt'], // Only insert new messages, not duplicates
     currentMessageOrder,
   );
 

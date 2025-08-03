@@ -98,7 +98,7 @@ export const getNewMessages = async (
   }
 
   // Helper function to normalize content for comparison
-  const normalizeContentForComparison = (content: any): string => {
+  const normalizeContentForComparison = (content: unknown): string => {
     if (typeof content === 'string') {
       // Check if the string is a JSON representation of content array
       try {

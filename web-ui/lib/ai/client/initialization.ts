@@ -1,7 +1,6 @@
 /*
 import { initializeUserKeys, getUserPublicKeyForServer } from './confirmation';
 */
-import { fetch } from '@/lib/nextjs-util/fetch';
 /**
  * Initialize user cryptographic keys and register public key with server if needed
  * Call this on app startup or user login

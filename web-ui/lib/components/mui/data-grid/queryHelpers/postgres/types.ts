@@ -10,7 +10,7 @@ export type BuildOrderByProps<RecordType extends Record<string, unknown> = Recor
   /**
    * The PostgreSQL client or adapter instance.
    */
-  sql: Sql<RecordType> | ISqlNeonAdapter | SqlDb<RecordType> | any;
+  sql: Sql<RecordType> | ISqlNeonAdapter | SqlDb<RecordType> | unknown;
 
   /**
    * The request object, typically similar to Next.js's request, URL, or direct sort model.
@@ -40,7 +40,7 @@ export type BuildPaginationProps<RecordType extends Record<string, unknown> = Re
   /**
    * The PostgreSQL client or adapter instance.
    */
-  sql: Sql<RecordType> | ISqlNeonAdapter | SqlDb<RecordType> | any;
+  sql: Sql<RecordType> | ISqlNeonAdapter | SqlDb<RecordType> | unknown;
 
   /**
    * The request object containing pagination parameters.
@@ -60,7 +60,7 @@ export type BuildPaginationProps<RecordType extends Record<string, unknown> = Re
   /**
    * Optional request parameter for backward compatibility.
    */
-  req?: any;
+  req?: unknown;
 };
 
 /**
@@ -70,7 +70,7 @@ export type BuildQueryFilterProps<RecordType extends Record<string, unknown> = R
   /**
    * The PostgreSQL client or adapter instance.
    */
-  sql: Sql<RecordType> | ISqlNeonAdapter | SqlDb<RecordType> | any;
+  sql: Sql<RecordType> | ISqlNeonAdapter | SqlDb<RecordType> | unknown;
 
   /**
    * The filter criteria source, typically specifying the fields and values to filter by.
@@ -95,7 +95,7 @@ export type BuildQueryFilterProps<RecordType extends Record<string, unknown> = R
   /**
    * Optional append parameter for backward compatibility.
    */
-  append?: any;
+  append?: unknown;
 };
 
 /**

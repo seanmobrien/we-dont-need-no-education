@@ -1,5 +1,4 @@
 import { PaginationStats } from '@/data-models';
-import type { ISqlNeonAdapter, SqlDb } from '@/lib/neondb';
 import type { LikeNextRequest } from '@/lib/nextjs-util';
 export type { LikeNextRequest };
 import type { FirstParameter } from '@/lib/typescript';

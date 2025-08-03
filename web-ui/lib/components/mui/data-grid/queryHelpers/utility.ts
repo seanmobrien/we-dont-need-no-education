@@ -80,11 +80,6 @@ export const columnMapFactory = (
 };
 
 
-interface ParseSortOptionsOverloads{
-  (source: URLSearchParams | LikeNextRequest | URL | string | GridSortModel): GridSortModel;
-  (source?: undefined): undefined;
-}
-
 type ParseSortOptionsParam =
   | URLSearchParams
   | LikeNextRequest
@@ -99,11 +94,11 @@ export const parseSortOptions = (
   source?: ParseSortOptionsParam,
 ): typeof source extends infer TSource ? TSource extends ParseSortOptionsParam ? GridSortModel : undefined : never => {  
   if (source === null) {
-    return [] as any; // Test expects [] for null
+    return [] as GridSortModel; // Test expects [] for null
   }
   
   if (source === undefined) {
-    return undefined as any; // Test expects undefined for undefined
+    return undefined as undefined; // Test expects undefined for undefined
   }
 
   if (isGridSortModel(source)) {
@@ -113,7 +108,7 @@ export const parseSortOptions = (
   if (isString(source)) {
     // Handle empty string case
     if (source.trim() === '') {
-      return undefined as any;
+      return undefined as undefined;
     }
     
     try {
@@ -146,10 +141,10 @@ export const parseSortOptions = (
       }, [] as GridSortItem[]);
       
       if (extracted.length > 0) {
-        return extracted as any;
+        return extracted as GridSortModel;
       }
     }
-    return undefined as any; // Return undefined for invalid strings
+    return undefined as undefined; // Return undefined for invalid strings
   }
 
   if (source instanceof URLSearchParams) {
@@ -169,7 +164,7 @@ export const parseSortOptions = (
   }
 
   // For unknown types (objects, numbers, etc.)
-  return undefined as any;
+  return undefined as undefined;
 };
 
 /**

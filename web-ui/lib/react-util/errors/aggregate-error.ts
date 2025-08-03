@@ -1,5 +1,3 @@
-import { ConfirmDialog } from "@toolpad/core";
-
 /**
  * Represents an aggregate error that encapsulates multiple errors.
  *

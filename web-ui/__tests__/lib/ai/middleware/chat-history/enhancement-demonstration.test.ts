@@ -49,8 +49,8 @@ describe('Chat History Enhancement Demonstration', () => {
     
     // Simulate existing messages from Turn 1
     const existingMessages: LanguageModelV1MessageExt = [
-      { role: 'user', content: [ { type: 'text', text: 'Hello' } ], messageOrder: 0 },
-      { role: 'assistant', content: [ { type: 'text', text: 'Hi there!' } ], messageOrder: 1 }
+      { role: 'user', content: [ { type: 'text', text: 'Hello' } ] },
+      { role: 'assistant', content: [ { type: 'text', text: 'Hi there!' } ] }
     ];
 
     // Simulate Turn 2 incoming messages (conversation history + new message)

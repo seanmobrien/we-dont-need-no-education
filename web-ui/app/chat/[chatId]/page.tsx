@@ -7,7 +7,6 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
 import { VirtualizedChatDisplay } from '@/components/chat';
-import { StringCheckGrader } from 'openai/resources/graders/grader-models.mjs';
 
 interface ChatMessage {
   turnId: number;
@@ -163,10 +162,10 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
 export default async function ChatDetailPage({
   params,
 }: {
-  params: { chatId: string };
+  params: Promise<{ chatId: string }>;
 }) {
   const session = await auth();
-  const chatDetails = await getChatDetails(params.chatId);
+  const chatDetails = await getChatDetails((await params).chatId);
 
   if (!chatDetails) {
     notFound();

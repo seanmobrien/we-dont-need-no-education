@@ -105,7 +105,7 @@ export class TokenStatsService {
             model: true, // Include quota details
           },
           where: and(
-            eq(models.provider, provider),
+            eq(models.providerId, provider),
             eq(models.modelName, modelName),
             eq(models.isActive, true),
             eq(modelQuotas.isActive, true),
@@ -116,7 +116,7 @@ export class TokenStatsService {
         }
         return {
           id: row.id,
-          provider: row.model.provider,
+          provider: row.model.providerId,
           modelName: row.model.modelName,
           maxTokensPerMessage: row.maxTokensPerMessage || undefined,
           maxTokensPerMinute: row.maxTokensPerMinute || undefined,
@@ -308,7 +308,7 @@ export class TokenStatsService {
         
         const model = await db.query.models.findFirst({
           where: and(
-            eq(models.provider, provider),
+            eq(models.providerId, provider),
             eq(models.modelName, modelName),
             eq(models.isActive, true),
           ),
