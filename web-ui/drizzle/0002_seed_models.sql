@@ -28,7 +28,7 @@ FROM (VALUES
     ('google', 'gemini-2.5-pro', 'Google Gemini 2.5 Pro', 'Google Gemini 2.5 Pro model for advanced reasoning'),
     ('google', 'gemini-2.5-flash', 'Google Gemini 2.5 Flash', 'Google Gemini 2.5 Flash model for fast responses'),
     ('google', 'gemini-2.0-flash', 'Google Gemini 2.0 Flash', 'Google Gemini 2.0 Flash model for fast responses'),
-    ('google', 'google-embedding', 'Google Text Embedding', 'Google text embedding model'),
+    ('google', 'google-embedding', 'Google Text Embedding', 'Google text embedding model')
 
 
 ) AS m(provider_name, model_name, display_name, description)
