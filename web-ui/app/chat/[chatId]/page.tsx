@@ -5,8 +5,9 @@ import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { VirtualizedChatDisplay } from '@/components/chat';
+import { StringCheckGrader } from 'openai/resources/graders/grader-models.mjs';
 
 interface ChatMessage {
   turnId: number;
@@ -107,13 +108,13 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
       .where(eq(schema.chatTurns.chatId, chatId))
       .orderBy(schema.chatTurns.turnId, schema.chatMessages.messageOrder);
 
+
     // Group messages by turn
     const turnsMap = new Map<number, ChatTurn>();
-    
     turnsAndMessagesResult.forEach((row: Record<string, unknown>) => {
-      if (!turnsMap.has(row.turnId)) {
-        turnsMap.set(row.turnId, {
-          turnId: row.turnId,
+      if (!turnsMap.has(Number(row.turnId))) {
+        turnsMap.set(Number(row.turnId), {
+          turnId: Number(row.turnId),
           createdAt: row.createdAt,
           completedAt: row.completedAt,
           modelName: row.modelName,
