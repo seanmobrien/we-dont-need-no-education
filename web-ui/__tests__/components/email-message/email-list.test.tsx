@@ -14,23 +14,13 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
-describe('EmailList', () => {
-  const mockFetch = jest.fn();
-  
+describe('EmailList', () => {    
   // Set a shorter timeout for all tests in this suite
-  jest.setTimeout(30000);
+  // jest.setTimeout(30000);
 
-  beforeAll(() => {
-    global.fetch = mockFetch;
-  });
-
-  beforeEach(() => {
-    // jest.clearAllMocks();
-    global.fetch = mockFetch;
-  });
 
   it('should display loading state initially', () => {
-    mockFetch.mockResolvedValueOnce({
+    (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => [],
     });
@@ -41,7 +31,7 @@ describe('EmailList', () => {
   });
 
   it('should display error message when fetching emails fails', async () => {
-    mockFetch.mockRejectedValueOnce(new Error('Error fetching emails.'));
+    (fetch as jest.Mock).mockRejectedValueOnce(new Error('Error fetching emails.'));
 
     render(<EmailList />);
 
@@ -53,7 +43,7 @@ describe('EmailList', () => {
   });
 
   it('should display no emails found message when there are no emails', async () => {
-    mockFetch.mockResolvedValueOnce({
+    (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ rows: [], totalRowCount: 0 }),
     });
@@ -70,7 +60,7 @@ describe('EmailList', () => {
 
   it('should display a list of emails', async () => {
     const mockEmails = mockEmailSummary();
-    mockFetch.mockResolvedValueOnce({
+    (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ rows: mockEmails, totalRowCount: mockEmails.length }),
     });
@@ -90,7 +80,7 @@ describe('EmailList', () => {
 
   it('should display the email form when an email is selected', async () => {
     const mockEmails = mockEmailSummary();
-    mockFetch.mockResolvedValueOnce({
+    (fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ rows: mockEmails, totalRowCount: mockEmails.length }),
     });

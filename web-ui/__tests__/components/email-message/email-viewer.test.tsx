@@ -1,28 +1,24 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, waitFor } from '@/__tests__/test-utils';
+import { render, asyncRender, screen, waitFor, act } from '@/__tests__/test-utils';
 import EmailViewer from '@/components/email-message/email-viewer';
-
-// Mock fetch globally for API calls
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 describe('EmailViewer', () => {
   beforeEach(() => {
-    // mockFetch.mockClear();
+    // Clear fetch mock - it's already mocked globally in jest.setup.ts
+    (fetch as jest.Mock).mockClear();
   });
 
   it('renders loading state initially', async () => {
-    let resolvePromise: (value: any) => void;
-    let rejectPromise: (error: any) => void;
-
-    const promise = new Promise((resolve, reject) => {
-      resolvePromise = resolve;
-      rejectPromise = reject;
-    });
-
+    const request = Promise.withResolvers();
+    const resolvePromise = request.resolve;
+    const promise = request.promise;
+        
     // Mock fetch to return a delayed promise
-    mockFetch.mockImplementation((url: string) => {
+    (fetch as jest.Mock).mockImplementation((url: string) => {
+      console.log('overridden fetch called with URL:', url);
       if (url.includes('/api/email/test-email-id/attachments')) {
+
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve([]),
@@ -36,34 +32,37 @@ describe('EmailViewer', () => {
       }
       return Promise.reject(new Error('Unexpected URL'));
     });
-
-    render(<EmailViewer emailId="test-email-id" />);
+    
+    await asyncRender(<EmailViewer emailId="test-email-id" />);
 
     // Check loading state
     expect(screen.getByText('Loading Email...')).toBeInTheDocument();
-
+    
     // Resolve the promise
-    resolvePromise!({
-      emailId: 'test-email-id',
-      sender: {
-        contactId: 1,
-        name: 'Test Sender',
-        email: 'sender@test.com',
-      },
-      recipients: [
-        {
-          contactId: 2,
-          name: 'Test Recipient',
-          email: 'recipient@test.com',
+    await act(async () => {
+      resolvePromise({
+        emailId: 'test-email-id',
+        sender: {
+          contactId: 1,
+          name: 'Test Sender',
+          email: 'sender@test.com',
         },
-      ],
-      subject: 'Test Subject',
-      body: 'Test email body content',
-      sentOn: '2023-01-01T00:00:00Z',
-      threadId: 1,
-      parentEmailId: null,
+        recipients: [
+          {
+            contactId: 2,
+            name: 'Test Recipient',
+            email: 'recipient@test.com',
+          },
+        ],
+        subject: 'Test Subject',
+        body: 'Test email body content',
+        sentOn: '2023-01-01T00:00:00Z',
+        threadId: 1,
+        parentEmailId: null,
+      });
+      await promise;
     });
-
+    
     // Wait for the component to finish loading
     await waitFor(
       () => {
@@ -96,7 +95,7 @@ describe('EmailViewer', () => {
     };
 
     // Mock fetch for both email and attachments
-    mockFetch.mockImplementation((url: string) => {
+    (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
         return Promise.resolve({
           ok: true,
@@ -133,7 +132,7 @@ describe('EmailViewer', () => {
 
   it('handles error state gracefully', async () => {
     // Mock fetch to throw an error
-    mockFetch.mockImplementation((url: string) => {
+    (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
         return Promise.resolve({
           ok: true,
@@ -158,7 +157,7 @@ describe('EmailViewer', () => {
 
   it('handles empty email state', async () => {
     // Mock fetch to return 404 for email
-    mockFetch.mockImplementation((url: string) => {
+    (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
         return Promise.resolve({
           ok: true,
@@ -204,7 +203,7 @@ describe('EmailViewer', () => {
     };
 
     // Mock fetch for both email and attachments
-    mockFetch.mockImplementation((url: string) => {
+    (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
         return Promise.resolve({
           ok: true,
@@ -256,3 +255,4 @@ describe('EmailViewer', () => {
     expect(screen.getByText('another-file.doc')).toBeInTheDocument();
   });
 });
+

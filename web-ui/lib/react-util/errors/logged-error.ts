@@ -228,3 +228,22 @@ export class LoggedError implements Error {
     return this.#error.message;
   }
 }
+
+export const dumpError = (e: unknown): string => {
+  let ret = '';
+  if (isError(e)) {
+    ret+= e.message ?? 'no message';
+    if (e.stack) {
+      ret += `\n${e.stack}`;
+    }
+    if (e.cause){
+      ret += `\nCaused by: ${dumpError(e.cause)}`;
+    }
+    ret = e.stack ?? e.message;
+  } else if (typeof e === 'object' && e !== null) {
+    ret = JSON.stringify(e, null, 5);
+  } else {
+    ret = String(e);
+  }
+  return ret;
+};

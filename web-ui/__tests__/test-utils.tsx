@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { act, PropsWithChildren } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, RenderOptions, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/lib/themes/provider';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
@@ -38,19 +38,36 @@ const customRender = (
   ui: React.ReactElement,
   options: RenderOptions = {}
 ) => {
-  let ret: ReturnType<typeof render> | undefined = undefined;
+  let ret: any = undefined;
   act(() => {
     ret = render(ui, { wrapper: AllTheProviders, ...options });
   });
   return ret; 
 };
   
+const customAsyncRender = async (
+  ui: React.ReactElement,
+  options: RenderOptions = {}
+) => {
+  let ret: any = undefined;
+  await act(async () => {
+    ret = render(ui, { wrapper: AllTheProviders, ...options });
+  });
+  return ret; 
+};
+
+
 
 // re-export everything
 export * from '@testing-library/react';
 
 // override render method
-export { customRender as render };
+export { customRender as render, customAsyncRender as asyncRender };
 
 // explicitly export screen to ensure it's available
 export { screen };
+
+export type { RenderOptions };
+
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
+(global as any).IS_REACT_ACT_ENVIRONMENT=true;

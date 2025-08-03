@@ -6,6 +6,7 @@ import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import React from 'react';
 import { renderHook } from '@/__tests__/test-utils';
 import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 // Polyfill ReadableStream for Node.js test environment
 if (!globalThis.ReadableStream) {
@@ -50,9 +51,6 @@ const mockResponse = (body: string | object, init: ResponseInit = {}) => ({
   })
 });
 
-// Override the global fetch mock for our tests
-const mockFetch = jest.fn();
-
 // Create a test query client and wrapper
 const createTestWrapper = () => {
   const queryClient = new QueryClient({
@@ -73,8 +71,8 @@ const createTestWrapper = () => {
 
 describe('TanStack React Query Chat Integration', () => {
   beforeEach(() => {
-    // jest.clearAllMocks();
-    global.fetch = mockFetch;
+    // Clear mocks - fetch is already mocked in jest.setup.ts
+    (fetch as jest.Mock).mockClear();
   });
 
   describe('useChatFetchWrapper', () => {
@@ -90,7 +88,7 @@ describe('TanStack React Query Chat Integration', () => {
 
     it('should create chatFetch function that makes requests', async () => {
       const mockResponseData = { message: 'success' };
-      mockFetch.mockResolvedValueOnce(mockResponse(mockResponseData));
+      (fetch as jest.Mock).mockResolvedValueOnce(mockResponse(mockResponseData));
 
       const { result } = renderHook(() => useChatFetchWrapper(), {
         wrapper: createTestWrapper(),

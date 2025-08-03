@@ -1,6 +1,23 @@
 /**
  * @jest-environment jsdom
  */
+import { act } from '@testing-library/react';
+
+// Mock window methods before importing the module
+const mockAlert = jest.fn();
+const mockReload = jest.fn();
+const mockBack = jest.fn();
+const mockOpen = jest.fn();
+
+// Mock the window and navigator objects without redefining location
+Object.defineProperty(window, 'alert', { value: mockAlert });
+Object.defineProperty(window, 'history', {
+  value: { back: mockBack },
+});
+Object.defineProperty(window, 'open', { value: mockOpen });
+Object.defineProperty(navigator, 'onLine', { value: true, writable: true });
+
+// Now import the module after setting up mocks
 import {
   classifyError,
   getRecoveryActions,
@@ -9,23 +26,6 @@ import {
   ErrorType,
   recoveryStrategies,
 } from '@/lib/error-monitoring/recovery-strategies';
-
-// Mock window methods
-const mockAlert = jest.fn();
-const mockReload = jest.fn();
-const mockBack = jest.fn();
-const mockOpen = jest.fn();
-
-Object.defineProperty(window, 'alert', { value: mockAlert });
-Object.defineProperty(window, 'location', {
-  value: { reload: mockReload },
-  writable: true,
-});
-Object.defineProperty(window, 'history', {
-  value: { back: mockBack },
-});
-Object.defineProperty(window, 'open', { value: mockOpen });
-Object.defineProperty(navigator, 'onLine', { value: true, writable: true });
 
 // Mock caches API
 const mockCacheDelete = jest.fn().mockResolvedValue(true);

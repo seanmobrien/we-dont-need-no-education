@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@/__tests__/test-utils';
 import ChatList from '@/components/chat/list';
 import { mockChatSummaries, mockChatHistoryResponse } from '../chat.mock-data';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 // Mock the router
 const mockPush = jest.fn();
@@ -44,18 +45,12 @@ jest.mock('@/lib/site-util/url-builder', () => ({
 }));
 
 describe('ChatList', () => {
-  const mockFetch = jest.fn();
-  
   // Set a shorter timeout for all tests in this suite
   jest.setTimeout(30000);
 
-  beforeAll(() => {
-    global.fetch = mockFetch;
-  });
-
   beforeEach(() => {
-    // jest.clearAllMocks();
-    global.fetch = mockFetch;
+    // No need to set global.fetch as it's already mocked in jest.setup.ts
+    (fetch as jest.Mock).mockClear();
   });
 
   it('should render initially without errors', () => {

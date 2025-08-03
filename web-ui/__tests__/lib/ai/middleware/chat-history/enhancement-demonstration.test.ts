@@ -96,7 +96,7 @@ describe('Chat History Enhancement Demonstration', () => {
   it('validates the enhancement is content and role aware', async () => {
     // Scenario: Similar content but different roles or slight variations
     const existingMessages = [
-      { role: 'user', content: 'Hello world', messageOrder: 0 }
+      { role: 'user', content: [{type: 'text', text: 'Hello world' }], messageOrder: 0 }
     ];
 
     const mixedMessages: LanguageModelV1MessageExt = [
@@ -112,6 +112,7 @@ describe('Chat History Enhancement Demonstration', () => {
 
     // Assert - Only exact matches are filtered out
     expect(newMessages).toHaveLength(3);
+    expect(newMessages.map(m => `${m.role}:${m.content[0].text}`)).toEqual([
     expect(newMessages.map(m => {
       const textContent = Array.isArray(m.content) 
         ? m.content.filter(part => part.type === 'text').map(part => part.text).join('')

@@ -3,7 +3,8 @@
  */
 
 import { jest } from '@jest/globals';
-fetch('http://localhost'); // Polyfill fetch for Node.js test environment
+
+ // Polyfill fetch for Node.js test environment
 // Polyfill Request for Node.js test environment
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -13,7 +14,7 @@ global.URL = URL;
 // Mock the environment utilities
 
 
-// Mock drizzle-orm and related database imports
+// Mock drizzle-orm and related`` database imports
 jest.mock('drizzle-orm', () => ({
   sql: jest.fn(),
 }));
@@ -216,11 +217,6 @@ describe('Local Development Auth Bypass', () => {
       expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
       });
 
-      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
-
-      expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
-    });
-
     it('should throw error when bypass is set but not on localhost', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
       process.env.NEXT_PUBLIC_HOSTNAME = 'https://production.com';
@@ -257,39 +253,40 @@ describe('Local Development Auth Bypass', () => {
     });
   });
 
-describe('Environment File Validation', () => {
-  it('should ensure .env files do not contain LOCAL_DEV_AUTH_BYPASS_USER_ID', async () => {
-    const fs = await import('fs');
-    const path = await import('path');
-    
-    const webUiRoot = path.resolve(__dirname, '..');
-    const envFiles = ['.env', '.env.local', '.env.development', '.env.production'];
-    
-    for (const envFile of envFiles) {
-      const envPath = path.join(webUiRoot, envFile);
+  describe('Environment File Validation', () => {
+    it('should ensure .env files do not contain LOCAL_DEV_AUTH_BYPASS_USER_ID', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
       
-      if (fs.existsSync(envPath)) {
-        const envContent = fs.readFileSync(envPath, 'utf-8');
+      const webUiRoot = path.resolve(__dirname, '..');
+      const envFiles = ['.env', '.env.local', '.env.development', '.env.production'];
+      
+      for (const envFile of envFiles) {
+        const envPath = path.join(webUiRoot, envFile);
         
-        // Check that the bypass variable is not set to any non-empty value
-        const bypassRegex = /^LOCAL_DEV_AUTH_BYPASS_USER_ID\s*=\s*(.+)$/m;
-        const match = envContent.match(bypassRegex);
-        
-        if (match && match[1] && match[1].trim() !== '' && match[1].trim() !== '""' && match[1].trim() !== "''") {
-          fail(`
-🚨 SECURITY VIOLATION DETECTED 🚨
+        if (fs.existsSync(envPath)) {
+          const envContent = fs.readFileSync(envPath, 'utf-8');
+          
+          // Check that the bypass variable is not set to any non-empty value
+          const bypassRegex = /^LOCAL_DEV_AUTH_BYPASS_USER_ID\s*=\s*(.+)$/m;
+          const match = envContent.match(bypassRegex);
+          
+          if (match && match[1] && match[1].trim() !== '' && match[1].trim() !== '""' && match[1].trim() !== "''") {
+            fail(`
+  🚨 SECURITY VIOLATION DETECTED 🚨
 
-${envFile} contains LOCAL_DEV_AUTH_BYPASS_USER_ID with a non-empty value: ${match[1]}
+  ${envFile} contains LOCAL_DEV_AUTH_BYPASS_USER_ID with a non-empty value: ${match[1]}
 
-This is extremely dangerous and MUST be fixed immediately:
-1. Remove or comment out this line from ${envFile}
-2. NEVER commit this file with this variable set
-3. This variable should ONLY be set temporarily during local development
+  This is extremely dangerous and MUST be fixed immediately:
+  1. Remove or comment out this line from ${envFile}
+  2. NEVER commit this file with this variable set
+  3. This variable should ONLY be set temporarily during local development
 
-The bypass feature is only for local development and could compromise security if deployed.
-          `);
+  The bypass feature is only for local development and could compromise security if deployed.
+            `);
+          }
         }
       }
-    }
+    });
   });
 });

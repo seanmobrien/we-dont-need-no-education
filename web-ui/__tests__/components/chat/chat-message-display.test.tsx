@@ -186,12 +186,12 @@ describe('ChatMessageDisplay', () => {
     
     // User message should have different background than assistant
     let messageContainer = screen.getByText('Test user message').closest('div');
-    expect(messageContainer).toHaveStyle('background-color: action.hover');
+    expect(messageContainer).toHaveStyle('background-color: var(--mui-palette-action-hover)');
     
     rerender(<ChatMessageDisplay message={mockAssistantMessage} />);
     
     messageContainer = screen.getByText('Test assistant response').closest('div');
-    expect(messageContainer).toHaveStyle('background-color: background.paper');
+    expect(messageContainer).toHaveStyle('background-color: var(--mui-palette-background-paper)');
   });
 
   it('should display role chip with correct color', () => {

@@ -1,3 +1,5 @@
+import { ConfirmDialog } from "@toolpad/core";
+
 /**
  * Represents an aggregate error that encapsulates multiple errors.
  *
@@ -78,6 +80,15 @@ export class AggregateError extends Error {
       typeof messageOrError == 'object'
         ? [messageOrError, ...errors]
         : [...errors];
+
+    errors.forEach((error) => {
+      console.log('in aggregateerror');
+      if (error instanceof Error) {
+        console.log(error.message);
+        console.log(error.stack);        
+      }
+    });
+    
   }
 
   [index: number]: Error;
