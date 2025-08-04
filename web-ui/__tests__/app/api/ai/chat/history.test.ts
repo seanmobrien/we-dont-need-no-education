@@ -11,21 +11,13 @@
 
 import { GET } from '@/app/api/ai/chat/history/route';
 import { NextRequest } from 'next/server';
-import { mockChatSummaries, mockChatHistoryResponse } from '@/__tests__/components/chat.mock-data';
+import { mockChatHistoryResponse } from '@/__tests__/components/chat.mock-data';
 
 // Define mocks before they are used
 const mockDbSelect = jest.fn();
 const mockDbFrom = jest.fn();
-const mockSelectForGrid = jest.fn();
 
-const mockSchema = {
-  chats: {
-    id: 'id',
-    title: 'title',
-    userId: 'userId',
-    createdAt: 'createdAt',
-  },
-};
+
 
 // Mock modules
 jest.mock('@/lib/drizzle-db', () => ({

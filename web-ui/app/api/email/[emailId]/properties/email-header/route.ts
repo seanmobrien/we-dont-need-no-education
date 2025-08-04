@@ -66,6 +66,9 @@ export async function GET(
 
   // Column getter function for filtering and sorting
   const getColumn = (columnName: string): PgColumn | undefined => {
+    if (columnName === 'typeName') {
+      return schema.emailPropertyType.propertyName;
+    }
     return getEmailColumn({ columnName, table: schema.documentProperty });
   };
 
@@ -88,7 +91,6 @@ export async function GET(
   // Use selectForGrid to apply filtering, sorting, and pagination
   const result = await selectForGrid<Partial<EmailProperty>>({
     req,
-    emailId,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: baseQuery as any,
     getColumn,

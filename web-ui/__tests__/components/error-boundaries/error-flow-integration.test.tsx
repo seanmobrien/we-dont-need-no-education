@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * @jest-environment jsdom
  */
 import React from 'react';
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
+import { render, waitFor, act } from '@testing-library/react';
 // import userEvent from '@testing-library/user-event';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ThemeProvider } from '@mui/material/styles';
@@ -125,7 +126,7 @@ describe('Error Flow Integration Tests', () => {
       render(
         <TestWrapper>
           <ErrorBoundary fallbackRender={RenderErrorBoundaryFallback}>
-            <ClientErrorManager debounceMs={100} />
+            <ClientErrorManager debounceMs={10000} />
           </ErrorBoundary>
         </TestWrapper>
       );

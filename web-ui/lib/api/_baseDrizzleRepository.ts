@@ -129,7 +129,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} list:`,
-          result: results,
+          resultset: results,
           num,
           offset,
         }),
@@ -174,7 +174,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} record retrieved:`,
-          result,
+          resultset: result,
         }),
       );
 
@@ -207,7 +207,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} record created:`,
-          result,
+          resultset: result,
         }),
       );
 
@@ -245,7 +245,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} record updated:`,
-          result,
+          resultset: result,
         }),
       );
 
@@ -277,7 +277,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       log((l) =>
         l.verbose({
           message: `[[AUDIT]] - ${this.tableName} record deleted:`,
-          result,
+          resultset: result,
         }),
       );
 

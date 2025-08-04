@@ -88,7 +88,6 @@ export const GET = async (
   // Use selectForGrid to apply filtering, sorting, and pagination
   const result = await selectForGrid<Partial<KeyPointsDetails>>({
     req,
-    emailId,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: baseQuery as any,
     getColumn,

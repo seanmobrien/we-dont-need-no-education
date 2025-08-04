@@ -84,7 +84,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     log((l) =>
       l.verbose({
         msg: '[[AUDIT]] -  Import list:',
-        result,
+        resultset: result,
         num,
         offset,
         cbTotal: total,

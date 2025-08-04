@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, useCallback, SetStateAction, Dispatch } from 'react';
 import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
+import { asErrorLike, ErrorLike, isErrorLike, StringOrErrorLike } from '@/lib/react-util';
 
 /**
  * Configuration for error suppression patterns
@@ -39,7 +40,7 @@ export interface ClientErrorManagerConfig {
 const DEFAULT_SUPPRESSION_RULES: ErrorSuppressionRule[] = [
   {
     id: 'ai-content-blob-error',
-    pattern: /AI \(Internal\): 102 message:"Invalid content blob\.\s*Missing required attributes \(id, contentName/i,
+    pattern: /AI \(Internal\): 102 message/i,
     suppressCompletely: true,
     reason: 'Known AI service issue that does not affect functionality',
   },
@@ -72,30 +73,210 @@ const normalizeDebounceKey = (key: string) => {
   return normalizeErrorMessage(key).toLowerCase().trim();
 };
 
+type SuppressionResult = {
+  suppress: boolean;
+  rule?: ErrorSuppressionRule;
+  completely?: boolean;
+}; 
+
+const shouldSuppressError = ({
+  error,
+  suppressionRules,
+}: {
+  error: ErrorLike;
+  suppressionRules: ErrorSuppressionRule[];
+}): SuppressionResult => {
+  const testMatch = (pattern: string | RegExp, value: string): boolean => {
+    return !!value && (typeof pattern === 'string' ? value.includes(pattern) : pattern.test(value));
+  }
+  const errorMessage = normalizeErrorMessage(error.message);    
+  const errorSource = error.source;
+  const matchedRule = suppressionRules.find(rule => {
+    // Check if the error message matches the rule pattern
+    const messageMatches = testMatch(rule.pattern, errorMessage);
+    if (!messageMatches) {
+      return false;
+    }
+    // If rule contains a source then it must match as well
+    if (rule.source) {
+      const sourceMatches = testMatch(rule.source, errorSource || '');
+      if (!sourceMatches) {
+        return false;
+      }
+    } 
+    // If we reach here, the rule is a match.
+    return true;
+  });
+  return matchedRule
+    ? {
+        suppress: true,
+        rule: matchedRule,
+        completely: matchedRule.suppressCompletely,
+      }
+    : { suppress: false };
+};
+
+class LastErrorMap {
+  #lastErrorTime: Map<string, number>;
+  #lastErrorKeys: Map<string, Array<string>>;
+
+  constructor() {
+    this.#lastErrorTime = new Map();
+    this.#lastErrorKeys = new Map();
+  }
+  lastErrorAt(
+    error: StringOrErrorLike,
+    allowLooseMatch = true,
+  ): number | undefined {
+    const errorKey = LastErrorMap.makeErrorKey(error);
+    let ret = this.#lastErrorTime.get(errorKey);
+    if (ret === undefined && allowLooseMatch) {
+      // Try to find a loose match if exact key not found
+      for (const [key, time] of this.#lastErrorTime.entries()) {
+        if (time > (ret ?? 0) && key.includes(errorKey)) {
+          ret = time;
+          continue;
+        }
+      }
+    }
+    return ret;
+  }
+
+  add(error: StringOrErrorLike, now: number): void {
+    const errorKey = LastErrorMap.makeErrorKey(error);
+    this.#lastErrorTime.set(errorKey, now);
+    const messagePart = errorKey.split(LastErrorMap.KeyDelimiter)[0];
+    const errorKeys = this.#lastErrorKeys.get(messagePart) || [];
+    if (!errorKeys.includes(errorKey)) {
+      errorKeys.push(errorKey);
+      this.#lastErrorKeys.set(messagePart, errorKeys);
+    }
+  }
+  /**
+   * Check if this error should be debounced (duplicate within time window)
+   */
+  shouldDebounce(error: StringOrErrorLike, debounceMs: number): boolean {
+    const now = Date.now();
+    const lastTime = this.lastErrorAt(error);
+    this.add(error, now);
+    return !!lastTime && now - lastTime < debounceMs;
+  }
+
+  static makeErrorKey(
+    error: StringOrErrorLike,
+    filename?: string,
+    [line = 0, column = 0]: [number, number] = [0, 0],
+  ): string {
+    let errorMessage: string;
+    let errorSource: string;
+    if (isErrorLike(error)) {
+      // TODO: if line/column is empty we could theoretically try to pull it out of the stack
+      errorMessage = error.message;
+      errorSource = filename ?? error.stack ?? '';
+    } else {
+      errorMessage = error;
+      errorSource = filename ?? '';
+    }
+    const theColumn = column > 0 ? `-${column}` : '';
+    const lineAndColumn = line > 0 ? String(line) + theColumn : theColumn;
+    return normalizeDebounceKey(
+      normalizeErrorMessage(errorMessage) +
+        LastErrorMap.KeyDelimiter +
+        errorSource +
+        LastErrorMap.KeyDelimiter +
+        lineAndColumn,
+    );
+  }
+
+  static readonly KeyDelimiter = '~~-~~';
+}
+
+const processError = ({
+  errorObj,
+  lastErrorMap,
+  suppressionRules,
+  reportSuppressedErrors,
+  surfaceToErrorBoundary,
+  debounceMs,
+  setErrorToThrow,
+}: {
+  errorObj: ErrorLike;
+  lastErrorMap: LastErrorMap;
+  suppressionRules: ErrorSuppressionRule[];
+  reportSuppressedErrors: boolean;
+  surfaceToErrorBoundary: boolean;
+  debounceMs: number;
+  setErrorToThrow: Dispatch<SetStateAction<Error | null>>;
+}): boolean => {
+  // Should the error be debounced?
+  if (lastErrorMap.shouldDebounce(errorObj, debounceMs)) {
+    return false;
+  }
+  // Should the error be suppressed?
+  const suppressionResult = shouldSuppressError({
+    error: errorObj,
+    suppressionRules,
+  });
+  // Process a suppressed result
+  if (suppressionResult.suppress) {
+    // Log suppressed errors with low severity if configured
+    if (reportSuppressedErrors && !suppressionResult.completely) {
+      errorReporter.reportError(errorObj, ErrorSeverity.LOW, {
+        source: errorObj.source,
+        breadcrumbs: ['global-error-suppressed'],
+        additionalData: {
+          suppression_rule: suppressionResult.rule?.id,
+          suppression_reason: suppressionResult.rule?.reason,
+          lineno: errorObj.line,
+          colno: errorObj.column,
+        },
+      });
+    }
+    return false;
+  }
+  // Report non-suppressed errors
+  errorReporter.reportError(errorObj, ErrorSeverity.HIGH, {
+    source: errorObj.source,
+    breadcrumbs: ['global-error-handler'],
+    additionalData: {
+      type: 'javascript-error',
+      lineno: errorObj.line,
+      colno: errorObj.column,
+    },
+  });
+  // If we are surfacing to a parent boundary then we don't want to log (avoid duplicate logs)
+  if (surfaceToErrorBoundary) {
+    // Surface to React error boundary if configured
+    setErrorToThrow(errorObj);
+  } 
+  return true;
+};
+
 /**
  * ClientErrorManager component that catches errors outside of React's render cycle
  * and surfaces them to the nearest error boundary while allowing suppression of known issues.
  */
-export function ClientErrorManager({
+export const ClientErrorManager = ({
   suppressionRules = DEFAULT_SUPPRESSION_RULES,
   surfaceToErrorBoundary = true,
   reportSuppressedErrors = false,
   debounceMs = 1000,
-}: ClientErrorManagerConfig = {}) {
-  const [errorToThrow, setErrorToThrow] = useState<Error | null>(null);
-  const lastErrorTime = useRef<Map<string, number>>(new Map());
+}: ClientErrorManagerConfig = {}) => {
+  const [errorToThrow, setErrorToThrow] = useState<ErrorLike | null>(null);
+  const lastErrorMap = useRef<LastErrorMap>(new LastErrorMap());
   const isInitialized = useRef(false);
 
   /**
    * Check if an error should be suppressed based on configured rules
-   */
+  
   const shouldSuppressError = useCallback((
-    error: Error | string,
+    error: ErrorLike | string,
     source?: string,
     lineno?: number, // eslint-disable-line @typescript-eslint/no-unused-vars
     colno?: number   // eslint-disable-line @typescript-eslint/no-unused-vars
   ): { suppress: boolean; rule?: ErrorSuppressionRule; completely?: boolean } => {
-    const errorMessage = typeof error === 'string' ? error : error.message;
+    const likeError = asErrorLike(error)!;
+    const errorMessage = likeError.message;
     const errorSource = source || '';
 
     for (const rule of suppressionRules) {
@@ -124,166 +305,73 @@ export function ClientErrorManager({
 
     return { suppress: false };
   }, [suppressionRules]);
-
-  /**
-   * Check if this error should be debounced (duplicate within time window)
-   */
-  const shouldDebounce = useCallback((errorKey: string): boolean => {
-    const now = Date.now();
-    const lastTime = lastErrorTime.current.get(errorKey);
-    
-    if (lastTime && (now - lastTime) < debounceMs) {
-      return true;
-    }
-    
-    lastErrorTime.current.set(errorKey, now);
-    return false;
-  }, [debounceMs]);
+ */
 
   /**
    * Handle global JavaScript errors
    */
-  const handleGlobalError = useCallback((event: ErrorEvent) => {
-    // Safely extract properties from event
-    const error = event.error;
-    const message = event.message || 'Unknown error';
-    const filename = event.filename || 'unknown';
-    const lineno = event.lineno || 0;
-    const colno = event.colno || 0;
-    
-    let errorObj: Error;
-    if (error instanceof Error) {
-      errorObj = error;
-    } else {
-      // Create error object manually to avoid Error constructor issues in tests
-      errorObj = {
-        name: 'Error',
-        message: message || 'Unknown error',
-        stack: undefined,
-        toString: () => message || 'Unknown error',
-      } as Error;
-    }
-    
-    // Create unique key for debouncing
-    const errorKey = normalizeDebounceKey(`${message}-${filename}-${lineno}`);
-    
-    if (shouldDebounce(errorKey)) {
-      return;
-    }
-
-    const suppressionResult = shouldSuppressError(errorObj, filename, lineno, colno);
-    
-    if (suppressionResult.suppress) {
-      // Prevent default browser error handling for suppressed errors
-      event.preventDefault();
-      
-      if (suppressionResult.completely) {
-        // Don't even log completely suppressed errors
-        return;
+  const handleGlobalError = useCallback(
+    (event: ErrorEvent) => {
+      // Safely extract properties from event
+      const errorObj = asErrorLike(event.error ? event.error : event.message, {
+        filename: event.filename || 'unknown',
+        lineno: event.lineno || 0,
+        colno: event.colno || 0,
+      });
+      if (errorObj) {
+        if (!processError({
+          errorObj,
+          lastErrorMap: lastErrorMap.current,
+          suppressionRules,
+          reportSuppressedErrors,
+          surfaceToErrorBoundary,
+          debounceMs,
+          setErrorToThrow,          
+        })) {
+          // Error was suppressed
+          event.preventDefault();
+        } 
       }
-      
-      // Log suppressed errors with low severity if configured
-      if (reportSuppressedErrors) {
-        errorReporter.reportError(errorObj, ErrorSeverity.LOW, {
-          source: filename,
-          breadcrumbs: ['global-error-suppressed'],
-          additionalData: {
-            suppression_rule: suppressionResult.rule?.id,
-            suppression_reason: suppressionResult.rule?.reason,
-            lineno,
-            colno,
-          },
-        });
-      }
-      return;
-    }
-
-    // Report non-suppressed errors
-    errorReporter.reportError(errorObj, ErrorSeverity.HIGH, {
-      source: filename,
-      breadcrumbs: ['global-error-handler'],
-      additionalData: { lineno, colno, type: 'javascript-error' },
-    });
-
-    // Surface to React error boundary if configured
-    if (surfaceToErrorBoundary) {
-      setErrorToThrow(errorObj);
-    }
-  }, [surfaceToErrorBoundary, reportSuppressedErrors, shouldSuppressError, shouldDebounce]);
+    },
+    [debounceMs, suppressionRules, surfaceToErrorBoundary, reportSuppressedErrors],
+  );
 
   /**
    * Handle unhandled promise rejections
    */
-  const handleUnhandledRejection = useCallback((event: PromiseRejectionEvent) => {
-    let error: Error;
-    if (event.reason instanceof Error) {
-      error = event.reason;
-    } else {
-      // Create error object manually to avoid Error constructor issues in tests
-      const reasonString = typeof event.reason === 'object' && event.reason !== null && 'message' in event.reason 
-        ? (event.reason as { message: string }).message 
-        : String(event.reason);
-      error = {
-        name: 'Error',
-        message: reasonString,
-        stack: undefined,
-        toString: () => reasonString,
-      } as Error;
-    }
-    
-    const errorKey = normalizeDebounceKey(`promise-${error.message}`);
-    
-    if (shouldDebounce(errorKey)) {
-      return;
-    }
-
-    const suppressionResult = shouldSuppressError(error);
-    
-    if (suppressionResult.suppress) {
-      // Prevent default browser handling for suppressed promise rejections
-      event.preventDefault();
-      
-      if (suppressionResult.completely) {
-        return;
-      }
-      
-      if (reportSuppressedErrors) {
-        errorReporter.reportError(error, ErrorSeverity.LOW, {
-          breadcrumbs: ['unhandled-rejection-suppressed'],
-          additionalData: {
-            suppression_rule: suppressionResult.rule?.id,
-            suppression_reason: suppressionResult.rule?.reason,
-            promise_rejection: true,
-          },
+  const handleUnhandledRejection = useCallback(
+    (event: PromiseRejectionEvent) => {
+      const error = asErrorLike(event.reason);
+      if (error) {
+        processError({
+          errorObj: error,
+          lastErrorMap: lastErrorMap.current,
+          suppressionRules,
+          setErrorToThrow,
+          reportSuppressedErrors,
+          surfaceToErrorBoundary,
+          debounceMs,
         });
       }
-      return;
-    }
-
-    // Report non-suppressed promise rejections
-    errorReporter.reportError(error, ErrorSeverity.HIGH, {
-      breadcrumbs: ['unhandled-rejection'],
-      additionalData: { type: 'promise-rejection' },
-    });
-
-    // Surface to React error boundary if configured
-    if (surfaceToErrorBoundary) {
-      setErrorToThrow(error);
-    }
-  }, [surfaceToErrorBoundary, reportSuppressedErrors, shouldSuppressError, shouldDebounce]);
+    },
+    [suppressionRules, reportSuppressedErrors, surfaceToErrorBoundary, debounceMs],
+  );
 
   // Set up global error listeners
   useEffect(() => {
     if (isInitialized.current) return;
-    
+
     window.addEventListener('error', handleGlobalError);
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    
+
     isInitialized.current = true;
 
     return () => {
       window.removeEventListener('error', handleGlobalError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      window.removeEventListener(
+        'unhandledrejection',
+        handleUnhandledRejection,
+      );
       isInitialized.current = false;
     };
   }, [handleGlobalError, handleUnhandledRejection]);
@@ -293,7 +381,7 @@ export function ClientErrorManager({
     if (errorToThrow) {
       // Clear the error state first to prevent infinite loops
       setErrorToThrow(null);
-      
+
       // Throw in next tick to ensure it's caught by error boundary
       setTimeout(() => {
         throw errorToThrow;

@@ -159,7 +159,6 @@ export async function GET(
   // Use selectForGrid to apply filtering, sorting, and pagination
   const result = await selectForGrid<Partial<CallToActionDetails>>({
     req,
-    emailId,
     query: baseQuery as unknown as DrizzleSelectQuery,
     getColumn: (columnName: string) => getEmailColumn({columnName, table: schema.callToActionDetails}),
     recordMapper,

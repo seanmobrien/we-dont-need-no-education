@@ -81,7 +81,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { transform: mapRecordToSummary },
     );
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email list:', result, num, offset }),
+      l.verbose({ msg: '[[AUDIT]] -  Email list:', resultset: result, num, offset }),
     );
     const total = await query(
       (sql) => sql`SELECT COUNT(*) AS records  FROM emails e
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     await insertRecipients(emailId, recipients);
 
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email created:', result: result[0] }),
+      l.verbose({ msg: '[[AUDIT]] -  Email created:', resultset: result[0] }),
     );
 
     return NextResponse.json(
@@ -295,7 +295,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     }
 
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email updated:', result: result.rows[0] }),
+      l.verbose({ msg: '[[AUDIT]] -  Email updated:', resultset: result.rows[0] }),
     );
 
     return NextResponse.json(

@@ -69,15 +69,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     // Use selectForGrid to apply filtering, sorting, and pagination
     const result = await selectForGrid<ChatSummary>({
       req,
-      emailId: '', // Not applicable for chat history
       query: baseQuery as unknown as DrizzleSelectQuery,
       getColumn,
       columnMap,
       recordMapper,
+      defaultSort: [{ field: 'created_at', sort: 'desc' }],
     });
 
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] - Chat history list:', result }),
+      l.verbose({ msg: '[[AUDIT]] - Chat history list:', resultset: result }),
     );
 
     return NextResponse.json(result);

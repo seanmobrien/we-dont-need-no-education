@@ -109,7 +109,6 @@ export async function GET(
   // Use selectForGrid to apply filtering, sorting, and pagination
   const result = await selectForGrid<Partial<EmailSentimentAnalysisDetails>>({
     req,
-    emailId,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     query: baseQuery as any,
     getColumn,

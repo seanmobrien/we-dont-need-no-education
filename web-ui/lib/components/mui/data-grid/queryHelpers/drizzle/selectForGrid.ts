@@ -271,17 +271,15 @@ export const countQueryFactory =
  */
 export async function selectForGrid<T = Record<string, unknown>>({
   req,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  emailId: _emailId, // Currently unused but kept for API consistency
   query,
   getColumn,
   columnMap = {},
   recordMapper,
+  defaultSort,
 }: SelectForGridProps<T>): Promise<PaginatedResultset<Partial<T>>> {
-  
   // Parse pagination parameters from the request
   const paginationStats = parsePaginationStats(new URL(req.url));
-  
+
   // Apply filtering logic
   const filteredQuery = buildDrizzleQueryFilter({
     query,
@@ -289,38 +287,35 @@ export async function selectForGrid<T = Record<string, unknown>>({
     getColumn,
     columnMap,
   });
-  
+
   // Apply sorting logic
   const sortedQuery = buildDrizzleOrderBy({
     query: filteredQuery,
     source: req,
     getColumn,
     columnMap,
+    defaultSort,
   });
 
-  const {
-    select,
-    count
-  } = countQueryFactory(sortedQuery as AnyPgSelect);
+  const { select, count } = countQueryFactory(sortedQuery as AnyPgSelect);
 
-  
   // Apply pagination logic
   const paginatedQuery: unknown = buildDrizzlePagination({
     query: select,
     req,
   });
-  
+
   // Execute both queries concurrently
   const [results, totalCount] = await Promise.all([
     typeof paginatedQuery === 'function' ? paginatedQuery() : paginatedQuery,
     count,
   ]);
-  
+
   // Transform results if mapper is provided
-  const transformedResults = recordMapper 
+  const transformedResults = recordMapper
     ? (results as Record<string, unknown>[]).map(recordMapper)
-    : results as Partial<T>[];  
-  
+    : (results as Partial<T>[]);
+
   // Return paginated result set with wire compatibility
   return {
     results: transformedResults,

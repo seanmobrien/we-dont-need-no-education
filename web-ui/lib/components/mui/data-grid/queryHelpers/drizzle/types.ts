@@ -23,11 +23,6 @@ export type SelectForGridProps<T> = {
   req: NextRequest;
 
   /**
-   * The email ID parsed from the route parameters.
-   */
-  emailId: string;
-
-  /**
    * The Drizzle select query builder to apply operations to.
    */
   query: DrizzleSelectQuery;
@@ -39,9 +34,7 @@ export type SelectForGridProps<T> = {
    * @param columnName - The database column name (after mapping)
    * @returns The Drizzle column object or SQL expression
    */
-  getColumn: (
-    columnName: string,
-  ) => PgColumn | SQL | undefined;
+  getColumn: (columnName: string) => PgColumn | SQL | undefined;
 
   /**
    * A mapping or function to translate source column names to database column names.
@@ -53,6 +46,11 @@ export type SelectForGridProps<T> = {
    * If not provided, records are returned as-is.
    */
   recordMapper?: (record: Record<string, unknown>) => T;
+
+  /**
+   * The default sort model or column name to use if none is provided.
+   */
+  defaultSort?: GridSortModel | string | SQL | PgColumn;
 };
 
 /**

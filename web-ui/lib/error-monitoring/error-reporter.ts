@@ -1,4 +1,4 @@
-import { LoggedError } from '@/lib/react-util';
+import { isError, LoggedError } from '@/lib/react-util';
 
 /**
  * Error severity levels for reporting and prioritization
@@ -198,7 +198,7 @@ export class ErrorReporter {
    * Normalize any thrown value to an Error object
    */
   private normalizeError(error: unknown): Error {
-    if (error instanceof Error) {
+    if (isError(error)) {
       return error;
     }
     if (typeof error === 'string') {
@@ -250,6 +250,7 @@ export class ErrorReporter {
    */
   private storeErrorLocally(report: ErrorReport): void {
     try {
+      if (typeof localStorage === 'undefined') { return; }
       const stored = JSON.parse(localStorage.getItem('error-reports') || '[]');
       stored.push({
         ...report,
@@ -354,5 +355,5 @@ export const errorReporter = ErrorReporter.getInstance();
 
 // Auto-setup global handlers
 if (typeof window !== 'undefined') {
-  errorReporter.setupGlobalHandlers();
+  // errorReporter.setupGlobalHandlers();
 }

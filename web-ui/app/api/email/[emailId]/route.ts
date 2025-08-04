@@ -199,7 +199,7 @@ export async function DELETE(
     }
     const { emailId: deletedEmailId } = records[0];
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] -  Email deleted:', result: deletedEmailId }),
+      l.verbose({ msg: '[[AUDIT]] -  Email deleted:', resultset: deletedEmailId }),
     );
     return NextResponse.json(
       { message: 'Email deleted successfully', email: deletedEmailId },
