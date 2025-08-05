@@ -1,58 +1,120 @@
 import { NextRequest } from 'next/server';
-import {
-  RepositoryCrudController,
-  SentimentAnalysisDetailsRepository,
-} from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { parsePaginationStats } from '@/data-models';
-import { db } from '@/lib/neondb';
-import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
+import { EmailSentimentAnalysisDetails } from '@/data-models';
+import { eq, and } from 'drizzle-orm';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
+import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
+import { PgColumn } from 'drizzle-orm/pg-core';
 
-const repository = new SentimentAnalysisDetailsRepository();
-const controller = new RepositoryCrudController(repository);
+const columnMap = {
+  ...DefaultEmailColumnMap,
+} as const;
 
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
 ) {
-  return controller.listFromRepository(async (r) => {
-    const { emailId } = await extractParams<{ emailId: string }>(args);
-    return r.innerQuery((q) =>
-      q.list(
-        (num, page, offset) =>
-          db(
-            (
-              sql,
-            ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
-            esad.sentiment_score, esad.detected_hostility, esad.flagged_phrases, esad.detected_on
-            FROM document_property ep 
-             JOIN email_sentiment_analysis_details esad ON esad.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=8 
-             ${buildOrderBy({ sql, source: req })}
-             LIMIT ${num} OFFSET ${offset}`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        () =>
-          db(
-            (sql) => sql`SELECT COUNT(ep.*) AS records 
-             FROM document_property ep 
-             JOIN email_sentiment_analysis_details esad ON esad.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=8`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        parsePaginationStats(new URL(req.url)),
-      ),
-    );
-  });
-}
+  const { emailId } = await extractParams<{ emailId: string }>(args);
 
-export async function POST(
-  req: NextRequest,
-  args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
-  return controller.create(req, args);
+  const db = await drizDbWithInit();
+
+  // Define the base query that matches the original SQL structure
+  const baseQuery = db
+    .select({
+      // From document_property (ep)
+      propertyId: schema.documentProperty.propertyId,
+      propertyValue: schema.documentProperty.propertyValue,
+      documentPropertyTypeId: schema.documentProperty.documentPropertyTypeId,
+      documentId: schema.documentProperty.documentId,
+      createdOn: schema.documentProperty.createdOn,
+      policyBasis: schema.documentProperty.policyBasis,
+      tags: schema.documentProperty.tags,
+      
+      // From email_property_type (ept)
+      propertyName: schema.emailPropertyType.propertyName,
+      
+      // From email_property_category (epc)
+      description: schema.emailPropertyCategory.description,
+      emailPropertyCategoryId: schema.emailPropertyCategory.emailPropertyCategoryId,
+      
+      // From email_sentiment_analysis_details (esad)
+      sentimentScore: schema.emailSentimentAnalysisDetails.sentimentScore,
+      detectedHostility: schema.emailSentimentAnalysisDetails.detectedHostility,
+      flaggedPhrases: schema.emailSentimentAnalysisDetails.flaggedPhrases,
+      detectedOn: schema.emailSentimentAnalysisDetails.detectedOn,
+    })
+    .from(schema.documentProperty)
+    .innerJoin(
+      schema.emailSentimentAnalysisDetails,
+      eq(schema.emailSentimentAnalysisDetails.propertyId, schema.documentProperty.propertyId)
+    )
+    .innerJoin(
+      schema.emailPropertyType,
+      eq(schema.emailPropertyType.documentPropertyTypeId, schema.documentProperty.documentPropertyTypeId)
+    )
+    .innerJoin(
+      schema.emailPropertyCategory,
+      eq(schema.emailPropertyCategory.emailPropertyCategoryId, schema.emailPropertyType.emailPropertyCategoryId)
+    )
+    .innerJoin(
+      schema.documentUnits,
+      eq(schema.documentUnits.unitId, schema.documentProperty.documentId)
+    )
+    .where(
+      and(
+        eq(schema.documentUnits.emailId, emailId),
+        eq(schema.emailPropertyType.emailPropertyCategoryId, 8)
+      )
+    );
+
+  // Column getter function for filtering and sorting
+  const getColumn = (columnName: string): PgColumn | undefined => {
+    switch (columnName) {
+      case 'property_id': return schema.documentProperty.propertyId;
+      case 'property_value': return schema.documentProperty.propertyValue;
+      case 'document_property_type_id': return schema.documentProperty.documentPropertyTypeId;
+      case 'document_id': return schema.documentProperty.documentId;
+      case 'created_on': return schema.documentProperty.createdOn;
+      case 'policy_basis': return schema.documentProperty.policyBasis;
+      case 'tags': return schema.documentProperty.tags;
+      case 'property_name': return schema.emailPropertyType.propertyName;
+      case 'description': return schema.emailPropertyCategory.description;
+      case 'email_property_category_id': return schema.emailPropertyCategory.emailPropertyCategoryId;
+      case 'sentiment_score': return schema.emailSentimentAnalysisDetails.sentimentScore;
+      case 'detected_hostility': return schema.emailSentimentAnalysisDetails.detectedHostility;
+      case 'flagged_phrases': return schema.emailSentimentAnalysisDetails.flaggedPhrases;
+      case 'detected_on': return schema.emailSentimentAnalysisDetails.detectedOn;
+      default: return undefined;
+    }
+  };
+
+  // Record mapper to transform database records to EmailSentimentAnalysisDetails objects
+  const recordMapper = (record: Record<string, unknown>): Partial<EmailSentimentAnalysisDetails> => {
+    return {
+      propertyId: record.propertyId as string,
+      documentId: record.documentId as number,
+      createdOn: new Date(Date.parse(record.createdOn as string)),
+      policy_basis: record.policyBasis as string[],
+      tags: record.tags as string[],
+      sentimentScore: record.sentimentScore as number | null,
+      detectedHostility: record.detectedHostility as boolean,
+      flaggedPhrases: record.flaggedPhrases as string,
+      detectedOn: new Date(Date.parse(record.detectedOn as string)),
+      value: record.propertyValue as string, // Map propertyValue to value field
+    };
+  };
+
+  // Use selectForGrid to apply filtering, sorting, and pagination
+  const result = await selectForGrid<Partial<EmailSentimentAnalysisDetails>>({
+    req,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query: baseQuery as any,
+    getColumn,
+    columnMap,
+    recordMapper,
+  });
+
+  return Response.json(result);
 }

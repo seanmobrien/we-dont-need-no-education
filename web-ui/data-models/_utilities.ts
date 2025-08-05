@@ -22,7 +22,7 @@ import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
 import {
   parseFilterOptions,
   parseSortOptions,
-} from '@/lib/components/mui/data-grid/utility';
+} from '@/lib/components/mui/data-grid/server';
 import { PaginatedGridListRequest } from '@/lib/components/mui/data-grid';
 import { isLikeNextRequest, LikeNextRequest } from '@/lib/nextjs-util';
 

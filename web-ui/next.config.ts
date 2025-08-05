@@ -63,31 +63,27 @@ const nextConfig: NextConfig = {
     hostname: process.env.NEXT_PUBLIC_HOSTNAME,
   },
   serverExternalPackages: [
-    //'@opentelemetry/instrumentation',
-    //'@opentelemetry/instrumentation-pino',
-    //'@azure/monitor-opentelemetry-exporter',
-    //'@azure/monitor-opentelemetry',
-    //'@azure/opentelemetry-instumentation-azure-sdk',
-    //'@microsoft/applicationinsights-web',
-    //'@microsoft/applicationinsights-react-js',
-    //'@microsoft/applicationinsights-clickanalytics-js',
-    //'@opentelemetry/auto-instrumentations-node',
     '@opentelemetry/sdk-node',
-    //'@opentelemetry/api',
     '@opentelemetry/exporter-jaeger',
-    //'@opentelemetry',
     'cloudflare:sockets',
     'pino',
     'pdf-parse',
     'pg',
     '@auth/pg-adapter',
   ],
-  webpack: (config, { webpack }) => {
+  webpack: (config, { webpack, isServer }) => {
     config.plugins.push(
       new webpack.IgnorePlugin({
         resourceRegExp: /^pg-native$|^cloudflare:sockets$/,
       }),
     );
+    if (!isServer) {
+      // For client-side, we need to ensure that the following packages are not bundled
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+      };
+    }
     return config;
   },
 };

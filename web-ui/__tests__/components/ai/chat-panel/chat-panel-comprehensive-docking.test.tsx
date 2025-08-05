@@ -35,14 +35,6 @@ jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
   useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
 }));
 
-jest.mock('@/instrument/browser', () => ({
-  getReactPlugin: () => ({}),
-}));
-
-jest.mock('@microsoft/applicationinsights-react-js', () => ({
-  withAITracking: (plugin: any, Component: any) => Component,
-}));
-
 // Mock react-dom createPortal to isolate portal content
 jest.mock('react-dom', () => ({
   ...jest.requireActual('react-dom'),

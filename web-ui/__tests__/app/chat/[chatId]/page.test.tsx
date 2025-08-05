@@ -152,7 +152,7 @@ describe('Chat Detail Page', () => {
       from: mockDbFrom,
     }).mockReturnValueOnce(mockTurnsQuery);
 
-    const params = { chatId: 'chat123' };
+    const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
     
     render(ChatDetailPageComponent);
@@ -164,7 +164,7 @@ describe('Chat Detail Page', () => {
   it('should call notFound for invalid chat ID', async () => {
     mockDbLimit.mockResolvedValue([]); // No chat found
     
-    const params = { chatId: 'invalid-chat' };
+    const params = Promise.resolve({ chatId: 'invalid-chat' });
     
     // notFound() throws an error in Next.js, so we need to catch it
     try {
@@ -198,7 +198,7 @@ describe('Chat Detail Page', () => {
       from: mockDbFrom,
     }).mockReturnValueOnce(mockTurnsQuery);
 
-    const params = { chatId: 'empty-chat' };
+    const params = Promise.resolve({ chatId: 'empty-chat' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
     
     render(ChatDetailPageComponent);
@@ -223,7 +223,7 @@ describe('Chat Detail Page', () => {
       from: mockDbFrom,
     }).mockReturnValueOnce(mockTurnsQuery);
 
-    const params = { chatId: 'chat123' };
+    const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
     
     render(ChatDetailPageComponent);
@@ -254,7 +254,7 @@ describe('Chat Detail Page', () => {
       from: mockDbFrom,
     }).mockReturnValueOnce(mockTurnsQuery);
 
-    const params = { chatId: 'chat123' };
+    const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
     
     render(ChatDetailPageComponent);
@@ -265,7 +265,7 @@ describe('Chat Detail Page', () => {
   it('should handle database connection errors', async () => {
     (drizDbWithInit as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
     
-    const params = { chatId: 'chat123' };
+    const params = Promise.resolve({ chatId: 'chat123' });
     
     // Should throw the error
     await expect(ChatDetailPage({ params })).rejects.toThrow('Database connection failed');
@@ -292,7 +292,7 @@ describe('Chat Detail Page', () => {
       from: mockDbFrom,
     }).mockReturnValueOnce(mockTurnsQuery);
 
-    const params = { chatId: 'chat123' };
+    const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
     
     render(ChatDetailPageComponent);
@@ -368,7 +368,7 @@ describe('Chat Detail Page', () => {
       from: mockDbFrom,
     }).mockReturnValueOnce(mockTurnsQuery);
 
-    const params = { chatId: 'chat123' };
+    const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
     
     render(ChatDetailPageComponent);
@@ -394,7 +394,7 @@ describe('Chat Detail Page', () => {
       from: mockDbFrom,
     }).mockReturnValueOnce(mockTurnsQuery);
 
-    const params = { chatId: 'chat123' };
+    const params = Promise.resolve({ chatId: 'chat123' });
     await ChatDetailPage({ params });
     
     expect(auth).toHaveBeenCalled();
@@ -443,7 +443,7 @@ describe('Chat Detail Page', () => {
       from: mockDbFrom,
     }).mockReturnValueOnce(mockTurnsQuery);
 
-    const params = { chatId: 'chat123' };
+    const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
     
     render(ChatDetailPageComponent);

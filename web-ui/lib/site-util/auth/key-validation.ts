@@ -9,7 +9,6 @@
  */
 
 import { log } from '@/lib/logger';
-import { fetch } from '@/lib/nextjs-util/fetch';
 
 /**
  * Storage key for tracking last key validation timestamp

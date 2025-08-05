@@ -77,10 +77,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     });
 
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] - Chat history list:', result }),
+      l.verbose({ msg: '[[AUDIT]] - Chat history list:', resultset: result }),
     );
 
-    return Response.json(result);
+    return NextResponse.json(result);
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,

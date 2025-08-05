@@ -1,39 +1,12 @@
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { modelQuotas, tokenConsumptionStats } from '@/drizzle/schema';
-import { eq, and, gte, lte, sql } from 'drizzle-orm';
+import { modelQuotas, models, tokenConsumptionStats } from '@/drizzle/schema';
+import { eq, and,  sql } from 'drizzle-orm';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
+import { ModelQuota, QuotaCheckResult, TokenStats, TokenUsageData } from './types';
 
-export interface TokenUsageData {
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
-}
 
-export interface ModelQuota {
-  id: string;
-  provider: string;
-  modelName: string;
-  maxTokensPerMessage?: number;
-  maxTokensPerMinute?: number;
-  maxTokensPerDay?: number;
-  isActive: boolean;
-}
-
-export interface TokenStats {
-  currentMinuteTokens: number;
-  lastHourTokens: number;
-  last24HoursTokens: number;
-  requestCount: number;
-}
-
-export interface QuotaCheckResult {
-  allowed: boolean;
-  reason?: string;
-  currentUsage?: TokenStats;
-  quota?: ModelQuota;
-}
 
 /**
  * Service for tracking token consumption statistics and enforcing quotas
@@ -127,31 +100,28 @@ export class TokenStatsService {
   private async loadQuotaFromDatabase(provider: string, modelName: string): Promise<ModelQuota | null> {
     try {
       return await drizDbWithInit(async (db) => {
-        const result = await db
-          .select()
-          .from(modelQuotas)
-          .where(
-            and(
-              eq(modelQuotas.provider, provider),
-              eq(modelQuotas.modelName, modelName),
-              eq(modelQuotas.isActive, true)
-            )
-          )
-          .limit(1);
-
-        if (result.length === 0) {
+        const row = await db.query.modelQuotas.findFirst({
+          with: {
+            model: true, // Include quota details
+          },
+          where: and(
+            eq(models.providerId, provider),
+            eq(models.modelName, modelName),
+            eq(models.isActive, true),
+            eq(modelQuotas.isActive, true),
+          ),
+        });
+        if (!row) {
           return null;
         }
-
-        const row = result[0];
         return {
           id: row.id,
-          provider: row.provider,
-          modelName: row.modelName,
+          provider: row.model.providerId,
+          modelName: row.model.modelName,
           maxTokensPerMessage: row.maxTokensPerMessage || undefined,
           maxTokensPerMinute: row.maxTokensPerMinute || undefined,
           maxTokensPerDay: row.maxTokensPerDay || undefined,
-          isActive: row.isActive,
+          isActive: row.isActive, // always true or we wouldn't have selected the row
         };
       });
     } catch (error) {
@@ -336,6 +306,17 @@ export class TokenStatsService {
       await drizDbWithInit(async (db) => {
         const now = new Date();
         
+        const model = await db.query.models.findFirst({
+          where: and(
+            eq(models.providerId, provider),
+            eq(models.modelName, modelName),
+            eq(models.isActive, true),
+          ),
+        });
+        if (!model) {
+          throw new Error(`Model not found: ${provider}:${modelName}`);
+        } 
+
         // Update each time window in the database
         const windows = [
           { type: 'minute', start: new Date(Math.floor(now.getTime() / 60000) * 60000) },
@@ -353,8 +334,7 @@ export class TokenStatsService {
           await db
             .insert(tokenConsumptionStats)
             .values({
-              provider,
-              modelName,
+              modelId: model.id,
               windowStart: window.start.toISOString(),
               windowEnd: windowEnd.toISOString(),
               windowType: window.type,
@@ -365,8 +345,7 @@ export class TokenStatsService {
             })
             .onConflictDoUpdate({
               target: [
-                tokenConsumptionStats.provider,
-                tokenConsumptionStats.modelName,
+                tokenConsumptionStats.modelId,
                 tokenConsumptionStats.windowStart,
                 tokenConsumptionStats.windowType,
               ],

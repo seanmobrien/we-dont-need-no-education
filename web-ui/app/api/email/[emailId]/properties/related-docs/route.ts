@@ -1,107 +1,169 @@
 import { NextRequest } from 'next/server';
-import {
-  RepositoryCrudController,
-  CallToActionDetailsRepository,
-} from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { parsePaginationStats } from '@/data-models';
-import { db } from '@/lib/neondb';
-import {
-  buildOrderBy,
-  DefaultEmailColumnMap,
-} from '@/lib/components/mui/data-grid/server';
-import {
-  buildAttachmentOrEmailFilter,
-  buildQueryFilter,
-} from '@/lib/components/mui/data-grid/buildQueryFilter';
+import { CallToActionDetails } from '@/data-models';
+import { eq, and } from 'drizzle-orm';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
+import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
+import { DefaultEmailColumnMap } from '@/lib/components/mui/data-grid/server';
+import { PgColumn } from 'drizzle-orm/pg-core';
 
-const repository = new CallToActionDetailsRepository();
-const controller = new RepositoryCrudController(repository);
 const columnMap = {
   ...DefaultEmailColumnMap,
 } as const;
+
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
 ) {
-  return controller.listFromRepository(async (r) => {
-    const { emailId } = await extractParams<{ emailId: string }>(args);
-    return r.innerQuery((q) =>
-      q.list(
-        (num, page, offset) =>
-          db(
-            (
-              sql,
-            ) => sql`SELECT ep.*, ept.property_name,epc.description, epc.email_property_category_id,
-            cta.opened_date, cta.closed_date, cta.compliancy_close_date, cta.completion_percentage, 
-            cta.compliance_rating, cta.inferred, cta.compliance_date_enforceable, cta.reasonable_request, 
-            cta.reasonable_reasons, cta.sentiment, cta.sentiment_reasons, cta.compliance_rating_reasons, 
-            cta.severity, cta.severity_reason, cta.title_ix_applicable, cta.title_ix_applicable_reasons, 
-            cta.closure_actions, 
-            (SELECT AVG(car.compliance_chapter_13) 
-              FROM call_to_action_details_call_to_action_response car 
-              WHERE car.call_to_action_id=cta.property_id
-            ) AS compliance_average_chapter_13,
-            (SELECT array_agg(reasons_raw_chapter_13) AS compliance_chapter_13_reasons FROM (
-              SELECT UNNEST(car.compliance_chapter_13_reasons) AS reasons_raw_chapter_13
-              FROM call_to_action_details_call_to_action_response car
-              WHERE car.call_to_action_id=cta.property_id
-            ) sub) AS compliance_chapter_13_reasons
-            FROM document_property ep 
-             JOIN call_to_action_details cta ON cta.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             JOIN document_units du ON du.unit_id = ep.document_id
-             WHERE ep.document_property_type_id=4 
-                  ${buildAttachmentOrEmailFilter({
-                    email_id: emailId,
-                    sql,
-                    attachments: req,
-                    append: true,
-                    email_id_table: 'du',
-                    email_id_column: 'email_id',
-                    document_id_table: 'ep',
-                    document_id_column: 'document_id',
-                  })} 
-                  ${buildQueryFilter({ sql, source: req, append: true, columnMap })} 
-                  ${buildOrderBy({ sql, source: req, columnMap })} 
-             LIMIT ${num} OFFSET ${offset}`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            { transform: r.mapRecordToObject as any },
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        () =>
-          db(
-            (sql) => sql`SELECT COUNT(ep.*) AS records 
-             FROM document_property ep 
-             JOIN call_to_action_details cta ON cta.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             JOIN document_units du ON du.unit_id = ep.document_id
-             WHERE ep.document_property_type_id=4 
-                  ${buildAttachmentOrEmailFilter({
-                    email_id: emailId,
-                    sql,
-                    attachments: req,
-                    append: true,
-                    email_id_table: 'du',
-                    email_id_column: 'email_id',
-                    document_id_table: 'ep',
-                    document_id_column: 'document_id',
-                  })} 
-                  ${buildQueryFilter({ sql, source: req, append: true, columnMap })} 
-             `,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        parsePaginationStats(new URL(req.url)),
-      ),
-    );
-  });
-}
+  const { emailId } = await extractParams<{ emailId: string }>(args);
 
-export async function POST(
-  req: NextRequest,
-  args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
-  return controller.create(req, args);
+  const db = await drizDbWithInit();
+
+  // Define the base query that matches the original SQL structure
+  const baseQuery = db
+    .select({
+      // From document_property (ep)
+      propertyId: schema.documentProperty.propertyId,
+      propertyValue: schema.documentProperty.propertyValue,
+      documentPropertyTypeId: schema.documentProperty.documentPropertyTypeId,
+      documentId: schema.documentProperty.documentId,
+      createdOn: schema.documentProperty.createdOn,
+      policyBasis: schema.documentProperty.policyBasis,
+      tags: schema.documentProperty.tags,
+      
+      // From email_property_type (ept)
+      propertyName: schema.emailPropertyType.propertyName,
+      
+      // From email_property_category (epc)
+      description: schema.emailPropertyCategory.description,
+      emailPropertyCategoryId: schema.emailPropertyCategory.emailPropertyCategoryId,
+      
+      // From call_to_action_details (cta)
+      openedDate: schema.callToActionDetails.openedDate,
+      closedDate: schema.callToActionDetails.closedDate,
+      compliancyCloseDate: schema.callToActionDetails.compliancyCloseDate,
+      completionPercentage: schema.callToActionDetails.completionPercentage,
+      complianceRating: schema.callToActionDetails.complianceRating,
+      inferred: schema.callToActionDetails.inferred,
+      complianceDateEnforceable: schema.callToActionDetails.complianceDateEnforceable,
+      reasonableRequest: schema.callToActionDetails.reasonableRequest,
+      reasonableReasons: schema.callToActionDetails.reasonableReasons,
+      sentiment: schema.callToActionDetails.sentiment,
+      sentimentReasons: schema.callToActionDetails.sentimentReasons,
+      complianceRatingReasons: schema.callToActionDetails.complianceRatingReasons,
+      severity: schema.callToActionDetails.severity,
+      severityReason: schema.callToActionDetails.severityReason,
+      titleIxApplicable: schema.callToActionDetails.titleIxApplicable,
+      titleIxApplicableReasons: schema.callToActionDetails.titleIxApplicableReasons,
+      closureActions: schema.callToActionDetails.closureActions,
+    })
+    .from(schema.documentProperty)
+    .innerJoin(
+      schema.callToActionDetails,
+      eq(schema.callToActionDetails.propertyId, schema.documentProperty.propertyId)
+    )
+    .innerJoin(
+      schema.emailPropertyType,
+      eq(schema.emailPropertyType.documentPropertyTypeId, schema.documentProperty.documentPropertyTypeId)
+    )
+    .innerJoin(
+      schema.emailPropertyCategory,
+      eq(schema.emailPropertyCategory.emailPropertyCategoryId, schema.emailPropertyType.emailPropertyCategoryId)
+    )
+    .innerJoin(
+      schema.documentUnits,
+      eq(schema.documentUnits.unitId, schema.documentProperty.documentId)
+    )
+    .where(
+      and(
+        eq(schema.documentProperty.documentPropertyTypeId, 4),
+        buildDrizzleAttachmentOrEmailFilter({
+          attachments: req,
+          email_id: emailId,
+          email_id_column: schema.documentUnits.emailId,
+          document_id_column: schema.documentProperty.documentId,
+        })
+      )
+    );
+
+  // Column getter function for filtering and sorting
+  const getColumn = (columnName: string): PgColumn | undefined => {
+    switch (columnName) {
+      case 'property_id': return schema.documentProperty.propertyId;
+      case 'property_value': return schema.documentProperty.propertyValue;
+      case 'document_property_type_id': return schema.documentProperty.documentPropertyTypeId;
+      case 'document_id': return schema.documentProperty.documentId;
+      case 'created_on': return schema.documentProperty.createdOn;
+      case 'policy_basis': return schema.documentProperty.policyBasis;
+      case 'tags': return schema.documentProperty.tags;
+      case 'property_name': return schema.emailPropertyType.propertyName;
+      case 'description': return schema.emailPropertyCategory.description;
+      case 'email_property_category_id': return schema.emailPropertyCategory.emailPropertyCategoryId;
+      case 'opened_date': return schema.callToActionDetails.openedDate;
+      case 'closed_date': return schema.callToActionDetails.closedDate;
+      case 'compliancy_close_date': return schema.callToActionDetails.compliancyCloseDate;
+      case 'completion_percentage': return schema.callToActionDetails.completionPercentage;
+      case 'compliance_rating': return schema.callToActionDetails.complianceRating;
+      case 'inferred': return schema.callToActionDetails.inferred;
+      case 'compliance_date_enforceable': return schema.callToActionDetails.complianceDateEnforceable;
+      case 'reasonable_request': return schema.callToActionDetails.reasonableRequest;
+      case 'reasonable_reasons': return schema.callToActionDetails.reasonableReasons;
+      case 'sentiment': return schema.callToActionDetails.sentiment;
+      case 'sentiment_reasons': return schema.callToActionDetails.sentimentReasons;
+      case 'compliance_rating_reasons': return schema.callToActionDetails.complianceRatingReasons;
+      case 'severity': return schema.callToActionDetails.severity;
+      case 'severity_reason': return schema.callToActionDetails.severityReason;
+      case 'title_ix_applicable': return schema.callToActionDetails.titleIxApplicable;
+      case 'title_ix_applicable_reasons': return schema.callToActionDetails.titleIxApplicableReasons;
+      case 'closure_actions': return schema.callToActionDetails.closureActions;
+      default: return undefined;
+    }
+  };
+
+  // Record mapper to transform database records to CallToActionDetails objects
+  const recordMapper = (record: Record<string, unknown>): Partial<CallToActionDetails> => {
+    const parseNullableDate = (dateString: unknown): Date | null => {
+      return dateString ? new Date(Date.parse(dateString as string)) : null;
+    };
+
+    return {
+      propertyId: record.propertyId as string,
+      documentId: record.documentId as number,
+      createdOn: new Date(Date.parse(record.createdOn as string)),
+      policy_basis: record.policyBasis as string[],
+      tags: record.tags as string[],
+      opened_date: parseNullableDate(record.openedDate),
+      closed_date: parseNullableDate(record.closedDate),
+      compliancy_close_date: parseNullableDate(record.compliancyCloseDate),
+      completion_percentage: record.completionPercentage as number | undefined,
+      compliance_rating: record.complianceRating as number | null,
+      inferred: record.inferred as boolean,
+      compliance_date_enforceable: record.complianceDateEnforceable as boolean | undefined,
+      reasonable_request: record.reasonableRequest as number | null | undefined,
+      reasonable_reasons: record.reasonableReasons as string[],
+      sentiment: record.sentiment as number | null,
+      sentiment_reasons: record.sentimentReasons as string[],
+      compliance_rating_reasons: record.complianceRatingReasons as string[],
+      severity: record.severity as number | null,
+      severity_reason: record.severityReason as string[] | null | undefined,
+      title_ix_applicable: record.titleIxApplicable as number | null | undefined,
+      title_ix_applicable_reasons: record.titleIxApplicableReasons as string[],
+      closure_actions: record.closureActions as string[],
+      value: record.propertyValue as string, // Map propertyValue to value field
+    };
+  };
+
+  // Use selectForGrid to apply filtering, sorting, and pagination
+  const result = await selectForGrid<Partial<CallToActionDetails>>({
+    req,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query: baseQuery as any,
+    getColumn,
+    columnMap,
+    recordMapper,
+  });
+
+  return Response.json(result);
 }

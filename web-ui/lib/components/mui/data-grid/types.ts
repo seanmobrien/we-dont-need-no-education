@@ -1,5 +1,4 @@
 import { PaginationStats } from '@/data-models';
-import type { ISqlNeonAdapter, SqlDb } from '@/lib/neondb';
 import type { LikeNextRequest } from '@/lib/nextjs-util';
 export type { LikeNextRequest };
 import type { FirstParameter } from '@/lib/typescript';
@@ -9,9 +8,7 @@ import type {
   GridFilterModel,
   DataGridProProps,
   GridGetRowsResponse,
-  GridFilterItem,
 } from '@mui/x-data-grid-pro';
-import { MaybeRow } from 'postgres';
 import type { Dispatch, SetStateAction } from 'react';
 
 /**
@@ -185,34 +182,6 @@ export type GetGridRecordDataCallback =
  */
 export type GetGridRecordDataProps = FirstParameter<GetGridRecordDataCallback>;
 
-/**
- * Properties used to build an executable SQL fragment out of a GridSortModel.
- *
- * @template RecordType - The type of the record, extending Record<string, ResultType>.
- */
-export type BuildOrderByProps<
-  RecordType extends MaybeRow = Exclude<MaybeRow, undefined>,
-> = {
-  /**
-   * The SQL database instance used to build the query.
-   */
-  sql: SqlDb<Exclude<RecordType, undefined>> | ISqlNeonAdapter;
-
-  /**
-   * The request object, typically similar to Next.js's request.
-   */
-  source: LikeNextRequest | URL | string | GridSortModel | undefined;
-
-  /**
-   * The default sort model or column name to use if none is provided.
-   */
-  defaultSort?: GridSortModel | string;
-
-  /**
-   * A mapping or function to translate source column names to database column names.
-   */
-  columnMap?: ((sourceColumnName: string) => string) | Record<string, string>;
-};
 
 /**
  * Represents a request for a paginated grid list, extending {@link PaginationStats}
@@ -267,43 +236,6 @@ export type PaginatedGridListRequest = PaginationStats<number> & {
  */
 export type FilterBySourceType = GridFilterModel | LikeNextRequest | undefined;
 
-/**
- * Properties for building a query filter for data grid components.
- *
- * @property source - The filter criteria source, typically specifying the fields and values to filter by.
- * @property sql - The SQL adapter or database instance used to build and execute the query.
- * @property defaultFilter - (Optional) A default filter to apply if no specific filter is provided.
- * @property append - (Optional) If true, appends the filter to the existing filter using an AND keyword;
- *                    if false or not provided, creates a new filter using the WHERE keyword.
- */
-export type BuildQueryFilterProps = {
-  /**
-   * The filter criteria source, typically specifying the fields and values to filter by.
-   */
-  source: FilterBySourceType;
-  /**
-   * The SQL adapter or database instance used to build and execute the query.
-   */
-  sql: ISqlNeonAdapter | SqlDb<Record<string, unknown>>;
-  /**
-   * (Optional) A default filter to apply if no specific filter is provided.
-   */
-  defaultFilter?: FilterBySourceType;
-  /**
-   * If true, the filter will be appended to the existing filter - eg and AND keyword will be used.
-   * If false or not provided, the filter will create a new filter - eg the WHERE keyword will be used.
-   */
-  append?: boolean;
-  /**
-   * A mapping or function to translate source column names to database column names.
-   */
-  columnMap?: ((sourceColumnName: string) => string) | Record<string, string>;
-  /**
-   * An optional set of additional filters that should be applied to the query.
-   * This can include any additional criteria that are not part of the main filter model.
-   */
-  additional?: Record<string, Omit<GridFilterItem, 'field'>>;
-};
 
 /**
  * Represents the response returned when a fetch operation for grid rows is cancelled.

@@ -33,6 +33,11 @@ jest.mock('@/instrument/browser', () => ({
   })),
   instrument: jest.fn()
 }));
+
+jest.mock('@microsoft/applicationinsights-react-js', () => ({
+  withAITracking: (plugin: any, Component: any) => Component,
+}));
+
 jest.mock('react-error-boundary', () => {
  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
  class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
@@ -109,7 +114,6 @@ jest.mock('react-error-boundary', () => {
 });
 jest.mock('@/lib/nextjs-util/fetch', () => ({
   fetch: jest.fn((url: string) => {
-    console.log('mocked fetch called with URL:', url);
     return Promise.resolve({
       ok: true,
       json: () => Promise.resolve({}),
@@ -277,7 +281,7 @@ const logger = () => ({
 
 jest.mock('@/lib/logger', () => {
   return {
-    logger: Promise.resolve(() => ({
+    logger: jest.fn(() => Promise.resolve({
       warn: jest.fn(makeMockImplementation('warn')),
       error: jest.fn(makeMockImplementation('error')),
       info: jest.fn(makeMockImplementation('info')),
@@ -286,11 +290,37 @@ jest.mock('@/lib/logger', () => {
       verbose: jest.fn(makeMockImplementation('verbose')),
       log: jest.fn(makeMockImplementation('log')),
     })),
-    log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => cb(logger())),
+    log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => {
+      const mockLogger = {
+        warn: jest.fn(makeMockImplementation('warn')),
+        error: jest.fn(makeMockImplementation('error')),
+        info: jest.fn(makeMockImplementation('info')),
+        debug: jest.fn(makeMockImplementation('debug')),
+        silly: jest.fn(makeMockImplementation('silly')),
+        verbose: jest.fn(makeMockImplementation('verbose')),
+        log: jest.fn(makeMockImplementation('log')),
+      };
+      return Promise.resolve(cb(mockLogger));
+    }),
     errorLogFactory: jest.fn((x) => x),
-    simpleScopedLogger: jest.fn(() => logger()),
+    simpleScopedLogger: jest.fn(() => ({
+      warn: jest.fn(makeMockImplementation('warn')),
+      error: jest.fn(makeMockImplementation('error')),
+      info: jest.fn(makeMockImplementation('info')),
+      debug: jest.fn(makeMockImplementation('debug')),
+      silly: jest.fn(makeMockImplementation('silly')),
+      verbose: jest.fn(makeMockImplementation('verbose')),
+      log: jest.fn(makeMockImplementation('log')),
+    })),
   };
 });
+
+jest.mock('@/lib/ai/middleware', () => ({
+  retryRateLimitMiddlewareFactory: jest.fn(() => jest.fn()),
+  cacheWithRedis: jest.fn(),
+  setNormalizedDefaultsMiddleware: jest.fn(),
+  tokenStatsLoggingOnlyMiddleware: jest.fn(() => jest.fn()),
+}));
 
 import NextAuth from 'next-auth';
 import { auth } from '@/auth';
@@ -318,6 +348,124 @@ import { TrackWithAppInsight } from '@/components/general/telemetry';
 import instrument, { getAppInsights } from '@/instrument/browser';
 
 globalThis.TextEncoder = TextEncoder;
+
+// Polyfill Web APIs for Next.js API route testing
+globalThis.Request = globalThis.Request || class Request {
+  url: string;
+  method: string;
+  headers: Headers;
+  body: ReadableStream | null;
+
+  constructor(input: string | Request, init?: RequestInit) {
+    if (typeof input === 'string') {
+      this.url = input;
+    } else {
+      this.url = input.url;
+    }
+    this.method = init?.method || 'GET';
+    this.headers = new Headers(init?.headers);
+    this.body = init?.body as ReadableStream || null;
+  }
+
+  async json() {
+    if (this.body) {
+      const reader = this.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let done = false;
+      
+      while (!done) {
+        const { value, done: readerDone } = await reader.read();
+        done = readerDone;
+        if (value) chunks.push(value);
+      }
+      
+      const text = new TextDecoder().decode(new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0)));
+      return JSON.parse(text);
+    }
+    return {};
+  }
+
+  async text() {
+    return '';
+  }
+} as any;
+
+globalThis.Response = globalThis.Response || class Response {
+  status: number;
+  statusText: string;
+  headers: Headers;
+  body: ReadableStream | null;
+  ok: boolean;
+
+  constructor(body?: BodyInit | null, init?: ResponseInit) {
+    this.status = init?.status || 200;
+    this.statusText = init?.statusText || 'OK';
+    this.headers = new Headers(init?.headers);
+    this.body = null;
+    this.ok = this.status >= 200 && this.status < 300;
+  }
+
+  static json(data: any, init?: ResponseInit) {
+    const response = new Response(JSON.stringify(data), {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...init?.headers,
+      },
+    });
+    return response;
+  }
+
+  async json() {
+    return {};
+  }
+
+  async text() {
+    return '';
+  }
+} as any;
+
+globalThis.Headers = globalThis.Headers || class Headers {
+  private headers: Record<string, string> = {};
+
+  constructor(init?: HeadersInit) {
+    if (init) {
+      if (init instanceof Headers) {
+        this.headers = { ...init.headers };
+      } else if (Array.isArray(init)) {
+        init.forEach(([key, value]) => {
+          this.headers[key.toLowerCase()] = value;
+        });
+      } else {
+        Object.entries(init).forEach(([key, value]) => {
+          this.headers[key.toLowerCase()] = value;
+        });
+      }
+    }
+  }
+
+  get(name: string) {
+    return this.headers[name.toLowerCase()] || null;
+  }
+
+  set(name: string, value: string) {
+    this.headers[name.toLowerCase()] = value;
+  }
+
+  has(name: string) {
+    return name.toLowerCase() in this.headers;
+  }
+
+  delete(name: string) {
+    delete this.headers[name.toLowerCase()];
+  }
+
+  forEach(callback: (value: string, key: string) => void) {
+    Object.entries(this.headers).forEach(([key, value]) => {
+      callback(value, key);
+    });
+  }
+} as any;
 (globalThis as unknown as {IS_REACT_ACT_ENVIRONMENT: boolean}).IS_REACT_ACT_ENVIRONMENT=true;
 // Automocks
 
@@ -629,6 +777,12 @@ beforeEach(() => {
   });
   jest.mock('redis', () => ({
     createClient: createRedisClient,
+  }));
+  jest.mock('@/lib/ai/middleware', () => ({
+    retryRateLimitMiddlewareFactory: jest.fn(() => jest.fn()),
+    cacheWithRedis: jest.fn(),
+    setNormalizedDefaultsMiddleware: jest.fn(),
+    tokenStatsLoggingOnlyMiddleware: jest.fn(() => jest.fn()),
   }));
 });
 

@@ -12,6 +12,7 @@
       "Bash(grep:*)",
       "Bash(yarn lint:*)",
       "Bash(cat:*)",
+      "Bash(find:*)",
       "Bash(ls:*)"
     ],
     "deny": []

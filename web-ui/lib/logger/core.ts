@@ -46,12 +46,20 @@ export const logger = (): Promise<ILogger> =>
     resolve(new WrappedLogger(_logger));
   });
 
+const resolvedPromise = Promise.resolve();
+
 /**
  * Executes a callback function with the provided logger instance.
  *
  * @param cb - A callback function that takes a logger instance as an argument.
  */
-export const log = (cb: (l: ILogger) => void) => logger().then(cb);
+export const log = (cb: (l: ILogger) => void) => {
+  if (_logger) {
+    const cbRet = cb(_logger);
+    return cbRet !== undefined ? Promise.resolve(cbRet) : resolvedPromise;
+  }
+  return logger().then(cb);
+};
 
 /**
  * @remarks

@@ -104,7 +104,6 @@ describe('selectForGrid', () => {
 
       const result = await selectForGrid({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
         recordMapper: mockRecordMapper,
@@ -132,7 +131,6 @@ describe('selectForGrid', () => {
 
       const result = await selectForGrid({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
       });
@@ -155,7 +153,6 @@ describe('selectForGrid', () => {
 
       await selectForGrid({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
         
@@ -177,7 +174,6 @@ describe('selectForGrid', () => {
 
       const result = await selectForGrid({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
         
@@ -195,7 +191,6 @@ describe('selectForGrid', () => {
 
       const result = await selectForGrid({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
         
@@ -214,7 +209,6 @@ describe('selectForGrid', () => {
 
       await expect(selectForGrid({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
         
@@ -235,7 +229,6 @@ describe('selectForGrid', () => {
 
       await expect(selectForGrid({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
         
@@ -270,7 +263,6 @@ describe('selectForGrid', () => {
 
       const result = await selectForGrid<CallToActionDetails>({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
         
@@ -312,7 +304,6 @@ describe('selectForGrid', () => {
 
       const result = await selectForGrid<CustomType>({
         req: mockReq,
-        emailId: 'test-email-id',
         query: mockQuery,
         getColumn: mockGetColumn,
         

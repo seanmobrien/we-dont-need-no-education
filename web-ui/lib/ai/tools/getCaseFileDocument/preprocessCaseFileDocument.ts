@@ -1,4 +1,3 @@
-import { promptTokensEstimate } from 'openai-chat-tokens';
 import { LoggedError } from '@/lib/react-util';
 import { zodToStructure } from '@/lib/typescript';
 import { CoreMessage, generateText } from 'ai';
@@ -12,6 +11,7 @@ import {
   caseFileDocumentPreprocessingDurationHistogram,
   caseFileDocumentSizeHistogram,
 } from './metrics';
+import { countTokens } from '../../core/count-tokens';
 
 /**
  * Preprocesses case file documents using AI to extract relevant information based on specified goals.
@@ -209,7 +209,7 @@ Output Record Format: [
   try {
     const payload = {
       // model,
-      // prompt: PROMPT,
+      // prompt: PROMPT,      
       messages: [
         { role: 'system', content: PROMPT },
         {
@@ -218,7 +218,7 @@ Output Record Format: [
 ___BEGIN CASE FILE___
 ${recordContents}
 ___END CASE FILE___`,
-        },
+        }
       ] as CoreMessage[],
       temperature: 0.1,
       experimental_telemetry: {
@@ -231,10 +231,9 @@ ___END CASE FILE___`,
       },
     };
 
-    const tokens = promptTokensEstimate(payload);
+    const tokens = countTokens({ prompt: payload.messages });
     const model =
       tokens > 100000 ? aiModelFactory('google:lofi') : aiModelFactory('lofi');
-
     const response = await generateText({
       ...payload,
       model,

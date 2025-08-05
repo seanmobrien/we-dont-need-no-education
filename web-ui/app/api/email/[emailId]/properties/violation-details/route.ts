@@ -1,58 +1,137 @@
 import { NextRequest } from 'next/server';
-import {
-  RepositoryCrudController,
-  ViolationDetailsRepository,
-} from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { parsePaginationStats } from '@/data-models';
-import { db } from '@/lib/neondb';
-import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
+import { ViolationDetails } from '@/data-models';
+import { eq, and } from 'drizzle-orm';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
+import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { DefaultDrizzleEmailColumnMap } from '@/lib/components/mui/data-grid/server';
+import { PgColumn } from 'drizzle-orm/pg-core';
 
-const repository = new ViolationDetailsRepository();
-const controller = new RepositoryCrudController(repository);
+const columnMap = {
+  ...DefaultDrizzleEmailColumnMap,
+} as const;
 
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
 ) {
-  return controller.listFromRepository(async (r) => {
-    const { emailId } = await extractParams<{ emailId: string }>(args);
-    return r.innerQuery((q) =>
-      q.list(
-        (num, page, offset) =>
-          db(
-            (
-              sql,
-            ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id,
-            vd.attachment_id, vd.key_point_property_id, vd.action_property_id, vd.violation_type, vd.severity_level, vd.detected_by, vd.detected_on
-            FROM document_property ep 
-             JOIN violation_details vd ON vd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE ep.email_id = ${emailId} AND ept.email_property_category_id=7 
-             ${buildOrderBy({ sql, source: req })}           
-             LIMIT ${num} OFFSET ${offset}`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        () =>
-          db(
-            (sql) => sql`SELECT COUNT(ep.*) AS records 
-             FROM document_property ep 
-             JOIN violation_details vd ON vd.property_id = ep.property_id 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE ep.email_id = ${emailId} AND ept.email_property_category_id=7`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        parsePaginationStats(new URL(req.url)),
-      ),
-    );
-  });
-}
+  const { emailId } = await extractParams<{ emailId: string }>(args);
 
-export async function POST(
-  req: NextRequest,
-  args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
-  return controller.create(req, args);
+  const db = await drizDbWithInit();
+
+  // Define the base query that matches the original SQL structure
+  const baseQuery = db
+    .select({
+      // From document_property (ep)
+      propertyId: schema.documentProperty.propertyId,
+      propertyValue: schema.documentProperty.propertyValue,
+      documentPropertyTypeId: schema.documentProperty.documentPropertyTypeId,
+      documentId: schema.documentProperty.documentId,
+      createdOn: schema.documentProperty.createdOn,
+      policyBasis: schema.documentProperty.policyBasis,
+      tags: schema.documentProperty.tags,
+      
+      // From email_property_type (ept)
+      propertyName: schema.emailPropertyType.propertyName,
+      
+      // From email_property_category (epc)
+      description: schema.emailPropertyCategory.description,
+      emailPropertyCategoryId: schema.emailPropertyCategory.emailPropertyCategoryId,
+      
+      // From violation_details (vd)
+      emailDocumentId: schema.violationDetails.emailDocumentId,
+      violationType: schema.violationDetails.violationType,
+      severityLevel: schema.violationDetails.severityLevel,
+      detectedBy: schema.violationDetails.detectedBy,
+      detectedOn: schema.violationDetails.detectedOn,
+      violationReasons: schema.violationDetails.violationReasons,
+      titleIxRelevancy: schema.violationDetails.titleIxRelevancy,
+      chapt13Relevancy: schema.violationDetails.chapt13Relevancy,
+      ferpaRelevancy: schema.violationDetails.ferpaRelevancy,
+      otherRelevancy: schema.violationDetails.otherRelevancy,
+      severityReasons: schema.violationDetails.severityReasons,
+    })
+    .from(schema.documentProperty)
+    .innerJoin(
+      schema.violationDetails,
+      eq(schema.violationDetails.propertyId, schema.documentProperty.propertyId)
+    )
+    .innerJoin(
+      schema.emailPropertyType,
+      eq(schema.emailPropertyType.documentPropertyTypeId, schema.documentProperty.documentPropertyTypeId)
+    )
+    .innerJoin(
+      schema.emailPropertyCategory,
+      eq(schema.emailPropertyCategory.emailPropertyCategoryId, schema.emailPropertyType.emailPropertyCategoryId)
+    )
+    .innerJoin(
+      schema.documentUnits,
+      eq(schema.documentUnits.unitId, schema.documentProperty.documentId)
+    )
+    .where(
+      and(
+        eq(schema.documentUnits.emailId, emailId),
+        eq(schema.emailPropertyType.emailPropertyCategoryId, 7)
+      )
+    );
+
+  // Column getter function for filtering and sorting
+  const getColumn = (columnName: string): PgColumn | undefined => {
+    switch (columnName) {
+      case 'property_id': return schema.documentProperty.propertyId;
+      case 'property_value': return schema.documentProperty.propertyValue;
+      case 'document_property_type_id': return schema.documentProperty.documentPropertyTypeId;
+      case 'document_id': return schema.documentProperty.documentId;
+      case 'created_on': return schema.documentProperty.createdOn;
+      case 'policy_basis': return schema.documentProperty.policyBasis;
+      case 'tags': return schema.documentProperty.tags;
+      case 'property_name': return schema.emailPropertyType.propertyName;
+      case 'description': return schema.emailPropertyCategory.description;
+      case 'email_property_category_id': return schema.emailPropertyCategory.emailPropertyCategoryId;
+      case 'email_document_id': return schema.violationDetails.emailDocumentId;
+      case 'violation_type': return schema.violationDetails.violationType;
+      case 'severity_level': return schema.violationDetails.severityLevel;
+      case 'detected_by': return schema.violationDetails.detectedBy;
+      case 'detected_on': return schema.violationDetails.detectedOn;
+      case 'violation_reasons': return schema.violationDetails.violationReasons;
+      case 'title_ix_relevancy': return schema.violationDetails.titleIxRelevancy;
+      case 'chapt_13_relevancy': return schema.violationDetails.chapt13Relevancy;
+      case 'ferpa_relevancy': return schema.violationDetails.ferpaRelevancy;
+      case 'other_relevancy': return schema.violationDetails.otherRelevancy;
+      case 'severity_reasons': return schema.violationDetails.severityReasons;
+      default: return undefined;
+    }
+  };
+
+  // Record mapper to transform database records to ViolationDetails objects
+  const recordMapper = (record: Record<string, unknown>): Partial<ViolationDetails> => {
+    return {
+      propertyId: record.propertyId as string,
+      documentId: record.documentId as number,
+      createdOn: new Date(Date.parse(record.createdOn as string)),
+      policy_basis: record.policyBasis as string[],
+      tags: record.tags as string[],
+      attachmentId: null, // Not available in current schema
+      keyPointPropertyId: null, // Not available in current schema  
+      actionPropertyId: null, // Not available in current schema
+      violationType: record.violationType as string,
+      severityLevel: record.severityLevel as number,
+      detectedBy: record.detectedBy as string,
+      detectedOn: new Date(Date.parse(record.detectedOn as string)),
+      value: record.propertyValue as string, // Map propertyValue to value field
+    };
+  };
+
+  // Use selectForGrid to apply filtering, sorting, and pagination
+  const result = await selectForGrid<Partial<ViolationDetails>>({
+    req,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query: baseQuery as any,
+    getColumn,
+    columnMap,
+    recordMapper,
+  });
+
+  return Response.json(result);
 }

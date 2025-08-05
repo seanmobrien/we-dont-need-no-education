@@ -10,7 +10,7 @@ import {
 } from '@/lib/ai/core/unions';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
-import { cacheWithRedis, setNormalizedDefaultsMiddleware } from './middleware';
+import { cacheWithRedis, retryRateLimitMiddlewareFactory, setNormalizedDefaultsMiddleware, tokenStatsLoggingOnlyMiddleware } from './middleware';
 
 /**
  * Model availability manager for programmatic control of model enabling/disabling
@@ -143,11 +143,20 @@ const modelAvailabilityManager = ModelAvailabilityManager.getInstance();
 const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
   return wrapLanguageModel({
     model: wrapLanguageModel({
-      model,
-      middleware: cacheWithRedis,
+      model: wrapLanguageModel({
+        model,
+        middleware: cacheWithRedis,
+      }),
+      middleware: setNormalizedDefaultsMiddleware,
     }),
-    middleware: setNormalizedDefaultsMiddleware,
+    middleware: [
+      tokenStatsLoggingOnlyMiddleware(),
+      retryRateLimitMiddlewareFactory({
+        model,
+      }),      
+    ],
   });
+  
 };
 
 /**
@@ -199,9 +208,14 @@ const googleProvider = customProvider({
     hifi: setupMiddleware(
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-2.0-pro'), // High-quality model equivalent to Azure hifi
+      }).chat('gemini-2.5-pro'), // High-quality model equivalent to Azure hifi
     ),
     lofi: setupMiddleware(
+      createGoogleGenerativeAI({
+        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
+      }).chat('gemini-2.5-flash'), // Fast model equivalent to Azure lofi
+    ),
+    'gemini-2.0-flash': setupMiddleware(
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.0-flash'), // Fast model equivalent to Azure lofi
@@ -210,22 +224,7 @@ const googleProvider = customProvider({
     'gemini-pro': setupMiddleware(
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-2.0-pro'),
-    ),
-    'gemini-flash': setupMiddleware(
-      createGoogleGenerativeAI({
-        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-1.5-flash'),
-    ),
-    'gemini-2.5-pro': setupMiddleware(
-      createGoogleGenerativeAI({
-        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.5-pro'),
-    ),
-    'gemini-2.5-flash': setupMiddleware(
-      createGoogleGenerativeAI({
-        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-2.5-flash'),
     ),
   },
   textEmbeddingModels: {
@@ -320,6 +319,10 @@ interface GetAiModelProviderOverloads {
     deploymentId: Exclude<AiModelType, 'embedding' | 'google-embedding'>,
     options?: ChatOptions,
   ): LanguageModelV1;
+  (
+    deploymentId: AiModelType,
+    options?: ChatOptions | EmbeddingOptions,
+  ): LanguageModelV1 | EmbeddingModelV1<string>;
 }
 
 /**
@@ -460,78 +463,62 @@ export const createGoogleEmbeddingModel = (
  * Disable a specific model (e.g., 'azure:hifi', 'google:embedding')
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  */
-export const disableModel = (modelKey: string): void => {
+export const disableModel = (modelKey: string): void =>
   modelAvailabilityManager.disableModel(modelKey);
-};
 
 /**
  * Enable a specific model (e.g., 'azure:hifi', 'google:embedding')
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  */
-export const enableModel = (modelKey: string): void => {
+export const enableModel = (modelKey: string): void =>
   modelAvailabilityManager.enableModel(modelKey);
-};
 
 /**
  * Disable all models for a provider
  * @param provider - Either 'azure' or 'google'
  */
-export const disableProvider = (provider: 'azure' | 'google'): void => {
+export const disableProvider = (provider: 'azure' | 'google'): void =>
   modelAvailabilityManager.disableProvider(provider);
-};
-
 /**
  * Enable all models for a provider
  * @param provider - Either 'azure' or 'google'
  */
-export const enableProvider = (provider: 'azure' | 'google'): void => {
+export const enableProvider = (provider: 'azure' | 'google'): void =>
   modelAvailabilityManager.enableProvider(provider);
-};
 
 /**
  * Temporarily disable a model for a specified duration
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  * @param durationMs - Duration in milliseconds to disable the model
  */
-export const temporarilyDisableModel = (
-  modelKey: string,
-  durationMs: number,
-): void => {
+export const temporarilyDisableModel = (modelKey: string, durationMs: number): void =>
   modelAvailabilityManager.temporarilyDisableModel(modelKey, durationMs);
-};
-
 /**
  * Check if a model is currently available
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  * @returns True if the model is available, false otherwise
  */
-export const isModelAvailable = (modelKey: string): boolean => {
-  return modelAvailabilityManager.isModelAvailable(modelKey);
-};
+export const isModelAvailable = (modelKey: string): boolean =>
+  modelAvailabilityManager.isModelAvailable(modelKey);
 
 /**
  * Check if a provider is available
  * @param provider - Either 'azure' or 'google'
  * @returns True if the provider has any available models, false otherwise
  */
-export const isProviderAvailable = (provider: 'azure' | 'google'): boolean => {
-  return modelAvailabilityManager.isProviderAvailable(provider);
-};
-
+export const isProviderAvailable = (provider: 'azure' | 'google'): boolean =>
+  modelAvailabilityManager.isProviderAvailable(provider);
 /**
  * Get the current availability status of all models (for debugging)
  * @returns Object mapping model keys to their availability status
  */
-export const getModelAvailabilityStatus = (): Record<string, boolean> => {
-  return modelAvailabilityManager.getAvailabilityStatus();
-};
+export const getModelAvailabilityStatus = (): Record<string, boolean> =>
+  modelAvailabilityManager.getAvailabilityStatus();
 
 /**
  * Reset all models to their default available state
  */
-export const resetModelAvailability = (): void => {
-  modelAvailabilityManager.resetToDefaults();
-};
+export const resetModelAvailability = (): void => modelAvailabilityManager.resetToDefaults();
 
 /**
  * Convenience functions for common scenarios

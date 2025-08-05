@@ -48,6 +48,8 @@ COPY --link=true ./data-models ./data-models
 COPY --link=true ./drizzle ./drizzle
 COPY --link=true ./lib ./lib
 COPY --link=true ./types ./types
+COPY --link=true ./instrument ./instrument
+COPY --link=true ./scripts ./scripts
 COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
 
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME

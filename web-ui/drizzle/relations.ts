@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { callToActionDetails, callToActionExpectedResponse, callToActionResponseDetails, emailAttachments, documentUnits, emails, documentProperty, chatTurns, mcpSessions, emailPropertyType, mcpEvents, intermediateLlmRequestLogs, analysisStage, documentUnitAnalysisStageAudit, users, chatHistory, accounts, sessions, sessionsExt, policiesStatutes, emailPropertyCategory, stagingMessage, legalReferences, complianceScoresDetails, emailSentimentAnalysisDetails, contacts, policyTypes, violationDetails, keyPointsDetails, callToActionCategory, documentPropertyCallToActionCategory, emailRecipients, documentPropertyRelatedDocumentOld, documentRelationshipReason, documentUnitEmbeddings, documentRelationship, tokenUsage, documentUnitAnalysisFunctionAudit, callToActionDetailsCallToActionResponse, stagingAttachment, chatMessages, messageStatuses, chats, turnStatuses,	userPublicKeys } from "./schema";
+import { callToActionDetails, callToActionExpectedResponse, callToActionResponseDetails, emailAttachments, documentUnits, emails, documentProperty, chatTurns, mcpSessions, emailPropertyType, mcpEvents, intermediateLlmRequestLogs, analysisStage, documentUnitAnalysisStageAudit, users, chatHistory, accounts, sessions, sessionsExt, policiesStatutes, emailPropertyCategory, stagingMessage, legalReferences, complianceScoresDetails, emailSentimentAnalysisDetails, contacts, policyTypes, violationDetails, keyPointsDetails, callToActionCategory, documentPropertyCallToActionCategory, emailRecipients, documentPropertyRelatedDocumentOld, documentRelationshipReason, documentUnitEmbeddings, documentRelationship, tokenUsage, documentUnitAnalysisFunctionAudit, callToActionDetailsCallToActionResponse, stagingAttachment, chatMessages, messageStatuses, chats, turnStatuses, userPublicKeys, models, modelQuotas, tokenConsumptionStats, providers } from "./schema";
 
 
 export const callToActionExpectedResponseRelations = relations(callToActionExpectedResponse, ({one}) => ({
@@ -424,4 +424,32 @@ export const chatsRelations = relations(chats, ({many}) => ({
 
 export const turnStatusesRelations = relations(turnStatuses, ({many}) => ({
 	chatTurns: many(chatTurns),
+}));
+
+// Relations for the new normalized model tables
+export const providersRelations = relations(providers, ({many}) => ({
+	models: many(models),
+}));
+
+export const modelsRelations = relations(models, ({one, many}) => ({
+	provider: one(providers, {
+		fields: [models.providerId],
+		references: [providers.id]
+	}),
+	modelQuotas: many(modelQuotas),
+	tokenConsumptionStats: many(tokenConsumptionStats),
+}));
+
+export const modelQuotasRelations = relations(modelQuotas, ({one}) => ({
+	model: one(models, {
+		fields: [modelQuotas.modelId],
+		references: [models.id]
+	}),
+}));
+
+export const tokenConsumptionStatsRelations = relations(tokenConsumptionStats, ({one}) => ({
+	model: one(models, {
+		fields: [tokenConsumptionStats.modelId],
+		references: [models.id]
+	}),
 }));

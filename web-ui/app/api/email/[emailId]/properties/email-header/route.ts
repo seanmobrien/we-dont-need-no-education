@@ -1,55 +1,101 @@
 import { NextRequest } from 'next/server';
-import {
-  RepositoryCrudController,
-  EmailHeaderDetailsRepository,
-} from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
-import { parsePaginationStats } from '@/data-models';
-import { db } from '@/lib/neondb';
-import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
+import { EmailProperty } from '@/data-models';
+import {
+  getEmailColumn,
+  selectForGrid,
+} from '@/lib/components/mui/data-grid/server';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { and, eq } from 'drizzle-orm';
+import { PgColumn } from 'drizzle-orm/pg-core';
 
-const repository = new EmailHeaderDetailsRepository();
-const controller = new RepositoryCrudController(repository);
 
 export async function GET(
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
 ) {
-  return controller.listFromRepository(async (r) => {
-    const { emailId } = await extractParams<{ emailId: string }>(args);
-    return r.innerQuery((q) =>
-      q.list(
-        (num, page, offset) =>
-          db(
-            (
-              sql,
-            ) => sql`SELECT ep.*, ept.property_name, epc.description, epc.email_property_category_id
-            FROM document_property ep 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=1 
-             ${buildOrderBy({ sql, source: req })}
-             LIMIT ${num} OFFSET ${offset}`,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        () =>
-          db(
-            (sql) => sql`SELECT COUNT(ep.*) AS records 
-             FROM document_property ep 
-             JOIN email_property_type ept ON ept.document_property_type_id = ep.document_property_type_id
-             JOIN email_property_category epc ON ept.email_property_category_id = epc.email_property_category_id
-             WHERE document_property_email(ep.property_id) = ${emailId} AND ept.email_property_category_id=1`,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ) as any,
-        parsePaginationStats(new URL(req.url)),
+  const { emailId } = await extractParams<{ emailId: string }>(args);
+
+  const db = await drizDbWithInit();
+
+  // Define the base query that matches the original SQL structure
+  const baseQuery = db
+    .select({
+      // From document_property (ep)
+      propertyId: schema.documentProperty.propertyId,
+      propertyValue: schema.documentProperty.propertyValue,
+      documentPropertyTypeId: schema.documentProperty.documentPropertyTypeId,
+      documentId: schema.documentProperty.documentId,
+      createdOn: schema.documentProperty.createdOn,
+      policyBasis: schema.documentProperty.policyBasis,
+      tags: schema.documentProperty.tags,
+
+      // From email_property_type (ept)
+      propertyName: schema.emailPropertyType.propertyName,
+
+      // From email_property_category (epc)
+      description: schema.emailPropertyCategory.description,
+      emailPropertyCategoryId:
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+    })
+    .from(schema.documentProperty)
+    .innerJoin(
+      schema.emailPropertyType,
+      eq(
+        schema.emailPropertyType.documentPropertyTypeId,
+        schema.documentProperty.documentPropertyTypeId,
+      ),
+    )
+    .innerJoin(
+      schema.emailPropertyCategory,
+      eq(
+        schema.emailPropertyCategory.emailPropertyCategoryId,
+        schema.emailPropertyType.emailPropertyCategoryId,
+      ),
+    )
+    .innerJoin(
+      schema.documentUnits,
+      eq(schema.documentUnits.unitId, schema.documentProperty.documentId),
+    )
+    .where(
+      and(
+        eq(schema.documentUnits.emailId, emailId),
+        eq(schema.emailPropertyType.emailPropertyCategoryId, 1),
       ),
     );
-  });
-}
 
-export async function POST(
-  req: NextRequest,
-  args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
-  return controller.create(req, args);
+  // Column getter function for filtering and sorting
+  const getColumn = (columnName: string): PgColumn | undefined => {
+    if (columnName === 'typeName') {
+      return schema.emailPropertyType.propertyName;
+    }
+    return getEmailColumn({ columnName, table: schema.documentProperty });
+  };
+
+  // Record mapper to transform database records to EmailProperty objects
+  const recordMapper = (
+    record: Record<string, unknown>,
+  ): Partial<EmailProperty> => {
+    return {
+      propertyId: record.propertyId as string,
+      typeName: record.propertyName as string,
+      documentId: record.documentId as number,
+      createdOn: new Date(Date.parse(record.createdOn as string)),
+      policy_basis: record.policyBasis as string[],
+      tags: record.tags as string[],
+      categoryName: record.description as string,
+      value: record.propertyValue as string, // Map propertyValue to value field
+    };
+  };
+
+  // Use selectForGrid to apply filtering, sorting, and pagination
+  const result = await selectForGrid<Partial<EmailProperty>>({
+    req,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    query: baseQuery as any,
+    getColumn,
+    recordMapper,
+  });
+
+  return Response.json(result);
 }

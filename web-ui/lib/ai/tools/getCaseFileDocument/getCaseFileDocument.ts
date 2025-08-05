@@ -309,9 +309,9 @@ export const getMultipleCaseFileDocuments = async ({
         if (goalsKey.trim() === '' || goalsKey === '[]') {
           return groupDocuments.map(
             (d) =>
-              ({
-                document: d.document as DocumentResource,
-              }) as CaseFileResponse,
+              (({
+                document: d.document as DocumentResource
+              }) as CaseFileResponse),
           );
         }
 

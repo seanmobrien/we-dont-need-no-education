@@ -84,12 +84,10 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
           </IconButton>
         )}
       </Box>
-
       {/* Message Content */}
       <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 1 }}>
         {message.content || '<no content>'}
       </Typography>
-
       {/* Optimized Content (if different from regular content) */}
       {message.optimizedContent && message.optimizedContent !== message.content && (
         <Accordion>
@@ -103,7 +101,6 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
           </AccordionDetails>
         </Accordion>
       )}
-
       {/* Metadata Section */}
       {showMetadata && (
         <Collapse in={metadataExpanded}>

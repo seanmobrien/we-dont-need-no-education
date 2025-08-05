@@ -79,9 +79,10 @@ const getAppInsights = () => {
     const ignoreNames = [
       ...ignoreMessage,
       '/api/auth/session',
+      '\\api\\auth\\session',
       '/static/',
       '/_next/',
-      '__nextjs_original-stack-frames'
+      '__nextjs_original-stack-frames',
     ];
     
     appInsightState.appInsightInstance.addTelemetryInitializer((envelope: ITelemetryItem) => {

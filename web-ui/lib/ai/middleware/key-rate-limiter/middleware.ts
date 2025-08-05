@@ -48,7 +48,7 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
     }
     // If factoryOptions is a FactoryOptions, derive context from it
     const { model } = factoryOptions;
-    if (!model) {
+    if (!model) {     
       throw new Error('Model is required to create rate limit context');
     }
     const modelClass = getModelClassification(model);
@@ -64,11 +64,14 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
     };
   })();
 
+
   const retryRateLimitMiddleware: RetryRateLimitMiddlewareType = {
     
     rateLimitContext: () => ({ ...rateLimitContext }),
 
     wrapGenerate: async ({ doGenerate, params }) => {
+
+
       const startTime = Date.now();
       const modelClassification = rateLimitContext.modelClass;
 
@@ -223,8 +226,10 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
       if (!isModelAvailable(currentModelKey)) {
         log(l => l.warn(`Requested model ${currentModelKey} is not available`));
       }
-
-      return params;
+      // Forward to token tracking middleware to generate token counts
+      return {
+        ...params,
+      }
     },
   };
 
