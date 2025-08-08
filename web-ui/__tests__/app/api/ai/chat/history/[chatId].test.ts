@@ -152,16 +152,34 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     // Setup default successful auth
     (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
 
-    // Setup database mocks
-    mockDbLimit.mockReturnValue(mockChatResult);
-    mockDbWhere.mockReturnValue({ limit: mockDbLimit });
-    mockDbFrom.mockReturnValue({ where: mockDbWhere });
-    mockDbSelect.mockReturnValue({ from: mockDbFrom });
-
-    mockDbOrderBy.mockReturnValue(mockTurnsAndMessagesResult);
-    mockDbWhere.mockReturnValue({ orderBy: mockDbOrderBy });
-    mockDbLeftJoin.mockReturnValue({ where: mockDbWhere });
-    mockDbFrom.mockReturnValue({ leftJoin: mockDbLeftJoin });
+    // Reset call count for each test
+    let callCount = 0;
+    
+    // Mock the select method to return different chains for different calls
+    mockDbSelect.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        // First call for basic chat info
+        return {
+          from: jest.fn().mockReturnValue({
+            where: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue(mockChatResult)
+            })
+          })
+        };
+      } else {
+        // Second call for turns and messages
+        return {
+          from: jest.fn().mockReturnValue({
+            leftJoin: jest.fn().mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                orderBy: jest.fn().mockReturnValue(mockTurnsAndMessagesResult)
+              })
+            })
+          })
+        };
+      }
+    });
     
     (drizDbWithInit as jest.Mock).mockResolvedValue(mockDb);
     (eq as jest.Mock).mockReturnValue('eq-condition');
@@ -245,7 +263,30 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     });
 
     it('should return 404 for non-existent chat', async () => {
-      mockDbLimit.mockReturnValue([]); // Empty result for chat query
+      // Override the first call to return empty result
+      let callCount = 0;
+      mockDbSelect.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            from: jest.fn().mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue([]) // Empty result for chat query
+              })
+            })
+          };
+        } else {
+          return {
+            from: jest.fn().mockReturnValue({
+              leftJoin: jest.fn().mockReturnValue({
+                where: jest.fn().mockReturnValue({
+                  orderBy: jest.fn().mockReturnValue(mockTurnsAndMessagesResult)
+                })
+              })
+            })
+          };
+        }
+      });
       
       const request = new NextRequest('http://localhost:3000/api/ai/chat/history/non-existent-id');
       const params = Promise.resolve({ chatId: 'non-existent-id' });
@@ -264,8 +305,29 @@ describe('/api/ai/chat/history/[chatId] route', () => {
         createdAt: '2025-01-01T10:00:00Z',
       }];
       
-      mockDbLimit.mockReturnValue(mockChatWithNullTitle);
-      mockDbOrderBy.mockReturnValue([]); // No turns
+      let callCount = 0;
+      mockDbSelect.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            from: jest.fn().mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue(mockChatWithNullTitle)
+              })
+            })
+          };
+        } else {
+          return {
+            from: jest.fn().mockReturnValue({
+              leftJoin: jest.fn().mockReturnValue({
+                where: jest.fn().mockReturnValue({
+                  orderBy: jest.fn().mockReturnValue([]) // No turns
+                })
+              })
+            })
+          };
+        }
+      });
       
       const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
       const params = Promise.resolve({ chatId: 'test-chat-id' });
@@ -279,7 +341,29 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     });
 
     it('should handle chat with no turns', async () => {
-      mockDbOrderBy.mockReturnValue([]); // No turns/messages
+      let callCount = 0;
+      mockDbSelect.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            from: jest.fn().mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue(mockChatResult)
+              })
+            })
+          };
+        } else {
+          return {
+            from: jest.fn().mockReturnValue({
+              leftJoin: jest.fn().mockReturnValue({
+                where: jest.fn().mockReturnValue({
+                  orderBy: jest.fn().mockReturnValue([]) // No turns/messages
+                })
+              })
+            })
+          };
+        }
+      });
       
       const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
       const params = Promise.resolve({ chatId: 'test-chat-id' });
@@ -324,8 +408,29 @@ describe('/api/ai/chat/history/[chatId] route', () => {
         createdAt: null,
       }];
       
-      mockDbLimit.mockReturnValue(mockChatWithNullCreatedAt);
-      mockDbOrderBy.mockReturnValue([]);
+      let callCount = 0;
+      mockDbSelect.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          return {
+            from: jest.fn().mockReturnValue({
+              where: jest.fn().mockReturnValue({
+                limit: jest.fn().mockReturnValue(mockChatWithNullCreatedAt)
+              })
+            })
+          };
+        } else {
+          return {
+            from: jest.fn().mockReturnValue({
+              leftJoin: jest.fn().mockReturnValue({
+                where: jest.fn().mockReturnValue({
+                  orderBy: jest.fn().mockReturnValue([])
+                })
+              })
+            })
+          };
+        }
+      });
       
       const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
       const params = Promise.resolve({ chatId: 'test-chat-id' });
