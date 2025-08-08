@@ -23,6 +23,7 @@ import RestoreIcon from '@mui/icons-material/FilterNone';
 import CloseIcon from '@mui/icons-material/Close';
 import ResizeableDraggablePaper from './resizeable-draggable-paper';
 import { ResizeableDraggableDialogProps } from './types';
+import { log } from '@/lib/logger';
 
 /**
  * Enum for dialog window state
@@ -307,7 +308,7 @@ const ResizableDraggableDialog = ({
       newWidth = window.innerWidth - 20;      
     }
     if (!onResize){
-      console.warn('onResize callback is not provided, dynamic resizing will not work.');
+      log(l => l.warn('onResize callback is not provided, dynamic resizing will not work.'));
     }
     onResize?.(newWidth, newHeight);
   }, [height, width, minConstraints, onResize]);

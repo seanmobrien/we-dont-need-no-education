@@ -1,12 +1,24 @@
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { modelQuotas, models, tokenConsumptionStats } from '@/drizzle/schema';
-import { eq, and,  sql } from 'drizzle-orm';
+import { eq, and, sql } from 'drizzle-orm';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
-import { ModelQuota, QuotaCheckResult, TokenStats, TokenUsageData } from './types';
+import {
+  ModelQuota,
+  QuotaCheckResult,
+  TokenStats,
+  TokenUsageData,
+} from './types';
+import { ProviderMap } from './provider-map';
 
-
+type ProviderModelResponse = {
+  error?: unknown;
+  providerId: string;
+  provider: string;
+  modelName: string;
+  rethrow: () => void;
+};
 
 /**
  * Service for tracking token consumption statistics and enforcing quotas
@@ -20,7 +32,7 @@ export class TokenStatsService {
 
   private constructor() {}
 
-  static getInstance(): TokenStatsService {
+  static get Instance(): TokenStatsService {
     if (!TokenStatsService.instance) {
       TokenStatsService.instance = new TokenStatsService();
     }
@@ -30,7 +42,11 @@ export class TokenStatsService {
   /**
    * Get Redis key for token statistics
    */
-  private getRedisStatsKey(provider: string, modelName: string, windowType: string): string {
+  private getRedisStatsKey(
+    provider: string,
+    modelName: string,
+    windowType: string,
+  ): string {
     return `token_stats:${provider}:${modelName}:${windowType}`;
   }
 
@@ -44,33 +60,101 @@ export class TokenStatsService {
   /**
    * Normalize provider and model names for consistent storage
    */
-  private normalizeModelKey(provider: string, modelName: string): { provider: string; modelName: string } {
+  private normalizeModelKey(
+    providerOrModel: string,
+    modelName?: string,
+  ): { provider: string; modelName: string } {
     // Handle provider:model format
-    if (modelName.includes(':')) {
-      const [providerPart, modelPart] = modelName.split(':', 2);
-      return { provider: providerPart, modelName: modelPart };
+    if (providerOrModel.includes(':')) {
+      const [providerPart, modelPart] = providerOrModel.split(':', 2);
+      const normalizedModelName = modelPart.trim();
+      return {
+        provider: providerPart.trim(),
+        modelName: normalizedModelName.length
+          ? normalizedModelName
+          : (modelName?.trim() ?? ''),
+      };
     }
-    return { provider, modelName };
+    return {
+      provider: providerOrModel?.trim() ?? '',
+      modelName: modelName?.trim() ?? '',
+    };
+  }
+
+  /**
+   * Normalize provider and model name then use it to retrieve the provider ID
+   */
+  private async normalizeProviderId(
+    providerOrModel: string,
+    modelName?: string,
+  ): Promise<ProviderModelResponse> {
+    const { provider, modelName: modelNameFromKey } = this.normalizeModelKey(
+      providerOrModel,
+      modelName,
+    );
+    try {
+      const providerMap = await ProviderMap.getInstance();
+      const providerId = providerMap.id(provider);
+      return {
+        rethrow: () => {
+          if (!providerId) {
+            throw new Error(`Unknown provider: ${provider}`);
+          }
+        },
+        providerId: providerId!,
+        provider,
+        modelName: modelNameFromKey ?? modelName ?? '',
+      };
+    } catch (error) {
+      const loggedError = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        message: 'Error normalizing provider ID',
+        extra: { providerOrModel, modelName },
+        source: 'TokenStatsService.normalizeProviderId',
+      });
+      return {
+        rethrow: () => {
+          throw loggedError;
+        },
+        providerId: undefined as unknown as string,
+        provider,
+        modelName: modelNameFromKey ?? modelName ?? '',
+      };
+    }
   }
 
   /**
    * Get quota configuration from cache or database
    */
-  async getQuota(provider: string, modelName: string): Promise<ModelQuota | null> {
-    const { provider: normalizedProvider, modelName: normalizedModel } = this.normalizeModelKey(provider, modelName);
-    const cacheKey = `${normalizedProvider}:${normalizedModel}`;
-    
-    // Check memory cache first
-    if (this.quotaCache.has(cacheKey) && Date.now() - this.lastQuotaCacheUpdate < this.QUOTA_CACHE_TTL) {
-      return this.quotaCache.get(cacheKey) || null;
-    }
-
+  async getQuota(
+    provider: string,
+    modelName: string,
+  ): Promise<ModelQuota | null> {
+    const {
+      providerId: normalizedProvider,
+      modelName: normalizedModel,
+      rethrow,
+    } = await this.normalizeProviderId(provider, modelName);
     try {
+      rethrow();
+      const cacheKey = `${normalizedProvider}:${normalizedModel}`;
+
+      // Check memory cache first
+      if (
+        this.quotaCache.has(cacheKey) &&
+        Date.now() - this.lastQuotaCacheUpdate < this.QUOTA_CACHE_TTL
+      ) {
+        return this.quotaCache.get(cacheKey) || null;
+      }
+
       // Try Redis cache
       const redis = await getRedisClient();
-      const redisKey = this.getRedisQuotaKey(normalizedProvider, normalizedModel);
+      const redisKey = this.getRedisQuotaKey(
+        normalizedProvider!,
+        normalizedModel,
+      );
       const cached = await redis.get(redisKey);
-      
+
       if (cached) {
         const quota = JSON.parse(cached) as ModelQuota;
         this.quotaCache.set(cacheKey, quota);
@@ -78,8 +162,11 @@ export class TokenStatsService {
       }
 
       // Fallback to database
-      const quota = await this.loadQuotaFromDatabase(normalizedProvider, normalizedModel);
-      
+      const quota = await this.loadQuotaFromDatabase(
+        normalizedProvider!,
+        normalizedModel,
+      );
+
       if (quota) {
         // Cache in Redis and memory
         await redis.setEx(redisKey, 300, JSON.stringify(quota)); // 5 minutes
@@ -89,7 +176,13 @@ export class TokenStatsService {
 
       return quota;
     } catch (error) {
-      log(l => l.error('Error getting quota', { provider: normalizedProvider, modelName: normalizedModel, error }));
+      log((l) =>
+        l.error('Error getting quota', {
+          provider: provider,
+          modelName: normalizedModel,
+          error,
+        }),
+      );
       return null;
     }
   }
@@ -97,7 +190,10 @@ export class TokenStatsService {
   /**
    * Load quota configuration from PostgreSQL
    */
-  private async loadQuotaFromDatabase(provider: string, modelName: string): Promise<ModelQuota | null> {
+  private async loadQuotaFromDatabase(
+    provider: string,
+    modelName: string,
+  ): Promise<ModelQuota | null> {
     try {
       return await drizDbWithInit(async (db) => {
         const row = await db.query.modelQuotas.findFirst({
@@ -138,17 +234,37 @@ export class TokenStatsService {
   /**
    * Get current token statistics from Redis
    */
-  async getTokenStats(provider: string, modelName: string): Promise<TokenStats> {
-    const { provider: normalizedProvider, modelName: normalizedModel } = this.normalizeModelKey(provider, modelName);
-    
+  async getTokenStats(
+    provider: string,
+    modelName: string,
+  ): Promise<TokenStats> {
+    const {
+      providerId: normalizedProvider,
+      modelName: normalizedModel,
+      rethrow,
+    } = await this.normalizeProviderId(provider, modelName);
     try {
+      rethrow();
+
       const redis = await getRedisClient();
-      
+
       // Get current stats from Redis sliding windows
-      const currentMinuteKey = this.getRedisStatsKey(normalizedProvider, normalizedModel, 'minute');
-      const lastHourKey = this.getRedisStatsKey(normalizedProvider, normalizedModel, 'hour');
-      const last24HoursKey = this.getRedisStatsKey(normalizedProvider, normalizedModel, 'day');
-      
+      const currentMinuteKey = this.getRedisStatsKey(
+        normalizedProvider,
+        normalizedModel,
+        'minute',
+      );
+      const lastHourKey = this.getRedisStatsKey(
+        normalizedProvider,
+        normalizedModel,
+        'hour',
+      );
+      const last24HoursKey = this.getRedisStatsKey(
+        normalizedProvider,
+        normalizedModel,
+        'day',
+      );
+
       const [minuteData, hourData, dayData] = await Promise.all([
         redis.get(currentMinuteKey),
         redis.get(lastHourKey),
@@ -156,13 +272,21 @@ export class TokenStatsService {
       ]);
 
       return {
-        currentMinuteTokens: minuteData ? JSON.parse(minuteData).totalTokens || 0 : 0,
+        currentMinuteTokens: minuteData
+          ? JSON.parse(minuteData).totalTokens || 0
+          : 0,
         lastHourTokens: hourData ? JSON.parse(hourData).totalTokens || 0 : 0,
         last24HoursTokens: dayData ? JSON.parse(dayData).totalTokens || 0 : 0,
         requestCount: minuteData ? JSON.parse(minuteData).requestCount || 0 : 0,
       };
     } catch (error) {
-      log(l => l.error('Error getting token stats', { provider: normalizedProvider, modelName: normalizedModel, error }));
+      log((l) =>
+        l.error('Error getting token stats', {
+          provider: normalizedProvider,
+          modelName: normalizedModel,
+          error,
+        }),
+      );
       return {
         currentMinuteTokens: 0,
         lastHourTokens: 0,
@@ -175,10 +299,19 @@ export class TokenStatsService {
   /**
    * Check if a request would exceed quotas
    */
-  async checkQuota(provider: string, modelName: string, requestedTokens: number): Promise<QuotaCheckResult> {
-    const { provider: normalizedProvider, modelName: normalizedModel } = this.normalizeModelKey(provider, modelName);
-    
+  async checkQuota(
+    provider: string,
+    modelName: string,
+    requestedTokens: number,
+  ): Promise<QuotaCheckResult> {
+    const {
+      provider: normalizedProvider,
+      modelName: normalizedModel,
+      rethrow,
+    } = await this.normalizeProviderId(provider, modelName);
+
     try {
+      rethrow();
       const [quota, currentStats] = await Promise.all([
         this.getQuota(normalizedProvider, normalizedModel),
         this.getTokenStats(normalizedProvider, normalizedModel),
@@ -190,7 +323,10 @@ export class TokenStatsService {
       }
 
       // Check per-message limit
-      if (quota.maxTokensPerMessage && requestedTokens > quota.maxTokensPerMessage) {
+      if (
+        quota.maxTokensPerMessage &&
+        requestedTokens > quota.maxTokensPerMessage
+      ) {
         return {
           allowed: false,
           reason: `Request tokens (${requestedTokens}) exceed per-message limit (${quota.maxTokensPerMessage})`,
@@ -200,7 +336,11 @@ export class TokenStatsService {
       }
 
       // Check per-minute limit
-      if (quota.maxTokensPerMinute && currentStats.currentMinuteTokens + requestedTokens > quota.maxTokensPerMinute) {
+      if (
+        quota.maxTokensPerMinute &&
+        currentStats.currentMinuteTokens + requestedTokens >
+          quota.maxTokensPerMinute
+      ) {
         return {
           allowed: false,
           reason: `Request would exceed per-minute limit (${quota.maxTokensPerMinute})`,
@@ -210,7 +350,10 @@ export class TokenStatsService {
       }
 
       // Check daily limit
-      if (quota.maxTokensPerDay && currentStats.last24HoursTokens + requestedTokens > quota.maxTokensPerDay) {
+      if (
+        quota.maxTokensPerDay &&
+        currentStats.last24HoursTokens + requestedTokens > quota.maxTokensPerDay
+      ) {
         return {
           allowed: false,
           reason: `Request would exceed daily limit (${quota.maxTokensPerDay})`,
@@ -221,19 +364,51 @@ export class TokenStatsService {
 
       return { allowed: true, currentUsage: currentStats, quota };
     } catch (error) {
-      log(l => l.error('Error checking quota', { provider: normalizedProvider, modelName: normalizedModel, error }));
+      log((l) =>
+        l.error('Error checking quota', {
+          provider: normalizedProvider,
+          modelName: normalizedModel,
+          error,
+        }),
+      );
       // On error, allow the request to avoid blocking legitimate usage
       return { allowed: true };
     }
   }
 
   /**
-   * Record token usage after a successful request
+   * This method updates both Redis and PostgreSQL with sliding window statistics. The returned promise is 'Guaranteed' not to reject
+   * and can be safely left ignored.   
+   *
+   * @param provider - The provider ID (e.g., 'azure-openai.chat')
+   * @param modelName - The model name (e.g., 'gpt-4')
+   * @param usage - The token usage data to record
+   * 
+   * @example
+   * ```typescript
+   * await tokenStatsService.safeRecordTokenUsage('azure-openai.chat', 'gpt-4', { 
+   *   promptTokens: 100,
+   *  completionTokens: 200,
+   *  totalTokens: 300
+   * });
+   * ```
+   * 
+   * @returns A promise that resolves when the usage is recorded
+   * @throws Never - this method is designed to handle errors internally and will not reject.
    */
-  async recordTokenUsage(provider: string, modelName: string, usage: TokenUsageData): Promise<void> {
-    const { provider: normalizedProvider, modelName: normalizedModel } = this.normalizeModelKey(provider, modelName);
-    
+  async safeRecordTokenUsage(
+    provider: string,
+    modelName: string,
+    usage: TokenUsageData,
+  ): Promise<void> {
+    const {
+      provider: normalizedProvider,
+      modelName: normalizedModel,
+      rethrow,
+    } = await this.normalizeProviderId(provider, modelName);
+
     try {
+      rethrow();
       await Promise.all([
         this.updateRedisStats(normalizedProvider, normalizedModel, usage),
         this.updateDatabaseStats(normalizedProvider, normalizedModel, usage),
@@ -242,8 +417,12 @@ export class TokenStatsService {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         message: 'Error recording token usage',
-        extra: { provider: normalizedProvider, modelName: normalizedModel, usage },
-        source: 'TokenStatsService.recordTokenUsage',
+        extra: {
+          provider: normalizedProvider,
+          modelName: normalizedModel,
+          usage,
+        },
+        source: 'TokenStatsService.safeRecordTokenUsage',
       });
     }
   }
@@ -251,33 +430,61 @@ export class TokenStatsService {
   /**
    * Update Redis statistics with sliding windows
    */
-  private async updateRedisStats(provider: string, modelName: string, usage: TokenUsageData): Promise<void> {
+  private async updateRedisStats(
+    provider: string,
+    modelName: string,
+    usage: TokenUsageData,
+  ): Promise<void> {
+    const {
+      provider: normalizedProvider,
+      modelName: normalizedModel,
+      rethrow,
+    } = await this.normalizeProviderId(provider, modelName);
     try {
+      rethrow();
       const redis = await getRedisClient();
       const now = new Date();
-      
+
       // Update each time window
       const windows = [
-        { type: 'minute', duration: 60, start: new Date(Math.floor(now.getTime() / 60000) * 60000) },
-        { type: 'hour', duration: 3600, start: new Date(Math.floor(now.getTime() / 3600000) * 3600000) },
-        { type: 'day', duration: 86400, start: new Date(Math.floor(now.getTime() / 86400000) * 86400000) },
+        {
+          type: 'minute',
+          duration: 60,
+          start: new Date(Math.floor(now.getTime() / 60000) * 60000),
+        },
+        {
+          type: 'hour',
+          duration: 3600,
+          start: new Date(Math.floor(now.getTime() / 3600000) * 3600000),
+        },
+        {
+          type: 'day',
+          duration: 86400,
+          start: new Date(Math.floor(now.getTime() / 86400000) * 86400000),
+        },
       ];
 
       for (const window of windows) {
-        const key = this.getRedisStatsKey(provider, modelName, window.type);
-        
+        const key = this.getRedisStatsKey(
+          normalizedProvider,
+          normalizedModel,
+          window.type,
+        );
+
         // Use Redis transaction to atomically update stats
         const multi = redis.multi();
-        
+
         // Get current data
         const currentData = await redis.get(key);
-        const current = currentData ? JSON.parse(currentData) : {
-          promptTokens: 0,
-          completionTokens: 0,
-          totalTokens: 0,
-          requestCount: 0,
-          windowStart: window.start.toISOString(),
-        };
+        const current = currentData
+          ? JSON.parse(currentData)
+          : {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              requestCount: 0,
+              windowStart: window.start.toISOString(),
+            };
 
         // Update stats
         const updated = {
@@ -301,11 +508,15 @@ export class TokenStatsService {
   /**
    * Update PostgreSQL statistics for persistence
    */
-  private async updateDatabaseStats(provider: string, modelName: string, usage: TokenUsageData): Promise<void> {
+  private async updateDatabaseStats(
+    provider: string,
+    modelName: string,
+    usage: TokenUsageData,
+  ): Promise<void> {
     try {
       await drizDbWithInit(async (db) => {
         const now = new Date();
-        
+
         const model = await db.query.models.findFirst({
           where: and(
             eq(models.providerId, provider),
@@ -315,19 +526,30 @@ export class TokenStatsService {
         });
         if (!model) {
           throw new Error(`Model not found: ${provider}:${modelName}`);
-        } 
+        }
 
         // Update each time window in the database
         const windows = [
-          { type: 'minute', start: new Date(Math.floor(now.getTime() / 60000) * 60000) },
-          { type: 'hour', start: new Date(Math.floor(now.getTime() / 3600000) * 3600000) },
-          { type: 'day', start: new Date(Math.floor(now.getTime() / 86400000) * 86400000) },
+          {
+            type: 'minute',
+            start: new Date(Math.floor(now.getTime() / 60000) * 60000),
+          },
+          {
+            type: 'hour',
+            start: new Date(Math.floor(now.getTime() / 3600000) * 3600000),
+          },
+          {
+            type: 'day',
+            start: new Date(Math.floor(now.getTime() / 86400000) * 86400000),
+          },
         ];
 
         for (const window of windows) {
           const windowEnd = new Date(window.start.getTime());
-          if (window.type === 'minute') windowEnd.setMinutes(windowEnd.getMinutes() + 1);
-          else if (window.type === 'hour') windowEnd.setHours(windowEnd.getHours() + 1);
+          if (window.type === 'minute')
+            windowEnd.setMinutes(windowEnd.getMinutes() + 1);
+          else if (window.type === 'hour')
+            windowEnd.setHours(windowEnd.getHours() + 1);
           else windowEnd.setDate(windowEnd.getDate() + 1);
 
           // Use upsert to update or insert stats
@@ -367,23 +589,35 @@ export class TokenStatsService {
   /**
    * Get comprehensive token usage report for a model
    */
-  async getUsageReport(provider: string, modelName: string): Promise<{
+  async getUsageReport(
+    provider: string,
+    modelName: string,
+  ): Promise<{
     quota: ModelQuota | null;
     currentStats: TokenStats;
     quotaCheckResult: QuotaCheckResult;
   }> {
-    const { provider: normalizedProvider, modelName: normalizedModel } = this.normalizeModelKey(provider, modelName);
-    
-    const [quota, currentStats] = await Promise.all([
-      this.getQuota(normalizedProvider, normalizedModel),
-      this.getTokenStats(normalizedProvider, normalizedModel),
-    ]);
+    const {
+      provider: normalizedProvider,
+      modelName: normalizedModel,
+      rethrow,
+    } = await this.normalizeProviderId(provider, modelName);
+    try {
+      rethrow();
+      const [quota, currentStats] = await Promise.all([
+        this.getQuota(normalizedProvider, normalizedModel),
+        this.getTokenStats(normalizedProvider, normalizedModel),
+      ]);
 
-    const quotaCheckResult = await this.checkQuota(normalizedProvider, normalizedModel, 0);
+      const quotaCheckResult = await this.checkQuota(
+        normalizedProvider,
+        normalizedModel,
+        0,
+      );
 
-    return { quota, currentStats, quotaCheckResult };
+      return { quota, currentStats, quotaCheckResult };
+    } catch (error) {
+      throw error;
+    }
   }
 }
-
-// Export singleton instance
-export const tokenStatsService = TokenStatsService.getInstance();

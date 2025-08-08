@@ -140,7 +140,7 @@ const modelAvailabilityManager = ModelAvailabilityManager.getInstance();
 /**
  * Setup middleware for language models with caching and retry logic
  */
-const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
+const setupMiddleware = (provider: string,model: LanguageModelV1): LanguageModelV1 => {
   return wrapLanguageModel({
     model: wrapLanguageModel({
       model: wrapLanguageModel({
@@ -150,7 +150,7 @@ const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
       middleware: setNormalizedDefaultsMiddleware,
     }),
     middleware: [
-      tokenStatsLoggingOnlyMiddleware(),
+      tokenStatsLoggingOnlyMiddleware({ provider }),
       retryRateLimitMiddlewareFactory({
         model,
       }),      
@@ -167,18 +167,21 @@ const azureProvider = customProvider({
   languageModels: {
     // Custom aliases for Azure models
     hifi: setupMiddleware(
+      'azure',
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
       }).chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI')),
     ),
     lofi: setupMiddleware(
+      'azure',
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
       }).chat(env('AZURE_OPENAI_DEPLOYMENT_LOFI')),
     ),
     completions: setupMiddleware(
+      'azure',
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
@@ -206,22 +209,26 @@ const googleProvider = customProvider({
   languageModels: {
     // Match Azure aliases with equivalent Google models
     hifi: setupMiddleware(
+      'google',
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.5-pro'), // High-quality model equivalent to Azure hifi
     ),
     lofi: setupMiddleware(
+      'google',
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.5-flash'), // Fast model equivalent to Azure lofi
     ),
     'gemini-2.0-flash': setupMiddleware(
+      'google',
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.0-flash'), // Fast model equivalent to Azure lofi
     ),
     // Google-specific model aliases
     'gemini-pro': setupMiddleware(
+      'google',
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.5-pro'),

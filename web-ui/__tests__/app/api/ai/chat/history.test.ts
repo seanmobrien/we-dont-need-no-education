@@ -59,7 +59,7 @@ describe('/api/ai/chat/history route', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     
     // Setup default mock chain
     mockDbSelect.mockReturnValue({

@@ -11,9 +11,6 @@ jest.mock('@/instrument/browser', () => ({
   getReactPlugin: () => ({}),
 }));
 
-jest.mock('@microsoft/applicationinsights-react-js', () => ({
-  withAITracking: (plugin: any, Component: any) => Component,
-}));
 
 describe('ResizableDraggableDialog Background Interaction', () => {
   it('should allow background clicks when modal=false', () => {

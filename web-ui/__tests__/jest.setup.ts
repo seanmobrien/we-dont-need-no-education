@@ -1,16 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const {
-  shouldWriteToConsole,
-  muiLicenseKey,
-  nodeEnv,
-  isReactActEnvironment
- } = {
-  shouldWriteToConsole:jest.requireActual('@/lib/react-util')
-    .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE),
-  muiLicenseKey: process.env.NEXT_PUBLIC_MUI_LICENSE || 'test-mui-license-key',
-  nodeEnv: process.env.NODE_ENV || 'test',
-  isReactActEnvironment: true
-};
+const shouldWriteToConsole = jest
+  .requireActual('@/lib/react-util')
+  .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
 
 jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
   TrackWithAppInsight: jest.fn((props: any) => {
@@ -18,6 +9,15 @@ jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
     return React.createElement('div', rest, children);
   })
 }));
+jest.mock('@microsoft/applicationinsights-react-js', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  withAITracking: (plugin: any, Component: any) => Component,
+}));
+
+jest.mock('@/lib/nextjs-util/fetch', () => ({
+  fetch: jest.fn(() => Promise.resolve({ json: jest.fn(() => Promise.resolve({})) })),
+}));
+
 jest.mock('@/instrument/browser', () => ({
   getReactPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
@@ -34,12 +34,7 @@ jest.mock('@/instrument/browser', () => ({
   instrument: jest.fn()
 }));
 
-jest.mock('@microsoft/applicationinsights-react-js', () => ({
-  withAITracking: (plugin: any, Component: any) => Component,
-}));
-
 jest.mock('react-error-boundary', () => {
- // eslint-disable-next-line @typescript-eslint/no-empty-object-type
  class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
    #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
    #children: React.ReactNode;
@@ -112,18 +107,10 @@ jest.mock('react-error-boundary', () => {
   },
 };
 });
-jest.mock('@/lib/nextjs-util/fetch', () => ({
-  fetch: jest.fn((url: string) => {
-    return Promise.resolve({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
-  }),
-}));
 
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
-import { mockDeep, mockClear as mockDeepClear } from 'jest-mock-extended';
+import { mockDeep } from 'jest-mock-extended';
 import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
@@ -269,7 +256,8 @@ const makeMockImplementation = (name: string) => {
       ? console.log(`logger::${name} called with `, args)
       : () => {};
 };
-const logger = () => ({
+
+const loggerInstance = (() => ({
   warn: jest.fn(makeMockImplementation('warn')),
   error: jest.fn(makeMockImplementation('error')),
   info: jest.fn(makeMockImplementation('info')),
@@ -277,50 +265,18 @@ const logger = () => ({
   silly: jest.fn(makeMockImplementation('silly')),
   verbose: jest.fn(makeMockImplementation('verbose')),
   log: jest.fn(makeMockImplementation('log')),
-});
+}))();
 
 jest.mock('@/lib/logger', () => {
   return {
-    logger: jest.fn(() => Promise.resolve({
-      warn: jest.fn(makeMockImplementation('warn')),
-      error: jest.fn(makeMockImplementation('error')),
-      info: jest.fn(makeMockImplementation('info')),
-      debug: jest.fn(makeMockImplementation('debug')),
-      silly: jest.fn(makeMockImplementation('silly')),
-      verbose: jest.fn(makeMockImplementation('verbose')),
-      log: jest.fn(makeMockImplementation('log')),
-    })),
-    log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => {
-      const mockLogger = {
-        warn: jest.fn(makeMockImplementation('warn')),
-        error: jest.fn(makeMockImplementation('error')),
-        info: jest.fn(makeMockImplementation('info')),
-        debug: jest.fn(makeMockImplementation('debug')),
-        silly: jest.fn(makeMockImplementation('silly')),
-        verbose: jest.fn(makeMockImplementation('verbose')),
-        log: jest.fn(makeMockImplementation('log')),
-      };
-      return Promise.resolve(cb(mockLogger));
-    }),
+    logger: jest.fn(() => loggerInstance),
+    log: jest.fn((cb: (l: typeof loggerInstance) => void) =>
+      cb(loggerInstance),
+    ),
     errorLogFactory: jest.fn((x) => x),
-    simpleScopedLogger: jest.fn(() => ({
-      warn: jest.fn(makeMockImplementation('warn')),
-      error: jest.fn(makeMockImplementation('error')),
-      info: jest.fn(makeMockImplementation('info')),
-      debug: jest.fn(makeMockImplementation('debug')),
-      silly: jest.fn(makeMockImplementation('silly')),
-      verbose: jest.fn(makeMockImplementation('verbose')),
-      log: jest.fn(makeMockImplementation('log')),
-    })),
+    simpleScopedLogger: jest.fn(() => loggerInstance),
   };
 });
-
-jest.mock('@/lib/ai/middleware', () => ({
-  retryRateLimitMiddlewareFactory: jest.fn(() => jest.fn()),
-  cacheWithRedis: jest.fn(),
-  setNormalizedDefaultsMiddleware: jest.fn(),
-  tokenStatsLoggingOnlyMiddleware: jest.fn(() => jest.fn()),
-}));
 
 import NextAuth from 'next-auth';
 import { auth } from '@/auth';
@@ -331,12 +287,11 @@ import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { drizDb } from '@/lib/drizzle-db';
-import { fetch } from '@/lib/nextjs-util/fetch';
 
 // jest.setup.ts
 // If using React Testing Library
-import '@testing-library/jest-dom';
 import 'jest';
+import '@testing-library/jest-dom';
 
 // Polyfill TextEncoder and TextDecoder for Node.js environment
 import { TextEncoder, TextDecoder } from 'util';
@@ -346,127 +301,9 @@ import { FormatAlignCenterSharp } from '@mui/icons-material';
 import React, { Component } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry';
 import instrument, { getAppInsights } from '@/instrument/browser';
-
+import { log } from '@/lib/logger';
 globalThis.TextEncoder = TextEncoder;
 
-// Polyfill Web APIs for Next.js API route testing
-globalThis.Request = globalThis.Request || class Request {
-  url: string;
-  method: string;
-  headers: Headers;
-  body: ReadableStream | null;
-
-  constructor(input: string | Request, init?: RequestInit) {
-    if (typeof input === 'string') {
-      this.url = input;
-    } else {
-      this.url = input.url;
-    }
-    this.method = init?.method || 'GET';
-    this.headers = new Headers(init?.headers);
-    this.body = init?.body as ReadableStream || null;
-  }
-
-  async json() {
-    if (this.body) {
-      const reader = this.body.getReader();
-      const chunks: Uint8Array[] = [];
-      let done = false;
-      
-      while (!done) {
-        const { value, done: readerDone } = await reader.read();
-        done = readerDone;
-        if (value) chunks.push(value);
-      }
-      
-      const text = new TextDecoder().decode(new Uint8Array(chunks.reduce((acc, chunk) => acc + chunk.length, 0)));
-      return JSON.parse(text);
-    }
-    return {};
-  }
-
-  async text() {
-    return '';
-  }
-} as any;
-
-globalThis.Response = globalThis.Response || class Response {
-  status: number;
-  statusText: string;
-  headers: Headers;
-  body: ReadableStream | null;
-  ok: boolean;
-
-  constructor(body?: BodyInit | null, init?: ResponseInit) {
-    this.status = init?.status || 200;
-    this.statusText = init?.statusText || 'OK';
-    this.headers = new Headers(init?.headers);
-    this.body = null;
-    this.ok = this.status >= 200 && this.status < 300;
-  }
-
-  static json(data: any, init?: ResponseInit) {
-    const response = new Response(JSON.stringify(data), {
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...init?.headers,
-      },
-    });
-    return response;
-  }
-
-  async json() {
-    return {};
-  }
-
-  async text() {
-    return '';
-  }
-} as any;
-
-globalThis.Headers = globalThis.Headers || class Headers {
-  private headers: Record<string, string> = {};
-
-  constructor(init?: HeadersInit) {
-    if (init) {
-      if (init instanceof Headers) {
-        this.headers = { ...init.headers };
-      } else if (Array.isArray(init)) {
-        init.forEach(([key, value]) => {
-          this.headers[key.toLowerCase()] = value;
-        });
-      } else {
-        Object.entries(init).forEach(([key, value]) => {
-          this.headers[key.toLowerCase()] = value;
-        });
-      }
-    }
-  }
-
-  get(name: string) {
-    return this.headers[name.toLowerCase()] || null;
-  }
-
-  set(name: string, value: string) {
-    this.headers[name.toLowerCase()] = value;
-  }
-
-  has(name: string) {
-    return name.toLowerCase() in this.headers;
-  }
-
-  delete(name: string) {
-    delete this.headers[name.toLowerCase()];
-  }
-
-  forEach(callback: (value: string, key: string) => void) {
-    Object.entries(this.headers).forEach(([key, value]) => {
-      callback(value, key);
-    });
-  }
-} as any;
-(globalThis as unknown as {IS_REACT_ACT_ENVIRONMENT: boolean}).IS_REACT_ACT_ENVIRONMENT=true;
 // Automocks
 
 (NextAuth as jest.Mock).mockImplementation(() => jest.fn);
@@ -475,9 +312,6 @@ globalThis.Headers = globalThis.Headers || class Headers {
 });
 
 const DefaultEnvVariables = {
-  NODE_ENV: nodeEnv,
-  NEXT_PUBLIC_MUI_LICENSE: muiLicenseKey,
-
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
   NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
@@ -537,267 +371,49 @@ export const withRedisConnection = () => {
   }
 };
 
-const theFetch = jest.fn();
+global.fetch = jest.fn().mockImplementation(() => {
+  return Promise.resolve({
+    ok: false,
+    status: 500,
+    json: () => Promise.resolve({ response: 'error' }),
+  });
+});
 
 export const resetEnvVariables = () => {
   process.env = {
     ...process.env,
     ...DefaultEnvVariables,
-    NEXT_PUBLIC_MUI_LICENSE: muiLicenseKey,
-    NODE_ENV: nodeEnv,
   };
-  (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
-  (global as any).IS_REACT_ACT_ENVIRONMENT=true;
 };
 
 beforeAll(() => {
   try {
-    if (!originalProcessEnv || !originalProcessEnv.REDIS_URL) {
-      const origConfig = dotenv.parse(
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
-      );
-      originalProcessEnv = {
-        REDIS_URL: origConfig.REDIS_URL,
-        REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
-      };
-    }
+    const origConfig = dotenv.parse(
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
+    );
+    originalProcessEnv = {
+      REDIS_URL: origConfig.REDIS_URL,
+      REDIS_PASSWORD: origConfig.REDIS_PASSWORD,
+    };
   } catch (error) {
     return {};
   }
 });
 
-beforeEach(() => {
-  jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
-    TrackWithAppInsight: jest.fn((props: any) => {
-      const { children, ...rest } = props;
-      return React.createElement('div', rest, children);
-    })
-  }));
-  jest.mock('@/instrument/browser', () => ({
-    getReactPlugin: jest.fn(() => ({
-      trackEvent: jest.fn(),
-      trackPageView: jest.fn(),
-    })),
-    getClickPlugin: jest.fn(() => ({
-      trackEvent: jest.fn(),
-      trackPageView: jest.fn(),
-    })),
-    getAppInsights: jest.fn(() => ({
-      trackEvent: jest.fn(),
-      trackPageView: jest.fn(),
-    })),
-    instrument: jest.fn()
-  }));
-  jest.mock('react-error-boundary', () => {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
-    #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
-    #children: React.ReactNode;
-    #onReset?: () => void;
-    #onError?: (error: Error, errorInfo: { componentStack: string }) => void;
-    
-    constructor(props: {
-      children?: React.ReactNode;
-      fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
-      onReset?: () => void;
-      onError?: (error: Error, errorInfo: { componentStack: string }) => void;
-    }) {
-      super(props);
-      const { fallbackRender, onReset, onError } = props;
-      this.#fallbackRender = fallbackRender;
-      this.#onReset = onReset;
-      this.#onError = onError;
-      this.#children = props.children;
-      this.state = { hasError: false, error: null as Error | null };
-    }
-
-    static getDerivedStateFromError(error: any) {
-      return { hasError: true, error };
-    }
-
-    componentDidCatch(error: any, errorInfo: any) {
-      if (this.#onError) {
-        this.#onError(error, errorInfo || { componentStack: 'test-component-stack' });
-      }
-    }
-
-    render() {
-      try {
-        if ('hasError' in this.state && this.state.hasError) {
-          const error =
-            'error' in this.state && !!this.state.error
-              ? this.state.error
-              : new Error('An error occurred');
-          
-          if (this.#fallbackRender) {
-            const FallbackWrapper = () => this.#fallbackRender!({ 
-              error, 
-              resetErrorBoundary: () => {
-                this.setState({ hasError: false, error: null });
-                this.#onReset?.();
-              }
-            });
-            return React.createElement(FallbackWrapper);
-          }
-          
-          return React.createElement('div', { role: 'alert' }, String(error));
-        }
-        return this.#children;
-      } catch (error) {
-        // Catch errors during render and trigger error boundary behavior
-        if (!this.state.hasError) {
-          this.setState({ hasError: true, error: error as Error });
-          if (this.#onError) {
-            this.#onError(error as Error, { componentStack: 'test-component-stack' });
-          }
-        }
-        return React.createElement('div', { role: 'alert' }, String(error));
-      }
-    }
-  }
-    return {
-    ErrorBoundary,
-    FallbackComponent: ({ error }: { error?: Error }) => {
-      return React.createElement('div', { role: 'alert' }, error?.message);
-    },
-  };
-  });
-  jest.mock('drizzle-orm/postgres-js', () => {
-    return {
-      ...actualDrizzle,
-      drizzle: jest.fn(() => mockDb),
-      sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
-    };
-  });
-  jest.mock('@/lib/neondb/connection', () => {
-    const pgDb = jest.fn(() => makeRecursiveMock());
-    return {
-      pgDbWithInit: jest.fn(() => Promise.resolve(makeRecursiveMock())),
-      pgDb,
-      sql: jest.fn(() => pgDb()),
-    };
-  });
-  jest.mock('@/lib/drizzle-db/connection', () => {
-    return {
-      drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
-        const mockDbInstance = makeMockDb();
-        if (fn) {
-          const result = fn(mockDbInstance);
-          return Promise.resolve(result);
-        }
-        return mockDbInstance;
-      }),
-      drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
-      schema: actualSchema,
-    };
-  });
-  jest.mock('@/lib/drizzle-db', () => {
-    return {
-      drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
-        const mockDbInstance = makeMockDb();
-        if (fn) {
-          const result = fn(mockDbInstance);
-          return Promise.resolve(result);
-        }
-        return mockDbInstance;
-      }),
-      drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
-      schema: actualSchema,
-      sql: jest.fn(() => makeRecursiveMock()),
-    };
-  });
-  jest.mock('postgres', () => {
-    return {
-      default: jest.fn().mockImplementation((strings, ...values) => {
-        return jest.fn(() => Promise.resolve({ rows: [] }));
-      }),
-    };
-  });
-  jest.mock('next-auth', () => {
-    return jest.fn();
-  });
-  jest.mock('@/auth', () => {
-    return {
-      auth: jest.fn(() => ({
-        id: 'fdsdfs',
-      })),
-    };
-  });
-  jest.mock('@/lib/site-util/env', () => {
-    return {
-      env: jest.fn((key: string) => {
-        return process.env[key] || '';
-      }),
-    };
-  });
-  jest.mock('next/navigation', () => ({
-    useRouter: jest.fn(() => ({
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn(),
-    })),
-    usePathname: jest.fn(() => '/test'),
-    useSearchParams: jest.fn(() => new URLSearchParams()),
-  }));
+beforeEach(async () => {
   resetEnvVariables();
   resetGlobalCache();  
-  theFetch.mockReset().mockImplementation(() => {
-    return Promise.resolve({
-      ok: false,
-      status: 500,
-      json: () => Promise.resolve({ response: 'error' }),
-    });
-  });
-  global.fetch = theFetch;
-  /*
-  (NextAuth as jest.Mock).mockImplementation(() => jest.fn);
-  (auth as jest.Mock).mockImplementation(() => {
-    return jest.fn(() => Promise.resolve({ id: 'test-id' }));
-  });
-  */
-  jest.mock('@/lib/logger', () => {
-    return {
-      logger: Promise.resolve(() => ({
-        warn: jest.fn(makeMockImplementation('warn')),
-        error: jest.fn(makeMockImplementation('error')),
-        info: jest.fn(makeMockImplementation('info')),
-        debug: jest.fn(makeMockImplementation('debug')),
-        silly: jest.fn(makeMockImplementation('silly')),
-        verbose: jest.fn(makeMockImplementation('verbose')),
-        log: jest.fn(makeMockImplementation('log')),
-      })),
-      log: jest.fn((cb: (l: ReturnType<typeof logger>) => void) => cb(logger())),
-      errorLogFactory: jest.fn((x) => x),
-      simpleScopedLogger: jest.fn(() => logger()),
-    };
-  });
-  jest.mock('redis', () => ({
-    createClient: createRedisClient,
-  }));
-  jest.mock('@/lib/ai/middleware', () => ({
-    retryRateLimitMiddlewareFactory: jest.fn(() => jest.fn()),
-    cacheWithRedis: jest.fn(),
-    setNormalizedDefaultsMiddleware: jest.fn(),
-    tokenStatsLoggingOnlyMiddleware: jest.fn(() => jest.fn()),
-  }));
+  for (const [, value] of Object.entries(loggerInstance)) {
+    (value as jest.Mock).mockClear();
+  }
 });
 
 afterEach(() => {
   jest.clearAllMocks();
-  mockDeepClear(mockDb);
+  mockDb = mockDeep<DatabaseType>();
   resetGlobalCache();
-  Object.entries({
-      ...(originalProcessEnv ?? {}),
-      NODE_ENV: nodeEnv,
-      NEXT_PUBLIC_MUI_LICENSE: muiLicenseKey,
-      IS_REACT_ACT_ENVIRONMENT: isReactActEnvironment ? 'true' : 'false',
-    }
-  ).forEach(([key, value]) => {
+  Object.entries(originalProcessEnv).forEach(([key, value]) => {
     process.env[key] = value;
   });
-  mockDb = mockDeep<DatabaseType>();
 });

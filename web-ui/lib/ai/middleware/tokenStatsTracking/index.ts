@@ -32,7 +32,7 @@
  * }
  * 
  * // Record usage after a successful request
- * await tokenStatsService.recordTokenUsage('azure', 'hifi', {
+ * await tokenStatsService.safeRecordTokenUsage('azure', 'hifi', {
  *   promptTokens: 100,
  *   completionTokens: 200,
  *   totalTokens: 300
@@ -45,7 +45,6 @@
  */
 
 export {
-  tokenStatsService,
   TokenStatsService,
 } from './tokenStatsService';
 

@@ -1,5 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* @jest-environment jsdom */
 
 // Mock drizzle-orm functions specifically for this test - must be before imports
 jest.mock('drizzle-orm', () => ({
@@ -42,13 +44,12 @@ jest.mock('@/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn(),
 }));
 
-jest.mock('@/lib/drizzle-db/schema', () => { 
-  const orig = jest.requireActual('@/lib/drizzle-db/schema');  
+jest.mock('@/lib/drizzle-db/schema', () => {
+  const orig = jest.requireActual('@/lib/drizzle-db/schema');
   return {
-    schema: orig.schema
+    schema: orig.schema,
   };
 });
-
 
 jest.mock('drizzle-orm', () => ({
   eq: jest.fn((field, value) => ({ field, value, type: 'eq' })),
@@ -66,13 +67,19 @@ jest.mock('@/components/chat', () => ({
 }));
 
 // Mock the EmailDashboardLayout component
-jest.mock('@/components/email-message/dashboard-layout/email-dashboard-layout', () => ({
-  EmailDashboardLayout: ({ children, session }: any) => (
-    <div data-testid="email-dashboard-layout" data-session={JSON.stringify(session)}>
-      {children}
-    </div>
-  ),
-}));
+jest.mock(
+  '@/components/email-message/dashboard-layout/email-dashboard-layout',
+  () => ({
+    EmailDashboardLayout: ({ children, session }: any) => (
+      <div
+        data-testid="email-dashboard-layout"
+        data-session={JSON.stringify(session)}
+      >
+        {children}
+      </div>
+    ),
+  }),
+);
 
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { auth } from '@/auth';
@@ -87,10 +94,8 @@ describe('Chat Detail Page', () => {
   };
 
   beforeEach(() => {
-    //jest.clearAllMocks();
-    //(auth as jest.Mock).mockResolvedValue(mockSession);
     (drizDbWithInit as jest.Mock).mockResolvedValue(mockDb);
-    
+
     // Setup default mock chain
     mockDbSelect.mockReturnValue({
       from: mockDbFrom,
@@ -101,11 +106,13 @@ describe('Chat Detail Page', () => {
     mockDbWhere.mockReturnValue({
       limit: mockDbLimit,
     });
-    mockDbLimit.mockResolvedValue([{
-      id: 'chat123',
-      title: 'Test Chat Title',
-      createdAt: '2025-01-01T10:00:00Z',
-    }]);
+    mockDbLimit.mockResolvedValue([
+      {
+        id: 'chat123',
+        title: 'Test Chat Title',
+        createdAt: '2025-01-01T10:00:00Z',
+      },
+    ]);
   });
 
   it('should render chat detail page with chat data', async () => {
@@ -148,24 +155,26 @@ describe('Chat Detail Page', () => {
     ]);
 
     // Setup additional select call for turns query
-    mockDbSelect.mockReturnValueOnce({
-      from: mockDbFrom,
-    }).mockReturnValueOnce(mockTurnsQuery);
+    mockDbSelect
+      .mockReturnValueOnce({
+        from: mockDbFrom,
+      })
+      .mockReturnValueOnce(mockTurnsQuery);
 
     const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
-    
+
     render(ChatDetailPageComponent);
-    
+
     expect(screen.getByText('Test Chat Title')).toBeInTheDocument();
     expect(screen.getByTestId('virtualized-chat-display')).toBeInTheDocument();
   });
 
   it('should call notFound for invalid chat ID', async () => {
     mockDbLimit.mockResolvedValue([]); // No chat found
-    
+
     const params = Promise.resolve({ chatId: 'invalid-chat' });
-    
+
     // notFound() throws an error in Next.js, so we need to catch it
     try {
       await ChatDetailPage({ params });
@@ -176,7 +185,7 @@ describe('Chat Detail Page', () => {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).message).toBe('NEXT_NOT_FOUND');
     }
-    
+
     expect(notFound).toHaveBeenCalled();
   });
 
@@ -194,16 +203,21 @@ describe('Chat Detail Page', () => {
     });
     mockDbOrderBy.mockResolvedValue([]); // No turns
 
-    mockDbSelect.mockReturnValueOnce({
-      from: mockDbFrom,
-    }).mockReturnValueOnce(mockTurnsQuery);
+    mockDbSelect
+      .mockReturnValueOnce({
+        from: mockDbFrom,
+      })
+      .mockReturnValueOnce(mockTurnsQuery);
 
     const params = Promise.resolve({ chatId: 'empty-chat' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
-    
+
     render(ChatDetailPageComponent);
-    
-    expect(screen.getByTestId('virtualized-chat-display')).toHaveAttribute('data-turn-count', '0');
+
+    expect(screen.getByTestId('virtualized-chat-display')).toHaveAttribute(
+      'data-turn-count',
+      '0',
+    );
   });
 
   it('should display chat creation date', async () => {
@@ -219,24 +233,30 @@ describe('Chat Detail Page', () => {
     });
     mockDbOrderBy.mockResolvedValue([]);
 
-    mockDbSelect.mockReturnValueOnce({
-      from: mockDbFrom,
-    }).mockReturnValueOnce(mockTurnsQuery);
+    mockDbSelect
+      .mockReturnValueOnce({
+        from: mockDbFrom,
+      })
+      .mockReturnValueOnce(mockTurnsQuery);
 
     const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
-    
+
     render(ChatDetailPageComponent);
-    
-    expect(screen.getByText(/Created: 1\/1\/2025, \d+:00:00 AM/)).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/Created: 1\/1\/2025, \d+:00:00 AM/),
+    ).toBeInTheDocument();
   });
 
   it('should format null chat title correctly', async () => {
-    mockDbLimit.mockResolvedValue([{
-      id: 'chat123',
-      title: null,
-      createdAt: '2025-01-01T10:00:00Z',
-    }]);
+    mockDbLimit.mockResolvedValue([
+      {
+        id: 'chat123',
+        title: null,
+        createdAt: '2025-01-01T10:00:00Z',
+      },
+    ]);
 
     const mockTurnsQuery = {
       from: jest.fn().mockReturnValue({
@@ -250,32 +270,37 @@ describe('Chat Detail Page', () => {
     });
     mockDbOrderBy.mockResolvedValue([]);
 
-    mockDbSelect.mockReturnValueOnce({
-      from: mockDbFrom,
-    }).mockReturnValueOnce(mockTurnsQuery);
+    mockDbSelect
+      .mockReturnValueOnce({
+        from: mockDbFrom,
+      })
+      .mockReturnValueOnce(mockTurnsQuery);
 
     const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
-    
+
     render(ChatDetailPageComponent);
-    
+
     expect(screen.getByText('Chat chat123')).toBeInTheDocument();
   });
 
   it('should handle database connection errors', async () => {
-    (drizDbWithInit as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
-    
+    (drizDbWithInit as jest.Mock).mockRejectedValue(
+      new Error('Database connection failed'),
+    );
+
     const params = Promise.resolve({ chatId: 'chat123' });
-    
+
     // Should throw the error
-    await expect(ChatDetailPage({ params })).rejects.toThrow('Database connection failed');
+    await expect(ChatDetailPage({ params })).rejects.toThrow(
+      'Database connection failed',
+    );
   });
 
   it('should pass session to EmailDashboardLayout', async () => {
-    
     const { auth } = await import('@/auth');
     (auth as jest.Mock).mockResolvedValue(mockSession);
-    
+
     const mockTurnsQuery = {
       from: jest.fn().mockReturnValue({
         leftJoin: mockDbLeftJoin,
@@ -288,17 +313,22 @@ describe('Chat Detail Page', () => {
     });
     mockDbOrderBy.mockResolvedValue([]);
 
-    mockDbSelect.mockReturnValueOnce({
-      from: mockDbFrom,
-    }).mockReturnValueOnce(mockTurnsQuery);
+    mockDbSelect
+      .mockReturnValueOnce({
+        from: mockDbFrom,
+      })
+      .mockReturnValueOnce(mockTurnsQuery);
 
     const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
-    
+
     render(ChatDetailPageComponent);
-    
+
     const layoutElement = screen.getByTestId('email-dashboard-layout');
-    expect(layoutElement).toHaveAttribute('data-session', JSON.stringify(mockSession));
+    expect(layoutElement).toHaveAttribute(
+      'data-session',
+      JSON.stringify(mockSession),
+    );
   });
 
   it('should group messages by turn correctly', async () => {
@@ -364,17 +394,22 @@ describe('Chat Detail Page', () => {
       },
     ]);
 
-    mockDbSelect.mockReturnValueOnce({
-      from: mockDbFrom,
-    }).mockReturnValueOnce(mockTurnsQuery);
+    mockDbSelect
+      .mockReturnValueOnce({
+        from: mockDbFrom,
+      })
+      .mockReturnValueOnce(mockTurnsQuery);
 
     const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
-    
+
     render(ChatDetailPageComponent);
-    
+
     // Should group both messages into one turn
-    expect(screen.getByTestId('virtualized-chat-display')).toHaveAttribute('data-turn-count', '1');
+    expect(screen.getByTestId('virtualized-chat-display')).toHaveAttribute(
+      'data-turn-count',
+      '1',
+    );
   });
 
   it('should call auth function', async () => {
@@ -390,13 +425,15 @@ describe('Chat Detail Page', () => {
     });
     mockDbOrderBy.mockResolvedValue([]);
 
-    mockDbSelect.mockReturnValueOnce({
-      from: mockDbFrom,
-    }).mockReturnValueOnce(mockTurnsQuery);
+    mockDbSelect
+      .mockReturnValueOnce({
+        from: mockDbFrom,
+      })
+      .mockReturnValueOnce(mockTurnsQuery);
 
     const params = Promise.resolve({ chatId: 'chat123' });
     await ChatDetailPage({ params });
-    
+
     expect(auth).toHaveBeenCalled();
   });
 
@@ -439,16 +476,21 @@ describe('Chat Detail Page', () => {
       },
     ]);
 
-    mockDbSelect.mockReturnValueOnce({
-      from: mockDbFrom,
-    }).mockReturnValueOnce(mockTurnsQuery);
+    mockDbSelect
+      .mockReturnValueOnce({
+        from: mockDbFrom,
+      })
+      .mockReturnValueOnce(mockTurnsQuery);
 
     const params = Promise.resolve({ chatId: 'chat123' });
     const ChatDetailPageComponent = await ChatDetailPage({ params });
-    
+
     render(ChatDetailPageComponent);
-    
+
     // Should still create the turn but with empty messages
-    expect(screen.getByTestId('virtualized-chat-display')).toHaveAttribute('data-turn-count', '1');
+    expect(screen.getByTestId('virtualized-chat-display')).toHaveAttribute(
+      'data-turn-count',
+      '1',
+    );
   });
 });

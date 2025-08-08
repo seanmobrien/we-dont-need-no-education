@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { act, PropsWithChildren } from 'react';
+import '@testing-library/jest-dom';
 import { render, RenderOptions, screen } from '@testing-library/react';
+import React, { act, PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/lib/themes/provider';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
-import '@testing-library/jest-dom';
 import { SessionProvider } from '@/components/auth/session-provider';
 
 // Create a test QueryClient with disabled retries and logs

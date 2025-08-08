@@ -7,6 +7,7 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
 import { VirtualizedChatDisplay } from '@/components/chat';
+import { LoggedError } from '@/lib/react-util';
 
 interface ChatMessage {
   turnId: number;
@@ -154,8 +155,11 @@ async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
       turns: Array.from(turnsMap.values()),
     };
   } catch (error) {
-    console.error('Error fetching chat details:', error);
-    throw error;
+    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      message: 'Error fetching chat details',
+      context: { chatId }
+    });
   }
 }
 
