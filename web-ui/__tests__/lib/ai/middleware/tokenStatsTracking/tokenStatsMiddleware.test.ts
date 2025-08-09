@@ -1,35 +1,59 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { tokenStatsMiddleware, tokenStatsWithQuotaMiddleware } from '@/lib/ai/middleware/tokenStatsTracking';
 
 // Mock the token stats service
-jest.mock('@/lib/ai/middleware/tokenStatsTracking');
-
-const mockTokenStatsService =
-  jest.fn(() => ({
-    safeRecordTokenUsage: jest.fn(),
+jest.mock('@/lib/ai/middleware/tokenStatsTracking/tokenStatsService', () => {
+  // const check = jest.requireActual('@/lib/ai/middleware/tokenStatsTracking/tokenStatsService');
+  const theInstance = {
     getTokenStats: jest.fn(),
+    getQuota: jest.fn(),
     checkQuota: jest.fn(),
-  }))();
+    safeRecordTokenUsage: jest.fn(),
+    reset: jest.fn(),
+    mockClear: () => {
+      Object.entries(theInstance).forEach(
+        ([key, value]) => key !== 'mockClear' && (value as any).mockClear(),
+      );
+    },
+  };
+  const ret = {
+    getInstance: jest.fn(() => theInstance),
+    reset: jest.fn(() => theInstance.mockClear()),
+  };
+  return ret;
+});
+
+import { getInstance, reset } from '@/lib/ai/middleware/tokenStatsTracking/tokenStatsService';
+import {
+  tokenStatsMiddleware,
+  tokenStatsWithQuotaMiddleware,
+  TokenStatsServiceType,
+} from '@/lib/ai/middleware/tokenStatsTracking';
+
+type MockTokenStats = {
+  [k in keyof TokenStatsServiceType]: k extends 'mockClear' ? TokenStatsServiceType[k] : jest.Mock<any, any, any>;
+};
 
 describe('TokenStatsMiddleware', () => {
+  const mockTokenStatsService: MockTokenStats = getInstance() as unknown as MockTokenStats;
   // Mock middleware context with all required properties
-  const createMockContext = (doGenerate: jest.Mock) => ({
-    doGenerate,
-    doStream: jest.fn(),
-    params: {
-      inputFormat: 'prompt' as const,
-      mode: { type: 'regular' as const },
-      prompt: 'test prompt',
-      providerMetadata: {
-        backOffice: {
-          estTokens: 100
-        }
-      }
-    },
-    model: { modelId: 'test-model' },
-  } as any);
+  const createMockContext = (doGenerate: jest.Mock) =>
+    ({
+      doGenerate,
+      doStream: jest.fn(),
+      params: {
+        inputFormat: 'prompt' as const,
+        mode: { type: 'regular' as const },
+        prompt: 'test prompt',
+        providerMetadata: {
+          backOffice: {
+            estTokens: 100,
+          },
+        },
+      },
+      model: { modelId: 'test-model' },
+    }) as any;
   beforeEach(() => {
-    // jest.clearAllMocks();
+    reset();
   });
 
   describe('tokenStatsMiddleware', () => {
@@ -49,10 +73,14 @@ describe('TokenStatsMiddleware', () => {
       };
 
       const mockDoGenerate = jest.fn().mockResolvedValue(mockResult);
-      
-      mockTokenStatsService.safeRecordTokenUsage.mockResolvedValue(undefined);
 
-      const result = await middleware.wrapGenerate!(createMockContext(mockDoGenerate));
+      (
+        mockTokenStatsService.safeRecordTokenUsage as jest.Mock
+      ).mockResolvedValue(undefined);
+
+      const result = await middleware.wrapGenerate!(
+        createMockContext(mockDoGenerate),
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockTokenStatsService.safeRecordTokenUsage).toHaveBeenCalledWith(
@@ -62,7 +90,7 @@ describe('TokenStatsMiddleware', () => {
           promptTokens: 10,
           completionTokens: 20,
           totalTokens: 30,
-        }
+        },
       );
     });
 
@@ -80,7 +108,9 @@ describe('TokenStatsMiddleware', () => {
 
       const mockDoGenerate = jest.fn().mockResolvedValue(mockResult);
 
-      const result = await middleware.wrapGenerate!(createMockContext(mockDoGenerate));
+      const result = await middleware.wrapGenerate!(
+        createMockContext(mockDoGenerate),
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockTokenStatsService.safeRecordTokenUsage).not.toHaveBeenCalled();
@@ -102,11 +132,15 @@ describe('TokenStatsMiddleware', () => {
       };
 
       const mockDoGenerate = jest.fn().mockResolvedValue(mockResult);
-      
-      mockTokenStatsService.safeRecordTokenUsage.mockRejectedValue(new Error('Recording failed'));
+
+      mockTokenStatsService.safeRecordTokenUsage.mockRejectedValue(
+        new Error('Recording failed'),
+      );
 
       // Should not throw despite recording error
-      const result = await middleware.wrapGenerate!(createMockContext(mockDoGenerate));
+      const result = await middleware.wrapGenerate!(
+        createMockContext(mockDoGenerate),
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockTokenStatsService.safeRecordTokenUsage).toHaveBeenCalled();
@@ -165,9 +199,15 @@ describe('TokenStatsMiddleware', () => {
 
       const mockDoGenerate = jest.fn().mockResolvedValue(mockResult);
 
-      const result = await middleware.wrapGenerate!(createMockContext(mockDoGenerate));
+      const result = await middleware.wrapGenerate!(
+        createMockContext(mockDoGenerate),
+      );
 
-      expect(mockTokenStatsService.checkQuota).toHaveBeenCalledWith('azure', 'hifi', 100);
+      expect(mockTokenStatsService.checkQuota).toHaveBeenCalledWith(
+        'azure',
+        'hifi',
+        100,
+      );
       expect(result).toEqual(mockResult);
     });
 
@@ -194,7 +234,7 @@ describe('TokenStatsMiddleware', () => {
       const mockDoGenerate = jest.fn();
 
       await expect(
-        middleware.wrapGenerate!(createMockContext(mockDoGenerate))
+        middleware.wrapGenerate!(createMockContext(mockDoGenerate)),
       ).rejects.toThrow('Quota exceeded: Daily limit exceeded');
 
       expect(mockDoGenerate).not.toHaveBeenCalled();
@@ -216,12 +256,16 @@ describe('TokenStatsMiddleware', () => {
         },
       };
 
-      mockTokenStatsService.checkQuota.mockRejectedValue(new Error('Quota check failed'));
+      mockTokenStatsService.checkQuota.mockRejectedValue(
+        new Error('Quota check failed'),
+      );
       mockTokenStatsService.safeRecordTokenUsage.mockResolvedValue(undefined);
 
       const mockDoGenerate = jest.fn().mockResolvedValue(mockResult);
 
-      const result = await middleware.wrapGenerate!(createMockContext(mockDoGenerate));
+      const result = await middleware.wrapGenerate!(
+        createMockContext(mockDoGenerate),
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockDoGenerate).toHaveBeenCalled();
@@ -252,7 +296,7 @@ describe('TokenStatsMiddleware', () => {
       expect(mockTokenStatsService.safeRecordTokenUsage).toHaveBeenCalledWith(
         'google',
         'gemini-pro',
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -277,7 +321,7 @@ describe('TokenStatsMiddleware', () => {
       expect(mockTokenStatsService.safeRecordTokenUsage).toHaveBeenCalledWith(
         'unknown',
         'test-model',
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });

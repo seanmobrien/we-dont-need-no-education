@@ -8,6 +8,7 @@ import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
 } from '@/lib/ai/core/unions';
+import { log } from '@/lib/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
 import { cacheWithRedis, retryRateLimitMiddlewareFactory, setNormalizedDefaultsMiddleware, tokenStatsLoggingOnlyMiddleware } from './middleware';
@@ -382,10 +383,10 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
               azureModelKey,
               60000,
             ); // 1 minute
-            console.warn(
+            log(l => l.warn(
               `Azure model ${modelType} failed, temporarily disabled:`,
               error,
-            );
+            ));
           }
         }
 
@@ -536,7 +537,7 @@ export const resetModelAvailability = (): void => modelAvailabilityManager.reset
  * @param durationMs - Duration in milliseconds to disable Azure (default: 5 minutes)
  */
 export const handleAzureRateLimit = (durationMs: number = 300000): void => {
-  console.warn('Azure rate limit detected, temporarily disabling Azure models');
+  log(l => l.warn('Azure rate limit detected, temporarily disabling Azure models'));
   modelAvailabilityManager.temporarilyDisableModel('azure:hifi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel('azure:lofi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel(
@@ -554,9 +555,7 @@ export const handleAzureRateLimit = (durationMs: number = 300000): void => {
  * @param durationMs - Duration in milliseconds to disable Google (default: 5 minutes)
  */
 export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
-  console.warn(
-    'Google rate limit detected, temporarily disabling Google models',
-  );
+  log(l => l.warn('Google rate limit detected, temporarily disabling Google models'));
   modelAvailabilityManager.temporarilyDisableModel('google:hifi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel('google:lofi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel(

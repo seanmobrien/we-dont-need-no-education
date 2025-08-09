@@ -1,3 +1,15 @@
+/**
+ * @module lib/ai/middleware/tokenStatsTracking/tokenStatsService
+ * @fileoverview
+ * TokenStatsService provides centralized logic for tracking AI token consumption, enforcing quotas, and reporting usage statistics.
+ * It integrates Redis for fast, sliding-window statistics and PostgreSQL for persistent system-of-record storage.
+ * This module is used by AI middleware, model factories, and quota enforcement logic throughout the application.
+ *
+ * @author NoEducation Team
+ * @version 1.0.0
+ * @since 2025-01-01
+ */
+
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { modelQuotas, models, tokenConsumptionStats } from '@/drizzle/schema';
@@ -6,32 +18,49 @@ import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 import {
   ModelQuota,
+  ProviderModelResponse,
   QuotaCheckResult,
   TokenStats,
+  TokenStatsServiceType,
   TokenUsageData,
 } from './types';
 import { ProviderMap } from './provider-map';
 
-type ProviderModelResponse = {
-  error?: unknown;
-  providerId: string;
-  provider: string;
-  modelName: string;
-  rethrow: () => void;
-};
-
 /**
- * Service for tracking token consumption statistics and enforcing quotas
- * Uses Redis for fast access and PostgreSQL as system of record
+ * Service for tracking token consumption statistics and enforcing quotas.
+ * Uses Redis for fast access and PostgreSQL as system of record.
+ *
+ * @implements {TokenStatsServiceType}
  */
-export class TokenStatsService {
-  private static instance: TokenStatsService;
-  private quotaCache = new Map<string, ModelQuota>();
-  private lastQuotaCacheUpdate = 0;
-  private readonly QUOTA_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+class TokenStatsService implements TokenStatsServiceType {
+  /** Singleton instance of TokenStatsService. */
+  private static instance: TokenStatsService | undefined = undefined;
 
+  /** In-memory cache for model quotas, keyed by `${provider}:${modelName}`. */
+  private quotaCache = new Map<string, ModelQuota>();
+
+  /** Timestamp of last quota cache update (ms since epoch). */
+  private lastQuotaCacheUpdate = 0;
+
+  /** Quota cache time-to-live in milliseconds (default: 5 minutes). */
+  private readonly QUOTA_CACHE_TTL = 5 * 60 * 1000;
+
+  /** Private constructor for singleton pattern. */
   private constructor() {}
 
+  /**
+   * Reset the singleton instance (for testing or reinitialization).
+   * @function
+   */
+  static reset(): void {
+    this.instance = undefined;
+  }
+
+  /**
+   * Get the singleton instance of TokenStatsService.
+   * @returns {TokenStatsService} The singleton instance.
+   * @function
+   */
   static get Instance(): TokenStatsService {
     if (!TokenStatsService.instance) {
       TokenStatsService.instance = new TokenStatsService();
@@ -40,7 +69,12 @@ export class TokenStatsService {
   }
 
   /**
-   * Get Redis key for token statistics
+   * Get the Redis key for token statistics for a given provider/model and window type.
+   * @param {string} provider - Provider ID (e.g., 'azure-openai.chat').
+   * @param {string} modelName - Model name (e.g., 'gpt-4').
+   * @param {string} windowType - Time window ('minute', 'hour', 'day').
+   * @returns {string} Redis key for token stats.
+   * @private
    */
   private getRedisStatsKey(
     provider: string,
@@ -51,20 +85,28 @@ export class TokenStatsService {
   }
 
   /**
-   * Get Redis key for quota information
+   * Get the Redis key for quota information for a given provider/model.
+   * @param {string} provider - Provider ID.
+   * @param {string} modelName - Model name.
+   * @returns {string} Redis key for quota.
+   * @private
    */
   private getRedisQuotaKey(provider: string, modelName: string): string {
     return `token_quota:${provider}:${modelName}`;
   }
 
   /**
-   * Normalize provider and model names for consistent storage
+   * Normalize provider and model names for consistent storage and lookup.
+   * Handles both separate and 'provider:model' formats.
+   * @param {string} providerOrModel - Provider name or 'provider:model' string.
+   * @param {string} [modelName] - Optional model name.
+   * @returns {{provider: string, modelName: string}} Normalized provider and model name.
+   * @private
    */
   private normalizeModelKey(
     providerOrModel: string,
     modelName?: string,
   ): { provider: string; modelName: string } {
-    // Handle provider:model format
     if (providerOrModel.includes(':')) {
       const [providerPart, modelPart] = providerOrModel.split(':', 2);
       const normalizedModelName = modelPart.trim();
@@ -82,7 +124,11 @@ export class TokenStatsService {
   }
 
   /**
-   * Normalize provider and model name then use it to retrieve the provider ID
+   * Normalize provider and model name, then retrieve the provider ID from ProviderMap.
+   * @param {string} providerOrModel - Provider name or 'provider:model' string.
+   * @param {string} [modelName] - Optional model name.
+   * @returns {Promise<ProviderModelResponse>} Provider/model normalization result.
+   * @private
    */
   private async normalizeProviderId(
     providerOrModel: string,
@@ -124,7 +170,10 @@ export class TokenStatsService {
   }
 
   /**
-   * Get quota configuration from cache or database
+   * Get quota configuration for a provider/model from cache, Redis, or database.
+   * @param {string} provider - Provider name or ID.
+   * @param {string} modelName - Model name.
+   * @returns {Promise<ModelQuota|null>} Quota configuration or null if not found.
    */
   async getQuota(
     provider: string,
@@ -188,7 +237,11 @@ export class TokenStatsService {
   }
 
   /**
-   * Load quota configuration from PostgreSQL
+   * Load quota configuration from PostgreSQL database.
+   * @param {string} provider - Provider ID.
+   * @param {string} modelName - Model name.
+   * @returns {Promise<ModelQuota|null>} Quota configuration or null if not found.
+   * @private
    */
   private async loadQuotaFromDatabase(
     provider: string,
@@ -217,7 +270,7 @@ export class TokenStatsService {
           maxTokensPerMessage: row.maxTokensPerMessage || undefined,
           maxTokensPerMinute: row.maxTokensPerMinute || undefined,
           maxTokensPerDay: row.maxTokensPerDay || undefined,
-          isActive: row.isActive, // always true or we wouldn't have selected the row
+          isActive: row.isActive,
         };
       });
     } catch (error) {
@@ -232,7 +285,10 @@ export class TokenStatsService {
   }
 
   /**
-   * Get current token statistics from Redis
+   * Get current token usage statistics for a provider/model from Redis.
+   * @param {string} provider - Provider name or ID.
+   * @param {string} modelName - Model name.
+   * @returns {Promise<TokenStats>} Aggregated token usage statistics.
    */
   async getTokenStats(
     provider: string,
@@ -297,7 +353,12 @@ export class TokenStatsService {
   }
 
   /**
-   * Check if a request would exceed quotas
+   * Check if a token usage request would exceed quotas for a provider/model.
+   * Returns a result indicating allowance, reason, and current usage.
+   * @param {string} provider - Provider name or ID.
+   * @param {string} modelName - Model name.
+   * @param {number} requestedTokens - Number of tokens requested.
+   * @returns {Promise<QuotaCheckResult>} Quota check result.
    */
   async checkQuota(
     provider: string,
@@ -377,24 +438,22 @@ export class TokenStatsService {
   }
 
   /**
-   * This method updates both Redis and PostgreSQL with sliding window statistics. The returned promise is 'Guaranteed' not to reject
-   * and can be safely left ignored.   
+   * Safely record token usage for a provider/model.
+   * Updates both Redis and PostgreSQL with sliding window statistics.
+   * This method is guaranteed not to reject and can be safely ignored.
    *
-   * @param provider - The provider ID (e.g., 'azure-openai.chat')
-   * @param modelName - The model name (e.g., 'gpt-4')
-   * @param usage - The token usage data to record
-   * 
+   * @param {string} provider - Provider ID (e.g., 'azure-openai.chat').
+   * @param {string} modelName - Model name (e.g., 'gpt-4').
+   * @param {TokenUsageData} usage - Token usage data to record.
+   * @returns {Promise<void>} Resolves when usage is recorded.
+   * @throws Never - errors are handled internally.
+   *
    * @example
-   * ```typescript
-   * await tokenStatsService.safeRecordTokenUsage('azure-openai.chat', 'gpt-4', { 
+   * await tokenStatsService.safeRecordTokenUsage('azure-openai.chat', 'gpt-4', {
    *   promptTokens: 100,
-   *  completionTokens: 200,
-   *  totalTokens: 300
+   *   completionTokens: 200,
+   *   totalTokens: 300
    * });
-   * ```
-   * 
-   * @returns A promise that resolves when the usage is recorded
-   * @throws Never - this method is designed to handle errors internally and will not reject.
    */
   async safeRecordTokenUsage(
     provider: string,
@@ -428,7 +487,12 @@ export class TokenStatsService {
   }
 
   /**
-   * Update Redis statistics with sliding windows
+   * Update Redis statistics for a provider/model with sliding windows.
+   * @param {string} provider - Provider ID.
+   * @param {string} modelName - Model name.
+   * @param {TokenUsageData} usage - Token usage data.
+   * @returns {Promise<void>} Resolves when Redis stats are updated.
+   * @private
    */
   private async updateRedisStats(
     provider: string,
@@ -506,7 +570,12 @@ export class TokenStatsService {
   }
 
   /**
-   * Update PostgreSQL statistics for persistence
+   * Update PostgreSQL statistics for a provider/model for persistence.
+   * @param {string} provider - Provider ID.
+   * @param {string} modelName - Model name.
+   * @param {TokenUsageData} usage - Token usage data.
+   * @returns {Promise<void>} Resolves when database stats are updated.
+   * @private
    */
   private async updateDatabaseStats(
     provider: string,
@@ -587,7 +656,12 @@ export class TokenStatsService {
   }
 
   /**
-   * Get comprehensive token usage report for a model
+   * Get a comprehensive token usage report for a provider/model.
+   * Includes quota, current stats, and quota check result.
+   * @param {string} provider - Provider name or ID.
+   * @param {string} modelName - Model name.
+   * @returns {Promise<{quota: ModelQuota|null, currentStats: TokenStats, quotaCheckResult: QuotaCheckResult}>}
+   *   Usage report object.
    */
   async getUsageReport(
     provider: string,
@@ -621,3 +695,15 @@ export class TokenStatsService {
     }
   }
 }
+
+/**
+ * Get the singleton instance of TokenStatsService as TokenStatsServiceType.
+ * @returns {TokenStatsServiceType} The singleton instance.
+ */
+export const getInstance = (): TokenStatsServiceType => TokenStatsService.Instance;
+
+/**
+ * Reset the singleton instance of TokenStatsService.
+ * @returns {void}
+ */
+export const reset = (): void => TokenStatsService.reset();

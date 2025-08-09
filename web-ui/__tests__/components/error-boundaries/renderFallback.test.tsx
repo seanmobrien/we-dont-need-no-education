@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * @jest-environment jsdom
  */
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 // import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
@@ -355,16 +357,17 @@ describe('RenderErrorBoundaryFallback', () => {
       mockGetDefaultRecoveryAction.mockReturnValue(null);
       renderComponent();
 
-      // Simulate dialog close by clicking Try Again button when no default action
-      const tryAgainButtons = screen.getAllByText('Try Again');
-      const dialogActionButton = tryAgainButtons.find(button => 
-        button.closest('button')?.classList.contains('MuiButton-contained')
-      );
-      fireEvent.click(dialogActionButton!);
+      act(() => {
+        // Simulate dialog close by clicking Try Again button when no default action
+        const tryAgainButtons = screen.getAllByText('Try Again');
+        const dialogActionButton = tryAgainButtons.find((button) =>
+          button.closest('button')?.classList.contains('MuiButton-contained'),
+        );
+        fireEvent.click(dialogActionButton!);
 
-      // Fast-forward through the timeout
-      jest.advanceTimersByTime(300);
-
+        // Fast-forward through the timeout
+        jest.advanceTimersByTime(300);
+      });
       await waitFor(() => {
         expect(mockResetErrorBoundary).toHaveBeenCalled();
       });

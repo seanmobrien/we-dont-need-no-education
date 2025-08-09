@@ -1,5 +1,5 @@
 import type { LanguageModelV1, LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
-import { TokenStatsService } from './tokenStatsService';
+import { getInstance } from './tokenStatsService';
 import { log } from '@/lib/logger';
 import { QuotaCheckResult, QuotaEnforcementError, TokenStatsMiddlewareConfig, TokenUsageData } from './types';
 import { countTokens } from '../../core/count-tokens';
@@ -71,7 +71,7 @@ const quotaCheck = async ({
   enableLogging: boolean;
 }): Promise<QuotaCheckResult> => {
   try {
-    const quotaCheck = await TokenStatsService.Instance.checkQuota(
+    const quotaCheck = await getInstance().checkQuota(
       provider,
       modelName,
       estimatedTokens,
@@ -190,7 +190,7 @@ const wrapGenerate = async ({
         };
 
         // Record usage asynchronously to avoid blocking the response
-        TokenStatsService.Instance.safeRecordTokenUsage(
+        getInstance().safeRecordTokenUsage(
           provider,
           modelName,
           tokenUsage,
@@ -362,7 +362,7 @@ const wrapStream = async ({
 
             // Record usage asynchronously to avoid blocking the stream
             if (tokenUsage.totalTokens > 0) {
-              TokenStatsService.Instance.safeRecordTokenUsage(
+              getInstance().safeRecordTokenUsage(
                 provider,
                 modelName,
                 tokenUsage,
