@@ -71,7 +71,7 @@ export class ErrorResponse extends Response {
         errorMessage = statusOrError.message;
       }
     } 
-
+    // extract stack before serializing    
     super(JSON.stringify({ error: errorMessage, status }), {
       status,
       headers: { 'Content-Type': 'application/json' },

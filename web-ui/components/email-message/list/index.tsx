@@ -19,6 +19,7 @@ import CallToActionIcon from '@mui/icons-material/CallToAction';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import EmailDetailPanel from './email-detail-panel';
+import { fetch } from '@/lib/nextjs-util';
 
 /**
  * Defines the column configuration for the email message list grid.

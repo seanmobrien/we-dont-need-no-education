@@ -149,7 +149,6 @@ export const PUT = async (
         source: 'email-import',
       });
     }
-    console.error('Unexpected error processing attachments:', error);
     return NextResponse.json(
       { error: 'Failed to process attachments' },
       { status: 500 },

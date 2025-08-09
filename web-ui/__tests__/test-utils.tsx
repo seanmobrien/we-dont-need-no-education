@@ -71,14 +71,12 @@ const customRenderHook = (hook: () => any, options: RenderOptions = {}) => {
 
 // re-export everything
 export * from '@testing-library/react';
-
 // override render method
 export {
   customRender as render,
   customAsyncRender as asyncRender,
   customRenderHook as renderHook,
 };
-
 // explicitly export screen to ensure it's available
 export { screen };
 
@@ -86,3 +84,17 @@ export type { RenderOptions };
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 (global as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+export const jsonResponse = <TData extends object>(data: TData, status?: number) => {
+  const jsonCallback = (): Promise<TData> => Promise.resolve(data as TData);
+  const stat = status ?? 200;
+  return {
+    ok: stat < 400,
+    status: stat ?? 200,
+    statusText: stat < 400 ? 'OK' : 'Error',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    json: jsonCallback
+  };
+};

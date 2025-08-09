@@ -9,24 +9,27 @@ jest.mock('@/components/chat/list', () => {
   };
 });
 
-
-
 // Mock the EmailDashboardLayout component
-jest.mock('@/components/email-message/dashboard-layout/email-dashboard-layout', () => ({
-  EmailDashboardLayout: ({ children, session }: React.PropsWithChildren<{ session: unknown }>) => (
-    <div data-testid="email-dashboard-layout" data-session={JSON.stringify(session)}>
-      {children}
-    </div>
-  ),
-}));
-
-// Mock auth module
-jest.mock('@/auth', () => ({
-  auth: jest.fn().mockImplementation(() => Promise.resolve(null)),
-}));
+jest.mock(
+  '@/components/email-message/dashboard-layout/email-dashboard-layout',
+  () => ({
+    EmailDashboardLayout: ({
+      children,
+      session,
+    }: React.PropsWithChildren<{ session: unknown }>) => (
+      <div
+        data-testid="email-dashboard-layout"
+        data-session={JSON.stringify(session)}
+      >
+        {children}
+      </div>
+    ),
+  }),
+);
 
 import { auth } from '@/auth';
-import type { Session } from 'next-auth';
+
+let authSpy: jest.SpyInstance<typeof auth>;
 
 describe('Chat List Page', () => {
   const mockSession = {
@@ -34,20 +37,20 @@ describe('Chat List Page', () => {
       id: 'user123',
       email: 'test@example.com',
       name: 'Test User',
-      image: '',
     },
-    expires: '2024-12-31T23:59:59.999Z',
-  } as Session;
+  };
 
   beforeEach(async () => {
     // jest.clearAllMocks();
-    (auth as any).mockResolvedValue(mockSession);
+    const authMod = await import('@/auth');
+    jest.spyOn(authMod, 'auth').mockResolvedValue(mockSession);
+    // (auth as jest.Mock).mockResolvedValue(mockSession);
   });
 
   it('should render chat list page with proper layout', async () => {
     const ChatPageComponent = await ChatPage();
     render(ChatPageComponent);
-    
+
     expect(screen.getByTestId('email-dashboard-layout')).toBeInTheDocument();
     expect(screen.getByTestId('chat-list')).toBeInTheDocument();
   });
@@ -55,29 +58,31 @@ describe('Chat List Page', () => {
   it('should render with proper box styling', async () => {
     const ChatPageComponent = await ChatPage();
     render(ChatPageComponent);
-    
+
     // Check that the Box component is rendered with proper structure
     const boxElement = screen.getByTestId('chat-list').parentElement;
     expect(boxElement).toHaveStyle('width: 100%');
   });
 
-
   it('should render ChatList component within the layout', async () => {
     const ChatPageComponent = await ChatPage();
     render(ChatPageComponent);
-    
+
     // Verify the structure: Layout contains Box which contains ChatList
     const layoutElement = screen.getByTestId('email-dashboard-layout');
     const chatListElement = screen.getByTestId('chat-list');
-    
+
     expect(layoutElement).toContainElement(chatListElement);
   });
 
   it('should have correct component hierarchy', async () => {
     const ChatPageComponent = await ChatPage();
     const { container } = render(ChatPageComponent);
-    
+
     // Check the DOM structure
-    expect(container.firstChild).toHaveAttribute('data-testid', 'email-dashboard-layout');
+    expect(container.firstChild).toHaveAttribute(
+      'data-testid',
+      'email-dashboard-layout',
+    );
   });
 });

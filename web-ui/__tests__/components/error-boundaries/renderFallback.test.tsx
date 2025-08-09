@@ -9,6 +9,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { logger } from '@/lib/logger';
 
 // Mock the recovery strategies
 const mockReload = jest.fn();
@@ -402,29 +403,26 @@ describe('RenderErrorBoundaryFallback', () => {
 
   describe('Error Handling in Recovery Actions', () => {
     it('should handle recovery action errors gracefully', async () => {
+      const thisError = new Error('Recovery action failed');
       const failingAction = {
         id: 'failing-action',
         label: 'Failing Action',
         description: 'This will fail',
         action: jest.fn().mockImplementation(() => {
-          throw new Error('Recovery action failed');
+          throw thisError;
         }),
       };
-      
+      const logMock = await logger();
       mockGetRecoveryActions.mockReturnValue([failingAction]);
-      
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       renderComponent();
 
       const failingButton = screen.getByText('Failing Action');
-      fireEvent.click(failingButton);
+      act(() => fireEvent.click(failingButton));
 
       // Should not crash the component
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(consoleSpy).toHaveBeenCalledWith('Recovery action failed:', expect.any(Error));
-      
-      consoleSpy.mockRestore();
+      expect(logMock.error).toHaveBeenCalled();
     });
 
     it('should not close dialog for certain recovery actions', async () => {

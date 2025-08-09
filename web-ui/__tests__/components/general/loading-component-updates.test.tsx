@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, screen, waitFor } from '@/__tests__/test-utils';
+import { act, asyncRender, render, screen, waitFor } from '@/__tests__/test-utils';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import Loading from '@/components/general/loading';
@@ -19,12 +19,10 @@ const LoadingWrapper = ({
 );
 
 describe('Loading Component Updates', () => {
-  it('renders loading state with Card-based UI pattern', () => {
-    act(() => {
-      render(<LoadingWrapper loading={true} errorMessage={null} />);
-      waitFor(() => screen.getByText('Loading...'));
-    });
-
+  it('renders loading state with Card-based UI pattern', async () => {
+    await asyncRender(<LoadingWrapper loading={true} errorMessage={null} />);
+    await waitFor(() => screen.getByText('Loading...'));
+    
     // Verify we have the card structure
     const cardContent = document.querySelector('.MuiCardContent-root');
     expect(cardContent).toBeInTheDocument();
@@ -40,16 +38,16 @@ describe('Loading Component Updates', () => {
     expect(circularProgress).not.toBeInTheDocument();
   });
 
-  it('maintains compatibility with existing error message behavior', () => {
+  it('maintains compatibility with existing error message behavior', async () => {
     const errorMessage = 'Test error message';
-    render(<LoadingWrapper loading={false} errorMessage={errorMessage} />);
+    await asyncRender(<LoadingWrapper loading={false} errorMessage={errorMessage} />);
 
     expect(screen.getByText('Error:')).toBeInTheDocument();
     expect(screen.getByText(errorMessage)).toBeInTheDocument();
   });
 
-  it('renders nothing when not loading and no error', () => {
-    const { container } = render(
+  it('renders nothing when not loading and no error', async () => {
+    const { container } = await asyncRender(
       <LoadingWrapper loading={false} errorMessage={null} />,
     );
     expect(container.firstChild).toBeNull();

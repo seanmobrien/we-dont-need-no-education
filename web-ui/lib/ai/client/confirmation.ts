@@ -1,3 +1,4 @@
+import { LoggedError } from '@/lib/react-util';
 import { signData } from '@/lib/site-util/auth/user-keys';
 
 /**
@@ -48,7 +49,7 @@ export const signResponse = async (source: Omit<UserResponse, 'hash'>): Promise<
     
     return { ...source, hash };
   } catch (error) {
-    console.error('Failed to sign response:', error);
+    LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'signResponse' });
     // Fallback to a basic hash if crypto fails (should not happen in secure contexts)
     const fallbackHash = btoa(`${source.callId}:${source.choice}:${Date.now()}`);
     return { ...source, hash: fallbackHash };
