@@ -3,11 +3,8 @@ import { notFound } from 'next/navigation';
 import { Box, Typography } from '@mui/material';
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema';
-import { eq, and } from 'drizzle-orm';
 import { VirtualizedChatDisplay } from '@/components/chat';
-import { LoggedError } from '@/lib/react-util';
+import { headers } from 'next/headers';
 
 interface ChatMessage {
   turnId: number;
@@ -16,7 +13,6 @@ interface ChatMessage {
   content: string | null;
   messageOrder: number;
   toolName: string | null;
-  // Additional message-level metadata fields
   functionCall: Record<string, unknown> | null;
   statusId: number;
   providerId: string | null;
@@ -31,7 +27,6 @@ interface ChatTurn {
   completedAt: string | null;
   modelName: string | null;
   messages: ChatMessage[];
-  // Additional turn properties for optional display
   statusId: number;
   temperature: number | null;
   topP: number | null;
@@ -48,118 +43,39 @@ interface ChatDetails {
   turns: ChatTurn[];
 }
 
+/**
+ * Fetches chat details from the API route
+ */
 async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
   try {
-    const db = await drizDbWithInit();
+    const headersList = await headers();
+    const host = headersList.get('host');
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const baseUrl = `${protocol}://${host}`;
+    
+    const response = await fetch(`${baseUrl}/api/ai/chat/history/${chatId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        // Forward cookies for authentication
+        'Cookie': headersList.get('cookie') || '',
+      },
+      cache: 'no-store', // Always fetch fresh data
+    });
 
-    // Get chat basic info using drizzle
-    const chatResult = await db
-      .select({
-        id: schema.chats.id,
-        title: schema.chats.title,
-        createdAt: schema.chats.createdAt,
-      })
-      .from(schema.chats)
-      .where(eq(schema.chats.id, chatId))
-      .limit(1);
-
-    if (chatResult.length === 0) {
+    if (response.status === 404) {
       return null;
     }
 
-    const chat = chatResult[0];
+    if (!response.ok) {
+      throw new Error(`API request failed with status ${response.status}`);
+    }
 
-    // Get chat turns and messages using drizzle with joins
-    const turnsAndMessagesResult = await db
-      .select({
-        // Turn fields
-        turnId: schema.chatTurns.turnId,
-        createdAt: schema.chatTurns.createdAt,
-        completedAt: schema.chatTurns.completedAt,
-        modelName: schema.chatTurns.modelName,
-        turnStatusId: schema.chatTurns.statusId,
-        temperature: schema.chatTurns.temperature,
-        topP: schema.chatTurns.topP,
-        latencyMs: schema.chatTurns.latencyMs,
-        warnings: schema.chatTurns.warnings,
-        errors: schema.chatTurns.errors,
-        turnMetadata: schema.chatTurns.metadata,
-        // Message fields
-        messageId: schema.chatMessages.messageId,
-        role: schema.chatMessages.role,
-        content: schema.chatMessages.content,
-        messageOrder: schema.chatMessages.messageOrder,
-        toolName: schema.chatMessages.toolName,
-        functionCall: schema.chatMessages.functionCall,
-        messageStatusId: schema.chatMessages.statusId,
-        providerId: schema.chatMessages.providerId,
-        messageMetadata: schema.chatMessages.metadata,
-        toolInstanceId: schema.chatMessages.toolInstanceId,
-        optimizedContent: schema.chatMessages.optimizedContent,
-      })
-      .from(schema.chatTurns)
-      .leftJoin(
-        schema.chatMessages,
-        and(
-          eq(schema.chatTurns.chatId, schema.chatMessages.chatId),
-          eq(schema.chatTurns.turnId, schema.chatMessages.turnId)
-        )
-      )
-      .where(eq(schema.chatTurns.chatId, chatId))
-      .orderBy(schema.chatTurns.turnId, schema.chatMessages.messageOrder);
-
-
-    // Group messages by turn
-    const turnsMap = new Map<number, ChatTurn>();
-    turnsAndMessagesResult.forEach((row: Record<string, unknown>) => {
-      if (!turnsMap.has(Number(row.turnId))) {
-        turnsMap.set(Number(row.turnId), {
-          turnId: Number(row.turnId),
-          createdAt: String(row.createdAt),
-          completedAt: String(row.completedAt),
-          modelName: String(row.modelName),
-          statusId: Number(row.turnStatusId),
-          temperature: Number(row.temperature),
-          topP: Number(row.topP),
-          latencyMs: Number(row.latencyMs),
-          warnings: Array.isArray(row.warnings) ? row.warnings : [],
-          errors: Array.isArray(row.errors) ? row.errors : [],
-          metadata: row.turnMetadata as Record<string, unknown>,
-          messages: [],
-        });
-      }
-
-      if (row.messageId) {
-        const turn = turnsMap.get(Number(row.turnId))!;
-        turn.messages.push({
-          turnId: Number(row.turnId),
-          messageId: Number(row.messageId),
-          role: String(row.role),
-          content: String(row.content),
-          messageOrder: Number(row.messageOrder),
-          toolName: String(row.toolName),
-          functionCall: row.functionCall as Record<string, unknown> | null,
-          statusId: Number(row.messageStatusId),
-          providerId: String(row.providerId),
-          metadata: row.messageMetadata as Record<string, unknown>,
-          toolInstanceId: String(row.toolInstanceId),
-          optimizedContent: row.optimizedContent as string | null,
-        });
-      }
-    });
-
-    return {
-      id: chat.id,
-      title: chat.title,
-      createdAt: chat.createdAt ?? new Date().toISOString(),
-      turns: Array.from(turnsMap.values()),
-    };
+    const chatDetails: ChatDetails = await response.json();
+    return chatDetails;
   } catch (error) {
-    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      message: 'Error fetching chat details',
-      context: { chatId }
-    });
+    console.error('Error fetching chat details:', error);
+    throw error;
   }
 }
 
