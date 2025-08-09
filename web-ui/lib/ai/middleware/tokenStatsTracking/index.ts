@@ -23,29 +23,29 @@
  * 
  * @example Direct service usage
  * ```typescript
- * import { tokenStatsService } from '@/lib/ai/middleware/tokenStatsTracking';
+ * import { getTokenStatsService } from '@/lib/ai/middleware/tokenStatsTracking';
  * 
  * // Check quota before making a request
- * const quotaCheck = await tokenStatsService.checkQuota('azure', 'hifi', 1000);
+ * const quotaCheck = await getTokenStatsService().checkQuota('azure', 'hifi', 1000);
  * if (!quotaCheck.allowed) {
  *   throw new Error(quotaCheck.reason);
  * }
  * 
  * // Record usage after a successful request
- * await tokenStatsService.safeRecordTokenUsage('azure', 'hifi', {
+ * await getTokenStatsService().safeRecordTokenUsage('azure', 'hifi', {
  *   promptTokens: 100,
  *   completionTokens: 200,
  *   totalTokens: 300
  * });
  * 
  * // Get current statistics
- * const stats = await tokenStatsService.getTokenStats('azure', 'hifi');
+ * const stats = await getTokenStatsService().getTokenStats('azure', 'hifi');
  * console.log(`Current minute usage: ${stats.currentMinuteTokens}`);
  * ```
  */
 
 export {
-  TokenStatsService,
+  getInstance as getTokenStatsService,
 } from './tokenStatsService';
 
 export {
@@ -54,6 +54,7 @@ export {
   type TokenStats,
   type QuotaCheckResult,
   type TokenStatsMiddlewareConfig,
+  type TokenStatsServiceType
 } from './types';
 
 export {

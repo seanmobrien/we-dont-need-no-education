@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { errorReporter, ErrorSeverity, type ErrorContext } from './error-reporter';
+import { log } from '@/lib/logger'
 
 /**
  * React hook for error reporting within components
@@ -19,7 +20,7 @@ export function useErrorReporter() {
         });
       } catch (reportingError) {
         // Silently handle reporting errors to avoid affecting the component
-        console.error('Error reporting failed:', reportingError);
+        log(l => l.error('Error reporting failed:', reportingError));
       }
     },
     []
@@ -38,7 +39,7 @@ export function useErrorReporter() {
         });
       } catch (reportingError) {
         // Silently handle reporting errors to avoid affecting the component
-        console.error('Error reporting failed:', reportingError);
+        log(l => l.error('Error reporting failed:', reportingError));
       }
     },
     []
@@ -56,7 +57,7 @@ export function useErrorReporter() {
           additionalData: { userAction: action },
         });
       } catch (reportingError) {
-        console.error('Error reporting failed:', reportingError);
+        log(l => l.error('Error reporting failed:', reportingError));
       }
     },
     []
@@ -79,7 +80,7 @@ export function useErrorReporter() {
           },
         });
       } catch (reportingError) {
-        console.error('Error reporting failed:', reportingError);
+        log(l => l.error('Error reporting failed:', reportingError));
       }
     },
     []

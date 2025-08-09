@@ -1,10 +1,48 @@
-import { TokenStatsService, TokenUsageData } from '@/lib/ai/middleware/tokenStatsTracking';
-import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+// Mock ProviderMap before other imports
+const mockProviderMapInstance = {
+  id: jest.fn((provider: string) => {
+    // Map provider names to provider IDs
+    switch (provider) {
+      case 'azure':
+        return 'azure-openai.chat';
+      case 'google':
+        return 'google';
+      default:
+        return provider; // fallback to original value
+    }
+  }),
+  name: jest.fn().mockReturnValue('azure'),
+  record: jest.fn().mockReturnValue({
+    name: 'azure',
+    displayName: 'Azure OpenAI',
+    isActive: true,
+  }),
+  contains: jest.fn().mockReturnValue(true),
+  initialized: true,
+  whenInitialized: Promise.resolve(true),
+};
 
-// Mock Redis for testing
+jest.mock('@/lib/ai/middleware/tokenStatsTracking/provider-map', () => ({
+  ProviderMap: {
+    getInstance: jest.fn().mockResolvedValue(mockProviderMapInstance),
+    Instance: mockProviderMapInstance,
+  },
+}));
+
+// Mock Redis and database before other imports
 jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
 jest.mock('@/lib/drizzle-db');
+
+import {
+  getTokenStatsService,
+  TokenStatsServiceType,
+  TokenUsageData,
+} from '@/lib/ai/middleware/tokenStatsTracking';
+import {
+  reset 
+ } from '@/lib/ai/middleware/tokenStatsTracking/tokenStatsService';
+import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { drizDbWithInit } from '@/lib/drizzle-db';
 
 const mockRedisClient = {
   get: jest.fn(),
@@ -13,6 +51,8 @@ const mockRedisClient = {
     setEx: jest.fn(),
     exec: jest.fn().mockResolvedValue(undefined),
   })),
+  quit: jest.fn(),
+  disconnect: jest.fn(),
 };
 
 const mockDb = {
@@ -30,51 +70,89 @@ const mockDb = {
   })),
   query: {
     models: {
-      findFirst: jest.fn(() => Promise.resolve({
-        id: 'test-model-id',
-        provider: 'azure',
-        modelName: 'hifi',
-        isActive: true,
-      })),
+      findFirst: jest.fn(() =>
+        Promise.resolve({
+          id: 'test-model-id',
+          provider: 'azure',
+          modelName: 'hifi',
+          isActive: true,
+        }),
+      ),
     },
   },
 };
 
+let tokenStatsService: TokenStatsServiceType;
+
 beforeEach(() => {
-  // jest.clearAllMocks();
+  /// jest.clearAllMocks();
+  reset();
+  tokenStatsService = getTokenStatsService();
+  
+  // Reset mock implementations
   (getRedisClient as jest.Mock).mockResolvedValue(mockRedisClient);
-  (drizDbWithInit as jest.Mock).mockImplementation((fn) => fn(mockDb));
+  (drizDbWithInit as jest.Mock).mockImplementation((fn) =>
+    !!fn ? Promise.resolve(fn(mockDb)) : Promise.resolve(mockDb),
+  );
+  
+  // Reset Redis client mocks
+  mockRedisClient.get.mockReset();
+  mockRedisClient.setEx.mockReset();
+  mockRedisClient.multi.mockReset();
+  
+  // Reset ProviderMap mocks to ensure consistent provider IDs
+  mockProviderMapInstance.id.mockImplementation((provider: string) => {
+    if (provider === 'azure') return 'azure-openai.chat';
+    if (provider === 'google') return 'google';
+    return provider; // fallback
+  });
 });
 
 describe('TokenStatsService', () => {
   describe('normalizeModelKey', () => {
     it('should handle provider:model format', async () => {
-      // When modelName contains ':', it overrides provider and extracts both from modelName
-      const result = await TokenStatsService.Instance.getTokenStats(
-        'ignored',
+      // Setup mock to return null for stats (zero stats)
+      mockRedisClient.get.mockResolvedValue(null);
+
+      // When the FIRST parameter contains ':', it should extract provider and model from it
+      // The second parameter should be ignored
+      const result = await tokenStatsService.getTokenStats(
         'azure:hifi',
+        'ignored',
       );
+      
       expect(result).not.toBeNull();
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_stats:azure:hifi:minute',
+        'token_stats:azure-openai.chat:hifi:minute',
       );
     });
 
     it('should handle separate provider and model', async () => {
-      const result = await TokenStatsService.Instance.getTokenStats('google', 'gemini-pro');
+      // Setup mock to return null for stats (zero stats)
+      mockRedisClient.get.mockResolvedValue(null);
+
+      const result = await tokenStatsService.getTokenStats(
+        'google',
+        'gemini-pro',
+      );
+      
       expect(result).not.toBeNull();
-      expect(mockRedisClient.get).toHaveBeenCalledWith('token_stats:google:gemini-pro:minute');
+      expect(mockRedisClient.get).toHaveBeenCalledWith(
+        'token_stats:google:gemini-pro:minute',
+      );
     });
   });
 
   describe('getQuota', () => {
     it('should return null when no quota is configured', async () => {
       mockRedisClient.get.mockResolvedValue(null);
-      
-      const result = await TokenStatsService.Instance.getQuota('azure', 'hifi');
-      
+
+      const result = await tokenStatsService.getQuota('azure', 'hifi');
+
       expect(result).toBeNull();
-      expect(mockRedisClient.get).toHaveBeenCalledWith('token_quota:azure:hifi');
+      expect(mockRedisClient.get).toHaveBeenCalledWith(
+        'token_quota:azure-openai.chat:hifi',
+      );
     });
 
     it('should return quota from Redis cache', async () => {
@@ -87,21 +165,27 @@ describe('TokenStatsService', () => {
         maxTokensPerDay: 100000,
         isActive: true,
       };
-      
+
       mockRedisClient.get.mockResolvedValue(JSON.stringify(mockQuota));
-      
-      const result = await TokenStatsService.Instance.getQuota('azure', 'hifi');
-      
+
+      const result = await tokenStatsService.getQuota('azure', 'hifi');
+
       expect(result).toEqual(mockQuota);
+      expect(mockRedisClient.get).toHaveBeenCalledWith(
+        'token_quota:azure-openai.chat:hifi',
+      );
     });
   });
 
   describe('getTokenStats', () => {
     it('should return zero stats when no data exists', async () => {
       mockRedisClient.get.mockResolvedValue(null);
-      
-      const result = await TokenStatsService.Instance.getTokenStats('azure', 'hifi');
-      
+
+      const result = await tokenStatsService.getTokenStats(
+        'azure',
+        'hifi',
+      );
+
       expect(result).toEqual({
         currentMinuteTokens: 0,
         lastHourTokens: 0,
@@ -114,14 +198,17 @@ describe('TokenStatsService', () => {
       const mockMinuteData = { totalTokens: 100, requestCount: 5 };
       const mockHourData = { totalTokens: 500 };
       const mockDayData = { totalTokens: 2000 };
-      
+
       mockRedisClient.get
-        .mockResolvedValueOnce(JSON.stringify(mockMinuteData))
-        .mockResolvedValueOnce(JSON.stringify(mockHourData))
-        .mockResolvedValueOnce(JSON.stringify(mockDayData));
-      
-      const result = await TokenStatsService.Instance.getTokenStats('azure', 'hifi');
-      
+        .mockResolvedValueOnce(JSON.stringify(mockMinuteData))  // minute stats
+        .mockResolvedValueOnce(JSON.stringify(mockHourData))    // hour stats
+        .mockResolvedValueOnce(JSON.stringify(mockDayData));    // day stats
+
+      const result = await tokenStatsService.getTokenStats(
+        'azure',
+        'hifi',
+      );
+
       expect(result).toEqual({
         currentMinuteTokens: 100,
         lastHourTokens: 500,
@@ -134,9 +221,13 @@ describe('TokenStatsService', () => {
   describe('checkQuota', () => {
     it('should allow request when no quota is configured', async () => {
       mockRedisClient.get.mockResolvedValue(null);
-      
-      const result = await TokenStatsService.Instance.checkQuota('azure', 'hifi', 100);
-      
+
+      const result = await tokenStatsService.checkQuota(
+        'azure',
+        'hifi',
+        100,
+      );
+
       expect(result.allowed).toBe(true);
     });
 
@@ -146,15 +237,21 @@ describe('TokenStatsService', () => {
         provider: 'azure',
         modelName: 'hifi',
         maxTokensPerMessage: 500,
+        maxTokensPerMinute: null,
+        maxTokensPerDay: null,
         isActive: true,
       };
-      
+
       mockRedisClient.get
         .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota
-        .mockResolvedValue(null); // stats
-      
-      const result = await TokenStatsService.Instance.checkQuota('azure', 'hifi', 1000);
-      
+        .mockResolvedValue(null); // stats (no existing usage)
+
+      const result = await tokenStatsService.checkQuota(
+        'azure',
+        'hifi',
+        1000, // Exceeds per-message limit of 500
+      );
+
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('per-message limit');
     });
@@ -164,19 +261,25 @@ describe('TokenStatsService', () => {
         id: 'test-id',
         provider: 'azure',
         modelName: 'hifi',
+        maxTokensPerMessage: null,
         maxTokensPerMinute: 1000,
+        maxTokensPerDay: null,
         isActive: true,
       };
-      
+
       const mockStats = { totalTokens: 900, requestCount: 5 };
-      
+
       mockRedisClient.get
         .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota
         .mockResolvedValueOnce(JSON.stringify(mockStats)) // minute stats
         .mockResolvedValue(null); // hour/day stats
-      
-      const result = await TokenStatsService.Instance.checkQuota('azure', 'hifi', 200);
-      
+
+      const result = await tokenStatsService.checkQuota(
+        'azure',
+        'hifi',
+        200, // 900 + 200 = 1100, exceeds limit of 1000
+      );
+
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('per-minute limit');
     });
@@ -191,15 +294,19 @@ describe('TokenStatsService', () => {
         maxTokensPerDay: 100000,
         isActive: true,
       };
-      
+
       const mockStats = { totalTokens: 500, requestCount: 2 };
-      
+
       mockRedisClient.get
-        .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota
-        .mockResolvedValue(JSON.stringify(mockStats)); // all stats
-      
-      const result = await TokenStatsService.Instance.checkQuota('azure', 'hifi', 400);
-      
+        .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota call
+        .mockResolvedValue(JSON.stringify(mockStats)); // all stats calls
+
+      const result = await tokenStatsService.checkQuota(
+        'azure',
+        'hifi',
+        400,
+      );
+
       expect(result.allowed).toBe(true);
       expect(result.quota).toEqual(mockQuota);
     });
@@ -212,14 +319,18 @@ describe('TokenStatsService', () => {
         completionTokens: 150,
         totalTokens: 250,
       };
-      
+
       mockRedisClient.get.mockResolvedValue(null); // no existing data
-      
-      await TokenStatsService.Instance.safeRecordTokenUsage('azure', 'hifi', usage);
-      
+
+      await tokenStatsService.safeRecordTokenUsage(
+        'azure',
+        'hifi',
+        usage,
+      );
+
       // Verify Redis was updated
       expect(mockRedisClient.multi).toHaveBeenCalled();
-      
+
       // Verify database was updated
       expect(mockDb.insert).toHaveBeenCalled();
     });
@@ -230,11 +341,13 @@ describe('TokenStatsService', () => {
         completionTokens: 150,
         totalTokens: 250,
       };
-      
+
       mockRedisClient.get.mockRejectedValue(new Error('Redis error'));
-      
+
       // Should not throw
-      await expect(TokenStatsService.Instance.safeRecordTokenUsage('azure', 'hifi', usage)).resolves.not.toThrow();
+      await expect(
+        tokenStatsService.safeRecordTokenUsage('azure', 'hifi', usage),
+      ).resolves.not.toThrow();
     });
   });
 
@@ -244,18 +357,23 @@ describe('TokenStatsService', () => {
         id: 'test-id',
         provider: 'azure',
         modelName: 'hifi',
+        maxTokensPerMessage: null,
         maxTokensPerMinute: 1000,
+        maxTokensPerDay: null,
         isActive: true,
       };
-      
+
       const mockStats = { totalTokens: 500, requestCount: 3 };
-      
+
       mockRedisClient.get
         .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota
         .mockResolvedValue(JSON.stringify(mockStats)); // stats
-      
-      const result = await TokenStatsService.Instance.getUsageReport('azure', 'hifi');
-      
+
+      const result = await tokenStatsService.getUsageReport(
+        'azure',
+        'hifi',
+      );
+
       expect(result.quota).toEqual(mockQuota);
       expect(result.currentStats.currentMinuteTokens).toBe(500);
       expect(result.quotaCheckResult.allowed).toBe(true);

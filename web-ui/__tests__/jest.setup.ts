@@ -10,14 +10,22 @@ jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
   })
 }));
 jest.mock('@microsoft/applicationinsights-react-js', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   withAITracking: (plugin: any, Component: any) => Component,
 }));
-
+jest.mock('@mui/material/ButtonBase/TouchRipple', () => {
+  return function MockTouchRipple() {
+    return null;
+  };
+});
 jest.mock('@/lib/nextjs-util/fetch', () => ({
   fetch: jest.fn(() => Promise.resolve({ json: jest.fn(() => Promise.resolve({})) })),
 }));
 
+jest.mock('@/lib/nextjs-util/client-navigate', () => ({
+  clientReload: jest.fn().mockImplementation(() => {}),
+  clientNavigate: jest.fn().mockImplementation(() => {}),
+  clientNavigateSignIn: jest.fn().mockImplementation(() => {}),
+}));
 jest.mock('@/instrument/browser', () => ({
   getReactPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
@@ -35,6 +43,7 @@ jest.mock('@/instrument/browser', () => ({
 }));
 
 jest.mock('react-error-boundary', () => {
+ // eslint-disable-next-line @typescript-eslint/no-empty-object-type
  class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
    #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
    #children: React.ReactNode;
@@ -302,7 +311,7 @@ import React, { Component } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry';
 import instrument, { getAppInsights } from '@/instrument/browser';
 import { log } from '@/lib/logger';
-globalThis.TextEncoder = TextEncoder;
+globalThis.TextEncoder = TextEncoder as any;
 
 // Automocks
 

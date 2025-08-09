@@ -1,5 +1,5 @@
 import type { LanguageModelV1, LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
-import { TokenStatsService } from './tokenStatsService';
+import { getInstance } from './tokenStatsService';
 import { log } from '@/lib/logger';
 import { QuotaCheckResult, QuotaEnforcementError, TokenStatsMiddlewareConfig, TokenUsageData } from './types';
 import { countTokens } from '../../core/count-tokens';
@@ -71,7 +71,7 @@ const quotaCheck = async ({
   enableLogging: boolean;
 }): Promise<QuotaCheckResult> => {
   try {
-    const quotaCheck = await TokenStatsService.Instance.checkQuota(
+    const quotaCheck = await getInstance().checkQuota(
       provider,
       modelName,
       estimatedTokens,
@@ -190,7 +190,7 @@ const wrapGenerate = async ({
         };
 
         // Record usage asynchronously to avoid blocking the response
-        TokenStatsService.Instance.safeRecordTokenUsage(
+        getInstance().safeRecordTokenUsage(
           provider,
           modelName,
           tokenUsage,
@@ -233,7 +233,7 @@ const wrapGenerate = async ({
         },
       });
     }
-  } catch(error) {
+  } catch (error) {
     if (isQuotaEnforcementError(error)) {
       // If this is a quota enforcement error, re-throw it
       throw error;
@@ -326,7 +326,7 @@ const wrapStream = async ({
 
           // Pass through the chunk
           controller.enqueue(chunk);
-        } catch(error) {
+        } catch (error) {
           LoggedError.isTurtlesAllTheWayDownBaby(error, {
             source: 'tokenStatsMiddleware.streamTransform',
             log: enableLogging,
@@ -341,7 +341,7 @@ const wrapStream = async ({
       },
       
       flush() {
-        try{
+        try {
           // Record token usage after stream completion
           if (hasFinished || generatedText.length > 0) {
             // If we don't have exact usage from the stream, estimate completion tokens
@@ -362,7 +362,7 @@ const wrapStream = async ({
 
             // Record usage asynchronously to avoid blocking the stream
             if (tokenUsage.totalTokens > 0) {
-              TokenStatsService.Instance.safeRecordTokenUsage(
+              getInstance().safeRecordTokenUsage(
                 provider,
                 modelName,
                 tokenUsage,
@@ -392,7 +392,7 @@ const wrapStream = async ({
               }
             }
           }
-        }catch(error) {
+        } catch (error) {
           LoggedError.isTurtlesAllTheWayDownBaby(error, {
             source: 'tokenStatsMiddleware.streamTransformFlush',
             log: enableLogging,

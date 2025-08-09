@@ -6,17 +6,9 @@
  * @description Unit tests for wrapRouteRequest utility
  */
 import { wrapRouteRequest, ErrorResponse } from '@/lib/nextjs-util/server';
-import { ILogger, log, logger } from '@/lib/logger';
+import { ILogger, logger } from '@/lib/logger';
 
 describe('wrapRouteRequest', () => {  
-  beforeEach(async () => {    
-    // (log as jest.Mock).mockImplementation(cb => cb(logSpy));
-  });
-
-  afterEach(() => {
-    // (log as jest.Mock).mockClear();
-  });
-
   it('should call the wrapped function and return its result', async () => {
     const fn = jest.fn().mockResolvedValue('ok');
     const wrapped = wrapRouteRequest(fn);

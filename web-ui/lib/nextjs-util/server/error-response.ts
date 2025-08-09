@@ -63,11 +63,15 @@ export class ErrorResponse extends Response {
       status = statusOrError;
     } else if (statusOrError instanceof Response) {
       status = statusOrError.status;
-      errorMessage = statusOrError.statusText || errorMessage;
+      if (!message) {
+        errorMessage = statusOrError.statusText;
+      }
     } else if (isError(statusOrError)) {
-      errorMessage = statusOrError.message || errorMessage;
+      if (!message) {
+        errorMessage = statusOrError.message;
+      }
     } 
-
+    // extract stack before serializing    
     super(JSON.stringify({ error: errorMessage, status }), {
       status,
       headers: { 'Content-Type': 'application/json' },

@@ -1,8 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Error recovery strategies for different types of errors
  * Provides automatic and manual recovery mechanisms
  */
+
+import { clientNavigateSignIn, clientReload } from "../nextjs-util";
 
 /**
  * Determines the type of error for appropriate recovery strategy
@@ -138,11 +139,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'retry-request',
         label: 'Retry Request',
         description: 'Attempt the request again',
-        action: () => {
-          if (typeof window !== 'undefined' && window.location && window.location.reload) {
-            window.location.reload();
-          }
-        },
+        action: clientReload,
         automatic: true,
         delay: 1000,
         maxRetries: 3,
@@ -155,7 +152,9 @@ export const recoveryStrategies: RecoveryStrategy[] = [
           if (navigator.onLine) {
             alert('Connection appears to be working. Please try again.');
           } else {
-            alert('No internet connection detected. Please check your connection.');
+            alert(
+              'No internet connection detected. Please check your connection.',
+            );
           }
         },
       },
@@ -163,11 +162,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'refresh-page',
         label: 'Refresh Page',
         description: 'Reload the page to start fresh',
-        action: () => {
-          if (typeof window !== 'undefined' && window.location && window.location.reload) {
-            window.location.reload();
-          }
-        },
+        action: clientReload,
       },
     ],
     defaultAction: 'retry-request',
@@ -180,9 +175,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'login-redirect',
         label: 'Sign In Again',
         description: 'Redirect to login page',
-        action: () => {
-          window.location.href = '/auth/signin';
-        },
+        action: clientNavigateSignIn,
         automatic: true,
         delay: 2000,
       },
@@ -207,7 +200,9 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         label: 'Contact Administrator',
         description: 'Request access from system administrator',
         action: () => {
-          alert('You do not have permission to perform this action. Please contact your administrator.');
+          alert(
+            'You do not have permission to perform this action. Please contact your administrator.',
+          );
         },
       },
       {
@@ -228,11 +223,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         label: 'Wait and Retry',
         description: 'Wait for rate limit to reset and try again',
         action: () => {
-          setTimeout(() => {
-            if (typeof window !== 'undefined' && window.location && window.location.reload) {
-              window.location.reload();
-            }
-          }, 60000); // Wait 1 minute
+          setTimeout(clientReload, 60000); // Wait 1 minute
         },
         automatic: true,
         delay: 60000,
@@ -242,7 +233,9 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         label: 'Reduce Activity',
         description: 'Slow down your requests and try again later',
         action: () => {
-          alert('Rate limit exceeded. Please slow down your requests and try again in a minute.');
+          alert(
+            'Rate limit exceeded. Please slow down your requests and try again in a minute.',
+          );
         },
       },
     ],
@@ -255,9 +248,12 @@ export const recoveryStrategies: RecoveryStrategy[] = [
       {
         id: 'retry-later',
         label: 'Try Again Later',
-        description: 'Server is experiencing issues, try again in a few minutes',
+        description:
+          'Server is experiencing issues, try again in a few minutes',
         action: () => {
-          alert('Server is temporarily unavailable. Please try again in a few minutes.');
+          alert(
+            'Server is temporarily unavailable. Please try again in a few minutes.',
+          );
         },
       },
       {
@@ -266,19 +262,19 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         description: 'Report the issue to technical support',
         action: () => {
           const subject = encodeURIComponent('Server Error Report');
-          const body = encodeURIComponent('I encountered a server error while using the application.');
-          window.open(`mailto:support@example.com?subject=${subject}&body=${body}`);
+          const body = encodeURIComponent(
+            'I encountered a server error while using the application.',
+          );
+          window.open(
+            `mailto:support@example.com?subject=${subject}&body=${body}`,
+          );
         },
       },
       {
         id: 'refresh-page',
         label: 'Refresh Page',
         description: 'Reload the page to try again',
-        action: () => {
-          if (typeof window !== 'undefined' && window.location && window.location.reload) {
-            window.location.reload();
-          }
-        },
+        action: clientReload,
       },
     ],
     defaultAction: 'retry-later',
@@ -292,7 +288,9 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         label: 'Review Input',
         description: 'Check your input and try again',
         action: () => {
-          alert('Please review your input and correct any errors before trying again.');
+          alert(
+            'Please review your input and correct any errors before trying again.',
+          );
         },
       },
       {
@@ -315,11 +313,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'refresh-page',
         label: 'Refresh Page',
         description: 'Reload the page to reset the application state',
-        action: () => {
-          if (typeof window !== 'undefined' && window.location && window.location.reload) {
-            window.location.reload();
-          }
-        },
+        action: clientReload,
         automatic: true,
         delay: 1000,
       },
@@ -330,15 +324,14 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         action: () => {
           if (typeof window !== 'undefined') {
             if ('caches' in window) {
-              return caches.keys().then(names => {
-                return Promise.all(names.map(name => caches.delete(name)));
-              }).then(() => {
-                if ((window as any).location && (window as any).location.reload) {
-                  (window as any).location.reload();
-                }
-              });
-            } else if ((window as any).location && (window as any).location.reload) {
-              (window as any).location.reload();
+              return caches
+                .keys()
+                .then((names) => {
+                  return Promise.all(names.map((name) => caches.delete(name)));
+                })
+                .then(clientReload);
+            } else {
+              clientReload();
             }
           }
         },
@@ -354,11 +347,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'refresh-page',
         label: 'Refresh Page',
         description: 'Reload the page to try again',
-        action: () => {
-          if (typeof window !== 'undefined' && window.location && window.location.reload) {
-            window.location.reload();
-          }
-        },
+        action: clientReload,
       },
       {
         id: 'report-bug',
@@ -366,8 +355,12 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         description: 'Report this unexpected error',
         action: () => {
           const subject = encodeURIComponent('Bug Report');
-          const body = encodeURIComponent('I encountered an unexpected error while using the application.');
-          window.open(`mailto:support@example.com?subject=${subject}&body=${body}`);
+          const body = encodeURIComponent(
+            'I encountered an unexpected error while using the application.',
+          );
+          window.open(
+            `mailto:support@example.com?subject=${subject}&body=${body}`,
+          );
         },
       },
     ],

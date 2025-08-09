@@ -18,6 +18,7 @@ import {
 } from './mem0.types';
 import { captureClientEvent, generateHash } from './telemetry';
 import { getMem0ApiUrl } from '../pollyfills';
+import { LoggedError } from '@/lib/react-util';
 
 class APIError extends Error {
   constructor(message: string) {
@@ -124,10 +125,10 @@ export default class MemoryClient {
         api_version: 'v1',
         client_type: 'MemoryClient',
       }).catch((error: any) => {
-        console.error('Failed to capture event:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'captureClientEvent' });
       });
     } catch (error: any) {
-      console.error('Failed to initialize client:', error);
+      LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'initializeClient' });
       await captureClientEvent('init_error', this, {
         error: error?.message || 'Unknown error',
         stack: error?.stack || 'No stack trace',

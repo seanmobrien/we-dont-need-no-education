@@ -28,6 +28,7 @@ import type {DockPosition} from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
+import { LoggedError } from '@/lib/react-util';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -182,7 +183,7 @@ const ChatPanel = ({ page }: { page: string }) => {
 
   const onChatError = useCallback(
     (error: Error) => {
-      console.error('Chat error:', error);
+      LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'chat-panel' });
       setErrorMessage((current) =>
         current === error.message ? current : error.message,
       );

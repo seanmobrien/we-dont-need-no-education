@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
+import { LoggedError } from '@/lib/react-util';
 // import { authOptions } from '@/auth';
 
 export async function GET(req: NextRequest) {
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in retry-response API:', error);
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {log: true});
     return NextResponse.json(
       { 
         error: 'Internal server error',
@@ -152,7 +153,11 @@ export async function POST(req: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error in retry-response API (POST):', error);
+    LoggedError.isTurtlesAllTheWayDownBaby(error, 
+    {
+      log: true,
+      message: 'Error in retry-response API (POST):'
+    });
     return NextResponse.json(
       { 
         error: 'Internal server error',

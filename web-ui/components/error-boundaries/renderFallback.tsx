@@ -22,7 +22,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import { getRecoveryActions, getDefaultRecoveryAction, classifyError } from '@/lib/error-monitoring/recovery-strategies';
 import type { RecoveryAction } from '@/lib/error-monitoring/recovery-strategies';
-import { dumpError } from '@/lib/react-util';
+import { dumpError, LoggedError } from '@/lib/react-util';
 
 export const RenderErrorBoundaryFallback = (
   {error, resetErrorBoundary}: {
@@ -75,7 +75,7 @@ export const RenderErrorBoundaryFallback = (
         setOpen(false);
       }
     } catch (actionError) {
-      console.error('Recovery action failed:', actionError);
+      LoggedError.isTurtlesAllTheWayDownBaby(actionError, { log: true, source: 'error-boundary' });      
     }
   };
 

@@ -11,9 +11,16 @@
  * @template TRecordIdType - The ID type (e.g., string | number)
  * @template TRecordNameType - The name type (e.g., string)
  */
-export class DualKeyMap<TRecordType extends Record<string, any>, TRecordIdType extends keyof any, TRecordNameType extends keyof any> {
-  private readonly idField: keyof TRecordType;
-  private readonly nameField: keyof TRecordType;
+export class DualKeyMap<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  TRecordType extends { [K in TIdField | TNameField]: any },
+  TRecordIdType extends PropertyKey,
+  TRecordNameType extends PropertyKey,
+  TIdField extends PropertyKey = PropertyKey,
+  TNameField extends PropertyKey = PropertyKey
+> {
+  private readonly idField: TIdField;
+  private readonly nameField: TNameField;
   private readonly idToRecord: Map<TRecordIdType, TRecordType>;
   private readonly nameToId: Map<TRecordNameType, TRecordIdType>;
 
@@ -23,7 +30,7 @@ export class DualKeyMap<TRecordType extends Record<string, any>, TRecordIdType e
    * @param nameField - The field name in the record that is the name
    * @param entries - Optional initial entries as [id, record] pairs
    */
-  constructor(idField: keyof TRecordType, nameField: keyof TRecordType, entries?: IterableIterator<[TRecordIdType, TRecordType]>) {
+  constructor(idField: TIdField, nameField: TNameField, entries?: IterableIterator<[TRecordIdType, TRecordType]>) {
     this.idField = idField;
     this.nameField = nameField;
     this.idToRecord = new Map(entries ?? []);

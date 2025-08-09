@@ -28,7 +28,7 @@ export {
   type CacheEvent,
 } from './cacheWithRedis';
 export {
-  TokenStatsService,
+  type TokenStatsServiceType,
   tokenStatsMiddleware,
   tokenStatsWithQuotaMiddleware,
   tokenStatsLoggingOnlyMiddleware,

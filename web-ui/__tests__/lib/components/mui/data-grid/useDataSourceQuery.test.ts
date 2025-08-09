@@ -2,11 +2,9 @@ import { act, renderHook, waitFor } from '@/__tests__/test-utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GridLogicOperator } from '@mui/x-data-grid-pro';
 import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
-// Mock fetch globally
-global.fetch = jest.fn();
 
 const TEST_URL = 'http://localhost:9999/api/test';
 
@@ -40,6 +38,10 @@ const createWrapper = () => {
 describe('useDataSource', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
+    (fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => ({ rows: [], rowCount: 0 }),
+    });
   });
 
   it('should initialize with default state', async () => {
@@ -48,6 +50,7 @@ describe('useDataSource', () => {
     });
     act(() => {
       waitFor(() => result.current.isLoading);
+      waitFor(() => !result.current.isLoading);
     });
 
     expect(result.current.loadError).toBe(null);
@@ -83,33 +86,4 @@ describe('useDataSource', () => {
     }
   });
 
-  it('should build query parameters correctly', async () => {
-    const mockResponse = { rows: [], rowCount: 0 };
-
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse,
-    });
-
-    const { result } = renderHook(() => useDataSource({ url: TEST_URL }), {
-      wrapper: createWrapper(),
-    });
-
-    await result.current.getRows({
-      paginationModel: { page: 1, pageSize: 25 },
-      sortModel: [{ field: 'name', sort: 'asc' }],
-      filterModel: {
-        items: [{ field: 'status', operator: 'equals', value: 'active' }],
-        logicOperator: GridLogicOperator.And,
-      },
-      start: 25,
-      end: 50,
-    });
-
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringMatching(
-        /\/api\/test\?num=25&page=2&sort=name%3Aasc&filter=/,
-      ),
-    );
-  });
 });

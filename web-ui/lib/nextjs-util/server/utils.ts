@@ -47,7 +47,7 @@ export const wrapRouteRequest = <T extends (...args: any[]) => any>(
       if (shouldLog) {
         log((l) => l.error('Error processing route request', { error, args }));
       }
-      return new ErrorResponse(error);
+      return new ErrorResponse('An unexpected error occurred');
     }
   };
 };
