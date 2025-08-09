@@ -233,7 +233,7 @@ const wrapGenerate = async ({
         },
       });
     }
-  } catch(error) {
+  } catch (error) {
     if (isQuotaEnforcementError(error)) {
       // If this is a quota enforcement error, re-throw it
       throw error;
@@ -326,7 +326,7 @@ const wrapStream = async ({
 
           // Pass through the chunk
           controller.enqueue(chunk);
-        } catch(error) {
+        } catch (error) {
           LoggedError.isTurtlesAllTheWayDownBaby(error, {
             source: 'tokenStatsMiddleware.streamTransform',
             log: enableLogging,
@@ -341,7 +341,7 @@ const wrapStream = async ({
       },
       
       flush() {
-        try{
+        try {
           // Record token usage after stream completion
           if (hasFinished || generatedText.length > 0) {
             // If we don't have exact usage from the stream, estimate completion tokens
@@ -392,7 +392,7 @@ const wrapStream = async ({
               }
             }
           }
-        }catch(error) {
+        } catch (error) {
           LoggedError.isTurtlesAllTheWayDownBaby(error, {
             source: 'tokenStatsMiddleware.streamTransformFlush',
             log: enableLogging,
