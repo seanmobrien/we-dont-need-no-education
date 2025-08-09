@@ -218,7 +218,7 @@ describe('Email API', () => {
         body: undefined,
         sentOn: undefined,
         threadId: 2,
-        parentEmailId: null, // normalizeNullableNumeric returns null for undefined
+        parentEmailId: undefined,
         recipients: undefined,
         sender: undefined,
       });
@@ -241,6 +241,12 @@ describe('Email API', () => {
       expect(res.status).toBe(500); // Service layer error becomes 500
       expect(await res.json()).toEqual({
         error: 'Internal Server Error',
+      });
+    });
+
+      expect(res.status).toBe(404);
+      expect(await res.json()).toEqual({
+        error: 'Email not found or not updated',
       });
     });
 
@@ -417,9 +423,6 @@ describe('Email API', () => {
         page: 1,
         num: 10,
         total: 0,
-        offset: 0,
-        filter: undefined,
-        sort: undefined,
       });
     });
 
