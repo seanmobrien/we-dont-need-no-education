@@ -48,6 +48,7 @@ const buildRawInstance = () => ({
   GOOGLE_GENERATIVE_AI_BASE_URL: process.env.GOOGLE_GENERATIVE_AI_BASE_URL,
   REDIS_URL: process.env.REDIS_URL,
   REDIS_PASSWORD: process.env.REDIS_PASSWORD,
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,    
   MEM0_DISABLED: process.env.MEM0_DISABLED,
   MEM0_API_HOST: process.env.MEM0_API_HOST,
   MEM0_UI_HOST: process.env.MEM0_UI_HOST,
@@ -55,7 +56,7 @@ const buildRawInstance = () => ({
   MEM0_ORG_ID: process.env.MEM0_ORG_ID,
   MEM0_PROJECT_ID: process.env.MEM0_PROJECT_ID,
   MEM0_API_KEY: process.env.MEM0_API_KEY,
-  LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,
+  NODE_ENV: process.env.NODE_ENV,
 });
 
 // Define the schema for server-side environment variables
@@ -110,7 +111,6 @@ const serverEnvSchema = z.object({
   AZURE_AISEARCH_VECTOR_SIZE_LARGE: z.number().default(3072),
   AZURE_AISEARCH_DOCUMENT_SPLITTER_OVERLAP: z.number().default(15),
   AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: z.number().default(512),
-
   AUTH_GOOGLE_ID: z.string(),
   AUTH_GOOGLE_SECRET: z.string(),
   AUTH_GOOGLE_APIKEY: z.string(),
@@ -125,6 +125,7 @@ const serverEnvSchema = z.object({
   ),
   REDIS_URL: z.string().min(1),
   REDIS_PASSWORD: z.string().min(1),
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: z.string().optional(),
   MEM0_DISABLED: ZodProcessors.truthy(false),
   MEM0_API_HOST: ZodProcessors.url(),
   MEM0_UI_HOST: ZodProcessors.url(),
@@ -132,7 +133,7 @@ const serverEnvSchema = z.object({
   MEM0_ORG_ID: ZodProcessors.nullableString().default(null),
   MEM0_PROJECT_ID: ZodProcessors.nullableString().default(null),
   MEM0_API_KEY: z.string().optional().default('SKYNET'),
-  LOCAL_DEV_AUTH_BYPASS_USER_ID: z.string().optional(),
+  NODE_ENV: z.string(),
 });
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;

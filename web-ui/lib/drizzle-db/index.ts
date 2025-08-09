@@ -26,6 +26,9 @@ export type {
   CallToActionResponseQueryShape,
   ViolationDetailsQueryShape,
   ComplianceScoresDetailsQueryShape,  
+  ProvidersType,
+  ModelsType,
+  ModelQuotasType,
   Types
 } from './drizzle-types';
 export type {

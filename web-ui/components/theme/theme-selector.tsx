@@ -11,6 +11,21 @@ import { Palette as PaletteIcon } from '@mui/icons-material';
 import { type ThemeType, themeDisplayNames, useTheme } from '@/lib/themes';
 
 const availableThemes: ThemeType[] = ['dark', 'light'] as const;
+const origins = {
+  anchor: {
+    vertical: 'bottom',
+    horizontal: 'right',
+  },
+  transform: {
+    vertical: 'top',
+    horizontal: 'right',
+  },
+} as const;
+const slotProps = {
+  list: {
+    'aria-labelledby': 'theme-selector-button',
+  },
+} as const;
 
 export const ThemeSelector = () => {
   const { currentTheme, setTheme } = useTheme();
@@ -71,20 +86,22 @@ export const ThemeSelector = () => {
         anchorEl={anchorEl}
         open={open}
         onClose={handleMenuClick}
-        anchorOrigin={{
-          vertical: 'bottom',
-          horizontal: 'right',
-        }}
-        transformOrigin={{
-          vertical: 'top',
-          horizontal: 'right',
-        }}
-        slotProps={{
-          list: {
-            'aria-labelledby': 'theme-selector-button',
-          },
-        }}
+        anchorOrigin={origins.anchor}
+        transformOrigin={origins.transform}
+        slotProps={slotProps}
       >
+        <ListSubheader>{`Current: ${themeDisplayNames[currentTheme]}`}</ListSubheader>
+        {availableThemes.map((themeType) => (
+          <MenuItem
+            data-id={`menu-id-theme-selector-${themeType}`}
+            key={themeType}
+            data-theme={themeType as string}
+            onClick={handleThemeSelect}
+            selected={themeType === currentTheme}
+          >
+            {themeDisplayNames[themeType]}
+          </MenuItem>
+        ))}
         <ListSubheader>{`Current: ${themeDisplayNames[currentTheme]}`}</ListSubheader>
         {availableThemes.map((themeType) => (
           <MenuItem

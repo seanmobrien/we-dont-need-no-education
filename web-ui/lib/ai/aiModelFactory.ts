@@ -8,6 +8,7 @@ import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
 } from '@/lib/ai/core/unions';
+import { log } from '@/lib/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
 import { cacheWithRedis, retryRateLimitMiddlewareFactory, setNormalizedDefaultsMiddleware, tokenStatsLoggingOnlyMiddleware } from './middleware';
@@ -140,7 +141,7 @@ const modelAvailabilityManager = ModelAvailabilityManager.getInstance();
 /**
  * Setup middleware for language models with caching and retry logic
  */
-const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
+const setupMiddleware = (provider: string,model: LanguageModelV1): LanguageModelV1 => {
   return wrapLanguageModel({
     model: wrapLanguageModel({
       model: wrapLanguageModel({
@@ -150,7 +151,7 @@ const setupMiddleware = (model: LanguageModelV1): LanguageModelV1 => {
       middleware: setNormalizedDefaultsMiddleware,
     }),
     middleware: [
-      tokenStatsLoggingOnlyMiddleware(),
+      tokenStatsLoggingOnlyMiddleware({ provider }),
       retryRateLimitMiddlewareFactory({
         model,
       }),      
@@ -167,18 +168,21 @@ const azureProvider = customProvider({
   languageModels: {
     // Custom aliases for Azure models
     hifi: setupMiddleware(
+      'azure',
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
       }).chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI')),
     ),
     lofi: setupMiddleware(
+      'azure',
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
       }).chat(env('AZURE_OPENAI_DEPLOYMENT_LOFI')),
     ),
     completions: setupMiddleware(
+      'azure',
       createAzure({
         baseURL: env('AZURE_OPENAI_ENDPOINT'),
         apiKey: env('AZURE_API_KEY'),
@@ -206,22 +210,26 @@ const googleProvider = customProvider({
   languageModels: {
     // Match Azure aliases with equivalent Google models
     hifi: setupMiddleware(
+      'google',
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.5-pro'), // High-quality model equivalent to Azure hifi
     ),
     lofi: setupMiddleware(
+      'google',
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.5-flash'), // Fast model equivalent to Azure lofi
     ),
     'gemini-2.0-flash': setupMiddleware(
+      'google',
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.0-flash'), // Fast model equivalent to Azure lofi
     ),
     // Google-specific model aliases
     'gemini-pro': setupMiddleware(
+      'google',
       createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
       }).chat('gemini-2.5-pro'),
@@ -375,10 +383,10 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
               azureModelKey,
               60000,
             ); // 1 minute
-            console.warn(
+            log(l => l.warn(
               `Azure model ${modelType} failed, temporarily disabled:`,
               error,
-            );
+            ));
           }
         }
 
@@ -529,7 +537,7 @@ export const resetModelAvailability = (): void => modelAvailabilityManager.reset
  * @param durationMs - Duration in milliseconds to disable Azure (default: 5 minutes)
  */
 export const handleAzureRateLimit = (durationMs: number = 300000): void => {
-  console.warn('Azure rate limit detected, temporarily disabling Azure models');
+  log(l => l.warn('Azure rate limit detected, temporarily disabling Azure models'));
   modelAvailabilityManager.temporarilyDisableModel('azure:hifi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel('azure:lofi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel(
@@ -547,9 +555,7 @@ export const handleAzureRateLimit = (durationMs: number = 300000): void => {
  * @param durationMs - Duration in milliseconds to disable Google (default: 5 minutes)
  */
 export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
-  console.warn(
-    'Google rate limit detected, temporarily disabling Google models',
-  );
+  log(l => l.warn('Google rate limit detected, temporarily disabling Google models'));
   modelAvailabilityManager.temporarilyDisableModel('google:hifi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel('google:lofi', durationMs);
   modelAvailabilityManager.temporarilyDisableModel(

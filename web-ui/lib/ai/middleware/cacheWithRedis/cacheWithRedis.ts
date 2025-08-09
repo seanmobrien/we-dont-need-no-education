@@ -7,6 +7,7 @@ import type { CacheableResponse } from './types';
 import { handleCacheHit, handleCacheMiss } from './cacheEventHandlers';
 import { createStreamFromCachedText } from './streamUtils';
 import { handleResponseCaching } from './cacheStrategy';
+import { LoggedError } from '@/lib/react-util';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();
@@ -54,7 +55,9 @@ export const cacheWithRedis: LanguageModelV1Middleware = {
         metricsCollector.recordError(cacheKey, String(error));
       }
       if (config.enableLogging) {
-        console.error('Redis cache error in wrapGenerate:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error,{
+          log: true
+        });    
       }
       return await doGenerate();
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { debounce } from 'lodash';
 import { EmailMessageSummary } from '@/data-models';
 import { fetch } from '@/lib/nextjs-util/fetch';
+import { LoggedError } from '@/lib/react-util';
 
 // Simple replacement for removed classnames function
 const classnames = (...classes: (string | undefined)[]): string => {
@@ -39,7 +40,7 @@ const EmailSelect: React.FC<{
         }
         setEmails(data.results);
       } catch (error) {
-        console.error('Error fetching emails:', error);
+        LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'email-select' });
       } finally {
         setLoading(false);
       }
@@ -61,7 +62,7 @@ const EmailSelect: React.FC<{
           const data = await response.json();
           setSelectedEmailDetails(data);
         } catch (error) {
-          console.error('Error fetching email details:', error);
+          LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'email-select' });
         } finally {
           setLoading(false);
         }

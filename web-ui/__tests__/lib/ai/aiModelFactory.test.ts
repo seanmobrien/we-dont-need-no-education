@@ -1,7 +1,32 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @jest-environment jsdom
  */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// Mock middleware
+jest.mock('@/lib/ai/middleware', () => ({
+  retryRateLimitMiddlewareFactory: jest.fn(),
+  setNormalizedDefaultsMiddleware: jest.fn(),
+  rateLimitMiddleware: jest.fn(),
+  createChatHistoryMiddleware: jest.fn(),
+  tokenStatsMiddleware: jest.fn(),
+  tokenStatsWithQuotaMiddleware: jest.fn(),
+  tokenStatsLoggingOnlyMiddleware: jest.fn(),
+  cacheWithRedis: jest.fn(),
+  getRedisClient: jest.fn(),
+}));
+
+import {
+  setNormalizedDefaultsMiddleware,
+  retryRateLimitMiddlewareFactory,
+  createChatHistoryMiddleware,
+  tokenStatsMiddleware,
+  tokenStatsWithQuotaMiddleware,
+  tokenStatsLoggingOnlyMiddleware,
+  cacheWithRedis,
+  getRedisClient,
+} from '@/lib/ai/middleware';
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import {
@@ -14,10 +39,7 @@ import {
   AiModelTypeValue_GeminiFlash,
   AiModelTypeValue_GoogleEmbedding,
 } from '@/lib/ai/core/unions';
-import {
-  isAiModelType,
-  isAiLanguageModelType,
-} from '@/lib/ai/core/guards';
+import { isAiModelType, isAiLanguageModelType } from '@/lib/ai/core/guards';
 import { EmbeddingModel, LanguageModel, Provider } from 'ai';
 
 // Mock environment variables
@@ -53,11 +75,6 @@ jest.mock('@ai-sdk/google', () => ({
     textEmbeddingModel: jest.fn(() => ({ modelType: 'google-embedding' })),
   })),
   GoogleGenerativeAIProvider: jest.fn(),
-}));
-
-// Mock middleware
-jest.mock('../../../lib/ai/middleware', () => ({
-  cacheWithRedis: jest.fn(),
 }));
 
 jest.mock('ai', () => ({
@@ -143,14 +160,14 @@ describe('AI Model Factory Integration', () => {
   it('should be importable without errors', async () => {
     // This test ensures our module structure is correct
     expect(async () => {
-      const { aiModelFactory } = await import('../../../lib/ai/aiModelFactory');
+      const { aiModelFactory } = await import('@/lib/ai/aiModelFactory');
       expect(typeof aiModelFactory).toBe('function');
     }).not.toThrow();
   });
 
   it('should define createGoogleEmbeddingModel function', async () => {
     const { createGoogleEmbeddingModel } = await import(
-      '../../../lib/ai/aiModelFactory'
+      '@/lib/ai/aiModelFactory'
     );
     expect(typeof createGoogleEmbeddingModel).toBe('function');
   });
@@ -168,7 +185,7 @@ describe('AI Model Factory Integration', () => {
       resetModelAvailability,
       handleAzureRateLimit,
       handleGoogleRateLimit,
-    } = await import('../../../lib/ai/aiModelFactory');
+    } = await import('@/lib/ai/aiModelFactory');
 
     expect(typeof disableModel).toBe('function');
     expect(typeof enableModel).toBe('function');

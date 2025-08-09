@@ -9,12 +9,13 @@
  * @since 2025-07-19
  */
 
-import React from 'react';
 import { render, screen } from '@/__tests__/test-utils';
-import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
-import type { Session } from 'next-auth';
-import '@testing-library/jest-dom';
+import React from 'react';
 
+jest.mock('@/components/error-boundaries/ServerSafeErrorManager', () => ({
+  __esModule: true,
+  default: jest.fn(() => <div>Mocked ServerSafeErrorManager</div>),
+}));
 // Mock Next.js navigation hooks
 const mockPush = jest.fn();
 const mockParams: { emailId?: string } = { emailId: 'test-email-123' };
@@ -164,6 +165,12 @@ jest.mock('@mui/icons-material/PrivacyTip', () => {
   PrivacyTipIcon.displayName = 'PrivacyTipIcon';
   return PrivacyTipIcon;
 });
+
+
+
+
+import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
+import type { Session } from 'next-auth';
 
 describe('EmailDashboardLayout', () => {
   const mockSession: Session = {

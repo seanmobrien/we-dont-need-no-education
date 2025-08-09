@@ -8,11 +8,11 @@ jest.mock('@/lib/ai/aiModelFactory');
 
 describe('retryRateLimitMiddlewareFactory', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    // jest.restoreAllMocks();
   });
 
   describe('factory function', () => {

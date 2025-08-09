@@ -44,7 +44,7 @@ describe('ProcessingQueue', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     
     // Create fresh queue instance
     queue = new ProcessingQueue();

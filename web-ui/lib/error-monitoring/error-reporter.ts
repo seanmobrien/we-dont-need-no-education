@@ -1,4 +1,5 @@
 import { isError, LoggedError } from '@/lib/react-util';
+import { log } from '@/lib/logger';
 
 /**
  * Error severity levels for reporting and prioritization
@@ -136,7 +137,7 @@ export class ErrorReporter {
       }
     } catch (reportingError) {
       // Avoid infinite loops - just log to console
-      console.error('Error in error reporting system:', reportingError);
+      log((l) => l.error('Error in error reporting system', reportingError));
     }
   }
 
@@ -306,7 +307,7 @@ export class ErrorReporter {
         });
       }
     });
-    console.debug('Would report to Application Insights:', report);
+    log((l) => l.debug('Would report to Application Insights:', report));
   }
 
   /**

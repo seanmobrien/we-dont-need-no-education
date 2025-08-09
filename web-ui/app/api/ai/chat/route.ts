@@ -17,6 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 import { generateChatId } from '@/lib/ai/core';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 
@@ -37,7 +38,8 @@ const getMcpClientHeaders = ({
   return ret;
 };
 
-export async function POST(req: NextRequest) {
+const POST = wrapRouteRequest(
+async (req: NextRequest) => {
   const session = await auth();
   if (!session || !session.user) {
     return new Response('Unauthorized', { status: 401 });
@@ -265,4 +267,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.error();
   }
-}
+}, { });
+
+
+export { POST };

@@ -2,9 +2,9 @@ import * as React from 'react';
 import Box from '@mui/material/Box';
 import ChatList from '@/components/chat/list';
 import { auth } from '@/auth';
-import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
+import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout'  ;
 
-export default async function Page() {
+const Page = async () => {
   const session = await auth();
   return (
     <EmailDashboardLayout session={session}>
@@ -21,3 +21,5 @@ export default async function Page() {
     </EmailDashboardLayout>
   );
 }
+
+export default Page;
