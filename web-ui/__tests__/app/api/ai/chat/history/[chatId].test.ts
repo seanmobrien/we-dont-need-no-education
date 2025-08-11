@@ -385,7 +385,7 @@ describe('/api/ai/chat/history/[chatId] route', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data).toEqual({ error: 'An error occurred', status: 500 });
+      expect(data).toEqual({ error: 'Internal Server Error' });
     });
 
     it('should handle authentication errors', async () => {
@@ -398,7 +398,9 @@ describe('/api/ai/chat/history/[chatId] route', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data).toEqual({ error: 'An error occurred', status: 500 });
+      expect(data).toEqual({ error: 'Internal Server Error' });
+
+      //expect(data).toEqual({ error: 'An error occurred', status: 500 });
     });
 
     it('should handle chat with null createdAt', async () => {

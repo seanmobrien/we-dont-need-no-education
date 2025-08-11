@@ -14,11 +14,12 @@ import { GridSortModel } from '@mui/x-data-grid';
 import { asc, desc, SQL } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 import { isGridSortModel } from '../../guards';
-import { columnMapFactory, parseSortOptions } from '../utility';
+// import { columnMapFactory, parseSortOptions } from '../utility';
 import {
   BuildDrizzleOrderByProps,
   DrizzleSortedQuery,
 } from './types';
+import { columnMapFactory, parseSortOptions } from '../utility';
 
 
 /**

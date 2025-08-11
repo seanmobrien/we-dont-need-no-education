@@ -86,7 +86,8 @@ let getChatDetails: (args: { chatId: string; userId: number }) => Promise<{ ok: 
 beforeAll(async () => {
   const mod = await import('@/app/chat/[chatId]/page');
   ChatDetailPage = mod.default; // ChatDetailPage is the default export
-  getChatDetails = mod.getChatDetails; // getChatDetails is a named export
+  const lib = await import('@/lib/ai/chat/history');
+  getChatDetails = lib.getChatDetails; // getChatDetails is a named export
 });
 
 // ---------------- Tests: Page Wrapper ----------------
