@@ -99,7 +99,6 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          environment: Production
           context: ./web-ui
           file: ./web-ui/Dockerfile
           push: true
