@@ -29,10 +29,10 @@ import {
  * @returns The normalized numeric value or null.
  */
 export const normalizeNullableNumeric = (
-  value: number | null,
+  value: number | null | undefined,
   defaultValue: number | null = null,
   minValue: number = 1,
-): number | null => ((value ?? 0) > minValue - 1 ? value : defaultValue);
+): number | null => ((value ?? 0) > minValue - 1 ? value ?? null : defaultValue);
 
 
 
