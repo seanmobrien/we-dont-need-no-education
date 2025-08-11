@@ -1,18 +1,52 @@
 import type { NextConfig } from 'next';
+import { withBundleAnalyzer, withIgnorePacks, withPublicEnv, withStripRscPrefixPlugin } from '@/lib/config';
 
-const nextConfig: NextConfig = {
-  ...(process.env.FOR_STANDALONE == '1' ? { output: 'standalone' } : {}),
-  env: {
-    // Manually add variables you want to expose
-    NEXT_PUBLIC_HOSTNAME: process.env.NEXT_PUBLIC_HOSTNAME,
-    NEXT_PUBLIC_LOG_LEVEL_CLIENT: process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT,
-    NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
-      process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
-    AZURE_MONITOR_CONNECTION_STRING:
-      process.env.AZURE_MONITOR_CONNECTION_STRING ??
-      process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
-    NEXT_PUBLIC_MUI_LICENSE: process.env.NEXT_PUBLIC_MUI_LICENSE,
+const StripRscPrefixPlugin = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  apply(compiler: any) {
+    compiler.hooks.compilation.tap(
+      'StripRscPrefixPlugin',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (compilation: any) => {
+        compilation.hooks.processAssets.tap(
+          {
+            name: 'StripRscPrefixPlugin',
+            stage:
+              compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_DEV_TOOLING,
+          },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (assets: Record<string, any>) => {
+            for (const [name, asset] of Object.entries(assets)) {
+              if (!name.endsWith('.map')) continue;
+              const src = asset.source().toString();
+              if (!src.includes('(rsc)')) continue;
+              try {
+                const map = JSON.parse(src);
+                map.sources = map.sources.map((s: string) =>
+                  // Normalize leading (rsc)/, /(rsc)/, (rsc)/./, or /(rsc)/./ to '/'
+                  s.replace(/^\/?\(rsc\)\/(?:\.\/*)?/, '/'),
+                );
+                compilation.updateAsset(
+                  name,
+                  new compiler.webpack.sources.RawSource(JSON.stringify(map)),
+                );
+              } catch {
+                /* ignore */
+              }
+            }
+          },
+        );
+      },
+    );
   },
+};
+
+export const nextConfig: NextConfig = 
+withStripRscPrefixPlugin(
+withPublicEnv(
+withIgnorePacks(
+withBundleAnalyzer({
+  ...(process.env.FOR_STANDALONE == '1' ? { output: 'standalone' } : {}),
   experimental: {
     //nodeMiddleware: true,
     optimizePackageImports: [
@@ -31,7 +65,6 @@ const nextConfig: NextConfig = {
       '@microsoft/applicationinsights-react-js',
       '@microsoft/applicationinsights-clickanalytics-js',
       '@modelcontextprotocol/sdk',
-      '@toolpad/core',
       '@opentelemetry/api',
       '@opentelemetry/api-logs',
       '@opentelemetry/core',
@@ -55,6 +88,7 @@ const nextConfig: NextConfig = {
       '@auth/drizzle-adapter',
       'next-auth',
       'ai',
+      // 'pino',
     ],
     webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID'],
     useLightningcss: true,
@@ -71,12 +105,14 @@ const nextConfig: NextConfig = {
     'pg',
     '@auth/pg-adapter',
   ],
-  webpack: (config, { webpack, isServer }) => {
+  webpack: (config, { webpack }) => {
     config.plugins.push(
       new webpack.IgnorePlugin({
         resourceRegExp: /^pg-native$|^cloudflare:sockets$/,
       }),
     );
+    config.plugins.push(StripRscPrefixPlugin);
+    /*
     if (!isServer) {
       // For client-side, we need to ensure that the following packages are not bundled
       config.resolve.fallback = {
@@ -84,12 +120,9 @@ const nextConfig: NextConfig = {
         fs: false,
       };
     }
+    */
     return config;
-  },
-};
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const withBundleAnalyzer = require('@next/bundle-analyzer')({
-  enabled: process.env.ANALYZE === 'true',
-  openAnalyzer: false,
-});
-export default withBundleAnalyzer(nextConfig);
+  }
+}))));
+
+export default nextConfig;

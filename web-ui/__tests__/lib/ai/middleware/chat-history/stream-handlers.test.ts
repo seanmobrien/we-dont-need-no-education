@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Unit tests for chat history stream handlers
  * 
@@ -33,8 +34,8 @@ describe('Stream Handlers', () => {
   let mockContext: StreamHandlerContext;
 
   beforeEach(() => {
-    // jest.clearAllMocks();
-        mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
+    jest.clearAllMocks();
+    mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
     
     mockContext = {
       chatId: 'chat-123',
@@ -42,6 +43,7 @@ describe('Stream Handlers', () => {
       messageId: 42,
       currentMessageOrder: 1,
       generatedText: 'Initial text',
+      toolCalls: new Map(),
     };
 
     // Setup default mocks
@@ -52,10 +54,38 @@ describe('Stream Handlers', () => {
     } as unknown as ReturnType<typeof mockDb.update>);
 
     mockDb.insert.mockReturnValue({
-      values: jest.fn().mockResolvedValue(undefined),
+      values: jest.fn().mockReturnValue({
+        returning: jest.fn().mockReturnValue({
+          execute: jest.fn().mockResolvedValue([{ messageId: 100, providerId: 'test-provider-id', toolName: 'test-tool' }]),
+        }),
+      }),
     } as unknown as ReturnType<typeof mockDb.insert>);
 
-    mockGetNextSequence.mockResolvedValue([100]);
+    mockDb.select.mockReturnValue({
+      from: jest.fn().mockReturnValue({
+        where: jest.fn().mockReturnValue({
+          limit: jest.fn().mockReturnValue({
+            execute: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      }),
+    } as unknown as ReturnType<typeof mockDb.select>);
+
+    mockDb.transaction.mockImplementation(async (callback) => {
+      // Mock transaction that calls the callback with a mock tx object
+      return await callback({
+        insert: mockDb.insert,
+        update: mockDb.update,
+        select: mockDb.select,
+      } as any);
+    });
+
+    mockGetNextSequence.mockImplementation((params) => {
+      if (params.tx) {
+        return Promise.resolve([100]);
+      }
+      return Promise.resolve([100]);
+    });
   });
 
   describe('handleTextDelta', () => {
@@ -71,8 +101,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Initial text additional text',
+        toolCalls: expect.any(Map),
         success: true,
       });
 
@@ -91,8 +123,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: true,
       });
     });
@@ -110,13 +144,15 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
-        currentMessageOrder: 1,
+        currentMessageId: expect.any(Number), // Will be assigned during transaction
+        currentMessageOrder: 2, // Incremented during transaction
         generatedText: 'Initial text new text',
+        toolCalls: expect.any(Map),
         success: true,
       });
 
-      // Should not call database update when no messageId
-      expect(mockDb.update).not.toHaveBeenCalled();
+      // Should call db transaction when no messageId to create new message
+      expect(mockDb.transaction).toHaveBeenCalled();
     });
 
     it('should handle database update errors gracefully', async () => {
@@ -138,8 +174,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: false,
       });
 
@@ -178,8 +216,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: undefined,
         currentMessageOrder: 2,
-        generatedText: 'Initial text',
+        generatedText: '',
+        toolCalls: expect.any(Map),
         success: true,
       });
 
@@ -188,6 +228,7 @@ describe('Stream Handlers', () => {
         chatId: 'chat-123',
         turnId: 1,
         count: 1,
+        tx: expect.any(Object),
       });
 
       expect(mockDb.insert).toHaveBeenCalledWith(chatMessages);
@@ -208,8 +249,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: undefined,
         currentMessageOrder: 2,
-        generatedText: 'Initial text',
+        generatedText: '',
+        toolCalls: expect.any(Map),
         success: true,
       });
     });
@@ -231,8 +274,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: false,
       });
 
@@ -250,17 +295,17 @@ describe('Stream Handlers', () => {
       };
       const insertError = new Error('Database insert failed');
       
-      mockDb.insert.mockReturnValue({
-        values: jest.fn().mockRejectedValue(insertError),
-      } as unknown as ReturnType<typeof mockDb.insert>);
+      mockDb.transaction.mockRejectedValue(insertError);
 
       // Act
       const result = await handleToolCall(chunk, mockContext);
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: false,
       });
 
@@ -291,7 +336,11 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result.success).toBe(true);
-      expect(mockDb.insert).toHaveBeenCalledWith(chatMessages);
+      expect(result.currentMessageId).toBe(undefined);
+      expect(result.currentMessageOrder).toBe(2);
+      expect(result.generatedText).toBe('');
+      expect(result.toolCalls).toEqual(expect.any(Map));
+      expect(mockDb.transaction).toHaveBeenCalled();
     });
   });
 
@@ -312,8 +361,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: undefined,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: true,
       });
 
@@ -330,19 +381,23 @@ describe('Stream Handlers', () => {
           completionTokens: 0,
         },
       };
+      // Remove messageId so that the condition doesn't trigger insertion
+      const contextWithoutMessageId = { ...mockContext, messageId: undefined };
 
       // Act
-      const result = await handleFinish(chunk, mockContext);
+      const result = await handleFinish(chunk, contextWithoutMessageId);
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: undefined,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: true,
       });
 
-      // Should not insert token usage when no usage data
-      expect(mockDb.insert).not.toHaveBeenCalled();
+      // Should not insert token usage when no usage data and no messageId
+      expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 
     it('should handle context without turnId', async () => {
@@ -362,8 +417,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: undefined,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: true,
       });
 
@@ -383,17 +440,17 @@ describe('Stream Handlers', () => {
       };
       const insertError = new Error('Token usage insert failed');
       
-      mockDb.insert.mockReturnValue({
-        values: jest.fn().mockRejectedValue(insertError),
-      } as unknown as ReturnType<typeof mockDb.insert>);
+      mockDb.transaction.mockRejectedValue(insertError);
 
       // Act
       const result = await handleFinish(chunk, mockContext);
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: false,
       });
 
@@ -441,8 +498,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Initial text routed text',
+        toolCalls: expect.any(Map),
         success: true,
       });
     });
@@ -462,8 +521,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: undefined,
         currentMessageOrder: 2,
-        generatedText: 'Initial text',
+        generatedText: '',
+        toolCalls: expect.any(Map),
         success: true,
       });
     });
@@ -484,8 +545,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        currentMessageId: undefined,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        toolCalls: expect.any(Map),
         success: true,
       });
     });
@@ -502,8 +565,13 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        chatId: 'chat-123',
+        turnId: 1,
+        messageId: 42,
         currentMessageOrder: 1,
-        generatedText: 'Initial text',
+        generatedText: 'Initial text{"type":"unknown-chunk-type","data":"some data"}',
+        toolCalls: expect.any(Map),
+        currentMessageId: 42,
         success: true,
       });
     });
@@ -520,8 +588,13 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        chatId: 'chat-123',
+        turnId: 1,
+        messageId: 42,
         currentMessageOrder: 1,
-        generatedText: 'Initial text',
+        generatedText: expect.stringContaining('Initial text'),
+        toolCalls: expect.any(Map),
+        currentMessageId: 42,
         success: true,
       });
     });

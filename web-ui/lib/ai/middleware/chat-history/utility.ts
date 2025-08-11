@@ -70,7 +70,7 @@ export const getNextSequence = async ({
  * ]);
  * // Returns: [{ role: 'user', content: 'How are you?' }]
  * ```
- */
+ */ 
 export const getNewMessages = async (
   tx: DbTransactionType,
   chatId: string,
@@ -133,15 +133,15 @@ export const getNewMessages = async (
   const existingMessageSignatures = new Set(
     existingMessages.map(msg => {
       const normalizedContent = normalizeContentForComparison(msg.content);
-      return `${msg.role}:${normalizedContent}`;
+      return `${msg.messageOrder}:${msg.role}:${normalizedContent}`;
     })
   );
 
   // Filter incoming messages to only include those not already persisted
-  const newMessages = incomingMessages.filter(incomingMsg => {
+  const newMessages = incomingMessages.filter((incomingMsg, index) => {
     const normalizedIncomingContent = normalizeContentForComparison(incomingMsg.content);
-    const incomingSignature = `${incomingMsg.role}:${normalizedIncomingContent}`;
-    
+    const incomingSignature = `${index + 1}:${incomingMsg.role}:${normalizedIncomingContent}`;
+
     return !existingMessageSignatures.has(incomingSignature);
   });
 

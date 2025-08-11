@@ -16,6 +16,8 @@ import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
 import { instrumentFlushOperation } from './instrumentation';
+import { insertPendingAssistantMessage, reserveTurnId } from './import-incoming-message';
+import { LoggedError } from '@/lib/react-util';
 
 /**
  * Default configuration for flush operations.
@@ -47,21 +49,42 @@ const DEFAULT_FLUSH_CONFIG: FlushConfig = {
  * ```
  */
 export async function finalizeAssistantMessage(context: FlushContext): Promise<void> {
-  if (!context.messageId) {
-    log((l) =>
-      l.warn('No message ID provided for finalization', {
-        chatId: context.chatId,
-        turnId: context.turnId,
-      }),
-    );
-    return;
-  }
+  try{
+    if (!context.messageId) {
+      if (!context.generatedText?.trim()) {
+        log((l) =>
+          l.warn('No pending message to finalize', {
+            chatId: context.chatId,
+            turnId: context.turnId,
+          }),
+        );
+        return;
+      }    
+      await drizDb().transaction(async tx => {    
+        let thisTurnId = context.turnId;
+        if (!thisTurnId) {
+          thisTurnId = await reserveTurnId(tx, context.chatId);
+          context.turnId = thisTurnId;
+        }    
+        await insertPendingAssistantMessage(
+          tx,
+          context.chatId,
+          thisTurnId,
+          0,
+          0,
+          context.generatedText,
+          2
+        );
+      });
+      return;      
+    }
 
-  try {
     await drizDb()
       .update(chatMessages)
-      .set({
-        content: context.generatedText,
+      .set(context.generatedText ? {
+        content: JSON.stringify([{type: 'text', text: context.generatedText}]),
+        statusId: 2, // complete status
+      } : {
         statusId: 2, // complete status
       })
       .where(
@@ -81,15 +104,15 @@ export async function finalizeAssistantMessage(context: FlushContext): Promise<v
       }),
     );
   } catch (error) {
-    log((l) =>
-      l.error('Failed to finalize assistant message', {
-        error,
+    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      message: 'Error finalizing assistant message',
+      data: {
         chatId: context.chatId,
         turnId: context.turnId,
         messageId: context.messageId,
-      }),
-    );
-    throw error;
+      },
+    });
   }
 }
 
@@ -144,14 +167,14 @@ export async function completeChatTurn(
       }),
     );
   } catch (error) {
-    log((l) =>
-      l.error('Failed to complete chat turn', {
-        error,
+    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      message: 'Failed to complete chat turn',
+      data: {
         chatId: context.chatId,
         turnId: context.turnId,
-      }),
-    );
-    throw error;
+      },
+    });
   }
 }
 
@@ -219,13 +242,14 @@ export async function generateChatTitle(
       );
     }
   } catch (error) {
-    log((l) =>
-      l.error('Failed to generate chat title', {
-        error,
+    // Title generation is non-critical; log structured error but do not throw.
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      message: 'Failed to generate chat title',
+      data: {
         chatId: context.chatId,
-      }),
-    );
-    // Don't throw - title generation is not critical
+      },
+    });
   }
 }
 
@@ -281,15 +305,16 @@ export async function markTurnAsError(
       }),
     );
   } catch (updateError) {
-    log((l) =>
-      l.error('Failed to mark turn as error', {
-        updateError,
+    LoggedError.isTurtlesAllTheWayDownBaby(updateError, {
+      log: true,
+      message: 'Failed to mark turn as error',
+      data: {
         originalError: error.message,
         chatId: context.chatId,
         turnId: context.turnId,
-      }),
-    );
-    // Don't throw - we're already in an error state
+      },
+    });
+    // Don't throw - already in an error state
   }
 }
 
@@ -356,17 +381,16 @@ export async function handleFlush(
         textLength: context.generatedText.length,
       };
     } catch (error) {
-      const flushError = error instanceof Error ? error : new Error(String(error));
-
-      log((l) =>
-        l.error('Error during flush operation', {
-          error: flushError,
+      const flushError = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        message: 'Error during flush operation',
+        data: {
           chatId: context.chatId,
           turnId: context.turnId,
-        }),
-      );
+        },
+      });
 
-      // Try to mark turn as error
+      // Attempt to mark turn as error (best-effort)
       await markTurnAsError(context, flushError);
 
       return {

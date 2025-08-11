@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Unit tests for chat history types module
  * 
@@ -67,6 +68,7 @@ describe('Chat History Types', () => {
         messageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Hello world',
+        toolCalls: new Map<string, any>()
       };
 
       expect(context.chatId).toBe('chat-123');

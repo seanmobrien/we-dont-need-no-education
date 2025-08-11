@@ -38,7 +38,7 @@ const getMcpClientHeaders = ({
   return ret;
 };
 
-const POST = wrapRouteRequest(
+export const POST = wrapRouteRequest(
 async (req: NextRequest) => {
   const session = await auth();
   if (!session || !session.user) {
@@ -267,7 +267,4 @@ async (req: NextRequest) => {
     });
     return NextResponse.error();
   }
-}, { });
-
-
-export { POST };
+});

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Tests for Chat History OpenTelemetry Instrumentation
  * 
@@ -54,7 +55,7 @@ jest.mock('@opentelemetry/api', () => ({
   },
 }));
 
-import type { FlushResult, FlushContext, StreamHandlerResult } from '@/lib/ai/middleware/chat-history/types';
+import type { FlushResult, FlushContext } from '@/lib/ai/middleware/chat-history/types';
 import {
   instrumentFlushOperation,
   instrumentStreamChunk,
@@ -159,7 +160,7 @@ describe('Chat History Instrumentation', () => {
     };
 
     it('should instrument successful stream chunk processing', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult = {
         currentMessageOrder: 1,
         generatedText: 'Hello',
         success: true,
@@ -167,7 +168,7 @@ describe('Chat History Instrumentation', () => {
 
       const mockOperation = jest.fn(() => Promise.resolve(mockResult));
 
-      const result = await instrumentStreamChunk('text-delta', mockContext, mockOperation);
+      const result = await instrumentStreamChunk('text-delta', mockContext, mockOperation as any);
 
       expect(result).toEqual(mockResult);
       expect(mockTracer.startSpan).toHaveBeenCalledWith('chat_history.stream_chunk', {
@@ -187,7 +188,7 @@ describe('Chat History Instrumentation', () => {
     });
 
     it('should instrument failed stream chunk processing', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult  = {
         currentMessageOrder: 1,
         generatedText: 'Partial',
         success: false,
@@ -195,7 +196,7 @@ describe('Chat History Instrumentation', () => {
 
       const mockOperation = jest.fn(() => Promise.resolve(mockResult));
 
-      const result = await instrumentStreamChunk('tool-call', mockContext, mockOperation);
+      const result = await instrumentStreamChunk('tool-call', mockContext, mockOperation as any);
 
       expect(result).toEqual(mockResult);
       expect(mockSpan.setStatus).toHaveBeenCalledWith({

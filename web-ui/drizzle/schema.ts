@@ -1339,6 +1339,7 @@ export const chatMessages = pgTable(
     content: text(),
     toolName: text('tool_name'),
     functionCall: jsonb('function_call'),
+    toolResult: jsonb('tool_result'),
     messageOrder: integer('message_order').notNull(),
     statusId: smallint('status_id').notNull(),
     providerId: text('provider_id'),
