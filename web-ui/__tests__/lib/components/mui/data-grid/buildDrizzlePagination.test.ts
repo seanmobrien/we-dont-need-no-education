@@ -12,11 +12,16 @@ import { buildDrizzlePagination } from '@/lib/components/mui/data-grid/queryHelp
 import type { LikeNextRequest, PaginatedGridListRequest } from '@/lib/components/mui/data-grid/types';
 
 // Mock the parsePaginationStats function
-jest.mock('@/data-models', () => ({
-  parsePaginationStats: jest.fn(),
-}));
+jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
+  const orig = jest.requireActual('@/lib/components/mui/data-grid/queryHelpers/utility');
+  return {
+    ...orig,
+    parsePaginationStats: jest.fn(),
+  };
+});
 
-import { parsePaginationStats } from '@/data-models';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+
 const mockParsePaginationStats = parsePaginationStats as jest.MockedFunction<typeof parsePaginationStats>;
 
 describe('buildDrizzlePagination', () => {

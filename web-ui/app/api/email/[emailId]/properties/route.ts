@@ -1,4 +1,5 @@
-import { parsePaginationStats } from '@/data-models';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+
 import {
   RepositoryCrudController,
   EmailPropertyRepository,

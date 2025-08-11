@@ -4,7 +4,6 @@
  * This module provides utility functions for data normalization.
  */
 
-import { URLSearchParams } from 'url';
 import type { PaginationStats } from './_types';
 import type {
   EmailPropertyCategoryType,
@@ -18,13 +17,7 @@ import {
   EmailPropertyTypeTypeIdValues,
   EmailPropertyTypeTypeValues,
 } from './api/email-properties/property-type';
-import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
-import {
-  parseFilterOptions,
-  parseSortOptions,
-} from '@/lib/components/mui/data-grid/server';
-import { PaginatedGridListRequest } from '@/lib/components/mui/data-grid';
-import { isLikeNextRequest, LikeNextRequest } from '@/lib/nextjs-util';
+
 
 /**
  * Normalizes a nullable numeric value.
@@ -41,73 +34,7 @@ export const normalizeNullableNumeric = (
   minValue: number = 1,
 ): number | null => ((value ?? 0) > minValue - 1 ? value : defaultValue);
 
-/**
- * Parses pagination statistics from a given request object.
- *
- * @param req - The request object which can be of type URL, URLSearchParams, or PaginationStats.
- * @returns An object containing pagination statistics including page, num, total, and offset.
- *
- * The function extracts the `page` and `num` parameters from the request object.
- * If the request object is of type URL or URLSearchParams, it retrieves these parameters from the search parameters.
- * If the request object is of type PaginationStats, it directly uses the `page` and `num` properties.
- * If the request object is undefined or null, it defaults to page 1 and num 10.
- *
- * The `page` and `num` values are normalized to ensure they are numeric and fall back to default values if necessary.
- * The `offset` is calculated based on the `page` and `num` values.
- *
- * @example
- * ```typescript
- * const url = new URL('https://example.com?page=2&num=20');
- * const stats = parsePaginationStats(url);
- * console.log(stats); // { page: 2, num: 20, total: 0, offset: 20 }
- * ```
- */
-export const parsePaginationStats = (
-  req:
-    | URL
-    | URLSearchParams
-    | (PaginatedGridListRequest | undefined)
-    | LikeNextRequest,
-): PaginatedGridListRequest & { offset: number } => {
-  let page: number | string | undefined | null;
-  let num: number | string | undefined | null;
-  let filter: GridFilterModel | undefined;
-  let sort: GridSortModel | undefined;
-  if (isLikeNextRequest(req)) {
-    req = new URL(req.url!);
-  }
-  if (!!req && ('searchParams' in req || 'get' in req)) {
-    if ('searchParams' in req) {
-      req = req.searchParams;
-    }
-    page = req.get('page');
-    num = req.get('num');
-    filter = parseFilterOptions(req);
-    sort = parseSortOptions(req);
-  } else {
-    if (!req) {
-      page = undefined;
-      num = undefined;
-      filter = undefined;
-      sort = undefined;
-    } else {
-      page = req.page;
-      num = req.num;
-      filter = req.filter;
-      sort = req.sort;
-    }
-  }
-  page = normalizeNullableNumeric(Number(page), 1) ?? 1;
-  num = normalizeNullableNumeric(Number(num), 10) ?? 10;
-  return {
-    filter,
-    sort,
-    page,
-    num,
-    total: 0,
-    offset: (page - 1) * num,
-  };
-};
+
 
 /**
  * Checks if the given value is of type `PaginationStats`.

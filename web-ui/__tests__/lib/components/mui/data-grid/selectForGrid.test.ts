@@ -12,9 +12,13 @@ import { NextRequest } from 'next/server';
 import { CallToActionDetails } from '@/data-models';
 
 // Mock the dependencies
-jest.mock('@/data-models', () => ({
-  parsePaginationStats: jest.fn(),
-}));
+jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
+  const orig = jest.requireActual('@/lib/components/mui/data-grid/queryHelpers/utility');
+  return {
+    ...orig,
+    parsePaginationStats: jest.fn(),
+  };
+});
 
 jest.mock('@/lib/components/mui/data-grid/queryHelpers', () => ({
   buildDrizzlePagination: jest.fn(),
@@ -22,7 +26,8 @@ jest.mock('@/lib/components/mui/data-grid/queryHelpers', () => ({
   buildDrizzleQueryFilter: jest.fn(),
 }));
 
-import { parsePaginationStats } from '@/data-models';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+
 import {
   buildDrizzleOrderBy,
   buildDrizzlePagination,

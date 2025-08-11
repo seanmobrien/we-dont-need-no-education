@@ -10,11 +10,11 @@ import {
 import { LoggedError } from '@/lib/react-util';
 import {
   PaginatedResultset,
-  parsePaginationStats,
 } from '@/data-models';
 import type { PaginationStats } from '@/data-models';
 import { GridSortModel, GridFilterModel } from '@mui/x-data-grid-pro';
 import { PaginatedGridListRequest } from '../components/mui/data-grid';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 type KeysFromModel<
   TRepositoryModel,

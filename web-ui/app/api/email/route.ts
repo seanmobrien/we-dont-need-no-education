@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
-import {
-  normalizeNullableNumeric,
-  parsePaginationStats,
-} from '@/data-models/_utilities';
+// (normalizeNullableNumeric no longer needed directly; handled in validation module)
 import { LoggedError, ValidationError } from '@/lib/react-util';
 
-import { EmailService, CreateEmailRequest, UpdateEmailRequest } from '@/lib/api/email/email-service';
+import { EmailService } from '@/lib/api/email/email-service';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+import { validateCreateEmail, validateUpdateEmail } from '@/lib/api/email/email-validation';
 
 /**
  * Handles the GET request to fetch a list of emails with sender and recipient information.
@@ -55,63 +54,16 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
  */
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
-    // Parse request email_contents
-    const requestData = await req.json();
-    const {
-      senderId: incomingSenderId,
-      subject,
-      body,
-      sentOn,
-      threadId,
-      parentEmailId,
-      recipients,
-      sender,
-    } = requestData;
-
-    // Support taking in either a senderId or sender object, with precedence given to
-    // the id because you have to go out of your way to set it.
-    const senderId = incomingSenderId ?? sender?.contactId;
-
-    // Validate required fields
-    if (
-      !senderId ||
-      !subject ||
-      !body ||
-      !sentOn ||
-      !recipients ||
-      recipients.length === 0
-    ) {
+    const raw = await req.json();
+    const validated = validateCreateEmail(raw);
+    if (!validated.success) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'Validation failed', details: validated.error.flatten() },
         { status: 400 },
       );
     }
-
-    // Create email using the service
     const emailService = new EmailService();
-    const createRequest: CreateEmailRequest = {
-      senderId,
-      subject,
-      body,
-      sentOn,
-      threadId: normalizeNullableNumeric(threadId),
-      parentEmailId,
-      recipients: recipients.map((r: {
-        recipientId?: number;
-        recipient_id?: number;
-        recipientName?: string;
-        recipient_name?: string;
-        recipientEmail?: string;
-        recipient_email?: string;
-      }) => ({
-        recipientId: r.recipientId || r.recipient_id,
-        recipientName: r.recipientName || r.recipient_name,
-        recipientEmail: r.recipientEmail || r.recipient_email,
-      })),
-      sender,
-    };
-
-    const createdEmail = await emailService.createEmail(createRequest);
+    const createdEmail = await emailService.createEmail(validated.data);
 
     return NextResponse.json(
       {
@@ -149,75 +101,16 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
  */
 export async function PUT(req: NextRequest): Promise<NextResponse> {
   try {
-    // Parse request email_contents
-    const requestData = await req.json();
-    const {
-      emailId,
-      senderId: incomingSenderId,
-      subject,
-      body,
-      sentOn,
-      threadId: incomingThreadId,
-      parentEmailId: incomingParentEmailId,
-      recipients,
-      sender,
-    } = requestData;
-
-    const threadId = normalizeNullableNumeric(incomingThreadId);
-    const parentEmailId = normalizeNullableNumeric(incomingParentEmailId);
-    // Support taking in either a senderId or sender object,
-    // with precedence given to the id because you have to go out of your way to set it.
-    const senderId = incomingSenderId ?? sender?.contactId;
-
-    // Validate required fields
-    if (!emailId) {
+    const raw = await req.json();
+    const validated = validateUpdateEmail(raw);
+    if (!validated.success) {
       return NextResponse.json(
-        { error: 'Email ID is required' },
+        { error: 'Validation failed', details: validated.error.flatten() },
         { status: 400 },
       );
     }
-
-    // Validate that at least one field to update is provided
-    if (
-      !senderId &&
-      !subject &&
-      !body &&
-      !sentOn &&
-      (threadId ?? 0) < 1 &&
-      (parentEmailId ?? 0) < 1
-    ) {
-      return NextResponse.json(
-        { error: 'At least one field is required for update' },
-        { status: 400 },
-      );
-    }
-
-    // Update email using the service
     const emailService = new EmailService();
-    const updateRequest: UpdateEmailRequest = {
-      emailId,
-      senderId,
-      subject,
-      body,
-      sentOn,
-      threadId,
-      parentEmailId,
-      recipients: recipients ? recipients.map((r: {
-        recipientId?: number;
-        recipient_id?: number;
-        recipientName?: string;
-        recipient_name?: string;
-        recipientEmail?: string;
-        recipient_email?: string;
-      }) => ({
-        recipientId: r.recipientId || r.recipient_id,
-        recipientName: r.recipientName || r.recipient_name,
-        recipientEmail: r.recipientEmail || r.recipient_email,
-      })) : undefined,
-      sender,
-    };
-
-    const updatedEmail = await emailService.updateEmail(updateRequest);
+    const updatedEmail = await emailService.updateEmail(validated.data);
 
     return NextResponse.json(
       { message: 'Email updated successfully', email: updatedEmail },

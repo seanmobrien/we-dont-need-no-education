@@ -1,3 +1,4 @@
+
 /**
  * @fileoverview Drizzle Pagination Builder for Data Grid
  * 
@@ -8,12 +9,12 @@
  * @version 1.0.0
  * @since 2025-07-27
  */
-
-import { parsePaginationStats } from '@/data-models';
-import { type LikeNextRequest } from '@/lib/nextjs-util';
+import {  LikeNextRequest } from '@/lib/nextjs-util';
 import { PaginatedGridListRequest } from '../../types';
 import type { DrizzleSelectQuery } from './types';
 import { AnyPgSelect } from 'drizzle-orm/pg-core';
+import { parsePaginationStats as parsePaginationStatsImpl } from '../utility';
+import { deprecate } from 'util';
 /**
  * Props for configuring Drizzle pagination functionality.
  */
@@ -32,6 +33,36 @@ export type BuildDrizzlePaginationProps = {
     | (PaginatedGridListRequest | undefined)
     | LikeNextRequest;
 };
+
+/**
+ * Parses pagination statistics from a given request object.
+ *
+ * @param req - The request object which can be of type URL, URLSearchParams, or PaginationStats.
+ * @returns An object containing pagination statistics including page, num, total, and offset.
+ *
+ * The function extracts the `page` and `num` parameters from the request object.
+ * If the request object is of type URL or URLSearchParams, it retrieves these parameters from the search parameters.
+ * If the request object is of type PaginationStats, it directly uses the `page` and `num` properties.
+ * If the request object is undefined or null, it defaults to page 1 and num 10.
+ *
+ * The `page` and `num` values are normalized to ensure they are numeric and fall back to default values if necessary.
+ * The `offset` is calculated based on the `page` and `num` values.
+ *
+ * @example
+ * ```typescript
+ * const url = new URL('https://example.com?page=2&num=20');
+ * const stats = parsePaginationStats(url);
+ * console.log(stats); // { page: 2, num: 20, total: 0, offset: 20 }
+ * ```
+ */
+export const parsePaginationStats = deprecate((
+  req:
+    | URL
+    | URLSearchParams
+    | (PaginatedGridListRequest | undefined)
+    | LikeNextRequest,
+): PaginatedGridListRequest & { offset: number } => parsePaginationStatsImpl(req), 
+"DP0010 - parsePaginationStats.  Import from '@/lib/components/mui/data-grid/queryHelpers/utility instead.");
 
 /**
  * Applies dynamic pagination logic to a Drizzle select query.

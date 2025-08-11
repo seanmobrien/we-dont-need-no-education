@@ -17,8 +17,8 @@ import { ObjectRepository } from './_types';
 import {
   isPaginationStats,
   PaginatedResultset,
-  parsePaginationStats,
 } from '@/data-models';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 import type { PaginationStats } from '@/data-models';
 import { GridSortModel, GridFilterModel } from '@mui/x-data-grid-pro';
 import { PaginatedGridListRequest } from '../components/mui/data-grid';

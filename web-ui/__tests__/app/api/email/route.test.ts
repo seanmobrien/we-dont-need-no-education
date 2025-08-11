@@ -72,8 +72,7 @@ jest.mock('@/lib/drizzle-db', () => ({
 import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
-import { query, queryExt } from '@/lib/neondb';
-import { auth } from '@/auth';
+import { query } from '@/lib/neondb';
 
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
@@ -102,7 +101,7 @@ describe('Email API', () => {
           senderId: 1,
           subject: 'Test Subject',
           body: 'Test Body',
-          sentOn: '2023-01-01T00:00:00Z',
+          sentOn: '2023-01-01T00:00:00.000Z',
           threadId: 1,
           userId: 1,
           recipients: [{ recipientId: 1, recipientEmail: 'test@test.com', recipientName: 'Test Name' }],
@@ -114,7 +113,7 @@ describe('Email API', () => {
         sender: { contactId: 1, name: 'Test Sender', email: 'sender@test.com' },
         subject: 'Test Subject',
         body: 'Test Body',
-        sentOn: '2023-01-01T00:00:00Z',
+        "sentOn": '2023-01-01T00:00:00.000Z',
         threadId: 1,
         parentEmailId: null,
         importedFromId: null,
@@ -135,20 +134,20 @@ describe('Email API', () => {
         senderId: 1,
         subject: 'Test Subject',
         body: 'Test Body',
-        sentOn: '2023-01-01T00:00:00Z',
+        sentOn: new Date('2023-01-01T00:00:00.000Z'),
         threadId: 1,
-        parentEmailId: undefined,
+        parentEmailId: null,
         recipients: [{ recipientId: 1, recipientEmail: 'test@test.com', recipientName: 'Test Name' }],
         sender: undefined,
       });
     });
-    it('should return 400 whne no recipients', async () => {
+    it('should return 400 when no recipients', async () => {
       const req = {
         json: jest.fn().mockResolvedValue({
           senderId: 1,
           subject: 'Test Subject',
           body: 'Test Body',
-          sentOn: '2023-01-01T00:00:00Z',
+          sentOn: '2023-01-01T00:00:00.000Z',
           threadId: 1,
         }),
       } as unknown as NextRequest;
@@ -157,7 +156,15 @@ describe('Email API', () => {
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
-        error: 'Missing required fields',
+        "details":  {
+          "fieldErrors": {
+            "recipients":  [
+              "Required",
+            ],
+          },
+          "formErrors":  [],
+        },
+        "error": "Validation failed",
       });
       expect(mockEmailService.createEmail).not.toHaveBeenCalled();
     });
@@ -174,7 +181,14 @@ describe('Email API', () => {
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
-        error: 'Missing required fields',
+        details: {
+          fieldErrors: {
+            body: ['Required'],
+            recipients: ['Required'],
+          },
+          formErrors: [],
+        },
+        error: 'Validation failed',
       });
     });
   });
@@ -194,7 +208,7 @@ describe('Email API', () => {
         sender: { contactId: 1, name: 'Test Sender', email: 'sender@test.com' },
         subject: 'Updated Subject',
         body: 'Test Body',
-        sentOn: '2023-01-01T00:00:00Z',
+        sentOn: '2023-01-01T00:00:00.000Z',
         threadId: 2,
         parentEmailId: null,
         importedFromId: null,
@@ -255,7 +269,16 @@ describe('Email API', () => {
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
-        error: 'Email ID is required',
+        "details": {
+          "fieldErrors": 
+            {
+            "emailId": [
+              "Required",
+            ],
+          },
+          "formErrors":  [],
+        },
+        "error": "Validation failed",
       });
     });
   });
@@ -275,7 +298,7 @@ describe('Email API', () => {
         emailId: ValidEmailId,
         subject: 'Test Subject',
         emailContents: 'Test Body',
-        sentTimestamp: '2023-01-01T00:00:00Z',
+        sentTimestamp: '2023-01-01T00:00:00.000Z',
         threadId: 1,
         parentId: null,
         sender: {
@@ -297,7 +320,7 @@ describe('Email API', () => {
         emailId: ValidEmailId,
         subject: 'Test Subject',
         body: 'Test Body',
-        sentOn: '2023-01-01T00:00:00Z',
+        sentOn: '2023-01-01T00:00:00.000Z',
         threadId: 1,
         parentEmailId: null,
         sender: {
@@ -341,7 +364,7 @@ describe('Email API', () => {
         emailId: ValidEmailId,
         subject: 'Test Subject',
         emailContents: 'Test Body',
-        sentTimestamp: '2023-01-01T00:00:00Z',
+        sentTimestamp: '2023-01-01T00:00:00.000Z',
         threadId: 1,
         parentId: null,
         sender: {
@@ -363,7 +386,7 @@ describe('Email API', () => {
         emailId: ValidEmailId,
         subject: 'Test Subject',
         body: 'Test Body',
-        sentOn: '2023-01-01T00:00:00Z',
+        sentOn: '2023-01-01T00:00:00.000Z',
         threadId: 1,
         parentEmailId: null,
         sender: {
@@ -386,7 +409,7 @@ describe('Email API', () => {
             emailId: ValidEmailId,
             sender: { contactId: 1, name: 'Sender Name', email: 'sender@example.com' },
             subject: 'Test Subject',
-            sentOn: '2023-01-01T00:00:00Z',
+            sentOn: '2023-01-01T00:00:00.000Z',
             threadId: null,
             parentEmailId: null,
             importedFromId: null,
