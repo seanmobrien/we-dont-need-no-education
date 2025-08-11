@@ -7,7 +7,6 @@ import type {
 } from '@/data-models';
 import {
   isContact,
-  parsePaginationStats,
   globalContactCache,
 } from '@/data-models';
 import { log } from '@/lib/logger';
@@ -16,6 +15,7 @@ import { ValidationError, DataIntegrityError } from '@/lib/react-util';
 import { PartialExceptFor } from '@/lib/typescript';
 import { RecipientType } from '@/lib/email/import/types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,

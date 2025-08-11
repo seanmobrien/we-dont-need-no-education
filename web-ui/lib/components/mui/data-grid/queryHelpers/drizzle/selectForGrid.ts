@@ -49,7 +49,8 @@
  * @since 1.0.0
  */
 
-import { PaginatedResultset, parsePaginationStats } from '@/data-models';
+import { PaginatedResultset } from '@/data-models';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 import { buildDrizzleQueryFilter } from './buildDrizzleFilter';
 import { buildDrizzleOrderBy } from './buildDrizzleOrderBy';
 import { buildDrizzlePagination } from './buildDrizzlePagination';

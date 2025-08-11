@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import {
   normalizeNullableNumeric,
-  parsePaginationStats,
 } from '@/data-models/_utilities';
 import { LoggedError, ValidationError } from '@/lib/react-util';
 
 import { EmailService, CreateEmailRequest, UpdateEmailRequest } from '@/lib/api/email/email-service';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 /**
  * Handles the GET request to fetch a list of emails with sender and recipient information.
@@ -164,7 +164,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
     } = requestData;
 
     const threadId = normalizeNullableNumeric(incomingThreadId);
-    const parentEmailId = normalizeNullableNumeric(incomingParentEmailId);
+    const parentEmailId = String(incomingParentEmailId);
     // Support taking in either a senderId or sender object,
     // with precedence given to the id because you have to go out of your way to set it.
     const senderId = incomingSenderId ?? sender?.contactId;
@@ -184,7 +184,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       !body &&
       !sentOn &&
       (threadId ?? 0) < 1 &&
-      (parentEmailId ?? 0) < 1
+      !parentEmailId
     ) {
       return NextResponse.json(
         { error: 'At least one field is required for update' },

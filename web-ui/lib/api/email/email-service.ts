@@ -341,7 +341,8 @@ export class EmailService {
       const senderId = request.senderId ?? request.sender?.contactId;
 
       // Build update object
-      const updateData: Partial<EmailDomain> = {
+      const updateData: Partial<EmailDomain> &
+        Required<Pick<EmailDomain, 'emailId'>> = {
         emailId: request.emailId,
       };
 

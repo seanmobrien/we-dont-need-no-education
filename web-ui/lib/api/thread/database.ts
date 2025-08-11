@@ -8,7 +8,8 @@ import type {
   Thread,
   ThreadSummary,
 } from '@/data-models';
-import { parsePaginationStats } from '@/data-models';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+
 import type { ObjectRepository } from '../_types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
 

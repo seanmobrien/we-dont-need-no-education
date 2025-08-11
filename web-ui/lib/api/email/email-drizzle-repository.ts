@@ -3,6 +3,12 @@ import { emails } from '@/drizzle/schema';
 import { ValidationError } from '@/lib/react-util';
 import { eq } from 'drizzle-orm';
 
+
+/**
+ * Base repository interface supports object repository implementation
+ */
+type BaseEmailDrizzleRepository = BaseDrizzleRepository<EmailDomain, 'emailId'>;
+
 /**
  * Domain model for Email entity used by the repository
  * This flattens the complex EmailMessage structure for database operations
@@ -101,11 +107,11 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
  * // Get single email
  * const email = await repository.get('email-uuid');
  * ```
- */
-export class EmailDrizzleRepository extends BaseDrizzleRepository<
-  EmailDomain,
-  'emailId'
-> {
+ */  
+  export class EmailDrizzleRepository extends BaseDrizzleRepository<
+    EmailDomain,
+    'emailId'
+  > implements BaseEmailDrizzleRepository {
   constructor() {
     super({
       table: emails,
@@ -123,7 +129,7 @@ export class EmailDrizzleRepository extends BaseDrizzleRepository<
    * @param obj - The data object to validate
    * @throws {ValidationError} When validation fails
    */
-  protected validate<TMethod extends keyof EmailDrizzleRepository>(
+  protected validate<TMethod extends keyof BaseEmailDrizzleRepository>(
     method: TMethod,
     obj: Record<string, unknown>,
   ): void {

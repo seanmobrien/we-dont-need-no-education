@@ -1,7 +1,6 @@
 import {
   PaginationStats,
   PaginatedResultset,
-  parsePaginationStats,
 } from '@/data-models';
 import { isError, isTemplateStringsArray } from '@/lib/react-util';
 import { log } from '../logger';
@@ -14,6 +13,7 @@ import { DataIntegrityError } from '../react-util/errors/data-integrity-error';
 import { LoggedError } from '../react-util/errors/logged-error';
 import { RecordToObjectImpl, RecordToSummaryImpl } from './_types';
 import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 /**
  * AbstractObjectRepository is a base class for handling database operations

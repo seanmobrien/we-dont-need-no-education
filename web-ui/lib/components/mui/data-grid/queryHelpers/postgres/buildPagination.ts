@@ -2,6 +2,7 @@ import { isSqlNeonAdapter, unwrapAdapter, SqlDb } from '@/lib/neondb';
 import { BuildPaginationProps } from './types';
 import { parsePaginationOptions } from '../utility';
 
+
 /**
  * Build LIMIT and OFFSET clauses for PostgreSQL queries
  */

@@ -22,7 +22,8 @@ jest.mock('@/lib/components/mui/data-grid/queryHelpers', () => ({
   buildDrizzleQueryFilter: jest.fn(),
 }));
 
-import { parsePaginationStats } from '@/data-models';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+
 import {
   buildDrizzleOrderBy,
   buildDrizzlePagination,

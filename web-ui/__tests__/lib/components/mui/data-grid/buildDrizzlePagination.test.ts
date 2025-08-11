@@ -16,7 +16,8 @@ jest.mock('@/data-models', () => ({
   parsePaginationStats: jest.fn(),
 }));
 
-import { parsePaginationStats } from '@/data-models';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+
 const mockParsePaginationStats = parsePaginationStats as jest.MockedFunction<typeof parsePaginationStats>;
 
 describe('buildDrizzlePagination', () => {

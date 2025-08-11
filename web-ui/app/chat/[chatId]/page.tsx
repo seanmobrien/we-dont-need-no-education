@@ -9,7 +9,7 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { isUserAuthorized } from '@/lib/site-util/auth';
 
 
-export const getChatDetails = async ({
+const getChatDetails = async ({
   chatId,
   userId,
 }: {
