@@ -121,21 +121,6 @@ describe('Chat History Middleware', () => {
       turnId: 1,
       messageId: 100,
       nextMessageOrder: 1,
-      pendingMessage: { 
-        messageId: 100, 
-        content: '', 
-        role: 'assistant',
-        chatId: 'chat-456',
-        turnId: 1,
-        metadata: null,
-        providerId: null,
-        statusId: 1,
-        toolInstanceId: null,
-        toolName: null,
-        functionCall: null,
-        messageOrder: 1,
-        optimizedContent: null,
-      },
     });
 
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });

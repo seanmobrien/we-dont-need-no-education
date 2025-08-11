@@ -55,7 +55,7 @@ export const buildAttachmentOrEmailFilter = ({
 }) => {
   const sql = isSqlNeonAdapter(sqlFromProps)
     ? unwrapAdapter(sqlFromProps)
-    : sqlFromProps;
+    : sqlFromProps as SqlDb<Record<string, unknown>>;
   let includeAttachments = true;
   if (typeof attachments === 'boolean') {
     includeAttachments = attachments;
@@ -132,10 +132,10 @@ export const buildQueryFilter = <RecordType extends Record<string, unknown> = Re
   columnMap = {},
   additional = {},
   append = false
-}: BuildQueryFilterProps<RecordType>): string => {
+}: BuildQueryFilterProps<RecordType>) => {
   const sql = isSqlNeonAdapter(sqlFromProps) 
     ? unwrapAdapter<RecordType>(sqlFromProps) 
-    : sqlFromProps;
+    : sqlFromProps as SqlDb<RecordType>;
 
   // Parse filter model from source
   let filterModel: GridFilterModel | null = null;

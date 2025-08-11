@@ -162,9 +162,8 @@ export class ProcessingQueue {
       if (result.currentMessageOrder !== undefined) {
         task.context.currentMessageOrder = result.currentMessageOrder;
       }
-      if (result.generatedText !== undefined) {
-        task.context.generatedText = result.generatedText;
-      }
+      task.context.generatedText = result.generatedText;
+      task.context.messageId = result.currentMessageId;
     }
   }
 

@@ -503,6 +503,38 @@ export type ModelQuotasType = TableSelectTypes['modelQuotas'];
  */
 export type ComplianceScoreType = TableSelectTypes['complianceScoresDetails'];
 
+
+
+
+/**
+ * Type definition for chat message instance
+ *
+ * Chat messages represent individual messages exchanged in a chat session,
+ * including their content, metadata, and associated user information.
+ *
+ * @typedef {TableSelectTypes['chatMessages']} ChatMessagesType
+ * ChatMessagesType
+ * @example
+ * ```typescript
+ * import type { ChatMessagesType } from '@/lib/drizzle-db/drizzle-types';
+ * 
+ * function evaluateChatMessage(message: ChatMessagesType) {
+ *   return {
+ *     content: message.content,
+ *     role: message.role,
+ *     messageId: message.messageId
+ *   };
+ * }
+ * ```
+ */
+export type ChatMessagesType = TableSelectTypes['chatMessages'];
+
+export type ChatTurnsType = TableSelectTypes['chatTurns'];
+
+export type ChatsType = TableSelectTypes['chats'];
+
+
+
 // ============================================================================
 // QUERY BUILDER TYPES
 // ============================================================================

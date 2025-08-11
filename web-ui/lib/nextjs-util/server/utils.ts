@@ -1,4 +1,3 @@
-import { ServerErrorResponseType } from './types';
 import { ErrorResponse } from './error-response';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
@@ -37,9 +36,12 @@ export const wrapRouteRequest = <T extends (...args: any[]) => any>(
   const { log: shouldLog = env('NODE_ENV') !== 'production' } = options ?? {};
   return async (
     ...args: Parameters<T>
-  ): Promise<ReturnType<T> | ServerErrorResponseType> => {
+  ): Promise<Awaited<ReturnType<T>>> => {
     try {
       if (shouldLog) {
+        if (args[0] && typeof args[0] === 'object' && 'params' in args[0]) {
+          await args[0].params;
+        }
         log((l) => l.info('Processing route request', { args }));
       }
       return await fn(...args);
@@ -47,7 +49,7 @@ export const wrapRouteRequest = <T extends (...args: any[]) => any>(
       if (shouldLog) {
         log((l) => l.error('Error processing route request', { error, args }));
       }
-      return new ErrorResponse('An unexpected error occurred');
+      return Promise.resolve(new ErrorResponse('An unexpected error occurred') as Awaited<ReturnType<T>>);
     }
   };
 };

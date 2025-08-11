@@ -56,6 +56,7 @@ describe('ProcessingQueue', () => {
       messageId: 42,
       currentMessageOrder: 1,
       generatedText: '',
+      toolCalls: new Map()
     };
     
     // Setup mock chunk

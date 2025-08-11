@@ -1,5 +1,5 @@
 import { GridSortModel } from '@mui/x-data-grid';
-import { isSqlNeonAdapter, unwrapAdapter } from '@/lib/neondb';
+import { isSqlNeonAdapter, unwrapAdapter, SqlDb } from '@/lib/neondb';
 import { isGridSortModel } from './guards';
 import { BuildOrderByProps } from './types';
 import { columnMapFactory, parseSortOptions } from '../utility';
@@ -12,10 +12,10 @@ export const buildOrderBy = <RecordType extends Record<string, unknown> = Record
   source,
   defaultSort,
   columnMap = {},
-}: BuildOrderByProps<RecordType>): string => {
+}: BuildOrderByProps<RecordType>) => {
   const sql = isSqlNeonAdapter(sqlFromProps) 
     ? unwrapAdapter<RecordType>(sqlFromProps) 
-    : sqlFromProps;
+    : sqlFromProps as SqlDb<RecordType>;
 
   const mapColumn = columnMapFactory(columnMap);
   

@@ -5,6 +5,7 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { DrizzleSelectQuery, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 
 /**
  * Chat summary interface for the data grid
@@ -33,7 +34,7 @@ const columnMap = {
  * @returns {Promise<NextResponse>} A promise that resolves to a JSON response containing the
  * list of chats with pagination information, or an error message if the request fails.
  */
-export async function GET(req: NextRequest): Promise<NextResponse> {
+export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     const db = await drizDbWithInit();
 
@@ -91,4 +92,4 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+});

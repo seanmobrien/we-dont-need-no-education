@@ -26,7 +26,7 @@ describe('wrapRouteRequest', () => {
     expect(logSpy.info as jest.Mock).toHaveBeenCalled();
     expect(result).toBeInstanceOf(ErrorResponse);
     const body = await result.json();
-    expect(body.error).toBe('fail');
+    expect(body.error).toBe('An error occurred');
   });
 
   it('should not log if log option is false', async () => {
@@ -44,7 +44,7 @@ describe('wrapRouteRequest', () => {
     const result = await wrapped();
     expect(result).toBeInstanceOf(ErrorResponse);
     const body = await result.json();
-    expect(body.error).toBe('bad');
+    expect(body.error).toBe('An error occurred');
   });
 
   it('should support async thrown errors', async () => {
@@ -53,6 +53,6 @@ describe('wrapRouteRequest', () => {
     const result = await wrapped();
     expect(result).toBeInstanceOf(ErrorResponse);
     const body = await result.json();
-    expect(body.error).toBe('async fail');
+    expect(body.error).toBe('An error occurred');
   });
 });

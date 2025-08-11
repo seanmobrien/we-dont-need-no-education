@@ -26,6 +26,7 @@ export const onClientToolRequest = async ({
       addToolResult({ toolCallId: toolCall.toolCallId, result: { success: true, notes: 'Opened case file' } });
       break;
     default:
-      throw new Error(`Unknown tool: ${toolName}`);
+      // Not my tool
+      break;
   }
 };

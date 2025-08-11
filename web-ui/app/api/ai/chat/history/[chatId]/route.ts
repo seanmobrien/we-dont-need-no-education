@@ -4,52 +4,8 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util';
-
-/**
- * Chat message interface for API responses
- */
-interface ChatMessage {
-  turnId: number;
-  messageId: number;
-  role: string;
-  content: string | null;
-  messageOrder: number;
-  toolName: string | null;
-  functionCall: Record<string, unknown> | null;
-  statusId: number;
-  providerId: string | null;
-  metadata: Record<string, unknown> | null;
-  toolInstanceId: string | null;
-  optimizedContent: string | null;
-}
-
-/**
- * Chat turn interface for API responses
- */
-interface ChatTurn {
-  turnId: number;
-  createdAt: string;
-  completedAt: string | null;
-  modelName: string | null;
-  messages: ChatMessage[];
-  statusId: number;
-  temperature: number | null;
-  topP: number | null;
-  latencyMs: number | null;
-  warnings: string[] | null;
-  errors: string[] | null;
-  metadata: Record<string, unknown> | null;
-}
-
-/**
- * Chat details interface for API responses
- */
-interface ChatDetails {
-  id: string;
-  title: string | null;
-  createdAt: string;
-  turns: ChatTurn[];
-}
+import type { ChatDetails, ChatTurn } from '@/lib/ai/chat';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 /**
  * Handles GET request to fetch chat details by ID
@@ -58,10 +14,10 @@ interface ChatDetails {
  * @param params - Route parameters containing chatId
  * @returns JSON response with chat details or error
  */
-export async function GET(
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   { params }: { params: Promise<{ chatId: string }> }
-): Promise<NextResponse> {
+): Promise<NextResponse> => {
   try {
     // Validate session authentication
     const session = await auth();
@@ -193,4 +149,4 @@ export async function GET(
       { status: 500 }
     );
   }
-}
+});

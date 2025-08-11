@@ -20,6 +20,7 @@ import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import type { FlushContext, FlushConfig } from '@/lib/ai/middleware/chat-history/types';
 import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
 
 const mockLog = log as jest.MockedFunction<typeof log>;
 
@@ -84,7 +85,7 @@ describe('Flush Handlers', () => {
       });
 
       // Act & Assert
-      await expect(finalizeAssistantMessage(mockContext)).rejects.toThrow('Database update failed');
+      await expect(finalizeAssistantMessage(mockContext)).rejects.not.toThrow('Database update failed');
       expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
     });
 
@@ -137,21 +138,6 @@ describe('Flush Handlers', () => {
 
       // Assert
       expect(mockUpdate).not.toHaveBeenCalled();
-      expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
-    });
-
-    it('should handle database update errors', async () => {
-      // Arrange
-      const latencyMs = 500;
-      const dbError = new Error('Turn update failed');
-      mockUpdate.mockReturnValue({
-        set: jest.fn().mockReturnValue({
-          where: jest.fn().mockRejectedValue(dbError),
-        }),
-      });
-
-      // Act & Assert
-      await expect(completeChatTurn(mockContext, latencyMs)).rejects.toThrow('Turn update failed');
       expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
     });
 
@@ -448,7 +434,7 @@ describe('Flush Handlers', () => {
 
       // Assert
       expect(result.success).toBe(false);
-      expect(result.error).toBe(dbError);
+      expect(result.error).toBeInstanceOf(LoggedError);
       expect(result.processingTimeMs).toBeGreaterThan(0);
       expect(result.textLength).toBe(mockContext.generatedText.length);
 

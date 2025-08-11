@@ -1,114 +1,67 @@
 import * as React from 'react';
-import { notFound } from 'next/navigation';
-import { Box, Typography } from '@mui/material';
+import { notFound, unauthorized } from 'next/navigation';
+import { Box } from '@mui/material';
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
-import { VirtualizedChatDisplay } from '@/components/chat';
-import { headers } from 'next/headers';
+import { ChatHistory } from '@/components/chat/history';
+import { extractParams } from '@/lib/nextjs-util';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { isUserAuthorized } from '@/lib/site-util/auth';
 
-interface ChatMessage {
-  turnId: number;
-  messageId: number;
-  role: string;
-  content: string | null;
-  messageOrder: number;
-  toolName: string | null;
-  functionCall: Record<string, unknown> | null;
-  statusId: number;
-  providerId: string | null;
-  metadata: Record<string, unknown> | null;
-  toolInstanceId: string | null;
-  optimizedContent: string | null;
-}
 
-interface ChatTurn {
-  turnId: number;
-  createdAt: string;
-  completedAt: string | null;
-  modelName: string | null;
-  messages: ChatMessage[];
-  statusId: number;
-  temperature: number | null;
-  topP: number | null;
-  latencyMs: number | null;
-  warnings: string[] | null;
-  errors: string[] | null;
-  metadata: Record<string, unknown> | null;
-}
-
-interface ChatDetails {
-  id: string;
-  title: string | null;
-  createdAt: string;
-  turns: ChatTurn[];
-}
-
-/**
- * Fetches chat details from the API route
- */
-async function getChatDetails(chatId: string): Promise<ChatDetails | null> {
-  try {
-    const headersList = await headers();
-    const host = headersList.get('host');
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const baseUrl = `${protocol}://${host}`;
-    
-    const response = await fetch(`${baseUrl}/api/ai/chat/history/${chatId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Forward cookies for authentication
-        'Cookie': headersList.get('cookie') || '',
-      },
-      cache: 'no-store', // Always fetch fresh data
-    });
-
-    if (response.status === 404) {
-      return null;
-    }
-
-    if (!response.ok) {
-      throw new Error(`API request failed with status ${response.status}`);
-    }
-
-    const chatDetails: ChatDetails = await response.json();
-    return chatDetails;
-  } catch (error) {
-    console.error('Error fetching chat details:', error);
-    throw error;
-  }
-}
-
-export default async function ChatDetailPage({
-  params,
+export const getChatDetails = async ({
+  chatId,
+  userId,
 }: {
-  params: Promise<{ chatId: string }>;
-}) {
-  const session = await auth();
-  const chatDetails = await getChatDetails((await params).chatId);
+  chatId: string;
+  userId: number;
+}) => {
+  const chat = await drizDbWithInit((db) =>
+    db.query.chats.findFirst({
+      columns: {
+        id: true,
+        userId: true,
+        title: true,
+      },
+      where: (chat, { eq }) => eq(chat.id, chatId),
+    }),
+  );
+  return chat &&
+    (await isUserAuthorized({
+      signedInUserId: userId,
+      ownerUserId: chat.userId,
+    }))
+    ? {
+        ok: true,
+        title: !chat.title ? undefined : chat.title,
+      }
+    : {
+        ok: false,
+      };
+};
 
-  if (!chatDetails) {
+
+const ChatDetailPage = async (req: {
+  params: Promise<{ chatId: string }>;
+}) => {
+  const session = await auth();
+  const userId = Number(session?.user?.id ?? 0);
+  if (!userId) {
+    unauthorized();
+  }
+  const { chatId } = await extractParams(req);
+  const { ok, title } = await getChatDetails({ chatId, userId });
+  if (!ok) {
     notFound();
   }
 
   return (
     <EmailDashboardLayout session={session}>
       <Box sx={{ p: 2 }}>
-        <Typography variant="h4" gutterBottom>
-          {chatDetails.title || `Chat ${chatDetails.id.slice(-8)}`}
-        </Typography>
-        
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Created: {new Date(chatDetails.createdAt).toLocaleString()}
-        </Typography>
-
-        <Box sx={{ mt: 3 }}>
-          <VirtualizedChatDisplay 
-            turns={chatDetails.turns}
-            height={800}
-          />
-        </Box>
+        <ChatHistory chatId={chatId} title={title} />
       </Box>
     </EmailDashboardLayout>
   );
 }
+
+export default ChatDetailPage;

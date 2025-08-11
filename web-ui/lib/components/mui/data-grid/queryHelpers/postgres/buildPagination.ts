@@ -1,4 +1,4 @@
-import { isSqlNeonAdapter, unwrapAdapter } from '@/lib/neondb';
+import { isSqlNeonAdapter, unwrapAdapter, SqlDb } from '@/lib/neondb';
 import { BuildPaginationProps } from './types';
 import { parsePaginationOptions } from '../utility';
 
@@ -10,10 +10,10 @@ export const buildPagination = <RecordType extends Record<string, unknown> = Rec
   source,
   defaultPageSize = 25,
   maxPageSize = 100,
-}: BuildPaginationProps<RecordType>): string => {
+}: BuildPaginationProps<RecordType>) => {
   const sql = isSqlNeonAdapter(sqlFromProps) 
     ? unwrapAdapter<RecordType>(sqlFromProps) 
-    : sqlFromProps;
+    : sqlFromProps as SqlDb<RecordType>;
 
   const { offset, limit } = parsePaginationOptions(source, defaultPageSize, maxPageSize);
   
