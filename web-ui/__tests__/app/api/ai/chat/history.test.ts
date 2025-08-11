@@ -186,7 +186,7 @@ describe('/api/ai/chat/history route', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data).toEqual({ error: 'Internal Server Error' });
+      expect(data).toEqual({ error: 'An error occurred', status: 500 });
     });
 
     it('should handle selectForGrid errors', async () => {
