@@ -71,9 +71,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            NEXT_PUBLIC_HOSTNAME="${{ vars.NEXT_PUBLIC_HOSTNAME }}"
-            NEXT_PUBLIC_LOG_LEVEL_CLIENT='${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}'
-            "NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}"
+            NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
+            NEXT_PUBLIC_HOSTNAME=\"${{ vars.NEXT_PUBLIC_HOSTNAME }}\"
+            NEXT_PUBLIC_LOG_LEVEL_CLIENT=${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           secrets: |
