@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { createDataStreamResponse, wrapLanguageModel, streamText } from 'ai';
 import {
   aiModelFactory,
@@ -41,9 +42,13 @@ const getMcpClientHeaders = ({
 export const POST = wrapRouteRequest(
 async (req: NextRequest) => {
   const session = await auth();
-  if (!session || !session.user) {
+  if (
+    !session ||
+    !session.user ||
+    process.env.NEXT_PHASE === 'phase-production-build'
+  ) {
     return new Response('Unauthorized', { status: 401 });
-  }
+  }  
   const {
     messages,
     id,

@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { RepositoryCrudController } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
 import { NotesRepository } from '@/lib/api/email/properties/notes/notes-repository';
@@ -13,10 +14,12 @@ import { PgColumn } from 'drizzle-orm/pg-core';
 const repository = new NotesRepository();
 const controller = new RepositoryCrudController(repository);
 
-export async function GET(
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
-) {
+) => {
   const { emailId } = await extractParams<{ emailId: string }>(args);
 
   const db = await drizDbWithInit();
@@ -102,11 +105,11 @@ export async function GET(
   });
 
   return Response.json(result);
-};
+});
 
-export async function POST(
+export const POST = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
+) => {
   return controller.create(req, args);
-}
+});

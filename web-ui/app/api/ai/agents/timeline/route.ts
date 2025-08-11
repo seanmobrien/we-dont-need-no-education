@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 import {
   TimelineAgentFactory,
@@ -11,7 +12,9 @@ import { LoggedError } from '@/lib/react-util';
  * Handles initialization, document processing, summary generation, and state serialization
  */
 
-export async function POST(request: NextRequest) {
+export const dynamic = 'force-dynamic';
+
+export const POST = wrapRouteRequest(async (request: NextRequest) => {
   try {
     const { action, initialDocumentId, snapshot, propertyId } =
       await request.json();
@@ -120,9 +123,9 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET(request: NextRequest) {
+export const GET = wrapRouteRequest(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const documentId = searchParams.get('documentId');
 
@@ -156,4 +159,4 @@ export async function GET(request: NextRequest) {
     success: true,
     data: mockDocument,
   });
-}
+});

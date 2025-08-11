@@ -31,13 +31,16 @@ import { log } from '@/lib/logger';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const wrapRouteRequest = <T extends (...args: any[]) => any>(
   fn: T,
-  options: { log?: boolean } = {},
+  options: { log?: boolean, disabledDuringBuild?: boolean; } = {},
 ) => {
-  const { log: shouldLog = env('NODE_ENV') !== 'production' } = options ?? {};
+  const { log: shouldLog = env('NODE_ENV') !== 'production', disabledDuringBuild = true } = options ?? {};
   return async (
     ...args: Parameters<T>
   ): Promise<Awaited<ReturnType<T>>> => {
     try {
+      if (disabledDuringBuild && process.env.NEXT_PHASE === 'phase-production-build') {
+        return Promise.resolve(new ErrorResponse('Route request disabled during build') as Awaited<ReturnType<T>>);
+      }
       if (shouldLog) {
         if (args[0] && typeof args[0] === 'object' && 'params' in args[0]) {
           await args[0].params;

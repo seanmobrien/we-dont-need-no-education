@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Unit tests for ProcessingQueue class
  * 
@@ -14,7 +15,7 @@ import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-que
 import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-handlers';
 import { log } from '@/lib/logger';
 import type { LanguageModelV1StreamPart } from 'ai';
-import type { StreamHandlerContext, StreamHandlerResult } from '@/lib/ai/middleware/chat-history/types';
+import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/stream-handlers', () => ({
@@ -69,7 +70,7 @@ describe('ProcessingQueue', () => {
   describe('enqueue', () => {
     /*
     it('should enqueue a task successfully', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Hello world',
         success: true,
@@ -182,7 +183,7 @@ describe('ProcessingQueue', () => {
 
     it('should continue processing remaining tasks after an error', async () => {
       const error = new Error('First task failed');
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Success',
         success: true,
@@ -206,7 +207,7 @@ describe('ProcessingQueue', () => {
     });
 
     it('should assign unique task IDs', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Test',
         success: true,
@@ -228,7 +229,7 @@ describe('ProcessingQueue', () => {
 
   describe('queue monitoring', () => {
     it('should track queue length correctly', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Test',
         success: true,
@@ -256,7 +257,7 @@ describe('ProcessingQueue', () => {
     });
 
     it('should track processing state correctly', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Test',
         success: true,
@@ -277,7 +278,7 @@ describe('ProcessingQueue', () => {
     });
 
     it('should return current queue state', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Test',
         success: true,
@@ -346,7 +347,7 @@ describe('ProcessingQueue', () => {
 
     it('should not update context for failed tasks', async () => {
       const error = new Error('First task failed');
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Success',
         success: true,
@@ -385,7 +386,7 @@ describe('ProcessingQueue', () => {
     });
 
     it('should handle rapid sequential enqueues', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Test',
         success: true,
@@ -412,7 +413,7 @@ describe('ProcessingQueue', () => {
     });
 
     it('should handle concurrent queue state queries', async () => {
-      const mockResult: StreamHandlerResult = {
+      const mockResult: any = {
         currentMessageOrder: 2,
         generatedText: 'Test',
         success: true,

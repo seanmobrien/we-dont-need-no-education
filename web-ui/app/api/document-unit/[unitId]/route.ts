@@ -5,15 +5,17 @@ import {
 } from '@/lib/ai/tools';
 import { RepositoryCrudController, DocumentUnitRepository } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { NextRequest, NextResponse } from 'next/server';
 import { isError } from '@/lib/react-util';
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { log } from '@/lib/logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
-export async function GET(
+export const dynamic = 'force-dynamic';
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ unitId: number }> },
-) {
+) => {
   try {
     const { unitId } = await extractParams(args);
     const document = await getCaseFileDocument({ caseFileId: unitId });
@@ -36,12 +38,12 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
 
-export async function PUT(
+export const PUT = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ unitId: number }> },
-) {
+) => {
   const { unitId } = await extractParams(args);
   const data = (await req.json()) as CaseFileAmendment;
   if (data.targetCaseFileId !== Number(unitId)) {
@@ -64,12 +66,12 @@ export async function PUT(
   return NextResponse.json(response, {
     status,
   });
-}
+});
 
-export async function DELETE(
+export const DELETE = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ unitId: number }> },
-) {
+) => {
   const controller = new RepositoryCrudController(new DocumentUnitRepository());
   return controller.delete(req, args);
-}
+});

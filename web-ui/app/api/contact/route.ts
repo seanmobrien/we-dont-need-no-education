@@ -1,8 +1,11 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/neondb';
 import { log } from '@/lib/logger';
 import { globalContactCache } from '@/data-models/api';
 import { LoggedError } from '@/lib/react-util';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,
@@ -34,7 +37,7 @@ const mapRecordToObject = (
   return ret;
 };
 
-export async function POST(req: NextRequest) {
+export const POST = wrapRouteRequest(async (req: NextRequest) => {
   try {
     const { name, email, jobDescription, phoneNumber, isDistrictStaff } =
       await req.json();
@@ -70,9 +73,9 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET() {
+export const GET = wrapRouteRequest(async () => {
   try {
     const result = await query(
       (sql) =>
@@ -90,4 +93,4 @@ export async function GET() {
       { status: 500 },
     );
   }
-}
+});

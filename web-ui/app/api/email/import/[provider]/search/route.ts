@@ -5,6 +5,8 @@ import { MailQueryBuilder } from '../_mailQueryBuilder';
 import { PaginatedResultset } from '@/data-models';
 import { EmailSearchResult } from '@/data-models/api/import/email-message';
 
+export const dynamic = 'force-dynamic';
+
 export const GET = async (
   req: NextRequest,
   { params }: { params: Promise<{ provider: string }> },

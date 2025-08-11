@@ -1,4 +1,7 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { extractParams } from '@/lib/nextjs-util';
 import { CallToActionDetails } from '@/data-models';
 import { eq, and } from 'drizzle-orm';
@@ -13,10 +16,10 @@ const columnMap = {
   ...DefaultEmailColumnMap,
 } as const;
 
-export async function GET(
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
-) {
+) => {
   const { emailId } = await extractParams<{ emailId: string }>(args);
 
   const db = await drizDbWithInit();
@@ -166,4 +169,4 @@ export async function GET(
   });
 
   return Response.json(result);
-}
+});

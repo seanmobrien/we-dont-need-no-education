@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getImportMessageStatus } from '../../../_utilitites';
 import { LoggedError } from '@/lib/react-util';
 
+export const dynamic = 'force-dynamic';
+
 export const GET = async (
   req: NextRequest,
   { params }: { params: Promise<{ provider: string; emailId: string }> },

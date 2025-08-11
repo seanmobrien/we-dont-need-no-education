@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 import { extractParams } from '@/lib/nextjs-util';
@@ -48,10 +49,12 @@ const extractEmailId = async <T extends { emailId: string }>(req: {
   return { emailId: null };
 };
 
-export async function GET(
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   withParams: { params: Promise<{ emailId: string }> },
-) {
+) => {
   const { emailId, documentId } = await extractEmailId(withParams);
   if (!emailId) {
     return NextResponse.json(
@@ -158,7 +161,7 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * Handles the DELETE request to remove an email and its associated recipients from the database.
@@ -176,12 +179,12 @@ export async function GET(
  * 5. Logs the deletion operation.
  * 6. Returns a success response if the email is deleted, or an error response if the email is not found or if an internal server error occurs.
  */
-export async function DELETE(
+export const DELETE = wrapRouteRequest(async (
   req: NextRequest,
   withParams: {
     params: Promise<{ emailId: string }>;
   },
-): Promise<NextResponse> {
+): Promise<NextResponse> => {
   const { emailId } = await extractEmailId(withParams);
   if (!emailId) {
     return NextResponse.json(
@@ -217,4 +220,4 @@ export async function DELETE(
       { status: 500 },
     );
   }
-}
+});

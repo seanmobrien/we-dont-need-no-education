@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   RepositoryCrudController,
   CallToActionResponseDetailsRepository,
@@ -19,11 +20,12 @@ const columnMap = {
   ...DefaultEmailColumnMap,
 } as const;
 
+export const dynamic = 'force-dynamic';
 
-export async function GET(
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
-) {
+) => {
   const { emailId } = await extractParams<{ emailId: string }>(args);
 
   const db = await drizDbWithInit();
@@ -99,28 +101,8 @@ export async function GET(
     );
 
   // Column getter function for filtering and sorting
-  const getColumn = (columnName: string): PgColumn | undefined => {
-    return getEmailColumn({columnName, table: schema.callToActionResponseDetails}); 
-    /*
-    switch (columnName) {
-      case 'property_id': return schema.documentProperty.propertyId;
-      case 'property_value': return schema.documentProperty.propertyValue;
-      case 'document_property_type_id': return schema.documentProperty.documentPropertyTypeId;
-      case 'document_id': return schema.documentProperty.documentId;
-      case 'created_on': return schema.documentProperty.createdOn;
-      case 'policy_basis': return schema.documentProperty.policyBasis;
-      case 'tags': return schema.documentProperty.tags;
-      case 'response_timestamp': return schema.callToActionResponseDetails.responseTimestamp;
-      case 'severity': return schema.callToActionResponseDetails.severity;
-      case 'inferred': return schema.callToActionResponseDetails.inferred;
-      case 'sentiment': return schema.callToActionResponseDetails.sentiment;
-      case 'sentiment_reasons': return schema.callToActionResponseDetails.sentimentReasons;
-      case 'severity_reasons': return schema.callToActionResponseDetails.severityReasons;
-      default: return undefined;
-    }
-    */
-  };
-
+  const getColumn = (columnName: string): PgColumn | undefined =>
+    getEmailColumn({ columnName, table: schema.callToActionResponseDetails });
 
   // Record mapper to transform database records to CallToActionResponseDetails objects
   const recordMapper = (record: Record<string, unknown>): Partial<CallToActionResponseDetails> => {
@@ -159,11 +141,11 @@ export async function GET(
   });
 
   return Response.json(result);
-}
+});
 
-export async function POST(
+export const POST = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
+) => {
   return controller.create(req, args);
-}
+});

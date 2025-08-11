@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { query, queryExt } from '@/lib/neondb';
 import { log } from '@/lib/logger';
 import { globalContactCache } from '@/data-models/api';
 import { isTruthy, LoggedError } from '@/lib/react-util';
 import { extractParams } from '@/lib/nextjs-util';
+
+export const dynamic = 'force-dynamic';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,
@@ -36,10 +39,10 @@ const mapRecordToObject = (
   return ret;
 };
 
-export async function PUT(
+export const PUT = wrapRouteRequest(async (
   req: NextRequest,
   { params }: { params: Promise<{ contactId: number }> },
-) {
+) => {
   try {
     const { contactId } = await params;
     const { name, email, jobDescription, phoneNumber, isDistrictStaff } =
@@ -119,12 +122,12 @@ export async function PUT(
       { status: 500 },
     );
   }
-}
+});
 
-export async function GET(
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   withParams: { params: Promise<{ contactId: number }> },
-) {
+) => {
   try {
     const { contactId } = await extractParams(withParams);
     const refresh = isTruthy(req.nextUrl.searchParams.get('refresh'));
@@ -163,12 +166,12 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});
 
-export async function DELETE(
+export const DELETE = wrapRouteRequest(async (
   req: NextRequest,
   { params }: { params: Promise<{ contactId: number }> },
-) {
+) => {
   try {
     const { contactId } = await params;
 
@@ -207,4 +210,4 @@ export async function DELETE(
       { status: 500 },
     );
   }
-}
+});

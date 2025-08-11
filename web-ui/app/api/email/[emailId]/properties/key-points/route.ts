@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   RepositoryCrudController,
   KeyPointsDetailsRepository,
@@ -10,6 +11,8 @@ import { schema } from '@/lib/drizzle-db/schema';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
+
+export const dynamic = 'force-dynamic';
 
 const repository = new KeyPointsDetailsRepository();
 const controller = new RepositoryCrudController(repository);
@@ -96,9 +99,9 @@ export const GET = async (
 
   return Response.json(result);
 };
-export async function POST(
+export const POST = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
+) => {
   return controller.create(req, args);
-}
+});

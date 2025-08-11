@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/neondb';
 import { LoggedError } from '@/lib/react-util';
 
+export const dynamic = 'force-dynamic';
+
 export const GET = async (): Promise<NextResponse> => {
   try {
     const result = await query(

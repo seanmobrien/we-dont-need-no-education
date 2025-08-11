@@ -93,3 +93,5 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
     );
   }
 });
+
+export const dynamic = 'force-dynamic';

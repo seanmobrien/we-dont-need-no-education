@@ -8,8 +8,11 @@ import {
 } from '@/lib/ai/tools';
 import z from 'zod';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
-export async function GET(req: NextRequest) {
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (req: NextRequest) => {
   const url = new URL(req.url);
   const { searchParams } = url;
   const generateDownloadKey = isTruthy(searchParams.get('downloadable'));
@@ -50,12 +53,12 @@ export async function GET(req: NextRequest) {
       { status: 500 },
     );
   }
-}
+});
 
-export async function POST(
+export const POST = wrapRouteRequest(async (
   req: NextRequest,
   data: { params: Promise<{ unitId: number }> },
-) {
+) => {
   const controller = new RepositoryCrudController(new DocumentUnitRepository());
   return controller.create(req, data);
-}
+});

@@ -6,6 +6,9 @@ import { LoggedError, ValidationError } from '@/lib/react-util';
 import { EmailService } from '@/lib/api/email/email-service';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 import { validateCreateEmail, validateUpdateEmail } from '@/lib/api/email/email-validation';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * Handles the GET request to fetch a list of emails with sender and recipient information.
@@ -20,7 +23,7 @@ import { validateCreateEmail, validateUpdateEmail } from '@/lib/api/email/email-
  * @throws {Error} If there is an issue with the service operation or any other error occurs during
  * the execution of the function, an error is logged and a 500 Internal Server Error response is returned.
  */
-export async function GET(req: NextRequest): Promise<NextResponse> {
+export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     const thisUrl = new URL(req.url);
     const pagination = parsePaginationStats(thisUrl);
@@ -40,7 +43,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * Handles the POST request to create a new email.
@@ -52,7 +55,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
  * @returns {Promise<NextResponse>} - The response object containing the result of the email creation.
  * @throws {Error} - If there is an issue with the email creation process.
  */
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export const POST = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     const raw = await req.json();
     const validated = validateCreateEmail(raw);
@@ -87,7 +90,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * Handles the PUT request to update an existing email.
@@ -99,7 +102,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
  * @returns {Promise<NextResponse>} - The response object containing the result of the email update.
  * @throws {Error} - If there is an issue with the email update process.
  */
-export async function PUT(req: NextRequest): Promise<NextResponse> {
+export const PUT = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     const raw = await req.json();
     const validated = validateUpdateEmail(raw);
@@ -126,7 +129,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+});
 
 /**
  * Handles the DELETE request to remove an email.
@@ -136,7 +139,7 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
  * @param {NextRequest} req - The incoming request object.
  * @returns {Promise<NextResponse>} - The response object containing the result of the email deletion.
  */
-export async function DELETE(req: NextRequest): Promise<NextResponse> {
+export const DELETE = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     const { emailId } = await req.json();
 
@@ -168,4 +171,4 @@ export async function DELETE(req: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+});

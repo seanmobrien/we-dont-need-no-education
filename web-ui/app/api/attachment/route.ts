@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'; // Never statically optimize
 
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   DrizzleCrudRepositoryController,
   EmailAttachmentDrizzleRepository,
@@ -8,14 +9,14 @@ import {
 
 
 
-export async function GET(req: NextRequest) {
+export const GET = wrapRouteRequest(async (req: NextRequest) => {
   const repository = new EmailAttachmentDrizzleRepository();
   const controller = new DrizzleCrudRepositoryController(repository);
   return controller.list(req);
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = wrapRouteRequest(async (req: NextRequest) => {
   const repository = new EmailAttachmentDrizzleRepository();
   const controller = new DrizzleCrudRepositoryController(repository);
   return controller.create(req);
-}
+});

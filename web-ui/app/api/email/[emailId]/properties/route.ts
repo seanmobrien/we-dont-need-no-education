@@ -9,11 +9,14 @@ import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { db } from '@/lib/neondb';
 import { extractParams } from '@/lib/nextjs-util';
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
-export async function GET(
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
-) {
+) => {
   const controller = new RepositoryCrudController(
     new EmailPropertyRepository(),
   );
@@ -48,14 +51,14 @@ export async function GET(
       ),
     );
   });
-}
+});
 
-export async function POST(
+export const POST = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
+) => {
   const controller = new RepositoryCrudController(
     new EmailPropertyRepository(),
   );
   return controller.create(req, args);
-}
+});

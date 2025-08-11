@@ -5,6 +5,7 @@ import {
 } from '@/lib/api';
 import { extractParams } from '@/lib/nextjs-util';
 import { CallToActionDetails } from '@/data-models';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { eq, and, sql, SQL } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
@@ -19,11 +20,12 @@ import { PgColumn } from 'drizzle-orm/pg-core';
 const repository = new CallToActionDetailsRepository();
 const controller = new RepositoryCrudController(repository);
 
+export const dynamic = 'force-dynamic';
 
-export async function GET(
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
-) {
+) => {
   const { emailId } = await extractParams<{ emailId: string }>(args);
 
   const db = await drizDbWithInit();
@@ -197,11 +199,11 @@ export async function GET(
   });
 
   return Response.json(result);
-}
+});
 
-export async function POST(
+export const POST = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ propertyId: string }> },
-) {
+) => {
   return controller.create(req, args);
-}
+});

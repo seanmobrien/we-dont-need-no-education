@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { mapRecordToSummary } from '../../../../lib/api/email/util';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 import { LoggedError } from '@/lib/react-util';
 
-export async function GET(req: NextRequest) {
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (req: NextRequest) => {
   try {
     const url = new URL(req.url);
     const { searchParams } = url;
@@ -86,4 +89,4 @@ export async function GET(req: NextRequest) {
       { status: 500 },
     );
   }
-}
+});

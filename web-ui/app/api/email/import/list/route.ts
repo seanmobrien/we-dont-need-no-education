@@ -1,4 +1,5 @@
 import { NextResponse, NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { log } from '@/lib/logger';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
@@ -22,7 +23,7 @@ import { LoggedError } from '@/lib/react-util';
  *
  * If an error occurs during the process, it logs the error and returns a 500 Internal Server Error response.
  */
-export async function GET(req: NextRequest): Promise<NextResponse> {
+export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     const { num, offset, page } = parsePaginationStats(new URL(req.url));
 
@@ -106,4 +107,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       { status: 500 },
     );
   }
-}
+});
+
+export const dynamic = 'force-dynamic';

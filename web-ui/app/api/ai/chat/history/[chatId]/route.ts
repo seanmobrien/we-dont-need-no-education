@@ -7,6 +7,8 @@ import { LoggedError } from '@/lib/react-util';
 import type { ChatDetails, ChatTurn } from '@/lib/ai/chat';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Handles GET request to fetch chat details by ID
  * 

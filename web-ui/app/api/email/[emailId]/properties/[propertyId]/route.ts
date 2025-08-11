@@ -1,32 +1,35 @@
 import { RepositoryCrudController, EmailPropertyRepository } from '@/lib/api';
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
-export async function GET(
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
+) => {
   const controller = new RepositoryCrudController(
     new EmailPropertyRepository(),
   );
   return controller.get(req, args);
-}
+});
 
-export async function PUT(
+export const PUT = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
+) => {
   const controller = new RepositoryCrudController(
     new EmailPropertyRepository(),
   );
   return controller.update(req, args);
-}
+});
 
-export async function DELETE(
+export const DELETE = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
+) => {
   const controller = new RepositoryCrudController(
     new EmailPropertyRepository(),
   );
   return controller.delete(req, args);
-}
+});

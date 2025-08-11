@@ -8,6 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { auth } from '@/auth';
 import { drizDb, schema } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
@@ -61,7 +62,7 @@ function validatePublicKeyFormat(publicKeyBase64: string): boolean {
  * 
  * Uploads a new public key for the authenticated user
  */
-export async function POST(req: NextRequest): Promise<NextResponse> {
+export const POST = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     // Verify user authentication
     const session = await auth();
@@ -174,14 +175,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       { status: 500 }
     );
   }
-}
+});
 
 /**
  * GET /api/auth/keys
  * 
  * Retrieves all active public keys for the authenticated user
  */
-export async function GET(): Promise<NextResponse> {
+export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
   try {
     // Verify user authentication
     const session = await auth();
@@ -242,4 +243,4 @@ export async function GET(): Promise<NextResponse> {
       { status: 500 }
     );
   }
-}
+});

@@ -48,6 +48,7 @@ jest.mock('@/drizzle/schema', () => {
 
 describe('EmailDrizzleRepository', () => {
   let repository: EmailDrizzleRepository;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let mockDb: any;
 
   beforeEach(() => {
@@ -196,7 +197,7 @@ describe('EmailDrizzleRepository', () => {
     });
 
     it('should provide default sentTimestamp if not provided', () => {
-      const emailDomain: Omit<EmailDomain, 'emailId'> = {
+      const emailDomain: any = {
         senderId: 123,
         subject: 'Test Subject',
         emailContents: 'Test content',
@@ -282,7 +283,7 @@ describe('EmailDrizzleRepository', () => {
       });
 
       // Set up the mock
-      repository['db'] = {
+      (repository as any)['db'] = {
         select: mockSelect,
       } as any;
 
@@ -313,7 +314,7 @@ describe('EmailDrizzleRepository', () => {
         }),
       });
 
-      repository['db'] = {
+      (repository as any)['db'] = {
         select: mockSelect,
       } as any;
 
@@ -333,7 +334,7 @@ describe('EmailDrizzleRepository', () => {
         }),
       });
 
-      repository['db'] = {
+      (repository as any)['db'] = {
         select: mockSelect,
       } as any;
 

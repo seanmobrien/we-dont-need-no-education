@@ -2,9 +2,8 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 import { EmailService, CreateEmailRequest, UpdateEmailRequest } from '@/lib/api/email/email-service';
-import { EmailDrizzleRepository, EmailDomain } from '@/lib/api/email/email-drizzle-repository';
-import { EmailMessage, EmailMessageSummary } from '@/data-models/api/email-message';
-import { ContactSummary } from '@/data-models/api/contact';
+import { EmailDomain } from '@/lib/api/email/email-drizzle-repository';
+import { EmailMessage } from '@/data-models/api/email-message';
 import { query } from '@/lib/neondb';
 
 // Mock the EmailDrizzleRepository
@@ -85,7 +84,7 @@ describe('EmailService', () => {
         .mockResolvedValueOnce([]) // Second recipients (empty)
         .mockResolvedValueOnce([{ count_attachments: 0, count_kpi: 0, count_notes: 1, count_cta: 0, count_responsive_actions: 2 }]); // Second counts
 
-      const result = await service.getEmailsSummary({ page: 1, num: 10 });
+      const result = await service.getEmailsSummary({ page: 1, num: 10, total: 40 });
 
       expect(result).toEqual({
         results: [
@@ -125,7 +124,7 @@ describe('EmailService', () => {
         pageStats: { page: 1, num: 10, total: 2 },
       });
 
-      expect(mockRepository.list).toHaveBeenCalledWith({ page: 1, num: 10 });
+      expect(mockRepository.list).toHaveBeenCalledWith({ page: 1, num: 10, total: 40 });
       expect(mockQuery).toHaveBeenCalledTimes(6); // 2 emails × 3 queries each (sender, recipients, counts)
     });
 

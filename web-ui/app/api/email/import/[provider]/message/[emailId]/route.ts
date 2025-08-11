@@ -11,6 +11,8 @@ import {
 } from '@/lib/email/import/google';
 import { LoggedError } from '@/lib/react-util';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Handles GET requests to retrieve an importable email message from the associated provider (e.g., Gmail).
  *

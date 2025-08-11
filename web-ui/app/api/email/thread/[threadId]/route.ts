@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   mapRecordToSummary,
   mapRecordToThreadSummary,
@@ -6,13 +7,15 @@ import {
 import { query, queryExt } from '@/lib/neondb';
 import { LoggedError } from '@/lib/react-util';
 
-export async function GET(
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
-  { params }: { params: Promise<{ threadId: string }> },
-) {
+  args: { params: Promise<{ threadId: string }> },
+) => {
   try {
     // Extract the slug from params
-    const { threadId } = await params;
+  const { threadId } = await args.params;
     const threadIdNumber = parseInt(threadId, 10);
     if (isNaN(threadIdNumber)) {
       return NextResponse.json({ error: 'Invalid thread ID' }, { status: 400 });
@@ -82,4 +85,4 @@ export async function GET(
       { status: 500 },
     );
   }
-}
+});

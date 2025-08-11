@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   RepositoryCrudController,
   CallToActionDetailsRepository,
@@ -13,10 +14,12 @@ import { CallToActionDetails } from '@/data-models';
 const repository = new CallToActionDetailsRepository();
 const controller = new RepositoryCrudController(repository);
 
-export async function GET(
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
-) {
+) => {
   const { emailId } = await extractParams<{ emailId: string }>(args);
 
   const db = await drizDbWithInit();
@@ -165,11 +168,11 @@ export async function GET(
   });
 
   return Response.json(result);
-};
+});
 
-export async function POST(
+export const POST = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) {
+) => {
   return controller.create(req, args);
-}
+});

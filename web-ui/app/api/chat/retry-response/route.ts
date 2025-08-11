@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { auth } from '@/auth';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { LoggedError } from '@/lib/react-util';
 // import { authOptions } from '@/auth';
 
-export async function GET(req: NextRequest) {
+export const dynamic = 'force-dynamic';
+
+export const GET = wrapRouteRequest(async (req: NextRequest) => {
   try {
     // Check authentication
     const session = await auth();
@@ -82,9 +85,9 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = wrapRouteRequest(async (req: NextRequest) => {
   try {
     // Check authentication
     const session = await auth();
@@ -166,4 +169,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

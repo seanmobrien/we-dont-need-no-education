@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { extractParams } from '@/lib/nextjs-util';
 import { EmailProperty } from '@/data-models';
 import {
@@ -9,11 +10,12 @@ import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { and, eq } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
+export const dynamic = 'force-dynamic';
 
-export async function GET(
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string }> },
-) {
+) => {
   const { emailId } = await extractParams<{ emailId: string }>(args);
 
   const db = await drizDbWithInit();
@@ -98,4 +100,4 @@ export async function GET(
   });
 
   return Response.json(result);
-}
+});

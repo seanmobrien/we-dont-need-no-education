@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
 import { rateLimitMetrics } from '@/lib/ai/middleware/key-rate-limiter/metrics';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
@@ -9,10 +10,12 @@ import type { RateLimitedRequest, ProcessedResponse, ModelClassification } from 
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 
+export const dynamic = 'force-dynamic';
+
 const MAX_PROCESSING_TIME_MS = 4 * 60 * 1000; // 4 minutes
 const REQUEST_TIMEOUT_MS = 10 * 1000; // 10 seconds per request
 
-export async function GET() {
+export const GET = wrapRouteRequest(async () => {
   const startTime = Date.now();
   let processedCount = 0;
   
@@ -252,4 +255,4 @@ export async function GET() {
       duration: Date.now() - startTime,
     }, { status: 500 });
   }
-}
+});
