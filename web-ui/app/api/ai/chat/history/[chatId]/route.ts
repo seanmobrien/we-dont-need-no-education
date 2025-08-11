@@ -142,7 +142,7 @@ export const GET = wrapRouteRequest(async (
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
       message: 'Error fetching chat details',
-      context: { chatId: (await params).chatId }
+      context: { chatId }
     });
     return NextResponse.json(
       { error: 'Internal Server Error' },
