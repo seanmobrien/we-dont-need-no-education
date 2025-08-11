@@ -1,7 +1,15 @@
 # Rate retry configuration
 ARG RATE_RETRY_INTERVAL_MINUTES=5
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT=info
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL=lofi
+ARG OTEL_SERVICE_NAME=WebUi
+ARG OTEL_RESOURCE_ATTRIBUTES="service.namespace=ObApps.ComplianceTheatre,service.version=1.0,deployment.environment=prod"
 
 FROM node:22-alpine AS base
+
+RUN printf "NEXT_PUBLIC_HOSTNAME=%s\r\nNEXT_PUBLIC_LOG_LEVEL_CLIENT=%s\r\nNEXT_PUBLIC_DEFAULT_AI_MODEL=%s\r\n" "$NEXT_PUBLIC_HOSTNAME" "$NEXT_PUBLIC_LOG_LEVEL_CLIENT" "$NEXT_PUBLIC_DEFAULT_AI_MODEL" > test \
+  && cat test
 
 # Install cron for rate retry processing
 RUN apk add --no-cache libc6-compat dcron curl

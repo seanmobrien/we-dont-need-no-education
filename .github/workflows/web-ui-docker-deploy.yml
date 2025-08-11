@@ -15,41 +15,6 @@ on:
   workflow_dispatch:
   
 jobs:
-#  check-code-changes:
-#    runs-on: ubuntu-latest
-#    outputs:
-#      deploy-production: 'true'
-#      code-changed: ${{ steps.changes.outputs.dependencies }}
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v4
-#        with:
-#          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-#          fetch-depth: 2#
-#
-#      - name: Check for web-ui and chat code changes
-#        id: changes
-#        run: |
-#          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-#            echo "dependencies=true" >> $GITHUB_OUTPUT
-#            echo "Manual trigger detected, proceeding with Docker build"
-#          else
-#            # Get the commit that triggered the original workflow
-#            TRIGGER_SHA="${{ github.event.workflow_run.head_sha }}"
-#            echo "Checking for web-ui and chat code changes in commit: $TRIGGER_SHA"
-#            
-#            # Check if any web-ui or chat code files changed in the triggering commit
-#            if git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "^(web-ui|chat)/"; then
-#              echo "dependencies=true" >> $GITHUB_OUTPUT
-#              echo "Web-ui or chat code changed, proceeding with Docker build"
-#              echo "Changed files:"
-#              git diff --name-only $TRIGGER_SHA~1 $TRIGGER_SHA | grep -E "^(web-ui|chat)/"
-#            else
-#              echo "dependencies=false" >> $GITHUB_OUTPUT
-#              echo "No web-ui or chat code changes detected, skipping Docker build"
-#            fi
-#          fi
-
   build-and-deploy:
     if: github.event_name == 'deployment' || github.event.workflow_run.conclusion == 'success'
     environment: Production
@@ -62,7 +27,8 @@ jobs:
       NEXT_PUBLIC_LOG_LEVEL_CLIENT: ${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT || 'info' }}
       NEXT_PUBLIC_DEFAULT_AI_MODEL: ${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL || 'hifi' }}
       NEXT_PUBLIC_MUI_LICENSE: ${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
-      NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING }}
+      NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
+      NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING: ${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
       OTEL_SERVICE_NAME: ${{ vars.OTEL_SERVICE_NAME }}
       OTEL_RESOURCE_ATTRIBUTES: ${{ vars.OTEL_RESOURCE_ATTRIBUTES }}
       RATE_RETRY_INTERVAL_MINUTES: ${{ vars.RATE_RETRY_INTERVAL_MINUTES || 5 }}  
@@ -105,11 +71,11 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
-            NEXT_PUBLIC_HOSTNAME=${{ vars.NEXT_PUBLIC_HOSTNAME }}
-            NEXT_PUBLIC_LOG_LEVEL_CLIENT=${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
-            NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
+            NEXT_PUBLIC_HOSTNAME="${{ vars.NEXT_PUBLIC_HOSTNAME }}"
+            NEXT_PUBLIC_LOG_LEVEL_CLIENT='${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}'
+            "NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}"
           cache-from: type=gha
           cache-to: type=gha,mode=max
           secrets: |
             NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
-            NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING }}
+            NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
