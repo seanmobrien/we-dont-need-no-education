@@ -5,7 +5,7 @@ import {
   parsePaginationStats,
 } from '@/data-models/_utilities';
 import { LoggedError, ValidationError } from '@/lib/react-util';
-import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
+
 import { EmailService, CreateEmailRequest, UpdateEmailRequest } from '@/lib/api/email/email-service';
 
 /**
@@ -96,7 +96,14 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       sentOn,
       threadId: normalizeNullableNumeric(threadId),
       parentEmailId,
-      recipients: recipients.map((r: any) => ({
+      recipients: recipients.map((r: {
+        recipientId?: number;
+        recipient_id?: number;
+        recipientName?: string;
+        recipient_name?: string;
+        recipientEmail?: string;
+        recipient_email?: string;
+      }) => ({
         recipientId: r.recipientId || r.recipient_id,
         recipientName: r.recipientName || r.recipient_name,
         recipientEmail: r.recipientEmail || r.recipient_email,
@@ -195,7 +202,14 @@ export async function PUT(req: NextRequest): Promise<NextResponse> {
       sentOn,
       threadId,
       parentEmailId,
-      recipients: recipients ? recipients.map((r: any) => ({
+      recipients: recipients ? recipients.map((r: {
+        recipientId?: number;
+        recipient_id?: number;
+        recipientName?: string;
+        recipient_name?: string;
+        recipientEmail?: string;
+        recipient_email?: string;
+      }) => ({
         recipientId: r.recipientId || r.recipient_id,
         recipientName: r.recipientName || r.recipient_name,
         recipientEmail: r.recipientEmail || r.recipient_email,

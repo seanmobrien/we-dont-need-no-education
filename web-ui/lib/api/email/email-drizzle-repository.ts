@@ -1,7 +1,5 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
 import { emails } from '@/drizzle/schema';
-import { EmailMessage, EmailMessageSummary } from '@/data-models/api/email-message';
-import { ContactSummary } from '@/data-models/api/contact';
 import { ValidationError } from '@/lib/react-util';
 import { eq } from 'drizzle-orm';
 
