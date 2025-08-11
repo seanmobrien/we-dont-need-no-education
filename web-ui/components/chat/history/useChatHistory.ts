@@ -82,7 +82,7 @@ import { useQuery, UseQueryResult } from '@tanstack/react-query';
  */
 async function fetchChatDetails(chatId: string): Promise<ChatDetails | null> {
   try {
-    const response = await fetch(`/api/ai/chat/history/${chatId}`, {
+    const response = await fetch(`/api/ai/chat/history/${encodeURIComponent(chatId)}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
