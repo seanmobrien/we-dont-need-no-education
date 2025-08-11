@@ -23,15 +23,11 @@ jobs:
       id-token: write
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_HOSTNAME: ${{ secrets.NEXT_PUBLIC_HOSTNAME }}
-      NEXT_PUBLIC_LOG_LEVEL_CLIENT: ${{ secrets.NEXT_PUBLIC_LOG_LEVEL_CLIENT || 'info' }}
-      NEXT_PUBLIC_DEFAULT_AI_MODEL: ${{ secrets.NEXT_PUBLIC_DEFAULT_AI_MODEL || 'hifi' }}
       NEXT_PUBLIC_MUI_LICENSE: ${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
       NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING: ${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
       NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING: ${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
       OTEL_SERVICE_NAME: ${{ secrets.OTEL_SERVICE_NAME }}
       OTEL_RESOURCE_ATTRIBUTES: ${{ secrets.OTEL_RESOURCE_ATTRIBUTES }}
-      RATE_RETRY_INTERVAL_MINUTES: ${{ vars.RATE_RETRY_INTERVAL_MINUTES || 5 }}  
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -72,9 +68,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}          
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
+            NEXT_PUBLIC_HOSTNAME=${{ vars.NEXT_PUBLIC_HOSTNAME }}
+            NEXT_PUBLIC_LOG_LEVEL_CLIENT=${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
           secrets: |
             NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
             NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
-            NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ secrets.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
-            NEXT_PUBLIC_HOSTNAME=${{ secrets.NEXT_PUBLIC_HOSTNAME }}
-            NEXT_PUBLIC_LOG_LEVEL_CLIENT=${{ secrets.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
