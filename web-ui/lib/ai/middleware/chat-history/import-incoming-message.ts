@@ -196,7 +196,7 @@ const upsertChat = async (tx: DbTransactionType, chatId: string, context: ChatHi
  * console.log(`Reserved turn: ${turnId}`); // e.g., "Reserved turn: 5"
  * ```
  */
-const reserveTurnId = async  (tx: DbTransactionType, chatId: string): Promise<number> => {
+export const reserveTurnId = async  (tx: DbTransactionType, chatId: string): Promise<number> => {
   const thisTurnId = await getNextSequence({
     tableName: 'chat_turns',
     chatId: chatId,
@@ -248,17 +248,31 @@ const reserveTurnId = async  (tx: DbTransactionType, chatId: string): Promise<nu
  * });
  * ```
  */
-const insertChatTurn = async (
+export const insertChatTurn = async (
   tx: DbTransactionType,
   chatId: string,
-  turnId: number,
+  turnId: number | undefined,
   context: ChatHistoryContext
 ) => {
+  const thisTurnId = turnId ? turnId : await reserveTurnId(tx, chatId);
+  const providerId = ((rId: undefined | string) => {
+    if (!rId) {
+      return undefined;
+    }
+    const idxOf = rId.lastIndexOf(':');
+    if (idxOf === -1){
+      return rId === chatId
+        ? undefined
+        : rId;
+    }
+    return rId.substring(idxOf + 1).trim();
+  })(context.requestId?.trim());
   await tx.insert(schema.chatTurns).values({
     chatId: chatId,
-    turnId: turnId,
+    turnId: thisTurnId,
     statusId: 1, // Waiting/in-progress
     createdAt: new Date().toISOString(),
+    providerId,
     temperature: context.temperature,
     topP: context.topP,
     warnings: [],
@@ -305,7 +319,7 @@ const insertChatTurn = async (
  * console.log(messageIds); // [101, 102, 103, 104]
  * ```
  */
-const reserveMessageIds = async  (
+export const reserveMessageIds = async  (
   tx: DbTransactionType,
   chatId: string,
   turnId: number,
@@ -315,10 +329,10 @@ const reserveMessageIds = async  (
     tableName: 'chat_messages',
     chatId: chatId,
     turnId: turnId,
-    count,
+    count: count,
     tx,
   });
-  if (!messageIds || messageIds.length !== count) {
+  if (!messageIds || messageIds.length < count) {
     throw new Error(
       `Failed to reserve enough message ids for chat ${chatId} turn ${turnId}. Expected ${count}, got ${messageIds?.length ?? 0}`,
     );
@@ -467,21 +481,48 @@ const insertPromptMessages = async (
  * console.log(pendingMessage.content);  // '' (empty, will be populated)
  * ```
  */
-const insertPendingAssistantMessage = async (
+export const insertPendingAssistantMessage = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number,
   assistantMessageId: number,
-  messageOrder: number
-) => {
+  messageOrder: number,
+  content: string = '',
+  statusId: number = 1
+) => {  
+  let newMessageId: number | undefined = assistantMessageId;
+  if (!newMessageId) {
+    [newMessageId] = await reserveMessageIds(tx, chatId, turnId, 1);
+  }
+  if (!messageOrder) {
+    try {
+      messageOrder = (await getLastMessageOrder(tx, chatId)) + 1;
+    } catch {
+      messageOrder = 1;
+    }
+  }
+  // Content may or may not be in message format - normalize
+  let thisContent = content?.trim();
+  if (thisContent) {
+    try
+    {
+      const check = JSON.parse(thisContent);
+      if (!Array.isArray(check)) {
+        thisContent = JSON.stringify([{ type: 'text', text: thisContent }]);
+      }
+    } catch {
+      thisContent = JSON.stringify([{ type: 'text', text: thisContent }]);
+    }
+  }
+  // Add record
   return await tx.insert(schema.chatMessages).values({
     chatId: chatId,
     turnId: turnId,
-    messageId: assistantMessageId,
+    messageId: newMessageId,
     role: 'assistant',
-    content: '',
+    content: thisContent ?? '',
     messageOrder: messageOrder,
-    statusId: 1, // Streaming status - response in progress
+    statusId
   })
   .returning()
   .execute();
@@ -654,6 +695,8 @@ export const importIncomingMessage = async ({
   context: ChatHistoryContext;
   /** Language model call options containing the messages to import */
   params: LanguageModelV1CallOptions;
+  /** Record identifier for the imported message */
+  messageId?: number;
 }) => {
   // Resolve and normalize chat ID from context
   const chatId = getChatId(context);
@@ -664,121 +707,60 @@ export const importIncomingMessage = async ({
 
   // Filter out messages that have already been saved in previous turns
   const newMessages = await getNewMessages(tx, chatId, prompt);
-  
+
   log((l) =>
-    l.debug(`Filtered messages for chat ${chatId}: ${prompt.length} total, ${newMessages?.length || 0} new`),
+    l.debug(
+      `Filtered messages for chat ${chatId}: ${prompt.length} total, ${newMessages?.length || 0} new`,
+    ),
   );
-
-  // If no new messages to process, we still need to prepare for assistant response
-  if (!newMessages || newMessages.length === 0) {
-    // Reserve unique turn ID for this conversation cycle
-    const thisTurnId = await reserveTurnId(tx, chatId);
-    log((l) =>
-      l.debug(`Reserved chat turn id: ${thisTurnId} for chat: ${chatId} (no new messages)`),
-    );
-
-    // Initialize turn record with comprehensive tracking information
-    await insertChatTurn(tx, chatId, thisTurnId, context);
-
-    // Get the current highest message order for proper sequencing
-    // Since we have no new messages, we need to find where to place the assistant response
-    let currentMessageOrder = 0;
-    try {
-      const lastMessageOrder = await getLastMessageOrder(tx, chatId);
-      // For new chats (no existing messages), start at 0
-      // For existing chats, start after the last message
-      currentMessageOrder = lastMessageOrder === 0 ? 0 : lastMessageOrder + 1;
-    } catch {
-      // If we can't get the last message order, default to 0
-      currentMessageOrder = 0;
-    }
-
-    // Reserve message ID for pending assistant response only
-    const messageIds = await reserveMessageIds(tx, chatId, thisTurnId, 1);
-    const assistantMessageId = messageIds[0];
-
-    // Prepare pending assistant message for streaming response
-    const pending = await insertPendingAssistantMessage(
-      tx,
-      chatId,
-      thisTurnId,
-      assistantMessageId,
-      currentMessageOrder,
-    );
-
-    return {
-      chatId,
-      turnId: thisTurnId,
-      messageId: assistantMessageId,
-      pendingMessage: pending[0],
-      nextMessageOrder: currentMessageOrder + 1,
-    };
-  }
 
   // Reserve unique turn ID for this conversation cycle
   const thisTurnId = await reserveTurnId(tx, chatId);
   log((l) =>
-    l.debug(`Reserved chat turn id: ${thisTurnId} for chat: ${chatId}`),
+    l.debug(
+      `Reserved chat turn id: ${thisTurnId} for chat: ${chatId} with ${newMessages?.length || 0} new messages`,
+    ),
   );
 
   // Initialize turn record with comprehensive tracking information
   await insertChatTurn(tx, chatId, thisTurnId, context);
 
-  log((l) =>
-    l.debug(
-      `Successfully initialized storage for chat  [${chatId}] turn [${thisTurnId}]; importing ${newMessages.length} new messages for this request.`,
-    ),
-  );
-
   // Get the current highest message order for proper sequencing
-  let lastMessageOrder = 0;
+  let lastMessageOrder: number;
   try {
     lastMessageOrder = await getLastMessageOrder(tx, chatId);
   } catch {
     // If we can't get the last message order, default to 0
-    lastMessageOrder = 0;
+    lastMessageOrder = 1;
   }
-  
-  // For new chats (no existing messages), start at 0
-  // For existing chats, start after the last message
-  currentMessageOrder = lastMessageOrder === 0 ? 0 : lastMessageOrder + 1;
 
-  // Reserve sequential message IDs for batch insertion (new messages + assistant response)
-  const messageIds = await reserveMessageIds(
-    tx,
-    chatId,
-    thisTurnId,
-    newMessages.length + 1, // +1 for pending assistant response
-  );
-  
-  // Insert only the new prompt messages in a single batch operation
-  await insertPromptMessages(
-    tx,
-    chatId,
-    thisTurnId,
-    messageIds,
-    newMessages as LanguageModelV1CallOptions['prompt'], // Only insert new messages, not duplicates
-    currentMessageOrder,
-  );
+  // set current order to last message + 1
+  currentMessageOrder = lastMessageOrder + 1;
 
-  // Prepare pending assistant message for streaming response
-  const assistantMessageId = messageIds[messageIds.length - 1];
-  currentMessageOrder += newMessages.length;
-
-  const pending = await insertPendingAssistantMessage(
-    tx,
-    chatId,
-    thisTurnId,
-    assistantMessageId,
-    currentMessageOrder,
-  );
-
+  if (newMessages?.length) {
+    // Reserve sequential message IDs for batch insertion (new messages + assistant response)
+    const messageIds = await reserveMessageIds(
+      tx,
+      chatId,
+      thisTurnId,
+      newMessages?.length ?? 0, // + 1, // +1 for pending assistant response
+    );
+    // If we have new messages, we can insert them
+    await insertPromptMessages(
+      tx,
+      chatId,
+      thisTurnId,
+      messageIds,
+      newMessages as LanguageModelV1CallOptions['prompt'], // Only insert new messages, not duplicates
+      currentMessageOrder,
+    );
+    currentMessageOrder += newMessages.length;
+  }  
   // Return comprehensive context for continued processing
   return {
     chatId,
     turnId: thisTurnId,
-    messageId: assistantMessageId,
-    pendingMessage: pending[0], // Complete message record for updates
-    nextMessageOrder: currentMessageOrder + 1, // For additional messages if needed
+    messageId: undefined as number | undefined,
+    nextMessageOrder: currentMessageOrder,
   };
 };

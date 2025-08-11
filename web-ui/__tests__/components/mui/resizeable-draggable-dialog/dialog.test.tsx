@@ -7,39 +7,44 @@
 import React from 'react';
 import { render, screen } from '@/__tests__/test-utils';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
-import type { ResizeableDraggableDialogProps } from '@/components/mui/resizeable-draggable-dialog/types';
+import type { ResizeableDraggableDialogProps, ResizeableDraggablePaperProps } from '@/components/mui/resizeable-draggable-dialog/types';
 
 // Mock the ResizeableDraggablePaper component to render children properly
 jest.mock(
   '@/components/mui/resizeable-draggable-dialog/resizeable-draggable-paper',
   () => {
-    const MockResizeableDraggablePaper = React.forwardRef<HTMLDivElement, any>(
-      (props, ref) => {
-        const { setRefineSizeProps, width, height, children, ...otherProps } =
-          props;
+    const MockResizeableDraggablePaper = React.forwardRef<
+      HTMLDivElement,
+      ResizeableDraggablePaperProps & {
+        setRefineSizeProps?: any;
+        ['data-testid']?: string;
+        dragHandleId?: string;
+      }
+    >((props, ref) => {
+      const { setRefineSizeProps, width, height, children, ...otherProps } =
+        props;
 
-        // Call setRefineSizeProps if provided
-        React.useEffect(() => {
-          if (setRefineSizeProps && typeof setRefineSizeProps === 'function') {
-            setRefineSizeProps(() => ({ width, height }));
-          }
-        }, [setRefineSizeProps, width, height]);
+      // Call setRefineSizeProps if provided
+      React.useEffect(() => {
+        if (setRefineSizeProps && typeof setRefineSizeProps === 'function') {
+          setRefineSizeProps(() => ({ width, height }));
+        }
+      }, [setRefineSizeProps, width, height]);
 
-        // Filter out non-DOM props
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { dragHandleId, dialogId, ...domProps } = otherProps;
+      // Filter out non-DOM props
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { dragHandleId, dialogId, maxConstraints, minConstraints, ...domProps } = otherProps;
 
-        return (
-          <div
-            ref={ref}
-            data-testid={props['data-testid'] || 'resizeable-draggable-paper'}
-            {...domProps}
-          >
-            {children}
-          </div>
-        );
-      },
-    );
+      return (
+        <div
+          ref={ref}
+          data-testid={props['data-testid'] || 'resizeable-draggable-paper'}
+          {...domProps}
+        >
+          {children}
+        </div>
+      );
+    });
     MockResizeableDraggablePaper.displayName = 'MockResizeableDraggablePaper';
     return MockResizeableDraggablePaper;
   },
@@ -193,7 +198,7 @@ describe('ResizableDraggableDialog', () => {
         paperProps: { elevation: 4 },
         dialogActions: () => {
           const Actions = () => <div>Actions</div>;
-          return Actions as any;
+          return <Actions />;
         },
       };
 

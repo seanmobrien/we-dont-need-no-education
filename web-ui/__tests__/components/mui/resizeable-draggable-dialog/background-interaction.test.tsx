@@ -3,17 +3,8 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, act } from '@/__tests__/test-utils';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
-
-// Mock the required dependencies
-jest.mock('@/instrument/browser', () => ({
-  getReactPlugin: () => ({}),
-}));
-
-jest.mock('@microsoft/applicationinsights-react-js', () => ({
-  withAITracking: (plugin: any, Component: any) => Component,
-}));
 
 describe('ResizableDraggableDialog Background Interaction', () => {
   it('should allow background clicks when modal=false', () => {
@@ -55,8 +46,8 @@ describe('ResizableDraggableDialog Background Interaction', () => {
     
     // Click on background element
     const backgroundElement = screen.getByTestId('background-element');
-    fireEvent.click(backgroundElement);
-    
+    act(() => fireEvent.click(backgroundElement));
+
     // Background click should be received
     expect(mockBackgroundClick).toHaveBeenCalledTimes(1);
     
@@ -106,7 +97,9 @@ describe('ResizableDraggableDialog Background Interaction', () => {
 
     // Click on dialog button
     const dialogButton = screen.getByTestId('dialog-button');
-    fireEvent.click(dialogButton);
+    act(() => {
+      fireEvent.click(dialogButton);
+    });
     
     // Dialog button click should work
     expect(mockDialogButtonClick).toHaveBeenCalledTimes(1);

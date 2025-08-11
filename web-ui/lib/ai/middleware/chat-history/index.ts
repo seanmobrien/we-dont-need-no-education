@@ -8,6 +8,7 @@ import {
   safeInitializeMessagePersistence, 
   safeCompleteMessagePersistence 
 } from './message-persistence';
+import { ChatMessagesType } from '@/lib/drizzle-db';
 export type { ChatHistoryContext } from './types';
 export { 
   instrumentFlushOperation,
@@ -70,8 +71,9 @@ export const createChatHistoryMiddleware = (
         return doStream();
       }
 
-      const { chatId, turnId, messageId } = persistenceInit;
-
+      const { chatId, turnId } = persistenceInit;
+      let { messageId } = persistenceInit;
+      const toolCalls: Map<string, ChatMessagesType> = new Map();
       try {
         const { stream, ...rest } = await doStream();        
         
@@ -82,12 +84,12 @@ export const createChatHistoryMiddleware = (
           async transform(chunk, controller) {
             // Enqueue chunk immediately for maximum transparency
             // If this fails, let the error propagate - don't try again
-            controller.enqueue(chunk);
-
+            controller.enqueue(chunk);            
             // Process chunk through queue to maintain FIFO order
             const handlerContext: StreamHandlerContext = {
               chatId: chatId!,
               turnId: turnId!,
+              toolCalls: toolCalls,
               messageId,
               currentMessageOrder,
               generatedText,
@@ -100,6 +102,7 @@ export const createChatHistoryMiddleware = (
                 // Get the latest state for subsequent chunks
                 currentMessageOrder = handlerContext.currentMessageOrder;
                 generatedText = handlerContext.generatedText;
+                messageId = handlerContext.messageId;
               })
               .catch((error: Error) => {
                 log((l) =>

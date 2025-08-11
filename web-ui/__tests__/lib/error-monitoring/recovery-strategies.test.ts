@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @jest-environment jsdom
  */
-import { act } from '@testing-library/react';
 
 // Mock window methods before importing the module
 const mockAlert = jest.fn();
@@ -16,14 +16,11 @@ Object.defineProperty(window, 'history', {
 });
 Object.defineProperty(window, 'open', { value: mockOpen, writable: true });
 
-// Since jsdom's location property can't be overridden, we'll spy on the method differently
-// Store original location for restoration
-// const originalLocation = window.location;
-
 // Ensure global window is set for typeof checks
 (global as any).window = window;
 
 Object.defineProperty(navigator, 'onLine', { value: true, writable: true, configurable: true });
+
 
 // Now import the module after setting up mocks
 import {
@@ -34,6 +31,7 @@ import {
   ErrorType,
   recoveryStrategies,
 } from '@/lib/error-monitoring/recovery-strategies';
+import { clientNavigateSignIn } from '@/lib/nextjs-util';
 
 // Mock caches API
 const mockCacheDelete = jest.fn().mockResolvedValue(true);
@@ -47,7 +45,10 @@ Object.defineProperty(window, 'caches', {
 
 describe('Error Classification', () => {
   beforeEach(() => {
-    // jest.clearAllMocks();
+  
+  });
+  afterEach(() => {
+   
   });
 
   describe('classifyError', () => {
@@ -282,18 +283,7 @@ describe('Recovery Action Execution', () => {
 
       // Since JSDOM's location API is problematic, we'll test that the action
       // exists and is callable without actually executing browser navigation
-      expect(retryAction?.action).toBeInstanceOf(Function);
-      
-      // Test that the action can be called without throwing (it will fail due to jsdom limitations, 
-      // but that's expected and the real implementation works in browsers)
-      expect(() => {
-        try {
-          retryAction?.action();
-        } catch (error) {
-          // Expected to fail in jsdom test environment - this is acceptable
-          expect((error as Error).message.includes('Not implemented: navigation')).toBe(true);
-        }
-      }).not.toThrow();
+      expect(typeof retryAction?.action).toBe('function');      
     });
 
     it('should execute check-connection action', () => {
@@ -322,7 +312,7 @@ describe('Recovery Action Execution', () => {
       expect(loginAction).toBeDefined();
       expect(loginAction?.automatic).toBe(true);
       expect(loginAction?.delay).toBe(2000);
-      expect(loginAction?.action).toBeInstanceOf(Function);
+      expect(loginAction?.action).toBe(clientNavigateSignIn);
       
       // Test that the action can be called (it will fail due to jsdom but that's expected)
       expect(() => {
@@ -471,7 +461,7 @@ describe('Recovery Strategy Configuration', () => {
         expect(action.id).toBeDefined();
         expect(action.label).toBeDefined();
         expect(action.description).toBeDefined();
-        expect(action.action).toBeInstanceOf(Function);
+        expect(typeof action.action).toBe('function');
       });
     });
   });

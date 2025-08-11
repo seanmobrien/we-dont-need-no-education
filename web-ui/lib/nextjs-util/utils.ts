@@ -183,4 +183,3 @@ export const deprecate =  <T extends (...args: any[]) => any>(fn: T, message = `
   
   return deprecatedFn;
 };
-

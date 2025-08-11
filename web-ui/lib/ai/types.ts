@@ -3,28 +3,44 @@ import './core/unions';
 import { AiModelType } from './core/unions';
 import { LanguageModelV1FilePart, LanguageModelV1ImagePart, LanguageModelV1ProviderMetadata, LanguageModelV1ReasoningPart, LanguageModelV1RedactedReasoningPart, LanguageModelV1TextPart, LanguageModelV1ToolCallPart, LanguageModelV1ToolResultPart } from '@ai-sdk/provider';
 
+export type { LanguageModelV1ProviderMetadata, LanguageModelV1ToolResultPart };
 
 export type LanguageModelV1MessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
-export type LanguageModelV1Message = ({
-    role: 'system';
-    content: string | Array<LanguageModelV1TextPart>;
-} | {
-    role: 'user';
-    content: Array<LanguageModelV1TextPart | LanguageModelV1ImagePart | LanguageModelV1FilePart>;
-} | {
-    role: 'assistant';
-    content: Array<LanguageModelV1TextPart | LanguageModelV1FilePart | LanguageModelV1ReasoningPart | LanguageModelV1RedactedReasoningPart | LanguageModelV1ToolCallPart>;
-} | {
-    role: 'tool';
-    content: Array<LanguageModelV1ToolResultPart>;
-}) & {
-    /**
-     * Additional provider-specific metadata. They are passed through
-     * to the provider from the AI SDK and enable provider-specific
-     * functionality that can be fully encapsulated in the provider.
-     */
-    providerMetadata?: LanguageModelV1ProviderMetadata;
+export type LanguageModelV1Message = (
+  | {
+      role: 'system';
+      content: string | Array<LanguageModelV1TextPart>;
+    }
+  | {
+      role: 'user';
+      content: Array<
+        | LanguageModelV1TextPart
+        | LanguageModelV1ImagePart
+        | LanguageModelV1FilePart
+      >;
+    }
+  | {
+      role: 'assistant';
+      content: Array<
+        | LanguageModelV1TextPart
+        | LanguageModelV1FilePart
+        | LanguageModelV1ReasoningPart
+        | LanguageModelV1RedactedReasoningPart
+        | LanguageModelV1ToolCallPart
+      >;
+    }
+  | {
+      role: 'tool';
+      content: Array<LanguageModelV1ToolCallPart | LanguageModelV1ToolResultPart>;
+    }
+) & {
+  /**
+   * Additional provider-specific metadata. They are passed through
+   * to the provider from the AI SDK and enable provider-specific
+   * functionality that can be fully encapsulated in the provider.
+   */
+  providerMetadata?: LanguageModelV1ProviderMetadata;
 };
 export type LanguageModelV1Prompt = Array<LanguageModelV1Message>;
 

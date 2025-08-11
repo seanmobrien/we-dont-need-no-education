@@ -6,6 +6,7 @@ import { createContactSummary } from '@/data-models/api';
 import { log } from '@/lib/logger';
 import { css, SerializedStyles } from '@emotion/react';
 import { fetch } from '@/lib/nextjs-util/fetch';
+import { LoggedError } from '@/lib/react-util';
 
 interface ContactDropdownProps {
   displayValue?: 'name' | 'email' | 'both';
@@ -50,7 +51,7 @@ const ContactDropdown = ({
       .then((data) => setContacts(data))
       .catch((error) => {
         if (error.name !== 'AbortError') {
-          console.error('Error fetching contacts:', error);
+          LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'chat-panel' });
         }
       });
 

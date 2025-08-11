@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from '@/__tests__/test-utils';
+import { render, screen, waitFor, jsonResponse, asyncRender } from '@/__tests__/test-utils';
 import EmailList from '@/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 // Mock the router
 jest.mock('next/navigation', () => ({
@@ -15,15 +16,8 @@ jest.mock('next/navigation', () => ({
 }));
 
 describe('EmailList', () => {    
-  // Set a shorter timeout for all tests in this suite
-  // jest.setTimeout(30000);
-
-
   it('should display loading state initially', () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => [],
-    });
+    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: [], totalRowCount: 0 }));
 
     const { asFragment } = render(<EmailList />);
     const theElement = asFragment();
@@ -33,7 +27,7 @@ describe('EmailList', () => {
   it('should display error message when fetching emails fails', async () => {
     (fetch as jest.Mock).mockRejectedValueOnce(new Error('Error fetching emails.'));
 
-    render(<EmailList />);
+    await asyncRender(<EmailList />);
 
     // The ServerBoundDataGrid component shows errors through notifications
     // We can test that the DataGrid is rendered even on error
@@ -43,12 +37,9 @@ describe('EmailList', () => {
   });
 
   it('should display no emails found message when there are no emails', async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ rows: [], totalRowCount: 0 }),
-    });
+    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: [], totalRowCount: 0 }));
 
-    render(<EmailList />);
+    await asyncRender(<EmailList />);
 
     await waitFor(() => {
       expect(screen.getByRole('grid')).toBeInTheDocument();
@@ -60,13 +51,10 @@ describe('EmailList', () => {
 
   it('should display a list of emails', async () => {
     const mockEmails = mockEmailSummary();
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ rows: mockEmails, totalRowCount: mockEmails.length }),
-    });
-    
-    const { asFragment } = render(<EmailList />);
-    
+    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }));
+
+    const { asFragment } = await asyncRender(<EmailList />);
+
     await waitFor(() => {
       expect(screen.getByRole('grid')).toBeInTheDocument();
       // Check that the grid has column headers
@@ -80,12 +68,8 @@ describe('EmailList', () => {
 
   it('should display the email form when an email is selected', async () => {
     const mockEmails = mockEmailSummary();
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ rows: mockEmails, totalRowCount: mockEmails.length }),
-    });
-    
-    render(<EmailList />);
+    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }));
+    await asyncRender(<EmailList />);
     
     await waitFor(
       () => {
@@ -93,8 +77,7 @@ describe('EmailList', () => {
         // The DataGrid should be rendered with column headers
         expect(screen.getByText('From')).toBeInTheDocument();
         expect(screen.getByText('Subject')).toBeInTheDocument();
-      },
-      { timeout: 10000 }
+      }
     );
   });
 });

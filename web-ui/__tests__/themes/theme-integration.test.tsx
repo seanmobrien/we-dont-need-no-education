@@ -1,4 +1,4 @@
-import { render, screen, act, waitFor } from '@/__tests__/test-utils';
+import { render, screen } from '@/__tests__/test-utils';
 import { ThemeProvider } from '@/lib/themes/provider';
 import { ThemeSelector } from '@/components/theme/theme-selector';
 
@@ -26,10 +26,8 @@ describe('Theme Integration', () => {
   it('renders ThemeSelector without crashing', async () => {
     render(<TestComponent />);
 
-    act(() => {
-      // This ensures any effects in ThemeProvider are applied
-      waitFor(() => screen.getByLabelText('Change Theme'));
-    });
+    // This ensures any effects in ThemeProvider are applied
+    // waitFor(() => screen.getByLabelText('Change Theme'));
 
     // Verify that the theme selector is rendered
     expect(screen.getByLabelText('Change Theme')).toBeInTheDocument();
@@ -37,9 +35,11 @@ describe('Theme Integration', () => {
 
   it('applies light theme data attribute correctly', () => {
     render(<TestComponent />);
+    /*
     act(() => {
       waitFor(() => screen.getByLabelText('Change Theme'));
     });
+    */
     // The theme provider should set the data-theme attribute
     // This test ensures our changes don't break the basic theme functionality
     expect(document.documentElement.getAttribute('data-theme')).toBe(
@@ -57,9 +57,11 @@ describe('Theme Integration', () => {
     );
 
     render(<DarkThemeComponent />);
+    /*
     act(() => {
       waitFor(() => screen.getByLabelText('Change Theme'));
     });
+    */
     // Verify dark theme is applied
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
   });

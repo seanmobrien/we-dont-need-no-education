@@ -108,6 +108,67 @@ Advanced tool system for AI interactions:
 - Snapshot testing for complex UI components
 - Tests are located in the __tests__ folder mirroring their site location.  eg, ```lib/module-1/test-module.tsx``` would be tested by  ```__tests__/lib/module-1/test-module.test.tsx```. 
 
+### 🚨 Mandatory Test Environment Analysis (DO THIS FIRST)
+You MUST perform the following analysis steps before adding, editing, or debugging any test. Skipping these steps has repeatedly led to duplicated mocks, incorrect import ordering, brittle tests, and wasted effort.
+
+#### 1. Read and Understand the Global Test Harness
+Checklist (all required):
+1. Open and read `__tests__/jest.setup.ts`
+2. Open and read `jest.config.ts` (or `__tests__/jest.config` if present)
+3. Identify:
+   - Globally mocked modules (auth, db, navigation, telemetry, etc.)
+   - Global test environment (jsdom vs node)
+   - Concurrency limits, timeouts, clear/reset behavior (e.g., `clearMocks`, `resetMocks`)
+   - Any global side‑effects or polyfills
+4. Note existing utilities/helpers you should reuse instead of recreating.
+
+Do NOT write a local `jest.mock(...)` for something already mocked globally unless you have a documented reason and you restore the original afterward.
+
+#### 2. Define the Test Contract Before Importing the SUT
+Before the first `import` of the module under test (SUT):
+1. List which branches / outcomes you need (e.g., authorized, unauthorized, notFound)
+2. Decide which collaborators require mocking vs. real implementation
+3. Prepare mocks FIRST, then import the SUT (if dependency order matters)
+
+#### 3. Anti‑Patterns to Avoid
+| Anti‑Pattern | Why It Hurts | Correct Approach |
+|--------------|-------------|------------------|
+| Re‑mocking `auth` after SUT import | Original call already captured; test can’t influence behavior | Set implementation on existing global mock BEFORE import or via provided helper |
+| Copy/paste of complex global mocks | Divergence & maintenance overhead | Reuse global mocks and override per test case |
+| Multiple invocations of async page component to “extract” props | Side effects consumed on first run | Capture props via shallow element inspection or exported pure helpers |
+| Using `any` in test helpers | Masks type regressions | Use discriminated unions / explicit interfaces |
+
+#### 4. Minimal Pre-Test Analysis Log (Recommended in PR Description)
+Add a short section in your PR describing:
+```
+Test Env Review:
+  Global mocks used: auth, drizzle-db, next/navigation (router hooks)
+  Additional local mocks: isUserAuthorized, ChatHistory
+  Branches covered: unauthorized, notFound (absent), notFound (unauthorized), success(title), success(undefined title)
+  Import ordering enforced: mocks declared before dynamic import of page module
+```
+
+#### 5. Fast Sanity Commands
+```
+yarn test --testNamePattern="ChatDetailPage"  # Run only matching tests
+yarn test __tests__/app/chat/chat-id/page.test.tsx  # Single file run
+```
+
+#### 6. PR Acceptance Gate (All Must Be True)
+Tick these mentally (or list in PR) before requesting review:
+- [ ] I read `jest.setup.ts` & `jest.config.ts` THIS SESSION (not relying on memory)
+- [ ] I reused (not duplicated) existing global mocks
+- [ ] I set mock implementations before importing the SUT when order mattered
+- [ ] I avoided multiple executions of server components just to capture props
+- [ ] I documented any deliberate divergence from global mocks
+
+If any box is unchecked, pause and fix before continuing.
+
+#### 7. When Unsure
+If you are uncertain about a mock’s origin: search for it first (`grep` / workspace search) before redefining. Prefer extending over replacing.
+
+> Summary Rule: “No test shall be authored or modified until the current global test environment (setup + config) has been freshly reviewed.” Treat this as a hard gate, not a suggestion.
+
 ## Environment Configuration
 
 ### Required Environment Variables
