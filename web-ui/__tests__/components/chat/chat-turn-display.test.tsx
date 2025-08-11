@@ -4,6 +4,7 @@ import { mockChatTurn, mockChatTurnWithTool } from '../chat.mock-data';
 
 // Mock ChatMessageDisplay component
 jest.mock('@/components/chat/chat-message-display', () => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ChatMessageDisplay: ({ message, showMetadata }: any) => (
     <div data-testid={`message-${message.messageId}`} data-show-metadata={String(showMetadata)}>
       Message {message.messageId} - {message.role}: {message.content}
@@ -176,7 +177,7 @@ describe('ChatTurnDisplay', () => {
     const settingsButton = screen.getByRole('button');
     fireEvent.click(settingsButton);
 
-    expect(screen.getByText(/In\sprogress\.\.\./g)).toBeInTheDocument();
+    expect(screen.getByText(/In\sprogress\.\.\./i)).toBeInTheDocument();
   });
 
   it('should expand and collapse properties section', () => {
@@ -256,7 +257,7 @@ describe('ChatTurnDisplay', () => {
     fireEvent.click(settingsButton);
     
     // Should show status ID
-    expect(screen.getByText(/Status ID:.*1/g)).toBeInTheDocument();
+    expect(screen.getByText(/Status ID:.*1/i)).toBeInTheDocument();
   });
 
   it('should handle warnings array properly', () => {

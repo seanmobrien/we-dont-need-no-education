@@ -1,10 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import '@testing-library/jest-dom';
+import {
+  render,
+  RenderOptions,
+  screen,
+  renderHook,
+} from '@testing-library/react';
 import React, { act, PropsWithChildren } from 'react';
-import { render, RenderOptions, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/lib/themes/provider';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
-import '@testing-library/jest-dom';
 import { SessionProvider } from '@/components/auth/session-provider';
 
 // Create a test QueryClient with disabled retries and logs
@@ -18,7 +23,7 @@ const createTestQueryClient = () =>
         retry: false,
       },
     },
-  });
+});
 
 const AllTheProviders = ({ children }: PropsWithChildren) => {
   const queryClient = createTestQueryClient();
@@ -34,40 +39,62 @@ const AllTheProviders = ({ children }: PropsWithChildren) => {
   );
 };
 
-const customRender = (
-  ui: React.ReactElement,
-  options: RenderOptions = {}
-) => {
+const customRender = (ui: React.ReactElement, options: RenderOptions = {}) => {
   let ret: any = undefined;
   act(() => {
     ret = render(ui, { wrapper: AllTheProviders, ...options });
   });
-  return ret; 
+  return ret;
 };
-  
+
 const customAsyncRender = async (
   ui: React.ReactElement,
-  options: RenderOptions = {}
+  options: RenderOptions = {},
 ) => {
   let ret: any = undefined;
   await act(async () => {
     ret = render(ui, { wrapper: AllTheProviders, ...options });
   });
-  return ret; 
+  return ret;
 };
 
-
+const customRenderHook = (hook: () => any, options: RenderOptions = {}) => {
+  let ret: any = undefined;
+  act(() => {
+    ret = renderHook(hook, {
+      wrapper: options.wrapper ?? AllTheProviders,
+      ...options,
+    });
+  });
+  return ret;
+};
 
 // re-export everything
 export * from '@testing-library/react';
-
 // override render method
-export { customRender as render, customAsyncRender as asyncRender };
-
+export {
+  customRender as render,
+  customAsyncRender as asyncRender,
+  customRenderHook as renderHook,
+};
 // explicitly export screen to ensure it's available
 export { screen };
 
 export type { RenderOptions };
 
-(globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
-(global as any).IS_REACT_ACT_ENVIRONMENT=true;
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+(global as any).IS_REACT_ACT_ENVIRONMENT = true;
+
+export const jsonResponse = <TData extends object>(data: TData, status?: number) => {
+  const jsonCallback = (): Promise<TData> => Promise.resolve(data as TData);
+  const stat = status ?? 200;
+  return {
+    ok: stat < 400,
+    status: stat ?? 200,
+    statusText: stat < 400 ? 'OK' : 'Error',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    json: jsonCallback
+  };
+};

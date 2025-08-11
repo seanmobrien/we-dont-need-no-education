@@ -40,7 +40,6 @@ export class SafetyUtils {
         handler(error);
       } catch (wrapperError) {
         // Last resort logging - error handler itself failed
-        console.error('MCP Transport: Error handler failed:', wrapperError);
         log((l) =>
           l.error('Error handler failed', {
             data: {

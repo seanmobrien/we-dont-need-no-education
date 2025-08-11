@@ -52,7 +52,59 @@
  * @since 1.0.0
  */
 
+import type { DbTransactionType, ChatMessagesType } from "@/lib/drizzle-db";
+import type { LanguageModelV1ProviderMetadata} from '@/lib/ai/types';
 import { LanguageModelV1StreamPart } from "ai";
+
+/**
+Tool result content part of a prompt. It contains the result of the tool call with the matching ID.
+ */
+export type LanguageModelV1ToolResultPart = {
+    type: 'tool-result';
+    /**
+  ID of the tool call that this result is associated with.
+   */
+    toolCallId: string;
+    /**
+  Name of the tool that generated this result.
+    */
+    toolName: string;
+    /**
+  Result of the tool call. This is a JSON-serializable object.
+     */
+    result: unknown;
+    /**
+  Optional flag if the result is an error or an error message.
+     */
+    isError?: boolean;
+    /**
+  Tool results as an array of parts. This enables advanced tool results including images.
+  When this is used, the `result` field should be ignored (if the provider supports content).
+     */
+    content?: Array<{
+        type: 'text';
+        /**
+Text content.
+         */
+        text: string;
+    } | {
+        type: 'image';
+        /**
+base-64 encoded image data
+         */
+        data: string;
+        /**
+Mime type of the image.
+         */
+        mimeType?: string;
+    }>;
+    /**
+     * Additional provider-specific metadata. They are passed through
+     * to the provider from the AI SDK and enable provider-specific
+     * functionality that can be fully encapsulated in the provider.
+     */
+    providerMetadata?: LanguageModelV1ProviderMetadata;
+}
 
 // ============================================================================
 // Core Context Types
@@ -230,6 +282,11 @@ export interface StreamHandlerContext {
    * Built incrementally as the AI response is generated.
    */
   generatedText: string;
+
+  /**
+   * A map of currently known tool calls that are awaiting response.
+   */
+  toolCalls: Map<string, ChatMessagesType>;
 }
 
 /**
@@ -279,6 +336,11 @@ export interface StreamHandlerContext {
  * ```
  */
 export interface StreamHandlerResult {
+  /**
+   * Unique identifier for the current message being processed.
+   * Used to track and update specific messages in the database.
+   */
+  currentMessageId: number | undefined;
   /** 
    * Updated message order counter after processing the chunk.
    * Reflects the current position in the conversation sequence.
@@ -291,6 +353,12 @@ export interface StreamHandlerResult {
    */
   generatedText: string;
   
+  /**
+   * Map of tool IDs to their corresponding chat messages.
+   * Tracks all tool invocations and their responses.
+   */
+  toolCalls: Map<string, ChatMessagesType>;
+
   /** 
    * Indicates whether the stream chunk was successfully processed.
    * When false, the chunk processing encountered an error or exception.
@@ -770,6 +838,7 @@ export interface MessagePersistenceInit {
  */
 
 export interface MessageCompletionContext {
+  tx?: DbTransactionType;
   chatId: string;
   turnId?: number;
   messageId?: number;

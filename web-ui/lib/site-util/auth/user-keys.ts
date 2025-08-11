@@ -1,3 +1,4 @@
+import { LoggedError } from "@/lib/react-util";
 
 
 
@@ -158,7 +159,11 @@ class UserKeyManager {
         await this.exportPublicKeyToBase64(localPublicKey);
       return serverKeys.includes(localPublicKeyBase64);
     } catch (error) {
-      console.error('Failed to validate against server keys:', error);
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        message: 'Failed to validate against server keys',
+        context: { serverKeys }
+      });
       return false;
     }
   }

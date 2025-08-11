@@ -44,7 +44,7 @@ describe('ProcessingQueue', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     
     // Create fresh queue instance
     queue = new ProcessingQueue();
@@ -56,6 +56,7 @@ describe('ProcessingQueue', () => {
       messageId: 42,
       currentMessageOrder: 1,
       generatedText: '',
+      toolCalls: new Map()
     };
     
     // Setup mock chunk

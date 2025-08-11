@@ -15,11 +15,12 @@ import {
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { caseFileRequestPropsShape, CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import { log } from '@/lib/logger';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util';
 import { createMcpHandler } from '@vercel/mcp-adapter';
 import { z } from 'zod';
 
-const handler = createMcpHandler(
+const handler = wrapRouteRequest(createMcpHandler(
   (server) => {
     server.registerTool(
       'playPingPong',
@@ -432,6 +433,6 @@ const handler = createMcpHandler(
       log((l) => l.info('MCP Event:', event, ...args));
     },
   },
-);
+), { log: true });
 
 export { handler as GET, handler as POST };

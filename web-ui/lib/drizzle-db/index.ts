@@ -12,6 +12,9 @@ export type {
   CallToActionCategoryType,
   CallToActionResponseType,
   CallToActionResponsiveActionLinkType,
+  ChatMessagesType,
+  ChatsType,
+  ChatTurnsType,
   UserPublicKeysType,
   ViolationDetailsType,
   ComplianceScoreType,
@@ -26,6 +29,9 @@ export type {
   CallToActionResponseQueryShape,
   ViolationDetailsQueryShape,
   ComplianceScoresDetailsQueryShape,  
+  ProvidersType,
+  ModelsType,
+  ModelQuotasType,
   Types
 } from './drizzle-types';
 export type {

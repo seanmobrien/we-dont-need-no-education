@@ -16,7 +16,6 @@ describe('EmailViewer', () => {
         
     // Mock fetch to return a delayed promise
     (fetch as jest.Mock).mockImplementation((url: string) => {
-      console.log('overridden fetch called with URL:', url);
       if (url.includes('/api/email/test-email-id/attachments')) {
 
         return Promise.resolve({

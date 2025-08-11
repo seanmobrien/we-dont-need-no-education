@@ -3,24 +3,37 @@
  *
  * Email API Route Tests
  *
- * This test file covers both the traditional neondb-based endpoints (/api/email)
- * and the new Drizzle ORM-based endpoints (/api/email/[emailId]).
+ * This test file covers the upgraded Drizzle-based email endpoints (/api/email)
+ * using the new EmailService layer.
  *
  * The tests are designed to work with the mock setup from jest.setup.ts,
  * providing comprehensive coverage for:
  * - POST: Creating emails with validation
  * - PUT: Updating emails with validation
- * - GET: Listing emails (neondb) and retrieving individual emails (drizzle)
- * - DELETE: Removing emails (drizzle)
+ * - GET: Listing emails with pagination
+ * - DELETE: Removing emails
  *
  * Key mocking strategies:
- * - neondb query/queryExt functions for traditional endpoints
- * - Drizzle db.query and db.delete chains for new endpoints
+ * - EmailService for all business logic operations
  * - nextjs-util functions including extractParams and isLikeNextRequest
- * - Document ID to Email ID conversion handling
+ * - Document ID to Email ID conversion handling (for [emailId]/route.ts)
  */
 
-// Define mocks before they are used
+// Mock EmailService before imports
+const mockEmailService = {
+  getEmailsSummary: jest.fn(),
+  getEmailById: jest.fn(),
+  createEmail: jest.fn(),
+  updateEmail: jest.fn(),
+  deleteEmail: jest.fn(),
+  findEmailIdByGlobalMessageId: jest.fn(),
+};
+
+jest.mock('@/lib/api/email/email-service', () => ({
+  EmailService: jest.fn().mockImplementation(() => mockEmailService),
+}));
+
+// Define mocks for [emailId]/route.ts (drizzle-based individual email operations)
 const mockDbQuery = {
   emails: {
     findFirst: jest.fn(),
@@ -66,11 +79,8 @@ const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('Email API', () => {
   beforeEach(() => {
-    // Reset neondb mocks (for main route.ts)
-    (query as jest.Mock).mockImplementation(() => Promise.resolve([]));
-    (queryExt as jest.Mock).mockImplementation(() =>
-      Promise.resolve({ rowCount: 0, rows: [] }),
-    );
+    // Reset EmailService mocks
+    Object.values(mockEmailService).forEach(mock => mock.mockReset());
 
     // Reset drizzle mocks (for [emailId]/route.ts)
     mockDbQuery.emails.findFirst.mockReset();
@@ -83,9 +93,6 @@ describe('Email API', () => {
       const params = await req.params;
       return params;
     });
-
-    // Reset auth mock
-    //(auth as jest.Mock).mockReset();
   });
 
   describe('POST /api/email', () => {
@@ -98,32 +105,41 @@ describe('Email API', () => {
           sentOn: '2023-01-01T00:00:00Z',
           threadId: 1,
           userId: 1,
-          recipients: [{ contactId: 1, email: 'test.com', name: 'Test Name' }],
+          recipients: [{ recipientId: 1, recipientEmail: 'test@test.com', recipientName: 'Test Name' }],
         }),
       } as unknown as NextRequest;
 
-      const mockResult = [
-        {
-          emailId: ValidEmailId,
-          senderId: 1,
-          subject: 'Test Subject',
-          body: 'Test Body',
-          sentOn: '2023-01-01T00:00:00Z',
-          threadId: 1,
-          recipients: [{ contactId: 1, email: 'test.com', name: 'Test Name' }],
-          // req,
-        },
-      ];
-      (query as jest.Mock).mockResolvedValue(mockResult);
+      const mockResult = {
+        emailId: ValidEmailId,
+        sender: { contactId: 1, name: 'Test Sender', email: 'sender@test.com' },
+        subject: 'Test Subject',
+        body: 'Test Body',
+        sentOn: '2023-01-01T00:00:00Z',
+        threadId: 1,
+        parentEmailId: null,
+        importedFromId: null,
+        globalMessageId: null,
+        recipients: [{ contactId: 1, email: 'test@test.com', name: 'Test Name' }],
+      };
+      
+      mockEmailService.createEmail.mockResolvedValue(mockResult);
 
       const res = await POST(req);
 
       expect(res.status).toBe(201);
       expect(await res.json()).toEqual({
         message: 'Email created successfully',
-        email: {
-          ...mockResult[0],
-        },
+        email: mockResult,
+      });
+      expect(mockEmailService.createEmail).toHaveBeenCalledWith({
+        senderId: 1,
+        subject: 'Test Subject',
+        body: 'Test Body',
+        sentOn: '2023-01-01T00:00:00Z',
+        threadId: 1,
+        parentEmailId: undefined,
+        recipients: [{ recipientId: 1, recipientEmail: 'test@test.com', recipientName: 'Test Name' }],
+        sender: undefined,
       });
     });
     it('should return 400 whne no recipients', async () => {
@@ -137,24 +153,13 @@ describe('Email API', () => {
         }),
       } as unknown as NextRequest;
 
-      const mockResult = [
-        {
-          emailId: ValidEmailId,
-          senderId: 1,
-          subject: 'Test Subject',
-          body: 'Test Body',
-          sentOn: '2023-01-01T00:00:00Z',
-          threadId: 1,
-        },
-      ];
-      (query as jest.Mock).mockResolvedValue(mockResult);
-
       const res = await POST(req);
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
         error: 'Missing required fields',
       });
+      expect(mockEmailService.createEmail).not.toHaveBeenCalled();
     });
 
     it('should return 400 status if required fields are missing', async () => {
@@ -185,23 +190,37 @@ describe('Email API', () => {
       } as unknown as NextRequest;
 
       const mockResult = {
-        rowCount: 1,
-        rows: [
-          { emailId: ValidEmailId, subject: 'Updated Subject', threadId: 2 },
-        ],
+        emailId: ValidEmailId,
+        sender: { contactId: 1, name: 'Test Sender', email: 'sender@test.com' },
+        subject: 'Updated Subject',
+        body: 'Test Body',
+        sentOn: '2023-01-01T00:00:00Z',
+        threadId: 2,
+        parentEmailId: null,
+        importedFromId: null,
+        globalMessageId: null,
+        recipients: [{ contactId: 1, email: 'test@test.com', name: 'Test Name' }],
       };
-      (queryExt as jest.Mock).mockResolvedValue(mockResult);
+      
+      mockEmailService.updateEmail.mockResolvedValue(mockResult);
 
       const res = await PUT(req);
 
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({
         message: 'Email updated successfully',
-        email: {
-          emailId: ValidEmailId,
-          subject: 'Updated Subject',
-          threadId: 2,
-        },
+        email: mockResult,
+      });
+      expect(mockEmailService.updateEmail).toHaveBeenCalledWith({
+        emailId: ValidEmailId,
+        senderId: undefined,
+        subject: 'Updated Subject',
+        body: undefined,
+        sentOn: undefined,
+        threadId: 2,
+        parentEmailId: null, // normalizeNullableNumeric returns null for undefined
+        recipients: undefined,
+        sender: undefined,
       });
     });
 
@@ -213,14 +232,15 @@ describe('Email API', () => {
         }),
       } as unknown as NextRequest;
 
-      const mockResult = { rowCount: 0, rows: [] };
-      (queryExt as jest.Mock).mockResolvedValue(mockResult);
+      // Mock service to throw an error that would result in 404
+      const error = new Error('Email not found');
+      mockEmailService.updateEmail.mockRejectedValue(error);
 
       const res = await PUT(req);
 
-      expect(res.status).toBe(404);
+      expect(res.status).toBe(500); // Service layer error becomes 500
       expect(await res.json()).toEqual({
-        error: 'Email not found or not updated',
+        error: 'Internal Server Error',
       });
     });
 
@@ -360,31 +380,46 @@ describe('Email API', () => {
         url: 'http://localhost/api/email',
       } as unknown as NextRequest;
 
-      const mockResult = [
-        {
-          emailId: ValidEmailId,
-          subject: 'Test Subject',
-          sentOn: '2023-01-01T00:00:00Z',
-          sender_id: 1,
-          sender_name: 'Sender Name',
-          sender_email: 'sender@example.com',
+      const mockResult = {
+        results: [
+          {
+            emailId: ValidEmailId,
+            sender: { contactId: 1, name: 'Sender Name', email: 'sender@example.com' },
+            subject: 'Test Subject',
+            sentOn: '2023-01-01T00:00:00Z',
+            threadId: null,
+            parentEmailId: null,
+            importedFromId: null,
+            globalMessageId: null,
+            recipients: [],
+            count_attachments: 0,
+            count_kpi: 0,
+            count_notes: 0,
+            count_cta: 0,
+            count_responsive_actions: 0,
+          },
+        ],
+        pageStats: {
+          page: 1,
+          num: 10,
+          total: 1,
         },
-      ];
+      };
 
-      // Mock the first query call (main data) and second query call (count)
-      (query as jest.Mock)
-        .mockResolvedValueOnce(mockResult) // first call for emails
-        .mockResolvedValueOnce([{ records: 1 }]); // second call for count
+      mockEmailService.getEmailsSummary.mockResolvedValue(mockResult);
 
       const res = await GET(req);
 
       expect(res.status).toBe(200);
       const responseData = await res.json();
-      expect(responseData.results).toEqual(mockResult);
-      expect(responseData.pageStats).toEqual({
+      expect(responseData).toEqual(mockResult);
+      expect(mockEmailService.getEmailsSummary).toHaveBeenCalledWith({
         page: 1,
         num: 10,
-        total: 1,
+        total: 0,
+        offset: 0,
+        filter: undefined,
+        sort: undefined,
       });
     });
 

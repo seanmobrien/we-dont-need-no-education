@@ -409,6 +409,78 @@ export type UserPublicKeysType =
  */
 export type ViolationDetailsType = TableSelectTypes['violationDetails'];
 
+
+/**
+ * Type definition for model entities.
+ * 
+ * Models represent AI models available for use in the system, including their
+ * metadata, capabilities, and associated providers.
+ * 
+ * @typedef {TableSelectTypes['models']} ModelsType
+ * 
+ * @example
+ * ```typescript
+ * import type { ModelsType } from '@/lib/drizzle-db/drizzle-types';
+ * function getModelInfo(model: ModelsType) {
+ *   return {
+ *     id: model.modelId,
+ *     name: model.name,
+ *     description: model.description,
+ *     provider: model.providerName,
+ *     capabilities: model.capabilities
+ *   };
+ * }
+ * ```
+ */
+export type ModelsType = TableSelectTypes['models'];
+
+
+/**
+ * Type definition for model providers.
+ * 
+ * Providers provide the AI models available in the system, including their
+ * 
+ * @typedef {TableSelectTypes['providers']} ProvidersType
+ * 
+ * @example
+ * ```typescript
+ * import type { ProvidersType } from '@/lib/drizzle-db/drizzle-types';
+ * function getModelInfo(providers: ProvidersType) {
+ *   return {
+ *     id: providers.modelId,
+ *     name: providers.name,
+ *     description: providers.description,
+ *   };
+ * }
+ * ```
+ */
+export type ProvidersType = TableSelectTypes['providers'];
+
+/**
+ * Type definition for model quota entities.
+ * 
+ * Model quotas represent usage limits, allocation, and consumption tracking for AI models
+ * within the system. They help manage resource usage, enforce limits, and provide insights
+ * into model utilization for users or organizations.
+ * 
+ * @typedef {TableSelectTypes['modelQuotas']} ModelQuotasType
+ * 
+ * @example
+ * ```typescript
+ * import type { ModelQuotasType } from '@/lib/drizzle-db/drizzle-types';
+ * function getQuotaInfo(quota: ModelQuotasType) {
+ *   return {
+ *     modelId: quota.modelId,
+ *     userId: quota.userId,
+ *     quotaLimit: quota.quotaLimit,
+ *     quotaUsed: quota.quotaUsed,
+ *     period: quota.period
+ *   };
+ * }
+ * ```
+ */
+export type ModelQuotasType = TableSelectTypes['modelQuotas'];
+
 /**
  * Type definition for compliance score entities.
  * 
@@ -430,6 +502,38 @@ export type ViolationDetailsType = TableSelectTypes['violationDetails'];
  * ```
  */
 export type ComplianceScoreType = TableSelectTypes['complianceScoresDetails'];
+
+
+
+
+/**
+ * Type definition for chat message instance
+ *
+ * Chat messages represent individual messages exchanged in a chat session,
+ * including their content, metadata, and associated user information.
+ *
+ * @typedef {TableSelectTypes['chatMessages']} ChatMessagesType
+ * ChatMessagesType
+ * @example
+ * ```typescript
+ * import type { ChatMessagesType } from '@/lib/drizzle-db/drizzle-types';
+ * 
+ * function evaluateChatMessage(message: ChatMessagesType) {
+ *   return {
+ *     content: message.content,
+ *     role: message.role,
+ *     messageId: message.messageId
+ *   };
+ * }
+ * ```
+ */
+export type ChatMessagesType = TableSelectTypes['chatMessages'];
+
+export type ChatTurnsType = TableSelectTypes['chatTurns'];
+
+export type ChatsType = TableSelectTypes['chats'];
+
+
 
 // ============================================================================
 // QUERY BUILDER TYPES

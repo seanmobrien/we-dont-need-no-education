@@ -1,4 +1,7 @@
 /**
+ * @jest-environment node
+ */
+/**
  * @fileoverview Unit tests for Call-to-Action API route
  * 
  * Tests the GET and POST endpoints for call-to-action properties,
@@ -63,7 +66,7 @@ describe('Call-to-Action API Route', () => {
   let mockParams: { params: Promise<{ emailId: string; propertyId: string }> };
 
   beforeEach(() => {
-    jest.clearAllMocks();  
+    // jest.clearAllMocks();  
    
     // Setup mock request
     mockRequest = new NextRequest('http://localhost:3000/api/email/test-email-123/properties/call-to-action?page=1&num=20');

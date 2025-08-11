@@ -48,9 +48,17 @@ describe('Chat History Enhancement Demonstration', () => {
      */
     
     // Simulate existing messages from Turn 1
-    const existingMessages: LanguageModelV1MessageExt = [
-      { role: 'user', content: [ { type: 'text', text: 'Hello' } ] },
-      { role: 'assistant', content: [ { type: 'text', text: 'Hi there!' } ] }
+    const existingMessages = [
+      {
+        role: 'user',
+        content: [{ type: 'text', text: 'Hello' }],
+        messageOrder: 1,
+      },
+      {
+        role: 'assistant',
+        content: [{ type: 'text', text: 'Hi there!' }],
+        messageOrder: 2,
+      },
     ];
 
     // Simulate Turn 2 incoming messages (conversation history + new message)
@@ -96,7 +104,7 @@ describe('Chat History Enhancement Demonstration', () => {
   it('validates the enhancement is content and role aware', async () => {
     // Scenario: Similar content but different roles or slight variations
     const existingMessages = [
-      { role: 'user', content: [{type: 'text', text: 'Hello world' }], messageOrder: 0 }
+      { role: 'user', content: [{type: 'text', text: 'Hello world' }], messageOrder: 1 }
     ];
 
     const mixedMessages: LanguageModelV1MessageExt = [

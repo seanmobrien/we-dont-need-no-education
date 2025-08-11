@@ -77,16 +77,7 @@ export class AggregateError extends Error {
     this.#errors =
       typeof messageOrError == 'object'
         ? [messageOrError, ...errors]
-        : [...errors];
-
-    errors.forEach((error) => {
-      console.log('in aggregateerror');
-      if (error instanceof Error) {
-        console.log(error.message);
-        console.log(error.stack);        
-      }
-    });
-    
+        : [...errors];    
   }
 
   [index: number]: Error;

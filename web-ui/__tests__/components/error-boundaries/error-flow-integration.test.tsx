@@ -64,7 +64,7 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 describe('Error Flow Integration Tests', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');

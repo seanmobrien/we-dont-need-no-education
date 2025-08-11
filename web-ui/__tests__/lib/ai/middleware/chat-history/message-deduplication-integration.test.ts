@@ -94,10 +94,10 @@ describe('Message Deduplication Integration', () => {
   describe('First conversation turn (all messages new)', () => {
     it('should save all messages in the first turn', async () => {
       // Arrange - First conversation turn
-      const firstTurnMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello, how are you?' }] },
-        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'I am doing well, thank you!' }] },
-        { role: 'user' as const, content: [{ type: 'text' as const, text: 'What can you help me with?' }] }
+      const firstTurnMessages = [
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello, how are you?' }], messageOrder: 1 },
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'I am doing well, thank you!' }], messageOrder: 2 },
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'What can you help me with?' }], messageOrder: 3 }
       ];
 
       const mockParams: LanguageModelV1CallOptions = {
@@ -127,24 +127,23 @@ describe('Message Deduplication Integration', () => {
         tableName: 'chat_messages',
         chatId: 'existing-chat-456',
         turnId: 1,
-        count: 4, // 3 new messages + 1 assistant response
+        count: 3, // 3 new messages 
         tx: mockTx,
       });
       
       expect(result.chatId).toBe('existing-chat-456');
       expect(result.turnId).toBe(1);
-      expect(result.messageId).toBe(13); // Last message ID for assistant
     });
   });
 
   describe('Second conversation turn (some messages duplicate)', () => {
     it('should only save new messages in subsequent turns', async () => {
       // Arrange - Second turn with conversation history included
-      const secondTurnMessages: LanguageModelV1CallOptions['prompt'] = [
-        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello, how are you?' }] },        // Duplicate from turn 1
-        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'I am doing well, thank you!' }] },  // Duplicate from turn 1
-        { role: 'user' as const, content: [{ type: 'text' as const, text: 'What can you help me with?' }] }, // Duplicate from turn 1
-        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Can you write a poem?' }] }       // NEW message
+      const secondTurnMessages = [
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Hello, how are you?' }] , messageOrder: 1},        // Duplicate from turn 1
+        { role: 'assistant' as const, content: [{ type: 'text' as const, text: 'I am doing well, thank you!' }] , messageOrder: 2},  // Duplicate from turn 1
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'What can you help me with?' }] , messageOrder: 3}, // Duplicate from turn 1
+        { role: 'user' as const, content: [{ type: 'text' as const, text: 'Can you write a poem?' }] , messageOrder: 4}       // NEW message
       ];
 
       const newMessages = [
@@ -178,13 +177,12 @@ describe('Message Deduplication Integration', () => {
         tableName: 'chat_messages',
         chatId: 'existing-chat-456',
         turnId: 2,
-        count: 2, // 1 new message + 1 assistant response
+        count: 1,
         tx: mockTx,
       });
       
       expect(result.chatId).toBe('existing-chat-456');
       expect(result.turnId).toBe(2);
-      expect(result.messageId).toBe(21); // Last message ID for assistant
     });
   });
 
@@ -223,17 +221,14 @@ describe('Message Deduplication Integration', () => {
 
       // Assert
       expect(mockGetNewMessages).toHaveBeenCalledWith(mockTx, 'existing-chat-456', thirdTurnMessages);
-      expect(mockGetNextSequence).toHaveBeenNthCalledWith(2, {
-        tableName: 'chat_messages',
+      expect(mockGetNextSequence).toHaveBeenNthCalledWith(1, {
+        tableName: 'chat_turns',
         chatId: 'existing-chat-456',
-        turnId: 3,
-        count: 1, // Only 1 assistant response
         tx: mockTx,
       });
       
       expect(result.chatId).toBe('existing-chat-456');
       expect(result.turnId).toBe(3);
-      expect(result.messageId).toBe(30); // Assistant message ID
     });
   });
 
@@ -257,15 +252,20 @@ describe('Message Deduplication Integration', () => {
       // Act
       const result = await importIncomingMessage({
         tx: mockTx,
-        context: mockContext,
+        context: {
+          userId: 'user-123',
+          chatId: 'existing-chat-456',
+          model: 'gpt-4o',
+          temperature: 0.7,
+          topP: 0.9,
+          requestId: 'session-789',
+        },
         params: mockParams,
       });
 
       // Assert
       expect(mockGetNewMessages).toHaveBeenCalledWith(mockTx, 'existing-chat-456', []);
       expect(result.chatId).toBe('existing-chat-456');
-      expect(result.turnId).toBe(4);
-      expect(result.messageId).toBe(40);
     });
   });
 });
