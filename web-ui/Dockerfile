@@ -25,6 +25,12 @@ ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
 # Install dependencies only when needed
 FROM base AS deps
 
+ARG RATE_RETRY_INTERVAL_MINUTES
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+
+
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat dcron curl
 WORKDIR /app
@@ -43,6 +49,11 @@ ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
 
 # Rebuild the source code only when needed
 FROM base AS builder
+
+ARG RATE_RETRY_INTERVAL_MINUTES
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
 
 WORKDIR /app
 
@@ -65,18 +76,14 @@ ENV FOR_STANDALONE=1
 ENV IS_BUILDING=1
 
 RUN \
-  --mount=type=secret,id=NEXT_PUBLIC_HOSTNAME,env=NEXT_PUBLIC_HOSTNAME \
-  --mount=type=secret,id=NEXT_PUBLIC_LOG_LEVEL_CLIENT,env=NEXT_PUBLIC_LOG_LEVEL_CLIENT \
-  --mount=type=secret,id=NEXT_PUBLIC_DEFAULT_AI_MODEL,env=NEXT_PUBLIC_DEFAULT_AI_MODEL \
   printf "NEXT_PUBLIC_HOSTNAME=%s\r\nNEXT_PUBLIC_LOG_LEVEL_CLIENT=%s\r\nNEXT_PUBLIC_DEFAULT_AI_MODEL=%s\r\n" "$NEXT_PUBLIC_HOSTNAME" "$NEXT_PUBLIC_LOG_LEVEL_CLIENT" "$NEXT_PUBLIC_DEFAULT_AI_MODEL" > .env \
   && cat .env
 
 RUN \
   --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE,env=NEXT_PUBLIC_MUI_LICENSE \
   --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,env=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
-  --mount=type=secret,id=NEXT_PUBLIC_HOSTNAME,env=NEXT_PUBLIC_HOSTNAME \
-  --mount=type=secret,id=NEXT_PUBLIC_LOG_LEVEL_CLIENT,env=NEXT_PUBLIC_LOG_LEVEL_CLIENT \
-  --mount=type=secret,id=NEXT_PUBLIC_DEFAULT_AI_MODEL,env=NEXT_PUBLIC_DEFAULT_AI_MODEL \
+  --mount=type=secret,id=REDIS_URL,env=REDIS_URL \
+  --mount=type=secret,id=REDIS_PASSWORD,env=REDIS_PASSWORD \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
@@ -85,6 +92,11 @@ RUN \
 
 # Production image, copy all the files and run next
 FROM base AS runner
+
+ARG RATE_RETRY_INTERVAL_MINUTES
+ARG NEXT_PUBLIC_HOSTNAME
+ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
+ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
 
 LABEL co.obapps.vendor="OBrien Appplications"
 LABEL co.obapps.name="Compliance Tracker Web UI"

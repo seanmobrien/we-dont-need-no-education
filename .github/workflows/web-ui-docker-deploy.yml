@@ -75,3 +75,5 @@ jobs:
           secrets: |
             NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
             NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
+            REDIS_URL=${{ secrets.REDIS_URL }}
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
