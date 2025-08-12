@@ -1,5 +1,5 @@
 import { PaginatedResultset } from '@/data-models';
-import { isAbortError, LoggedError } from '@/lib/react-util';
+import { isAbortError, LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   GridFilterModel,
   GridGetRowsResponse,

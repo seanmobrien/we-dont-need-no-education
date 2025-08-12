@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
-import { LoggedError, ValidationError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
 import { EmailService } from '@/lib/api/email/email-service';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';

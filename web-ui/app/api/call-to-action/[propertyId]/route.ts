@@ -6,7 +6,7 @@ import {
 import {
   CallToActionDetailsRepository,
 } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
-import { extractParams } from '@/lib/nextjs-util';
+import { extractParams } from '@/lib/nextjs-util/utils';
 
 import { eq, and, sql } from 'drizzle-orm';
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';

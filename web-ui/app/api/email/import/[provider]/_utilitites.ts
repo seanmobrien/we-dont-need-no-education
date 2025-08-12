@@ -10,7 +10,8 @@ import {
 import { query } from '@/lib/neondb';
 import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from './_googleProviderFactory';
-import { isError, LoggedError } from '@/lib/react-util';
+import { isError } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { auth } from '@/auth';
 import {
   GmailEmailMessageHeader,

@@ -8,7 +8,8 @@ import type {
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
-import { isError, isTruthy, LoggedError } from '@/lib/react-util';
+import { isError, isTruthy } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetch } from '@/lib/nextjs-util/fetch';
 import {

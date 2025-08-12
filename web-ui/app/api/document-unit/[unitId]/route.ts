@@ -5,10 +5,10 @@ import {
 } from '@/lib/ai/tools';
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { DocumentUnitRepository } from '@/lib/api/document-unit';
-import { extractParams } from '@/lib/nextjs-util';
+import { extractParams } from '@/lib/nextjs-util/utils';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { NextRequest, NextResponse } from 'next/server';
-import { isError } from '@/lib/react-util';
+import { isError } from '@/lib/react-util/_utility-methods';
 import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { log } from '@/lib/logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';

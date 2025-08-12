@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
-import { extractParams } from '@/lib/nextjs-util';
+import { extractParams } from '@/lib/nextjs-util/utils';
 import { NotesRepository } from '@/lib/api/email/properties/notes/notes-repository';
 import { EmailProperty } from '@/data-models';
 import { eq, and, ne } from 'drizzle-orm';

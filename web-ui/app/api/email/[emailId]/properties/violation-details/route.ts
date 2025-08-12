@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util';
+import { extractParams } from '@/lib/nextjs-util/utils';
 import { ViolationDetails } from '@/data-models';
 import { eq, and } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';

@@ -4,7 +4,7 @@ import {
   hybridPolicySearchFactory,
 } from '../services/search';
 import { AiSearchToolResult, PolicySearchOptions } from './types';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { toolCallbackResultFactory } from './utility';
 import { appMeters } from '@/lib/site-util/metrics';
 

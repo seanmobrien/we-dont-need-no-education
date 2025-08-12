@@ -3,7 +3,7 @@ import { ObjectRepository, DrizzleRepositoryConfig, IObjectRepositoryExt } from 
 import { PaginatedResultset, PaginationStats } from '@/data-models';
 import { PartialExceptFor } from '@/lib/typescript';
 import { eq, count, SQL } from 'drizzle-orm';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { PgColumn } from 'drizzle-orm/pg-core';

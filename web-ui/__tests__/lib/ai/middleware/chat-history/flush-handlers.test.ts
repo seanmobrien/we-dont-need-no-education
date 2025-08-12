@@ -20,7 +20,7 @@ import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import type { FlushContext, FlushConfig } from '@/lib/ai/middleware/chat-history/types';
 import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 const mockLog = log as jest.MockedFunction<typeof log>;
 

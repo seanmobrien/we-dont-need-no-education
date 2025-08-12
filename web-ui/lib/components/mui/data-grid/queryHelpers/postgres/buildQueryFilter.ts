@@ -1,10 +1,10 @@
 import { GridFilterModel, GridFilterItem } from '@mui/x-data-grid-pro';
 import { ISqlNeonAdapter, isSqlNeonAdapter, SqlDb, unwrapAdapter } from '@/lib/neondb';
-import { isLikeNextRequest, LikeNextRequest } from '@/lib/nextjs-util';
+import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { columnMapFactory } from '../utility';
 import { BuildQueryFilterProps, BuildItemFilterProps } from './types';
 import { isGridFilterModel } from './guards';
-import { isTruthy } from '@/lib/react-util';
+import { isTruthy } from '@/lib/react-util/errors/logged-error';
 
 export const buildAttachmentOrEmailFilter = ({
   attachments,

@@ -4,7 +4,8 @@ import {
   ToolCallbackResult,
   ValidCaseFileRequestProps,
 } from './types';
-import { isError, LoggedError } from '@/lib/react-util';
+import { isError } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { drizDb,drizDbWithInit } from '@/lib/drizzle-db';
 
 interface ToolCallbackResultOverloads {

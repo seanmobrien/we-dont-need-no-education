@@ -1,14 +1,12 @@
 export const dynamic = 'force-dynamic';
 import { createDataStreamResponse, wrapLanguageModel, streamText } from 'ai';
-import {
-  aiModelFactory,
-  ChatRequestMessage,
-  isAiLanguageModelType,
-  getRetryErrorInfo,
-  optimizeMessagesWithToolSummarization,
-  toolProviderSetFactory,
-  type ChatHistoryContext,
-} from '@/lib/ai';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import type { ChatRequestMessage } from '@/lib/ai/types';
+import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
+import { isAiLanguageModelType } from '@/lib/ai/core/guards';
+import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
+import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+import { toolProviderSetFactory } from '@/lib/ai/mcp/toolProviderFactory';
 import {
   createChatHistoryMiddleware,
 } from '@/lib/ai/middleware/chat-history';
@@ -16,7 +14,7 @@ import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { generateChatId } from '@/lib/ai/core';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 // Allow streaming responses up to 180 seconds

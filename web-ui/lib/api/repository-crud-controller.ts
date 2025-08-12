@@ -6,13 +6,9 @@ import {
   PartialExceptFor,
   PickField,
 } from '@/lib/typescript';
-import {
-  extractParams,
-  isNextResponse,
-  isRequestOrApiRequest,
-  LikeNextRequest,
-} from '@/lib/nextjs-util';
-import { LoggedError } from '@/lib/react-util';
+import { LikeNextRequest } from '@/lib/nextjs-util/types'
+import { extractParams, isNextResponse, isRequestOrApiRequest,  } from '@/lib/nextjs-util/utils';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ObjectRepository } from './_types';
 import {
   isPaginationStats,

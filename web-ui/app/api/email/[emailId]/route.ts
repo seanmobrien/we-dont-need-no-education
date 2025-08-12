@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
-import { extractParams } from '@/lib/nextjs-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { extractParams } from '@/lib/nextjs-util/utils';
 import { eq } from 'drizzle-orm';
 import { drizDb, schema } from '@/lib/drizzle-db';
 

@@ -1,4 +1,4 @@
-import type { LikeNextRequest } from '@/lib/nextjs-util';
+import type { LikeNextRequest } from '@/lib/nextjs-util/types';
 import type { GridFilterModel, GridFilterItem, GridSortModel } from '@mui/x-data-grid-pro';
 import type { NextRequest } from 'next/server';
 import type { ColumnBaseConfig, SQL } from 'drizzle-orm';

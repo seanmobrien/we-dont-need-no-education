@@ -1,5 +1,5 @@
 import { DrizzleCrudRepositoryController } from '@/lib/api/drizzle-crud-controller';
-import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment';
+import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment/drizzle-repository';
 import { NextRequest } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 

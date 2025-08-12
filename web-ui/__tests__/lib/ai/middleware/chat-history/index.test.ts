@@ -22,7 +22,7 @@ import {
 } from '@/lib/ai/middleware/chat-history/message-persistence';
 import { generateChatId } from '@/lib/ai/core';
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
 import { LanguageModelV1FunctionToolCall, LanguageModelV1FinishReason, LanguageModelV1CallWarning, LanguageModelV1ProviderMetadata, LanguageModelV1Source, LanguageModelV1LogProbs } from '@ai-sdk/provider';
 

@@ -9,7 +9,7 @@ import {
 } from '@/lib/api/email/properties/email-property-repository';
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { db } from '@/lib/neondb';
-import { extractParams } from '@/lib/nextjs-util';
+import { extractParams } from '@/lib/nextjs-util/utils';
 import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 

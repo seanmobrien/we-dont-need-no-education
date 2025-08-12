@@ -1,5 +1,5 @@
 import { query, queryExt } from '@/lib/neondb';
-import { ValidationError, DataIntegrityError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { PartialExceptFor } from '@/lib/typescript';
 import { log } from '@/lib/logger';
 import type {

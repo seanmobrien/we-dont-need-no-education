@@ -5,7 +5,7 @@ import {
   extractToolCallIds,
   hasToolCalls,
 } from '@/lib/ai/chat/message-optimizer-tools';
-import { aiModelFactory } from '@/lib/ai';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { generateText } from 'ai';
 
 // Mock dependencies

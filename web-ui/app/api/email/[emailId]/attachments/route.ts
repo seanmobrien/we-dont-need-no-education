@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractParams } from '@/lib/nextjs-util';
-import { LoggedError } from '@/lib/react-util';
+import { extractParams } from '@/lib/nextjs-util/utils';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { buildAttachmentDownloadUrl } from '@/lib/api/attachment';
 import { getAbsoluteUrl } from '@/lib/site-util/url-builder';

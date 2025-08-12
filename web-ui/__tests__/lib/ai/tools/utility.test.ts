@@ -21,7 +21,7 @@ import {
   resolveCaseFileIdBatch,
 } from '@/lib/ai/tools/utility';
 // import { db } from '@/lib/drizzle-db';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 

@@ -55,7 +55,7 @@ import {
   ToolCallbackResult,
   ValidCaseFileRequestProps,
 } from '../types';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 import { caseFileDocumentShape } from '../caseFileDocumentQuery';
 import {

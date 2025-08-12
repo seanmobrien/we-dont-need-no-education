@@ -9,13 +9,13 @@
  * @since 2025-07-27
  */
 
-import { isLikeNextRequest } from '@/lib/nextjs-util';
+import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { GridFilterModel } from '@mui/x-data-grid-pro';
 import { and, or, eq, ne, ilike, isNull, isNotNull, inArray, notInArray, gt, lt, gte, lte, between, notBetween, SQL, sql } from 'drizzle-orm';
 import { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
-import { isTruthy } from '@/lib/react-util';
+import { isTruthy } from '@/lib/react-util/errors/logged-error';
 import { schema } from '@/lib/drizzle-db';
 import { BuildDrizzleAttachmentOrEmailFilterProps, BuildDrizzleItemFilterProps, BuildDrizzleQueryFilterProps, DrizzleSelectQuery } from './types';
 

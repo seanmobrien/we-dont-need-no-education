@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 import { EmailDrizzleRepository, EmailDomain } from '@/lib/api/email/email-drizzle-repository';
-import { ValidationError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
 // Mock drizzle-db
 jest.mock('@/lib/drizzle-db', () => {

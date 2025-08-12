@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 import EmailViewer from '@/components/email-message/email-viewer';
-import { extractParams } from '@/lib/nextjs-util';
+import { extractParams } from '@/lib/nextjs-util/utils';
 import { Box } from '@mui/material';
 import React from 'react';
 import { Metadata } from 'next';

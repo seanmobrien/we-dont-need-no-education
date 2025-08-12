@@ -4,7 +4,7 @@ import { mapRecordToSummary } from '../../../../lib/api/email/util';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const dynamic = 'force-dynamic';
 

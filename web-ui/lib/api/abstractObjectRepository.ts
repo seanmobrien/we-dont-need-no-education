@@ -2,7 +2,7 @@ import {
   PaginationStats,
   PaginatedResultset,
 } from '@/data-models';
-import { isError, isTemplateStringsArray } from '@/lib/react-util';
+import { isError, isTemplateStringsArray } from '@/lib/react-util/_utility-methods';
 import { log } from '../logger';
 import type {
   TransformedFullQueryResults,

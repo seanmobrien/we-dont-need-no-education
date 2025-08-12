@@ -18,7 +18,7 @@ import {
 } from './mem0.types';
 import { captureClientEvent, generateHash } from './telemetry';
 import { getMem0ApiUrl } from '../pollyfills';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 class APIError extends Error {
   constructor(message: string) {

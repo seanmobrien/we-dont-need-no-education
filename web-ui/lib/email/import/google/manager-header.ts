@@ -14,7 +14,9 @@ import {
   AdditionalStageOptions,
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
-import { AggregateError, isError, LoggedError } from '@/lib/react-util';
+import { AggregateError } from '@/lib/react-util/errors/aggregate-error';
+import { isError } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { CustomAppInsightsEvent, log } from '@/lib/logger';
 import { newUuid } from '@/lib/typescript';
 const EmailPropertyTypeMap: Map<string, number> = new Map();

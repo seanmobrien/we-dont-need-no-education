@@ -10,7 +10,7 @@
 
 import type { ContactSummary } from '@/data-models';
 import { query } from '@/lib/neondb';
-import { ValidationError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
 /**
  * Maps a record to a summary object containing email details.

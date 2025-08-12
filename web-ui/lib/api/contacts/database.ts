@@ -11,7 +11,7 @@ import {
 } from '@/data-models';
 import { log } from '@/lib/logger';
 import { query, queryExt } from '@/lib/neondb';
-import { ValidationError, DataIntegrityError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { PartialExceptFor } from '@/lib/typescript';
 import { RecipientType } from '@/lib/email/import/types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';

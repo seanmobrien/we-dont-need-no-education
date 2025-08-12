@@ -4,7 +4,7 @@ import {
   hybridDocumentSearchFactory,
 } from '../services/search';
 import { AiSearchToolResult, CaseFileSearchOptions } from './types';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { toolCallbackResultFactory } from './utility';
 import { appMeters } from '@/lib/site-util/metrics';
 import type {

@@ -12,7 +12,7 @@
 import { LanguageModelV1CallOptions } from 'ai';
 import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ChatHistoryContext, FlushContext, MessageCompletionContext, MessagePersistenceInit } from './types';
 import { importIncomingMessage } from './import-incoming-message';
 import { handleFlush } from './flush-handlers';

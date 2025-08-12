@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import Mail from '@mui/icons-material/Mail';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { searchEmails } from '@/lib/api/email/import/google';
 import { log } from '@/lib/logger';
 import { default as EnhancedTableHead } from '@/components/general/enhanced-table-head';

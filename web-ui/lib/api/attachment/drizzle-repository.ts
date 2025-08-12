@@ -1,7 +1,7 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
 import { EmailAttachment } from '@/data-models/api/attachment';
 import { emailAttachments } from '@/drizzle/schema';
-import { ValidationError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
 /**
  * Maps a database record to an EmailAttachment domain object

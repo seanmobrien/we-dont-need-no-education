@@ -12,7 +12,7 @@ import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { auth } from '@/auth';
 import { drizDb, schema } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';

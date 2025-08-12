@@ -16,7 +16,7 @@ import { drizDb } from '@/lib/drizzle-db';
 import { setupDefaultTools } from '../../mcp/setup-default-tools';
 import { NextRequest } from 'next/server';
 import { ChatHistoryContext, createChatHistoryMiddleware } from '../../middleware';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ToolProviderSet } from '../..';
 import { log } from '@/lib/logger';
 

@@ -19,7 +19,7 @@ import React from 'react';
 import ContactRecipients from '@/components/contact/contact-recipients';
 import EmailSelect from '../select';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // Define stable style objects outside component to avoid re-renders
 const stableStyles = {
