@@ -15,8 +15,8 @@ export const buildPagination = <RecordType extends Record<string, unknown> = Rec
   const sql = isSqlNeonAdapter(sqlFromProps) 
     ? unwrapAdapter<RecordType>(sqlFromProps) 
     : sqlFromProps as SqlDb<RecordType>;
+  const ops = parsePaginationOptions(source, defaultPageSize, maxPageSize);
+  const { offset, limit } = 'offset' in ops ? ops : { offset: 0, limit: defaultPageSize };
 
-  const { offset, limit } = parsePaginationOptions(source, defaultPageSize, maxPageSize);
-  
   return sql`LIMIT ${limit} OFFSET ${offset}`;
 };
