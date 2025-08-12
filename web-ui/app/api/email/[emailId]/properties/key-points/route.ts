@@ -2,8 +2,10 @@ import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   RepositoryCrudController,
+} from '@/lib/api/repository-crud-controller';
+import {
   KeyPointsDetailsRepository,
-} from '@/lib/api';
+} from '@/lib/api/email/properties/key-points/key-points-details-repository';
 import { extractParams } from '@/lib/nextjs-util';
 import { KeyPointsDetails } from '@/data-models';
 import { drizDbWithInit } from '@/lib/drizzle-db';

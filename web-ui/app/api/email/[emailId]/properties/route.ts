@@ -2,9 +2,11 @@ import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelper
 
 import {
   RepositoryCrudController,
+} from '@/lib/api/repository-crud-controller';
+import {
   EmailPropertyRepository,
   mapEmailPropertyRecordToObject,
-} from '@/lib/api';
+} from '@/lib/api/email/properties/email-property-repository';
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { db } from '@/lib/neondb';
 import { extractParams } from '@/lib/nextjs-util';
