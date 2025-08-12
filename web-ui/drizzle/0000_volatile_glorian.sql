@@ -84,7 +84,7 @@ CREATE TABLE "chat_history" (
 --> statement-breakpoint
 CREATE TABLE "accounts" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"userId" integer NOT NULL,
+	"user_id" integer NOT NULL,
 	"type" varchar(255) NOT NULL,
 	"provider" varchar(255) NOT NULL,
 	"providerAccountId" varchar(255) NOT NULL,
@@ -95,13 +95,13 @@ CREATE TABLE "accounts" (
 	"scope" text,
 	"id_token" text,
 	"session_state" text,
-	CONSTRAINT "constraint_userId" UNIQUE("userId")
+	CONSTRAINT "constraint_userId" UNIQUE("user_id")
 );
 --> statement-breakpoint
 CREATE TABLE "sessions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"sessionToken" varchar(255) NOT NULL,
-	"userId" integer NOT NULL,
+	"user_id" integer NOT NULL,
 	"expires" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
@@ -163,7 +163,7 @@ CREATE TABLE "staging_message" (
 	"stage" "import_stage_type",
 	"id" uuid PRIMARY KEY NOT NULL,
 	"message" "email_message_type",
-	"userId" integer,
+	"user_id" integer,
 	CONSTRAINT "staging_message_external_id_key" UNIQUE("external_id")
 );
 --> statement-breakpoint
@@ -361,14 +361,14 @@ ALTER TABLE "document_property" ADD CONSTRAINT "document_property_emails" FOREIG
 ALTER TABLE "document_unit_analysis_stage_audit" ADD CONSTRAINT "document_unit_analysis_audt_document_fk" FOREIGN KEY ("document_id") REFERENCES "public"."document_units"("unit_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "document_unit_analysis_stage_audit" ADD CONSTRAINT "document_unit_analysis_audit_stage_fk" FOREIGN KEY ("analysis_stage_id") REFERENCES "public"."analysis_stage"("analysis_stage_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "chat_history" ADD CONSTRAINT "fk_chat_history_user" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "sessions" ADD CONSTRAINT "FK_account" FOREIGN KEY ("userId") REFERENCES "public"."accounts"("userId") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "sessions" ADD CONSTRAINT "FK_account" FOREIGN KEY ("user_id") REFERENCES "public"."accounts"("user_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "sessions_ext" ADD CONSTRAINT "FK_sessions_ext_sessions" FOREIGN KEY ("session_id") REFERENCES "public"."sessions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "emails" ADD CONSTRAINT "emails_relation_1" FOREIGN KEY ("sender_id") REFERENCES "public"."contacts"("contact_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "emails" ADD CONSTRAINT "fk_emails_parent_email" FOREIGN KEY ("parent_id") REFERENCES "public"."emails"("email_id") ON DELETE set null ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "email_attachments" ADD CONSTRAINT "email_attachments_email_fkey" FOREIGN KEY ("email_id") REFERENCES "public"."emails"("email_id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "email_attachments" ADD CONSTRAINT "email_attachments_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "public"."policies_statutes"("policy_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "email_property_type" ADD CONSTRAINT "email_property_type_email_property_category" FOREIGN KEY ("email_property_category_id") REFERENCES "public"."email_property_category"("email_property_category_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "staging_message" ADD CONSTRAINT "fk_staging_message_users" FOREIGN KEY ("userId") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
+ALTER TABLE "staging_message" ADD CONSTRAINT "fk_staging_message_users" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE cascade;--> statement-breakpoint
 ALTER TABLE "legal_references" ADD CONSTRAINT "legal_references_policy_id_fkey" FOREIGN KEY ("policy_id") REFERENCES "public"."policies_statutes"("policy_id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "violation_details" ADD CONSTRAINT "violation_details_action_fk" FOREIGN KEY ("action_property_id") REFERENCES "public"."call_to_action_details"("property_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "violation_details" ADD CONSTRAINT "violation_details_attachment_fk" FOREIGN KEY ("attachment_id") REFERENCES "public"."email_attachments"("attachment_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
@@ -408,7 +408,7 @@ CREATE INDEX "fki_email_attachments_email_fkey" ON "email_attachments" USING btr
 CREATE INDEX "idx_attachment_search" ON "email_attachments" USING gin ("extracted_text_tsv" tsvector_ops);--> statement-breakpoint
 CREATE INDEX "idx_email_attachments_email_id" ON "email_attachments" USING btree ("email_id" uuid_ops);--> statement-breakpoint
 CREATE UNIQUE INDEX "email_property_category_property_type_id" ON "email_property_type" USING btree ("email_property_category_id" int4_ops,"document_property_type_id" int4_ops);--> statement-breakpoint
-CREATE INDEX "fki_fk_staging_message_users" ON "staging_message" USING btree ("userId" int4_ops);--> statement-breakpoint
+CREATE INDEX "fki_fk_staging_message_users" ON "staging_message" USING btree ("user_id" int4_ops);--> statement-breakpoint
 CREATE INDEX "idx_violation_details_action_property_id" ON "violation_details" USING btree ("action_property_id" uuid_ops);--> statement-breakpoint
 CREATE INDEX "idx_violation_details_attachment_id" ON "violation_details" USING btree ("attachment_id" int4_ops);--> statement-breakpoint
 CREATE INDEX "idx_violation_details_detected_on" ON "violation_details" USING btree ("detected_on" timestamp_ops);--> statement-breakpoint

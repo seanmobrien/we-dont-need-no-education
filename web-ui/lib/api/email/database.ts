@@ -65,7 +65,7 @@ export class EmailRepository extends BaseObjectRepository<
         (
           sql,
         ) => sql`INSERT INTO document_units (email_id, content, created_on, document_type)
-        VALUES (${ret.emailId}, ${props.emailContents}, ${importDate}, 'email')
+        VALUES (${ret.emailId}, ${props.emailContents}, ${importDate.toISOString()}, 'email')
         returning unit_id`,
       );
       if (res.length < 1) {
@@ -160,7 +160,7 @@ export class EmailRepository extends BaseObjectRepository<
         obj.emailContents,
         obj.globalMessageId ?? null,
         obj.importedFromId ?? null,
-        obj.sentOn,
+        !obj.sentOn ? null : typeof obj.sentOn === 'string' ? obj.sentOn : obj.sentOn.toISOString(),
       ],
     ];
   }

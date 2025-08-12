@@ -432,10 +432,10 @@ export const accounts = pgTable(
   'accounts',
   {
     id: serial().primaryKey().notNull(),
-    userId: integer().notNull(),
+    userId: integer("user_id").notNull(),
     type: varchar({ length: 255 }).notNull(),
     provider: varchar({ length: 255 }).notNull(),
-    providerAccountId: varchar({ length: 255 }).notNull(),
+    providerAccountId: varchar("provider_account_id", { length: 255 }).notNull(),
     refreshToken: text('refresh_token'),
     accessToken: text('access_token'),
     // You can use { mode: "bigint" } if numbers are exceeding js number limitations
@@ -460,7 +460,7 @@ export const sessions = pgTable(
   {
     id: serial().primaryKey().notNull(),
     sessionToken: varchar({ length: 255 }).notNull(),
-    userId: integer().notNull(),
+    userId: integer("user_id").notNull(),
     expires: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
   },
   (table) => [
@@ -589,7 +589,7 @@ export const stagingMessage = pgTable(
     id: uuid().primaryKey().notNull(),
     // TODO: failed to parse database type 'email_message_type'
     // message: unknown('message'),
-    userId: integer(),
+    userId: integer("user_id"),
   },
   (table) => [
     index('fki_fk_staging_message_users').using(

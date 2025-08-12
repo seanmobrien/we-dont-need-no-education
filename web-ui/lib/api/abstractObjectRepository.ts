@@ -225,6 +225,7 @@ export class AbstractObjectRepository<T extends object> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     values: Array<any>,
   ) => {
+    values = values?.map(x => (x instanceof Date ? x.toISOString() : x));
     return isTemplateStringsArray(sqlQuery)
       ? sql(sqlQuery, ...values)
       : sql(sqlQuery, values);

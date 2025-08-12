@@ -11,6 +11,7 @@
  * - ./docs/lib/nextjs-util/error-response.md
  */
 import { isError } from "@/lib/react-util/_utility-methods";
+/*
 
 // Local minimal fallbacks to allow evaluation in non-fetch environments (e.g., some Jest setups)
 // These are only used if the corresponding global constructors are missing.
@@ -38,7 +39,6 @@ class __SimpleHeaders {
 // Decide which Headers to use at module eval time without throwing
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const __HeadersBase: any = typeof Headers !== 'undefined' ? Headers : __SimpleHeaders;
-
 // Minimal Response polyfill that supports status, headers, json(), text()
 class __SimpleResponse {
   status: number;
@@ -69,10 +69,10 @@ class __SimpleResponse {
     }
   }
 }
-
+*/
 // Choose a base Response class safely
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const __ResponseBase: any = typeof Response !== 'undefined' ? Response : __SimpleResponse;
+
+// const __ResponseBase: any = typeof Response !== 'undefined' ? Response : __SimpleResponse;
 
 /**
  * Options that can be used to influence how an error response is produced.
@@ -184,7 +184,7 @@ export const parseResponseOptions = (
  *
  * See {@link ./README.md} for examples.
  */
-export class ErrorResponse extends __ResponseBase {
+export class ErrorResponse extends Response {
   /**
    * Create a new ErrorResponse.
    *

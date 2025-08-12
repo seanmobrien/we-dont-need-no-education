@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-import { parsePaginationStats } from '@/app/api/email/import/[provider]/_utilitites';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 import { MailQueryBuilder } from '@/app/api/email/import/[provider]/_mailQueryBuilder';
 import { PaginationStats } from '@/data-models';
 

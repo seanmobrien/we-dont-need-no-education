@@ -31,7 +31,7 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
     const result = await query(
       (sql) =>
         sql`SELECT 
-      s.stage, s.id, m.email_id AS targetId, s."userId",
+      s.stage, s.id, m.email_id AS targetId, s."user_id",
       (SELECT h.value 
         FROM staging_message, 
         LATERAL unnest((message).payload.headers) AS h(name, value) 

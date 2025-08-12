@@ -12,6 +12,7 @@ import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelper
 
 import type { ObjectRepository } from '../_types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
   threadId: Number(record.thread_id),
@@ -106,26 +107,42 @@ export class ThreadRepository
     createdOn,
   }: Omit<Partial<ThreadSummary>, 'threadId'>): Promise<ThreadSummary> {
     try {
-      if (!subject) {
+      if (!subject || !externalId) {
         throw new ValidationError({
           field: 'name||email',
           source: 'ThreadRepository',
         });
       }
       const createdDate = createdOn || new Date();
+      const result = await drizDbWithInit(async (db) =>
+        await db.insert(schema.threads).values({
+          subject,
+          createdAt: createdDate.toISOString(),
+          externalId: externalId,
+        }).returning()
+        .execute()
+        .then(x => x.at(0))
+      );
+      /*
       const result = await query(
         (sql) =>
           sql`INSERT INTO threads (subject, created_at, external_id) VALUES (${subject}, ${createdDate}, ${externalId}) \
             RETURNING *`,
         { transform: ThreadRepository.MapRecordToSummary },
       );
-      log((l) => l.verbose('[ [AUDIT]] -  Thread created:', result[0]));
-      if (result.length !== 1) {
+      */
+      if (!result) {
         throw new DataIntegrityError('Failed to create Thread', {
           table: 'Threads',
         });
       }
-      return result[0];
+      log((l) => l.verbose('[ [AUDIT]] -  Thread created:', result.threadId));      
+      return {
+        threadId: result.threadId,
+        subject: result.subject,
+        createdOn: createdDate,
+        externalId: externalId,
+      };
     } catch (error) {
       AbstractObjectRepository.logDatabaseError({
         error,

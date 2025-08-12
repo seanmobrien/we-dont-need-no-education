@@ -45,7 +45,7 @@ const getTokensFromUser = async (
   }
   const records = await query(
     (sql) =>
-      sql`select refresh_token, access_token from accounts where "userId"=${userId} and provider='google'`,
+      sql`select refresh_token, access_token from accounts where "user_id"=${userId} and provider='google'`,
   );
   if (!records.length) {
     throw new Error('Account not found');

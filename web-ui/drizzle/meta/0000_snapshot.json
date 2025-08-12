@@ -723,8 +723,8 @@
           "primaryKey": true,
           "notNull": true
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -741,8 +741,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "providerAccountId": {
-          "name": "providerAccountId",
+        "provider_account_id": {
+          "name": "provider_account_id",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
@@ -794,12 +794,12 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "constraint_userId": {
+        "constraint_user_id": {
           "columns": [
-            "userId"
+            "user_id"
           ],
           "nullsNotDistinct": false,
-          "name": "constraint_userId"
+          "name": "constraint_user_id"
         }
       },
       "checkConstraints": {},
@@ -816,14 +816,14 @@
           "primaryKey": true,
           "notNull": true
         },
-        "sessionToken": {
-          "name": "sessionToken",
+        "session_token": {
+          "name": "session_token",
           "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true
@@ -843,10 +843,10 @@
           "tableTo": "accounts",
           "schemaTo": "public",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
-            "userId"
+            "user_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -1424,8 +1424,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "userId": {
-          "name": "userId",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -1436,7 +1436,7 @@
           "name": "fki_fk_staging_message_users",
           "columns": [
             {
-              "expression": "userId",
+              "expression": "user_id",
               "asc": true,
               "nulls": "last",
               "opclass": "int4_ops",
@@ -1456,7 +1456,7 @@
           "tableTo": "users",
           "schemaTo": "public",
           "columnsFrom": [
-            "userId"
+            "user_id"
           ],
           "columnsTo": [
             "id"

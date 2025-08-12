@@ -157,7 +157,7 @@ export const saveAttachment = async (
     const { model } = job;
     const records = await query(
       (sql) =>
-        sql`select external_id, "userId" from staging_message where id=${model.stagedMessageId}`,
+        sql`select external_id, "user_id" from staging_message where id=${model.stagedMessageId}`,
     );
     if (!records.length) {
       throw new Error(

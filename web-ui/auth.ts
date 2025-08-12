@@ -225,7 +225,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
               refreshToken: String(account.refresh_token),
             })
             .where(
-              sql`provider='google' AND "providerAccountId" = ${account.providerAccountId}`,
+              sql`provider='google' AND "provider_account_id" = ${account.providerAccountId}`,
             )));
         }
         logEvent('signIn');

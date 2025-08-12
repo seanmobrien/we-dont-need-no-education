@@ -305,7 +305,7 @@ const getCurrentState = async ({
   const currentStateRows = await query((sql) =>
     sql<false, false>(
       `
-          select s.external_id AS providerId, s.stage, s.id${messageField}, s."userId", m.email_id AS targetId from emails m 
+          select s.external_id AS providerId, s.stage, s.id${messageField}, s."user_id", m.email_id AS targetId from emails m 
             right join staging_message s on s.external_id = m.imported_from_id
             where s.external_id = $1;`.toString(),
       [emailId],
