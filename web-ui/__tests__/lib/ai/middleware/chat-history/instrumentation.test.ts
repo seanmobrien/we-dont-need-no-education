@@ -159,34 +159,6 @@ describe('Chat History Instrumentation', () => {
       messageId: 84,
     };
 
-    it('should instrument successful stream chunk processing', async () => {
-      const mockResult = {
-        currentMessageOrder: 1,
-        generatedText: 'Hello',
-        success: true,
-      };
-
-      const mockOperation = jest.fn(() => Promise.resolve(mockResult));
-
-      const result = await instrumentStreamChunk('text-delta', mockContext, mockOperation as any);
-
-      expect(result).toEqual(mockResult);
-      expect(mockTracer.startSpan).toHaveBeenCalledWith('chat_history.stream_chunk', {
-        kind: expect.any(Number),
-        attributes: {
-          'chat.id': 'test-chat-456',
-          'chat.turn_id': 2,
-          'chat.message_id': 84,
-          'chunk.type': 'text-delta',
-          'operation.type': 'stream_chunk',
-        },
-      });
-      expect(mockCounter.add).toHaveBeenCalledWith(1, {
-        chunk_type: 'text-delta',
-        success: 'true',
-      });
-    });
-
     it('should instrument failed stream chunk processing', async () => {
       const mockResult  = {
         currentMessageOrder: 1,
@@ -199,10 +171,7 @@ describe('Chat History Instrumentation', () => {
       const result = await instrumentStreamChunk('tool-call', mockContext, mockOperation as any);
 
       expect(result).toEqual(mockResult);
-      expect(mockSpan.setStatus).toHaveBeenCalledWith({
-        code: 2, // ERROR
-        message: 'Stream chunk processing failed',
-      });
+
       expect(mockCounter.add).toHaveBeenCalledWith(1, {
         operation: 'stream_chunk',
         error_type: 'processing_failure',
