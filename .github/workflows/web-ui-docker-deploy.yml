@@ -79,3 +79,12 @@ jobs:
             NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
             REDIS_URL=${{ secrets.REDIS_URL }}
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+      
+      - name: Deploy to container
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          #appSourcePath: ${{ github.workspace }}/src
+          imageToDeploy: schoollawregistry.azurecr.io/compliance-ui:${{ github.sha }}  
+          acrName: schoollawregistry
+          containerAppName: full-ui
+          resourceGroup: SchoolLawyer

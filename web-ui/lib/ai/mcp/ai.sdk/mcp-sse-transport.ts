@@ -82,6 +82,7 @@ import { createEventSourceParserStream } from '@ai-sdk/provider-utils';
 import { MCPTransport, MCPClientError } from 'ai';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
 import { fetch } from '@/lib/nextjs-util/fetch';
+import { log } from '@/lib/logger';
 
 /**
  * SSE-based transport implementation for Model Context Protocol (MCP).
@@ -289,14 +290,16 @@ export class SseMCPTransport implements MCPTransport {
                     });
                     this.onerror?.(e);
                     // We do not throw here so we continue processing events after reporting the error
+                    resolve();
                   }
                 }
               }
             } catch (error) {
               if (error instanceof Error && error.name === 'AbortError') {
+                log(l=> l.warn("MCP SSE Transport: Connection aborted", error));
+                resolve();
                 return;
               }
-
               this.onerror?.(error);
               reject(error);
             }

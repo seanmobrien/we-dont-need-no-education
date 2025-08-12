@@ -109,11 +109,11 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       this.#onclose = opts.onclose;
       this.#onmessage = opts.onmessage;
       this.#onerror = this.#safetyUtils.createSafeErrorHandler((e: unknown) => {
-        if (isError(e)) {
-          opts.onerror(e);
-        } else {
-          opts.onerror(new Error(String(e)));
-        }
+        opts.onerror(
+        LoggedError.isTurtlesAllTheWayDownBaby(e, {
+          log: true,
+          message: 'MCP SSE Transport: Error occurred'
+        }));        
       });
 
       // Override base callbacks with instrumented versions
@@ -310,14 +310,20 @@ export class InstrumentedSseTransport extends SseMCPTransport {
 
       // End the transport span
       if (this.#transportSpan) {
-        const connectionDuration = this.#connectionStartTime
-          ? Date.now() - this.#connectionStartTime
-          : 0;
-        this.#transportSpan.addEvent('transport.closed', {
-          'mcp.transport.duration_ms': connectionDuration,
-        });
-        this.#transportSpan.setStatus({ code: SpanStatusCode.OK });
-        this.#transportSpan.end();
+        try{
+          const connectionDuration = this.#connectionStartTime
+            ? Date.now() - this.#connectionStartTime
+            : 0;
+          this.#transportSpan.addEvent('transport.closed', {
+            'mcp.transport.duration_ms': connectionDuration,
+          });
+          this.#transportSpan.setStatus({ code: SpanStatusCode.OK });
+          this.#transportSpan.end();
+        }catch(e){
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+            log: true
+          });
+        }
       }
 
       span.setStatus({ code: SpanStatusCode.OK });
@@ -341,9 +347,8 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         l.error('Failed to close MCP Client Transport', {
           data: { error: isError(error) ? error.message : String(error) },
         }),
-      );
-
-      throw error;
+      );      
+      // throw error;
     } finally {
       span?.end();
     }
