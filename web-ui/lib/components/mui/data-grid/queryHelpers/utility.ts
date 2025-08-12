@@ -175,7 +175,7 @@ export const parsePaginationOptions = (
   source: LikeNextRequest | URL | string | undefined,
   defaultPageSize: number = 25,
   maxPageSize: number = 100
-): { offset: number; limit: number } => {
+): { offset: number; limit: number } | { num: number; page: string; } => {
   let page = 0;
   let pageSize = defaultPageSize;
 
@@ -197,12 +197,14 @@ export const parsePaginationOptions = (
   } else if (source && isLikeNextRequest(source) && source.url) {
     const url = new URL(source.url);
     searchParams = url.searchParams;
+  } else if (source instanceof URLSearchParams) {
+    searchParams = source;
   }
 
   if (searchParams) {
     const pageParam = searchParams.get('page');
     const pageSizeParam = searchParams.get('pageSize');
-
+        
     if (pageParam) {
       const parsedPage = parseInt(pageParam, 10);
       if (!isNaN(parsedPage) && parsedPage >= 0) {
@@ -215,6 +217,18 @@ export const parsePaginationOptions = (
       if (!isNaN(parsedPageSize) && parsedPageSize > 0) {
         pageSize = Math.min(parsedPageSize, maxPageSize);
       }
+    } else {
+      const numParam = searchParams.get('num');
+      if (numParam !== null) {
+        const numValue = parseInt(numParam, 10);
+        return {
+          num:
+            isNaN(numValue) || numValue < 1
+              ? 100
+              : Math.min(numValue, maxPageSize),
+          page: (pageParam ?? '').trim(),
+        };
+      }      
     }
   }
 

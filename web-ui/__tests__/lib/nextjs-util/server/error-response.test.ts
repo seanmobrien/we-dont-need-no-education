@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 // Load module under test only after ensuring Response/Request/Headers exist
 let parseResponseOptions: any;
 let ErrorResponse: any;

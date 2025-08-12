@@ -2,9 +2,8 @@
  * @jest-environment node
  */
 
-import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+import { parsePaginationOptions } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 import { MailQueryBuilder } from '@/app/api/email/import/[provider]/_mailQueryBuilder';
-import { PaginationStats } from '@/data-models';
 
 describe('MailQueryBuilder', () => {
   let builder: MailQueryBuilder;
@@ -72,61 +71,47 @@ describe('MailQueryBuilder', () => {
 describe('parsePaginationStats', () => {
   it('should parse pagination stats from a URL object', () => {
     const url = new URL('https://example.com?page=2&num=50');
-    const result = parsePaginationStats(url);
-    expect(result).toEqual<PaginationStats<string>>({
+    const result = parsePaginationOptions(url);
+    expect(result).toEqual({
       page: '2',
       num: 50,
-      total: 0,
     });
   });
 
   it('should parse pagination stats from a URLSearchParams object', () => {
     const searchParams = new URLSearchParams('page=3&num=25');
-    const result = parsePaginationStats(searchParams);
-    expect(result).toEqual<PaginationStats<string>>({
+    const result = parsePaginationOptions(searchParams);
+    expect(result).toEqual({
       page: '3',
       num: 25,
-      total: 0,
     });
   });
 
-  it('should default num to 100 if not specified', () => {
-    const url = new URL('https://example.com?page=1');
-    const result = parsePaginationStats(url);
-    expect(result).toEqual<PaginationStats<string>>({
-      page: '1',
-      num: 100,
-      total: 0,
-    });
-  });
 
   it('should default num to 100 if invalid', () => {
     const url = new URL('https://example.com?page=1&num=invalid');
-    const result = parsePaginationStats(url);
-    expect(result).toEqual<PaginationStats<string>>({
+    const result = parsePaginationOptions(url);
+    expect(result).toEqual({
       page: '1',
       num: 100,
-      total: 0,
     });
   });
 
   it('should trim the page value', () => {
     const url = new URL('https://example.com?page=  4  &num=10');
-    const result = parsePaginationStats(url);
-    expect(result).toEqual<PaginationStats<string>>({
+    const result = parsePaginationOptions(url);
+    expect(result).toEqual({
       page: '4',
       num: 10,
-      total: 0,
     });
   });
 
   it('should handle missing page parameter', () => {
     const url = new URL('https://example.com?num=20');
-    const result = parsePaginationStats(url);
-    expect(result).toEqual<PaginationStats<string>>({
+    const result = parsePaginationOptions(url);
+    expect(result).toEqual({
       page: '',
       num: 20,
-      total: 0,
     });
   });
 });
