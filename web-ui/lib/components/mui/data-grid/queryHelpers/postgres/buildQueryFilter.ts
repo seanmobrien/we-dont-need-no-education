@@ -4,7 +4,7 @@ import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { columnMapFactory } from '../utility';
 import { BuildQueryFilterProps, BuildItemFilterProps } from './types';
 import { isGridFilterModel } from './guards';
-import { isTruthy } from '@/lib/react-util/errors/logged-error';
+import { isTruthy } from '@/lib/react-util/_utility-methods';
 
 export const buildAttachmentOrEmailFilter = ({
   attachments,

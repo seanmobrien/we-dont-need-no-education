@@ -15,7 +15,7 @@ import { and, or, eq, ne, ilike, isNull, isNotNull, inArray, notInArray, gt, lt,
 import { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
-import { isTruthy } from '@/lib/react-util/errors/logged-error';
+import { isTruthy } from '@/lib/react-util/_utility-methods';
 import { schema } from '@/lib/drizzle-db';
 import { BuildDrizzleAttachmentOrEmailFilterProps, BuildDrizzleItemFilterProps, BuildDrizzleQueryFilterProps, DrizzleSelectQuery } from './types';
 
