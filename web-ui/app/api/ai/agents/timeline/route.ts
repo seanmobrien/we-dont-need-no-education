@@ -1,6 +1,7 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-
 import {
   TimelineAgentFactory,
   ServerTimelineAgent as TimelineAgent,
@@ -11,9 +12,6 @@ import { LoggedError } from '@/lib/react-util';
  * API endpoint for Timeline Agent operations
  * Handles initialization, document processing, summary generation, and state serialization
  */
-
-export const dynamic = 'force-dynamic';
-
 export const POST = wrapRouteRequest(async (request: NextRequest) => {
   try {
     const { action, initialDocumentId, snapshot, propertyId } =
