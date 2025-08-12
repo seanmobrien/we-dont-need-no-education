@@ -3,7 +3,8 @@ import {
   getCaseFileDocument,
   toolCallbackResultSchemaFactory,
 } from '@/lib/ai/tools';
-import { RepositoryCrudController, DocumentUnitRepository } from '@/lib/api';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { DocumentUnitRepository } from '@/lib/api/document-unit';
 import { extractParams } from '@/lib/nextjs-util';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { NextRequest, NextResponse } from 'next/server';

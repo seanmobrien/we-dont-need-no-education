@@ -10,7 +10,8 @@
 
 import { NextRequest } from 'next/server';
 import { GET, POST } from '@/app/api/email/[emailId]/properties/call-to-action/route';
-import { CallToActionDetailsRepository, RepositoryCrudController } from '@/lib/api';
+import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 
 // Mock external dependencies
 jest.mock('@/lib/neondb');
