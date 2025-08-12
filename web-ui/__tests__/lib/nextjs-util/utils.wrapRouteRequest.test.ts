@@ -12,8 +12,8 @@ describe('wrapRouteRequest', () => {
   it('should call the wrapped function and return its result', async () => {
     const fn = jest.fn().mockResolvedValue('ok');
     const wrapped = wrapRouteRequest(fn);
-    const result = await wrapped('a', 'b');
-    expect(fn).toHaveBeenCalledWith('a', 'b');
+    const result = await wrapped('a', { params: Promise.resolve({ emailId: 'b' }) });
+    expect(fn).toHaveBeenCalledWith('a', { params: Promise.resolve({ emailId: 'b' }) });
     expect(result).toBe('ok');
   });
 
@@ -21,7 +21,7 @@ describe('wrapRouteRequest', () => {
     const logSpy = (await logger() as jest.Mocked<ILogger>);
     const fn = jest.fn().mockImplementation(() => { throw new Error('fail'); });        
     const wrapped = wrapRouteRequest(fn, { log: true });
-    const result = await wrapped('x');
+    const result = await wrapped('x', { params: Promise.resolve({ emailId: 'y' }) });
     expect(logSpy.error as jest.Mock).toHaveBeenCalled();
     expect(logSpy.info as jest.Mock).toHaveBeenCalled();
     expect(result).toBeInstanceOf(ErrorResponse);
@@ -33,7 +33,7 @@ describe('wrapRouteRequest', () => {
     const logSpy = (await logger()) as jest.Mocked<ILogger>;
     const fn = jest.fn().mockResolvedValue('ok');
     const wrapped = wrapRouteRequest(fn, { log: false });
-    const result = await wrapped();
+    const result = await wrapped('x', { params: Promise.resolve({ emailId: 'y' }) });
     expect(logSpy.info as jest.Mock).not.toHaveBeenCalled();
     expect(result).toBe('ok');
   });
@@ -41,7 +41,7 @@ describe('wrapRouteRequest', () => {
   it('should return ErrorResponse on thrown error', async () => {
     const fn = jest.fn().mockImplementation(() => { throw new Error('bad'); });
     const wrapped = wrapRouteRequest(fn);
-    const result = await wrapped();
+    const result = await wrapped('x', { params: Promise.resolve({ emailId: 'y' }) });
     expect(result).toBeInstanceOf(ErrorResponse);
     const body = await result.json();
     expect(body.error).toBe('An error occurred');
@@ -50,7 +50,7 @@ describe('wrapRouteRequest', () => {
   it('should support async thrown errors', async () => {
     const fn = jest.fn().mockRejectedValue(new Error('async fail'));
     const wrapped = wrapRouteRequest(fn);
-    const result = await wrapped();
+    const result = await wrapped('x', { params: Promise.resolve({ emailId: 'y' }) });
     expect(result).toBeInstanceOf(ErrorResponse);
     const body = await result.json();
     expect(body.error).toBe('An error occurred');

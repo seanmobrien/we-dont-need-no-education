@@ -1,6 +1,8 @@
-import { ErrorResponse } from './error-response';
+import { ErrorResponse } from './error-response/index';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util';
+import type { NextRequest } from 'next/server';
 
 
 /**
@@ -52,6 +54,16 @@ const globalBuildFallback = {
   __status: 'Service disabled during build.',
 } as const;
 
+
+type RouteHandler<TContext extends object = object, TReq extends Request | NextRequest = Request> =
+| (() => Promise<Response>)
+| (( req: TReq ) => Promise<Response>)
+| ((
+    req: TReq,
+    context: { params: Promise<TContext> },
+  ) => Promise<Response>);
+
+
 /**
  * Wraps a route handler function with error handling and optional logging for Next.js API/app routes.
  *
@@ -60,7 +72,11 @@ const globalBuildFallback = {
  *   - Calls the original handler and returns its result
  *   - Catches synchronous or async errors, logs them if logging is enabled, and returns an ErrorResponse
  *
- * @template T - The type of the route handler function
+ * Supports both Fetch API `Request` and Next.js `NextRequest`. The type you use in your handler
+ * will be preserved by the wrapper and passed through unchanged.
+ *
+ * @template TContext - The type of the dynamic route params (default: object)
+ * @template TReq - Request type: Fetch API `Request` or Next.js `NextRequest` (inferred)
  * @param fn - The route handler function to wrap (can be sync or async)
  * @param options - Optional config:
  *   - log: boolean (default: true in non-production, false in production)
@@ -77,39 +93,58 @@ const globalBuildFallback = {
  * export default wrapRouteRequest(handler, { log: false });
  * ```
  */
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const wrapRouteRequest = <T extends (...args: any[]) => any>(
-  fn: T,
-  options: { log?: boolean, buildFallback?: object | typeof EnableOnBuild; } = { },
-) => {
-  const { log: shouldLog = env('NODE_ENV') !== 'production', buildFallback } = options ?? {};
+export function wrapRouteRequest<
+  TContext extends object = object,
+  TReq extends Request | NextRequest = Request,
+>(
+  fn: RouteHandler<TContext, TReq>,
+  options: {
+    log?: boolean;
+    buildFallback?: object | typeof EnableOnBuild;
+  } = {},
+): ((
+  req: TReq,
+  context: { params: Promise<TContext> },
+) => Promise<Response>) {
+  const { log: shouldLog = env('NODE_ENV') !== 'production', buildFallback } =
+    options ?? {};
   return async (
-    ...args: Parameters<T>
-  ): Promise<Awaited<ReturnType<T>>> => {
+    req: TReq,
+    context: { params: Promise<TContext> },
+  ): Promise<Response> => {
     try {
       if (
         buildFallback !== EnableOnBuild &&
-        (process.env.IS_BUILDING == '1' || process.env.NEXT_PHASE === 'phase-production-build')
+        (process.env.IS_BUILDING == '1' ||
+          process.env.NEXT_PHASE === 'phase-production-build')
       ) {
-        return Promise.resolve(
-          Response.json(
-            buildFallback ?? globalBuildFallback,
-            { status: 200, statusText: 'OK-BUILD-FALLBACK' }
-         )) as Promise<Awaited<ReturnType<T>>>;
+        return Response.json(buildFallback ?? globalBuildFallback, {
+          status: 200,
+          statusText: 'OK-BUILD-FALLBACK',
+        });
       }
       if (shouldLog) {
-        if (args[0] && typeof args[0] === 'object' && 'params' in args[0]) {
-          await args[0].params;
-        }
-        log((l) => l.info('Processing route request', { args }));
+        const extractedParams = await (!!context?.params
+          ? context.params
+          : Promise.resolve({}));
+        log((l) => l.info(`Processing route request [${req.url}]`, { args: JSON.stringify(extractedParams) }));
       }
-      return await fn(...args);
+      return await fn(req, context);
     } catch (error) {
       if (shouldLog) {
-        log((l) => l.error('Error processing route request', { error, args }));
+        const extractedParams = await (!!context?.params
+          ? context.params
+          : Promise.resolve({}));
+        LoggedError.isTurtlesAllTheWayDownBaby(error,{
+          log: true,
+          source: 'wrapRouteRequest:catch',
+          data: {
+            params: extractedParams,
+            req,
+          }
+        });
       }
-      return Promise.resolve(new ErrorResponse('An unexpected error occurred') as Awaited<ReturnType<T>>);
+      return new ErrorResponse('An unexpected error occurred', { cause: error });
     }
   };
-};
+}

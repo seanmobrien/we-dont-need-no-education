@@ -46,19 +46,19 @@ describe('ErrorResponse', () => {
     expect(body).toEqual({ error: 'Something went wrong', status: 500 });
   });
 
-  it('should use custom message even with Error', async () => {
+  it('should combine messages when both Error and custom message provided', async () => {
     const err = new Error('Original');
     const res = new ErrorResponse(err, 'Custom');
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body).toEqual({ error: 'Custom', status: 500 });
+    expect(body).toEqual({ error: 'Original - Custom', status: 500 });
   });
 
-  it('should use custom message even with Response', async () => {
+  it('should combine messages when both Response statusText and custom message provided', async () => {
     const base = new Response(null, { status: 400, statusText: 'Bad Request' });
     const res = new ErrorResponse(base, 'Custom');
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body).toEqual({ error: 'Custom', status: 400 });
+    expect(body).toEqual({ error: 'Bad Request - Custom', status: 400 });
   });
 });
