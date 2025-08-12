@@ -6,7 +6,7 @@ import { LoggedError, ValidationError } from '@/lib/react-util';
 import { EmailService } from '@/lib/api/email/email-service';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 import { validateCreateEmail, validateUpdateEmail } from '@/lib/api/email/email-validation';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,7 +43,7 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
       { status: 500 },
     );
   }
-});
+}, { buildFallback: buildFallbackGrid });
 
 /**
  * Handles the POST request to create a new email.

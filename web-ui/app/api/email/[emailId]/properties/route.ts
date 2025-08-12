@@ -9,7 +9,7 @@ import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { db } from '@/lib/neondb';
 import { extractParams } from '@/lib/nextjs-util';
 import { NextRequest } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,7 +51,7 @@ export const GET = wrapRouteRequest(async (
       ),
     );
   });
-});
+}, { buildFallback: buildFallbackGrid });
 
 export const POST = wrapRouteRequest(async (
   req: NextRequest,

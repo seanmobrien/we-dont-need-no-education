@@ -92,6 +92,6 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
       { status: 500 },
     );
   }
-});
+}, { buildFallback: { rows: [], rowCount: 0 } });
 
 export const dynamic = 'force-dynamic';

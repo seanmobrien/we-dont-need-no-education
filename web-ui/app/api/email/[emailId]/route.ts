@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 import { extractParams } from '@/lib/nextjs-util';
@@ -161,7 +161,7 @@ export const GET = wrapRouteRequest(async (
       { status: 500 },
     );
   }
-});
+}, { buildFallback: buildFallbackGrid });
 
 /**
  * Handles the DELETE request to remove an email and its associated recipients from the database.

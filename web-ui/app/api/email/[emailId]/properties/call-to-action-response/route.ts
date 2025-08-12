@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   RepositoryCrudController,
   CallToActionResponseDetailsRepository,
@@ -141,7 +141,7 @@ export const GET = wrapRouteRequest(async (
   });
 
   return Response.json(result);
-});
+}, { buildFallback: buildFallbackGrid });
 
 export const POST = wrapRouteRequest(async (
   req: NextRequest,

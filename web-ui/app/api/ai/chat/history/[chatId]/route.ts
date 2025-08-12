@@ -147,4 +147,4 @@ export const GET = wrapRouteRequest(async (
         { status: 500 },
       );
     }
-});
+}, { buildFallback: { id: 'not-enabled', title: 'Wait for build to complete' } });

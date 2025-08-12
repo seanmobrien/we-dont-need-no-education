@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/neondb';
 import { LoggedError } from '@/lib/react-util';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = async (): Promise<NextResponse> => {
+export const GET = wrapRouteRequest(async (): Promise<NextResponse> => {
   try {
     const result = await query(
       (query) => query`
@@ -27,4 +28,4 @@ export const GET = async (): Promise<NextResponse> => {
       { status: 500 },
     );
   }
-};
+}, { buildFallback: buildFallbackGrid });

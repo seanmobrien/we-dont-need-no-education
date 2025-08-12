@@ -272,4 +272,4 @@ async (req: NextRequest) => {
     });
     return NextResponse.error();
   }
-});
+}, { buildFallback: { "role": "assistant", content: "I'm currently disabled for solution rebuild." }});

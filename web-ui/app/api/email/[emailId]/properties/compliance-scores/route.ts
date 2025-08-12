@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { extractParams } from '@/lib/nextjs-util';
 import { ComplianceScoresDetails } from '@/data-models';
 import { eq, and } from 'drizzle-orm';
@@ -118,4 +118,4 @@ export const GET = wrapRouteRequest(async (
   });
 
   return Response.json(result);
-});
+}, { buildFallback: buildFallbackGrid });

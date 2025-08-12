@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   mapRecordToSummary,
   mapRecordToThreadSummary,
@@ -85,4 +85,4 @@ export const GET = wrapRouteRequest(async (
       { status: 500 },
     );
   }
-});
+}, { buildFallback: buildFallbackGrid });

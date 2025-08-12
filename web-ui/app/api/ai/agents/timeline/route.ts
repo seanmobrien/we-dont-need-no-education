@@ -8,6 +8,34 @@ import {
 } from '@/lib/ai/agents/timeline/agent-server';
 import { LoggedError } from '@/lib/react-util';
 
+const buildFallback = {
+  success: true,
+  data: {
+    summary: {
+      title: 'Mock Timeline Summary',
+      description: 'This is a mock summary for the timeline.',
+    },
+    counts: {
+      totalDocuments: 1,
+      processedDocuments: 1,
+    },
+    hasMoreDocuments: false,
+    snapshot: {
+      documentId: 'mock-doc-1',
+      date: new Date().toISOString(),
+      summary: 'Mock document processed successfully',
+      verbatimStatements: [
+        'This is a mock verbatim statement from the document',
+      ],
+      complianceNotes: [
+        'Build-optimized mock document',
+      ],
+      actionTaken: 'Document reviewed and analyzed',
+      actionRequired: 'Continue to next document in sequence',
+    },
+  },
+} as const;
+
 /**
  * API endpoint for Timeline Agent operations
  * Handles initialization, document processing, summary generation, and state serialization
@@ -121,7 +149,7 @@ export const POST = wrapRouteRequest(async (request: NextRequest) => {
       { status: 500 },
     );
   }
-});
+}, { buildFallback });
 
 export const GET = wrapRouteRequest(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
@@ -157,4 +185,4 @@ export const GET = wrapRouteRequest(async (request: NextRequest) => {
     success: true,
     data: mockDocument,
   });
-});
+  }, { buildFallback });

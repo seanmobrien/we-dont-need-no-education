@@ -3,7 +3,7 @@ import {
   ComplianceScoresDetailsRepository,
 } from '@/lib/api';
 import { NextRequest } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export const GET = wrapRouteRequest(async (
     new ComplianceScoresDetailsRepository(),
   );
   return controller.get(req, args);
-});
+}, { buildFallback: buildFallbackGrid });
 
 export const PUT = wrapRouteRequest(async (
   req: NextRequest,

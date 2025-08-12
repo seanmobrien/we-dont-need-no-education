@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   RepositoryCrudController,
   KeyPointsDetailsRepository,
@@ -17,7 +17,7 @@ export const dynamic = 'force-dynamic';
 const repository = new KeyPointsDetailsRepository();
 const controller = new RepositoryCrudController(repository);
 
-export const GET = async (
+export const GET = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; attachments: boolean }> },
 ) => {
@@ -98,7 +98,8 @@ export const GET = async (
   });
 
   return Response.json(result);
-};
+}, { buildFallback: buildFallbackGrid });
+
 export const POST = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
