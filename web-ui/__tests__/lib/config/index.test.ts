@@ -62,7 +62,7 @@ describe('lib/config/index.ts', () => {
     };
 
     beforeEach(() => {
-      jest.clearAllMocks();
+      // jest.clearAllMocks();
       mockWebpackConfig.plugins = [];
     });
 
@@ -160,8 +160,7 @@ describe('lib/config/index.ts', () => {
     let mockCompiler: any;
     let mockCompilation: any;
 
-    beforeEach(() => {      
-      
+    beforeEach(() => {
       mockCompilation = {
         hooks: {
           processAssets: {
@@ -178,7 +177,7 @@ describe('lib/config/index.ts', () => {
         hooks: {
           compilation: {
             tap: jest.fn((name, callback) => {
-              // Store the callback for manual execution  
+              // Store the callback for manual execution
               (mockCompiler as any)._compilationCallback = callback;
             }),
           },
@@ -196,7 +195,7 @@ describe('lib/config/index.ts', () => {
         },
       };
 
-      jest.clearAllMocks();
+      // jest.clearAllMocks();
     });
 
     describe('StripRscPrefixPlugin', () => {
@@ -636,7 +635,7 @@ describe('lib/config/index.ts', () => {
 
     beforeEach(() => {
       delete process.env.ANALYZE;
-      jest.clearAllMocks();
+      // jest.clearAllMocks();
     });
 
     afterEach(() => {

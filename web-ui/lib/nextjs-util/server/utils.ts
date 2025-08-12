@@ -55,13 +55,7 @@ const globalBuildFallback = {
 } as const;
 
 
-type RouteHandler<TContext extends object = object, TReq extends Request | NextRequest = Request> =
-| (() => Promise<Response>)
-| (( req: TReq ) => Promise<Response>)
-| ((
-    req: TReq,
-    context: { params: Promise<TContext> },
-  ) => Promise<Response>);
+// Note: handler can be 0, 1, or 2 args; we'll infer via a generic below
 
 
 /**
@@ -93,25 +87,20 @@ type RouteHandler<TContext extends object = object, TReq extends Request | NextR
  * export default wrapRouteRequest(handler, { log: false });
  * ```
  */
-export function wrapRouteRequest<
-  TContext extends object = object,
-  TReq extends Request | NextRequest = Request,
->(
-  fn: RouteHandler<TContext, TReq>,
-  options: {
-    log?: boolean;
-    buildFallback?: object | typeof EnableOnBuild;
-  } = {},
-): ((
-  req: TReq,
-  context: { params: Promise<TContext> },
-) => Promise<Response>) {
+// Generic preserves the original handler signature (0, 1, or 2 args)
+export function wrapRouteRequest<A extends unknown[], R extends Response>(
+  fn: (...args: A) => Promise<R>,
+  options: { log?: boolean; buildFallback?: object | typeof EnableOnBuild } = {},
+): (...args: A) => Promise<Response> {
   const { log: shouldLog = env('NODE_ENV') !== 'production', buildFallback } =
     options ?? {};
   return async (
-    req: TReq,
-    context: { params: Promise<TContext> },
+    ...args: A
   ): Promise<Response> => {
+    const req = (args[0] as unknown as Request | NextRequest | undefined);
+    const context = (args[1] as
+      | { params: Promise<Record<string, unknown>> }
+      | undefined);
     try {
       if (
         buildFallback !== EnableOnBuild &&
@@ -126,15 +115,21 @@ export function wrapRouteRequest<
       if (shouldLog) {
         const extractedParams = await (!!context?.params
           ? context.params
-          : Promise.resolve({}));
-        log((l) => l.info(`Processing route request [${req.url}]`, { args: JSON.stringify(extractedParams) }));
+          : Promise.resolve({} as Record<string, unknown>));
+        const url = (req as unknown as Request)?.url ?? '<no-req>';
+        log((l) =>
+          l.info(`Processing route request [${url}]`, {
+            args: JSON.stringify(extractedParams),
+          }),
+        );
       }
-      return await fn(req, context);
+  // Invoke the original handler with the same args shape
+  return await fn(...args);
     } catch (error) {
       if (shouldLog) {
         const extractedParams = await (!!context?.params
           ? context.params
-          : Promise.resolve({}));
+          : Promise.resolve({} as Record<string, unknown>));
         LoggedError.isTurtlesAllTheWayDownBaby(error,{
           log: true,
           source: 'wrapRouteRequest:catch',

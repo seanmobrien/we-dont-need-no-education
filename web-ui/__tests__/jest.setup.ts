@@ -313,6 +313,28 @@ import instrument, { getAppInsights } from '@/instrument/browser';
 import { log } from '@/lib/logger';
 globalThis.TextEncoder = TextEncoder as any;
 
+// Ensure WHATWG Response/Request/Headers exist in all environments (jsdom/node)
+// Node 18+ typically provides these via undici, but jsdom can lack them during tests.
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const undici = require('undici');
+  if (!globalThis.Response && undici.Response) {
+    globalThis.Response = undici.Response;
+  }
+  if (!globalThis.Request && undici.Request) {
+    globalThis.Request = undici.Request;
+  }
+  if (!globalThis.Headers && undici.Headers) {
+    globalThis.Headers = undici.Headers;
+  }
+  // Do not override fetch if already mocked below
+  if (!globalThis.fetch && undici.fetch) {
+    globalThis.fetch = undici.fetch;
+  }
+} catch {
+  // ignore if undici is unavailable; tests that require Response will provide their own env
+}
+
 // Automocks
 
 (NextAuth as jest.Mock).mockImplementation(() => jest.fn);

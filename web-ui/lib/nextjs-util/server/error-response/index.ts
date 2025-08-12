@@ -12,6 +12,68 @@
  */
 import { isError } from "@/lib/react-util/_utility-methods";
 
+// Local minimal fallbacks to allow evaluation in non-fetch environments (e.g., some Jest setups)
+// These are only used if the corresponding global constructors are missing.
+class __SimpleHeaders {
+  private m = new Map<string, string>();
+  constructor(init?: HeadersInit) {
+    if (!init) return;
+    if (Array.isArray(init)) {
+      for (const [k, v] of init) this.m.set(String(k).toLowerCase(), String(v));
+    } else if (init instanceof Map) {
+      for (const [k, v] of (init as Map<string, string>).entries()) this.m.set(String(k).toLowerCase(), String(v));
+    } else {
+      const obj = init as Record<string, string>;
+      for (const k of Object.keys(obj)) this.m.set(k.toLowerCase(), String(obj[k]));
+    }
+  }
+  get(name: string): string | null {
+    return this.m.get(String(name).toLowerCase()) ?? null;
+  }
+  set(name: string, value: string) {
+    this.m.set(String(name).toLowerCase(), String(value));
+  }
+}
+
+// Decide which Headers to use at module eval time without throwing
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const __HeadersBase: any = typeof Headers !== 'undefined' ? Headers : __SimpleHeaders;
+
+// Minimal Response polyfill that supports status, headers, json(), text()
+class __SimpleResponse {
+  status: number;
+  headers: InstanceType<typeof __HeadersBase>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private __body: any;
+  constructor(body?: BodyInit | null, init?: ResponseInit) {
+    this.status = init?.status ?? 200;
+    this.headers = new __HeadersBase(init?.headers ?? {});
+    this.__body = body ?? '';
+  }
+  async json() {
+    const text = await this.text();
+    try {
+      return JSON.parse(text || '{}');
+    } catch {
+      return {};
+    }
+  }
+  async text() {
+    if (typeof this.__body === 'string') return this.__body;
+    if (this.__body == null) return '';
+    try {
+      // Attempt best-effort conversion
+      return String(this.__body);
+    } catch {
+      return '';
+    }
+  }
+}
+
+// Choose a base Response class safely
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const __ResponseBase: any = typeof Response !== 'undefined' ? Response : __SimpleResponse;
+
 /**
  * Options that can be used to influence how an error response is produced.
  *
@@ -46,11 +108,9 @@ const normalizeArg = (arg: unknown): Partial<ErrorResponseOptions> => {
   }
   if (isError(arg)) return { cause: arg, message: (arg as Error).message };
   if (typeof arg === 'object') {
+    // Treat plain option objects as-is; do NOT auto-derive message from cause here.
+    // Message derivation from Error should only occur when the arg itself is an Error.
     const obj = { ...(arg as Record<string, unknown>) } as Partial<ErrorResponseOptions>;
-    // If object has Error cause and no message, derive message from cause.message
-    if ((obj.message == null || String(obj.message).length === 0) && obj.cause && isError(obj.cause)) {
-      obj.message = (obj.cause as Error).message;
-    }
     return obj;
   }
   return {};
@@ -124,7 +184,7 @@ export const parseResponseOptions = (
  *
  * See {@link ./README.md} for examples.
  */
-export class ErrorResponse extends Response {
+export class ErrorResponse extends __ResponseBase {
   /**
    * Create a new ErrorResponse.
    *

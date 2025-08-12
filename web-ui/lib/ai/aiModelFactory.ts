@@ -136,7 +136,7 @@ class ModelAvailabilityManager {
   }
 }
 
-const modelAvailabilityManager = ModelAvailabilityManager.getInstance();
+const getAvailability = () => ModelAvailabilityManager.getInstance();
 
 /**
  * Setup middleware for language models with caching and retry logic
@@ -164,7 +164,10 @@ const setupMiddleware = (provider: string,model: LanguageModelV1): LanguageModel
  * Azure custom provider with model aliases for our existing model names
  * Maps hifi, lofi, embedding to Azure-hosted models
  */
-const azureProvider = customProvider({
+let _azureProvider: ReturnType<typeof customProvider> | undefined;
+const getAzureProvider = () => {
+  if (_azureProvider) return _azureProvider;
+  _azureProvider = customProvider({
   languageModels: {
     // Custom aliases for Azure models
     hifi: setupMiddleware(
@@ -200,13 +203,18 @@ const azureProvider = customProvider({
     baseURL: env('AZURE_OPENAI_ENDPOINT'),
     apiKey: env('AZURE_API_KEY'),
   }),
-});
+  });
+  return _azureProvider;
+};
 
 /**
  * Google custom provider with model aliases matching Azure as much as possible
  * Maps hifi, lofi, embedding to Google-hosted models
  */
-const googleProvider = customProvider({
+let _googleProvider: ReturnType<typeof customProvider> | undefined;
+const getGoogleProvider = () => {
+  if (_googleProvider) return _googleProvider;
+  _googleProvider = customProvider({
   languageModels: {
     // Match Azure aliases with equivalent Google models
     hifi: setupMiddleware(
@@ -244,18 +252,23 @@ const googleProvider = customProvider({
   fallbackProvider: createGoogleGenerativeAI({
     apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
   }),
-});
+  });
+  return _googleProvider;
+};
 
 /**
  * Provider registry with Azure as default and Google as fallback
  * Supports creating models by alias with Azure as primary, falling back to Google
  */
-export const providerRegistry = createProviderRegistry({
-  // Azure is primary provider
-  azure: azureProvider,
-  // Google is fallback provider
-  google: googleProvider,
-});
+let _providerRegistry: ReturnType<typeof createProviderRegistry> | undefined;
+export const getProviderRegistry = () => {
+  if (_providerRegistry) return _providerRegistry;
+  _providerRegistry = createProviderRegistry({
+    azure: getAzureProvider(),
+    google: getGoogleProvider(),
+  });
+  return _providerRegistry;
+};
 
 /**
  * Overloaded function signature for normalizing model keys based on the provider and model type.
@@ -318,7 +331,7 @@ const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads = (
  * @returns An instance of `LanguageModelV1`.
  */
 interface GetAiModelProviderOverloads {
-  (): typeof azureProvider;
+  (): ReturnType<typeof getAzureProvider>;
   (
     deploymentId: 'embedding' | 'google-embedding',
     options?: EmbeddingOptions,
@@ -361,7 +374,7 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any => {
   if (typeof modelType === 'undefined') {
-    return azureProvider;
+    return getAzureProvider();
   }
   const azureModelKey = normalizeModelKeyForProvider('azure', modelType);
   const googleModelKey = normalizeModelKeyForProvider('google', modelType);
@@ -374,12 +387,12 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
       case caseProviderMatch('azure:', modelType): {
         // Matches any string starting with 'azure:'
         // Check availability and try Azure first if available, fallback to Google
-        if (modelAvailabilityManager.isModelAvailable(azureModelKey)) {
+        if (getAvailability().isModelAvailable(azureModelKey)) {
           try {
-            return providerRegistry.languageModel(azureModelKey);
+            return getProviderRegistry().languageModel(azureModelKey);
           } catch (error) {
             // If Azure fails, temporarily disable it and try Google
-            modelAvailabilityManager.temporarilyDisableModel(
+            getAvailability().temporarilyDisableModel(
               azureModelKey,
               60000,
             ); // 1 minute
@@ -390,8 +403,8 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
           }
         }
 
-        if (modelAvailabilityManager.isModelAvailable(googleModelKey)) {
-          return providerRegistry.languageModel(googleModelKey);
+        if (getAvailability().isModelAvailable(googleModelKey)) {
+          return getProviderRegistry().languageModel(googleModelKey);
         }
 
         throw new Error(`No available providers for model type: ${modelType}`);
@@ -402,15 +415,15 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
       case caseProviderMatch('google:', modelType): {
         // Matches any string starting with 'google:'
         // Google-specific models
-        if (!modelAvailabilityManager.isModelAvailable(googleModelKey)) {
+  if (!getAvailability().isModelAvailable(googleModelKey)) {
           throw new Error(`Google model ${modelType} is currently disabled`);
         }
-        return providerRegistry.languageModel(googleModelKey);
+  return getProviderRegistry().languageModel(googleModelKey);
       }
 
       default:
-        if (modelAvailabilityManager.isModelAvailable(modelType)) {
-          const chat = providerRegistry.languageModel(modelType);
+        if (getAvailability().isModelAvailable(modelType)) {
+          const chat = getProviderRegistry().languageModel(modelType);
           if (chat == null) {
             throw new Error('Invalid AiModelType provided: ' + modelType);
           }
@@ -421,14 +434,14 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
     switch (modelType) {
       case 'embedding':
       case caseProviderMatch('azure:', modelType): // Matches any string starting with 'azure
-        const embed = providerRegistry.textEmbeddingModel(azureModelKey);
+  const embed = getProviderRegistry().textEmbeddingModel(azureModelKey);
         if (embed != null) {
           return embed;
         }
         break;
       case 'google-embedding':
       case caseProviderMatch('google:', modelType): // Matches any string starting with 'google:'
-        const googleEmbed = providerRegistry.textEmbeddingModel(googleModelKey);
+  const googleEmbed = getProviderRegistry().textEmbeddingModel(googleModelKey);
         if (googleEmbed != null) {
           return googleEmbed;
         }
@@ -472,27 +485,27 @@ export const createGoogleEmbeddingModel = (
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  */
 export const disableModel = (modelKey: string): void =>
-  modelAvailabilityManager.disableModel(modelKey);
+  getAvailability().disableModel(modelKey);
 
 /**
  * Enable a specific model (e.g., 'azure:hifi', 'google:embedding')
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  */
 export const enableModel = (modelKey: string): void =>
-  modelAvailabilityManager.enableModel(modelKey);
+  getAvailability().enableModel(modelKey);
 
 /**
  * Disable all models for a provider
  * @param provider - Either 'azure' or 'google'
  */
 export const disableProvider = (provider: 'azure' | 'google'): void =>
-  modelAvailabilityManager.disableProvider(provider);
+  getAvailability().disableProvider(provider);
 /**
  * Enable all models for a provider
  * @param provider - Either 'azure' or 'google'
  */
 export const enableProvider = (provider: 'azure' | 'google'): void =>
-  modelAvailabilityManager.enableProvider(provider);
+  getAvailability().enableProvider(provider);
 
 /**
  * Temporarily disable a model for a specified duration
@@ -500,14 +513,14 @@ export const enableProvider = (provider: 'azure' | 'google'): void =>
  * @param durationMs - Duration in milliseconds to disable the model
  */
 export const temporarilyDisableModel = (modelKey: string, durationMs: number): void =>
-  modelAvailabilityManager.temporarilyDisableModel(modelKey, durationMs);
+  getAvailability().temporarilyDisableModel(modelKey, durationMs);
 /**
  * Check if a model is currently available
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  * @returns True if the model is available, false otherwise
  */
 export const isModelAvailable = (modelKey: string): boolean =>
-  modelAvailabilityManager.isModelAvailable(modelKey);
+  getAvailability().isModelAvailable(modelKey);
 
 /**
  * Check if a provider is available
@@ -515,18 +528,18 @@ export const isModelAvailable = (modelKey: string): boolean =>
  * @returns True if the provider has any available models, false otherwise
  */
 export const isProviderAvailable = (provider: 'azure' | 'google'): boolean =>
-  modelAvailabilityManager.isProviderAvailable(provider);
+  getAvailability().isProviderAvailable(provider);
 /**
  * Get the current availability status of all models (for debugging)
  * @returns Object mapping model keys to their availability status
  */
 export const getModelAvailabilityStatus = (): Record<string, boolean> =>
-  modelAvailabilityManager.getAvailabilityStatus();
+  getAvailability().getAvailabilityStatus();
 
 /**
  * Reset all models to their default available state
  */
-export const resetModelAvailability = (): void => modelAvailabilityManager.resetToDefaults();
+export const resetModelAvailability = (): void => getAvailability().resetToDefaults();
 
 /**
  * Convenience functions for common scenarios
@@ -538,13 +551,13 @@ export const resetModelAvailability = (): void => modelAvailabilityManager.reset
  */
 export const handleAzureRateLimit = (durationMs: number = 300000): void => {
   log(l => l.warn('Azure rate limit detected, temporarily disabling Azure models'));
-  modelAvailabilityManager.temporarilyDisableModel('azure:hifi', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel('azure:lofi', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel(
+  getAvailability().temporarilyDisableModel('azure:hifi', durationMs);
+  getAvailability().temporarilyDisableModel('azure:lofi', durationMs);
+  getAvailability().temporarilyDisableModel(
     'azure:completions',
     durationMs,
   );
-  modelAvailabilityManager.temporarilyDisableModel(
+  getAvailability().temporarilyDisableModel(
     'azure:embedding',
     durationMs,
   );
@@ -556,21 +569,21 @@ export const handleAzureRateLimit = (durationMs: number = 300000): void => {
  */
 export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
   log(l => l.warn('Google rate limit detected, temporarily disabling Google models'));
-  modelAvailabilityManager.temporarilyDisableModel('google:hifi', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel('google:lofi', durationMs);
-  modelAvailabilityManager.temporarilyDisableModel(
+  getAvailability().temporarilyDisableModel('google:hifi', durationMs);
+  getAvailability().temporarilyDisableModel('google:lofi', durationMs);
+  getAvailability().temporarilyDisableModel(
     'google:embedding',
     durationMs,
   );
-  modelAvailabilityManager.temporarilyDisableModel(
+  getAvailability().temporarilyDisableModel(
     'google:gemini-pro',
     durationMs,
   );
-  modelAvailabilityManager.temporarilyDisableModel(
+  getAvailability().temporarilyDisableModel(
     'google:gemini-flash',
     durationMs,
   );
-  modelAvailabilityManager.temporarilyDisableModel(
+  getAvailability().temporarilyDisableModel(
     'google:google-embedding',
     durationMs,
   );

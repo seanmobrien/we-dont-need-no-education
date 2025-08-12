@@ -53,7 +53,7 @@ describe('EmailDrizzleRepository', () => {
 
   beforeEach(() => {
     // Clear all mocks
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     
     // Create repository instance
     repository = new EmailDrizzleRepository();

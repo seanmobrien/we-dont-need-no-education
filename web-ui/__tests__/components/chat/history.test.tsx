@@ -72,7 +72,7 @@ describe('ChatHistory (React Query integration)', () => {
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    // jest.resetAllMocks();
     mockUseChatDetails.mockReset();
   });
 

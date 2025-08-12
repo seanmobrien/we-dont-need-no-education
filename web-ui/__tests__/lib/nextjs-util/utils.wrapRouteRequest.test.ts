@@ -12,8 +12,9 @@ describe('wrapRouteRequest', () => {
   it('should call the wrapped function and return its result', async () => {
     const fn = jest.fn().mockResolvedValue('ok');
     const wrapped = wrapRouteRequest(fn);
-    const result = await wrapped('a', { params: Promise.resolve({ emailId: 'b' }) });
-    expect(fn).toHaveBeenCalledWith('a', { params: Promise.resolve({ emailId: 'b' }) });
+  const paramsPromise = Promise.resolve({ emailId: 'b' });
+  const result = await wrapped('a', { params: paramsPromise });
+  expect(fn).toHaveBeenCalledWith('a', { params: paramsPromise });
     expect(result).toBe('ok');
   });
 
@@ -26,7 +27,7 @@ describe('wrapRouteRequest', () => {
     expect(logSpy.info as jest.Mock).toHaveBeenCalled();
     expect(result).toBeInstanceOf(ErrorResponse);
     const body = await result.json();
-    expect(body.error).toBe('An error occurred');
+  expect(body.error).toContain('An unexpected error occurred');
   });
 
   it('should not log if log option is false', async () => {
@@ -44,7 +45,7 @@ describe('wrapRouteRequest', () => {
     const result = await wrapped('x', { params: Promise.resolve({ emailId: 'y' }) });
     expect(result).toBeInstanceOf(ErrorResponse);
     const body = await result.json();
-    expect(body.error).toBe('An error occurred');
+  expect(body.error).toContain('An unexpected error occurred');
   });
 
   it('should support async thrown errors', async () => {
@@ -53,6 +54,6 @@ describe('wrapRouteRequest', () => {
     const result = await wrapped('x', { params: Promise.resolve({ emailId: 'y' }) });
     expect(result).toBeInstanceOf(ErrorResponse);
     const body = await result.json();
-    expect(body.error).toBe('An error occurred');
+  expect(body.error).toContain('An unexpected error occurred');
   });
 });

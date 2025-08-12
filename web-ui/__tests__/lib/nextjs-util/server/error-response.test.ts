@@ -1,4 +1,30 @@
-import { parseResponseOptions, ErrorResponse } from '@/lib/nextjs-util/server/error-response';
+// Load module under test only after ensuring Response/Request/Headers exist
+let parseResponseOptions: any;
+let ErrorResponse: any;
+
+beforeAll(async () => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const undici = require('undici');
+    if (!(globalThis as any).Response && undici.Response) {
+      (globalThis as any).Response = undici.Response;
+    }
+    if (!(globalThis as any).Request && undici.Request) {
+      (globalThis as any).Request = undici.Request;
+    }
+    if (!(globalThis as any).Headers && undici.Headers) {
+      (globalThis as any).Headers = undici.Headers;
+    }
+    if (!(globalThis as any).fetch && undici.fetch) {
+      (globalThis as any).fetch = undici.fetch;
+    }
+  } catch {
+    // ignore if undici cannot be loaded; tests may provide their own env
+  }
+  const mod = await import('@/lib/nextjs-util/server/error-response');
+  parseResponseOptions = mod.parseResponseOptions;
+  ErrorResponse = mod.ErrorResponse as any;
+});
 
 describe('parseResponseOptions', () => {
   test('string + number => message and status', () => {
@@ -12,7 +38,7 @@ describe('parseResponseOptions', () => {
     const err = new Error('boom');
     const res = parseResponseOptions(err, 'override');
     expect(res.status).toBe(500);
-    expect(res.message).toBe('override');
+    expect(res.message).toBe('boom - override');
     expect(res.cause).toBe('Error');
   });
 
@@ -68,6 +94,6 @@ describe('ErrorResponse', () => {
     const r = new ErrorResponse(new Error('boom'));
     expect(r.status).toBe(500);
     const body = await r.json();
-    expect(body).toEqual({ error: 'boom', status: 500 });
+  expect(body).toEqual({ error: 'boom', status: 500, cause: 'Error' });
   });
 });

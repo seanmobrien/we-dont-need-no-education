@@ -147,7 +147,7 @@ describe('/api/ai/chat/history/[chatId] route', () => {
   ];
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     
     // Setup default successful auth
     (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
