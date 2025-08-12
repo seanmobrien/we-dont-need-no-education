@@ -3,6 +3,10 @@ ARG RATE_RETRY_INTERVAL_MINUTES=5
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG MEM0_APIHOST
 
 FROM node:22-alpine AS base
 
@@ -11,16 +15,8 @@ ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
 
-RUN printf "NEXT_PUBLIC_HOSTNAME=%s\r\nNEXT_PUBLIC_LOG_LEVEL_CLIENT=%s\r\nNEXT_PUBLIC_DEFAULT_AI_MODEL=%s\r\n" "$NEXT_PUBLIC_HOSTNAME" "$NEXT_PUBLIC_LOG_LEVEL_CLIENT" "$NEXT_PUBLIC_DEFAULT_AI_MODEL" > test \
-  && cat test
-
 # Install cron for rate retry processing
 RUN apk add --no-cache libc6-compat dcron curl
-
-ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
-ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
-ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
-ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -29,7 +25,10 @@ ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
-
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG MEM0_APIHOST
 
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat dcron curl
@@ -44,9 +43,6 @@ RUN \
   else echo "Lockfile not found." && exit 1; \
   fi
 
-ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
-ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
-
 # Rebuild the source code only when needed
 FROM base AS builder
 
@@ -54,6 +50,10 @@ ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG MEM0_APIHOST
 
 WORKDIR /app
 
@@ -75,18 +75,22 @@ ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
+ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ENV MEM0_APIHOST=$MEM0_APIHOST
 ENV FOR_STANDALONE=1
 ENV IS_BUILDING=1
 
-#RUN \
-#  printf "NEXT_PUBLIC_HOSTNAME=%s\r\nNEXT_PUBLIC_LOG_LEVEL_CLIENT=%s\r\nNEXT_PUBLIC_DEFAULT_AI_MODEL=%s\r\n" "$NEXT_PUBLIC_HOSTNAME" "$NEXT_PUBLIC_LOG_LEVEL_CLIENT" "$NEXT_PUBLIC_DEFAULT_AI_MODEL" > .env \
-#  && cat .env
+RUN \
+  --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,env=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
+  printf "NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=%s\r\nAZURE_MONITOR_CONNECTION_STRING\r\n" "$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" "$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" > .env \
+  && cat .env
 
 RUN \
   --mount=type=secret,id=NEXT_PUBLIC_MUI_LICENSE,env=NEXT_PUBLIC_MUI_LICENSE \
   --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,env=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
   --mount=type=secret,id=REDIS_URL,env=REDIS_URL \
   --mount=type=secret,id=REDIS_PASSWORD,env=REDIS_PASSWORD \
+  --mount=type=secret,id=DATABASE_URL,env=DATABASE_URL \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
@@ -100,6 +104,10 @@ ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG MEM0_APIHOST
 
 LABEL co.obapps.vendor="OBrien Appplications"
 LABEL co.obapps.name="Compliance Tracker Web UI"
@@ -116,6 +124,12 @@ ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
 ENV NEXT_PUBLIC_HOSTNAME=$NEXT_PUBLIC_HOSTNAME
 ENV NEXT_PUBLIC_LOG_LEVEL_CLIENT=$NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ENV NEXT_PUBLIC_DEFAULT_AI_MODEL=$NEXT_PUBLIC_DEFAULT_AI_MODEL
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV RATE_RETRY_INTERVAL_MINUTES=$RATE_RETRY_INTERVAL_MINUTES
+ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT
+ENV MEM0_APIHOST=$MEM0_APIHOST
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -125,15 +139,12 @@ RUN adduser --system --uid 1001 nextjs
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/public ./public
-#COPY --link=true --from=builder --chown=nextjs:nodejs /.env ./.env
-#COPY --link=true --from=builder --chown=nextjs:nodejs /.env ./.next/static/.env
 
 # Copy rate retry script
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/scripts/rate-retry-client.sh ./scripts/
 RUN chmod +x ./scripts/rate-retry-client.sh
 
 # Set up cron for rate retry processing
-ENV RATE_RETRY_INTERVAL_MINUTES=${RATE_RETRY_INTERVAL_MINUTES:-5}
 RUN echo "*/${RATE_RETRY_INTERVAL_MINUTES} * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs
 RUN crontab -u nextjs /etc/crontabs/nextjs
 
@@ -143,13 +154,8 @@ RUN mkdir -p /var/log && chown nextjs:nodejs /var/log
 USER nextjs
 
 EXPOSE 3000
-ENV PORT=3000
-ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
-ENV OTEL_RESOURCE_ATTRIBUTES=$OTEL_RESOURCE_ATTRIBUTES
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-ENV HOSTNAME="0.0.0.0"
-
 # Start cron daemon and then start the Next.js server
 CMD ["sh", "-c", "crond -f -d 8 & node server.js"]
