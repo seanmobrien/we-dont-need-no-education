@@ -55,18 +55,23 @@ ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs \
+  && chown -R nextjs:nodejs /app \
+  && echo "added user nextjs to group nodejs."
+
 WORKDIR /app
 
-COPY --link=true --from=deps /app/node_modules ./node_modules
-COPY --link=true ./app ./app
-COPY --link=true ./components ./components
-COPY --link=true ./data-models ./data-models
-COPY --link=true ./drizzle ./drizzle
-COPY --link=true ./lib ./lib
-COPY --link=true ./types ./types
-COPY --link=true ./instrument ./instrument
-COPY --link=true ./scripts ./scripts
-COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
+COPY --link=true --chown=nextjs:nodejs --from=deps /app/node_modules ./node_modules
+COPY --link=true --chown=nextjs:nodejs ./app ./app
+COPY --link=true --chown=nextjs:nodejs ./components ./components
+COPY --link=true --chown=nextjs:nodejs ./data-models ./data-models
+COPY --link=true --chown=nextjs:nodejs ./drizzle ./drizzle
+COPY --link=true --chown=nextjs:nodejs ./lib ./lib
+COPY --link=true --chown=nextjs:nodejs ./types ./types
+COPY --link=true --chown=nextjs:nodejs ./instrument ./instrument
+COPY --link=true --chown=nextjs:nodejs ./scripts ./scripts
+COPY --link=true --chown=nextjs:nodejs ./*.ts ./*.mjs ./*.json ./*.lock ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
@@ -131,8 +136,9 @@ ENV MEM0_APIHOST=$MEM0_APIHOST
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs \
+  && echo "added user nextjs to group nodejs."
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
