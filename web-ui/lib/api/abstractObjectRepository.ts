@@ -1,7 +1,7 @@
 import {
   PaginationStats,
   PaginatedResultset,
-} from '@/data-models';
+} from '@/data-models/_types';
 import { isError, isTemplateStringsArray } from '@/lib/react-util/_utility-methods';
 import { log } from '../logger';
 import type {

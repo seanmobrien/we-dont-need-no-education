@@ -1,6 +1,6 @@
 'use client';
 
-import { isMessageImportWithChildrenStatus } from '@/data-models';
+import { isMessageImportWithChildrenStatus } from '@/data-models/api/guards';
 import {
   ImportResponse,
   MessageImportStatus,

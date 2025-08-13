@@ -3,9 +3,13 @@
 import { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import {
   EmailMessage,
+} from '@/data-models/api/email-message';
+import {
   normalizeDateAndTime,
+} from '@/data-models/_utilities';
+import {
   PaginationStats,
-} from '@/data-models';
+} from '@/data-models/_types';
 import {
   setUuid,
   getUuid,

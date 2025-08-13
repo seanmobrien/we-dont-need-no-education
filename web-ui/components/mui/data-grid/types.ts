@@ -1,4 +1,4 @@
-import { EmailMessageSummary } from '@/data-models';
+import { EmailMessageSummary } from '@/data-models/api/email-message';
 // import { GetGridRecordDataProps } from '@/lib/components/mui/data-grid';
 import {
   DataGridProProps,

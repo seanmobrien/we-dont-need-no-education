@@ -3,7 +3,7 @@ import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/ut
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { extractParams } from '@/lib/nextjs-util/utils';
 import { NotesRepository } from '@/lib/api/email/properties/notes/notes-repository';
-import { EmailProperty } from '@/data-models';
+import { EmailProperty } from '@/data-models/api/email-properties/property-type';
 import { eq, and, ne } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';

@@ -17,11 +17,13 @@ import {
 
 import { EmailMessage } from '@/data-models/api/email-message';
 import ContactDropdown from '@/components/contact/contact-dropdown';
+import { ContactSummary } from '@/data-models/api/contact';
 import {
-  ContactSummary,
   createContactSummary,
+} from '@/data-models/api/factories';
+import {
   normalizeDateAndTime,
-} from '@/data-models';
+} from '@/data-models/_utilities';
 import ContactRecipients from '../contact/contact-recipients';
 import EmailSelect from './select';
 import { SubmitRefCallbackInstance } from './_types';

@@ -5,7 +5,7 @@ import { isGridSortModel, isString, isURL } from './postgres/guards';
 import { isGridFilterModel } from '../guards';
 import { ArrayElement } from '@/lib/typescript';
 import { PaginatedGridListRequest } from '../types';
-import { normalizeNullableNumeric } from '@/data-models';
+import { normalizeNullableNumeric } from '@/data-models/_utilities';
 type GridSortItem = ArrayElement<GridSortModel>;
 
 /**

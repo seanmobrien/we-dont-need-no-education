@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { extractParams } from '@/lib/nextjs-util/utils';
-import { EmailProperty } from '@/data-models';
+import { EmailProperty } from '@/data-models/api/email-properties/property-type';
 import {
   getEmailColumn,
   selectForGrid,

@@ -1,4 +1,5 @@
-import { normalizeNullableNumeric, PaginationStats } from '@/data-models';
+import { normalizeNullableNumeric } from '@/data-models/_utilities';
+import { PaginationStats } from '@/data-models/_types';
 import {
   GmailEmailImportSource,
   ImportSourceMessage,

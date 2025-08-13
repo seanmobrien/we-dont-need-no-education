@@ -1,4 +1,4 @@
-import { EmailProperty } from '@/data-models';
+import { EmailProperty } from '@/data-models/api/email-properties/property-type';
 import { Stack, Paper, Typography, Chip, Box } from '@mui/material';
 import { useMemo } from 'react';
 

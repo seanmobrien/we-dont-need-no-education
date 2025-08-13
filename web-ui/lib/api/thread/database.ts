@@ -5,9 +5,11 @@ import { log } from '@/lib/logger';
 import type {
   PaginatedResultset,
   PaginationStats,
+} from '@/data-models/_types';
+import type {
   Thread,
   ThreadSummary,
-} from '@/data-models';
+} from '@/data-models/api/thread';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 import type { ObjectRepository } from '../_types';

@@ -7,7 +7,7 @@ import {
   KeyPointsDetailsRepository,
 } from '@/lib/api/email/properties/key-points/key-points-details-repository';
 import { extractParams } from '@/lib/nextjs-util/utils';
-import { KeyPointsDetails } from '@/data-models';
+import { KeyPointsDetails } from '@/data-models/api/email-properties/extended-properties';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';

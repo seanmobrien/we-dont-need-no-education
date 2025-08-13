@@ -8,7 +8,7 @@
  * - mapRecordToObject: Maps a record to an object containing email details and body content.
  */
 
-import type { ContactSummary } from '@/data-models';
+import type { ContactSummary } from '@/data-models/api/contact';
 import { query } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 

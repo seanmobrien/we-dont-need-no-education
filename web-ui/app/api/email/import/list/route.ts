@@ -4,7 +4,7 @@ import { log } from '@/lib/logger';
 import { query } from '@/lib/neondb';
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
-import type { ImportStage, StagedMessageSummary } from '@/data-models';
+import type { ImportStage, StagedMessageSummary } from '@/data-models/api/import/email-message';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**

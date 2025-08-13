@@ -1,4 +1,4 @@
-import { PaginatedResultset } from '@/data-models';
+import { PaginatedResultset } from '@/data-models/_types';
 import { isAbortError, LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   GridFilterModel,

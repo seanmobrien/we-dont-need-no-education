@@ -2,11 +2,15 @@ import {
   EmailPropertyType,
   EmailPropertyCategoryTypeId,
   EmailPropertyCategoryType,
+} from '@/data-models/api/email-properties/property-type';
+import {
   PaginationStats,
   PaginatedResultset,
+} from '@/data-models/_types';
+import {
   lookupEmailPropertyCategory,
   lookupEmailPropertyType,
-} from '@/data-models';
+} from '@/data-models/_utilities';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { FirstParameter } from '@/lib/typescript';
 import { BaseObjectRepository } from '../../_baseObjectRepository';

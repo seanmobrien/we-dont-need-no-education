@@ -1,6 +1,6 @@
 import { drizDb, type DatabaseType } from '@/lib/drizzle-db';
 import { ObjectRepository, DrizzleRepositoryConfig, IObjectRepositoryExt } from './_types';
-import { PaginatedResultset, PaginationStats } from '@/data-models';
+import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { PartialExceptFor } from '@/lib/typescript';
 import { eq, count, SQL } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';

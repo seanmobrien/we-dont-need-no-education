@@ -1,14 +1,20 @@
 import type {
   Contact,
   ContactSummary,
+} from '@/data-models/api/contact';
+import type {
   PaginatedResultset,
   PaginationStats,
+} from '@/data-models/_types';
+import type {
   ObjectRepository,
-} from '@/data-models';
+} from '@/data-models/api/object-repository';
 import {
   isContact,
+} from '@/data-models/api/guards';
+import {
   globalContactCache,
-} from '@/data-models';
+} from '@/data-models/api/contact-cache';
 import { log } from '@/lib/logger';
 import { query, queryExt } from '@/lib/neondb';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
