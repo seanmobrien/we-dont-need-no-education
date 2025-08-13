@@ -9,8 +9,20 @@ const { providers, models, modelQuotas, tokenConsumptionStats } = schema;
 
 export const dynamic = 'force-dynamic';
 
-export const GET = wrapRouteRequest(async () => {
+export const GET = wrapRouteRequest(async (request: Request) => {
   try {
+    const { searchParams } = new URL(request.url);
+    const source = searchParams.get('source') || 'database'; // 'database' or 'redis'
+    
+    if (source === 'redis') {
+      // TODO: Implement Redis-based model statistics fetching
+      // This would fetch data directly from Redis cache instead of database
+      return NextResponse.json({
+        success: false,
+        error: 'Redis source not yet implemented for model statistics',
+      }, { status: 501 });
+    }
+
     const db = await drizDbWithInit();
     
     // Get all models with their provider info and quotas

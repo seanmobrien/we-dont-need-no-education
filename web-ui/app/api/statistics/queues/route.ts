@@ -15,26 +15,16 @@ export const GET = wrapRouteRequest(async () => {
 
     const queueInfo = await Promise.all(
       modelClassifications.map(async (classification) => {
-        const gen1Size = await rateLimitQueueManager.getQueueSize(1, classification);
-        const gen2Size = await rateLimitQueueManager.getQueueSize(2, classification);
-
-        // Get sample requests from each queue for details
-        const gen1Requests = gen1Size > 0 ? await getSampleRequests(redis, 1, classification, 5) : [];
-        const gen2Requests = gen2Size > 0 ? await getSampleRequests(redis, 2, classification, 5) : [];
+        const gen1Stats = await getQueueGenerationStats(redis, 1, classification);
+        const gen2Stats = await getQueueGenerationStats(redis, 2, classification);
 
         return {
           classification,
           queues: {
-            generation1: {
-              size: gen1Size,
-              requests: gen1Requests,
-            },
-            generation2: {
-              size: gen2Size,
-              requests: gen2Requests,
-            },
+            generation1: gen1Stats,
+            generation2: gen2Stats,
           },
-          totalPending: gen1Size + gen2Size,
+          totalPending: gen1Stats.size + gen2Stats.size,
         };
       })
     );
@@ -121,4 +111,58 @@ async function getSampleRequests(
     console.error(`Error getting sample requests for ${classification} gen${generation}:`, error);
     return [];
   }
+}
+
+async function getQueueGenerationStats(
+  redis: Awaited<ReturnType<typeof getRedisClient>>,
+  generation: 1 | 2,
+  classification: string
+): Promise<{
+  size: number;
+  requests: Array<RateLimitedRequest & { queueTime: number; tokenEstimate?: number }>;
+  oldestRequest?: Date;
+  newestRequest?: Date;
+  averageSize: number;
+  largestRequest?: RateLimitedRequest & { queueTime: number; tokenEstimate?: number };
+}> {
+  const size = await rateLimitQueueManager.getQueueSize(generation, classification);
+  const requests = size > 0 ? await getSampleRequests(redis, generation, classification, 5) : [];
+  
+  if (requests.length === 0) {
+    return {
+      size,
+      requests: [],
+      averageSize: 0,
+    };
+  }
+
+  // Calculate stats from requests
+  const submittedDates = requests
+    .map(r => new Date(r.metadata.submittedAt))
+    .filter(d => !isNaN(d.getTime()));
+  
+  const oldestRequest = submittedDates.length > 0 ? new Date(Math.min(...submittedDates.map(d => d.getTime()))) : undefined;
+  const newestRequest = submittedDates.length > 0 ? new Date(Math.max(...submittedDates.map(d => d.getTime()))) : undefined;
+  
+  const requestSizes = requests.map(r => {
+    const messages = r.request.messages;
+    if (Array.isArray(messages)) {
+      const content = messages.map(m => m.content || '').join(' ') || '';
+      return content.length;
+    }
+    return 0;
+  });
+  
+  const averageSize = requestSizes.length > 0 ? requestSizes.reduce((a, b) => a + b, 0) / requestSizes.length : 0;
+  const largestRequestIndex = requestSizes.length > 0 ? requestSizes.indexOf(Math.max(...requestSizes)) : -1;
+  const largestRequest = largestRequestIndex >= 0 ? requests[largestRequestIndex] : undefined;
+
+  return {
+    size,
+    requests,
+    oldestRequest,
+    newestRequest,
+    averageSize,
+    largestRequest,
+  };
 }

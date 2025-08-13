@@ -4,7 +4,7 @@ import { EmailDashboardLayout } from '@/components/email-message/dashboard-layou
 import { auth } from '@/auth';
 import { StatisticsOverview } from '@/components/statistics/statistics-overview';
 
-export default async function StatisticsPage() {
+const StatisticsPage = async () => {
   const session = await auth();
   
   return (
@@ -22,4 +22,6 @@ export default async function StatisticsPage() {
       </Box>
     </EmailDashboardLayout>
   );
-}
+};
+
+export default StatisticsPage;

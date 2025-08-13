@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Typography,
   Card,
@@ -14,6 +14,8 @@ import {
   Alert,
   IconButton,
   Tooltip,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -22,117 +24,21 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { ModelStatistics } from './model-statistics';
 import { QueueStatistics } from './queue-statistics';
+import { useStatistics } from '@/lib/hooks/use-statistics';
 
-interface ModelStat {
-  id: string;
-  modelName: string;
-  displayName: string;
-  description: string;
-  isActive: boolean;
-  providerId: string;
-  providerName: string;
-  providerDisplayName: string;
-  maxTokensPerMessage: number;
-  maxTokensPerMinute: number;
-  maxTokensPerDay: number;
-  modelKey: string;
-  available: boolean;
-  stats: {
-    minute: { promptTokens: number; completionTokens: number; totalTokens: number; requestCount: number };
-    hour: { promptTokens: number; completionTokens: number; totalTokens: number; requestCount: number };
-    day: { promptTokens: number; completionTokens: number; totalTokens: number; requestCount: number };
-  };
-}
+export const StatisticsOverview = () => {
+  const [dataSource, setDataSource] = useState<'database' | 'redis'>('database');
+  
+  const {
+    models,
+    queues,
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useStatistics(dataSource);
 
-interface QueueInfo {
-  classification: string;
-  queues: {
-    generation1: { size: number; requests: QueueRequest[] };
-    generation2: { size: number; requests: QueueRequest[] };
-  };
-  totalPending: number;
-}
-
-interface QueueRequest {
-  id: string;
-  modelClassification: string;
-  request: {
-    params: Record<string, unknown>;
-    messages: Array<{ role?: string; content?: string }>;
-  };
-  metadata: {
-    submittedAt: string;
-    generation: 1 | 2;
-    chatHistoryId?: string;
-    userId?: string;
-  };
-  queueTime: number;
-  tokenEstimate?: number;
-}
-
-interface StatisticsData {
-  models: ModelStat[];
-  queues: {
-    summary: { totalPending: number; totalGen1: number; totalGen2: number };
-    queues: QueueInfo[];
-  };
-}
-
-export function StatisticsOverview() {
-  const [data, setData] = useState<StatisticsData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
-
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [modelsResponse, queuesResponse] = await Promise.all([
-        fetch('/api/statistics/models'),
-        fetch('/api/statistics/queues'),
-      ]);
-
-      if (!modelsResponse.ok || !queuesResponse.ok) {
-        throw new Error('Failed to fetch statistics data');
-      }
-
-      const [modelsData, queuesData] = await Promise.all([
-        modelsResponse.json() as Promise<{ success: boolean; data: ModelStat[] }>,
-        queuesResponse.json() as Promise<{ 
-          success: boolean; 
-          data: {
-            summary: { totalPending: number; totalGen1: number; totalGen2: number };
-            queues: QueueInfo[];
-          } 
-        }>,
-      ]);
-
-      if (!modelsData.success || !queuesData.success) {
-        throw new Error('API returned error response');
-      }
-
-      setData({
-        models: modelsData.data,
-        queues: queuesData.data,
-      });
-      setLastRefresh(new Date());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-    // Auto-refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (loading && !data) {
+  if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
         <CircularProgress />
@@ -140,19 +46,22 @@ export function StatisticsOverview() {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <Alert severity="error" action={
-        <IconButton onClick={fetchData} color="inherit" size="small">
-          <RefreshIcon />
-        </IconButton>
-      }>
-        Error loading statistics: {error}
+      <Alert 
+        severity="error" 
+        action={
+          <IconButton onClick={refetch} color="inherit" size="small">
+            <RefreshIcon />
+          </IconButton>
+        }
+      >
+        Error loading statistics: {error?.message || 'Unknown error'}
       </Alert>
     );
   }
 
-  if (!data) {
+  if (!models.data || !queues.data) {
     return (
       <Alert severity="info">
         No statistics data available
@@ -160,27 +69,43 @@ export function StatisticsOverview() {
     );
   }
 
-  const totalModels = data.models.length;
-  const activeModels = data.models.filter(m => m.isActive).length;
-  const availableModels = data.models.filter(m => m.available).length;
+  const totalModels = models.data.length;
+  const activeModels = models.data.filter(m => m.isActive).length;
+  const availableModels = models.data.filter(m => m.available).length;
 
   return (
     <Box>
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" color="var(--color-primary-accent)">
           AI Model Statistics
         </Typography>
-        <Tooltip title={`Last updated: ${lastRefresh.toLocaleTimeString()}`}>
-          <IconButton onClick={fetchData} disabled={loading}>
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
+        <Box display="flex" alignItems="center" gap={2}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={dataSource === 'redis'}
+                onChange={(e) => setDataSource(e.target.checked ? 'redis' : 'database')}
+                disabled={dataSource === 'redis'} // Disable Redis for now as it's not implemented
+              />
+            }
+            label={
+              <Typography variant="body2" color="var(--color-secondary-accent)">
+                Redis Data
+              </Typography>
+            }
+          />
+          <Tooltip title={`Last updated: ${new Date().toLocaleTimeString()}`}>
+            <IconButton onClick={refetch} disabled={isLoading} color="primary">
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Box>
 
       {/* Summary Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
+          <Card className="primary">
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
                 Total Models
@@ -192,7 +117,7 @@ export function StatisticsOverview() {
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
+          <Card className="secondary">
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
                 Active Models
@@ -210,7 +135,7 @@ export function StatisticsOverview() {
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
+          <Card className="accent">
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
                 Available Models
@@ -228,15 +153,15 @@ export function StatisticsOverview() {
           </Card>
         </Grid>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-          <Card>
+          <Card className="primary">
             <CardContent>
               <Typography color="textSecondary" gutterBottom>
                 Queued Requests
               </Typography>
-              <Typography variant="h4" color={data.queues.summary.totalPending > 0 ? "warning.main" : "text.primary"}>
-                {data.queues.summary.totalPending}
+              <Typography variant="h4" color={queues.data.summary.totalPending > 0 ? "warning.main" : "text.primary"}>
+                {queues.data.summary.totalPending}
               </Typography>
-              {data.queues.summary.totalPending > 0 && (
+              {queues.data.summary.totalPending > 0 && (
                 <Chip 
                   size="small" 
                   icon={<ErrorIcon />} 
@@ -252,25 +177,27 @@ export function StatisticsOverview() {
       {/* Detailed Statistics */}
       <Accordion defaultExpanded>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="h6">Model Performance & Status</Typography>
+          <Typography variant="h6" color="var(--color-primary-accent)">
+            Model Performance & Status
+          </Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <ModelStatistics models={data.models} />
+          <ModelStatistics models={models.data} />
         </AccordionDetails>
       </Accordion>
 
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-          <Typography variant="h6">
-            Queue Details {data.queues.summary.totalPending > 0 && (
-              <Chip size="small" label={data.queues.summary.totalPending} color="warning" />
+          <Typography variant="h6" color="var(--color-primary-accent)">
+            Queue Details {queues.data.summary.totalPending > 0 && (
+              <Chip size="small" label={queues.data.summary.totalPending} color="warning" />
             )}
           </Typography>
         </AccordionSummary>
         <AccordionDetails>
-          <QueueStatistics queues={data.queues} />
+          <QueueStatistics queues={queues.data} />
         </AccordionDetails>
       </Accordion>
     </Box>
   );
-}
+};

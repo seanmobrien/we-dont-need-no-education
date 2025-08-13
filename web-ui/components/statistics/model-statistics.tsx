@@ -18,54 +18,14 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import PauseCircleIcon from '@mui/icons-material/PauseCircle';
-
-interface ModelStat {
-  id: string;
-  modelName: string;
-  displayName: string;
-  description: string;
-  isActive: boolean;
-  providerId: string;
-  providerName: string;
-  providerDisplayName: string;
-  maxTokensPerMessage: number;
-  maxTokensPerMinute: number;
-  maxTokensPerDay: number;
-  modelKey: string;
-  available: boolean;
-  stats: {
-    minute: { promptTokens: number; completionTokens: number; totalTokens: number; requestCount: number };
-    hour: { promptTokens: number; completionTokens: number; totalTokens: number; requestCount: number };
-    day: { promptTokens: number; completionTokens: number; totalTokens: number; requestCount: number };
-  };
-}
+import type { ModelStat } from '@/types/statistics';
+import { formatNumber, getUsagePercentage, getUsageColor } from '@/lib/site-util/format';
 
 interface ModelStatisticsProps {
   models: ModelStat[];
 }
 
-function formatNumber(num: number): string {
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M';
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'K';
-  }
-  return num.toString();
-}
-
-function getUsagePercentage(used: number, limit: number | null): number {
-  if (!limit || limit === 0) return 0;
-  return Math.min((used / limit) * 100, 100);
-}
-
-function getUsageColor(percentage: number): 'success' | 'warning' | 'error' {
-  if (percentage < 70) return 'success';
-  if (percentage < 90) return 'warning';
-  return 'error';
-}
-
-export function ModelStatistics({ models }: ModelStatisticsProps) {
+export const ModelStatistics = ({ models }: ModelStatisticsProps) => {
   if (models.length === 0) {
     return (
       <Typography variant="body2" color="textSecondary">
@@ -97,16 +57,16 @@ export function ModelStatistics({ models }: ModelStatisticsProps) {
               <TableRow key={model.id} hover>
                 <TableCell>
                   <Box>
-                    <Typography variant="body2" fontWeight="medium">
+                    <Typography variant="body2" fontWeight="medium" color="var(--color-primary-accent)">
                       {model.displayName || model.modelName}
                     </Typography>
-                    <Typography variant="caption" color="textSecondary">
+                    <Typography variant="caption" color="var(--color-secondary-accent)">
                       {model.modelKey}
                     </Typography>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2">
+                  <Typography variant="body2" color="var(--color-primary-accent)">
                     {model.providerDisplayName}
                   </Typography>
                 </TableCell>
@@ -118,6 +78,7 @@ export function ModelStatistics({ models }: ModelStatisticsProps) {
                         icon={<CheckCircleIcon />}
                         label="Active"
                         color="primary"
+                        className="primary"
                       />
                     ) : (
                       <Chip
@@ -125,6 +86,7 @@ export function ModelStatistics({ models }: ModelStatisticsProps) {
                         icon={<PauseCircleIcon />}
                         label="Inactive"
                         color="default"
+                        className="secondary"
                       />
                     )}
                     {model.isActive && (
@@ -133,13 +95,14 @@ export function ModelStatistics({ models }: ModelStatisticsProps) {
                         icon={model.available ? <CheckCircleIcon /> : <ErrorIcon />}
                         label={model.available ? "Available" : "Unavailable"}
                         color={model.available ? "success" : "error"}
+                        className={model.available ? "accent" : "primary"}
                       />
                     )}
                   </Box>
                 </TableCell>
                 <TableCell align="center">
                   <Box minWidth={100}>
-                    <Typography variant="body2">
+                    <Typography variant="body2" color="var(--color-primary-accent)">
                       {formatNumber(model.stats.minute.totalTokens)}
                       {model.maxTokensPerMinute && ` / ${formatNumber(model.maxTokensPerMinute)}`}
                     </Typography>
@@ -156,13 +119,13 @@ export function ModelStatistics({ models }: ModelStatisticsProps) {
                   </Box>
                 </TableCell>
                 <TableCell align="center">
-                  <Typography variant="body2">
+                  <Typography variant="body2" color="var(--color-primary-accent)">
                     {formatNumber(model.stats.hour.totalTokens)}
                   </Typography>
                 </TableCell>
                 <TableCell align="center">
                   <Box minWidth={100}>
-                    <Typography variant="body2">
+                    <Typography variant="body2" color="var(--color-primary-accent)">
                       {formatNumber(model.stats.day.totalTokens)}
                       {model.maxTokensPerDay && ` / ${formatNumber(model.maxTokensPerDay)}`}
                     </Typography>
@@ -180,13 +143,13 @@ export function ModelStatistics({ models }: ModelStatisticsProps) {
                 </TableCell>
                 <TableCell align="center">
                   <Box>
-                    <Typography variant="body2">
+                    <Typography variant="body2" color="var(--color-secondary-accent)">
                       M: {model.stats.minute.requestCount}
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" color="var(--color-secondary-accent)">
                       H: {model.stats.hour.requestCount}
                     </Typography>
-                    <Typography variant="body2">
+                    <Typography variant="body2" color="var(--color-secondary-accent)">
                       D: {model.stats.day.requestCount}
                     </Typography>
                   </Box>
@@ -198,4 +161,4 @@ export function ModelStatistics({ models }: ModelStatisticsProps) {
       </Table>
     </TableContainer>
   );
-}
+};

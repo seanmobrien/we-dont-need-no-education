@@ -108,6 +108,20 @@ export const EmailDashboardLayout = ({
           },
         ]
       : [];
+    
+    const chatNavigation: NavigationItem = {
+      title: 'Chats',
+      icon: <ChatIcon key="chats-icon" />, 
+      segment: 'chat',
+      children: [
+        {
+          segment: 'messages/chat/statistics',
+          icon: <BarChartIcon key="statistics-icon" />, 
+          title: 'Statistics',
+        },
+      ],
+    };
+
     return [
       { kind: 'header', title: 'Available Records' },
       {
@@ -115,16 +129,7 @@ export const EmailDashboardLayout = ({
         icon: <DashboardIcon key="list-emails-icon" />, 
         segment: 'messages',
       },
-      {
-        title: 'Chats',
-        icon: <ChatIcon key="chats-icon" />, 
-        segment: 'chat',
-      },
-      {
-        title: 'Statistics',
-        icon: <BarChartIcon key="statistics-icon" />, 
-        segment: 'messages/statistics',
-      },
+      chatNavigation,
       ...viewEmailNavigation,
       { kind: 'divider' },
       { kind: 'header', title: 'Aquisition' },
