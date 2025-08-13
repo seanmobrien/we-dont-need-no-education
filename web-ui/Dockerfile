@@ -15,6 +15,10 @@ ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
 
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs \
+  && echo "added user nextjs to group nodejs."
+
 # Install cron for rate retry processing
 RUN apk add --no-cache libc6-compat dcron curl
 
@@ -54,11 +58,6 @@ ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
-
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
-  && chown -R nextjs:nodejs /app \
-  && echo "added user nextjs to group nodejs."
 
 WORKDIR /app
 
@@ -135,10 +134,6 @@ ENV NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=$NEXT_PUBLIC_DATAGRID_CLIENT_CACHE
 ENV MEM0_APIHOST=$MEM0_APIHOST
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
-
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
-  && echo "added user nextjs to group nodejs."
 
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
