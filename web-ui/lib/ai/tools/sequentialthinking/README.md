@@ -1,3 +1,86 @@
+# About this folder: Git subtree integration
+
+This folder is vendored from another repository using git subtree (split of a subdirectory).
+
+- Parent repository (this repo):
+  - URL: https://github.com/seanmobrien/we-dont-need-no-education
+  - Path to subtree: web-ui/lib/ai/tools/sequentialthinking
+- Child (upstream) repository and subdirectory:
+  - URL: https://github.com/seanmobrien/mcp-servers
+  - Subdirectory: src/sequentialthinking
+  - Default branch: develop
+
+Quick operations (from the repository root)
+- Pull updates from upstream (only src/sequentialthinking):
+  1) Maintain a persistent upstream clone at web-ui/.upstream/mcp-servers
+    pwsh
+    if (!(Test-Path 'web-ui/.upstream/mcp-servers')) { git clone --depth=1 -b develop https://github.com/seanmobrien/mcp-servers.git 'web-ui/.upstream/mcp-servers' }
+    git -C 'web-ui/.upstream/mcp-servers' fetch origin develop
+    git -C 'web-ui/.upstream/mcp-servers' checkout develop
+    git -C 'web-ui/.upstream/mcp-servers' subtree split --prefix=src/sequentialthinking -b sequentialthinking-split --rejoin
+  2) Pull into this subtree (squashed history)
+    git subtree pull --prefix=web-ui/lib/ai/tools/sequentialthinking 'web-ui/.upstream/mcp-servers' sequentialthinking-split --squash
+  Or use the helper script from anywhere inside the repo:
+      pwsh web-ui/scripts/sequentialthinking-subtree-pull.ps1 -Branch develop
+
+- Contribute changes back to upstream:
+  1) Commit your edits in this folder as usual in the parent repo
+  2) Push a split branch to a fork or to upstream (requires write access)
+    pwsh
+    # If you don't have push rights, point mcp-servers at your fork first:
+    # git remote set-url mcp-servers https://github.com/<your-username>/mcp-servers.git
+    git subtree push --prefix=web-ui/lib/ai/tools/sequentialthinking mcp-servers sequentialthinking-split
+  # Or use helper script:
+  pwsh web-ui/scripts/sequentialthinking-subtree-push.ps1 -Branch sequentialthinking-split -Remote mcp-servers
+  3) Open a PR from sequentialthinking-split into the upstream repo
+    Note: The split branch places the files at repo root. Upstream maintainers can merge by
+    moving those files into src/sequentialthinking (or by using `git subtree merge -P src/sequentialthinking`).
+
+Notes
+- Ensure your working tree is clean before running subtree operations.
+- We use `--squash` to keep the parent repository history compact.
+- A convenience remote named `mcp-servers` is configured to https://github.com/seanmobrien/mcp-servers.git.
+
+### Working on a specific upstream branch ("check out a branch in the sub-repo")
+
+Because this folder is a subtree (not a submodule), it is not an independent Git repo. To work against a specific upstream branch, use a temporary clone of the upstream and then pull/push via subtree.
+
+Check out upstream branch and pull it into the subtree:
+
+1) Use the persistent upstream clone and check out the target branch (replace `<branch>`)
+  pwsh
+  if (!(Test-Path 'web-ui/.upstream/mcp-servers')) { git clone --depth=1 https://github.com/seanmobrien/mcp-servers.git 'web-ui/.upstream/mcp-servers' }
+  git -C 'web-ui/.upstream/mcp-servers' fetch origin <branch>
+  git -C 'web-ui/.upstream/mcp-servers' checkout <branch>
+
+2) Split only the desired subdirectory from that branch
+  git -C 'web-ui/.upstream/mcp-servers' subtree split --prefix=src/sequentialthinking -b seq-split-<branch>
+
+3) Pull the split branch into this subtree path (squashed)
+  git subtree pull --prefix=web-ui/lib/ai/tools/sequentialthinking 'web-ui/.upstream/mcp-servers' seq-split-<branch> --squash
+
+Push local changes to a specific upstream branch:
+
+1) Commit your local edits in this subtree path in the parent repo
+2) Push to upstream branch (creates the branch on remote if it doesn’t exist and you have permissions)
+  pwsh
+  git subtree push --prefix=web-ui/lib/ai/tools/sequentialthinking mcp-servers <branch>
+
+Tip: The persistent local clone lives at `web-ui/.upstream/mcp-servers`. Point subtree commands at that path.
+
+### Helper scripts
+
+Run a pre-flight verification (ensures clean working tree unless -AllowDirty):
+  pwsh web-ui/scripts/sequentialthinking-subtree-verify.ps1
+
+One-liner syncs:
+- Pull latest from upstream (develop):
+  pwsh web-ui/scripts/sequentialthinking-subtree-sync.ps1 -Mode pull -Branch develop
+- Pull a feature branch from upstream:
+  pwsh web-ui/scripts/sequentialthinking-subtree-sync.ps1 -Mode pull -Branch feature/my-branch
+- Push local subtree changes to upstream branch (requires permissions):
+  pwsh web-ui/scripts/sequentialthinking-subtree-sync.ps1 -Mode push -Branch sequentialthinking-split -Remote mcp-servers
+
 # Sequential Thinking MCP Server
 
 An MCP server implementation that provides a tool for dynamic and reflective problem-solving through a structured thinking process.
