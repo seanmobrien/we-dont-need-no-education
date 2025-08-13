@@ -4,8 +4,10 @@ import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   DrizzleCrudRepositoryController,
+} from '@/lib/api/drizzle-crud-controller';
+import {
   EmailAttachmentDrizzleRepository,
-} from '@/lib/api';
+} from '@/lib/api/attachment';
 
 
 

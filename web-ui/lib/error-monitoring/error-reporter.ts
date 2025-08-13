@@ -1,4 +1,5 @@
-import { isError, LoggedError } from '@/lib/react-util';
+import { isError } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 
 /**

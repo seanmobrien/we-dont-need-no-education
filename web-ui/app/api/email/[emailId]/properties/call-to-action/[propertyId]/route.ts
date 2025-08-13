@@ -1,7 +1,5 @@
-import {
-  RepositoryCrudController,
-  CallToActionDetailsRepository,
-} from '@/lib/api';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
 import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 

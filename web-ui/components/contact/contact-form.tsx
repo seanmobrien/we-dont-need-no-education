@@ -2,7 +2,7 @@ import React, { useState, useEffect, ChangeEvent, useCallback } from 'react';
 import type { Contact } from '@/data-models/api';
 import { createContact, isContact, isContactSummary } from '@/data-models/api';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
 type ContactFormProps = {

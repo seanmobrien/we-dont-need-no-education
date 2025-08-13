@@ -9,7 +9,7 @@
  * @since 2025-07-26
  */
 
-import { isLikeNextRequest } from '@/lib/nextjs-util';
+import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { GridSortModel } from '@mui/x-data-grid';
 import { asc, desc, SQL } from 'drizzle-orm';
 import { PgColumn } from 'drizzle-orm/pg-core';

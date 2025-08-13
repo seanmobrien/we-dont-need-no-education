@@ -15,7 +15,7 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { modelQuotas, models, tokenConsumptionStats } from '@/drizzle/schema';
 import { eq, and, sql } from 'drizzle-orm';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   ModelQuota,
   ProviderModelResponse,

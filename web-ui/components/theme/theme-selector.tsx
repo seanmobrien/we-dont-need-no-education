@@ -8,7 +8,9 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Palette as PaletteIcon } from '@mui/icons-material';
-import { type ThemeType, themeDisplayNames, useTheme } from '@/lib/themes';
+import { type ThemeType } from '@/lib/themes/types';
+import { themeDisplayNames } from '@/lib/themes/definitions';
+import { useTheme } from '@/lib/themes/provider';
 
 const availableThemes: ThemeType[] = ['dark', 'light'] as const;
 const origins = {

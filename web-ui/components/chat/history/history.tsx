@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Box, Typography } from '@mui/material';
-import { VirtualizedChatDisplay } from '@/components/chat';
+import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
 import { useChatHistory } from './useChatHistory';
 import Loading from '@/components/general/loading';
 

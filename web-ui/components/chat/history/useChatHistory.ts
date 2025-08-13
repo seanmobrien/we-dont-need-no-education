@@ -57,9 +57,9 @@
  *   - Keep business logic (title derivation, etc.) out of the data hook; place in presentation component.
  *   - Avoid adding UI concerns (formatting dates) here; return raw canonical data.
  */
-import { type ChatDetails } from '@/lib/ai';
-import { LoggedError } from '@/lib/react-util';
-import { fetch } from '@/lib/nextjs-util';
+import { type ChatDetails } from '@/lib/ai/chat/types';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { fetch } from '@/lib/nextjs-util/fetch';
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
 
 /**

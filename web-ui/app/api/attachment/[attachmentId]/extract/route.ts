@@ -4,7 +4,7 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 import { AttachmentRepository } from '@/lib/api/attachment';
-import { extractParams } from '@/lib/nextjs-util';
+import { extractParams } from '@/lib/nextjs-util/utils';
 
 const attachmentRepository = new AttachmentRepository();
 

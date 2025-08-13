@@ -1,5 +1,8 @@
 import type { NextConfig } from 'next';
-import { withBundleAnalyzer, withIgnorePacks, withPublicEnv, withStripRscPrefixPlugin } from '@/lib/config';
+import { withBundleAnalyzer } from '@/lib/config/bundle-analyzers';
+import { withIgnorePacks } from '@/lib/config/ignore-unsupported-packs-plugin';
+import { withPublicEnv } from '@/lib/config/public-env';
+import { withStripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
 
 const StripRscPrefixPlugin = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

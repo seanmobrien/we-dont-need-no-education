@@ -1,4 +1,4 @@
-import { PaginationStats, PaginatedResultset } from '@/data-models';
+import { PaginationStats, PaginatedResultset } from '@/data-models/_types';
 import { log } from '../logger';
 import { query, queryExt, TransformedFullQueryResults } from '@/lib/neondb';
 import { FirstParameter, PartialExceptFor } from '../typescript';

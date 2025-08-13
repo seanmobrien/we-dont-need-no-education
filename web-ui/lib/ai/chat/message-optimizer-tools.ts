@@ -1,5 +1,5 @@
 import { UIMessage } from 'ai';
-import { aiModelFactory } from '@/lib/ai';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { generateText } from 'ai';
 import { log } from '@/lib/logger';
 import { createHash } from 'crypto';

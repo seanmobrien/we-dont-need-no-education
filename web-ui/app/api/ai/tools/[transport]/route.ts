@@ -18,7 +18,7 @@ import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
 import { caseFileRequestPropsShape, CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 import { log } from '@/lib/logger';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createMcpHandler } from '@vercel/mcp-adapter';
 import { z } from 'zod';
 

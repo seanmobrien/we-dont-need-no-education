@@ -5,7 +5,7 @@ import {
   mapRecordToThreadSummary,
 } from '@/lib/api/email/util';
 import { query, queryExt } from '@/lib/neondb';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const dynamic = 'force-dynamic';
 

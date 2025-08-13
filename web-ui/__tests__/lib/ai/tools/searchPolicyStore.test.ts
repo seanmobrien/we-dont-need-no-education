@@ -14,7 +14,7 @@ jest.mock('@/lib/react-util', () => ({
 import { searchPolicyStore } from '@/lib/ai/tools/searchPolicyStore';
 import { HybridPolicySearch } from '@/lib/ai/services/search';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { hybridPolicySearchFactory } from '@/lib/ai/services/search';
 import { toolCallbackResultFactory } from '@/lib/ai/tools/utility';
 

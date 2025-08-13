@@ -8,7 +8,7 @@ import { metricsCollector } from './metrics';
 import { createJailKey } from './cacheKeys';
 import type { getRedisClient } from './redis-client';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 const config = getCacheConfig();
 

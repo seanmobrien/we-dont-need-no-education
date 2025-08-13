@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RepositoryCrudController, DocumentUnitRepository } from '@/lib/api';
-import { isTruthy } from '@/lib/react-util';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { DocumentUnitRepository } from '@/lib/api/document-unit';
+import { isTruthy } from '@/lib/react-util/_utility-methods';
 
 import {
   getMultipleCaseFileDocuments,

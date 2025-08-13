@@ -17,7 +17,7 @@ import {
 } from '@/lib/ai/services/search';
 
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 describe('searchCaseFile', () => {
   const mockHybridSearch = jest.fn();

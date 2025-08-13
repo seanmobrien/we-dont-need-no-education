@@ -1,4 +1,4 @@
-import { PaginatedResultset, PaginationStats } from '@/data-models';
+import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { PartialExceptFor } from '../typescript';
 import { TransformedFullQueryResults } from '../neondb';
 import { PgTable, PgColumn } from 'drizzle-orm/pg-core';

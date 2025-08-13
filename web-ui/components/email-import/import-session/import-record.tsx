@@ -1,6 +1,6 @@
 'use client';
 
-import { isMessageImportWithChildrenStatus } from '@/data-models';
+import { isMessageImportWithChildrenStatus } from '@/data-models/api/guards';
 import {
   ImportResponse,
   MessageImportStatus,
@@ -20,7 +20,7 @@ import {
   importEmailRecord,
 } from '@/lib/api/email/import/google';
 import { isAbortablePromise } from '@/lib/typescript';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 import {
   TableRow,
@@ -30,7 +30,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { isError } from '@/lib/react-util';
+import { isError } from '@/lib/react-util/_utility-methods';
 
 const ImportRecord: React.FC<ImportRecordProps> = ({
   importStatus: importStatusFromProps,

@@ -1,7 +1,5 @@
-import {
-  RepositoryCrudController,
-  KeyPointsDetailsRepository,
-} from '@/lib/api';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { KeyPointsDetailsRepository } from '@/lib/api/email/properties/key-points/key-points-details-repository';
 import { NextRequest } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 

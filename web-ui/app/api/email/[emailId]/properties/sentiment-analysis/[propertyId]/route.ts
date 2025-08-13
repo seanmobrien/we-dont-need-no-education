@@ -1,7 +1,5 @@
-import {
-  RepositoryCrudController,
-  SentimentAnalysisDetailsRepository,
-} from '@/lib/api';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { SentimentAnalysisDetailsRepository } from '@/lib/api/email/properties/sentiment-analysis/sentiment-analysis-details-repository';
 import { NextRequest } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 

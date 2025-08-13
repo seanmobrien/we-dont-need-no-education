@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback, SetStateAction, Dispatch } from 'react';
 import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
-import { asErrorLike, ErrorLike, isErrorLike, StringOrErrorLike } from '@/lib/react-util';
+import { asErrorLike, ErrorLike, isErrorLike, StringOrErrorLike } from '@/lib/react-util/errors/error-like';
 
 /**
  * Configuration for error suppression patterns

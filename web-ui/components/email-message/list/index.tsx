@@ -11,7 +11,8 @@ import {
   MuiEvent,
   DataGridProProps,
 } from '@mui/x-data-grid-pro';
-import { ContactSummary, EmailMessageSummary } from '@/data-models';
+import { ContactSummary } from '@/data-models/api/contact';
+import { EmailMessageSummary } from '@/data-models/api/email-message';
 import AttachEmailIcon from '@mui/icons-material/AttachEmail';
 import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';

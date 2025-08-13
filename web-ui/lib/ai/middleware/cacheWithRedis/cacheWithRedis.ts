@@ -7,7 +7,7 @@ import type { CacheableResponse } from './types';
 import { handleCacheHit, handleCacheMiss } from './cacheEventHandlers';
 import { createStreamFromCachedText } from './streamUtils';
 import { handleResponseCaching } from './cacheStrategy';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();

@@ -9,7 +9,7 @@ import { tracer, MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
 import type { JSONRPCMessage } from '../../ai.sdk';
 import { log } from '@/lib/logger';
-import { isError } from '@/lib/react-util';
+import { isError } from '@/lib/react-util/_utility-methods';
 
 export interface SpanState {
   span: Span;

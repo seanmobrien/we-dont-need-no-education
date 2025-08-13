@@ -1,14 +1,18 @@
 import type {
   PaginatedResultset,
   PaginationStats,
+} from '@/data-models/_types';
+import type {
   KeyPointsDetails,
   CallToActionDetails,
   CallToActionResponseDetails,
   ComplianceScoresDetails,
   EmailSentimentAnalysisDetails,
   ViolationDetails,
+} from '@/data-models/api/email-properties/extended-properties';
+import type {
   EmailPropertySummary,
-} from '@/data-models';
+} from '@/data-models/api/email-properties/property-type';
 import siteMap from '@/lib/site-util/url-builder';
 import {
   apiRequestHelperFactory,

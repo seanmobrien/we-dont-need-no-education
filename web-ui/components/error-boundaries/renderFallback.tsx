@@ -22,7 +22,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import BugReportIcon from '@mui/icons-material/BugReport';
 import { getRecoveryActions, getDefaultRecoveryAction, classifyError } from '@/lib/error-monitoring/recovery-strategies';
 import type { RecoveryAction } from '@/lib/error-monitoring/recovery-strategies';
-import { dumpError, LoggedError } from '@/lib/react-util';
+import { dumpError, LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const RenderErrorBoundaryFallback = (
   {error, resetErrorBoundary}: {

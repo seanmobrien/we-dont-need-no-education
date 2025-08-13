@@ -1,7 +1,7 @@
 import { EmailDrizzleRepository, EmailDomain } from './email-drizzle-repository';
 import { EmailMessage, EmailMessageSummary } from '@/data-models/api/email-message';
 import { ContactSummary } from '@/data-models/api/contact';
-import { PaginatedResultset, PaginationStats } from '@/data-models';
+import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { query } from '@/lib/neondb';
 import { log } from '@/lib/logger';
 

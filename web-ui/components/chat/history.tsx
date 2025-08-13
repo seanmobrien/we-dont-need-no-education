@@ -3,10 +3,10 @@
 import * as React from 'react';
 import { Box, Typography } from '@mui/material';
 import { useQuery, UseQueryResult } from '@tanstack/react-query';
-import { VirtualizedChatDisplay } from '@/components/chat';
-import { LoggedError } from '@/lib/react-util';
-import { fetch } from '@/lib/nextjs-util';
-import type { ChatDetails } from '@/lib/ai/chat';
+import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { fetch } from '@/lib/nextjs-util/fetch';
+import type { ChatDetails } from '@/lib/ai/chat/types';
 
 
 /**

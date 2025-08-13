@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { errorReporter, ErrorSeverity, type ErrorContext } from './error-reporter';
-import { log } from '@/lib/logger'
+import { log } from '@/lib/logger/core'
 
 /**
  * React hook for error reporting within components

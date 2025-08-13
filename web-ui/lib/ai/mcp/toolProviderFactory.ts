@@ -16,7 +16,8 @@ import type {
 } from './types';
 import { experimental_createMCPClient as createMCPClient } from 'ai';
 import { ToolSet } from 'ai';
-import { getResolvedPromises, isError, LoggedError } from '@/lib/react-util';
+import { getResolvedPromises, isError } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { InstrumentedSseTransport } from './instrumented-sse-transport';
 import { FirstParameter } from '@/lib/typescript';
 import { clientToolProviderFactory } from './client-tool-provider';

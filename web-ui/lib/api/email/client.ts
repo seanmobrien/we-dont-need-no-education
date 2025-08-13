@@ -2,9 +2,11 @@ import type {
   EmailMessageSummary,
   EmailMessage,
   EmailMessageStats,
+} from '@/data-models/api/email-message';
+import type {
   PaginatedResultset,
   PaginationStats,
-} from '@/data-models';
+} from '@/data-models/_types';
 import type { EmailSearchApiParams } from './types';
 import siteMap from '@/lib/site-util/url-builder';
 import {

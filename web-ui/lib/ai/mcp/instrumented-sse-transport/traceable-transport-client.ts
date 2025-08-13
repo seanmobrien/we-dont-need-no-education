@@ -60,7 +60,8 @@ import { trace, Span, SpanStatusCode, metrics } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { LoggedError, isError } from '@/lib/react-util';
+import { isError } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 
 // OTEL Configuration

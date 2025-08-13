@@ -19,8 +19,8 @@ import { ThreadRepository } from '@/lib/api/thread/database';
 import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
 import { ParsedHeaderMap } from '../../parsedHeaderMap';
 import { query } from '@/lib/neondb';
-import { ContactSummary } from '@/data-models';
-import { LoggedError } from '@/lib/react-util';
+import { ContactSummary } from '@/data-models/api/contact';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type ParsedEmailProps = {
   savedSender: ContactSummary;

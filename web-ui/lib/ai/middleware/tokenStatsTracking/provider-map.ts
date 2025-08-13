@@ -1,5 +1,5 @@
 import { drizDbWithInit, type ProvidersType, type DbDatabaseType, schema } from "@/lib/drizzle-db";
-import { LoggedError } from "@/lib/react-util";
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 
 type ProviderMapEntry = Omit<ProvidersType, 'id' | 'createdAt' | 'updatedAt'>;

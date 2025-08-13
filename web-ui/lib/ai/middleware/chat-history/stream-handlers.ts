@@ -20,7 +20,7 @@ import type { StreamHandlerContext, StreamHandlerResult } from './types';
 import type { LanguageModelV1ToolResultPart } from '../../types'
 import { instrumentStreamChunk } from './instrumentation';
 import { insertPendingAssistantMessage, reserveMessageIds } from './import-incoming-message';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Handles text-delta stream chunks by accumulating text and updating the assistant message.

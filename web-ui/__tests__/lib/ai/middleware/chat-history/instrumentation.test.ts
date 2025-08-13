@@ -62,8 +62,8 @@ import {
   recordQueueOperation,
   createChatHistoryError,
 } from '@/lib/ai/middleware/chat-history/instrumentation';
-import { getStackTrace } from '@/lib/nextjs-util';
-import { isError } from '@/lib/react-util';
+import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
+import { isError } from '@/lib/react-util/_utility-methods';
 
 describe('Chat History Instrumentation', () => {
   beforeEach(() => {

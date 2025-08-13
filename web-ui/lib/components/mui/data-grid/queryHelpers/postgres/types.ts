@@ -1,4 +1,4 @@
-import type { LikeNextRequest } from '@/lib/nextjs-util';
+import type { LikeNextRequest } from '@/lib/nextjs-util/types';
 import type { GridFilterModel, GridFilterItem, GridSortModel } from '@mui/x-data-grid-pro';
 import type { Sql } from 'postgres';
 import type { ISqlNeonAdapter, SqlDb } from '@/lib/neondb';
