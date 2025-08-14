@@ -7,7 +7,6 @@ import { generateChatId } from '../../core';
 import type { ChatHistoryContext } from './types';
 import { tracer } from '../../mcp';
 import { isError } from '@/lib/react-util/_utility-methods';
-import { importIncomingMessage } from './import-incoming-message';
 
 export const AgentUserId = -1;
 
