@@ -1,9 +1,16 @@
-import { UIMessage } from 'ai';
-import { aiModelFactory } from '@/lib/ai';
+import { generateObject, UIMessage, wrapLanguageModel } from 'ai';
+import { aiModelFactory, ChatHistoryContext, createChatHistoryMiddleware } from '@/lib/ai';
 import { generateText } from 'ai';
 import { log } from '@/lib/logger';
 import { createHash } from 'crypto';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
+import { createAgentHistoryContext } from '../middleware/chat-history/create-chat-history-context';
+import { LoggedError } from '@/lib/react-util';
+import z, { number } from 'zod';
+import { ChatMessagesType, DbTransactionType, drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { ThisDbQueryProvider } from '@/lib/drizzle-db/schema';
+import { and, eq, not } from 'drizzle-orm';
+import { metadata } from '@/app/layout';
 
 // OpenTelemetry Metrics for Message Optimization
 const optimizationCounter = appMeters.createCounter(
@@ -222,6 +229,7 @@ export async function optimizeMessagesWithToolSummarization(
   messages: UIMessage[],
   model: string,
   userId?: string,
+  chatHistoryId?: string
 ): Promise<UIMessage[]> {
   const startTime = Date.now();
 
@@ -266,72 +274,93 @@ export async function optimizeMessagesWithToolSummarization(
     return messages;
   }
 
-  // Step 2: Process older messages for tool summarization
-  const { optimizedMessages, toolCallDict } =
-    await processOlderMessagesForSummarization(
-      messages,
+  const chatHistoryContext = createAgentHistoryContext({
+    model,
+    originatingUserId: userId ?? '-1',
+    operation: 'context.summarize',
+    metadata: {
+      targetChatId: chatHistoryId,
       cutoffIndex,
-      preservedToolIds,
+      preservedToolIds: Array.from(preservedToolIds),
+    },
+  });
+
+  try {
+    // Step 2: Process older messages for tool summarization
+    const { optimizedMessages, toolCallDict } =
+      await processOlderMessagesForSummarization(
+        messages,
+        cutoffIndex,
+        preservedToolIds,
+      );
+
+    // Step 3: Generate AI summaries for all collected tool calls
+    await generateToolCallSummaries(toolCallDict, chatHistoryContext, messages);
+    const processingTime = Date.now() - startTime;
+
+    // Calculate optimized context size for meaningful metrics
+    const optimizedCharacterCount =
+      calculateMessageCharacterCount(optimizedMessages);
+    const characterReduction = Math.round(
+      ((originalCharacterCount - optimizedCharacterCount) /
+        originalCharacterCount) *
+        100,
     );
 
-  // Step 3: Generate AI summaries for all collected tool calls
-  await generateToolCallSummaries(toolCallDict, messages);
-  const processingTime = Date.now() - startTime;
+    const messageReduction = Math.round(
+      ((messages.length - optimizedMessages.length) / messages.length) * 100,
+    );
 
-  // Calculate optimized context size for meaningful metrics
-  const optimizedCharacterCount =
-    calculateMessageCharacterCount(optimizedMessages);
-  const characterReduction = Math.round(
-    ((originalCharacterCount - optimizedCharacterCount) /
-      originalCharacterCount) *
-      100,
-  );
-
-  const messageReduction = Math.round(
-    ((messages.length - optimizedMessages.length) / messages.length) * 100,
-  );
-
-  // Record comprehensive OpenTelemetry metrics
-  const attributes = {
-    model,
-    user_id: userId ? hashUserId(userId) : 'anonymous',
-    optimization_type: 'tool_summarization',
-  };
-
-  optimizationCounter.add(1, attributes);
-
-  optimizationDurationHistogram.record(processingTime, attributes);
-
-  optimizedMessageCountHistogram.record(optimizedMessages.length, attributes);
-
-  messageReductionHistogram.record(
-    (messages.length - optimizedMessages.length) / messages.length,
-    attributes,
-  );
-
-  characterReductionHistogram.record(
-    (originalCharacterCount - optimizedCharacterCount) / originalCharacterCount,
-    attributes,
-  );
-
-  toolCallSummariesCounter.add(toolCallDict.size, attributes);
-
-  log((l) =>
-    l.info('Enterprise tool optimization completed', {
-      originalMessages: messages.length,
-      optimizedMessages: optimizedMessages.length,
-      originalCharacterCount,
-      optimizedCharacterCount,
-      characterReduction: `${characterReduction}%`,
-      toolCallsProcessed: toolCallDict.size,
-      messageReduction: `${messageReduction}%`,
-      processingTimeMs: processingTime,
+    // Record comprehensive OpenTelemetry metrics
+    const attributes = {
       model,
-      userId,
-    }),
-  );
+      user_id: userId ? hashUserId(userId) : 'anonymous',
+      optimization_type: 'tool_summarization',
+    };
 
-  return optimizedMessages;
+    optimizationCounter.add(1, attributes);
+
+    optimizationDurationHistogram.record(processingTime, attributes);
+
+    optimizedMessageCountHistogram.record(optimizedMessages.length, attributes);
+
+    messageReductionHistogram.record(
+      (messages.length - optimizedMessages.length) / messages.length,
+      attributes,
+    );
+
+    characterReductionHistogram.record(
+      (originalCharacterCount - optimizedCharacterCount) /
+        originalCharacterCount,
+      attributes,
+    );
+
+    toolCallSummariesCounter.add(toolCallDict.size, attributes);
+
+    log((l) =>
+      l.info('Enterprise tool optimization completed', {
+        originalMessages: messages.length,
+        optimizedMessages: optimizedMessages.length,
+        originalCharacterCount,
+        optimizedCharacterCount,
+        characterReduction: `${characterReduction}%`,
+        toolCallsProcessed: toolCallDict.size,
+        messageReduction: `${messageReduction}%`,
+        processingTimeMs: processingTime,
+        model,
+        userId,
+      }),
+    );
+    return optimizedMessages;
+  } catch (error) {
+    chatHistoryContext.error = error;
+    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'processOlderMessagesForSummarization',
+    });
+  } finally {
+    chatHistoryContext.dispose();
+  }
 }
 
 /**
@@ -381,6 +410,154 @@ const findUserInteractionCutoff = (
   return { cutoffIndex, preservedToolIds };
 };
 
+export const summarizeMessageRecord = async (
+  {
+    tx,    
+    chatId,
+    turnId,
+    messageId,
+    write = false,
+    deep = false,
+  } : {
+    /**
+     * Dabase transactional context
+     */
+    tx?: DbTransactionType
+    /**
+     * Chat ID to summarize
+     */
+    chatId: string;
+    /**
+     * Turn ID to summarize
+     */
+    turnId: number;
+    /**
+     * Message ID to summarize
+     */
+    messageId: number;
+    /**
+     * If true results are used to update the database record
+     */
+    write?: boolean;
+    /**
+     * If true, the full contents of historical messages will be considered for context; 
+     * otherwise, the optimized output will be favored and used when present.
+     */
+    deep?: boolean;
+    /**
+     * Additional metadata to send to the model when summarizing.
+     */
+    metadata?: Record<string, unknown>;    
+  }
+):Promise<{
+  /**
+   * An AI-optimized / summarized version of this message's content
+  */
+  optimizedContent: string;
+  /**
+   * The most appropriately descriptive title for the chat given current context
+   */
+  chatTitle: string;
+  /**
+   * When true it signals this is a different title than what was assigned before this message was processed
+   */
+  newTitle: boolean;
+}> => {
+  const qp: ThisDbQueryProvider = await (tx
+    ? Promise.resolve(tx)
+    : drizDbWithInit());
+
+  const isThisMessage = and(
+    eq(schema.chatMessages.chatId, chatId),
+    eq(schema.chatMessages.turnId, turnId),
+    eq(schema.chatMessages.messageId, messageId),
+  )!;
+  // First assemble previous message state
+  const prevMessages = await qp.query
+    .chatMessages({
+      where: and(eq(schema.chatMessages.chatId, chatId), not(isThisMessage)),
+      columns: {
+        content: deep === true,
+        optimizedContent: !deep,
+      },
+    })
+    .findMany()
+    .orderBy('turnId', 'asc')
+    .orderBy('messageId', 'asc')
+    .execute()
+    .then((q: Array<ChatMessagesType>) =>
+      q.map(
+        deep
+          ? (m: ChatMessagesType) => m.content
+          : (m: ChatMessagesType) => m.optimizedContent,
+      ),
+    );
+  // Then retrieve the target message
+  const thisMessage = await qp.query
+    .chatMessages({
+      where: isThisMessage,
+      columns: {
+        content: true,
+        optimizedContent: true,
+      },
+      with: {
+        chat: {
+          title: true,
+        },
+      },
+    })
+    .findFirst();
+  if (!thisMessage) {
+    throw new Error('Message not found');
+  }
+  // Let the models work their magic...
+  const prompt = `You are an expert at summarizing message output for AI conversation context.
+
+  CONVERSATIONAL CONTEXT:
+  ${prevMessages.join('\n----\n')}
+
+  CURRENT MESSAGE:
+  ${JSON.stringify(thisMessage.content, null, 2)}
+
+  CURRENT CHAT TITLE:
+  ${thisMessage.chat.title}
+
+  Create a short, concise summary that:
+  1. Maintains context for ongoing conversation flow
+  2. Extracts the key findings that might be relevant for future conversation
+  3. Notes any important patterns, insights, errors, or ommissions
+  4. Maintains high-fidelity context for ongoing conversation flow
+
+  Additionally,
+  5. Provide a short (4-5 word max) title that accurately describes the conversation as a whole - this will be used as the new Chat Title.
+
+  Keep the summary as short as possible while preserving essential meaning.
+  Avoid changing the title unless there is a meaningful difference.`;
+  const model = aiModelFactory('lofi');
+  const summarized = (await generateObject({
+      model,
+      prompt,
+      schema: z.object({
+        messageSummary: z.string(),
+        chatTitle: z.string(),
+      }),
+      temperature: 0.3,
+      experimental_telemetry: {
+        isEnabled: true,
+        functionId: 'completion-message-summarization',
+      },
+  })).object;
+  const ret = {
+    optimizedContent: summarized.messageSummary,
+    chatTitle: summarized.chatTitle,
+    newTitle: summarized.chatTitle !== thisMessage.chat.title,
+  };
+  if (write) {
+    await qp.update(schema.chats).where(eq(schema.chats.id, thisMessage.chat.id)).values({ title: ret.chatTitle }).execute();
+    await qp.update(schema.chatMessages).where(thisMessage).values({ optimizedContent: ret.optimizedContent }).execute();
+  }
+  return ret;
+};
 /**
  * Process older messages (before cutoff) for tool summarization
  * Groups tool calls by ID and replaces them with summary placeholders
@@ -388,7 +565,7 @@ const findUserInteractionCutoff = (
 const processOlderMessagesForSummarization = async (
   messages: UIMessage[],
   cutoffIndex: number,
-  preservedToolIds: Set<string>,
+  preservedToolIds: Set<string>
 ): Promise<{
   optimizedMessages: UIMessage[];
   toolCallDict: Map<string, ToolCallRecord>;
@@ -522,6 +699,7 @@ const processOlderMessagesForSummarization = async (
  */
 const generateToolCallSummaries = async (
   toolCallDict: Map<string, ToolCallRecord>,
+  chatHistoryContext: ChatHistoryContext,
   allMessages?: UIMessage[],
 ): Promise<void> => {
   if (toolCallDict.size === 0) {
@@ -540,7 +718,8 @@ const generateToolCallSummaries = async (
       try {
         const summary = await generateSingleToolCallSummary(
           record,
-          allMessages,
+          chatHistoryContext,
+          allMessages,          
         ); // Update the summary message by reference
         record.toolSummary.content = summary;
         if (
@@ -590,7 +769,8 @@ const generateToolCallSummaries = async (
  */
 const generateSingleToolCallSummary = async (
   record: ToolCallRecord,
-  allMessages?: UIMessage[],
+  chatHistoryContext: ChatHistoryContext,
+  allMessages?: UIMessage[],  
 ): Promise<string> => {
   // Generate cache key from the tool call sequence
   const allToolMessages = [...record.toolRequest, ...record.toolResult];
@@ -681,20 +861,23 @@ Create a concise summary that:
 Keep the summary under 300 characters while preserving essential meaning.
 Respond with just the summary text, no additional formatting.`;
 
+
   const startSummaryTime = Date.now();
 
   try {
     const lofiModel = aiModelFactory('lofi');
-
-    const result = await generateText({
+    const result = await generateObject({
       model: lofiModel,
       prompt,
-      maxTokens: 150,
+      schema: z.object({
+        messageSummary: z.string(),
+        chatTitle: z.string(),
+      }),
       temperature: 0.3,
       experimental_telemetry: {
-        isEnabled: true, // Currently a bug in the ai package processing string dates
-        functionId: 'completion-tool-summarization',
-        metadata: {},
+        isEnabled: true,
+        functionId: 'completion-message-summarization',
+        metadata,
       },
     });
 

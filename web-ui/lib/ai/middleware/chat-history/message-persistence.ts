@@ -158,6 +158,7 @@ export const safeInitializeMessagePersistence = async (
   params: LanguageModelV1CallOptions,
 ): Promise<MessagePersistenceInit | null> => {
   try {
+    context.chatId?==createChatId();
     return await instrumentMiddlewareInit(context, async () => {
       return await initializeMessagePersistence(context, params);
     });

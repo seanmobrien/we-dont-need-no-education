@@ -14,6 +14,10 @@ ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
 ARG NEXT_PUBLIC_LOG_LEVEL_CLIENT
 ARG NEXT_PUBLIC_DEFAULT_AI_MODEL
+ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
+ARG OTEL_SERVICE_NAME
+ARG OTEL_RESOURCE_ATTRIBUTES
+ARG MEM0_APIHOST
 
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs \
@@ -33,6 +37,10 @@ ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs \
+  && echo "added user nextjs to group nodejs."
 
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat dcron curl
@@ -58,6 +66,10 @@ ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs \
+  && echo "added user nextjs to group nodejs."
 
 WORKDIR /app
 
@@ -112,6 +124,9 @@ ARG NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=300000
 ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
 
 LABEL co.obapps.vendor="OBrien Appplications"
 LABEL co.obapps.name="Compliance Tracker Web UI"

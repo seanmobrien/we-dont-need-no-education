@@ -37,9 +37,16 @@ export const notCryptoSafeKeyHash = (str: string): string => {
  * @param seed - Optional. The seed value to initialize the random number generator. If not provided, a random seed is used.
  * @returns An object containing the seed used and the generated chat ID string.
  */
-export const generateChatId = (seed?: number): { seed: number; id: string } => {
+export const generateChatId = (seed?: number | string): { seed: number; id: string } => {
   // Does not need to be cryptographically secure, so we can use a simple seeded random function
-  const actualSeed = seed ?? Math.floor(Math.random() * 1000000);
+  let actualSeed: number;
+  if (!seed) {
+    actualSeed = Math.floor(Math.random() * 1000000);
+  } else if (typeof seed === 'number') {
+    actualSeed = seed;
+  } else {
+    actualSeed = Number.parseInt(notCryptoSafeKeyHash(seed), 10);
+  }
   const random = seededRandom(actualSeed);
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@$%~';
   let id = '';

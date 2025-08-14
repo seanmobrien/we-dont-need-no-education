@@ -6,8 +6,7 @@ import {
   isAiLanguageModelType,
   getRetryErrorInfo,
   optimizeMessagesWithToolSummarization,
-  toolProviderSetFactory,
-  type ChatHistoryContext,
+  toolProviderSetFactory
 } from '@/lib/ai';
 import {
   createChatHistoryMiddleware,
@@ -19,6 +18,7 @@ import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 import { generateChatId } from '@/lib/ai/core';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 180;
 
@@ -48,11 +48,16 @@ async (req: NextRequest) => {
     process.env.NEXT_PHASE === 'phase-production-build'
   ) {
     return new Response('Unauthorized', { status: 401 });
-  }  
+  }
   const {
     messages,
     id,
-    data: { model: modelFromRequest, threadId, writeEnabled = false, memoryDisabled } = {},
+    data: {
+      model: modelFromRequest,
+      threadId,
+      writeEnabled = false,
+      memoryDisabled,
+    } = {},
   } = ((await req.json()) as ChatRequestMessage) ?? {};
   const model = isAiLanguageModelType(modelFromRequest)
     ? modelFromRequest
@@ -62,11 +67,13 @@ async (req: NextRequest) => {
     return new Response('Invalid messages format', { status: 400 });
   }
 
+  const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
   // Apply advanced tool message optimization with AI-powered summarization
   const optimizedMessages = await optimizeMessagesWithToolSummarization(
     messages,
     model,
     session?.user?.id,
+    chatHistoryId,
   );
 
   // Log optimization results for monitoring
@@ -82,8 +89,6 @@ async (req: NextRequest) => {
     );
   }
 
-  const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
-
   try {
     const toolProviders = await toolProviderSetFactory([
       {
@@ -95,27 +100,27 @@ async (req: NextRequest) => {
         headers: getMcpClientHeaders({ req, chatHistoryId }),
         traceable: req.headers.get('x-traceable') !== 'false',
       },
-      ...(memoryDisabled !== true && env('MEM0_DISABLED') ? [] : [
-          {
-            allowWrite: true,        
-            headers: {
-              'cache-control': 'no-cache, no-transform',
-              'content-encoding': 'none',
+      ...(memoryDisabled !== true && env('MEM0_DISABLED')
+        ? []
+        : [
+            {
+              allowWrite: true,
+              headers: {
+                'cache-control': 'no-cache, no-transform',
+                'content-encoding': 'none',
+              },
+              url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
             },
-            url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
-          },
-        ]),
+          ]),
     ]);
 
     // Create chat history context
-    const chatHistoryContext: ChatHistoryContext = {
+    const chatHistoryContext = createUserChatHistoryContext({
       userId: session?.user?.id || 'anonymous',
       requestId: chatHistoryId,
       chatId: threadId,
       model,
-      temperature: 0.7, // Default values, could be extracted from request
-      topP: 1.0,
-    };
+    });
 
     // Wrap the base model with chat history middleware
     const baseModel = aiModelFactory(model);
@@ -154,6 +159,7 @@ async (req: NextRequest) => {
           onError: async (error) => {
             log((l) => l.error('on error streamText callback'));
             const mcpCloseTask = toolProviders.dispose();
+            chatHistoryContext.error = error;
             try {
               const rateLimitErrorInfo = getRetryErrorInfo(error);
               if (
@@ -196,10 +202,15 @@ async (req: NextRequest) => {
                 }),
               );
             } finally {
+              chatHistoryContext.dispose();
               await mcpCloseTask;
             }
           },
-          onFinish: async ({ /*request: { body: requestBody }, ...evt */ }) => {            
+          onFinish: async (
+            {
+              /*request: { body: requestBody }, ...evt */
+            },
+          ) => {
             try {
               log((l) =>
                 l.verbose({
@@ -228,6 +239,9 @@ async (req: NextRequest) => {
                   retryAfter,
                 },
               });
+              chatHistoryContext.error = error;
+            } finally {
+              chatHistoryContext.dispose();
             }
           },
           tools: toolProviders.get_tools(),
@@ -242,7 +256,7 @@ async (req: NextRequest) => {
             `Rate limit exceeded. Please try again later. Retry after: ${retryAfter} seconds.`,
             {
               cause: { reason: 'RateLimit', retryAfter },
-            }
+            },
           );
         }
         // Log the error for debugging purposes
@@ -258,6 +272,8 @@ async (req: NextRequest) => {
             retryAfter,
           },
         });
+        chatHistoryContext.error = error;
+        chatHistoryContext.dispose();
         toolProviders.dispose();
         // Error messages are masked by default for security reasons.
         // If you want to expose the error message to the client, you can do so here:

@@ -65,6 +65,7 @@ import {
   getCaseFileDocumentCounter,
 } from './metrics';
 import { preprocessCaseFileDocument } from './preprocessCaseFileDocument';
+import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
 
 /**
  * Retrieves a single case file document by delegating to getMultipleCaseFileDocuments.
@@ -303,26 +304,50 @@ export const getMultipleCaseFileDocuments = async ({
      * - AI resources are used efficiently by processing similar documents together
      * - System performance scales well with varying document loads and complexity
      */
-    const processedGroups = await Promise.all(
-      Object.entries(groupedByGoals).map(async ([goalsKey, groupDocuments]) => {
-        // Handle documents without goals - no AI processing needed
-        if (goalsKey.trim() === '' || goalsKey === '[]') {
-          return groupDocuments.map(
-            (d) =>
-              (({
-                document: d.document as DocumentResource
-              }) as CaseFileResponse),
-          );
-        }
+    const chatHistoryContext = createAgentHistoryContext({
+      operation: 'summarize.case-file',
+      opTags: { documents: requests },
+      iteration: 1,
+      originatingUserId: '-1',
+    });
+    let processedGroups: Array<CaseFileResponse | Array<CaseFileResponse>>;
+    try{
+      processedGroups = await Promise.all(
+        Object.entries(groupedByGoals).map(async ([goalsKey, groupDocuments]) => {
+          // Handle documents without goals - no AI processing needed
+          if (goalsKey.trim() === '' || goalsKey === '[]') {
+            return groupDocuments.map(
+              (d) =>
+                ({
+                  document: d.document as DocumentResource,
+                }) as CaseFileResponse,
+            );
+          }
 
-        // Process documents with goals through AI analysis pipeline
-        const groupGoals = JSON.parse(goalsKey) as string[];
-        return await preprocessCaseFileDocument({
-          documents: groupDocuments,
-          goals: groupGoals,
-        });
-      }),
-    );
+          // Process documents with goals through AI analysis pipeline
+          const groupGoals = JSON.parse(goalsKey) as string[];
+          try {
+            return await preprocessCaseFileDocument({
+              documents: groupDocuments,
+              goals: groupGoals,
+              chatHistoryContext,
+            });
+          } catch (error) {
+            const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+              log: true,
+              source: 'getCaseFileDocument::preprocessCaseFileDocument'
+            });
+            return groupDocuments.map((d) => ({
+              document: { unitId: d?.document?.unitId ?? '<<unknown>>' },
+              text: `An unexpected error occurred processing case file id ${d?.document?.unitId ?? '<<unknown>>'}. Please try your request again later.  Error details: ${le.toString()}`,
+            })) as CaseFileResponse;
+          }          
+        }),
+      );      
+    } finally {
+      chatHistoryContext.dispose();
+    }
+    
 
     // Flatten the processed groups into a unified result array
     const result: CaseFileResponse[] = processedGroups.flat().map(x => {

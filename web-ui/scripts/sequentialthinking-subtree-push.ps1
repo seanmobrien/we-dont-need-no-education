@@ -12,8 +12,8 @@ Set-Location -LiteralPath $gitRoot
 
 $prefix = 'web-ui/lib/ai/tools/sequentialthinking'
 
-Write-Host "Pushing subtree at $prefix to $Remote:$Branch ..."
+Write-Host "Pushing subtree at $prefix to ${Remote}:${Branch}..."
 
 git subtree push --prefix=$prefix $Remote $Branch
 
-Write-Host "Done: Pushed subtree $prefix to $Remote:$Branch"
+Write-Host "Done: Pushed subtree $prefix to ${Remote}:${Branch}"

@@ -1,6 +1,6 @@
 import { LoggedError } from '@/lib/react-util';
 import { zodToStructure } from '@/lib/typescript';
-import { CoreMessage, generateText } from 'ai';
+import { CoreMessage, generateText, GenerateTextResult, ToolSet, wrapLanguageModel } from 'ai';
 import { log } from '@/lib/logger';
 import { aiModelFactory } from '../../aiModelFactory';
 import { DocumentResource } from '../documentResource';
@@ -12,6 +12,7 @@ import {
   caseFileDocumentSizeHistogram,
 } from './metrics';
 import { countTokens } from '../../core/count-tokens';
+import { ChatHistoryContext, createChatHistoryMiddleware } from '../../middleware';
 
 /**
  * Preprocesses case file documents using AI to extract relevant information based on specified goals.
@@ -90,11 +91,13 @@ import { countTokens } from '../../core/count-tokens';
 export const preprocessCaseFileDocument = async ({
   documents,
   goals,
+  chatHistoryContext,
 }: {
   documents:
     | Array<{ verbatim_fidelity: number; document: DocumentResource }>
     | { verbatim_fidelity: number; document: DocumentResource };
   goals: Array<string>;
+  chatHistoryContext: ChatHistoryContext;
 }): Promise<Array<CaseFileResponse>> => {
   const preprocessingStartTime = Date.now();
   const source = Array.isArray(documents) ? documents : [documents];
@@ -231,14 +234,29 @@ ___END CASE FILE___`,
       },
     };
 
-    const tokens = countTokens({ prompt: payload.messages });
-    const model =
-      tokens > 100000 ? aiModelFactory('google:lofi') : aiModelFactory('lofi');
-    const response = await generateText({
-      ...payload,
-      model,
-    });
-
+    const tokens = countTokens({ prompt: payload.messages });    
+    let response: GenerateTextResult<ToolSet, unknown>;
+    try
+    {      
+      const model = wrapLanguageModel({
+        model:
+          tokens > 100000
+            ? aiModelFactory('google:lofi')
+            : aiModelFactory('lofi'),
+        middleware: createChatHistoryMiddleware(chatHistoryContext),
+      });
+      response = await generateText({
+          ...payload,
+          model,
+        });
+    } catch(error) {
+      chatHistoryContext.error = error;
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'getCaseFileDocument::preprocessCaseFileDocument',
+      });
+    } 
+    
     const preprocessingDuration = Date.now() - preprocessingStartTime;
 
     // Record preprocessing success metrics

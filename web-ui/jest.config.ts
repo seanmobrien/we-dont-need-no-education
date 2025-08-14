@@ -17,7 +17,7 @@ const config: Config.InitialOptions = {
   testMatch: [
     '**/__tests__/**/*.test.(ts|tsx)',
     '**/?(*.)+(spec|test).(ts|tsx)',
-    '!/.next/**'
+    '!/.next/**',
   ], // Test file patterns
 
   // Concurrency configuration to prevent hanging issues
@@ -49,6 +49,7 @@ const config: Config.InitialOptions = {
   transformIgnorePatterns: [
     '<rootDir>/node_modules/(?!(react-error-boundary)/)',
     '<rootDir>/.next',
+    '<rootDir>/.upstream'
   ],
   collectCoverage: true, // Enable coverage collection
   //collectCoverage: false, // Enable coverage collection
