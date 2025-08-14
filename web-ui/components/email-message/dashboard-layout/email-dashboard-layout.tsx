@@ -12,6 +12,7 @@ import Sync from '@mui/icons-material/Sync';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import DraftsIcon from '@mui/icons-material/Drafts';
 import ChatIcon from '@mui/icons-material/Chat';
+import BarChartIcon from '@mui/icons-material/BarChart';
 import { NavigationItem, NavigationPageItem } from '@toolpad/core/AppProvider';
 import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
@@ -107,6 +108,20 @@ export const EmailDashboardLayout = ({
           },
         ]
       : [];
+    
+    const chatNavigation: NavigationItem = {
+      title: 'Chats',
+      icon: <ChatIcon key="chats-icon" />, 
+      segment: 'chat',
+      children: [
+        {
+          segment: 'messages/chat/statistics',
+          icon: <BarChartIcon key="statistics-icon" />, 
+          title: 'Statistics',
+        },
+      ],
+    };
+
     return [
       { kind: 'header', title: 'Available Records' },
       {
@@ -114,11 +129,7 @@ export const EmailDashboardLayout = ({
         icon: <DashboardIcon key="list-emails-icon" />, 
         segment: 'messages',
       },
-      {
-        title: 'Chats',
-        icon: <ChatIcon key="chats-icon" />, 
-        segment: 'chat',
-      },
+      chatNavigation,
       ...viewEmailNavigation,
       { kind: 'divider' },
       { kind: 'header', title: 'Aquisition' },
