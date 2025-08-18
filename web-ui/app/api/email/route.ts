@@ -84,7 +84,10 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
         eq(schema.emails.senderId, schema.contacts.contactId),
       )
       .fullJoin(attachments, eq(schema.emails.emailId, attachments.emailId))
-      .fullJoin(countKpi, eq(schema.emails.emailId, countKpi.targetId));
+      .fullJoin(countKpi, eq(schema.emails.emailId, countKpi.targetId))
+      .fullJoin(countNotes, eq(schema.emails.emailId, countNotes.targetId))
+      .fullJoin(countCta, eq(schema.emails.emailId, countCta.targetId))
+      .fullJoin(countRa, eq(schema.emails.emailId, countRa.targetId));
       return await selectForGrid<EmailMessageSummary>({
         req,
         query: bq as unknown as DrizzleSelectQuery,

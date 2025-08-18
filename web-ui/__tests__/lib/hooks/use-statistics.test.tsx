@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStatistics, useModelStatistics, useQueueStatistics } from '@/lib/hooks/use-statistics';
 import type { ModelStat, QueueInfo } from '@/types/statistics';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import { act } from 'react-dom/test-utils';
+import { act } from '@/__tests__/test-utils';
 // Mock fetch globally
 //global.fetch = jest.fn();
 
