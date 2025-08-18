@@ -11,8 +11,7 @@
  */
 
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { modelQuotas, models, tokenConsumptionStats } from '@/drizzle/schema';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { eq, and, sql } from 'drizzle-orm';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
@@ -249,24 +248,36 @@ class TokenStatsService implements TokenStatsServiceType {
   ): Promise<ModelQuota | null> {
     try {
       return await drizDbWithInit(async (db) => {
-        const row = await db.query.modelQuotas.findFirst({
-          with: {
-            model: true, // Include quota details
-          },
-          where: and(
-            eq(models.providerId, provider),
-            eq(models.modelName, modelName),
-            eq(models.isActive, true),
-            eq(modelQuotas.isActive, true),
-          ),
-        });
+        const row = await db
+        
+          .select({
+            id: schema.modelQuotas.id,
+            providerId: schema.models.providerId,
+            modelName: schema.models.modelName,
+            maxTokensPerMessage: schema.modelQuotas.maxTokensPerMessage,
+            maxTokensPerMinute: schema.modelQuotas.maxTokensPerMinute,
+            maxTokensPerDay: schema.modelQuotas.maxTokensPerDay,
+            isActive: schema.modelQuotas.isActive,
+          })
+          .from(schema.modelQuotas)
+          .innerJoin(schema.models, eq(schema.modelQuotas.modelId, schema.models.id))
+          .where(
+            and(
+              eq(schema.models.providerId, provider),
+              eq(schema.models.modelName, modelName),
+            ),
+          )
+          .limit(1)
+          .execute()
+          .then((r) => r.at(0));      
+
         if (!row) {
           return null;
         }
         return {
           id: row.id,
-          provider: row.model.providerId,
-          modelName: row.model.modelName,
+          provider: row.providerId,
+          modelName: row.modelName,
           maxTokensPerMessage: row.maxTokensPerMessage || undefined,
           maxTokensPerMinute: row.maxTokensPerMinute || undefined,
           maxTokensPerDay: row.maxTokensPerDay || undefined,
@@ -366,7 +377,7 @@ class TokenStatsService implements TokenStatsServiceType {
     requestedTokens: number,
   ): Promise<QuotaCheckResult> {
     const {
-      provider: normalizedProvider,
+      providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
     } = await this.normalizeProviderId(provider, modelName);
@@ -461,7 +472,7 @@ class TokenStatsService implements TokenStatsServiceType {
     usage: TokenUsageData,
   ): Promise<void> {
     const {
-      provider: normalizedProvider,
+      providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
     } = await this.normalizeProviderId(provider, modelName);
@@ -473,6 +484,7 @@ class TokenStatsService implements TokenStatsServiceType {
         this.updateDatabaseStats(normalizedProvider, normalizedModel, usage),
       ]);
     } catch (error) {
+
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         message: 'Error recording token usage',
@@ -500,7 +512,7 @@ class TokenStatsService implements TokenStatsServiceType {
     usage: TokenUsageData,
   ): Promise<void> {
     const {
-      provider: normalizedProvider,
+      providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
     } = await this.normalizeProviderId(provider, modelName);
@@ -565,7 +577,12 @@ class TokenStatsService implements TokenStatsServiceType {
         await multi.exec();
       }
     } catch (error) {
-      throw new Error(`Failed to update Redis stats: ${error}`);
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        message: 'Failed to update Redis stats',
+        extra: { provider: normalizedProvider, modelName: normalizedModel, usage },
+        source: 'TokenStatsService.updateRedisStats',
+      });
     }
   }
 
@@ -588,9 +605,9 @@ class TokenStatsService implements TokenStatsServiceType {
 
         const model = await db.query.models.findFirst({
           where: and(
-            eq(models.providerId, provider),
-            eq(models.modelName, modelName),
-            eq(models.isActive, true),
+            eq(schema.models.providerId, provider),
+            eq(schema.models.modelName, modelName),
+            eq(schema.models.isActive, true),
           ),
         });
         if (!model) {
@@ -623,7 +640,7 @@ class TokenStatsService implements TokenStatsServiceType {
 
           // Use upsert to update or insert stats
           await db
-            .insert(tokenConsumptionStats)
+            .insert(schema.tokenConsumptionStats)
             .values({
               modelId: model.id,
               windowStart: window.start.toISOString(),
@@ -636,22 +653,29 @@ class TokenStatsService implements TokenStatsServiceType {
             })
             .onConflictDoUpdate({
               target: [
-                tokenConsumptionStats.modelId,
-                tokenConsumptionStats.windowStart,
-                tokenConsumptionStats.windowType,
+                schema.tokenConsumptionStats.modelId,
+                schema.tokenConsumptionStats.windowStart,
+                schema.tokenConsumptionStats.windowType,
               ],
               set: {
-                promptTokens: sql`${tokenConsumptionStats.promptTokens} + ${usage.promptTokens}`,
-                completionTokens: sql`${tokenConsumptionStats.completionTokens} + ${usage.completionTokens}`,
-                totalTokens: sql`${tokenConsumptionStats.totalTokens} + ${usage.totalTokens}`,
-                requestCount: sql`${tokenConsumptionStats.requestCount} + 1`,
+                promptTokens: sql`${schema.tokenConsumptionStats.promptTokens} + ${usage.promptTokens}`,
+                completionTokens: sql`${schema.tokenConsumptionStats.completionTokens} + ${usage.completionTokens}`,
+                totalTokens: sql`${schema.tokenConsumptionStats.totalTokens} + ${usage.totalTokens}`,
+                requestCount: sql`${schema.tokenConsumptionStats.requestCount} + 1`,
                 lastUpdated: new Date().toISOString(),
               },
             });
         }
       });
     } catch (error) {
-      throw new Error(`Failed to update database stats: ${error}`);
+      throw LoggedError.isTurtlesAllTheWayDownBaby(
+        error,{
+          log: true,
+          message: 'Failed to update database stats.',
+          data: { provider, modelName, usage },
+          source: 'TokenStatsService.updateDatabaseStats',
+        }
+      );
     }
   }
 
@@ -672,7 +696,7 @@ class TokenStatsService implements TokenStatsServiceType {
     quotaCheckResult: QuotaCheckResult;
   }> {
     const {
-      provider: normalizedProvider,
+      providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
     } = await this.normalizeProviderId(provider, modelName);

@@ -116,8 +116,10 @@ const getAppInsights = () => {
       envelope.data ??= {};
       envelope.data.baseData ??= {};
       envelope.data.baseData.properties ??= {};
-      envelope.data.baseData.properties['service.namespace'] =
-        config.attributes['service.namespace'];
+      envelope.data.baseData.properties['service.instance'] =
+        envelope.tags['ai.cloud.roleInstance'];
+        envelope.data.baseData.properties['service.namespace'] =
+          config.attributes['service.namespace'];
       envelope.data.baseData.properties['telemetry.sdk.language'] =
         'javascript';
     });

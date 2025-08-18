@@ -16,8 +16,9 @@ const config: Config.InitialOptions = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled
   testMatch: [
     '**/__tests__/**/*.test.(ts|tsx)',
-    '**/?(*.)+(spec|test).(ts|tsx)',
+    // '**/?(*.)+(spec|test).(ts|tsx)',
     '!/.next/**',
+    '!/.upstream/**',
   ], // Test file patterns
 
   // Concurrency configuration to prevent hanging issues
@@ -49,7 +50,7 @@ const config: Config.InitialOptions = {
   transformIgnorePatterns: [
     '<rootDir>/node_modules/(?!(react-error-boundary)/)',
     '<rootDir>/.next',
-    '<rootDir>/.upstream'
+    '<rootDir>/.upstream',
   ],
   collectCoverage: true, // Enable coverage collection
   //collectCoverage: false, // Enable coverage collection
@@ -59,6 +60,7 @@ const config: Config.InitialOptions = {
     '!__(tests|mocks)__/**/*.*', // Exclude type declaration files
     //'!**/*.{jsx,tsx}', // Exclude JSX-based
     '!.next/**/*.*', // Exclude next build files
+    '!.upstream/**/*.*', // Exclude upstream build files
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats

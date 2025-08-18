@@ -1,16 +1,15 @@
-import { generateObject, UIMessage, wrapLanguageModel } from 'ai';
-import { aiModelFactory, ChatHistoryContext, createChatHistoryMiddleware } from '@/lib/ai';
-import { generateText } from 'ai';
+import { generateObject, UIMessage } from 'ai';
+import { aiModelFactory, ChatHistoryContext } from '@/lib/ai';
 import { log } from '@/lib/logger';
 import { createHash } from 'crypto';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
 import { createAgentHistoryContext } from '../middleware/chat-history/create-chat-history-context';
 import { LoggedError } from '@/lib/react-util';
-import z, { number } from 'zod';
-import { ChatMessagesType, DbTransactionType, drizDbWithInit, schema } from '@/lib/drizzle-db';
+import z from 'zod';
+import { DbTransactionType, drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { ThisDbQueryProvider } from '@/lib/drizzle-db/schema';
 import { and, eq, not } from 'drizzle-orm';
-import { metadata } from '@/app/layout';
+import { AttributeValue } from '@opentelemetry/api';
 
 // OpenTelemetry Metrics for Message Optimization
 const optimizationCounter = appMeters.createCounter(
@@ -229,7 +228,7 @@ export async function optimizeMessagesWithToolSummarization(
   messages: UIMessage[],
   model: string,
   userId?: string,
-  chatHistoryId?: string
+  chatHistoryId?: string,
 ): Promise<UIMessage[]> {
   const startTime = Date.now();
 
@@ -243,7 +242,7 @@ export async function optimizeMessagesWithToolSummarization(
   });
 
   log((l) =>
-    l.debug('Starting enterprise tool message optimization', {
+    l.verbose('Starting enterprise tool message optimization', {
       originalMessageCount: messages.length,
       originalCharacterCount,
       model,
@@ -256,7 +255,7 @@ export async function optimizeMessagesWithToolSummarization(
 
   if (cutoffIndex === 0) {
     // No optimization needed - all messages are recent
-    log((l) => l.debug('No optimization needed - all messages are recent'));
+    log((l) => l.verbose('No optimization needed - all messages are recent'));
 
     // Record metrics for no-op optimization
     optimizationCounter.add(1, {
@@ -410,49 +409,47 @@ const findUserInteractionCutoff = (
   return { cutoffIndex, preservedToolIds };
 };
 
-export const summarizeMessageRecord = async (
-  {
-    tx,    
-    chatId,
-    turnId,
-    messageId,
-    write = false,
-    deep = false,
-  } : {
-    /**
-     * Dabase transactional context
-     */
-    tx?: DbTransactionType
-    /**
-     * Chat ID to summarize
-     */
-    chatId: string;
-    /**
-     * Turn ID to summarize
-     */
-    turnId: number;
-    /**
-     * Message ID to summarize
-     */
-    messageId: number;
-    /**
-     * If true results are used to update the database record
-     */
-    write?: boolean;
-    /**
-     * If true, the full contents of historical messages will be considered for context; 
-     * otherwise, the optimized output will be favored and used when present.
-     */
-    deep?: boolean;
-    /**
-     * Additional metadata to send to the model when summarizing.
-     */
-    metadata?: Record<string, unknown>;    
-  }
-):Promise<{
+export const summarizeMessageRecord = async ({
+  tx,
+  chatId,
+  turnId,
+  messageId,
+  write = false,
+  deep = false,
+}: {
+  /**
+   * Dabase transactional context
+   */
+  tx?: DbTransactionType;
+  /**
+   * Chat ID to summarize
+   */
+  chatId: string;
+  /**
+   * Turn ID to summarize
+   */
+  turnId: number;
+  /**
+   * Message ID to summarize
+   */
+  messageId: number;
+  /**
+   * If true results are used to update the database record
+   */
+  write?: boolean;
+  /**
+   * If true, the full contents of historical messages will be considered for context;
+   * otherwise, the optimized output will be favored and used when present.
+   */
+  deep?: boolean;
+  /**
+   * Additional metadata to send to the model when summarizing.
+   */
+  metadata?: Record<string, AttributeValue>;
+}): Promise<{
   /**
    * An AI-optimized / summarized version of this message's content
-  */
+   */
   optimizedContent: string;
   /**
    * The most appropriately descriptive title for the chat given current context
@@ -463,9 +460,9 @@ export const summarizeMessageRecord = async (
    */
   newTitle: boolean;
 }> => {
-  const qp: ThisDbQueryProvider = await (tx
+  const qp: ThisDbQueryProvider = (await (tx
     ? Promise.resolve(tx)
-    : drizDbWithInit());
+    : drizDbWithInit())) as unknown as ThisDbQueryProvider;
 
   const isThisMessage = and(
     eq(schema.chatMessages.chatId, chatId),
@@ -473,40 +470,38 @@ export const summarizeMessageRecord = async (
     eq(schema.chatMessages.messageId, messageId),
   )!;
   // First assemble previous message state
-  const prevMessages = await qp.query
-    .chatMessages({
+  const prevMessages = await qp.query.chatMessages
+    .findMany({
       where: and(eq(schema.chatMessages.chatId, chatId), not(isThisMessage)),
       columns: {
         content: deep === true,
-        optimizedContent: !deep,
+        optimizedContent: deep !== true,
       },
+      orderBy: [schema.chatMessages.turnId, schema.chatMessages.messageId],
     })
-    .findMany()
-    .orderBy('turnId', 'asc')
-    .orderBy('messageId', 'asc')
     .execute()
-    .then((q: Array<ChatMessagesType>) =>
+    .then((q) =>
       q.map(
         deep
-          ? (m: ChatMessagesType) => m.content
-          : (m: ChatMessagesType) => m.optimizedContent,
+          ? (m: object) => (m as { content: string }).content
+          : (m: object) => (m as { optimizedContent: string }).optimizedContent,
       ),
     );
   // Then retrieve the target message
-  const thisMessage = await qp.query
-    .chatMessages({
-      where: isThisMessage,
-      columns: {
-        content: true,
-        optimizedContent: true,
-      },
-      with: {
-        chat: {
+  const thisMessage = await qp.query.chatMessages.findFirst({
+    where: isThisMessage,
+    columns: {
+      content: true,
+      optimizedContent: true,
+    },
+    with: {
+      chat: {
+        columns: {
           title: true,
         },
       },
-    })
-    .findFirst();
+    },
+  });
   if (!thisMessage) {
     throw new Error('Message not found');
   }
@@ -534,7 +529,8 @@ export const summarizeMessageRecord = async (
   Keep the summary as short as possible while preserving essential meaning.
   Avoid changing the title unless there is a meaningful difference.`;
   const model = aiModelFactory('lofi');
-  const summarized = (await generateObject({
+  const summarized = (
+    await generateObject({
       model,
       prompt,
       schema: z.object({
@@ -546,15 +542,33 @@ export const summarizeMessageRecord = async (
         isEnabled: true,
         functionId: 'completion-message-summarization',
       },
-  })).object;
+    })
+  ).object;
   const ret = {
     optimizedContent: summarized.messageSummary,
     chatTitle: summarized.chatTitle,
     newTitle: summarized.chatTitle !== thisMessage.chat.title,
   };
   if (write) {
-    await qp.update(schema.chats).where(eq(schema.chats.id, thisMessage.chat.id)).values({ title: ret.chatTitle }).execute();
-    await qp.update(schema.chatMessages).where(thisMessage).values({ optimizedContent: ret.optimizedContent }).execute();
+    (await drizDbWithInit())
+      .update(schema.chatMessages)
+      .set({ optimizedContent: ret.optimizedContent })
+      .where(isThisMessage)
+      .execute();
+
+    // Update chat title by chat id
+    await qp
+      .update(schema.chats)
+      .set({ title: ret.chatTitle })
+      .where(eq(schema.chats.id, chatId))
+      .execute();
+
+    // Update the specific chat message identified by (chatId, turnId, messageId)
+    await qp
+      .update(schema.chatMessages)
+      .set({ optimizedContent: ret.optimizedContent })
+      .where(isThisMessage)
+      .execute();
   }
   return ret;
 };
@@ -565,7 +579,7 @@ export const summarizeMessageRecord = async (
 const processOlderMessagesForSummarization = async (
   messages: UIMessage[],
   cutoffIndex: number,
-  preservedToolIds: Set<string>
+  preservedToolIds: Set<string>,
 ): Promise<{
   optimizedMessages: UIMessage[];
   toolCallDict: Map<string, ToolCallRecord>;
@@ -719,7 +733,7 @@ const generateToolCallSummaries = async (
         const summary = await generateSingleToolCallSummary(
           record,
           chatHistoryContext,
-          allMessages,          
+          allMessages,
         ); // Update the summary message by reference
         record.toolSummary.content = summary;
         if (
@@ -770,7 +784,7 @@ const generateToolCallSummaries = async (
 const generateSingleToolCallSummary = async (
   record: ToolCallRecord,
   chatHistoryContext: ChatHistoryContext,
-  allMessages?: UIMessage[],  
+  allMessages?: UIMessage[],
 ): Promise<string> => {
   // Generate cache key from the tool call sequence
   const allToolMessages = [...record.toolRequest, ...record.toolResult];
@@ -861,7 +875,6 @@ Create a concise summary that:
 Keep the summary under 300 characters while preserving essential meaning.
 Respond with just the summary text, no additional formatting.`;
 
-
   const startSummaryTime = Date.now();
 
   try {
@@ -877,10 +890,8 @@ Respond with just the summary text, no additional formatting.`;
       experimental_telemetry: {
         isEnabled: true,
         functionId: 'completion-message-summarization',
-        metadata,
       },
     });
-
     const summaryDuration = Date.now() - startSummaryTime;
 
     // Record summary generation duration
@@ -889,19 +900,21 @@ Respond with just the summary text, no additional formatting.`;
       status: 'success',
     });
 
-    const summary = result.text.trim();
-    // Cache the result for future use
-    toolSummaryCache.set(cacheKey, summary);
+    const summary = result.object?.messageSummary;
+    if (summary) {
+      // Cache the result for future use
+      toolSummaryCache.set(cacheKey, summary);
 
-    log((l) =>
-      l.debug('Generated and cached new tool summary', {
-        cacheKey: cacheKey.substring(0, 8),
-        summaryLength: summary.length,
-        cacheSize: toolSummaryCache.size,
-        durationMs: summaryDuration,
-      }),
-    );
+      log((l) =>
+        l.debug('Generated and cached new tool summary', {
+          cacheKey: cacheKey.substring(0, 8),
+          summaryLength: summary.length,
+          cacheSize: toolSummaryCache.size,
+          durationMs: summaryDuration,
+        }),
+      );
 
+    }
     return summary;
   } catch (error) {
     const summaryDuration = Date.now() - startSummaryTime;

@@ -1,113 +1,33 @@
+/**
+ * @jest-environment jsdom
+ */
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 // it's not worth the effort to try and fix types for all these mocks
-// Mock the dependencies
-
-let mockDb: Record<string, unknown> | undefined;
-
-
-
-jest.mock('@/lib/drizzle-db', () => ({
-  drizDb: () =>
-    (mockDb = mockDb ?? {
-      select: jest.fn(),
-      insert: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    }),
-}));
-
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-}));
 
 jest.mock('@/lib/react-util', () => ({
   LoggedError: {
-    isTurtlesAllTheWayDownBaby: jest.fn(),
+    isTurtlesAllTheWayDownBaby: jest.fn().mockImplementation((error) => {
+      // Return a LoggedError that extends Error and can be thrown
+      return new Error(error instanceof Error ? error.message : String(error));
+    }),
   },
 }));
 
-import { BaseDrizzleRepository } from '@/lib/api/_baseDrizzleRepository';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { drizDbWithInit, drizDb } from '@/lib/drizzle-db';
 import { DrizzleRepositoryConfig } from '@/lib/api/_types';
 import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
-import { SQL } from 'drizzle-orm';
-
-// Test model interface
-interface TestModel {
-  id: number;
-  name: string;
-  description: string | null;
-}
-
-// Concrete implementation for testing
-class TestDrizzleRepository extends BaseDrizzleRepository<TestModel, 'id'> {
-  constructor(config: DrizzleRepositoryConfig<TestModel, 'id'>) {
-    super(config);
-  }
-
-  protected prepareInsertData(
-    model: Omit<TestModel, 'id'>,
-  ): Record<string, unknown> {
-    return {
-      name: model.name,
-      description: model.description,
-    };
-  }
-
-  protected prepareUpdateData(
-    model: Partial<TestModel>,
-  ): Record<string, unknown> {
-    const updateData: Record<string, unknown> = {};
-    if (model.name !== undefined) updateData.name = model.name;
-    if (model.description !== undefined)
-      updateData.description = model.description;
-    return updateData;
-  }
-}
-
-// Test repository with custom filtering for testing the new buildQueryConditions approach
-class FilteredTestDrizzleRepository extends BaseDrizzleRepository<
+import {
+  FilteredTestDrizzleRepository,
+  TestDrizzleRepository,
   TestModel,
-  'id'
-> {
-  constructor(
-    config: DrizzleRepositoryConfig<TestModel, 'id'>,
-    private nameFilter?: string,
-  ) {
-    super(config);
-  }
-
-  protected buildQueryConditions() {
-    if (this.nameFilter) {
-      // This would normally use eq(table.name, this.nameFilter) but we'll mock it
-      return { mockFilter: this.nameFilter } as unknown as SQL;
-    }
-    return undefined;
-  }
-
-  protected prepareInsertData(
-    model: Omit<TestModel, 'id'>,
-  ): Record<string, unknown> {
-    return {
-      name: model.name,
-      description: model.description,
-    };
-  }
-
-  protected prepareUpdateData(
-    model: Partial<TestModel>,
-  ): Record<string, unknown> {
-    const updateData: Record<string, unknown> = {};
-    if (model.name !== undefined) updateData.name = model.name;
-    if (model.description !== undefined)
-      updateData.description = model.description;
-    return updateData;
-  }
-}
+} from './target-repositories';
+import { DatabaseMockType } from '../jest.setup';
 
 describe('BaseDrizzleRepository', () => {
   let repository: TestDrizzleRepository;
-  let mockDb: Record<string, unknown>;
+  let mockDb: DatabaseMockType;
   let mockTable: PgTable;
   let mockIdColumn: PgColumn;
   let mockRecordMapper: (record: Record<string, unknown>) => TestModel;
@@ -115,17 +35,11 @@ describe('BaseDrizzleRepository', () => {
     record: Record<string, unknown>,
   ) => Partial<TestModel>;
 
-  beforeEach(() => {
-    // jest.clearAllMocks();
-
-    // Mock database
-    mockDb = {
-      select: jest.fn(),
-      insert: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    };
-
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    mockDb = await drizDbWithInit() as DatabaseMockType;
+    mockDb.__setRecords([]);
+    
     // Mock table and column
     mockTable = {} as PgTable;
     mockIdColumn = {} as PgColumn;
@@ -152,7 +66,6 @@ describe('BaseDrizzleRepository', () => {
     };
 
     repository = new TestDrizzleRepository(config);
-    (repository as any).db = mockDb;
   });
 
   describe('list', () => {
@@ -162,21 +75,38 @@ describe('BaseDrizzleRepository', () => {
         { id: 1, name: 'Test 1' },
         { id: 2, name: 'Test 2' },
       ];
-
-      // Mock the count query
-      mockDb.select.mockReturnValueOnce({
-        from: jest.fn().mockReturnValue([mockCountRecord]),
-      });
-
-      // Mock the data query
-      mockDb.select.mockReturnValueOnce({
+      
+      // Mock count query - first select call returns count query
+      const mockCountQuery = {
         from: jest.fn().mockReturnValue({
-          offset: jest.fn().mockReturnValue({
-            limit: jest.fn().mockReturnValue(mockRecords),
+          where: jest.fn().mockReturnValue({
+            execute: jest.fn().mockResolvedValue([mockCountRecord])
           }),
+          execute: jest.fn().mockResolvedValue([mockCountRecord])
         }),
-      });
+        execute: jest.fn().mockResolvedValue([mockCountRecord])
+      };
+      
+      // Mock data query - second select call returns data query  
+      const mockDataQuery = {
+        from: jest.fn().mockReturnValue({
+          where: jest.fn().mockReturnValue({
+            offset: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                execute: jest.fn().mockResolvedValue(mockRecords)
+              })
+            })
+          }),
+          offset: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              execute: jest.fn().mockResolvedValue(mockRecords)
+            })
+          })
+        })
+      };
 
+      mockDb.select.mockReturnValueOnce(mockCountQuery).mockReturnValueOnce(mockDataQuery);
+      
       const result = await repository.list();
 
       expect(result).toEqual({
@@ -198,17 +128,26 @@ describe('BaseDrizzleRepository', () => {
       const mockCountRecord = { count: 15 };
       const mockRecords = [{ id: 3, name: 'Test 3' }];
 
-      mockDb.select.mockReturnValueOnce({
-        from: jest.fn().mockReturnValue([mockCountRecord]),
-      });
-
-      mockDb.select.mockReturnValueOnce({
+      // Mock count query
+      const mockCountQuery = {
+        from: jest.fn().mockReturnValue({
+          execute: jest.fn().mockResolvedValue([mockCountRecord])
+        }),
+        execute: jest.fn().mockResolvedValue([mockCountRecord])
+      };
+      
+      // Mock data query  
+      const mockDataQuery = {
         from: jest.fn().mockReturnValue({
           offset: jest.fn().mockReturnValue({
-            limit: jest.fn().mockReturnValue(mockRecords),
-          }),
-        }),
-      });
+            limit: jest.fn().mockReturnValue({
+              execute: jest.fn().mockResolvedValue(mockRecords)
+            })
+          })
+        })
+      };
+
+      mockDb.select.mockReturnValueOnce(mockCountQuery).mockReturnValueOnce(mockDataQuery);
 
       const result = await repository.list({ page: 2, num: 5, total: 15 });
 
@@ -224,11 +163,15 @@ describe('BaseDrizzleRepository', () => {
     it('should return a single record when found', async () => {
       const mockRecord = { id: 1, name: 'Test', description: 'Description' };
 
-      mockDb.select.mockReturnValue({
+      const mockSelectQuery = {
         from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue([mockRecord]),
-        }),
-      });
+          where: jest.fn().mockReturnValue({
+            execute: jest.fn().mockResolvedValue([mockRecord])
+          })
+        })
+      };
+
+      mockDb.select.mockReturnValue(mockSelectQuery);
 
       const result = await repository.get(1);
 
@@ -242,11 +185,15 @@ describe('BaseDrizzleRepository', () => {
     });
 
     it('should return null when record not found', async () => {
-      mockDb.select.mockReturnValue({
+      const mockSelectQuery = {
         from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue([]),
-        }),
-      });
+          where: jest.fn().mockReturnValue({
+            execute: jest.fn().mockResolvedValue([])
+          })
+        })
+      };
+
+      mockDb.select.mockReturnValue(mockSelectQuery);
 
       const result = await repository.get(999);
 
@@ -259,11 +206,15 @@ describe('BaseDrizzleRepository', () => {
         { id: 1, name: 'Test 2' },
       ];
 
-      mockDb.select.mockReturnValue({
+      const mockSelectQuery = {
         from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue(mockRecords),
-        }),
-      });
+          where: jest.fn().mockReturnValue({
+            execute: jest.fn().mockResolvedValue(mockRecords)
+          })
+        })
+      };
+
+      mockDb.select.mockReturnValue(mockSelectQuery);
 
       await expect(repository.get(1)).rejects.toThrow(
         'Multiple records found for id: 1',
@@ -280,11 +231,13 @@ describe('BaseDrizzleRepository', () => {
         description: 'New Description',
       };
 
-      mockDb.insert.mockReturnValue({
+      const mockInsertQuery = {
         values: jest.fn().mockReturnValue({
-          returning: jest.fn().mockReturnValue([createdRecord]),
+          returning: jest.fn().mockResolvedValue([createdRecord]),
         }),
-      });
+      };
+
+      mockDb.insert.mockReturnValue(mockInsertQuery);
 
       const result = await repository.create(newModel);
 
@@ -300,11 +253,13 @@ describe('BaseDrizzleRepository', () => {
     it('should throw error when create fails', async () => {
       const newModel = { name: 'New Test', description: 'New Description' };
 
-      mockDb.insert.mockReturnValue({
+      const mockInsertQuery = {
         values: jest.fn().mockReturnValue({
-          returning: jest.fn().mockReturnValue([]),
+          returning: jest.fn().mockResolvedValue([]),
         }),
-      });
+      };
+
+      mockDb.insert.mockReturnValue(mockInsertQuery);
 
       await expect(repository.create(newModel)).rejects.toThrow(
         'Failed to create test_table record',
@@ -321,13 +276,15 @@ describe('BaseDrizzleRepository', () => {
         description: 'Description',
       };
 
-      mockDb.update.mockReturnValue({
+      const mockUpdateQuery = {
         set: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
-            returning: jest.fn().mockReturnValue([updatedRecord]),
+            returning: jest.fn().mockResolvedValue([updatedRecord]),
           }),
         }),
-      });
+      };
+
+      mockDb.update.mockReturnValue(mockUpdateQuery);
 
       const result = await repository.update(updateModel);
 
@@ -343,13 +300,15 @@ describe('BaseDrizzleRepository', () => {
     it('should throw error when record not found for update', async () => {
       const updateModel = { id: 999, name: 'Updated Test' };
 
-      mockDb.update.mockReturnValue({
+      const mockUpdateQuery = {
         set: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
-            returning: jest.fn().mockReturnValue([]),
+            returning: jest.fn().mockResolvedValue([]),
           }),
         }),
-      });
+      };
+
+      mockDb.update.mockReturnValue(mockUpdateQuery);
 
       await expect(repository.update(updateModel)).rejects.toThrow(
         'test_table record not found for update',
@@ -361,11 +320,17 @@ describe('BaseDrizzleRepository', () => {
     it('should delete and return true when successful', async () => {
       const deletedRecord = { id: 1, name: 'Test', description: 'Description' };
 
-      mockDb.delete.mockReturnValue({
+      const mockDeleteQuery = {
         where: jest.fn().mockReturnValue({
-          returning: jest.fn().mockReturnValue([deletedRecord]),
+          returning: jest.fn().mockReturnValue({
+            then: jest.fn().mockImplementation((callback) => {
+              return callback([deletedRecord]);
+            })
+          }),
         }),
-      });
+      };
+
+      mockDb.delete.mockReturnValue(mockDeleteQuery);
 
       const result = await repository.delete(1);
 
@@ -374,11 +339,17 @@ describe('BaseDrizzleRepository', () => {
     });
 
     it('should return false when record not found for deletion', async () => {
-      mockDb.delete.mockReturnValue({
+      const mockDeleteQuery = {
         where: jest.fn().mockReturnValue({
-          returning: jest.fn().mockReturnValue([]),
+          returning: jest.fn().mockReturnValue({
+            then: jest.fn().mockImplementation((callback) => {
+              return callback([]);
+            })
+          }),
         }),
-      });
+      };
+
+      mockDb.delete.mockReturnValue(mockDeleteQuery);
 
       const result = await repository.delete(999);
 
@@ -410,27 +381,33 @@ describe('BaseDrizzleRepository', () => {
         },
         'filtered-name',
       );
-      (filteredRepository as Record<string, unknown>).db = mockDb;
 
       const mockCountRecord = { count: 3 };
       const mockRecords = [{ id: 1, name: 'filtered-name' }];
 
-      // Mock both count and data queries with where clauses
-      mockDb.select.mockReturnValueOnce({
+      // Mock count query with where clause
+      const mockCountQuery = {
         from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue([mockCountRecord]),
-        }),
-      });
+          where: jest.fn().mockReturnValue({
+            execute: jest.fn().mockResolvedValue([mockCountRecord])
+          })
+        })
+      };
 
-      mockDb.select.mockReturnValueOnce({
+      // Mock data query with where clause
+      const mockDataQuery = {
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
             offset: jest.fn().mockReturnValue({
-              limit: jest.fn().mockReturnValue(mockRecords),
-            }),
-          }),
-        }),
-      });
+              limit: jest.fn().mockReturnValue({
+                execute: jest.fn().mockResolvedValue(mockRecords)
+              })
+            })
+          })
+        })
+      };
+
+      mockDb.select.mockReturnValueOnce(mockCountQuery).mockReturnValueOnce(mockDataQuery);
 
       const result = await filteredRepository.list();
 
@@ -449,18 +426,25 @@ describe('BaseDrizzleRepository', () => {
         { id: 2, name: 'test2' },
       ];
 
-      // Mock queries without where clauses
-      mockDb.select.mockReturnValueOnce({
-        from: jest.fn().mockReturnValue([mockCountRecord]),
-      });
+      // Mock count query without where clause
+      const mockCountQuery = {
+        from: jest.fn().mockReturnValue({
+          execute: jest.fn().mockResolvedValue([mockCountRecord])
+        })
+      };
 
-      mockDb.select.mockReturnValueOnce({
+      // Mock data query without where clause
+      const mockDataQuery = {
         from: jest.fn().mockReturnValue({
           offset: jest.fn().mockReturnValue({
-            limit: jest.fn().mockReturnValue(mockRecords),
-          }),
-        }),
-      });
+            limit: jest.fn().mockReturnValue({
+              execute: jest.fn().mockResolvedValue(mockRecords)
+            })
+          })
+        })
+      };
+
+      mockDb.select.mockReturnValueOnce(mockCountQuery).mockReturnValueOnce(mockDataQuery);
 
       const result = await repository.list();
 

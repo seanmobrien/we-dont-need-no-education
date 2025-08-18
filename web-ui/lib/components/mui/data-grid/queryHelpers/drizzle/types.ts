@@ -1,7 +1,7 @@
 import type { LikeNextRequest } from '@/lib/nextjs-util';
 import type { GridFilterModel, GridFilterItem, GridSortModel } from '@mui/x-data-grid-pro';
 import type { NextRequest } from 'next/server';
-import type { ColumnBaseConfig, SQL } from 'drizzle-orm';
+import type { ColumnBaseConfig, SQL} from 'drizzle-orm';
 import type { AnyPgSelect, PgColumn } from 'drizzle-orm/pg-core';
 
 // Type for Drizzle select query builder - simplified to match actual usage
@@ -34,7 +34,7 @@ export type SelectForGridProps<T> = {
    * @param columnName - The database column name (after mapping)
    * @returns The Drizzle column object or SQL expression
    */
-  getColumn: (columnName: string) => PgColumn | SQL | undefined;
+  getColumn: (columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
 
   /**
    * A mapping or function to translate source column names to database column names.
