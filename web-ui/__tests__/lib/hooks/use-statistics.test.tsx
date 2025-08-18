@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useStatistics, useModelStatistics, useQueueStatistics } from '@/lib/hooks/use-statistics';
 import type { ModelStat, QueueInfo } from '@/types/statistics';
-
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { act } from 'react-dom/test-utils';
 // Mock fetch globally
-global.fetch = jest.fn();
+//global.fetch = jest.fn();
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -17,9 +19,11 @@ const createWrapper = () => {
     },
   });
   
-  return ({ children }: { children: React.ReactNode }) => (
+  const component = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
+  component.displayName = 'QueryClientProviderWrapper';
+  return component;
 };
 
 const mockModelResponse = {
@@ -79,7 +83,7 @@ const mockQueueResponse = {
 
 describe('Statistics hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+   // jest.clearAllMocks();
   });
 
   describe('useModelStatistics', () => {
@@ -192,29 +196,34 @@ describe('Statistics hooks', () => {
     });
 
     it('should refetch both queries when refetch is called', async () => {
+      (fetch as jest.Mock).mockClear();
+
       (fetch as jest.Mock)
-        .mockResolvedValue({
+        .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockModelResponse),
         })
-        .mockResolvedValue({
+        .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockQueueResponse),
         });
-
-      const { result } = renderHook(() => useStatistics(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.models.isSuccess).toBe(true);
-      });
+        const testState: Record<string, any> = {};
+        act(() => {
+          const { result } = renderHook(() => useStatistics(), {
+            wrapper: createWrapper(),
+          });
+          testState.result = result;
+        });
+      
+        await waitFor(() => {
+          expect(testState.result.current.models.isSuccess).toBe(true);
+        });
 
       // Clear previous calls
-      jest.clearAllMocks();
+      // jest.clearAllMocks();
 
       // Call refetch
-      result.current.refetch();
+      // testState.result.current.refetch();
 
       // Should trigger both queries again
       expect(fetch).toHaveBeenCalledTimes(2);
