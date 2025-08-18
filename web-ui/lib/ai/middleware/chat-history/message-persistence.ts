@@ -17,6 +17,7 @@ import type { ChatHistoryContext, FlushContext, MessageCompletionContext, Messag
 import { importIncomingMessage } from './import-incoming-message';
 import { handleFlush } from './flush-handlers';
 import { instrumentMiddlewareInit, createChatHistoryError } from './instrumentation';
+import { generateChatId } from '../../core';
 
 /**
  * Initializes message persistence by creating chat, turn, and message records.
@@ -158,6 +159,7 @@ export const safeInitializeMessagePersistence = async (
   params: LanguageModelV1CallOptions,
 ): Promise<MessagePersistenceInit | null> => {
   try {
+    context.chatId ??= generateChatId().id;
     return await instrumentMiddlewareInit(context, async () => {
       return await initializeMessagePersistence(context, params);
     });

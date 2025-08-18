@@ -55,6 +55,7 @@
 import type { DbTransactionType, ChatMessagesType } from "@/lib/drizzle-db";
 import type { LanguageModelV1ProviderMetadata} from '@/lib/ai/types';
 import { LanguageModelV1StreamPart } from "ai";
+import { Span } from "@opentelemetry/api";
 
 /**
 Tool result content part of a prompt. It contains the result of the tool call with the matching ID.
@@ -158,46 +159,83 @@ Mime type of the image.
  */
 export interface ChatHistoryContext {
   processingTimeMs?: number;
-  /** 
+  /**
    * Unique identifier for the user initiating the chat.
    * Used for access control, data isolation, and audit trails.
    */
   userId: string;
-  
-  /** 
+
+  /**
    * Optional unique identifier for the chat session.
    * When provided, enables conversation continuity and threading.
    * When omitted, a new chat session will be created automatically.
    */
   chatId?: string;
-  
-  /** 
+
+  /**
    * Optional unique identifier for the current request.
    * Enables distributed tracing, debugging, and request correlation.
    * Recommended for production systems and monitoring.
    */
   requestId?: string;
-  
-  /** 
+
+  /**
    * Optional name of the AI model being used.
    * Enables provider-specific handling and response optimization.
    * Examples: 'gpt-4', 'gpt-3.5-turbo', 'claude-3'
    */
   model?: string;
-  
-  /** 
+
+  /**
    * Optional temperature setting for response generation.
    * Controls randomness in model responses (0.0 = deterministic, 1.0 = creative).
    * Preserved for reproducibility and debugging purposes.
    */
   temperature?: number;
-  
-  /** 
+
+  /**
    * Optional top-p (nucleus sampling) setting for response generation.
    * Controls diversity of model responses (0.1 = focused, 1.0 = diverse).
    * Preserved for reproducibility and debugging purposes.
    */
   topP?: number;
+
+  /**
+   * Optional metadata associated with the current request.
+   * Can be used to store additional context or parameters for processing.
+   */
+  metadata?: Record<PropertyKey, unknown>;
+
+  /**
+   * Timestamp indicating when the chat context was created.
+   */
+  beganAt: Date;
+
+  /**
+   * Current iteration number for the chat context.
+   * Used to track the progression of the conversation.
+   * Note this differs from the turn number in that it
+   * is calculated by chat context instance, not the overall
+   * conversation.
+   */
+  iteration: number;
+
+  /**
+   * opentelemetry span instance for tracing.
+   */
+  span: Span;
+
+  /**
+   * Current error state for the chat context.
+   * Used to track any errors that occur during processing.
+   */
+  error: unknown;
+
+  /**
+   * Disposes of the chat context and releases any resources.
+   * @returns A promise that resolves when the context is disposed.
+   */
+  dispose: () => Promise<void>;
 }
 
 // ============================================================================

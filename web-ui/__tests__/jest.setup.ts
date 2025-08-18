@@ -124,10 +124,82 @@ import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+
+const QueryBuilderMethodValues = [
+  'from','select','where','orderBy','limit',
+  'offset','execute','innerJoin','fullJoin'
+] as const;
+type QueryBuilderMethodType = typeof QueryBuilderMethodValues[number];
+
+type IMockQueryBuilder = {
+  [K in QueryBuilderMethodType]: jest.Mock;
+} & {
+  __setRecords: <T>(records: T[]) => void;
+  __getRecords: <T>() => T[];
+};
+
+export class MockQueryBuilder implements IMockQueryBuilder {
+  readonly from: jest.Mock;
+  readonly select: jest.Mock;
+  readonly where: jest.Mock;
+  readonly orderBy: jest.Mock;
+  readonly limit: jest.Mock;
+  readonly offset: jest.Mock;
+  readonly execute: jest.Mock;
+  readonly innerJoin: jest.Mock;
+  readonly fullJoin: jest.Mock;
+
+  #records: unknown[] = [];
+
+  constructor() {
+    this.from = jest.fn().bind(this).mockReturnThis();
+    this.select = jest.fn().bind(this).mockReturnThis();
+    this.where = jest.fn().bind(this).mockReturnThis();
+    this.orderBy = jest.fn().bind(this).mockReturnThis();
+    this.limit = jest.fn().bind(this).mockReturnThis();
+    this.offset = jest.fn().bind(this).mockReturnThis();
+    this.execute = jest.fn(() => Promise.resolve(this.#records)).bind(this);
+    this.innerJoin = jest.fn().bind(this).mockReturnThis();
+    this.fullJoin = jest.fn().bind(this).mockReturnThis();
+  }
+
+
+
+  __setRecords<T>(records: T[]) {
+    this.#records = records ?? [];
+  }
+  __getRecords<T>() {
+    return this.#records as T[];  
+  }
+
+}
+
 type DatabaseType = DbDatabaseType;
+export type DatabaseMockType = DatabaseType & { __queryBuilder: MockQueryBuilder };
+const mockDbFactory = (): DatabaseMockType => {
+  const db = mockDeep<DatabaseType>() as unknown as DatabaseMockType;
+  // db.__queryBuilder = new MockQueryBuilder();
+  const qb = db as unknown as IMockQueryBuilder;
+  let theRows: unknown[] = [];
+  QueryBuilderMethodValues.forEach((key: keyof IMockQueryBuilder) => {
+    if (key === '__setRecords' || key === '__getRecords') { return; }
+    const current = qb[key];
+    if (!current) {
+      qb[key] = jest.fn();
+    }
+    if (key === 'execute'){
+      qb[key].mockImplementation(() => Promise.resolve(theRows))
+    } else {       
+      qb[key].mockReturnThis();
+    }    
+  });
+  qb.__setRecords = <T>(v: T[]) => theRows = v ?? [];
+  qb.__getRecords = <T>() => theRows as T[];
 
+  return db;
+};
 
-let mockDb = mockDeep<DatabaseType>();
+let mockDb: DatabaseMockType = mockDbFactory();
 
 export const makeMockDb = (): DatabaseType => {
   // Return the same mock instance to ensure test isolation but consistency within a test
@@ -144,14 +216,8 @@ export const makeMockDb = (): DatabaseType => {
     }
     if (!(mockDb.$count as jest.Mock).getMockImplementation()) {
       (mockDb.$count as jest.Mock).mockResolvedValue(1);
-    }
-    if (
-      !(mockDb.select as jest.Mock).getMockImplementation()
-    ) {
-      (mockDb.select as jest.Mock).mockResolvedValue(mockDb);
-    }
-  }
-  
+    }   
+  }  
   return mockDb;
 };
 
@@ -183,7 +249,11 @@ jest.mock('@/lib/drizzle-db/connection', () => {
       }
       return mockDbInstance;
     }),
-    drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
+    drizDbWithInit: (cb?: (db: unknown) => unknown): Promise<unknown> => {      
+      const db = makeMockDb();
+      const normalCallback = cb ?? ((x) => x);
+      return Promise.resolve(normalCallback(db));
+    },     
     schema: actualSchema,
   };
 });
@@ -197,7 +267,11 @@ jest.mock('@/lib/drizzle-db', () => {
       }
       return mockDbInstance;
     }),
-    drizDbWithInit: jest.fn(() => Promise.resolve(makeMockDb())),
+    drizDbWithInit: (cb?: (db: unknown) => unknown): Promise<unknown> => {
+      const db = makeMockDb();
+      const normalCallback = cb ?? ((x) => x);
+      return Promise.resolve(normalCallback(db));
+    },
     schema: actualSchema,
     sql: jest.fn(() => makeRecursiveMock()),
   };
@@ -311,6 +385,7 @@ import React, { Component } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry';
 import instrument, { getAppInsights } from '@/instrument/browser';
 import { log } from '@/lib/logger';
+import { isKeyOf } from '@/lib/typescript';
 globalThis.TextEncoder = TextEncoder as any;
 
 // Ensure WHATWG Response/Request/Headers exist in all environments (jsdom/node)
@@ -442,7 +517,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   jest.clearAllMocks();
-  mockDb = mockDeep<DatabaseType>();
+  mockDb = mockDbFactory();
   resetGlobalCache();
   Object.entries(originalProcessEnv).forEach(([key, value]) => {
     process.env[key] = value;

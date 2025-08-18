@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
-import { LoggedError, ValidationError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util';
 
 import { EmailService } from '@/lib/api/email/email-service';
-import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 import { validateCreateEmail, validateUpdateEmail } from '@/lib/api/email/email-validation';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { count_kpi, count_attachments, count_notes, count_responsive_actions, count_cta } from '@/lib/api/email/drizzle/query-parts';
+import { eq } from 'drizzle-orm';
+// count_kpi import removed; not used in this route currently
+import { DrizzleSelectQuery, getEmailColumn, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { ContactSummary, EmailMessageSummary } from '@/data-models';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,26 +28,100 @@ export const dynamic = 'force-dynamic';
  * @throws {Error} If there is an issue with the service operation or any other error occurs during
  * the execution of the function, an error is logged and a 500 Internal Server Error response is returned.
  */
-export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
-  try {
-    const thisUrl = new URL(req.url);
-    const pagination = parsePaginationStats(thisUrl);
+export const GET = wrapRouteRequest(async (req: NextRequest) => {
+  
+  
+  const results = await drizDbWithInit(async (db) => {
+    // Correlated subquery returning a JSONB array of recipient objects for each email
+    const attachments = count_attachments({ db });
+    const countKpi = count_kpi({ db });
+    const countNotes = count_notes({ db });
+    const countRa = count_responsive_actions({ db });
+    const countCta = count_cta({ db });
     
-    // Use the EmailService to get emails with full contact information
-    const emailService = new EmailService();
-    const result = await emailService.getEmailsSummary(pagination);
-
-    return NextResponse.json(result, { status: 200 });
-  } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'GET email',
+      const getColumn = (columnName: string) => {
+        switch (columnName) {
+          case 'sentOn':
+            return schema.emails.sentTimestamp;
+          case 'count_attachments':
+            return attachments.countAttachments;
+          case 'count_kpi':
+            return countKpi.targetCount;
+          case 'count_notes':
+            return countNotes.targetCount;
+          case 'count_cta':
+            return countCta.targetCount;
+          case 'count_responsive_actions':
+            return countRa.targetCount;
+          case 'sender':
+            return schema.contacts.name;
+          default:
+            return getEmailColumn({ columnName, table: schema.emails });
+        }
+      };
+    
+    const bq = db
+      .select({
+        emailId: schema.emails.emailId,
+        senderId: schema.emails.senderId,
+        senderName: schema.contacts.name,
+        senderEmai: schema.contacts.email,
+        subject: schema.emails.subject,
+        sentOn: schema.emails.sentTimestamp,
+        threadId: schema.emails.threadId,
+        parentEmailId: schema.emails.parentId,
+        importedFromId: schema.emails.importedFromId,
+        globalMessageId: schema.emails.globalMessageId,
+        count_kpi: countKpi.targetCount,
+        count_notes: countNotes.targetCount,
+        count_cta: countCta.targetCount,
+        count_responsive_actions: countRa.targetCount,
+        count_attachments: attachments.countAttachments,
+      })
+      .from(schema.emails)
+      .innerJoin(
+        schema.contacts,
+        eq(schema.emails.senderId, schema.contacts.contactId),
+      )
+      .fullJoin(attachments, eq(schema.emails.emailId, attachments.emailId))
+      .fullJoin(countKpi, eq(schema.emails.emailId, countKpi.targetId));
+      return await selectForGrid<EmailMessageSummary>({
+        req,
+        query: bq as unknown as DrizzleSelectQuery,
+        getColumn,
+        defaultSort: 'sentOn',
+        recordMapper: (emailDomain) => ({
+          emailId: String(emailDomain.emailId),
+          sender: {
+            contactId: Number(emailDomain.senderId),
+            name: String(emailDomain.senderName),
+            email: String(emailDomain.senderEmail),
+          } as ContactSummary,
+          subject: String(emailDomain.subject ?? ''),
+          sentOn: new Date(
+            emailDomain.sentOn ? Date.parse(String(emailDomain.sentOn)) : Date.now(),
+          ),
+          threadId: emailDomain.threadId ? Number(emailDomain.threadId) : undefined,
+          parentEmailId: emailDomain.parentId
+            ? String(emailDomain.parentId)
+            : undefined,
+          importedFromId: emailDomain.importedFromId
+            ? String(emailDomain.importedFromId)
+            : undefined,
+          globalMessageId: emailDomain.globalMessageId
+            ? String(emailDomain.globalMessageId)
+            : undefined,
+          recipients: emailDomain.recipients as Array<ContactSummary>,
+          count_attachments: Number(emailDomain.count_attachments) ?? 0,
+          count_kpi: Number(emailDomain.count_kpi) ?? 0,
+          count_notes: Number(emailDomain.count_notes) ?? 0,
+          count_cta: Number(emailDomain.count_cta) ?? 0,
+          count_responsive_actions: Number(emailDomain.count_responsive_actions) ?? 0,
+        }),
+      });
     });
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
+  
+  return Response.json(results);
 }, { buildFallback: buildFallbackGrid });
 
 /**

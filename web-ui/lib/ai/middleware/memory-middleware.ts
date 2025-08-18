@@ -5,23 +5,14 @@ import { log } from '@/lib/logger';
 
 export const memoryMiddleware: LanguageModelV1Middleware = {
   wrapStream: async ({ doStream }) => {
-
     const { stream, ...rest } = await doStream();
-
-    // let generatedText = '';
-
     const transformStream = new TransformStream<
       LanguageModelV1StreamPart,
       LanguageModelV1StreamPart
     >({
       transform(chunk, controller) {
-        if (chunk.type === 'text-delta') {
-          // generatedText += chunk.textDelta;
-        }
-
         controller.enqueue(chunk);
       },
-
       flush() {
         log(l => l.verbose('Memory middleware stream flushed'));
       },

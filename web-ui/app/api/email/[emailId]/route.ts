@@ -4,7 +4,7 @@ import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util';
 import { extractParams } from '@/lib/nextjs-util';
 import { eq } from 'drizzle-orm';
-import { drizDb, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 
 /**
  * Extracts the emailId out of the route parameters, with some magic to support document IDs if that's what we were given.
@@ -34,7 +34,7 @@ const extractEmailId = async <T extends { emailId: string }>(req: {
     return { emailId: null };
   }
   // If so try and look it up
-  const doc = await drizDb().query.documentUnits.findFirst({
+  const doc = await (await drizDbWithInit()).query.documentUnits.findFirst({
     where: (d, { eq }) => eq(d.unitId, documentId),
     columns: {
       unitId: true,
@@ -62,8 +62,8 @@ export const GET = wrapRouteRequest(async (
       { status: 400 },
     );
   }
-  try {
-    const record = await drizDb().query.emails.findFirst({
+  try { 
+    const record = await (await drizDbWithInit()).query.emails.findFirst({
       where: (e, { eq }) => eq(e.emailId, emailId),
       with: {
         sender: {
@@ -193,7 +193,7 @@ export const DELETE = wrapRouteRequest(async (
     );
   }
   try {
-    const records = await drizDb()
+    const records = await (await drizDbWithInit())
       .delete(schema.emails)
       .where(eq(schema.emails.emailId, emailId))
       .returning({ emailId: schema.emails.emailId });

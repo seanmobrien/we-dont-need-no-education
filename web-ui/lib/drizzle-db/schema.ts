@@ -26,8 +26,11 @@
 
 import * as tables from '@/drizzle/schema';
 import * as dbRelations from '@/drizzle/custom-relations';
-import { PgTransaction } from 'drizzle-orm/pg-core';
+import { PgQueryResultHKT, PgTable, PgTransaction, PgUpdateBuilder } from 'drizzle-orm/pg-core';
 import { drizzle } from 'drizzle-orm/postgres-js';
+import { RelationalQueryBuilder } from 'drizzle-orm/gel-core/query-builders/query';
+import { DrizzleTypeError } from 'drizzle-orm/utils';
+import { TablesRelationalConfig } from 'drizzle-orm';
 
 /**
  * Unified database schema object combining all table definitions and custom relations.
@@ -329,3 +332,11 @@ export { schema };
  * @see {@link schema}
  */
 export default schema;
+
+export type DbQueryProvider<TSchema extends TablesRelationalConfig, TFullSchema> = {
+  query: TFullSchema extends Record<string, never> ? DrizzleTypeError<'Seems like the schema generic is missing - did you forget to add it to your DB type?'> : {
+        [K in keyof TSchema]: RelationalQueryBuilder<TSchema, TSchema[K]>;
+    };  
+  update: <TTable extends PgTable, TQueryResult extends PgQueryResultHKT = PgQueryResultHKT>(table: TTable) => PgUpdateBuilder<TTable, TQueryResult>;
+};
+export type ThisDbQueryProvider = DbQueryProvider<DbSchemaType, DbQueryResultHKT>;
