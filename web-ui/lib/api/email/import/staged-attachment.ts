@@ -2,7 +2,7 @@ import { BaseObjectRepository } from '@/lib/api/_baseObjectRepository';
 import { ObjectRepository } from '@/lib/api/_types';
 import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
 import { query } from '@/lib/neondb';
-import { ValidationError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { FirstParameter } from '@/lib/typescript';
 import { GridSortModel } from '@mui/x-data-grid-pro';
 

@@ -1,5 +1,6 @@
 import { generateObject, UIMessage } from 'ai';
-import { aiModelFactory, ChatHistoryContext } from '@/lib/ai';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { log } from '@/lib/logger';
 import { createHash } from 'crypto';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';

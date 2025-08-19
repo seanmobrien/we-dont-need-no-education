@@ -1,5 +1,5 @@
-import { PaginationStats } from '@/data-models';
-import type { LikeNextRequest } from '@/lib/nextjs-util';
+import { PaginationStats } from '@/data-models/_types';
+import type { LikeNextRequest } from '@/lib/nextjs-util/types';
 export type { LikeNextRequest };
 import type { FirstParameter } from '@/lib/typescript';
 import type {

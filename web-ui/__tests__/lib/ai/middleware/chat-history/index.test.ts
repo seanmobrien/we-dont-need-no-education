@@ -8,6 +8,8 @@
  * @module __tests__/lib/ai/middleware/chat-history/index.test.ts
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 import {
   createChatHistoryMiddleware,
@@ -38,7 +40,6 @@ jest.mock('@/lib/logger');
 
 jest.mock('@/lib/react-util', () => {
   const original = jest.requireActual('@/lib/react-util');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mockLoggedErrorImpl: any = jest.fn().mockImplementation((message, options) => {
       return {        
         ...options,
@@ -129,8 +130,9 @@ describe('Chat History Middleware', () => {
       processingTimeMs: 100, 
       textLength: 50 
     });
-    (LoggedError.isTurtlesAllTheWayDownBaby as jest.Mock)
-      .mockClear();
+    if (typeof (LoggedError as any)?.isTurtlesAllTheWayDownBaby === 'function') {
+      (LoggedError as any).isTurtlesAllTheWayDownBaby.mockClear();
+    }
     
 
     // Mock db.transaction

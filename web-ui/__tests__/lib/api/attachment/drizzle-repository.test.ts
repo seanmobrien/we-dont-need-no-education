@@ -104,7 +104,7 @@ describe('EmailAttachmentDrizzleRepository', () => {
       expect(() => {
         (repository as any).validate('create', invalidModel);
       }).toThrow(
-        'Validation error: fileName, filePath, or emailId (source: EmailAttachmentDrizzleRepository)',
+        `Field 'fileName, filePath, or emailId' Source: EmailAttachmentDrizzleRepository`,
       );
     });
 
@@ -120,7 +120,7 @@ describe('EmailAttachmentDrizzleRepository', () => {
       expect(() => {
         (repository as any).validate('create', invalidModel);
       }).toThrow(
-        'Validation error: mimeType or size (source: EmailAttachmentDrizzleRepository)',
+        `Field 'mimeType or size' Source: EmailAttachmentDrizzleRepository`,
       );
     });
 
@@ -132,7 +132,7 @@ describe('EmailAttachmentDrizzleRepository', () => {
       expect(() => {
         (repository as any).validate('update', invalidModel);
       }).toThrow(
-        'Validation error: attachmentId (source: EmailAttachmentDrizzleRepository)',
+        `Field 'attachmentId' Source: EmailAttachmentDrizzleRepository`,
       );
     });
 
@@ -142,7 +142,7 @@ describe('EmailAttachmentDrizzleRepository', () => {
       expect(() => {
         (repository as any).validate('get', invalidParams);
       }).toThrow(
-        'Validation error: attachmentId (source: EmailAttachmentDrizzleRepository)',
+        `Field 'attachmentId' Source: EmailAttachmentDrizzleRepository`,
       );
     });
 
@@ -152,7 +152,7 @@ describe('EmailAttachmentDrizzleRepository', () => {
       expect(() => {
         (repository as any).validate('delete', invalidParams);
       }).toThrow(
-        'Validation error: attachmentId (source: EmailAttachmentDrizzleRepository)',
+        `Field 'attachmentId' Source: EmailAttachmentDrizzleRepository`,
       );
     });
 

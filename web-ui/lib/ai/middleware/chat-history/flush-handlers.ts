@@ -17,8 +17,8 @@ import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
 import { instrumentFlushOperation } from './instrumentation';
 import { insertPendingAssistantMessage, reserveTurnId } from './import-incoming-message';
-import { LoggedError } from '@/lib/react-util';
-import { summarizeMessageRecord } from '../..';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { summarizeMessageRecord } from '@/lib/ai/chat/message-optimizer-tools';
 
 /**
  * Default configuration for flush operations.

@@ -35,7 +35,7 @@ import {
 type Sql<T extends Record<string, unknown>> = PostgresSql<T>;
 
 //import { deprecate } from '../nextjs-util';
-//import { deprecate } from '@/lib/nextjs-util';
+//import { deprecate } from '@/lib/nextjs-util/utils';
 
 
 

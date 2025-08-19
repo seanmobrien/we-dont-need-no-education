@@ -2,7 +2,7 @@ import { Box, Button, IconButton, MenuItem, Select, Stack } from '@mui/material'
 import { ToolInvocation as ToolInvocationProps } from 'ai';
 import { useCallback, useState } from 'react';
 import { signResponse } from '@/lib/ai/client/confirmation';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { useNotifications } from '@toolpad/core/useNotifications';
 
 

@@ -5,7 +5,7 @@
 jest.mock('@/lib/neondb');
 
 import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
-import { ValidationError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { query, queryExt } from '@/lib/neondb';
 import { CallToActionDetails } from '@/data-models/api';
 

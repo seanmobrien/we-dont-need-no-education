@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock('@/lib/react-util', () => ({
+jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -17,17 +17,20 @@ import {
 } from '@/lib/ai/services/search';
 
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 describe('searchCaseFile', () => {
   const mockHybridSearch = jest.fn();
   const mockLog = jest.fn();
+  const mockError = jest.fn();
 
   beforeEach(() => {
     (HybridDocumentSearch as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
     }));
-    (log as jest.Mock).mockImplementation((cb) => cb({ trace: mockLog }));
+    (log as jest.Mock).mockImplementation((cb) =>
+      cb({ trace: mockLog, error: mockError }),
+    );
     (hybridDocumentSearchFactory as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
     }));

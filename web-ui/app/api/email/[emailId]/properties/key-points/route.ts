@@ -2,10 +2,12 @@ import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   RepositoryCrudController,
+} from '@/lib/api/repository-crud-controller';
+import {
   KeyPointsDetailsRepository,
-} from '@/lib/api';
-import { extractParams } from '@/lib/nextjs-util';
-import { KeyPointsDetails } from '@/data-models';
+} from '@/lib/api/email/properties/key-points/key-points-details-repository';
+import { extractParams } from '@/lib/nextjs-util/utils';
+import { KeyPointsDetails } from '@/data-models/api/email-properties/extended-properties';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';

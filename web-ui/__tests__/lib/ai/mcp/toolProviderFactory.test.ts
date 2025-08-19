@@ -14,9 +14,12 @@ const mockLoggedError = {
 const mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
 const mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
 
-jest.mock('@/lib/react-util', () => ({
+jest.mock('@/lib/react-util/_utility-methods', () => ({
   getResolvedPromises: mockGetResolvedPromises,
   isError: mockIsError,
+}));
+
+jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: mockLoggedError,
 }));
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { debounce } from '@/lib/react-util';
+import { debounce } from '@/lib/react-util/_utility-methods';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import React, { createContext, useContext, useState, useEffect, useMemo, SetStateAction } from 'react';
 

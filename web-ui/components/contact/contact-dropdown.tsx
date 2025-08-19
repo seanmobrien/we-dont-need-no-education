@@ -6,7 +6,7 @@ import { createContactSummary } from '@/data-models/api';
 import { log } from '@/lib/logger';
 import { css, SerializedStyles } from '@emotion/react';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 interface ContactDropdownProps {
   displayValue?: 'name' | 'email' | 'both';

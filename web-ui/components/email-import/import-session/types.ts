@@ -2,7 +2,7 @@ import {
   MessageImportStatusWithChildren,
   MessageImportStatus,
 } from '@/data-models/api/import/email-message';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Represents the session data for an email import.
