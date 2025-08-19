@@ -9,7 +9,7 @@ import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { generateText, generateObject } from 'ai';
 
 // Mock dependencies
-jest.mock('@/lib/ai');
+jest.mock('@/lib/ai/aiModelFactory');
 jest.mock('ai');
 jest.mock('@/lib/logger', () => ({
   log: jest.fn((callback) => {

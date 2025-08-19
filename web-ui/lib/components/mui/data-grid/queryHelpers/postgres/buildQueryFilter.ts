@@ -1,6 +1,7 @@
 import { GridFilterModel, GridFilterItem } from '@mui/x-data-grid-pro';
 import { ISqlNeonAdapter, isSqlNeonAdapter, SqlDb, unwrapAdapter } from '@/lib/neondb';
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
+import { LikeNextRequest } from '@/lib/nextjs-util/types';
 import { columnMapFactory } from '../utility';
 import { BuildQueryFilterProps, BuildItemFilterProps } from './types';
 import { isGridFilterModel } from './guards';

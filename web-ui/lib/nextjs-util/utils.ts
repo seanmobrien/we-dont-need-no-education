@@ -171,3 +171,6 @@ export const deprecate =  <T extends (...args: any[]) => any>(fn: T, message = `
   
   return deprecatedFn;
 };
+
+// Re-export guards for convenience
+export { isNextResponse } from './guards';

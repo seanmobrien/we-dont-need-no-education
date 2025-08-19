@@ -2,7 +2,6 @@ export const dynamic = 'force-dynamic';
 import { createDataStreamResponse, wrapLanguageModel, streamText } from 'ai';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatRequestMessage } from '@/lib/ai/types';
-import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { isAiLanguageModelType } from '@/lib/ai/core/guards';
 import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
