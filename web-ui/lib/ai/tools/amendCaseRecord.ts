@@ -1,4 +1,4 @@
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   Amendment,
   AmendmentResult,
@@ -6,8 +6,7 @@ import {
   ResponsiveActionAssociation,
   ToolCallbackResult,
 } from './types';
-import { drizDb } from '@/lib/drizzle-db';
-import { resolveCaseFileId } from './utility';
+import { resolveCaseFileId, toolCallbackArrayResultSchemaFactory } from './utility';
 import {
   callToActionDetails,
   callToActionDetailsCallToActionResponse,
@@ -23,12 +22,15 @@ import { toolCallbackResultFactory } from './utility';
 import { newUuid } from '@/lib/typescript';
 import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 import {
+  drizDb,
   CallToActionResponsiveActionLinkType,
   DbTransactionType,
   addDocumentRelations,
   addNotesToDocument,
 } from '@/lib/drizzle-db';
 import { appMeters } from '@/lib/site-util/metrics';
+import { CaseFileAmendmentShape } from './schemas/caseFileAmendmentShape';
+import { AmendmentResultShape } from './schemas/amendmentResultSchema';
 
 // OpenTelemetry Metrics for AmendCaseRecord Tool
 const amendCaseRecordCounter = appMeters.createCounter(
@@ -773,3 +775,26 @@ export const amendCaseRecord = async ({
     FailedRecords: failedRecords,
   });
 };
+export const amendCaseRecordConfig = 
+{
+  description:
+    'This tool supports updating values within existing case file documents.  It provides the following capabilities:\n' +
+    '  - Adding a note to the file.\n' +
+    '  - Associating existing call to action and call to action response files.\n' +
+    '  - Adding a violation report to the case file.\n' +
+    '  - Creating relationships between case file documents.\n' +
+    '  - Updating select fields on extracted key points, notes, calls to action, responsive actions, or other relevant information.\n\n' +
+    'Must be used with caution, as it can modify existing case file documents; Write access required.',
+  inputSchema: {
+    update: CaseFileAmendmentShape,
+  },
+  outputSchema:
+    toolCallbackArrayResultSchemaFactory(AmendmentResultShape),
+  annotations: {
+    title: 'Amend Case File Document',
+    readOnlyHint: false,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;

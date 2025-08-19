@@ -4,6 +4,7 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
+import { getInstance as getTokenStatsService } from '@/lib/ai/middleware/tokenStatsTracking/token-stats-service';
 
 const { providers, models, modelQuotas, tokenConsumptionStats } = schema;
 
@@ -15,12 +16,66 @@ export const GET = wrapRouteRequest(async (request: Request) => {
     const source = searchParams.get('source') || 'database'; // 'database' or 'redis'
     
     if (source === 'redis') {
-      // TODO: Implement Redis-based model statistics fetching
-      // This would fetch data directly from Redis cache instead of database
+      // Redis-backed stats + quota (fast path) via TokenStatsService
+      const baseModels = await drizDbWithInit((db) =>
+        db
+          .select({
+            id: models.id,
+            modelName: models.modelName,
+            displayName: models.displayName,
+            description: models.description,
+            isActive: models.isActive,
+            providerId: models.providerId,
+            providerName: providers.name,
+            providerDisplayName: providers.displayName,
+          })
+          .from(models)
+          .innerJoin(providers, eq(models.providerId, providers.id))
+          .execute(),
+      ) ?? [];      
+
+      const tokenStatsService = getTokenStatsService();
+      const enriched = await Promise.all(baseModels.map(async (m) => {
+        const modelKey = `${m.providerName}:${m.modelName}`;
+        const available = isModelAvailable(modelKey);
+        // Usage report gives quota + aggregated redis windows (minute/hour/day) approximations
+        const usage = await tokenStatsService.getUsageReport(m.providerName, m.modelName)
+          .catch(() => ({ quota: null, currentStats: { currentMinuteTokens: 0, lastHourTokens: 0, last24HoursTokens: 0, requestCount: 0 }, quotaCheckResult: { allowed: true } }));
+
+        const quota = usage.quota;
+        const current = usage.currentStats;
+
+        // Map redis windows to existing response shape (minute/hour/day). We only have totals; prompt/completion split unknown.
+        const makeStats = (total: number) => ({
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: total,
+          requestCount: current.requestCount,
+        });
+
+        return {
+          ...m,
+          modelKey,
+          available,
+          maxTokensPerMessage: quota?.maxTokensPerMessage ?? null,
+          maxTokensPerMinute: quota?.maxTokensPerMinute ?? null,
+          maxTokensPerDay: quota?.maxTokensPerDay ?? null,
+          stats: {
+            minute: makeStats(current.currentMinuteTokens),
+            hour: makeStats(current.lastHourTokens),
+            day: makeStats(current.last24HoursTokens),
+          },
+          quotaCheck: usage.quotaCheckResult,
+          source: 'redis',
+        };
+      }));
+
       return NextResponse.json({
-        success: false,
-        error: 'Redis source not yet implemented for model statistics',
-      }, { status: 501 });
+                                     success: true,
+        data: enriched,
+        timestamp: new Date().toISOString(),
+        source: 'redis',
+      });
     }
 
     const db = await drizDbWithInit();

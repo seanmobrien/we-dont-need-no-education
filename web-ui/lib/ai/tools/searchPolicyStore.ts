@@ -5,8 +5,10 @@ import {
 } from '../services/search';
 import { AiSearchToolResult, PolicySearchOptions } from './types';
 import { LoggedError } from '@/lib/react-util';
-import { toolCallbackResultFactory } from './utility';
+import { toolCallbackResultFactory, toolCallbackResultSchemaFactory } from './utility';
 import { appMeters } from '@/lib/site-util/metrics';
+import z from 'zod';
+import { AiSearchResultEnvelopeSchema, PolicySearchOptionsSchema } from './schemas/searchObjects';
 
 // OpenTelemetry Metrics for SearchPolicyStore Tool
 const searchPolicyStoreCounter = appMeters.createCounter(
@@ -111,3 +113,25 @@ export const searchPolicyStore = async ({
     );
   }
 };
+
+export const searchPolicyStoreConfig = {
+  description: 'Uses hybrid search to find policies based on a query.',
+  inputSchema: {
+    query: z
+      .string()
+      .describe('The search query term used to find policies.'),
+    options: PolicySearchOptionsSchema.optional().describe(
+      'Options used to influence the search results, such as scope and pagination.',
+    ),
+  },
+  outputSchema: toolCallbackResultSchemaFactory(
+    AiSearchResultEnvelopeSchema,
+  ),
+  annotations: {
+    title: 'Search Policy Store',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;

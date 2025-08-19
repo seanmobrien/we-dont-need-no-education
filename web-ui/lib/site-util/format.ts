@@ -18,6 +18,19 @@ export const formatDuration = (ms: number): string => {
 };
 
 /**
+ * 
+ * @param {Date | string} fromDate The date used to compute elapsed time. 
+ * @returns A formatted string describing the duration beteen now and the provided value.
+ */
+export const formatElapsed = (fromDate: Date | string): string => {
+  if (!fromDate) return undefined as unknown as string;
+  const start = new Date();
+  const end = typeof fromDate === 'string' ? new Date(fromDate) : fromDate;
+  const elapsed = end.getTime() - start.getTime();
+  return formatDuration(elapsed);
+};
+
+/**
  * Formats a number to a human-readable string with appropriate units.
  * @param num - Number to format
  * @returns Formatted number string (e.g., "1.5M", "2.3K", "150")

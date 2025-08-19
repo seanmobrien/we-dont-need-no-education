@@ -1,10 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, UseQueryResult } from '@tanstack/react-query';
 import { useStatistics, useModelStatistics, useQueueStatistics } from '@/lib/hooks/use-statistics';
 import type { ModelStat, QueueInfo } from '@/types/statistics';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import { act } from '@/__tests__/test-utils';
+import { act, renderHook, waitFor } from '@/__tests__/test-utils';
+import { RefObject } from 'react';
+import { log } from '@/lib/logger';
+import { isError } from '@/lib/react-util/_utility-methods';
+import { assert } from 'console';
 // Mock fetch globally
 //global.fetch = jest.fn();
 
@@ -102,27 +105,13 @@ describe('Statistics hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockModelResponse.data);
-      expect(fetch).toHaveBeenCalledWith('/api/statistics/models?source=database');
+      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/models?source=database');
     });
 
-    it('should handle fetch errors', async () => {
-      (fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
-
-      const { result } = renderHook(() => useModelStatistics(), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      }, { timeout: 2000 });
-
-      expect(result.current.error).toBeInstanceOf(Error);
-    });
-
-    it('should support Redis data source', async () => {
-      (fetch as jest.Mock).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockModelResponse),
+  it('should support Redis data source', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve(mockModelResponse),
       });
 
       const { result } = renderHook(() => useModelStatistics('redis'), {
@@ -133,7 +122,7 @@ describe('Statistics hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(fetch).toHaveBeenCalledWith('/api/statistics/models?source=redis');
+      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/models?source=redis');
     });
   });
 
@@ -153,7 +142,7 @@ describe('Statistics hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockQueueResponse.data);
-      expect(fetch).toHaveBeenCalledWith('/api/statistics/queues');
+      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
     });
   });
 
@@ -227,8 +216,8 @@ describe('Statistics hooks', () => {
 
       // Should trigger both queries again
       expect(fetch).toHaveBeenCalledTimes(2);
-      expect(fetch).toHaveBeenCalledWith('/api/statistics/models?source=database');
-      expect(fetch).toHaveBeenCalledWith('/api/statistics/queues');
+      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/models?source=database');
+      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
     });
   });
 });

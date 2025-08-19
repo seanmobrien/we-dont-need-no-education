@@ -5,7 +5,10 @@ import {
   RenderOptions,
   screen,
   renderHook,
+  RenderHookOptions,  
+  RenderHookResult,
 } from '@testing-library/react';
+import Queries from '@testing-library/dom/types/queries';
 import React, { act, PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/lib/themes/provider';
@@ -58,15 +61,26 @@ const customAsyncRender = async (
   return ret;
 };
 
-const customRenderHook = (hook: () => any, options: RenderOptions = {}) => {
-  let ret: any = undefined;
+const customRenderHook = <
+  Result,
+  Props,
+  Q extends typeof Queries = typeof Queries,
+  Container extends HTMLElement = HTMLElement,
+  BaseElement extends Container = Container,
+>(
+  hook: (initialProps?: Props) => Result,
+  options?: RenderHookOptions<Props, Q, Container, BaseElement>,
+): RenderHookResult<Result, Props> => {
+  let ret: RenderHookResult<Result, Props> | undefined = undefined;
   act(() => {
-    ret = renderHook(hook, {
-      wrapper: options.wrapper ?? AllTheProviders,
-      ...options,
+    const normalOptions = options ?? {};
+    const fromHook = renderHook<Result, Props, Q, Container, BaseElement>(hook, {
+      wrapper: normalOptions.wrapper ?? AllTheProviders,
+      ...normalOptions,
     });
+    ret = fromHook;
   });
-  return ret;
+  return ret!;
 };
 
 // re-export everything

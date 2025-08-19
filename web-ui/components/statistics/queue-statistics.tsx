@@ -28,7 +28,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import TokenIcon from '@mui/icons-material/Token';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
 import type { QueueInfo, QueueRequest } from '@/types/statistics';
-import { formatDuration } from '@/lib/site-util/format';
+import { formatDuration, formatElapsed } from '@/lib/site-util/format';
 
 interface QueueStatisticsProps {
   queues: {
@@ -244,17 +244,24 @@ const QueueGenerationDetails = ({
   queueData: QueueInfo['queues']['generation1']; 
 }) => {
   return (
-    <Card variant="outlined" className={generation === 1 ? "primary" : "secondary"}>
+    <Card
+      variant="outlined"
+      className={generation === 1 ? 'primary' : 'secondary'}
+    >
       <CardContent>
-        <Typography variant="h6" gutterBottom color="var(--color-primary-accent)">
+        <Typography
+          variant="h6"
+          gutterBottom
+          color="var(--color-primary-accent)"
+        >
           Generation {generation} Queue ({queueData.size} requests)
         </Typography>
-        
+
         <Box display="flex" flexWrap="wrap" gap={2} mb={2}>
           {queueData.oldestRequest && (
             <Chip
               size="small"
-              label={`Oldest: ${formatDuration(Date.now() - queueData.oldestRequest.getTime())}`}
+              label={`Oldest: ${formatElapsed(queueData.oldestRequest)}`}
               color="warning"
               className="accent"
             />
@@ -262,7 +269,7 @@ const QueueGenerationDetails = ({
           {queueData.newestRequest && (
             <Chip
               size="small"
-              label={`Newest: ${formatDuration(Date.now() - queueData.newestRequest.getTime())}`}
+              label={`Newest: ${formatElapsed(queueData.newestRequest)}`}
               color="info"
               className="secondary"
             />
@@ -276,14 +283,14 @@ const QueueGenerationDetails = ({
           {queueData.largestRequest && (
             <Chip
               size="small"
-              label={`Largest: ${queueData.largestRequest.request.messages?.map(m => m.content || '').join('').length || 0} chars`}
+              label={`Largest: ${queueData.largestRequest.request.messages?.map((m) => m.content || '').join('').length || 0} chars`}
               variant="outlined"
               color="secondary"
               className="accent"
             />
           )}
         </Box>
-        
+
         <QueueTable
           requests={queueData.requests}
           title={`Generation ${generation} Requests`}
