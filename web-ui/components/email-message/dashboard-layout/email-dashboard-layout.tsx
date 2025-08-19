@@ -112,10 +112,10 @@ export const EmailDashboardLayout = ({
     const chatNavigation: NavigationItem = {
       title: 'Chats',
       icon: <ChatIcon key="chats-icon" />, 
-      segment: 'chat',
+      segment: 'messages/chat',
       children: [
         {
-          segment: 'messages/chat/statistics',
+          segment: 'statistics',
           icon: <BarChartIcon key="statistics-icon" />, 
           title: 'Statistics',
         },

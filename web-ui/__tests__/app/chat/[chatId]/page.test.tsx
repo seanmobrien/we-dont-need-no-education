@@ -84,7 +84,7 @@ const findChatHistoryProps = (node: PossibleNode): MockChatHistoryProps | null =
 let ChatDetailPage: (args: { params: Promise<{ chatId: string }> }) => Promise<React.ReactElement>;
 let getChatDetails: (args: { chatId: string; userId: number }) => Promise<{ ok: boolean; title?: string }>;
 beforeAll(async () => {
-  const mod = await import('@/app/chat/[chatId]/page');
+  const mod = await import('@/app/messages/chat/[chatId]/page');
   ChatDetailPage = mod.default; // ChatDetailPage is the default export
   const lib = await import('@/lib/ai/chat/history');
   getChatDetails = lib.getChatDetails; // getChatDetails is a named export
