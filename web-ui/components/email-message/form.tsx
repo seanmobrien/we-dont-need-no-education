@@ -4,7 +4,6 @@ import { log } from '@/lib/logger';
 import { isError, LoggedError } from '@/lib/react-util';
 import {
   useState,
-  useEffect,
   useCallback,
   Dispatch,
   ChangeEvent,
@@ -12,6 +11,7 @@ import {
   useImperativeHandle,
   ForwardRefRenderFunction,
   useId,
+  useEffect,
 } from 'react';
 
 import { EmailMessage } from '@/data-models/api/email-message';
@@ -24,8 +24,7 @@ import {
 import ContactRecipients from '../contact/contact-recipients';
 import EmailSelect from './select';
 import { SubmitRefCallbackInstance } from './_types';
-import { getEmail, writeEmailRecord } from '@/lib/api/client';
-import { AbortablePromise, ICancellablePromiseExt } from '@/lib/typescript';
+import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
 import siteMap from '@/lib/site-util/url-builder';
 import { useRouter } from 'next/navigation';
 
@@ -134,72 +133,91 @@ const EmailForm: ForwardRefRenderFunction<
   const [sentTimestamp, setSentTimestamp] = useState('');
   const [threadId, setThreadId] = useState<number | null>(null);
   const [parentEmailId, setParentEmailId] = useState<string | null>(null);
-  const [loading, setLoading] = useState<null | 'loading' | 'saving'>(null);
   const [message, setMessage] = useState('');
   const { replace: routerReplace, back: routerBack } = useRouter();
+  
   // Generate unique IDs for form elements
   const uniqueId = useId();
 
   // Utility function to generate combined IDs
   const generateCombinedId = (childId: string) => `${childId}-${uniqueId}`;
 
-  // Fetch existing email details if editing
+  // Use React Query to fetch email data
+  const {
+    data: emailData,
+    isLoading: isLoadingEmail,
+    error: emailError,
+  } = useEmail(emailId);
+
+  // Use React Query mutation for saving email
+  const writeEmailMutation = useWriteEmail({
+    onSuccess: (result) => {
+      const isNewEmail = !emailId;
+      if (isNewEmail) {
+        routerReplace(siteMap.email.edit(result.emailId).toString());
+      } else {
+        switch (afterSaveBehavior) {
+          case 'redirect':
+            routerBack();
+            break;
+          case 'none':
+          default:
+            // NO-OP
+            break;
+        }
+      }
+      setMessage(`Email ${isNewEmail ? 'created' : 'updated'} successfully!`);
+      if (onSaved) {
+        onSaved({ ...result });
+      }
+    },
+    onError: (error) => {
+      const errorMessage = isError(error) ? error.message : 'Error saving email.';
+      setMessage(errorMessage);
+    },
+  });
+
+  // Update form state when email data is loaded
   useEffect(() => {
-    let cancelled = false;
-    let request: ICancellablePromiseExt<EmailMessage | void> | null = null;
-    if (emailId) {
-      setLoading('loading');
-      request = getEmail(emailId)
-        .then((data) => {
-          setSender(data.sender ?? createContactSummary());
-          setSubject(data.subject);
-          setEmailContents(data.body);
-          setRecipients(data.recipients ?? []);
-          setSentTimestamp(
-            typeof data.sentOn === 'string'
-              ? data.sentOn
-              : data.sentOn.toISOString(),
-          );
-          setThreadId(data.threadId ?? null);
-          setParentEmailId(data.parentEmailId ?? null);
-          return data;
-        })
-        .catch((error) => {
-          if (cancelled || AbortablePromise.isOperationCancelledError(error)) {
-            return;
-          }
-          LoggedError.isTurtlesAllTheWayDownBaby(error, {
-            log: true,
-            source: 'email-form: load',
-          });
-          setMessage(
-            String(
-              isError(error) ? error.message : 'Error fetching email details.',
-            ),
-          );
-        })
-        .finally(() => {
-          request = null;
-          if (!cancelled) {
-            setLoading(null);
-          }
-        });
-      return () => {
-        cancelled = true;
-        request?.cancel();
-      };
+    if (emailData) {
+      setSender(emailData.sender ?? createContactSummary());
+      setSubject(emailData.subject);
+      setEmailContents(emailData.body);
+      setRecipients(emailData.recipients ?? []);
+      setSentTimestamp(
+        typeof emailData.sentOn === 'string'
+          ? emailData.sentOn
+          : emailData.sentOn.toISOString(),
+      );
+      setThreadId(emailData.threadId ?? null);
+      setParentEmailId(emailData.parentEmailId ?? null);
+      setMessage(''); // Clear any previous error messages
     }
-  }, [emailId]);
+  }, [emailData]);
+
+  // Handle loading error
+  useEffect(() => {
+    if (emailError) {
+      const errorMessage = isError(emailError) 
+        ? emailError.message 
+        : 'Error fetching email details.';
+      setMessage(errorMessage);
+    }
+  }, [emailError]);
+
+  // Determine if form is loading (either fetching or saving)
+  const isLoading = isLoadingEmail || writeEmailMutation.isPending;
 
   const setSubjectCallback = useElementUpdateDispatchCallback(setSubject);
   const setEmailContentsCallback =
     useElementUpdateDispatchCallback<HTMLTextAreaElement>(setEmailContents);
   const setSentTimestampCallback =
     useElementUpdateDispatchCallback(setSentTimestamp);
+    
   const saveEmailCallback = useCallback(() => {
     log((l) => l.debug({ message: 'Saving email...' }));
-    setLoading('saving');
     setMessage('');
+    
     const emailData = {
       emailId: emailId ? emailId : undefined,
       sender,
@@ -211,49 +229,8 @@ const EmailForm: ForwardRefRenderFunction<
       threadId,
       parentEmailId,
     };
-    const isNewEmail = !emailId;
-    return writeEmailRecord(emailData)
-      .then((result) => {
-        if (isNewEmail) {
-          routerReplace(siteMap.email.edit(result.emailId).toString());
-        } else {
-          switch (afterSaveBehavior) {
-            case 'redirect':
-              routerBack();
-              break;
-            case 'none':
-            default:
-              // NO-OP;
-              break;
-          }
-        }
-        setMessage(`Email ${isNewEmail ? 'created' : 'updated'} successfully!`);
-        if (onSaved) {
-          onSaved({ ...result });
-        }
-        return result;
-      })
-      .catch((error) => {
-        LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          log: true,
-          source: 'email-form: submit',
-          details: 'Error saving email',
-          include: { emailId },
-        });
-        setMessage(
-          String(
-            isError(error ? error.message : null) ??
-              'Network error. Please try again.',
-          ),
-        );
-        return null;
-      })
-      .finally(() => {
-        // If we just created a new email we're about to redirect so don't clear the loading state
-        if (!isNewEmail) {
-          setLoading(null);
-        }
-      });
+    
+    return writeEmailMutation.mutateAsync(emailData);
   }, [
     emailId,
     sender,
@@ -263,16 +240,13 @@ const EmailForm: ForwardRefRenderFunction<
     sentTimestamp,
     threadId,
     parentEmailId,
-    onSaved,
-    routerReplace,
-    afterSaveBehavior,
-    routerBack,
+    writeEmailMutation,
   ]);
 
   const handleSubmit = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault();
-      await saveEmailCallback().awaitable;
+      await saveEmailCallback();
     },
     [saveEmailCallback],
   );
@@ -280,7 +254,7 @@ const EmailForm: ForwardRefRenderFunction<
   useImperativeHandle(
     ref,
     () => ({
-      saveEmailCallback: () => saveEmailCallback().awaitable,
+      saveEmailCallback,
     }),
     [saveEmailCallback],
   );
@@ -411,22 +385,22 @@ const EmailForm: ForwardRefRenderFunction<
           <button
             type="button"
             style={stableStyles.button}
-            disabled={!!loading}
+            disabled={isLoading}
             aria-roledescription="Submit Form"
             onClick={handleSubmit}
           >
-            {loading === 'saving'
+            {writeEmailMutation.isPending
               ? 'Submitting...'
-              : loading === 'loading'
+              : isLoadingEmail
                 ? 'Loading...'
                 : emailId
                   ? 'Update Email'
                   : 'Create Email'}
           </button>
-        ) : !!loading ? (
-          loading === 'saving' ? (
+        ) : isLoading ? (
+          writeEmailMutation.isPending ? (
             'Submitting...'
-          ) : loading === 'loading' ? (
+          ) : isLoadingEmail ? (
             'Loading...'
           ) : (
             ''

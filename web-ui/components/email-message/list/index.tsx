@@ -19,6 +19,7 @@ import CallToActionIcon from '@mui/icons-material/CallToAction';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import EmailDetailPanel from './email-detail-panel';
+import { usePrefetchEmail } from '@/lib/hooks/use-email';
 
 /**
  * Defines the column configuration for the email message list grid.
@@ -33,7 +34,7 @@ import EmailDetailPanel from './email-detail-panel';
  * - `subject`: Displays the subject of the email.
  * - `sentDate`: Displays the date the email was sent.
  */
-const stableColumns: GridColDef<EmailMessageSummary>[] = [
+const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<EmailMessageSummary>[] => [
   {
     field: 'count_attachments',
     headerName: 'Attachments',
@@ -72,7 +73,11 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
             color: '#2563eb',
             textDecoration: 'none',
           }}
-          onMouseEnter={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
+          onMouseEnter={(e) => {
+            (e.target as HTMLElement).style.textDecoration = 'underline';
+            // Prefetch email data on hover for better UX
+            prefetchEmail(params.row.emailId);
+          }}
           onMouseLeave={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
         >
           {params.value}
@@ -152,6 +157,7 @@ export const EmailList = ({
     [maxHeight],
   );
   const { push } = useRouter();
+  const prefetchEmail = usePrefetchEmail();
 
   const onRowDoubleClick = useCallback(
     (
@@ -179,6 +185,9 @@ export const EmailList = ({
 
   const getDetailPanelHeight = useCallback(() => 'auto', []);
 
+  // Create columns with prefetching capability
+  const columns = useMemo(() => createColumns(prefetchEmail), [prefetchEmail]);
+
   return (
     <>
       <Box
@@ -191,7 +200,7 @@ export const EmailList = ({
       >
         <ServerBoundDataGrid<EmailMessageSummary>
           {...props}
-          columns={stableColumns}
+          columns={columns}
           url={siteMap.api.email.url}
           idColumn="emailId"
           onRowDoubleClick={onRowDoubleClick}
