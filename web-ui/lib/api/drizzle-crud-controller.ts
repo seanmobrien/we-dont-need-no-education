@@ -4,7 +4,7 @@ import {
   PickField,
 } from '@/lib/typescript';
 import { LikeNextRequest } from '@/lib/nextjs-util/types'
-import { isRequestOrApiRequest,  } from '@/lib/nextjs-util/guards';
+import { isRequestOrApiRequest } from '@/lib/nextjs-util/guards';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   PaginatedResultset,
