@@ -198,7 +198,8 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       return result;
     } catch (error) {
-      throw this.logDatabaseError('get', error);
+      const le = this.logDatabaseError('get', error);
+      throw le;
     }
   }
 

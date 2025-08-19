@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Mock the database connection
 
 import { DbDatabaseType, drizDb, drizDbWithInit } from '@/lib/drizzle-db';
@@ -10,7 +10,7 @@ const mockDb = actualDrizzle.drizzle.mock({ actualSchema });
 let mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
 
 // Mock LoggedError
-jest.mock('@/lib/react-util', () => ({
+jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },

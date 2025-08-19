@@ -13,9 +13,6 @@ import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { DrizzleSelectQuery,buildDrizzleAttachmentOrEmailFilter,  getEmailColumn, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 
-const repository = new CallToActionDetailsRepository();
-const controller = new RepositoryCrudController(repository);
-
 export const dynamic = 'force-dynamic';
 
 export const GET = wrapRouteRequest(async (
@@ -175,6 +172,7 @@ export const GET = wrapRouteRequest(async (
 export const POST = wrapRouteRequest(async (
   req: NextRequest,
   args: { params: Promise<{ emailId: string; propertyId: string }> },
-) => {
+) => {  
+  const controller = new RepositoryCrudController(new CallToActionDetailsRepository());
   return controller.create(req, args);
 });

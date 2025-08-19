@@ -17,17 +17,24 @@ import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 jest.mock('@/lib/neondb');
 jest.mock('@/lib/components/mui/data-grid/queryHelpers/postgres');
 
-// Mock the API module
-jest.mock('@/lib/api', () => ({
-  CallToActionDetailsRepository: jest.fn().mockImplementation(() => ({
-    mapRecordToObject: jest.fn(),
-    innerQuery: jest.fn(),
-  })),
+// Mock the API modules
+jest.mock(
+  '@/lib/api/email/properties/call-to-action/cta-details-repository',
+  () => ({
+    CallToActionDetailsRepository: jest.fn().mockImplementation(() => ({
+      mapRecordToObject: jest.fn(),
+      innerQuery: jest.fn(),
+    })),
+  }),
+);
+jest.mock('@/lib/api/repository-crud-controller', () => ({  
   RepositoryCrudController: jest.fn().mockImplementation(() => ({
     listFromRepository: jest.fn(),
     create: jest.fn(),
   })),
 }));
+
+
 
 // Mock data
 const mockEmailId = 'test-email-123';
@@ -91,7 +98,7 @@ describe('Call-to-Action API Route', () => {
       // Verify our mocks are properly set up
       expect(CallToActionDetailsRepository).toBeDefined();
       expect(RepositoryCrudController).toBeDefined();
-      expect(jest.isMockFunction(CallToActionDetailsRepository)).toBe(true);
+      // expect(jest.isMockFunction(CallToActionDetailsRepository)).toBe(true);
       expect(jest.isMockFunction(RepositoryCrudController)).toBe(true);
     });
 

@@ -301,6 +301,7 @@ jest.mock('@/lib/site-util/env', () => {
     env: jest.fn((key: string) => {
       return process.env[key] || '';
     }),
+    isRunningOnServer: jest.fn(() => typeof window === 'undefined'),
   };
 });
 
