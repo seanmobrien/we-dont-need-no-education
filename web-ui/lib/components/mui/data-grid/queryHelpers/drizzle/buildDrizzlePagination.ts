@@ -22,7 +22,7 @@ export type BuildDrizzlePaginationProps = {
   /**
    * The Drizzle select query to apply pagination to.
    */
-  query: Pick<DrizzleSelectQuery, 'limit' | 'offset'>;
+  query: Pick<Exclude<DrizzleSelectQuery, Array<Record<string, unknown>>>, 'limit' | 'offset'>;
 
   /**
    * The request object containing pagination parameters.

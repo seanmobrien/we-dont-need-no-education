@@ -259,17 +259,9 @@ describe('resolveCaseFileIdBatch', () => {
       mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
       const mockRecords = [...source];
       
-      // Mock drizDbWithInit to return the mockDb and resolve with the records
-      (drizDbWithInit as jest.Mock).mockImplementation((cb?: (db: DbDatabaseType) => any) => {
-        if (cb) {
-          const result = cb(mockDb);
-          return Promise.resolve(result);
-        }
-        return Promise.resolve(mockDb);
-      });
-      
-      // Setup the findMany mock on the mockDb to return records directly
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockReturnValue(mockRecords);
+      // Note: drizDbWithInit is already globally mocked, so we just need to set up
+      // the findMany mock to return the expected records
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(mockRecords);
       
       return mockRecords;
     }
@@ -333,20 +325,12 @@ describe('resolveCaseFileIdBatch', () => {
         { caseFileId: 999 }, // number
       ];
 
-      // Mock drizDbWithInit for this test
-      (drizDbWithInit as jest.Mock).mockImplementation((cb?: (db: DbDatabaseType) => any) => {
-        if (cb) {
-          const result = cb(mockDb);
-          return Promise.resolve(result);
-        }
-        return Promise.resolve(mockDb);
-      });
-
+      // Note: drizDbWithInit is already globally mocked
       const mockRecords = [
         { unitId: 999, documentPropertyId: uuid, emailId: null },
       ];
 
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockReturnValue(mockRecords);
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(mockRecords);
 
       const result = await resolveCaseFileIdBatch(requests);
 
@@ -382,8 +366,8 @@ describe('resolveCaseFileIdBatch', () => {
       const uuid = '12345678-1234-4567-8901-123456789012';
       const requests = [{ caseFileId: uuid }];
 
-      // Mock drizDbWithInit to reject with the error
-      (drizDbWithInit as jest.Mock).mockRejectedValue(
+      // Mock the database query to reject with the error
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockRejectedValue(
         new Error('Database connection failed'),
       );
 

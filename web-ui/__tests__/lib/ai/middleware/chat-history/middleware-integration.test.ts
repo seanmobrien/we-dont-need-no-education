@@ -4,6 +4,7 @@
  * Integration tests for chat history middleware supporting both streaming and text completions
  */
 import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 
 // Mock external dependencies
@@ -57,13 +58,12 @@ jest.mock('@/lib/ai/core', () => ({
 }));
 
 describe('Chat History Middleware Integration', () => {
-  const mockContext: ChatHistoryContext = {
+  const mockContext: ChatHistoryContext = createUserChatHistoryContext({
     userId: 'test-user',
     chatId: 'test-chat',
     requestId: 'test-request',
     model: 'gpt-4o',
-    temperature: 0.7,
-  };
+  });
 
   beforeEach(() => {
     // jest.clearAllMocks();

@@ -3,7 +3,9 @@
 
 import { EmailDrizzleRepository, EmailDomain } from '@/lib/api/email/email-drizzle-repository';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
+/*
 // Mock drizzle-db
 jest.mock('@/lib/drizzle-db', () => {
   const { mockDeep } = require('jest-mock-extended');
@@ -16,6 +18,7 @@ jest.mock('@/lib/drizzle-db', () => {
     schema: {},
   };
 });
+*/
 
 // Mock drizzle schema
 jest.mock('@/drizzle/schema', () => {
@@ -59,7 +62,7 @@ describe('EmailDrizzleRepository', () => {
     repository = new EmailDrizzleRepository();
     
     // Get the mock database instance
-    const { drizDb } = require('@/lib/drizzle-db');
+    //const { drizDb } = require('@/lib/drizzle-db');
     mockDb = drizDb();
   });
 
@@ -264,28 +267,14 @@ describe('EmailDrizzleRepository', () => {
 
   describe('findByGlobalMessageId', () => {
     it('should find email by global message ID', async () => {
-      const mockEmailRecord = {
+      mockDb.__setRecords([{
         emailId: 'test-uuid',
         senderId: 123,
         subject: 'Test Subject',
         emailContents: 'Test content',
         sentTimestamp: '2023-01-01T00:00:00Z',
         globalMessageId: 'global-123',
-      };
-
-      // Mock the database query chain
-      const mockSelect = jest.fn().mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            limit: jest.fn().mockResolvedValue([mockEmailRecord]),
-          }),
-        }),
-      });
-
-      // Set up the mock
-      (repository as any)['db'] = {
-        select: mockSelect,
-      } as any;
+      }]);
 
       const result = await repository.findByGlobalMessageId('global-123');
 
@@ -301,23 +290,11 @@ describe('EmailDrizzleRepository', () => {
         importedFromId: undefined,
       });
 
-      expect(mockSelect).toHaveBeenCalled();
+      expect(mockDb.select).toHaveBeenCalled();
     });
 
     it('should return null when global message ID not found', async () => {
       // Mock empty result
-      const mockSelect = jest.fn().mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            limit: jest.fn().mockResolvedValue([]), // Empty array
-          }),
-        }),
-      });
-
-      (repository as any)['db'] = {
-        select: mockSelect,
-      } as any;
-
       const result = await repository.findByGlobalMessageId('non-existent');
 
       expect(result).toBeNull();
@@ -325,19 +302,8 @@ describe('EmailDrizzleRepository', () => {
 
     it('should handle database errors in findByGlobalMessageId', async () => {
       const mockError = new Error('Database connection failed');
+      mockDb.execute.mockRejectedValue(mockError);
       
-      const mockSelect = jest.fn().mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            limit: jest.fn().mockRejectedValue(mockError),
-          }),
-        }),
-      });
-
-      (repository as any)['db'] = {
-        select: mockSelect,
-      } as any;
-
       // Spy on logDatabaseError
       const logSpy = jest.spyOn(repository as any, 'logDatabaseError').mockImplementation();
 

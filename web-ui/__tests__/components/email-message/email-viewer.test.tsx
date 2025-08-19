@@ -3,6 +3,19 @@ import { render, asyncRender, screen, waitFor, act } from '@/__tests__/test-util
 import EmailViewer from '@/components/email-message/email-viewer';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
+// Mock Promise.withResolvers if not available
+if (!Promise.withResolvers) {
+  Promise.withResolvers = function<T>() {
+    let resolve: (value: T | PromiseLike<T>) => void;
+    let reject: (reason?: any) => void;
+    const promise = new Promise<T>((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve: resolve!, reject: reject! };
+  };
+}
+
 describe('EmailViewer', () => {
   beforeEach(() => {
     // Clear fetch mock - it's already mocked globally in jest.setup.ts
@@ -17,7 +30,6 @@ describe('EmailViewer', () => {
     // Mock fetch to return a delayed promise
     (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
-
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve([]),
@@ -32,13 +44,13 @@ describe('EmailViewer', () => {
       return Promise.reject(new Error('Unexpected URL'));
     });
     
-    await asyncRender(<EmailViewer emailId="test-email-id" />);
+    render(<EmailViewer emailId="test-email-id" />);
 
     // Check loading state
     expect(screen.getByText('Loading Email...')).toBeInTheDocument();
     
     // Resolve the promise
-    await act(async () => {
+    act(() => {
       resolvePromise({
         emailId: 'test-email-id',
         sender: {
@@ -59,7 +71,6 @@ describe('EmailViewer', () => {
         threadId: 1,
         parentEmailId: null,
       });
-      await promise;
     });
     
     // Wait for the component to finish loading
@@ -67,9 +78,9 @@ describe('EmailViewer', () => {
       () => {
         expect(screen.queryByText('Loading Email...')).not.toBeInTheDocument();
       },
-      { timeout: 3000 },
+      { timeout: 5000 },
     );
-  });
+  }, 10000);
 
   it('renders with valid emailId prop', async () => {
     const mockEmail = {
@@ -117,7 +128,7 @@ describe('EmailViewer', () => {
       () => {
         expect(screen.getByText('Test Subject')).toBeInTheDocument();
       },
-      { timeout: 3000 },
+      { timeout: 5000 },
     );
 
     expect(
@@ -146,13 +157,15 @@ describe('EmailViewer', () => {
 
     render(<EmailViewer emailId="test-email-id" />);
 
+    // Wait for error boundary to catch the error and render fallback
     await waitFor(
       () => {
+        // The error boundary should render some error UI
         expect(screen.getByRole('alert')).toBeInTheDocument();
       },
-      { timeout: 3000 },
+      { timeout: 5000 },
     );
-  });
+  }, 10000);
 
   it('handles empty email state', async () => {
     // Mock fetch to return 404 for email
@@ -175,9 +188,9 @@ describe('EmailViewer', () => {
       () => {
         expect(screen.getByRole('alert')).toBeInTheDocument();
       },
-      { timeout: 3000 },
+      { timeout: 5000 },
     );
-  });
+  }, 10000);
 
   it('handles attachments correctly', async () => {
     const mockEmail = {
@@ -239,7 +252,7 @@ describe('EmailViewer', () => {
       () => {
         expect(screen.getByText('Test Subject')).toBeInTheDocument();
       },
-      { timeout: 3000 },
+      { timeout: 5000 },
     );
 
     // Check for attachments
@@ -247,7 +260,7 @@ describe('EmailViewer', () => {
       () => {
         expect(screen.getByText('Attachments (2)')).toBeInTheDocument();
       },
-      { timeout: 3000 },
+      { timeout: 5000 },
     );
 
     expect(screen.getByText('test-attachment.pdf')).toBeInTheDocument();

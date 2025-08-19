@@ -126,7 +126,7 @@ export const buildDrizzleOrderBy = ({
     }
 
     // Apply all order by expressions
-    return query.orderBy(...orderByExpressions) as DrizzleSortedQuery;
+    return Array.isArray(query) ? query : query.orderBy(...orderByExpressions) as DrizzleSortedQuery;
   };
 
   /**
@@ -136,7 +136,7 @@ export const buildDrizzleOrderBy = ({
    * @returns The query builder with orderBy applied
    */
   const applyDefaultSort = (
-    sort: GridSortModel | string | SQL | PgColumn,
+    sort: GridSortModel | string | SQL | SQL.Aliased | PgColumn,
   ): DrizzleSortedQuery => {
     if (typeof sort === 'string') {
       // String column name - map it and get the column
@@ -144,7 +144,9 @@ export const buildDrizzleOrderBy = ({
       const column = getColumn(mappedColumnName);
 
       if (column) {
-        return query.orderBy(asc(column)) as DrizzleSortedQuery;
+        return Array.isArray(query)
+          ? query
+          : (query.orderBy(asc(column)) as DrizzleSortedQuery);
       } else {
         console.warn(
           `buildDrizzleOrderBy: Unknown default sort column '${mappedColumnName}' (mapped from '${sort}')`,
@@ -157,7 +159,9 @@ export const buildDrizzleOrderBy = ({
     } else {
       // SQL expression or PgColumn - use directly
       // We know sort is either SQL or PgColumn here due to type narrowing
-      return query.orderBy(asc(sort as SQL | PgColumn)) as DrizzleSortedQuery;
+      return Array.isArray(query)
+        ? query
+        : (query.orderBy(asc(sort as SQL | PgColumn)) as DrizzleSortedQuery);
     }
   };
 

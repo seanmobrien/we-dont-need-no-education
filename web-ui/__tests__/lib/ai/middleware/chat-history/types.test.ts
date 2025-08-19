@@ -9,6 +9,7 @@
  * @module __tests__/lib/ai/middleware/chat-history/types.test.ts
  */
 
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type {
   ChatHistoryContext,
   QueuedTask,
@@ -21,22 +22,22 @@ import type { LanguageModelV1StreamPart } from 'ai';
 describe('Chat History Types', () => {
   describe('ChatHistoryContext', () => {
     it('should have required userId field', () => {
-      const context: ChatHistoryContext = {
+      const context = {
         userId: 'user-123',
-      };
+      } as ChatHistoryContext;
 
       expect(context.userId).toBe('user-123');
     });
 
     it('should accept optional fields', () => {
-      const context: ChatHistoryContext = {
+      const context = {
         userId: 'user-123',
         chatId: 'chat-456',
         requestId: 'session-789',
         model: 'gpt-4o',
         temperature: 0.7,
         topP: 0.9,
-      };
+      } as ChatHistoryContext;
 
       expect(context.chatId).toBe('chat-456');
       expect(context.requestId).toBe('session-789');
@@ -46,9 +47,9 @@ describe('Chat History Types', () => {
     });
 
     it('should work with minimal required fields only', () => {
-      const context: ChatHistoryContext = {
+      const context = {
         userId: 'user-123',
-      };
+      } as ChatHistoryContext;
 
       expect(context.chatId).toBeUndefined();
       expect(context.requestId).toBeUndefined();
@@ -321,11 +322,11 @@ describe('Chat History Types', () => {
   describe('Type Integration', () => {
     it('should work together in typical usage patterns', () => {
       // Simulate a typical workflow with all types
-      const historyContext: ChatHistoryContext = {
+      const historyContext: ChatHistoryContext = createUserChatHistoryContext({
         userId: 'user-123',
         chatId: 'chat-456',
         model: 'gpt-4o',
-      };
+      });
 
       const streamContext: any = {
         chatId: historyContext.chatId!,

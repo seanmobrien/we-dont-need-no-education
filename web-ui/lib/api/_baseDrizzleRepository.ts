@@ -1,4 +1,4 @@
-import { drizDb, type DatabaseType } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '@/lib/drizzle-db';
 import { ObjectRepository, DrizzleRepositoryConfig, IObjectRepositoryExt } from './_types';
 import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { PartialExceptFor } from '@/lib/typescript';
@@ -62,19 +62,17 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
 export abstract class BaseDrizzleRepository<T extends object, KId extends keyof T>
   implements ObjectRepository<T, KId>
 {
-  protected readonly db: DatabaseType;
   protected readonly config: DrizzleRepositoryConfig<T, KId>;
   protected readonly idColumn: PgColumn;
   protected readonly idField: KId;
   protected readonly tableName: string;
 
   constructor(config: DrizzleRepositoryConfig<T, KId>) {
-    this.db = drizDb();
     this.config = config;
-    
+
     // Auto-detect table name if not provided
     this.tableName = config.tableName || getTableConfig(config.table).name;
-    
+
     // Auto-detect primary key if not provided
     if (!config.idColumn || !config.idField) {
       const detected = detectPrimaryKey(config);
@@ -96,14 +94,19 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
   ): void {
     // NO-OP by default, can be overridden
     log((l) =>
-      l.silly(`Validating ${String(method)} operation`, { obj, tableName: this.tableName }),
+      l.silly(`Validating ${String(method)} operation`, {
+        obj,
+        tableName: this.tableName,
+      }),
     );
   }
 
   /**
    * Retrieves a paginated list of objects.
    */
-  async list(pagination?: PaginationStats): Promise<PaginatedResultset<Partial<T>>> {
+  async list(
+    pagination?: PaginationStats,
+  ): Promise<PaginatedResultset<Partial<T>>> {
     try {
       const page = pagination?.page ?? 1;
       const num = pagination?.num ?? 10;
@@ -112,27 +115,38 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       // Get the query conditions from subclasses (if any)
       const queryConditions = this.buildQueryConditions();
 
+      const validDb = await drizDbWithInit();
       // Build count query with the same conditions
-      const countQueryBase = this.db.select({ count: count() }).from(this.config.table);
-      const countQuery = queryConditions ? countQueryBase.where(queryConditions) : countQueryBase;
+      const countQueryBase = validDb
+        .select({ count: count() })
+        .from(this.config.table);
+      const countQuery = queryConditions
+        ? countQueryBase.where(queryConditions)
+        : countQueryBase;
 
       // Build data query with the same conditions
-      const dataQueryBase = this.db.select().from(this.config.table);
-      const dataQuery = queryConditions ? dataQueryBase.where(queryConditions) : dataQueryBase;
+      const dataQueryBase = validDb.select().from(this.config.table);
+      const dataQuery = queryConditions
+        ? dataQueryBase.where(queryConditions)
+        : dataQueryBase;
 
       // Execute both queries
-      const [{ count: totalCount }] = await countQuery;
-      const records = await dataQuery.offset(offset).limit(num);
-
-      const results = records.map(this.config.summaryMapper);
+      const [ countRecords, results ] = await Promise.all([
+        countQuery.execute(),
+        dataQuery.offset(offset).limit(num).execute().then(x => x.map(this.config.summaryMapper)),
+      ]);
+      const [{ count: totalCount }] = countRecords;
 
       log((l) =>
         l.verbose({
-          message: `[[AUDIT]] - ${this.tableName} list:`,
-          resultset: results,
-          num,
-          offset,
-        }),
+          message: `[[AUDIT]] - ${this.tableName} list retrieved ${results.length} of ${totalCount} records.`,
+          data: {
+            results,
+            totalCount,
+            page,
+            num,
+          }
+        })
       );
 
       return {
@@ -144,8 +158,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
         },
       };
     } catch (error) {
-      this.logDatabaseError('list', error);
-      throw error;
+      throw this.logDatabaseError('list', error);
     }
   }
 
@@ -156,17 +169,22 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
     try {
       this.validate('get', { [this.idField]: recordId });
 
-      const records = await this.db
-        .select()
-        .from(this.config.table)
-        .where(eq(this.idColumn, recordId as string | number));
+      const records = await drizDbWithInit((db) =>
+        db
+          .select()
+          .from(this.config.table)
+          .where(eq(this.idColumn, recordId as string | number))
+          .execute(),
+      );
 
       if (records.length === 0) {
         return null;
       }
 
       if (records.length > 1) {
-        throw new Error(`Multiple records found for ${String(this.idField)}: ${recordId}`);
+        throw new Error(
+          `Multiple records found for ${String(this.idField)}: ${recordId}`,
+        );
       }
 
       const result = this.config.recordMapper(records[0]);
@@ -180,8 +198,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       return result;
     } catch (error) {
-      this.logDatabaseError('get', error);
-      throw error;
+      throw this.logDatabaseError('get', error);
     }
   }
 
@@ -193,10 +210,9 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
       this.validate('create', model);
 
       const insertData = this.prepareInsertData(model);
-      const records = await this.db
-        .insert(this.config.table)
-        .values(insertData)
-        .returning();
+      const records = await drizDbWithInit((db) =>
+        db.insert(this.config.table).values(insertData).returning(),
+      );
 
       if (records.length !== 1) {
         throw new Error(`Failed to create ${this.tableName} record`);
@@ -213,24 +229,27 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       return result;
     } catch (error) {
-      this.logDatabaseError('create', error);
-      throw error;
+      throw this.logDatabaseError('create', error);
     }
   }
 
   /**
    * Updates an existing object.
    */
-  async update(model: PartialExceptFor<T, KId> & Required<Pick<T, KId>>): Promise<T> {
+  async update(
+    model: PartialExceptFor<T, KId> & Required<Pick<T, KId>>,
+  ): Promise<T> {
     try {
       this.validate('update', model);
 
       const updateData = this.prepareUpdateData(model);
-      const records = await this.db
-        .update(this.config.table)
-        .set(updateData)
-        .where(eq(this.idColumn, model[this.idField] as string | number))
-        .returning();
+      const records = await drizDbWithInit((db) =>
+        db
+          .update(this.config.table)
+          .set(updateData)
+          .where(eq(this.idColumn, model[this.idField] as string | number))
+          .returning(),
+      );
 
       if (records.length === 0) {
         throw new Error(`${this.tableName} record not found for update`);
@@ -251,8 +270,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       return result;
     } catch (error) {
-      this.logDatabaseError('update', error);
-      throw error;
+      throw this.logDatabaseError('update', error);
     }
   }
 
@@ -263,16 +281,18 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
     try {
       this.validate('delete', { [this.idField]: recordId });
 
-      const records = await this.db
-        .delete(this.config.table)
-        .where(eq(this.idColumn, recordId as string | number))
-        .returning();
-
-      if (records.length === 0) {
+      const record = await drizDbWithInit((db) =>
+        db
+          .delete(this.config.table)
+          .where(eq(this.idColumn, recordId as string | number))
+          .returning()
+          .then((records) => records.at(0)),
+      );
+      if (!record) {
         return false;
       }
 
-      const result = this.config.recordMapper(records[0]);
+      const result = this.config.recordMapper(record);
 
       log((l) =>
         l.verbose({
@@ -283,8 +303,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       return true;
     } catch (error) {
-      this.logDatabaseError('delete', error);
-      throw error;
+      throw this.logDatabaseError('delete', error);
     }
   }
 
@@ -301,7 +320,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
    * Builds the query conditions for list operations.
    * Override this method in subclasses to add filtering logic.
    * This single method ensures perfect consistency between count and data results.
-   * 
+   *
    * Example usage:
    * ```typescript
    * protected buildQueryConditions(): SQL | undefined {
@@ -315,7 +334,7 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
    *   return undefined; // No filtering
    * }
    * ```
-   * 
+   *
    * @returns Query conditions that will be applied to both count and data queries
    */
   protected buildQueryConditions(): SQL | undefined {
@@ -327,19 +346,23 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
    * Prepares data for insert operations.
    * Override this method to customize how domain objects are mapped to database inserts.
    */
-  protected abstract prepareInsertData(model: Omit<T, KId>): Record<string, unknown>;
+  protected abstract prepareInsertData(
+    model: Omit<T, KId>,
+  ): Record<string, unknown>;
 
   /**
    * Prepares data for update operations.
    * Override this method to customize how domain objects are mapped to database updates.
    */
-  protected abstract prepareUpdateData(model: Partial<T>): Record<string, unknown>;
+  protected abstract prepareUpdateData(
+    model: Partial<T>,
+  ): Record<string, unknown>;
 
   /**
    * Logs database errors with consistent formatting.
    */
-  protected logDatabaseError(operation: string, error: unknown): void {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+  protected logDatabaseError(operation: string, error: unknown): LoggedError {
+    return LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
       source: `${this.tableName}DrizzleRepository::${operation}`,
     });

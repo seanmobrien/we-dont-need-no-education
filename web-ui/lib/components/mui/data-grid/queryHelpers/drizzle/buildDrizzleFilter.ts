@@ -42,17 +42,19 @@ export const appendFilter = ({
   if (typeof append === 'undefined' || !append.queryChunks?.length) {
     return query;
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anyQuery = query as any;
   // If the query has no where clause then just pop it on
-  if (!query._?.config?.where?.queryChunks?.length) {
-    return query.where(append) as AnyPgSelect;
+  if (!anyQuery._?.config?.where?.queryChunks?.length) {
+    return anyQuery.where(append) as AnyPgSelect;
   }
   // Otherwise, and the two queries together and set that
-  const left: SQL = query._.config.where!;
+  const left: SQL = anyQuery._.config.where!;
   const right: SQL = append!;
   if (left && right) {
     const combinedQuery = and(left, right);
     if (combinedQuery) {
-      return query.where(combinedQuery) as AnyPgSelect;
+      return anyQuery.where(combinedQuery) as AnyPgSelect;
     }
   }
   // If we made it all the way to here then there was nothing for us to do

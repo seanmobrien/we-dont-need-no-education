@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock the token stats service
-jest.mock('@/lib/ai/middleware/tokenStatsTracking/tokenStatsService', () => {
+jest.mock('@/lib/ai/middleware/tokenStatsTracking/token-stats-service', () => {
   // const check = jest.requireActual('@/lib/ai/middleware/tokenStatsTracking/tokenStatsService');
   const theInstance = {
     getTokenStats: jest.fn(),
@@ -22,7 +22,7 @@ jest.mock('@/lib/ai/middleware/tokenStatsTracking/tokenStatsService', () => {
   return ret;
 });
 
-import { getInstance, reset } from '@/lib/ai/middleware/tokenStatsTracking/tokenStatsService';
+import { getInstance, reset } from '@/lib/ai/middleware/tokenStatsTracking/token-stats-service';
 import {
   tokenStatsMiddleware,
   tokenStatsWithQuotaMiddleware,

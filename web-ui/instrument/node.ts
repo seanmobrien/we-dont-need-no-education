@@ -102,6 +102,7 @@ export default function instrumentServer() {
                   ? KnownSeverityLevel.Information
                   : KnownSeverityLevel.Verbose;
           record.severityNumber ||= 100;
+          
         },
       }),
     ],

@@ -172,7 +172,7 @@ export const parseSortOptions = (
  * Parse pagination options from various sources.
  */
 export const parsePaginationOptions = (
-  source: LikeNextRequest | URL | string | undefined,
+  source: LikeNextRequest | URL | URLSearchParams | string | undefined,
   defaultPageSize: number = 25,
   maxPageSize: number = 100
 ): { offset: number; limit: number } | { num: number; page: string; } => {

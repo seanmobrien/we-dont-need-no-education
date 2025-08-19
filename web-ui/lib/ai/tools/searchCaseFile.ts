@@ -5,13 +5,15 @@ import {
 } from '../services/search';
 import { AiSearchToolResult, CaseFileSearchOptions } from './types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { toolCallbackResultFactory } from './utility';
+import { toolCallbackResultFactory, toolCallbackResultSchemaFactory } from './utility';
 import { appMeters } from '@/lib/site-util/metrics';
 import type {
   ServerNotification,
   ServerRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
+import { AiSearchResultEnvelopeSchema, CaseFileSearchOptionsSchema } from './schemas/searchObjects';
+import z from 'zod';
 
 // OpenTelemetry Metrics for SearchCaseFile Tool
 const searchCaseFileCounter = appMeters.createCounter(
@@ -132,3 +134,26 @@ export const searchCaseFile = async (
     );
   }
 };
+
+export const searchCaseFileConfig ={
+  description:
+    'Uses hybrid search to find case files based on a query.',
+  inputSchema: {
+    query: z
+      .string()
+      .describe('The search query term used to find case files.'),
+    options: CaseFileSearchOptionsSchema.optional().describe(
+      'Options used to influence the search results, such as scope and pagination.',
+    ),
+  },
+  outputSchema: toolCallbackResultSchemaFactory(
+    AiSearchResultEnvelopeSchema,
+  ),
+  annotations: {
+    title: 'Search Case Files',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;

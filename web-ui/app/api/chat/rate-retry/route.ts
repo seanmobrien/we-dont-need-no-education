@@ -4,11 +4,13 @@ import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queu
 import { rateLimitMetrics } from '@/lib/ai/middleware/key-rate-limiter/metrics';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
-import { generateText } from 'ai';
+import { generateText, wrapLanguageModel } from 'ai';
 import type { LanguageModelV1, CoreMessage } from 'ai';
 import type { RateLimitedRequest, ProcessedResponse, ModelClassification } from '@/lib/ai/middleware/key-rate-limiter/types';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
+import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,7 +24,12 @@ export const GET = wrapRouteRequest(async () => {
   try {
     log(l => l.verbose('Rate retry processing started'));
     rateLimitMetrics.recordMessageProcessed('system', 1);
-    
+    const chatHistoryContext = createAgentHistoryContext({
+      operation: "ratelimit.retry",
+      iteration: 1,
+      originatingUserId: "-1"      
+    });
+
     const modelClassifications: ModelClassification[] = ['hifi', 'lofi', 'completions', 'embedding'];
     
     // Process gen-1 messages first
@@ -64,15 +71,17 @@ export const GET = wrapRouteRequest(async () => {
         try {
           // Choose available model (Azure first, then Google)
           const modelKey = azureAvailable ? azureModelKey : googleModelKey;
-          log(l => l.verbose(`Processing request ${request.id} with model ${modelKey}`));
-          
+          log(l => l.verbose(`Processing request ${request.id} with model ${modelKey}`));                              
           // Create model instance (ensure we don't use embedding models for text generation)
           const modelInstance = classification === 'embedding' 
             ? aiModelFactory(classification)
             : classification === 'hifi' || classification === 'lofi'
               ? aiModelFactory(classification)
               : aiModelFactory('lofi');
-          const model = modelInstance as unknown as LanguageModelV1;
+          const model = wrapLanguageModel({
+            middleware: createChatHistoryMiddleware(chatHistoryContext),
+            model: modelInstance as LanguageModelV1,
+          });
           
           // Process the request (simplified - in real implementation would handle streaming)
           const timeoutPromise = new Promise((_, reject) => {
@@ -84,7 +93,9 @@ export const GET = wrapRouteRequest(async () => {
             messages: (request.request.messages as CoreMessage[]) || [],
             maxTokens: 1000, // reasonable limit
           });
-          
+          chatHistoryContext.iteration++;
+
+
           const result = await Promise.race([generatePromise, timeoutPromise]);
           
           // Store successful response
@@ -186,7 +197,10 @@ export const GET = wrapRouteRequest(async () => {
             : classification === 'hifi' || classification === 'lofi'
               ? aiModelFactory(classification)
               : aiModelFactory('lofi');
-          const model = modelInstance as unknown as LanguageModelV1;
+          const model = wrapLanguageModel({
+            model: modelInstance as LanguageModelV1,
+            middleware: createChatHistoryMiddleware(chatHistoryContext),
+          });           
           
           const timeoutPromise = new Promise((_, reject) => {
             setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT_MS);

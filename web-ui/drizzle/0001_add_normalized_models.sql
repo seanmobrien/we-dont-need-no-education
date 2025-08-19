@@ -42,9 +42,7 @@ ALTER TABLE "models" ADD CONSTRAINT "models_provider_id_fkey" FOREIGN KEY ("prov
 -- Create model_quotas table if it doesn't exist
 CREATE TABLE IF NOT EXISTS "model_quotas" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"provider" text,  -- Will be dropped later in favor of model_id
-	"model_name" text,  -- Will be dropped later in favor of model_id
-	"max_tokens_per_message" integer,
+	"model_id" uuid,	"max_tokens_per_message" integer,
 	"max_tokens_per_minute" integer,
 	"max_tokens_per_day" integer,
 	"created_at" timestamp with time zone DEFAULT now(),

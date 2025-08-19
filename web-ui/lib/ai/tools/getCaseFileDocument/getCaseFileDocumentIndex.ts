@@ -2,12 +2,13 @@ import { drizDb } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { DocumentResourceIndex } from '../documentResource';
 import { DocumentIndexResourceToolResult } from '../types';
-import { toolCallbackResultFactory } from '../utility';
+import { toolCallbackArrayResultSchemaFactory, toolCallbackResultFactory } from '../utility';
 import {
   getCaseFileDocumentCounter,
   getCaseFileDocumentDurationHistogram,
   caseFileDocumentErrorCounter,
 } from './metrics';
+import z from 'zod';
 
 /**
  * Maps an external document scope value to its serialized equivalent.
@@ -192,3 +193,73 @@ export const getCaseFileDocumentIndex = async ({
     );
   }
 };
+
+export const getCaseFileDocumentIndexConfig = 
+{
+description:
+  'Retrieves an index containing summary information about all case file documents, optionally filtered by document type.  This ' +
+  'index can be used as a quick and reliable way to obtain a listing of document types for performing iterative retrievals or analysis.',
+inputSchema: {
+  scope: z
+    .array(
+      z.enum([
+        'email',
+        'attachment',
+        'core-document',
+        'key-point',
+        'call-to-action',
+        'responsive-action',
+        'note',
+      ]),
+    )
+    .optional()
+    .describe(
+      `An optional array of case file search scope types to filter the search results.  If not set, the search applies to all available scopes.  Available values are: 
+  - 'email': represents email messages associated with the case file.
+  - 'attachment': represents file attachments related to the case file.
+  - 'core-document': an alias for 'email' and 'attachment', used to search across both scopes.
+  - 'key-point': represents key points extracted from the case file.
+  - 'call-to-action': represents actionable items identified in the case file.
+  - 'responsive-action': represents responsive actions identified in the case file.
+  - 'note': represents notes extracted from the case file.`,
+      ),
+  },
+  outputSchema: toolCallbackArrayResultSchemaFactory(
+    z.object({
+      unitId: z
+        .number()
+        .describe(
+          'The unique identifier of the case file document.  This value can be passed to the `getCaseFileDocument` or `getMultipleCaseFileDocuments` tools to retrieve the full contents of the document.',
+        ),
+      emailId: z
+        .string()
+        .nullable()
+        .describe(
+          'The unique identifier of the email associated with the case file document, if applicable.',
+        ),
+      attachmentId: z
+        .number()
+        .nullable()
+        .describe(
+          'The unique identifier of the document property associated with the case file document, if applicable.',
+        ),
+      documentType: z
+        .string()
+        .describe(
+          'The type of the case file document, such as email, attachment, key point, call to action, responsive action, or note.',
+        ),
+      createdOn: z
+        .date()
+        .describe(
+          'The date and time when the case file document was created.',
+        ),
+    }),
+  ),
+  annotations: {
+    title: 'Retrieve Case File Document Index',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;

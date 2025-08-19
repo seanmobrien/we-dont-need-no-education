@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Integration tests for chat history message deduplication
  * 
@@ -15,6 +16,7 @@ import { log } from '@/lib/logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV1CallOptions } from 'ai';
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/utility');
@@ -77,14 +79,12 @@ describe('Message Deduplication Integration', () => {
     } as unknown as jest.Mocked<DbTransactionType>;
 
     // Mock context
-    mockContext = {
+    mockContext = createUserChatHistoryContext({
       userId: 'user-123',
       chatId: 'existing-chat-456',
       model: 'gpt-4o',
-      temperature: 0.7,
-      topP: 0.9,
       requestId: 'session-789',
-    };
+    });
 
     // Mock functions
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });
@@ -252,14 +252,12 @@ describe('Message Deduplication Integration', () => {
       // Act
       const result = await importIncomingMessage({
         tx: mockTx,
-        context: {
+        context: createUserChatHistoryContext({
           userId: 'user-123',
           chatId: 'existing-chat-456',
           model: 'gpt-4o',
-          temperature: 0.7,
-          topP: 0.9,
           requestId: 'session-789',
-        },
+        }),
         params: mockParams,
       });
 

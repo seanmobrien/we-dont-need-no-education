@@ -1346,6 +1346,7 @@ export const chatMessages = pgTable(
     metadata: jsonb(),
     toolInstanceId: uuid('tool_instance_id'),
     optimizedContent: text('optimized_content'),
+    messageTimestamp: timestamp('message_timestamp', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index('idx_messages_provider_id').using(

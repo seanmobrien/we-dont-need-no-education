@@ -15,6 +15,7 @@
       "Bash(find:*)",
       "Bash(ls:*)"
     ],
-    "deny": []
+    "deny": [],
+    "defaultMode": "acceptEdits"
   }
 }

@@ -19,6 +19,8 @@ import { ChatHistoryContext, createChatHistoryMiddleware } from '../../middlewar
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ToolProviderSet } from '../..';
 import { log } from '@/lib/logger';
+import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
+import { auth } from '@/auth';
 
 type InitializeProps = { req: NextRequest };
 
@@ -53,6 +55,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   readonly #processedDocuments = new Set<string>();
   readonly #documentMetadata = new Map<string, DocumentMetadata>();
   readonly #documentContent = new Map<string, string>();
+  #userId: string | undefined
   #timelineState: TimelineSummary = {
     globalMetadata: {
       caseId: '',
@@ -99,7 +102,8 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     { req }: InitializeProps | undefined = {} as InitializeProps,
   ): Promise<void> {
     if (this.#isInitialized) return;
-
+    const session = await auth();
+    this.#userId = session?.user?.id;    
     const initialDocId = Array.from(this.#pendingDocuments)[0];
     if (!(this.propertyId ?? initialDocId)) {
       throw new Error('No initial document provided');
@@ -296,6 +300,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     Your goal is to identify all email or attachment case files that reference this call to action specifically, or speak 
     to a similar or related request.  To do that, you will -
     ☐ Analyze the call to action, document content, and metadata.
+    ☐ Use tool-based sequential thinking to formulate a comprehensive plan of action.
     ☐ Identify search terms and keywords that would retrieve relevant documents.  It is critical that we identify all related
         case files, so a comprehensive set of queries should be identified - including synonyms, related terms, related concepts, and rephrased queries.
     ☐ Use the case file search tool to retrieve all emails and attachment records that reference this call to action or related requests.
@@ -510,19 +515,28 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     {
       model = 'lofi',
       req,
-    }: { model?: AiLanguageModelType; req?: NextRequest } = {},
+      operation,
+      opProps,
+    }: { 
+      model?: AiLanguageModelType; 
+      req?: NextRequest; 
+      operation?: string; 
+      opProps?: Record<string, unknown>;
+    } = {},
   ): Promise<TResultType> {      
     let tools: ToolProviderSet | undefined = undefined;
     try {
-        this.#chatHistoryContext = this.#chatHistoryContext ?? {
-          userId: '-1',
-          requestId: generateChatId(Math.random() * 1000).id,
-          chatId: generateChatId(Math.random() * 1000).id,
-          temperature: 0.7, // Default values, could be extracted from request
-          topP: 1.0,
-        };
-        
       const baseModel = aiModelFactory(model ?? 'lofi');
+      this.#chatHistoryContext =
+        this.#chatHistoryContext ??
+        createAgentHistoryContext({
+          model,          
+          originatingUserId: this.#userId ?? '-1',
+          operation: operation ? `timeline:${operation}` : 'timeline:agent',
+          opTags: opProps,
+          chatId: generateChatId(Math.random() * 1000).id,          
+        });
+        
       const hal = wrapLanguageModel({
           model: baseModel,
           middleware: createChatHistoryMiddleware({...this.#chatHistoryContext, model: baseModel.modelId }),
@@ -535,7 +549,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
         maxSteps: 20,
         //experimental_continueSteps: true,
       });
-
+      this.#chatHistoryContext.iteration++;
       // If we have structured output available, use it.  Note our fancy middleware will automatically parse
       // recognizable JSON content for us
       if (

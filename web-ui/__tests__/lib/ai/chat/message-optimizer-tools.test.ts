@@ -6,7 +6,7 @@ import {
   hasToolCalls,
 } from '@/lib/ai/chat/message-optimizer-tools';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
-import { generateText } from 'ai';
+import { generateText, generateObject } from 'ai';
 
 // Mock dependencies
 jest.mock('@/lib/ai');
@@ -29,6 +29,9 @@ const mockAiModelFactory = aiModelFactory as jest.MockedFunction<
 const mockGenerateText = generateText as jest.MockedFunction<
   typeof generateText
 >;
+const mockGenerateObject = generateObject as jest.MockedFunction<
+  typeof generateObject
+>;
 
 describe('Message Optimizer Tools', () => {
   beforeEach(() => {
@@ -39,6 +42,13 @@ describe('Message Optimizer Tools', () => {
     mockAiModelFactory.mockReturnValue('mock-lofi-model' as never);
     mockGenerateText.mockResolvedValue({
       text: 'Tool executed successfully with optimized results.',
+      usage: { completionTokens: 50, promptTokens: 100, totalTokens: 150 },
+    } as never);
+    mockGenerateObject.mockResolvedValue({
+      object: {
+        messageSummary: 'Tool executed successfully with optimized results.',
+        chatTitle: 'Tool Summary',
+      },
       usage: { completionTokens: 50, promptTokens: 100, totalTokens: 150 },
     } as never);
   });
@@ -269,7 +279,7 @@ describe('Message Optimizer Tools', () => {
       );
 
       expect(optimized).toEqual(messages);
-      expect(mockGenerateText).not.toHaveBeenCalled();
+      expect(mockGenerateObject).not.toHaveBeenCalled();
     });
     it('should optimize old tool calls while preserving recent interactions', async () => {
       const messages: UIMessage[] = [
@@ -316,7 +326,7 @@ describe('Message Optimizer Tools', () => {
       ]);
 
       // Should have called LLM for summarization
-      expect(mockGenerateText).toHaveBeenCalled();
+      expect(mockGenerateObject).toHaveBeenCalled();
     });
     it('should use cached summaries for identical tool calls', async () => {
       const toolMessages = [
@@ -342,10 +352,10 @@ describe('Message Optimizer Tools', () => {
         'gpt-4',
         'test_user',
       );
-      expect(mockGenerateText).toHaveBeenCalledTimes(1);
+      expect(mockGenerateObject).toHaveBeenCalledTimes(1);
 
       // Reset mock but keep cache
-      mockGenerateText.mockClear();
+      mockGenerateObject.mockClear();
 
       // Second optimization with same tool calls - should use cache
       await optimizeMessagesWithToolSummarization(
@@ -353,10 +363,10 @@ describe('Message Optimizer Tools', () => {
         'gpt-4',
         'test_user',
       );
-      expect(mockGenerateText).not.toHaveBeenCalled();
+      expect(mockGenerateObject).not.toHaveBeenCalled();
     });
     it('should handle LLM summarization failures gracefully', async () => {
-      mockGenerateText.mockRejectedValueOnce(
+      mockGenerateObject.mockRejectedValueOnce(
         new Error('LLM service unavailable'),
       );
 

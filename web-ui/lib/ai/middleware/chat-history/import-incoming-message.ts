@@ -133,7 +133,7 @@ const getChatId = (context: ChatHistoryContext): string =>
  * });
  * ```
  */
-const upsertChat = async (tx: DbTransactionType, chatId: string, context: ChatHistoryContext) =>  {
+export const upsertChat = async (tx: DbTransactionType, chatId: string, context: ChatHistoryContext) =>  {
   const existingChat =
     (
       await tx

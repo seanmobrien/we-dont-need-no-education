@@ -43,4 +43,5 @@ export type {
 } from './schema';
 export * from './connection';
 export * from './db-helpers';
-export { sql } from './drizzle-sql';
+
+export { sql, type DrizzleSqlType } from './drizzle-sql';

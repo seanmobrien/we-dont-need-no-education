@@ -46,7 +46,7 @@
 
 export {
   getInstance as getTokenStatsService,
-} from './tokenStatsService';
+} from './token-stats-service';
 
 export {
   type TokenUsageData,

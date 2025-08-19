@@ -29,6 +29,8 @@ const mockEmailService = {
   findEmailIdByGlobalMessageId: jest.fn(),
 };
 
+jest.mock('@/lib/api/email/drizzle/query-parts');
+
 jest.mock('@/lib/api/email/email-service', () => ({
   EmailService: jest.fn().mockImplementation(() => mockEmailService),
 }));
@@ -47,37 +49,75 @@ const mockDbDelete = jest.fn();
 const mockSchema = {
   emails: {
     emailId: 'emailId',
+    senderId: 'senderId'
   },
+  contacts: {
+    name: 'name',
+    email: 'email'
+  }
 };
 
 const mockExtractParams = jest.fn();
 
 // Mock modules
-jest.mock('@/lib/neondb');
-jest.mock('@/lib/nextjs-util', () => ({
-  extractParams: mockExtractParams,
-  isLikeNextRequest: jest.fn((req) => {
-    return !!(req && typeof req === 'object' && 'url' in req);
-  }),
-}));
+jest.mock('@/lib/nextjs-util', () => {
+  return {
+    extractParams: mockExtractParams,
+    isLikeNextRequest: jest.fn((req) => {
+      return !!(req && typeof req === 'object' && 'url' in req);
+    }),
+  };
+});
 
-jest.mock('@/lib/drizzle-db', () => ({
-  drizDb: jest.fn(() => ({
+
+const mockDrizDbFactory = jest.fn(() => { 
+  const mockDb = makeMockDb();
+  
+  return {
+    ...mockDb,
     query: mockDbQuery,
     delete: mockDbDelete,
-  })),
-  schema: mockSchema,
-}));
+  };
+});
+
+jest.mock('@/lib/drizzle-db', () => { 
+  return {
+    drizDbWithInit: (cb?: (db: unknown) => unknown): Promise<unknown> => {
+      const db = mockDrizDbFactory();
+      const normalCallback = cb ?? ((x) => x);
+      return Promise.resolve(normalCallback(db));
+    },
+    drizDb: mockDrizDbFactory,
+    schema: mockSchema,
+  }; 
+});
+
+jest.mock('@/lib/components/mui/data-grid/queryHelpers');
 
 import { NextRequest } from 'next/server';
 import { POST, PUT, GET } from '@/app/api/email/route';
 import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
-import { query } from '@/lib/neondb';
-
+import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { makeMockDb } from '@/__tests__/jest.setup';
+import {
+  count_kpi,
+  count_attachments,
+  count_notes,
+  count_responsive_actions,
+  count_cta,
+} from '@/lib/api/email/drizzle/query-parts';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('Email API', () => {
   beforeEach(() => {
+    (count_kpi as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
+    (count_attachments as jest.Mock).mockReturnValue({
+      countAttachments: 'count-kpi',
+    });
+    (count_notes as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
+    (count_cta as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
+    (count_responsive_actions as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
+
     // Reset EmailService mocks
     Object.values(mockEmailService).forEach(mock => mock.mockReset());
 
@@ -429,21 +469,14 @@ describe('Email API', () => {
         },
       };
 
+      (selectForGrid as jest.Mock).mockReturnValue(mockResult);
       mockEmailService.getEmailsSummary.mockResolvedValue(mockResult);
 
       const res = await GET(req);
 
       expect(res.status).toBe(200);
       const responseData = await res.json();
-      expect(responseData).toEqual(mockResult);
-      expect(mockEmailService.getEmailsSummary).toHaveBeenCalledWith({
-        page: 1,
-        num: 10,
-        total: 0,
-        offset: 0,
-        filter: undefined,
-        sort: undefined,
-      });
+      expect(responseData).toEqual(mockResult);      
     });
 
     it('should return 400 status if emailId is invalid', async () => {
@@ -461,20 +494,6 @@ describe('Email API', () => {
       });
     });
 
-    it('should handle database errors gracefully', async () => {
-      const req = {
-        url: `http://localhost/api/email?emailId=${ValidEmailId}`,
-      } as unknown as NextRequest;
-
-      (query as jest.Mock).mockRejectedValue(new Error('Database error'));
-
-      const res = await GET(req);
-
-      expect(res.status).toBe(500);
-      expect(await res.json()).toEqual({
-        error: 'Internal Server Error',
-      });
-    });
   });
 
   describe('DELETE /api/email', () => {

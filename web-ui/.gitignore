@@ -2,3 +2,6 @@
 (rsc)
 (ssr)
 (rsc)/**
+
+# Local helper clones for subtree operations
+/.upstream/

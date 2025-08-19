@@ -1,5 +1,6 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
 import { emails } from '@/drizzle/schema';
+import { drizDbWithInit } from '@/lib/drizzle-db';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { eq } from 'drizzle-orm';
 
@@ -34,16 +35,6 @@ export type EmailDomain = {
   globalMessageId?: string | null;
 };
 
-/**
- * Summary version of EmailDomain for list operations
- */
-export type EmailDomainSummary = Omit<EmailDomain, 'emailContents'> & {
-  count_attachments?: number;
-  count_kpi?: number;
-  count_notes?: number;
-  count_cta?: number;
-  count_responsive_actions?: number;
-};
 
 /**
  * Maps a database record to an EmailDomain object
@@ -218,17 +209,17 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
    */
   async findByGlobalMessageId(globalMessageId: string): Promise<EmailDomain | null> {
     try {
-      const records = await this.db
+      const record = await drizDbWithInit(db => db
         .select()
         .from(this.config.table)
         .where(eq(emails.globalMessageId, globalMessageId))
-        .limit(1);
+        .limit(1)
+        .execute()
+        .then(x => x.at(0)));
+      return record
+        ? this.config.recordMapper(record)
+        : null;
 
-      if (records.length === 0) {
-        return null;
-      }
-
-      return this.config.recordMapper(records[0]);
     } catch (error) {
       this.logDatabaseError('findByGlobalMessageId', error);
       throw error;

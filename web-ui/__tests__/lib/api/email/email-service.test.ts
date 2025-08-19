@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-require-imports */
+
 
 import { EmailService, CreateEmailRequest, UpdateEmailRequest } from '@/lib/api/email/email-service';
 import { EmailDomain } from '@/lib/api/email/email-drizzle-repository';
@@ -41,155 +40,6 @@ describe('EmailService', () => {
     
     // Create service instance
     service = new EmailService();
-  });
-
-  describe('getEmailsSummary', () => {
-    it('should retrieve paginated email summaries with contact information', async () => {
-      const mockEmailDomains = [
-        {
-          emailId: 'email-1',
-          senderId: 1,
-          subject: 'Test Subject 1',
-          sentTimestamp: '2023-01-01T00:00:00Z',
-          threadId: null,
-          parentId: null,
-          importedFromId: null,
-          globalMessageId: null,
-        },
-        {
-          emailId: 'email-2',
-          senderId: 2,
-          subject: 'Test Subject 2',
-          sentTimestamp: '2023-01-02T00:00:00Z',
-          threadId: 1,
-          parentId: 'email-1',
-          importedFromId: 'import-123',
-          globalMessageId: 'global-456',
-        },
-      ];
-
-      const mockRepositoryResult = {
-        results: mockEmailDomains,
-        pageStats: { page: 1, num: 10, total: 2 },
-      };
-
-      mockRepository.list.mockResolvedValue(mockRepositoryResult);
-
-      // Mock contact queries
-      mockQuery
-        .mockResolvedValueOnce([{ contact_id: 1, name: 'Sender One', email: 'sender1@test.com' }]) // First sender
-        .mockResolvedValueOnce([{ recipient_id: 1, recipient_name: 'Recipient One', recipient_email: 'rec1@test.com' }]) // First recipients
-        .mockResolvedValueOnce([{ count_attachments: 2, count_kpi: 1, count_notes: 0, count_cta: 1, count_responsive_actions: 0 }]) // First counts
-        .mockResolvedValueOnce([{ contact_id: 2, name: 'Sender Two', email: 'sender2@test.com' }]) // Second sender
-        .mockResolvedValueOnce([]) // Second recipients (empty)
-        .mockResolvedValueOnce([{ count_attachments: 0, count_kpi: 0, count_notes: 1, count_cta: 0, count_responsive_actions: 2 }]); // Second counts
-
-      const result = await service.getEmailsSummary({ page: 1, num: 10, total: 40 });
-
-      expect(result).toEqual({
-        results: [
-          {
-            emailId: 'email-1',
-            sender: { contactId: 1, name: 'Sender One', email: 'sender1@test.com' },
-            subject: 'Test Subject 1',
-            sentOn: '2023-01-01T00:00:00Z',
-            threadId: null,
-            parentEmailId: null,
-            importedFromId: null,
-            globalMessageId: null,
-            recipients: [{ contactId: 1, name: 'Recipient One', email: 'rec1@test.com' }],
-            count_attachments: 2,
-            count_kpi: 1,
-            count_notes: 0,
-            count_cta: 1,
-            count_responsive_actions: 0,
-          },
-          {
-            emailId: 'email-2',
-            sender: { contactId: 2, name: 'Sender Two', email: 'sender2@test.com' },
-            subject: 'Test Subject 2',
-            sentOn: '2023-01-02T00:00:00Z',
-            threadId: 1,
-            parentEmailId: 'email-1',
-            importedFromId: 'import-123',
-            globalMessageId: 'global-456',
-            recipients: [],
-            count_attachments: 0,
-            count_kpi: 0,
-            count_notes: 1,
-            count_cta: 0,
-            count_responsive_actions: 2,
-          },
-        ],
-        pageStats: { page: 1, num: 10, total: 2 },
-      });
-
-      expect(mockRepository.list).toHaveBeenCalledWith({ page: 1, num: 10, total: 40 });
-      expect(mockQuery).toHaveBeenCalledTimes(6); // 2 emails × 3 queries each (sender, recipients, counts)
-    });
-
-    it('should handle emails with missing sender information', async () => {
-      const mockEmailDomains = [
-        {
-          emailId: 'email-1',
-          senderId: 999, // Non-existent sender
-          subject: 'Test Subject',
-          sentTimestamp: '2023-01-01T00:00:00Z',
-          threadId: null,
-          parentId: null,
-          importedFromId: null,
-          globalMessageId: null,
-        },
-      ];
-
-      mockRepository.list.mockResolvedValue({
-        results: mockEmailDomains,
-        pageStats: { page: 1, num: 10, total: 1 },
-      });
-
-      // Mock empty sender result, empty recipients, empty counts
-      mockQuery
-        .mockResolvedValueOnce([]) // No sender found
-        .mockResolvedValueOnce([]) // No recipients
-        .mockResolvedValueOnce([{}]); // Empty counts
-
-      const result = await service.getEmailsSummary();
-
-      expect(result.results[0].sender).toEqual({
-        contactId: 999,
-        name: 'Unknown',
-        email: 'unknown@example.com',
-      });
-    });
-
-    it('should skip emails with incomplete data', async () => {
-      const mockEmailDomains = [
-        { emailId: '', senderId: 1 }, // Missing emailId
-        { emailId: 'email-1' }, // Missing senderId
-        {
-          emailId: 'email-2',
-          senderId: 2,
-          subject: 'Valid Email',
-          sentTimestamp: '2023-01-01T00:00:00Z',
-        },
-      ];
-
-      mockRepository.list.mockResolvedValue({
-        results: mockEmailDomains,
-        pageStats: { page: 1, num: 10, total: 3 },
-      });
-
-      // Mock queries for only the valid email
-      mockQuery
-        .mockResolvedValueOnce([{ contact_id: 2, name: 'Valid Sender', email: 'valid@test.com' }])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([{}]);
-
-      const result = await service.getEmailsSummary();
-
-      expect(result.results).toHaveLength(1);
-      expect(result.results[0].emailId).toBe('email-2');
-    });
   });
 
   describe('getEmailById', () => {
@@ -454,12 +304,6 @@ describe('EmailService', () => {
   });
 
   describe('error handling', () => {
-    it('should handle repository errors in getEmailsSummary', async () => {
-      const error = new Error('Repository error');
-      mockRepository.list.mockRejectedValue(error);
-
-      await expect(service.getEmailsSummary()).rejects.toThrow('Repository error');
-    });
 
     it('should handle query errors in getEmailById', async () => {
       mockRepository.get.mockResolvedValue({} as EmailDomain);

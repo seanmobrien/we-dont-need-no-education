@@ -3,7 +3,7 @@
 
 -- First, insert providers
 INSERT INTO providers ("name", display_name, description) VALUES
-('azure', 'Azure OpenAI', 'Microsoft Azure OpenAI Service for enterprise AI solutions'),
+('azure-openai.chat', 'Azure OpenAI', 'Microsoft Azure OpenAI Service for enterprise AI solutions'),
 ('google', 'Google AI', 'Google AI Platform including Gemini models')
 ON CONFLICT ("name") DO UPDATE SET
     display_name = EXCLUDED.display_name,

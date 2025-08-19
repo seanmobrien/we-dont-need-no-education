@@ -10,14 +10,15 @@
  * @since 2025-07-17
  */
 
-import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
+// import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import { and, eq } from 'drizzle-orm';
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDb, schema } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
 import { instrumentFlushOperation } from './instrumentation';
 import { insertPendingAssistantMessage, reserveTurnId } from './import-incoming-message';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { summarizeMessageRecord } from '@/lib/ai/middleware';
 
 /**
  * Default configuration for flush operations.
@@ -80,7 +81,7 @@ export async function finalizeAssistantMessage(context: FlushContext): Promise<v
     }
 
     await drizDb()
-      .update(chatMessages)
+      .update(schema.chatMessages)
       .set(context.generatedText ? {
         content: JSON.stringify([{type: 'text', text: context.generatedText}]),
         statusId: 2, // complete status
@@ -89,9 +90,9 @@ export async function finalizeAssistantMessage(context: FlushContext): Promise<v
       })
       .where(
         and(
-          eq(chatMessages.chatId, context.chatId),
-          eq(chatMessages.turnId, context.turnId!),
-          eq(chatMessages.messageId, context.messageId),
+          eq(schema.chatMessages.chatId, context.chatId),
+          eq(schema.chatMessages.turnId, context.turnId!),
+          eq(schema.chatMessages.messageId, context.messageId),
         ),
       );
 
@@ -146,7 +147,7 @@ export async function completeChatTurn(
 
   try {
     await drizDb()
-      .update(chatTurns)
+      .update(schema.chatTurns)
       .set({
         statusId: 2, // complete status
         completedAt: new Date().toISOString(),
@@ -154,11 +155,41 @@ export async function completeChatTurn(
       })
       .where(
         and(
-          eq(chatTurns.chatId, context.chatId),
-          eq(chatTurns.turnId, context.turnId),
+          eq(schema.chatTurns.chatId, context.chatId),
+          eq(schema.chatTurns.turnId, context.turnId),
         ),
       );
 
+    drizDb()
+      .select()
+      .from(schema.chatMessages)
+      .where(
+        and(
+          eq(schema.chatMessages.chatId, context.chatId),
+          eq(schema.chatMessages.turnId, context.turnId!),
+        ),
+      ).execute()
+      .then(x => x.map(
+        (m) =>
+          // Process each message for summarization
+          summarizeMessageRecord({
+            chatId: m.chatId,
+            turnId: m.turnId,
+            messageId: m.messageId,
+            write: true,
+          }).catch((error) => {
+            LoggedError.isTurtlesAllTheWayDownBaby(error, {
+              log: true,
+              message: 'Error summarizing message record',
+              data: {
+                chatId: context.chatId,
+                turnId: context.turnId,
+                messageId: context.messageId,
+              },
+            });
+          return Promise.resolve();
+        })
+      ));
     log((l) =>
       l.debug('Chat turn completed', {
         chatId: context.chatId,
@@ -209,7 +240,7 @@ export async function generateChatTitle(
   try {
     // Check if chat already has a title
     const existingTitle = await drizDb().query.chats.findFirst({
-      where: eq(chats.id, context.chatId),
+      where: eq(schema.chats.id, context.chatId),
       columns: { title: true },
     });
 
@@ -229,9 +260,9 @@ export async function generateChatTitle(
 
     if (title.trim()) {
       await drizDb()
-        .update(chats)
+        .update(schema.chats)
         .set({ title })
-        .where(eq(chats.id, context.chatId));
+        .where(eq(schema.chats.id, context.chatId));
 
       log((l) =>
         l.debug('Generated chat title', {
@@ -284,7 +315,7 @@ export async function markTurnAsError(
 
   try {
     await drizDb()
-      .update(chatTurns)
+      .update(schema.chatTurns)
       .set({
         statusId: 3, // error status
         completedAt: new Date().toISOString(),
@@ -292,8 +323,8 @@ export async function markTurnAsError(
       })
       .where(
         and(
-          eq(chatTurns.chatId, context.chatId),
-          eq(chatTurns.turnId, context.turnId),
+          eq(schema.chatTurns.chatId, context.chatId),
+          eq(schema.chatTurns.turnId, context.turnId),
         ),
       );
 
