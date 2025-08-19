@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react';
+import { renderHook, waitFor } from '../../test-utils';
 import { useEmail, useWriteEmail, emailKeys } from '@/lib/hooks/use-email';
 import { getEmail, writeEmailRecord } from '@/lib/api/client';
 import { EmailMessage } from '@/data-models';
@@ -65,9 +65,12 @@ describe('useEmail hook', () => {
 
   it('should handle errors properly', async () => {
     const mockError = new Error('Failed to fetch email');
-    const mockPromise = Promise.reject(mockError);
-    Object.assign(mockPromise, { cancel: jest.fn() });
-    mockedGetEmail.mockReturnValue(mockPromise as any);
+    // Mock the getEmail function to reject with error
+    mockedGetEmail.mockImplementation(() => {
+      const promise = Promise.reject(mockError);
+      Object.assign(promise, { cancel: jest.fn() });
+      return promise as any;
+    });
 
     const { result } = renderHook(() => useEmail('123'));
 
@@ -131,9 +134,12 @@ describe('useWriteEmail hook', () => {
 
   it('should handle write errors properly', async () => {
     const mockError = new Error('Failed to write email');
-    const mockPromise = Promise.reject(mockError);
-    Object.assign(mockPromise, { cancel: jest.fn() });
-    mockedWriteEmailRecord.mockReturnValue(mockPromise as any);
+    // Mock the writeEmailRecord function to reject with error
+    mockedWriteEmailRecord.mockImplementation(() => {
+      const promise = Promise.reject(mockError);
+      Object.assign(promise, { cancel: jest.fn() });
+      return promise as any;
+    });
 
     const onErrorSpy = jest.fn();
     const { result } = renderHook(() => useWriteEmail({ onError: onErrorSpy }));
