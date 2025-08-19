@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Unit tests for selectForGrid utility function
@@ -44,6 +45,7 @@ import {
   buildDrizzleOrderBy,
   buildDrizzlePagination,
   buildDrizzleQueryFilter,
+  DrizzleSelectQuery,
 } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleQueryFilter as buildDrizzleFilter } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter';
 import { buildDrizzleOrderBy as buildDrizzleOrder } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
@@ -101,17 +103,17 @@ describe('selectForGrid', () => {
     // The build functions should return the query they receive
     mockBuildDrizzleQueryFilter.mockImplementation((params) => params.query);
     mockBuildDrizzleOrderBy.mockImplementation((params) => params.query);
-    mockBuildDrizzlePagination.mockImplementation((params) => {
+    mockBuildDrizzlePagination.mockImplementation(() => {
       // This function will be overridden in each test to return the appropriate results
-      return () => Promise.resolve([]);
+      return [] as DrizzleSelectQuery;
     });
     
     // Mock the specific build functions from drizzle modules
     mockBuildDrizzleFilter.mockImplementation((params) => params.query);
     mockBuildDrizzleOrder.mockImplementation((params) => params.query);
-    mockBuildDrizzlePage.mockImplementation((params) => {
+    mockBuildDrizzlePage.mockImplementation(() => {
       // This function will be overridden in each test to return the appropriate results
-      return () => Promise.resolve([]);
+      return [] as DrizzleSelectQuery;
     });
 
     // Mock the countQueryFactory
@@ -272,8 +274,12 @@ describe('selectForGrid', () => {
       });
 
       // Mock buildDrizzlePagination to return a function that rejects
-      mockBuildDrizzlePagination.mockImplementation(() => () => Promise.reject(error));
-      mockBuildDrizzlePage.mockImplementation(() => () => Promise.reject(error));
+      mockBuildDrizzlePagination.mockImplementation(
+        () => (() => Promise.reject(error)) as unknown as DrizzleSelectQuery,
+      );
+      mockBuildDrizzlePage.mockImplementation(
+        () => (() => Promise.reject(error)) as unknown as DrizzleSelectQuery,
+      );
 
       await expect(selectForGrid({
         req: mockReq,

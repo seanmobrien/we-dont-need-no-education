@@ -24,13 +24,15 @@ import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelper
 
 const mockParsePaginationStats = parsePaginationStats as jest.MockedFunction<typeof parsePaginationStats>;
 
+type MockQueryType = {
+  limit: jest.Mock;
+  offset: jest.Mock;
+  where: jest.Mock;
+  orderBy: jest.Mock;
+};
+
 describe('buildDrizzlePagination', () => {
-  let mockQuery: {
-    limit: jest.Mock;
-    offset: jest.Mock;
-    where: jest.Mock;
-    orderBy: jest.Mock;
-  };
+  let mockQuery: MockQueryType;
 
   beforeEach(() => {
     // jest.clearAllMocks();
@@ -145,6 +147,7 @@ describe('buildDrizzlePagination', () => {
     it('should handle LikeNextRequest object', () => {
       mockParsePaginationStats.mockReturnValue({ page: 3, num: 30, total: 100, offset: 60 });
       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const req: LikeNextRequest = new Request('https://example.com/api/data?page=3&pageSize=30') as any;
       
       buildDrizzlePagination({
@@ -184,12 +187,12 @@ describe('buildDrizzlePagination', () => {
       
       // Should return the same query instance for chaining
       expect(result).toBe(mockQuery);
-      
+      const asQuery = result as unknown as MockQueryType;
       // Should be able to chain additional operations
-      expect(typeof result.where).toBe('function');
-      expect(typeof result.orderBy).toBe('function');
-      expect(typeof result.limit).toBe('function');
-      expect(typeof result.offset).toBe('function');
+      expect(typeof asQuery.where).toBe('function');
+      expect(typeof asQuery.orderBy).toBe('function');
+      expect(typeof asQuery.limit).toBe('function');
+      expect(typeof asQuery.offset).toBe('function');
     });
 
     it('should apply pagination in the correct order (limit then offset)', () => {

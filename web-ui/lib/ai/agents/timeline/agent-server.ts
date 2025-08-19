@@ -300,6 +300,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     Your goal is to identify all email or attachment case files that reference this call to action specifically, or speak 
     to a similar or related request.  To do that, you will -
     ☐ Analyze the call to action, document content, and metadata.
+    ☐ Use tool-based sequential thinking to formulate a comprehensive plan of action.
     ☐ Identify search terms and keywords that would retrieve relevant documents.  It is critical that we identify all related
         case files, so a comprehensive set of queries should be identified - including synonyms, related terms, related concepts, and rephrased queries.
     ☐ Use the case file search tool to retrieve all emails and attachment records that reference this call to action or related requests.

@@ -25,6 +25,7 @@ import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util';
 import type { LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
 import { LanguageModelV1FunctionToolCall, LanguageModelV1FinishReason, LanguageModelV1CallWarning, LanguageModelV1ProviderMetadata, LanguageModelV1Source, LanguageModelV1LogProbs } from '@ai-sdk/provider';
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/import-incoming-message');
@@ -69,13 +70,12 @@ describe('Chat History Middleware', () => {
     // jest.clearAllMocks();
     mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
     // Mock context
-    mockContext = {
+    mockContext = createUserChatHistoryContext({
       userId: 'user-123',
       chatId: 'chat-456',
       model: 'gpt-4o',
-      temperature: 0.7,
       requestId: 'session-789',
-    };
+    });
 
     // Mock params
     mockParams = {
@@ -506,9 +506,9 @@ describe('Chat History Middleware', () => {
   describe('Context Variations', () => {
     it('should handle minimal context', () => {
       // Arrange
-      const minimalContext: ChatHistoryContext = {
+      const minimalContext: ChatHistoryContext = createUserChatHistoryContext({
         userId: 'user-minimal',
-      };
+      });
 
       // Act
       const middleware = createChatHistoryMiddleware(minimalContext);
@@ -521,14 +521,12 @@ describe('Chat History Middleware', () => {
 
     it('should handle full context', () => {
       // Arrange
-      const fullContext: ChatHistoryContext = {
+      const fullContext: ChatHistoryContext = createUserChatHistoryContext({
         userId: 'user-full',
         chatId: 'chat-full',
         requestId: 'session-full',
         model: 'gpt-4-turbo',
-        temperature: 0.9,
-        topP: 0.95,
-      };
+      });
 
       // Act
       const middleware = createChatHistoryMiddleware(fullContext);

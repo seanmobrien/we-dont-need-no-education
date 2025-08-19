@@ -3,6 +3,8 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 // Fixed chalk import for ESM
 import chalk from 'chalk';
+import { log } from "@/lib/logger";
+
 interface ThoughtData {
   thought: string;
   thoughtNumber: number;
@@ -101,7 +103,17 @@ export class SequentialThinkingServer {
 
       if (!this.disableThoughtLogging) {
         const formattedThought = this.formatThought(validatedInput);
-        console.error(formattedThought);
+        log(l => l.info({
+          message: `Thought Processed: ${formattedThought}`,
+          source: 'sequentialThinking',
+          data: {
+            thoughtNumber: validatedInput.thoughtNumber,
+            totalThoughts: validatedInput.totalThoughts,
+            nextThoughtNeeded: validatedInput.nextThoughtNeeded,
+            branches: Object.keys(this.branches),
+            thoughtHistoryLength: this.thoughtHistory.length
+          }
+        }));
       }
 
       return {

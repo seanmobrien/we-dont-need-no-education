@@ -42,7 +42,7 @@ const hydrateContext = (
   const attributes = Object.entries(context).reduce(
     (acc, [key, value]) => {
       if (!!value) {
-        acc[`chat.${key}`] = String(value);
+        acc[`chat.${key}`] = String(typeof value === 'object' ? JSON.stringify(value) : value);
       }
       return acc;
     },

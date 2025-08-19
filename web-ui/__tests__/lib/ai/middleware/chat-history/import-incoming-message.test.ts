@@ -15,6 +15,7 @@ import { log } from '@/lib/logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV1CallOptions } from 'ai';
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/utility');
@@ -78,14 +79,12 @@ describe('Import Incoming Message', () => {
     } as unknown as jest.Mocked<DbTransactionType>;
 
     // Mock context
-    mockContext = {
+    mockContext = createUserChatHistoryContext({
       userId: 'user-123',
       chatId: 'chat-456',
       model: 'gpt-4o',
-      temperature: 0.7,
-      topP: 0.9,
       requestId: 'session-789',
-    };
+    });
 
     // Mock params
     mockParams = {
@@ -433,9 +432,9 @@ describe('Import Incoming Message', () => {
   describe('Context Variations', () => {
     it('should handle minimal context', async () => {
       // Arrange
-      const minimalContext: ChatHistoryContext = {
+      const minimalContext: ChatHistoryContext = createUserChatHistoryContext({
         userId: 'user-minimal',
-      };
+      });
 
       mockGetNextSequence.mockReset();
       mockGetNextSequence
@@ -456,14 +455,12 @@ describe('Import Incoming Message', () => {
 
     it('should handle context with all optional fields', async () => {
       // Arrange
-      const fullContext: ChatHistoryContext = {
+      const fullContext: ChatHistoryContext = createUserChatHistoryContext({
         userId: 'user-full',
         chatId: 'chat-full',
         requestId: 'session-full',
         model: 'gpt-4-turbo',
-        temperature: 0.8,
-        topP: 0.95,
-      };
+      });
 
       // Act
       const result = await importIncomingMessage({

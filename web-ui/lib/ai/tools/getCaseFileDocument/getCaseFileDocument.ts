@@ -47,7 +47,7 @@
  */
 
 import { drizDbWithInit } from '@/lib/drizzle-db';
-import { resolveCaseFileIdBatch, toolCallbackResultFactory } from '../utility';
+import { resolveCaseFileIdBatch, toolCallbackArrayResultSchemaFactory, toolCallbackResultFactory } from '../utility';
 import {
   CaseFileRequestProps,
   CaseFileResponse,
@@ -66,6 +66,8 @@ import {
 } from './metrics';
 import { preprocessCaseFileDocument } from './preprocessCaseFileDocument';
 import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
+import { caseFileRequestPropsShape, CaseFileResponseShape } from '../schemas/case-file-request-props-shape';
+import z from 'zod';
 
 /**
  * Retrieves a single case file document by delegating to getMultipleCaseFileDocuments.
@@ -398,3 +400,70 @@ export const getMultipleCaseFileDocuments = async ({
     );
   }
 };
+
+export const getMultipleCaseFileDocumentsConfig = {
+  description:
+    'Retrieves and pre-processes the full contents of a batch of specific case file documents by ID.  This will include all metadata, as well as any linked case file documents, such as ' +
+    'extracted key points, notes, calls to action, responsive actions, or other relevant information.  Useful for performing detailed ' +
+    'analysis of the case file contents.  IMPORTANT: case ' +
+    'files are large and require a lot of context space, so pre-processing via goals is recommended. Never attempt to load more than 5 unprocessed documents at a time.  ' +
+    'With adequate summarization goals, more documents can be processed, but you should never request more than 100 documents at once.',
+  inputSchema: {
+    requests: z
+      .array(caseFileRequestPropsShape)
+      .describe('An array of case file requests.'),
+    goals: z
+      .array(z.string())
+      .describe(
+        'An array of goals identifying your task or describing what information should be extracted from the case files.  When set, each document will be pre-processed and relevant information returned, when left blank you will receive the full case files.  Case file documents are large and require a lot of context space, so pre-processing is recommended.',
+      )
+      .optional(),
+    verbatim_fidelity: z
+      .number()
+      .min(1)
+      .max(100)
+      .optional()
+      .describe(
+        'Controls how closely output should match source text. 100 = exact quotes with full context;  75 = exact excerpts with minimal context; 50 = summarized excerpts with some context; 1 = full summary, exact quotes not needed.  Set here to provide a default for all requests.',
+      ),
+  },
+  outputSchema: toolCallbackArrayResultSchemaFactory(
+    z.string().or(CaseFileResponseShape),
+  ),
+  annotations: {
+    title: 'Get Multiple Case Files',
+    readOnlyHint: true,
+    destructiveHint: false,
+    idempotentHint: true,
+    openWorldHint: false,
+  },
+} as const;
+
+
+  /*
+  Single document tool - obsolete (not worth the toolspace, just load a multiple of 1)
+server.registerTool(
+  'getCaseFileDocument',
+  {
+    description:
+      "Retrieves the full contents of a specific case file document by it's ID.  This will include all metadata, as well as any linked case file documents, such as " +
+      'extracted key points, notes, calls to action, responsive actions, or other relevant information.  Useful for performing detailed ' +
+      'analysis of the case file contents.  IMPORTANT: case files are large and require a lot of context space, so pre-processing via goals is recommended.',
+    inputSchema: {
+      ...caseFileRequestPropsShape.shape,
+    },
+    outputSchema: toolCallbackResultSchemaFactory(
+      z.string().or(DocumentSchema),
+    ),
+    annotations: {
+      title: 'Get Full Case File',
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+  },
+  getCaseFileDocument,
+);
+*/
+  
