@@ -8,9 +8,9 @@ import { generateText, wrapLanguageModel } from 'ai';
 import type { LanguageModelV1, CoreMessage } from 'ai';
 import type { RateLimitedRequest, ProcessedResponse, ModelClassification } from '@/lib/ai/middleware/key-rate-limiter/types';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
-import { createChatHistoryMiddleware } from '@/lib/ai';
+import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 
 export const dynamic = 'force-dynamic';
 

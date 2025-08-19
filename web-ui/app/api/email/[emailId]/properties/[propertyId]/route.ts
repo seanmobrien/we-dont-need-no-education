@@ -1,4 +1,5 @@
-import { RepositoryCrudController, EmailPropertyRepository } from '@/lib/api';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { EmailPropertyRepository } from '@/lib/api/email/properties/email-property-repository';
 import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 

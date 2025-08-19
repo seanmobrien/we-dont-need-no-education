@@ -79,8 +79,8 @@ describe('parsePaginationStats', () => {
   });
 
   it('should parse pagination stats from a URLSearchParams object', () => {
-    const searchParams = new URLSearchParams('page=3&num=25');
-    const result = parsePaginationOptions(searchParams);
+    const url = new URL('http://example.com?page=3&num=25');
+    const result = parsePaginationOptions(url);
     expect(result).toEqual({
       page: '3',
       num: 25,

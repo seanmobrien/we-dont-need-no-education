@@ -23,7 +23,7 @@ import { Session } from 'next-auth';
 import { EmailContextProvider } from '@/components/email-message/email-context';
 import { useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { useTheme } from '@/lib/themes';
+import { useTheme } from '@/lib/themes/provider';
 
 // Import extracted components
 import { CustomEmailPageItem } from './custom-email-page-item';
@@ -112,10 +112,10 @@ export const EmailDashboardLayout = ({
     const chatNavigation: NavigationItem = {
       title: 'Chats',
       icon: <ChatIcon key="chats-icon" />, 
-      segment: 'chat',
+      segment: 'messages/chat',
       children: [
         {
-          segment: 'messages/chat/statistics',
+          segment: 'statistics',
           icon: <BarChartIcon key="statistics-icon" />, 
           title: 'Statistics',
         },

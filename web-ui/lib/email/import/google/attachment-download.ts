@@ -2,10 +2,10 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { log } from '@/lib/logger';
 import { googleProviderFactory } from '@/app/api/email/import/[provider]/_googleProviderFactory';
 import { query } from '@/lib/neondb';
-import type { StagedAttachment } from '@/lib/api';
+import type { StagedAttachment } from '@/lib/api/email/import/staged-attachment';
 import { NextApiRequest } from 'next/types';
 import { NextRequest } from 'next/server';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { env } from '@/lib/site-util/env';
 
 export type AttachmentDownloadJob = {

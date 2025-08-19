@@ -31,7 +31,7 @@ import {
   ErrorType,
   recoveryStrategies,
 } from '@/lib/error-monitoring/recovery-strategies';
-import { clientNavigateSignIn } from '@/lib/nextjs-util';
+import { clientNavigateSignIn } from '@/lib/nextjs-util/client-navigate';
 
 // Mock caches API
 const mockCacheDelete = jest.fn().mockResolvedValue(true);

@@ -5,7 +5,7 @@
 jest.mock('@/lib/neondb');
 
 import { ComplianceScoresDetailsRepository } from '@/lib/api/email/properties/compliance-scores/compliance-scores-details-repository';
-import { ValidationError } from '@/lib/react-util';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { query, queryExt } from '@/lib/neondb';
 import { ComplianceScoresDetails } from '@/data-models/api';
 

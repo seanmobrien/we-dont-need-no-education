@@ -1,7 +1,7 @@
 import { ErrorResponse } from './error-response/index';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest } from 'next/server';
 
 

@@ -243,3 +243,6 @@ export const dumpError = (e: unknown): string => {
   }
   return ret;
 };
+
+// Re-export utility functions for convenience
+export { isAbortError } from '../_utility-methods';

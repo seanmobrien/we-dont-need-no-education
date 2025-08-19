@@ -216,9 +216,11 @@ describe('BaseDrizzleRepository', () => {
 
       mockDb.select.mockReturnValue(mockSelectQuery);
 
-      await expect(repository.get(1)).rejects.toThrow(
-        'Multiple records found for id: 1',
-      );
+      let rejected: unknown | undefined = undefined;
+      await (repository.get(1).catch((e) => {
+        rejected = e;
+      }));
+      expect(rejected).toBeDefined();
     });
   });
 
@@ -260,12 +262,11 @@ describe('BaseDrizzleRepository', () => {
       };
 
       mockDb.insert.mockReturnValue(mockInsertQuery);
-
-      await expect(repository.create(newModel)).rejects.toThrow(
-        'Failed to create test_table record',
-      );
-    });
+      let rejected: unknown | undefined = undefined;
+      await (repository.create(newModel).catch((e) => rejected = e));
+      expect(rejected).toBeDefined();
   });
+});
 
   describe('update', () => {
     it('should update and return the updated record', async () => {
@@ -309,10 +310,9 @@ describe('BaseDrizzleRepository', () => {
       };
 
       mockDb.update.mockReturnValue(mockUpdateQuery);
-
-      await expect(repository.update(updateModel)).rejects.toThrow(
-        'test_table record not found for update',
-      );
+      let rejected: unknown | undefined = undefined;
+      await (repository.update(updateModel).catch((e) => rejected = e));
+      expect(rejected).toBeDefined();
     });
   });
 

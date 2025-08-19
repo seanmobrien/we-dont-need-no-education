@@ -1,9 +1,9 @@
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { ObjectRepository, DrizzleRepositoryConfig, IObjectRepositoryExt } from './_types';
-import { PaginatedResultset, PaginationStats } from '@/data-models';
+import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import { PartialExceptFor } from '@/lib/typescript';
 import { eq, count, SQL } from 'drizzle-orm';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { PgColumn } from 'drizzle-orm/pg-core';
@@ -198,7 +198,8 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
 
       return result;
     } catch (error) {
-      throw this.logDatabaseError('get', error);
+      const le = this.logDatabaseError('get', error);
+      throw le;
     }
   }
 

@@ -2,10 +2,12 @@ import { NextRequest } from 'next/server';
 import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   RepositoryCrudController,
+} from '@/lib/api/repository-crud-controller';
+import {
   CallToActionResponseDetailsRepository,
-} from '@/lib/api';
-import { extractParams } from '@/lib/nextjs-util';
-import { CallToActionResponseDetails } from '@/data-models';
+} from '@/lib/api/email/properties/call-to-action-response/call-to-action-response-details-repository';
+import { extractParams } from '@/lib/nextjs-util/utils';
+import { CallToActionResponseDetails } from '@/data-models/api/email-properties/extended-properties';
 import { eq, and, sql } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';

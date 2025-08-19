@@ -9,7 +9,7 @@
  * @version 1.0.0
  * @since 2025-07-27
  */
-import {  LikeNextRequest } from '@/lib/nextjs-util';
+import { LikeNextRequest } from '@/lib/nextjs-util/types';
 import { PaginatedGridListRequest } from '../../types';
 import type { DrizzleSelectQuery } from './types';
 import { AnyPgSelect } from 'drizzle-orm/pg-core';

@@ -1,7 +1,7 @@
 import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
 
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ChatHistoryContext, StreamHandlerContext } from './types';
 import { ProcessingQueue } from './processing-queue';
 import { 

@@ -9,7 +9,7 @@ import {
   HybridSearchPayload,
   AiSearchResultEnvelope,
 } from './types';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
 

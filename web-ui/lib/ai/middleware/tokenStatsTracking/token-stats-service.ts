@@ -14,7 +14,7 @@ import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client'
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { eq, and, sql } from 'drizzle-orm';
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   ModelQuota,
   ProviderModelResponse,

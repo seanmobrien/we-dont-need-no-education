@@ -1,8 +1,8 @@
 import {
   PaginationStats,
   PaginatedResultset,
-} from '@/data-models';
-import { isError, isTemplateStringsArray } from '@/lib/react-util';
+} from '@/data-models/_types';
+import { isError, isTemplateStringsArray } from '@/lib/react-util/_utility-methods';
 import { log } from '../logger';
 import type {
   TransformedFullQueryResults,

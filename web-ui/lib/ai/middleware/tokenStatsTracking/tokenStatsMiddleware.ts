@@ -3,7 +3,7 @@ import { getInstance } from './token-stats-service';
 import { log } from '@/lib/logger';
 import { QuotaCheckResult, QuotaEnforcementError, TokenStatsMiddlewareConfig, TokenUsageData } from './types';
 import { countTokens } from '../../core/count-tokens';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type DoGenerateReturnType = ReturnType<LanguageModelV1['doGenerate']>;
 type DoStreamReturnType = ReturnType<LanguageModelV1['doStream']>;
