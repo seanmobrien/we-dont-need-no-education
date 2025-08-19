@@ -1,7 +1,6 @@
 'use client';
 
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error'
 import { isError } from '@/lib/react-util/_utility-methods';
 import {
   useState,

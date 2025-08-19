@@ -17,6 +17,13 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+// Mock fetch API for contacts
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    json: () => Promise.resolve([]),
+  })
+) as jest.Mock;
+
 const mockedUseEmail = useEmail as jest.MockedFunction<typeof useEmail>;
 const mockedUseWriteEmail = useWriteEmail as jest.MockedFunction<typeof useWriteEmail>;
 
@@ -125,7 +132,7 @@ describe('EmailForm with React Query', () => {
     });
 
     // Submit form
-    fireEvent.click(screen.getByText('Create Email'));
+    fireEvent.click(screen.getByRole('button', { name: /create email/i }));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith(
@@ -161,17 +168,31 @@ describe('EmailForm with React Query', () => {
       error: null,
     } as any);
 
-    const onErrorCallback = jest.fn();
-    mockedUseWriteEmail.mockImplementation((options) => {
-      // Simulate error callback being called
-      setTimeout(() => options?.onError?.(new Error('Save failed')), 0);
-      return mockWriteEmailMutation as any;
-    });
+    // Mock a mutation that will fail
+    const mockErrorMutation = {
+      mutateAsync: jest.fn().mockRejectedValue(new Error('Save failed')),
+      isPending: false,
+      isError: true,
+      error: new Error('Save failed'),
+    };
+
+    mockedUseWriteEmail.mockReturnValue(mockErrorMutation as any);
 
     render(<EmailForm emailId={null} withButtons={true} />);
 
+    // Fill in form data and trigger submission to see the error
+    fireEvent.change(screen.getByLabelText(/subject/i), {
+      target: { value: 'Test Subject' },
+    });
+    fireEvent.change(screen.getByLabelText(/email contents/i), {
+      target: { value: 'Test Body' },
+    });
+
+    // Submit form to trigger error
+    fireEvent.click(screen.getByRole('button', { name: /create email/i }));
+
     await waitFor(() => {
       expect(screen.getByText('Save failed')).toBeInTheDocument();
-    });
+    }, { timeout: 2000 });
   });
 });
