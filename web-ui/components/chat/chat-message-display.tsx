@@ -105,7 +105,7 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
       {showMetadata && (
         <Collapse in={metadataExpanded}>
           <Divider sx={{ my: 1 }} />
-          <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+          <Paper variant="outlined" sx={{ p: 2 }} elevation={3}>
             <Typography variant="subtitle2" gutterBottom>
               Message Metadata
             </Typography>
@@ -164,11 +164,11 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
                   <Typography variant="caption" display="block">
                     Metadata:
                   </Typography>
-                  <Box
+                  <Paper
+                    elevation={4}
                     component="pre"
                     sx={{
-                      fontSize: '0.75rem',
-                      backgroundColor: 'grey.100',
+                      fontSize: '0.75rem',                      
                       p: 1,
                       borderRadius: 1,
                       overflow: 'auto',
@@ -176,7 +176,7 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
                     }}
                   >
                     {JSON.stringify(message.metadata, null, 2)}
-                  </Box>
+                  </Paper>
                 </Grid>
               )}
             </Grid>

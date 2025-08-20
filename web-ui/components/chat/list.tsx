@@ -2,15 +2,13 @@
 import { JSX, useMemo, useCallback } from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
-import { Box } from '@mui/material';
-import {
-  GridCallbackDetails,
-  GridColDef,
-  GridRowParams,
-  MuiEvent,
-} from '@mui/x-data-grid-pro';
+import Box from '@mui/material/Box';
+
+import type { MuiEvent } from '@mui/x-internals/types';
+import type { GridCallbackDetails, GridColDef, GridRowParams } from '@mui/x-data-grid/models';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import siteBuilder from '@/lib/site-util/url-builder';
 
 /**
  * Chat summary interface matching the API response
@@ -47,10 +45,10 @@ const stableColumns: GridColDef<ChatSummary>[] = [
       const title = params.value || `Chat ${params.row.id.slice(-8)}`;
       return (
         <Link
-          href={`/chat/${params.row.id}`}
+          href={siteBuilder.messages.chat.page(encodeURIComponent(params.row.id))}
           title="Open chat"
           style={{
-            color: '#2563eb',
+            // color: '#2563eb',
             textDecoration: 'none',
           }}
           onMouseEnter={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
@@ -111,7 +109,7 @@ export const ChatList = ({
       if (!event.isPropagationStopped()) {
         const chatId = params.row.id;
         if (chatId) {
-          push(`/chat/${chatId}`);
+          push(String(siteBuilder.messages.chat.page(encodeURIComponent(chatId))));
         }
       }
     },

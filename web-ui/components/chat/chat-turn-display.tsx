@@ -131,7 +131,7 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
         {/* Turn Properties (when expanded) */}
         {showTurnProperties && (
           <Collapse in={propertiesExpanded}>
-            <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+            <Paper variant="outlined" sx={{ p: 2, mb: 2 }} elevation={3}>
               <Typography variant="subtitle2" gutterBottom>
                 Turn Properties
               </Typography>
@@ -239,7 +239,7 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
 
               {/* Turn Metadata */}
               {turn.metadata && (
-                <Box sx={{ mt: 2 }}>
+                <Paper sx={{ mt: 2 }} elevation={4}>
                   <Typography variant="caption" display="block" gutterBottom>
                     Turn Metadata:
                   </Typography>
@@ -247,7 +247,7 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                     component="pre"
                     sx={{
                       fontSize: '0.75rem',
-                      backgroundColor: 'grey.100',
+                      // backgroundColor: 'grey.100',
                       p: 1,
                       borderRadius: 1,
                       overflow: 'auto',
@@ -256,7 +256,7 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                   >
                     {JSON.stringify(turn.metadata, null, 2)}
                   </Box>
-                </Box>
+                </Paper>
               )}
             </Paper>
             <Divider sx={{ mb: 2 }} />

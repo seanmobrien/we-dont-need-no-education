@@ -198,9 +198,22 @@ export interface MappedUrlBuilder extends IUrlBuilder {
        */
       chat: IUrlBuilder & {
         /**
-         * URL builder for chat history.
+         * URL builder for chat history API.
          */
         history: MappedPageOverloads;
+        /**
+         * URL builder for chat statistics API.
+         */
+        stats: MappedPageOverloads;
+        /**
+         * URL builder for rate retry queue API.
+         */
+        rateRetry: IUrlBuilder & {
+          /**
+           * URL builder for rate retry response retrieval API.
+           */
+          response: MappedPageOverloads;
+        };
       };
     };
   };
@@ -254,6 +267,22 @@ export interface MappedUrlBuilder extends IUrlBuilder {
      * @returns A function that generates the URL for handling emails.
      */
     email: MappedPageOverloads;
+    /**
+     * URL builder for handling historic chats.
+     *
+     * @param slug - Optional slug or object for a specific chat history page.
+     * @returns A function that generates the URL for handling historic chats.
+     */
+    chat: IUrlBuilder & {
+      /**
+       * URL builder for chat statistics.
+       */
+      stats: MappedPageOverloads;
+      /**
+       * URL builder for chat details; equivalent to {@link messages.chat}.
+       */
+      detail: MappedPageOverloads;
+    };
   };
 }
 
@@ -362,16 +391,31 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
   // Add AI chat builders
   ret.api.ai = ret.api.child('ai') as MappedUrlBuilder['api']['ai'];
   ret.api.ai.chat = ret.api.ai.child('chat') as MappedUrlBuilder['api']['ai']['chat'];
-  ret.api.ai.chat.history = mappedPageOverloadFactory(ret.api.ai.chat, 'history');
-  
-  ret.chat = ret.child('chat') as MappedUrlBuilder['chat'];
-  ret.chat.detail = mappedPageOverloadFactory(ret.chat, '');
-  
+  ret.api.ai.chat.history = mappedPageOverloadFactory(
+    ret.api.ai.chat,
+    'history',
+  );
+  ret.api.ai.chat.stats = mappedPageOverloadFactory(
+    ret.api.ai.chat,
+    'stats',
+  );
+  ret.api.ai.chat.rateRetry = ret.api.ai.chat.child('rate-retry') as MappedUrlBuilder['api']['ai']['chat']['rateRetry'];
+  ret.api.ai.chat.rateRetry.response = mappedPageOverloadFactory(
+    ret.api.ai.chat.rateRetry,
+    'response',
+  );
+
   ret.email = ret.child('messages').child('email') as MappedUrlBuilder['email'];
   ret.email.bulkEdit = mappedPageOverloadFactory(ret.email, 'bulk-edit');
   ret.email.edit = mappedPageOverloadFactory(ret.email, 'edit');
   ret.messages = ret.child('messages') as MappedUrlBuilder['messages'];
   ret.messages.import = mappedPageOverloadFactory(ret.messages, 'import');
   ret.messages.email = mappedPageOverloadFactory(ret.messages, 'email');
+  ret.messages.chat = ret.child('messages').child('chat') as MappedUrlBuilder['messages']['chat'];
+  ret.messages.chat.stats = mappedPageOverloadFactory(ret.messages.chat, 'stats');
+  ret.messages.chat.detail = mappedPageOverloadFactory(ret.messages.chat, '');
+
+  ret.chat = ret.messages.chat;
+    
   return ret as MappedUrlBuilder;
 };

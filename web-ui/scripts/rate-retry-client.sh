@@ -7,7 +7,7 @@ set -e
 
 # Configuration
 API_HOST="${API_HOST:-http://localhost:3000}"
-API_ENDPOINT="${API_HOST}/api/chat/rate-retry"
+API_ENDPOINT="${API_HOST}/api/ai/chat/rate-retry"
 TIMEOUT="${TIMEOUT:-300}" # 5 minutes timeout
 LOG_FILE="${LOG_FILE:-/var/log/rate-retry-client.log}"
 
