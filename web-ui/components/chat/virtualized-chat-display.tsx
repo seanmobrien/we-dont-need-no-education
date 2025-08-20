@@ -5,12 +5,10 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box, Switch, FormControlLabel, FormGroup, Paper } from '@mui/material';
 import { ChatTurnDisplay } from './chat-turn-display';
 import { 
-  createElementMeasurer, 
   createTextMeasurer, 
   estimateMarkdownHeight 
 } from '@/lib/components/ai/height-estimators';
 
-const elementMeasurer = createElementMeasurer();
 const textMeasurer = createTextMeasurer();
 
 interface ChatMessage {
