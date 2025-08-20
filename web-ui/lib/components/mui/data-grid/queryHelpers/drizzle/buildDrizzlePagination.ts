@@ -9,12 +9,12 @@
  * @version 1.0.0
  * @since 2025-07-27
  */
-import { LikeNextRequest } from '@/lib/nextjs-util/types';
-import { PaginatedGridListRequest } from '../../types';
+import type { LikeNextRequest } from '@/lib/nextjs-util/types';
+import type { PaginatedGridListRequest } from '../../types';
 import type { DrizzleSelectQuery } from './types';
-import { AnyPgSelect } from 'drizzle-orm/pg-core';
+import type { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { parsePaginationStats as parsePaginationStatsImpl } from '../utility';
-import { deprecate } from 'util';
+import { deprecate } from '@/lib/nextjs-util/utils';
 /**
  * Props for configuring Drizzle pagination functionality.
  */

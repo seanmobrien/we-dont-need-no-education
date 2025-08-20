@@ -9,7 +9,7 @@
  * @since 2025-07-25
  */
 
-import { LanguageModelV1CallOptions } from 'ai';
+import { JSONValue, LanguageModelV1CallOptions } from 'ai';
 import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -160,6 +160,9 @@ export const safeInitializeMessagePersistence = async (
 ): Promise<MessagePersistenceInit | null> => {
   try {
     context.chatId ??= generateChatId().id;
+    params.providerMetadata ??= {};
+    params.providerMetadata.backoffice ??= {} as Record<string, JSONValue>;
+    params.providerMetadata.backoffice.chatId = context.chatId;
     return await instrumentMiddlewareInit(context, async () => {
       return await initializeMessagePersistence(context, params);
     });

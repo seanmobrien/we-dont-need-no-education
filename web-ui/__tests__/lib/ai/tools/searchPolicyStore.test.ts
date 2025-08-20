@@ -23,7 +23,7 @@ describe('searchPolicyStore', () => {
   const mockError = jest.fn();
 
   beforeEach(() => {
-    (HybridPolicySearch as jest.Mock).mockImplementation(() => ({
+    (HybridPolicySearch as unknown as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
     }));
     (hybridPolicySearchFactory as jest.Mock).mockReturnValue({

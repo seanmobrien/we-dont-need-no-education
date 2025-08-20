@@ -1,4 +1,4 @@
-import { generateText, wrapLanguageModel } from 'ai';
+import { wrapLanguageModel } from 'ai';
 import { aiModelFactory } from '../../aiModelFactory';
 import { getCaseFileDocument } from '../../tools';
 import { ClientTimelineAgent } from './agent';
@@ -21,8 +21,11 @@ import { ToolProviderSet } from '../..';
 import { log } from '@/lib/logger';
 import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
 import { auth } from '@/auth';
+import { generateTextWithRetry } from '../../core/generate-text-with-retry';
 
 type InitializeProps = { req: NextRequest };
+
+
 
 /**
  * Represents an agent responsible for building a timeline summary for a given case record.
@@ -259,14 +262,14 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   ): Promise<Partial<GlobalMetadata>> {
     const prompt = `
     Analyze the following document and extract case metadata. Return a JSON object with the following fields:
-    - caseId: string - The ID of the request case file
-    - communicationId: string - The ID of the email or attachment the request originates from
+    - caseId: string - The documentPropertyId of the target call-to-action case file; usually formatted as a uuid.
+    - communicationId: string - The ID of the email or attachment the target call-to-action originates from; usually formatted as an integer.
     - caseType: "FERPA" | "MNGDPA" | "Other"
-    - requestType: string - The type of requset
+    - requestType: string - The type of request being made (eg "Data Request from Subject", "Public Data Request", "Educational Records Request", "Title IX Request", "Other", etc.)
     - requestDate: ISO date string - The date the request was made
     - requesterName: string - The name of the requester
     - institutionName: string - The name of the institution handling the request
-    - complianceDeadline: ISO date string - The nearest compliance deadline for the request
+    - complianceDeadline: ISO date string - The nearest enforceable compliance deadline based on requestType and requestDate, considering any applicable laws or regulations and the request complexity.
     - currentStatus: string - The current status of the request
 
     Document:
@@ -542,11 +545,16 @@ class ServerTimelineAgent extends ClientTimelineAgent {
           middleware: createChatHistoryMiddleware({...this.#chatHistoryContext, model: baseModel.modelId }),
         })
       tools = await setupDefaultTools({ req });
-      const ret = await generateText({
+      const ret = await generateTextWithRetry({
         model: hal,
         prompt: input,
         tools: tools.get_tools(),
         maxSteps: 20,
+        experimental_telemetry: {
+          isEnabled: true,
+          functionId:
+            'agent-timeline-' + (operation ? operation : 'model-request'),
+        },
         //experimental_continueSteps: true,
       });
       this.#chatHistoryContext.iteration++;

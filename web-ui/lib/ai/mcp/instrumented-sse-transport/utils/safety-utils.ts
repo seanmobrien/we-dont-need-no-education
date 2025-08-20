@@ -13,7 +13,7 @@ import { log } from '@/lib/logger';
 
 // Timeout constants
 export const CONNECTION_TIMEOUT_MS = 30 * 1000; // 30 seconds for connection
-export const SEND_TIMEOUT_MS = 10 * 1000; // 10 seconds for sending messages
+export const SEND_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes for sending messages
 
 export interface OperationMetrics {
   startTime: number;

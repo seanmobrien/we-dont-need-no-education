@@ -17,10 +17,17 @@ const ChatDetailPage = async (req: {
   if (!userId) {
     unauthorized();
   }
-  const { chatId } = await extractParams(req);
-  const { ok, title } = await getChatDetails({ chatId, userId });
-  if (!ok) {
-    notFound();
+  let { chatId } = await extractParams(req);
+  let { ok, title } = await getChatDetails({ chatId, userId });
+  if (!ok) {    
+    chatId = decodeURIComponent(chatId);
+    const { ok: okDecoded, title: titleDecoded } = await getChatDetails({ chatId, userId });
+    ok = okDecoded;
+    if (ok) {
+      title = titleDecoded;
+    } else {
+      notFound();
+    }
   }
 
   return (

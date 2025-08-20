@@ -3,8 +3,8 @@ import type { GridFilterModel, GridSortModel, GridFilterItem } from '@mui/x-data
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { isGridSortModel, isString, isURL } from './postgres/guards';
 import { isGridFilterModel } from '../guards';
-import { ArrayElement } from '@/lib/typescript';
-import { PaginatedGridListRequest } from '../types';
+import type { ArrayElement } from '@/lib/typescript/_types';
+import type { PaginatedGridListRequest } from '../types';
 import { normalizeNullableNumeric } from '@/data-models/_utilities';
 type GridSortItem = ArrayElement<GridSortModel>;
 

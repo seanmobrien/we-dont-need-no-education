@@ -114,6 +114,7 @@ describe('AI Model Types', () => {
       'azure:embedding',
       'google:completions',
       'google:embedding',
+      'google:gemini-2.0-flash',
     ]);
   });
 

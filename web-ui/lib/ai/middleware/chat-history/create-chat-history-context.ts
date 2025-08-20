@@ -63,7 +63,6 @@ const hydrateContext = (
     }
     span.end();
   };
-
   return {
     iteration: 1,
     beganAt: new Date(),

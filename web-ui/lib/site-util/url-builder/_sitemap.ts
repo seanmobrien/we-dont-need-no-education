@@ -33,6 +33,10 @@ export const siteMap = {
       notes: 'notes',
       responsiveAction: 'call-to-action-response',
     },
+    chat: {
+      stats: 'stats',
+      detail: (chatId: string) => `/messages/chat/${chatId}`,
+    },
     thread: (threadId: string) => `/messages/email/thread/${threadId}`,
   },
   chat: {

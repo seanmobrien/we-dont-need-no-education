@@ -57,6 +57,7 @@ const buildRawInstance = () => ({
   MEM0_PROJECT_ID: process.env.MEM0_PROJECT_ID,
   MEM0_API_KEY: process.env.MEM0_API_KEY,
   NODE_ENV: process.env.NODE_ENV,
+  TOKEN_BATCH_THRESHOLD: process.env.TOKEN_BATCH_THRESHOLD,
 });
 
 // Define the schema for server-side environment variables
@@ -111,6 +112,14 @@ const serverEnvSchema = z.object({
   AZURE_AISEARCH_VECTOR_SIZE_LARGE: z.number().default(3072),
   AZURE_AISEARCH_DOCUMENT_SPLITTER_OVERLAP: z.number().default(15),
   AZURE_AISEARCH_DOCUMENT_SPLITTER_MAX_TOKENS: z.number().default(512),
+  /**
+   * Maximum cumulative token count (approx) per AI preprocessing batch when
+   * grouping case file documents with shared goals. Documents are accumulated
+   * until the next document would exceed this threshold, then a batch
+   * processing call is executed. Tuned to balance prompt size vs. parallelism.
+   * Override via env TOKEN_BATCH_THRESHOLD; defaults to 50,000 tokens.
+   */
+  TOKEN_BATCH_THRESHOLD: z.number().default(50000),
   AUTH_GOOGLE_ID: z.string(),
   AUTH_GOOGLE_SECRET: z.string(),
   AUTH_GOOGLE_APIKEY: z.string(),

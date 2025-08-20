@@ -527,8 +527,7 @@ export const summarizeMessageRecord = async ({
   Additionally,
   5. Provide a short (4-5 word max) title that accurately describes the conversation as a whole - this will be used as the new Chat Title.
 
-  Keep the summary as short as possible while preserving essential meaning.
-  Avoid changing the title unless there is a meaningful difference.`;
+  Keep the summary as short as possible while preserving essential meaning.`;
   const model = aiModelFactory('lofi');
   const summarized = (
     await generateObject({
