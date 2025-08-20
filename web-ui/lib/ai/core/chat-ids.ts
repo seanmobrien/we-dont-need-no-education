@@ -57,7 +57,7 @@ export const generateChatId = (seed?: number | string): { seed: number; id: stri
     if (cb === undefined) {
       log((l) => l.error('Chat ID generation failed', { seed: actualSeed }));
     }
-    id += cb;    
+    id += cb ?? '';    
   }
   return {
     seed: actualSeed,
