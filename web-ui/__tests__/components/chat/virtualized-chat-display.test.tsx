@@ -58,7 +58,8 @@ describe('VirtualizedChatDisplay', () => {
       count: 1,
       getScrollElement: expect.any(Function),
       estimateSize: expect.any(Function),
-      overscan: 2,
+      overscan: 3,
+      measureElement: undefined,
     });
   });
 
@@ -127,7 +128,8 @@ describe('VirtualizedChatDisplay', () => {
       count: 2,
       getScrollElement: expect.any(Function),
       estimateSize: expect.any(Function),
-      overscan: 2,
+      overscan: 3,
+      measureElement: undefined,
     });
   });
 
@@ -150,7 +152,7 @@ describe('VirtualizedChatDisplay', () => {
     const estimatedSize = estimateSize(0);
     expect(typeof estimatedSize).toBe('number');
     expect(estimatedSize).toBeGreaterThan(0);
-    expect(estimatedSize).toBeLessThanOrEqual(1000); // Should be capped at 1000
+    // No longer artificially capped - content can be as tall as it needs to be
   });
 
   it('should test size estimation with turn properties enabled', () => {
