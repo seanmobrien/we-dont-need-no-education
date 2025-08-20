@@ -1,12 +1,17 @@
 "use client";
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box, Switch, FormControlLabel, FormGroup, Paper } from '@mui/material';
 import { ChatTurnDisplay } from './chat-turn-display';
-import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
+import { 
+  createElementMeasurer, 
+  createTextMeasurer, 
+  estimateMarkdownHeight 
+} from '@/lib/components/ai/height-estimators';
 
 const elementMeasurer = createElementMeasurer();
+const textMeasurer = createTextMeasurer();
 
 interface ChatMessage {
   turnId: number;
@@ -51,8 +56,8 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
   const [showTurnProperties, setShowTurnProperties] = useState(false);
   const [showMessageMetadata, setShowMessageMetadata] = useState(false);
 
-  // Estimate size for each turn based on content using elementMeasurer
-  const estimateSize = (index: number) => {
+  // Estimate size for each turn based on content using improved measurement
+  const estimateSize = useCallback((index: number) => {
     const turn = turns[index];
     if (!turn) return 200; // default fallback
     
@@ -70,20 +75,26 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
     }
 
     // Base size for turn header and card structure
-    let totalHeight = 80; // Base turn header height
+    let totalHeight = 120; // Increased base turn header height to account for chips and spacing
 
-    // Measure each message content using elementMeasurer
+    // Calculate content width accounting for Card padding and margins
+    const contentWidth = Math.max(width * 0.85 - 48, 300); // 85% width minus Card padding, min 300px
+
+    // Measure each message content using sophisticated height estimation
     turn.messages.forEach(message => {
-      if (message.content) {
-        // Use elementMeasurer to get accurate height estimation
-        const estimatedHeight = elementMeasurer.measureMarkdown
-          ? elementMeasurer.measureMarkdown({ text: message.content, width: width * 0.85 })
-          : message.content.split('\n').length * 24; // fallback
+      if (message.content && message.content.trim()) {
+        // Use sophisticated markdown height estimation
+        const estimatedHeight = estimateMarkdownHeight(
+          message.content,
+          contentWidth,
+          textMeasurer
+        );
         
-        totalHeight += estimatedHeight;
+        // Add message container padding and margins
+        totalHeight += estimatedHeight + 32; // content height + message container padding
       } else {
         // Base message height for messages without content (tool calls, etc)
-        totalHeight += 40;
+        totalHeight += 60; // Increased from 40 to account for message container
       }
       
       // Add spacing between messages
@@ -92,45 +103,73 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
 
     // Add size if properties are shown
     if (showTurnProperties) {
-      totalHeight += 120; // space for model, temperature, latency etc
+      totalHeight += 150; // Increased space for model, temperature, latency etc
       
-      // Add space for warnings and errors
+      // Add space for warnings and errors using proper estimation
       if (turn.warnings?.length) {
         turn.warnings.forEach(warning => {
-          const warningHeight = elementMeasurer.measureMarkdown
-            ? elementMeasurer.measureMarkdown({ text: warning, width: width * 0.8 })
-            : Math.max(warning.split('\n').length * 20, 40);
-          totalHeight += warningHeight + 8;
+          const warningHeight = estimateMarkdownHeight(
+            warning,
+            contentWidth * 0.9, // Slightly narrower for alerts
+            textMeasurer
+          );
+          totalHeight += warningHeight + 24; // Alert padding
         });
       }
       
       if (turn.errors?.length) {
         turn.errors.forEach(error => {
-          const errorHeight = elementMeasurer.measureMarkdown
-            ? elementMeasurer.measureMarkdown({ text: error, width: width * 0.8 })
-            : Math.max(error.split('\n').length * 20, 40);
-          totalHeight += errorHeight + 8;
+          const errorHeight = estimateMarkdownHeight(
+            error,
+            contentWidth * 0.9, // Slightly narrower for alerts  
+            textMeasurer
+          );
+          totalHeight += errorHeight + 24; // Alert padding
         });
+      }
+      
+      // Add space for metadata if present
+      if (turn.metadata) {
+        const metadataLines = JSON.stringify(turn.metadata, null, 2).split('\n').length;
+        totalHeight += Math.min(metadataLines * 16, 200); // Cap metadata display at 200px
       }
     }
 
-    // Add space for metadata display if enabled
+    // Add space for message metadata display if enabled
     if (showMessageMetadata) {
-      totalHeight += turn.messages.length * 40; // Additional space per message for metadata
+      turn.messages.forEach(message => {
+        totalHeight += 80; // Base metadata panel height
+        
+        // Add space for function call and metadata JSON
+        if (message.functionCall) {
+          const funcCallLines = JSON.stringify(message.functionCall, null, 2).split('\n').length;
+          totalHeight += Math.min(funcCallLines * 16, 200); // Cap at 200px
+        }
+        
+        if (message.metadata) {
+          const msgMetadataLines = JSON.stringify(message.metadata, null, 2).split('\n').length;
+          totalHeight += Math.min(msgMetadataLines * 16, 200); // Cap at 200px  
+        }
+      });
     }
 
     // Add padding for Paper component and margins
-    totalHeight += 32; // Paper padding
-    totalHeight += 16; // Margin between turns
+    totalHeight += 48; // Card padding and margins
     
-    return Math.min(totalHeight, 2000); // cap at reasonable max
-  };
+    // Remove artificial cap - let content be as tall as it needs to be
+    // Only set a reasonable minimum height
+    return Math.max(totalHeight, 150);
+  }, [turns, showTurnProperties, showMessageMetadata]);
 
   const rowVirtualizer = useVirtualizer({
     count: turns.length,
     getScrollElement: () => parentRef.current,
     estimateSize,
-    overscan: 2, // Render a few items outside of the visible area
+    overscan: 3, // Render more items outside visible area for smoother scrolling
+    measureElement: 
+      typeof window !== 'undefined' && window.ResizeObserver
+        ? (element) => element?.getBoundingClientRect().height
+        : undefined, // Enable dynamic measurement when ResizeObserver is available
   });
 
   return (
@@ -181,6 +220,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
             return (
               <Box
                 key={virtualItem.key}
+                data-index={virtualItem.index}
                 sx={{
                   position: 'absolute',
                   top: 0,

@@ -85,7 +85,17 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
         )}
       </Box>
       {/* Message Content */}
-      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 1 }}>
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          whiteSpace: 'pre-wrap', 
+          wordBreak: 'break-word',
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+          mb: 1,
+          maxWidth: '100%'
+        }}
+      >
         {message.content || '<no content>'}
       </Typography>
       {/* Optimized Content (if different from regular content) */}
@@ -95,7 +105,16 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
             <Typography variant="caption">Optimized Content</Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                maxWidth: '100%'
+              }}
+            >
               {message.optimizedContent}
             </Typography>
           </AccordionDetails>
@@ -153,6 +172,9 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
                       borderRadius: 1,
                       overflow: 'auto',
                       maxHeight: 200,
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '100%'
                     }}
                   >
                     {JSON.stringify(message.functionCall, null, 2)}
@@ -173,6 +195,9 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
                       borderRadius: 1,
                       overflow: 'auto',
                       maxHeight: 200,
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '100%'
                     }}
                   >
                     {JSON.stringify(message.metadata, null, 2)}

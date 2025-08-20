@@ -252,6 +252,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                       borderRadius: 1,
                       overflow: 'auto',
                       maxHeight: 200,
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '100%'
                     }}
                   >
                     {JSON.stringify(turn.metadata, null, 2)}
