@@ -11,7 +11,7 @@ export interface RateLimitedRequest {
     chatHistoryId?: string;
     chatTurnId?: string;
     userId?: string;
-    retryAfter: number;
+    retryAfter?: number;
     submittedAt: string;
     generation: 1 | 2; // gen-1 or gen-2 retry queue
   };

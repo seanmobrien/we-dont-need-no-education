@@ -11,7 +11,7 @@ import type {
 } from './types';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import { log } from '@/__mocks__/lib/logger';
+import { log } from '@/lib/logger';
 
 /**
  * Raw metadata structure returned by Azure AI Search (or compatible hybrid search endpoint)
