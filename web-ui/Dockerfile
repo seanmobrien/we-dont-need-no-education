@@ -56,7 +56,7 @@ RUN \
   fi
 
 # Rebuild the source code only when needed
-FROM base AS builder
+FROM deps AS builder
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -114,7 +114,7 @@ RUN \
   fi
 
 # Production image, copy all the files and run next
-FROM base AS runner
+FROM builder AS runner
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
