@@ -12,8 +12,9 @@ import {
   caseFileDocumentSizeHistogram,
 } from './metrics';
 import { countTokens } from '../../core/count-tokens';
-import { ChatHistoryContext, createChatHistoryMiddleware } from '../../middleware';
+import { createChatHistoryMiddleware } from '../../middleware';
 import { generateTextWithRetry } from '../../core/generate-text-with-retry';
+import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
 
 /**
  * Preprocesses case file documents using AI to extract relevant information based on specified goals.
@@ -92,13 +93,13 @@ import { generateTextWithRetry } from '../../core/generate-text-with-retry';
 export const preprocessCaseFileDocument = async ({
   documents,
   goals,
-  chatHistoryContext,
+  requestContext: { requestId },
 }: {
   documents:
     | Array<{ verbatim_fidelity: number; document: DocumentResource }>
     | { verbatim_fidelity: number; document: DocumentResource };
   goals: Array<string>;
-  chatHistoryContext: ChatHistoryContext;
+  requestContext: { requestId: string };
 }): Promise<Array<CaseFileResponse>> => {
   const preprocessingStartTime = Date.now();
   const source = Array.isArray(documents) ? documents : [documents];
@@ -177,6 +178,7 @@ Input Record Format:
 Output Record Format: [
 {
   "documentId": ...,
+  "documentPropertyId": ...,
   "documentType": ...,
   "createdOn": ...,
   "sender": ...,
@@ -213,7 +215,7 @@ Output Record Format: [
   try {
     const payload = {
       // model,
-      // prompt: PROMPT,      
+      // prompt: PROMPT,
       messages: [
         { role: 'system', content: PROMPT },
         {
@@ -222,7 +224,7 @@ Output Record Format: [
 ___BEGIN CASE FILE___
 ${recordContents}
 ___END CASE FILE___`,
-        }
+        },
       ] as CoreMessage[],
       temperature: 0.1,
       experimental_telemetry: {
@@ -231,33 +233,43 @@ ___END CASE FILE___`,
         metadata: {
           documentId: document_ids.join(', '),
           goals: goals.join(', '),
+          requestId: requestId,
         },
       },
     };
 
-    const tokens = countTokens({ prompt: payload.messages });    
+    const tokens = countTokens({ prompt: payload.messages });
     let response: GenerateTextResult<ToolSet, unknown>;
-    try
-    {      
+    const chatHistoryContext = createAgentHistoryContext({
+      operation: 'summarize.case-file',
+      iteration: 1,
+      originatingUserId: '-1',
+      metadata: {
+        requestId,
+        documentId: document_ids.join(', '),
+        goals: goals.join(', '),
+      },
+    });
+    try {
       const model = wrapLanguageModel({
         model:
-          tokens > 100000
-            ? aiModelFactory('google:gemini-2.0-flash')
-            : aiModelFactory('lofi'),
+          tokens > 100000 ? aiModelFactory('lofi') : aiModelFactory('hifi'),
         middleware: createChatHistoryMiddleware(chatHistoryContext),
       });
       response = await generateTextWithRetry({
         ...payload,
         model,
       });
-    } catch(error) {
+    } catch (error) {
       chatHistoryContext.error = error;
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'getCaseFileDocument::preprocessCaseFileDocument',
       });
-    } 
-    
+    }finally{
+      chatHistoryContext?.dispose();
+    }
+
     const preprocessingDuration = Date.now() - preprocessingStartTime;
 
     // Record preprocessing success metrics

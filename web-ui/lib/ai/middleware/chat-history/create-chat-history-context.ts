@@ -63,9 +63,6 @@ const hydrateContext = (
     }
     span.end();
   };
-  if (context.chatId?.indexOf('undefined') !== -1) {
-    debugger;
-  }
   return {
     iteration: 1,
     beganAt: new Date(),

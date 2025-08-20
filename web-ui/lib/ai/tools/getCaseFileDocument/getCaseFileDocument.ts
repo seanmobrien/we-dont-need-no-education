@@ -65,7 +65,8 @@ import {
   getCaseFileDocumentCounter,
 } from './metrics';
 import { preprocessCaseFileDocument } from './preprocessCaseFileDocument';
-import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
+import { countTokens } from '../../core/count-tokens';
+import { generateChatId } from '../../core';
 import { caseFileRequestPropsShape, CaseFileResponseShape } from '../schemas/case-file-request-props-shape';
 import z from 'zod';
 
@@ -192,8 +193,7 @@ export const getMultipleCaseFileDocuments = async ({
       verbatim_fidelity: x.verbatimFidelity ?? verbatim_fidelity ?? 75,
       goals: [...new Set<string>([...(x.goals ?? []), ...globalGoals])],
     }),
-  );
-
+  );  
   const attributes = {
     // has_goals: Boolean(goals.length),
     // has_reasoning: Boolean(reasoning),
@@ -202,7 +202,7 @@ export const getMultipleCaseFileDocuments = async ({
     initial_document_count: requests.length,
     valid_document_count: resolvedRequests.length,
   };
-
+  const requestId = generateChatId(JSON.stringify(resolvedRequests));
   try {
     const validIds = resolvedRequests.map((x) => x.caseFileId);
     if (validIds.length === 0) {
@@ -305,13 +305,7 @@ export const getMultipleCaseFileDocuments = async ({
      * - Documents without specific analysis needs aren't subjected to unnecessary AI processing
      * - AI resources are used efficiently by processing similar documents together
      * - System performance scales well with varying document loads and complexity
-     */
-    const chatHistoryContext = createAgentHistoryContext({
-      operation: 'summarize.case-file',
-      opTags: { documents: requests },
-      iteration: 1,
-      originatingUserId: '-1',
-    });
+     */    
     let processedGroups: Array<CaseFileResponse | Array<CaseFileResponse>>;
     try{
       processedGroups = await Promise.all(
@@ -328,26 +322,76 @@ export const getMultipleCaseFileDocuments = async ({
 
           // Process documents with goals through AI analysis pipeline
           const groupGoals = JSON.parse(goalsKey) as string[];
-          try {
-            return await preprocessCaseFileDocument({
-              documents: groupDocuments,
-              goals: groupGoals,
-              chatHistoryContext,
-            });
-          } catch (error) {
-            const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-              log: true,
-              source: 'getCaseFileDocument::preprocessCaseFileDocument'
-            });
-            return groupDocuments.map((d) => ({
-              document: { unitId: d?.document?.unitId ?? '<<unknown>>' },
-              text: `An unexpected error occurred processing case file id ${d?.document?.unitId ?? '<<unknown>>'}. Please try your request again later.  Error details: ${le.toString()}`,
-            })) as CaseFileResponse;
-          }          
+          // New batching strategy: accumulate documents until token threshold exceeded, then process batch
+          const TOKEN_BATCH_THRESHOLD = 50000;
+          const aggregatedResults: Array<CaseFileResponse> = [];
+
+          let currentBatch: typeof groupDocuments = [];
+          let currentBatchTokens = 0;
+
+          const processCurrentBatch = async () => {
+            if (currentBatch.length === 0) return;
+            try {
+              const batchResults = await preprocessCaseFileDocument({
+                documents: currentBatch,
+                goals: groupGoals,
+                requestContext: { requestId: requestId.id },
+              });
+              aggregatedResults.push(...batchResults);
+            } catch (error) {
+              const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+                log: true,
+                source: 'getCaseFileDocument::preprocessCaseFileDocument:batch',
+              });
+              aggregatedResults.push(
+                ...currentBatch.map((d) => ({
+                  document: { unitId: d?.document?.unitId ?? '<<unknown>>' },
+                  text: `An unexpected error occurred processing case file id ${d?.document?.unitId ?? '<<unknown>>'}. Please try your request again later.  Error details: ${le.toString()}`,
+                })) as Array<CaseFileResponse>,
+              );
+            } finally {
+              currentBatch = [];
+              currentBatchTokens = 0;
+            }
+          };
+
+          for (const doc of groupDocuments) {
+            let docTokens = 0;
+            try {
+              // Estimate tokens for this single document by serializing its content
+              docTokens = countTokens({
+                // We approximate token usage by providing a single message with JSON of the document
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                prompt: [{ role: 'user', content: JSON.stringify(doc.document) }] as any,
+                enableLogging: false,
+              });
+            } catch {
+              // Fallback conservative estimate if token counting fails
+              docTokens = 2000;
+            }
+
+            // If adding this doc would exceed threshold, process existing batch first
+            if (currentBatch.length > 0 && currentBatchTokens + docTokens > TOKEN_BATCH_THRESHOLD) {
+              await processCurrentBatch();
+            }
+
+            currentBatch.push(doc);
+            currentBatchTokens += docTokens;
+
+            // If a single (or accumulated) batch crosses threshold, process immediately
+            if (currentBatchTokens > TOKEN_BATCH_THRESHOLD) {
+              await processCurrentBatch();
+            }
+          }
+
+          // Process any remaining documents in the final batch
+          await processCurrentBatch();
+
+          return aggregatedResults;
         }),
       );      
     } finally {
-      chatHistoryContext.dispose();
+      // Clean up any resources or contexts
     }
     
 

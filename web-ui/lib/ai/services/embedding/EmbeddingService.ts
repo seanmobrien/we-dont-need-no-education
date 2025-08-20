@@ -37,11 +37,8 @@ export class EmbeddingService implements IEmbeddingService {
     return ret.embedding;
   }
 
-  public async embed(query: string): Promise<number[]> {
-    if (!this.cacheEmbeddings) {
-      return this.getEmbedding(query);
-    }
-    if (this.embeddingCache.has(query)) {
+  public async embed(query: string): Promise<number[]> {    
+    if (this.cacheEmbeddings && this.embeddingCache.has(query)) {
       return this.embeddingCache.get(query)!;
     }
     const vector = await this.getEmbedding(query);

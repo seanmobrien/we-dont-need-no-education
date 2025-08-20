@@ -62,10 +62,6 @@ export const createChatHistoryMiddleware = (
   // Create processing queue to maintain FIFO order
   const processingQueue = new ProcessingQueue();
 
-  if (context.chatId?.indexOf('undefined') !== -1) {
-    debugger;
-  }
-
   return {
     wrapStream: async ({ doStream, params }) => {      
       // Initialize message persistence

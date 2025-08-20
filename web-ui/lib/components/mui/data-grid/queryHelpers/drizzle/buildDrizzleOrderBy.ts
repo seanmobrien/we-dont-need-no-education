@@ -10,12 +10,11 @@
  */
 
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
-import { GridSortModel } from '@mui/x-data-grid';
+import type { GridSortModel } from '@mui/x-data-grid-pro';
 import { asc, desc, SQL } from 'drizzle-orm';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import type { PgColumn } from 'drizzle-orm/pg-core';
 import { isGridSortModel } from '../../guards';
-// import { columnMapFactory, parseSortOptions } from '../utility';
-import {
+import type {
   BuildDrizzleOrderByProps,
   DrizzleSortedQuery,
 } from './types';

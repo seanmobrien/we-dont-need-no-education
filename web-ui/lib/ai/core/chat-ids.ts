@@ -1,3 +1,5 @@
+import { log } from '@/lib/logger';
+
 /**
  * Creates a seeded pseudo-random number generator function using a linear congruential generator algorithm.
  *
@@ -51,7 +53,11 @@ export const generateChatId = (seed?: number | string): { seed: number; id: stri
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@$%~';
   let id = '';
   for (let i = 0; i < 8; i++) {
-    id += chars[Math.floor(random() * chars.length)];
+    const cb = chars[Math.floor(random() * chars.length)];
+    if (cb === undefined) {
+      log((l) => l.error('Chat ID generation failed', { seed: actualSeed }));
+    }
+    id += cb;    
   }
   return {
     seed: actualSeed,

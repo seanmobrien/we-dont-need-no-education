@@ -1,24 +1,31 @@
 'use client';
-import {
-  StableDefaultInitialState,
-  StableDefaultPageSizeOptions,
-  useGetRowId,
+import {  
   useDataSource,
-} from '@/lib/components/mui/data-grid';
+} from '@/lib/components/mui/data-grid/useDataSource';
+import {
+  useGetRowId,
+} from '@/lib/components/mui/data-grid/useGetRowId';
+import {
+  StableDefaultPageSizeOptions,
+  StableDefaultInitialState,
+} from '@/lib/components/mui/data-grid/default-values';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import TableContainer from '@mui/material/TableContainer';
 
-import { Box, Paper, TableContainer } from '@mui/material';
 import {
   DataGridPro,
-  DataGridProProps,
-  GridGetRowsError,
-  GridGetRowsParams,
-  GridLoadingOverlayVariant,
-  GridUpdateRowError,
-  GridValidRowModel,
+  type DataGridProProps,
+  type GridGetRowsParams,
+  type GridLoadingOverlayVariant,
+  type GridUpdateRowError,
+  type GridGetRowsError,
+  type GridValidRowModel,
 } from '@mui/x-data-grid-pro';
+
 import { useCallback, useMemo } from 'react';
-import { ServerBoundDataGridProps } from './types';
-import { useNotifications } from '@toolpad/core';
+import type { ServerBoundDataGridProps } from './types';
+import { useNotifications } from '@toolpad/core/useNotifications';
 
 import ServerBoundDataGridPropsSchema from './server-bound-data-grid-props-schema';
 

@@ -10,14 +10,14 @@
  */
 
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
-import { GridFilterModel } from '@mui/x-data-grid-pro';
+import type { GridFilterModel } from '@mui/x-data-grid-pro';
 import { and, or, eq, ne, ilike, isNull, isNotNull, inArray, notInArray, gt, lt, gte, lte, between, notBetween, SQL, sql } from 'drizzle-orm';
-import { AnyPgSelect } from 'drizzle-orm/pg-core';
+import type { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
 import { isTruthy } from '@/lib/react-util/_utility-methods';
 import { schema } from '@/lib/drizzle-db';
-import { BuildDrizzleAttachmentOrEmailFilterProps, BuildDrizzleItemFilterProps, BuildDrizzleQueryFilterProps, DrizzleSelectQuery } from './types';
+import type { BuildDrizzleAttachmentOrEmailFilterProps, BuildDrizzleItemFilterProps, BuildDrizzleQueryFilterProps, DrizzleSelectQuery } from './types';
 
 /**
  * Appends a filter condition to a DrizzleSelectQuery.

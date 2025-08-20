@@ -25,7 +25,7 @@ describe('searchCaseFile', () => {
   const mockError = jest.fn();
 
   beforeEach(() => {
-    (HybridDocumentSearch as jest.Mock).mockImplementation(() => ({
+    (HybridDocumentSearch as unknown as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
     }));
     (log as jest.Mock).mockImplementation((cb) =>

@@ -1,6 +1,6 @@
-import { NextApiRequest, NextApiResponse } from 'next';
-import { NextRequest, NextResponse } from 'next/server';
-import { LikeNextRequest, LikeNextResponse } from './types';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextRequest, NextResponse } from 'next/server';
+import type { LikeNextRequest, LikeNextResponse } from './types';
 
 /**
  * Type guard to check if the given object is a NextApiRequest or NextRequest.

@@ -262,14 +262,14 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   ): Promise<Partial<GlobalMetadata>> {
     const prompt = `
     Analyze the following document and extract case metadata. Return a JSON object with the following fields:
-    - caseId: string - The ID of the request case file
-    - communicationId: string - The ID of the email or attachment the request originates from
+    - caseId: string - The documentPropertyId of the target call-to-action case file; usually formatted as a uuid.
+    - communicationId: string - The ID of the email or attachment the target call-to-action originates from; usually formatted as an integer.
     - caseType: "FERPA" | "MNGDPA" | "Other"
-    - requestType: string - The type of requset
+    - requestType: string - The type of request being made (eg "Data Request from Subject", "Public Data Request", "Educational Records Request", "Title IX Request", "Other", etc.)
     - requestDate: ISO date string - The date the request was made
     - requesterName: string - The name of the requester
     - institutionName: string - The name of the institution handling the request
-    - complianceDeadline: ISO date string - The nearest compliance deadline for the request
+    - complianceDeadline: ISO date string - The nearest enforceable compliance deadline based on requestType and requestDate, considering any applicable laws or regulations and the request complexity.
     - currentStatus: string - The current status of the request
 
     Document:
