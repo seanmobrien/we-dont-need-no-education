@@ -7,7 +7,7 @@
 const seededRandom = (seed: number): (() => number) => {
   return () => {
     seed = (seed * 9301 + 49297) % 233280; // Linear congruential generator
-    return seed / 233280;
+    return Math.abs(seed / 233280);
   };
 };
 

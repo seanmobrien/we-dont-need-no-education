@@ -1,6 +1,6 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { zodToStructure } from '@/lib/typescript';
-import { CoreMessage, generateText, GenerateTextResult, ToolSet, wrapLanguageModel } from 'ai';
+import { CoreMessage, GenerateTextResult, ToolSet, wrapLanguageModel } from 'ai';
 import { log } from '@/lib/logger';
 import { aiModelFactory } from '../../aiModelFactory';
 import { DocumentResource } from '../documentResource';
@@ -13,6 +13,7 @@ import {
 } from './metrics';
 import { countTokens } from '../../core/count-tokens';
 import { ChatHistoryContext, createChatHistoryMiddleware } from '../../middleware';
+import { generateTextWithRetry } from '../../core/generate-text-with-retry';
 
 /**
  * Preprocesses case file documents using AI to extract relevant information based on specified goals.
@@ -241,14 +242,14 @@ ___END CASE FILE___`,
       const model = wrapLanguageModel({
         model:
           tokens > 100000
-            ? aiModelFactory('google:lofi')
+            ? aiModelFactory('google:gemini-2.0-flash')
             : aiModelFactory('lofi'),
         middleware: createChatHistoryMiddleware(chatHistoryContext),
       });
-      response = await generateText({
-          ...payload,
-          model,
-        });
+      response = await generateTextWithRetry({
+        ...payload,
+        model,
+      });
     } catch(error) {
       chatHistoryContext.error = error;
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {

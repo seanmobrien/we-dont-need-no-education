@@ -17,6 +17,7 @@ export const AiModelTypeValues = [
   'azure:embedding',
   'google:completions',
   'google:embedding',
+  'google:gemini-2.0-flash',
 ] as const;
 
 export const AiModelTypeValue_LoFi = AiModelTypeValues[0];
@@ -34,6 +35,7 @@ export const AiModelTypeValue_Azure_Completions = AiModelTypeValues[11];
 export const AiModelTypeValue_Azure_Embedding = AiModelTypeValues[12];
 export const AiModelTypeValue_Google_Completions = AiModelTypeValues[13];
 export const AiModelTypeValue_Google_Embedding = AiModelTypeValues[14];
+export const AiModelTypeValue_Google_GeminiFlash_2dot0 = AiModelTypeValues[15];
 
 /**
  * Defines the type of AI model being used.

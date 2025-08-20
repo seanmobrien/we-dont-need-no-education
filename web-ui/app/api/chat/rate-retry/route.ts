@@ -15,7 +15,7 @@ import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 export const dynamic = 'force-dynamic';
 
 const MAX_PROCESSING_TIME_MS = 4 * 60 * 1000; // 4 minutes
-const REQUEST_TIMEOUT_MS = 10 * 1000; // 10 seconds per request
+const REQUEST_TIMEOUT_MS = 240 * 1000; // 240 seconds per request
 
 export const GET = wrapRouteRequest(async () => {
   const startTime = Date.now();
@@ -73,11 +73,11 @@ export const GET = wrapRouteRequest(async () => {
           const modelKey = azureAvailable ? azureModelKey : googleModelKey;
           log(l => l.verbose(`Processing request ${request.id} with model ${modelKey}`));                              
           // Create model instance (ensure we don't use embedding models for text generation)
-          const modelInstance = classification === 'embedding' 
+          const modelInstance = aiModelFactory('google:gemini-2.0-flash'); /* classification === 'embedding' 
             ? aiModelFactory(classification)
             : classification === 'hifi' || classification === 'lofi'
               ? aiModelFactory(classification)
-              : aiModelFactory('lofi');
+              : aiModelFactory('lofi'); */
           const model = wrapLanguageModel({
             middleware: createChatHistoryMiddleware(chatHistoryContext),
             model: modelInstance as LanguageModelV1,
@@ -91,7 +91,7 @@ export const GET = wrapRouteRequest(async () => {
           const generatePromise = generateText({
             model,
             messages: (request.request.messages as CoreMessage[]) || [],
-            maxTokens: 1000, // reasonable limit
+            // maxTokens: 1000, // reasonable limit
           });
           chatHistoryContext.iteration++;
 
@@ -118,7 +118,7 @@ export const GET = wrapRouteRequest(async () => {
           log(l => l.error(`Error processing request ${request.id}:`, error));
 
           // Check if it's another rate limit
-          if (error instanceof Error && error.message.includes('rate limit')) {
+          if (error instanceof Error && (error.message.includes('rate limit') || error.message.includes('RateRetry'))) {
             // Move to gen-2 queue
             const gen2Request: RateLimitedRequest = {
               ...request,

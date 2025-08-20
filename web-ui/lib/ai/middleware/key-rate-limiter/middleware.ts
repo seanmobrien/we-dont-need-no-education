@@ -87,7 +87,14 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
           currentModelKey,
           modelClassification,
           rateLimitContext.failover,
-          params
+          {
+            ...params,
+            ...{
+              chatId: 'unassigned',
+              turnId: '1',
+              ...(params?.providerMetadata?.backoffice ?? {})
+            }    
+          }
         );
       } catch (error) {
         // Model unavailable and no fallback - error already thrown with appropriate message
@@ -109,8 +116,15 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
           currentModelKey,
           modelClassification,
           rateLimitContext.failover,
-          params,
-          'generate'
+          {
+            ...params,
+            ...{
+              chatId: 'unassigned',
+              turnId: '1',
+              ...(params?.providerMetadata?.backoffice ?? {}),
+            },
+          },
+          'generate',
         );
         // This line should never be reached as handleRateLimitError always throws
         throw error;
@@ -133,7 +147,14 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
           currentModelKey,
           modelClassification,
           getFailoverConfig(currentProvider),
-          params
+          {
+            ...params,
+            ...{
+              chatId: 'unassigned',
+              turnId: '1',
+              ...(params?.providerMetadata?.backoffice ?? {}),
+            },
+          },
         );
       } catch (error) {
         // Model unavailable and no fallback - error already thrown with appropriate message

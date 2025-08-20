@@ -1,4 +1,4 @@
-import { generateText, wrapLanguageModel } from 'ai';
+import { wrapLanguageModel } from 'ai';
 import { aiModelFactory } from '../../aiModelFactory';
 import { getCaseFileDocument } from '../../tools';
 import { ClientTimelineAgent } from './agent';
@@ -21,8 +21,11 @@ import { ToolProviderSet } from '../..';
 import { log } from '@/lib/logger';
 import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
 import { auth } from '@/auth';
+import { generateTextWithRetry } from '../../core/generate-text-with-retry';
 
 type InitializeProps = { req: NextRequest };
+
+
 
 /**
  * Represents an agent responsible for building a timeline summary for a given case record.
@@ -542,11 +545,16 @@ class ServerTimelineAgent extends ClientTimelineAgent {
           middleware: createChatHistoryMiddleware({...this.#chatHistoryContext, model: baseModel.modelId }),
         })
       tools = await setupDefaultTools({ req });
-      const ret = await generateText({
+      const ret = await generateTextWithRetry({
         model: hal,
         prompt: input,
         tools: tools.get_tools(),
         maxSteps: 20,
+        experimental_telemetry: {
+          isEnabled: true,
+          functionId:
+            'agent-timeline-' + (operation ? operation : 'model-request'),
+        },
         //experimental_continueSteps: true,
       });
       this.#chatHistoryContext.iteration++;

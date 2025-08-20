@@ -687,7 +687,7 @@ const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promi
 export const importIncomingMessage = async ({
   tx,
   context,
-  params: { prompt },
+  params: { prompt, providerMetadata: { backoffice = {} } = {} },
 }: {
   /** Active database transaction ensuring consistency across all operations */
   tx: DbTransactionType;
@@ -724,6 +724,7 @@ export const importIncomingMessage = async ({
 
   // Initialize turn record with comprehensive tracking information
   await insertChatTurn(tx, chatId, thisTurnId, context);
+  backoffice.turnId = thisTurnId;
 
   // Get the current highest message order for proper sequencing
   let lastMessageOrder: number;

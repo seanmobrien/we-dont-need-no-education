@@ -4,6 +4,7 @@ import { temporarilyDisableModel } from '@/lib/ai/aiModelFactory';
 import { rateLimitMetrics } from './metrics';
 import type { ModelClassification, ModelFailoverConfig } from './types';
 import { enqueueRequestForRetry, getAvailableModel } from './model-availability';
+import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
 /**
  * Disables a model based on rate limit headers.
@@ -66,14 +67,26 @@ export async function handleRateLimitError(
         ? 'stream_rate_limit'
         : 'stream_rate_limit_enqueue';
         
-    const requestId = await enqueueRequestForRetry(modelClassification, params, errorType);
+    const requestId = await enqueueRequestForRetry(
+      modelClassification,
+      {
+        ...params,
+        ...{
+          chatId: 'unassigned',
+          turnId: '1',
+          ...((params?.providerMetadata as Record<string, unknown>)?.backoffice ?? {}),
+        },
+      },
+      errorType,
+    );
 
     // Create context-specific error message
-    const errorMessage = errorContext === 'generate'
-      ? `Rate limit exceeded. Request enqueued with ID: ${requestId}. Retry after: ${rateLimitErrorInfo.retryAfter}s`
-      : `Stream rate limit exceeded. Request enqueued with ID: ${requestId}. Retry after: ${rateLimitErrorInfo.retryAfter}s`;
-
-    throw new Error(errorMessage);
+    throw new RateRetryError({
+      chatId: String(params.chatId ?? 'unassigned'),
+      turnId: String(params.turnId ?? '1'),
+      retryId: String(requestId),
+      retryAfter: new Date(Date.now() + 90 * 1000)
+    });
   }
 
   // Not a rate limit error, record as other error and rethrow
