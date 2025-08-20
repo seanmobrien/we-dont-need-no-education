@@ -3,7 +3,11 @@ import { log } from '@/lib/logger';
 import { temporarilyDisableModel } from '@/lib/ai/aiModelFactory';
 import { rateLimitMetrics } from './metrics';
 import type { ModelClassification, ModelFailoverConfig } from './types';
-import { enqueueRequestForRetry, getAvailableModel } from './model-availability';
+import {
+  enqueueRequestForRetry,
+  getAvailableModel,
+  CHAT_RETRY_DELAY_MS,
+} from './model-availability';
 import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
 /**
@@ -85,7 +89,7 @@ export async function handleRateLimitError(
       chatId: String(params.chatId ?? 'unassigned'),
       turnId: String(params.turnId ?? '1'),
       retryId: String(requestId),
-      retryAfter: new Date(Date.now() + 90 * 1000)
+      retryAfter: new Date(Date.now() + CHAT_RETRY_DELAY_MS),
     });
   }
 

@@ -13,6 +13,11 @@ export function getAvailableModel(provider: 'azure' | 'google', classification: 
 }
 
 /**
+ * Retry delay for model requests.
+ */
+export const CHAT_RETRY_DELAY_MS = 90 * 1000; // 90 seconds
+
+/**
  * Checks model availability and handles fallback logic.
  * If no models are available, enqueues the request for retry.
  * 
@@ -71,16 +76,6 @@ export async function checkModelAvailabilityAndFallback(
 
 /**
  * Enqueues a request for retry processing when models are unavailable or rate limited.
- *
- * @param modelClassification - The model classification
-        retryAfter: params.retryAfter
-      });
-    }
-  }
-}
-
-/**
- * Enqueues a request for retry processing when models are unavailable or rate limited.
  * 
  * @param modelClassification - The model classification
  * @param params - The request parameters
@@ -99,12 +94,12 @@ export const enqueueRequestForRetry = async (
   const rateLimitedRequest: RateLimitedRequest = {
     id: requestId,
     modelClassification,
-    request: { params, messages: prompt }, 
+    request: { params, messages: prompt },
     metadata: {
       submittedAt: new Date().toISOString(),
       chatTurnId: String(params.chatTurnId ?? '1'),
       chatHistoryId: String(params.chatHistoryId ?? 'unassigned'),
-      retryAfter: new Date(Date.now() + 90000).valueOf(), // Retry after 1.5 minute
+      retryAfter: new Date(Date.now() + CHAT_RETRY_DELAY_MS).valueOf(), // Retry after 90 seconds
       generation: 1,
     },
   };

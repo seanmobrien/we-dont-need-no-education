@@ -76,7 +76,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       if (!attr.value) return;
       const key = attr.key;
       const m = key.match(/^(.+?)(\d+)$/);
-      if (m) {
+      if (m && m.at(1)) {
         processExisting(m[1], attr, true);        
       } else {
         processExisting(key, attr);

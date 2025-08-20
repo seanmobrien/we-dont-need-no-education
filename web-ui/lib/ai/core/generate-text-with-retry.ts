@@ -40,7 +40,12 @@ export const generateTextWithRetry = async ({
         throw error;
       }
       retryId = normalError.retryId;
-      await new Promise((resolve) => setTimeout(resolve, normalError.retryAfter.valueOf() - Date.now()));
+      await new Promise((resolve) =>
+         setTimeout(
+           resolve,
+           Math.max(20 * 1000, normalError.retryAfter.valueOf() - Date.now()),
+         ),
+       );
     }
   }
   throw new Error(`Max retries exceeded processing request`);

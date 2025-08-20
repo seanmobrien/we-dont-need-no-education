@@ -73,11 +73,12 @@ export const GET = wrapRouteRequest(async () => {
           const modelKey = azureAvailable ? azureModelKey : googleModelKey;
           log(l => l.verbose(`Processing request ${request.id} with model ${modelKey}`));                              
           // Create model instance (ensure we don't use embedding models for text generation)
-          const modelInstance = aiModelFactory('google:gemini-2.0-flash'); /* classification === 'embedding' 
-            ? aiModelFactory(classification)
-            : classification === 'hifi' || classification === 'lofi'
+          const modelInstance =
+            classification === 'embedding'
               ? aiModelFactory(classification)
-              : aiModelFactory('lofi'); */
+              : classification === 'hifi' || classification === 'lofi'
+                ? aiModelFactory(classification)
+                : aiModelFactory('lofi');
           const model = wrapLanguageModel({
             middleware: createChatHistoryMiddleware(chatHistoryContext),
             model: modelInstance as LanguageModelV1,
@@ -192,11 +193,8 @@ export const GET = wrapRouteRequest(async () => {
         log(l => l.verbose(`Processing gen-2 request ${request.id} for ${classification}`));
 
         try {
-          const modelInstance =  classification === 'embedding' 
-            ? aiModelFactory(classification)
-            : classification === 'hifi' || classification === 'lofi'
-              ? aiModelFactory(classification)
-              : aiModelFactory('lofi');
+          // If we've made it all the way to gen-2 it's time to bust out the bgcontext model.
+          const modelInstance = aiModelFactory('google:gemini-2.0-flash');
           const model = wrapLanguageModel({
             model: modelInstance as LanguageModelV1,
             middleware: createChatHistoryMiddleware(chatHistoryContext),

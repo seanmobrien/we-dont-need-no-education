@@ -1,5 +1,57 @@
 "use client";
 
+/**
+ * Module: Virtualized Chat Display
+ * -------------------------------------------------------------
+ * High‑performance, scroll‑virtualized rendering of chat turns/messages.
+ *
+ * Why virtualization?
+ *  - Large chats (hundreds of turns, thousands of messages) can cause DOM bloat,
+ *    expensive layout / paint cycles, and sluggish interaction if fully rendered.
+ *  - Virtualization keeps only the visible (plus a small overscan buffer) portion
+ *    of the chat in the DOM while still preserving accurate scrollbar size and
+ *    scroll position semantics.
+ *
+ * Height Strategy:
+ *  - We provide an initial optimistic size estimate per chat turn via the
+ *    `estimateSize` callback. This attempts to approximate the total rendered
+ *    height of the turn (header, messages, metadata panels, warnings/errors, etc.)
+ *    using a markdown + text measurement utility.
+ *  - When `ResizeObserver` is available, the virtualization library can refine
+ *    the measurement with the actual DOM height (via `measureElement`). This
+ *    produces smooth, low-jitter scrolling even for highly variable content.
+ *
+ * Key Trade‑offs / Assumptions:
+ *  - Estimation favors slight overestimation to avoid visual jump when the real
+ *    measurement arrives. (Underestimation creates more noticeable layout shifts.)
+ *  - We intentionally removed arbitrary maximum height caps so very long AI
+ *    responses remain fully accessible.
+ *  - Width is derived dynamically from the scroll container (falling back to a
+ *    viewport or constant fallback during first render / SSR boundary cases).
+ *
+ * Accessibility & UX:
+ *  - Message and metadata toggles allow users to progressively disclose
+ *    diagnostic / system information without penalizing initial load cost.
+ *  - Empty state messaging clarifies when a chat has no turns/messages.
+ *
+ * Performance Notes:
+ *  - `overscan` is tuned (currently 3) to balance scroll fluidity and memory
+ *    usage. Increase for faster wheels / touchpad momentum; decrease for tight
+ *    memory environments.
+ *  - Height estimation leverages a shared `textMeasurer` to avoid creating
+ *    repeated canvas contexts / DOM nodes.
+ *
+ * Extension Points:
+ *  - Additional per‑message adornments (e.g., token usage bars) should factor
+ *    their vertical contribution into `estimateSize` for accuracy.
+ *  - Alternate rendering modes (collapsing tool / system messages) can be added
+ *    behind new toggles – ensure both estimation and actual DOM reflect changes.
+ *
+ * Error Handling:
+ *  - This component assumes `turns` integrity (e.g., arrays present). Defensive
+ *    fallbacks (default heights) ensure resilience if partial data arrives.
+ */
+
 import React, { useRef, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box, Switch, FormControlLabel, FormGroup, Paper } from '@mui/material';
@@ -9,43 +61,110 @@ import {
   estimateMarkdownHeight 
 } from '@/lib/components/ai/height-estimators';
 
+/**
+ * Fallback container width for virtualized chat display
+ */
+export const FALLBACK_CONTAINER_WIDTH = 1200;
+
+/**
+ * Text measurement utility for estimating heights of chat messages
+ */
 const textMeasurer = createTextMeasurer();
 
+/**
+ * A single atomic message within a chat turn. Represents user, assistant,
+ * system, or tool/function output.
+ */
 interface ChatMessage {
+  /** Monotonic identifier for the parent turn */
   turnId: number;
+  /** Unique identifier for this message within the chat */
   messageId: number;
+  /** Author role (e.g., 'user', 'assistant', 'system', 'tool') */
   role: string;
+  /** Primary textual content (may be null for pure tool/function calls) */
   content: string | null;
+  /** Ordering of the message inside a turn (0‑based or 1‑based depending on source) */
   messageOrder: number;
+  /** Tool name if this message originated from a tool invocation */
   toolName: string | null;
+  /** Structured function call metadata (arguments, name, etc.) */
   functionCall: Record<string, unknown> | null;
+  /** Status classification / lifecycle state identifier */
   statusId: number;
+  /** Provider / model origin identifier (if applicable) */
   providerId: string | null;
+  /** Arbitrary message-level metadata bag */
   metadata: Record<string, unknown> | null;
+  /** Specific tool instance correlation id */
   toolInstanceId: string | null;
+  /** Optimized / post‑processed content (e.g., condensed text) */
   optimizedContent: string | null;
 }
 
+/**
+ * A logical unit of interaction consisting of one or more related messages
+ * (e.g., user prompt + assistant response + tool calls). Turn boundaries often
+ * align with a single full model invocation cycle.
+ */
 interface ChatTurn {
+  /** Unique turn identifier */
   turnId: number;
+  /** ISO timestamp of turn creation */
   createdAt: string;
+  /** ISO timestamp of completion (null if still in progress) */
   completedAt: string | null;
+  /** Model name used for the assistant response(s) */
   modelName: string | null;
+  /** Ordered set of messages within the turn */
   messages: ChatMessage[];
+  /** Turn status classification id */
   statusId: number;
+  /** Sampling temperature (null if not applicable) */
   temperature: number | null;
+  /** Top‑p nucleus sampling parameter (null if not applicable) */
   topP: number | null;
+  /** End‑to‑end latency in milliseconds (null if not yet measured) */
   latencyMs: number | null;
+  /** Non‑fatal warning messages emitted during processing */
   warnings: string[] | null;
+  /** Error messages captured for this turn */
   errors: string[] | null;
+  /** Arbitrary structured turn‑level metadata */
   metadata: Record<string, unknown> | null;
 }
 
+/**
+ * Props for `VirtualizedChatDisplay`.
+ */
 interface VirtualizedChatDisplayProps {
+  /** Ordered collection of turns to render */
   turns: ChatTurn[];
+  /** Explicit pixel height of the scroll container (defaults to 600) */
   height?: number;
 }
 
+/**
+ * Virtualized chat transcript component rendering only the visible subset of
+ * turns for scalability. Supports optional disclosure of diagnostic metadata
+ * (turn properties, message metadata) without compromising baseline performance.
+ *
+ * Rendering Flow:
+ *  1. Derive an estimated height for each turn synchronously (fast path).
+ *  2. Virtualizer positions absolute containers within a tall spacer box.
+ *  3. Each visible item mounts `ChatTurnDisplay`, after which (when supported)
+ *     a `ResizeObserver` refines the actual measured height.
+ *
+ * Interaction Toggles:
+ *  - Show Turn Properties: reveals model parameters + warnings/errors + metadata.
+ *  - Show Message Metadata: reveals per‑message diagnostic JSON blocks.
+ *
+ * Performance Considerations:
+ *  - Avoid injecting heavy synchronous parsing or large JSON serialization into
+ *    the `estimateSize` callback; keep it deterministic and CPU‑light.
+ *  - For additional data (e.g., token usage charts) remember to adjust both the
+ *    estimator and the actual DOM height contributions.
+ */
 export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({ 
   turns, 
   height = 600 
@@ -55,6 +174,20 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
   const [showMessageMetadata, setShowMessageMetadata] = useState(false);
 
   // Estimate size for each turn based on content using improved measurement
+  /**
+   * Estimate (optimistically) the vertical pixel footprint of a turn.
+   *
+   * Goals:
+   *  - Be fast (no DOM writes, minimal JSON work) to keep scroll perf smooth.
+   *  - Slightly overestimate to reduce post‑measurement visual shifts.
+   *
+   * Fallback Paths:
+   *  - If a turn or container width is unavailable (initial prerender), uses
+   *    conservative defaults and a global fallback width.
+   *
+   * @param index Index of the virtualized row (turn)
+   * @returns Estimated height in pixels (never less than the minimum of 150)
+   */
   const estimateSize = useCallback((index: number) => {
     const turn = turns[index];
     if (!turn) return 200; // default fallback
@@ -66,7 +199,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
       if (typeof window !== 'undefined') {
         width = window.innerWidth * 0.9; // Fallback to 90% of viewport width
       } else {
-        width = 1200; // Fallback to a default width
+        width = FALLBACK_CONTAINER_WIDTH; // Fallback to a default width
       }
     } else {
       width = parentRef.current.getBoundingClientRect().width;
@@ -159,6 +292,10 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
     return Math.max(totalHeight, 150);
   }, [turns, showTurnProperties, showMessageMetadata]);
 
+  /**
+   * Virtualization controller from TanStack Virtual handling item measurement,
+   * scroll range projection, and overscan buffering.
+   */
   const rowVirtualizer = useVirtualizer({
     count: turns.length,
     getScrollElement: () => parentRef.current,

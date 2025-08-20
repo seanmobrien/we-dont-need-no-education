@@ -69,6 +69,7 @@ import { countTokens } from '../../core/count-tokens';
 import { generateChatId } from '../../core';
 import { caseFileRequestPropsShape, CaseFileResponseShape } from '../schemas/case-file-request-props-shape';
 import z from 'zod';
+import { env } from '@/lib/site-util/env';
 
 /**
  * Retrieves a single case file document by delegating to getMultipleCaseFileDocuments.
@@ -322,8 +323,10 @@ export const getMultipleCaseFileDocuments = async ({
 
           // Process documents with goals through AI analysis pipeline
           const groupGoals = JSON.parse(goalsKey) as string[];
-          // New batching strategy: accumulate documents until token threshold exceeded, then process batch
-          const TOKEN_BATCH_THRESHOLD = 50000;
+          // New batching strategy: accumulate documents until token threshold exceeded, then process batch.
+          // Threshold is configurable via env TOKEN_BATCH_THRESHOLD (defaults to 50,000 tokens).          
+          // Fallback in unlikely case env factory returns undefined (e.g., client context)
+          const effectiveBatchThreshold = env('TOKEN_BATCH_THRESHOLD') || 50000;
           const aggregatedResults: Array<CaseFileResponse> = [];
 
           let currentBatch: typeof groupDocuments = [];
@@ -371,7 +374,7 @@ export const getMultipleCaseFileDocuments = async ({
             }
 
             // If adding this doc would exceed threshold, process existing batch first
-            if (currentBatch.length > 0 && currentBatchTokens + docTokens > TOKEN_BATCH_THRESHOLD) {
+            if (currentBatch.length > 0 && currentBatchTokens + docTokens > effectiveBatchThreshold) {
               await processCurrentBatch();
             }
 
@@ -379,7 +382,7 @@ export const getMultipleCaseFileDocuments = async ({
             currentBatchTokens += docTokens;
 
             // If a single (or accumulated) batch crosses threshold, process immediately
-            if (currentBatchTokens > TOKEN_BATCH_THRESHOLD) {
+            if (currentBatchTokens > effectiveBatchThreshold) {
               await processCurrentBatch();
             }
           }
