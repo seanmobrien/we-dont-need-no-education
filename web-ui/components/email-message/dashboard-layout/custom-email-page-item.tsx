@@ -71,7 +71,6 @@ export const CustomEmailPageItem = React.memo(
     emailId,
   }: CustomEmailPageItemProps): React.JSX.Element => {
     const itemId = `navmenu-email-${item.title?.toLocaleLowerCase()?.replaceAll(' ', '-')}`;
-    console.log(itemId);
     return (
       <>        
         <ListItem
