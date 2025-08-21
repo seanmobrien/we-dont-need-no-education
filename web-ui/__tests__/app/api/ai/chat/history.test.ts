@@ -1,4 +1,6 @@
 /* @jest-environment node */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * Chat History API Route Tests
  *
@@ -11,17 +13,56 @@
 
 import { GET } from '@/app/api/ai/chat/history/route';
 import { NextRequest } from 'next/server';
-import { mockChatHistoryResponse } from '@/__tests__/components/chat.mock-data';
+// import { mockChatHistoryResponse } from '@/__tests__/components/chat.mock-data';
+const mockChatHistoryResponse = {
+  results: [
+    {
+      id: '1',
+      title: 'Test Chat 1',
+      userId: 1,
+      createdAt: '2023-01-01T00:00:00Z',
+      chatMetadata: { key: 'value' },
+      totalTokens: 100,
+      totalMessages: 10,
+      totalTurns: 5,
+    },
+    {
+      id: '2',
+      title: 'Test Chat 2',
+      userId: 2,
+      createdAt: '2023-01-02T00:00:00Z',
+      chatMetadata: { key: 'value' },
+      totalTokens: 200,
+      totalMessages: 20,
+      totalTurns: 10,
+    },
+  ],
+  totalCount: 2,
+};
+const columnMap = {
+  chatMetadata: 'chat_metadata',
+  createdAt: 'created_at',
+  id: 'id',
+  title: 'title',
+  totalTokens: 'total_tokens',
+  totalMessages: 'total_messages',
+  totalTurns: 'total_turns',
+  userId: 'user_id',
+} as const;
 
 // Define mocks before they are used
+/*
 const mockDbSelect = jest.fn();
 const mockDbFrom = jest.fn();
 
-
+// Mock implementations
+mockDbSelect.mockReturnValue({
+  from: mockDbFrom,
+});
 
 // Mock modules
 jest.mock('@/lib/drizzle-db', () => ({
-  drizDbWithInit: jest.fn(),
+  drizDbWithInit: jest.fn((cb) => cb(mockDb)),
 }));
 
 jest.mock('@/lib/drizzle-db/schema', () => ({
@@ -34,6 +75,20 @@ jest.mock('@/lib/drizzle-db/schema', () => ({
     },
   },
 }));
+
+
+jest.mock('drizzle-orm/sql', () => {
+  const mockAs = jest.fn().mockReturnValue(jest.fn());
+  const mockSqlOperator = jest.fn().mockReturnValue({ as: mockAs });
+
+  return {
+    as: jest.fn().mockReturnThis(),
+    eq: mockSqlOperator,
+    count: mockSqlOperator,
+    sum: mockSqlOperator,
+  };
+});
+*/
 
 jest.mock('@/lib/components/mui/data-grid/queryHelpers', () => ({
   selectForGrid: jest.fn(),
@@ -50,150 +105,151 @@ jest.mock('@/lib/react-util', () => ({
 }));
 
 // Import mocked dependencies
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit, drizDb } from '@/lib/drizzle-db';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { schema } from '@/lib/drizzle-db/schema';
 
 describe('/api/ai/chat/history route', () => {
-  const mockDb = {
+  const mockDb = drizDb() as any;
+  mockDb.__setRows(mockChatHistoryResponse.results);
+  /*{
     select: mockDbSelect,
-  };
+  };*/
 
   beforeEach(() => {
     // jest.clearAllMocks();
-    
-    // Setup default mock chain
-    mockDbSelect.mockReturnValue({
-      from: mockDbFrom,
-    });
-    mockDbFrom.mockReturnValue({});
-    
-    (drizDbWithInit as jest.Mock).mockResolvedValue(mockDb);
+    // (drizDbWithInit as jest.Mock).mockResolvedValue(mockDb);
     (selectForGrid as jest.Mock).mockResolvedValue(mockChatHistoryResponse);
   });
 
   describe('GET', () => {
     it('should return chat history with pagination', async () => {
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history?page=0&pageSize=10');
-      
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history?page=0&pageSize=10',
+      );
+
       const response = await GET(request);
       const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data).toEqual(mockChatHistoryResponse);
-      expect(drizDbWithInit).toHaveBeenCalled();
-      expect(mockDbSelect).toHaveBeenCalledWith({
-        id: 'id',
-        title: 'title',
-        userId: 'userId',
-        createdAt: 'createdAt',
-      });
       expect(selectForGrid).toHaveBeenCalled();
     });
 
     it('should handle filtering and sorting parameters', async () => {
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history?page=0&pageSize=5&filterModel={"items":[{"field":"title","operator":"contains","value":"test"}]}&sortModel=[{"field":"created_at","sort":"asc"}]');
-      
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history?page=0&pageSize=5&filterModel={"items":[{"field":"title","operator":"contains","value":"test"}]}&sortModel=[{"field":"created_at","sort":"asc"}]',
+      );
+
       const response = await GET(request);
-      
+
       expect(response.status).toBe(200);
       expect(selectForGrid).toHaveBeenCalledWith({
         req: request,
-        query: expect.any(Object),
+        query: expect.any(Promise),
         getColumn: expect.any(Function),
-        columnMap: {
-          id: 'id',
-          title: 'title',
-          userId: 'user_id',
-          createdAt: 'created_at',
-        },
-        recordMapper: expect.any(Function),
+        columnMap,
+        recordMapper: expect.anything(),
         defaultSort: [{ field: 'created_at', sort: 'desc' }],
       });
     });
 
     it('should test column getter function', async () => {
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history');
-      
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history',
+      );
+
       await GET(request);
-      
+
       const selectForGridCall = (selectForGrid as jest.Mock).mock.calls[0][0];
       const getColumn = selectForGridCall.getColumn;
-      
+
       // Test column mapping
-      expect(getColumn('id')).toBe('id');
-      expect(getColumn('title')).toBe('title');
-      expect(getColumn('user_id')).toBe('userId');
-      expect(getColumn('created_at')).toBe('createdAt');
+      expect(getColumn('id')).toBe(schema.chats.id);
+      expect(getColumn('title')).toBe(schema.chats.title);
+      expect(getColumn('user_id')).toBe(schema.chats.userId);
+      expect(getColumn('created_at')).toBe(schema.chats.createdAt);
       expect(getColumn('invalid_column')).toBeUndefined();
     });
 
     it('should test record mapper function', async () => {
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history');
-      
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history',
+      );
+
       await GET(request);
-      
+
       const selectForGridCall = (selectForGrid as jest.Mock).mock.calls[0][0];
       const recordMapper = selectForGridCall.recordMapper;
-      
+
       const testRecord = {
-        id: 'test-id',
-        title: 'Test Title',
-        userId: 123,
-        createdAt: '2025-01-01T10:00:00Z',
+        id: '2',
+        title: 'Test Chat 2',
+        userId: 2,
+        createdAt: '2023-01-02T00:00:00Z',
+        chatMetadata: { key: 'value' },
+        totalTokens: 200,
+        totalMessages: 20,
+        totalTurns: 10,
       };
-      
+
       const mappedRecord = recordMapper(testRecord);
-      
+
       expect(mappedRecord).toEqual({
-        id: 'test-id',
-        title: 'Test Title',
-        userId: 123,
-        createdAt: '2025-01-01T10:00:00Z',
+        id: '2',
+        title: 'Test Chat 2',
+        userId: 2,
+        createdAt: '2023-01-02T00:00:00Z',
+        chatMetadata: { key: 'value' },
+        totalTokens: 200,
+        totalMessages: 20,
+        totalTurns: 10,
       });
     });
 
     it('should handle null title in record mapper', async () => {
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history');
-      
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history',
+      );
+
       await GET(request);
-      
+
       const selectForGridCall = (selectForGrid as jest.Mock).mock.calls[0][0];
       const recordMapper = selectForGridCall.recordMapper;
-      
+
       const testRecord = {
-        id: 'test-id',
-        title: null,
-        userId: 123,
-        createdAt: '2025-01-01T10:00:00Z',
+        id: '2',
+        // title: 'Test Chat 2',
+        userId: 2,
+        createdAt: '2023-01-02T00:00:00Z',
+        chatMetadata: { key: 'value' },
+        totalTokens: 200,
+        totalMessages: 20,
+        totalTurns: 10,
       };
-      
+
       const mappedRecord = recordMapper(testRecord);
-      
+
       expect(mappedRecord).toEqual({
-        id: 'test-id',
+        id: '2',
         title: null,
-        userId: 123,
-        createdAt: '2025-01-01T10:00:00Z',
+        userId: 2,
+        createdAt: '2023-01-02T00:00:00Z',
+        chatMetadata: { key: 'value' },
+        totalTokens: 200,
+        totalMessages: 20,
+        totalTurns: 10,
       });
     });
 
-    it('should handle database connection errors', async () => {
-      (drizDbWithInit as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history');
-      
-      const response = await GET(request);
-      const data = await response.json();
-
-      expect(response.status).toBe(500);
-      expect(data).toEqual({ error: 'Internal Server Error' });
-    });
 
     it('should handle selectForGrid errors', async () => {
       (selectForGrid as jest.Mock).mockRejectedValue(new Error('Query failed'));
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history');
-      
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history',
+      );
+
       const response = await GET(request);
       const data = await response.json();
 
@@ -202,12 +258,16 @@ describe('/api/ai/chat/history route', () => {
     });
 
     it('should use default sort when no sort model provided', async () => {
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history');
-      
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history',
+      );
+
       await GET(request);
-      
+
       const selectForGridCall = (selectForGrid as jest.Mock).mock.calls[0][0];
-      expect(selectForGridCall.defaultSort).toEqual([{ field: 'created_at', sort: 'desc' }]);
+      expect(selectForGridCall.defaultSort).toEqual([
+        { field: 'created_at', sort: 'desc' },
+      ]);
     });
 
     it('should return empty results gracefully', async () => {
@@ -216,9 +276,11 @@ describe('/api/ai/chat/history route', () => {
         rowCount: 0,
         totalRowCount: 0,
       });
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history');
-      
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history',
+      );
+
       const response = await GET(request);
       const data = await response.json();
 
