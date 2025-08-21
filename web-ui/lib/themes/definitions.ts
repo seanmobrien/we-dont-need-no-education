@@ -168,8 +168,9 @@ export const darkTheme: Theme = createTheme({
     },
     background: {
       default: '#0a0a0a',
-      paper: '#23393d', // color-surface-primary
-    },
+      paper: '#23393d', // color-surface-primary      
+      
+    },   
     action: {
       active: '#1898a8',
       /*

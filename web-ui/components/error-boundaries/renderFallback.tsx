@@ -153,7 +153,7 @@ export const RenderErrorBoundaryFallback = (
                   sx={{
                     mt: 1,
                     p: 1,
-                    backgroundColor: theme.palette.grey[100],
+                    backgroundColor: theme.palette.background.paper,
                     borderRadius: 1,
                     fontSize: '0.75rem',
                     overflow: 'auto',

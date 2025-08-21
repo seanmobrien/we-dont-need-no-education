@@ -20,8 +20,7 @@ ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
-  && echo "added user nextjs to group nodejs."
+  && adduser --system --uid 1001 nextjs 
 
 # Install cron for rate retry processing
 RUN apk add --no-cache libc6-compat dcron curl
@@ -38,13 +37,12 @@ ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
-  && echo "added user nextjs to group nodejs."
-
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat dcron curl
 WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs 
 
 # Install dependencies based on the preferred package manager
 COPY --link=true package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
@@ -67,11 +65,10 @@ ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
-  && echo "added user nextjs to group nodejs."
-
 WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs 
 
 COPY --link=true --chown=nextjs:nodejs --from=deps /app/node_modules ./node_modules
 COPY --link=true --chown=nextjs:nodejs ./app ./app
@@ -125,9 +122,6 @@ ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs
-
 LABEL co.obapps.vendor="OBrien Appplications"
 LABEL co.obapps.name="Compliance Tracker Web UI"
 LABEL org.opencontainers.image.description="A web UI for the Compliance Tracker application, which helps users track and manage compliance issues in educational institutions."
@@ -135,6 +129,9 @@ LABEL org.opencontainers.image.authors="stopbullyingpriorlake@gmail.com"
 LABEL org.opencontainers.image.licenses="EJL-1.0"
 
 WORKDIR /app
+
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs
 
 ENV NODE_ENV=production
 ENV FOR_STANDALONE=1

@@ -11,19 +11,26 @@
  */
 
 import * as React from 'react';
-import {
-  Box,
-  IconButton,
-  Link,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-} from '@mui/material';
 import { DashboardSidebarPageItem } from '@toolpad/core/DashboardLayout';
 import { NavigationPageItem } from '@toolpad/core/AppProvider';
 import siteBuilder from '@/lib/site-util/url-builder';
 import type { CustomEmailPageItemProps } from './types';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Link from '@mui/material/Link';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import { Theme } from '@mui/material/styles';
+
+
+
+const stableActiveText = (
+  theme: Theme & { palette?: { warning?: { main?: string } } },
+) => ({
+  color: theme?.palette?.warning?.main,
+});
 
 /**
  * CustomEmailPageItem renders a navigation item for an email, including its children.
@@ -60,9 +67,11 @@ export const CustomEmailPageItem = React.memo(
   ({
     item: { children = [], ...item },
     mini,
+    pathname,
     emailId,
   }: CustomEmailPageItemProps): React.JSX.Element => {
     const itemId = `navmenu-email-${item.title?.toLocaleLowerCase()?.replaceAll(' ', '-')}`;
+    console.log(itemId);
     return (
       <>        
         <ListItem
@@ -87,9 +96,11 @@ export const CustomEmailPageItem = React.memo(
             <ListItemButton sx={{ paddingRight: 0 }} >
               <Link
               data-id={itemId}
-                href={siteBuilder.messages.email(emailId).toString()}
+                href={String(emailId 
+                  ? siteBuilder.messages.email(emailId)
+                  : `/${item.segment ?? ''}`)}
                 sx={(theme) => ({
-                  color: theme.palette.secondary.main,
+                  color: theme.palette.warning.main,
                   textDecoration: 'none',
                   width: 1,
                   display: 'flex',
@@ -105,7 +116,7 @@ export const CustomEmailPageItem = React.memo(
                 >
                   <ListItemIcon
                     sx={(theme) => ({
-                      color: theme.palette.primary.main,
+                      color: theme.palette.text.primary,
                     })}
                   >
                     {item.icon!}
@@ -119,7 +130,7 @@ export const CustomEmailPageItem = React.memo(
         </ListItem>
         <ListItem
           sx={(theme) => ({
-            color: theme.palette.primary.main,
+            color: theme.palette.text.primary,
             overflowX: 'hidden',
             paddingLeft: mini ? 0 : theme.spacing(4),
             paddingY: 0,
@@ -137,11 +148,13 @@ export const CustomEmailPageItem = React.memo(
             {children.map((child, idx) => {
               const key =
                 'segment' in child && child.segment ? child.segment : idx;
+              const sx = typeof key === 'string' && pathname?.endsWith(key) ? stableActiveText : undefined;
               return (
-                <DashboardSidebarPageItem
-                  item={child as NavigationPageItem}
-                  key={key}
-                />
+                <Box key={key} sx={sx}>
+                  <DashboardSidebarPageItem
+                    item={child as NavigationPageItem}
+                  />
+                </Box>
               );
             })}
           </List>

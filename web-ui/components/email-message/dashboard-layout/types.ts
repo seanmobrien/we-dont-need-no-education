@@ -28,6 +28,8 @@ export interface CustomEmailPageItemProps {
   mini: boolean;
   /** The unique identifier of the email being viewed */
   emailId: string;
+  /** The active pathname  */
+  pathname: string;
 }
 
 /**
