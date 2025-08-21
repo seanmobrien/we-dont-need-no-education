@@ -90,6 +90,8 @@ interface ChatMessage {
   toolName: string | null;
   /** Structured function call metadata (arguments, name, etc.) */
   functionCall: Record<string, unknown> | null;
+  /** Tool execution result/return value */
+  toolResult: Record<string, unknown> | null;
   /** Status classification / lifecycle state identifier */
   statusId: number;
   /** Provider / model origin identifier (if applicable) */

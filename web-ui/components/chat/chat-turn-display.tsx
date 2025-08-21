@@ -30,6 +30,7 @@ interface ChatMessage {
   messageOrder: number;
   toolName: string | null;
   functionCall: Record<string, unknown> | null;
+  toolResult: Record<string, unknown> | null;
   statusId: number;
   providerId: string | null;
   metadata: Record<string, unknown> | null;

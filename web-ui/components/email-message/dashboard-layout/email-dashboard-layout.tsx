@@ -22,7 +22,7 @@ import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import { Session } from 'next-auth';
 import { EmailContextProvider } from '@/components/email-message/email-context';
 import { useCallback, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import { useTheme } from '@/lib/themes/provider';
 
 // Import extracted components
@@ -70,76 +70,82 @@ export const EmailDashboardLayout = ({
   session: Session | null;
 }): React.JSX.Element => {
   const { emailId } = useParams<{ emailId: string }>();
+  const pathname = usePathname();
   const { theme } = useTheme();
   const dashboardNavigation = useMemo<NavigationItem[]>(() => {
+    const isChatPage = pathname?.startsWith('/messages/chat');
     const viewEmailNavigation: NavigationItem[] = emailId
-      ? [
-          {
-            segment: `messages/email/${emailId}`,
-            title: 'View Email',
-            icon: <DraftsIcon key="view-email-icon" />, 
-            children: [
-              {
-                segment: 'key-points',
-                icon: <KeyIcon key="key-points-icon" />, 
-                title: 'Key Points',
-              },
-              {
-                segment: 'notes',
-                icon: <TextSnippetIcon key="notes-icon" />, 
-                title: 'Notes',
-              },
-              {
-                segment: 'call-to-action',
-                icon: <CallToActionIcon key="call-to-action-icon" />, 
-                title: 'Calls to Action',
-              },
-              {
-                segment: 'call-to-action-response',
-                icon: <ReplyIcon key="call-to-action-response-icon" />, 
-                title: 'Follow-up Activity',
-              },
-              {
-                segment: 'email-header',
-                icon: <PrivacyTipIcon key="header-icon" />, 
-                title: 'Headers',
-              },
-            ],
-          },
-        ]
-      : [];
-    
-    const chatNavigation: NavigationItem = {
-      title: 'Chats',
-      icon: <ChatIcon key="chats-icon" />, 
-      segment: 'messages/chat',
-      children: [
+    ? [
         {
-          segment: 'statistics',
-          icon: <BarChartIcon key="statistics-icon" />, 
-          title: 'Statistics',
+          segment: `messages/email/${emailId}`,
+          title: 'View Email',
+          icon: <DraftsIcon key="view-email-icon" />,
+          children: [
+            {
+              segment: 'key-points',
+              icon: <KeyIcon key="key-points-icon" />,
+              title: 'Key Points',
+            },
+            {
+              segment: 'notes',
+              icon: <TextSnippetIcon key="notes-icon" />,
+              title: 'Notes',
+            },
+            {
+              segment: 'call-to-action',
+              icon: <CallToActionIcon key="call-to-action-icon" />,
+              title: 'Calls to Action',
+            },
+            {
+              segment: 'call-to-action-response',
+              icon: <ReplyIcon key="call-to-action-response-icon" />,
+              title: 'Follow-up Activity',
+            },
+            {
+              segment: 'email-header',
+              icon: <PrivacyTipIcon key="header-icon" />,
+              title: 'Headers',
+            },
+          ],
         },
-      ],
-    };
+      ]
+    : [];    
+    const chatNavigation: NavigationItem[] = [
+      {
+        title: 'Chat History',
+        icon: <ChatIcon key="chats-icon" />, 
+        segment: 'messages/chat', 
+        children: isChatPage
+          ? [
+          {
+            segment: 'stats',
+            icon: <BarChartIcon key="statistics-icon" />,
+            title: 'View chat statistics',
+          },
+        ] : []     
+      },      
+    ];
 
     return [
       { kind: 'header', title: 'Available Records' },
       {
         title: 'List Emails',
-        icon: <DashboardIcon key="list-emails-icon" />, 
+        icon: <DashboardIcon key="list-emails-icon" />,
         segment: 'messages',
       },
-      chatNavigation,
       ...viewEmailNavigation,
       { kind: 'divider' },
-      { kind: 'header', title: 'Aquisition' },
+      { kind: 'header', title: 'Chat' },
+      ...chatNavigation,
+      { kind: 'divider' },
+      { kind: 'header', title: 'Acquisition' },
       {
         segment: 'messages/import',
         title: 'Import Emails',
-        icon: <Sync key="import-emails-icon" />, 
+        icon: <Sync key="import-emails-icon" />,
       },
     ];
-  }, [emailId]);
+  }, [emailId, pathname]);
   /**
    * Renders a navigation page item in the sidebar.
    * @param {NavigationPageItem} item - The navigation item to render.
@@ -155,6 +161,7 @@ export const EmailDashboardLayout = ({
         'call-to-action-response',
         'email-header',
       ];
+      const dynamicMenus = ['View Email', 'Chat History'];
       if (
         'segment' in item &&
         !!item.segment &&
@@ -162,14 +169,14 @@ export const EmailDashboardLayout = ({
       ) {
         return null;
       }
-      if (item.title === 'View Email') {
+      if (dynamicMenus.includes(item.title ?? '')) {
         return (
-          <CustomEmailPageItem item={item} mini={mini} emailId={emailId} data-id={`navmenu-email-${item.segment}`} />
+          <CustomEmailPageItem item={item} mini={mini} emailId={emailId} data-id={`navmenu-email-${item.segment}`} pathname={pathname} />
         );
       }
       return <DashboardSidebarPageItem item={item} />;
     },
-    [emailId],
+    [emailId, pathname],
   );
   return (
     <EmailContextProvider>

@@ -19,12 +19,14 @@ ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
+ENV PYTHONUNBUFFERED=1
+
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
-  && echo "added user nextjs to group nodejs."
+  && adduser --system --uid 1001 nextjs 
 
 # Install cron for rate retry processing
-RUN apk add --no-cache libc6-compat dcron curl
+RUN apk update && apk upgrade \
+  && apk add --update --no-cache libc6-compat dcron curl build-base cairo pango jpeg giflib fontconfig freetype curl python3 py3-pip pixman
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -38,13 +40,17 @@ ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
-  && echo "added user nextjs to group nodejs."
+WORKDIR /app
 
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat dcron curl
-WORKDIR /app
+RUN apk add --no-cache libc6-compat dcron build-base cairo-dev pango-dev jpeg-dev giflib-dev fontconfig-dev freetype-dev curl  python3-dev python3 py3-pip pixman \
+#  && apk add  build-base \
+  && ln -sf python3 /usr/bin/python \
+  #&& python3 -m venv myenv && source myenv/bin/activate \
+  #&& pip3 install --no-cache --upgrade pip setuptools \
+  && (id -u nextjs 2>/dev/null || (adduser --system --uid 1001 nextjs && usermod -aG nextjs nodejs))
+
+ENV PKG_CONFIG_PATH="/app/myenv/lib/pkgconfig:${PKG_CONFIG_PATH}"
 
 # Install dependencies based on the preferred package manager
 COPY --link=true package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
@@ -67,11 +73,9 @@ ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs \
-  && echo "added user nextjs to group nodejs."
-
 WORKDIR /app
+
+RUN  id -u nextjs 2>/dev/null || (adduser --system --uid 1001 nextjs && usermod -aG nextjs nodejs)
 
 COPY --link=true --chown=nextjs:nodejs --from=deps /app/node_modules ./node_modules
 COPY --link=true --chown=nextjs:nodejs ./app ./app
@@ -114,7 +118,7 @@ RUN \
   fi
 
 # Production image, copy all the files and run next
-FROM builder AS runner
+FROM base AS runner
 
 ARG RATE_RETRY_INTERVAL_MINUTES
 ARG NEXT_PUBLIC_HOSTNAME
@@ -125,9 +129,6 @@ ARG OTEL_SERVICE_NAME
 ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs
-
 LABEL co.obapps.vendor="OBrien Appplications"
 LABEL co.obapps.name="Compliance Tracker Web UI"
 LABEL org.opencontainers.image.description="A web UI for the Compliance Tracker application, which helps users track and manage compliance issues in educational institutions."
@@ -135,6 +136,8 @@ LABEL org.opencontainers.image.authors="stopbullyingpriorlake@gmail.com"
 LABEL org.opencontainers.image.licenses="EJL-1.0"
 
 WORKDIR /app
+
+RUN  id -u nextjs 2>/dev/null || (adduser --system --uid 1001 nextjs && usermod -aG nextjs nodejs)
 
 ENV NODE_ENV=production
 ENV FOR_STANDALONE=1
@@ -151,7 +154,7 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
+
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --link=true --from=builder --chown=nextjs:nodejs /app/public ./public

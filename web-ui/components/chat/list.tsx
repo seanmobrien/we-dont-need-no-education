@@ -18,6 +18,10 @@ interface ChatSummary {
   title: string | null;
   userId: number;
   createdAt: string;
+  chatMetadata: object | null;
+  totalTokens: number;
+  totalMessages: number;
+  totalTurns: number;
 }
 
 /**
@@ -45,19 +49,40 @@ const stableColumns: GridColDef<ChatSummary>[] = [
       const title = params.value || `Chat ${params.row.id.slice(-8)}`;
       return (
         <Link
-          href={siteBuilder.messages.chat.page(encodeURIComponent(params.row.id))}
+          href={siteBuilder.messages.chat.page(
+            encodeURIComponent(params.row.id),
+          )}
           title="Open chat"
           style={{
             // color: '#2563eb',
             textDecoration: 'none',
           }}
-          onMouseEnter={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
-          onMouseLeave={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
+          onMouseEnter={(e) =>
+            ((e.target as HTMLElement).style.textDecoration = 'underline')
+          }
+          onMouseLeave={(e) =>
+            ((e.target as HTMLElement).style.textDecoration = 'none')
+          }
         >
           {title}
         </Link>
       );
     },
+  },
+  {
+    field: 'totalTurns',
+    headerName: 'Turns',
+    editable: false,
+  },
+  {
+    field: 'totalMessages',
+    headerName: 'Messages',
+    editable: false,
+  },
+  {
+    field: 'totalTokens',
+    headerName: 'Tokens',
+    editable: false,
   },
   {
     field: 'createdAt',
