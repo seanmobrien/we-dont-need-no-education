@@ -127,7 +127,8 @@ const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
 
 const QueryBuilderMethodValues = [
   'from','select','where','orderBy','limit',
-  'offset','execute','innerJoin','fullJoin'
+  'offset','execute','innerJoin','fullJoin',
+  'groupBy', 'as', 'leftJoin'
 ] as const;
 type QueryBuilderMethodType = typeof QueryBuilderMethodValues[number];
 
@@ -148,10 +149,14 @@ export class MockQueryBuilder implements IMockQueryBuilder {
   readonly execute: jest.Mock;
   readonly innerJoin: jest.Mock;
   readonly fullJoin: jest.Mock;
+  readonly leftJoin: jest.Mock;
+  readonly as: jest.Mock;
+  readonly groupBy: jest.Mock;
 
   #records: unknown[] = [];
 
   constructor() {
+    this.groupBy = jest.fn().bind(this).mockReturnThis();
     this.from = jest.fn().bind(this).mockReturnThis();
     this.select = jest.fn().bind(this).mockReturnThis();
     this.where = jest.fn().bind(this).mockReturnThis();
@@ -161,17 +166,16 @@ export class MockQueryBuilder implements IMockQueryBuilder {
     this.execute = jest.fn(() => Promise.resolve(this.#records)).bind(this);
     this.innerJoin = jest.fn().bind(this).mockReturnThis();
     this.fullJoin = jest.fn().bind(this).mockReturnThis();
+    this.leftJoin = jest.fn().bind(this).mockReturnThis();
+    this.as = jest.fn().bind(this).mockReturnThis();
   }
-
-
 
   __setRecords<T>(records: T[]) {
     this.#records = records ?? [];
   }
   __getRecords<T>() {
-    return this.#records as T[];  
+    return this.#records as T[];
   }
-
 }
 
 type DatabaseType = DbDatabaseType;

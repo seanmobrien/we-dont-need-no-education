@@ -81,6 +81,7 @@ describe('CustomEmailPageItem', () => {
     item: mockNavigationItem,
     mini: false,
     emailId: 'test-email-123',
+    pathname: '/messages/email',
   };
 
   describe('Component Rendering', () => {
@@ -272,14 +273,21 @@ describe('CustomEmailPageItem', () => {
       render(
         <TestWrapper>
           <CustomEmailPageItem 
-            {...defaultProps} 
+            {...({
+              ...defaultProps,
+              item: {
+                ...defaultProps.item,
+                segment: 'custom-segment',
+              }
+            })
+            } 
             emailId=""
           />
         </TestWrapper>
       );
       
       const link = screen.getByRole('link');
-      expect(link).toHaveAttribute('href', '/messages/email/');
+      expect(link).toHaveAttribute('href', '/custom-segment');
     });
   });
 

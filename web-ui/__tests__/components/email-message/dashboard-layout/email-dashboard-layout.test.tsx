@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @fileoverview Unit tests for EmailDashboardLayout component
  * 
@@ -25,6 +26,7 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+  usePathname: jest.fn(() => '/messages'),
 }));
 
 // Mock theme provider
@@ -171,6 +173,7 @@ jest.mock('@mui/icons-material/PrivacyTip', () => {
 
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import type { Session } from 'next-auth';
+import { usePathname } from 'next/navigation';
 
 describe('EmailDashboardLayout', () => {
   const mockSession: Session = {

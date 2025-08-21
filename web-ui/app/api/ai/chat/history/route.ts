@@ -24,14 +24,14 @@ interface ChatSummary {
 
 // Column map for the data grid
 const columnMap = {
-  id: 'id',
-  title: 'title', 
-  userId: 'user_id',
-  createdAt: 'created_at',
   chatMetadata: 'chat_metadata',
+  createdAt: 'created_at',
+  id: 'id',
+  title: 'title',
   totalTokens: 'total_tokens',
   totalMessages: 'total_messages',
-  totalTurns: 'total_turns'
+  totalTurns: 'total_turns',
+  userId: 'user_id',
 } as const;
 
 /**
@@ -46,7 +46,7 @@ const columnMap = {
 export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     // Define the base query for chats
-    const [baseQuery, getColumn] = await drizDbWithInit((db) => {
+    const {baseQuery, getColumn} = await drizDbWithInit((db) => {
       const qSumTokens = db
         .select({
           chatId: schema.tokenUsage.chatId,
@@ -96,10 +96,11 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
         .from(schema.chats)
         .leftJoin(qSumTokens, eq(qSumTokens.chatId, schema.chats.id))
         .leftJoin(qSumMessages, eq(qSumMessages.chatId, schema.chats.id))
-        .leftJoin(qSumTurns, eq(qSumTurns.chatId, schema.chats.id));
-      return [
-        q,
-        (columnName: string): PgColumn | SQL.Aliased | undefined => {
+        .leftJoin(qSumTurns, eq(qSumTurns.chatId, schema.chats.id))
+        .execute();
+      return {
+        baseQuery: q,
+        getColumn: (columnName: string): PgColumn | SQL.Aliased | undefined => {
           switch (columnName) {
             case 'id':
               return schema.chats.id;
@@ -121,13 +122,13 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
               return undefined;
           }
         },
-      ];
+      };
     });
 
     // Record mapper to transform database records to ChatSummary objects
     const recordMapper = (record: Record<string, unknown>): ChatSummary => ({
       id: record.id as string,
-      title: record.title as string | null,
+      title: record.title as string ?? null,
       userId: record.userId as number,
       createdAt: record.createdAt as string,
       chatMetadata: typeof record.chatMetadata === 'string' ? JSON.parse(record.chatMetadata) : record.chatMetadata,
