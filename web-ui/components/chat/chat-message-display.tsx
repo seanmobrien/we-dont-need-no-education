@@ -29,6 +29,7 @@ interface ChatMessage {
   toolName: string | null;
   // Additional message-level metadata fields
   functionCall: Record<string, unknown> | null;
+  toolResult: Record<string, unknown> | null;
   statusId: number;
   providerId: string | null;
   metadata: Record<string, unknown> | null;
@@ -178,6 +179,30 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
                     }}
                   >
                     {JSON.stringify(message.functionCall, null, 2)}
+                  </Box>
+                </Grid>
+              )}
+              {message.toolResult && (
+                <Grid size={12}>
+                  <Typography variant="caption" display="block">
+                    Tool Result:
+                  </Typography>
+                  <Box
+                    component="pre"
+                    sx={{
+                      fontSize: '0.75rem',
+                      backgroundColor: 'success.light',
+                      color: 'success.contrastText',
+                      p: 1,
+                      borderRadius: 1,
+                      overflow: 'auto',
+                      maxHeight: 200,
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '100%'
+                    }}
+                  >
+                    {JSON.stringify(message.toolResult, null, 2)}
                   </Box>
                 </Grid>
               )}

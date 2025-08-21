@@ -20,10 +20,12 @@
 'use client';
 
 import * as React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { ExpandMore } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
 import { useChatHistory } from './useChatHistory';
 import Loading from '@/components/general/loading';
+import type { ChatDetails } from '@/lib/ai/chat/types';
 
 
 /**
@@ -66,14 +68,126 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
       </Box>
     );
   }
+  // Calculate chat statistics
+  const calculateStats = (chatDetails: ChatDetails) => {
+    const turns = chatDetails.turns;
+    const totalMessages = turns.reduce((sum, turn) => sum + turn.messages.length, 0);
+    const totalTokens = turns.reduce((sum, turn) => {
+      if (turn.metadata?.totalTokens) {
+        return sum + (turn.metadata.totalTokens as number);
+      }
+      return sum;
+    }, 0);
+    
+    const toolUsage = turns.reduce((acc, turn) => {
+      turn.messages.forEach(msg => {
+        if (msg.toolName) {
+          acc[msg.toolName] = (acc[msg.toolName] || 0) + 1;
+        }
+      });
+      return acc;
+    }, {} as Record<string, number>);
+
+    return {
+      totalTurns: turns.length,
+      totalMessages,
+      totalTokens,
+      toolUsage,
+      avgLatency: turns.filter(t => t.latencyMs).reduce((sum, t) => sum + (t.latencyMs || 0), 0) / Math.max(turns.filter(t => t.latencyMs).length, 1),
+    };
+  };
+
+  const stats = data ? calculateStats(data) : null;
+
   return (
     <>
       <Typography variant="h4" gutterBottom>
         {effectiveTitle || `Chat ${chatId.slice(-8)}`}
       </Typography>
-      {data && <Typography variant="body2" color="text.secondary" gutterBottom>
-        Created: {new Date(data.createdAt).toLocaleString()}
-      </Typography> }
+      {data && (
+        <>
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Created: {new Date(data.createdAt).toLocaleString()}
+          </Typography>
+          
+          {/* Chat Statistics */}
+          <Accordion sx={{ mb: 3 }}>
+            <AccordionSummary expandIcon={<ExpandMore />}>
+              <Typography variant="h6">Chat Statistics & Metadata</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Grid container spacing={2}>
+                <Grid gridColumn={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" color="primary">
+                        {stats?.totalTurns || 0}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Turns
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid gridColumn={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" color="primary">
+                        {stats?.totalMessages || 0}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Messages
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid gridColumn={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" color="primary">
+                        {stats?.totalTokens || 0}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Total Tokens
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid gridColumn={{ xs: 12, sm: 6, md: 3 }}>
+                  <Card variant="outlined">
+                    <CardContent>
+                      <Typography variant="h6" color="primary">
+                        {stats?.avgLatency ? Math.round(stats.avgLatency) : 0}ms
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Avg Latency
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                {stats?.toolUsage && Object.keys(stats.toolUsage).length > 0 && (
+                  <Grid gridColumn={{ xs: 12 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                      Tool Usage
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {Object.entries(stats.toolUsage).map(([tool, count]) => (
+                        <Chip 
+                          key={tool} 
+                          label={`${tool}: ${count}`} 
+                          size="small" 
+                          variant="outlined"
+                        />
+                      ))}
+                    </Box>
+                  </Grid>
+                )}
+              </Grid>
+            </AccordionDetails>
+          </Accordion>
+        </>
+      )}
+      
       <Box sx={{ mt: 3 }}>
         <Loading loading={isLoading} />
         {!data 

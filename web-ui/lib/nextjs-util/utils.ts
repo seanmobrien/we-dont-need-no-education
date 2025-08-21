@@ -7,6 +7,7 @@ import {
 } from './guards';
 import { LikeNextRequest, LikeNextResponse } from './types';
 import { isPromise } from '../typescript';
+import { getStackTrace } from './get-stack-trace';
 
 /**
  * Type definition for objects that have a headers property of type Headers.
@@ -153,13 +154,14 @@ export const extractParams = async <T extends object>(req: {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const deprecate =  <T extends (...args: any[]) => any>(fn: T, message = `The ${fn.name} function is deprecated.`, code = 'DEP000') => {
+  const stack = getStackTrace({ skip: 2 });
   const deprecatedFn = function (
     this: ThisParameterType<T>,
     ...args: Parameters<T>
   ): ReturnType<T> {
-    process.emitWarning(message, {
+    process.emitWarning(`${message}\nStack Trace:\n${stack}`, {
       code,
-      type: 'DeprecationWarning',
+      type: 'DeprecationWarning'
     });
     return fn.apply(this, args);
   } as T;

@@ -47,14 +47,10 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
   try {
     // Define the base query for chats
     const [baseQuery, getColumn] = await drizDbWithInit((db) => {
-      const columnTurns = count(schema.chatTurns.turnId).as('total_turns');
-      const columnTokens = sum(schema.tokenUsage.totalTokens).as('total_tokens');
-      const columnMessages = count(schema.chatMessages.messageId).as('total_messages');
-      // Sum tokens by chat
       const qSumTokens = db
         .select({
           chatId: schema.tokenUsage.chatId,
-          totalTokens: columnTokens,
+          totalTokens: sum(schema.tokenUsage.totalTokens).as('all_the_tokens'),
         })
         .from(schema.tokenUsage)
         .groupBy(schema.tokenUsage.chatId)
@@ -63,7 +59,7 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
       const qSumMessages = db
         .select({
           chatId: schema.chatMessages.chatId,
-          totalMessages: columnMessages,
+          totalMessages: count().as('all_the_messages'),
         })
         .from(schema.chatMessages)
         .groupBy(schema.chatMessages.chatId)
@@ -72,11 +68,19 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
       const qSumTurns = db
         .select({
           chatId: schema.chatTurns.chatId,
-          totalTurns: columnTurns,
+          totalTurns: count().as('all_the_turns'),
         })
         .from(schema.chatTurns)
         .groupBy(schema.chatTurns.chatId)
         .as('tblTurns');
+
+      // Sum tokens by chat
+      const columnTurns: SQL.Aliased = qSumTurns.totalTurns;
+      // count(schema.chatTurns.turnId).as('all_the_turns');
+      const columnTokens: SQL.Aliased =
+        qSumTokens.totalTokens;
+      const columnMessages: SQL.Aliased = qSumMessages.totalMessages;
+      
 
       const q = db
         .select({
@@ -116,7 +120,7 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
             default:
               return undefined;
           }
-        }
+        },
       ];
     });
 

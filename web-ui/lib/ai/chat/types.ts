@@ -99,6 +99,8 @@ export interface ChatMessage {
 	toolName: string | null;
 	/** Serialized function call payload (model dependent). */
 	functionCall: Record<string, unknown> | null;
+	/** Tool execution result/return value. */
+	toolResult: Record<string, unknown> | null;
 	/** Status code id for message lifecycle (domain enum mapping). */
 	statusId: number;
 	/** Upstream provider identifier (e.g. 'azure-openai', 'google'). */
