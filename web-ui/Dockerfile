@@ -24,9 +24,23 @@ ENV PYTHONUNBUFFERED=1
 RUN addgroup --system --gid 1001 nodejs \
   && adduser --system --uid 1001 nextjs 
 
-# Install cron for rate retry processing
-RUN apk update && apk upgrade \
-  && apk add --update --no-cache libc6-compat dcron curl build-base cairo pango jpeg giflib fontconfig freetype curl python3 py3-pip pixman
+# Install all required dependencies in one layer
+RUN apk add --no-cache \
+    libc6-compat \
+    dcron \
+    curl \
+    build-base \
+    cairo-dev \
+    pango-dev \
+    jpeg-dev \
+    giflib-dev \
+    fontconfig-dev \
+    freetype-dev \
+    python3-dev \
+    python3 \
+    py3-pip \
+    pixman \
+  && ln -sf python3 /usr/bin/python
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -41,16 +55,6 @@ ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
 WORKDIR /app
-
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat dcron build-base cairo-dev pango-dev jpeg-dev giflib-dev fontconfig-dev freetype-dev curl  python3-dev python3 py3-pip pixman \
-#  && apk add  build-base \
-  && ln -sf python3 /usr/bin/python \
-  #&& python3 -m venv myenv && source myenv/bin/activate \
-  #&& pip3 install --no-cache --upgrade pip setuptools \
-  && (id -u nextjs 2>/dev/null || (adduser --system --uid 1001 nextjs && usermod -aG nextjs nodejs))
-
-ENV PKG_CONFIG_PATH="/app/myenv/lib/pkgconfig:${PKG_CONFIG_PATH}"
 
 # Install dependencies based on the preferred package manager
 COPY --link=true package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
@@ -74,8 +78,6 @@ ARG OTEL_RESOURCE_ATTRIBUTES
 ARG MEM0_APIHOST
 
 WORKDIR /app
-
-RUN  id -u nextjs 2>/dev/null || (adduser --system --uid 1001 nextjs && usermod -aG nextjs nodejs)
 
 COPY --link=true --chown=nextjs:nodejs --from=deps /app/node_modules ./node_modules
 COPY --link=true --chown=nextjs:nodejs ./app ./app
@@ -102,7 +104,7 @@ ENV IS_BUILDING=1
 
 RUN \
   --mount=type=secret,id=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,env=NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING \
-  printf "NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=%s\r\nAZURE_MONITOR_CONNECTION_STRING\r\n" "$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" "$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" > .env \
+  printf "NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=%s\nAZURE_MONITOR_CONNECTION_STRING=%s\n" "$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" "$NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING" > .env \
   && cat .env
 
 RUN \
@@ -137,8 +139,6 @@ LABEL org.opencontainers.image.licenses="EJL-1.0"
 
 WORKDIR /app
 
-RUN  id -u nextjs 2>/dev/null || (adduser --system --uid 1001 nextjs && usermod -aG nextjs nodejs)
-
 ENV NODE_ENV=production
 ENV FOR_STANDALONE=1
 ENV OTEL_SERVICE_NAME=$OTEL_SERVICE_NAME
@@ -164,7 +164,7 @@ COPY --link=true --from=builder --chown=nextjs:nodejs /app/scripts/rate-retry-cl
 RUN chmod +x ./scripts/rate-retry-client.sh
 
 # Set up cron for rate retry processing
-RUN echo "*/${RATE_RETRY_INTERVAL_MINUTES} * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs
+RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs
 RUN crontab -u nextjs /etc/crontabs/nextjs
 
 # Ensure log directory exists
