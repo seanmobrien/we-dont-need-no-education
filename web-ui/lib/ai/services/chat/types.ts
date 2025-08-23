@@ -92,26 +92,5 @@ export interface QueueMetrics {
   modelType: string;
 }
 
-/**
- * Custom error thrown when a message is too large for the queue
- */
-export class MessageTooLargeForQueueError extends Error {
-  constructor(
-    public readonly tokenCount: number,
-    public readonly maxTokens: number,
-    public readonly modelType: string
-  ) {
-    super(`Message with ${tokenCount} tokens exceeds maximum allowed ${maxTokens} tokens for model ${modelType}`);
-    this.name = 'MessageTooLargeForQueueError';
-  }
-}
-
-/**
- * Custom error thrown when a request is aborted
- */
-export class AbortChatMessageRequestError extends Error {
-  constructor(public readonly requestId: string) {
-    super(`Chat message request ${requestId} was aborted`);
-    this.name = 'AbortChatMessageRequestError';
-  }
-}
+// Error classes are now exported from the errors directory
+export { MessageTooLargeForQueueError, AbortChatMessageRequestError } from './errors';
