@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import documentPropertyShape from './documentPropertyShape';
+import { ArrayElement } from '@/lib/typescript/_types';
 
 const referencedEmailShape = z.object({
   subject: z.string(),
@@ -198,51 +199,14 @@ export const DocumentSchema = z.object({
     .describe('Details about the email this case file specifically describes.'),
   docRel_targetDoc: z
     .array(
-      z.object({
-        sourceDocumentId: z.number().describe('Source document ID.'),
-        description: z
-          .string()
-          .optional()
-          .nullable()
-          .describe(
-            'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
-          ),
-        sourceDoc: z.object({
-          documentType: z
-            .string()
-            .describe('Type of the source document.')
-            .optional()
-            .nullable(),
-          content: z
-            .string()
-            .describe('Content of the source document.')
-            .optional()
-            .nullable(),
-        }),
-      }),
-    )
-    .nullable()
-    .optional()
-    .describe(
-      'Relationships to other documents, where this document is the target.',
-    ),
-  docRel_sourceDoc: z
-    .array(
-      z.object({
-        targetDocumentId: z
-          .number()
-          .describe('Target document ID.')
-          .optional()
-          .nullable(),
-        description: z
-          .string()
-          .optional()
-          .nullable()
-          .describe(
-            'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
-          ),
-        targetDoc: z
-          .object({
+      z.union([
+        z.object({
+          sourceDocumentId: z.number().describe('Source document ID.'),
+          description: z.union([z.string(), z.array(z.string())])
+            .describe(
+              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
+            ),
+          sourceDoc: z.object({
             documentType: z
               .string()
               .describe('Type of the source document.')
@@ -253,10 +217,85 @@ export const DocumentSchema = z.object({
               .describe('Content of the source document.')
               .optional()
               .nullable(),
-          })
-          .optional()
-          .nullable(),
-      }),
+          }),
+        }),
+        z.object({
+          description: z.union([z.string(), z.array(z.string())]),
+          sourceDoc: z.object({
+            unitId: z.number(),
+            documentType: z
+              .string()
+              .describe('Type of the source document.')
+              .optional()
+              .nullable(),
+            content: z
+              .string()
+              .optional()
+              .nullable(),
+          }),
+        }),
+      ]),
+    )
+    .nullable()
+    .optional()
+    .describe(
+      'Relationships to other documents, where this document is the target.',
+    ),
+  docRel_sourceDoc: z
+    .array(
+      z.union([
+        z.object({
+          targetDocumentId: z
+            .number()
+            .describe('Target document ID.'),
+          description: z
+            .union([z.string(), z.array(z.string())])
+            .describe(
+              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
+            ),
+          targetDoc: z
+            .object({
+              documentType: z
+                .string()
+                .describe('Type of the source document.')
+                .optional()
+                .nullable(),
+              content: z
+                .string()
+                .describe('Content of the source document.')
+                .optional()
+                .nullable(),
+            })
+            .optional()
+            .nullable(),
+        }),
+        z.object({          
+          description: z
+            .string()
+            .or(z.array(z.string()))
+            .optional()
+            .nullable()
+            .describe(
+              'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
+            ),
+          targetDoc: z
+            .object({
+              unitId: z.number(),
+              documentType: z
+                .string()
+                .describe('Type of the source document.')
+                .optional()
+                .nullable(),
+              content: z
+                .string()
+                .describe('Content of the source document.')
+                .optional()
+                .nullable(),
+            })
+            .optional()
+            .nullable(),
+        }),
+      ]),
     )
     .nullable()
     .optional()
@@ -264,3 +303,12 @@ export const DocumentSchema = z.object({
       'Relationships to other documents, where this document is the source.',
     ),
 });
+
+export type DocumentSchemaType = typeof DocumentSchema._output;
+export type TargetDocumentSchemaType = ArrayElement<
+  DocumentSchemaType['docRel_targetDoc']
+>;
+export type SourceDocumentSchemaType = ArrayElement<
+  DocumentSchemaType['docRel_sourceDoc']
+>;
+export type RelatedDocumentSchemaType = SourceDocumentSchemaType | TargetDocumentSchemaType;

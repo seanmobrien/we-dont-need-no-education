@@ -144,7 +144,8 @@ describe('Dashboard Layout Module Exports', () => {
         React.createElement(Component, { 
           item: { title: 'Test' }, 
           mini: false, 
-          emailId: 'test' 
+          emailId: 'test',
+          pathname:'/messages'
         });
       }).not.toThrow();
     });

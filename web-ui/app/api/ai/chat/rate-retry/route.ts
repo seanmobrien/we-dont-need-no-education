@@ -11,11 +11,12 @@ import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
 export const dynamic = 'force-dynamic';
 
-const MAX_PROCESSING_TIME_MS = 4 * 60 * 1000; // 4 minutes
-const REQUEST_TIMEOUT_MS = 240 * 1000; // 240 seconds per request
+const MAX_PROCESSING_TIME_MS = 10 * 60 * 1000; // 10 minutes
+const REQUEST_TIMEOUT_MS = 720 * 1000; // 720 seconds per request
 
 export const GET = wrapRouteRequest(async () => {
   const startTime = Date.now();
@@ -118,8 +119,8 @@ export const GET = wrapRouteRequest(async () => {
         } catch (error) {
           log(l => l.error(`Error processing request ${request.id}:`, error));
 
-          // Check if it's another rate limit
-          if (error instanceof Error && (error.message.includes('rate limit') || error.message.includes('RateRetry'))) {
+          // Check if it's another rate limit error
+          if (isRateRetryError(error)) {
             // Move to gen-2 queue
             const gen2Request: RateLimitedRequest = {
               ...request,
@@ -135,12 +136,16 @@ export const GET = wrapRouteRequest(async () => {
             const errorResponse: ProcessedResponse = {
               id: request.id,
               error: {
-                type: error instanceof Error && error.message.includes('timeout') ? 'server_error' : 'server_error',
-                message: error instanceof Error ? error.message : 'Unknown error',
+                type:
+                  error instanceof Error && error.message.includes('timeout')
+                    ? 'server_error'
+                    : 'server_error',
+                message:
+                  error instanceof Error ? error.message : 'Unknown error',
               },
               processedAt: new Date().toISOString(),
             };
-            
+
             await rateLimitQueueManager.storeResponse(errorResponse);
             rateLimitMetrics.recordError('processing_error', classification);
           }

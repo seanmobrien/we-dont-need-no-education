@@ -21,37 +21,7 @@ import {
   Error as ErrorIcon
 } from '@mui/icons-material';
 import { ChatMessageDisplay } from './chat-message-display';
-
-interface ChatMessage {
-  turnId: number;
-  messageId: number;
-  role: string;
-  content: string | null;
-  messageOrder: number;
-  toolName: string | null;
-  functionCall: Record<string, unknown> | null;
-  toolResult: Record<string, unknown> | null;
-  statusId: number;
-  providerId: string | null;
-  metadata: Record<string, unknown> | null;
-  toolInstanceId: string | null;
-  optimizedContent: string | null;
-}
-
-interface ChatTurn {
-  turnId: number;
-  createdAt: string;
-  completedAt: string | null;
-  modelName: string | null;
-  messages: ChatMessage[];
-  statusId: number;
-  temperature: number | null;
-  topP: number | null;
-  latencyMs: number | null;
-  warnings: string[] | null;
-  errors: string[] | null;
-  metadata: Record<string, unknown> | null;
-}
+import { ChatTurn } from '@/lib/ai/chat/types';
 
 interface ChatTurnDisplayProps {
   turn: ChatTurn;

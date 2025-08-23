@@ -1,0 +1,2 @@
+# web-ui
+This folder contains the nextjs-based web application.  If you will be working in this folder, load [web-ui/.github/instructions/copilot-instructions.md](web-ui/.github/instructions/copilot-instructions.md) for further instructions.

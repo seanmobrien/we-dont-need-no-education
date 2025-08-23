@@ -173,6 +173,13 @@ export interface ChatHistoryContext {
   chatId?: string;
 
   /**
+   * Optional unique identifier for the current turn within the chat session.
+   * When provided, enables precise tracking of user interactions and model responses.
+   * When omitted, a new turn will be created automatically.
+   */
+  turnId?: string;
+
+  /**
    * Optional unique identifier for the current request.
    * Enables distributed tracing, debugging, and request correlation.
    * Recommended for production systems and monitoring.

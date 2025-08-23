@@ -20,11 +20,11 @@ import {
 import {
   getMultipleCaseFileDocuments,
   getMultipleCaseFileDocumentsConfig,
-} from '@/lib/ai/tools/getCaseFileDocument/getCaseFileDocument';
+} from '@/lib/ai/tools/getCaseFileDocument/get-casefile-document';
 import {
   getCaseFileDocumentIndex,
   getCaseFileDocumentIndexConfig,
-} from '@/lib/ai/tools/getCaseFileDocument/getCaseFileDocumentIndex';
+} from '@/lib/ai/tools/getCaseFileDocument/get-casefile-document-index';
 import {
   SEQUENTIAL_THINKING_TOOL_NAME,
   sequentialThinkingCallback,

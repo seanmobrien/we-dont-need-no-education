@@ -48,6 +48,6 @@
 export {
   getCaseFileDocument,
   getMultipleCaseFileDocuments,
-} from './getCaseFileDocument';
+} from './get-casefile-document';
 
-export { getCaseFileDocumentIndex } from './getCaseFileDocumentIndex';
+export { getCaseFileDocumentIndex } from './get-casefile-document-index';
