@@ -22,7 +22,7 @@ const mockProviderMapInstance = {
   whenInitialized: Promise.resolve(true),
 };
 
-jest.mock('@/lib/ai/middleware/tokenStatsTracking/provider-map', () => ({
+jest.mock('@/lib/ai/services/model-stats/provider-map', () => ({
   ProviderMap: {
     getInstance: jest.fn().mockResolvedValue(mockProviderMapInstance),
     Instance: mockProviderMapInstance,
@@ -40,7 +40,7 @@ import {
 } from '@/lib/ai/middleware/tokenStatsTracking';
 import {
   reset 
- } from '@/lib/ai/middleware/tokenStatsTracking/token-stats-service';
+ } from '@/lib/ai/services/model-stats/token-stats-service';
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 
@@ -85,7 +85,7 @@ const mockDb = {
 let tokenStatsService: TokenStatsServiceType;
 
 beforeEach(() => {
-  jest.clearAllMocks();
+  //jest.clearAllMocks();
   reset();
   tokenStatsService = getTokenStatsService();
   

@@ -91,6 +91,3 @@ export interface QueueMetrics {
   /** Model type */
   modelType: string;
 }
-
-// Error classes are now exported from the errors directory
-export { MessageTooLargeForQueueError, AbortChatMessageRequestError } from './errors';

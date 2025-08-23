@@ -7,25 +7,26 @@
 
 import { LanguageModelV1 } from '@ai-sdk/provider';
 import { v4 as uuidv4 } from 'uuid';
-import { getRedisClient } from '../../middleware/cacheWithRedis/redis-client';
-import { countTokens } from '../../core/count-tokens';
+import { getRedisClient } from '../../../middleware/cacheWithRedis/redis-client';
+import { countTokens } from '../../../core/count-tokens';
 import { auth } from '@/auth';
 import { log } from '@/lib/logger';
-import { 
+import type{ 
   LanguageModelQueueOptions, 
   QueuedRequest, 
   LanguageModelMethod, 
-  MessageTooLargeForQueueError,
   ModelCapacity,
   RateLimitInfo,
   QueueMetrics
 } from './types';
+import { MessageTooLargeForQueueError } from '../errors';
+import { ModelMap } from '../../model-stats/model-map';
 
 const REDIS_PREFIX = 'language-model-queue';
-const EXPIRATION_HOURS = 6;
-const EXPIRATION_SECONDS = EXPIRATION_HOURS * 60 * 60;
-const FIVE_MINUTES_MS = 5 * 60 * 1000;
-const TOKEN_BUFFER = 1500; // Reserved tokens for response
+const FIFO_CHATQUEUE_QUEUE_EXPIRATION_HOURS = 6;
+const FIFO_CHATQUEUE_QUEUE_EXPIRATION_SECONDS = FIFO_CHATQUEUE_QUEUE_EXPIRATION_HOURS * 60 * 60;
+const FIFO_CHATQUEUE_MESSAGE_STALE_TIMEOUT = 5 * 60 * 1000;
+const FIFO_CHATQUEUE_OUTPUT_TOKEN_BUFFER = 1500; // Reserved tokens for response
 
 /**
  * FIFO rate-aware language model queue
@@ -72,8 +73,7 @@ export class LanguageModelQueue {
     if ('provider' in model && 'modelId' in model) {
       const modelWithProps = model as { provider: string; modelId: string };
       return `${modelWithProps.provider}:${modelWithProps.modelId}`;
-    }
-    
+    }    
     // Fallback to a generic identifier  
     return 'unknown-model';
   }
@@ -111,10 +111,11 @@ export class LanguageModelQueue {
    */
   private async getModelTokenLimit(): Promise<number> {
     try {
+      const quotaRecord = await (await ModelMap.getInstance()).getModelFromLanguageModelV1(this.model);
       // This would need to be implemented to query the models table
       // For now, return a reasonable default
       // TODO: Implement actual database query to get model limits
-      return 50000; // Default limit
+      return quotaRecord?.quota?.maxTokensPerMinute || 50000; // Default limit
     } catch (error) {
       log(l => l.warn('Failed to get model token limit', { error }));
       return 10000; // Conservative fallback
@@ -126,7 +127,7 @@ export class LanguageModelQueue {
    */
   private async validateMessageSize(tokenCount: number): Promise<void> {
     const maxTokensPerMinute = await this.getModelTokenLimit();
-    const maxAllowedTokens = maxTokensPerMinute - TOKEN_BUFFER;
+    const maxAllowedTokens = maxTokensPerMinute - FIFO_CHATQUEUE_OUTPUT_TOKEN_BUFFER;
     
     if (tokenCount > maxAllowedTokens) {
       throw new MessageTooLargeForQueueError(tokenCount, maxAllowedTokens, this.modelType);
@@ -164,7 +165,7 @@ export class LanguageModelQueue {
     
     await redis.multi()
       .lPush(queueKey, JSON.stringify(request))
-      .expire(queueKey, EXPIRATION_SECONDS)
+      .expire(queueKey, FIFO_CHATQUEUE_QUEUE_EXPIRATION_SECONDS)
       .exec();
 
     log(l => l.info('Request enqueued', {
@@ -205,7 +206,7 @@ export class LanguageModelQueue {
       
       await redis.multi()
         .set(capacityKey, JSON.stringify(capacity))
-        .expire(capacityKey, EXPIRATION_SECONDS)
+        .expire(capacityKey, FIFO_CHATQUEUE_QUEUE_EXPIRATION_SECONDS)
         .exec();
     } catch (error) {
       log(l => l.warn('Failed to update model capacity', { error }));
@@ -256,7 +257,7 @@ export class LanguageModelQueue {
     }
     
     // Check token capacity
-    const requiredTokens = tokenCount + TOKEN_BUFFER;
+    const requiredTokens = tokenCount + FIFO_CHATQUEUE_OUTPUT_TOKEN_BUFFER;
     return capacity.tokensPerMinute >= requiredTokens;
   }
 
@@ -368,7 +369,7 @@ export class LanguageModelQueue {
       await redis.del(queueKey);
       if (filteredRequests.length > 0) {
         await redis.lPush(queueKey, filteredRequests);
-        await redis.expire(queueKey, EXPIRATION_SECONDS);
+        await redis.expire(queueKey, FIFO_CHATQUEUE_QUEUE_EXPIRATION_SECONDS);
       }
       
       // Clean up abort controller
@@ -472,11 +473,11 @@ export class LanguageModelQueue {
       if (hasCapacityForRequest) {
         requestsToProcess.push(request);
       } else {
-        // Check if we should skip this request due to the 5-minute rule
+        // Check if we should wait for capacity to process this request due to the stale-message rule
         const queuedTime = new Date(request.queuedAt);
         const timeDiff = now.getTime() - queuedTime.getTime();
         
-        if (timeDiff > FIVE_MINUTES_MS) {
+        if (timeDiff > FIFO_CHATQUEUE_MESSAGE_STALE_TIMEOUT) {
           // Don't skip requests older than 5 minutes
           requestsToProcess.push(request);
         }
@@ -551,7 +552,7 @@ export class LanguageModelQueue {
     await redis.del(queueKey);
     if (updatedRequests.length > 0) {
       await redis.lPush(queueKey, updatedRequests);
-      await redis.expire(queueKey, EXPIRATION_SECONDS);
+      await redis.expire(queueKey, FIFO_CHATQUEUE_QUEUE_EXPIRATION_SECONDS);
     }
   }
 
@@ -635,7 +636,7 @@ export class LanguageModelQueue {
     await redis.del(queueKey);
     if (filteredRequests.length > 0) {
       await redis.lPush(queueKey, filteredRequests);
-      await redis.expire(queueKey, EXPIRATION_SECONDS);
+      await redis.expire(queueKey, FIFO_CHATQUEUE_QUEUE_EXPIRATION_SECONDS);
     }
   }
 

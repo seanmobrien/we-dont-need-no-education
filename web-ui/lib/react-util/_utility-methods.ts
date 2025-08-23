@@ -28,7 +28,7 @@ export function isError(value: unknown): value is Error {
     !!value &&
     typeof value === 'object' &&
     (value instanceof Error ||
-      ('message' in value && 'name' in value && 'stack' in value))
+      ('message' in value && 'name' in value))
   );
 }
 

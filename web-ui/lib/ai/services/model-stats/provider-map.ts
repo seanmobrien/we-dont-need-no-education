@@ -11,7 +11,6 @@ type ProviderNameOrIdType = ProviderIdType | ProviderNameType;
 
 export class ProviderMap {
   static #instance: ProviderMap | undefined;
-  static readonly #ProviderIdKey: ProviderMapEntryIdKey = 'id' as const;
   static readonly #ProviderNameKey: ProviderMapEntryNameKey = 'name' as const;
 
   static get Instance(): ProviderMap {

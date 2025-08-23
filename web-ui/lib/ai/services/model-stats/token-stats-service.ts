@@ -22,7 +22,7 @@ import {
   TokenStats,
   TokenStatsServiceType,
   TokenUsageData,
-} from './types';
+} from '../../middleware/tokenStatsTracking/types';
 import { ProviderMap } from './provider-map';
 
 /**
