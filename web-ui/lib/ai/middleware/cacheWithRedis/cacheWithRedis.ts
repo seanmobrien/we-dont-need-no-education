@@ -47,7 +47,15 @@ export const cacheWithRedis: LanguageModelV1Middleware = {
       const result = await doGenerate();
 
       // Handle caching strategy
-      await handleResponseCaching(redis, cacheKey, result);
+      await 
+      
+      
+      
+      
+      
+      
+      
+      handleResponseCaching(redis, cacheKey, result);
 
       return result;
     } catch (error) {

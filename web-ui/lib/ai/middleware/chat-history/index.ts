@@ -153,18 +153,49 @@ export const createChatHistoryMiddleware = (
 
     wrapGenerate: async ({ doGenerate, params }) => {
       // Initialize message persistence
-      const persistenceInit = await safeInitializeMessagePersistence(context, params);
+      const persistenceInit = await safeInitializeMessagePersistence(context, params);      
       if (!persistenceInit) {
         // If persistence initialization fails, continue with original generation
         return doGenerate();
       }
-
       const { chatId, turnId, messageId } = persistenceInit;
-
       try {
         // Execute the text generation
         const result = await doGenerate();
+        /*
 
+      const toolCalls: Map<string, ChatMessagesType> = new Map();
+      const handlerContext: StreamHandlerContext = {
+        chatId: chatId!,
+        turnId: turnId!,
+        toolCalls: toolCalls,
+        messageId,
+        currentMessageOrder,
+        generatedText,
+      };
+  // Queue processing maintains order and updates local state
+  processingQueue
+    .enqueue(chunk, handlerContext)
+    .then(() => {
+      // Context is updated by the queue processor
+      // Get the latest state for subsequent chunks
+      currentMessageOrder = handlerContext.currentMessageOrder;
+      generatedText = handlerContext.generatedText;
+      messageId = handlerContext.messageId;
+    })
+    .catch((error: Error) => {
+      log((l) =>
+        l.error('Queued chunk processing failed', {
+          error,
+          turnId,
+          chatId,
+          chunkType: chunk.type,
+          queueLength: processingQueue.getQueueLength(),
+        }),
+      );
+    });
+
+*/
         // Extract the generated text from the result
         const finalText = result.text || '';
 

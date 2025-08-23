@@ -495,7 +495,7 @@ export const toolProviderSetFactory = async (
      * Merges tools from all successful provider connections. If multiple providers
      * offer tools with the same name, the last provider's tool will take precedence.
      */
-    get_tools: () => {
+    get_tools: (): ToolSet => {
       return allProviders.reduce((acc, provider) => {
         return { ...acc, ...provider.get_tools() };
       }, {} as ToolSet);
@@ -507,14 +507,14 @@ export const toolProviderSetFactory = async (
      * @async
      * @returns {Promise<void>} Promise that resolves when disposal is complete or times out
      * @description
-     * Attempts to dispose all providers gracefully within a 15-second timeout.
+     * Attempts to dispose all providers gracefully within a 30-second timeout.
      * Uses `Promise.any` to ensure the function doesn't hang indefinitely if
      * some providers fail to dispose properly.
      */
-    dispose: async () => {
+    dispose: async (): Promise<void> => {
       await Promise.any([
         Promise.all(allProviders.map((provider) => provider.dispose())),
-        new Promise((resolve) => setTimeout(resolve, 15 * 1000)), // Wait 15 seconds max for disposal
+        new Promise((resolve) => setTimeout(resolve, 30 * 1000)), // Wait 30 seconds max for disposal
       ]);
     },
   };

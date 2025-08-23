@@ -118,6 +118,7 @@ export const createUserChatHistoryContext = ({
   userId: string;
   requestId?: string;
   chatId?: string;
+  turnId?: string;
   model?: string;
 }) : ChatHistoryContext => {
   return hydrateContext({

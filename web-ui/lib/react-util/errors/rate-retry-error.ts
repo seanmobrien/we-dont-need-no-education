@@ -9,9 +9,12 @@ export class RateRetryError extends Error {
     chatId,
     turnId,
     retryId,
-    retryAfter
-  } : { chatId: string; turnId: string; retryId: string; retryAfter: Date }) {
-    super(`RateRetryError: Model Quota was exceeded while processing messages for chat ${chatId}; `);
+    retryAfter,
+    message
+  } : { chatId: string; turnId: string; retryId: string; retryAfter: Date; message?: string; }) {
+    super(
+      `RateRetryError: ${message ?? `Model Quota was exceeded while processing messages for chat ${chatId}`}`,
+    );
     this.name = 'RateRetryError';
     this.#chatId = chatId;
     this.#turnId = turnId;

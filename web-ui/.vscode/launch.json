@@ -10,8 +10,8 @@
             "sourceMapRenames": true,
             "runtimeArgs": [
                 "--inspect",
-                "--preserve-symlinks",
-                "--preserve-symlinks-main",
+                //"--preserve-symlinks",
+                //"--preserve-symlinks-main",
                 "--trace-deprecation",
                 "--trace-warnings",
                 "--experimental-modules",

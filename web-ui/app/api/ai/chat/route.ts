@@ -17,8 +17,12 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { generateChatId } from '@/lib/ai/core';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
+import { ToolProviderSet } from '@/lib/ai/mcp/types';
+import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 // Allow streaming responses up to 180 seconds
-export const maxDuration = 180;
+export const maxDuration = 1440;
+let toolProviders: ToolProviderSet | undefined = undefined;
+
 
 const getMcpClientHeaders = ({
   req,
@@ -36,6 +40,28 @@ const getMcpClientHeaders = ({
   }
   return ret;
 };
+const toolProviderFactory = ({req, chatHistoryId, memoryDisabled = false, writeEnabled = false }: {req: NextRequest; chatHistoryId: string, writeEnabled?: boolean; memoryDisabled?: boolean }) => (
+ toolProviderSetFactory([
+   {
+     allowWrite: writeEnabled,
+     url: new URL('/api/ai/tools/sse', env('NEXT_PUBLIC_HOSTNAME')).toString(),
+     headers: getMcpClientHeaders({ req, chatHistoryId }),
+     traceable: req.headers.get('x-traceable') !== 'false',
+   },
+   ...(memoryDisabled !== true && env('MEM0_DISABLED')
+     ? []
+     : [
+         {
+           allowWrite: true,
+           headers: {
+             'cache-control': 'no-cache, no-transform',
+             'content-encoding': 'none',
+           },
+           url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
+         },
+       ]),
+ ])
+);
 
 export const POST = wrapRouteRequest(
 async (req: NextRequest) => {
@@ -88,30 +114,12 @@ async (req: NextRequest) => {
   }
 
   try {
-    const toolProviders = await toolProviderSetFactory([
-      {
-        allowWrite: writeEnabled,
-        url: new URL(
-          '/api/ai/tools/sse',
-          env('NEXT_PUBLIC_HOSTNAME'),
-        ).toString(),
-        headers: getMcpClientHeaders({ req, chatHistoryId }),
-        traceable: req.headers.get('x-traceable') !== 'false',
-      },
-      ...(memoryDisabled !== true && env('MEM0_DISABLED')
-        ? []
-        : [
-            {
-              allowWrite: true,
-              headers: {
-                'cache-control': 'no-cache, no-transform',
-                'content-encoding': 'none',
-              },
-              url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
-            },
-          ]),
-    ]);
-
+    toolProviders ??= await toolProviderFactory({ 
+      req, 
+      chatHistoryId, 
+      memoryDisabled,
+      writeEnabled 
+    });
     // Create chat history context
     const chatHistoryContext = createUserChatHistoryContext({
       userId: session?.user?.id || 'anonymous',
@@ -129,9 +137,9 @@ async (req: NextRequest) => {
 
     let isRateLimitError = false;
     let retryAfter = 0;
-
+    toolProviders ??= await toolProviderFactory({ req, chatHistoryId, memoryDisabled, writeEnabled });
     return createDataStreamResponse({
-      execute: (dataStream) => {
+      execute: async (dataStream) => {
         const result = streamText({
           model: modelWithHistory,
           messages: optimizedMessages,
@@ -156,7 +164,7 @@ async (req: NextRequest) => {
           maxSteps: 100,
           onError: async (error) => {
             log((l) => l.error('on error streamText callback'));
-            const mcpCloseTask = toolProviders.dispose();
+            // const mcpCloseTask = toolProviders.dispose();
             chatHistoryContext.error = error;
             try {
               const rateLimitErrorInfo = getRetryErrorInfo(error);
@@ -201,7 +209,6 @@ async (req: NextRequest) => {
               );
             } finally {
               chatHistoryContext.dispose();
-              await mcpCloseTask;
             }
           },
           onFinish: async (
@@ -223,7 +230,6 @@ async (req: NextRequest) => {
                   },
                 }),
               );
-              await toolProviders.dispose();
             } catch (error) {
               LoggedError.isTurtlesAllTheWayDownBaby(error, {
                 log: true,
@@ -242,20 +248,20 @@ async (req: NextRequest) => {
               chatHistoryContext.dispose();
             }
           },
-          tools: toolProviders.get_tools(),
+          tools: (toolProviders ??= await toolProviderFactory({ req, chatHistoryId, memoryDisabled, writeEnabled })).get_tools(),
         });
 
         result.mergeIntoDataStream(dataStream);
       },
       onError: (error: unknown) => {
-        log((l) => l.error('on error custom data stream callback'));
         if (isRateLimitError) {
-          error = new Error(
-            `Rate limit exceeded. Please try again later. Retry after: ${retryAfter} seconds.`,
-            {
-              cause: { reason: 'RateLimit', retryAfter },
-            },
-          );
+          error = new RateRetryError({
+            chatId: chatHistoryContext.chatId!,
+            turnId: chatHistoryContext.turnId ?? '1',
+            retryId: '',
+            message: `Rate limit exceeded. Please try again later. Retry after: ${retryAfter} seconds.`,
+            retryAfter: new Date(Date.now() + retryAfter),
+          });
         }
         // Log the error for debugging purposes
         LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -272,7 +278,6 @@ async (req: NextRequest) => {
         });
         chatHistoryContext.error = error;
         chatHistoryContext.dispose();
-        toolProviders.dispose();
         // Error messages are masked by default for security reasons.
         // If you want to expose the error message to the client, you can do so here:
         return error instanceof Error ? error.message : String(error);

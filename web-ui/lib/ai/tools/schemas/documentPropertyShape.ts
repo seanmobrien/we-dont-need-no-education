@@ -12,4 +12,10 @@ const documentPropertyShape = z
   ])
   .or(baseDocumentPropertyShape);
 
+export type BaseDocumentPropertySchemaType = typeof baseDocumentPropertyShape._output;
+export type CtaResponseSchemaType = typeof docPropCtaResponseShape._output;
+export type CtaKeyPointSchemaType = typeof docPropKeyPointShape._output;
+export type CtaSchemaType = typeof dockPropCtaShape._output;
+
 export default documentPropertyShape;
+export type DocumentPropertySchemaType = typeof documentPropertyShape._output;

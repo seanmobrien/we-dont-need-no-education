@@ -3,7 +3,7 @@ import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
-import { type DrizzleSelectQuery, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { SQL, eq, count, sum } from 'drizzle-orm/sql';
@@ -21,6 +21,47 @@ interface ChatSummary {
   totalMessages: number;
   totalTurns: number;
 }
+
+type ColumnType = PgColumn | SQL.Aliased;;
+
+export const getColumnFromName  = (columnName: string, {
+  columnTurns,
+  columnMessages,
+  columnTokens
+ }: { columnTurns: ColumnType; columnMessages: ColumnType; columnTokens: ColumnType; } ): ColumnType | undefined => {
+  switch (columnName) {
+    case 'id':
+      return schema.chats.id;
+    case 'title':
+      return schema.chats.title;
+    case 'user_id':
+      return schema.chats.userId;
+    case 'created_at':
+      return schema.chats.createdAt;
+    case 'chat_metadata':
+      return schema.chats.metadata;
+    case 'total_tokens':
+      return columnTokens;
+    case 'total_messages':
+      return columnMessages;
+    case 'total_turns':
+      return columnTurns;
+    default:
+      return undefined;
+  }
+};
+
+    // Record mapper to transform database records to ChatSummary objects
+const recordMapper = (record: Record<string, unknown>): ChatSummary => ({
+  id: String(record.id),
+  title: String(record.title) ?? null,
+  userId: Number(record.userId),
+  createdAt: String(record.createdAt),
+  chatMetadata: typeof record.chatMetadata === 'string' ? JSON.parse(record.chatMetadata) : record.chatMetadata,
+  totalTokens: Number(record.totalTokens) || 0,
+  totalMessages: Number(record.totalMessages) || 0,
+  totalTurns: Number(record.totalTurns) || 0,
+});
 
 // Column map for the data grid
 const columnMap = {
@@ -46,7 +87,7 @@ const columnMap = {
 export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
     // Define the base query for chats
-    const {baseQuery, getColumn} = await drizDbWithInit((db) => {
+    const result = await drizDbWithInit((db) => {
       const qSumTokens = db
         .select({
           chatId: schema.tokenUsage.chatId,
@@ -82,7 +123,7 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
       const columnMessages: SQL.Aliased = qSumMessages.totalMessages;
       
 
-      const q = db
+      const query = db
         .select({
           id: schema.chats.id,
           title: schema.chats.title,
@@ -96,61 +137,21 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
         .from(schema.chats)
         .leftJoin(qSumTokens, eq(qSumTokens.chatId, schema.chats.id))
         .leftJoin(qSumMessages, eq(qSumMessages.chatId, schema.chats.id))
-        .leftJoin(qSumTurns, eq(qSumTurns.chatId, schema.chats.id))
-        .execute();
-      return {
-        baseQuery: q,
-        getColumn: (columnName: string): PgColumn | SQL.Aliased | undefined => {
-          switch (columnName) {
-            case 'id':
-              return schema.chats.id;
-            case 'title':
-              return schema.chats.title;
-            case 'user_id':
-              return schema.chats.userId;
-            case 'created_at':
-              return schema.chats.createdAt;
-            case 'chat_metadata':
-              return schema.chats.metadata;
-            case 'total_tokens':
-              return columnTokens;
-            case 'total_messages':
-              return columnMessages;
-            case 'total_turns':
-              return columnTurns;
-            default:
-              return undefined;
-          }
-        },
-      };
+        .leftJoin(qSumTurns, eq(qSumTurns.chatId, schema.chats.id));
+      
+        return selectForGrid<ChatSummary>({
+          req,
+          query,
+          getColumn: (c) =>
+            getColumnFromName(c, { columnTokens, columnMessages, columnTurns }),
+          columnMap,
+          recordMapper,
+          defaultSort: [{ field: 'created_at', sort: 'desc' }],
+        });      
     });
-
-    // Record mapper to transform database records to ChatSummary objects
-    const recordMapper = (record: Record<string, unknown>): ChatSummary => ({
-      id: record.id as string,
-      title: record.title as string ?? null,
-      userId: record.userId as number,
-      createdAt: record.createdAt as string,
-      chatMetadata: typeof record.chatMetadata === 'string' ? JSON.parse(record.chatMetadata) : record.chatMetadata,
-      totalTokens: record.totalTokens as number ?? 0,
-      totalMessages: record.totalMessages as number ?? 0,
-      totalTurns: record.totalTurns as number ?? 0,
-    });
-
-    // Use selectForGrid to apply filtering, sorting, and pagination
-    const result = await selectForGrid<ChatSummary>({
-      req,
-      query: baseQuery as unknown as DrizzleSelectQuery,
-      getColumn,
-      columnMap,
-      recordMapper,
-      defaultSort: [{ field: 'created_at', sort: 'desc' }],
-    });
-
     log((l) =>
-      l.verbose({ msg: '[[AUDIT]] - Chat history list:', resultset: result }),
+      l.verbose({ msg: `[[AUDIT]] - Chat history list ${result.results} matches:`, resultset: result.results.map(x => x.id) }),
     );
-
     return NextResponse.json(result);
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {

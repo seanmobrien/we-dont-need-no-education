@@ -74,7 +74,7 @@ export type UnionToObject<T extends string | number | symbol> = {
  * type ElementType = ArrayElement<MyArray>; // string | number
  * ```
  */
-export type ArrayElement<T extends readonly any[] | undefined> =
+export type ArrayElement<T extends readonly any[] | undefined | null> =
   T extends readonly (infer U)[] ? U : never;
 
 /**
