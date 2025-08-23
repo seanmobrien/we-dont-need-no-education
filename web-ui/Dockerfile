@@ -173,6 +173,7 @@ RUN \
   --mount=type=secret,id=AUTH_GOOGLE_SECRET,env=AUTH_GOOGLE_SECRET \
   --mount=type=secret,id=AUTH_GOOGLE_APIKEY,env=AUTH_GOOGLE_APIKEY \
   --mount=type=secret,id=AZURE_STORAGE_ACCOUNT_KEY,env=AZURE_STORAGE_ACCOUNT_KEY \
+  --mount=type=secret,id=AUTH_GOOGLE_ID,env=AUTH_GOOGLE_ID \
   if [ -f yarn.lock ]; then yarn run build; \
   elif [ -f package-lock.json ]; then npm run build; \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
