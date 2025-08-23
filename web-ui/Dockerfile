@@ -50,7 +50,7 @@ RUN apk add --no-cache libc6-compat dcron build-base cairo-dev pango-dev jpeg-de
   #&& pip3 install --no-cache --upgrade pip setuptools \
   && (id -u nextjs 2>/dev/null || (adduser --system --uid 1001 nextjs && usermod -aG nextjs nodejs))
 
-ENV PKG_CONFIG_PATH="/app/myenv/lib/pkgconfig:${PKG_CONFIG_PATH}"
+ENV PKG_CONFIG_PATH="/app/myenv/lib/pkgconfig"
 
 # Install dependencies based on the preferred package manager
 COPY --link=true package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
