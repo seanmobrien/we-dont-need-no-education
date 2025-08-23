@@ -60,6 +60,7 @@ import {
   createTextMeasurer, 
   estimateMarkdownHeight 
 } from '@/lib/components/ai/height-estimators';
+import { ChatTurn } from '@/lib/ai/chat/types';
 
 /**
  * Fallback container width for virtualized chat display
@@ -71,70 +72,8 @@ export const FALLBACK_CONTAINER_WIDTH = 1200;
  */
 const textMeasurer = createTextMeasurer();
 
-/**
- * A single atomic message within a chat turn. Represents user, assistant,
- * system, or tool/function output.
- */
-interface ChatMessage {
-  /** Monotonic identifier for the parent turn */
-  turnId: number;
-  /** Unique identifier for this message within the chat */
-  messageId: number;
-  /** Author role (e.g., 'user', 'assistant', 'system', 'tool') */
-  role: string;
-  /** Primary textual content (may be null for pure tool/function calls) */
-  content: string | null;
-  /** Ordering of the message inside a turn (0‑based or 1‑based depending on source) */
-  messageOrder: number;
-  /** Tool name if this message originated from a tool invocation */
-  toolName: string | null;
-  /** Structured function call metadata (arguments, name, etc.) */
-  functionCall: Record<string, unknown> | null;
-  /** Tool execution result/return value */
-  toolResult: Record<string, unknown> | null;
-  /** Status classification / lifecycle state identifier */
-  statusId: number;
-  /** Provider / model origin identifier (if applicable) */
-  providerId: string | null;
-  /** Arbitrary message-level metadata bag */
-  metadata: Record<string, unknown> | null;
-  /** Specific tool instance correlation id */
-  toolInstanceId: string | null;
-  /** Optimized / post‑processed content (e.g., condensed text) */
-  optimizedContent: string | null;
-}
 
-/**
- * A logical unit of interaction consisting of one or more related messages
- * (e.g., user prompt + assistant response + tool calls). Turn boundaries often
- * align with a single full model invocation cycle.
- */
-interface ChatTurn {
-  /** Unique turn identifier */
-  turnId: number;
-  /** ISO timestamp of turn creation */
-  createdAt: string;
-  /** ISO timestamp of completion (null if still in progress) */
-  completedAt: string | null;
-  /** Model name used for the assistant response(s) */
-  modelName: string | null;
-  /** Ordered set of messages within the turn */
-  messages: ChatMessage[];
-  /** Turn status classification id */
-  statusId: number;
-  /** Sampling temperature (null if not applicable) */
-  temperature: number | null;
-  /** Top‑p nucleus sampling parameter (null if not applicable) */
-  topP: number | null;
-  /** End‑to‑end latency in milliseconds (null if not yet measured) */
-  latencyMs: number | null;
-  /** Non‑fatal warning messages emitted during processing */
-  warnings: string[] | null;
-  /** Error messages captured for this turn */
-  errors: string[] | null;
-  /** Arbitrary structured turn‑level metadata */
-  metadata: Record<string, unknown> | null;
-}
+
 
 /**
  * Props for `VirtualizedChatDisplay`.

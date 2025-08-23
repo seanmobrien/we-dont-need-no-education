@@ -19,23 +19,9 @@ import {
   Code as CodeIcon,
   Info as InfoIcon
 } from '@mui/icons-material';
+import { ChatMessage } from '@/lib/ai/chat/types';
 
-interface ChatMessage {
-  turnId: number;
-  messageId: number;
-  role: string;
-  content: string | null;
-  messageOrder: number;
-  toolName: string | null;
-  // Additional message-level metadata fields
-  functionCall: Record<string, unknown> | null;
-  toolResult: Record<string, unknown> | null;
-  statusId: number;
-  providerId: string | null;
-  metadata: Record<string, unknown> | null;
-  toolInstanceId: string | null;
-  optimizedContent: string | null;
-}
+
 
 interface ChatMessageDisplayProps {
   message: ChatMessage;

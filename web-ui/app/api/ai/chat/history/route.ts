@@ -54,7 +54,7 @@ export const getColumnFromName  = (columnName: string, {
     // Record mapper to transform database records to ChatSummary objects
 const recordMapper = (record: Record<string, unknown>): ChatSummary => ({
   id: String(record.id),
-  title: String(record.title) ?? null,
+  title: record.title != null ? String(record.title) : null,
   userId: Number(record.userId),
   createdAt: String(record.createdAt),
   chatMetadata: typeof record.chatMetadata === 'string' ? JSON.parse(record.chatMetadata) : record.chatMetadata,

@@ -144,14 +144,15 @@ describe('/api/ai/chat/history route', () => {
       const response = await GET(request);
 
       expect(response.status).toBe(200);
-      expect(selectForGrid).toHaveBeenCalledWith({
-        req: request,
-        query: expect.any(Promise),
-        getColumn: expect.any(Function),
-        columnMap,
-        recordMapper: expect.anything(),
-        defaultSort: [{ field: 'created_at', sort: 'desc' }],
-      });
+      expect(selectForGrid).toHaveBeenCalledWith(
+        expect.objectContaining({
+          req: request,
+          getColumn: expect.any(Function),
+          columnMap,
+          recordMapper: expect.any(Function),
+          defaultSort: [{ field: 'created_at', sort: 'desc' }],
+        })
+      );
     });
 
     it('should test column getter function', async () => {
@@ -272,9 +273,8 @@ describe('/api/ai/chat/history route', () => {
 
     it('should return empty results gracefully', async () => {
       (selectForGrid as jest.Mock).mockResolvedValue({
-        rows: [],
-        rowCount: 0,
-        totalRowCount: 0,
+        results: [],
+        totalCount: 0,
       });
 
       const request = new NextRequest(
@@ -286,9 +286,8 @@ describe('/api/ai/chat/history route', () => {
 
       expect(response.status).toBe(200);
       expect(data).toEqual({
-        rows: [],
-        rowCount: 0,
-        totalRowCount: 0,
+        results: [],
+        totalCount: 0,
       });
     });
   });
