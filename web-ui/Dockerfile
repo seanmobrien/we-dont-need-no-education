@@ -78,13 +78,13 @@ ARG MEM0_USERNAME
 WORKDIR /app
 
 # Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat dcron build-base cairo-dev pango-dev jpeg-dev giflib-dev fontconfig-dev freetype-dev curl  python3-dev python3 py3-pip pixman \
+RUN apk add --no-cache libc6-compat dcron build-base cairo-dev pango-dev jpeg-dev giflib-dev fontconfig-dev freetype-dev curl python3 py3-pip pixman 
 #  && apk add  build-base \
-  && ln -sf python3 /usr/bin/python \
+  # && ln -sf python3 /usr/bin/python \
   #&& python3 -m venv myenv && source myenv/bin/activate \
-  #&& pip3 install --no-cache --upgrade pip setuptools   \
+  #&& pip3 install --no-cache --upgrade pip setuptools   
 
-ENV PKG_CONFIG_PATH="/app/myenv/lib/pkgconfig"
+# ENV PKG_CONFIG_PATH="/app/myenv/lib/pkgconfig"
 
 # Install dependencies based on the preferred package manager
 COPY --link=true package.json yarn.lock* package-lock.json* pnpm-lock.yaml* .npmrc* ./
