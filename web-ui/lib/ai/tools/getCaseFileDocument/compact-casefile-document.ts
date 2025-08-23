@@ -349,9 +349,9 @@ const compactDocProp = ({
         unitId: documentUnitId,
       });
     }  
-    return compactNulls(docProps);
-} 
-};
+  } 
+  return compactNulls(docProps);
+}
 
 /**
  * Compacts a full case file document, deduplicating related docs, removing nulls, and normalizing nested properties.

@@ -269,9 +269,7 @@ export const DocumentSchema = z.object({
             .optional()
             .nullable(),
         }),
-        z.object({
-          targetDocumentId: z
-            .never(),
+        z.object({          
           description: z
             .string()
             .or(z.array(z.string()))

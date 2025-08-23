@@ -30,7 +30,7 @@ import {
 } from '@/lib/drizzle-db';
 import { appMeters } from '@/lib/site-util/metrics';
 import { CaseFileAmendmentShape } from './schemas/caseFileAmendmentShape';
-import { AmendmentResultShape } from './schemas/amendmentResultSchema';
+import { AmendmentResultShape } from './schemas/amendment-result-schema';
 
 // OpenTelemetry Metrics for AmendCaseRecord Tool
 const amendCaseRecordCounter = appMeters.createCounter(

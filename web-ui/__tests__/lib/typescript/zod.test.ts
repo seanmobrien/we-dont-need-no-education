@@ -1,4 +1,4 @@
-import { DocumentSchema } from "@/lib/ai/tools/schemas/caseFileShape";
+import { DocumentSchema } from "@/lib/ai/tools/schemas/case-file-shape";
 import { zodToStructure } from "@/lib/typescript";
 
 describe('zod-to-json-structure', () => {

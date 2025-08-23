@@ -1,4 +1,4 @@
-import baseDocumentPropertyShape from './baseDocumentPropertyShape';
+import baseDocumentPropertyShape from './base-document-property-shape';
 import docPropCtaResponseShape from './docPropCtaResponseShape';
 import docPropKeyPointShape from './docPropKeyPointShape';
 import dockPropCtaShape from './docPropCtaShape';
