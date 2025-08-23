@@ -82,8 +82,7 @@ RUN apk add --no-cache libc6-compat dcron build-base cairo-dev pango-dev jpeg-de
 #  && apk add  build-base \
   && ln -sf python3 /usr/bin/python \
   #&& python3 -m venv myenv && source myenv/bin/activate \
-  #&& pip3 install --no-cache --upgrade pip setuptools \
-  && (id -u nextjs 2>/dev/null || (adduser --system --uid 1001 nextjs && usermod -aG nextjs nodejs))
+  #&& pip3 install --no-cache --upgrade pip setuptools   \
 
 ENV PKG_CONFIG_PATH="/app/myenv/lib/pkgconfig"
 
