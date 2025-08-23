@@ -37,9 +37,6 @@ ARG MEM0_USERNAME
 
 ENV PYTHONUNBUFFERED=1
 
-RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs 
-
 # Install all required dependencies in one layer
 RUN apk add --no-cache \
     libc6-compat \
@@ -121,16 +118,16 @@ ARG MEM0_USERNAME
 
 WORKDIR /app
 
-COPY --link=true --chown=nextjs:nodejs --from=deps /app/node_modules ./node_modules
-COPY --link=true --chown=nextjs:nodejs ./app ./app
-COPY --link=true --chown=nextjs:nodejs ./components ./components
-COPY --link=true --chown=nextjs:nodejs ./data-models ./data-models
-COPY --link=true --chown=nextjs:nodejs ./drizzle ./drizzle
-COPY --link=true --chown=nextjs:nodejs ./lib ./lib
-COPY --link=true --chown=nextjs:nodejs ./types ./types
-COPY --link=true --chown=nextjs:nodejs ./instrument ./instrument
-COPY --link=true --chown=nextjs:nodejs ./scripts ./scripts
-COPY --link=true --chown=nextjs:nodejs ./*.ts ./*.mjs ./*.json ./*.lock ./
+COPY --link=true --from=deps /app/node_modules ./node_modules
+COPY --link=true ./app ./app
+COPY --link=true ./components ./components
+COPY --link=true ./data-models ./data-models
+COPY --link=true ./drizzle ./drizzle
+COPY --link=true ./lib ./lib
+COPY --link=true ./types ./types
+COPY --link=true ./instrument ./instrument
+COPY --link=true ./scripts ./scripts
+COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
@@ -226,14 +223,17 @@ ENV MEM0_USERNAME=$MEM0_USERNAME
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
+RUN addgroup --system --gid 1001 nodejs \
+  && adduser --system --uid 1001 nextjs 
+
 # Automatically leverage output traces to reduce image size
 
-COPY --link=true --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --link=true --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --link=true --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --link=true --from=builder /app/.next/standalone ./
+COPY --link=true --from=builder /app/.next/static ./.next/static
+COPY --link=true --from=builder /app/public ./public
 
 # Copy rate retry script
-COPY --link=true --from=builder --chown=nextjs:nodejs /app/scripts/rate-retry-client.sh ./scripts/
+COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/
 RUN chmod +x ./scripts/rate-retry-client.sh
 
 # Set up cron for rate retry processing
@@ -241,7 +241,7 @@ RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.
 RUN crontab -u nextjs /etc/crontabs/nextjs
 
 # Ensure log directory exists
-RUN mkdir -p /var/log && chown nextjs:nodejs /var/log
+RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app
 
 USER nextjs
 
