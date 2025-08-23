@@ -79,6 +79,7 @@ jobs:
             NEXT_PUBLIC_AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
             REDIS_URL=${{ secrets.REDIS_URL }}
             REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
       
       - name: Deploy to container
         uses: azure/container-apps-deploy-action@v1
