@@ -1,5 +1,19 @@
+'use client';
 import EmailList from '@/components/email-message/list';
-import { Box } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
+import { Suspense } from 'react';
+
+// Loading component for better UX
+const EmailListSkeleton = () => (
+  <Box
+    display="flex"
+    justifyContent="center"
+    alignItems="center"
+    minHeight="400px"
+  >
+    <CircularProgress size={40} />
+  </Box>
+);
 
 export default function Home() {
   return (
@@ -25,7 +39,9 @@ export default function Home() {
           width: '100%',
         }}
       >
-        <EmailList />
+        <Suspense fallback={<EmailListSkeleton />}>
+          <EmailList />
+        </Suspense>
       </Box>
     </Box>
   );
