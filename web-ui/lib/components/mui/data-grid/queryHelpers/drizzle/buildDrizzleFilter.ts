@@ -1,9 +1,9 @@
 /**
  * @fileoverview Drizzle Filter Builder for Data Grid
- * 
+ *
  * This module provides functionality to apply dynamic filtering logic to Drizzle PgSelectBuilder
  * queries, similar to the postgres.js buildQueryFilter function but adapted for Drizzle ORM.
- * 
+ *
  * @module lib/components/mui/data-grid/buildDrizzleFilter
  * @version 1.0.0
  * @since 2025-07-27
@@ -11,13 +11,36 @@
 
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import type { GridFilterModel } from '@mui/x-data-grid-pro';
-import { and, or, eq, ne, ilike, isNull, isNotNull, inArray, notInArray, gt, lt, gte, lte, between, notBetween, SQL, sql } from 'drizzle-orm';
+import {
+  and,
+  or,
+  eq,
+  ne,
+  ilike,
+  isNull,
+  isNotNull,
+  inArray,
+  notInArray,
+  gt,
+  lt,
+  gte,
+  lte,
+  between,
+  notBetween,
+  SQL,
+  sql,
+} from 'drizzle-orm';
 import type { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
-import { isTruthy } from '@/lib/react-util/_utility-methods';
+import { isTruthy } from '@/lib/react-util/utility-methods';
 import { schema } from '@/lib/drizzle-db';
-import type { BuildDrizzleAttachmentOrEmailFilterProps, BuildDrizzleItemFilterProps, BuildDrizzleQueryFilterProps, DrizzleSelectQuery } from './types';
+import type {
+  BuildDrizzleAttachmentOrEmailFilterProps,
+  BuildDrizzleItemFilterProps,
+  BuildDrizzleQueryFilterProps,
+  DrizzleSelectQuery,
+} from './types';
 
 /**
  * Appends a filter condition to a DrizzleSelectQuery.
@@ -61,30 +84,26 @@ export const appendFilter = ({
   return query;
 };
 
-
-
-
-
 /**
  * Creates a Drizzle-compatible filter for attachment or email queries.
- * 
+ *
  * This function builds a SQL condition that can filter documents to include either
  * attachments (when attachments = true) or only emails (when attachments = false).
- * 
+ *
  * @param props - Configuration props for building the attachment/email filter
  * @returns A SQL condition that can be used with Drizzle's where() method
- * 
+ *
  * @example
  * ```typescript
  * import { emails } from '@/drizzle/schema';
- * 
+ *
  * const condition = buildDrizzleAttachmentOrEmailFilter({
  *   attachments: true,
  *   email_id: 'email-123',
  *   email_id_column: emails.emailId,
  *   document_id_column: emails.documentId,
  * });
- * 
+ *
  * const result = await db.select().from(emails).where(condition);
  * ```
  */
@@ -110,21 +129,23 @@ export const buildDrizzleAttachmentOrEmailFilter = ({
       searchParams = attachments;
     } else if (isLikeNextRequest(attachments)) {
       searchParams = new URL(attachments.url!).searchParams;
-    } else {      
+    } else {
       // Handle generic objects with url property
       const asObj = attachments as Record<string, unknown>;
       if (asObj && asObj.url && typeof asObj.url === 'string') {
         try {
           searchParams = new URL(asObj.url).searchParams;
         } catch {
-          throw new Error('Invalid attachments parameter', { cause: attachments });
+          throw new Error('Invalid attachments parameter', {
+            cause: attachments,
+          });
         }
       } else {
         throw new Error('Invalid attachments parameter', {
           cause: attachments,
         });
       }
-    }    
+    }
     // Default to include attachments if parameter is missing
     if (!searchParams.has('attachments')) {
       includeAttachments = true;
@@ -158,22 +179,22 @@ export const buildDrizzleAttachmentOrEmailFilter = ({
     } else {
       return eq(document_id_column, sql`email_to_document_id(${email_id})`);
     }
-  }  
+  }
 };
 
 /**
  * Creates a Drizzle-compatible filter condition for a single filter item.
- * 
+ *
  * This function converts MUI Data Grid filter operators into corresponding Drizzle ORM
  * filter conditions.
- * 
+ *
  * @param props - Configuration props for building the item filter
  * @returns A SQL condition that can be used with Drizzle's where() method
- * 
+ *
  * @example
  * ```typescript
  * import { users } from '@/drizzle/schema';
- * 
+ *
  * const getColumn = (name: string) => {
  *   switch (name) {
  *     case 'name': return users.name;
@@ -181,12 +202,12 @@ export const buildDrizzleAttachmentOrEmailFilter = ({
  *     default: return undefined;
  *   }
  * };
- * 
+ *
  * const condition = buildDrizzleItemFilter({
  *   item: { field: 'name', operator: 'contains', value: 'John' },
  *   getColumn,
  * });
- * 
+ *
  * const result = await db.select().from(users).where(condition);
  * ```
  */
@@ -198,17 +219,23 @@ export const buildDrizzleItemFilter = ({
   const columnMapper = columnMapFactory(columnMap);
   const mappedField = columnMapper(item.field);
   const column = getColumn(mappedField);
-  
+
   if (!column) {
-    console.warn(`buildDrizzleItemFilter: Unknown column '${mappedField}' (mapped from '${item.field}')`);
+    console.warn(
+      `buildDrizzleItemFilter: Unknown column '${mappedField}' (mapped from '${item.field}')`,
+    );
     return undefined;
   }
 
   switch (item.operator) {
     case 'equals':
-      return 'table' in column ? eq(column, item.value) : eq(sql`${column}`, item.value);
+      return 'table' in column
+        ? eq(column, item.value)
+        : eq(sql`${column}`, item.value);
     case 'notEquals':
-      return 'table' in column ? ne(column, item.value) : ne(sql`${column}`, item.value);
+      return 'table' in column
+        ? ne(column, item.value)
+        : ne(sql`${column}`, item.value);
     case 'contains':
       return ilike(column, `%${item.value}%`);
     case 'notContains':
@@ -218,25 +245,47 @@ export const buildDrizzleItemFilter = ({
     case 'endsWith':
       return ilike(column, `%${item.value}`);
     case 'isEmpty':
-      return or(isNull(column), 'table' in column ? eq(column, '') : eq(sql`${column}`, ''));
+      return or(
+        isNull(column),
+        'table' in column ? eq(column, '') : eq(sql`${column}`, ''),
+      );
     case 'isNotEmpty':
-      return and(isNotNull(column), 'table' in column ? ne(column, '') : ne(sql`${column}`, ''));
+      return and(
+        isNotNull(column),
+        'table' in column ? ne(column, '') : ne(sql`${column}`, ''),
+      );
     case 'isAnyOf':
-      return 'table' in column ? inArray(column, item.value) : inArray(sql`${column}`, item.value);
+      return 'table' in column
+        ? inArray(column, item.value)
+        : inArray(sql`${column}`, item.value);
     case 'isNoneOf':
-      return 'table' in column ? notInArray(column, item.value) : notInArray(sql`${column}`, item.value);
+      return 'table' in column
+        ? notInArray(column, item.value)
+        : notInArray(sql`${column}`, item.value);
     case 'isGreaterThan':
-      return 'table' in column ? gt(column, item.value) : gt(sql`${column}`, item.value);
+      return 'table' in column
+        ? gt(column, item.value)
+        : gt(sql`${column}`, item.value);
     case 'isLessThan':
-      return 'table' in column ? lt(column, item.value) : lt(sql`${column}`, item.value);
+      return 'table' in column
+        ? lt(column, item.value)
+        : lt(sql`${column}`, item.value);
     case 'isGreaterThanOrEqual':
-      return 'table' in column ? gte(column, item.value) : gte(sql`${column}`, item.value);
+      return 'table' in column
+        ? gte(column, item.value)
+        : gte(sql`${column}`, item.value);
     case 'isLessThanOrEqual':
-      return 'table' in column ? lte(column, item.value) : lte(sql`${column}`, item.value);
+      return 'table' in column
+        ? lte(column, item.value)
+        : lte(sql`${column}`, item.value);
     case 'isBetween':
-      return 'table' in column ? between(column, item.value[0], item.value[1]) : between(sql`${column}`, item.value[0], item.value[1]);
+      return 'table' in column
+        ? between(column, item.value[0], item.value[1])
+        : between(sql`${column}`, item.value[0], item.value[1]);
     case 'isNotBetween':
-      return 'table' in column ? notBetween(column, item.value[0], item.value[1]) : notBetween(sql`${column}`, item.value[0], item.value[1]);
+      return 'table' in column
+        ? notBetween(column, item.value[0], item.value[1])
+        : notBetween(sql`${column}`, item.value[0], item.value[1]);
     case 'isNull':
       return isNull(column);
     case 'isNotNull':
@@ -253,13 +302,13 @@ export const buildDrizzleItemFilter = ({
 
 /**
  * Applies dynamic filter logic to a Drizzle select query.
- * 
+ *
  * This function parses filter options from various sources (URL parameters, GridFilterModel, etc.)
  * and applies the appropriate where clauses to a Drizzle query builder.
- * 
+ *
  * @param props - Configuration props for building the query filter
  * @returns The query builder with where clauses applied
- * 
+ *
  * @example
  * ```typescript
  * // Basic usage with a simple column map
@@ -277,14 +326,14 @@ export const buildDrizzleItemFilter = ({
  *   },
  *   columnMap: { displayName: 'name', userEmail: 'email' },
  * });
- * 
+ *
  * // Usage with table schema object
  * const tableColumns = {
  *   name: users.name,
  *   email: users.email,
  *   created_at: users.createdAt,
  * };
- * 
+ *
  * const filteredQuery = buildDrizzleQueryFilter({
  *   query: db.select().from(users),
  *   source: req.url,
@@ -301,15 +350,16 @@ export const buildDrizzleQueryFilter = ({
   columnMap = {},
   additional,
 }: BuildDrizzleQueryFilterProps): DrizzleSelectQuery => {
-  
   /**
    * Parses the filter model from the source.
    */
-  const parseFilterFromSource = (src: typeof source): GridFilterModel | undefined => {
+  const parseFilterFromSource = (
+    src: typeof source,
+  ): GridFilterModel | undefined => {
     if (isGridFilterModel(src)) {
       return src;
     }
-    
+
     if (typeof src === 'string') {
       try {
         const url = new URL(src);
@@ -319,11 +369,11 @@ export const buildDrizzleQueryFilter = ({
         return undefined;
       }
     }
-    
+
     if (src instanceof URL) {
       return parseFilterOptions(src.searchParams, additional);
     }
-    
+
     if (isLikeNextRequest(src)) {
       try {
         const url = new URL(src.url!);
@@ -332,18 +382,18 @@ export const buildDrizzleQueryFilter = ({
         return undefined;
       }
     }
-    
+
     return undefined;
   };
 
   // Parse the filter model from the source
   let filterModel = parseFilterFromSource(source);
-  
+
   // If no filter from source, try default filter
   if (!filterModel && defaultFilter) {
     filterModel = parseFilterFromSource(defaultFilter);
   }
-  
+
   // If still no filter model or no items, return original query
   if (!filterModel || !filterModel.items || filterModel.items.length === 0) {
     return query;
@@ -351,7 +401,7 @@ export const buildDrizzleQueryFilter = ({
 
   // Build filter conditions
   const conditions: SQL[] = [];
-  
+
   for (const item of filterModel.items) {
     const condition = buildDrizzleItemFilter({ item, getColumn, columnMap });
     if (condition) {
@@ -363,15 +413,14 @@ export const buildDrizzleQueryFilter = ({
   if (conditions.length === 0) {
     return query;
   }
-  
+
   // Combine conditions based on logic operator
   const logicOperator = filterModel.logicOperator || 'and';
-  const combinedCondition = logicOperator === 'or' 
-    ? or(...conditions)
-    : and(...conditions);
+  const combinedCondition =
+    logicOperator === 'or' ? or(...conditions) : and(...conditions);
 
   return appendFilter({
     query,
     append: combinedCondition,
-  });  
+  });
 };

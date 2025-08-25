@@ -30,7 +30,7 @@ import {
   Typography,
   useTheme,
 } from '@mui/material';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 
 const ImportRecord: React.FC<ImportRecordProps> = ({
   importStatus: importStatusFromProps,

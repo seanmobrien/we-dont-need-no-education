@@ -12,7 +12,7 @@ import {
   TypeBrandSymbol,
   isTypeBranded,
   getResolvedPromises,
-} from '@/lib/react-util/_utility-methods';
+} from '@/lib/react-util/utility-methods';
 
 describe('_utility-methods', () => {
   describe('generateUniqueId', () => {

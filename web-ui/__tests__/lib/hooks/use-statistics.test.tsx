@@ -1,12 +1,20 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { QueryClient, QueryClientProvider, UseQueryResult } from '@tanstack/react-query';
-import { useStatistics, useModelStatistics, useQueueStatistics } from '@/lib/hooks/use-statistics';
+import {
+  QueryClient,
+  QueryClientProvider,
+  UseQueryResult,
+} from '@tanstack/react-query';
+import {
+  useStatistics,
+  useModelStatistics,
+  useQueueStatistics,
+} from '@/lib/hooks/use-statistics';
 import type { ModelStat, QueueInfo } from '@/types/statistics';
 import { fetch } from '@/lib/nextjs-util/fetch';
 import { act, renderHook, waitFor } from '@/__tests__/test-utils';
 import { RefObject } from 'react';
 import { log } from '@/lib/logger';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 import { assert } from 'console';
 // Mock fetch globally
 //global.fetch = jest.fn();
@@ -21,7 +29,7 @@ const createWrapper = () => {
       },
     },
   });
-  
+
   const component = ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
@@ -47,9 +55,24 @@ const mockModelResponse = {
       modelKey: 'openai:gpt-4',
       available: true,
       stats: {
-        minute: { promptTokens: 100, completionTokens: 50, totalTokens: 150, requestCount: 5 },
-        hour: { promptTokens: 1000, completionTokens: 500, totalTokens: 1500, requestCount: 50 },
-        day: { promptTokens: 10000, completionTokens: 5000, totalTokens: 15000, requestCount: 500 },
+        minute: {
+          promptTokens: 100,
+          completionTokens: 50,
+          totalTokens: 150,
+          requestCount: 5,
+        },
+        hour: {
+          promptTokens: 1000,
+          completionTokens: 500,
+          totalTokens: 1500,
+          requestCount: 50,
+        },
+        day: {
+          promptTokens: 10000,
+          completionTokens: 5000,
+          totalTokens: 15000,
+          requestCount: 500,
+        },
       },
     },
   ] as ModelStat[],
@@ -86,7 +109,7 @@ const mockQueueResponse = {
 
 describe('Statistics hooks', () => {
   beforeEach(() => {
-   // jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('useModelStatistics', () => {
@@ -105,13 +128,15 @@ describe('Statistics hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockModelResponse.data);
-      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/models?source=database');
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/ai/chat/stats/models?source=database',
+      );
     });
 
-  it('should support Redis data source', async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(mockModelResponse),
+    it('should support Redis data source', async () => {
+      (fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockModelResponse),
       });
 
       const { result } = renderHook(() => useModelStatistics('redis'), {
@@ -122,7 +147,9 @@ describe('Statistics hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/models?source=redis');
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/ai/chat/stats/models?source=redis',
+      );
     });
   });
 
@@ -196,17 +223,17 @@ describe('Statistics hooks', () => {
           ok: true,
           json: () => Promise.resolve(mockQueueResponse),
         });
-        const testState: Record<string, any> = {};
-        act(() => {
-          const { result } = renderHook(() => useStatistics(), {
-            wrapper: createWrapper(),
-          });
-          testState.result = result;
+      const testState: Record<string, any> = {};
+      act(() => {
+        const { result } = renderHook(() => useStatistics(), {
+          wrapper: createWrapper(),
         });
-      
-        await waitFor(() => {
-          expect(testState.result.current.models.isSuccess).toBe(true);
-        });
+        testState.result = result;
+      });
+
+      await waitFor(() => {
+        expect(testState.result.current.models.isSuccess).toBe(true);
+      });
 
       // Clear previous calls
       // jest.clearAllMocks();
@@ -216,7 +243,9 @@ describe('Statistics hooks', () => {
 
       // Should trigger both queries again
       expect(fetch).toHaveBeenCalledTimes(2);
-      expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/models?source=database');
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/ai/chat/stats/models?source=database',
+      );
       expect(fetch).toHaveBeenCalledWith('/api/ai/chat/stats/queues');
     });
   });

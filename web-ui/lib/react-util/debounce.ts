@@ -1,15 +1,15 @@
-import { log } from "../logger";
-import { isError } from "./_utility-methods";
-import { LoggedError } from "./errors/logged-error";
+import { log } from '../logger';
+import { isError } from './utility-methods';
+import { LoggedError } from './errors/logged-error';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const debounce = <R, T extends (...args: any[]) => R>(
   func: T,
-  delay: number | { wait: number; timeout?: number; }
-): ((...args: Parameters<T>) => Promise<R>) & { cancel: () => void; } => {
-
+  delay: number | { wait: number; timeout?: number },
+): ((...args: Parameters<T>) => Promise<R>) & { cancel: () => void } => {
   const wait = typeof delay === 'number' ? delay : delay.wait;
-  const timeout = typeof delay === 'object' && delay.timeout ? delay.timeout : 500;
+  const timeout =
+    typeof delay === 'object' && delay.timeout ? delay.timeout : 500;
 
   let timeoutId: NodeJS.Timeout | number | null = null;
   let maxDebounceTimeoutId: NodeJS.Timeout | null = null;
@@ -35,7 +35,10 @@ export const debounce = <R, T extends (...args: any[]) => R>(
     cancelTimeout('Deferred');
     const when = new Promise<R>((resolve, reject) => {
       rejectPending = reject;
-      maxDebounceTimeoutId = setTimeout(() => cancelTimeout('Timeout'), wait + timeout);
+      maxDebounceTimeoutId = setTimeout(
+        () => cancelTimeout('Timeout'),
+        wait + timeout,
+      );
       timeoutId = setTimeout(async () => {
         // Cancelling timeout w/out an error code will clean up the timeout timeout, etc
         try {
@@ -60,7 +63,9 @@ export const debounce = <R, T extends (...args: any[]) => R>(
           log: true,
         });
       } else {
-        log(l => l.silly('Debounced function timed out or was deferred:', reason));
+        log((l) =>
+          l.silly('Debounced function timed out or was deferred:', reason),
+        );
       }
     });
     return when;

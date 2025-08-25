@@ -4,9 +4,9 @@ import {
   ToolCallbackResult,
   ValidCaseFileRequestProps,
 } from './types';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { drizDb,drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 
 interface ToolCallbackResultOverloads {
   <T>(result: T): ToolCallbackResult<T>;
@@ -132,8 +132,8 @@ export const resolveCaseFileId = async (
   if (typeof documentId === 'string') {
     const isUuid = isValidUuid(documentId);
     if (isUuid) {
-      parsedId = await drizDb().query.documentUnits
-        .findFirst({
+      parsedId = await drizDb()
+        .query.documentUnits.findFirst({
           where: (du, { eq, and, or }) =>
             or(
               and(eq(du.emailId, documentId), eq(du.documentType, 'email')),
@@ -228,19 +228,19 @@ export const resolveCaseFileIdBatch = async (
   if (!guids.length) {
     return valid;
   }
-  const records = await drizDbWithInit(db => {
-      return db.query.documentUnits.findMany({
-        where: (du, { and, or, eq, inArray }) =>
-          or(
-            and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
-            inArray(du.documentPropertyId, guids),
-          ),
-        columns: {
-          unitId: true,
-          documentPropertyId: true,
-          emailId: true,
-        },
-      });
+  const records = await drizDbWithInit((db) => {
+    return db.query.documentUnits.findMany({
+      where: (du, { and, or, eq, inArray }) =>
+        or(
+          and(inArray(du.emailId, guids), eq(du.documentType, 'email')),
+          inArray(du.documentPropertyId, guids),
+        ),
+      columns: {
+        unitId: true,
+        documentPropertyId: true,
+        emailId: true,
+      },
+    });
   });
   // Now use records to translate pending into valid
   const { resolved } = pending.reduce(

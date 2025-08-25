@@ -3,8 +3,12 @@
 import { getAppInsights } from '@/instrument/browser';
 import { useSession } from '@/components/auth/session-provider';
 import { Session } from 'next-auth';
-import { usePathname, useSearchParams } from 'next/dist/client/components/navigation';
+import {
+  usePathname,
+  useSearchParams,
+} from 'next/dist/client/components/navigation';
 import { useEffect, useMemo } from 'react';
+import { makeAbsoluteUrl } from '@/lib/react-util/url';
 
 export const TrackWithAppInsight = () => {
   const { status, data: session } = useSession<Session>();
@@ -17,7 +21,9 @@ export const TrackWithAppInsight = () => {
 
   const pageUri = useMemo(() => {
     const qs = searchParams?.toString();
-    return qs ? `${window.location.origin}${pathname}?${qs}` : `${window.location.origin}${pathname}`;
+    return qs
+      ? `${makeAbsoluteUrl(pathname)}?${qs}`
+      : `${makeAbsoluteUrl(pathname)}`;
   }, [pathname, searchParams]);
 
   useEffect(() => {

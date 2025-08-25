@@ -1,11 +1,16 @@
 import { GridFilterModel, GridFilterItem } from '@mui/x-data-grid-pro';
-import { ISqlNeonAdapter, isSqlNeonAdapter, SqlDb, unwrapAdapter } from '@/lib/neondb';
+import {
+  ISqlNeonAdapter,
+  isSqlNeonAdapter,
+  SqlDb,
+  unwrapAdapter,
+} from '@/lib/neondb';
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { LikeNextRequest } from '@/lib/nextjs-util/types';
 import { columnMapFactory } from '../utility';
 import { BuildQueryFilterProps, BuildItemFilterProps } from './types';
 import { isGridFilterModel } from './guards';
-import { isTruthy } from '@/lib/react-util/_utility-methods';
+import { isTruthy } from '@/lib/react-util/utility-methods';
 
 export const buildAttachmentOrEmailFilter = ({
   attachments,
@@ -56,7 +61,7 @@ export const buildAttachmentOrEmailFilter = ({
 }) => {
   const sql = isSqlNeonAdapter(sqlFromProps)
     ? unwrapAdapter(sqlFromProps)
-    : sqlFromProps as SqlDb<Record<string, unknown>>;
+    : (sqlFromProps as SqlDb<Record<string, unknown>>);
   let includeAttachments = true;
   if (typeof attachments === 'boolean') {
     includeAttachments = attachments;
@@ -91,14 +96,16 @@ export const buildAttachmentOrEmailFilter = ({
   return sql`${conjunction} email_to_document_id(${email_id}) = ${sql(document_id_table)}.${sql(document_id_column)} `;
 };
 
-
 /**
  * Build a single filter condition for an item
  */
-export const buildItemFilter = ({ item, columnMap = {} }: BuildItemFilterProps): string => {
+export const buildItemFilter = ({
+  item,
+  columnMap = {},
+}: BuildItemFilterProps): string => {
   const mapColumn = columnMapFactory(columnMap);
   const column = mapColumn(item.field);
-  
+
   switch (item.operator) {
     case 'contains':
       return `${column} ILIKE '%${item.value}%'`;
@@ -114,7 +121,7 @@ export const buildItemFilter = ({ item, columnMap = {} }: BuildItemFilterProps):
       return `${column} IS NOT NULL AND ${column} != ''`;
     case 'isAnyOf':
       if (Array.isArray(item.value)) {
-        const values = item.value.map(v => `'${v}'`).join(', ');
+        const values = item.value.map((v) => `'${v}'`).join(', ');
         return `${column} IN (${values})`;
       }
       return `${column} = '${item.value}'`;
@@ -126,21 +133,23 @@ export const buildItemFilter = ({ item, columnMap = {} }: BuildItemFilterProps):
 /**
  * Build query filter for PostgreSQL
  */
-export const buildQueryFilter = <RecordType extends Record<string, unknown> = Record<string, unknown>>({
+export const buildQueryFilter = <
+  RecordType extends Record<string, unknown> = Record<string, unknown>,
+>({
   sql: sqlFromProps,
   source,
   defaultFilter,
   columnMap = {},
   additional = {},
-  append = false
+  append = false,
 }: BuildQueryFilterProps<RecordType>) => {
-  const sql = isSqlNeonAdapter(sqlFromProps) 
-    ? unwrapAdapter<RecordType>(sqlFromProps) 
-    : sqlFromProps as SqlDb<RecordType>;
+  const sql = isSqlNeonAdapter(sqlFromProps)
+    ? unwrapAdapter<RecordType>(sqlFromProps)
+    : (sqlFromProps as SqlDb<RecordType>);
 
   // Parse filter model from source
   let filterModel: GridFilterModel | null = null;
-  
+
   if (!source && defaultFilter) {
     source = defaultFilter;
   }
@@ -193,7 +202,7 @@ export const buildQueryFilter = <RecordType extends Record<string, unknown> = Re
 
   // Build filter conditions
   const conditions: string[] = [];
-  
+
   // Add main filter items
   for (const item of filterModel.items) {
     const condition = buildItemFilter({ item, columnMap });
@@ -216,9 +225,13 @@ export const buildQueryFilter = <RecordType extends Record<string, unknown> = Re
   }
 
   // Combine conditions based on linkOperator
-  const filterWithLinkOperator: GridFilterModel & { linkOperator?: 'and' | 'or' } = filterModel;
-  const linkOperator = (filterWithLinkOperator.linkOperator ?? 'and').toLocaleLowerCase();
+  const filterWithLinkOperator: GridFilterModel & {
+    linkOperator?: 'and' | 'or';
+  } = filterModel;
+  const linkOperator = (
+    filterWithLinkOperator.linkOperator ?? 'and'
+  ).toLocaleLowerCase();
   const operator = linkOperator === 'or' ? ' OR ' : ' AND ';
-  
+
   return sql(`${append ? 'AND ' : 'WHERE '} (${conditions.join(operator)})`);
 };

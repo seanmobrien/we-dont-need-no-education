@@ -1,6 +1,6 @@
 /**
  * @fileoverview Refactored Instrumented SSE MCP Transport Client
- * 
+ *
  * This is a refactored version of the original InstrumentedSseTransport that
  * delegates specific concerns to dedicated modules while maintaining the
  * same external interface and functionality.
@@ -10,7 +10,7 @@ import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 
@@ -19,7 +19,11 @@ import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';
 import { CounterManager } from './metrics/counter-manager';
 import { SessionManager } from './session/session-manager';
 import { TraceContextManager } from './tracing/trace-context';
-import { SafetyUtils, CONNECTION_TIMEOUT_MS, SEND_TIMEOUT_MS } from './utils/safety-utils';
+import {
+  SafetyUtils,
+  CONNECTION_TIMEOUT_MS,
+  SEND_TIMEOUT_MS,
+} from './utils/safety-utils';
 import { MessageProcessor } from './message/message-processor';
 
 type InstrumentedSseTransportOptions = {
@@ -36,7 +40,7 @@ type InstrumentedSseTransportOptions = {
  * This refactored version maintains the same external interface while delegating
  * specific concerns to specialized modules:
  * - MetricsRecorder: OpenTelemetry metrics recording
- * - CounterManager: Active session and tool call tracking  
+ * - CounterManager: Active session and tool call tracking
  * - SessionManager: Session lifecycle and timeout management
  * - TraceContextManager: Distributed tracing support
  * - SafetyUtils: Error handling and timeout utilities
@@ -104,17 +108,22 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       this.#counterManager = new CounterManager();
       this.#sessionManager = new SessionManager(opts.url, this.#counterManager);
       this.#safetyUtils = new SafetyUtils(opts.url);
-      this.#messageProcessor = new MessageProcessor(opts.url, this.#sessionManager, this.#counterManager);
+      this.#messageProcessor = new MessageProcessor(
+        opts.url,
+        this.#sessionManager,
+        this.#counterManager,
+      );
 
       // Set up event handlers
       this.#onclose = opts.onclose;
       this.#onmessage = opts.onmessage;
       this.#onerror = this.#safetyUtils.createSafeErrorHandler((e: unknown) => {
         opts.onerror(
-        LoggedError.isTurtlesAllTheWayDownBaby(e, {
-          log: true,
-          message: 'MCP SSE Transport: Error occurred'
-        }));        
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+            log: true,
+            message: 'MCP SSE Transport: Error occurred',
+          }),
+        );
       });
 
       // Override base callbacks with instrumented versions
@@ -147,7 +156,10 @@ export class InstrumentedSseTransport extends SseMCPTransport {
     } catch (error) {
       // Record construction failure
       MetricsRecorder.recordConnection(opts.url, 'constructor', 'error');
-      MetricsRecorder.recordError('constructor', isError(error) ? error.name : 'unknown');
+      MetricsRecorder.recordError(
+        'constructor',
+        isError(error) ? error.name : 'unknown',
+      );
 
       constructorSpan?.recordException(error as Error);
       constructorSpan?.setStatus({
@@ -224,13 +236,20 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       if (DEBUG_MODE) {
         log((l) =>
           l.debug('Starting MCP Client Transport', {
-            data: { url: this.url?.toString(), mode: DEBUG_MODE ? 'DEBUG' : 'WARNING' },
+            data: {
+              url: this.url?.toString(),
+              mode: DEBUG_MODE ? 'DEBUG' : 'WARNING',
+            },
           }),
         );
       }
 
       // Record connection attempt
-      MetricsRecorder.recordConnection(this.url?.toString() || 'unknown', 'start', 'attempt');
+      MetricsRecorder.recordConnection(
+        this.url?.toString() || 'unknown',
+        'start',
+        'attempt',
+      );
 
       // Apply connection timeout
       await this.#safetyUtils.withTimeout(
@@ -240,7 +259,11 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       );
 
       // Record successful connection
-      MetricsRecorder.recordConnection(this.url?.toString() || 'unknown', 'start', 'success');
+      MetricsRecorder.recordConnection(
+        this.url?.toString() || 'unknown',
+        'start',
+        'success',
+      );
 
       span.setStatus({ code: SpanStatusCode.OK });
       this.#safetyUtils.completeOperation(operationId, 'success');
@@ -250,8 +273,15 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       }
     } catch (error) {
       // Record failed connection
-      MetricsRecorder.recordConnection(this.url?.toString() || 'unknown', 'start', 'error');
-      MetricsRecorder.recordError('start', isError(error) ? error.name : 'unknown');
+      MetricsRecorder.recordConnection(
+        this.url?.toString() || 'unknown',
+        'start',
+        'error',
+      );
+      MetricsRecorder.recordError(
+        'start',
+        isError(error) ? error.name : 'unknown',
+      );
 
       span?.recordException(error as Error);
       span?.setStatus({
@@ -311,7 +341,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
 
       // End the transport span
       if (this.#transportSpan) {
-        try{
+        try {
           const connectionDuration = this.#connectionStartTime
             ? Date.now() - this.#connectionStartTime
             : 0;
@@ -320,9 +350,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
           });
           this.#transportSpan.setStatus({ code: SpanStatusCode.OK });
           this.#transportSpan.end();
-        }catch(e){
+        } catch (e) {
           LoggedError.isTurtlesAllTheWayDownBaby(e, {
-            log: true
+            log: true,
           });
         }
       }
@@ -334,7 +364,10 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         log((l) => l.debug('MCP Client Transport closed successfully'));
       }
     } catch (error) {
-      MetricsRecorder.recordError('close', isError(error) ? error.name : 'unknown');
+      MetricsRecorder.recordError(
+        'close',
+        isError(error) ? error.name : 'unknown',
+      );
 
       span?.recordException(error as Error);
       span?.setStatus({
@@ -348,7 +381,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         l.error('Failed to close MCP Client Transport', {
           data: { error: isError(error) ? error.message : String(error) },
         }),
-      );      
+      );
       // throw error;
     } finally {
       span?.end();
@@ -404,7 +437,10 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         );
       }
     } catch (error) {
-      MetricsRecorder.recordError('send', isError(error) ? error.name : 'unknown');
+      MetricsRecorder.recordError(
+        'send',
+        isError(error) ? error.name : 'unknown',
+      );
 
       span?.recordException(error as Error);
       span?.setStatus({

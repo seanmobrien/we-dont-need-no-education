@@ -1,5 +1,5 @@
 import { errorLogFactory, log } from '@/lib/logger';
-import { isAbortError, isError } from '../_utility-methods';
+import { isAbortError, isError } from '../utility-methods';
 import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
 import { ErrorReporter } from '@/lib/error-monitoring/error-reporter';
 import { asKnownSeverityLevel } from '@/lib/logger/constants';
@@ -9,12 +9,30 @@ import { asKnownSeverityLevel } from '@/lib/logger/constants';
  */
 const brandLoggedError: unique symbol = Symbol('LoggedError');
 
-const loggedErrorReporter = ErrorReporter.createInstance({ 
-  enableStandardLogging: false,
-  enableConsoleLogging: false,
-  enableExternalReporting: typeof window === 'undefined',
-  enableLocalStorage: false,
-});
+/**
+ * Provides access to the shared ErrorReporter instance used by LoggedError.
+ *
+ * Usage: LoggedErrorReported.Instance.reportError({...})
+ */
+class LoggedErrorReporter {
+  static #instance: ErrorReporter | undefined;
+  static get Instance(): ErrorReporter {
+    if (!LoggedErrorReporter.#instance) {
+      LoggedErrorReporter.#instance = ErrorReporter.createInstance({
+        enableStandardLogging: false,
+        enableConsoleLogging: false,
+        enableExternalReporting: typeof window === 'undefined',
+        enableLocalStorage: false,
+      });
+    }
+    if (!LoggedErrorReporter.#instance) {
+      throw new TypeError(
+        'Failed to initialize LoggedErrorReporter - telemetry error tracking will not work',
+      );
+    }
+    return LoggedErrorReporter.#instance;
+  }
+}
 
 /**
  * Options for specifying details about a validation error.
@@ -127,17 +145,21 @@ export class LoggedError implements Error {
           message,
           stack: getStackTrace({ skip: 2 }),
           ...itsRecusionMan,
-        });        
-        loggedErrorReporter.reportError({
-          error: e,
-          severity: asKnownSeverityLevel(logObject.severity),
-          context: {
-            source,
-            message,
-            stack: getStackTrace({ skip: 2 }),
-            ...itsRecusionMan,
-          },
         });
+        try {
+          LoggedErrorReporter.Instance.reportError({
+            error: e,
+            severity: asKnownSeverityLevel(logObject.severity),
+            context: {
+              source,
+              message,
+              stack: getStackTrace({ skip: 2 }),
+              ...itsRecusionMan,
+            },
+          });
+        } catch (fail) {
+          log((l) => l.error('Failed to report error', { error: fail }));
+        }
         log((l) => l.error(logObject.message ?? 'Error occurred', logObject));
       }
     }
@@ -252,7 +274,7 @@ export const dumpError = (e: unknown): string => {
   let ret = '';
   if (isError(e)) {
     ret = e.message ?? 'no message';
-    if (e.cause){
+    if (e.cause) {
       ret += `\nCaused by: ${dumpError(e.cause)}`;
     }
   } else if (typeof e === 'object' && e !== null) {
@@ -264,4 +286,4 @@ export const dumpError = (e: unknown): string => {
 };
 
 // Re-export utility functions for convenience
-export { isAbortError } from '../_utility-methods';
+export { isAbortError } from '../utility-methods';

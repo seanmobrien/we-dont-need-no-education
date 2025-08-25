@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box } from '@mui/material';
 import { Message } from 'ai';
-import Loading from '@/components/general/loading';
+import { Loading } from '@/components/general/loading';
 import { ChatMessageV2 } from './chat-message';
 import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
 import { log } from '@/lib/logger';

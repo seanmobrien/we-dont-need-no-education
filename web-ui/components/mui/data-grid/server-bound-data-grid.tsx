@@ -12,6 +12,7 @@ import {
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import TableContainer from '@mui/material/TableContainer';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 import {
   DataGridPro,
@@ -30,15 +31,15 @@ import { useNotifications } from '@toolpad/core/useNotifications';
 import ServerBoundDataGridPropsSchema from './server-bound-data-grid-props-schema';
 
 const stableWrapperStyles = {
-  box: { width: 'auto', maxWidth: 1 },
-  paper: { width: 'auto', mb: 2, overflow: 'hidden' },
+  box: { width: 'auto', maxWidth: 1 } satisfies SxProps<Theme>,
+  paper: { width: 'auto', mb: 2, overflow: 'hidden' } satisfies SxProps<Theme>,
   table: {
     display: 'flex',
-    flexBasis: 'column',
+    flexDirection: 'column',
     minHeight: '400px',
     maxHeight: '75%',
-  },
-};
+  } satisfies SxProps<Theme>,
+} as const;
 
 export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   columns,
@@ -112,7 +113,7 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
       sx={stableWrapperStyles.box}
     >
       <Paper sx={stableWrapperStyles.paper}>
-        <TableContainer style={stableWrapperStyles.table}>
+        <TableContainer sx={stableWrapperStyles.table}>
           <DataGridPro<TRowModel>
             filterDebounceMs={300}
             autoHeight={true}

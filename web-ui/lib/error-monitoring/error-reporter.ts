@@ -1,4 +1,4 @@
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 import { log } from '@/lib/logger';
 
 /**
@@ -18,7 +18,7 @@ export interface ErrorContext {
   userId?: string;
   sessionId?: string;
   source?: string;
-  userAgent?: string;  
+  userAgent?: string;
   url?: string;
   timestamp?: Date;
   componentStack?: string;
@@ -51,9 +51,19 @@ export interface ErrorReporterConfig {
   environment: KnownEnvironmentType;
 }
 
-const isGtagClient = <T>(check: T) : check is T & { gtag: (signal: string, event: string, params: Record<string, unknown>) => void } => 
-  typeof check === 'object' && check !== null && 'gtag' in check && typeof (check.gtag) === 'function';
-
+const isGtagClient = <T>(
+  check: T,
+): check is T & {
+  gtag: (
+    signal: string,
+    event: string,
+    params: Record<string, unknown>,
+  ) => void;
+} =>
+  typeof check === 'object' &&
+  check !== null &&
+  'gtag' in check &&
+  typeof check.gtag === 'function';
 
 const asEnvironment = (input: string): KnownEnvironmentType => {
   return ['development', 'staging', 'production'].includes(input)
@@ -67,7 +77,7 @@ const defaultConfig: ErrorReporterConfig = {
   enableExternalReporting: process.env.NODE_ENV === 'production',
   enableLocalStorage: true,
   maxStoredErrors: 50,
-  environment: asEnvironment(process.env.NODE_ENV)
+  environment: asEnvironment(process.env.NODE_ENV),
 };
 
 /**
@@ -87,7 +97,9 @@ export class ErrorReporter {
    * @param config ErrorReporter configuration
    * @returns ErrorReporter instance
    */
-  public static createInstance = (config: Partial<ErrorReporterConfig>): ErrorReporter => 
+  public static createInstance = (
+    config: Partial<ErrorReporterConfig>,
+  ): ErrorReporter =>
     new ErrorReporter({
       ...defaultConfig,
       ...config,
@@ -128,7 +140,9 @@ export class ErrorReporter {
       };
 
       if (this.config.enableStandardLogging) {
-        const { LoggedError } = await import('@/lib/react-util/errors/logged-error');
+        const { LoggedError } = await import(
+          '@/lib/react-util/errors/logged-error'
+        );
         // Use LoggedError for consistent logging
         LoggedError.isTurtlesAllTheWayDownBaby(errorObj, {
           log: this.config.enableConsoleLogging,
@@ -137,7 +151,7 @@ export class ErrorReporter {
           ...enrichedContext,
         });
       }
-      
+
       // Console logging for development
       if (this.config.enableConsoleLogging) {
         console.group(`🐛 Error Report [${severity.toUpperCase()}]`);

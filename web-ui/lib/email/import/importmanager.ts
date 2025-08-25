@@ -13,7 +13,7 @@ import {
 import { managerMapFactory } from './google/managermapfactory';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 import { NextRequest } from 'next/server';
 import { TransactionalStateManagerBase } from './default/transactional-statemanager';
 import {

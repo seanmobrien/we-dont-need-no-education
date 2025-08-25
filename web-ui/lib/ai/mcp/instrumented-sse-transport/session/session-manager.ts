@@ -1,6 +1,6 @@
 /**
  * @fileoverview Session Management for MCP Transport
- * 
+ *
  * This module handles session lifecycle, idle timeouts, and session state tracking.
  */
 
@@ -9,7 +9,7 @@ import { tracer, MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
 import type { JSONRPCMessage } from '../../ai.sdk';
 import { log } from '@/lib/logger';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 
 export interface SpanState {
   span: Span;
@@ -120,7 +120,7 @@ export class SessionManager {
           MetricsRecorder.recordSessionDuration(
             sessionDuration,
             this.#url,
-            'idle_timeout'
+            'idle_timeout',
           );
 
           sessionState.span.addEvent('session.idle_timeout', {
@@ -139,7 +139,7 @@ export class SessionManager {
             MetricsRecorder.recordToolCallCompletion(
               this.#url,
               sessionState.toolCallMethod || 'unknown',
-              'idle_timeout'
+              'idle_timeout',
             );
           }
 
@@ -185,11 +185,11 @@ export class SessionManager {
 
     for (const [, sessionState] of this.#sessions.entries()) {
       const sessionDuration = Date.now() - sessionState.createdAt;
-      
+
       MetricsRecorder.recordSessionDuration(
         sessionDuration,
         this.#url,
-        'normal_close'
+        'normal_close',
       );
 
       sessionState.span.addEvent('session.closing', {
@@ -209,7 +209,7 @@ export class SessionManager {
         MetricsRecorder.recordToolCallCompletion(
           this.#url,
           sessionState.toolCallMethod || 'unknown',
-          'transport_close'
+          'transport_close',
         );
       }
     }
@@ -228,7 +228,9 @@ export class SessionManager {
     MetricsRecorder.recordSessionDuration(
       sessionDuration,
       this.#url,
-      reason === 'tool_call_response' ? 'tool_call_response' : 'normal_completion'
+      reason === 'tool_call_response'
+        ? 'tool_call_response'
+        : 'normal_completion',
     );
 
     if (sessionState.isToolCall) {
@@ -252,7 +254,7 @@ export class SessionManager {
       MetricsRecorder.recordToolCallCompletion(
         this.#url,
         sessionState.toolCallMethod || 'unknown',
-        reason
+        reason,
       );
     }
 
@@ -314,7 +316,7 @@ export class SessionManager {
     MetricsRecorder.recordToolCallCompletion(
       this.#url,
       sessionState.toolCallMethod || 'unknown',
-      reason
+      reason,
     );
 
     this.#sessions.delete(sessionId);

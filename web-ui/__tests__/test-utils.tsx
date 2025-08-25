@@ -5,7 +5,7 @@ import {
   RenderOptions,
   screen,
   renderHook,
-  RenderHookOptions,  
+  RenderHookOptions,
   RenderHookResult,
 } from '@testing-library/react';
 import Queries from '@testing-library/dom/types/queries';
@@ -26,7 +26,7 @@ const createTestQueryClient = () =>
         retry: false,
       },
     },
-});
+  });
 
 const AllTheProviders = ({ children }: PropsWithChildren) => {
   const queryClient = createTestQueryClient();
@@ -74,10 +74,13 @@ const customRenderHook = <
   let ret: RenderHookResult<Result, Props> | undefined = undefined;
   act(() => {
     const normalOptions = options ?? {};
-    const fromHook = renderHook<Result, Props, Q, Container, BaseElement>(hook, {
-      wrapper: normalOptions.wrapper ?? AllTheProviders,
-      ...normalOptions,
-    });
+    const fromHook = renderHook<Result, Props, Q, Container, BaseElement>(
+      hook,
+      {
+        wrapper: normalOptions.wrapper ?? AllTheProviders,
+        ...normalOptions,
+      },
+    );
     ret = fromHook;
   });
   return ret!;
@@ -99,7 +102,10 @@ export type { RenderOptions };
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 (global as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-export const jsonResponse = <TData extends object>(data: TData, status?: number) => {
+export const jsonResponse = <TData extends object>(
+  data: TData,
+  status?: number,
+) => {
   const jsonCallback = (): Promise<TData> => Promise.resolve(data as TData);
   const stat = status ?? 200;
   return {
@@ -109,6 +115,20 @@ export const jsonResponse = <TData extends object>(data: TData, status?: number)
     headers: {
       'Content-Type': 'application/json',
     },
-    json: jsonCallback
+    json: jsonCallback,
   };
 };
+
+let mockIdCounter: number = 0;
+let mockUseId: jest.SpyInstance<string, [], any> | undefined;
+
+beforeEach(() => {
+  mockIdCounter = 0;
+  mockUseId = jest.spyOn(React, 'useId');
+  mockUseId.mockImplementation(() => `mock-id-${mockIdCounter++}`);
+});
+
+afterEach(() => {
+  mockUseId?.mockRestore();
+  mockUseId = undefined;
+});
