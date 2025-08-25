@@ -9,7 +9,7 @@ const makeItem = (
 ): NavigationPageItem => ({
   kind: 'page',
   title: 'Email',
-  segment: 'email',
+  segment: 'email/{emailId}',
   children: [
     { kind: 'page', title: 'Details', segment: 'details' },
     { kind: 'page', title: undefined as any, segment: 'attachments' },
@@ -58,12 +58,12 @@ describe('CustomEmailPageItem', () => {
         item={makeItem()}
         mini={false}
         emailId="123"
-        pathname="/messages/email/123/attachments"
+        pathname="/messages/email/123/details"
       />,
     );
     const active = document.querySelector('[data-active="true"]');
     expect(active).toBeTruthy();
-    expect(active?.textContent).toMatch(/attachments|Attachments/i);
+    expect(active?.textContent).toMatch(/details|Details/i);
   });
 
   it('renders tooltip and aria-label in mini mode', () => {
