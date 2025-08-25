@@ -1,0 +1,13 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ChatPanelLayout renders with default props snapshot 1`] = `
+<div>
+  <div
+    class="MuiBox-root css-1q5fg2i"
+  >
+    <div>
+      Test child content
+    </div>
+  </div>
+</div>
+`;

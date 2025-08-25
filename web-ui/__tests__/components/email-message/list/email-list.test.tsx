@@ -7,7 +7,15 @@ import EmailList from '@/components/email-message/list';
 jest.mock('@toolpad/core/useNotifications', () => ({ useNotifications: () => ({ show: jest.fn() }) }));
 
 jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
-  ServerBoundDataGrid: ({ columns, onRowDoubleClick, ...rest }: any) => {
+  ServerBoundDataGrid: ({ 
+    columns, 
+    onRowDoubleClick, 
+    idColumn,
+    getDetailPanelContent,
+    getDetailPanelHeight,
+    url,
+    ...rest 
+  }: any) => {
     const subjectCol = columns.find((c: any) => c.field === 'subject');
     const subjectLink = subjectCol?.renderCell
       ? subjectCol.renderCell({ value: 'Hello world', row: { emailId: '123' } })
