@@ -24,7 +24,7 @@ interface ChatSummary {
 
 type ColumnType = PgColumn | SQL.Aliased;;
 
-export const getColumnFromName  = (columnName: string, {
+const getColumnFromName  = (columnName: string, {
   columnTurns,
   columnMessages,
   columnTokens
