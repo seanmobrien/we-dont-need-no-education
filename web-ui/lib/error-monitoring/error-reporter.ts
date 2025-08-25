@@ -1,5 +1,4 @@
 import { isError } from '@/lib/react-util/_utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 
 /**
@@ -38,20 +37,38 @@ export interface ErrorReport {
   fingerprint?: string;
   tags?: Record<string, string>;
 }
+type KnownEnvironmentType = 'development' | 'staging' | 'production';
 
 /**
  * Configuration for error reporting
  */
 export interface ErrorReporterConfig {
+  enableStandardLogging: boolean;
   enableConsoleLogging: boolean;
   enableExternalReporting: boolean;
   enableLocalStorage: boolean;
   maxStoredErrors: number;
-  environment: 'development' | 'staging' | 'production';
+  environment: KnownEnvironmentType;
 }
 
 const isGtagClient = <T>(check: T) : check is T & { gtag: (signal: string, event: string, params: Record<string, unknown>) => void } => 
   typeof check === 'object' && check !== null && 'gtag' in check && typeof (check.gtag) === 'function';
+
+
+const asEnvironment = (input: string): KnownEnvironmentType => {
+  return ['development', 'staging', 'production'].includes(input)
+    ? (input as KnownEnvironmentType)
+    : 'development';
+};
+
+const defaultConfig: ErrorReporterConfig = {
+  enableStandardLogging: true,
+  enableConsoleLogging: process.env.NODE_ENV === 'development',
+  enableExternalReporting: process.env.NODE_ENV === 'production',
+  enableLocalStorage: true,
+  maxStoredErrors: 50,
+  environment: asEnvironment(process.env.NODE_ENV)
+};
 
 /**
  * Centralized error reporting system
@@ -65,20 +82,23 @@ export class ErrorReporter {
     this.config = config;
   }
 
+  /**
+   * Create a new instance of ErrorReporter
+   * @param config ErrorReporter configuration
+   * @returns ErrorReporter instance
+   */
+  public static createInstance = (config: Partial<ErrorReporterConfig>): ErrorReporter => 
+    new ErrorReporter({
+      ...defaultConfig,
+      ...config,
+    });
 
   /**
    * Get singleton instance of ErrorReporter
    */
   public static getInstance(config?: ErrorReporterConfig): ErrorReporter {
     if (!ErrorReporter.instance) {
-      const defaultConfig: ErrorReporterConfig = {
-        enableConsoleLogging: process.env.NODE_ENV === 'development',
-        enableExternalReporting: process.env.NODE_ENV === 'production',
-        enableLocalStorage: true,
-        maxStoredErrors: 50,
-        environment: (process.env.NODE_ENV as 'development' | 'staging' | 'production') || 'development',
-      };
-      ErrorReporter.instance = new ErrorReporter(config || defaultConfig);
+      ErrorReporter.instance = ErrorReporter.createInstance(config ?? {});
     }
     return ErrorReporter.instance;
   }
@@ -89,15 +109,15 @@ export class ErrorReporter {
   public async reportError(
     error: Error | unknown,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    context: Partial<ErrorContext> = {}
+    context: Partial<ErrorContext> = {},
   ): Promise<void> {
     try {
       // Ensure we have a proper Error object
       const errorObj = this.normalizeError(error);
-      
+
       // Enrich context with browser/environment data
       const enrichedContext = this.enrichContext(context);
-      
+
       // Create error report
       const report: ErrorReport = {
         error: errorObj,
@@ -107,14 +127,17 @@ export class ErrorReporter {
         tags: this.generateTags(errorObj, enrichedContext),
       };
 
-      // Use LoggedError for consistent logging
-      LoggedError.isTurtlesAllTheWayDownBaby(errorObj, {
-        log: this.config.enableConsoleLogging,
-        source: 'ErrorReporter',
-        critical: severity === ErrorSeverity.CRITICAL,
-        ...enrichedContext,
-      });
-
+      if (this.config.enableStandardLogging) {
+        const { LoggedError } = await import('@/lib/react-util/errors/logged-error');
+        // Use LoggedError for consistent logging
+        LoggedError.isTurtlesAllTheWayDownBaby(errorObj, {
+          log: this.config.enableConsoleLogging,
+          source: 'ErrorReporter',
+          critical: severity === ErrorSeverity.CRITICAL,
+          ...enrichedContext,
+        });
+      }
+      
       // Console logging for development
       if (this.config.enableConsoleLogging) {
         console.group(`🐛 Error Report [${severity.toUpperCase()}]`);
@@ -148,7 +171,7 @@ export class ErrorReporter {
   public async reportBoundaryError(
     error: Error,
     errorInfo: { componentStack?: string; errorBoundary?: string },
-    severity: ErrorSeverity = ErrorSeverity.HIGH
+    severity: ErrorSeverity = ErrorSeverity.HIGH,
   ): Promise<void> {
     await this.reportError(error, severity, {
       componentStack: errorInfo.componentStack,
@@ -162,7 +185,7 @@ export class ErrorReporter {
    */
   public async reportUnhandledRejection(
     reason: unknown,
-    promise: Promise<unknown>
+    promise: Promise<unknown>,
   ): Promise<void> {
     const error = reason instanceof Error ? reason : new Error(String(reason));
     await this.reportError(error, ErrorSeverity.HIGH, {
@@ -179,15 +202,19 @@ export class ErrorReporter {
 
     // Unhandled errors
     window.addEventListener('error', (event) => {
-      this.reportError(event.error || new Error(event.message), ErrorSeverity.HIGH, {
-        url: window.location.href,
-        breadcrumbs: ['global-error-handler'],
-        additionalData: {
-          filename: event.filename,
-          lineno: event.lineno,
-          colno: event.colno,
+      this.reportError(
+        event.error || new Error(event.message),
+        ErrorSeverity.HIGH,
+        {
+          url: window.location.href,
+          breadcrumbs: ['global-error-handler'],
+          additionalData: {
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+          },
         },
-      });
+      );
     });
 
     // Unhandled promise rejections
@@ -231,13 +258,18 @@ export class ErrorReporter {
    */
   private generateFingerprint(error: Error, context: ErrorContext): string {
     const key = `${error.name}:${error.message}:${context.url || 'unknown'}`;
-    return btoa(key).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    return btoa(key)
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .substring(0, 16);
   }
 
   /**
    * Generate tags for error categorization
    */
-  private generateTags(error: Error, context: ErrorContext): Record<string, string> {
+  private generateTags(
+    error: Error,
+    context: ErrorContext,
+  ): Record<string, string> {
     return {
       environment: this.config.environment,
       errorType: error.name,
@@ -252,7 +284,9 @@ export class ErrorReporter {
    */
   private storeErrorLocally(report: ErrorReport): void {
     try {
-      if (typeof localStorage === 'undefined') { return; }
+      if (typeof localStorage === 'undefined') {
+        return;
+      }
       const stored = JSON.parse(localStorage.getItem('error-reports') || '[]');
       stored.push({
         ...report,
@@ -271,8 +305,6 @@ export class ErrorReporter {
     }
   }
 
-
-
   /**
    * Report to Google Analytics if available
    */
@@ -290,11 +322,13 @@ export class ErrorReporter {
   /**
    * Report to Application Insights if available
    */
-  private async reportToApplicationInsights(report: ErrorReport): Promise<void> {
+  private async reportToApplicationInsights(
+    report: ErrorReport,
+  ): Promise<void> {
     // Implementation would depend on Application Insights setup
     // This is a placeholder for Azure Application Insights integration
     if (typeof window === 'undefined') return;
-    await import('@/instrument/browser').then(m => {
+    await import('@/instrument/browser').then((m) => {
       const appInsights = m.getAppInsights();
       if (appInsights) {
         appInsights.trackException({

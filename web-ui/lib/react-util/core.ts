@@ -2,8 +2,8 @@ export { isError, isRecord } from './_utility-methods';
 export { LoggedError } from './errors/logged-error';
 
 // Import error types for type guards
-import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/AbortChatMessageRequestError';
-import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/MessageTooLargeForQueueError';
+import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
+import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
 import { isError } from './_utility-methods';
 
 /**

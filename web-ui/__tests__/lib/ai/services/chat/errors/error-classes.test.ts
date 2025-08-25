@@ -10,8 +10,8 @@
  * - Error inheritance and serialization behavior
  */
 
-import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/AbortChatMessageRequestError';
-import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/MessageTooLargeForQueueError';
+import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
+import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
 import { 
   isAbortChatMessageRequestError, 
   isMessageTooLargeForQueueError 

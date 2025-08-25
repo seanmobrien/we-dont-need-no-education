@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * @jest-environment jsdom
@@ -63,9 +64,10 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 describe('Error Flow Integration Tests', () => {
+  let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any> | undefined;
   beforeEach(() => {
     // jest.clearAllMocks();
-    
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');
     mockGetRecoveryActions.mockReturnValue([
@@ -88,7 +90,10 @@ describe('Error Flow Integration Tests', () => {
     window.removeEventListener = jest.fn();
   });
 
-
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
+    consoleErrorSpy = undefined;
+  });
 
   describe('Error Reporting Integration', () => {
     it('should report boundary errors with proper context', async () => {

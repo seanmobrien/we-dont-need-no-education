@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor, jsonResponse, asyncRender } from '@/__tests__/test-utils';
 import EmailList from '@/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
@@ -16,6 +17,17 @@ jest.mock('next/navigation', () => ({
 }));
 
 describe('EmailList', () => {    
+
+  let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any> | undefined;
+  beforeEach(() => {
+    // Turn off console.error logging for these planned exceptions - keeps test output clean.
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
+    consoleErrorSpy = undefined;
+  });
+
   it('should display loading state initially', () => {
     (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: [], totalRowCount: 0 }));
 

@@ -1,40 +1,6 @@
 /**
  * @fileoverview Unit tests for ModelMap class with comprehensive mocking
  */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-// Mock the schema before importing ModelMap
-const mockSchema = {
-  models: {
-    id: { name: 'id' },
-    providerId: { name: 'providerId' },
-    modelName: { name: 'modelName' },
-    displayName: { name: 'displayName' },
-    description: { name: 'description' },
-    isActive: { name: 'isActive' },
-    createdAt: { name: 'createdAt' },
-    updatedAt: { name: 'updatedAt' },
-  },
-  providers: {
-    id: { name: 'id' },
-    name: { name: 'name' },
-  },
-  modelQuotas: {
-    id: { name: 'id' },
-    modelId: { name: 'modelId' },
-    maxTokensPerMessage: { name: 'maxTokensPerMessage' },
-    maxTokensPerMinute: { name: 'maxTokensPerMinute' },
-    maxTokensPerDay: { name: 'maxTokensPerDay' },
-    isActive: { name: 'isActive' },
-    createdAt: { name: 'createdAt' },
-    updatedAt: { name: 'updatedAt' },
-  },
-};
-
-jest.mock('@/lib/drizzle-db', () => ({
-  drizDbWithInit: jest.fn(),
-  schema: mockSchema,
-}));
 
 jest.mock('@/lib/ai/services/model-stats/provider-map');
 jest.mock('drizzle-orm', () => ({
@@ -45,7 +11,9 @@ jest.mock('drizzle-orm', () => ({
 import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 import { ProviderMap } from '@/lib/ai/services/model-stats/provider-map';
 import { LanguageModelV1 } from '@ai-sdk/provider';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
+import { IMockQueryBuilder } from '@/__tests__/jest.mock-drizzle';
 
 describe('ModelMap with Full Mocking', () => {
   const mockProviderId = 'provider-uuid-123';
@@ -83,35 +51,24 @@ describe('ModelMap with Full Mocking', () => {
   };
 
   const createMockDatabase = () => {
-    let queryCount = 0;
-    
-    const mockQuery = {
-      from: jest.fn().mockReturnThis(),
-      innerJoin: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      limit: jest.fn().mockReturnThis(),
-    };
+    const ret = drizDb();
+    const mock = ret as unknown as IMockQueryBuilder;
 
-    const mockDatabase = {
-      select: jest.fn().mockImplementation(() => {
-        queryCount++;
-        return {
-          ...mockQuery,
-          // The final result of the query chain - needs to be awaitable
-          then: (resolve: any) => {
-            const result = queryCount === 1 ? mockModelsWithProviders : mockQuotas;
-            console.log(`Query ${queryCount} returning:`, result);
-            return Promise.resolve(result).then(resolve);
-          },
-        };
-      }),
-    };
-
-    return mockDatabase;
+    mock.__setRecords(async (ctx) => {
+      if (ctx.isFrom('models')){
+        return mockModelsWithProviders;
+      }
+      if (ctx.isFrom(schema.modelQuotas)) {
+        return mockQuotas;
+      }
+      return false;
+    });
+    return mock;
   };
+  let mockDb: IMockQueryBuilder;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     ModelMap.reset();
 
     // Setup ProviderMap mock
@@ -121,15 +78,12 @@ describe('ModelMap with Full Mocking', () => {
       if (provider === 'google') return mockGoogleProviderId;
       return null;
     });
-
-    // Setup database mock
-    (drizDbWithInit as jest.Mock).mockImplementation(() => {
-      return Promise.resolve(createMockDatabase());
-    });
+    mockDb = createMockDatabase();
   });
 
   afterEach(() => {
     ModelMap.reset();
+    mockDb?.__resetMocks();
   });
 
   describe('Singleton Pattern', () => {
@@ -246,7 +200,7 @@ describe('ModelMap with Full Mocking', () => {
       expect(result.provider).toBe('unknown-provider');
       expect(result.modelName).toBe('some-model');
       expect(result.providerId).toBeUndefined();
-      expect(() => result.rethrow()).toThrow('Unknown provider: unknown-provider');
+      expect(() => result.rethrow()).toThrow('Provider not found: unknown-provider');
     });
   });
 

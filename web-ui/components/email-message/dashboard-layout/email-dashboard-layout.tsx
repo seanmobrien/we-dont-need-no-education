@@ -1,7 +1,5 @@
 'use client';
 
-import * as React from 'react';
-
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import {
   DashboardLayout,

@@ -1,5 +1,24 @@
-import { TableHead, TableRow, TableCell, Checkbox } from '@mui/material';
-import { HeadCell } from './_types';
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import TableCell from "@mui/material/TableCell";
+import Checkbox from "@mui/material/Checkbox";
+
+/**
+ * Represents a header cell in a table.
+ *
+ * @property {string} id - The unique identifier for the cell.
+ * @property {string} label - The label for the cell.
+ * @property {boolean} numeric - Indicates whether the cell contains numeric data.
+ * @property {boolean} disablePadding - Indicates whether padding is disabled for the cell.
+ */
+export interface HeadCell {
+  id: string;
+  label: string;
+  numeric: boolean;
+  disablePadding: boolean;
+  maxWidth?: string;
+}
+
 
 interface EnhancedTableProps {
   numSelected: number;

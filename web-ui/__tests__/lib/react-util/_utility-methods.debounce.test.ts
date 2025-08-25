@@ -1,4 +1,4 @@
-import { debounce } from '@/lib/react-util/_utility-methods';
+import { debounce } from "@/lib/react-util/debounce";
 
 jest.useFakeTimers();
 

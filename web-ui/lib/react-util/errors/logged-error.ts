@@ -1,11 +1,20 @@
 import { errorLogFactory, log } from '@/lib/logger';
 import { isAbortError, isError } from '../_utility-methods';
 import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
+import { ErrorReporter } from '@/lib/error-monitoring/error-reporter';
+import { asKnownSeverityLevel } from '@/lib/logger/constants';
 
 /**
  * A unique symbol used to brand the `LoggedError` class instances.
  */
 const brandLoggedError: unique symbol = Symbol('LoggedError');
+
+const loggedErrorReporter = ErrorReporter.createInstance({ 
+  enableStandardLogging: false,
+  enableConsoleLogging: false,
+  enableExternalReporting: typeof window === 'undefined',
+  enableLocalStorage: false,
+});
 
 /**
  * Options for specifying details about a validation error.
@@ -118,6 +127,16 @@ export class LoggedError implements Error {
           message,
           stack: getStackTrace({ skip: 2 }),
           ...itsRecusionMan,
+        });        
+        loggedErrorReporter.reportError({
+          error: e,
+          severity: asKnownSeverityLevel(logObject.severity),
+          context: {
+            source,
+            message,
+            stack: getStackTrace({ skip: 2 }),
+            ...itsRecusionMan,
+          },
         });
         log((l) => l.error(logObject.message ?? 'Error occurred', logObject));
       }

@@ -13,10 +13,12 @@ const appInsightState = {
   reactPlugin: undefined,
   clickPlugin: undefined,
   appInsightInstance: undefined,
+  initializersAdded: false, // guard against duplicate registration
 } as {
   reactPlugin?: ReactPlugin;
   clickPlugin?: ClickAnalyticsPlugin;
   appInsightInstance?: ApplicationInsights;
+  initializersAdded: boolean;
 };
 
 const getReactPlugin = (): ReactPlugin => {
@@ -44,9 +46,7 @@ const getAppInsights = () => {
     appInsightState.appInsightInstance ??= new ApplicationInsights({
       config: {
         appId: config.serviceName,
-        connectionString: env(
-          'NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING',
-        ),
+        connectionString: env('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING'),
         enableDebug: true,
         enableAutoRouteTracking: true,
         enableAjaxErrorStatusText: true,
@@ -62,67 +62,83 @@ const getAppInsights = () => {
         extensionConfig: {
           [appInsightState.reactPlugin.identifier]: { history: null },
           [appInsightState.clickPlugin.identifier]: {
-            autoCapture: true, // Enable automatic capture of click events
+            autoCapture: true,
             contentName: callback.contentName.bind(callback),
             pageName: callback.pageName.bind(callback),
-            clickEvents: true, // Enable click events tracking
+            clickEvents: true,
             dropInvalidEvents: false,
             urlCollectQuery: false,
-            useDefaultContentNameOrId: false, // Disable default to force callback usage
+            useDefaultContentNameOrId: false,
           },
         },
       },
     });
     appInsightState.appInsightInstance.loadAppInsights();
-      
-    const ignoreMessage = ['messageId: 102', '102 message:'];
-    const ignoreNames = [
-      ...ignoreMessage,
-      '/api/auth/session',
-      '\\api\\auth\\session',
-      '/static/',
-      '/_next/',
-      '__nextjs_original-stack-frames',
-    ];
-    
-    appInsightState.appInsightInstance.addTelemetryInitializer((envelope: ITelemetryItem) => {
 
-      if (envelope && envelope.baseData && envelope.baseData.name) {
-        const lookFor = envelope.baseData.name.toLowerCase();
-        if (ignoreNames.findIndex((name) => lookFor.lastIndexOf(name) !== -1) !== -1) {
-          return false; // Filter out telemetry items with ignored names
-        }
-      }
-            
-      if (envelope.baseType === "ExceptionData") {
-        // If the telemetry 'message' field contains any of the strings in ignoreMessage, return false  
-        if (envelope.baseData && envelope.baseData.exceptions) {
-          const exceptions = envelope.baseData.exceptions;
-          for (const exception of exceptions) {
-            if (exception.message && ignoreMessage.some(msg => exception.message.includes(msg))) {
+    // Add telemetry initializers once
+    if (!appInsightState.initializersAdded) {
+      const ignoreMessage = ['messageId: 102', '102 message:'];
+      const ignoreNames = [
+        ...ignoreMessage,
+        '/api/auth/session',
+        '\\api\\auth\\session',
+        '/static/',
+        '/_next/',
+        '__nextjs_original-stack-frames',
+      ];
+
+      appInsightState.appInsightInstance.addTelemetryInitializer(
+        (envelope: ITelemetryItem) => {
+          if (envelope?.baseData?.name) {
+            const lookFor = envelope.baseData.name.toLowerCase();
+            if (
+              ignoreNames.findIndex(
+                (name) => lookFor.lastIndexOf(name) !== -1,
+              ) !== -1
+            ) {
               return false;
             }
           }
-        }
-      }      
-      // Pass the telemetry item to the next processor in the chain
-      return true; 
-    });
-    appInsightState.appInsightInstance.addTelemetryInitializer((envelope) => {
-      envelope.tags ??= {};
-      envelope.tags['ai.cloud.role'] = config.serviceName;
-      envelope.tags['ai.cloud.roleInstance'] =
-        (`${config.attributes!['service.instance'] ?? 'service-instance'}-browser`).replace("WebUi--undefined", "ObApps.ComplianceTheatre-WebUi");
-      envelope.data ??= {};
-      envelope.data.baseData ??= {};
-      envelope.data.baseData.properties ??= {};
-      envelope.data.baseData.properties['service.instance'] =
-        envelope.tags['ai.cloud.roleInstance'];
+
+          if (envelope.baseType === 'ExceptionData') {
+            const exceptions = envelope.baseData && envelope.baseData.exceptions;
+            if (exceptions) {
+              for (const exception of exceptions) {
+                if (
+                  exception.message &&
+                  ignoreMessage.some((msg) => exception.message.includes(msg))
+                ) {
+                  return false;
+                }
+              }
+            }
+          }
+          return true;
+        },
+      );
+
+      appInsightState.appInsightInstance.addTelemetryInitializer((envelope) => {
+        envelope.tags ??= {};
+        envelope.tags['ai.cloud.role'] = config.serviceName;
+        envelope.tags['ai.cloud.roleInstance'] = (
+          `${config.attributes!['service.instance'] ?? 'service-instance'}-browser`
+        ).replace(
+          'WebUi--undefined',
+          'ObApps.ComplianceTheatre-WebUi',
+        );
+        envelope.data ??= {};
+        envelope.data.baseData ??= {};
+        envelope.data.baseData.properties ??= {};
+        envelope.data.baseData.properties['service.instance'] =
+          envelope.tags['ai.cloud.roleInstance'];
         envelope.data.baseData.properties['service.namespace'] =
           config.attributes['service.namespace'];
-      envelope.data.baseData.properties['telemetry.sdk.language'] =
-        'javascript';
-    });
+        envelope.data.baseData.properties['telemetry.sdk.language'] =
+          'javascript';
+      });
+
+      appInsightState.initializersAdded = true;
+    }
   }
   return appInsightState.appInsightInstance;
 };

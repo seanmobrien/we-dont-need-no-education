@@ -6,7 +6,7 @@ const shouldWriteToConsole = jest
 jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
   TrackWithAppInsight: jest.fn((props: any) => {
     const { children, ...rest } = props;
-    return React.createElement('div', rest, children);
+    return createElement('div', rest, children);
   })
 }));
 jest.mock('@microsoft/applicationinsights-react-js', () => ({
@@ -42,81 +42,6 @@ jest.mock('@/instrument/browser', () => ({
   instrument: jest.fn()
 }));
 
-jest.mock('react-error-boundary', () => {
- // eslint-disable-next-line @typescript-eslint/no-empty-object-type
- class ErrorBoundary extends Component<{}, { hasError: boolean; error: Error | null }> {
-   #fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
-   #children: React.ReactNode;
-   #onReset?: () => void;
-   #onError?: (error: Error, errorInfo: { componentStack: string }) => void;
-   
-   constructor(props: {
-     children?: React.ReactNode;
-     fallbackRender?: (props: { error: unknown; resetErrorBoundary: () => void }) => React.ReactNode;
-     onReset?: () => void;
-     onError?: (error: Error, errorInfo: { componentStack: string }) => void;
-   }) {
-     super(props);
-     const { fallbackRender, onReset, onError } = props;
-     this.#fallbackRender = fallbackRender;
-     this.#onReset = onReset;
-     this.#onError = onError;
-     this.#children = props.children;
-     this.state = { hasError: false, error: null as Error | null };
-   }
-
-   static getDerivedStateFromError(error: any) {
-     return { hasError: true, error };
-   }
-
-   componentDidCatch(error: any, errorInfo: any) {
-     if (this.#onError) {
-       this.#onError(error, errorInfo || { componentStack: 'test-component-stack' });
-     }
-   }
-
-   render() {
-     try {
-       if ('hasError' in this.state && this.state.hasError) {
-         const error =
-           'error' in this.state && !!this.state.error
-             ? this.state.error
-             : new Error('An error occurred');
-         
-         if (this.#fallbackRender) {
-           const FallbackWrapper = () => this.#fallbackRender!({ 
-             error, 
-             resetErrorBoundary: () => {
-               this.setState({ hasError: false, error: null });
-               this.#onReset?.();
-             }
-           });
-           return React.createElement(FallbackWrapper);
-         }
-         
-         return React.createElement('div', { role: 'alert' }, String(error));
-       }
-       return this.#children;
-     } catch (error) {
-       // Catch errors during render and trigger error boundary behavior
-       if (!this.state.hasError) {
-         this.setState({ hasError: true, error: error as Error });
-         if (this.#onError) {
-           this.#onError(error as Error, { componentStack: 'test-component-stack' });
-         }
-       }
-       return React.createElement('div', { role: 'alert' }, String(error));
-     }
-   }
- }
-  return {
-  ErrorBoundary,
-  FallbackComponent: ({ error }: { error?: Error }) => {
-    return React.createElement('div', { role: 'alert' }, error?.message);
-  },
-};
-});
-
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
@@ -124,20 +49,16 @@ import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+const ErrorBoundary = jest.requireActual('./jest.mock-error-boundary').default;
 
-const QueryBuilderMethodValues = [
-  'from','select','where','orderBy','limit',
-  'offset','execute','innerJoin','fullJoin',
-  'groupBy', 'as', 'leftJoin'
-] as const;
-type QueryBuilderMethodType = typeof QueryBuilderMethodValues[number];
-
-type IMockQueryBuilder = {
-  [K in QueryBuilderMethodType]: jest.Mock;
-} & {
-  __setRecords: <T>(records: T[]) => void;
-  __getRecords: <T>() => T[];
-};
+jest.mock('react-error-boundary', () => {
+  return {
+    ErrorBoundary,
+    FallbackComponent: ({ error }: { error?: Error }) => {
+      return createElement('div', { role: 'alert' }, error?.message);
+    },
+  };
+});
 
 export class MockQueryBuilder implements IMockQueryBuilder {
   readonly from: jest.Mock;
@@ -154,6 +75,7 @@ export class MockQueryBuilder implements IMockQueryBuilder {
   readonly groupBy: jest.Mock;
 
   #records: unknown[] = [];
+  #matchers: Map<MockDbQueryCallback, MockDbQueryRecord> = new Map();
 
   constructor() {
     this.groupBy = jest.fn().bind(this).mockReturnThis();
@@ -170,36 +92,181 @@ export class MockQueryBuilder implements IMockQueryBuilder {
     this.as = jest.fn().bind(this).mockReturnThis();
   }
 
-  __setRecords<T>(records: T[]) {
-    this.#records = records ?? [];
+  __setRecords<T extends Record<string, unknown> = Record<string, unknown>>(
+    v: T[] | MockDbQueryCallback,
+    rows?: T[] | null,
+    state?: unknown,
+  ) {
+    // If we are "not" or an array then we are updating the default return value
+    if (!v || Array.isArray(v)) {
+      this.#records = v ?? [];
+      return;
+    }
+    // Otherwise we have a callback
+    if (typeof v === 'function') {
+      // If rows is explicitly null then this is removing an existing callback
+      if (rows === null) {
+        this.#matchers.delete(v);
+        return;
+      }
+      // Otherwise we're adding a new one
+      this.#matchers.set(v, { rows: rows ?? [], state });
+    }
   }
   __getRecords<T>() {
     return this.#records as T[];
+  }
+  __resetMocks() {
+    this.#records = [];
+    this.#matchers.clear();
   }
 }
 
 type DatabaseType = DbDatabaseType;
 export type DatabaseMockType = DatabaseType & { __queryBuilder: MockQueryBuilder };
-const mockDbFactory = (): DatabaseMockType => {
+const mockDbFactory = (): DatabaseMockType => {  
   const db = mockDeep<DatabaseType>() as unknown as DatabaseMockType;
-  // db.__queryBuilder = new MockQueryBuilder();
   const qb = db as unknown as IMockQueryBuilder;
   let theRows: unknown[] = [];
-  QueryBuilderMethodValues.forEach((key: keyof IMockQueryBuilder) => {
-    if (key === '__setRecords' || key === '__getRecords') { return; }
-    const current = qb[key];
-    if (!current) {
-      qb[key] = jest.fn();
+  const theMatchers: Map<MockDbQueryCallback,  MockDbQueryRecord> = new Map();
+  const qbMethodValues = [
+    'from',
+    'select',
+    'where',
+    'orderBy',
+    'limit',
+    'offset',
+    'execute',
+    'innerJoin',
+    'fullJoin',
+    'groupBy',
+    'as',
+    'leftJoin',
+  ] as const;
+  const initMocks = () => {
+    qbMethodValues.forEach((key: keyof IMockQueryBuilder) => {
+      if (key === '__setRecords' || key === '__getRecords' || key === '__resetMocks') { return; }
+      const current = qb[key];
+      if (!current) {
+        qb[key] = jest.fn();
+      }
+      if (key === 'execute'){
+        qb[key].mockImplementation((async () =>{
+          const executeMock = qb[key].mock;
+          const count = executeMock.calls.length;
+          const thisIndex = count - 1;
+          const from = qb['from']?.mock.lastCall?.[0];
+          const isFrom = (table: unknown) => {
+            if (typeof table === 'string'){
+              const tables = from.getSQL().usedTables ?? [];
+              if (tables.includes(table)) {
+                return true;
+              }
+            } 
+            return Object.is(from, table);
+          };
+          const baseContext = {
+            db: qb,
+            context: {
+              current: executeMock.contexts[thisIndex],
+              last: thisIndex > 0 ? executeMock.contexts[thisIndex - 1] : undefined,
+            },
+            call: {
+              current: executeMock.calls[thisIndex],
+              last: executeMock.lastCall
+            },
+            count,
+            from,
+            isFrom: isFrom,
+            result: [],
+            returned: {
+              last: executeMock.results[thisIndex]
+            },
+            state: undefined,
+            query: qb['select']?.mock.lastCall?.[0]
+          };
+          const entries = await (Promise.all(Array.from(theMatchers.entries())
+          .map(([cb, record]) => new Promise<{ hit: MockDbQueryCallback; result: MockDbQueryCallbackResult; record?: MockDbQueryRecord; }>(async (resolve) => {
+              try{
+                const thisContext = {
+                  ...baseContext,
+                  state: record.state,
+                  result: record.rows,
+                };
+                const check = await cb(thisContext);
+                resolve({ hit: cb, result: check, record });
+              }catch{
+                resolve({hit: cb, result: undefined });
+              }}))));
+          const match = entries.find((check) => !!check.result);
+          if (match) {          
+            if (!match.record) {
+              throw new Error(
+                'Matcher hit but no record found - something is fishy with our fancy db mock',
+              );
+            }
+            // Can be either a boolean, a rowset, or a queryresult object
+            if (typeof match.result === 'boolean') {
+              if (!match.result) {
+                throw new Error('Matcher hit but result is not true - something is fishy with our fancy db mock');
+              }
+              // Boolean means we return the value provided when the record was set
+              return match.record.rows;
+            }
+            if (typeof match.result === 'object') {
+              // Array means we return the rows the callback gave back
+              if (Array.isArray(match.result)) {
+                return match.result;
+              }
+              // QueryResult object can do a few different things...
+              if (match.result?.state !== undefined) {
+                // For example, it can update model state...
+                match.record.state = match.result.state;
+              }
+              // Override the result, or return the original rows.
+              return match.result?.rows ?? match.record.rows;
+            }
+            throw new Error('Matcher hit but result is not a boolean or an object - investigate fancy db mock.');
+          }
+          // If we made it this far then we use the default result
+          return theRows;
+        }));
+      } else {
+        qb[key].mockImplementation((() => db));
+      }    
+    });
+  };
+  initMocks();
+  qb.__setRecords = (<T extends Record<string, unknown>>(v: T[] | MockDbQueryCallback, rows?: T[] | null, state?: unknown) => {
+    // If we are "not" or an array then we are updating the default return value
+    if (!v || Array.isArray(v)) {
+      theRows = v ?? [];
+      return;
     }
-    if (key === 'execute'){
-      qb[key].mockImplementation(() => Promise.resolve(theRows))
-    } else {       
-      qb[key].mockReturnThis();
-    }    
+    // Otherwise we have a callback
+    if (typeof v === 'function') {
+      // If rows is explicitly null then this is removing an existing callback
+      if (rows === null) {
+        theMatchers.delete(v);        
+        return;
+      }
+      // Otherwise we're adding a new one
+      theMatchers.set(v, { rows: rows ?? [], state });
+    }
   });
-  qb.__setRecords = <T>(v: T[]) => theRows = v ?? [];
-  qb.__getRecords = <T>() => theRows as T[];
-
+  qb.__getRecords = (<T>() => theRows as T[]);
+  qb.__resetMocks = () => {
+    theRows = [];
+    theMatchers.clear();
+    qbMethodValues.forEach((key: keyof IMockQueryBuilder) => {
+      if (key === '__setRecords' || key === '__getRecords' || key === '__resetMocks') { return; }
+      const current = qb[key];
+      if (current && current.mock) {
+        current.mockReset();
+      }
+      initMocks();
+    });
+  };
   return db;
 };
 
@@ -253,11 +320,11 @@ jest.mock('@/lib/drizzle-db/connection', () => {
       }
       return mockDbInstance;
     }),
-    drizDbWithInit: (cb?: (db: unknown) => unknown): Promise<unknown> => {      
+    drizDbWithInit: jest.fn((cb?: (db: unknown) => unknown): Promise<unknown> => {      
       const db = makeMockDb();
       const normalCallback = cb ?? ((x) => x);
       return Promise.resolve(normalCallback(db));
-    },     
+    }),
     schema: actualSchema,
   };
 });
@@ -271,11 +338,11 @@ jest.mock('@/lib/drizzle-db', () => {
       }
       return mockDbInstance;
     }),
-    drizDbWithInit: (cb?: (db: unknown) => unknown): Promise<unknown> => {
+    drizDbWithInit: jest.fn((cb?: (db: unknown) => unknown): Promise<unknown> => {
       const db = makeMockDb();
       const normalCallback = cb ?? ((x) => x);
       return Promise.resolve(normalCallback(db));
-    },
+    }),
     schema: actualSchema,
     sql: jest.fn(() => makeRecursiveMock()),
   };
@@ -386,11 +453,14 @@ import { TextEncoder, TextDecoder } from 'util';
 import { mock } from 'jest-mock-extended';
 import { sql } from 'drizzle-orm';
 import { FormatAlignCenterSharp } from '@mui/icons-material';
-import React, { Component } from 'react';
-import { TrackWithAppInsight } from '@/components/general/telemetry';
+import { createElement } from 'react';
+import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '@/instrument/browser';
 import { log } from '@/lib/logger';
 import { isKeyOf } from '@/lib/typescript';
+import { result } from 'lodash';
+import { IMockQueryBuilder, MockDbQueryCallback, MockDbQueryCallbackResult, MockDbQueryRecord, QueryBuilderMethodValues } from './jest.mock-drizzle';
+import { count } from 'console';
 globalThis.TextEncoder = TextEncoder as any;
 
 // Ensure WHATWG Response/Request/Headers exist in all environments (jsdom/node)
