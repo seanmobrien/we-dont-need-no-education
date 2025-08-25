@@ -3,6 +3,7 @@ import type {
   LanguageModelV1Middleware,
   LanguageModelV1StreamPart,
 } from 'ai';
+import { createSimpleStatefulMiddleware } from './state-management';
 
 /**
  * Default telemetry configuration for normalized chat requests
@@ -90,13 +91,13 @@ function safeJsonParse(jsonString: string): unknown {
 }
 
 /**
- * Set Normalized Defaults Middleware
+ * Set Normalized Defaults Middleware (Original Implementation)
  *
  * This middleware:
  * 1. On request: Sets default experimental_telemetry if not present
  * 2. On response: Detects JSON code blocks and valid JSON objects, converts to structured output if structured output is empty
  */
-export const setNormalizedDefaultsMiddleware: LanguageModelV1Middleware = {
+const originalSetNormalizedDefaultsMiddleware: LanguageModelV1Middleware = {
   /**
    * Transform parameters to add default telemetry if missing
    */
@@ -223,5 +224,16 @@ export const setNormalizedDefaultsMiddleware: LanguageModelV1Middleware = {
     };
   },
 };
+
+/**
+ * Set Normalized Defaults Middleware with State Management Support
+ *
+ * This middleware supports the state management protocol and can participate
+ * in state collection and restoration operations.
+ */
+export const setNormalizedDefaultsMiddleware = createSimpleStatefulMiddleware(
+  'set-normalized-defaults',
+  originalSetNormalizedDefaultsMiddleware
+);
 
 export default setNormalizedDefaultsMiddleware;
