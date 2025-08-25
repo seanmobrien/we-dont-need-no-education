@@ -10,7 +10,7 @@
  * For usage examples, see the README:
  * - ./docs/lib/nextjs-util/error-response.md
  */
-import { isError } from "@/lib/react-util/_utility-methods";
+import { isError } from '@/lib/react-util/utility-methods';
 /*
 
 // Local minimal fallbacks to allow evaluation in non-fetch environments (e.g., some Jest setups)
@@ -110,7 +110,9 @@ const normalizeArg = (arg: unknown): Partial<ErrorResponseOptions> => {
   if (typeof arg === 'object') {
     // Treat plain option objects as-is; do NOT auto-derive message from cause here.
     // Message derivation from Error should only occur when the arg itself is an Error.
-    const obj = { ...(arg as Record<string, unknown>) } as Partial<ErrorResponseOptions>;
+    const obj = {
+      ...(arg as Record<string, unknown>),
+    } as Partial<ErrorResponseOptions>;
     return obj;
   }
   return {};
@@ -142,20 +144,31 @@ const normalizeArg = (arg: unknown): Partial<ErrorResponseOptions> => {
  */
 export const parseResponseOptions = (
   first?: unknown,
-  second?: unknown
+  second?: unknown,
 ): { status: number; message: string; cause?: string; source?: string } => {
   const a = normalizeArg(first);
   const b = normalizeArg(second);
   const merged: ErrorResponseOptions = { ...a, ...b } as ErrorResponseOptions;
 
   const status = typeof merged.status === 'number' ? merged.status : 500;
-  const aMsg = typeof a.message === 'string' && a.message.length > 0 ? a.message : undefined;
-  const bMsg = typeof b.message === 'string' && b.message.length > 0 ? b.message : undefined;
+  const aMsg =
+    typeof a.message === 'string' && a.message.length > 0
+      ? a.message
+      : undefined;
+  const bMsg =
+    typeof b.message === 'string' && b.message.length > 0
+      ? b.message
+      : undefined;
   const combined = aMsg && bMsg ? `${aMsg} - ${bMsg}` : (bMsg ?? aMsg);
-  const message = combined && combined.length > 0 ? combined : 'An error occurred';
+  const message =
+    combined && combined.length > 0 ? combined : 'An error occurred';
 
   const hasSource = (val: unknown): val is { source: unknown } => {
-    return typeof val === 'object' && val !== null && 'source' in (val as Record<string, unknown>);
+    return (
+      typeof val === 'object' &&
+      val !== null &&
+      'source' in (val as Record<string, unknown>)
+    );
   };
 
   let source: string | undefined;
@@ -167,10 +180,17 @@ export const parseResponseOptions = (
 
   let cause: string | undefined;
   if (merged.cause !== undefined) {
-    cause = isError(merged.cause) ? (merged.cause as Error).name : String(merged.cause);
+    cause = isError(merged.cause)
+      ? (merged.cause as Error).name
+      : String(merged.cause);
   }
 
-  return { status, message, ...(source ? { source } : {}), ...(cause ? { cause } : {}) };
+  return {
+    status,
+    message,
+    ...(source ? { source } : {}),
+    ...(cause ? { cause } : {}),
+  };
 };
 
 /**
@@ -199,9 +219,16 @@ export class ErrorResponse extends Response {
    */
   constructor(statusOrError?: unknown, messageOrOptions?: unknown) {
     const opts = parseResponseOptions(statusOrError, messageOrOptions);
-    super(JSON.stringify({ error: opts.message, status: opts.status, cause: opts.cause }), {
-      status: opts.status,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    super(
+      JSON.stringify({
+        error: opts.message,
+        status: opts.status,
+        cause: opts.cause,
+      }),
+      {
+        status: opts.status,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
   }
 }

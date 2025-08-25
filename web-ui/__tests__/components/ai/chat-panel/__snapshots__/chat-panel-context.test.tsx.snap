@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`ChatPanelContext renders with default state snapshot 1`] = `
+<div>
+  <div
+    data-testid="test-component"
+  >
+    <span
+      data-testid="is-docked"
+    >
+      false
+    </span>
+    <span
+      data-testid="is-floating"
+    >
+      false
+    </span>
+    <span
+      data-testid="is-inline"
+    >
+      true
+    </span>
+    <span
+      data-testid="position"
+    >
+      inline
+    </span>
+  </div>
+</div>
+`;

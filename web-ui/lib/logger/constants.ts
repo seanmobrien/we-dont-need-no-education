@@ -48,3 +48,50 @@ export enum KnownSeverityLevel {
   /** Critical */
   Critical = 'Critical',
 }
+export const asKnownSeverityLevel = (input: unknown): KnownSeverityLevel => {
+  if (typeof input === 'number') {
+    if (input < 5){
+      switch(input) {
+        case 0:
+          return KnownSeverityLevel.Verbose;
+        case 1:
+          return KnownSeverityLevel.Information;
+        case 2:
+          return KnownSeverityLevel.Warning;
+        case 3:
+          return KnownSeverityLevel.Error;
+        case 4:
+          return KnownSeverityLevel.Critical;
+      }
+    }
+    if (input === 0) {
+      return KnownSeverityLevel.Verbose;
+    }
+    if (input < 10) {
+      return KnownSeverityLevel.Information;
+    }
+    if (input < 20) {
+      return KnownSeverityLevel.Warning;
+    }
+    if (input < 30) {
+      return KnownSeverityLevel.Error;
+    }
+    if (input < 40) {
+      return KnownSeverityLevel.Critical;
+    }      
+    return KnownSeverityLevel.Error;
+  }
+  switch (String(input ?? '').toLocaleLowerCase()) {
+    case 'verbose':
+      return KnownSeverityLevel.Verbose;
+    case 'information':
+      return KnownSeverityLevel.Information;
+    case 'warning':
+      return KnownSeverityLevel.Warning;
+    case 'error':
+      return KnownSeverityLevel.Error;
+    case 'critical':
+      return KnownSeverityLevel.Critical;
+  }
+  return KnownSeverityLevel.Error;
+}

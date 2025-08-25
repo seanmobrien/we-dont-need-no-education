@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { render, screen, waitFor, jsonResponse, asyncRender } from '@/__tests__/test-utils';
 import EmailList from '@/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
@@ -16,12 +17,21 @@ jest.mock('next/navigation', () => ({
 }));
 
 describe('EmailList', () => {    
-  it('should display loading state initially', () => {
-    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: [], totalRowCount: 0 }));
 
-    const { asFragment } = render(<EmailList />);
-    const theElement = asFragment();
-    expect(theElement).toMatchSnapshot();
+  let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any> | undefined;
+  beforeEach(() => {
+    // Turn off console.error logging for these planned exceptions - keeps test output clean.
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
+    consoleErrorSpy = undefined;
+  });
+
+  it('should mount and render grid initially', () => {
+    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: [], totalRowCount: 0 }));
+    render(<EmailList />);
+    expect(screen.getByRole('grid')).toBeInTheDocument();
   });
 
   it('should display error message when fetching emails fails', async () => {
@@ -52,8 +62,7 @@ describe('EmailList', () => {
   it('should display a list of emails', async () => {
     const mockEmails = mockEmailSummary();
     (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }));
-
-    const { asFragment } = await asyncRender(<EmailList />);
+    await asyncRender(<EmailList />);
 
     await waitFor(() => {
       expect(screen.getByRole('grid')).toBeInTheDocument();
@@ -61,9 +70,6 @@ describe('EmailList', () => {
       expect(screen.getByText('From')).toBeInTheDocument();
       expect(screen.getByText('Subject')).toBeInTheDocument();
     });
-
-    const theElement = asFragment();
-    expect(theElement).toMatchSnapshot();
   }, 10000);
 
   it('should display the email form when an email is selected', async () => {

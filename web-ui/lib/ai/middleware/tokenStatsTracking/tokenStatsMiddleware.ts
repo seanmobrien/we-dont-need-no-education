@@ -1,5 +1,5 @@
 import type { LanguageModelV1, LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
-import { getInstance } from './token-stats-service';
+import { getInstance } from '../../services/model-stats/token-stats-service';
 import { log } from '@/lib/logger';
 import { QuotaCheckResult, QuotaEnforcementError, TokenStatsMiddlewareConfig, TokenUsageData } from './types';
 import { countTokens } from '../../core/count-tokens';

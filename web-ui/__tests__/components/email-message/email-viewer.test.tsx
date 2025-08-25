@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, asyncRender, screen, waitFor, act } from '@/__tests__/test-utils';
+import { render, screen, waitFor, act } from '@/__tests__/test-utils';
 import EmailViewer from '@/components/email-message/email-viewer';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
@@ -17,9 +17,14 @@ if (!Promise.withResolvers) {
 }
 
 describe('EmailViewer', () => {
+  let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any> | undefined;
   beforeEach(() => {
     // Clear fetch mock - it's already mocked globally in jest.setup.ts
     (fetch as jest.Mock).mockClear();
+  });
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
+    consoleErrorSpy = undefined;
   });
 
   it('renders loading state initially', async () => {
@@ -141,6 +146,8 @@ describe('EmailViewer', () => {
   });
 
   it('handles error state gracefully', async () => {
+    // Turn off console.error logging for this planned exception - keeps test output clean.
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     // Mock fetch to throw an error
     (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
@@ -168,6 +175,8 @@ describe('EmailViewer', () => {
   }, 10000);
 
   it('handles empty email state', async () => {
+    // Turn off console.error logging for this planned exception - keeps test output clean.
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     // Mock fetch to return 404 for email
     (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {

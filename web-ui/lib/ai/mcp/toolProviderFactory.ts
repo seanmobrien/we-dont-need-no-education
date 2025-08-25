@@ -16,7 +16,7 @@ import type {
 } from './types';
 import { experimental_createMCPClient as createMCPClient } from 'ai';
 import { ToolSet } from 'ai';
-import { getResolvedPromises, isError } from '@/lib/react-util/_utility-methods';
+import { getResolvedPromises, isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { InstrumentedSseTransport } from './instrumented-sse-transport';
 import { FirstParameter } from '@/lib/typescript';
@@ -75,15 +75,14 @@ export const toolProviderFactory = async ({
   traceable = true,
   ...options
 }: ToolProviderFactoryOptions): Promise<ConnectableToolProvider> => {
-
   const onerror = ((error: unknown) => {
     log((l) => l.error('MCP Client SSE Error:', error));
 
     return {
       role: 'assistant',
       content: `An error occurred while connecting to the MCP server: ${isError(error) ? error.message : String(error)}. Please try again later.`,
-    }
-  }) as unknown as ((error:unknown) => void);
+    };
+  }) as unknown as (error: unknown) => void;
 
   try {
     type MCPClientConfig = FirstParameter<typeof createMCPClient>;
@@ -110,13 +109,13 @@ export const toolProviderFactory = async ({
       onclose: () => {
         try {
           log((l) => l.warn('MCP Client SSE Connection Closed'));
-        } catch (e) {          
+        } catch (e) {
           LoggedError.isTurtlesAllTheWayDownBaby(e, {
-             log: true,
-             source: 'MCPClientMessageHandler',
-             message: 'MCP Client SSE Close Error',
+            log: true,
+            source: 'MCPClientMessageHandler',
+            message: 'MCP Client SSE Close Error',
             critical: true,
-           });
+          });
         }
       },
       /**
@@ -129,14 +128,14 @@ export const toolProviderFactory = async ({
           log((l) => l.info('MCP Client SSE Message:', message));
         } catch (e) {
           LoggedError.isTurtlesAllTheWayDownBaby(e, {
-             log: true,
-             source: 'MCPClientMessageHandler',
-             message: 'MCP Client SSE Message Error',
-             critical: true,
-             data: {
-               message
-             },
-           });          
+            log: true,
+            source: 'MCPClientMessageHandler',
+            message: 'MCP Client SSE Message Error',
+            critical: true,
+            data: {
+              message,
+            },
+          });
         }
       },
     };
@@ -160,12 +159,12 @@ export const toolProviderFactory = async ({
        */
       onUncaughtError: (error) => {
         try {
-           LoggedError.isTurtlesAllTheWayDownBaby(error, {
-             log: true,
-             source: 'MCPClientMessageHandler',
-             message: 'MCP Client SSE Uncaught Error',
-             critical: true,             
-           });          
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'MCPClientMessageHandler',
+            message: 'MCP Client SSE Uncaught Error',
+            critical: true,
+          });
           return {
             role: 'assistant',
             content: [
@@ -292,7 +291,7 @@ export const toolProviderFactory = async ({
        * Stub implementation - returns empty tool set for failed connections.
        * @returns {ToolSet} Empty tool set
        */
-      get_tools: () => (({}) as ToolSet),
+      get_tools: () => ({}) as ToolSet,
 
       /**
        * Stub implementation - no-op disposal for failed connections.

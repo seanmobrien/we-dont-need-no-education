@@ -1,8 +1,8 @@
 import React from 'react';
-import { act, asyncRender, render, screen, waitFor } from '@/__tests__/test-utils';
+import { asyncRender, screen, waitFor } from '@/__tests__/test-utils';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-import Loading from '@/components/general/loading';
+import { Loading } from '@/components/general/loading';
 
 const theme = createTheme();
 

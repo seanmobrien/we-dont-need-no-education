@@ -1,13 +1,13 @@
 /**
  * @fileoverview Safety Utilities for MCP Transport
- * 
+ *
  * This module provides error handling wrappers, timeout utilities, and
  * safe operation patterns.
  */
 
 import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { tracer, MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 
@@ -35,7 +35,9 @@ export class SafetyUtils {
   /**
    * Creates a safe wrapper for error handlers that never throws
    */
-  createSafeErrorHandler(handler: (error: unknown) => void): (error: unknown) => void {
+  createSafeErrorHandler(
+    handler: (error: unknown) => void,
+  ): (error: unknown) => void {
     return (error: unknown) => {
       try {
         handler(error);
@@ -82,7 +84,11 @@ export class SafetyUtils {
 
         if (DEBUG_MODE) {
           const duration = Date.now() - startTime;
-          MetricsRecorder.recordOperationDuration(duration, operationName, 'success');
+          MetricsRecorder.recordOperationDuration(
+            duration,
+            operationName,
+            'success',
+          );
 
           span?.addEvent(`${operationName}.completed`, {
             'mcp.transport.duration_ms': duration,
@@ -95,8 +101,15 @@ export class SafetyUtils {
         const duration = Date.now() - startTime;
 
         // Record error metrics
-        MetricsRecorder.recordError(operationName, isError(error) ? error.name : 'unknown');
-        MetricsRecorder.recordOperationDuration(duration, operationName, 'error');
+        MetricsRecorder.recordError(
+          operationName,
+          isError(error) ? error.name : 'unknown',
+        );
+        MetricsRecorder.recordOperationDuration(
+          duration,
+          operationName,
+          'error',
+        );
 
         span?.recordException(error as Error);
         span?.setStatus({
@@ -144,11 +157,18 @@ export class SafetyUtils {
   /**
    * Completes operation metrics tracking
    */
-  completeOperation(operationId: string, status: 'success' | 'error' = 'success') {
+  completeOperation(
+    operationId: string,
+    status: 'success' | 'error' = 'success',
+  ) {
     const metrics = this.#operationMetrics.get(operationId);
     if (metrics) {
       const duration = Date.now() - metrics.startTime;
-      MetricsRecorder.recordOperationDuration(duration, metrics.operation, status);
+      MetricsRecorder.recordOperationDuration(
+        duration,
+        metrics.operation,
+        status,
+      );
       this.#operationMetrics.delete(operationId);
 
       if (DEBUG_MODE) {

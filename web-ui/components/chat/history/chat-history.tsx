@@ -24,7 +24,7 @@ import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSum
 import { ExpandMore } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
 import { useChatHistory } from './useChatHistory';
-import Loading from '@/components/general/loading';
+import { Loading } from '@/components/general/loading';
 import type { ChatDetails } from '@/lib/ai/chat/types';
 
 

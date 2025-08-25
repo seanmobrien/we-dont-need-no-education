@@ -3,7 +3,9 @@
  */
 
 import { LanguageModelV1 } from '@ai-sdk/provider';
-import { LanguageModelQueue, MessageTooLargeForQueueError, AbortChatMessageRequestError } from '@/lib/ai/services/chat';
+import { LanguageModelQueue } from '@/lib/ai/services/chat';
+import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
+import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');

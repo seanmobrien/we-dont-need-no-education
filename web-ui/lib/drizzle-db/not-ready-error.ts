@@ -1,9 +1,8 @@
-import { isError } from "../react-util/_utility-methods";
-import { drizDbWithInit } from "./connection";
-import { DbDatabaseType } from "./schema"; 
+import { isError } from '../react-util/utility-methods';
+import { drizDbWithInit } from './connection';
+import { DbDatabaseType } from './schema';
 
 export class NotReadyError extends Error {
-  
   constructor(message?: string) {
     super(
       message ??
@@ -26,6 +25,7 @@ export class NotReadyError extends Error {
 export const isNotReadyError = (error: unknown): error is NotReadyError => {
   return (
     error instanceof NotReadyError ||
-    (isError(error) && (error.cause as { code: string; })?.code === 'DB_INITIALIZING')
+    (isError(error) &&
+      (error.cause as { code: string })?.code === 'DB_INITIALIZING')
   );
 };

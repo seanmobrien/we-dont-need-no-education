@@ -10,7 +10,7 @@ import React, {
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import type { ThemeType, ThemeContextType } from './types';
 import { themes } from './definitions';
-import Loading from '@/components/general/loading';
+import { Loading } from '@/components/general/loading';
 import { log } from '@/lib/logger';
 
 

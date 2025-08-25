@@ -1,5 +1,6 @@
 import { drizDbWithInit, type ProvidersType, type DbDatabaseType, schema } from "@/lib/drizzle-db";
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { ModelResourceNotFoundError } from '@/lib/ai/services/chat/errors/model-resource-not-found-error';
 
 
 type ProviderMapEntry = Omit<ProvidersType, 'id' | 'createdAt' | 'updatedAt'>;
@@ -11,7 +12,6 @@ type ProviderNameOrIdType = ProviderIdType | ProviderNameType;
 
 export class ProviderMap {
   static #instance: ProviderMap | undefined;
-  static readonly #ProviderIdKey: ProviderMapEntryIdKey = 'id' as const;
   static readonly #ProviderNameKey: ProviderMapEntryNameKey = 'name' as const;
 
   static get Instance(): ProviderMap {
@@ -74,13 +74,46 @@ export class ProviderMap {
     }
     return ret;
   }
+  /** Throws if not found */
+  recordOrThrow(idOrName: ProviderNameOrIdType): ProviderMapEntry {
+    const rec = this.record(idOrName);
+    if (rec) return rec;
+    throw new ModelResourceNotFoundError({
+      resourceType: 'provider',
+      normalized: idOrName,
+      inputRaw: idOrName,
+      message: `Provider not found: ${String(idOrName)}`,
+    });
+  }
   name(id: ProviderNameOrIdType): ProviderNameType | undefined {
     const record = this.record(id);
     return record?.[ProviderMap.#ProviderNameKey];
   }
+  /** Throws if not found */
+  nameOrThrow(id: ProviderNameOrIdType): ProviderNameType {
+    const name = this.name(id);
+    if (name) return name;
+    throw new ModelResourceNotFoundError({
+      resourceType: 'provider',
+      normalized: id,
+      inputRaw: id,
+      message: `Provider name not found for: ${String(id)}`,
+    });
+  }
   id(idOrName: ProviderNameOrIdType): ProviderIdType | undefined {
     const name = this.name(idOrName);
     return name ? this.#nameToId.get(name) : undefined;
+  }
+  /** Throws if not found */
+  idOrThrow(idOrName: ProviderNameOrIdType): ProviderIdType {
+    const val = this.id(idOrName);
+    if (val) return val;
+    throw new ModelResourceNotFoundError({
+      resourceType: 'provider',
+      normalized: idOrName,
+      inputRaw: idOrName,
+      message: `Provider id not found: ${String(idOrName)}`,
+    });
   }
   contains(idOrName: ProviderNameOrIdType): boolean {
     return !!this.record(idOrName);

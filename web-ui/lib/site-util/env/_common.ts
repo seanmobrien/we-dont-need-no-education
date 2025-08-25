@@ -1,4 +1,4 @@
-import { isTruthy } from '@/lib/react-util/_utility-methods';
+import { isTruthy } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import z from 'zod';
 
@@ -161,13 +161,17 @@ export const ZodProcessors = {
   truthy: (
     defaultValue = false,
   ): z.ZodType<boolean, z.ZodEffectsDef<z.ZodBoolean>, unknown> =>
-    z.preprocess((val: unknown) => {
-      return typeof val === undefined ||
-        val === null ||
-        (typeof val === 'string' && val.trim() === '')
-        ? !!defaultValue
-        : isTruthy(val);
-    }, z.boolean(), z.boolean()),
+    z.preprocess(
+      (val: unknown) => {
+        return typeof val === undefined ||
+          val === null ||
+          (typeof val === 'string' && val.trim() === '')
+          ? !!defaultValue
+          : isTruthy(val);
+      },
+      z.boolean(),
+      z.boolean(),
+    ),
 
   /**
    * Processor for array values.

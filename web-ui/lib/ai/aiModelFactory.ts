@@ -11,7 +11,7 @@ import {
 import { log } from '@/lib/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
-import { cacheWithRedis, retryRateLimitMiddlewareFactory, setNormalizedDefaultsMiddleware, tokenStatsLoggingOnlyMiddleware } from './middleware';
+import { cacheWithRedis, setNormalizedDefaultsMiddleware, tokenStatsLoggingOnlyMiddleware } from './middleware';
 
 /**
  * Model availability manager for programmatic control of model enabling/disabling
@@ -152,9 +152,11 @@ const setupMiddleware = (provider: string,model: LanguageModelV1): LanguageModel
     }),
     middleware: [
       tokenStatsLoggingOnlyMiddleware({ provider }),
+      /*
       retryRateLimitMiddlewareFactory({
         model,
-      }),      
+      }),
+      */      
     ],
   });
   

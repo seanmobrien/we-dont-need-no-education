@@ -20,6 +20,24 @@ jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
   };
 });
 
+jest.mock('@/lib/nextjs-util/utils', () => {
+  const nextJsUtils = jest.requireActual('@/lib/nextjs-util/utils');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const deprecate = <T extends (...args: any[]) => any>(fn: T) => {
+    const deprecatedFn = function (
+      this: ThisParameterType<T>,
+      ...args: Parameters<T>
+    ): ReturnType<T> {
+      return fn.apply(this, args);
+    } as T;
+    return deprecatedFn;
+  };
+  return {
+    ...nextJsUtils,
+    deprecate,
+  };
+});
+
 import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 const mockParsePaginationStats = parsePaginationStats as jest.MockedFunction<typeof parsePaginationStats>;

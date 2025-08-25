@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @jest-environment jsdom
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 
@@ -14,10 +14,15 @@ const mockLoggedError = {
 const mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
 const mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
 
-jest.mock('@/lib/react-util/_utility-methods', () => ({
-  getResolvedPromises: mockGetResolvedPromises,
-  isError: mockIsError,
-}));
+jest.mock('@/lib/react-util/utility-methods', () => {
+  const original: typeof import('@/lib/react-util/utility-methods') =
+    jest.requireActual('@/lib/react-util/utility-methods');
+  return {
+    ...original,
+    getResolvedPromises: mockGetResolvedPromises,
+    isError: mockIsError,
+  };
+});
 
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: mockLoggedError,
@@ -145,7 +150,6 @@ describe('toolProviderFactory', () => {
       });
     });
 
-   
     it('should handle MCP client uncaught errors', async () => {
       let uncaughtErrorHandler: (error: unknown) => {
         role: string;

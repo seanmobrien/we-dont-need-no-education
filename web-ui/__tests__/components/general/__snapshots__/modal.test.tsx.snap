@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`Modal renders closed modal snapshot 1`] = `<div />`;
+
+exports[`Modal renders modal with actions snapshot 1`] = `<div />`;
+
+exports[`Modal renders modal with title snapshot 1`] = `<div />`;
+
+exports[`Modal renders open modal snapshot 1`] = `<div />`;

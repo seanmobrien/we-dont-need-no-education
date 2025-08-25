@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { LoggedError } from '../errors';
-import { isError } from '../_utility-methods';
+import { isError } from '../utility-methods';
 import { log } from '@/lib/logger';
 
 type UseInEffectRecordResolver = {

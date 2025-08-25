@@ -1,8 +1,7 @@
 /** @jsxImportSource @emotion/react */
-import React from 'react';
+//import React from 'react';
+import { FC, ReactNode } from 'react';
 import { css } from '@emotion/react';
-import type { SaveModalEventArgs, ModalProps } from './_types';
-export type { SaveModalEventArgs, ModalProps };
 
 const modalStyles = {
   overlay: css`
@@ -82,7 +81,16 @@ const modalStyles = {
   `,
 };
 
-const Modal: React.FC<ModalProps> = ({
+export interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave?: (args: unknown) => unknown;
+  title: string;
+  closeButtonText?: string;
+  children: ReactNode;
+}
+
+const Modal: FC<ModalProps> = ({
   isOpen,
   onClose,
   onSave,

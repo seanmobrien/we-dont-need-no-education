@@ -6,7 +6,7 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider } from '@/lib/themes/provider';
 import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
-import { TrackWithAppInsight } from '@/components/general/telemetry';
+import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@/components/auth/session-provider';
 import { KeyRefreshNotify } from '@/components/auth/key-refresh-notify';

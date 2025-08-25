@@ -1,5 +1,5 @@
 'use client';
-import { JSX, useMemo, useCallback } from 'react';
+import { JSX, useMemo, useCallback, MouseEvent as ReactMouseEvent } from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
 import { Box } from '@mui/material';
@@ -18,8 +18,28 @@ import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import NextLink from 'next/link';
+import Link from '@mui/material/Link';
+import type { SxProps, Theme } from '@mui/material/styles';
 import EmailDetailPanel from './email-detail-panel';
+
+const stableSx = {
+  containerBase: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: 1,
+  } satisfies SxProps<Theme>,
+  subjectLink: {
+    color: 'primary.main',
+    textDecoration: 'none',
+    '&:hover': { textDecoration: 'underline' },
+    '&:focusVisible': {
+      outline: '2px solid',
+      outlineColor: 'primary.main',
+      outlineOffset: 2,
+    },
+  } satisfies SxProps<Theme>,
+} as const;
 
 /**
  * Defines the column configuration for the email message list grid.
@@ -41,14 +61,20 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     description: '# attachments',
     renderHeader: () => <AttachEmailIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : ''),
-    width: 30,
+  width: 30,
+  minWidth: 48,
+  headerAlign: 'center',
+  align: 'center',
     type: 'number',
   },
   {
     field: 'threadId',
     headerName: 'Thread',
     editable: false,
-    width: 20,
+  width: 20,
+  minWidth: 56,
+  headerAlign: 'center',
+  align: 'center',
   },
   {
     field: 'sender',
@@ -67,14 +93,11 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     renderCell: (params) => {
       return params.value ? (
         <Link
+          component={NextLink}
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
-          style={{
-            color: '#2563eb',
-            textDecoration: 'none',
-          }}
-          onMouseEnter={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
-          onMouseLeave={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
+          aria-label={params.value ? `Open email: ${params.value}` : 'Open email'}
+          sx={stableSx.subjectLink}
         >
           {params.value}
         </Link>
@@ -88,7 +111,10 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     description: '# KPI',
     renderHeader: () => <KeyIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : '-'),
-    width: 10,
+  width: 10,
+  minWidth: 56,
+  headerAlign: 'center',
+  align: 'center',
     type: 'number',
   },
   {
@@ -96,7 +122,10 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     description: '# Notes',
     renderHeader: () => <TextSnippetIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : '-'),
-    width: 10,
+  width: 10,
+  minWidth: 56,
+  headerAlign: 'center',
+  align: 'center',
     type: 'number',
   },
   {
@@ -107,7 +136,10 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
       return (v ?? 0) + (row.count_responsive_actions ?? 0);
     },
     valueFormatter: (v: number) => (v ? v : '-'),
-    width: 10,
+  width: 10,
+  minWidth: 56,
+  headerAlign: 'center',
+  align: 'center',
     type: 'number',
   },
   {
@@ -157,7 +189,7 @@ export const EmailList = ({
   const onRowDoubleClick = useCallback(
     (
       params: GridRowParams<EmailMessageSummary>,
-      event: MuiEvent<React.MouseEvent<HTMLElement, MouseEvent>>,
+      event: MuiEvent<ReactMouseEvent<HTMLElement, MouseEvent>>,
       details: GridCallbackDetails,
     ) => {
       if (onRowDoubleClickProps) {
@@ -182,14 +214,7 @@ export const EmailList = ({
 
   return (
     <>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          ...containerSx,
-        }}
-      >
+  <Box sx={[stableSx.containerBase, containerSx]}>
         <ServerBoundDataGrid<EmailMessageSummary>
           {...props}
           columns={stableColumns}
