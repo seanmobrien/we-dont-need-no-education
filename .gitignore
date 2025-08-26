@@ -53,3 +53,6 @@ next-env.d.ts
 *.lilith
 logs
 attachments
+web-ui/Dockerfile
+db/backups/prod_current_nodropdb.sql
+db/backups/prod_current.sql
