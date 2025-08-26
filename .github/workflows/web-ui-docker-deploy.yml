@@ -95,6 +95,7 @@ jobs:
             AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
             AUTH_GOOGLE_APIKEY=${{ secrets.AUTH_GOOGLE_APIKEY }}
             AZURE_STORAGE_ACCOUNT_KEY=${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+            OPENAI_KEY_TEXT=${{ secrets.OPENAI_KEY_TEXT }}
       
       - name: Deploy to container
         uses: azure/container-apps-deploy-action@v1
