@@ -2,8 +2,15 @@ import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { memoryClientFactory } from '../mem0';
 import { log } from '@/lib/logger';
+import { createSimpleStatefulMiddleware } from './state-management';
 
-export const memoryMiddleware: LanguageModelV1Middleware = {
+/**
+ * Memory Middleware (Original Implementation)
+ *
+ * This middleware adds memory-related system prompts to enhance AI responses
+ * with context from previous interactions.
+ */
+const originalMemoryMiddleware: LanguageModelV1Middleware = {
   wrapStream: async ({ doStream }) => {
     const { stream, ...rest } = await doStream();
     const transformStream = new TransformStream<
@@ -52,3 +59,16 @@ export const memoryMiddleware: LanguageModelV1Middleware = {
     return params;
   },
 };
+
+/**
+ * Memory Middleware with State Management Support
+ *
+ * This middleware supports the state management protocol and can participate
+ * in state collection and restoration operations.
+ */
+export const memoryMiddleware = createSimpleStatefulMiddleware(
+  'memory-middleware',
+  originalMemoryMiddleware
+);
+
+export default memoryMiddleware;

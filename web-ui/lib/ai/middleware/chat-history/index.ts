@@ -9,6 +9,7 @@ import {
   safeCompleteMessagePersistence 
 } from './message-persistence';
 import { ChatMessagesType } from '@/lib/drizzle-db';
+import { createStatefulMiddleware } from '../state-management';
 export type { ChatHistoryContext } from './types';
 export { 
   instrumentFlushOperation,
@@ -19,7 +20,7 @@ export {
 } from './instrumentation';
 
 /**
- * Creates a middleware for chat history management that wraps language model streaming and generation operations.
+ * Creates a middleware for chat history management that wraps language model streaming and generation operations (Original Implementation).
  * 
  * This middleware is responsible for:
  * - Initializing message persistence for each chat turn.
@@ -52,7 +53,7 @@ export {
  * 
  * ```
  */
-export const createChatHistoryMiddleware = (
+const createOriginalChatHistoryMiddleware = (
   context: ChatHistoryContext,
 ): LanguageModelV1Middleware => {
   let currentMessageOrder = 0;
@@ -232,4 +233,70 @@ export const createChatHistoryMiddleware = (
       return params;
     },
   };
+};
+
+/**
+ * Chat History Middleware State Interface
+ */
+interface ChatHistoryState {
+  currentMessageOrder: number;
+  generatedText: string;
+  startTime: number;
+  contextData: {
+    chatId?: string;
+    turnId?: string;
+    messageId?: string;
+  };
 }
+
+/**
+ * Creates a middleware for chat history management with State Management Support.
+ * 
+ * This middleware supports the state management protocol and can participate
+ * in state collection and restoration operations, preserving processing state
+ * across operations.
+ * 
+ * @param context - The chat history context containing persistence and logging utilities.
+ * @returns A stateful middleware object that supports state serialization.
+ */
+export const createChatHistoryMiddleware = (
+  context: ChatHistoryContext,
+): LanguageModelV1Middleware => {
+  // State that can be serialized/restored
+  let sharedState: ChatHistoryState = {
+    currentMessageOrder: 0,
+    generatedText: '',
+    startTime: Date.now(),
+    contextData: {}
+  };
+
+  const originalMiddleware = createOriginalChatHistoryMiddleware(context);
+
+  return createStatefulMiddleware({
+    middlewareId: 'chat-history',
+    originalMiddleware,
+    stateHandlers: {
+      serialize: (): ChatHistoryState => ({
+        ...sharedState,
+        // Update with current values before serializing
+        startTime: Date.now() - sharedState.startTime // Convert to elapsed time
+      }),
+      deserialize: (state: ChatHistoryState) => {
+        if (state) {
+          sharedState = {
+            ...state,
+            // Convert elapsed time back to absolute start time
+            startTime: Date.now() - (state.startTime || 0)
+          };
+          
+          log(l => l.debug('Chat history state restored', {
+            messageOrder: sharedState.currentMessageOrder,
+            textLength: sharedState.generatedText.length,
+            elapsedTime: Date.now() - sharedState.startTime,
+            contextData: sharedState.contextData
+          }));
+        }
+      }
+    }
+  });
+};

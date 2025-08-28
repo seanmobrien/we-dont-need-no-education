@@ -4,6 +4,7 @@ import { log } from '@/lib/logger';
 import { QuotaCheckResult, QuotaEnforcementError, TokenStatsMiddlewareConfig, TokenUsageData } from './types';
 import { countTokens } from '../../core/count-tokens';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { createSimpleStatefulMiddleware } from '../state-management';
 
 type DoGenerateReturnType = ReturnType<LanguageModelV1['doGenerate']>;
 type DoStreamReturnType = ReturnType<LanguageModelV1['doStream']>;
@@ -450,14 +451,14 @@ export const transformParams = async ({
 };
   
 /**
- * Create token statistics tracking middleware
+ * Create token statistics tracking middleware (Original Implementation)
  * 
  * This middleware:
  * 1. Checks quotas before making requests (if enforcement is enabled)
  * 2. Records actual token usage after successful requests
  * 3. Logs quota violations and usage statistics
  */
-export const tokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV1Middleware => {
+const createOriginalTokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV1Middleware => {
   return {
     wrapGenerate: async (props) => wrapGenerate({
       ...props,
@@ -472,6 +473,20 @@ export const tokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): L
       config,
     })
   };
+};
+
+/**
+ * Create token statistics tracking middleware with State Management Support
+ * 
+ * This middleware supports the state management protocol and can participate
+ * in state collection and restoration operations.
+ */
+export const tokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV1Middleware => {
+  const originalMiddleware = createOriginalTokenStatsMiddleware(config);
+  return createSimpleStatefulMiddleware(
+    'token-stats-tracking',
+    originalMiddleware
+  );
 };
 
 /**
