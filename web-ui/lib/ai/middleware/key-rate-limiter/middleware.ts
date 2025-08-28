@@ -7,6 +7,7 @@ import { log } from '@/lib/logger';
 import { checkModelAvailabilityAndFallback } from './model-availability';
 import { handleRateLimitError, disableModelFromRateLimit } from './rate-limit-handler';
 import { recordRequestMetrics, getCurrentProvider, constructModelKey } from './metrics-utils';
+import { createStatefulMiddleware } from '../state-management';
 
 // Model classification mapping - extract from model identifier
 function getModelClassification({ modelId = 'unknown' }: { modelId?: string;} = {}): ModelClassification {    
@@ -64,8 +65,10 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
     };
   })();
 
-
-  const retryRateLimitMiddleware: RetryRateLimitMiddlewareType = {
+  /**
+   * Original rate limit middleware implementation
+   */
+  const originalRetryRateLimitMiddleware: RetryRateLimitMiddlewareType = {
     
     rateLimitContext: () => ({ ...rateLimitContext }),
 
@@ -254,5 +257,32 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
     },
   };
 
-  return retryRateLimitMiddleware;
+  /**
+   * Stateful wrapper with rate limit context preservation
+   */
+  const statefulMiddleware = createStatefulMiddleware({
+    middlewareId: 'retry-rate-limiter',
+    originalMiddleware: originalRetryRateLimitMiddleware,
+    stateHandlers: {
+      serialize: () => ({
+        rateLimitContext: { ...rateLimitContext },
+        currentProvider: getCurrentProvider(),
+        timestamp: Date.now()
+      }),
+      deserialize: (state: { rateLimitContext?: RateLimitRetryContext; currentProvider?: string; timestamp?: number }) => {
+        if (state?.rateLimitContext) {
+          log(l => l.debug('Rate limiter state restored', { 
+            context: state.rateLimitContext,
+            provider: state.currentProvider,
+            age: Date.now() - (state.timestamp || 0)
+          }));
+        }
+      }
+    }
+  }) as RetryRateLimitMiddlewareType;
+
+  // Add the rateLimitContext method to the stateful middleware
+  statefulMiddleware.rateLimitContext = () => ({ ...rateLimitContext });
+
+  return statefulMiddleware;
 };

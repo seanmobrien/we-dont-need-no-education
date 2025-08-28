@@ -161,14 +161,16 @@ export const middlewareMetadata = pgTable(
 ### ✅ Integrated Middleware
 
 - **set-normalized-defaults**: Uses `createSimpleStatefulMiddleware` wrapper
+- **memory-middleware**: Uses `createSimpleStatefulMiddleware` wrapper
+- **cacheWithRedis**: Uses `createSimpleStatefulMiddleware` wrapper
+- **tokenStatsTracking**: Uses `createSimpleStatefulMiddleware` wrapper
+- **key-rate-limiter**: Uses `createStatefulMiddleware` with custom state handlers for rate limit context
+- **chat-history**: Uses `createStatefulMiddleware` with custom state handlers for processing queue state
 - **StateManagementMiddleware**: Core protocol implementation
 
 ### 🔄 Existing Middleware (Compatible but not yet wrapped)
 
-- **tokenStatsTracking**: Uses custom pattern, requires manual integration
-- **chat-history**: Large middleware, requires careful integration
-- **cacheWithRedis**: Caching middleware, may benefit from state serialization
-- **key-rate-limiter**: Rate limiting, could preserve rate limit state
+All middleware implementations now have state management support integrated!
 
 ## Error Handling
 
