@@ -3,33 +3,35 @@
 /**
  * Integration tests for chat history middleware supporting both streaming and text completions
  */
-import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 
 // Mock external dependencies
 jest.mock('@/lib/drizzle-db', () => ({
   drizDb: jest.fn(() => ({
-    transaction: jest.fn((fn) => fn({
-      select: jest.fn(() => ({
-        from: jest.fn(() => ({
-          where: jest.fn(() => ({
-            limit: jest.fn(() => ({
-              execute: jest.fn(() => Promise.resolve([])),
+    transaction: jest.fn((fn) =>
+      fn({
+        select: jest.fn(() => ({
+          from: jest.fn(() => ({
+            where: jest.fn(() => ({
+              limit: jest.fn(() => ({
+                execute: jest.fn(() => Promise.resolve([])),
+              })),
             })),
           })),
         })),
-      })),
-      insert: jest.fn(() => ({
-        values: jest.fn(() => ({
-          returning: jest.fn(() => ({
-            execute: jest.fn(() => Promise.resolve([{ messageId: 1 }])),
+        insert: jest.fn(() => ({
+          values: jest.fn(() => ({
+            returning: jest.fn(() => ({
+              execute: jest.fn(() => Promise.resolve([{ messageId: 1 }])),
+            })),
+            execute: jest.fn(() => Promise.resolve()),
           })),
-          execute: jest.fn(() => Promise.resolve()),
         })),
-      })),
-      execute: jest.fn(() => Promise.resolve([{ allocate_scoped_ids: 1 }])),
-    })),
+        execute: jest.fn(() => Promise.resolve([{ allocate_scoped_ids: 1 }])),
+      }),
+    ),
     query: {
       chats: {
         findFirst: jest.fn(() => Promise.resolve(null)),
@@ -72,7 +74,7 @@ describe('Chat History Middleware Integration', () => {
   describe('Middleware Structure', () => {
     it('should provide both wrapStream and wrapGenerate methods', () => {
       // Act
-      const middleware = createChatHistoryMiddleware(mockContext);
+      const middleware = createChatHistoryMiddlewareEx(mockContext);
 
       // Assert
       expect(middleware).toBeDefined();
@@ -86,12 +88,14 @@ describe('Chat History Middleware Integration', () => {
 
     it('should handle wrapGenerate method call', async () => {
       // Arrange
-      const middleware = createChatHistoryMiddleware(mockContext);
-      const mockDoGenerate = jest.fn(() => Promise.resolve({
-        text: 'Test response',
-        finishReason: 'stop',
-        usage: { totalTokens: 5 },
-      }));
+      const middleware = createChatHistoryMiddlewareEx(mockContext);
+      const mockDoGenerate = jest.fn(() =>
+        Promise.resolve({
+          text: 'Test response',
+          finishReason: 'stop',
+          usage: { totalTokens: 5 },
+        }),
+      );
 
       const mockParams = {
         prompt: [{ role: 'user', content: 'Hello' }],
@@ -111,24 +115,26 @@ describe('Chat History Middleware Integration', () => {
 
     it('should handle wrapStream method call', async () => {
       // Arrange
-      const middleware = createChatHistoryMiddleware(mockContext);
-      
+      const middleware = createChatHistoryMiddlewareEx(mockContext);
+
       // Create a simple mock stream
       const mockStream = {
         [Symbol.asyncIterator]: async function* () {
           yield { type: 'text-delta', textDelta: 'Hello' };
           yield { type: 'finish', finishReason: 'stop' };
         },
-        pipeThrough: jest.fn(function(this: any) {
+        pipeThrough: jest.fn(function (this: any) {
           return this;
         }),
       };
 
-      const mockDoStream = jest.fn(() => Promise.resolve({
-        stream: mockStream,
-        rawCall: { rawPrompt: 'test', rawSettings: {} },
-        rawResponse: { headers: {} },
-      }));
+      const mockDoStream = jest.fn(() =>
+        Promise.resolve({
+          stream: mockStream,
+          rawCall: { rawPrompt: 'test', rawSettings: {} },
+          rawResponse: { headers: {} },
+        }),
+      );
 
       const mockParams = {
         prompt: [{ role: 'user', content: 'Hello' }],
@@ -155,12 +161,14 @@ describe('Chat History Middleware Integration', () => {
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),
       }));
 
-      const middleware = createChatHistoryMiddleware(mockContext);
-      const mockDoGenerate = jest.fn(() => Promise.resolve({
-        text: 'Response despite error',
-        finishReason: 'stop',
-        usage: { totalTokens: 5 },
-      }));
+      const middleware = createChatHistoryMiddlewareEx(mockContext);
+      const mockDoGenerate = jest.fn(() =>
+        Promise.resolve({
+          text: 'Response despite error',
+          finishReason: 'stop',
+          usage: { totalTokens: 5 },
+        }),
+      );
 
       const mockParams = {
         prompt: [{ role: 'user', content: 'Test' }],
@@ -183,22 +191,24 @@ describe('Chat History Middleware Integration', () => {
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),
       }));
 
-      const middleware = createChatHistoryMiddleware(mockContext);
-      
+      const middleware = createChatHistoryMiddlewareEx(mockContext);
+
       const mockStream = {
         [Symbol.asyncIterator]: async function* () {
           yield { type: 'text-delta', textDelta: 'Recovery' };
         },
-        pipeThrough: jest.fn(function(this: any) {
+        pipeThrough: jest.fn(function (this: any) {
           return this;
         }),
       };
 
-      const mockDoStream = jest.fn(() => Promise.resolve({
-        stream: mockStream,
-        rawCall: { rawPrompt: 'test', rawSettings: {} },
-        rawResponse: { headers: {} },
-      }));
+      const mockDoStream = jest.fn(() =>
+        Promise.resolve({
+          stream: mockStream,
+          rawCall: { rawPrompt: 'test', rawSettings: {} },
+          rawResponse: { headers: {} },
+        }),
+      );
 
       const mockParams = {
         prompt: [{ role: 'user', content: 'Test' }],

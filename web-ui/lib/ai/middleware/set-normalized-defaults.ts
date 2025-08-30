@@ -1,8 +1,8 @@
 import type {
   JSONValue,
-  LanguageModelV1Middleware,
-  LanguageModelV1StreamPart,
-} from 'ai';
+  LanguageModelV2Middleware,
+  LanguageModelV2StreamPart,
+} from '@ai-sdk/provider';
 
 /**
  * Default telemetry configuration for normalized chat requests
@@ -96,7 +96,7 @@ function safeJsonParse(jsonString: string): unknown {
  * 1. On request: Sets default experimental_telemetry if not present
  * 2. On response: Detects JSON code blocks and valid JSON objects, converts to structured output if structured output is empty
  */
-export const setNormalizedDefaultsMiddleware: LanguageModelV1Middleware = {
+export const setNormalizedDefaultsMiddleware: LanguageModelV2Middleware = {
   /**
    * Transform parameters to add default telemetry if missing
    */
@@ -120,20 +120,20 @@ export const setNormalizedDefaultsMiddleware: LanguageModelV1Middleware = {
   wrapGenerate: async ({ doGenerate }) => {
     const result = await doGenerate();
 
-    // Cast result to allow access to experimental properties
-    const resultWithMeta = result as Record<string, unknown>;
-
-    // Check if structured output is empty
-    if (result.text && isStructuredOutputEmpty(resultWithMeta)) {
+    if (typeof result.response?.body !== 'string') {
+      return result;
+    }
+    result.providerMetadata = result.providerMetadata || {};
+    if (isStructuredOutputEmpty(result)) {
       let jsonContent: string | undefined = undefined;
 
       // Check if response text is a JSON code block
-      if (isJsonCodeBlock(result.text)) {
-        jsonContent = extractJsonFromCodeBlock(result.text);
+      if (isJsonCodeBlock(result.response.body)) {
+        jsonContent = extractJsonFromCodeBlock(result.response.body);
       }
       // Check if response text is valid JSON object
-      else if (isValidJsonObject(result.text)) {
-        jsonContent = result.text.trim();
+      else if (isValidJsonObject(result.response.body)) {
+        jsonContent = result.response.body.trim();
       }
 
       if (jsonContent) {
@@ -144,10 +144,7 @@ export const setNormalizedDefaultsMiddleware: LanguageModelV1Middleware = {
           const modifiedResult = {
             ...result,
             providerMetadata: {
-              ...((resultWithMeta.providerMetadata as Record<
-                string,
-                unknown
-              >) || {}),
+              ...((result.providerMetadata as Record<string, unknown>) || {}),
               structuredOutputs: parsedJson as Record<string, JSONValue>,
             },
           };
@@ -169,13 +166,13 @@ export const setNormalizedDefaultsMiddleware: LanguageModelV1Middleware = {
     let accumulatedText = '';
 
     const transformStream = new TransformStream<
-      LanguageModelV1StreamPart,
-      LanguageModelV1StreamPart
+      LanguageModelV2StreamPart,
+      LanguageModelV2StreamPart
     >({
       transform(chunk, controller) {
         // Accumulate text deltas
         if (chunk.type === 'text-delta') {
-          accumulatedText += chunk.textDelta;
+          accumulatedText += chunk.delta;
         }
 
         // If this is a finish chunk and we have accumulated text that could be JSON

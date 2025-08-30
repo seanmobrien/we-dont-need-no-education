@@ -27,9 +27,9 @@ jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
 import { openai } from '@ai-sdk/openai';
 import {
   generateText,
-  LanguageModelV1,
-  LanguageModelV1CallOptions,
-  LanguageModelV1Middleware,
+  LanguageModel,
+  LanguageModelCallOptions,
+  LanguageModelMiddleware,
   wrapLanguageModel,
 } from 'ai';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
@@ -39,18 +39,18 @@ import type { RedisClientType } from 'redis';
 // Mock function to simulate different response types
 const createMockMiddleware = (
   mockResponse: Record<string, unknown>,
-): LanguageModelV1Middleware => ({
+): LanguageModelMiddleware => ({
   wrapGenerate: async () => {
-    return mockResponse as unknown as ReturnType<LanguageModelV1['doGenerate']>;
+    return mockResponse as unknown as ReturnType<LanguageModel['doGenerate']>;
   },
   transformParams: async ({ params }: { params: Record<string, unknown> }) =>
-    params as LanguageModelV1CallOptions,
+    params as LanguageModelCallOptions,
 });
 
 const wrapMockMiddleware = (
-  model: LanguageModelV1,
+  model: LanguageModel,
   mockResponse: Record<string, unknown>,
-): LanguageModelV1 =>
+): LanguageModel =>
   wrapLanguageModel({
     model: wrapLanguageModel({
       model: model,
@@ -69,7 +69,7 @@ describe('Cache Success-Only Functionality', () => {
   it('should cache successful responses', async () => {
     const baseModel = openai('gpt-4o-mini');
 
-    const successMiddleware: LanguageModelV1Middleware = createMockMiddleware({
+    const successMiddleware: LanguageModelMiddleware = createMockMiddleware({
       text: 'This is a successful response',
       finishReason: 'stop',
       usage: { totalTokens: 10 },

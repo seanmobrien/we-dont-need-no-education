@@ -34,14 +34,16 @@
  */
 
 import { z } from 'zod';
-import { Tool, ToolExecutionOptions } from 'ai';
-import { inferParameters, ToolParameters } from './tool';
+// import { Tool } from 'ai';
+// import { inferParameters, ToolParameters, ToolExecutionOptions } from './tool';
 
 export const LATEST_PROTOCOL_VERSION = '2024-11-05';
 export const SUPPORTED_PROTOCOL_VERSIONS = [
   LATEST_PROTOCOL_VERSION,
   '2024-10-07',
 ];
+
+/*
 
 export type ToolSchemas =
   | Record<string, { parameters: ToolParameters }>
@@ -69,7 +71,7 @@ export type McpToolSet<TOOL_SCHEMAS extends ToolSchemas = 'automatic'> =
           ) => PromiseLike<CallToolResult>;
         };
       };
-
+*/
 const ClientOrServerImplementationSchema = z
   .object({
     name: z.string(),

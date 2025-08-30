@@ -33,6 +33,15 @@ const mockGenerateObject = generateObject as jest.MockedFunction<
   typeof generateObject
 >;
 
+// Helper to extract text from UIMessage parts
+const messageText = (m: UIMessage): string =>
+  (m.parts || [])
+    .map((p: any) =>
+      p && p.type === 'text' && typeof p.text === 'string' ? p.text : '',
+    )
+    .join(' ')
+    .trim();
+
 describe('Message Optimizer Tools', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
@@ -102,7 +111,6 @@ describe('Message Optimizer Tools', () => {
       it('should extract tool call IDs from assistant messages', () => {
         const message: UIMessage = {
           role: 'assistant',
-          content: 'I will help you',
           parts: [{ type: 'text', text: 'I will help you' }],
           toolInvocations: [
             {
@@ -129,7 +137,6 @@ describe('Message Optimizer Tools', () => {
       it('should return empty array for non-assistant messages', () => {
         const message: UIMessage = {
           role: 'user',
-          content: 'Hello',
           parts: [{ type: 'text', text: 'Hello' }],
           id: 'msg_1',
           createdAt: new Date(),
@@ -142,7 +149,6 @@ describe('Message Optimizer Tools', () => {
       it('should handle messages without tool invocations', () => {
         const message: UIMessage = {
           role: 'assistant',
-          content: 'Hello back',
           parts: [{ type: 'text', text: 'Hello back' }],
           id: 'msg_1',
           createdAt: new Date(),
@@ -157,7 +163,6 @@ describe('Message Optimizer Tools', () => {
       it('should return true for assistant messages with tool invocations', () => {
         const message: UIMessage = {
           role: 'assistant',
-          content: 'Processing...',
           parts: [{ type: 'text', text: 'Processing...' }],
           toolInvocations: [
             {
@@ -177,7 +182,6 @@ describe('Message Optimizer Tools', () => {
       it('should return false for user messages', () => {
         const message: UIMessage = {
           role: 'user',
-          content: 'Hello',
           parts: [{ type: 'text', text: 'Hello' }],
           id: 'msg_1',
           createdAt: new Date(),
@@ -189,7 +193,6 @@ describe('Message Optimizer Tools', () => {
       it('should return false for assistant messages without tool invocations', () => {
         const message: UIMessage = {
           role: 'assistant',
-          content: 'Hello back',
           parts: [{ type: 'text', text: 'Hello back' }],
           id: 'msg_1',
           createdAt: new Date(),
@@ -203,7 +206,6 @@ describe('Message Optimizer Tools', () => {
   describe('Message Optimization', () => {
     const createUserMessage = (content: string, id: string): UIMessage => ({
       role: 'user',
-      content,
       parts: [{ type: 'text', text: content }],
       id,
       createdAt: new Date(),
@@ -214,7 +216,6 @@ describe('Message Optimizer Tools', () => {
       id: string,
     ): UIMessage => ({
       role: 'assistant',
-      content,
       parts: [{ type: 'text', text: content }],
       id,
       createdAt: new Date(),
@@ -228,7 +229,6 @@ describe('Message Optimizer Tools', () => {
     ): UIMessage => {
       const baseMessage = {
         role: 'assistant' as const,
-        content: 'Processing...',
         parts: [{ type: 'text' as const, text: 'Processing...' }],
         id: id || `tool_msg_${toolCallId}`,
         createdAt: new Date(),
@@ -318,7 +318,7 @@ describe('Message Optimizer Tools', () => {
 
       // Recent interactions should be preserved (last 2 user prompts + responses)
       const recentMessages = optimized.slice(-4);
-      expect(recentMessages.map((m) => m.content)).toEqual([
+      expect(recentMessages.map(messageText)).toEqual([
         'What about examples?',
         'Let me search for examples',
         'Thanks!',
@@ -399,13 +399,15 @@ describe('Message Optimizer Tools', () => {
       ); // Should still return optimized messages with fallback summary
       expect(optimized.length).toBeGreaterThanOrEqual(messages.length - 1); // Allow for some optimization
       // Should find fallback summary message or summary message
-      const summaryMessage = optimized.find(
-        (m) =>
-          typeof m.content === 'string' &&
-          (m.content.includes('[TOOL CALL COMPLETED]') ||
-            m.content.includes('TOOL SUMMARY') ||
-            m.id?.includes('tool-summary')),
-      );
+      const summaryMessage = optimized.find((m) => {
+        const text = messageText(m);
+        return (
+          (typeof text === 'string' &&
+            (text.includes('[TOOL CALL COMPLETED]') ||
+              text.includes('TOOL SUMMARY'))) ||
+          m.id?.includes('tool-summary')
+        );
+      });
       expect(summaryMessage).toBeDefined();
     });
     it('should preserve tool calls from recent interactions', async () => {
@@ -484,14 +486,12 @@ describe('Message Optimizer Tools', () => {
       const messages: UIMessage[] = [
         {
           role: 'user',
-          content: 'Hello',
           parts: [{ type: 'text', text: 'Hello' }],
           id: '1',
           createdAt: new Date(),
         },
         {
           role: 'assistant',
-          content: 'Hi',
           parts: [{ type: 'text', text: 'Hi' }],
           id: '2',
           createdAt: new Date(),
@@ -510,14 +510,12 @@ describe('Message Optimizer Tools', () => {
       const messages: UIMessage[] = [
         {
           role: 'user',
-          content: 'Test',
           parts: [{ type: 'text', text: 'Test' }],
           id: '1',
           createdAt: new Date(),
         },
         {
           role: 'assistant',
-          content: 'Processing',
           parts: [{ type: 'text', text: 'Processing' }],
           toolInvocations: [
             {
@@ -548,7 +546,6 @@ describe('Message Optimizer Tools', () => {
       const largeMessages: UIMessage[] = [
         ...Array.from({ length: 20 }, (_, i) => ({
           role: 'user' as const,
-          content: `User message ${i} with lots of content that makes the message quite large and contributes to token usage`,
           parts: [
             {
               type: 'text' as const,
@@ -560,7 +557,6 @@ describe('Message Optimizer Tools', () => {
         })),
         ...Array.from({ length: 20 }, (_, i) => ({
           role: 'assistant' as const,
-          content: `Assistant response ${i} with detailed explanation and comprehensive information`,
           parts: [
             {
               type: 'text' as const,

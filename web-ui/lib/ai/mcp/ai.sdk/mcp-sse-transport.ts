@@ -78,7 +78,7 @@
 
 // Original source: https://github.com/vercel/ai/blob/ai%404.3.16/packages/ai/core/tool/mcp/mcp-sse-transport.ts
 
-import { createEventSourceParserStream } from '@ai-sdk/provider-utils';
+import { EventSourceParserStream } from '@ai-sdk/provider-utils';
 import { MCPTransport, MCPClientError } from 'ai';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
 import { fetch } from '@/lib/nextjs-util/fetch';
@@ -243,7 +243,7 @@ export class SseMCPTransport implements MCPTransport {
 
           const stream = response.body
             .pipeThrough(new TextDecoderStream())
-            .pipeThrough(createEventSourceParserStream());
+            .pipeThrough(new EventSourceParserStream());
 
           const reader = stream.getReader();
 
@@ -296,7 +296,9 @@ export class SseMCPTransport implements MCPTransport {
               }
             } catch (error) {
               if (error instanceof Error && error.name === 'AbortError') {
-                log(l=> l.warn("MCP SSE Transport: Connection aborted", error));
+                log((l) =>
+                  l.warn('MCP SSE Transport: Connection aborted', error),
+                );
                 resolve();
                 return;
               }

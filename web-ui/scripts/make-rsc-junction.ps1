@@ -1,0 +1,1 @@
+New-Item -ItemType SymbolicLink -Path "C:\Users\seanm\source\repos\NoEducation\web-ui\(rsc)" -Target "C:\Users\seanm\source\repos\NoEducation\web-ui"

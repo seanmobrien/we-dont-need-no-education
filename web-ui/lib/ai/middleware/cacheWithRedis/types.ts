@@ -6,6 +6,7 @@
  * Represents a cacheable AI response with all relevant metadata
  */
 export interface CacheableResponse {
+  id: string;
   text?: string;
   finishReason?: string;
   usage?: Record<string, unknown>;

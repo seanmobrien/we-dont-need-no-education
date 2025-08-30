@@ -1,20 +1,24 @@
-import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
+import type {
+  LanguageModelV2Middleware,
+  LanguageModelV2StreamPart,
+} from '@ai-sdk/provider';
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { memoryClientFactory } from '../mem0';
 import { log } from '@/lib/logger';
 
-export const memoryMiddleware: LanguageModelV1Middleware = {
+export const memoryMiddleware: LanguageModelV2Middleware = {
   wrapStream: async ({ doStream }) => {
     const { stream, ...rest } = await doStream();
     const transformStream = new TransformStream<
-      LanguageModelV1StreamPart,
-      LanguageModelV1StreamPart
+      LanguageModelV2StreamPart,
+      LanguageModelV2StreamPart
     >({
       transform(chunk, controller) {
         controller.enqueue(chunk);
       },
       flush() {
-        log(l => l.verbose('Memory middleware stream flushed'));
+        log((l) => l.verbose('Memory middleware stream flushed'));
       },
     });
 

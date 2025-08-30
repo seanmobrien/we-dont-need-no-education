@@ -1,4 +1,12 @@
-import { generateObject, UIMessage } from 'ai';
+import {
+  generateObject,
+  isToolUIPart,
+  TextUIPart,
+  UIDataTypes,
+  UIMessage,
+  UIMessagePart,
+  UITools,
+} from 'ai';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { log } from '@/lib/logger';
@@ -183,23 +191,35 @@ export const cacheManager = {
 /**
  * Generate a deterministic hash for a tool call sequence
  */
-const hashToolCallSequence = (toolMessages: UIMessage[]): string => {
+const hashToolCallSequence = (
+  toolMessages: UIMessagePart<UIDataTypes, UITools>[],
+): string => {
   // Create a stable representation of the tool call sequence
   const contentToHash = toolMessages
-    .map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-      toolInvocations: msg.toolInvocations?.map((inv) => ({
-        toolCallId: inv.toolCallId,
-        toolName: 'toolName' in inv ? inv.toolName : 'unknown',
-        args: 'args' in inv ? inv.args : {},
-        result: 'result' in inv ? inv.result : 'No result',
-      })),
-    }))
+    .map((part) => {
+      if (part.type === 'text') {
+        return {
+          type: part.type,
+          state: part.state ?? 'state',
+          text: part.text,
+        };
+      }
+      if (!isToolUIPart(part)) {
+        return { type: part.type };
+      }
+      return {
+        type: part.type,
+        toolName: 'toolName' in part ? part.toolName : 'unknown',
+        input: 'input' in part ? part.input : 'none',
+        state: 'state' in part ? part.state : 'unknown',
+        errorText: 'errorText' in part ? part.errorText : 'No error',
+        output: 'output' in part ? part.output : 'No output',
+      };
+    })
     .sort((a, b) => {
-      // Sort by role first, then content for consistency
-      if (a.role !== b.role) return a.role.localeCompare(b.role);
-      return String(a.content).localeCompare(String(b.content));
+      // Sort by type first, then text or input
+      if (a.type !== b.type) return a.type.localeCompare(b.type);
+      return String(a.text ?? a.input).localeCompare(String(b.text ?? b.input));
     });
 
   const hashInput = JSON.stringify(contentToHash);
@@ -210,9 +230,13 @@ const hashToolCallSequence = (toolMessages: UIMessage[]): string => {
  * Interface for tracking tool call sequences
  */
 interface ToolCallRecord {
-  toolResult: UIMessage[]; // Tool response messages (in chronological order)
-  toolRequest: UIMessage[]; // Tool request messages (in chronological order)
-  toolSummary: UIMessage; // Summary placeholder message (by reference)
+  /**
+   * The message this part was found in
+   */
+  messageId: string;
+  toolResult: UIMessagePart<UIDataTypes, UITools>[]; // Tool response messages (in chronological order)
+  toolRequest: UIMessagePart<UIDataTypes, UITools>[]; // Tool request messages (in chronological order)
+  toolSummary: TextUIPart; // Summary placeholder message (by reference)
 }
 
 /**
@@ -586,30 +610,31 @@ const processOlderMessagesForSummarization = async (
 }> => {
   const toolCallDict = new Map<string, ToolCallRecord>();
   const pendingToolIds = new Set<string>();
-  const optimizedMessages: UIMessage[] = [];
+  //const optimizedMessages: UIMessage[] = [];
 
   // Keep preserved messages (from cutoff forward) as-is
-  const preservedMessages = messages.slice(cutoffIndex);
+  //const preservedMessages = messages.slice(cutoffIndex);
 
   // Process older messages backwards (this is key for proper tool pairing)
   const olderMessages = messages.slice(0, cutoffIndex);
 
   for (let i = olderMessages.length - 1; i >= 0; i--) {
     const message = olderMessages[i];
-    let shouldIncludeMessage = true;
+    //let shouldIncludeMessage = true;
 
     if (
-      message.role === 'assistant' &&
-      'toolInvocations' in message &&
-      Array.isArray(message.toolInvocations)
+      message.role === 'assistant' // &&
+      // 'toolInvocations' in message &&
+      // Array.isArray(message.toolInvocations)
     ) {
       // Process tool invocations in this assistant message (backwards to match message iteration)
       const processedInvocations = [];
-      let hasRemovedInvocations = false;
+      //let hasRemovedInvocations = false;
 
       // Process invocations backwards to maintain consistency with message processing
-      for (let j = message.toolInvocations.length - 1; j >= 0; j--) {
-        const invocation = message.toolInvocations[j];
+      for (let j = message.parts?.length - 1; j >= 0; j--) {
+        if (!isToolUIPart(message.parts[j])) continue;
+        const invocation = message.parts[j];
         const toolCallId =
           'toolCallId' in invocation ? (invocation.toolCallId as string) : null;
         if (!toolCallId) {
@@ -626,9 +651,9 @@ const processOlderMessagesForSummarization = async (
 
         // Check if this is a tool request or response
         const isToolRequest =
-          !('result' in invocation) || invocation.result === undefined;
+          !('output' in invocation) || invocation.output === undefined;
         const isToolResponse =
-          'result' in invocation && invocation.result !== undefined;
+          'output' in invocation && invocation.output !== undefined;
         if (isToolRequest && !toolCallDict.has(toolCallId)) {
           // This is a pending request (we're going backwards, so we'd see response first)
           pendingToolIds.add(toolCallId);
@@ -639,72 +664,44 @@ const processOlderMessagesForSummarization = async (
         } else if (toolCallDict.has(toolCallId)) {
           // Add to existing record
           const record = toolCallDict.get(toolCallId)!;
-          const messageWithInvocation = {
-            ...message,
-            toolInvocations: [invocation],
-          };
 
           if (isToolRequest) {
-            record.toolRequest.unshift(messageWithInvocation);
+            record.toolRequest.unshift(invocation);
           } else if (isToolResponse) {
-            record.toolResult.unshift(messageWithInvocation);
+            record.toolResult.unshift(invocation);
           }
-
-          hasRemovedInvocations = true;
+          message.parts.slice(j, message.parts.length);
+          //hasRemovedInvocations = true;
           // Don't add this invocation to processedInvocations
         } else if (isToolResponse) {
-          // New completed tool call - create summary placeholder
-          const summaryMessage: UIMessage = {
-            role: 'assistant',
-            content: '[TOOL SUMMARY LOADING...]', // Required field
-            parts: [{ type: 'text', text: '[TOOL SUMMARY LOADING...]' }], // Will be replaced by AI summary
-            id: `tool-summary-${toolCallId}-${Date.now()}`,
-            createdAt: new Date(),
-          };
-
           // Create new record
           const record: ToolCallRecord = {
-            toolResult: [{ ...message, toolInvocations: [invocation] }],
+            messageId: message.id,
+            toolResult: [{ ...invocation }],
             toolRequest: [],
-            toolSummary: summaryMessage,
+            toolSummary: {
+              type: 'text',
+              text: '[TOOL SUMMARY LOADING...]',
+            },
           };
 
           toolCallDict.set(toolCallId, record); // Replace this invocation with the summary message
           processedInvocations.unshift({
             ...invocation,
-            result: '[SUMMARIZED - See summary message]',
+            output: '[SUMMARIZED - See summary message]',
           });
+          message.parts.slice(j, message.parts.length);
 
           // Add summary message to the stream
-          optimizedMessages.unshift(summaryMessage);
-          hasRemovedInvocations = true;
+          //hasRemovedInvocations = true;
         } else {
           // Keep as-is for edge cases
           processedInvocations.unshift(invocation);
         }
       }
-
-      // Update the message with processed invocations
-      if (hasRemovedInvocations && processedInvocations.length > 0) {
-        optimizedMessages.unshift({
-          ...message,
-          toolInvocations: processedInvocations,
-        });
-        shouldIncludeMessage = false;
-      } else if (processedInvocations.length === 0) {
-        // All invocations were removed - don't include this message
-        shouldIncludeMessage = false;
-      }
-    }
-
-    if (shouldIncludeMessage) {
-      optimizedMessages.unshift(message);
     }
   }
-
-  // Add preserved messages at the end
-  optimizedMessages.push(...preservedMessages);
-  return { optimizedMessages, toolCallDict };
+  return { optimizedMessages: messages, toolCallDict };
 };
 
 /**
@@ -735,13 +732,7 @@ const generateToolCallSummaries = async (
           chatHistoryContext,
           allMessages,
         ); // Update the summary message by reference
-        record.toolSummary.content = summary;
-        if (
-          record.toolSummary.parts &&
-          record.toolSummary.parts[0]?.type === 'text'
-        ) {
-          record.toolSummary.parts[0].text = summary;
-        }
+        record.toolSummary.text = summary;
 
         log((l) =>
           l.debug(`Generated summary for tool call ${toolCallId}`, {
@@ -759,13 +750,7 @@ const generateToolCallSummaries = async (
           }),
         ); // Fallback to basic summary on error
         const fallbackText = `[TOOL CALL COMPLETED] ID: ${toolCallId} - Summary generation failed, see logs for details.`;
-        record.toolSummary.content = fallbackText;
-        if (
-          record.toolSummary.parts &&
-          record.toolSummary.parts[0]?.type === 'text'
-        ) {
-          record.toolSummary.parts[0].text = fallbackText;
-        }
+        record.toolSummary.text = fallbackText;
       }
     },
   );
@@ -913,7 +898,6 @@ Respond with just the summary text, no additional formatting.`;
           durationMs: summaryDuration,
         }),
       );
-
     }
     return summary;
   } catch (error) {
@@ -951,14 +935,6 @@ const extractConversationalContext = (
 
   // Extract content from the assistant messages that contain tool requests
   record.toolRequest.forEach((msg) => {
-    if (
-      'content' in msg &&
-      typeof msg.content === 'string' &&
-      msg.content.trim()
-    ) {
-      contextParts.push(`Assistant reasoning: ${msg.content.trim()}`);
-    }
-
     // Also check parts for AI SDK v5 structure
     if ('parts' in msg && Array.isArray(msg.parts)) {
       msg.parts.forEach((part) => {
@@ -976,15 +952,8 @@ const extractConversationalContext = (
   // Look for the user message that likely prompted this tool sequence
   // We'll search backwards from tool request messages to find recent user input
   if (record.toolRequest.length > 0) {
-    const toolRequestMessage = record.toolRequest[0];
     const toolRequestIndex = allMessages.findIndex(
-      (msg) =>
-        msg.id === toolRequestMessage.id ||
-        (msg.createdAt &&
-          toolRequestMessage.createdAt &&
-          Math.abs(
-            msg.createdAt.getTime() - toolRequestMessage.createdAt.getTime(),
-          ) < 1000),
+      (msg) => msg.id === record.messageId,
     );
 
     if (toolRequestIndex > 0) {
@@ -996,23 +965,10 @@ const extractConversationalContext = (
       ) {
         const prevMessage = allMessages[i];
         if (prevMessage.role === 'user') {
-          let userContent = '';
-
-          if (
-            'content' in prevMessage &&
-            typeof prevMessage.content === 'string'
-          ) {
-            userContent = prevMessage.content;
-          } else if (
-            'parts' in prevMessage &&
-            Array.isArray(prevMessage.parts)
-          ) {
-            userContent = prevMessage.parts
-              .filter((part) => part.type === 'text')
-              .map((part) => ('text' in part ? part.text : ''))
-              .join(' ');
-          }
-
+          const userContent = prevMessage.parts
+            .filter((part) => part.type === 'text')
+            .map((part) => ('text' in part ? part.text : ''))
+            .join(' ');
           if (userContent.trim()) {
             // Truncate user content to avoid bloating the prompt
             const truncatedContent =

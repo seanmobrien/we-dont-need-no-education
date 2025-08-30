@@ -40,8 +40,12 @@ export const userPublicKeys = pgTable(
     publicKey: text('public_key').notNull(), // base64-encoded public key
     effectiveDate: timestamp('effective_date', { mode: 'string' }).notNull(),
     expirationDate: timestamp('expiration_date', { mode: 'string' }),
-    createdAt: timestamp('created_at', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-    updatedAt: timestamp('updated_at', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
+    createdAt: timestamp('created_at', { mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
   },
   (table) => [
     foreignKey({
@@ -49,10 +53,19 @@ export const userPublicKeys = pgTable(
       foreignColumns: [users.id],
       name: 'fk_user_public_keys_user_id',
     }).onDelete('cascade'),
-    index('idx_user_public_keys_user_id').using('btree', table.userId.asc().nullsLast().op('int4_ops')),
-    index('idx_user_public_keys_effective').using('btree', table.effectiveDate.asc().nullsLast().op('timestamp_ops')),
-    index('idx_user_public_keys_expiration').using('btree', table.expirationDate.asc().nullsLast().op('timestamp_ops')),
-  ]
+    index('idx_user_public_keys_user_id').using(
+      'btree',
+      table.userId.asc().nullsLast().op('int4_ops'),
+    ),
+    index('idx_user_public_keys_effective').using(
+      'btree',
+      table.effectiveDate.asc().nullsLast().op('timestamp_ops'),
+    ),
+    index('idx_user_public_keys_expiration').using(
+      'btree',
+      table.expirationDate.asc().nullsLast().op('timestamp_ops'),
+    ),
+  ],
 );
 
 export const importStageType = pgEnum('import_stage_type', [
@@ -432,10 +445,12 @@ export const accounts = pgTable(
   'accounts',
   {
     id: serial().primaryKey().notNull(),
-    userId: integer("user_id").notNull(),
+    userId: integer('user_id').notNull(),
     type: varchar({ length: 255 }).notNull(),
     provider: varchar({ length: 255 }).notNull(),
-    providerAccountId: varchar("provider_account_id", { length: 255 }).notNull(),
+    providerAccountId: varchar('provider_account_id', {
+      length: 255,
+    }).notNull(),
     refreshToken: text('refresh_token'),
     accessToken: text('access_token'),
     // You can use { mode: "bigint" } if numbers are exceeding js number limitations
@@ -460,7 +475,7 @@ export const sessions = pgTable(
   {
     id: serial().primaryKey().notNull(),
     sessionToken: varchar({ length: 255 }).notNull(),
-    userId: integer("user_id").notNull(),
+    userId: integer('user_id').notNull(),
     expires: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
   },
   (table) => [
@@ -589,7 +604,7 @@ export const stagingMessage = pgTable(
     id: uuid().primaryKey().notNull(),
     // TODO: failed to parse database type 'email_message_type'
     // message: unknown('message'),
-    userId: integer("user_id"),
+    userId: integer('user_id'),
   },
   (table) => [
     index('fki_fk_staging_message_users').using(
@@ -1150,14 +1165,27 @@ export const providers = pgTable(
     description: text(), // Optional provider description
     baseUrl: text('base_url'), // Optional base URL for API calls
     isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    aliases: text('aliases').array(), // Optional alternative names
   },
   (table) => [
     // Ensure unique provider names
     unique('providers_name_unique').on(table.name),
-    index('idx_providers_name').using('btree', table.name.asc().nullsLast().op('text_ops')),
-    index('idx_providers_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
+    index('idx_providers_name').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_providers_active').using(
+      'btree',
+      table.isActive.asc().nullsLast().op('bool_ops'),
+    ),
   ],
 );
 
@@ -1171,15 +1199,33 @@ export const models = pgTable(
     displayName: text('display_name'), // Optional human-readable name
     description: text(), // Optional model description
     isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
   },
   (table) => [
     // Ensure unique provider/model combination
-    unique('models_provider_model_unique').on(table.providerId, table.modelName),
-    index('idx_models_provider_id').using('btree', table.providerId.asc().nullsLast().op('uuid_ops')),
-    index('idx_models_model_name').using('btree', table.modelName.asc().nullsLast().op('text_ops')),
-    index('idx_models_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
+    unique('models_provider_model_unique').on(
+      table.providerId,
+      table.modelName,
+    ),
+    index('idx_models_provider_id').using(
+      'btree',
+      table.providerId.asc().nullsLast().op('uuid_ops'),
+    ),
+    index('idx_models_model_name').using(
+      'btree',
+      table.modelName.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_models_active').using(
+      'btree',
+      table.isActive.asc().nullsLast().op('bool_ops'),
+    ),
     foreignKey({
       columns: [table.providerId],
       foreignColumns: [providers.id],
@@ -1196,15 +1242,27 @@ export const modelQuotas = pgTable(
     maxTokensPerMessage: integer('max_tokens_per_message'), // Per-message limit
     maxTokensPerMinute: integer('max_tokens_per_minute'), // Rate limit
     maxTokensPerDay: integer('max_tokens_per_day'), // Daily quota
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
     isActive: boolean('is_active').default(true).notNull(),
   },
   (table) => [
     // Ensure unique quota configuration per model
     unique('model_quotas_model_unique').on(table.modelId),
-    index('idx_model_quotas_model_id').using('btree', table.modelId.asc().nullsLast().op('uuid_ops')),
-    index('idx_model_quotas_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
+    index('idx_model_quotas_model_id').using(
+      'btree',
+      table.modelId.asc().nullsLast().op('uuid_ops'),
+    ),
+    index('idx_model_quotas_active').using(
+      'btree',
+      table.isActive.asc().nullsLast().op('bool_ops'),
+    ),
     foreignKey({
       columns: [table.modelId],
       foreignColumns: [models.id],
@@ -1218,26 +1276,47 @@ export const tokenConsumptionStats = pgTable(
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     modelId: uuid('model_id').notNull(), // Reference to models table
-    windowStart: timestamp('window_start', { withTimezone: true, mode: 'string' }).notNull(),
-    windowEnd: timestamp('window_end', { withTimezone: true, mode: 'string' }).notNull(),
+    windowStart: timestamp('window_start', {
+      withTimezone: true,
+      mode: 'string',
+    }).notNull(),
+    windowEnd: timestamp('window_end', {
+      withTimezone: true,
+      mode: 'string',
+    }).notNull(),
     windowType: text('window_type').notNull(), // 'minute', 'hour', 'day'
     promptTokens: integer('prompt_tokens').default(0).notNull(),
     completionTokens: integer('completion_tokens').default(0).notNull(),
     totalTokens: integer('total_tokens').default(0).notNull(),
     requestCount: integer('request_count').default(0).notNull(),
-    lastUpdated: timestamp('last_updated', { withTimezone: true, mode: 'string' }).defaultNow(),
+    lastUpdated: timestamp('last_updated', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
   },
   (table) => [
     // Ensure unique stats per model/window combination
     unique('token_stats_model_window_unique').on(
-      table.modelId, 
-      table.windowStart, 
-      table.windowType
+      table.modelId,
+      table.windowStart,
+      table.windowType,
     ),
-    index('idx_token_stats_model_id').using('btree', table.modelId.asc().nullsLast().op('uuid_ops')),
-    index('idx_token_stats_window_start').using('btree', table.windowStart.asc().nullsLast().op('timestamptz_ops')),
-    index('idx_token_stats_window_type').using('btree', table.windowType.asc().nullsLast().op('text_ops')),
-    index('idx_token_stats_last_updated').using('btree', table.lastUpdated.asc().nullsLast().op('timestamptz_ops')),
+    index('idx_token_stats_model_id').using(
+      'btree',
+      table.modelId.asc().nullsLast().op('uuid_ops'),
+    ),
+    index('idx_token_stats_window_start').using(
+      'btree',
+      table.windowStart.asc().nullsLast().op('timestamptz_ops'),
+    ),
+    index('idx_token_stats_window_type').using(
+      'btree',
+      table.windowType.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_token_stats_last_updated').using(
+      'btree',
+      table.lastUpdated.asc().nullsLast().op('timestamptz_ops'),
+    ),
     // Check constraint for valid window types
     check(
       'token_stats_window_type_check',
@@ -1346,7 +1425,9 @@ export const chatMessages = pgTable(
     metadata: jsonb(),
     toolInstanceId: uuid('tool_instance_id'),
     optimizedContent: text('optimized_content'),
-    messageTimestamp: timestamp('message_timestamp', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
+    messageTimestamp: timestamp('message_timestamp', {
+      mode: 'string',
+    }).default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
     index('idx_messages_provider_id').using(

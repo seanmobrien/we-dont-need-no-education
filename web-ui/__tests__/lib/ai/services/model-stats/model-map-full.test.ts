@@ -10,7 +10,7 @@ jest.mock('drizzle-orm', () => ({
 
 import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 import { ProviderMap } from '@/lib/ai/services/model-stats/provider-map';
-import { LanguageModelV1 } from '@ai-sdk/provider';
+import { LanguageModel } from '@ai-sdk/provider';
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { IMockQueryBuilder } from '@/__tests__/jest.mock-drizzle';
@@ -55,7 +55,7 @@ describe('ModelMap with Full Mocking', () => {
     const mock = ret as unknown as IMockQueryBuilder;
 
     mock.__setRecords(async (ctx) => {
-      if (ctx.isFrom('models')){
+      if (ctx.isFrom('models')) {
         return mockModelsWithProviders;
       }
       if (ctx.isFrom(schema.modelQuotas)) {
@@ -110,64 +110,75 @@ describe('ModelMap with Full Mocking', () => {
   describe('Database Initialization', () => {
     it('should initialize with database', async () => {
       const instance = await ModelMap.getInstance();
-      
+
       expect(instance.initialized).toBe(true);
       expect(drizDbWithInit).toHaveBeenCalled();
     });
 
     it('should get model by provider and name', async () => {
       const instance = await ModelMap.getInstance();
-      const model = await instance.getModelByProviderAndName('azure-openai.chat', 'gpt-4');
-      
-      expect(model).toEqual(expect.objectContaining({
-        id: 'model-uuid-123',
-        providerId: mockProviderId,
-        modelName: 'gpt-4',
-        displayName: 'GPT-4 Turbo',
-      }));
+      const model = await instance.getModelByProviderAndName(
+        'azure-openai.chat',
+        'gpt-4',
+      );
+
+      expect(model).toEqual(
+        expect.objectContaining({
+          id: 'model-uuid-123',
+          providerId: mockProviderId,
+          modelName: 'gpt-4',
+          displayName: 'GPT-4 Turbo',
+        }),
+      );
     });
 
     it('should get quota by model ID', async () => {
       const instance = await ModelMap.getInstance();
       const quota = await instance.getQuotaByModelId('model-uuid-123');
-      
-      expect(quota).toEqual(expect.objectContaining({
-        modelId: 'model-uuid-123',
-        maxTokensPerMessage: 8192,
-        maxTokensPerMinute: 40000,
-        maxTokensPerDay: 1000000,
-      }));
+
+      expect(quota).toEqual(
+        expect.objectContaining({
+          modelId: 'model-uuid-123',
+          maxTokensPerMessage: 8192,
+          maxTokensPerMinute: 40000,
+          maxTokensPerDay: 1000000,
+        }),
+      );
     });
   });
 
-  describe('LanguageModelV1 Integration', () => {
-    it('should extract model info from LanguageModelV1 instance', async () => {
+  describe('LanguageModel Integration', () => {
+    it('should extract model info from LanguageModel instance', async () => {
       const instance = await ModelMap.getInstance();
 
-      const mockLanguageModel: LanguageModelV1 = {
+      const mockLanguageModel: LanguageModel = {
         provider: 'azure-openai.chat',
         modelId: 'gpt-4',
-      } as LanguageModelV1;
+      } as LanguageModel;
 
-      const modelInfo = await instance.getModelFromLanguageModelV1(mockLanguageModel);
-      
-      expect(modelInfo).toEqual(expect.objectContaining({
-        modelName: 'gpt-4',
-        providerId: mockProviderId,
-        quota: expect.objectContaining({
-          maxTokensPerMessage: 8192,
+      const modelInfo =
+        await instance.getModelFromLanguageModel(mockLanguageModel);
+
+      expect(modelInfo).toEqual(
+        expect.objectContaining({
+          modelName: 'gpt-4',
+          providerId: mockProviderId,
+          quota: expect.objectContaining({
+            maxTokensPerMessage: 8192,
+          }),
         }),
-      }));
+      );
     });
 
     it('should handle missing provider or modelId', async () => {
       const instance = await ModelMap.getInstance();
 
-      const incompleteModel: LanguageModelV1 = {
+      const incompleteModel: LanguageModel = {
         provider: 'azure-openai.chat',
-      } as LanguageModelV1; // Missing modelId
+      } as LanguageModel; // Missing modelId
 
-      const modelInfo = await instance.getModelFromLanguageModelV1(incompleteModel);
+      const modelInfo =
+        await instance.getModelFromLanguageModel(incompleteModel);
       expect(modelInfo).toBeNull();
     });
   });
@@ -175,8 +186,10 @@ describe('ModelMap with Full Mocking', () => {
   describe('Provider/Model Normalization', () => {
     it('should normalize provider:model format correctly', async () => {
       const instance = ModelMap.Instance;
-      const result = await instance.normalizeProviderModel('azure-openai.chat:gpt-4');
-      
+      const result = await instance.normalizeProviderModel(
+        'azure-openai.chat:gpt-4',
+      );
+
       expect(result.provider).toBe('azure-openai.chat');
       expect(result.modelName).toBe('gpt-4');
       expect(result.providerId).toBe(mockProviderId);
@@ -184,8 +197,11 @@ describe('ModelMap with Full Mocking', () => {
 
     it('should normalize separate provider and model parameters', async () => {
       const instance = ModelMap.Instance;
-      const result = await instance.normalizeProviderModel('azure-openai.chat', 'gpt-4');
-      
+      const result = await instance.normalizeProviderModel(
+        'azure-openai.chat',
+        'gpt-4',
+      );
+
       expect(result.provider).toBe('azure-openai.chat');
       expect(result.modelName).toBe('gpt-4');
       expect(result.providerId).toBe(mockProviderId);
@@ -193,14 +209,19 @@ describe('ModelMap with Full Mocking', () => {
 
     it('should handle unknown provider gracefully', async () => {
       mockProviderMap.id.mockReturnValue(null);
-      
+
       const instance = ModelMap.Instance;
-      const result = await instance.normalizeProviderModel('unknown-provider', 'some-model');
-      
+      const result = await instance.normalizeProviderModel(
+        'unknown-provider',
+        'some-model',
+      );
+
       expect(result.provider).toBe('unknown-provider');
       expect(result.modelName).toBe('some-model');
       expect(result.providerId).toBeUndefined();
-      expect(() => result.rethrow()).toThrow('Provider not found: unknown-provider');
+      expect(() => result.rethrow()).toThrow(
+        'Provider not found: unknown-provider',
+      );
     });
   });
 
@@ -210,8 +231,11 @@ describe('ModelMap with Full Mocking', () => {
 
       const exists = await instance.contains('azure-openai.chat', 'gpt-4');
       expect(exists).toBe(true);
-      
-      const notExists = await instance.contains('azure-openai.chat', 'non-existent');
+
+      const notExists = await instance.contains(
+        'azure-openai.chat',
+        'non-existent',
+      );
       expect(notExists).toBe(false);
     });
 
@@ -219,7 +243,9 @@ describe('ModelMap with Full Mocking', () => {
       const instance = await ModelMap.getInstance();
 
       expect(instance.allIds).toContain('model-uuid-123');
-      expect(instance.allProviderModelKeys).toContain(`${mockProviderId}:gpt-4`);
+      expect(instance.allProviderModelKeys).toContain(
+        `${mockProviderId}:gpt-4`,
+      );
     });
   });
 });

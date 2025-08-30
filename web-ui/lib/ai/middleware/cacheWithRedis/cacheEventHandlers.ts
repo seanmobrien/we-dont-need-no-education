@@ -48,8 +48,7 @@ export const handleCacheHit = (
   }
   if ('id' in parsed && parsed.id) {
     try {
-      const responseObj = parsed as Record<string, unknown>;
-      responseObj.id = String(responseObj.id) + generateChatId();
+      parsed.id = String(parsed.id) + generateChatId();
     } catch (error) {
       log((l) =>
         l.warn('Failed to parse ID in cached response', {

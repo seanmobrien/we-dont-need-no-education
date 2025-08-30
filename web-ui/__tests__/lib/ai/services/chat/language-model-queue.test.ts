@@ -2,7 +2,7 @@
  * @fileoverview Tests for the LanguageModelQueue class
  */
 
-import { LanguageModelV1 } from '@ai-sdk/provider';
+import { LanguageModel } from '@ai-sdk/provider';
 import { LanguageModelQueue } from '@/lib/ai/services/chat';
 import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
 import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
@@ -14,19 +14,19 @@ jest.mock('@/auth');
 jest.mock('@/lib/logger');
 
 describe('LanguageModelQueue', () => {
-  let mockModel: LanguageModelV1;
+  let mockModel: LanguageModel;
   let queue: LanguageModelQueue;
 
   beforeEach(() => {
-    // Create a mock LanguageModelV1
+    // Create a mock LanguageModel
     mockModel = {
       provider: 'test-provider',
-      modelId: 'test-model'
-    } as LanguageModelV1;
+      modelId: 'test-model',
+    } as LanguageModel;
 
     queue = new LanguageModelQueue({
       model: mockModel,
-      maxConcurrentRequests: 2
+      maxConcurrentRequests: 2,
     });
   });
 
@@ -45,7 +45,7 @@ describe('LanguageModelQueue', () => {
     it('should generate unique instance IDs', () => {
       const queue2 = new LanguageModelQueue({
         model: mockModel,
-        maxConcurrentRequests: 1
+        maxConcurrentRequests: 1,
       });
 
       expect(queue.queueInstanceId).not.toBe(queue2.queueInstanceId);
@@ -56,17 +56,19 @@ describe('LanguageModelQueue', () => {
   describe('Error classes', () => {
     it('should create MessageTooLargeForQueueError with correct properties', () => {
       const error = new MessageTooLargeForQueueError(1000, 500, 'test-model');
-      
+
       expect(error.name).toBe('MessageTooLargeForQueueError');
       expect(error.tokenCount).toBe(1000);
       expect(error.maxTokens).toBe(500);
       expect(error.modelType).toBe('test-model');
-      expect(error.message).toContain('1000 tokens exceeds maximum allowed 500 tokens');
+      expect(error.message).toContain(
+        '1000 tokens exceeds maximum allowed 500 tokens',
+      );
     });
 
     it('should create AbortChatMessageRequestError with correct properties', () => {
       const error = new AbortChatMessageRequestError('test-request-id');
-      
+
       expect(error.name).toBe('AbortChatMessageRequestError');
       expect(error.requestId).toBe('test-request-id');
       expect(error.message).toContain('test-request-id was aborted');
@@ -100,7 +102,7 @@ describe('LanguageModelQueue', () => {
         queue.generateText(params, controller.signal).catch(() => 'expected'),
         queue.generateObject(params, controller.signal).catch(() => 'expected'),
         queue.streamText(params, controller.signal).catch(() => 'expected'),
-        queue.streamObject(params, controller.signal).catch(() => 'expected')
+        queue.streamObject(params, controller.signal).catch(() => 'expected'),
       ];
 
       const results = await Promise.all(promises);
@@ -112,7 +114,7 @@ describe('LanguageModelQueue', () => {
     it('should dispose resources properly', () => {
       const spy = jest.spyOn(console, 'log').mockImplementation();
       queue.dispose();
-      
+
       // Verify cleanup doesn't throw
       expect(() => queue.dispose()).not.toThrow();
       spy.mockRestore();

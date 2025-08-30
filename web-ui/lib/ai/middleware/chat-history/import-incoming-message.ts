@@ -46,15 +46,14 @@
  * @since 1.0.0
  */
 
-import { schema } from "@/lib/drizzle-db";
-import { DbTransactionType } from "@/lib/drizzle-db";
-import { ChatHistoryContext } from "./types";
-import { eq, desc } from "drizzle-orm";
-import { log } from "@/lib/logger";
-import { getNextSequence, getNewMessages } from "./utility";
-import { generateChatId } from "@/lib/ai/core";
-import { LanguageModelV1CallOptions } from "ai";
-
+import { schema } from '@/lib/drizzle-db';
+import { DbTransactionType } from '@/lib/drizzle-db';
+import { ChatHistoryContext } from './types';
+import { eq, desc } from 'drizzle-orm';
+import { log } from '@/lib/logger';
+import { getNextSequence, getNewMessages } from './utility';
+import { generateChatId } from '@/lib/ai/core';
+import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 // ============================================================================
 // Private Helper Functions
@@ -133,7 +132,11 @@ const getChatId = (context: ChatHistoryContext): string =>
  * });
  * ```
  */
-export const upsertChat = async (tx: DbTransactionType, chatId: string, context: ChatHistoryContext) =>  {
+export const upsertChat = async (
+  tx: DbTransactionType,
+  chatId: string,
+  context: ChatHistoryContext,
+) => {
   const existingChat =
     (
       await tx
@@ -196,7 +199,10 @@ export const upsertChat = async (tx: DbTransactionType, chatId: string, context:
  * console.log(`Reserved turn: ${turnId}`); // e.g., "Reserved turn: 5"
  * ```
  */
-export const reserveTurnId = async  (tx: DbTransactionType, chatId: string): Promise<number> => {
+export const reserveTurnId = async (
+  tx: DbTransactionType,
+  chatId: string,
+): Promise<number> => {
   const thisTurnId = await getNextSequence({
     tableName: 'chat_turns',
     chatId: chatId,
@@ -252,7 +258,7 @@ export const insertChatTurn = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number | undefined,
-  context: ChatHistoryContext
+  context: ChatHistoryContext,
 ) => {
   const thisTurnId = turnId ? turnId : await reserveTurnId(tx, chatId);
   const providerId = ((rId: undefined | string) => {
@@ -260,10 +266,8 @@ export const insertChatTurn = async (
       return undefined;
     }
     const idxOf = rId.lastIndexOf(':');
-    if (idxOf === -1){
-      return rId === chatId
-        ? undefined
-        : rId;
+    if (idxOf === -1) {
+      return rId === chatId ? undefined : rId;
     }
     return rId.substring(idxOf + 1).trim();
   })(context.requestId?.trim());
@@ -319,12 +323,12 @@ export const insertChatTurn = async (
  * console.log(messageIds); // [101, 102, 103, 104]
  * ```
  */
-export const reserveMessageIds = async  (
+export const reserveMessageIds = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number,
-  count: number
-): Promise<number[]>  => {
+  count: number,
+): Promise<number[]> => {
   const messageIds = await getNextSequence({
     tableName: 'chat_messages',
     chatId: chatId,
@@ -395,46 +399,49 @@ const insertPromptMessages = async (
   chatId: string,
   turnId: number,
   messageIds: number[],
-  prompt: LanguageModelV1CallOptions['prompt'],
-  startOrder: number
+  prompt: LanguageModelV2CallOptions['prompt'],
+  startOrder: number,
 ) => {
   let messageOrder = startOrder;
-  await tx.insert(schema.chatMessages).values(
-    prompt.map((p, i) => {
-      let providerId: string | null = null;
-      
-      // Tool call relationship detection and linking
-      // IMPORTANT: This logic does not scale to support parallel tool calling correctly.
-      if (p.role === 'tool') {
-        // Tool response message - link to original tool call
-        if (Array.isArray(p.content) && p.content.length > 0) {
-          providerId = p.content[0].toolCallId;
-        }
-      } else if (p.role === 'assistant') {
-        // Assistant message with tool calls - extract call ID for linking
-        if (Array.isArray(p.content)) {
-          const toolCall = p.content.find(x => x.type === 'tool-call');
-          if (toolCall) {
-            providerId = toolCall.toolCallId;
+  await tx
+    .insert(schema.chatMessages)
+    .values(
+      prompt.map((p, i) => {
+        let providerId: string | null = null;
+
+        // Tool call relationship detection and linking
+        // IMPORTANT: This logic does not scale to support parallel tool calling correctly.
+        if (p.role === 'tool') {
+          // Tool response message - link to original tool call
+          if (Array.isArray(p.content) && p.content.length > 0) {
+            providerId = p.content[0].toolCallId;
+          }
+        } else if (p.role === 'assistant') {
+          // Assistant message with tool calls - extract call ID for linking
+          if (Array.isArray(p.content)) {
+            const toolCall = p.content.find((x) => x.type === 'tool-call');
+            if (toolCall) {
+              providerId = toolCall.toolCallId;
+            }
           }
         }
-      }
-      
-      return {
-        chatId: chatId,
-        turnId: turnId,
-        messageId: messageIds[i],
-        providerId, // Links tool calls to responses for relationship tracking
-        role: p.role as 'user' | 'assistant' | 'tool' | 'system',
-        content:
-          typeof p.content === 'string'
-            ? p.content
-            : JSON.stringify(p.content), // Serialize complex content structures
-        messageOrder: messageOrder++,
-        statusId: 2, // Complete status for imported messages
-      };
-    }),
-  ).execute();
+
+        return {
+          chatId: chatId,
+          turnId: turnId,
+          messageId: messageIds[i],
+          providerId, // Links tool calls to responses for relationship tracking
+          role: p.role as 'user' | 'assistant' | 'tool' | 'system',
+          content:
+            typeof p.content === 'string'
+              ? p.content
+              : JSON.stringify(p.content), // Serialize complex content structures
+          messageOrder: messageOrder++,
+          statusId: 2, // Complete status for imported messages
+        };
+      }),
+    )
+    .execute();
 };
 
 /**
@@ -488,8 +495,8 @@ export const insertPendingAssistantMessage = async (
   assistantMessageId: number,
   messageOrder: number,
   content: string = '',
-  statusId: number = 1
-) => {  
+  statusId: number = 1,
+) => {
   let newMessageId: number | undefined = assistantMessageId;
   if (!newMessageId) {
     [newMessageId] = await reserveMessageIds(tx, chatId, turnId, 1);
@@ -504,8 +511,7 @@ export const insertPendingAssistantMessage = async (
   // Content may or may not be in message format - normalize
   let thisContent = content?.trim();
   if (thisContent) {
-    try
-    {
+    try {
       const check = JSON.parse(thisContent);
       if (!Array.isArray(check)) {
         thisContent = JSON.stringify([{ type: 'text', text: thisContent }]);
@@ -515,17 +521,19 @@ export const insertPendingAssistantMessage = async (
     }
   }
   // Add record
-  return await tx.insert(schema.chatMessages).values({
-    chatId: chatId,
-    turnId: turnId,
-    messageId: newMessageId,
-    role: 'assistant',
-    content: thisContent ?? '',
-    messageOrder: messageOrder,
-    statusId
-  })
-  .returning()
-  .execute();
+  return await tx
+    .insert(schema.chatMessages)
+    .values({
+      chatId: chatId,
+      turnId: turnId,
+      messageId: newMessageId,
+      role: 'assistant',
+      content: thisContent ?? '',
+      messageOrder: messageOrder,
+      statusId,
+    })
+    .returning()
+    .execute();
 };
 
 // ============================================================================
@@ -544,7 +552,10 @@ export const insertPendingAssistantMessage = async (
  * @param chatId - The chat ID to query for message order
  * @returns Promise resolving to the highest message order (0 if no messages exist)
  */
-const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promise<number> => {
+const getLastMessageOrder = async (
+  tx: DbTransactionType,
+  chatId: string,
+): Promise<number> => {
   const result = await tx
     .select({ maxOrder: schema.chatMessages.messageOrder })
     .from(schema.chatMessages)
@@ -641,10 +652,10 @@ const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promi
  *   params: {
  *     prompt: [
  *       { role: 'user', content: 'What\'s the weather like?' },
- *       { 
- *         role: 'assistant', 
- *         content: [{ 
- *           type: 'tool-call', 
+ *       {
+ *         role: 'assistant',
+ *         content: [{
+ *           type: 'tool-call',
  *           toolCallId: 'call_123',
  *           toolName: 'getWeather',
  *           args: { location: 'San Francisco' }
@@ -652,7 +663,7 @@ const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promi
  *       },
  *       {
  *         role: 'tool',
- *         content: [{ 
+ *         content: [{
  *           toolCallId: 'call_123',
  *           result: { temperature: 72, condition: 'sunny' }
  *         }]
@@ -687,14 +698,14 @@ const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promi
 export const importIncomingMessage = async ({
   tx,
   context,
-  params: { prompt, providerMetadata: { backoffice = {} } = {} },
+  params: { prompt, providerOptions: { backoffice = {} } = {} },
 }: {
   /** Active database transaction ensuring consistency across all operations */
   tx: DbTransactionType;
   /** Chat context containing user, session, and model configuration */
   context: ChatHistoryContext;
   /** Language model call options containing the messages to import */
-  params: LanguageModelV1CallOptions;
+  params: LanguageModelV2CallOptions;
   /** Record identifier for the imported message */
   messageId?: number;
 }) => {
@@ -752,11 +763,11 @@ export const importIncomingMessage = async ({
       chatId,
       thisTurnId,
       messageIds,
-      newMessages as LanguageModelV1CallOptions['prompt'], // Only insert new messages, not duplicates
+      newMessages as LanguageModelV2CallOptions['prompt'], // Only insert new messages, not duplicates
       currentMessageOrder,
     );
     currentMessageOrder += newMessages.length;
-  }  
+  }
   // Return comprehensive context for continued processing
   return {
     chatId,

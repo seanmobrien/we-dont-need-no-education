@@ -1396,11 +1396,11 @@ console.log(userMemories);
 #### Advanced Integration with Multiple Providers
 
 ```typescript
-import { generateText, LanguageModelV1Prompt } from 'ai';
+import { generateText, LanguageModelPrompt } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { retrieveMemories } from '@mem0/vercel-ai-provider';
 
-const messages: LanguageModelV1Prompt = [
+const messages: LanguageModelPrompt = [
   {
     role: 'user',
     content: [

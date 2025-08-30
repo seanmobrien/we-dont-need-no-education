@@ -1,32 +1,42 @@
 /**
  * @jest-environment node
  * @fileoverview Unit tests for chat history middleware main entry point
- * 
+ *
  * These tests verify the middleware creation, stream transformation,
  * and table initialization functionality.
- * 
+ *
  * @module __tests__/lib/ai/middleware/chat-history/index.test.ts
  */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import {
-  createChatHistoryMiddleware,
+  createChatHistoryMiddlewareEx as createChatHistoryMiddleware,
   type ChatHistoryContext,
 } from '@/lib/ai/middleware/chat-history';
 import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { handleFlush } from '@/lib/ai/middleware/chat-history/flush-handlers';
-import { 
-  safeInitializeMessagePersistence, 
-  safeCompleteMessagePersistence 
+import {
+  safeInitializeMessagePersistence,
+  safeCompleteMessagePersistence,
 } from '@/lib/ai/middleware/chat-history/message-persistence';
 import { generateChatId } from '@/lib/ai/core';
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util';
-import type { LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
-import { LanguageModelV1FunctionToolCall, LanguageModelV1FinishReason, LanguageModelV1CallWarning, LanguageModelV1ProviderMetadata, LanguageModelV1Source, LanguageModelV1LogProbs } from '@ai-sdk/provider';
+import type {
+  LanguageModelCallOptions,
+  LanguageModelMiddleware,
+  LanguageModelStreamPart,
+} from 'ai';
+import {
+  LanguageModelFunctionToolCall,
+  LanguageModelFinishReason,
+  LanguageModelCallWarning,
+  LanguageModelProviderMetadata,
+  LanguageModelSource,
+  LanguageModelLogProbs,
+} from '@ai-sdk/provider';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 
 // Mock dependencies
@@ -40,8 +50,10 @@ jest.mock('@/lib/logger');
 
 jest.mock('@/lib/react-util', () => {
   const original = jest.requireActual('@/lib/react-util');
-  const mockLoggedErrorImpl: any = jest.fn().mockImplementation((message, options) => {
-      return {        
+  const mockLoggedErrorImpl: any = jest
+    .fn()
+    .mockImplementation((message, options) => {
+      return {
         ...options,
         message,
       };
@@ -53,18 +65,29 @@ jest.mock('@/lib/react-util', () => {
   };
 });
 
-
-const mockImportIncomingMessage = importIncomingMessage as jest.MockedFunction<typeof importIncomingMessage>;
-const mockProcessingQueue = ProcessingQueue as jest.MockedClass<typeof ProcessingQueue>;
+const mockImportIncomingMessage = importIncomingMessage as jest.MockedFunction<
+  typeof importIncomingMessage
+>;
+const mockProcessingQueue = ProcessingQueue as jest.MockedClass<
+  typeof ProcessingQueue
+>;
 const mockHandleFlush = handleFlush as jest.MockedFunction<typeof handleFlush>;
-const mockSafeInitializeMessagePersistence = safeInitializeMessagePersistence as jest.MockedFunction<typeof safeInitializeMessagePersistence>;
-const mockSafeCompleteMessagePersistence = safeCompleteMessagePersistence as jest.MockedFunction<typeof safeCompleteMessagePersistence>;
-const mockGenerateChatId = generateChatId as jest.MockedFunction<typeof generateChatId>;
+const mockSafeInitializeMessagePersistence =
+  safeInitializeMessagePersistence as jest.MockedFunction<
+    typeof safeInitializeMessagePersistence
+  >;
+const mockSafeCompleteMessagePersistence =
+  safeCompleteMessagePersistence as jest.MockedFunction<
+    typeof safeCompleteMessagePersistence
+  >;
+const mockGenerateChatId = generateChatId as jest.MockedFunction<
+  typeof generateChatId
+>;
 let mockDb: jest.Mocked<DbDatabaseType>;
 
 describe('Chat History Middleware', () => {
   let mockContext: ChatHistoryContext;
-  let mockParams: LanguageModelV1CallOptions;
+  let mockParams: LanguageModelCallOptions;
   let mockQueueInstance: jest.Mocked<ProcessingQueue>;
 
   beforeEach(() => {
@@ -125,20 +148,23 @@ describe('Chat History Middleware', () => {
     });
 
     mockGenerateChatId.mockReturnValue({ seed: 1, id: 'generated-chat-id' });
-    mockHandleFlush.mockResolvedValue({ 
-      success: true, 
-      processingTimeMs: 100, 
-      textLength: 50 
+    mockHandleFlush.mockResolvedValue({
+      success: true,
+      processingTimeMs: 100,
+      textLength: 50,
     });
-    if (typeof (LoggedError as any)?.isTurtlesAllTheWayDownBaby === 'function') {
+    if (
+      typeof (LoggedError as any)?.isTurtlesAllTheWayDownBaby === 'function'
+    ) {
       (LoggedError as any).isTurtlesAllTheWayDownBaby.mockClear();
     }
-    
 
     // Mock db.transaction
-    mockDb.transaction = jest.fn().mockImplementation((callback) =>
-      callback({} as unknown as Parameters<typeof callback>[0])
-    );
+    mockDb.transaction = jest
+      .fn()
+      .mockImplementation((callback) =>
+        callback({} as unknown as Parameters<typeof callback>[0]),
+      );
   });
 
   describe('createChatHistoryMiddleware', () => {
@@ -168,7 +194,10 @@ describe('Chat History Middleware', () => {
 
     it('should create middleware without immediate chatId processing', () => {
       // Arrange
-      const contextWithNumericChatId = { ...mockContext, chatId: 123 as unknown as string };
+      const contextWithNumericChatId = {
+        ...mockContext,
+        chatId: 123 as unknown as string,
+      };
 
       // Act
       const middleware = createChatHistoryMiddleware(contextWithNumericChatId);
@@ -181,7 +210,10 @@ describe('Chat History Middleware', () => {
 
     it('should use string chatId directly', () => {
       // Arrange
-      const contextWithStringChatId = { ...mockContext, chatId: 'existing-chat' };
+      const contextWithStringChatId = {
+        ...mockContext,
+        chatId: 'existing-chat',
+      };
 
       // Act
       const middleware = createChatHistoryMiddleware(contextWithStringChatId);
@@ -203,7 +235,7 @@ describe('Chat History Middleware', () => {
   describe('wrapStream', () => {
     let middleware: ReturnType<typeof createChatHistoryMiddleware>;
     let mockDoStream: jest.Mock;
-    let mockStream: ReadableStream<LanguageModelV1StreamPart>;
+    let mockStream: ReadableStream<LanguageModelStreamPart>;
 
     beforeEach(() => {
       middleware = createChatHistoryMiddleware(mockContext);
@@ -230,7 +262,7 @@ describe('Chat History Middleware', () => {
           });
           controller.close();
         },
-      });      
+      });
       mockDoStream = jest.fn().mockResolvedValue({
         stream: mockStream,
         rawCall: { rawPrompt: mockParams.prompt },
@@ -239,11 +271,15 @@ describe('Chat History Middleware', () => {
     });
 
     // Helper function for wrapStream calls
-    const callWrapStream = async (middleware: ReturnType<typeof createChatHistoryMiddleware>) => {
+    const callWrapStream = async (
+      middleware: ReturnType<typeof createChatHistoryMiddleware>,
+    ) => {
       return await middleware.wrapStream?.({
         doStream: mockDoStream,
         doGenerate: jest.fn(),
-        model: { modelId: 'test-model' } as unknown as Parameters<NonNullable<typeof middleware.wrapStream>>[0]['model'],
+        model: { modelId: 'test-model' } as unknown as Parameters<
+          NonNullable<typeof middleware.wrapStream>
+        >[0]['model'],
         params: mockParams,
       });
     };
@@ -255,7 +291,7 @@ describe('Chat History Middleware', () => {
       // Assert
       expect(mockSafeInitializeMessagePersistence).toHaveBeenCalledWith(
         mockContext,
-        mockParams
+        mockParams,
       );
     });
 
@@ -283,7 +319,7 @@ describe('Chat History Middleware', () => {
     it('should process chunks through queue', async () => {
       // Act
       const result = await callWrapStream(middleware);
-      
+
       // Verify the queue processing setup
       expect(mockQueueInstance.enqueue).toBeDefined();
       expect(result).toBeDefined();
@@ -291,7 +327,9 @@ describe('Chat History Middleware', () => {
 
     it('should handle queue processing errors', async () => {
       // Arrange
-      mockQueueInstance.enqueue.mockRejectedValue(new Error('Queue processing failed'));
+      mockQueueInstance.enqueue.mockRejectedValue(
+        new Error('Queue processing failed'),
+      );
 
       // Act
       const result = await callWrapStream(middleware);
@@ -329,7 +367,9 @@ describe('Chat History Middleware', () => {
 
     it('should handle completion exception gracefully', async () => {
       // Arrange
-      mockSafeCompleteMessagePersistence.mockRejectedValue(new Error('Completion exception'));
+      mockSafeCompleteMessagePersistence.mockRejectedValue(
+        new Error('Completion exception'),
+      );
 
       // Act
       const result = await callWrapStream(middleware);
@@ -368,7 +408,10 @@ describe('Chat History Middleware', () => {
 
     it('should return params unchanged', async () => {
       // Act
-      const result = await middleware.transformParams?.({ type: 'stream', params: mockParams });
+      const result = await middleware.transformParams?.({
+        type: 'stream',
+        params: mockParams,
+      });
 
       // Assert
       expect(result).toEqual(mockParams);
@@ -376,10 +419,13 @@ describe('Chat History Middleware', () => {
 
     it('should handle empty params', async () => {
       // Arrange
-      const emptyParams = {} as LanguageModelV1CallOptions;
+      const emptyParams = {} as LanguageModelCallOptions;
 
       // Act
-      const result = await middleware.transformParams?.({ type: 'generate', params: emptyParams });
+      const result = await middleware.transformParams?.({
+        type: 'generate',
+        params: emptyParams,
+      });
 
       // Assert
       expect(result).toEqual(emptyParams);
@@ -396,7 +442,10 @@ describe('Chat History Middleware', () => {
       };
 
       // Act
-      const result = await middleware.transformParams?.({ type: 'stream', params: complexParams });
+      const result = await middleware.transformParams?.({
+        type: 'stream',
+        params: complexParams,
+      });
 
       // Assert
       expect(result).toEqual(complexParams);
@@ -416,27 +465,64 @@ describe('Chat History Middleware', () => {
       });
     });
 
-    const callWrapGenerate = async (middleware: LanguageModelV1Middleware) => {
-      return middleware.wrapGenerate ? await middleware.wrapGenerate({
-        doGenerate: mockDoGenerate,
-        doStream: jest.fn(),
-        params: mockParams,
-        model: {
-          specificationVersion: 'v1',
-          provider: '',
-          modelId: '',
-          defaultObjectGenerationMode: undefined,
-          supportsImageUrls: undefined,
-          supportsStructuredOutputs: undefined,
-          supportsUrl: undefined,
-          doGenerate: function (): PromiseLike<{ text?: string; reasoning?: string | Array<{ type: 'text'; text: string; signature?: string; } | { type: 'redacted'; data: string; }>; files?: Array<{ data: string | Uint8Array; mimeType: string; }>; toolCalls?: Array<LanguageModelV1FunctionToolCall>; finishReason: LanguageModelV1FinishReason; usage: { promptTokens: number; completionTokens: number; }; rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown>; }; rawResponse?: { headers?: Record<string, string>; body?: unknown; }; request?: { body?: string; }; response?: { id?: string; timestamp?: Date; modelId?: string; }; warnings?: LanguageModelV1CallWarning[]; providerMetadata?: LanguageModelV1ProviderMetadata; sources?: LanguageModelV1Source[]; logprobs?: LanguageModelV1LogProbs; }> {
-            throw new Error('Function not implemented.');
-          },
-          doStream: function (): PromiseLike<{ stream: ReadableStream<LanguageModelV1StreamPart>; rawCall: { rawPrompt: unknown; rawSettings: Record<string, unknown>; }; rawResponse?: { headers?: Record<string, string>; }; request?: { body?: string; }; warnings?: Array<LanguageModelV1CallWarning>; }> {
-            throw new Error('Function not implemented.');
-          }
-        }
-      }) : undefined;
+    const callWrapGenerate = async (middleware: LanguageModelMiddleware) => {
+      return middleware.wrapGenerate
+        ? await middleware.wrapGenerate({
+            doGenerate: mockDoGenerate,
+            doStream: jest.fn(),
+            params: mockParams,
+            model: {
+              specificationVersion: 'v1',
+              provider: '',
+              modelId: '',
+              defaultObjectGenerationMode: undefined,
+              supportsImageUrls: undefined,
+              supportsStructuredOutputs: undefined,
+              supportsUrl: undefined,
+              doGenerate: function (): PromiseLike<{
+                text?: string;
+                reasoning?:
+                  | string
+                  | Array<
+                      | { type: 'text'; text: string; signature?: string }
+                      | { type: 'redacted'; data: string }
+                    >;
+                files?: Array<{ data: string | Uint8Array; mimeType: string }>;
+                toolCalls?: Array<LanguageModelFunctionToolCall>;
+                finishReason: LanguageModelFinishReason;
+                usage: { promptTokens: number; completionTokens: number };
+                rawCall: {
+                  rawPrompt: unknown;
+                  rawSettings: Record<string, unknown>;
+                };
+                rawResponse?: {
+                  headers?: Record<string, string>;
+                  body?: unknown;
+                };
+                request?: { body?: string };
+                response?: { id?: string; timestamp?: Date; modelId?: string };
+                warnings?: LanguageModelCallWarning[];
+                providerMetadata?: LanguageModelProviderMetadata;
+                sources?: LanguageModelSource[];
+                logprobs?: LanguageModelLogProbs;
+              }> {
+                throw new Error('Function not implemented.');
+              },
+              doStream: function (): PromiseLike<{
+                stream: ReadableStream<LanguageModelStreamPart>;
+                rawCall: {
+                  rawPrompt: unknown;
+                  rawSettings: Record<string, unknown>;
+                };
+                rawResponse?: { headers?: Record<string, string> };
+                request?: { body?: string };
+                warnings?: Array<LanguageModelCallWarning>;
+              }> {
+                throw new Error('Function not implemented.');
+              },
+            },
+          })
+        : undefined;
     };
 
     it('should initialize message persistence for text generation', async () => {
@@ -446,7 +532,7 @@ describe('Chat History Middleware', () => {
       // Assert
       expect(mockSafeInitializeMessagePersistence).toHaveBeenCalledWith(
         mockContext,
-        mockParams
+        mockParams,
       );
     });
 
@@ -462,7 +548,7 @@ describe('Chat History Middleware', () => {
           messageId: 100,
           generatedText: 'Generated text response',
           startTime: expect.any(Number),
-        })
+        }),
       );
     });
 
@@ -501,7 +587,9 @@ describe('Chat History Middleware', () => {
       mockDoGenerate.mockRejectedValue(generationError);
 
       // Act & Assert
-      await expect(callWrapGenerate(middleware)).rejects.toThrow('Generation failed');
+      await expect(callWrapGenerate(middleware)).rejects.toThrow(
+        'Generation failed',
+      );
     });
   });
 

@@ -10,7 +10,8 @@ jest.mock('react-dom', () => ({
 
 describe('Modal', () => {
   const defaultProps = {
-    open: false,
+    isOpen: false,
+    title: 'Test Modal Title',
     onClose: jest.fn(),
   };
 
@@ -18,25 +19,25 @@ describe('Modal', () => {
     const { container } = render(
       <Modal {...defaultProps}>
         <div>Modal content</div>
-      </Modal>
+      </Modal>,
     );
     expect(container).toMatchSnapshot();
   });
 
   it('renders open modal snapshot', () => {
     const { container } = render(
-      <Modal {...defaultProps} open={true}>
+      <Modal {...defaultProps} isOpen={true}>
         <div>Modal content</div>
-      </Modal>
+      </Modal>,
     );
     expect(container).toMatchSnapshot();
   });
 
   it('renders modal with title snapshot', () => {
     const { container } = render(
-      <Modal {...defaultProps} open={true} title="Test Modal Title">
+      <Modal {...defaultProps} isOpen={true} title="Test Modal Title">
         <div>Modal content</div>
-      </Modal>
+      </Modal>,
     );
     expect(container).toMatchSnapshot();
   });
@@ -52,7 +53,7 @@ describe('Modal', () => {
     const { container } = render(
       <Modal {...defaultProps} open={true} actions={actions}>
         <div>Modal content</div>
-      </Modal>
+      </Modal>,
     );
     expect(container).toMatchSnapshot();
   });

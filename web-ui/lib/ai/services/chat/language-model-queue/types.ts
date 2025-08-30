@@ -2,7 +2,7 @@
  * @fileoverview Types and error classes for the FIFO rate-aware model queue system
  */
 
-import { LanguageModelV1 } from '@ai-sdk/provider';
+import { LanguageModelV2 } from '@ai-sdk/provider';
 
 /**
  * Status of a queued request
@@ -12,14 +12,18 @@ export type QueuedRequestStatus = 'pending' | 'processing';
 /**
  * Method type for language model operations
  */
-export type LanguageModelMethod = 'generateText' | 'generateObject' | 'streamText' | 'streamObject';
+export type LanguageModelMethod =
+  | 'generateText'
+  | 'generateObject'
+  | 'streamText'
+  | 'streamObject';
 
 /**
  * Configuration options for LanguageModelQueue constructor
  */
 export interface LanguageModelQueueOptions {
   /** The language model the queue is attached to */
-  model: LanguageModelV1;
+  model: LanguageModelV2;
   /** Maximum number of concurrent requests the queue will run */
   maxConcurrentRequests: number;
 }
@@ -30,7 +34,7 @@ export interface LanguageModelQueueOptions {
 export interface QueuedRequest {
   /** Unique request identifier */
   id: string;
-  /** Model type from the LanguageModelV1 */
+  /** Model type from the LanguageModelV2 */
   modelType: string;
   /** Method used to queue the request */
   method: LanguageModelMethod;

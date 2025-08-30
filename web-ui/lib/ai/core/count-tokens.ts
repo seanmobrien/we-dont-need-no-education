@@ -1,12 +1,12 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { LanguageModelV1Prompt, CoreMessage } from "ai";
-import { promptTokensEstimate } from "openai-chat-tokens";
-
+import { CoreMessage } from 'ai';
+import { promptTokensEstimate } from 'openai-chat-tokens';
+import { LanguageModelV2Prompt } from '@ai-sdk/provider';
 
 /**
  * Estimates the number of tokens in a given prompt for language model usage.
  *
- * This function processes the provided prompt, which can be either a `LanguageModelV1Prompt`
+ * This function processes the provided prompt, which can be either a `LanguageModelPrompt`
  * or an array of `CoreMessage` objects, and extracts relevant message content, tool calls,
  * and function information. It then constructs an input object suitable for token estimation
  * and returns the estimated token count using `promptTokensEstimate`.
@@ -15,22 +15,24 @@ import { promptTokensEstimate } from "openai-chat-tokens";
  * prompt's string length.
  *
  * @param params - An object containing:
- *   @param params.prompt - The prompt to estimate tokens for, either a `LanguageModelV1Prompt` or an array of `CoreMessage` objects.
+ *   @param params.prompt - The prompt to estimate tokens for, either a `LanguageModelPrompt` or an array of `CoreMessage` objects.
  *   @param params.enableLogging - Optional. Whether to enable error logging. Defaults to `true`.
  * @returns The estimated number of tokens in the prompt.
  */
-export const countTokens = ({prompt, enableLogging = true}: {prompt: LanguageModelV1Prompt|(CoreMessage[]), enableLogging?: boolean}): number => {
+export const countTokens = ({
+  prompt,
+  enableLogging = true,
+}: {
+  prompt: LanguageModelV2Prompt | CoreMessage[];
+  enableLogging?: boolean;
+}): number => {
   try {
     // Extract messages, functions, and function_call from prompt
     const messages = prompt.map((msg) => {
       const content = Array.isArray(msg.content)
         ? msg.content
             .map((part) =>
-              typeof part === 'string'
-                ? part
-                : 'text' in part
-                  ? part.text
-                  : '',
+              typeof part === 'string' ? part : 'text' in part ? part.text : '',
             )
             .join('')
         : typeof msg.content === 'string'
@@ -88,10 +90,11 @@ export const countTokens = ({prompt, enableLogging = true}: {prompt: LanguageMod
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'tokenStatsMiddleware.transformParams',
-      log: enableLogging,          
+      log: enableLogging,
     });
     // Return a fallback estimate if token counting fails
-    const promptStr = typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
+    const promptStr =
+      typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
     return Math.ceil(promptStr.length / 4);
   }
 };

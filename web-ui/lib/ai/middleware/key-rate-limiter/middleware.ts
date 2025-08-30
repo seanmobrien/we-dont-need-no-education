@@ -1,19 +1,50 @@
-import type {  LanguageModelV1StreamPart } from 'ai';
+import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import { getRetryErrorInfo } from '@/lib/ai/chat';
-import { isModelAvailable, getModelAvailabilityStatus } from '@/lib/ai/aiModelFactory';
+import {
+  isModelAvailable,
+  getModelAvailabilityStatus,
+} from '@/lib/ai/aiModelFactory';
 import { rateLimitMetrics } from './metrics';
-import type { ModelClassification, ModelFailoverConfig, RetryRateLimitMiddlewareType, RateLimitRetryContext, RateLimitFactoryOptions } from './types';
+import type {
+  ModelClassification,
+  ModelFailoverConfig,
+  RetryRateLimitMiddlewareType,
+  RateLimitRetryContext,
+  RateLimitFactoryOptions,
+} from './types';
 import { log } from '@/lib/logger';
 import { checkModelAvailabilityAndFallback } from './model-availability';
-import { handleRateLimitError, disableModelFromRateLimit } from './rate-limit-handler';
-import { recordRequestMetrics, getCurrentProvider, constructModelKey } from './metrics-utils';
+import {
+  handleRateLimitError,
+  disableModelFromRateLimit,
+} from './rate-limit-handler';
+import {
+  recordRequestMetrics,
+  getCurrentProvider,
+  constructModelKey,
+} from './metrics-utils';
+import { LanguageModel } from 'ai';
+import { ModelMap } from '../../services/model-stats/model-map';
 
 // Model classification mapping - extract from model identifier
-function getModelClassification({ modelId = 'unknown' }: { modelId?: string;} = {}): ModelClassification {    
-  if (modelId.includes('hifi') || modelId.includes('gpt-4') || modelId.includes('gemini-1.5-pro')) {
+async function getModelClassification({
+  model = 'unknown',
+}: { model?: LanguageModel } = {}): Promise<ModelClassification> {
+  const { modelId = 'unknown' } = await (
+    await ModelMap.getInstance()
+  ).normalizeProviderModel(model);
+  if (
+    modelId.includes('hifi') ||
+    modelId.includes('gpt-4') ||
+    modelId.includes('gemini-1.5-pro')
+  ) {
     return 'hifi';
   }
-  if (modelId.includes('lofi') || modelId.includes('gpt-3.5') || modelId.includes('gemini-1.5-flash')) {
+  if (
+    modelId.includes('lofi') ||
+    modelId.includes('gpt-3.5') ||
+    modelId.includes('gemini-1.5-flash')
+  ) {
     return 'lofi';
   }
   if (modelId.includes('embedding')) {
@@ -22,15 +53,17 @@ function getModelClassification({ modelId = 'unknown' }: { modelId?: string;} = 
   if (modelId.includes('completions')) {
     return 'completions';
   }
-  
+
   return 'hifi'; // default fallback
 }
 
 // Provider and model failover logic
 function getFailoverConfig(currentProvider: string): ModelFailoverConfig {
-  const primaryProvider = currentProvider.includes('azure') ? 'azure' : 'google';
+  const primaryProvider = currentProvider.includes('azure')
+    ? 'azure'
+    : 'google';
   const fallbackProvider = primaryProvider === 'azure' ? 'google' : 'azure';
-  
+
   return {
     primaryProvider,
     fallbackProvider,
@@ -38,22 +71,29 @@ function getFailoverConfig(currentProvider: string): ModelFailoverConfig {
   };
 }
 
-export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactoryOptions | RateLimitRetryContext): RetryRateLimitMiddlewareType => {    
+export const retryRateLimitMiddlewareFactory = async (
+  factoryOptions: RateLimitFactoryOptions | RateLimitRetryContext,
+): Promise<RetryRateLimitMiddlewareType> => {
   /**
    * Advanced rate limit middleware context data
    */
-  const rateLimitContext = (() => {
+  const rateLimitContext = await (async () => {
     if ('modelClass' in factoryOptions) {
       return factoryOptions;
     }
     // If factoryOptions is a FactoryOptions, derive context from it
     const { model } = factoryOptions;
-    if (!model) {     
+    if (!model) {
       throw new Error('Model is required to create rate limit context');
     }
-    const modelClass = getModelClassification(model);
+    const normalModel = await (
+      await ModelMap.getInstance()
+    ).normalizeProviderModel(model);
+    const modelClass = await getModelClassification({
+      model: normalModel.modelId,
+    });
     const { primaryProvider, fallbackProvider } = getFailoverConfig(
-      model.provider
+      normalModel.provider,
     );
     return {
       modelClass,
@@ -64,14 +104,10 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
     };
   })();
 
-
   const retryRateLimitMiddleware: RetryRateLimitMiddlewareType = {
-    
     rateLimitContext: () => ({ ...rateLimitContext }),
 
     wrapGenerate: async ({ doGenerate, params }) => {
-
-
       const startTime = Date.now();
       const modelClassification = rateLimitContext.modelClass;
 
@@ -80,7 +116,10 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
 
       // Check if current model is available, attempt fallback if not
       const currentProvider = getCurrentProvider();
-      const currentModelKey = constructModelKey(currentProvider, modelClassification);
+      const currentModelKey = constructModelKey(
+        currentProvider,
+        modelClassification,
+      );
 
       try {
         await checkModelAvailabilityAndFallback(
@@ -92,9 +131,9 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
             ...{
               chatId: 'unassigned',
               turnId: '1',
-              ...(params?.providerMetadata?.backoffice ?? {})
-            }    
-          }
+              ...(params?.providerOptions?.backoffice ?? {}),
+            },
+          },
         );
       } catch (error) {
         // Model unavailable and no fallback - error already thrown with appropriate message
@@ -109,7 +148,7 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
         return result;
       } catch (error) {
         recordRequestMetrics(startTime, modelClassification, 'generate');
-        
+
         // Use utility function to handle rate limit errors
         await handleRateLimitError(
           error,
@@ -121,7 +160,7 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
             ...{
               chatId: 'unassigned',
               turnId: '1',
-              ...(params?.providerMetadata?.backoffice ?? {}),
+              ...(params?.providerOptions?.backoffice ?? {}),
             },
           },
           'generate',
@@ -133,14 +172,17 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
 
     wrapStream: async ({ doStream, params, model }) => {
       const startTime = Date.now();
-      const modelClassification = getModelClassification(model);
+      const modelClassification = await getModelClassification({ model });
 
       console.log('Advanced rate limit middleware - doStream called');
       console.log(`Model classification: ${modelClassification}`);
 
       // Similar model availability check as in wrapGenerate
       const currentProvider = getCurrentProvider();
-      const currentModelKey = constructModelKey(currentProvider, modelClassification);
+      const currentModelKey = constructModelKey(
+        currentProvider,
+        modelClassification,
+      );
 
       try {
         await checkModelAvailabilityAndFallback(
@@ -152,7 +194,7 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
             ...{
               chatId: 'unassigned',
               turnId: '1',
-              ...(params?.providerMetadata?.backoffice ?? {}),
+              ...(params?.providerOptions?.backoffice ?? {}),
             },
           },
         );
@@ -167,12 +209,12 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
         let hasError = false;
 
         const transformStream = new TransformStream<
-          LanguageModelV1StreamPart,
-          LanguageModelV1StreamPart
+          LanguageModelV2StreamPart,
+          LanguageModelV2StreamPart
         >({
           transform(chunk, controller) {
             if (chunk.type === 'text-delta') {
-              generatedText += chunk.textDelta;
+              generatedText += chunk.delta;
             }
 
             // Check for error chunks that might indicate rate limiting
@@ -224,7 +266,7 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
           modelClassification,
           getFailoverConfig(currentProvider),
           params,
-          'stream_setup'
+          'stream_setup',
         );
         // This line should never be reached as handleRateLimitError always throws
         throw error;
@@ -235,22 +277,25 @@ export const retryRateLimitMiddlewareFactory = (factoryOptions: RateLimitFactory
       console.log('transformParams called - checking model availability');
 
       const modelClassification = rateLimitContext.modelClass;
-      const currentProvider = rateLimitContext.failover?.primaryProvider ?? 'azure';
+      const currentProvider =
+        rateLimitContext.failover?.primaryProvider ?? 'azure';
       const currentModelKey = `${currentProvider}:${modelClassification}`;
 
       // Log current model availability status
       const availabilityStatus = getModelAvailabilityStatus();
-      log(l => l.verbose('Model availability status:', availabilityStatus));
+      log((l) => l.verbose('Model availability status:', availabilityStatus));
 
       // If current model is not available, we could potentially modify params here
       // to use a different model, but this would require careful handling
       if (!isModelAvailable(currentModelKey)) {
-        log(l => l.warn(`Requested model ${currentModelKey} is not available`));
+        log((l) =>
+          l.warn(`Requested model ${currentModelKey} is not available`),
+        );
       }
       // Forward to token tracking middleware to generate token counts
       return {
         ...params,
-      }
+      };
     },
   };
 
