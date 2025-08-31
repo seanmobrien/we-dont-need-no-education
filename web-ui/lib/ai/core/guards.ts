@@ -7,8 +7,8 @@
 import { match, P } from 'ts-pattern';
 import {
   AnnotatedErrorMessage,
-  AnnotatedMessageBase,
   AnnotatedRetryMessage,
+  AnnotatedErrorMessageBase,
 } from './types';
 import { AiModelType, AiModelTypeValues, AiLanguageModelType } from './unions';
 
@@ -20,12 +20,13 @@ import { AiModelType, AiModelTypeValues, AiLanguageModelType } from './unions';
  */
 export const isAnnotatedMessageBase = (
   message: unknown,
-): message is AnnotatedMessageBase => {
+): message is AnnotatedErrorMessageBase => {
   return (
     typeof message === 'object' &&
     message !== null &&
     'type' in message &&
-    typeof (message as AnnotatedMessageBase).type === 'string'
+    (message.type === 'data-error-notify-retry' ||
+      message.type === 'data-error-retry')
   );
 };
 
@@ -41,7 +42,7 @@ export const isAnnotatedErrorMessage = (
   if (!isAnnotatedMessageBase(message)) {
     return false;
   }
-  return message.type === 'error';
+  return message.type === 'data-error-retry';
 };
 
 /**
@@ -64,11 +65,9 @@ export const isAnnotatedRetryMessage = (
   match(message)
     .with(
       {
-        type: 'error',
-        hint: 'notify:retry',
-        message: P.string,
+        type: 'data-error-notify-retry',
         data: {
-          model: P.union('hifi', 'lofi', 'completions', 'embedding', 'gemini-pro', 'gemini-flash', 'google-embedding'),
+          model: P.union(...AiModelTypeValues),
           retryAt: P.string.regex(
             /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/,
           ),

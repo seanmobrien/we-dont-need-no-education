@@ -4,13 +4,17 @@ import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queu
 import { rateLimitMetrics } from '@/lib/ai/middleware/key-rate-limiter/metrics';
 import { isModelAvailable } from '@/lib/ai/aiModelFactory';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
-import { generateText, wrapLanguageModel } from 'ai';
-import type { LanguageModelV1, CoreMessage } from 'ai';
-import type { RateLimitedRequest, ProcessedResponse, ModelClassification } from '@/lib/ai/middleware/key-rate-limiter/types';
+import { convertToModelMessages, generateText, UIMessage } from 'ai';
+import type { LanguageModelV2 } from '@ai-sdk/provider';
+import type {
+  RateLimitedRequest,
+  ProcessedResponse,
+  ModelClassification,
+} from '@/lib/ai/middleware/key-rate-limiter/types';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
-import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
 export const dynamic = 'force-dynamic';
@@ -21,103 +25,129 @@ const REQUEST_TIMEOUT_MS = 720 * 1000; // 720 seconds per request
 export const GET = wrapRouteRequest(async () => {
   const startTime = Date.now();
   let processedCount = 0;
-  
+
   try {
-    log(l => l.verbose('Rate retry processing started'));
+    log((l) => l.verbose('Rate retry processing started'));
     rateLimitMetrics.recordMessageProcessed('system', 1);
     const chatHistoryContext = createAgentHistoryContext({
-      operation: "ratelimit.retry",
+      operation: 'ratelimit.retry',
       iteration: 1,
-      originatingUserId: "-1"      
+      originatingUserId: '-1',
     });
 
-    const modelClassifications: ModelClassification[] = ['hifi', 'lofi', 'completions', 'embedding'];
-    
+    const modelClassifications: ModelClassification[] = [
+      'hifi',
+      'lofi',
+      'completions',
+      'embedding',
+    ];
+
     // Process gen-1 messages first
     for (const classification of modelClassifications) {
       const processingTimeElapsed = Date.now() - startTime;
       if (processingTimeElapsed >= MAX_PROCESSING_TIME_MS) {
-        log(l => l.warn('Max processing time reached, stopping'));
+        log((l) => l.warn('Max processing time reached, stopping'));
         break;
       }
-      
+
       // Check if we have available models for this classification
       const azureModelKey = `azure:${classification}`;
       const googleModelKey = `google:${classification}`;
-      
+
       const azureAvailable = isModelAvailable(azureModelKey);
       const googleAvailable = isModelAvailable(googleModelKey);
-      
+
       if (!azureAvailable && !googleAvailable) {
-        log(l => l.warn(`No available models for ${classification}, skipping`));
+        log((l) =>
+          l.warn(`No available models for ${classification}, skipping`),
+        );
         continue;
       }
-      
+
       // Get queue size for metrics
-      const queueSize = await rateLimitQueueManager.getQueueSize(1, classification);
+      const queueSize = await rateLimitQueueManager.getQueueSize(
+        1,
+        classification,
+      );
       rateLimitMetrics.updateQueueSize(queueSize, classification, 1);
-      
+
       if (queueSize === 0) {
-        log(l => l.verbose(`No gen-1 requests for ${classification}`));
+        log((l) => l.verbose(`No gen-1 requests for ${classification}`));
         continue;
       }
-      
+
       // Process requests from gen-1 queue
-      const requests = await rateLimitQueueManager.dequeueRequests(1, classification, 10);
-      log(l => l.verbose(`Processing ${requests.length} gen-1 requests for ${classification}`));
-      
+      const requests = await rateLimitQueueManager.dequeueRequests(
+        1,
+        classification,
+        10,
+      );
+      log((l) =>
+        l.verbose(
+          `Processing ${requests.length} gen-1 requests for ${classification}`,
+        ),
+      );
+
       for (const request of requests) {
         const requestStartTime = Date.now();
-        
+
         try {
           // Choose available model (Azure first, then Google)
           const modelKey = azureAvailable ? azureModelKey : googleModelKey;
-          log(l => l.verbose(`Processing request ${request.id} with model ${modelKey}`));                              
+          log((l) =>
+            l.verbose(
+              `Processing request ${request.id} with model ${modelKey}`,
+            ),
+          );
           // Create model instance (ensure we don't use embedding models for text generation)
-          const modelInstance =
+          const modelInstance = (
             classification === 'embedding'
               ? aiModelFactory(classification)
               : classification === 'hifi' || classification === 'lofi'
                 ? aiModelFactory(classification)
-                : aiModelFactory('lofi');
-          const model = wrapLanguageModel({
-            middleware: createChatHistoryMiddleware(chatHistoryContext),
-            model: modelInstance as LanguageModelV1,
+                : aiModelFactory('lofi')
+          ) as LanguageModelV2;
+          const model = wrapChatHistoryMiddleware({
+            chatHistoryContext,
+            model: modelInstance,
           });
-          
+
           // Process the request (simplified - in real implementation would handle streaming)
           const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT_MS);
+            setTimeout(
+              () => reject(new Error('Request timeout')),
+              REQUEST_TIMEOUT_MS,
+            );
           });
-          
+
           const generatePromise = generateText({
             model,
-            messages: (request.request.messages as CoreMessage[]) || [],
+            messages: convertToModelMessages(
+              (request.request.messages ?? []) as UIMessage[],
+            ),
             // maxTokens: 1000, // reasonable limit
           });
           chatHistoryContext.iteration++;
 
-
           const result = await Promise.race([generatePromise, timeoutPromise]);
-          
+
           // Store successful response
           const response: ProcessedResponse = {
             id: request.id,
             response: result,
             processedAt: new Date().toISOString(),
           };
-          
+
           await rateLimitQueueManager.storeResponse(response);
-          
+
           const duration = Date.now() - requestStartTime;
           rateLimitMetrics.recordProcessingDuration(duration, classification);
           rateLimitMetrics.recordMessageProcessed(classification, 1);
-          
-          processedCount++;
-          log(l => l.verbose(`Successfully processed request ${request.id}`));
 
+          processedCount++;
+          log((l) => l.verbose(`Successfully processed request ${request.id}`));
         } catch (error) {
-          log(l => l.error(`Error processing request ${request.id}:`, error));
+          log((l) => l.error(`Error processing request ${request.id}:`, error));
 
           // Check if it's another rate limit error
           if (isRateRetryError(error)) {
@@ -150,16 +180,20 @@ export const GET = wrapRouteRequest(async () => {
             rateLimitMetrics.recordError('processing_error', classification);
           }
         }
-        
+
         // Check time limit
         const totalElapsed = Date.now() - startTime;
         if (totalElapsed >= MAX_PROCESSING_TIME_MS) {
-          log(l => l.error(new Error('Max processing time reached during gen-1 processing')));
+          log((l) =>
+            l.error(
+              new Error('Max processing time reached during gen-1 processing'),
+            ),
+          );
           break;
         }
       }
     }
-    
+
     // Process gen-2 messages (only one per model classification)
     const totalElapsed = Date.now() - startTime;
     if (totalElapsed < MAX_PROCESSING_TIME_MS) {
@@ -168,67 +202,81 @@ export const GET = wrapRouteRequest(async () => {
         if (processingTimeElapsed >= MAX_PROCESSING_TIME_MS) {
           break;
         }
-        
+
         // Only process gen-2 if no gen-1 was processed for this classification
-        const gen2QueueSize = await rateLimitQueueManager.getQueueSize(2, classification);
+        const gen2QueueSize = await rateLimitQueueManager.getQueueSize(
+          2,
+          classification,
+        );
         rateLimitMetrics.updateQueueSize(gen2QueueSize, classification, 2);
-        
+
         if (gen2QueueSize === 0) {
           continue;
         }
-        
+
         // Check model availability
         const azureModelKey = `azure:${classification}`;
         const googleModelKey = `google:${classification}`;
-        
+
         const azureAvailable = isModelAvailable(azureModelKey);
         const googleAvailable = isModelAvailable(googleModelKey);
-        
+
         if (!azureAvailable && !googleAvailable) {
           continue;
         }
-        
+
         // Process only one gen-2 request
-        const requests = await rateLimitQueueManager.dequeueRequests(2, classification, 1);
+        const requests = await rateLimitQueueManager.dequeueRequests(
+          2,
+          classification,
+          1,
+        );
         if (requests.length === 0) {
           continue;
         }
-        
+
         const request = requests[0];
-        log(l => l.verbose(`Processing gen-2 request ${request.id} for ${classification}`));
+        log((l) =>
+          l.verbose(
+            `Processing gen-2 request ${request.id} for ${classification}`,
+          ),
+        );
 
         try {
           // If we've made it all the way to gen-2 it's time to bust out the bgcontext model.
           const modelInstance = aiModelFactory('google:gemini-2.0-flash');
-          const model = wrapLanguageModel({
-            model: modelInstance as LanguageModelV1,
-            middleware: createChatHistoryMiddleware(chatHistoryContext),
-          });           
-          
-          const timeoutPromise = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Request timeout')), REQUEST_TIMEOUT_MS);
+          const model = wrapChatHistoryMiddleware({
+            model: modelInstance as LanguageModelV2,
+            chatHistoryContext,
           });
-          
+
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(
+              () => reject(new Error('Request timeout')),
+              REQUEST_TIMEOUT_MS,
+            );
+          });
+
           const generatePromise = generateText({
             model,
-            messages: (request.request.messages as CoreMessage[]) || [],
-            maxTokens: 1000,
+            messages:
+              convertToModelMessages(request.request.messages as UIMessage[]) ||
+              [],
           });
-          
+
           const result = await Promise.race([generatePromise, timeoutPromise]);
-          
+
           const response: ProcessedResponse = {
             id: request.id,
             response: result,
             processedAt: new Date().toISOString(),
           };
-          
+
           await rateLimitQueueManager.storeResponse(response);
           rateLimitMetrics.recordMessageProcessed(classification, 2);
           processedCount++;
-          
         } catch (error) {
-          log(l => l.error(`Gen-2 request ${request.id} failed:`, error));
+          log((l) => l.error(`Gen-2 request ${request.id} failed:`, error));
 
           // Gen-2 failures are critical - mark as will not retry
           const errorResponse: ProcessedResponse = {
@@ -239,15 +287,19 @@ export const GET = wrapRouteRequest(async () => {
             },
             processedAt: new Date().toISOString(),
           };
-          
+
           await rateLimitQueueManager.storeResponse(errorResponse);
           rateLimitMetrics.recordError('gen2_critical_failure', classification);
         }
       }
     }
-    
+
     const totalDuration = Date.now() - startTime;
-    log(l => l.verbose(`Rate retry processing completed. Processed: ${processedCount}, Duration: ${totalDuration}ms`));
+    log((l) =>
+      l.verbose(
+        `Rate retry processing completed. Processed: ${processedCount}, Duration: ${totalDuration}ms`,
+      ),
+    );
 
     return NextResponse.json({
       success: true,
@@ -255,7 +307,6 @@ export const GET = wrapRouteRequest(async () => {
       duration: totalDuration,
       timestamp: new Date().toISOString(),
     });
-    
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
@@ -264,12 +315,15 @@ export const GET = wrapRouteRequest(async () => {
       extra: { processedCount, duration: Date.now() - startTime },
     });
     rateLimitMetrics.recordError('processing_system_error', 'system');
-    
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      processed: processedCount,
-      duration: Date.now() - startTime,
-    }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        processed: processedCount,
+        duration: Date.now() - startTime,
+      },
+      { status: 500 },
+    );
   }
 });

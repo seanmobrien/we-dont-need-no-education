@@ -4,17 +4,19 @@ import { render, screen, fireEvent } from '@/__tests__/test-utils';
 import { useRouter } from 'next/navigation';
 import EmailList from '@/components/email-message/list';
 
-jest.mock('@toolpad/core/useNotifications', () => ({ useNotifications: () => ({ show: jest.fn() }) }));
+jest.mock('@toolpad/core/useNotifications', () => ({
+  useNotifications: () => ({ show: jest.fn() }),
+}));
 
 jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
-  ServerBoundDataGrid: ({ 
-    columns, 
-    onRowDoubleClick, 
+  ServerBoundDataGrid: ({
+    columns,
+    onRowDoubleClick,
     idColumn,
     getDetailPanelContent,
     getDetailPanelHeight,
     url,
-    ...rest 
+    ...rest
   }: any) => {
     const subjectCol = columns.find((c: any) => c.field === 'subject');
     const subjectLink = subjectCol?.renderCell
@@ -42,31 +44,37 @@ jest.mock('@/lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     api: { email: { url: '/api/email' } },
-    messages: { email: (id: string) => ({ toString: () => `/messages/email/${id}` }) },
+    messages: {
+      email: (id: string) => ({ toString: () => `/messages/email/${id}` }),
+    },
   },
 }));
 
 describe('EmailList', () => {
   it('renders grid with expected columns count', () => {
-  render(<EmailList />);
+    render(<EmailList />);
     expect(screen.getByTestId('grid')).toBeInTheDocument();
     // Current stableColumns has 8 entries
     expect(screen.getByTestId('grid').getAttribute('data-columns')).toBe('8');
   });
 
   it('renders subject column as a link with correct href', () => {
-  render(<EmailList />);
+    render(<EmailList />);
     const link = screen.getByRole('link', { name: /Open email: Hello world/i });
     expect(link).toBeInTheDocument();
-  expect(link).toHaveAttribute('href', expect.stringContaining('/messages/email/123'));
+    expect(link).toHaveAttribute(
+      'href',
+      expect.stringContaining('/messages/email/123'),
+    );
   });
 
   it('navigates on row double-click via router.push', () => {
-  const useRouterMock = useRouter as unknown as jest.Mock;
-  render(<EmailList />);
+    const useRouterMock = useRouter as unknown as jest.Mock;
+    render(<EmailList />);
     fireEvent.click(screen.getByTestId('dbl'));
     // Access the last router instance created by useRouter and assert push was called
-  const lastRouter = useRouterMock.mock.results[useRouterMock.mock.results.length - 1].value;
+    const lastRouter =
+      useRouterMock.mock.results[useRouterMock.mock.results.length - 1].value;
     expect(lastRouter.push).toHaveBeenCalledWith('/messages/email/999');
   });
 });

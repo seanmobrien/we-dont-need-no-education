@@ -12,12 +12,12 @@ import { ModelResourceNotFoundError } from '@/lib/ai/services/chat/errors/model-
  */
 
 import { drizDbWithInit, type DbDatabaseType } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema'
-import { LanguageModelV1 } from '@ai-sdk/provider';
+import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ProviderMap } from './provider-map';
 import { log } from '@/lib/logger';
+import { LanguageModel } from 'ai';
 
 /**
  * Type representing a complete model record with provider information.
@@ -69,14 +69,14 @@ export type ProviderModelNormalization = {
 /**
  * ModelMap provides centralized management of AI model configurations and quotas.
  * Uses singleton pattern with local caching and database persistence.
- * 
+ *
  * Key features:
  * - Singleton instance with lazy initialization
  * - Local caching with TTL for performance
  * - Provider/model name normalization
  * - Direct lookup from LanguageModelV1 instances
  * - Comprehensive quota management
- * 
+ *
  * @example
  * ```typescript
  * const modelMap = await ModelMap.getInstance();
@@ -120,8 +120,8 @@ export class ModelMap {
     this.#idToRecord = new Map();
     this.#modelIdToQuota = new Map();
     this.#initialized = false;
-    this.#whenInitialized = Promise.withResolvers<boolean>();    
-    if (Array.isArray(modelsOrDb)) {      
+    this.#whenInitialized = Promise.withResolvers<boolean>();
+    if (Array.isArray(modelsOrDb)) {
       // Initialize with provided model records
       for (const [key, record] of modelsOrDb) {
         this.#providerModelToRecord.set(key, record);
@@ -138,10 +138,14 @@ export class ModelMap {
    * @returns {ModelMap} The singleton instance.
    */
   static get Instance(): ModelMap {
-    if (this.#instance) { return this.#instance; }
+    if (this.#instance) {
+      return this.#instance;
+    }
     ModelMap.getInstance();
-    if (this.#instance) { return this.#instance; }
-    throw new Error('ModelMap not initialized');    
+    if (this.#instance) {
+      return this.#instance;
+    }
+    throw new Error('ModelMap not initialized');
   }
 
   /**
@@ -157,7 +161,7 @@ export class ModelMap {
     this.#instance = new ModelMap(db);
     const p = this.#instance.#whenInitialized.promise
       .then((x) => {
-        log(l => l.silly('ModelMap initialized successfully'));
+        log((l) => l.silly('ModelMap initialized successfully'));
         return x;
       })
       .catch((e) => {
@@ -186,7 +190,7 @@ export class ModelMap {
    * @param {DbDatabaseType} [db] - Optional database instance.
    * @returns {Promise<boolean>} Promise that resolves to true when refresh is complete.
    */
-  async refresh(db?: DbDatabaseType): Promise<boolean> {      
+  async refresh(db?: DbDatabaseType): Promise<boolean> {
     this.#providerModelToRecord.clear();
     this.#idToRecord.clear();
     this.#modelIdToQuota.clear();
@@ -227,7 +231,7 @@ export class ModelMap {
 
       // Populate model caches - ensure we have an array to iterate over
       const now = new Date(Date.now());
-      Array.from(await modelsWithProviders ?? []).forEach((row) => {
+      Array.from((await modelsWithProviders) ?? []).forEach((row) => {
         const record: ModelRecord = {
           id: row.modelId,
           providerId: row.providerId,
@@ -247,7 +251,7 @@ export class ModelMap {
       });
 
       // Populate quota cache - ensure we have an array to iterate over
-      Array.from(await quotas ?? []).forEach((quota) => {
+      Array.from((await quotas) ?? []).forEach((quota) => {
         const quotaRecord: ModelQuotaRecord = {
           id: quota.id,
           modelId: quota.modelId,
@@ -330,9 +334,16 @@ export class ModelMap {
    * ```
    */
   async normalizeProviderModel(
-    providerOrModel: string,
+    providerOrModel: LanguageModel,
     modelName?: string,
   ): Promise<ProviderModelNormalization> {
+    if (typeof providerOrModel === 'object' && providerOrModel) {
+      return await this.normalizeProviderModel(
+        providerOrModel.provider,
+        providerOrModel.modelId,
+      );
+    }
+
     // Parse provider:model format if present
     let provider: string;
     let parsedModelName: string;
@@ -349,13 +360,16 @@ export class ModelMap {
     // Get provider ID from ProviderMap
     try {
       // Give maps a chance to finish initialization
-      const [providerMap] = await Promise.all([ProviderMap.getInstance(), this.whenInitialized]);
+      const [providerMap] = await Promise.all([
+        ProviderMap.getInstance(),
+        this.whenInitialized,
+      ]);
       // Get provider ID from ProviderMap - note providermap.id is a synchronous function, so no await is necessary.
       const providerId = providerMap.id(provider);
       // If provider ID was found then use it pull the model, otherwise set id to undefined
-      const record = (providerId 
+      const record = providerId
         ? this.#providerModelToRecord.get(`${providerId}:${parsedModelName}`)
-        : undefined);
+        : undefined;
       const modelId = record?.id;
       // Return normalized results with an error rethrow callback
       return {
@@ -404,7 +418,17 @@ export class ModelMap {
   }
 
   /** Helper that throws ModelResourceNotFoundError when provider/model can’t be normalized */
-  async normalizeProviderModelOrThrow(providerOrModel: string, modelName?: string): Promise<Required<Pick<ProviderModelNormalization,'provider'|'modelName'|'providerId'|'modelId'>>> {
+  async normalizeProviderModelOrThrow(
+    providerOrModel: string,
+    modelName?: string,
+  ): Promise<
+    Required<
+      Pick<
+        ProviderModelNormalization,
+        'provider' | 'modelName' | 'providerId' | 'modelId'
+      >
+    >
+  > {
     const norm = await this.normalizeProviderModel(providerOrModel, modelName);
     norm.rethrow();
     return {
@@ -522,7 +546,7 @@ export class ModelMap {
    * ```
    */
   async getModelFromLanguageModelV1(
-    languageModel: LanguageModelV1,
+    languageModel: LanguageModel,
   ): Promise<ModelWithQuota | null> {
     try {
       // Extract provider and model information from the LanguageModelV1 instance
@@ -628,7 +652,8 @@ export class ModelMap {
         if (!row) {
           return null;
         }
-        const now = row.createdAt ?? row.updatedAt ?? new Date(Date.now()).toISOString();
+        const now =
+          row.createdAt ?? row.updatedAt ?? new Date(Date.now()).toISOString();
         return {
           id: row.id,
           modelId: row.modelId,

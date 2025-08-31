@@ -1,5 +1,11 @@
 'use client';
-import React, { useCallback, useEffect, useState, useMemo, useRef } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+} from 'react';
 import { createPortal } from 'react-dom';
 import {
   Box,
@@ -10,7 +16,7 @@ import {
 } from '@mui/material';
 import PublishIcon from '@mui/icons-material/Publish';
 import { useChat } from '@ai-sdk/react';
-import { Message, ToolCall } from 'ai';
+import { UIMessage, DefaultChatTransport } from 'ai';
 import { ChatMenu } from './chat-menu';
 import {
   AiModelType,
@@ -19,12 +25,14 @@ import {
   generateChatId,
 } from '@/lib/ai/core';
 import { log } from '@/lib/logger';
-import { /*enhancedChatFetch, */ useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
+import {
+  /*enhancedChatFetch, */ useChatFetchWrapper,
+} from '@/lib/components/ai/chat-fetch-wrapper';
 import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
-import type {DockPosition} from './types';
+import type { DockPosition } from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
@@ -47,7 +55,7 @@ const getInitialThreadId = (): string => {
   return generateChatId().id;
 };
 
-const loadCurrentMessageState = (): Message[] | undefined => {
+const loadCurrentMessageState = (): UIMessage[] | undefined => {
   if (typeof localStorage === 'undefined') {
     return undefined;
   }
@@ -57,31 +65,30 @@ const loadCurrentMessageState = (): Message[] | undefined => {
   if (!messages) {
     return undefined;
   }
-  return JSON.parse(messages) as Array<Message> | undefined;
+  return JSON.parse(messages) as Array<UIMessage> | undefined;
 };
-
 
 const splitIds = (id: string): [string, string | undefined] => {
   if (!id) {
-    log(l => l.warn('No ID provided to splitIds, returning emtpy values.'));
+    log((l) => l.warn('No ID provided to splitIds, returning emtpy values.'));
     return ['', undefined];
-  }  
+  }
   const splitIndex = id.indexOf(':');
   if (splitIndex === -1) {
-    log(l => l.warn('No ":" found in ID, returning as is.'));
+    log((l) => l.warn('No ":" found in ID, returning as is.'));
     return [id, undefined];
   }
   if (splitIndex === 0 || splitIndex === id.length - 1) {
-    log(l => l.warn('Invalid ID format, returning empty values.'));
+    log((l) => l.warn('Invalid ID format, returning empty values.'));
     return ['', undefined];
   }
   return [id.slice(0, splitIndex), id.slice(splitIndex + 1)];
-}
+};
 
-const stable_onFinish = (message: Message) => {
+const stable_onFinish = ({ message }: { message: UIMessage }) => {
   let [threadId, messageId] = splitIds(message.id);
-  if (!threadId) {    
-    threadId = generateChatId().id;    
+  if (!threadId) {
+    threadId = generateChatId().id;
   }
   if (!messageId) {
     messageId = generateChatId().id;
@@ -92,13 +99,15 @@ const stable_onFinish = (message: Message) => {
   if (typeof localStorage !== 'undefined') {
     const messages = loadCurrentMessageState() ?? [];
     // This may be a revisised message, so first we check if it exists
-    const indexOfExisting = messages.findIndex(
-      (m) => m.id === message.id,
-    );
-    let newMessages: Message[];
+    const indexOfExisting = messages.findIndex((m) => m.id === message.id);
+    let newMessages: UIMessage[];
     if (indexOfExisting !== undefined && indexOfExisting >= 0) {
-      // Replace the existing message      
-      newMessages = [...messages.slice(0, indexOfExisting), message, ...messages.slice(indexOfExisting + 1)];
+      // Replace the existing message
+      newMessages = [
+        ...messages.slice(0, indexOfExisting),
+        message,
+        ...messages.slice(indexOfExisting + 1),
+      ];
     } else {
       newMessages = [...messages, message];
     }
@@ -126,13 +135,13 @@ const stableStyles = {
     height: '100%', // Fill available height instead of viewport
     boxSizing: 'border-box',
   } as const,
-  chatInput: { 
+  chatInput: {
     marginBottom: 2,
     flexShrink: 0,
     width: '100%',
   } as const,
-  stack: { 
-    flexGrow: 1, 
+  stack: {
+    flexGrow: 1,
     overflow: 'hidden',
     width: '100%',
     minHeight: 0, // Allow flex shrinking
@@ -158,21 +167,29 @@ const stableStyles = {
 const ChatPanel = ({ page }: { page: string }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string>(getInitialThreadId);
-  const [initialMessages, setInitialMessages] = useState<Message[] | undefined>(
-    undefined,
-  );
+  const [initialMessages, setInitialMessages] = useState<
+    UIMessage[] | undefined
+  >(undefined);
   const [activeModel, setActiveModel] = useState<string>('hifi');
   const [rateLimitTimeout, setRateLimitTimeout] = useState<
     Map<AiModelType, Date>
   >(new Map<AiModelType, Date>());
-  
+
   // Use chat panel context for docking state
-  const { dockPanel, config, setPosition, isFloating, setFloating, debounced: { setSize: debouncedSetSize } } = useChatPanelContext();
+  const {
+    dockPanel,
+    config,
+    setPosition,
+    isFloating,
+    setFloating,
+    debounced: { setSize: debouncedSetSize },
+  } = useChatPanelContext();
 
   // Ref for the TextField input to preserve focus in floating mode
+  const [input, setInput] = useState<string>('');
   const textFieldRef = useRef<HTMLInputElement>(null);
   const shouldRestoreFocus = useRef<boolean>(false);
-  const {chatFetch} = useChatFetchWrapper();
+  const { chatFetch } = useChatFetchWrapper();
 
   if (!initialMessages) {
     const messages = loadCurrentMessageState();
@@ -183,7 +200,10 @@ const ChatPanel = ({ page }: { page: string }) => {
 
   const onChatError = useCallback(
     (error: Error) => {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'chat-panel' });
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'chat-panel',
+      });
       setErrorMessage((current) =>
         current === error.message ? current : error.message,
       );
@@ -211,39 +231,41 @@ const ChatPanel = ({ page }: { page: string }) => {
     [setRateLimitTimeout],
   );
 
-  
-
   const {
     id,
     messages,
-    input,
-    handleInputChange,
-    handleSubmit,
+    //input,
+    //handleInputChange,
+    //handleSubmit,
     status,
-    data,
-    setData,
-    reload,
+    //data,
+    //setData,
+    //reload,
+    regenerate,
+    //stop,
+    //resumeStream,
     setMessages,
+    sendMessage,
     addToolResult,
   } = useChat({
     // id: threadId,
     generateId: generateChatMessageId,
-    initialMessages,
-    maxSteps: 5,
-    api: '/api/ai/chat',
-    fetch: chatFetch,
-    onToolCall: async ({ toolCall }: { toolCall: ToolCall<string, unknown> }) => {
-      onClientToolRequest({toolCall, addToolResult });
+    messages: initialMessages,
+    // maxSteps: 5,
+    transport: new DefaultChatTransport({
+      api: '/api/ai/chat',
+      fetch: chatFetch,
+    }),
+    onToolCall: ({ toolCall }) => {
+      onClientToolRequest({ toolCall, addToolResult });
     },
     onFinish: stable_onFinish,
-    onResponse: () => {
-      (data ?? []).forEach((item) => {
-        if (isAnnotatedRetryMessage(item)) {          
-          onModelTimeout(item);
-        } else {
-          log((l) => l.warn('Unhandled item type:', item));
-        }
-      });
+    onData: (data) => {
+      if (isAnnotatedRetryMessage(data)) {
+        onModelTimeout(data);
+      } else {
+        log((l) => l.warn('Unhandled item type:', data));
+      }
     },
     onError: onChatError,
     experimental_throttle: 100,
@@ -256,20 +278,24 @@ const ChatPanel = ({ page }: { page: string }) => {
       const isFloatingMode = config.position === 'floating';
       const inputElement = textFieldRef.current;
       const wasFocused = document.activeElement === inputElement;
-      
+
       if (isFloatingMode && wasFocused) {
         shouldRestoreFocus.current = true;
       }
-      
+
       // Call the original input change handler
-      handleInputChange(event);
+      setInput(event.target.value);
     },
-    [handleInputChange, config.position],
+    [setInput, config.position],
   );
 
   // Effect to restore focus in floating mode after re-renders
   useEffect(() => {
-    if (shouldRestoreFocus.current && config.position === 'floating' && textFieldRef.current) {
+    if (
+      shouldRestoreFocus.current &&
+      config.position === 'floating' &&
+      textFieldRef.current
+    ) {
       // Use a small timeout to ensure the DOM has been updated
       const timeoutId = setTimeout(() => {
         if (textFieldRef.current && shouldRestoreFocus.current) {
@@ -277,7 +303,7 @@ const ChatPanel = ({ page }: { page: string }) => {
           shouldRestoreFocus.current = false;
         }
       }, 0);
-      
+
       return () => clearTimeout(timeoutId);
     }
   }, [input, config.position]); // Trigger on input changes and position changes
@@ -292,25 +318,32 @@ const ChatPanel = ({ page }: { page: string }) => {
         }
         sessionStorage.setItem('chatActiveId', threadPartOfId);
         if (messages && messages.length) {
-          localStorage.setItem(`chatMessages-${threadPartOfId}`, JSON.stringify(messages));
+          localStorage.setItem(
+            `chatMessages-${threadPartOfId}`,
+            JSON.stringify(messages),
+          );
         }
       }
       setErrorMessage(null);
       const withModel = model ?? activeModel;
-      handleSubmit(event, {
-        allowEmptySubmit: false,
-        data: {
-          model: withModel,
-          page,
-          threadId: threadPartOfId,
+      sendMessage(
+        {
+          text: input,
         },
-        headers: {
-          'x-active-model': withModel,
-          'x-active-page': page, 
+        {
+          metadata: {
+            model: withModel,
+            page,
+            threadId: threadPartOfId,
+          },
+          headers: {
+            'x-active-model': withModel,
+            'x-active-page': page,
+          },
         },
-      });
+      );
     },
-    [activeModel, handleSubmit, id, messages, page, threadId],
+    [activeModel, sendMessage, id, messages, page, threadId, input],
   );
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -329,9 +362,7 @@ const ChatPanel = ({ page }: { page: string }) => {
                 .join(' ')
                 .trim();
               if (messageText) {
-                handleInputChange({
-                  target: { value: messageText },
-                } as React.ChangeEvent<HTMLInputElement>);
+                setInput(messageText);
                 break;
               }
             }
@@ -339,26 +370,25 @@ const ChatPanel = ({ page }: { page: string }) => {
         }
       }
     },
-    [handleInputChange, input, messages, onSendClick],
+    [input, messages, onSendClick],
   );
-  
+
   const onFloat = useCallback(() => {
     // set isFloating to true
     setFloating(true);
   }, [setFloating]);
-  
+
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const onDock = useCallback((position: DockPosition) => {
-    setPosition(position);
-  }, [setPosition]);
+  const onDock = useCallback(
+    (position: DockPosition) => {
+      setPosition(position);
+    },
+    [setPosition],
+  );
 
   const onInline = useCallback(() => {
     setPosition('inline');
   }, [setPosition]);
-
-
-
-
 
   const stableChatInputSlotProps = useMemo(() => {
     const onResetSession = () => {
@@ -373,7 +403,11 @@ const ChatPanel = ({ page }: { page: string }) => {
         endAdornment: (
           <InputAdornment position="end">
             <Box sx={stableStyles.inputAdornmentBox}>
-              <IconButton edge="end" onClick={onSendClick} data-id="ChatMessageSend">
+              <IconButton
+                edge="end"
+                onClick={onSendClick}
+                data-id="ChatMessageSend"
+              >
                 <PublishIcon />
               </IconButton>
               <ChatMenu
@@ -390,71 +424,94 @@ const ChatPanel = ({ page }: { page: string }) => {
         ),
       },
     };
-  }, [onSendClick, activeModel, onFloat, setPosition, config.position, setMessages]);
+  }, [
+    onSendClick,
+    activeModel,
+    onFloat,
+    setPosition,
+    config.position,
+    setMessages,
+  ]);
 
   useEffect(() => {
+    if (!messages?.length) {
+      return;
+    }
+    const lastMessage = messages[messages.length - 1];
     const timeoutIds: Array<NodeJS.Timeout | number> = [];
-    const thisData = [...(data ?? [])].filter(isAnnotatedRetryMessage);
+    const thisData = [...(lastMessage.parts ?? [])].filter(
+      isAnnotatedRetryMessage,
+    ) as Array<AnnotatedRetryMessage>;
     const onRateLimitTimeout = (model: string) => {
-      setData((prevData) => {
-        const newData = prevData?.filter(
-          (item) => !isAnnotatedRetryMessage(item) || item.data.model !== model,
-        );
-        return newData?.length === prevData?.length ? prevData : newData;
+      lastMessage.parts = lastMessage.parts?.filter(
+        (item) => !isAnnotatedRetryMessage(item) || item.data.model !== model,
+      );
+      setMessages((prevMessages) => {
+        return [
+          ...prevMessages!.slice(0, prevMessages!.length - 1),
+          lastMessage,
+        ];
       });
     };
     if (thisData.length > 0) {
-      thisData.forEach(
-        ({ data: { retryAt, model } }: AnnotatedRetryMessage) => {
-          const thisModel = model;
-          const timeout = new Date(Date.parse(retryAt));
-          const rateLimitExpires = timeout.getTime() - Date.now();
-          if (rateLimitExpires <= 0) {
-            onRateLimitTimeout(thisModel);
-            reload();
-          } else {
-            timeoutIds.push(
-              setTimeout(() => {
-                onRateLimitTimeout(thisModel);
-                console.warn('Rate limit timeout expired, resending message.');
-                reload();
-              }, rateLimitExpires),
-            );
-          }
-        },
-      );
+      thisData.forEach(({ data: { retryAt, model } }) => {
+        const thisModel = model;
+        const timeout = new Date(Date.parse(retryAt));
+        const rateLimitExpires = timeout.getTime() - Date.now();
+        if (rateLimitExpires <= 0) {
+          onRateLimitTimeout(thisModel);
+          regenerate();
+        } else {
+          timeoutIds.push(
+            setTimeout(() => {
+              onRateLimitTimeout(thisModel);
+              console.warn('Rate limit timeout expired, resending message.');
+              regenerate();
+            }, rateLimitExpires),
+          );
+        }
+      });
       return () => timeoutIds.forEach(clearTimeout);
     }
-  }, [rateLimitTimeout, reload, data, setData]);
+  }, [rateLimitTimeout, regenerate, messages, setMessages]);
 
   // Create chat content component
-  const chatContent = useMemo(() => (
-    <Stack 
-      spacing={2} 
-      sx={stableStyles.stack}
-    >
-      <TextField
-        inputRef={textFieldRef}
-        multiline
-        rows={5}
-        variant="outlined"
-        placeholder="Type your message here..."
-        value={input}
-        onChange={handleInputChangeWithFocusPreservation}
-        onKeyDown={handleInputKeyDown}
-        sx={stableStyles.chatInput}
-        slotProps={stableChatInputSlotProps}
-      />
-      <Box sx={stableStyles.chatBox}>
-        <ChatWindow
-          messages={messages}
-          loading={status === 'submitted'}
-          errorMessage={errorMessage}
-          addToolResult={addToolResult}
+  const chatContent = useMemo(
+    () => (
+      <Stack spacing={2} sx={stableStyles.stack}>
+        <TextField
+          inputRef={textFieldRef}
+          multiline
+          rows={5}
+          variant="outlined"
+          placeholder="Type your message here..."
+          value={input}
+          onChange={handleInputChangeWithFocusPreservation}
+          onKeyDown={handleInputKeyDown}
+          sx={stableStyles.chatInput}
+          slotProps={stableChatInputSlotProps}
         />
-      </Box>
-    </Stack>
-  ), [input, handleInputChangeWithFocusPreservation, handleInputKeyDown, addToolResult, stableChatInputSlotProps, messages, status, errorMessage]);
+        <Box sx={stableStyles.chatBox}>
+          <ChatWindow
+            messages={messages}
+            loading={status === 'submitted'}
+            errorMessage={errorMessage}
+            addToolResult={addToolResult}
+          />
+        </Box>
+      </Stack>
+    ),
+    [
+      input,
+      handleInputChangeWithFocusPreservation,
+      handleInputKeyDown,
+      addToolResult,
+      stableChatInputSlotProps,
+      messages,
+      status,
+      errorMessage,
+    ],
+  );
 
   // Handle docked positions
   if (config.position !== 'inline' && config.position !== 'floating') {
@@ -465,17 +522,18 @@ const ChatPanel = ({ page }: { page: string }) => {
           Chat panel is docked to {config.position}
         </Box>
         {/* Docked panel - render using portal to escape layout context */}
-        {typeof document !== 'undefined' && createPortal(
-          <DockedPanel
-            position={config.position}
-            onUndock={onInline}
-            onFloat={onFloat}
-            title={`Chat - ${page}`}
-          >
-            {chatContent}
-          </DockedPanel>,
-          dockPanel ?? document.body
-        )}       
+        {typeof document !== 'undefined' &&
+          createPortal(
+            <DockedPanel
+              position={config.position}
+              onUndock={onInline}
+              onFloat={onFloat}
+              title={`Chat - ${page}`}
+            >
+              {chatContent}
+            </DockedPanel>,
+            dockPanel ?? document.body,
+          )}
       </>
     );
   }

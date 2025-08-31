@@ -1,10 +1,6 @@
 'use client';
-import {  
-  useDataSource,
-} from '@/lib/components/mui/data-grid/useDataSource';
-import {
-  useGetRowId,
-} from '@/lib/components/mui/data-grid/useGetRowId';
+import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
+import { useGetRowId } from '@/lib/components/mui/data-grid/useGetRowId';
 import {
   StableDefaultPageSizeOptions,
   StableDefaultInitialState,

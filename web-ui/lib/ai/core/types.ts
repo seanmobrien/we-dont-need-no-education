@@ -1,20 +1,17 @@
+import { DataUIPart } from 'ai';
 import { AiModelType } from './unions';
 
 export type * from './unions';
 
-/**
- * Represents the base structure for an annotated message.
- *
- * @property type - The type of the message.
- * @property message - An optional human-readable message.
- * @property data - Optional additional data associated with the message.
- */
-
-export type AnnotatedMessageBase = {
-  type: string;
-  message?: string;
-  data?: unknown;
+type AnnotatedErrorMessageType = {
+  'error-retry': { retryAfter: number; reason: string };
+  'error-notify-retry': { retryAt: string; model: AiModelType };
 };
+
+export type AnnotatedErrorMessageBase = DataUIPart<AnnotatedErrorMessageType>;
+export type AnnotatedErrorPart<TError extends keyof AnnotatedErrorMessageType> =
+  DataUIPart<Pick<AnnotatedErrorMessageType, TError>>;
+
 /**
  * Represents an annotated error message, extending the base annotated message.
  *
@@ -23,25 +20,10 @@ export type AnnotatedMessageBase = {
  * @property data.reason - A string describing the reason for the error.
  * @property data.retryAfter - (Optional) The number of seconds to wait before retrying the operation.
  */
-export type AnnotatedErrorMessage = AnnotatedMessageBase & {
-  type: 'error';
-  message?: string;
-  data: {
-    reason: string;
-    retryAfter?: number;
-  };
-};
-export type AnnotatedRetryMessage = AnnotatedMessageBase & {
-  type: 'error';
-  message: string;
-  hint: 'notify:retry';
-  data: {
-    model: AiModelType;
-    retryAt: string; // ISO 8601 format
-  };
-};
+export type AnnotatedErrorMessage = AnnotatedErrorPart<'error-retry'>;
+export type AnnotatedRetryMessage = AnnotatedErrorPart<'error-notify-retry'>;
 
 export type AnnotatedMessage =
   | AnnotatedErrorMessage
   | AnnotatedRetryMessage
-  | AnnotatedMessageBase;
+  | AnnotatedErrorMessageBase;

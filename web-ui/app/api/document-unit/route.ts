@@ -55,12 +55,3 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
     );
   }
 });
-
-export const POST = wrapRouteRequest(
-  async (req: NextRequest, data: { params: Promise<{ unitId: number }> }) => {
-    const controller = new RepositoryCrudController(
-      new DocumentUnitRepository(),
-    );
-    return controller.create(req, data);
-  },
-);

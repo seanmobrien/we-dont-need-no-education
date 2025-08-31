@@ -1,10 +1,15 @@
-import { drizDbWithInit, type ProvidersType, type DbDatabaseType, schema } from "@/lib/drizzle-db";
+import {
+  drizDbWithInit,
+  type ProvidersType,
+  type DbDatabaseType,
+  schema,
+} from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ModelResourceNotFoundError } from '@/lib/ai/services/chat/errors/model-resource-not-found-error';
 
-
 type ProviderMapEntry = Omit<ProvidersType, 'id' | 'createdAt' | 'updatedAt'>;
 type ProviderMapEntryNameKey = 'name';
+type ProviderMapEntryAliasesKey = 'aliases';
 type ProviderMapEntryIdKey = 'id';
 type ProviderIdType = ProvidersType[ProviderMapEntryIdKey];
 type ProviderNameType = ProviderMapEntry[ProviderMapEntryNameKey];
@@ -13,6 +18,8 @@ type ProviderNameOrIdType = ProviderIdType | ProviderNameType;
 export class ProviderMap {
   static #instance: ProviderMap | undefined;
   static readonly #ProviderNameKey: ProviderMapEntryNameKey = 'name' as const;
+  static readonly #ProviderAliasesKey: ProviderMapEntryAliasesKey =
+    'aliases' as const;
 
   static get Instance(): ProviderMap {
     this.#instance ??= new ProviderMap();
@@ -129,13 +136,22 @@ export class ProviderMap {
       })
       .then((rows) => {
         (rows as ProvidersType[]).forEach(
-          ({ id, name, displayName, description, baseUrl, isActive }) => {
+          ({
+            id,
+            name,
+            displayName,
+            description,
+            baseUrl,
+            isActive,
+            aliases,
+          }) => {
             this.#idToRecord.set(id, {
               name,
               displayName,
               description,
               baseUrl,
               isActive,
+              aliases,
             });
           },
         );
@@ -157,6 +173,8 @@ export class ProviderMap {
     this.#nameToId.clear();
     this.#idToRecord.forEach((rec, id) => {
       this.#nameToId.set(rec[ProviderMap.#ProviderNameKey], id);
+      const aliases = rec[ProviderMap.#ProviderAliasesKey] || [];
+      aliases.forEach((alias) => this.#nameToId.set(alias, id));
     });
     this.#initialized = true;
     this.#whenInitialized.resolve(true);

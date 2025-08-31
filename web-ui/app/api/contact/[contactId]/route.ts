@@ -43,7 +43,7 @@ const mapRecordToObject = (
 export const PUT = wrapRouteRequest(
   async (
     req: NextRequest,
-    { params }: { params: Promise<{ contactId: number }> },
+    { params }: { params: Promise<{ contactId: number | string }> },
   ) => {
     try {
       const { contactId } = await params;
@@ -87,7 +87,7 @@ export const PUT = wrapRouteRequest(
         }
       });
 
-      values.push(contactId);
+      values.push(Number(contactId));
 
       const result = await queryExt(
         (sql) =>
@@ -130,7 +130,7 @@ export const PUT = wrapRouteRequest(
 export const GET = wrapRouteRequest(
   async (
     req: NextRequest,
-    withParams: { params: Promise<{ contactId: number }> },
+    withParams: { params: Promise<{ contactId: number | string }> },
   ) => {
     try {
       const { contactId } = await extractParams(withParams);
@@ -152,7 +152,7 @@ export const GET = wrapRouteRequest(
       }
       const result = await query(
         (sql) =>
-          sql`SELECT contact_id, name, email, phone, role_dscr, is_district_staff FROM contacts WHERE contact_id = ${contactId}`,
+          sql`SELECT contact_id, name, email, phone, role_dscr, is_district_staff FROM contacts WHERE contact_id = ${Number(contactId)}`,
         { transform: mapRecordToObject },
       );
 
@@ -179,7 +179,7 @@ export const GET = wrapRouteRequest(
 export const DELETE = wrapRouteRequest(
   async (
     req: NextRequest,
-    { params }: { params: Promise<{ contactId: number }> },
+    { params }: { params: Promise<{ contactId: number | string }> },
   ) => {
     try {
       const { contactId } = await params;
@@ -204,7 +204,7 @@ export const DELETE = wrapRouteRequest(
         );
       }
       log((l) => l.verbose('[[AUDIT]] -  Contact deleted:', result[0]));
-      globalContactCache((cache) => cache.remove(contactId));
+      globalContactCache((cache) => cache.remove(Number(contactId)));
       return NextResponse.json(
         {
           message: 'Contact deleted successfully',

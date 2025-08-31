@@ -2,35 +2,51 @@ import { DrizzleCrudRepositoryController } from '@/lib/api/drizzle-crud-controll
 import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment/drizzle-repository';
 import { NextRequest } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { extractParams } from '@/lib/nextjs-util/utils';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = wrapRouteRequest(async (
-  req: NextRequest,
-  args: { params: Promise<{ attachmentId: number }> },
-) => {
-  const controller = new DrizzleCrudRepositoryController(
-    new EmailAttachmentDrizzleRepository(),
-  );
-  return controller.get(req, args);
-});
+export const GET = wrapRouteRequest(
+  async (
+    req: NextRequest,
+    args: { params: Promise<{ attachmentId: number | string }> },
+  ) => {
+    const controller = new DrizzleCrudRepositoryController(
+      new EmailAttachmentDrizzleRepository(),
+    );
+    const { attachmentId } = await extractParams(args);
+    return controller.get(req, {
+      params: Promise.resolve({ attachmentId: Number(attachmentId) }),
+    });
+  },
+);
 
-export const PUT = wrapRouteRequest(async (
-  req: NextRequest,
-  args: { params: Promise<{ attachmentId: number }> },
-) => {
-  const controller = new DrizzleCrudRepositoryController(
-    new EmailAttachmentDrizzleRepository(),
-  );
-  return controller.update(req, args);
-});
+export const PUT = wrapRouteRequest(
+  async (
+    req: NextRequest,
+    args: { params: Promise<{ attachmentId: number | string }> },
+  ) => {
+    const controller = new DrizzleCrudRepositoryController(
+      new EmailAttachmentDrizzleRepository(),
+    );
+    const { attachmentId } = await extractParams(args);
+    return controller.update(req, {
+      params: Promise.resolve({ attachmentId: Number(attachmentId) }),
+    });
+  },
+);
 
-export const DELETE = wrapRouteRequest(async (
-  req: NextRequest,
-  args: { params: Promise<{ attachmentId: number }> },
-) => {
-  const controller = new DrizzleCrudRepositoryController(
-    new EmailAttachmentDrizzleRepository(),
-  );
-  return controller.delete(req, args);
-});
+export const DELETE = wrapRouteRequest(
+  async (
+    req: NextRequest,
+    args: { params: Promise<{ attachmentId: number | string }> },
+  ) => {
+    const controller = new DrizzleCrudRepositoryController(
+      new EmailAttachmentDrizzleRepository(),
+    );
+    const { attachmentId } = await extractParams(args);
+    return controller.delete(req, {
+      params: Promise.resolve({ attachmentId: Number(attachmentId) }),
+    });
+  },
+);

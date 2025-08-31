@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Unit tests for chat history types module
- * 
+ *
  * These tests verify that the TypeScript interfaces in the types module
  * are properly structured and can be used correctly in type assertions
  * and runtime validations.
- * 
+ *
  * @module __tests__/lib/ai/middleware/chat-history/types.test.ts
  */
 
@@ -17,7 +17,7 @@ import type {
   FlushResult,
   FlushConfig,
 } from '@/lib/ai/middleware/chat-history/types';
-import type { LanguageModelV1StreamPart } from 'ai';
+import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 
 describe('Chat History Types', () => {
   describe('ChatHistoryContext', () => {
@@ -67,7 +67,7 @@ describe('Chat History Types', () => {
         messageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Hello world',
-        toolCalls: new Map<string, any>()
+        toolCalls: new Map<string, any>(),
       };
 
       expect(context.chatId).toBe('chat-123');
@@ -138,9 +138,10 @@ describe('Chat History Types', () => {
 
   describe('QueuedTask', () => {
     it('should have all required fields', () => {
-      const mockChunk: LanguageModelV1StreamPart = {
+      const mockChunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
-        textDelta: 'Hello',
+        delta: 'Hello',
+        id: 'chunk-1',
       };
 
       const mockContext: any = {
@@ -172,9 +173,10 @@ describe('Chat History Types', () => {
     });
 
     it('should allow optional result field', () => {
-      const mockChunk: LanguageModelV1StreamPart = {
+      const mockChunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
-        textDelta: 'Hello',
+        delta: 'Hello',
+        id: 'chunk-1',
       };
 
       const mockContext: any = {

@@ -1,4 +1,5 @@
-import { LanguageModelV1, LanguageModelV1Middleware } from "ai";
+import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
+import { LanguageModel } from 'ai';
 
 export interface RateLimitedRequest {
   id: string;
@@ -48,10 +49,10 @@ export type RateLimitRetryContext = {
   failover: ModelFailoverConfig;
 };
 
-export type RetryRateLimitMiddlewareType = LanguageModelV1Middleware & {
+export type RetryRateLimitMiddlewareType = LanguageModelV2Middleware & {
   rateLimitContext: () => RateLimitRetryContext | undefined;
 };
 
 export type RateLimitFactoryOptions = {
-  model: LanguageModelV1;
+  model: LanguageModel;
 };

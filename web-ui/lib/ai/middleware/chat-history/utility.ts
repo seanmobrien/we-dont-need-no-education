@@ -1,7 +1,7 @@
-import { type DbTransactionType, drizDbWithInit } from "@/lib/drizzle-db";
-import { schema } from "@/lib/drizzle-db";
-import { eq, desc } from "drizzle-orm";
-import { LanguageModelV1MessageExt } from "@/lib/ai/types";
+import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
+import { type DbTransactionType, drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db';
+import { eq, desc } from 'drizzle-orm';
 
 export const getNextSequence = async ({
   chatId,
@@ -28,9 +28,12 @@ export const getNextSequence = async ({
   // this keeps turnId a number type and sumplifies use of the value
   // downstream.
   const turnId = 'turnId' in props ? props.turnId : 0;
-  const scopedIds = await (tx ? Promise.resolve(tx) : drizDbWithInit()).then(db => db.execute<{ allocate_scoped_ids: number }>(
-    `SELECT * FROM allocate_scoped_ids('${tableName}', '${chatId}', ${turnId}, ${count})`,
-  ));
+  const scopedIds = await (tx ? Promise.resolve(tx) : drizDbWithInit()).then(
+    (db) =>
+      db.execute<{ allocate_scoped_ids: number }>(
+        `SELECT * FROM allocate_scoped_ids('${tableName}', '${chatId}', ${turnId}, ${count})`,
+      ),
+  );
   const ret: Array<number> = scopedIds.map(
     (x) => x.allocate_scoped_ids as number,
   );
@@ -39,43 +42,43 @@ export const getNextSequence = async ({
 
 /**
  * Identifies new messages by comparing incoming prompt with existing chat messages.
- * 
+ *
  * @remarks
  * This function performs message deduplication by comparing incoming messages
  * against existing messages in the chat session. It identifies which messages
  * from the prompt array are truly new and haven't been saved before.
- * 
+ *
  * **Comparison Strategy:**
  * - Messages are compared by role and content for exact matches
  * - Only messages not found in existing chat history are considered new
  * - Maintains message order from the original prompt array
  * - Handles various content types (string and complex content structures)
- * 
+ *
  * **Performance Optimizations:**
  * - Queries existing messages only once per chat session
  * - Uses efficient array operations for comparison
  * - Minimizes database operations by batching lookups
- * 
+ *
  * @param tx - Active database transaction for consistency
  * @param chatId - The chat ID to check for existing messages
  * @param incomingMessages - Array of messages from the prompt
  * @returns Promise resolving to array of new messages not yet persisted
- * 
+ *
  * @example
  * ```typescript
  * const newMessages = await getNewMessages(transaction, 'chat_123', [
  *   { role: 'user', content: 'Hello' },        // Already exists
- *   { role: 'assistant', content: 'Hi there' }, // Already exists  
+ *   { role: 'assistant', content: 'Hi there' }, // Already exists
  *   { role: 'user', content: 'How are you?' }   // New message
  * ]);
  * // Returns: [{ role: 'user', content: 'How are you?' }]
  * ```
- */ 
+ */
 export const getNewMessages = async (
   tx: DbTransactionType,
   chatId: string,
-  incomingMessages: LanguageModelV1MessageExt
-): Promise<LanguageModelV1MessageExt> => {
+  incomingMessages: LanguageModelV2CallOptions['prompt'],
+): Promise<LanguageModelV2CallOptions['prompt']> => {
   // Handle null/undefined incomingMessages gracefully
   if (!incomingMessages || incomingMessages.length === 0) {
     return [];
@@ -106,8 +109,8 @@ export const getNewMessages = async (
         if (Array.isArray(parsed)) {
           // Extract text from parsed content parts and join them
           return parsed
-            .filter(part => part.type === 'text')
-            .map(part => part.text)
+            .filter((part) => part.type === 'text')
+            .map((part) => part.text)
             .join('');
         }
       } catch {
@@ -115,31 +118,33 @@ export const getNewMessages = async (
       }
       return content;
     }
-    
-    // Handle LanguageModelV1 content format: array of content parts
+
+    // Handle LanguageModelontent format: array of content parts
     if (Array.isArray(content)) {
       // Extract text from content parts and join them
       return content
-        .filter(part => part.type === 'text')
-        .map(part => part.text)
+        .filter((part) => part.type === 'text')
+        .map((part) => part.text)
         .join('');
     }
-    
+
     // Fallback to JSON string for other formats
     return JSON.stringify(content);
   };
 
   // Create a normalized representation of existing messages for comparison
   const existingMessageSignatures = new Set(
-    existingMessages.map(msg => {
+    existingMessages.map((msg) => {
       const normalizedContent = normalizeContentForComparison(msg.content);
       return `${msg.messageOrder}:${msg.role}:${normalizedContent}`;
-    })
+    }),
   );
 
   // Filter incoming messages to only include those not already persisted
   const newMessages = incomingMessages.filter((incomingMsg, index) => {
-    const normalizedIncomingContent = normalizeContentForComparison(incomingMsg.content);
+    const normalizedIncomingContent = normalizeContentForComparison(
+      incomingMsg.content,
+    );
     const incomingSignature = `${index + 1}:${incomingMsg.role}:${normalizedIncomingContent}`;
 
     return !existingMessageSignatures.has(incomingSignature);

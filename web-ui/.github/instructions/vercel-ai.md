@@ -722,18 +722,18 @@ While we've designed AI SDK 5 to be a substantial improvement over previous vers
 
 ## New Features
 
-- [**LanguageModelV2**](#languagemodelv2) - new redesigned architecture
+- [**LanguageModel**](#LanguageModel) - new redesigned architecture
 - [**Message Overhaul**](#message-overhaul) - new `UIMessage` and `ModelMessage` types
 - [**ChatStore**](#chatstore) - new `useChat` architecture
 - [**Server-Sent Events (SSE)**](#server-sent-events-sse) - new standardised protocol for sending UI messages to the client
 - [**Agentic Control**](#agentic-control) - new primitives for building agentic systems
 
-## LanguageModelV2
+## LanguageModel
 
-LanguageModelV2 represents a complete redesign of how the AI SDK communicates with language models, adapting to the increasingly complex outputs modern AI systems generate. The new LanguageModelV2 treats all LLM outputs as content parts, enabling more consistent handling of text, images, reasoning, sources, and other response types. It now has:
+LanguageModel represents a complete redesign of how the AI SDK communicates with language models, adapting to the increasingly complex outputs modern AI systems generate. The new LanguageModel treats all LLM outputs as content parts, enabling more consistent handling of text, images, reasoning, sources, and other response types. It now has:
 
 - **Content-First Design** - Rather than separating text, reasoning, and tool calls, everything is now represented as ordered content parts in a unified array
-- **Improved Type Safety** - The new LanguageModelV2 provides better TypeScript type guarantees, making it easier to work with different content types
+- **Improved Type Safety** - The new LanguageModel provides better TypeScript type guarantees, making it easier to work with different content types
 - **Simplified Extensibility** - Adding support for new model capabilities no longer requires changes to the core structure
 
 ## Message Overhaul
@@ -4031,9 +4031,9 @@ Here are some examples of how to implement language model middleware:
 This example shows how to log the parameters and generated text of a language model call.
 
 ```ts
-import type { LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
+import type { LanguageModelMiddleware, LanguageModelStreamPart } from 'ai';
 
-export const yourLogMiddleware: LanguageModelV1Middleware = {
+export const yourLogMiddleware: LanguageModelMiddleware = {
   wrapGenerate: async ({ doGenerate, params }) => {
     console.log('doGenerate called');
     console.log(`params: ${JSON.stringify(params, null, 2)}`);
@@ -4055,8 +4055,8 @@ export const yourLogMiddleware: LanguageModelV1Middleware = {
     let generatedText = '';
 
     const transformStream = new TransformStream<
-      LanguageModelV1StreamPart,
-      LanguageModelV1StreamPart
+      LanguageModelStreamPart,
+      LanguageModelStreamPart
     >({
       transform(chunk, controller) {
         if (chunk.type === 'text-delta') {
@@ -4085,11 +4085,11 @@ export const yourLogMiddleware: LanguageModelV1Middleware = {
 This example shows how to build a simple cache for the generated text of a language model call.
 
 ```ts
-import type { LanguageModelV1Middleware } from 'ai';
+import type { LanguageModelMiddleware } from 'ai';
 
 const cache = new Map<string, any>();
 
-export const yourCacheMiddleware: LanguageModelV1Middleware = {
+export const yourCacheMiddleware: LanguageModelMiddleware = {
   wrapGenerate: async ({ doGenerate, params }) => {
     const cacheKey = JSON.stringify(params);
 
@@ -4119,9 +4119,9 @@ This example shows how to use RAG as middleware.
 </Note>
 
 ```ts
-import type { LanguageModelV1Middleware } from 'ai';
+import type { LanguageModelMiddleware } from 'ai';
 
-export const yourRagMiddleware: LanguageModelV1Middleware = {
+export const yourRagMiddleware: LanguageModelMiddleware = {
   transformParams: async ({ params }) => {
     const lastUserMessageText = getLastUserMessageText({
       prompt: params.prompt,
@@ -4148,9 +4148,9 @@ Guard rails are a way to ensure that the generated text of a language model call
 is safe and appropriate. This example shows how to use guardrails as middleware.
 
 ```ts
-import type { LanguageModelV1Middleware } from 'ai';
+import type { LanguageModelMiddleware } from 'ai';
 
-export const yourGuardrailMiddleware: LanguageModelV1Middleware = {
+export const yourGuardrailMiddleware: LanguageModelMiddleware = {
   wrapGenerate: async ({ doGenerate }) => {
     const { text, ...rest } = await doGenerate();
 
@@ -4172,9 +4172,9 @@ To send and access custom metadata in Middleware, you can use `providerOptions`.
 
 ```ts
 import { openai } from '@ai-sdk/openai';
-import { generateText, wrapLanguageModel, LanguageModelV1Middleware } from 'ai';
+import { generateText, wrapLanguageModel, LanguageModelMiddleware } from 'ai';
 
-export const yourLogMiddleware: LanguageModelV1Middleware = {
+export const yourLogMiddleware: LanguageModelMiddleware = {
   wrapGenerate: async ({ doGenerate, params }) => {
     console.log('METADATA', params?.providerMetadata?.yourLogMiddleware);
     const result = await doGenerate();
@@ -4556,8 +4556,8 @@ and calling them is slow and expensive.
 To enable you to unit test your code that uses the AI SDK, the AI SDK Core
 includes mock providers and test helpers. You can import the following helpers from `ai/test`:
 
-- `MockEmbeddingModelV1`: A mock embedding model using the [embedding model v1 specification](https://github.com/vercel/ai/blob/main/packages/provider/src/embedding-model/v1/embedding-model-v1.ts).
-- `MockLanguageModelV1`: A mock language model using the [language model v1 specification](https://github.com/vercel/ai/blob/main/packages/provider/src/language-model/v1/language-model-v1.ts).
+- `MockEmbeddingModelV2`: A mock embedding model using the [embedding model v1 specification](https://github.com/vercel/ai/blob/main/packages/provider/src/embedding-model/v1/embedding-model-v1.ts).
+- `MockLanguageModel`: A mock language model using the [language model v1 specification](https://github.com/vercel/ai/blob/main/packages/provider/src/language-model/v1/language-model-v1.ts).
 - `mockId`: Provides an incrementing integer ID.
 - `mockValues`: Iterates over an array of values with each call. Returns the last value when the array is exhausted.
 - [`simulateReadableStream`](/docs/reference/ai-sdk-core/simulate-readable-stream): Simulates a readable stream with delays.
@@ -4574,10 +4574,10 @@ You can use the test helpers with the AI Core functions in your unit tests:
 
 ```ts
 import { generateText } from 'ai';
-import { MockLanguageModelV1 } from 'ai/test';
+import { MockLanguageModel } from 'ai/test';
 
 const result = await generateText({
-  model: new MockLanguageModelV1({
+  model: new MockLanguageModel({
     doGenerate: async () => ({
       rawCall: { rawPrompt: null, rawSettings: {} },
       finishReason: 'stop',
@@ -4593,10 +4593,10 @@ const result = await generateText({
 
 ```ts
 import { streamText, simulateReadableStream } from 'ai';
-import { MockLanguageModelV1 } from 'ai/test';
+import { MockLanguageModel } from 'ai/test';
 
 const result = streamText({
-  model: new MockLanguageModelV1({
+  model: new MockLanguageModel({
     doStream: async () => ({
       stream: simulateReadableStream({
         chunks: [
@@ -4622,11 +4622,11 @@ const result = streamText({
 
 ```ts
 import { generateObject } from 'ai';
-import { MockLanguageModelV1 } from 'ai/test';
+import { MockLanguageModel } from 'ai/test';
 import { z } from 'zod';
 
 const result = await generateObject({
-  model: new MockLanguageModelV1({
+  model: new MockLanguageModel({
     defaultObjectGenerationMode: 'json',
     doGenerate: async () => ({
       rawCall: { rawPrompt: null, rawSettings: {} },
@@ -4644,11 +4644,11 @@ const result = await generateObject({
 
 ```ts
 import { streamObject, simulateReadableStream } from 'ai';
-import { MockLanguageModelV1 } from 'ai/test';
+import { MockLanguageModel } from 'ai/test';
 import { z } from 'zod';
 
 const result = streamObject({
-  model: new MockLanguageModelV1({
+  model: new MockLanguageModel({
     defaultObjectGenerationMode: 'json',
     doStream: async () => ({
       stream: simulateReadableStream({
