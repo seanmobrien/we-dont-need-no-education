@@ -9,11 +9,13 @@ import {
 } from './types';
 import { countTokens } from '../../core/count-tokens';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { createSimpleStatefulMiddleware } from '../state-management';
 
 import {
   LanguageModelV2,
   LanguageModelV2CallOptions,
   LanguageModelV2StreamPart,
+  LanguageModelV2Middleware,
 } from '@ai-sdk/provider';
 
 type DoGenerateReturnType = ReturnType<LanguageModelV2['doGenerate']>;
@@ -487,9 +489,7 @@ export const transformParams = async ({
  * 2. Records actual token usage after successful requests
  * 3. Logs quota violations and usage statistics
  */
-export const tokenStatsMiddleware = (
-  config: TokenStatsMiddlewareConfig = {},
-): LanguageModelMiddleware => {
+const createOriginalTokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV2Middleware => {
   return {
     wrapGenerate: async (props) =>
       wrapGenerate({
@@ -507,6 +507,20 @@ export const tokenStatsMiddleware = (
         config,
       }),
   };
+};
+
+/**
+ * Create token statistics tracking middleware with State Management Support
+ * 
+ * This middleware supports the state management protocol and can participate
+ * in state collection and restoration operations.
+ */
+export const tokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV2Middleware => {
+  const originalMiddleware = createOriginalTokenStatsMiddleware(config);
+  return createSimpleStatefulMiddleware(
+    'token-stats-tracking',
+    originalMiddleware
+  );
 };
 
 /**

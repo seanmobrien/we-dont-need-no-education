@@ -8,6 +8,8 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ChatHistoryContext } from './types';
 import { enqueueStream, ProcessingQueue } from './processing-queue';
 import { simulateReadableStream, wrapLanguageModel } from 'ai';
+import { createStatefulMiddleware } from '../state-management';
+import { log } from '@/lib/logger';
 export type { ChatHistoryContext } from './types';
 export {
   instrumentFlushOperation,
@@ -54,7 +56,7 @@ export {
  *
  * ```
  */
-export const createChatHistoryMiddlewareEx = (
+const createOriginalChatHistoryMiddleware = (
   context: ChatHistoryContext,
 ): LanguageModelV2Middleware => {
   // Create processing queue to maintain FIFO order
@@ -143,6 +145,74 @@ export const createChatHistoryMiddlewareEx = (
   };
 };
 
+/**
+ * Chat History Middleware State Interface
+ */
+interface ChatHistoryState {
+  currentMessageOrder: number;
+  generatedText: string;
+  startTime: number;
+  contextData: {
+    chatId?: string;
+    turnId?: string;
+    messageId?: string;
+  };
+}
+
+/**
+ * Creates a middleware for chat history management with State Management Support.
+ * 
+ * This middleware supports the state management protocol and can participate
+ * in state collection and restoration operations, preserving processing state
+ * across operations.
+ * 
+ * @param context - The chat history context containing persistence and logging utilities.
+ * @returns A stateful middleware object that supports state serialization.
+ */
+export const createChatHistoryMiddleware = (
+  context: ChatHistoryContext,
+): LanguageModelV2Middleware => {
+  // State that can be serialized/restored
+  let sharedState: ChatHistoryState = {
+    currentMessageOrder: 0,
+    generatedText: '',
+    startTime: Date.now(),
+    contextData: {}
+  };
+
+  const originalMiddleware = createOriginalChatHistoryMiddleware(context);
+
+  return createStatefulMiddleware({
+    middlewareId: 'chat-history',
+    originalMiddleware,
+    stateHandlers: {
+      serialize: (): ChatHistoryState => ({
+        ...sharedState,
+        // Update with current values before serializing
+        startTime: Date.now() - sharedState.startTime // Convert to elapsed time
+      }),
+      deserialize: (state: ChatHistoryState) => {
+        if (state) {
+          sharedState = {
+            ...state,
+            // Convert elapsed time back to absolute start time
+            startTime: Date.now() - (state.startTime || 0)
+          };
+          
+          log(l => l.debug('Chat history state restored', {
+            messageOrder: sharedState.currentMessageOrder,
+            textLength: sharedState.generatedText.length,
+            elapsedTime: Date.now() - sharedState.startTime,
+            contextData: sharedState.contextData
+          }));
+        }
+      }
+    }
+  }) as LanguageModelV2Middleware;
+};
+
+export const createChatHistoryMiddlewareEx = createOriginalChatHistoryMiddleware;
+
 export const wrapChatHistoryMiddleware = ({
   model,
   chatHistoryContext,
@@ -158,6 +228,6 @@ export const wrapChatHistoryMiddleware = ({
   }
   return wrapLanguageModel({
     model,
-    middleware: createChatHistoryMiddlewareEx(chatHistoryContext),
+    middleware: createOriginalChatHistoryMiddleware(chatHistoryContext),
   });
 };
