@@ -43,35 +43,6 @@ export const SUPPORTED_PROTOCOL_VERSIONS = [
   '2024-10-07',
 ];
 
-/*
-
-export type ToolSchemas =
-  | Record<string, { parameters: ToolParameters }>
-  | 'automatic'
-  | undefined;
-
-export type McpToolSet<TOOL_SCHEMAS extends ToolSchemas = 'automatic'> =
-  TOOL_SCHEMAS extends Record<string, { parameters: ToolParameters }>
-    ? {
-        [K in keyof TOOL_SCHEMAS]: Tool<
-          TOOL_SCHEMAS[K]['parameters'],
-          CallToolResult
-        > & {
-          execute: (
-            args: inferParameters<TOOL_SCHEMAS[K]['parameters']>,
-            options: ToolExecutionOptions,
-          ) => PromiseLike<CallToolResult>;
-        };
-      }
-    : {
-        [k: string]: Tool<z.ZodUnknown, CallToolResult> & {
-          execute: (
-            args: unknown,
-            options: ToolExecutionOptions,
-          ) => PromiseLike<CallToolResult>;
-        };
-      };
-*/
 const ClientOrServerImplementationSchema = z
   .object({
     name: z.string(),
