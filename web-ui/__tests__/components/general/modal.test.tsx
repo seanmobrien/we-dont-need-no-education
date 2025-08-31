@@ -51,7 +51,7 @@ describe('Modal', () => {
     );
 
     const { container } = render(
-      <Modal {...defaultProps} open={true} actions={actions}>
+      <Modal {...defaultProps}>
         <div>Modal content</div>
       </Modal>,
     );

@@ -62,11 +62,10 @@ describe('State Management Protocol', () => {
       const mockParams = { prompt: 'normal request' };
       const mockModel = { modelId: 'test-model' };
 
-      await wrapper.wrapGenerate!({ model: mockModel, params: mockParams }, mockNext);
+      await (wrapper.wrapGenerate as any)({ model: mockModel, params: mockParams, doGenerate: mockNext });
 
       expect(mockOriginalMiddleware.wrapGenerate).toHaveBeenCalledWith(
-        { model: mockModel, params: mockParams },
-        mockNext
+        { model: mockModel, params: mockParams, doGenerate: mockNext }
       );
     });
 
@@ -87,7 +86,7 @@ describe('State Management Protocol', () => {
         }
       });
 
-      await wrapper.wrapGenerate!({ model: mockModel, params: mockParams }, mockNext);
+      await (wrapper.wrapGenerate as any)({ model: mockModel, params: mockParams, doGenerate: mockNext });
 
       expect(stateCollection.has('test-middleware')).toBe(true);
       expect(stateCollection.get('test-middleware')).toEqual({ test: 'state' });
@@ -113,7 +112,7 @@ describe('State Management Protocol', () => {
         }
       });
 
-      await wrapper.wrapGenerate!({ model: mockModel, params: mockParams }, mockNext);
+      await (wrapper.wrapGenerate as any)({ model: mockModel, params: mockParams, doGenerate: mockNext });
 
       expect(mockDeserialize).toHaveBeenCalledWith({ test: 'restored-state' });
       expect(mockNext).toHaveBeenCalled();

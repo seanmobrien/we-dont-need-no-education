@@ -217,15 +217,15 @@ Output Record Format: [
       // model,
       // prompt: PROMPT,
       messages: [
-        { role: 'system', content: PROMPT },
+        { role: 'system' as const, content: PROMPT },
         {
-          role: 'user',
-          content: `The document record to analyze is as follows:
+          role: 'user' as const,
+          content: [{ type: 'text' as const, text: `The document record to analyze is as follows:
 ___BEGIN CASE FILE___
 ${recordContents}
-___END CASE FILE___`,
+___END CASE FILE___` }],
         },
-      ] as CoreMessage[],
+      ],
       temperature: 0.1,
       experimental_telemetry: {
         isEnabled: true,

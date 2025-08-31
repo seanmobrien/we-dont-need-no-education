@@ -110,7 +110,7 @@ export const handleCacheJail = async (
     jailEntry.lastResponse = {
       finishReason: response.finishReason || 'unknown',
       hasWarnings: !!(response.warnings && response.warnings.length > 0),
-      textLength: response.text?.length || 0,
+      textLength: response.content?.reduce((acc, part) => acc + (part.type === 'text' ? part.text.length : 0), 0) || 0,
     };
 
     // Store updated jail entry
@@ -153,7 +153,7 @@ export const handleCacheJail = async (
 
       // Record promotion metrics
       if (config.enableMetrics) {
-        const responseSize = response.text?.length || 0;
+        const responseSize = response.content?.reduce((acc, part) => acc + (part.type === 'text' ? part.text.length : 0), 0) || 0;
         metricsCollector.recordJailPromotion(cacheKey, responseSize);
       }
     }

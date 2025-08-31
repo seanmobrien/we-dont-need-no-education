@@ -8,6 +8,7 @@
 // Core types and interfaces
 export {
   STATE_PROTOCOL,
+  type SerializableState,
   type StatefulMiddleware,
   type StateHandlers,
   type StatefulMiddlewareConfig,

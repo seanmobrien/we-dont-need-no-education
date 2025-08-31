@@ -5,10 +5,10 @@ import { ModelResourceNotFoundError, isModelResourceNotFoundError } from '@/lib/
 // Minimal seeded data to drive lookups
 const seedProviders: Array<[
   string,
-  { name: string; displayName: string; description: string; baseUrl: string; isActive: boolean }
+  { name: string; displayName: string; description: string; baseUrl: string; isActive: boolean; aliases: string[] }
 ]> = [
-  ['prov-1', { name: 'azure-openai.chat', displayName: 'Azure OpenAI', description: '', baseUrl: 'https://example', isActive: true }],
-  ['prov-2', { name: 'google.gemini', displayName: 'Google Gemini', description: '', baseUrl: 'https://example', isActive: true }],
+  ['prov-1', { name: 'azure-openai.chat', displayName: 'Azure OpenAI', description: '', baseUrl: 'https://example', isActive: true, aliases: [] }],
+  ['prov-2', { name: 'google.gemini', displayName: 'Google Gemini', description: '', baseUrl: 'https://example', isActive: true, aliases: [] }],
 ];
 
 const seedModels: Array<[

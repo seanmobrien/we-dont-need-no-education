@@ -22,7 +22,7 @@ export const handleCacheHit = (
   parsed: CacheableResponse,
   context: string = '',
 ): void => {
-  const responseSize = parsed.text?.length || 0;
+  const responseSize = parsed.content?.reduce((acc, part) => acc + (part.type === 'text' ? part.text.length : 0), 0) || 0;
 
   // Fix-up timestamps
   if (

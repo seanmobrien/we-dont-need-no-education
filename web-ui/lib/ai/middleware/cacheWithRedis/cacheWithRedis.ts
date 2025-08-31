@@ -127,7 +127,7 @@ export const cacheWithRedis: LanguageModelV2Middleware = {
           // Create response object for caching logic
           const streamResponse: CacheableResponse = {
             id: newUuid(),
-            text: generatedText,
+            content: [{ type: 'text', text: generatedText }],
             finishReason,
             usage,
             //warnings: rest.warnings,

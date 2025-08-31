@@ -259,7 +259,7 @@ export const enqueueStream = async ({
       // Process chunk through queue to maintain FIFO order
       const handlerContext: StreamHandlerContext = {
         chatId: streamContext.chatId!,
-        turnId: streamContext.turnId!,
+        turnId: parseInt(streamContext.turnId!, 10),
         toolCalls: streamContext.toolCalls,
         messageId: streamContext.messageId,
         currentMessageOrder: streamContext.currentMessageOrder,

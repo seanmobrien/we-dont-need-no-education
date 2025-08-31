@@ -10,7 +10,7 @@ jest.mock('drizzle-orm', () => ({
 
 import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 import { ProviderMap } from '@/lib/ai/services/model-stats/provider-map';
-import { LanguageModel } from '@ai-sdk/provider';
+import { LanguageModelV2 } from '@ai-sdk/provider';
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { IMockQueryBuilder } from '@/__tests__/jest.mock-drizzle';
@@ -147,17 +147,17 @@ describe('ModelMap with Full Mocking', () => {
     });
   });
 
-  describe('LanguageModel Integration', () => {
-    it('should extract model info from LanguageModel instance', async () => {
+  describe('LanguageModelV2 Integration', () => {
+    it('should extract model info from LanguageModelV2 instance', async () => {
       const instance = await ModelMap.getInstance();
 
-      const mockLanguageModel: LanguageModel = {
+      const mockLanguageModelV2: LanguageModelV2 = {
         provider: 'azure-openai.chat',
         modelId: 'gpt-4',
-      } as LanguageModel;
+      } as LanguageModelV2;
 
       const modelInfo =
-        await instance.normalizeProviderModel(mockLanguageModel);
+        await instance.normalizeProviderModel(mockLanguageModelV2);
 
       expect(modelInfo.modelName).toEqual('gpt-4');
       expect(modelInfo.modelId).toEqual('model-uuid-123');
@@ -167,9 +167,9 @@ describe('ModelMap with Full Mocking', () => {
     it('should handle missing provider or modelId', async () => {
       const instance = await ModelMap.getInstance();
 
-      const incompleteModel: LanguageModel = {
+      const incompleteModel: LanguageModelV2 = {
         provider: 'azure-openai-blahblah.chat',
-      } as LanguageModel; // Missing modelId
+      } as LanguageModelV2; // Missing modelId
 
       const modelInfo = await instance.normalizeProviderModel(incompleteModel);
       expect(modelInfo.modelId).toBeUndefined();

@@ -20,7 +20,7 @@ export const createStreamFromCachedText = (
   return new ReadableStream<LanguageModelV2StreamPart>({
     start(controller) {
       // Emit text deltas to simulate streaming
-      const text = parsed.text || '';
+      const text = parsed.content?.reduce((acc, part) => acc + (part.type === 'text' ? part.text : ''), '') || '';
 
       for (let i = 0; i < text.length; i += config.streamChunkSize) {
         const chunk = text.slice(i, i + config.streamChunkSize);

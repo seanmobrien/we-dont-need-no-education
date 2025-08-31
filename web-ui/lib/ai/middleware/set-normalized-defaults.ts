@@ -97,130 +97,131 @@ function safeJsonParse(jsonString: string): unknown {
  * 1. On request: Sets default experimental_telemetry if not present
  * 2. On response: Detects JSON code blocks and valid JSON objects, converts to structured output if structured output is empty
  */
-export const setNormalizedDefaultsMiddleware: LanguageModelV2Middleware = {
-  /**
-   * Transform parameters to add default telemetry if missing
-   */
-  transformParams: async ({ params }) => {
-    // Cast params to allow access to experimental properties
-    const modifiedParams = { ...params } as typeof params & {
-      experimental_telemetry?: typeof DEFAULT_TELEMETRY;
-    };
+export const originalSetNormalizedDefaultsMiddleware: LanguageModelV2Middleware =
+  {
+    /**
+     * Transform parameters to add default telemetry if missing
+     */
+    transformParams: async ({ params }) => {
+      // Cast params to allow access to experimental properties
+      const modifiedParams = { ...params } as typeof params & {
+        experimental_telemetry?: typeof DEFAULT_TELEMETRY;
+      };
 
-    // Set default telemetry if not present
-    if (!modifiedParams.experimental_telemetry) {
-      modifiedParams.experimental_telemetry = DEFAULT_TELEMETRY;
-    }
+      // Set default telemetry if not present
+      if (!modifiedParams.experimental_telemetry) {
+        modifiedParams.experimental_telemetry = DEFAULT_TELEMETRY;
+      }
 
-    return modifiedParams;
-  },
+      return modifiedParams;
+    },
 
-  /**
-   * Wrap generate to post-process response for JSON code blocks and valid JSON objects
-   */
-  wrapGenerate: async ({ doGenerate }) => {
-    const result = await doGenerate();
+    /**
+     * Wrap generate to post-process response for JSON code blocks and valid JSON objects
+     */
+    wrapGenerate: async ({ doGenerate }) => {
+      const result = await doGenerate();
 
-    if (typeof result.response?.body !== 'string') {
+      if (typeof result.response?.body !== 'string') {
+        return result;
+      }
+      result.providerMetadata = result.providerMetadata || {};
+      if (isStructuredOutputEmpty(result)) {
+        let jsonContent: string | undefined = undefined;
+
+        // Check if response text is a JSON code block
+        if (isJsonCodeBlock(result.response.body)) {
+          jsonContent = extractJsonFromCodeBlock(result.response.body);
+        }
+        // Check if response text is valid JSON object
+        else if (isValidJsonObject(result.response.body)) {
+          jsonContent = result.response.body.trim();
+        }
+
+        if (jsonContent) {
+          const parsedJson = safeJsonParse(jsonContent);
+
+          if (parsedJson) {
+            // Create modified result with structured output
+            const modifiedResult = {
+              ...result,
+              providerMetadata: {
+                ...((result.providerMetadata as Record<string, unknown>) || {}),
+                structuredOutputs: parsedJson as Record<string, JSONValue>,
+              },
+            };
+
+            return modifiedResult;
+          }
+        }
+      }
+
       return result;
-    }
-    result.providerMetadata = result.providerMetadata || {};
-    if (isStructuredOutputEmpty(result)) {
-      let jsonContent: string | undefined = undefined;
+    },
 
-      // Check if response text is a JSON code block
-      if (isJsonCodeBlock(result.response.body)) {
-        jsonContent = extractJsonFromCodeBlock(result.response.body);
-      }
-      // Check if response text is valid JSON object
-      else if (isValidJsonObject(result.response.body)) {
-        jsonContent = result.response.body.trim();
-      }
+    /**
+     * Wrap stream to post-process response for JSON code blocks and valid JSON objects
+     */
+    wrapStream: async ({ doStream }) => {
+      const { stream, ...rest } = await doStream();
 
-      if (jsonContent) {
-        const parsedJson = safeJsonParse(jsonContent);
+      let accumulatedText = '';
 
-        if (parsedJson) {
-          // Create modified result with structured output
-          const modifiedResult = {
-            ...result,
-            providerMetadata: {
-              ...((result.providerMetadata as Record<string, unknown>) || {}),
-              structuredOutputs: parsedJson as Record<string, JSONValue>,
-            },
-          };
-
-          return modifiedResult;
-        }
-      }
-    }
-
-    return result;
-  },
-
-  /**
-   * Wrap stream to post-process response for JSON code blocks and valid JSON objects
-   */
-  wrapStream: async ({ doStream }) => {
-    const { stream, ...rest } = await doStream();
-
-    let accumulatedText = '';
-
-    const transformStream = new TransformStream<
-      LanguageModelV2StreamPart,
-      LanguageModelV2StreamPart
-    >({
-      transform(chunk, controller) {
-        // Accumulate text deltas
-        if (chunk.type === 'text-delta') {
-          accumulatedText += chunk.delta;
-        }
-
-        // If this is a finish chunk and we have accumulated text that could be JSON
-        if (chunk.type === 'finish' && accumulatedText) {
-          let jsonContent: string | null = null;
-
-          // Check if accumulated text is a JSON code block
-          if (isJsonCodeBlock(accumulatedText)) {
-            jsonContent = extractJsonFromCodeBlock(accumulatedText);
-          }
-          // Check if accumulated text is valid JSON object
-          else if (isValidJsonObject(accumulatedText)) {
-            jsonContent = accumulatedText.trim();
+      const transformStream = new TransformStream<
+        LanguageModelV2StreamPart,
+        LanguageModelV2StreamPart
+      >({
+        transform(chunk, controller) {
+          // Accumulate text deltas
+          if (chunk.type === 'text-delta') {
+            accumulatedText += chunk.delta;
           }
 
-          if (jsonContent) {
-            const parsedJson = safeJsonParse(jsonContent);
+          // If this is a finish chunk and we have accumulated text that could be JSON
+          if (chunk.type === 'finish' && accumulatedText) {
+            let jsonContent: string | null = null;
 
-            if (parsedJson !== null) {
-              // Modify the finish chunk to include structured output
-              const chunkWithMeta = chunk as Record<string, unknown>;
-              const modifiedChunk = {
-                ...chunk,
-                providerMetadata: {
-                  ...((chunkWithMeta.providerMetadata as Record<
-                    string,
-                    unknown
-                  >) || {}),
-                  structuredOutputs: parsedJson as Record<string, JSONValue>,
-                },
-              };
-              controller.enqueue(modifiedChunk);
-              return;
+            // Check if accumulated text is a JSON code block
+            if (isJsonCodeBlock(accumulatedText)) {
+              jsonContent = extractJsonFromCodeBlock(accumulatedText);
+            }
+            // Check if accumulated text is valid JSON object
+            else if (isValidJsonObject(accumulatedText)) {
+              jsonContent = accumulatedText.trim();
+            }
+
+            if (jsonContent) {
+              const parsedJson = safeJsonParse(jsonContent);
+
+              if (parsedJson !== null) {
+                // Modify the finish chunk to include structured output
+                const chunkWithMeta = chunk as Record<string, unknown>;
+                const modifiedChunk = {
+                  ...chunk,
+                  providerMetadata: {
+                    ...((chunkWithMeta.providerMetadata as Record<
+                      string,
+                      unknown
+                    >) || {}),
+                    structuredOutputs: parsedJson as Record<string, JSONValue>,
+                  },
+                };
+                controller.enqueue(modifiedChunk);
+                return;
+              }
             }
           }
-        }
 
-        controller.enqueue(chunk);
-      },
-    });
+          controller.enqueue(chunk);
+        },
+      });
 
-    return {
-      stream: stream.pipeThrough(transformStream),
-      ...rest,
-    };
-  },
-};
+      return {
+        stream: stream.pipeThrough(transformStream),
+        ...rest,
+      };
+    },
+  };
 
 /**
  * Set Normalized Defaults Middleware with State Management Support

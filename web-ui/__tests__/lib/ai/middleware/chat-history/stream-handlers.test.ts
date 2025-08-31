@@ -102,6 +102,7 @@ describe('Stream Handlers', () => {
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
         {
           type: 'text-delta',
+          id: 'test-id',
           delta: ' additional text',
         };
 
@@ -125,6 +126,7 @@ describe('Stream Handlers', () => {
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
         {
           type: 'text-delta',
+          id: 'test-id',
           delta: '',
         };
 
@@ -146,6 +148,7 @@ describe('Stream Handlers', () => {
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
         {
           type: 'text-delta',
+          id: 'test-id',
           delta: ' new text',
         };
       const contextWithoutMessageId = { ...mockContext, messageId: undefined };
@@ -171,6 +174,7 @@ describe('Stream Handlers', () => {
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
         {
           type: 'text-delta',
+          id: 'test-id',
           delta: ' error text',
         };
       const dbError = new Error('Database update failed');
@@ -201,6 +205,7 @@ describe('Stream Handlers', () => {
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
         {
           type: 'text-delta',
+          id: 'test-id',
           delta: ' 🚀 émojis and ñoñó special chars',
         };
 
@@ -220,7 +225,6 @@ describe('Stream Handlers', () => {
       // Arrange
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
-        toolCallType: 'function',
         toolCallId: 'tool-123',
         toolName: 'search',
         input: JSON.stringify({ query: 'test search' }),
@@ -253,7 +257,6 @@ describe('Stream Handlers', () => {
       // Arrange
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
-        toolCallType: 'function',
         toolCallId: 'tool-456',
         toolName: 'ping',
         input: '',
@@ -276,7 +279,6 @@ describe('Stream Handlers', () => {
       // Arrange
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
-        toolCallType: 'function',
         toolCallId: 'tool-error',
         toolName: 'error-tool',
         input: '{}',
@@ -303,7 +305,6 @@ describe('Stream Handlers', () => {
       // Arrange
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
-        toolCallType: 'function',
         toolCallId: 'tool-db-error',
         toolName: 'db-error-tool',
         input: '{}',
@@ -340,7 +341,6 @@ describe('Stream Handlers', () => {
 
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
-        toolCallType: 'function',
         toolCallId: 'tool-complex',
         toolName: 'complex-search',
         input: JSON.stringify(complexArgs),
@@ -513,6 +513,7 @@ describe('Stream Handlers', () => {
       // Arrange
       const chunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
+        id: 'test-id',
         delta: ' routed text',
       };
 
@@ -533,7 +534,6 @@ describe('Stream Handlers', () => {
       // Arrange
       const chunk: LanguageModelV2StreamPart = {
         type: 'tool-call',
-        toolCallType: 'function',
         toolCallId: 'tool-route',
         toolName: 'route-tool',
         input: '{}',
@@ -633,6 +633,7 @@ describe('Stream Handlers', () => {
       // First chunk: text-delta
       const textChunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
+        id: 'test-id',
         delta: 'Hello',
       };
       let result = await processStreamChunk(textChunk, context);
@@ -643,7 +644,6 @@ describe('Stream Handlers', () => {
       // Second chunk: tool-call
       const toolChunk: LanguageModelV2StreamPart = {
         type: 'tool-call',
-        toolCallType: 'function',
         toolCallId: 'tool-seq',
         toolName: 'sequence-tool',
         input: JSON.stringify({ step: 1 }),
@@ -656,6 +656,7 @@ describe('Stream Handlers', () => {
       // Third chunk: more text
       const moreTextChunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
+        id: 'test-id',
         delta: ' world',
       };
       result = await processStreamChunk(moreTextChunk, context);
@@ -681,9 +682,9 @@ describe('Stream Handlers', () => {
     it('should maintain state consistency across multiple chunks', async () => {
       // Arrange
       const chunks: LanguageModelV2StreamPart[] = [
-        { type: 'text-delta', delta: 'First' },
-        { type: 'text-delta', delta: ' Second' },
-        { type: 'text-delta', delta: ' Third' },
+        { type: 'text-delta', id: 'test-id-1', delta: 'First' },
+        { type: 'text-delta', id: 'test-id-2', delta: ' Second' },
+        { type: 'text-delta', id: 'test-id-3', delta: ' Third' },
       ];
 
       const currentContext = { ...mockContext };
