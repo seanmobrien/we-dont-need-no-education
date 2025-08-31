@@ -130,8 +130,6 @@ export const cacheWithRedis: LanguageModelV2Middleware = {
             content: [{ type: 'text', text: generatedText }],
             finishReason,
             usage,
-            //warnings: rest.warnings,
-            //rawCall: rest.rawCall,
             rawResponse: (rest.response as Record<string, unknown>).body,
           };
 
