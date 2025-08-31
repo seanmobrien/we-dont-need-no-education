@@ -39,3 +39,17 @@ export {
   type QuotaCheckResult,
   type TokenStatsMiddlewareConfig,
 } from './tokenStatsTracking';
+export {
+  STATE_PROTOCOL,
+  StateManagementMiddleware,
+  createStateManagementMiddleware,
+  createStatefulMiddleware,
+  createSimpleStatefulMiddleware,
+  type StatefulMiddleware,
+  type StateHandlers,
+  type StatefulMiddlewareConfig,
+  type StateManagementParams,
+  type MiddlewareMetadata,
+  type StateCollectionResult,
+  type StateRestorationData,
+} from './state-management';

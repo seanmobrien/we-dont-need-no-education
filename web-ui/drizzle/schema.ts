@@ -1649,3 +1649,24 @@ export const documentPropertyRelatedDocument = pgMaterializedView(
 ).as(
   sql`SELECT du.document_property_id AS related_property_id, dpr.target_document_id AS document_id, dpr.relationship_reason_id AS relationship_type, dpr."timestamp" FROM document_relationship dpr JOIN document_units du ON dpr.source_document_id = du.unit_id`,
 );
+
+// Middleware metadata tables for state management protocol
+
+export const middlewareMetadata = pgTable(
+  'middleware_metadata',
+  {
+    id: text().primaryKey().notNull(),
+    name: text().notNull(),
+    implementationPath: text('implementation_path').notNull(),
+    description: text(),
+    supportsStateSerialization: boolean('supports_state_serialization').default(false).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+  },
+  (table) => [
+    index('idx_middleware_metadata_name').using('btree', table.name.asc().nullsLast().op('text_ops')),
+    index('idx_middleware_metadata_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
+    index('idx_middleware_metadata_serialization').using('btree', table.supportsStateSerialization.asc().nullsLast().op('bool_ops')),
+  ],
+);
