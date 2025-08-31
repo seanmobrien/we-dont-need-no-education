@@ -26,7 +26,6 @@ import {
 import { LanguageModel } from 'ai';
 import { ModelMap } from '../../services/model-stats/model-map';
 import { createStatefulMiddleware } from '../state-management';
-import { log } from '@/lib/logger';
 
 // Model classification mapping - extract from model identifier
 async function getModelClassification({
@@ -314,18 +313,24 @@ export const retryRateLimitMiddlewareFactory = async (
       serialize: () => ({
         rateLimitContext: { ...rateLimitContext },
         currentProvider: getCurrentProvider(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       }),
-      deserialize: (state: { rateLimitContext?: RateLimitRetryContext; currentProvider?: string; timestamp?: number }) => {
+      deserialize: (state: {
+        rateLimitContext?: RateLimitRetryContext;
+        currentProvider?: string;
+        timestamp?: number;
+      }) => {
         if (state?.rateLimitContext) {
-          log(l => l.debug('Rate limiter state restored', { 
-            context: state.rateLimitContext,
-            provider: state.currentProvider,
-            age: Date.now() - (state.timestamp || 0)
-          }));
+          log((l) =>
+            l.debug('Rate limiter state restored', {
+              context: state.rateLimitContext,
+              provider: state.currentProvider,
+              age: Date.now() - (state.timestamp || 0),
+            }),
+          );
         }
-      }
-    }
+      },
+    },
   }) as RetryRateLimitMiddlewareType;
 
   // Add the rateLimitContext method to the stateful middleware
