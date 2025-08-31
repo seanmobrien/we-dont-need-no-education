@@ -211,6 +211,8 @@ export const createChatHistoryMiddleware = (
   }) as LanguageModelV2Middleware;
 };
 
+export const createChatHistoryMiddlewareEx = createOriginalChatHistoryMiddleware;
+
 export const wrapChatHistoryMiddleware = ({
   model,
   chatHistoryContext,
@@ -227,6 +229,5 @@ export const wrapChatHistoryMiddleware = ({
   return wrapLanguageModel({
     model,
     middleware: createOriginalChatHistoryMiddleware(chatHistoryContext),
-  });
   });
 };
