@@ -32,7 +32,7 @@ import { metricsCollector } from '@/lib/ai/middleware/cacheWithRedis/metrics';
 jest.mock('@ai-sdk/openai', () => ({
   openai: jest.fn(() => ({
     doGenerate: jest.fn(async () => ({
-      text: 'The answer is 4',
+      content: [{ type: 'text', text: 'The answer is 4' }],
       finishReason: 'stop',
       usage: { totalTokens: 10 },
       warnings: undefined,
@@ -54,7 +54,7 @@ describe('Cache Basic Functionality', () => {
   it('should cache and retrieve responses correctly', async () => {
     // Setup: First call is cache miss, second call is cache hit
     const cachedResponse = JSON.stringify({
-      text: 'The answer is 4',
+      content: [{ type: 'text', text: 'The answer is 4' }],
       finishReason: 'stop',
       usage: { totalTokens: 10 },
       warnings: undefined,

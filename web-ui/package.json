@@ -129,7 +129,8 @@
     "jest-mock-extended": "^4.0.0-beta1",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
-    "ts-jest": "^29.3.4"
+    "ts-jest": "^29.3.4",
+    "web-streams-polyfill": "^4.2.0"
   },
   "overrides": {
     "uri-js": "npm:uri-js-replace",

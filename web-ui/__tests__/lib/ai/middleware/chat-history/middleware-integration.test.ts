@@ -93,7 +93,8 @@ describe('Chat History Middleware Integration', () => {
         Promise.resolve({
           text: 'Test response',
           finishReason: 'stop',
-          usage: { totalTokens: 5 },
+          usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
+          content: [{ type: 'text-delta', delta: 'Test response' }],
         }),
       );
 
@@ -109,7 +110,7 @@ describe('Chat History Middleware Integration', () => {
 
       // Assert
       expect(result).toBeDefined();
-      expect(result.text).toBe('Test response');
+      expect((result.content[0] as any).delta).toBe('Test response');
       expect(mockDoGenerate).toHaveBeenCalled();
     });
 
@@ -120,7 +121,7 @@ describe('Chat History Middleware Integration', () => {
       // Create a simple mock stream
       const mockStream = {
         [Symbol.asyncIterator]: async function* () {
-          yield { type: 'text-delta', textDelta: 'Hello' };
+          yield { type: 'text-delta', delta: 'Hello' };
           yield { type: 'finish', finishReason: 'stop' };
         },
         pipeThrough: jest.fn(function (this: any) {
@@ -166,7 +167,8 @@ describe('Chat History Middleware Integration', () => {
         Promise.resolve({
           text: 'Response despite error',
           finishReason: 'stop',
-          usage: { totalTokens: 5 },
+          usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
+          content: [{ type: 'text-delta', delta: 'Response despite error' }],
         }),
       );
 
@@ -180,7 +182,7 @@ describe('Chat History Middleware Integration', () => {
         params: mockParams as any,
       } as any);
 
-      expect(result.text).toBe('Response despite error');
+      expect((result.content[0] as any).delta).toBe('Response despite error');
       expect(mockDoGenerate).toHaveBeenCalled();
     });
 
@@ -195,7 +197,7 @@ describe('Chat History Middleware Integration', () => {
 
       const mockStream = {
         [Symbol.asyncIterator]: async function* () {
-          yield { type: 'text-delta', textDelta: 'Recovery' };
+          yield { type: 'text-delta', delta: 'Recovery' };
         },
         pipeThrough: jest.fn(function (this: any) {
           return this;

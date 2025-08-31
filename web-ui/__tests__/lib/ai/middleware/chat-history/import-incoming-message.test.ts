@@ -19,6 +19,7 @@ import { log } from '@/lib/logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
+import { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/utility');
@@ -344,9 +345,7 @@ describe('Import Incoming Message', () => {
 
     it('should handle messages with tool calls', async () => {
       // Arrange
-      const paramsWithToolCall: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const paramsWithToolCall: LanguageModelV2CallOptions = {
         prompt: [
           {
             role: 'user',
@@ -359,7 +358,7 @@ describe('Import Incoming Message', () => {
                 type: 'tool-call',
                 toolCallId: 'tool-123',
                 toolName: 'search',
-                args: { query: 'test' },
+                input: { query: 'test' },
               },
             ],
           },
@@ -370,7 +369,7 @@ describe('Import Incoming Message', () => {
                 type: 'tool-result',
                 toolCallId: 'tool-123',
                 toolName: 'search',
-                result: 'search results',
+                output: { type: 'text', value: 'search results' },
               },
             ],
           },
@@ -395,9 +394,7 @@ describe('Import Incoming Message', () => {
 
     it('should handle messages with string content', async () => {
       // Arrange
-      const paramsWithStringContent: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const paramsWithStringContent: LanguageModelV2CallOptions = {
         prompt: [
           {
             role: 'user',
@@ -424,9 +421,7 @@ describe('Import Incoming Message', () => {
 
     it('should assign correct message order', async () => {
       // Arrange
-      const multiMessageParams: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const multiMessageParams: LanguageModelV2CallOptions = {
         prompt: [
           { role: 'user', content: [{ type: 'text', text: 'Message 1' }] },
           { role: 'assistant', content: [{ type: 'text', text: 'Message 2' }] },
@@ -497,9 +492,7 @@ describe('Import Incoming Message', () => {
 
     it('should handle empty prompt array', async () => {
       // Arrange
-      const emptyParams: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const emptyParams: LanguageModelV2CallOptions = {
         prompt: [],
       };
 
@@ -626,9 +619,7 @@ describe('Import Incoming Message', () => {
   describe('Integration Tests', () => {
     it('should handle complete workflow with tool calls', async () => {
       // Arrange
-      const complexParams: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const complexParams: LanguageModelV2CallOptions = {
         prompt: [
           {
             role: 'system',
@@ -647,7 +638,7 @@ describe('Import Incoming Message', () => {
                 type: 'tool-call',
                 toolCallId: 'search-1',
                 toolName: 'web_search',
-                args: { query: 'recent AI news' },
+                input: { query: 'recent AI news' },
               },
             ],
           },
@@ -658,7 +649,7 @@ describe('Import Incoming Message', () => {
                 type: 'tool-result',
                 toolCallId: 'search-1',
                 toolName: 'web_search',
-                result: 'Found 10 articles about AI',
+                output: { type: 'text', value: 'Found 10 articles about AI' },
               },
             ],
           },

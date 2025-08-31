@@ -19,7 +19,7 @@ import { chatMessages, tokenUsage } from '@/drizzle/schema';
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { log } from '@/lib/logger';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
-import type { LanguageModelStreamPart } from 'ai';
+import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 
 // Mock dependencies
 jest.mock('@/lib/drizzle-db');
@@ -99,10 +99,11 @@ describe('Stream Handlers', () => {
   describe('handleTextDelta', () => {
     it('should accumulate text and update message successfully', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'text-delta' }> = {
-        type: 'text-delta',
-        textDelta: ' additional text',
-      };
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
+        {
+          type: 'text-delta',
+          delta: ' additional text',
+        };
 
       // Act
       const result = await handleTextDelta(chunk, mockContext);
@@ -121,10 +122,11 @@ describe('Stream Handlers', () => {
 
     it('should handle empty text delta', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'text-delta' }> = {
-        type: 'text-delta',
-        textDelta: '',
-      };
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
+        {
+          type: 'text-delta',
+          delta: '',
+        };
 
       // Act
       const result = await handleTextDelta(chunk, mockContext);
@@ -141,10 +143,11 @@ describe('Stream Handlers', () => {
 
     it('should handle context without messageId', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'text-delta' }> = {
-        type: 'text-delta',
-        textDelta: ' new text',
-      };
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
+        {
+          type: 'text-delta',
+          delta: ' new text',
+        };
       const contextWithoutMessageId = { ...mockContext, messageId: undefined };
 
       // Act
@@ -165,10 +168,11 @@ describe('Stream Handlers', () => {
 
     it('should handle database update errors gracefully', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'text-delta' }> = {
-        type: 'text-delta',
-        textDelta: ' error text',
-      };
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
+        {
+          type: 'text-delta',
+          delta: ' error text',
+        };
       const dbError = new Error('Database update failed');
 
       mockDb.update.mockReturnValue({
@@ -194,10 +198,11 @@ describe('Stream Handlers', () => {
 
     it('should handle special characters correctly', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'text-delta' }> = {
-        type: 'text-delta',
-        textDelta: ' 🚀 émojis and ñoñó special chars',
-      };
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
+        {
+          type: 'text-delta',
+          delta: ' 🚀 émojis and ñoñó special chars',
+        };
 
       // Act
       const result = await handleTextDelta(chunk, mockContext);
@@ -213,12 +218,12 @@ describe('Stream Handlers', () => {
   describe('handleToolCall', () => {
     it('should create tool message successfully', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'tool-call' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
         toolCallType: 'function',
         toolCallId: 'tool-123',
         toolName: 'search',
-        args: JSON.stringify({ query: 'test search' }),
+        input: JSON.stringify({ query: 'test search' }),
       };
 
       // Act
@@ -246,12 +251,12 @@ describe('Stream Handlers', () => {
 
     it('should handle tool call without arguments', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'tool-call' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
         toolCallType: 'function',
         toolCallId: 'tool-456',
         toolName: 'ping',
-        args: '',
+        input: '',
       };
 
       // Act
@@ -269,12 +274,12 @@ describe('Stream Handlers', () => {
 
     it('should handle getNextSequence errors', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'tool-call' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
         toolCallType: 'function',
         toolCallId: 'tool-error',
         toolName: 'error-tool',
-        args: '{}',
+        input: '{}',
       };
       const sequenceError = new Error('Failed to get next sequence');
       mockGetNextSequence.mockRejectedValue(sequenceError);
@@ -296,12 +301,12 @@ describe('Stream Handlers', () => {
 
     it('should handle database insert errors', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'tool-call' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
         toolCallType: 'function',
         toolCallId: 'tool-db-error',
         toolName: 'db-error-tool',
-        args: '{}',
+        input: '{}',
       };
       const insertError = new Error('Database insert failed');
 
@@ -333,12 +338,12 @@ describe('Stream Handlers', () => {
         options: ['precise', 'fast'],
       };
 
-      const chunk: Extract<LanguageModelStreamPart, { type: 'tool-call' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'tool-call' }> = {
         type: 'tool-call',
         toolCallType: 'function',
         toolCallId: 'tool-complex',
         toolName: 'complex-search',
-        args: JSON.stringify(complexArgs),
+        input: JSON.stringify(complexArgs),
       };
 
       // Act
@@ -357,11 +362,12 @@ describe('Stream Handlers', () => {
   describe('handleFinish', () => {
     it('should record token usage successfully', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'finish' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }> = {
         type: 'finish',
         usage: {
-          promptTokens: 50,
-          completionTokens: 25,
+          inputTokens: 50,
+          outputTokens: 25,
+          totalTokens: 75,
         },
         finishReason: 'stop',
       };
@@ -383,12 +389,13 @@ describe('Stream Handlers', () => {
 
     it('should handle finish without usage data', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'finish' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }> = {
         type: 'finish',
         finishReason: 'stop',
         usage: {
-          promptTokens: 0,
-          completionTokens: 0,
+          inputTokens: 0,
+          outputTokens: 0,
+          totalTokens: 0,
         },
       };
       // Remove messageId so that the condition doesn't trigger insertion
@@ -412,11 +419,12 @@ describe('Stream Handlers', () => {
 
     it('should handle context without turnId', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'finish' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }> = {
         type: 'finish',
         usage: {
-          promptTokens: 30,
-          completionTokens: 15,
+          inputTokens: 30,
+          outputTokens: 15,
+          totalTokens: 45,
         },
         finishReason: 'stop',
       };
@@ -443,11 +451,12 @@ describe('Stream Handlers', () => {
 
     it('should handle database insert errors for token usage', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'finish' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }> = {
         type: 'finish',
         usage: {
-          promptTokens: 40,
-          completionTokens: 20,
+          inputTokens: 40,
+          outputTokens: 20,
+          totalTokens: 60,
         },
         finishReason: 'stop',
       };
@@ -472,11 +481,12 @@ describe('Stream Handlers', () => {
 
     it('should calculate total tokens correctly', async () => {
       // Arrange
-      const chunk: Extract<LanguageModelStreamPart, { type: 'finish' }> = {
+      const chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }> = {
         type: 'finish',
         usage: {
-          promptTokens: 100,
-          completionTokens: 75,
+          inputTokens: 100,
+          outputTokens: 75,
+          totalTokens: 175,
         },
         finishReason: 'stop',
       };
@@ -501,9 +511,9 @@ describe('Stream Handlers', () => {
   describe('processStreamChunk', () => {
     it('should route text-delta chunks correctly', async () => {
       // Arrange
-      const chunk: LanguageModelStreamPart = {
+      const chunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
-        textDelta: ' routed text',
+        delta: ' routed text',
       };
 
       // Act
@@ -521,12 +531,12 @@ describe('Stream Handlers', () => {
 
     it('should route tool-call chunks correctly', async () => {
       // Arrange
-      const chunk: LanguageModelStreamPart = {
+      const chunk: LanguageModelV2StreamPart = {
         type: 'tool-call',
         toolCallType: 'function',
         toolCallId: 'tool-route',
         toolName: 'route-tool',
-        args: '{}',
+        input: '{}',
       };
 
       // Act
@@ -544,11 +554,12 @@ describe('Stream Handlers', () => {
 
     it('should route finish chunks correctly', async () => {
       // Arrange
-      const chunk: LanguageModelStreamPart = {
+      const chunk: LanguageModelV2StreamPart = {
         type: 'finish',
         usage: {
-          promptTokens: 10,
-          completionTokens: 5,
+          inputTokens: 10,
+          outputTokens: 5,
+          totalTokens: 15,
         },
         finishReason: 'stop',
       };
@@ -571,7 +582,7 @@ describe('Stream Handlers', () => {
       const chunk = {
         type: 'unknown-chunk-type',
         data: 'some data',
-      } as unknown as LanguageModelStreamPart;
+      } as unknown as LanguageModelV2StreamPart;
 
       // Act
       const result = await processStreamChunk(chunk, mockContext);
@@ -592,7 +603,7 @@ describe('Stream Handlers', () => {
 
     it('should handle error chunks', async () => {
       // Arrange
-      const chunk: LanguageModelStreamPart = {
+      const chunk: LanguageModelV2StreamPart = {
         type: 'error',
         error: new Error('Stream error'),
       };
@@ -620,9 +631,9 @@ describe('Stream Handlers', () => {
       const context = { ...mockContext };
 
       // First chunk: text-delta
-      const textChunk: LanguageModelStreamPart = {
+      const textChunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
-        textDelta: 'Hello',
+        delta: 'Hello',
       };
       let result = await processStreamChunk(textChunk, context);
       context.generatedText = result.generatedText;
@@ -630,12 +641,12 @@ describe('Stream Handlers', () => {
       expect(result.generatedText).toBe('Initial textHello');
 
       // Second chunk: tool-call
-      const toolChunk: LanguageModelStreamPart = {
+      const toolChunk: LanguageModelV2StreamPart = {
         type: 'tool-call',
         toolCallType: 'function',
         toolCallId: 'tool-seq',
         toolName: 'sequence-tool',
-        args: JSON.stringify({ step: 1 }),
+        input: JSON.stringify({ step: 1 }),
       };
       result = await processStreamChunk(toolChunk, context);
       context.currentMessageOrder = result.currentMessageOrder;
@@ -643,9 +654,9 @@ describe('Stream Handlers', () => {
       expect(result.currentMessageOrder).toBe(2);
 
       // Third chunk: more text
-      const moreTextChunk: LanguageModelStreamPart = {
+      const moreTextChunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
-        textDelta: ' world',
+        delta: ' world',
       };
       result = await processStreamChunk(moreTextChunk, context);
       context.generatedText = result.generatedText;
@@ -653,11 +664,12 @@ describe('Stream Handlers', () => {
       expect(result.generatedText).toBe('Initial textHello world');
 
       // Final chunk: finish
-      const finishChunk: LanguageModelStreamPart = {
+      const finishChunk: LanguageModelV2StreamPart = {
         type: 'finish',
         usage: {
-          promptTokens: 10,
-          completionTokens: 5,
+          inputTokens: 10,
+          outputTokens: 5,
+          totalTokens: 15,
         },
         finishReason: 'stop',
       };
@@ -668,10 +680,10 @@ describe('Stream Handlers', () => {
 
     it('should maintain state consistency across multiple chunks', async () => {
       // Arrange
-      const chunks: LanguageModelStreamPart[] = [
-        { type: 'text-delta', textDelta: 'First' },
-        { type: 'text-delta', textDelta: ' Second' },
-        { type: 'text-delta', textDelta: ' Third' },
+      const chunks: LanguageModelV2StreamPart[] = [
+        { type: 'text-delta', delta: 'First' },
+        { type: 'text-delta', delta: ' Second' },
+        { type: 'text-delta', delta: ' Third' },
       ];
 
       const currentContext = { ...mockContext };

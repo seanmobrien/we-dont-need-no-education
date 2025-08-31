@@ -257,7 +257,7 @@ export interface StreamHandlerContext {
    * Unique identifier for the current conversation turn.
    * Groups related messages within a request/response cycle.
    */
-  turnId: string;
+  turnId: number;
 
   /**
    * Optional unique identifier for the assistant message being generated.

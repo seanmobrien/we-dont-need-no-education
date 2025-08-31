@@ -9,7 +9,10 @@ import { extractParams } from '@/lib/nextjs-util/utils';
 const attachmentRepository = new AttachmentRepository();
 
 export const POST = wrapRouteRequest(
-  async (req: Request, args: { params: Promise<{ attachmentId: number }> }) => {
+  async (
+    req: Request,
+    args: { params: Promise<{ attachmentId: number | string }> },
+  ) => {
     const { attachmentId } = await extractParams(args);
 
     if (!attachmentId) {

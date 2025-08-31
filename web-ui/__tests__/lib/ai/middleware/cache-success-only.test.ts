@@ -25,32 +25,27 @@ jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
 }));
 
 import { openai } from '@ai-sdk/openai';
-import {
-  generateText,
-  LanguageModel,
-  LanguageModelCallOptions,
-  LanguageModelMiddleware,
-  wrapLanguageModel,
-} from 'ai';
+import { generateText, LanguageModelMiddleware, wrapLanguageModel } from 'ai';
+import { LanguageModelV2, LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
 import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
-import type { RedisClientType } from 'redis';
+import { content } from 'googleapis/build/src/apis/content';
 
 // Mock function to simulate different response types
 const createMockMiddleware = (
   mockResponse: Record<string, unknown>,
 ): LanguageModelMiddleware => ({
   wrapGenerate: async () => {
-    return mockResponse as unknown as ReturnType<LanguageModel['doGenerate']>;
+    return mockResponse as unknown as ReturnType<LanguageModelV2['doGenerate']>;
   },
   transformParams: async ({ params }: { params: Record<string, unknown> }) =>
-    params as LanguageModelCallOptions,
+    params as LanguageModelV2CallOptions,
 });
 
 const wrapMockMiddleware = (
-  model: LanguageModel,
+  model: LanguageModelV2,
   mockResponse: Record<string, unknown>,
-): LanguageModel =>
+): LanguageModelV2 =>
   wrapLanguageModel({
     model: wrapLanguageModel({
       model: model,
@@ -70,7 +65,7 @@ describe('Cache Success-Only Functionality', () => {
     const baseModel = openai('gpt-4o-mini');
 
     const successMiddleware: LanguageModelMiddleware = createMockMiddleware({
-      text: 'This is a successful response',
+      content: [{ type: 'text', text: 'This is a successful response' }],
       finishReason: 'stop',
       usage: { totalTokens: 10 },
       warnings: undefined,
@@ -101,7 +96,7 @@ describe('Cache Success-Only Functionality', () => {
     const baseModel = openai('gpt-4o-mini');
 
     const errorModel = wrapMockMiddleware(baseModel, {
-      text: '',
+      content: [{ type: 'text', text: '' }],
       finishReason: 'error',
       usage: { totalTokens: 10 },
       warnings: ['API Error occurred'],
@@ -123,7 +118,7 @@ describe('Cache Success-Only Functionality', () => {
     const baseModel = openai('gpt-4o-mini');
 
     const filterModel = wrapMockMiddleware(baseModel, {
-      text: 'Filtered content',
+      content: [{ type: 'text', text: 'Filtered content' }],
       finishReason: 'content-filter',
       usage: { totalTokens: 5 },
       warnings: undefined,
@@ -146,7 +141,7 @@ describe('Cache Success-Only Functionality', () => {
     const baseModel = openai('gpt-4o-mini');
 
     const warningModel = wrapMockMiddleware(baseModel, {
-      text: 'Response with warnings',
+      content: [{ type: 'text', text: 'Response with warnings' }],
       finishReason: 'stop',
       usage: { totalTokens: 15 },
       warnings: ['Rate limit warning'],
@@ -169,7 +164,7 @@ describe('Cache Success-Only Functionality', () => {
     const baseModel = openai('gpt-4o-mini');
 
     const emptyModel = wrapMockMiddleware(baseModel, {
-      text: '',
+      content: [{ type: 'text', text: '' }],
       finishReason: 'stop',
       usage: { totalTokens: 1 },
       warnings: undefined,

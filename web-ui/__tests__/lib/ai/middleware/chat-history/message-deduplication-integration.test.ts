@@ -15,7 +15,7 @@ import { generateChatId } from '@/lib/ai/core';
 import { log } from '@/lib/logger';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
-import type { LanguageModelCallOptions } from 'ai';
+import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 
 // Mock dependencies
@@ -132,9 +132,7 @@ describe('Message Deduplication Integration', () => {
         },
       ];
 
-      const mockParams: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const mockParams: LanguageModelV2CallOptions = {
         prompt: firstTurnMessages,
       };
 
@@ -209,9 +207,7 @@ describe('Message Deduplication Integration', () => {
         }, // Only the new message
       ];
 
-      const mockParams: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const mockParams: LanguageModelV2CallOptions = {
         prompt: secondTurnMessages,
       };
 
@@ -252,7 +248,7 @@ describe('Message Deduplication Integration', () => {
   describe('Third conversation turn (no new messages)', () => {
     it('should handle turns with no new user messages', async () => {
       // Arrange - Turn with only existing messages (e.g., retry scenario)
-      const thirdTurnMessages: LanguageModelCallOptions['prompt'] = [
+      const thirdTurnMessages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'user' as const,
           content: [{ type: 'text' as const, text: 'Hello, how are you?' }],
@@ -275,11 +271,9 @@ describe('Message Deduplication Integration', () => {
         }, // Duplicate
       ];
 
-      const newMessages: LanguageModelCallOptions['prompt'] = []; // No new messages
+      const newMessages: LanguageModelV2CallOptions['prompt'] = []; // No new messages
 
-      const mockParams: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const mockParams: LanguageModelV2CallOptions = {
         prompt: thirdTurnMessages,
       };
 
@@ -318,9 +312,7 @@ describe('Message Deduplication Integration', () => {
   describe('Edge cases', () => {
     it('should handle empty prompt arrays gracefully', async () => {
       // Arrange
-      const mockParams: LanguageModelCallOptions = {
-        inputFormat: 'prompt',
-        mode: { type: 'regular' },
+      const mockParams: LanguageModelV2CallOptions = {
         prompt: [],
       };
 

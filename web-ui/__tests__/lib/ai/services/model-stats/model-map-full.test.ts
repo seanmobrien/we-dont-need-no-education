@@ -157,29 +157,22 @@ describe('ModelMap with Full Mocking', () => {
       } as LanguageModel;
 
       const modelInfo =
-        await instance.getModelFromLanguageModel(mockLanguageModel);
+        await instance.normalizeProviderModel(mockLanguageModel);
 
-      expect(modelInfo).toEqual(
-        expect.objectContaining({
-          modelName: 'gpt-4',
-          providerId: mockProviderId,
-          quota: expect.objectContaining({
-            maxTokensPerMessage: 8192,
-          }),
-        }),
-      );
+      expect(modelInfo.modelName).toEqual('gpt-4');
+      expect(modelInfo.modelId).toEqual('model-uuid-123');
+      expect(modelInfo.providerId).toEqual(mockProviderId);
     });
 
     it('should handle missing provider or modelId', async () => {
       const instance = await ModelMap.getInstance();
 
       const incompleteModel: LanguageModel = {
-        provider: 'azure-openai.chat',
+        provider: 'azure-openai-blahblah.chat',
       } as LanguageModel; // Missing modelId
 
-      const modelInfo =
-        await instance.getModelFromLanguageModel(incompleteModel);
-      expect(modelInfo).toBeNull();
+      const modelInfo = await instance.normalizeProviderModel(incompleteModel);
+      expect(modelInfo.modelId).toBeUndefined();
     });
   });
 

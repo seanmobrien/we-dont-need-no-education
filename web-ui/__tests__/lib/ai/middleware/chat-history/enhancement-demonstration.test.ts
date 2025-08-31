@@ -7,6 +7,7 @@
  */
 
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
+import { LanguageModelV2Message } from '@ai-sdk/provider';
 
 // Mock database schema
 jest.mock('@/lib/drizzle-db', () => ({
@@ -154,11 +155,17 @@ describe('Chat History Enhancement Demonstration', () => {
     // Assert - Only exact matches are filtered out
     expect(newMessages).toHaveLength(3);
     expect(
-      newMessages.map((m: { content: any[]; role: any }) => {
+      newMessages.map((m: LanguageModelV2Message) => {
         const textContent = Array.isArray(m.content)
           ? m.content
               .filter((part) => part.type === 'text')
-              .map((part) => part.text)
+              .map((part) =>
+                'content' in part
+                  ? part.content
+                  : 'text' in part
+                    ? part.text
+                    : '',
+              )
               .join('')
           : m.content;
         return `${m.role}:${textContent}`;

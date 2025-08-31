@@ -17,7 +17,7 @@ import type {
   FlushResult,
   FlushConfig,
 } from '@/lib/ai/middleware/chat-history/types';
-import type { LanguageModelStreamPart } from 'ai';
+import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 
 describe('Chat History Types', () => {
   describe('ChatHistoryContext', () => {
@@ -138,9 +138,10 @@ describe('Chat History Types', () => {
 
   describe('QueuedTask', () => {
     it('should have all required fields', () => {
-      const mockChunk: LanguageModelStreamPart = {
+      const mockChunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
-        textDelta: 'Hello',
+        delta: 'Hello',
+        id: 'chunk-1',
       };
 
       const mockContext: any = {
@@ -172,9 +173,10 @@ describe('Chat History Types', () => {
     });
 
     it('should allow optional result field', () => {
-      const mockChunk: LanguageModelStreamPart = {
+      const mockChunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
-        textDelta: 'Hello',
+        delta: 'Hello',
+        id: 'chunk-1',
       };
 
       const mockContext: any = {

@@ -8,9 +8,8 @@
  */
 
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
-import { schema } from '@/lib/drizzle-db';
 import type { DbTransactionType } from '@/lib/drizzle-db';
-import type { LanguageModelCallOptions } from 'ai';
+import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 // Mock database schema
 jest.mock('@/lib/drizzle-db', () => ({
@@ -44,7 +43,7 @@ describe('Message Deduplication', () => {
     it('should return all messages when chat has no existing messages', async () => {
       // Arrange
       const chatId = 'chat-123';
-      const incomingMessages: LanguageModelCallOptions['prompt'] = [
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         { role: 'user', content: [{ type: 'text', text: 'Hello' }] },
         { role: 'assistant', content: [{ type: 'text', text: 'Hi there!' }] },
       ];
@@ -63,7 +62,7 @@ describe('Message Deduplication', () => {
     it('should filter out duplicate messages', async () => {
       // Arrange
       const chatId = 'chat-123';
-      const incomingMessages: LanguageModelCallOptions['prompt'] = [
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'user' as const,
           content: [{ type: 'text' as const, text: 'Hello' }],
@@ -102,7 +101,7 @@ describe('Message Deduplication', () => {
       const complexContent = [
         { type: 'text' as const, text: 'Hello with metadata' },
       ];
-      const incomingMessages: LanguageModelCallOptions['prompt'] = [
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         { role: 'user' as const, content: complexContent },
         {
           role: 'user' as const,
@@ -134,7 +133,7 @@ describe('Message Deduplication', () => {
     it('should return empty array when all messages already exist', async () => {
       // Arrange
       const chatId = 'chat-123';
-      const incomingMessages: LanguageModelCallOptions['prompt'] = [
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'user' as const,
           content: [{ type: 'text' as const, text: 'Hello' }],
@@ -163,7 +162,7 @@ describe('Message Deduplication', () => {
     it('should handle mixed content types correctly', async () => {
       // Arrange
       const chatId = 'chat-123';
-      const incomingMessages: LanguageModelCallOptions['prompt'] = [
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'user' as const,
           content: [{ type: 'text' as const, text: 'Text message' }],
@@ -203,7 +202,7 @@ describe('Message Deduplication', () => {
     it('should be case sensitive for content comparison', async () => {
       // Arrange
       const chatId = 'chat-123';
-      const incomingMessages: LanguageModelCallOptions['prompt'] = [
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'user' as const,
           content: [{ type: 'text' as const, text: 'Hello' }],
@@ -234,7 +233,7 @@ describe('Message Deduplication', () => {
     it('should handle role differences correctly', async () => {
       // Arrange
       const chatId = 'chat-123';
-      const incomingMessages: LanguageModelCallOptions['prompt'] = [
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'user' as const,
           content: [{ type: 'text' as const, text: 'Hello' }],

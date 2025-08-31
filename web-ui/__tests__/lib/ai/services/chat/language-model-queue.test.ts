@@ -2,7 +2,7 @@
  * @fileoverview Tests for the LanguageModelQueue class
  */
 
-import { LanguageModel } from '@ai-sdk/provider';
+import { LanguageModelV2 } from '@ai-sdk/provider';
 import { LanguageModelQueue } from '@/lib/ai/services/chat';
 import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
 import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
@@ -14,7 +14,7 @@ jest.mock('@/auth');
 jest.mock('@/lib/logger');
 
 describe('LanguageModelQueue', () => {
-  let mockModel: LanguageModel;
+  let mockModel: LanguageModelV2;
   let queue: LanguageModelQueue;
 
   beforeEach(() => {
@@ -22,7 +22,7 @@ describe('LanguageModelQueue', () => {
     mockModel = {
       provider: 'test-provider',
       modelId: 'test-model',
-    } as LanguageModel;
+    } as LanguageModelV2;
 
     queue = new LanguageModelQueue({
       model: mockModel,

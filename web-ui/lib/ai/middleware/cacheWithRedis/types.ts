@@ -1,3 +1,5 @@
+import type { LanguageModelV2Content } from '@ai-sdk/provider';
+
 /**
  * @fileoverview Type definitions for Redis cache middleware
  */
@@ -7,7 +9,7 @@
  */
 export interface CacheableResponse {
   id: string;
-  text?: string;
+  content: Array<LanguageModelV2Content>;
   finishReason?: string;
   usage?: Record<string, unknown>;
   warnings?: unknown[];

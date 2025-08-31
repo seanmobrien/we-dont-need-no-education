@@ -1,12 +1,15 @@
 import {
+  DynamicToolUIPart,
   generateObject,
   isToolUIPart,
   TextUIPart,
+  ToolUIPart,
   UIDataTypes,
   UIMessage,
   UIMessagePart,
   UITools,
 } from 'ai';
+import { LanguageModelV2Prompt } from '@ai-sdk/provider';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { log } from '@/lib/logger';
@@ -19,6 +22,8 @@ import { DbTransactionType, drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { ThisDbQueryProvider } from '@/lib/drizzle-db/schema';
 import { and, eq, not } from 'drizzle-orm';
 import { AttributeValue } from '@opentelemetry/api';
+import { isKeyOf } from '@/lib/typescript';
+import { countTokens } from '../core/count-tokens';
 
 // OpenTelemetry Metrics for Message Optimization
 const optimizationCounter = appMeters.createCounter(
@@ -226,6 +231,43 @@ const hashToolCallSequence = (
   return createHash('sha256').update(hashInput).digest('hex');
 };
 
+const InputToolStateValues = ['input-streaming', 'input-available'] as const;
+const OutputToolStateValues = ['output-error', 'output-available'] as const;
+const ToolStateValues = [
+  ...InputToolStateValues,
+  ...OutputToolStateValues,
+] as const;
+
+type InputToolState = (typeof InputToolStateValues)[number];
+type OutputToolState = (typeof OutputToolStateValues)[number];
+
+const isInputToolState = (state: unknown): state is InputToolState =>
+  !!state && InputToolStateValues.includes(state.toString() as InputToolState);
+const isOutputToolState = (state: unknown): state is OutputToolState =>
+  !!state &&
+  OutputToolStateValues.includes(state.toString() as OutputToolState);
+const isTool = (
+  check: unknown,
+): check is ToolUIPart<UITools> | DynamicToolUIPart =>
+  !!check &&
+  typeof check === 'object' &&
+  'state' in check &&
+  isKeyOf(check.state, ToolStateValues);
+
+type ToolResponseMesage = UIMessagePart<UIDataTypes, UITools> & {
+  state: 'output-available' | 'output-error';
+};
+type ToolRequestMessage = UIMessagePart<UIDataTypes, UITools> & {
+  state: 'input-available' | 'input-streaming';
+};
+
+type SummarizedToolRequest = ToolRequestMessage;
+type SummarizedToolResponse = ToolResponseMesage & {
+  preliminary?: true;
+  input?: unknown;
+  output?: unknown;
+};
+
 /**
  * Interface for tracking tool call sequences
  */
@@ -234,9 +276,26 @@ interface ToolCallRecord {
    * The message this part was found in
    */
   messageId: string;
-  toolResult: UIMessagePart<UIDataTypes, UITools>[]; // Tool response messages (in chronological order)
-  toolRequest: UIMessagePart<UIDataTypes, UITools>[]; // Tool request messages (in chronological order)
-  toolSummary: TextUIPart; // Summary placeholder message (by reference)
+  /**
+   * Tool response messages
+   */
+  toolResult: Array<ToolResponseMesage>;
+  /**
+   * Tool request messages
+   */
+  toolRequest: Array<ToolRequestMessage>;
+  /**
+   * Summary message text
+   * */
+  toolSummary: TextUIPart;
+  /**
+   * Summarized tool request message
+   */
+  summarizedRequest?: SummarizedToolRequest;
+  /**
+   * Summarized tool response message
+   */
+  summarizedResult: SummarizedToolResponse;
 }
 
 /**
@@ -277,7 +336,6 @@ export async function optimizeMessagesWithToolSummarization(
 
   // Step 1: Find cutoff point - preserve last two user interactions
   const { cutoffIndex, preservedToolIds } = findUserInteractionCutoff(messages);
-
   if (cutoffIndex === 0) {
     // No optimization needed - all messages are recent
     log((l) => l.verbose('No optimization needed - all messages are recent'));
@@ -596,6 +654,30 @@ export const summarizeMessageRecord = async ({
   }
   return ret;
 };
+
+const requestSummaryFactory = ({
+  responseSummary,
+  toolRequest,
+}: {
+  responseSummary: SummarizedToolResponse;
+  toolRequest: ToolRequestMessage;
+}): SummarizedToolRequest => {
+  const requestSummary = {
+    state: toolRequest.state,
+    type: toolRequest.type,
+  } as Record<string, unknown>;
+  const ignoreKeys = ['state', 'type', 'output', 'errorText'];
+  for (const key of Object.keys(responseSummary).filter(
+    (k) => !ignoreKeys.includes(k),
+  )) {
+    const value = responseSummary[key as keyof SummarizedToolResponse];
+    if (value) {
+      requestSummary[key] = value;
+    }
+  }
+  return requestSummary as SummarizedToolRequest;
+};
+
 /**
  * Process older messages (before cutoff) for tool summarization
  * Groups tool calls by ID and replaces them with summary placeholders
@@ -609,99 +691,100 @@ const processOlderMessagesForSummarization = async (
   toolCallDict: Map<string, ToolCallRecord>;
 }> => {
   const toolCallDict = new Map<string, ToolCallRecord>();
-  const pendingToolIds = new Set<string>();
-  //const optimizedMessages: UIMessage[] = [];
+  //const pendingToolIds = new Set<string>();
+  const optimizedMessages: UIMessage[] = [...messages.slice(cutoffIndex)];
+  // Iterate through messages to build optimized output
+  for (let i = cutoffIndex - 1; i >= 0; i--) {
+    const message = messages[i];
+    const processedParts = [] as Array<UIMessagePart<UIDataTypes, UITools>>;
 
-  // Keep preserved messages (from cutoff forward) as-is
-  //const preservedMessages = messages.slice(cutoffIndex);
+    let messageDirtyFlag = false;
 
-  // Process older messages backwards (this is key for proper tool pairing)
-  const olderMessages = messages.slice(0, cutoffIndex);
-
-  for (let i = olderMessages.length - 1; i >= 0; i--) {
-    const message = olderMessages[i];
-    //let shouldIncludeMessage = true;
-
-    if (
-      message.role === 'assistant' // &&
-      // 'toolInvocations' in message &&
-      // Array.isArray(message.toolInvocations)
-    ) {
-      // Process tool invocations in this assistant message (backwards to match message iteration)
-      const processedInvocations = [];
-      //let hasRemovedInvocations = false;
-
-      // Process invocations backwards to maintain consistency with message processing
-      for (let j = message.parts?.length - 1; j >= 0; j--) {
-        if (!isToolUIPart(message.parts[j])) continue;
-        const invocation = message.parts[j];
-        const toolCallId =
-          'toolCallId' in invocation ? (invocation.toolCallId as string) : null;
-        if (!toolCallId) {
-          // No tool call ID - keep as-is (add to front since we're iterating backwards)
-          processedInvocations.unshift(invocation);
-          continue;
-        }
-
-        if (preservedToolIds.has(toolCallId)) {
-          // This tool call is in the preserved section - keep it
-          processedInvocations.unshift(invocation);
-          continue;
-        }
-
-        // Check if this is a tool request or response
-        const isToolRequest =
-          !('output' in invocation) || invocation.output === undefined;
-        const isToolResponse =
-          'output' in invocation && invocation.output !== undefined;
-        if (isToolRequest && !toolCallDict.has(toolCallId)) {
-          // This is a pending request (we're going backwards, so we'd see response first)
-          pendingToolIds.add(toolCallId);
-          processedInvocations.unshift(invocation);
-        } else if (pendingToolIds.has(toolCallId)) {
-          // This tool is pending - don't process it
-          processedInvocations.unshift(invocation);
-        } else if (toolCallDict.has(toolCallId)) {
-          // Add to existing record
-          const record = toolCallDict.get(toolCallId)!;
-
-          if (isToolRequest) {
-            record.toolRequest.unshift(invocation);
-          } else if (isToolResponse) {
-            record.toolResult.unshift(invocation);
+    // Process invocations backwards to maintain consistency with message processing
+    for (let j = (message.parts ?? []).length - 1; j >= 0; j--) {
+      const invocation = message.parts[j];
+      // If we are not a tool, or do not have an id, or have an id thats been bucketed as preserved
+      // then no additional processing is needed
+      if (
+        !isTool(invocation) ||
+        !invocation.toolCallId ||
+        preservedToolIds.has(invocation.toolCallId)
+      ) {
+        processedParts.unshift(invocation);
+        continue;
+      }
+      // First process records we've already seen a response for
+      if (toolCallDict.has(invocation.toolCallId)) {
+        const record = toolCallDict.get(invocation.toolCallId)!;
+        if (isInputToolState(invocation.state)) {
+          if (invocation.state === 'input-available') {
+            record.summarizedRequest ??= requestSummaryFactory({
+              responseSummary: record.summarizedResult,
+              toolRequest: invocation,
+            });
+            processedParts.unshift(record.summarizedRequest!);
+            messageDirtyFlag = true;
+          } else {
+            // NO-OP: skip streaming message input when response present
           }
-          message.parts.slice(j, message.parts.length);
-          //hasRemovedInvocations = true;
-          // Don't add this invocation to processedInvocations
-        } else if (isToolResponse) {
-          // Create new record
+        } else if (isOutputToolState(invocation.state)) {
+          // NO-OP: only keep the most recent tool response, which is what created the record
+        } else {
+          log((l) =>
+            l.warn(
+              'Encountered existing tool invocation with unrecognized or missing state - preserving as-is',
+              { invocation },
+            ),
+          );
+          processedParts.unshift(invocation);
+        }
+      } else {
+        // Then process records we've never seen
+        if (isOutputToolState(invocation.state)) {
+          // If the first thing we see is a result then we want to create a new record
           const record: ToolCallRecord = {
             messageId: message.id,
-            toolResult: [{ ...invocation }],
+            toolResult: [{ ...invocation } as ToolResponseMesage],
             toolRequest: [],
             toolSummary: {
               type: 'text',
               text: '[TOOL SUMMARY LOADING...]',
             },
+            summarizedResult: {
+              ...invocation,
+              preliminary: true,
+              input: '[SUMMARIZED - (input) See summary message]',
+              output: '[SUMMARIZED - (output) See summary message]',
+            } as SummarizedToolResponse,
           };
-
-          toolCallDict.set(toolCallId, record); // Replace this invocation with the summary message
-          processedInvocations.unshift({
-            ...invocation,
-            output: '[SUMMARIZED - See summary message]',
-          });
-          message.parts.slice(j, message.parts.length);
-
-          // Add summary message to the stream
-          //hasRemovedInvocations = true;
+          toolCallDict.set(invocation.toolCallId, record); // Replace this invocation with the summary message
+          processedParts.unshift(record.summarizedResult);
+          messageDirtyFlag = true;
+        } else if (isInputToolState(invocation.state)) {
+          // If the first thing we see is a tool request, we want to preserve it
+          preservedToolIds.add(invocation.toolCallId);
+          processedParts.unshift(invocation);
         } else {
-          // Keep as-is for edge cases
-          processedInvocations.unshift(invocation);
+          log((l) =>
+            l.warn(
+              'Encountered new tool invocation with unrecognized or missing state - preserving as-is',
+              { invocation },
+            ),
+          );
+          processedParts.unshift(invocation);
         }
       }
     }
+    if (messageDirtyFlag) {
+      optimizedMessages.unshift({
+        ...message,
+        parts: processedParts,
+      });
+    } else {
+      optimizedMessages.unshift(message);
+    }
   }
-  return { optimizedMessages: messages, toolCallDict };
+  return { optimizedMessages, toolCallDict };
 };
 
 /**
@@ -993,15 +1076,19 @@ const extractConversationalContext = (
 export function extractToolCallIds(message: UIMessage): string[] {
   if (
     message.role !== 'assistant' ||
-    !('toolInvocations' in message) ||
-    !Array.isArray(message.toolInvocations)
+    !('parts' in message) ||
+    !Array.isArray(message.parts)
   ) {
     return [];
   }
 
-  return message.toolInvocations
-    .map((inv) => ('toolCallId' in inv ? (inv.toolCallId as string) : null))
-    .filter((id): id is string => id !== null);
+  return Array.from(
+    new Set<string>(
+      message.parts
+        .map((inv) => ('toolCallId' in inv ? (inv.toolCallId as string) : null))
+        .filter((id): id is string => id !== null),
+    ),
+  );
 }
 
 /**
@@ -1010,9 +1097,9 @@ export function extractToolCallIds(message: UIMessage): string[] {
 export function hasToolCalls(message: UIMessage): boolean {
   return (
     message.role === 'assistant' &&
-    'toolInvocations' in message &&
-    Array.isArray(message.toolInvocations) &&
-    message.toolInvocations.length > 0
+    'parts' in message &&
+    Array.isArray(message.parts) &&
+    message.parts.some((part) => 'toolCallId' in part && part.toolCallId)
   );
 }
 
@@ -1021,36 +1108,13 @@ export function hasToolCalls(message: UIMessage): boolean {
  * This gives a much better indication of actual context consumption than message count
  */
 const calculateMessageCharacterCount = (messages: UIMessage[]): number => {
-  return messages.reduce((total, message) => {
-    let messageSize = 0;
-
-    // Count content characters
-    if ('content' in message && typeof message.content === 'string') {
-      messageSize += message.content.length;
-    }
-
-    // Count parts characters (AI SDK v5 structure)
-    if ('parts' in message && Array.isArray(message.parts)) {
-      messageSize += message.parts.reduce((partTotal, part) => {
-        if (part.type === 'text' && typeof part.text === 'string') {
-          return partTotal + part.text.length;
-        }
-        // For other part types, estimate based on JSON size
-        return partTotal + JSON.stringify(part).length;
-      }, 0);
-    }
-
-    // Count tool invocation characters
-    if (
-      'toolInvocations' in message &&
-      Array.isArray(message.toolInvocations)
-    ) {
-      messageSize += message.toolInvocations.reduce((toolTotal, invocation) => {
-        return toolTotal + JSON.stringify(invocation).length;
-      }, 0);
-    }
-    return total + messageSize;
-  }, 0);
+  return countTokens({
+    prompt: messages.map((msg) => ({
+      ...msg,
+      content: msg.parts,
+      parts: undefined,
+    })) as LanguageModelV2Prompt,
+  });
 };
 
 /**

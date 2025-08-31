@@ -113,6 +113,8 @@ export const cacheWithRedis: LanguageModelV2Middleware = {
         transform(chunk, controller) {
           if (chunk.type === 'text-delta') {
             generatedText += chunk.delta;
+          } else if ('text' in chunk) {
+            generatedText += chunk.text;
           } else if (chunk.type === 'finish') {
             finishReason = chunk.finishReason;
             usage = chunk.usage;

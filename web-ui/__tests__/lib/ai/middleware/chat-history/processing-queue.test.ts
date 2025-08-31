@@ -14,7 +14,7 @@
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-handlers';
 import { log } from '@/lib/logger';
-import type { LanguageModelStreamPart } from 'ai';
+import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
 
 // Mock dependencies
@@ -43,7 +43,7 @@ const mockLog = log as jest.MockedFunction<typeof log>;
 describe('ProcessingQueue', () => {
   let queue: ProcessingQueue;
   let mockContext: StreamHandlerContext;
-  let mockChunk: LanguageModelStreamPart;
+  let mockChunk: LanguageModelV2StreamPart;
 
   beforeEach(() => {
     // Reset all mocks
@@ -65,7 +65,8 @@ describe('ProcessingQueue', () => {
     // Setup mock chunk
     mockChunk = {
       type: 'text-delta',
-      textDelta: 'Hello world',
+      delta: 'Hello world',
+      id: 'chunk-1',
     };
   });
 
@@ -193,8 +194,16 @@ describe('ProcessingQueue', () => {
         success: true,
       };
 
-      const chunk1 = { type: 'text-delta' as const, textDelta: 'Fail' };
-      const chunk2 = { type: 'text-delta' as const, textDelta: 'Success' };
+      const chunk1 = {
+        type: 'text-delta' as const,
+        delta: 'Fail',
+        id: 'chunk-1',
+      };
+      const chunk2 = {
+        type: 'text-delta' as const,
+        delta: 'Success',
+        id: 'chunk-2',
+      };
 
       mockProcessStreamChunk
         .mockRejectedValueOnce(error)
@@ -404,7 +413,11 @@ describe('ProcessingQueue', () => {
       // Rapidly enqueue many tasks
       const promises = Array.from({ length: 10 }, (_, i) =>
         queue.enqueue(
-          { type: 'text-delta' as const, textDelta: `chunk-${i}` },
+          {
+            type: 'text-delta' as const,
+            delta: `chunk-${i}`,
+            id: `chunk-${i}`,
+          },
           { ...mockContext, currentMessageOrder: i },
         ),
       );

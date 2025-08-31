@@ -19,10 +19,10 @@ describe('clientToolProviderFactory', () => {
       const tool = provider.get_tools().askConfirmation;
 
       expect(tool.description).toBe(
-        'Ask the user for confirmation before proceeding.  Returns an empty string if the user rejects the request, otherwise a confirmation hash.'
+        'Ask the user for confirmation before proceeding.  Returns an empty string if the user rejects the request, otherwise a confirmation hash.',
       );
 
-      const schema = tool.parameters;
+      const schema = tool.inputSchema;
       expect(() => {
         schema.parse({ question: 'Are you sure?' });
       }).not.toThrow();
@@ -42,10 +42,10 @@ describe('clientToolProviderFactory', () => {
       const tool = provider.get_tools().openCaseFile;
 
       expect(tool.description).toBe(
-        "Opens a case file on the user's desktop.  This tool is useful when a "
+        "Opens a case file on the user's desktop.  This tool is useful when a ",
       );
 
-      const schema = tool.parameters;
+      const schema = tool.inputSchema;
       expect(() => {
         schema.parse({ caseId: '12345' });
       }).not.toThrow();

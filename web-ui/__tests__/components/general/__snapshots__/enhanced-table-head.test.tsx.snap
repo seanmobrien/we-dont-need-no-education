@@ -7,7 +7,7 @@ exports[`EnhancedTableHead renders table head snapshot 1`] = `
       class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
     >
       <tr
-        class="MuiTableRow-root MuiTableRow-head css-1t6vsw9-MuiTableRow-root"
+        class="MuiTableRow-root MuiTableRow-head css-92sqde-MuiTableRow-root"
       >
         <th
           class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
@@ -43,7 +43,7 @@ exports[`EnhancedTableHead renders with all items selected snapshot 1`] = `
       class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
     >
       <tr
-        class="MuiTableRow-root MuiTableRow-head css-1t6vsw9-MuiTableRow-root"
+        class="MuiTableRow-root MuiTableRow-head css-92sqde-MuiTableRow-root"
       >
         <th
           class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"
@@ -79,14 +79,14 @@ exports[`EnhancedTableHead renders with select all callback snapshot 1`] = `
       class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
     >
       <tr
-        class="MuiTableRow-root MuiTableRow-head css-1t6vsw9-MuiTableRow-root"
+        class="MuiTableRow-root MuiTableRow-head css-92sqde-MuiTableRow-root"
       >
         <th
           class="MuiTableCell-root MuiTableCell-head MuiTableCell-paddingCheckbox MuiTableCell-sizeMedium css-j0ceml-MuiTableCell-root"
           scope="col"
         >
           <span
-            class="MuiButtonBase-root MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium PrivateSwitchBase-root MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium css-1poq2nf-MuiButtonBase-root-MuiSwitchBase-root-MuiCheckbox-root"
+            class="MuiButtonBase-root MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium PrivateSwitchBase-root MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium MuiCheckbox-root MuiCheckbox-colorPrimary MuiCheckbox-sizeMedium css-rm2pxo-MuiButtonBase-root-MuiSwitchBase-root-MuiCheckbox-root"
           >
             <input
               aria-label="select all emails"
@@ -141,7 +141,7 @@ exports[`EnhancedTableHead renders with some selected items snapshot 1`] = `
       class="MuiTableHead-root css-1a7iywq-MuiTableHead-root"
     >
       <tr
-        class="MuiTableRow-root MuiTableRow-head css-1t6vsw9-MuiTableRow-root"
+        class="MuiTableRow-root MuiTableRow-head css-92sqde-MuiTableRow-root"
       >
         <th
           class="MuiTableCell-root MuiTableCell-head MuiTableCell-alignLeft MuiTableCell-sizeMedium css-xncyw9-MuiTableCell-root"

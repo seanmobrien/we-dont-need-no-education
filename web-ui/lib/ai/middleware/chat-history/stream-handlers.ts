@@ -80,7 +80,7 @@ export async function handleTextDelta(
         .where(
           and(
             eq(chatMessages.chatId, context.chatId),
-            eq(chatMessages.turnId, context.turnId),
+            eq(chatMessages.turnId, Number(context.turnId)),
             eq(chatMessages.messageId, currentMessageId),
           ),
         );
@@ -90,13 +90,13 @@ export async function handleTextDelta(
         const [messageId] = await reserveMessageIds(
           tx,
           context.chatId,
-          context.turnId,
+          Number(context.turnId),
           1,
         );
         await insertPendingAssistantMessage(
           tx,
           context.chatId,
-          context.turnId,
+          Number(context.turnId),
           messageId,
           currentMessageOrder,
           updatedText
@@ -208,13 +208,18 @@ export const handleToolCall = async (
       toolCalls,
     } = context;
     await drizDb().transaction(async (tx) => {
-      await completePendingMessage({ tx, messageId, chatId, turnId });
+      await completePendingMessage({
+        tx,
+        messageId,
+        chatId,
+        turnId: Number(turnId),
+      });
       // Generate next message ID for the tool call
       const nextMessageId = await getNextSequence({
         tx,
         tableName: 'chat_messages',
         chatId,
-        turnId,
+        turnId: Number(turnId),
         count: 1,
       }).then((ids) => ids[0]);
       const toolCall = (
@@ -222,7 +227,7 @@ export const handleToolCall = async (
           .insert(chatMessages)
           .values({
             chatId,
-            turnId,
+            turnId: Number(turnId),
             role: 'tool',
             content: generatedText,
             messageId: nextMessageId,
@@ -392,7 +397,12 @@ export const handleToolResult = async (
       toolCalls,
     } = context;
     await drizDb().transaction(async (tx) => {
-      await completePendingMessage({ tx, messageId, chatId, turnId });
+      await completePendingMessage({
+        tx,
+        messageId,
+        chatId,
+        turnId: Number(turnId),
+      });
       // Match against a pending tool call
       const pendingCall = await findPendingToolCall({
         chatId,
@@ -411,7 +421,7 @@ export const handleToolResult = async (
         ) {
           statusId = 3;
           metadata.toolErrorResult = chunk.output;
-          await setTurnError({ tx, chatId, turnId, chunk });
+          await setTurnError({ tx, chatId, turnId: Number(turnId), chunk });
         }
         if (chunk.providerOptions) {
           metadata.toolResultProviderMeta = chunk.providerOptions;
@@ -427,7 +437,7 @@ export const handleToolResult = async (
           .where(
             and(
               eq(chatMessages.chatId, chatId),
-              eq(chatMessages.turnId, turnId),
+              eq(chatMessages.turnId, Number(turnId)),
               eq(chatMessages.messageId, pendingCall.messageId),
             ),
           );
@@ -527,14 +537,14 @@ export async function handleFinish(
             .where(
               and(
                 eq(chatMessages.chatId, context.chatId),
-                eq(chatMessages.turnId, context.turnId),
+                eq(chatMessages.turnId, Number(context.turnId)),
                 eq(chatMessages.messageId, context.messageId),
               ),
             );
         }
         await tx.insert(tokenUsage).values({
           chatId: context.chatId,
-          turnId: context.turnId,
+          turnId: Number(context.turnId),
           promptTokens: chunk.usage.inputTokens,
           completionTokens: chunk.usage.outputTokens,
           totalTokens: chunk.usage.totalTokens,
