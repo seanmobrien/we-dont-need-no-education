@@ -24,7 +24,7 @@ const model = getAiModelProvider('gpt-4o');
 // Create a queue with max 3 concurrent requests
 const queue = new LanguageModelQueue({
   model,
-  maxConcurrentRequests: 3
+  maxConcurrentRequests: 3,
 });
 
 // Use the queue
@@ -32,7 +32,7 @@ try {
   const result = await queue.generateText({
     messages: [{ role: 'user', content: 'Hello!' }],
     temperature: 0.7,
-    maxTokens: 150
+    maxTokens: 150,
   });
   console.log(result);
 } finally {
@@ -63,7 +63,10 @@ try {
 Custom error types provide specific handling for different scenarios:
 
 ```typescript
-import { MessageTooLargeForQueueError, AbortChatMessageRequestError } from '@/lib/ai/services/chat';
+import {
+  MessageTooLargeForQueueError,
+  AbortChatMessageRequestError,
+} from '@/lib/ai/services/chat';
 
 try {
   await queue.generateText(largeRequest);
@@ -83,7 +86,7 @@ try {
 ```typescript
 interface LanguageModelQueueOptions {
   /** The language model the queue is attached to */
-  model: LanguageModelV1;
+  model: LanguageModel;
   /** Maximum number of concurrent requests the queue will run */
   maxConcurrentRequests: number;
 }
@@ -189,7 +192,7 @@ The queue integrates with existing infrastructure:
 - **Auth**: Gets user IDs from the NextAuth `auth()` function
 - **Tokens**: Uses the existing token counting logic from `@/lib/ai/core/count-tokens`
 - **Logging**: Integrates with the application logger
-- **Models**: Works with any `LanguageModelV1` implementation
+- **Models**: Works with any `LanguageModel` implementation
 
 ## Usage Examples
 
@@ -202,27 +205,24 @@ import { getAiModelProvider } from '@/lib/ai/aiModelFactory';
 async function basicUsage() {
   // Get a language model (e.g., GPT-4)
   const model = getAiModelProvider('gpt-4o');
-  
+
   // Create a queue with a maximum of 3 concurrent requests
   const queue = new LanguageModelQueue({
     model,
-    maxConcurrentRequests: 3
+    maxConcurrentRequests: 3,
   });
 
   try {
     // Example request parameters
     const requestParams = {
-      messages: [
-        { role: 'user', content: 'Hello, how are you?' }
-      ],
+      messages: [{ role: 'user', content: 'Hello, how are you?' }],
       temperature: 0.7,
-      maxTokens: 150
+      maxTokens: 150,
     };
 
     // Generate text using the queue
     const result = await queue.generateText(requestParams);
     console.log('Received response:', result);
-
   } catch (error) {
     console.error('Request failed:', error);
   } finally {
@@ -239,13 +239,13 @@ async function abortSignalExample() {
   const model = getAiModelProvider('gpt-4o');
   const queue = new LanguageModelQueue({
     model,
-    maxConcurrentRequests: 2
+    maxConcurrentRequests: 2,
   });
 
   try {
     // Create an abort controller
     const controller = new AbortController();
-    
+
     // Set up automatic abort after 10 seconds
     const timeoutId = setTimeout(() => {
       controller.abort();
@@ -253,8 +253,11 @@ async function abortSignalExample() {
 
     const requestParams = {
       messages: [
-        { role: 'user', content: 'Write a very long story about space exploration...' }
-      ]
+        {
+          role: 'user',
+          content: 'Write a very long story about space exploration...',
+        },
+      ],
     };
 
     try {
@@ -270,7 +273,6 @@ async function abortSignalExample() {
         throw error;
       }
     }
-
   } finally {
     queue.dispose();
   }
@@ -284,7 +286,7 @@ async function concurrentRequestsExample() {
   const model = getAiModelProvider('gpt-4o-mini');
   const queue = new LanguageModelQueue({
     model,
-    maxConcurrentRequests: 2
+    maxConcurrentRequests: 2,
   });
 
   try {
@@ -294,38 +296,40 @@ async function concurrentRequestsExample() {
       'Explain quantum computing in simple terms.',
       'Write a haiku about coding.',
       'What are the benefits of renewable energy?',
-      'Describe the water cycle.'
+      'Describe the water cycle.',
     ];
 
     // Send all requests concurrently
-    const promises = prompts.map((prompt, index) => 
-      queue.generateText({
-        messages: [{ role: 'user', content: prompt }],
-        temperature: 0.7,
-        maxTokens: 100
-      }).then(result => ({
-        id: `request-${index}`,
-        success: true,
-        result
-      })).catch(error => ({
-        id: `request-${index}`,
-        success: false,
-        error: error.message
-      }))
+    const promises = prompts.map((prompt, index) =>
+      queue
+        .generateText({
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.7,
+          maxTokens: 100,
+        })
+        .then((result) => ({
+          id: `request-${index}`,
+          success: true,
+          result,
+        }))
+        .catch((error) => ({
+          id: `request-${index}`,
+          success: false,
+          error: error.message,
+        })),
     );
 
     // Wait for all requests to complete
     const results = await Promise.all(promises);
-    
+
     // Process results
-    results.forEach(result => {
+    results.forEach((result) => {
       if (result.success) {
         console.log(`${result.id}: Success`);
       } else {
         console.log(`${result.id}: Failed - ${result.error}`);
       }
     });
-
   } finally {
     queue.dispose();
   }
@@ -339,33 +343,33 @@ async function differentMethodsExample() {
   const model = getAiModelProvider('gpt-4o');
   const queue = new LanguageModelQueue({
     model,
-    maxConcurrentRequests: 1
+    maxConcurrentRequests: 1,
   });
 
   try {
     // Generate structured object
     const objectResult = await queue.generateObject({
       messages: [
-        { role: 'user', content: 'Create a person profile with name, age, and occupation' }
+        {
+          role: 'user',
+          content: 'Create a person profile with name, age, and occupation',
+        },
       ],
       schema: {
         type: 'object',
         properties: {
           name: { type: 'string' },
           age: { type: 'number' },
-          occupation: { type: 'string' }
+          occupation: { type: 'string' },
         },
-        required: ['name', 'age', 'occupation']
-      }
+        required: ['name', 'age', 'occupation'],
+      },
     });
 
     // Stream text response
     const streamResult = await queue.streamText({
-      messages: [
-        { role: 'user', content: 'Count from 1 to 10 slowly' }
-      ]
+      messages: [{ role: 'user', content: 'Count from 1 to 10 slowly' }],
     });
-
   } catch (error) {
     console.error('Error:', error);
   } finally {
@@ -381,21 +385,19 @@ async function errorHandlingExample() {
   const model = getAiModelProvider('gpt-4o');
   const queue = new LanguageModelQueue({
     model,
-    maxConcurrentRequests: 1
+    maxConcurrentRequests: 1,
   });
 
   try {
     // Create a very large message that exceeds token limits
-    const largeContent = 'Tell me about '.repeat(10000) + 'artificial intelligence.';
-    
+    const largeContent =
+      'Tell me about '.repeat(10000) + 'artificial intelligence.';
+
     const requestParams = {
-      messages: [
-        { role: 'user', content: largeContent }
-      ]
+      messages: [{ role: 'user', content: largeContent }],
     };
 
     await queue.generateText(requestParams);
-    
   } catch (error) {
     if (error.name === 'MessageTooLargeForQueueError') {
       console.log('Message was too large for the queue:');

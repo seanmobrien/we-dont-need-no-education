@@ -1,4 +1,5 @@
-import { UIMessage } from 'ai';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { ToolUIPart, UIMessage } from 'ai';
 import {
   optimizeMessagesWithToolSummarization,
   cacheManager,
@@ -32,6 +33,19 @@ const mockGenerateText = generateText as jest.MockedFunction<
 const mockGenerateObject = generateObject as jest.MockedFunction<
   typeof generateObject
 >;
+
+// Helper to extract text from UIMessage parts
+const messageText = (m: UIMessage): string =>
+  (m.parts || [])
+    .map((p: any) =>
+      p && p.type === 'text' && typeof p.text === 'string'
+        ? p.text
+        : 'input' in p
+          ? p.input
+          : '',
+    )
+    .join(' ')
+    .trim();
 
 describe('Message Optimizer Tools', () => {
   beforeEach(() => {
@@ -102,24 +116,28 @@ describe('Message Optimizer Tools', () => {
       it('should extract tool call IDs from assistant messages', () => {
         const message: UIMessage = {
           role: 'assistant',
-          content: 'I will help you',
-          parts: [{ type: 'text', text: 'I will help you' }],
-          toolInvocations: [
+          parts: [
+            { type: 'text', text: 'I will help you' },
             {
-              state: 'call',
+              type: 'tool-search',
               toolCallId: 'call_1',
-              toolName: 'search',
-              args: {},
+              state: 'input-streaming',
+              input: undefined,
             },
             {
-              state: 'call',
+              type: 'tool-search',
+              toolCallId: 'call_1',
+              state: 'input-available',
+              input: { searchTerm: 'search term' },
+            },
+            {
+              type: 'tool-analyze',
               toolCallId: 'call_2',
-              toolName: 'analyze',
-              args: {},
+              state: 'input-available',
+              input: { target: 'results' },
             },
           ],
           id: 'msg_1',
-          createdAt: new Date(),
         };
 
         const ids = extractToolCallIds(message);
@@ -129,10 +147,28 @@ describe('Message Optimizer Tools', () => {
       it('should return empty array for non-assistant messages', () => {
         const message: UIMessage = {
           role: 'user',
-          content: 'Hello',
-          parts: [{ type: 'text', text: 'Hello' }],
+          parts: [
+            { type: 'text', text: 'Hello' },
+            {
+              type: 'tool-search',
+              toolCallId: 'call_1',
+              state: 'input-streaming',
+              input: undefined,
+            },
+            {
+              type: 'tool-search',
+              toolCallId: 'call_1',
+              state: 'input-available',
+              input: { searchTerm: 'search term' },
+            },
+            {
+              type: 'tool-analyze',
+              toolCallId: 'call_2',
+              state: 'input-available',
+              input: { target: 'results' },
+            },
+          ],
           id: 'msg_1',
-          createdAt: new Date(),
         };
 
         const ids = extractToolCallIds(message);
@@ -142,10 +178,8 @@ describe('Message Optimizer Tools', () => {
       it('should handle messages without tool invocations', () => {
         const message: UIMessage = {
           role: 'assistant',
-          content: 'Hello back',
           parts: [{ type: 'text', text: 'Hello back' }],
           id: 'msg_1',
-          createdAt: new Date(),
         };
 
         const ids = extractToolCallIds(message);
@@ -157,18 +191,28 @@ describe('Message Optimizer Tools', () => {
       it('should return true for assistant messages with tool invocations', () => {
         const message: UIMessage = {
           role: 'assistant',
-          content: 'Processing...',
-          parts: [{ type: 'text', text: 'Processing...' }],
-          toolInvocations: [
+          parts: [
+            { type: 'text', text: 'Processing...' },
             {
-              state: 'call',
+              type: 'tool-search',
               toolCallId: 'call_1',
-              toolName: 'search',
-              args: {},
+              state: 'input-streaming',
+              input: undefined,
+            },
+            {
+              type: 'tool-search',
+              toolCallId: 'call_1',
+              state: 'input-available',
+              input: { searchTerm: 'search term' },
+            },
+            {
+              type: 'tool-analyze',
+              toolCallId: 'call_2',
+              state: 'input-available',
+              input: { target: 'results' },
             },
           ],
           id: 'msg_1',
-          createdAt: new Date(),
         };
 
         expect(hasToolCalls(message)).toBe(true);
@@ -177,10 +221,28 @@ describe('Message Optimizer Tools', () => {
       it('should return false for user messages', () => {
         const message: UIMessage = {
           role: 'user',
-          content: 'Hello',
-          parts: [{ type: 'text', text: 'Hello' }],
+          parts: [
+            { type: 'text', text: 'Processing...' },
+            {
+              type: 'tool-search',
+              toolCallId: 'call_1',
+              state: 'input-streaming',
+              input: undefined,
+            },
+            {
+              type: 'tool-search',
+              toolCallId: 'call_1',
+              state: 'input-available',
+              input: { searchTerm: 'search term' },
+            },
+            {
+              type: 'tool-analyze',
+              toolCallId: 'call_2',
+              state: 'input-available',
+              input: { target: 'results' },
+            },
+          ],
           id: 'msg_1',
-          createdAt: new Date(),
         };
 
         expect(hasToolCalls(message)).toBe(false);
@@ -189,81 +251,190 @@ describe('Message Optimizer Tools', () => {
       it('should return false for assistant messages without tool invocations', () => {
         const message: UIMessage = {
           role: 'assistant',
-          content: 'Hello back',
           parts: [{ type: 'text', text: 'Hello back' }],
           id: 'msg_1',
-          createdAt: new Date(),
         };
 
         expect(hasToolCalls(message)).toBe(false);
       });
     });
   });
+  type FakeToolType = {
+    type: string;
+    toolCallId: string;
+    state: string;
+    input?: Record<string, unknown>;
+    output?: unknown;
+    id?: string;
+    rawInput?: unknown;
+    errorText?: string;
+  };
 
-  describe('Message Optimization', () => {
-    const createUserMessage = (content: string, id: string): UIMessage => ({
-      role: 'user',
-      content,
-      parts: [{ type: 'text', text: content }],
-      id,
-      createdAt: new Date(),
-    });
+  const createUserMessage = (content: string, id: string): UIMessage => ({
+    role: 'user',
+    parts: [{ type: 'text', text: content }],
+    id,
+  });
 
-    const createAssistantMessage = (
-      content: string,
-      id: string,
-    ): UIMessage => ({
-      role: 'assistant',
-      content,
-      parts: [{ type: 'text', text: content }],
-      id,
-      createdAt: new Date(),
-    });
-    const createToolMessage = (
-      toolCallId: string,
-      toolName: string,
-      args: Record<string, unknown>,
-      result?: unknown,
-      id?: string,
-    ): UIMessage => {
-      const baseMessage = {
-        role: 'assistant' as const,
-        content: 'Processing...',
-        parts: [{ type: 'text' as const, text: 'Processing...' }],
-        id: id || `tool_msg_${toolCallId}`,
-        createdAt: new Date(),
-      };
+  const createAssistantMessage = (content: string, id: string): UIMessage => ({
+    role: 'assistant',
+    parts: [{ type: 'text', text: content }],
+    id,
+  });
 
-      if (result !== undefined) {
-        // Tool result message
-        return {
-          ...baseMessage,
-          toolInvocations: [
-            {
-              state: 'result' as const,
-              toolCallId,
-              toolName,
-              args,
-              result,
-            } as never, // Type assertion for testing
-          ],
-        };
-      } else {
-        // Tool call message
-        return {
-          ...baseMessage,
-          toolInvocations: [
-            {
-              state: 'call' as const,
-              toolCallId,
-              toolName,
-              args,
-            } as never, // Type assertion for testing
-          ],
-        };
-      }
+  const createToolMessage = (
+    toolCallId: string,
+    toolName: string,
+    args: Record<string, unknown>,
+    result?: unknown,
+    id?: string,
+    error?: string,
+  ): UIMessage => {
+    const builtToolName = `tool-${toolName}`;
+
+    const toolParts: FakeToolType[] = [
+      {
+        type: builtToolName,
+        toolCallId: toolCallId,
+        state: 'input-streaming',
+        input: undefined,
+        id,
+      },
+    ];
+    if (args) {
+      toolParts.push({
+        type: builtToolName,
+        toolCallId: toolCallId,
+        state: 'input-available',
+        input: args,
+        id,
+      });
+    }
+    if (result) {
+      toolParts.push({
+        type: builtToolName,
+        toolCallId: toolCallId,
+        state: 'output-available',
+        input: args,
+        output: result,
+        id,
+      });
+    }
+    if (error) {
+      toolParts.push({
+        type: builtToolName,
+        state: 'output-error',
+        toolCallId: toolCallId,
+        rawInput: args,
+        errorText: error,
+      });
+    }
+
+    const baseMessage = {
+      role: 'assistant' as const,
+      parts: [{ type: 'text' as const, text: 'Processing...' }, ...toolParts],
+      id: id || `tool_msg_${toolCallId}`,
     };
 
+    // Tool result message
+    return {
+      ...baseMessage,
+    } as UIMessage;
+  };
+
+  const createToolResultMessage = (
+    toolCallId: string,
+    toolName: string,
+    args: Record<string, unknown>,
+    result?: unknown,
+    id?: string,
+    error?: string,
+  ): UIMessage => {
+    const builtToolName = `tool-${toolName}`;
+
+    const toolParts: FakeToolType[] = [];
+    // Skip input / streaming message (they must have been sent in an earlier message)
+    if (result) {
+      toolParts.push({
+        type: builtToolName,
+        toolCallId: toolCallId,
+        state: 'output-available',
+        input: args,
+        output: result,
+        id,
+      });
+    }
+    if (error) {
+      toolParts.push({
+        type: builtToolName,
+        state: 'output-error',
+        toolCallId: toolCallId,
+        rawInput: args,
+        errorText: error,
+      });
+    }
+
+    const baseMessage = {
+      role: 'assistant' as const,
+      parts: [{ type: 'text' as const, text: 'Processing...' }, ...toolParts],
+      id: id || `tool_msg_${toolCallId}_result`,
+    };
+
+    // Tool result message
+    return {
+      ...baseMessage,
+    } as UIMessage;
+  };
+
+  const createRecentMessageBuffer = (includeTool: boolean) => {
+    const messages: UIMessage[] = [];
+    // Recent interactions (should be preserved - last 2 user interactions)
+    messages.push(createUserMessage('What about examples?', 'user_3'));
+    if (includeTool) {
+      messages.push(
+        createToolResultMessage(
+          'call_inrecent',
+          'semantic_search',
+          { query: 'examples' },
+          'Found 5 results',
+        ),
+      );
+    }
+    messages.push(
+      createAssistantMessage('Let me search for examples', 'assistant_4'),
+    );
+    messages.push(createUserMessage('Thanks!', 'user_4'));
+    messages.push(createAssistantMessage('You are welcome!', 'assistant_5'));
+
+    return messages;
+  };
+
+  const createStandardUsecase = () => {
+    const messages: UIMessage[] = [
+      // Old interaction with completed tool call (will be summarized)
+      createUserMessage('Search for documentation', 'user_1'),
+      createAssistantMessage('I will search for documentation', 'assistant_1'),
+      createToolMessage(
+        'call_1',
+        'semantic_search',
+        { query: 'docs' },
+        'Found 10 results',
+      ),
+      createAssistantMessage('Found some documentation', 'assistant_2'),
+
+      // Another old interaction
+      createUserMessage('What about tutorials?', 'user_2'),
+      createAssistantMessage('Let me search for tutorials', 'assistant_3'),
+      // Neither of these messages should be optimized because the response is in the preserve set
+      createToolMessage('call_inrecent', 'semantic_search', {
+        query: 'this value is split',
+      }),
+      ...createRecentMessageBuffer(true),
+    ];
+    return messages;
+  };
+
+  describe('Message Optimization', () => {
     it('should preserve recent messages when no optimization is needed', async () => {
       const messages: UIMessage[] = [
         createUserMessage('Hello', 'user_1'),
@@ -281,50 +452,47 @@ describe('Message Optimizer Tools', () => {
       expect(optimized).toEqual(messages);
       expect(mockGenerateObject).not.toHaveBeenCalled();
     });
+
+    const summary_input = '[SUMMARIZED - (input) See summary message]';
+    const summary_output = '[SUMMARIZED - (output) See summary message]';
+
     it('should optimize old tool calls while preserving recent interactions', async () => {
-      const messages: UIMessage[] = [
-        // Old interaction with completed tool call (will be summarized)
-        createUserMessage('Search for documentation', 'user_1'),
-        createAssistantMessage(
-          'I will search for documentation',
-          'assistant_1',
-        ),
-        createToolMessage('call_1', 'semantic_search', { query: 'docs' }),
-        createToolMessage(
-          'call_1',
-          'semantic_search',
-          { query: 'docs' },
-          'Found 10 results',
-        ),
-        createAssistantMessage('Found some documentation', 'assistant_2'),
-
-        // Another old interaction
-        createUserMessage('What about tutorials?', 'user_2'),
-        createAssistantMessage('Let me search for tutorials', 'assistant_3'),
-
-        // Recent interactions (should be preserved - last 2 user interactions)
-        createUserMessage('What about examples?', 'user_3'),
-        createAssistantMessage('Let me search for examples', 'assistant_4'),
-        createUserMessage('Thanks!', 'user_4'),
-        createAssistantMessage('You are welcome!', 'assistant_5'),
-      ];
+      const messages = createStandardUsecase();
 
       const optimized = await optimizeMessagesWithToolSummarization(
         messages,
         'gpt-4',
         'test_user',
-      ); // Should have created summary messages (tool calls get summarized but messages count may stay same or increase)
-      expect(optimized.length).toBeGreaterThanOrEqual(messages.length - 2); // Allow for some optimization
-
-      // Recent interactions should be preserved (last 2 user prompts + responses)
-      const recentMessages = optimized.slice(-4);
-      expect(recentMessages.map((m) => m.content)).toEqual([
-        'What about examples?',
-        'Let me search for examples',
-        'Thanks!',
-        'You are welcome!',
-      ]);
-
+      );
+      // Should have created summary messages
+      expect(optimized.length).toEqual(messages.length);
+      // Should have excluded streaming tool with response
+      expect(optimized[2].parts.length).toEqual(messages[2].parts.length - 1);
+      // Should have optimized request
+      expect(
+        (
+          optimized[2].parts[1] as ToolUIPart & {
+            type: 'tool-abc';
+            state: 'input-available';
+          }
+        ).input,
+      ).toEqual(summary_input);
+      expect(
+        (
+          optimized[2].parts[2] as ToolUIPart & {
+            type: 'tool-abc';
+            state: 'output-available';
+          }
+        ).input,
+      ).toEqual(summary_input);
+      expect(
+        (
+          optimized[2].parts[2] as ToolUIPart & {
+            type: 'tool-abc';
+            state: 'output-available';
+          }
+        ).output,
+      ).toEqual(summary_output);
       // Should have called LLM for summarization
       expect(mockGenerateObject).toHaveBeenCalled();
     });
@@ -374,9 +542,14 @@ describe('Message Optimizer Tools', () => {
         // Old messages with tool calls
         createUserMessage('Search for something', 'user_1'),
         createAssistantMessage('Searching...', 'assistant_1'),
-        createToolMessage('call_1', 'search', { query: 'test' }),
         createToolMessage(
           'call_1',
+          'search',
+          { query: 'test' },
+          'Found matches',
+        ),
+        createToolMessage(
+          'call_2',
           'search',
           { query: 'test' },
           'Found results',
@@ -390,6 +563,7 @@ describe('Message Optimizer Tools', () => {
         // Recent interactions
         createUserMessage('Recent question', 'user_3'),
         createAssistantMessage('Recent answer', 'assistant_4'),
+        ...createRecentMessageBuffer(false),
       ];
 
       const optimized = await optimizeMessagesWithToolSummarization(
@@ -399,74 +573,50 @@ describe('Message Optimizer Tools', () => {
       ); // Should still return optimized messages with fallback summary
       expect(optimized.length).toBeGreaterThanOrEqual(messages.length - 1); // Allow for some optimization
       // Should find fallback summary message or summary message
-      const summaryMessage = optimized.find(
-        (m) =>
-          typeof m.content === 'string' &&
-          (m.content.includes('[TOOL CALL COMPLETED]') ||
-            m.content.includes('TOOL SUMMARY') ||
-            m.id?.includes('tool-summary')),
-      );
+      const summaryMessage = optimized.find((m) => {
+        const text = messageText(m);
+        return typeof text === 'string' && text.includes(summary_input);
+      });
       expect(summaryMessage).toBeDefined();
     });
     it('should preserve tool calls from recent interactions', async () => {
-      const messages: UIMessage[] = [
-        // Old tool call (should be summarized)
-        createUserMessage('Old search', 'user_1'),
-        createAssistantMessage('Searching old...', 'assistant_1'),
-        createToolMessage('old_call', 'search', { query: 'old' }),
-        createToolMessage(
-          'old_call',
-          'search',
-          { query: 'old' },
-          'Old results',
-        ),
-        createAssistantMessage('Old response', 'assistant_2'),
-
-        // Intermediate interaction
-        createUserMessage('Intermediate', 'user_2'),
-        createAssistantMessage('Intermediate response', 'assistant_3'),
-
-        // Recent tool call (should be preserved - within last 2 user interactions)
-        createUserMessage('Recent search', 'user_3'),
-        createToolMessage('recent_call', 'search', { query: 'recent' }),
-        createToolMessage(
-          'recent_call',
-          'search',
-          { query: 'recent' },
-          'Recent results',
-        ),
-        createAssistantMessage('Recent response', 'assistant_4'),
-
-        createUserMessage('Follow up', 'user_4'),
-        createAssistantMessage('Follow up response', 'assistant_5'),
-      ];
-
+      const messages = createStandardUsecase();
       const optimized = await optimizeMessagesWithToolSummarization(
         messages,
         'gpt-4',
         'test_user',
       );
+      // Should have unoptimized response in 4th to last message
+      expect(optimized[optimized.length - 4].parts.length).toEqual(
+        messages[optimized.length - 4].parts.length,
+      );
+      expect(
+        (optimized[optimized.length - 4].parts[1] as Record<string, unknown>)
+          .output,
+      ).toEqual(
+        (messages[optimized.length - 4].parts[1] as Record<string, unknown>)
+          .output,
+      );
+      // Should have unoptimized request in 6th to last message -> all messages are present
+      expect(optimized[optimized.length - 6].parts.length).toEqual(
+        messages[optimized.length - 6].parts.length,
+      );
+      // Streaming request is unoptimized for match
+      expect(
+        (optimized[optimized.length - 6].parts[1] as Record<string, unknown>)
+          .input,
+      ).toEqual(
+        (messages[optimized.length - 6].parts[1] as Record<string, unknown>)
+          .input,
+      );
 
-      // Recent tool calls should be preserved (within last 2 user interactions)
-      const recentToolCalls = optimized.filter(
-        (m) => hasToolCalls(m) && extractToolCallIds(m).includes('recent_call'),
+      expect(
+        (optimized[optimized.length - 6].parts[1] as Record<string, unknown>)
+          .output,
+      ).toEqual(
+        (messages[optimized.length - 6].parts[2] as Record<string, unknown>)
+          .output,
       );
-      expect(recentToolCalls.length).toBeGreaterThan(0); // Should be preserved      // Old tool calls should be replaced with summary or have results marked as summarized
-      const oldToolCalls = optimized.filter(
-        (m) =>
-          hasToolCalls(m) &&
-          m.toolInvocations?.some(
-            (inv) =>
-              inv.toolCallId === 'old_call' &&
-              inv.state === 'result' &&
-              !(
-                'result' in inv &&
-                typeof inv.result === 'string' &&
-                inv.result.includes('[SUMMARIZED')
-              ),
-          ),
-      );
-      expect(oldToolCalls).toHaveLength(0); // Should be summarized/marked
     });
   });
 
@@ -484,17 +634,13 @@ describe('Message Optimizer Tools', () => {
       const messages: UIMessage[] = [
         {
           role: 'user',
-          content: 'Hello',
           parts: [{ type: 'text', text: 'Hello' }],
           id: '1',
-          createdAt: new Date(),
         },
         {
           role: 'assistant',
-          content: 'Hi',
           parts: [{ type: 'text', text: 'Hi' }],
           id: '2',
-          createdAt: new Date(),
         },
       ];
 
@@ -508,27 +654,17 @@ describe('Message Optimizer Tools', () => {
 
     it('should handle tool calls without proper IDs', async () => {
       const messages: UIMessage[] = [
-        {
-          role: 'user',
-          content: 'Test',
-          parts: [{ type: 'text', text: 'Test' }],
-          id: '1',
-          createdAt: new Date(),
-        },
-        {
-          role: 'assistant',
-          content: 'Processing',
-          parts: [{ type: 'text', text: 'Processing' }],
-          toolInvocations: [
-            {
-              state: 'call',
-              toolName: 'search',
-              args: {},
-            } as never, // Missing toolCallId
-          ],
-          id: '2',
-          createdAt: new Date(),
-        },
+        createUserMessage('1', 'Test'),
+        createAssistantMessage('2', 'Processing'),
+        createToolMessage(
+          undefined as unknown as string,
+          'semantic_search',
+          { query: 'search-term', toolName: 'search' },
+          '1000 search results found',
+        ),
+        createUserMessage('3', 'You sure are a helpful assistant'),
+        createAssistantMessage('4', 'Thank you!'),
+        ...createRecentMessageBuffer(false),
       ];
 
       const optimized = await optimizeMessagesWithToolSummarization(
@@ -540,6 +676,29 @@ describe('Message Optimizer Tools', () => {
       // Should handle gracefully without errors
       expect(optimized).toBeDefined();
       expect(optimized.length).toBe(messages.length);
+
+      // Should have unoptimized request in 6th to last message -> all messages are present
+      expect(optimized[2].parts.length).toEqual(messages[2].parts.length);
+      // Streaming request is unoptimized for match
+      expect((optimized[2].parts[1] as Record<string, unknown>).input).toEqual(
+        (messages[2].parts[1] as Record<string, unknown>).input,
+      );
+      expect((optimized[2].parts[2] as Record<string, unknown>).input).toEqual(
+        (messages[2].parts[2] as Record<string, unknown>).input,
+      );
+      expect((optimized[2].parts[3] as Record<string, unknown>).input).toEqual(
+        (messages[2].parts[3] as Record<string, unknown>).input,
+      );
+      // Unoptimized output
+      expect((optimized[2].parts[1] as Record<string, unknown>).output).toEqual(
+        (messages[2].parts[1] as Record<string, unknown>).output,
+      );
+      expect((optimized[2].parts[2] as Record<string, unknown>).output).toEqual(
+        (messages[2].parts[2] as Record<string, unknown>).output,
+      );
+      expect((optimized[2].parts[3] as Record<string, unknown>).output).toEqual(
+        (messages[2].parts[3] as Record<string, unknown>).output,
+      );
     });
   });
 
@@ -548,7 +707,6 @@ describe('Message Optimizer Tools', () => {
       const largeMessages: UIMessage[] = [
         ...Array.from({ length: 20 }, (_, i) => ({
           role: 'user' as const,
-          content: `User message ${i} with lots of content that makes the message quite large and contributes to token usage`,
           parts: [
             {
               type: 'text' as const,
@@ -556,11 +714,9 @@ describe('Message Optimizer Tools', () => {
             },
           ],
           id: `user_${i}`,
-          createdAt: new Date(),
         })),
         ...Array.from({ length: 20 }, (_, i) => ({
           role: 'assistant' as const,
-          content: `Assistant response ${i} with detailed explanation and comprehensive information`,
           parts: [
             {
               type: 'text' as const,
@@ -568,7 +724,6 @@ describe('Message Optimizer Tools', () => {
             },
           ],
           id: `assistant_${i}`,
-          createdAt: new Date(),
         })),
       ];
 

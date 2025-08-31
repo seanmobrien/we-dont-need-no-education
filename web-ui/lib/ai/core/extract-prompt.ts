@@ -1,10 +1,10 @@
-import { LanguageModelV1CallOptions } from 'ai';
+import { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 export const extractPromptText = ({
   prompt,
   count = 2,
 }: {
-  prompt: LanguageModelV1CallOptions['prompt'];
+  prompt: LanguageModelV2CallOptions['prompt'];
   count?: number;
 }) => {
   // Extracts the last `count` exchanges from the prompt.  Return as a string array, with output formated user: [user prompt]\nassistant:[assistant]

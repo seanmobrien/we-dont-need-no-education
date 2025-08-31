@@ -14,10 +14,15 @@ import { log } from '@/lib/logger';
 import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
-  async (req: NextRequest, args: { params: Promise<{ unitId: number }> }) => {
+  async (
+    req: NextRequest,
+    args: { params: Promise<{ unitId: number | string }> },
+  ) => {
     try {
       const { unitId } = await extractParams(args);
-      const document = await getCaseFileDocument({ caseFileId: unitId });
+      const document = await getCaseFileDocument({
+        caseFileId: Number(unitId),
+      });
 
       const valid = toolCallbackResultSchemaFactory(
         CaseFileResponseShape,
@@ -43,7 +48,10 @@ export const GET = wrapRouteRequest(
 );
 
 export const PUT = wrapRouteRequest(
-  async (req: NextRequest, args: { params: Promise<{ unitId: number }> }) => {
+  async (
+    req: NextRequest,
+    args: { params: Promise<{ unitId: number | string }> },
+  ) => {
     const { unitId } = await extractParams(args);
     const data = (await req.json()) as CaseFileAmendment;
     if (data.targetCaseFileId !== Number(unitId)) {
@@ -70,10 +78,27 @@ export const PUT = wrapRouteRequest(
 );
 
 export const DELETE = wrapRouteRequest(
-  async (req: NextRequest, args: { params: Promise<{ unitId: number }> }) => {
+  async (
+    req: NextRequest,
+    args: { params: Promise<{ unitId: number | string }> },
+  ) => {
     const controller = new RepositoryCrudController(
       new DocumentUnitRepository(),
     );
-    return controller.delete(req, args);
+    const { unitId } = await extractParams(args);
+    return controller.delete(req, { params: { unitId: Number(unitId) } });
+  },
+);
+
+export const POST = wrapRouteRequest(
+  async (
+    req: NextRequest,
+    data: { params: Promise<{ unitId: number | string }> },
+  ) => {
+    const controller = new RepositoryCrudController(
+      new DocumentUnitRepository(),
+    );
+    const { unitId } = await extractParams(data);
+    return controller.create(req, { params: { unitId: Number(unitId) } });
   },
 );

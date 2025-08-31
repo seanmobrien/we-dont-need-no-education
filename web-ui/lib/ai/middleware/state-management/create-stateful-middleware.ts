@@ -5,7 +5,7 @@
  * to participate in the state management protocol.
  */
 
-import type { LanguageModelV1Middleware, LanguageModelV1 } from 'ai';
+import type { LanguageModelV2Middleware, LanguageModelV2 } from '@ai-sdk/provider';
 import { log } from '@/lib/logger';
 import { 
   STATE_PROTOCOL, 
@@ -27,64 +27,69 @@ import {
  */
 export function createStatefulMiddleware<T = SerializableState>(
   config: StatefulMiddlewareConfig<T>
-): LanguageModelV1Middleware {
+): LanguageModelV2Middleware {
   const { middlewareId, originalMiddleware, stateHandlers } = config;
 
   return {
-    wrapGenerate: async ({ model, params }, next) => {
+    wrapGenerate: async (options) => {
+      const { doGenerate } = options;
+      
       // Handle state collection
-      if (isStateCollectionRequest(params)) {
-        return handleStateCollection(middlewareId, stateHandlers, { model, params }, next);
+      if (isStateCollectionRequest(options)) {
+        return handleStateCollection(middlewareId, stateHandlers, options, doGenerate);
       }
 
       // Handle state restoration
-      if (isStateRestorationRequest(params)) {
-        return handleStateRestoration(middlewareId, stateHandlers, { model, params }, next);
+      if (isStateRestorationRequest(options)) {
+        return handleStateRestoration(middlewareId, stateHandlers, options, doGenerate);
       }
 
       // Normal operation - use original middleware
       if (originalMiddleware.wrapGenerate) {
-        return await originalMiddleware.wrapGenerate({ model, params }, next);
+        return await originalMiddleware.wrapGenerate(options);
       }
 
-      return await next({ model, params });
+      return await doGenerate();
     },
 
-    wrapStream: async ({ model, params }, next) => {
+    wrapStream: async (options) => {
+      const { doStream } = options;
+      
       // Handle state collection for streaming
-      if (isStateCollectionRequest(params)) {
-        return handleStateCollection(middlewareId, stateHandlers, { model, params }, next);
+      if (isStateCollectionRequest(options)) {
+        return handleStateCollection(middlewareId, stateHandlers, options, doStream);
       }
 
       // Handle state restoration for streaming
-      if (isStateRestorationRequest(params)) {
-        return handleStateRestoration(middlewareId, stateHandlers, { model, params }, next);
+      if (isStateRestorationRequest(options)) {
+        return handleStateRestoration(middlewareId, stateHandlers, options, doStream);
       }
 
       // Normal operation - use original middleware stream wrapper if available
       if (originalMiddleware.wrapStream) {
-        return await originalMiddleware.wrapStream({ model, params }, next);
+        return await originalMiddleware.wrapStream(options);
       }
 
-      return await next({ model, params });
+      return await doStream();
     },
 
-    // Pass through parameter transformation if available
-    transformParams: originalMiddleware.transformParams
+    transformParams: originalMiddleware.transformParams,
   };
 }
 
 /**
  * Check if this is a state collection request
  */
-function isStateCollectionRequest(params: StateManagementParams): boolean {
+function isStateCollectionRequest(options: any): boolean {
+  const params = options.params || options;
   return !!(params as StateManagementParams)[STATE_PROTOCOL.RESULT_KEY];
 }
 
 /**
  * Check if this is a state restoration request
  */
-function isStateRestorationRequest(params: StateManagementParams): boolean {
+function isStateRestorationRequest(options: any): boolean {
+  const params = options.params || options;
   return !!(params as StateManagementParams)[STATE_PROTOCOL.RESTORE];
 }
 
@@ -94,9 +99,10 @@ function isStateRestorationRequest(params: StateManagementParams): boolean {
 async function handleStateCollection<T>(
   middlewareId: string,
   stateHandlers: { serialize?: () => T; deserialize?: (state: T) => void } | undefined,
-  { model, params }: { model: LanguageModelV1; params: StateManagementParams },
-  next: (args: { model: LanguageModelV1; params: StateManagementParams }) => Promise<unknown>
-): Promise<unknown> {
+  options: any,
+  next: () => any
+): Promise<any> {
+  const params = options.params || options;
   const stateCollection = (params as StateManagementParams)[STATE_PROTOCOL.RESULT_KEY];
   
   if (stateCollection) {
@@ -127,7 +133,7 @@ async function handleStateCollection<T>(
   }
 
   // Continue down the chain
-  return await next({ model, params });
+  return await next();
 }
 
 /**
@@ -136,9 +142,10 @@ async function handleStateCollection<T>(
 async function handleStateRestoration<T>(
   middlewareId: string,
   stateHandlers: { serialize?: () => T; deserialize?: (state: T) => void } | undefined,
-  { model, params }: { model: LanguageModelV1; params: StateManagementParams },
-  next: (args: { model: LanguageModelV1; params: StateManagementParams }) => Promise<unknown>
-): Promise<unknown> {
+  options: any,
+  next: () => any
+): Promise<any> {
+  const params = options.params || options;
   const stateData = (params as StateManagementParams).stateData;
   
   if (stateData) {
@@ -166,7 +173,7 @@ async function handleStateRestoration<T>(
   }
 
   // Continue down the chain
-  return await next({ model, params });
+  return await next();
 }
 
 /**
@@ -178,8 +185,8 @@ async function handleStateRestoration<T>(
  */
 export function createSimpleStatefulMiddleware(
   middlewareId: string,
-  originalMiddleware: LanguageModelV1Middleware
-): LanguageModelV1Middleware {
+  originalMiddleware: LanguageModelV2Middleware
+): LanguageModelV2Middleware {
   return createStatefulMiddleware({
     middlewareId,
     originalMiddleware

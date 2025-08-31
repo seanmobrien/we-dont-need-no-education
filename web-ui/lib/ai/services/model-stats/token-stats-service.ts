@@ -102,15 +102,16 @@ class TokenStatsService implements TokenStatsServiceType {
    * @returns {{provider: string, modelName: string}} Normalized provider and model name.
    * @private
    */
-  private normalizeModelKey(
+  private async normalizeModelKey(
     providerOrModel: string,
     modelName?: string,
-  ): { provider: string; modelName: string } {
+  ): Promise<{ provider: string; modelName: string }> {
     if (providerOrModel.includes(':')) {
       const [providerPart, modelPart] = providerOrModel.split(':', 2);
       const normalizedModelName = modelPart.trim();
+      const providerMap = await ProviderMap.getInstance();
       return {
-        provider: providerPart.trim(),
+        provider: providerMap.name(providerPart.trim()) ?? providerPart.trim(),
         modelName: normalizedModelName.length
           ? normalizedModelName
           : (modelName?.trim() ?? ''),
@@ -133,10 +134,8 @@ class TokenStatsService implements TokenStatsServiceType {
     providerOrModel: string,
     modelName?: string,
   ): Promise<ProviderModelResponse> {
-    const { provider, modelName: modelNameFromKey } = this.normalizeModelKey(
-      providerOrModel,
-      modelName,
-    );
+    const { provider, modelName: modelNameFromKey } =
+      await this.normalizeModelKey(providerOrModel, modelName);
     try {
       const providerMap = await ProviderMap.getInstance();
       const providerId = providerMap.id(provider);
@@ -249,7 +248,6 @@ class TokenStatsService implements TokenStatsServiceType {
     try {
       return await drizDbWithInit(async (db) => {
         const row = await db
-        
           .select({
             id: schema.modelQuotas.id,
             providerId: schema.models.providerId,
@@ -260,7 +258,10 @@ class TokenStatsService implements TokenStatsServiceType {
             isActive: schema.modelQuotas.isActive,
           })
           .from(schema.modelQuotas)
-          .innerJoin(schema.models, eq(schema.modelQuotas.modelId, schema.models.id))
+          .innerJoin(
+            schema.models,
+            eq(schema.modelQuotas.modelId, schema.models.id),
+          )
           .where(
             and(
               eq(schema.models.providerId, provider),
@@ -269,7 +270,7 @@ class TokenStatsService implements TokenStatsServiceType {
           )
           .limit(1)
           .execute()
-          .then((r) => r.at(0));      
+          .then((r) => r.at(0));
 
         if (!row) {
           return null;
@@ -484,7 +485,6 @@ class TokenStatsService implements TokenStatsServiceType {
         this.updateDatabaseStats(normalizedProvider, normalizedModel, usage),
       ]);
     } catch (error) {
-
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         message: 'Error recording token usage',
@@ -580,7 +580,11 @@ class TokenStatsService implements TokenStatsServiceType {
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         message: 'Failed to update Redis stats',
-        extra: { provider: normalizedProvider, modelName: normalizedModel, usage },
+        extra: {
+          provider: normalizedProvider,
+          modelName: normalizedModel,
+          usage,
+        },
         source: 'TokenStatsService.updateRedisStats',
       });
     }
@@ -668,14 +672,12 @@ class TokenStatsService implements TokenStatsServiceType {
         }
       });
     } catch (error) {
-      throw LoggedError.isTurtlesAllTheWayDownBaby(
-        error,{
-          log: true,
-          message: 'Failed to update database stats.',
-          data: { provider, modelName, usage },
-          source: 'TokenStatsService.updateDatabaseStats',
-        }
-      );
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        message: 'Failed to update database stats.',
+        data: { provider, modelName, usage },
+        source: 'TokenStatsService.updateDatabaseStats',
+      });
     }
   }
 
@@ -724,7 +726,8 @@ class TokenStatsService implements TokenStatsServiceType {
  * Get the singleton instance of TokenStatsService as TokenStatsServiceType.
  * @returns {TokenStatsServiceType} The singleton instance.
  */
-export const getInstance = (): TokenStatsServiceType => TokenStatsService.Instance;
+export const getInstance = (): TokenStatsServiceType =>
+  TokenStatsService.Instance;
 
 /**
  * Reset the singleton instance of TokenStatsService.

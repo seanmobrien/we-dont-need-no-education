@@ -1,6 +1,5 @@
 /** @jsxImportSource @emotion/react */
-//import React from 'react';
-import { FC, ReactNode } from 'react';
+import { FunctionComponent, ReactNode } from 'react';
 import { css } from '@emotion/react';
 
 const modalStyles = {
@@ -17,14 +16,16 @@ const modalStyles = {
     background-color: #1f2937;
     color: #ffffff;
     border-radius: 0.5rem;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
     overflow: hidden;
     width: 91.666667%;
-    
+
     @media (min-width: 768px) {
       width: 50%;
     }
-    
+
     @media (min-width: 1024px) {
       width: 33.333333%;
     }
@@ -43,7 +44,7 @@ const modalStyles = {
   `,
   closeButton: css`
     color: #9ca3af;
-    
+
     &:hover {
       color: #e5e7eb;
     }
@@ -63,7 +64,7 @@ const modalStyles = {
     font-weight: 600;
     padding: 0.5rem 1rem;
     margin-right: 0.5rem;
-    
+
     &:hover {
       background-color: #047857;
     }
@@ -74,7 +75,7 @@ const modalStyles = {
     font-weight: 600;
     padding: 0.5rem 1rem;
     margin-right: 0.5rem;
-    
+
     &:hover {
       background-color: #1d4ed8;
     }
@@ -90,7 +91,7 @@ export interface ModalProps {
   children: ReactNode;
 }
 
-const Modal: FC<ModalProps> = ({
+const Modal: FunctionComponent<ModalProps> = ({
   isOpen,
   onClose,
   onSave,

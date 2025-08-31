@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { log } from '@/lib/logger';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { createMcpHandler } from '@vercel/mcp-adapter';
+import { createMcpHandler } from 'mcp-handler';
 // tool imports
 import {
   searchCaseFile,
@@ -13,7 +13,7 @@ import {
   searchPolicyStore,
   searchPolicyStoreConfig,
 } from '@/lib/ai/tools/searchPolicyStore';
-import { 
+import {
   amendCaseRecord,
   amendCaseRecordConfig,
 } from '@/lib/ai/tools/amendCaseRecord';
@@ -83,21 +83,18 @@ const handler = wrapRouteRequest(
           try {
             if (isAbortError(error)) {
               log((l) =>
-                l.verbose(
-                  {
-                    message: `MCP Server ${dscr} aborted`,
-                    data: {
-                      abort_signal: error,
-                    }
+                l.verbose({
+                  message: `MCP Server ${dscr} aborted`,
+                  data: {
+                    abort_signal: error,
                   },
-                ),
+                }),
               );
               return {
                 role: 'assistant',
                 content: `MCP Server ${dscr} aborted`,
               };
             }
-
 
             const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
               log: true,
@@ -209,7 +206,12 @@ const handler = wrapRouteRequest(
       verboseLogs: true,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onEvent: (event, ...args: any[]) => {
-        log((l) => l.info(`MCP Event: ${event} -\n${JSON.stringify(args ?? [])}`, ...args));
+        log((l) =>
+          l.info(
+            `MCP Event: ${event} -\n${JSON.stringify(args ?? [])}`,
+            ...args,
+          ),
+        );
       },
     },
   ),

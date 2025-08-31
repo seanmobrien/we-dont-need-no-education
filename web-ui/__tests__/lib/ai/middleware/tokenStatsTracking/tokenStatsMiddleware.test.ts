@@ -21,7 +21,10 @@ jest.mock('@/lib/ai/services/model-stats/token-stats-service', () => {
   return ret;
 });
 
-import { getInstance, reset } from '@/lib/ai/services/model-stats/token-stats-service';
+import {
+  getInstance,
+  reset,
+} from '@/lib/ai/services/model-stats/token-stats-service';
 import {
   tokenStatsMiddleware,
   tokenStatsWithQuotaMiddleware,
@@ -29,11 +32,14 @@ import {
 } from '@/lib/ai/middleware/tokenStatsTracking';
 
 type MockTokenStats = {
-  [k in keyof TokenStatsServiceType]: k extends 'mockClear' ? TokenStatsServiceType[k] : jest.Mock<any, any, any>;
+  [k in keyof TokenStatsServiceType]: k extends 'mockClear'
+    ? TokenStatsServiceType[k]
+    : jest.Mock<any, any, any>;
 };
 
 describe('TokenStatsMiddleware', () => {
-  const mockTokenStatsService: MockTokenStats = getInstance() as unknown as MockTokenStats;
+  const mockTokenStatsService: MockTokenStats =
+    getInstance() as unknown as MockTokenStats;
   // Mock middleware context with all required properties
   const createMockContext = (doGenerate: jest.Mock) =>
     ({
@@ -66,8 +72,9 @@ describe('TokenStatsMiddleware', () => {
       const mockResult = {
         text: 'Hello world',
         usage: {
-          promptTokens: 10,
-          completionTokens: 20,
+          inputTokens: 10,
+          outputTokens: 20,
+          totalTokens: 30,
         },
       };
 
@@ -188,8 +195,8 @@ describe('TokenStatsMiddleware', () => {
       const mockResult = {
         text: 'Hello world',
         usage: {
-          promptTokens: 10,
-          completionTokens: 20,
+          inputTokens: 10,
+          outputTokens: 20,
         },
       };
 
@@ -205,7 +212,7 @@ describe('TokenStatsMiddleware', () => {
       expect(mockTokenStatsService.checkQuota).toHaveBeenCalledWith(
         'azure',
         'hifi',
-        100,
+        0,
       );
       expect(result).toEqual(mockResult);
     });

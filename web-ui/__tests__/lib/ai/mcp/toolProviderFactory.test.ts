@@ -57,6 +57,7 @@ import type {
   ToolProviderFactoryOptions,
 } from '@/lib/ai/mcp/types';
 import { ToolSet } from 'ai';
+import z from 'zod';
 
 describe('toolProviderFactory', () => {
   const mockOptions: ToolProviderFactoryOptions = {
@@ -68,17 +69,11 @@ describe('toolProviderFactory', () => {
   const mockTools: ToolSet = {
     'read-tool': {
       description: 'A read-only tool',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
+      inputSchema: z.object({ type: z.string(), properties: z.string() }),
     },
     'write-tool': {
       description: 'A tool with Write access',
-      parameters: {
-        type: 'object',
-        properties: {},
-      },
+      inputSchema: z.object({ type: z.string(), properties: z.string() }),
     },
   };
 
@@ -310,7 +305,7 @@ describe('toolProviderFactory', () => {
       const toolsWithUndefinedDesc: ToolSet = {
         'undefined-desc-tool': {
           description: undefined,
-          parameters: { type: 'object', properties: {} },
+          inputSchema: z.object({ type: z.string(), properties: z.string() }),
         },
       };
 

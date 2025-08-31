@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from '@jest/globals';
 import { retryRateLimitMiddlewareFactory } from '@/lib/ai/middleware/key-rate-limiter/middleware';
 
 // Mock dependencies
@@ -16,12 +23,12 @@ describe('retryRateLimitMiddlewareFactory', () => {
   });
 
   describe('factory function', () => {
-    it('should create middleware with required methods', () => {
-      const middleware = retryRateLimitMiddlewareFactory({ 
-        modelClass: 'hifi', 
-        failover: { primaryProvider: 'azure', fallbackProvider: 'google' } 
+    it('should create middleware with required methods', async () => {
+      const middleware = await retryRateLimitMiddlewareFactory({
+        modelClass: 'hifi',
+        failover: { primaryProvider: 'azure', fallbackProvider: 'google' },
       });
-      
+
       expect(middleware).toBeDefined();
       expect(typeof middleware.wrapGenerate).toBe('function');
       expect(typeof middleware.wrapStream).toBe('function');
@@ -29,29 +36,37 @@ describe('retryRateLimitMiddlewareFactory', () => {
       expect(typeof middleware.rateLimitContext).toBe('function');
     });
 
-    it('should return rate limit context', () => {
-      const context = { 
-        modelClass: 'hifi' as const, 
-        failover: { primaryProvider: 'azure' as const, fallbackProvider: 'google' as const } 
+    it('should return rate limit context', async () => {
+      const context = {
+        modelClass: 'hifi' as const,
+        failover: {
+          primaryProvider: 'azure' as const,
+          fallbackProvider: 'google' as const,
+        },
       };
-      const middleware = retryRateLimitMiddlewareFactory(context);
-      
+      const middleware = await retryRateLimitMiddlewareFactory(context);
+
       const retrievedContext = middleware.rateLimitContext();
       expect(retrievedContext).toEqual(context);
     });
 
-    it('should handle different model classifications', () => {
-      const modelClasses = ['hifi', 'lofi', 'completions', 'embedding'] as const;
-      
-      modelClasses.forEach(modelClass => {
-        const middleware = retryRateLimitMiddlewareFactory({ 
-          modelClass, 
-          failover: { primaryProvider: 'azure', fallbackProvider: 'google' } 
+    it('should handle different model classifications', async () => {
+      const modelClasses = [
+        'hifi',
+        'lofi',
+        'completions',
+        'embedding',
+      ] as const;
+
+      for (const modelClass of modelClasses) {
+        const middleware = await retryRateLimitMiddlewareFactory({
+          modelClass,
+          failover: { primaryProvider: 'azure', fallbackProvider: 'google' },
         });
-        
+
         expect(middleware).toBeDefined();
         expect(middleware.rateLimitContext()?.modelClass).toBe(modelClass);
-      });
+      }
     });
   });
 });

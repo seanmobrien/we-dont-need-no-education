@@ -4,6 +4,88 @@ exports[`Modal renders closed modal snapshot 1`] = `<div />`;
 
 exports[`Modal renders modal with actions snapshot 1`] = `<div />`;
 
-exports[`Modal renders modal with title snapshot 1`] = `<div />`;
+exports[`Modal renders modal with title snapshot 1`] = `
+<div>
+  <div
+    class="css-1ei9n0w"
+  >
+    <div
+      class="css-ebbbus"
+    >
+      <div
+        class="css-zoykhr"
+      >
+        <h2
+          class="css-1rbf9s1"
+        >
+          Test Modal Title
+        </h2>
+        <button
+          class="css-1uizrlc"
+        >
+          ×
+        </button>
+      </div>
+      <div
+        class="css-a7r8ae"
+      >
+        <div>
+          Modal content
+        </div>
+      </div>
+      <div
+        class="css-fvk0vs"
+      >
+        <button
+          class="css-42vy0d"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+`;
 
-exports[`Modal renders open modal snapshot 1`] = `<div />`;
+exports[`Modal renders open modal snapshot 1`] = `
+<div>
+  <div
+    class="css-1ei9n0w"
+  >
+    <div
+      class="css-ebbbus"
+    >
+      <div
+        class="css-zoykhr"
+      >
+        <h2
+          class="css-1rbf9s1"
+        >
+          Test Modal Title
+        </h2>
+        <button
+          class="css-1uizrlc"
+        >
+          ×
+        </button>
+      </div>
+      <div
+        class="css-a7r8ae"
+      >
+        <div>
+          Modal content
+        </div>
+      </div>
+      <div
+        class="css-fvk0vs"
+      >
+        <button
+          class="css-42vy0d"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+`;

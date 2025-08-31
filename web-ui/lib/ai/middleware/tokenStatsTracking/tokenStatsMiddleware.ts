@@ -1,15 +1,27 @@
-import type { LanguageModelV1, LanguageModelV1CallOptions, LanguageModelV1Middleware, LanguageModelV1StreamPart } from 'ai';
+import { LanguageModelMiddleware, type LanguageModel } from 'ai';
 import { getInstance } from '../../services/model-stats/token-stats-service';
 import { log } from '@/lib/logger';
-import { QuotaCheckResult, QuotaEnforcementError, TokenStatsMiddlewareConfig, TokenUsageData } from './types';
+import {
+  QuotaCheckResult,
+  QuotaEnforcementError,
+  TokenStatsMiddlewareConfig,
+  TokenUsageData,
+} from './types';
 import { countTokens } from '../../core/count-tokens';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createSimpleStatefulMiddleware } from '../state-management';
 
-type DoGenerateReturnType = ReturnType<LanguageModelV1['doGenerate']>;
-type DoStreamReturnType = ReturnType<LanguageModelV1['doStream']>;
-type TokenStatsTransformParamsType = LanguageModelV1CallOptions & {
-  providerMetadata?: LanguageModelV1CallOptions['providerMetadata'] & {
+import {
+  LanguageModelV2,
+  LanguageModelV2CallOptions,
+  LanguageModelV2StreamPart,
+  LanguageModelV2Middleware,
+} from '@ai-sdk/provider';
+
+type DoGenerateReturnType = ReturnType<LanguageModelV2['doGenerate']>;
+type DoStreamReturnType = ReturnType<LanguageModelV2['doStream']>;
+type TokenStatsTransformParamsType = LanguageModelV2CallOptions & {
+  providerOptions?: LanguageModelV2CallOptions['providerOptions'] & {
     backOffice?: {
       estTokens?: number;
     };
@@ -19,7 +31,20 @@ type TokenStatsTransformParamsType = LanguageModelV1CallOptions & {
 /**
  * Extract provider and model name from various model ID formats
  */
-const extractProviderAndModel = (modelId: string): { provider: string; modelName: string } => {
+const extractProviderAndModel = (
+  modelId: LanguageModel,
+): { provider: string; modelName: string } => {
+  if (typeof modelId === 'object' && 'modelId' in modelId) {
+    return extractProviderAndModel(
+      modelId.provider
+        ? `${modelId.provider}:${modelId.modelId}`
+        : modelId.modelId,
+    );
+  }
+
+  if (typeof modelId !== 'string' || modelId.trim() === '') {
+    throw new Error(`Invalid modelId: ${modelId}`);
+  }
   // Handle explicit provider:model format (e.g., "azure:hifi", "google:gemini-pro")
   if (modelId.includes(':')) {
     const [provider, ...modelParts] = modelId.split(':');
@@ -27,19 +52,20 @@ const extractProviderAndModel = (modelId: string): { provider: string; modelName
   }
 
   // Handle common model names and map to likely providers
-  const modelMappings: Record<string, { provider: string; modelName: string }> = {
-    'hifi': { provider: 'azure', modelName: 'hifi' },
-    'lofi': { provider: 'azure', modelName: 'lofi' },
-    'completions': { provider: 'azure', modelName: 'completions' },
-    'embedding': { provider: 'azure', modelName: 'embedding' },
-    'gemini-pro': { provider: 'google', modelName: 'gemini-pro' },
-    'gemini-flash': { provider: 'google', modelName: 'gemini-flash' },
-    'gemini-2.0-pro': { provider: 'google', modelName: 'gemini-2.0-pro' },
-    'gemini-2.0-flash': { provider: 'google', modelName: 'gemini-2.0-flash' },
-    'gemini-2.5-pro': { provider: 'google', modelName: 'gemini-2.5-pro' },
-    'gemini-2.5-flash': { provider: 'google', modelName: 'gemini-2.5-flash' },
-    'google-embedding': { provider: 'google', modelName: 'embedding' },
-  };
+  const modelMappings: Record<string, { provider: string; modelName: string }> =
+    {
+      hifi: { provider: 'azure', modelName: 'hifi' },
+      lofi: { provider: 'azure', modelName: 'lofi' },
+      completions: { provider: 'azure', modelName: 'completions' },
+      embedding: { provider: 'azure', modelName: 'embedding' },
+      'gemini-pro': { provider: 'google', modelName: 'gemini-pro' },
+      'gemini-flash': { provider: 'google', modelName: 'gemini-flash' },
+      'gemini-2.0-pro': { provider: 'google', modelName: 'gemini-2.0-pro' },
+      'gemini-2.0-flash': { provider: 'google', modelName: 'gemini-2.0-flash' },
+      'gemini-2.5-pro': { provider: 'google', modelName: 'gemini-2.5-pro' },
+      'gemini-2.5-flash': { provider: 'google', modelName: 'gemini-2.5-flash' },
+      'google-embedding': { provider: 'google', modelName: 'embedding' },
+    };
 
   const mapped = modelMappings[modelId];
   if (mapped) {
@@ -50,13 +76,14 @@ const extractProviderAndModel = (modelId: string): { provider: string; modelName
   return { provider: 'unknown', modelName: modelId };
 };
 
-const isQuotaEnforcementError = (error: unknown): error is QuotaEnforcementError =>
-  typeof error === 'object' 
-&& !!error 
-&& 'message' in error
-&& 'quota' in error
-&& typeof error.quota === 'object';
-
+const isQuotaEnforcementError = (
+  error: unknown,
+): error is QuotaEnforcementError =>
+  typeof error === 'object' &&
+  !!error &&
+  'message' in error &&
+  'quota' in error &&
+  typeof error.quota === 'object';
 
 const quotaCheck = async ({
   provider,
@@ -125,14 +152,10 @@ const quotaCheck = async ({
           estimatedTokens,
         },
       });
-    } 
+    }
   }
   return { allowed: true, reason: 'Quota check failed, allowing request' };
 };
-
-
-
-
 
 const wrapGenerate = async ({
   doGenerate,
@@ -144,11 +167,13 @@ const wrapGenerate = async ({
     enableQuotaEnforcement = false,
   },
   params: {
-    providerMetadata: { backOffice: { estTokens: estimatedTokens = 0 } = {} } = {},
+    providerOptions: {
+      backOffice: { estTokens: estimatedTokens = 0 } = {},
+    } = {},
   },
 }: {
   doGenerate: () => DoGenerateReturnType;
-  model: LanguageModelV1;
+  model: LanguageModel;
   config: TokenStatsMiddlewareConfig;
   params: TokenStatsTransformParamsType;
 }): Promise<DoGenerateReturnType> => {
@@ -156,12 +181,13 @@ const wrapGenerate = async ({
     // Extract provider and model info from the model instance
     // Note: We'll need to pass this info through config since it's not available in params
     const { provider, modelName } =
-      configProvider && configModelName
-        ? { provider: configProvider, modelName: configModelName }
-        : model.provider && model.modelId
-          ? { provider: model.provider, modelName: model.modelId }
-          : extractProviderAndModel(model.modelId);
-
+      typeof model === 'string'
+        ? extractProviderAndModel(model)
+        : configProvider && configModelName
+          ? { provider: configProvider, modelName: configModelName }
+          : model.provider && model.modelId
+            ? { provider: model.provider, modelName: model.modelId }
+            : extractProviderAndModel(model.modelId);
     if (enableLogging) {
       log((l) =>
         l.verbose('Token stats middleware processing request', {
@@ -183,30 +209,26 @@ const wrapGenerate = async ({
       // Post-request usage recording
       if (result.usage) {
         const tokenUsage: TokenUsageData = {
-          promptTokens: result.usage.promptTokens || 0,
-          completionTokens: result.usage.completionTokens || 0,
-          totalTokens:
-            (result.usage.promptTokens || 0) +
-            (result.usage.completionTokens || 0),
+          promptTokens: result.usage.inputTokens || 0,
+          completionTokens: result.usage.outputTokens || 0,
+          totalTokens: result.usage.totalTokens || 0,
         };
 
         // Record usage asynchronously to avoid blocking the response
-        getInstance().safeRecordTokenUsage(
-          provider,
-          modelName,
-          tokenUsage,
-        ).catch((error: unknown) => {
-          if (enableLogging) {
-            log((l) =>
-              l.error('Failed to record token usage', {
-                provider,
-                modelName,
-                tokenUsage,
-                error: error instanceof Error ? error.message : String(error),
-              }),
-            );
-          }
-        });
+        getInstance()
+          .safeRecordTokenUsage(provider, modelName, tokenUsage)
+          .catch((error: unknown) => {
+            if (enableLogging) {
+              log((l) =>
+                l.error('Failed to record token usage', {
+                  provider,
+                  modelName,
+                  tokenUsage,
+                  error: error instanceof Error ? error.message : String(error),
+                }),
+              );
+            }
+          });
 
         if (enableLogging) {
           log((l) =>
@@ -244,14 +266,17 @@ const wrapGenerate = async ({
         source: 'tokenStatsMiddleware.wrapGenerate',
         log: enableLogging,
         data: {
-          provider: configProvider || model.provider,
-          modelName: configModelName || model.modelId,
+          provider:
+            configProvider || typeof model === 'string' ? '' : model.provider,
+          modelName:
+            configModelName || typeof model === 'string'
+              ? model
+              : model.modelId,
           estimatedTokens,
         },
       });
     }
   }
-  
 };
 
 const wrapStream = async ({
@@ -264,21 +289,25 @@ const wrapStream = async ({
     enableQuotaEnforcement = false,
   },
   params: {
-    providerMetadata: { backOffice: { estTokens: estimatedTokens = 0 } = {} } = {},
+    providerOptions: {
+      backOffice: { estTokens: estimatedTokens = 0 } = {},
+    } = {},
   },
 }: {
   doStream: () => DoStreamReturnType;
-  model: LanguageModelV1;
+  model: LanguageModel;
   config: TokenStatsMiddlewareConfig;
   params: TokenStatsTransformParamsType;
 }): Promise<DoStreamReturnType> => {
   // Extract provider and model info from the model instance
   const { provider, modelName } =
-    configProvider && configModelName
-      ? { provider: configProvider, modelName: configModelName }
-      : model.provider && model.modelId
-        ? { provider: model.provider, modelName: model.modelId }
-        : extractProviderAndModel(model.modelId);
+    typeof model === 'string'
+      ? extractProviderAndModel(model)
+      : configProvider && configModelName
+        ? { provider: configProvider, modelName: configModelName }
+        : model.provider && model.modelId
+          ? { provider: model.provider, modelName: model.modelId }
+          : extractProviderAndModel(model);
 
   if (enableLogging) {
     log((l) =>
@@ -300,7 +329,7 @@ const wrapStream = async ({
 
   try {
     const result = await doStream();
-    
+
     // Track token usage during streaming
     let promptTokens = 0;
     let completionTokens = 0;
@@ -308,20 +337,23 @@ const wrapStream = async ({
     let hasFinished = false;
 
     // Create a transform stream to wrap the original stream
-    const transformStream = new TransformStream<LanguageModelV1StreamPart, LanguageModelV1StreamPart>({
+    const transformStream = new TransformStream<
+      LanguageModelV2StreamPart,
+      LanguageModelV2StreamPart
+    >({
       transform(chunk, controller) {
         try {
           // Track text generation for token counting
           if (chunk.type === 'text-delta') {
-            generatedText += chunk.textDelta;
+            generatedText += chunk.delta;
           }
 
           // Extract usage information from finish chunks
           if (chunk.type === 'finish') {
             hasFinished = true;
             if (chunk.usage) {
-              promptTokens = chunk.usage.promptTokens || 0;
-              completionTokens = chunk.usage.completionTokens || 0;
+              promptTokens = chunk.usage.inputTokens || 0;
+              completionTokens = chunk.usage.outputTokens || 0;
             }
           }
 
@@ -338,9 +370,8 @@ const wrapStream = async ({
             },
           });
         }
-       
       },
-      
+
       flush() {
         try {
           // Record token usage after stream completion
@@ -363,23 +394,23 @@ const wrapStream = async ({
 
             // Record usage asynchronously to avoid blocking the stream
             if (tokenUsage.totalTokens > 0) {
-              getInstance().safeRecordTokenUsage(
-                provider,
-                modelName,
-                tokenUsage,
-              ).catch((error: unknown) => {
-                if (enableLogging) {
-                  log((l) =>
-                    l.error('Failed to record token usage for stream', {
-                      provider,
-                      modelName,
-                      tokenUsage,
-                      error:
-                        error instanceof Error ? error.message : String(error),
-                    }),
-                  );
-                }
-              });
+              getInstance()
+                .safeRecordTokenUsage(provider, modelName, tokenUsage)
+                .catch((error: unknown) => {
+                  if (enableLogging) {
+                    log((l) =>
+                      l.error('Failed to record token usage for stream', {
+                        provider,
+                        modelName,
+                        tokenUsage,
+                        error:
+                          error instanceof Error
+                            ? error.message
+                            : String(error),
+                      }),
+                    );
+                  }
+                });
 
               if (enableLogging) {
                 log((l) =>
@@ -402,8 +433,8 @@ const wrapStream = async ({
               modelName,
             },
           });
-        }        
-      }
+        }
+      },
     });
 
     // Return the result with the transformed stream
@@ -425,53 +456,56 @@ const wrapStream = async ({
 };
 
 export const transformParams = async ({
-  params: { prompt, providerMetadata = {}, ...params },
-  config: { enableLogging = true }
+  params: { prompt, providerOptions: providerMetadata = {}, ...params },
+  config: { enableLogging = true },
 }: {
   config: TokenStatsMiddlewareConfig;
   params: TokenStatsTransformParamsType;
-}): Promise<TokenStatsTransformParamsType> => {  
+}): Promise<TokenStatsTransformParamsType> => {
   try {
-    const tokens = countTokens({ prompt, enableLogging });    
+    const tokens = countTokens({ prompt, enableLogging });
     providerMetadata.backOffice = {
       ...(providerMetadata.backOffice ?? {}),
       estTokens: tokens,
     };
   } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, { 
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'tokenStatsMiddleware.transformParams',
       log: enableLogging,
-    });    
+    });
   }
   return {
     ...params,
     prompt,
-    providerMetadata,
+    providerOptions: providerMetadata,
   };
 };
-  
+
 /**
- * Create token statistics tracking middleware (Original Implementation)
- * 
+ * Create token statistics tracking middleware
+ *
  * This middleware:
  * 1. Checks quotas before making requests (if enforcement is enabled)
  * 2. Records actual token usage after successful requests
  * 3. Logs quota violations and usage statistics
  */
-const createOriginalTokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV1Middleware => {
+const createOriginalTokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV2Middleware => {
   return {
-    wrapGenerate: async (props) => wrapGenerate({
-      ...props,
-      config
-    }),
-    wrapStream: async (props) => wrapStream({
-      ...props,
-      config
-    }), 
-    transformParams: async (props) => transformParams({
-      ...props,
-      config,
-    })
+    wrapGenerate: async (props) =>
+      wrapGenerate({
+        ...props,
+        config,
+      }),
+    wrapStream: async (props) =>
+      wrapStream({
+        ...props,
+        config,
+      }),
+    transformParams: async (props) =>
+      transformParams({
+        ...props,
+        config,
+      }),
   };
 };
 
@@ -481,7 +515,7 @@ const createOriginalTokenStatsMiddleware = (config: TokenStatsMiddlewareConfig =
  * This middleware supports the state management protocol and can participate
  * in state collection and restoration operations.
  */
-export const tokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV1Middleware => {
+export const tokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV2Middleware => {
   const originalMiddleware = createOriginalTokenStatsMiddleware(config);
   return createSimpleStatefulMiddleware(
     'token-stats-tracking',
@@ -492,13 +526,21 @@ export const tokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): L
 /**
  * Create token statistics middleware with quota enforcement enabled
  */
-export const tokenStatsWithQuotaMiddleware = (config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {}) => {
+export const tokenStatsWithQuotaMiddleware = (
+  config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {},
+) => {
   return tokenStatsMiddleware({ ...config, enableQuotaEnforcement: true });
 };
 
 /**
  * Create token statistics middleware with only logging (no quota enforcement)
  */
-export const tokenStatsLoggingOnlyMiddleware = (config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {}) => {
-  return tokenStatsMiddleware({ ...config, enableLogging: true, enableQuotaEnforcement: false });
+export const tokenStatsLoggingOnlyMiddleware = (
+  config: Omit<TokenStatsMiddlewareConfig, 'enableQuotaEnforcement'> = {},
+) => {
+  return tokenStatsMiddleware({
+    ...config,
+    enableLogging: true,
+    enableQuotaEnforcement: false,
+  });
 };

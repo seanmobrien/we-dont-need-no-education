@@ -13,5 +13,4 @@
  *
  */
 export * from './json-rpc-message';
-export * from './tool-result-content';
 export * from './mcp-sse-transport';

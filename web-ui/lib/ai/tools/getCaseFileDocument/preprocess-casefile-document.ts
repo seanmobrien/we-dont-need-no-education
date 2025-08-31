@@ -1,6 +1,6 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { zodToStructure } from '@/lib/typescript';
-import { CoreMessage, GenerateTextResult, ToolSet, wrapLanguageModel } from 'ai';
+import { CoreMessage, GenerateTextResult, ToolSet } from 'ai';
 import { log } from '@/lib/logger';
 import { aiModelFactory } from '../../aiModelFactory';
 import { DocumentResource } from '../documentResource';
@@ -12,7 +12,7 @@ import {
   caseFileDocumentSizeHistogram,
 } from './metrics';
 import { countTokens } from '../../core/count-tokens';
-import { createChatHistoryMiddleware } from '../../middleware';
+import { wrapChatHistoryMiddleware } from '../../middleware';
 import { generateTextWithRetry } from '../../core/generate-text-with-retry';
 import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
 
@@ -217,15 +217,15 @@ Output Record Format: [
       // model,
       // prompt: PROMPT,
       messages: [
-        { role: 'system', content: PROMPT },
+        { role: 'system' as const, content: PROMPT },
         {
-          role: 'user',
-          content: `The document record to analyze is as follows:
+          role: 'user' as const,
+          content: [{ type: 'text' as const, text: `The document record to analyze is as follows:
 ___BEGIN CASE FILE___
 ${recordContents}
-___END CASE FILE___`,
+___END CASE FILE___` }],
         },
-      ] as CoreMessage[],
+      ],
       temperature: 0.1,
       experimental_telemetry: {
         isEnabled: true,
@@ -251,10 +251,10 @@ ___END CASE FILE___`,
       },
     });
     try {
-      const model = wrapLanguageModel({
+      const model = wrapChatHistoryMiddleware({
         model:
           tokens > 100000 ? aiModelFactory('lofi') : aiModelFactory('hifi'),
-        middleware: createChatHistoryMiddleware(chatHistoryContext),
+        chatHistoryContext,
       });
       response = await generateTextWithRetry({
         ...payload,
@@ -266,7 +266,7 @@ ___END CASE FILE___`,
         log: true,
         source: 'getCaseFileDocument::preprocessCaseFileDocument',
       });
-    }finally{
+    } finally {
       chatHistoryContext?.dispose();
     }
 

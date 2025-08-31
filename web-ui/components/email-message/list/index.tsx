@@ -1,5 +1,10 @@
 'use client';
-import { JSX, useMemo, useCallback, MouseEvent as ReactMouseEvent } from 'react';
+import {
+  JSX,
+  useMemo,
+  useCallback,
+  MouseEvent as ReactMouseEvent,
+} from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
 import { Box } from '@mui/material';
@@ -61,20 +66,20 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     description: '# attachments',
     renderHeader: () => <AttachEmailIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : ''),
-  width: 30,
-  minWidth: 48,
-  headerAlign: 'center',
-  align: 'center',
+    width: 30,
+    minWidth: 48,
+    headerAlign: 'center',
+    align: 'center',
     type: 'number',
   },
   {
     field: 'threadId',
     headerName: 'Thread',
     editable: false,
-  width: 20,
-  minWidth: 56,
-  headerAlign: 'center',
-  align: 'center',
+    width: 20,
+    minWidth: 56,
+    headerAlign: 'center',
+    align: 'center',
   },
   {
     field: 'sender',
@@ -96,7 +101,9 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
           component={NextLink}
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
-          aria-label={params.value ? `Open email: ${params.value}` : 'Open email'}
+          aria-label={
+            params.value ? `Open email: ${params.value}` : 'Open email'
+          }
           sx={stableSx.subjectLink}
         >
           {params.value}
@@ -111,10 +118,10 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     description: '# KPI',
     renderHeader: () => <KeyIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : '-'),
-  width: 10,
-  minWidth: 56,
-  headerAlign: 'center',
-  align: 'center',
+    width: 10,
+    minWidth: 56,
+    headerAlign: 'center',
+    align: 'center',
     type: 'number',
   },
   {
@@ -122,10 +129,10 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     description: '# Notes',
     renderHeader: () => <TextSnippetIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : '-'),
-  width: 10,
-  minWidth: 56,
-  headerAlign: 'center',
-  align: 'center',
+    width: 10,
+    minWidth: 56,
+    headerAlign: 'center',
+    align: 'center',
     type: 'number',
   },
   {
@@ -136,10 +143,10 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
       return (v ?? 0) + (row.count_responsive_actions ?? 0);
     },
     valueFormatter: (v: number) => (v ? v : '-'),
-  width: 10,
-  minWidth: 56,
-  headerAlign: 'center',
-  align: 'center',
+    width: 10,
+    minWidth: 56,
+    headerAlign: 'center',
+    align: 'center',
     type: 'number',
   },
   {
@@ -214,7 +221,7 @@ export const EmailList = ({
 
   return (
     <>
-  <Box sx={[stableSx.containerBase, containerSx]}>
+      <Box sx={[stableSx.containerBase, containerSx]}>
         <ServerBoundDataGrid<EmailMessageSummary>
           {...props}
           columns={stableColumns}

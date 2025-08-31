@@ -1,11 +1,14 @@
 /**
  * @fileoverview State Management Protocol Types and Interfaces
- * 
+ *
  * This file defines the types and interfaces for the middleware state management
  * protocol that enables capturing and restoring middleware state across requests.
  */
 
-import type { LanguageModelV1Middleware, LanguageModelV1CallOptions } from 'ai';
+import type {
+  LanguageModelV2Middleware,
+  LanguageModelV2CallOptions,
+} from '@ai-sdk/provider';
 
 /**
  * State management protocol constants for special prompt handling
@@ -13,7 +16,7 @@ import type { LanguageModelV1Middleware, LanguageModelV1CallOptions } from 'ai';
 export const STATE_PROTOCOL = {
   COLLECT: '__COLLECT_MIDDLEWARE_STATE__',
   RESTORE: '__RESTORE_MIDDLEWARE_STATE__',
-  RESULT_KEY: '__MIDDLEWARE_STATE_RESULT__'
+  RESULT_KEY: '__MIDDLEWARE_STATE_RESULT__',
 } as const;
 
 /**
@@ -71,7 +74,7 @@ export interface StatefulMiddlewareConfig<T = SerializableState> {
   /**
    * The original middleware to wrap
    */
-  originalMiddleware: LanguageModelV1Middleware;
+  originalMiddleware: LanguageModelV2Middleware;
 
   /**
    * Optional state handlers for serialization/deserialization
@@ -82,7 +85,7 @@ export interface StatefulMiddlewareConfig<T = SerializableState> {
 /**
  * Extended parameters for middleware that include state management
  */
-export interface StateManagementParams extends LanguageModelV1CallOptions {
+export interface StateManagementParams extends LanguageModelV2CallOptions {
   /**
    * Collection result storage for state collection protocol
    */

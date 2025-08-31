@@ -1,5 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, waitFor, jsonResponse, asyncRender } from '@/__tests__/test-utils';
+import {
+  render,
+  screen,
+  waitFor,
+  jsonResponse,
+  asyncRender,
+} from '@/__tests__/test-utils';
 import EmailList from '@/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
 import { fetch } from '@/lib/nextjs-util/fetch';
@@ -16,9 +22,10 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
-describe('EmailList', () => {    
-
-  let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any> | undefined;
+describe('EmailList', () => {
+  let consoleErrorSpy:
+    | jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>
+    | undefined;
   beforeEach(() => {
     // Turn off console.error logging for these planned exceptions - keeps test output clean.
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -29,13 +36,17 @@ describe('EmailList', () => {
   });
 
   it('should mount and render grid initially', () => {
-    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: [], totalRowCount: 0 }));
+    (fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({ rows: [], totalRowCount: 0 }),
+    );
     render(<EmailList />);
     expect(screen.getByRole('grid')).toBeInTheDocument();
   });
 
   it('should display error message when fetching emails fails', async () => {
-    (fetch as jest.Mock).mockRejectedValueOnce(new Error('Error fetching emails.'));
+    (fetch as jest.Mock).mockRejectedValueOnce(
+      new Error('Error fetching emails.'),
+    );
 
     await asyncRender(<EmailList />);
 
@@ -47,7 +58,9 @@ describe('EmailList', () => {
   });
 
   it('should display no emails found message when there are no emails', async () => {
-    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: [], totalRowCount: 0 }));
+    (fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({ rows: [], totalRowCount: 0 }),
+    );
 
     await asyncRender(<EmailList />);
 
@@ -61,7 +74,9 @@ describe('EmailList', () => {
 
   it('should display a list of emails', async () => {
     const mockEmails = mockEmailSummary();
-    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }));
+    (fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }),
+    );
     await asyncRender(<EmailList />);
 
     await waitFor(() => {
@@ -74,16 +89,16 @@ describe('EmailList', () => {
 
   it('should display the email form when an email is selected', async () => {
     const mockEmails = mockEmailSummary();
-    (fetch as jest.Mock).mockResolvedValueOnce(jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }));
-    await asyncRender(<EmailList />);
-    
-    await waitFor(
-      () => {
-        expect(screen.getByRole('grid')).toBeInTheDocument();
-        // The DataGrid should be rendered with column headers
-        expect(screen.getByText('From')).toBeInTheDocument();
-        expect(screen.getByText('Subject')).toBeInTheDocument();
-      }
+    (fetch as jest.Mock).mockResolvedValueOnce(
+      jsonResponse({ rows: mockEmails, totalRowCount: mockEmails.length }),
     );
+    await asyncRender(<EmailList />);
+
+    await waitFor(() => {
+      expect(screen.getByRole('grid')).toBeInTheDocument();
+      // The DataGrid should be rendered with column headers
+      expect(screen.getByText('From')).toBeInTheDocument();
+      expect(screen.getByText('Subject')).toBeInTheDocument();
+    });
   });
 });

@@ -22,7 +22,7 @@ export const handleCacheHit = (
   parsed: CacheableResponse,
   context: string = '',
 ): void => {
-  const responseSize = parsed.text?.length || 0;
+  const responseSize = parsed.content?.reduce((acc, part) => acc + (part.type === 'text' ? part.text.length : 0), 0) || 0;
 
   // Fix-up timestamps
   if (
@@ -48,8 +48,7 @@ export const handleCacheHit = (
   }
   if ('id' in parsed && parsed.id) {
     try {
-      const responseObj = parsed as Record<string, unknown>;
-      responseObj.id = String(responseObj.id) + generateChatId();
+      parsed.id = String(parsed.id) + generateChatId();
     } catch (error) {
       log((l) =>
         l.warn('Failed to parse ID in cached response', {

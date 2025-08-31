@@ -2,6 +2,9 @@
 
 exports[`KeyRefreshWrapper renders with default state snapshot 1`] = `
 <div>
+  <div>
+    Test child content
+  </div>
   <div
     class="MuiSnackbar-root MuiSnackbar-anchorOriginBottomLeft css-1w76183-MuiSnackbar-root"
     role="presentation"
@@ -41,7 +44,7 @@ exports[`KeyRefreshWrapper renders with default state snapshot 1`] = `
         >
           <button
             aria-label="Close"
-            class="MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeSmall css-1h8h7yz-MuiButtonBase-root-MuiIconButton-root"
+            class="MuiButtonBase-root MuiIconButton-root MuiIconButton-colorInherit MuiIconButton-sizeSmall css-11wq6a3-MuiButtonBase-root-MuiIconButton-root"
             tabindex="0"
             title="Close"
             type="button"
