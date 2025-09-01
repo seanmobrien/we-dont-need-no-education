@@ -1,16 +1,15 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview State Management Protocol Tests
- * 
+ *
  * Tests for the middleware state management protocol implementation.
  */
 
-import { 
+import {
   STATE_PROTOCOL,
   StateManagementMiddleware,
   createStateManagementMiddleware,
   createStatefulMiddleware,
-  createSimpleStatefulMiddleware,
-  type SerializableState
 } from '@/lib/ai/middleware/state-management';
 
 describe('State Management Protocol', () => {
@@ -31,7 +30,7 @@ describe('State Management Protocol', () => {
     const mockOriginalMiddleware = {
       wrapGenerate: jest.fn(),
       wrapStream: jest.fn(),
-      transformParams: jest.fn()
+      transformParams: jest.fn(),
     };
 
     afterEach(() => {
@@ -41,7 +40,7 @@ describe('State Management Protocol', () => {
     it('should create a stateful middleware wrapper', () => {
       const wrapper = createStatefulMiddleware({
         middlewareId: 'test-middleware',
-        originalMiddleware: mockOriginalMiddleware
+        originalMiddleware: mockOriginalMiddleware,
       });
 
       expect(wrapper).toBeDefined();
@@ -55,38 +54,51 @@ describe('State Management Protocol', () => {
 
       const wrapper = createStatefulMiddleware({
         middlewareId: 'test-middleware',
-        originalMiddleware: mockOriginalMiddleware
+        originalMiddleware: mockOriginalMiddleware,
       });
 
       const mockNext = jest.fn();
       const mockParams = { prompt: 'normal request' };
       const mockModel = { modelId: 'test-model' };
 
-      await (wrapper.wrapGenerate as any)({ model: mockModel, params: mockParams, doGenerate: mockNext });
+      await (wrapper.wrapGenerate as any)({
+        model: mockModel,
+        params: mockParams,
+        doGenerate: mockNext,
+      });
 
-      expect(mockOriginalMiddleware.wrapGenerate).toHaveBeenCalledWith(
-        { model: mockModel, params: mockParams, doGenerate: mockNext }
-      );
+      expect(mockOriginalMiddleware.wrapGenerate).toHaveBeenCalledWith({
+        model: mockModel,
+        params: mockParams,
+        doGenerate: mockNext,
+      });
     });
 
     it('should handle state collection requests', async () => {
       const stateCollection = new Map();
       const mockParams = {
         prompt: 'normal request',
-        [STATE_PROTOCOL.RESULT_KEY]: stateCollection
+        [STATE_PROTOCOL.RESULTS]: stateCollection,
       };
       const mockModel = { modelId: 'test-model' };
       const mockNext = jest.fn();
 
       const wrapper = createStatefulMiddleware({
         middlewareId: 'test-middleware',
-        originalMiddleware: mockOriginalMiddleware,
-        stateHandlers: {
-          serialize: () => ({ test: 'state' })
-        }
+        originalMiddleware: {
+          ...mockOriginalMiddleware,
+          serializeState: () => Promise.resolve({ test: 'state' }),
+          deserializeState() {
+            return Promise.resolve();
+          },
+        },
       });
 
-      await (wrapper.wrapGenerate as any)({ model: mockModel, params: mockParams, doGenerate: mockNext });
+      await (wrapper.wrapGenerate as any)({
+        model: mockModel,
+        params: mockParams,
+        doGenerate: mockNext,
+      });
 
       expect(stateCollection.has('test-middleware')).toBe(true);
       expect(stateCollection.get('test-middleware')).toEqual({ test: 'state' });
@@ -94,25 +106,31 @@ describe('State Management Protocol', () => {
     });
 
     it('should handle state restoration requests', async () => {
-      const stateData = new Map([['test-middleware', { test: 'restored-state' }]]);
+      const stateData = new Map([
+        ['test-middleware', { test: 'restored-state' }],
+      ]);
       const mockDeserialize = jest.fn();
       const mockParams = {
         prompt: 'normal request',
         [STATE_PROTOCOL.RESTORE]: true,
-        stateData
+        stateData,
       };
       const mockModel = { modelId: 'test-model' };
       const mockNext = jest.fn();
 
       const wrapper = createStatefulMiddleware({
         middlewareId: 'test-middleware',
-        originalMiddleware: mockOriginalMiddleware,
-        stateHandlers: {
-          deserialize: mockDeserialize
-        }
+        originalMiddleware: {
+          ...mockOriginalMiddleware,
+          deserializeState: mockDeserialize,
+        },
       });
 
-      await (wrapper.wrapGenerate as any)({ model: mockModel, params: mockParams, doGenerate: mockNext });
+      await (wrapper.wrapGenerate as any)({
+        model: mockModel,
+        params: mockParams,
+        doGenerate: mockNext,
+      });
 
       expect(mockDeserialize).toHaveBeenCalledWith({ test: 'restored-state' });
       expect(mockNext).toHaveBeenCalled();
@@ -122,10 +140,15 @@ describe('State Management Protocol', () => {
   describe('createSimpleStatefulMiddleware', () => {
     it('should create a simple stateful middleware without state handlers', () => {
       const mockOriginalMiddleware = {
-        wrapGenerate: jest.fn()
+        wrapGenerate: jest.fn(),
       };
 
-      const wrapper = createSimpleStatefulMiddleware('simple-middleware', mockOriginalMiddleware);
+      const wrapper = StateManagementMiddleware.Instance.basicMiddlewareWrapper(
+        {
+          middlewareId: 'simple-middleware',
+          middleware: mockOriginalMiddleware,
+        },
+      );
 
       expect(wrapper).toBeDefined();
       expect(wrapper.wrapGenerate).toBeDefined();
@@ -136,7 +159,7 @@ describe('State Management Protocol', () => {
     it('should have the correct protocol constants', () => {
       expect(STATE_PROTOCOL.COLLECT).toBe('__COLLECT_MIDDLEWARE_STATE__');
       expect(STATE_PROTOCOL.RESTORE).toBe('__RESTORE_MIDDLEWARE_STATE__');
-      expect(STATE_PROTOCOL.RESULT_KEY).toBe('__MIDDLEWARE_STATE_RESULT__');
+      expect(STATE_PROTOCOL.RESULTS).toBe('__MIDDLEWARE_STATE_RESULT__');
     });
   });
 });

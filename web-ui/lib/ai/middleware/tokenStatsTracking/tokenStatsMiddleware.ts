@@ -1,4 +1,3 @@
-import { LanguageModelMiddleware, type LanguageModel } from 'ai';
 import { getInstance } from '../../services/model-stats/token-stats-service';
 import { log } from '@/lib/logger';
 import {
@@ -32,7 +31,7 @@ type TokenStatsTransformParamsType = LanguageModelV2CallOptions & {
  * Extract provider and model name from various model ID formats
  */
 const extractProviderAndModel = (
-  modelId: LanguageModel,
+  modelId: string | LanguageModelV2,
 ): { provider: string; modelName: string } => {
   if (typeof modelId === 'object' && 'modelId' in modelId) {
     return extractProviderAndModel(
@@ -173,7 +172,7 @@ const wrapGenerate = async ({
   },
 }: {
   doGenerate: () => DoGenerateReturnType;
-  model: LanguageModel;
+  model: string | LanguageModelV2;
   config: TokenStatsMiddlewareConfig;
   params: TokenStatsTransformParamsType;
 }): Promise<DoGenerateReturnType> => {
@@ -295,7 +294,7 @@ const wrapStream = async ({
   },
 }: {
   doStream: () => DoStreamReturnType;
-  model: LanguageModel;
+  model: string | LanguageModelV2;
   config: TokenStatsMiddlewareConfig;
   params: TokenStatsTransformParamsType;
 }): Promise<DoStreamReturnType> => {
@@ -489,7 +488,9 @@ export const transformParams = async ({
  * 2. Records actual token usage after successful requests
  * 3. Logs quota violations and usage statistics
  */
-const createOriginalTokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV2Middleware => {
+const createOriginalTokenStatsMiddleware = (
+  config: TokenStatsMiddlewareConfig = {},
+): LanguageModelV2Middleware => {
   return {
     wrapGenerate: async (props) =>
       wrapGenerate({
@@ -511,15 +512,17 @@ const createOriginalTokenStatsMiddleware = (config: TokenStatsMiddlewareConfig =
 
 /**
  * Create token statistics tracking middleware with State Management Support
- * 
+ *
  * This middleware supports the state management protocol and can participate
  * in state collection and restoration operations.
  */
-export const tokenStatsMiddleware = (config: TokenStatsMiddlewareConfig = {}): LanguageModelV2Middleware => {
+export const tokenStatsMiddleware = (
+  config: TokenStatsMiddlewareConfig = {},
+): LanguageModelV2Middleware => {
   const originalMiddleware = createOriginalTokenStatsMiddleware(config);
   return createSimpleStatefulMiddleware(
     'token-stats-tracking',
-    originalMiddleware
+    originalMiddleware,
   );
 };
 

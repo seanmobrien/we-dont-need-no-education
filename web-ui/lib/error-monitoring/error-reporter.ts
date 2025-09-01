@@ -1,55 +1,23 @@
 import { isError } from '@/lib/react-util/utility-methods';
 import { log } from '@/lib/logger';
+import {
+  ErrorSeverity,
+  KnownEnvironmentType,
+  ErrorContext,
+  ErrorReport,
+  ErrorReporterConfig,
+  ErrorReporterInterface,
+} from './types';
 
-/**
- * Error severity levels for reporting and prioritization
- */
-export enum ErrorSeverity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
-}
+export { ErrorSeverity };
 
-/**
- * Error context information for better debugging
- */
-export interface ErrorContext {
-  userId?: string;
-  sessionId?: string;
-  source?: string;
-  userAgent?: string;
-  url?: string;
-  timestamp?: Date;
-  componentStack?: string;
-  errorBoundary?: string;
-  breadcrumbs?: string[];
-  additionalData?: Record<string, unknown>;
-}
-
-/**
- * Error report structure for external monitoring services
- */
-export interface ErrorReport {
-  error: Error;
-  severity: ErrorSeverity;
-  context: ErrorContext;
-  fingerprint?: string;
-  tags?: Record<string, string>;
-}
-type KnownEnvironmentType = 'development' | 'staging' | 'production';
-
-/**
- * Configuration for error reporting
- */
-export interface ErrorReporterConfig {
-  enableStandardLogging: boolean;
-  enableConsoleLogging: boolean;
-  enableExternalReporting: boolean;
-  enableLocalStorage: boolean;
-  maxStoredErrors: number;
-  environment: KnownEnvironmentType;
-}
+export type {
+  KnownEnvironmentType,
+  ErrorContext,
+  ErrorReport,
+  ErrorReporterConfig,
+  ErrorReporterInterface,
+};
 
 const isGtagClient = <T>(
   check: T,
@@ -84,9 +52,9 @@ const defaultConfig: ErrorReporterConfig = {
  * Centralized error reporting system
  * Handles logging, external service reporting, and error analytics
  */
-export class ErrorReporter {
+export class ErrorReporter implements ErrorReporterInterface {
   private config: ErrorReporterConfig;
-  private static instance: ErrorReporter;
+  private static instance: ErrorReporterInterface;
 
   private constructor(config: ErrorReporterConfig) {
     this.config = config;
@@ -99,7 +67,7 @@ export class ErrorReporter {
    */
   public static createInstance = (
     config: Partial<ErrorReporterConfig>,
-  ): ErrorReporter =>
+  ): ErrorReporterInterface =>
     new ErrorReporter({
       ...defaultConfig,
       ...config,
@@ -108,7 +76,9 @@ export class ErrorReporter {
   /**
    * Get singleton instance of ErrorReporter
    */
-  public static getInstance(config?: ErrorReporterConfig): ErrorReporter {
+  public static getInstance(
+    config?: ErrorReporterConfig,
+  ): ErrorReporterInterface {
     if (!ErrorReporter.instance) {
       ErrorReporter.instance = ErrorReporter.createInstance(config ?? {});
     }
@@ -323,7 +293,7 @@ export class ErrorReporter {
    * Report to Google Analytics if available
    */
   private async reportToGoogleAnalytics(report: ErrorReport): Promise<void> {
-    if (isGtagClient(window)) {
+    if (typeof window !== 'undefined' && isGtagClient(window)) {
       window.gtag('event', 'exception', {
         description: report.error.message,
         fatal: report.severity === ErrorSeverity.CRITICAL,
@@ -333,15 +303,9 @@ export class ErrorReporter {
     }
   }
 
-  /**
-   * Report to Application Insights if available
-   */
-  private async reportToApplicationInsights(
+  private async client_reportToApplicationInsights(
     report: ErrorReport,
   ): Promise<void> {
-    // Implementation would depend on Application Insights setup
-    // This is a placeholder for Azure Application Insights integration
-    if (typeof window === 'undefined') return;
     await import('@/instrument/browser').then((m) => {
       const appInsights = m.getAppInsights();
       if (appInsights) {
@@ -356,6 +320,20 @@ export class ErrorReporter {
         });
       }
     });
+  }
+
+  /**
+   * Report to Application Insights if available
+   */
+  private async reportToApplicationInsights(
+    report: ErrorReport,
+  ): Promise<void> {
+    // Implementation would depend on Application Insights setup
+    // This is a placeholder for Azure Application Insights integration
+    if (typeof window === 'undefined' || process.env.NEXT_RUNTIME === 'EDGE') {
+      return;
+    }
+    await this.client_reportToApplicationInsights(report);
     log((l) => l.debug('Would report to Application Insights:', report));
   }
 

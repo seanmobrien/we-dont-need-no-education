@@ -5,10 +5,13 @@
  * protocol that enables capturing and restoring middleware state across requests.
  */
 
+import { PickField } from '@/lib/typescript';
 import type {
   LanguageModelV2Middleware,
   LanguageModelV2CallOptions,
+  SharedV2ProviderOptions,
 } from '@ai-sdk/provider';
+import { JSONValue } from 'ai';
 
 /**
  * State management protocol constants for special prompt handling
@@ -16,90 +19,110 @@ import type {
 export const STATE_PROTOCOL = {
   COLLECT: '__COLLECT_MIDDLEWARE_STATE__',
   RESTORE: '__RESTORE_MIDDLEWARE_STATE__',
-  RESULT_KEY: '__MIDDLEWARE_STATE_RESULT__',
+  RESULTS: '__MIDDLEWARE_STATE_RESULT__',
+  OPTIONS_ROOT: '9bd3f8a1-2c5f-4e5b-9c7a-6f1e2d3c4b5a',
 } as const;
 
 /**
  * Serializable state data type
  */
-export type SerializableState = Record<string, unknown>;
+export type SerializableState = Record<string, JSONValue>;
 
-/**
- * Interface that middleware must implement to participate in the state management protocol
- */
-export interface StatefulMiddleware {
+export type SerializableMiddleware<
+  T extends SerializableState = SerializableState,
+> = {
   /**
    * Get the unique identifier for this middleware instance
    * @returns A string that uniquely identifies this middleware
    */
-  getMiddlewareId(): string;
+  getMiddlewareId(props: { config: StatefulMiddlewareConfig }): string;
 
   /**
    * Serialize the current state of this middleware
    * @returns A JSON-serializable object representing the middleware state
    */
-  serializeState?(): SerializableState;
+  serializeState(props: {
+    params: StateManagementParams;
+    config: StatefulMiddlewareConfig;
+  }): Promise<T>;
 
   /**
    * Restore the middleware state from a serialized object
    * @param state The serialized state to restore
    */
-  deserializeState?(state: SerializableState): void;
-}
+  deserializeState(props: {
+    state: T;
+    params: StateManagementParams;
+    config: StatefulMiddlewareConfig;
+  }): Promise<void>;
+};
 
 /**
- * Handlers for state serialization and deserialization
+ * Interface that middleware must implement to participate in the state management protocol
  */
-export interface StateHandlers<T = SerializableState> {
-  /**
-   * Function to serialize the middleware state
-   */
-  serialize?: () => T;
-
-  /**
-   * Function to deserialize and restore the middleware state
-   */
-  deserialize?: (state: T) => void;
-}
+export type SerializableLanguageModelMiddleware<
+  TMiddlewareId extends string = string,
+  T extends SerializableState = SerializableState,
+> = LanguageModelV2Middleware &
+  SerializableMiddleware<T> & {
+    /**
+     * Get the unique identifier for this middleware instance
+     * @returns A string that uniquely identifies this middleware
+     */
+    getMiddlewareId(props: {
+      options: StatefulMiddlewareConfig;
+    }): TMiddlewareId;
+  };
 
 /**
  * Configuration for the createStatefulMiddleware wrapper
  */
-export interface StatefulMiddlewareConfig<T = SerializableState> {
+export interface StatefulMiddlewareConfig<
+  TMiddlewareId extends string = string,
+> {
   /**
    * Unique identifier for the middleware
    */
-  middlewareId: string;
-
-  /**
-   * The original middleware to wrap
-   */
-  originalMiddleware: LanguageModelV2Middleware;
-
-  /**
-   * Optional state handlers for serialization/deserialization
-   */
-  stateHandlers?: StateHandlers<T>;
+  middlewareId: TMiddlewareId;
 }
+
+export type StateManagementProviderOptions = Record<string, JSONValue> & {
+  /**
+   * A statebag keyed by middleware id and used to gather collection state results during state collection
+   */
+  [STATE_PROTOCOL.RESULTS]?: Array<[string, SerializableState]>;
+  /**
+   * When flag is true participating middleware should read state from the statebag; default is to write state.
+   */
+  [STATE_PROTOCOL.RESTORE]?: boolean;
+  /**
+   * State data for restoration.  I don't think we need this? eg the one result_key statebag should work...
+   *
+   * @deprecated Use [STATE_PROTOCOL.RESULT_KEY] instead.
+   */
+  stateData?: Map<string, unknown>;
+};
+
+export type StateManagementProviderOptionsKey =
+  keyof StateManagementProviderOptions;
+
+export type StateManagementField<
+  TKey extends StateManagementProviderOptionsKey,
+> = PickField<StateManagementProviderOptions, TKey>;
 
 /**
  * Extended parameters for middleware that include state management
  */
 export interface StateManagementParams extends LanguageModelV2CallOptions {
   /**
-   * Collection result storage for state collection protocol
+   * Extends {@link SharedV2ProviderOptions} with state management protocol support.
    */
-  [STATE_PROTOCOL.RESULT_KEY]?: Map<string, unknown>;
-
-  /**
-   * Flag indicating state restoration is in progress
-   */
-  [STATE_PROTOCOL.RESTORE]?: boolean;
-
-  /**
-   * State data for restoration
-   */
-  stateData?: Map<string, unknown>;
+  providerOptions?: SharedV2ProviderOptions & {
+    /**
+     * "Magic" statebag used to smuggle in state management protocul support.
+     */
+    [STATE_PROTOCOL.OPTIONS_ROOT]?: StateManagementProviderOptions;
+  };
 }
 
 /**
@@ -148,11 +171,8 @@ export interface MiddlewareMetadata {
 }
 
 /**
- * State collection result type
+ * Basic state representation for middleware
  */
-export type StateCollectionResult = Map<string, unknown>;
-
-/**
- * State restoration data type
- */
-export type StateRestorationData = Map<string, unknown>;
+export type BasicMiddlewareState = {
+  timestamp: number;
+};

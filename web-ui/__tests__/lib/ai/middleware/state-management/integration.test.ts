@@ -1,46 +1,58 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Integration Tests for State Management Protocol
- * 
+ *
  * These tests demonstrate the full end-to-end functionality of the state management
  * protocol including state collection and restoration across multiple middleware.
  */
 
-import { 
+import {
   STATE_PROTOCOL,
   StateManagementMiddleware,
   createStateManagementMiddleware,
   createStatefulMiddleware,
-  setNormalizedDefaultsMiddleware
+  setNormalizedDefaultsMiddleware,
 } from '@/lib/ai/middleware';
 
 describe('State Management Protocol Integration', () => {
+  beforeEach(() => {
+    // Reset the global instance before each test
+    StateManagementMiddleware.reset();
+  });
   describe('End-to-end state collection and restoration', () => {
     it('should collect and restore state from multiple middleware in the chain', async () => {
       // Create a simple stateful middleware with actual state
       let middlewareState = { requestCount: 0, lastPrompt: '' };
-      
-      const statefulMiddleware = createStatefulMiddleware({
+
+      const statefulMiddleware = createStatefulMiddleware<
+        typeof middlewareState
+      >({
         middlewareId: 'test-counter',
         originalMiddleware: {
           wrapGenerate: async (options) => {
             // Update internal state
             middlewareState.requestCount++;
-            middlewareState.lastPrompt = typeof options.params?.prompt === 'string' ? options.params.prompt : '';
-            
+            middlewareState.lastPrompt =
+              typeof options.params?.prompt === 'string'
+                ? options.params.prompt
+                : '';
+
             // Continue with the chain
             return await options.doGenerate();
-          }
+          },
+          serializeState: () => Promise.resolve(middlewareState),
+          deserializeState: (state) => {
+            middlewareState = {
+              ...middlewareState,
+              ...state,
+            };
+            return Promise.resolve();
+          },
         },
-        stateHandlers: {
-          serialize: () => middlewareState,
-          deserialize: (state) => {
-            middlewareState = { ...state };
-          }
-        }
       });
 
       // Create state management middleware
-      const stateManager = createStateManagementMiddleware();
+      const stateManager = StateManagementMiddleware.Instance;
 
       // Create a mock model that implements LanguageModelV2
       const mockModel: any = {
@@ -58,7 +70,7 @@ describe('State Management Protocol Integration', () => {
       // Step 1: Normal request - this should update the middleware state
       const normalParams: any = {
         prompt: 'test prompt for counting',
-        messages: []
+        messages: [],
       };
 
       await (stateManagerMiddleware.wrapGenerate as any)({
@@ -74,17 +86,19 @@ describe('State Management Protocol Integration', () => {
               return {
                 finishReason: 'stop',
                 usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
-                content: [{ type: 'text', text: `Response to: ${normalParams.prompt}` }],
+                content: [
+                  { type: 'text', text: `Response to: ${normalParams.prompt}` },
+                ],
                 warnings: [],
                 response: {
                   id: 'test-response',
                   timestamp: new Date(),
-                  modelId: mockModel.modelId
-                }
+                  modelId: mockModel.modelId,
+                },
               };
-            }
+            },
           });
-        }
+        },
       });
 
       // Verify the middleware state was updated
@@ -94,10 +108,12 @@ describe('State Management Protocol Integration', () => {
       // Step 2: Collect state using the protocol
       const collectionParams: any = {
         prompt: STATE_PROTOCOL.COLLECT,
-        messages: []
+        messages: [],
       };
 
-      const collectionResult = await (stateManagerMiddleware.wrapGenerate as any)({
+      const collectionResult = await (
+        stateManagerMiddleware.wrapGenerate as any
+      )({
         model: mockModel,
         params: collectionParams,
         doGenerate: async () => {
@@ -115,12 +131,12 @@ describe('State Management Protocol Integration', () => {
                 response: {
                   id: 'unreachable',
                   timestamp: new Date(),
-                  modelId: mockModel.modelId
-                }
+                  modelId: mockModel.modelId,
+                },
               };
-            }
+            },
           });
-        }
+        },
       });
 
       // Verify state was collected
@@ -131,12 +147,14 @@ describe('State Management Protocol Integration', () => {
       expect(collectedStates).toHaveLength(1); // Only test-counter (state-manager doesn't collect its own state)
 
       // Find our middleware's state
-      const testCounterEntry = collectedStates.find(([id]: any) => id === 'test-counter');
-      
+      const testCounterEntry = collectedStates.find(
+        ([id]: any) => id === 'test-counter',
+      );
+
       expect(testCounterEntry).toBeDefined();
       expect(testCounterEntry[1]).toEqual({
         requestCount: 1,
-        lastPrompt: 'test prompt for counting'
+        lastPrompt: 'test prompt for counting',
       });
 
       // Step 3: Reset the middleware state to simulate a new instance
@@ -149,10 +167,12 @@ describe('State Management Protocol Integration', () => {
       const restorationParams: any = {
         prompt: STATE_PROTOCOL.RESTORE,
         messages: [],
-        stateData
+        stateData,
       };
 
-      const restorationResult = await (stateManagerMiddleware.wrapGenerate as any)({
+      const restorationResult = await (
+        stateManagerMiddleware.wrapGenerate as any
+      )({
         model: mockModel,
         params: restorationParams,
         doGenerate: async () => {
@@ -170,16 +190,17 @@ describe('State Management Protocol Integration', () => {
                 response: {
                   id: 'unreachable',
                   timestamp: new Date(),
-                  modelId: mockModel.modelId
-                }
+                  modelId: mockModel.modelId,
+                },
               };
-            }
+            },
           });
-        }
+        },
       });
 
       // Verify restoration was successful
-      const restorationTextContent = (restorationResult.content as any)?.[0]?.text || '';
+      const restorationTextContent =
+        (restorationResult.content as any)?.[0]?.text || '';
       expect(restorationTextContent).toBe('State restored successfully');
 
       // Verify the middleware state was actually restored
@@ -189,7 +210,7 @@ describe('State Management Protocol Integration', () => {
       // Step 5: Make another normal request to verify the restored state works
       const followupParams: any = {
         prompt: 'follow-up prompt',
-        messages: []
+        messages: [],
       };
 
       await (stateManagerMiddleware.wrapGenerate as any)({
@@ -204,16 +225,21 @@ describe('State Management Protocol Integration', () => {
                 finishReason: 'stop',
                 usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
                 warnings: [],
-                content: [{ type: 'text', text: `Follow-up response to: ${followupParams.prompt}` }],
+                content: [
+                  {
+                    type: 'text',
+                    text: `Follow-up response to: ${followupParams.prompt}`,
+                  },
+                ],
                 response: {
                   id: 'follow-up-response',
                   timestamp: new Date(),
-                  modelId: mockModel.modelId
-                }
+                  modelId: mockModel.modelId,
+                },
               };
-            }
+            },
           });
-        }
+        },
       });
 
       // Verify the state continued from where it was restored
@@ -235,10 +261,12 @@ describe('State Management Protocol Integration', () => {
       // Test that setNormalizedDefaultsMiddleware participates in state collection
       const collectionParams: any = {
         prompt: STATE_PROTOCOL.COLLECT,
-        messages: []
+        messages: [],
       };
 
-      const collectionResult = await (stateManager.middleware.wrapGenerate as any)({
+      const collectionResult = await (
+        stateManager.middleware.wrapGenerate as any
+      )({
         model: mockModel,
         params: collectionParams,
         doGenerate: async () => {
@@ -254,18 +282,21 @@ describe('State Management Protocol Integration', () => {
                 response: {
                   id: 'test',
                   timestamp: new Date(),
-                  modelId: mockModel.modelId
-                }
+                  modelId: mockModel.modelId,
+                },
               };
-            }
+            },
           });
-        }
+        },
       });
 
-      const collectionTextContent = (collectionResult.content as any)?.[0]?.text || '';
+      const collectionTextContent =
+        (collectionResult.content as any)?.[0]?.text || '';
       const collectedStates = JSON.parse(collectionTextContent);
-      const normalizedDefaultsEntry = collectedStates.find(([id]: any) => id === 'set-normalized-defaults');
-      
+      const normalizedDefaultsEntry = collectedStates.find(
+        ([id]: any) => id === 'set-normalized-defaults',
+      );
+
       expect(normalizedDefaultsEntry).toBeDefined();
       expect(normalizedDefaultsEntry[1]).toEqual({ present: true }); // No custom state, just presence
     });
@@ -287,14 +318,14 @@ describe('State Management Protocol Integration', () => {
       const simpleMiddleware = createStatefulMiddleware({
         middlewareId: 'simple-middleware',
         originalMiddleware: {
-          wrapGenerate: async (options: any) => options.doGenerate()
-        }
+          wrapGenerate: async (options: any) => options.doGenerate(),
+        },
         // No stateHandlers - should still report presence
       });
 
       const collectionParams: any = {
         prompt: STATE_PROTOCOL.COLLECT,
-        messages: []
+        messages: [],
       };
 
       const result = await (stateManager.middleware.wrapGenerate as any)({
@@ -308,16 +339,18 @@ describe('State Management Protocol Integration', () => {
               finishReason: 'stop',
               usage: { promptTokens: 0, completionTokens: 0 },
               content: [{ type: 'text', text: 'test' }],
-              response: { id: 'test', timestamp: new Date(), modelId: 'test' }
-            })
+              response: { id: 'test', timestamp: new Date(), modelId: 'test' },
+            }),
           });
-        }
+        },
       });
 
       const resultTextContent = (result.content as any)?.[0]?.text || '';
       const collectedStates = JSON.parse(resultTextContent);
-      const simpleEntry = collectedStates.find(([id]: any) => id === 'simple-middleware');
-      
+      const simpleEntry = collectedStates.find(
+        ([id]: any) => id === 'simple-middleware',
+      );
+
       expect(simpleEntry).toBeDefined();
       expect(simpleEntry[1]).toEqual({ present: true });
     });
@@ -335,7 +368,7 @@ describe('State Management Protocol Integration', () => {
 
       const restorationParams = {
         prompt: STATE_PROTOCOL.RESTORE,
-        messages: []
+        messages: [],
         // No stateData provided
       };
 
@@ -347,12 +380,14 @@ describe('State Management Protocol Integration', () => {
           usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
           content: [{ type: 'text', text: 'should not reach' }],
           warnings: [],
-          response: { id: 'test', timestamp: new Date(), modelId: 'test' }
-        })
+          response: { id: 'test', timestamp: new Date(), modelId: 'test' },
+        }),
       });
 
       const textContent = (result.content as any)?.[0]?.text || '';
-      expect(textContent).toBe('State restoration failed: no state data provided');
+      expect(textContent).toBe(
+        'State restoration failed: no state data provided',
+      );
       expect(result.response?.id).toBe('state-restoration-error');
     });
   });

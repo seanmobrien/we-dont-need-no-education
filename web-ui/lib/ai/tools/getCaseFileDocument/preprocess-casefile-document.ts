@@ -1,8 +1,8 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { zodToStructure } from '@/lib/typescript';
-import { CoreMessage, GenerateTextResult, ToolSet } from 'ai';
+import { GenerateTextResult, ToolSet } from 'ai';
 import { log } from '@/lib/logger';
-import { aiModelFactory } from '../../aiModelFactory';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { DocumentResource } from '../documentResource';
 import { DocumentSchema } from '../schemas';
 import { CaseFileResponse, SummarizedDocumentResource } from '../types';
@@ -11,10 +11,10 @@ import {
   caseFileDocumentPreprocessingDurationHistogram,
   caseFileDocumentSizeHistogram,
 } from './metrics';
-import { countTokens } from '../../core/count-tokens';
-import { wrapChatHistoryMiddleware } from '../../middleware';
-import { generateTextWithRetry } from '../../core/generate-text-with-retry';
-import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
+import { countTokens } from '@/lib/ai/core/count-tokens';
+import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
+import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 
 /**
  * Preprocesses case file documents using AI to extract relevant information based on specified goals.
@@ -220,10 +220,15 @@ Output Record Format: [
         { role: 'system' as const, content: PROMPT },
         {
           role: 'user' as const,
-          content: [{ type: 'text' as const, text: `The document record to analyze is as follows:
+          content: [
+            {
+              type: 'text' as const,
+              text: `The document record to analyze is as follows:
 ___BEGIN CASE FILE___
 ${recordContents}
-___END CASE FILE___` }],
+___END CASE FILE___`,
+            },
+          ],
         },
       ],
       temperature: 0.1,

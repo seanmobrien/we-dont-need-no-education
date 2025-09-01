@@ -38,11 +38,10 @@ export interface RateLimitMetrics {
 
 export type ModelClassification = 'hifi' | 'lofi' | 'completions' | 'embedding';
 
-export interface ModelFailoverConfig {
+export type ModelFailoverConfig = {
   primaryProvider: 'azure' | 'google';
   fallbackProvider: 'azure' | 'google';
-  // modelClassification: ModelClassification;
-}
+};
 
 export type RateLimitRetryContext = {
   modelClass: ModelClassification;

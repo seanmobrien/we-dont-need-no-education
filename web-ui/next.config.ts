@@ -2,49 +2,10 @@ import type { NextConfig } from 'next';
 import { withBundleAnalyzer } from '@/lib/config/bundle-analyzers';
 import { withIgnorePacks } from '@/lib/config/ignore-unsupported-packs-plugin';
 import { withPublicEnv } from '@/lib/config/public-env';
-import { withStripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
+//import { withStripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
 
-const StripRscPrefixPlugin = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  apply(compiler: any) {
-    compiler.hooks.compilation.tap(
-      'StripRscPrefixPlugin',
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (compilation: any) => {
-        compilation.hooks.processAssets.tap(
-          {
-            name: 'StripRscPrefixPlugin',
-            stage:
-              compiler.webpack.Compilation.PROCESS_ASSETS_STAGE_DEV_TOOLING,
-          },
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (assets: Record<string, any>) => {
-            for (const [name, asset] of Object.entries(assets)) {
-              if (!name.endsWith('.map')) continue;
-              const src = asset.source().toString();
-              if (!src.includes('(rsc)')) continue;
-              try {
-                const map = JSON.parse(src);
-                map.sources = map.sources.map((s: string) =>
-                  // Normalize leading (rsc)/, /(rsc)/, (rsc)/./, or /(rsc)/./ to '/'
-                  s.replace(/^\/?\(rsc\)\/(?:\.\/*)?/, '/'),
-                );
-                compilation.updateAsset(
-                  name,
-                  new compiler.webpack.sources.RawSource(JSON.stringify(map)),
-                );
-              } catch {
-                /* ignore */
-              }
-            }
-          },
-        );
-      },
-    );
-  },
-};
-
-export const nextConfig: NextConfig = withStripRscPrefixPlugin(
+export const nextConfig: NextConfig =
+  //withStripRscPrefixPlugin(
   withPublicEnv(
     withIgnorePacks(
       withBundleAnalyzer({
@@ -52,7 +13,7 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
         experimental: {
           //nodeMiddleware: true,
           optimizePackageImports: [
-            '@ai-sdk',
+            //'@ai-sdk',
             '@mui/icons-material',
             '@mui/material',
             '@mui/material-nextjs',
@@ -61,13 +22,13 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
             '@mui/x-data-grid-pro',
             '@mui/x-license',
             '@toolpad/core',
-            '@redis',
-            '@azure/storage-blob',
+            //'@redis',
+            //'@azure/storage-blob',
+            /*
             '@microsoft/applicationinsights-web',
             '@microsoft/applicationinsights-react-js',
             '@microsoft/applicationinsights-clickanalytics-js',
             '@modelcontextprotocol/sdk',
-            /*
       '@opentelemetry/api',
       '@opentelemetry/api-logs',
       '@opentelemetry/core',
@@ -84,14 +45,14 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
       */
             '@googleapis/gmail',
             'googleapis',
-            '@emotion/react',
-            '@emotion/styled',
-            '@emotion/cache',
-            'js-tiktoken',
-            '@auth/core',
-            '@auth/drizzle-adapter',
-            'next-auth',
-            'ai',
+            // '@emotion/react',
+            // '@emotion/styled',
+            //'@emotion/cache',
+            //'js-tiktoken',
+            //'@auth/core',
+            //'@auth/drizzle-adapter',
+            //'next-auth',
+            //'ai',
             // 'pino',
           ],
           webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID'],
@@ -115,8 +76,8 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
               resourceRegExp: /^pg-native$|^cloudflare:sockets$/,
             }),
           );
-          config.plugins.push(StripRscPrefixPlugin);
           /*
+          config.plugins.push(StripRscPrefixPlugin);
     if (!isServer) {
       // For client-side, we need to ensure that the following packages are not bundled
       config.resolve.fallback = {
@@ -129,7 +90,6 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
         },
       }),
     ),
-  ),
-);
+  );
 
 export default nextConfig;

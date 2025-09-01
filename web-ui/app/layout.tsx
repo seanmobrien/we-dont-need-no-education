@@ -11,6 +11,7 @@ import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@/components/auth/session-provider';
 import { KeyRefreshNotify } from '@/components/auth/key-refresh-notify';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
+import { Suspense } from 'react';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -51,7 +52,9 @@ export default function RootLayout({
         <QueryProvider>
           <SessionProvider>
             <ChatPanelProvider>
-              <TrackWithAppInsight />
+              <Suspense>
+                <TrackWithAppInsight />
+              </Suspense>
               <KeyRefreshNotify />
               <MuiXLicense />
               <AppRouterCacheProvider options={stableAppRouterOptions}>

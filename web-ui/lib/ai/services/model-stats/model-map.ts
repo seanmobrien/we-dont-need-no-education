@@ -18,6 +18,7 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { ProviderMap } from './provider-map';
 import { log } from '@/lib/logger';
 import { LanguageModel } from 'ai';
+import { ModelClassification } from '../../middleware/key-rate-limiter/types';
 
 /**
  * Type representing a complete model record with provider information.
@@ -64,6 +65,7 @@ export type ProviderModelNormalization = {
   modelId?: string;
   providerId?: string;
   rethrow: () => void;
+  get classification(): ModelClassification;
 };
 
 /**
@@ -377,6 +379,36 @@ export class ModelMap {
         modelName: parsedModelName,
         modelId: modelId,
         providerId: providerId || undefined,
+        get classification(): ModelClassification {
+          if (!modelId) {
+            // HACK: undefined does not a modelclassification make,
+            // however I should never have a null /undefined modelId
+            // either, so good for the goose good for the gander.
+            return undefined as unknown as ModelClassification;
+          }
+          if (
+            modelId.includes('hifi') ||
+            modelId.includes('gpt-4') ||
+            (modelId.includes('gemini') && modelId.includes('pro'))
+          ) {
+            return 'hifi';
+          }
+          if (
+            modelId.includes('lofi') ||
+            modelId.includes('gpt-3.5') ||
+            (modelId.includes('gemini') && modelId.includes('flash'))
+          ) {
+            return 'lofi';
+          }
+          if (modelId.includes('embedding')) {
+            return 'embedding';
+          }
+          if (modelId.includes('completions')) {
+            return 'completions';
+          }
+
+          return 'hifi'; // default fallback
+        },
         rethrow: () => {
           if (!providerId) {
             throw new ModelResourceNotFoundError({
@@ -410,6 +442,7 @@ export class ModelMap {
         modelId: undefined,
         modelName: parsedModelName,
         providerId: undefined,
+        classification: undefined as unknown as ModelClassification,
         rethrow: () => {
           throw loggedError;
         },

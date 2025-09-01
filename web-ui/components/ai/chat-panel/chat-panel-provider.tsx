@@ -84,7 +84,6 @@ export const ChatPanelProvider: React.FC<ChatPanelProviderProps> = ({
   }, [config, isClient]);
 
   const {
-    setConfig,
     setPosition,
     setSize,
     setDockSize,

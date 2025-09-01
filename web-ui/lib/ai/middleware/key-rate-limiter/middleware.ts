@@ -27,39 +27,22 @@ import { LanguageModel } from 'ai';
 import { ModelMap } from '../../services/model-stats/model-map';
 import { createStatefulMiddleware } from '../state-management';
 
-// Model classification mapping - extract from model identifier
-async function getModelClassification({
-  model = 'unknown',
-}: { model?: LanguageModel } = {}): Promise<ModelClassification> {
-  const { modelId = 'unknown' } = await (
-    await ModelMap.getInstance()
-  ).normalizeProviderModel(model);
-  if (
-    modelId.includes('hifi') ||
-    modelId.includes('gpt-4') ||
-    modelId.includes('gemini-1.5-pro')
-  ) {
-    return 'hifi';
-  }
-  if (
-    modelId.includes('lofi') ||
-    modelId.includes('gpt-3.5') ||
-    modelId.includes('gemini-1.5-flash')
-  ) {
-    return 'lofi';
-  }
-  if (modelId.includes('embedding')) {
-    return 'embedding';
-  }
-  if (modelId.includes('completions')) {
-    return 'completions';
-  }
+type RateLimitRetryState = {
+  rateLimitContext: RateLimitRetryContext;
+  timestamp: number;
+};
 
-  return 'hifi'; // default fallback
-}
+// Model classification mapping - extract from model identifier
+const getModelClassification = async ({
+  model = 'unknown',
+}: { model?: LanguageModel } = {}): Promise<ModelClassification> => {
+  return await (await ModelMap.getInstance())
+    .normalizeProviderModel(model)
+    .then((x) => x.classification);
+};
 
 // Provider and model failover logic
-function getFailoverConfig(currentProvider: string): ModelFailoverConfig {
+const getFailoverConfig = (currentProvider: string): ModelFailoverConfig => {
   const primaryProvider = currentProvider.includes('azure')
     ? 'azure'
     : 'google';
@@ -70,7 +53,7 @@ function getFailoverConfig(currentProvider: string): ModelFailoverConfig {
     fallbackProvider,
     // modelClassification,
   };
-}
+};
 
 export const retryRateLimitMiddlewareFactory = async (
   factoryOptions: RateLimitFactoryOptions | RateLimitRetryContext,
@@ -78,7 +61,7 @@ export const retryRateLimitMiddlewareFactory = async (
   /**
    * Advanced rate limit middleware context data
    */
-  const rateLimitContext = await (async () => {
+  let rateLimitContext = await (async () => {
     if ('modelClass' in factoryOptions) {
       return factoryOptions;
     }
@@ -303,32 +286,37 @@ export const retryRateLimitMiddlewareFactory = async (
     },
   };
 
+  const serializeState = async (): Promise<RateLimitRetryState> => {
+    return Promise.resolve({
+      rateLimitContext,
+      timestamp: Date.now(),
+    });
+  };
+
   /**
    * Stateful wrapper with rate limit context preservation
    */
-  const statefulMiddleware = createStatefulMiddleware({
+  const statefulMiddleware = createStatefulMiddleware<RateLimitRetryState>({
     middlewareId: 'retry-rate-limiter',
-    originalMiddleware: originalRetryRateLimitMiddleware,
-    stateHandlers: {
-      serialize: () => ({
-        rateLimitContext: { ...rateLimitContext },
-        currentProvider: getCurrentProvider(),
-        timestamp: Date.now(),
-      }),
-      deserialize: (state: {
-        rateLimitContext?: RateLimitRetryContext;
-        currentProvider?: string;
-        timestamp?: number;
+    originalMiddleware: {
+      ...originalRetryRateLimitMiddleware,
+      serializeState,
+      deserializeState: ({
+        state: {
+          rateLimitContext: rateLimiteContextFromState,
+          timestamp: timestampFromState,
+        },
       }) => {
-        if (state?.rateLimitContext) {
-          log((l) =>
-            l.debug('Rate limiter state restored', {
-              context: state.rateLimitContext,
-              provider: state.currentProvider,
-              age: Date.now() - (state.timestamp || 0),
-            }),
-          );
+        if (rateLimiteContextFromState) {
+          rateLimitContext = rateLimiteContextFromState;
         }
+        log((l) =>
+          l.debug('Rate limiter state restored', {
+            context: rateLimitContext,
+            age: Date.now() - (timestampFromState || 0),
+          }),
+        );
+        return Promise.resolve();
       },
     },
   }) as RetryRateLimitMiddlewareType;

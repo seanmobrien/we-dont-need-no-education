@@ -12,7 +12,7 @@ import { createStreamFromCachedText } from './streamUtils';
 import { handleResponseCaching } from './cacheStrategy';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { newUuid } from '@/lib/typescript/_record-decorators';
-import { createSimpleStatefulMiddleware } from '../state-management';
+import { StateManagementMiddleware } from '../state-management';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();
@@ -166,7 +166,8 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
  * This middleware supports the state management protocol and can participate
  * in state collection and restoration operations.
  */
-export const cacheWithRedis = createSimpleStatefulMiddleware(
-  'cache-with-redis',
-  originalCacheWithRedis
-);
+export const cacheWithRedis =
+  StateManagementMiddleware.Instance.basicMiddlewareWrapper({
+    middlewareId: 'cache-with-redis',
+    middleware: originalCacheWithRedis,
+  });
