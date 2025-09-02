@@ -553,23 +553,25 @@ export const stagingAttachmentRelations = relations(
   }),
 );
 
-
 // Relations for the new normalized model tables
-export const modelsRelations = relations(models, ({many}) => ({
+export const modelsRelations = relations(models, ({ many }) => ({
   modelQuotas: many(modelQuotas),
   tokenConsumptionStats: many(tokenConsumptionStats),
 }));
 
-export const modelQuotasRelations = relations(modelQuotas, ({one}) => ({
+export const modelQuotasRelations = relations(modelQuotas, ({ one }) => ({
   model: one(models, {
     fields: [modelQuotas.modelId],
-    references: [models.id]
+    references: [models.id],
   }),
 }));
 
-export const tokenConsumptionStatsRelations = relations(tokenConsumptionStats, ({one}) => ({
-  model: one(models, {
-    fields: [tokenConsumptionStats.modelId],
-    references: [models.id]
+export const tokenConsumptionStatsRelations = relations(
+  tokenConsumptionStats,
+  ({ one }) => ({
+    model: one(models, {
+      fields: [tokenConsumptionStats.modelId],
+      references: [models.id],
+    }),
   }),
-}));
+);

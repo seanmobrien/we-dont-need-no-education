@@ -11,17 +11,10 @@ export {
   type SerializableState,
   type StatefulMiddlewareConfig,
   type StateManagementParams,
+  type SerializableMiddleware,
+  type SerializableLanguageModelMiddleware,
   type MiddlewareMetadata,
 } from './types';
 
 // State management middleware
-export {
-  StateManagementMiddleware,
-  createStateManagementMiddleware,
-} from './state-management-middleware';
-
-// Stateful middleware wrapper
-export {
-  createStatefulMiddleware,
-  createSimpleStatefulMiddleware,
-} from './create-stateful-middleware';
+export { MiddlewareStateManager } from './middleware-state-manager';

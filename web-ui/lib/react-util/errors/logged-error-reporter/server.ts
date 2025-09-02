@@ -1,4 +1,5 @@
 import type { ErrorReporterInterface } from '@/lib/error-monitoring/types';
+import { ErrorReporter } from '@/lib/error-monitoring/error-reporter';
 
 /**
  * Provides access to the shared ErrorReporter instance used by LoggedError.
@@ -9,19 +10,12 @@ class LoggedErrorReporter {
   static #instance: ErrorReporterInterface | undefined;
   static get Instance(): ErrorReporterInterface {
     if (!LoggedErrorReporter.#instance) {
-      const mockReport = (error: unknown) => {
-        console.error('error reported to mock instance:', error);
-        return Promise.resolve();
-      };
-
-      LoggedErrorReporter.#instance = {
-        reportError: mockReport,
-        reportBoundaryError: mockReport,
-        reportUnhandledRejection: mockReport,
-        setupGlobalHandlers: () => {},
-        getStoredErrors: () => [],
-        clearStoredErrors: () => {},
-      };
+      LoggedErrorReporter.#instance = ErrorReporter.createInstance({
+        enableStandardLogging: true,
+        enableConsoleLogging: false,
+        enableExternalReporting: true,
+        enableLocalStorage: false,
+      });
     }
     if (!LoggedErrorReporter.#instance) {
       throw new TypeError(

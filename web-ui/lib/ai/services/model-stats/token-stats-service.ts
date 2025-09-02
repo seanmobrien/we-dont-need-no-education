@@ -23,7 +23,7 @@ import {
   TokenStatsServiceType,
   TokenUsageData,
 } from '../../middleware/tokenStatsTracking/types';
-import { ProviderMap } from './provider-map';
+import { ModelMap } from './model-map';
 
 /**
  * Service for tracking token consumption statistics and enforcing quotas.
@@ -95,35 +95,6 @@ class TokenStatsService implements TokenStatsServiceType {
   }
 
   /**
-   * Normalize provider and model names for consistent storage and lookup.
-   * Handles both separate and 'provider:model' formats.
-   * @param {string} providerOrModel - Provider name or 'provider:model' string.
-   * @param {string} [modelName] - Optional model name.
-   * @returns {{provider: string, modelName: string}} Normalized provider and model name.
-   * @private
-   */
-  private async normalizeModelKey(
-    providerOrModel: string,
-    modelName?: string,
-  ): Promise<{ provider: string; modelName: string }> {
-    if (providerOrModel.includes(':')) {
-      const [providerPart, modelPart] = providerOrModel.split(':', 2);
-      const normalizedModelName = modelPart.trim();
-      const providerMap = await ProviderMap.getInstance();
-      return {
-        provider: providerMap.name(providerPart.trim()) ?? providerPart.trim(),
-        modelName: normalizedModelName.length
-          ? normalizedModelName
-          : (modelName?.trim() ?? ''),
-      };
-    }
-    return {
-      provider: providerOrModel?.trim() ?? '',
-      modelName: modelName?.trim() ?? '',
-    };
-  }
-
-  /**
    * Normalize provider and model name, then retrieve the provider ID from ProviderMap.
    * @param {string} providerOrModel - Provider name or 'provider:model' string.
    * @param {string} [modelName] - Optional model name.
@@ -134,37 +105,22 @@ class TokenStatsService implements TokenStatsServiceType {
     providerOrModel: string,
     modelName?: string,
   ): Promise<ProviderModelResponse> {
-    const { provider, modelName: modelNameFromKey } =
-      await this.normalizeModelKey(providerOrModel, modelName);
-    try {
-      const providerMap = await ProviderMap.getInstance();
-      const providerId = providerMap.id(provider);
-      return {
-        rethrow: () => {
-          if (!providerId) {
-            throw new Error(`Unknown provider: ${provider}`);
-          }
-        },
-        providerId: providerId!,
-        provider,
-        modelName: modelNameFromKey ?? modelName ?? '',
-      };
-    } catch (error) {
-      const loggedError = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        log: true,
-        message: 'Error normalizing provider ID',
-        extra: { providerOrModel, modelName },
-        source: 'TokenStatsService.normalizeProviderId',
-      });
-      return {
-        rethrow: () => {
-          throw loggedError;
-        },
-        providerId: undefined as unknown as string,
-        provider,
-        modelName: modelNameFromKey ?? modelName ?? '',
-      };
-    }
+    const {
+      rethrow,
+      providerId,
+      provider: normalizedProviderName,
+      modelName: normalizedModelName,
+    } = await ModelMap.Instance.normalizeProviderModel(
+      providerOrModel,
+      modelName,
+    );
+    rethrow();
+    return {
+      provider: normalizedProviderName,
+      modelName: normalizedModelName,
+      rethrow,
+      providerId: providerId!,
+    };
   }
 
   /**
@@ -604,20 +560,15 @@ class TokenStatsService implements TokenStatsServiceType {
     usage: TokenUsageData,
   ): Promise<void> {
     try {
+      const model = await ModelMap.Instance.getModelByProviderAndName(
+        provider,
+        modelName,
+      );
+      if (!model) {
+        throw new Error(`Model not found: ${provider}:${modelName}`);
+      }
       await drizDbWithInit(async (db) => {
         const now = new Date();
-
-        const model = await db.query.models.findFirst({
-          where: and(
-            eq(schema.models.providerId, provider),
-            eq(schema.models.modelName, modelName),
-            eq(schema.models.isActive, true),
-          ),
-        });
-        if (!model) {
-          throw new Error(`Model not found: ${provider}:${modelName}`);
-        }
-
         // Update each time window in the database
         const windows = [
           {
@@ -642,6 +593,12 @@ class TokenStatsService implements TokenStatsServiceType {
             windowEnd.setHours(windowEnd.getHours() + 1);
           else windowEnd.setDate(windowEnd.getDate() + 1);
 
+          const conflictTarget = [
+            schema.tokenConsumptionStats.modelId,
+            schema.tokenConsumptionStats.windowStart,
+            schema.tokenConsumptionStats.windowType,
+          ];
+
           // Use upsert to update or insert stats
           await db
             .insert(schema.tokenConsumptionStats)
@@ -656,11 +613,7 @@ class TokenStatsService implements TokenStatsServiceType {
               requestCount: 1,
             })
             .onConflictDoUpdate({
-              target: [
-                schema.tokenConsumptionStats.modelId,
-                schema.tokenConsumptionStats.windowStart,
-                schema.tokenConsumptionStats.windowType,
-              ],
+              target: conflictTarget,
               set: {
                 promptTokens: sql`${schema.tokenConsumptionStats.promptTokens} + ${usage.promptTokens}`,
                 completionTokens: sql`${schema.tokenConsumptionStats.completionTokens} + ${usage.completionTokens}`,

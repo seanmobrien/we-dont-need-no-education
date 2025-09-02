@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Integration Tests for State Management Protocol
@@ -6,42 +7,129 @@
  * protocol including state collection and restoration across multiple middleware.
  */
 
+import { aiModelFactory } from '@/lib/ai';
 import {
-  STATE_PROTOCOL,
-  StateManagementMiddleware,
-  createStateManagementMiddleware,
-  createStatefulMiddleware,
+  MiddlewareStateManager,
   setNormalizedDefaultsMiddleware,
 } from '@/lib/ai/middleware';
+import { generateText, wrapLanguageModel } from 'ai';
+import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
+
+const makeMiddleware = () => ({
+  wrapGenerate: async (options: any) => {
+    // Custom logic for wrapping the generate function
+    return await options.doGenerate();
+  },
+});
+const makeMockModel = (stateManager?: MiddlewareStateManager) => {
+  const model = {
+    modelId: 'test-model',
+    provider: 'test',
+    specificationVersion: 'v2' as const,
+    supportedUrls: {
+      img: [/.*/i],
+    },
+    doGenerate: jest.fn().mockImplementation(async (arg: any) => {
+      return {
+        finishReason: 'stop',
+        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+        content: [
+          {
+            type: 'text',
+            text: `Response to: ${JSON.stringify(arg?.prompt ?? {})}`,
+          },
+        ],
+        warnings: [],
+        response: {
+          id: 'test-response',
+          timestamp: new Date(),
+          modelId: arg.params.modelId,
+        },
+      };
+    }),
+    doStream: jest.fn(),
+  };
+  return stateManager
+    ? stateManager.initializeModel({
+        model,
+      })
+    : model;
+};
 
 describe('State Management Protocol Integration', () => {
+  let actualModel: any;
+  let mockDoGenerate: jest.SpyInstance;
+
+  beforeAll(async () => {
+    setupMaps();
+    actualModel = aiModelFactory('lofi');
+
+    /*
+    let text = await generateText({
+      model: actualModel,
+      prompt: 'what model version are you?',
+    });
+    console.log(text);
+    text = await generateText({
+      model: aiModelFactory('hifi'),
+      prompt: 'what model version are you?',
+    });
+    console.log(text);
+    */
+  });
   beforeEach(() => {
+    mockDoGenerate = jest
+      .spyOn(actualModel, 'doGenerate')
+      .mockImplementation(async (arg: any) => {
+        return {
+          finishReason: 'stop',
+          usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+          content: [
+            {
+              type: 'text',
+              text: `Response to: ${JSON.stringify(arg?.prompt ?? {})}`,
+            },
+          ],
+          warnings: [],
+          response: {
+            id: 'test-response',
+            timestamp: new Date(),
+            modelId: actualModel.modelId,
+          },
+        };
+      });
     // Reset the global instance before each test
-    StateManagementMiddleware.reset();
+    MiddlewareStateManager.reset();
   });
   describe('End-to-end state collection and restoration', () => {
     it('should collect and restore state from multiple middleware in the chain', async () => {
       // Create a simple stateful middleware with actual state
       let middlewareState = { requestCount: 0, lastPrompt: '' };
 
-      const statefulMiddleware = createStatefulMiddleware<
+      // Create state management middleware
+      const stateManager = MiddlewareStateManager.Instance;
+      const statefulMiddleware = stateManager.statefulMiddlewareWrapper<
         typeof middlewareState
       >({
         middlewareId: 'test-counter',
-        originalMiddleware: {
-          wrapGenerate: async (options) => {
-            // Update internal state
+        middleware: {
+          wrapGenerate: async (options: any) => {
+            // Continue with the chain
             middlewareState.requestCount++;
             middlewareState.lastPrompt =
-              typeof options.params?.prompt === 'string'
+              typeof options.params.prompt === 'string'
                 ? options.params.prompt
-                : '';
-
-            // Continue with the chain
+                : options.params.prompt
+                    .flatMap((msg: any) =>
+                      msg.content.map((part: any) => part.text),
+                    )
+                    .join('\n');
             return await options.doGenerate();
           },
-          serializeState: () => Promise.resolve(middlewareState),
-          deserializeState: (state) => {
+          serializeState: () => {
+            return Promise.resolve(middlewareState);
+          },
+          deserializeState: ({ state }) => {
             middlewareState = {
               ...middlewareState,
               ...state,
@@ -51,108 +139,51 @@ describe('State Management Protocol Integration', () => {
         },
       });
 
-      // Create state management middleware
-      const stateManager = StateManagementMiddleware.Instance;
-
-      // Create a mock model that implements LanguageModelV2
-      const mockModel: any = {
-        modelId: 'test-model',
-        provider: 'test',
-        specificationVersion: 'v2' as const,
-        supportedUrls: [],
-        doGenerate: jest.fn(),
-        doStream: jest.fn(),
-      };
-
-      // Simulate a middleware chain with state manager first
-      const stateManagerMiddleware = stateManager.middleware;
+      const wrappedModel = wrapLanguageModel({
+        model: stateManager.initializeModel(actualModel),
+        middleware: [
+          makeMiddleware(),
+          statefulMiddleware,
+          stateManager.basicMiddlewareWrapper({
+            middleware: makeMiddleware(),
+            middlewareId: 'wrapper-middleware',
+          }),
+        ],
+      });
 
       // Step 1: Normal request - this should update the middleware state
       const normalParams: any = {
         prompt: 'test prompt for counting',
-        messages: [],
+        // messages: [],
       };
 
-      await (stateManagerMiddleware.wrapGenerate as any)({
-        model: mockModel,
-        params: normalParams,
-        doGenerate: async () => {
-          // Chain to our stateful middleware
-          return await (statefulMiddleware.wrapGenerate as any)({
-            model: mockModel,
-            params: normalParams,
-            doGenerate: async () => {
-              // Final handler - simulate LLM response
-              return {
-                finishReason: 'stop',
-                usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
-                content: [
-                  { type: 'text', text: `Response to: ${normalParams.prompt}` },
-                ],
-                warnings: [],
-                response: {
-                  id: 'test-response',
-                  timestamp: new Date(),
-                  modelId: mockModel.modelId,
-                },
-              };
-            },
-          });
-        },
+      await generateText({
+        model: wrappedModel,
+        ...normalParams,
       });
+      expect(mockDoGenerate).toHaveBeenCalledTimes(1);
 
       // Verify the middleware state was updated
       expect(middlewareState.requestCount).toBe(1);
       expect(middlewareState.lastPrompt).toBe('test prompt for counting');
 
-      // Step 2: Collect state using the protocol
-      const collectionParams: any = {
-        prompt: STATE_PROTOCOL.COLLECT,
-        messages: [],
-      };
-
-      const collectionResult = await (
-        stateManagerMiddleware.wrapGenerate as any
-      )({
-        model: mockModel,
-        params: collectionParams,
-        doGenerate: async () => {
-          // Chain to our stateful middleware for state collection
-          return await (statefulMiddleware.wrapGenerate as any)({
-            model: mockModel,
-            params: collectionParams,
-            doGenerate: async () => {
-              // This won't be reached during collection
-              return {
-                finishReason: 'stop',
-                usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-                warnings: [],
-                content: [{ type: 'text', text: 'should not reach here' }],
-                response: {
-                  id: 'unreachable',
-                  timestamp: new Date(),
-                  modelId: mockModel.modelId,
-                },
-              };
-            },
-          });
-        },
+      const collectionResult = await stateManager.serializeState({
+        model: wrappedModel,
       });
+      expect(mockDoGenerate).toHaveBeenCalledTimes(1);
 
       // Verify state was collected
-      expect(collectionResult.content).toBeDefined();
-      const textContent = (collectionResult.content as any)?.[0]?.text || '';
-      const collectedStates = JSON.parse(textContent);
-      expect(Array.isArray(collectedStates)).toBe(true);
-      expect(collectedStates).toHaveLength(1); // Only test-counter (state-manager doesn't collect its own state)
+      expect(collectionResult.state).toBeDefined();
+      expect(Array.isArray(collectionResult.state)).toBe(true);
+      expect(collectionResult.state).toHaveLength(2); // Only test-counter (state-manager doesn't collect its own state)
 
       // Find our middleware's state
-      const testCounterEntry = collectedStates.find(
+      const testCounterEntry = collectionResult.state.find(
         ([id]: any) => id === 'test-counter',
       );
 
       expect(testCounterEntry).toBeDefined();
-      expect(testCounterEntry[1]).toEqual({
+      expect(testCounterEntry![1]).toEqual({
         requestCount: 1,
         lastPrompt: 'test prompt for counting',
       });
@@ -163,45 +194,12 @@ describe('State Management Protocol Integration', () => {
       expect(middlewareState.lastPrompt).toBe('');
 
       // Step 4: Restore state using the protocol
-      const stateData = new Map(collectedStates);
-      const restorationParams: any = {
-        prompt: STATE_PROTOCOL.RESTORE,
-        messages: [],
-        stateData,
-      };
 
-      const restorationResult = await (
-        stateManagerMiddleware.wrapGenerate as any
-      )({
-        model: mockModel,
-        params: restorationParams,
-        doGenerate: async () => {
-          // Chain to our stateful middleware for state restoration
-          return await (statefulMiddleware.wrapGenerate as any)({
-            model: mockModel,
-            params: restorationParams,
-            doGenerate: async () => {
-              // This won't be reached during restoration
-              return {
-                finishReason: 'stop',
-                usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-                warnings: [],
-                content: [{ type: 'text', text: 'should not reach here' }],
-                response: {
-                  id: 'unreachable',
-                  timestamp: new Date(),
-                  modelId: mockModel.modelId,
-                },
-              };
-            },
-          });
-        },
+      await stateManager.deserializeState({
+        model: wrappedModel,
+        state: collectionResult,
       });
-
-      // Verify restoration was successful
-      const restorationTextContent =
-        (restorationResult.content as any)?.[0]?.text || '';
-      expect(restorationTextContent).toBe('State restored successfully');
+      expect(mockDoGenerate).toHaveBeenCalledTimes(1);
 
       // Verify the middleware state was actually restored
       expect(middlewareState.requestCount).toBe(1);
@@ -210,37 +208,13 @@ describe('State Management Protocol Integration', () => {
       // Step 5: Make another normal request to verify the restored state works
       const followupParams: any = {
         prompt: 'follow-up prompt',
-        messages: [],
       };
 
-      await (stateManagerMiddleware.wrapGenerate as any)({
-        model: mockModel,
-        params: followupParams,
-        doGenerate: async () => {
-          return await (statefulMiddleware.wrapGenerate as any)({
-            model: mockModel,
-            params: followupParams,
-            doGenerate: async () => {
-              return {
-                finishReason: 'stop',
-                usage: { inputTokens: 5, outputTokens: 3, totalTokens: 8 },
-                warnings: [],
-                content: [
-                  {
-                    type: 'text',
-                    text: `Follow-up response to: ${followupParams.prompt}`,
-                  },
-                ],
-                response: {
-                  id: 'follow-up-response',
-                  timestamp: new Date(),
-                  modelId: mockModel.modelId,
-                },
-              };
-            },
-          });
-        },
+      await generateText({
+        model: wrappedModel,
+        ...followupParams,
       });
+      expect(mockDoGenerate).toHaveBeenCalledTimes(2);
 
       // Verify the state continued from where it was restored
       expect(middlewareState.requestCount).toBe(2); // 1 (restored) + 1 (new)
@@ -248,147 +222,60 @@ describe('State Management Protocol Integration', () => {
     });
 
     it('should work with existing middleware like setNormalizedDefaultsMiddleware', async () => {
-      const stateManager = createStateManagementMiddleware();
-      const mockModel: any = {
-        modelId: 'test-model',
-        provider: 'test',
-        specificationVersion: 'v2' as const,
-        supportedUrls: [],
-        doGenerate: jest.fn(),
-        doStream: jest.fn(),
-      };
+      const stateManager = MiddlewareStateManager.Instance;
+      const model = makeMockModel();
 
       // Test that setNormalizedDefaultsMiddleware participates in state collection
-      const collectionParams: any = {
-        prompt: STATE_PROTOCOL.COLLECT,
-        messages: [],
-      };
-
-      const collectionResult = await (
-        stateManager.middleware.wrapGenerate as any
-      )({
-        model: mockModel,
-        params: collectionParams,
-        doGenerate: async () => {
-          return await (setNormalizedDefaultsMiddleware.wrapGenerate as any)({
-            model: mockModel,
-            params: collectionParams,
-            doGenerate: async () => {
-              return {
-                finishReason: 'stop',
-                usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-                warnings: [],
-                content: [{ type: 'text', text: 'test' }],
-                response: {
-                  id: 'test',
-                  timestamp: new Date(),
-                  modelId: mockModel.modelId,
-                },
-              };
-            },
-          });
-        },
+      const collectionResult = await stateManager.serializeState({
+        model: wrapLanguageModel({
+          model: stateManager.initializeModel({ model }),
+          middleware: setNormalizedDefaultsMiddleware,
+        }),
       });
 
-      const collectionTextContent =
-        (collectionResult.content as any)?.[0]?.text || '';
-      const collectedStates = JSON.parse(collectionTextContent);
+      const collectedStates = collectionResult.state;
       const normalizedDefaultsEntry = collectedStates.find(
         ([id]: any) => id === 'set-normalized-defaults',
       );
 
       expect(normalizedDefaultsEntry).toBeDefined();
-      expect(normalizedDefaultsEntry[1]).toEqual({ present: true }); // No custom state, just presence
+      expect(normalizedDefaultsEntry![1]).toBeDefined();
+      expect(model.doGenerate).not.toHaveBeenCalled();
     });
   });
 
   describe('Error handling and edge cases', () => {
     it('should handle middleware that does not support state serialization', async () => {
-      const stateManager = createStateManagementMiddleware();
-      const mockModel: any = {
-        modelId: 'test-model',
-        provider: 'test',
-        specificationVersion: 'v2' as const,
-        supportedUrls: [],
-        doGenerate: jest.fn(),
-        doStream: jest.fn(),
-      };
+      const stateManager = MiddlewareStateManager.Instance;
+      const mockModel = makeMockModel(stateManager);
 
       // Create middleware without state handlers
-      const simpleMiddleware = createStatefulMiddleware({
-        middlewareId: 'simple-middleware',
-        originalMiddleware: {
-          wrapGenerate: async (options: any) => options.doGenerate(),
-        },
-        // No stateHandlers - should still report presence
-      });
-
-      const collectionParams: any = {
-        prompt: STATE_PROTOCOL.COLLECT,
-        messages: [],
+      const simpleMiddleware = {
+        wrapGenerate: async (options: any) => options.doGenerate(),
       };
 
-      const result = await (stateManager.middleware.wrapGenerate as any)({
-        model: mockModel,
-        params: collectionParams,
-        doGenerate: async () => {
-          return await (simpleMiddleware.wrapGenerate as any)({
-            model: mockModel,
-            params: collectionParams,
-            doGenerate: async () => ({
-              finishReason: 'stop',
-              usage: { promptTokens: 0, completionTokens: 0 },
-              content: [{ type: 'text', text: 'test' }],
-              response: { id: 'test', timestamp: new Date(), modelId: 'test' },
-            }),
-          });
-        },
-      });
-
-      const resultTextContent = (result.content as any)?.[0]?.text || '';
-      const collectedStates = JSON.parse(resultTextContent);
-      const simpleEntry = collectedStates.find(
-        ([id]: any) => id === 'simple-middleware',
-      );
-
-      expect(simpleEntry).toBeDefined();
-      expect(simpleEntry[1]).toEqual({ present: true });
-    });
-
-    it('should handle restoration when no state data is provided', async () => {
-      const stateManager = createStateManagementMiddleware();
-      const mockModel: any = {
-        modelId: 'test-model',
-        provider: 'test',
-        specificationVersion: 'v2' as const,
-        supportedUrls: [],
-        doGenerate: jest.fn(),
-        doStream: jest.fn(),
-      };
-
-      const restorationParams = {
-        prompt: STATE_PROTOCOL.RESTORE,
-        messages: [],
-        // No stateData provided
-      };
-
-      const result = await (stateManager.middleware.wrapGenerate as any)({
-        model: mockModel,
-        params: restorationParams,
-        doGenerate: async () => ({
-          finishReason: 'stop',
-          usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
-          content: [{ type: 'text', text: 'should not reach' }],
-          warnings: [],
-          response: { id: 'test', timestamp: new Date(), modelId: 'test' },
+      const result = await stateManager.serializeState({
+        model: wrapLanguageModel({
+          model: mockModel,
+          middleware: [simpleMiddleware],
         }),
       });
 
-      const textContent = (result.content as any)?.[0]?.text || '';
-      expect(textContent).toBe(
-        'State restoration failed: no state data provided',
-      );
-      expect(result.response?.id).toBe('state-restoration-error');
+      expect(result).toBeDefined();
+      const collectedStates = result.state;
+      expect(collectedStates).toBeDefined();
+    });
+
+    it('should handle restoration when no state data is provided', async () => {
+      const stateManager = MiddlewareStateManager.Instance;
+      const mockModel: any = makeMockModel(stateManager);
+
+      await stateManager.deserializeState({
+        model: mockModel,
+        state: [],
+      });
+
+      // If we make it to here without throwing the test has passed.
     });
   });
 });

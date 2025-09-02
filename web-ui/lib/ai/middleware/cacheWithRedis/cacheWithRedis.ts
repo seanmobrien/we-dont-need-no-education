@@ -12,7 +12,7 @@ import { createStreamFromCachedText } from './streamUtils';
 import { handleResponseCaching } from './cacheStrategy';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { newUuid } from '@/lib/typescript/_record-decorators';
-import { StateManagementMiddleware } from '../state-management';
+import { MiddlewareStateManager } from '../state-management';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();
@@ -167,7 +167,7 @@ const originalCacheWithRedis: LanguageModelV2Middleware = {
  * in state collection and restoration operations.
  */
 export const cacheWithRedis =
-  StateManagementMiddleware.Instance.basicMiddlewareWrapper({
+  MiddlewareStateManager.Instance.basicMiddlewareWrapper({
     middlewareId: 'cache-with-redis',
     middleware: originalCacheWithRedis,
   });

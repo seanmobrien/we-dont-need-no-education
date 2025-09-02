@@ -4,13 +4,29 @@ import { log } from '@/lib/logger';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 
 import { EmailService } from '@/lib/api/email/email-service';
-import { validateCreateEmail, validateUpdateEmail } from '@/lib/api/email/email-validation';
-import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import {
+  validateCreateEmail,
+  validateUpdateEmail,
+} from '@/lib/api/email/email-validation';
+import {
+  buildFallbackGrid,
+  wrapRouteRequest,
+} from '@/lib/nextjs-util/server/utils';
 import { drizDbWithInit, schema } from '@/lib/drizzle-db';
-import { count_kpi, count_attachments, count_notes, count_responsive_actions, count_cta } from '@/lib/api/email/drizzle/query-parts';
+import {
+  count_kpi,
+  count_attachments,
+  count_notes,
+  count_responsive_actions,
+  count_cta,
+} from '@/lib/api/email/drizzle/query-parts';
 import { eq } from 'drizzle-orm';
 // count_kpi import removed; not used in this route currently
-import { DrizzleSelectQuery, getEmailColumn, selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import {
+  DrizzleSelectQuery,
+  getEmailColumn,
+  selectForGrid,
+} from '@/lib/components/mui/data-grid/queryHelpers';
 import { ContactSummary, EmailMessageSummary } from '@/data-models';
 
 export const dynamic = 'force-dynamic';
@@ -28,17 +44,16 @@ export const dynamic = 'force-dynamic';
  * @throws {Error} If there is an issue with the service operation or any other error occurs during
  * the execution of the function, an error is logged and a 500 Internal Server Error response is returned.
  */
-export const GET = wrapRouteRequest(async (req: NextRequest) => {
-  
-  
-  const results = await drizDbWithInit(async (db) => {
-    // Correlated subquery returning a JSONB array of recipient objects for each email
-    const attachments = count_attachments({ db });
-    const countKpi = count_kpi({ db });
-    const countNotes = count_notes({ db });
-    const countRa = count_responsive_actions({ db });
-    const countCta = count_cta({ db });
-    
+export const GET = wrapRouteRequest(
+  async (req: NextRequest) => {
+    const results = await drizDbWithInit(async (db) => {
+      // Correlated subquery returning a JSONB array of recipient objects for each email
+      const attachments = count_attachments({ db });
+      const countKpi = count_kpi({ db });
+      const countNotes = count_notes({ db });
+      const countRa = count_responsive_actions({ db });
+      const countCta = count_cta({ db });
+
       const getColumn = (columnName: string) => {
         switch (columnName) {
           case 'sentOn':
@@ -59,35 +74,35 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
             return getEmailColumn({ columnName, table: schema.emails });
         }
       };
-    
-    const bq = db
-      .select({
-        emailId: schema.emails.emailId,
-        senderId: schema.emails.senderId,
-        senderName: schema.contacts.name,
-        senderEmai: schema.contacts.email,
-        subject: schema.emails.subject,
-        sentOn: schema.emails.sentTimestamp,
-        threadId: schema.emails.threadId,
-        parentEmailId: schema.emails.parentId,
-        importedFromId: schema.emails.importedFromId,
-        globalMessageId: schema.emails.globalMessageId,
-        count_kpi: countKpi.targetCount,
-        count_notes: countNotes.targetCount,
-        count_cta: countCta.targetCount,
-        count_responsive_actions: countRa.targetCount,
-        count_attachments: attachments.countAttachments,
-      })
-      .from(schema.emails)
-      .innerJoin(
-        schema.contacts,
-        eq(schema.emails.senderId, schema.contacts.contactId),
-      )
-      .fullJoin(attachments, eq(schema.emails.emailId, attachments.emailId))
-      .fullJoin(countKpi, eq(schema.emails.emailId, countKpi.targetId))
-      .fullJoin(countNotes, eq(schema.emails.emailId, countNotes.targetId))
-      .fullJoin(countCta, eq(schema.emails.emailId, countCta.targetId))
-      .fullJoin(countRa, eq(schema.emails.emailId, countRa.targetId));
+
+      const bq = db
+        .select({
+          emailId: schema.emails.emailId,
+          senderId: schema.emails.senderId,
+          senderName: schema.contacts.name,
+          senderEmai: schema.contacts.email,
+          subject: schema.emails.subject,
+          sentOn: schema.emails.sentTimestamp,
+          threadId: schema.emails.threadId,
+          parentEmailId: schema.emails.parentId,
+          importedFromId: schema.emails.importedFromId,
+          globalMessageId: schema.emails.globalMessageId,
+          count_kpi: countKpi.targetCount,
+          count_notes: countNotes.targetCount,
+          count_cta: countCta.targetCount,
+          count_responsive_actions: countRa.targetCount,
+          count_attachments: attachments.countAttachments,
+        })
+        .from(schema.emails)
+        .innerJoin(
+          schema.contacts,
+          eq(schema.emails.senderId, schema.contacts.contactId),
+        )
+        .fullJoin(attachments, eq(schema.emails.emailId, attachments.emailId))
+        .fullJoin(countKpi, eq(schema.emails.emailId, countKpi.targetId))
+        .fullJoin(countNotes, eq(schema.emails.emailId, countNotes.targetId))
+        .fullJoin(countCta, eq(schema.emails.emailId, countCta.targetId))
+        .fullJoin(countRa, eq(schema.emails.emailId, countRa.targetId));
       return await selectForGrid<EmailMessageSummary>({
         req,
         query: bq as unknown as DrizzleSelectQuery,
@@ -102,9 +117,13 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
           } as ContactSummary,
           subject: String(emailDomain.subject ?? ''),
           sentOn: new Date(
-            emailDomain.sentOn ? Date.parse(String(emailDomain.sentOn)) : Date.now(),
+            emailDomain.sentOn
+              ? Date.parse(String(emailDomain.sentOn))
+              : Date.now(),
           ),
-          threadId: emailDomain.threadId ? Number(emailDomain.threadId) : undefined,
+          threadId: emailDomain.threadId
+            ? Number(emailDomain.threadId)
+            : undefined,
           parentEmailId: emailDomain.parentId
             ? String(emailDomain.parentId)
             : undefined,
@@ -119,13 +138,16 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
           count_kpi: Number(emailDomain.count_kpi) ?? 0,
           count_notes: Number(emailDomain.count_notes) ?? 0,
           count_cta: Number(emailDomain.count_cta) ?? 0,
-          count_responsive_actions: Number(emailDomain.count_responsive_actions) ?? 0,
+          count_responsive_actions:
+            Number(emailDomain.count_responsive_actions) ?? 0,
         }),
       });
     });
-  
-  return Response.json(results);
-}, { buildFallback: buildFallbackGrid });
+
+    return Response.json(results);
+  },
+  { buildFallback: buildFallbackGrid },
+);
 
 /**
  * Handles the POST request to create a new email.
@@ -137,42 +159,44 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
  * @returns {Promise<NextResponse>} - The response object containing the result of the email creation.
  * @throws {Error} - If there is an issue with the email creation process.
  */
-export const POST = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
-  try {
-    const raw = await req.json();
-    const validated = validateCreateEmail(raw);
-    if (!validated.success) {
+export const POST = wrapRouteRequest(
+  async (req: NextRequest): Promise<NextResponse> => {
+    try {
+      const raw = await req.json();
+      const validated = validateCreateEmail(raw);
+      if (!validated.success) {
+        return NextResponse.json(
+          { error: 'Validation failed', details: validated.error.flatten() },
+          { status: 400 },
+        );
+      }
+      const emailService = new EmailService();
+      const createdEmail = await emailService.createEmail(validated.data);
+
       return NextResponse.json(
-        { error: 'Validation failed', details: validated.error.flatten() },
-        { status: 400 },
+        {
+          message: 'Email created successfully',
+          email: createdEmail,
+        },
+        { status: 201 },
+      );
+    } catch (error) {
+      if (ValidationError.isValidationError(error)) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      log((l) =>
+        l.error({
+          source: 'POST email',
+          error,
+        }),
+      );
+      return NextResponse.json(
+        { error: 'Internal Server Error' },
+        { status: 500 },
       );
     }
-    const emailService = new EmailService();
-    const createdEmail = await emailService.createEmail(validated.data);
-
-    return NextResponse.json(
-      {
-        message: 'Email created successfully',
-        email: createdEmail,
-      },
-      { status: 201 },
-    );
-  } catch (error) {
-    if (ValidationError.isValidationError(error)) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    log((l) =>
-      l.error({
-        source: 'POST email',
-        error,
-      }),
-    );
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
-});
+  },
+);
 
 /**
  * Handles the PUT request to update an existing email.
@@ -184,34 +208,36 @@ export const POST = wrapRouteRequest(async (req: NextRequest): Promise<NextRespo
  * @returns {Promise<NextResponse>} - The response object containing the result of the email update.
  * @throws {Error} - If there is an issue with the email update process.
  */
-export const PUT = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
-  try {
-    const raw = await req.json();
-    const validated = validateUpdateEmail(raw);
-    if (!validated.success) {
+export const PUT = wrapRouteRequest(
+  async (req: NextRequest): Promise<NextResponse> => {
+    try {
+      const raw = await req.json();
+      const validated = validateUpdateEmail(raw);
+      if (!validated.success) {
+        return NextResponse.json(
+          { error: 'Validation failed', details: validated.error.flatten() },
+          { status: 400 },
+        );
+      }
+      const emailService = new EmailService();
+      const updatedEmail = await emailService.updateEmail(validated.data);
+
       return NextResponse.json(
-        { error: 'Validation failed', details: validated.error.flatten() },
-        { status: 400 },
+        { message: 'Email updated successfully', email: updatedEmail },
+        { status: 200 },
+      );
+    } catch (error) {
+      if (ValidationError.isValidationError(error)) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      log((l) => l.error({ source: 'PUT email', error }));
+      return NextResponse.json(
+        { error: 'Internal Server Error' },
+        { status: 500 },
       );
     }
-    const emailService = new EmailService();
-    const updatedEmail = await emailService.updateEmail(validated.data);
-
-    return NextResponse.json(
-      { message: 'Email updated successfully', email: updatedEmail },
-      { status: 200 },
-    );
-  } catch (error) {
-    if (ValidationError.isValidationError(error)) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-    log((l) => l.error({ source: 'PUT email', error }));
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
-});
+  },
+);
 
 /**
  * Handles the DELETE request to remove an email.
@@ -221,36 +247,35 @@ export const PUT = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
  * @param {NextRequest} req - The incoming request object.
  * @returns {Promise<NextResponse>} - The response object containing the result of the email deletion.
  */
-export const DELETE = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
-  try {
-    const { emailId } = await req.json();
+export const DELETE = wrapRouteRequest(
+  async (req: NextRequest): Promise<NextResponse> => {
+    try {
+      const { emailId } = await req.json();
 
-    if (!emailId) {
+      if (!emailId) {
+        return NextResponse.json(
+          { error: 'Email ID is required' },
+          { status: 400 },
+        );
+      }
+
+      const emailService = new EmailService();
+      const deleted = await emailService.deleteEmail(emailId);
+
+      if (!deleted) {
+        return NextResponse.json({ error: 'Email not found' }, { status: 404 });
+      }
+
       return NextResponse.json(
-        { error: 'Email ID is required' },
-        { status: 400 },
+        { message: 'Email deleted successfully' },
+        { status: 200 },
+      );
+    } catch (error) {
+      log((l) => l.error({ source: 'DELETE email', error }));
+      return NextResponse.json(
+        { error: 'Internal Server Error' },
+        { status: 500 },
       );
     }
-
-    const emailService = new EmailService();
-    const deleted = await emailService.deleteEmail(emailId);
-
-    if (!deleted) {
-      return NextResponse.json(
-        { error: 'Email not found' },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json(
-      { message: 'Email deleted successfully' },
-      { status: 200 },
-    );
-  } catch (error) {
-    log((l) => l.error({ source: 'DELETE email', error }));
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
-});
+  },
+);

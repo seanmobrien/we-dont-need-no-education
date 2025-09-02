@@ -3,7 +3,7 @@ import type {
   LanguageModelV2Middleware,
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
-import { createSimpleStatefulMiddleware } from './state-management';
+import { MiddlewareStateManager } from './state-management';
 
 /**
  * Default telemetry configuration for normalized chat requests
@@ -229,9 +229,10 @@ export const originalSetNormalizedDefaultsMiddleware: LanguageModelV2Middleware 
  * This middleware supports the state management protocol and can participate
  * in state collection and restoration operations.
  */
-export const setNormalizedDefaultsMiddleware = createSimpleStatefulMiddleware(
-  'set-normalized-defaults',
-  originalSetNormalizedDefaultsMiddleware,
-);
+export const setNormalizedDefaultsMiddleware =
+  MiddlewareStateManager.Instance.basicMiddlewareWrapper({
+    middlewareId: 'set-normalized-defaults',
+    middleware: originalSetNormalizedDefaultsMiddleware,
+  });
 
 export default setNormalizedDefaultsMiddleware;

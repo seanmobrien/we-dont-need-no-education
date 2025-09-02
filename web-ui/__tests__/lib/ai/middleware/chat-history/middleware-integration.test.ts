@@ -3,6 +3,7 @@
 /**
  * Integration tests for chat history middleware supporting both streaming and text completions
  */
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
@@ -155,6 +156,16 @@ describe('Chat History Middleware Integration', () => {
   });
 
   describe('Error Handling', () => {
+    const mockConsole = hideConsoleOutput();
+
+    beforeEach(() => {
+      mockConsole.setup();
+    });
+
+    afterEach(() => {
+      mockConsole.dispose();
+    });
+
     it('should gracefully handle database errors in wrapGenerate', async () => {
       // Arrange - Mock transaction to fail
       const mockDb = await import('@/lib/drizzle-db');

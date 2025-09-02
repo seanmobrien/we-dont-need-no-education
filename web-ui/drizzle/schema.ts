@@ -1659,14 +1659,29 @@ export const middlewareMetadata = pgTable(
     name: text().notNull(),
     implementationPath: text('implementation_path').notNull(),
     description: text(),
-    supportsStateSerialization: boolean('supports_state_serialization').default(false).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+    supportsStateSerialization: boolean('supports_state_serialization')
+      .default(false)
+      .notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
     isActive: boolean('is_active').default(true).notNull(),
   },
   (table) => [
-    index('idx_middleware_metadata_name').using('btree', table.name.asc().nullsLast().op('text_ops')),
-    index('idx_middleware_metadata_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
-    index('idx_middleware_metadata_serialization').using('btree', table.supportsStateSerialization.asc().nullsLast().op('bool_ops')),
+    index('idx_middleware_metadata_name').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_middleware_metadata_active').using(
+      'btree',
+      table.isActive.asc().nullsLast().op('bool_ops'),
+    ),
+    index('idx_middleware_metadata_serialization').using(
+      'btree',
+      table.supportsStateSerialization.asc().nullsLast().op('bool_ops'),
+    ),
   ],
 );

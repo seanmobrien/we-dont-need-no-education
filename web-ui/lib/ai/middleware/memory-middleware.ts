@@ -6,7 +6,7 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { memoryClientFactory } from '../mem0';
 import { log } from '@/lib/logger';
-import { createSimpleStatefulMiddleware } from './state-management';
+import { MiddlewareStateManager } from './state-management';
 
 /**
  * Memory Middleware (Original Implementation)
@@ -70,9 +70,10 @@ const originalMemoryMiddleware: LanguageModelV2Middleware = {
  * This middleware supports the state management protocol and can participate
  * in state collection and restoration operations.
  */
-export const memoryMiddleware = createSimpleStatefulMiddleware(
-  'memory-middleware',
-  originalMemoryMiddleware
-);
+export const memoryMiddleware =
+  MiddlewareStateManager.Instance.basicMiddlewareWrapper({
+    middlewareId: 'memory-middleware',
+    middleware: originalMemoryMiddleware,
+  });
 
 export default memoryMiddleware;

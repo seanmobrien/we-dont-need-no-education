@@ -75,6 +75,7 @@ export class MockQueryBuilder implements IMockQueryBuilder {
   readonly leftJoin: jest.Mock;
   readonly as: jest.Mock;
   readonly groupBy: jest.Mock;
+  readonly insert: jest.Mock;
 
   #records: unknown[] = [];
   #matchers: Map<MockDbQueryCallback, MockDbQueryRecord> = new Map();
@@ -92,6 +93,7 @@ export class MockQueryBuilder implements IMockQueryBuilder {
     this.fullJoin = jest.fn().bind(this).mockReturnThis();
     this.leftJoin = jest.fn().bind(this).mockReturnThis();
     this.as = jest.fn().bind(this).mockReturnThis();
+    this.insert = jest.fn();
   }
 
   __setRecords<T extends Record<string, unknown> = Record<string, unknown>>(
@@ -146,7 +148,32 @@ const mockDbFactory = (): DatabaseMockType => {
     'groupBy',
     'as',
     'leftJoin',
+    'insert',
   ] as const;
+
+  const insertBuilder = {
+    values: jest.fn(),
+    onConflictDoUpdate: jest.fn(),
+    __setRecords: <T extends Record<string, unknown> = Record<string, unknown>>(
+      v: T[] | MockDbQueryCallback,
+      rows?: T[] | null,
+      state?: unknown,
+    ) => {
+      qb.__setRecords<T>(v, rows, state);
+      return insertBuilder;
+    },
+    __getRecords: <T>() => {
+      qb.__getRecords<T>();
+      return insertBuilder;
+    },
+    __resetMocks: () => {
+      qb.__resetMocks();
+      return insertBuilder;
+    },
+  };
+  insertBuilder.values.mockReturnValue(insertBuilder);
+  insertBuilder.onConflictDoUpdate.mockReturnValue(insertBuilder);
+
   const initMocks = () => {
     qbMethodValues.forEach((key: keyof IMockQueryBuilder) => {
       if (
@@ -255,6 +282,8 @@ const mockDbFactory = (): DatabaseMockType => {
           // If we made it this far then we use the default result
           return theRows;
         });
+      } else if (key === 'insert') {
+        (qb[key] as jest.Mock).mockImplementation(() => insertBuilder);
       } else {
         qb[key].mockImplementation(() => db);
       }
@@ -288,8 +317,9 @@ const mockDbFactory = (): DatabaseMockType => {
     theMatchers.clear();
     qbMethodValues.forEach((key: keyof IMockQueryBuilder) => {
       if (
-        key === '__setRecords' ||
+        key === 'insert' ||
         key === '__getRecords' ||
+        key === '__setRecords' ||
         key === '__resetMocks'
       ) {
         return;
@@ -508,6 +538,7 @@ import { log } from '@/lib/logger';
 import { isKeyOf } from '@/lib/typescript';
 import { result } from 'lodash';
 import {
+  IMockInsertBuilder,
   IMockQueryBuilder,
   MockDbQueryCallback,
   MockDbQueryCallbackResult,

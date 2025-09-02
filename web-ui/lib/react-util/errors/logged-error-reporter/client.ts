@@ -11,10 +11,10 @@ class LoggedErrorReporter {
   static get Instance(): ErrorReporterInterface {
     if (!LoggedErrorReporter.#instance) {
       LoggedErrorReporter.#instance = ErrorReporter.createInstance({
-        enableStandardLogging: false,
-        enableConsoleLogging: false,
-        enableExternalReporting: typeof window === 'undefined',
-        enableLocalStorage: false,
+        enableStandardLogging: true,
+        enableConsoleLogging: true,
+        enableExternalReporting: true,
+        enableLocalStorage: true,
       });
     }
     if (!LoggedErrorReporter.#instance) {

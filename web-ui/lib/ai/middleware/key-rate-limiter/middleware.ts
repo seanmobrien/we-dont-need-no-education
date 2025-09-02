@@ -25,7 +25,7 @@ import {
 } from './metrics-utils';
 import { LanguageModel } from 'ai';
 import { ModelMap } from '../../services/model-stats/model-map';
-import { createStatefulMiddleware } from '../state-management';
+import { MiddlewareStateManager } from '../state-management';
 
 type RateLimitRetryState = {
   rateLimitContext: RateLimitRetryContext;
@@ -296,30 +296,33 @@ export const retryRateLimitMiddlewareFactory = async (
   /**
    * Stateful wrapper with rate limit context preservation
    */
-  const statefulMiddleware = createStatefulMiddleware<RateLimitRetryState>({
-    middlewareId: 'retry-rate-limiter',
-    originalMiddleware: {
-      ...originalRetryRateLimitMiddleware,
-      serializeState,
-      deserializeState: ({
-        state: {
-          rateLimitContext: rateLimiteContextFromState,
-          timestamp: timestampFromState,
+  const statefulMiddleware =
+    MiddlewareStateManager.Instance.statefulMiddlewareWrapper<RateLimitRetryState>(
+      {
+        middlewareId: 'retry-rate-limiter',
+        middleware: {
+          ...originalRetryRateLimitMiddleware,
+          serializeState,
+          deserializeState: ({
+            state: {
+              rateLimitContext: rateLimiteContextFromState,
+              timestamp: timestampFromState,
+            },
+          }) => {
+            if (rateLimiteContextFromState) {
+              rateLimitContext = rateLimiteContextFromState;
+            }
+            log((l) =>
+              l.debug('Rate limiter state restored', {
+                context: rateLimitContext,
+                age: Date.now() - (timestampFromState || 0),
+              }),
+            );
+            return Promise.resolve();
+          },
         },
-      }) => {
-        if (rateLimiteContextFromState) {
-          rateLimitContext = rateLimiteContextFromState;
-        }
-        log((l) =>
-          l.debug('Rate limiter state restored', {
-            context: rateLimitContext,
-            age: Date.now() - (timestampFromState || 0),
-          }),
-        );
-        return Promise.resolve();
       },
-    },
-  }) as RetryRateLimitMiddlewareType;
+    ) as RetryRateLimitMiddlewareType;
 
   // Add the rateLimitContext method to the stateful middleware
   statefulMiddleware.rateLimitContext = () => ({ ...rateLimitContext });
