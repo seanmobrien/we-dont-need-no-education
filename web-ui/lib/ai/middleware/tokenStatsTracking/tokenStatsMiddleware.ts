@@ -205,9 +205,9 @@ const wrapGenerate = async ({
       // Post-request usage recording
       if (result.usage) {
         const tokenUsage: TokenUsageData = {
-          promptTokens: result?.usage?.inputTokens || 0,
-          completionTokens: result?.usage?.outputTokens || 0,
-          totalTokens: result?.usage?.totalTokens || 0,
+          promptTokens: result?.usage?.inputTokens ?? 0,
+          completionTokens: result?.usage?.outputTokens ?? 0,
+          totalTokens: result?.usage?.totalTokens ?? 0,
         };
         // If the provider and modelName are available, record the token usage
         if (provider && modelName) {
