@@ -120,6 +120,7 @@ COPY --link=true ./lib ./lib
 COPY --link=true ./types ./types
 COPY --link=true ./instrument ./instrument
 COPY --link=true ./scripts ./scripts
+COPY --link=true ./public ./public
 COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
 
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -225,7 +226,7 @@ RUN addgroup --system --gid 1001 nodejs \
 
 COPY --link=true --from=builder /app/.next/standalone ./
 COPY --link=true --from=builder /app/.next/static ./.next/static
-COPY --link=true --from=builder /app/public ./public
+COPY --link=true --from=builder /public ./public
 
 # Copy rate retry script
 COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/
