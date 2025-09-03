@@ -116,7 +116,7 @@ export class LanguageModelQueue {
     try {
       const quotaRecord = await (
         await ModelMap.getInstance()
-      ).getModelFromLanguageModelV1(this.model);
+      ).getModelFromLanguageModel(this.model);
       // This would need to be implemented to query the models table
       // For now, return a reasonable default
       // TODO: Implement actual database query to get model limits

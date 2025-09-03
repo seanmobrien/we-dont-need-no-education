@@ -8,7 +8,7 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ChatHistoryContext } from './types';
 import { enqueueStream, ProcessingQueue } from './processing-queue';
 import { JSONValue, simulateReadableStream, wrapLanguageModel } from 'ai';
-import { StateManagementMiddleware } from '../state-management';
+import { MiddlewareStateManager } from '../state-management';
 import { log } from '@/lib/logger';
 export type { ChatHistoryContext } from './types';
 export {
@@ -182,7 +182,7 @@ export const createChatHistoryMiddleware = (
 
   const originalMiddleware = createOriginalChatHistoryMiddleware(context);
 
-  return StateManagementMiddleware.Instance.statefulMiddlewareWrapper<
+  return MiddlewareStateManager.Instance.statefulMiddlewareWrapper<
     ChatHistoryState & Record<string, JSONValue>
   >({
     middlewareId: 'chat-history',

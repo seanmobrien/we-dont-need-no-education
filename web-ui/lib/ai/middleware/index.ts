@@ -40,11 +40,9 @@ export {
   type TokenStatsMiddlewareConfig,
 } from './tokenStatsTracking';
 export {
-  STATE_PROTOCOL,
-  StateManagementMiddleware,
-  createStateManagementMiddleware,
-  createStatefulMiddleware,
-  createSimpleStatefulMiddleware,
+  MiddlewareStateManager,
+  type SerializableLanguageModelMiddleware,
+  type SerializableMiddleware,
   type StatefulMiddlewareConfig,
   type StateManagementParams,
   type MiddlewareMetadata,

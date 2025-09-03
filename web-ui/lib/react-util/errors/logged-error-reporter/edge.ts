@@ -1,4 +1,5 @@
 import type { ErrorReporterInterface } from '@/lib/error-monitoring/types';
+import { log } from '@/lib/logger';
 
 /**
  * Provides access to the shared ErrorReporter instance used by LoggedError.
@@ -10,7 +11,13 @@ class LoggedErrorReporter {
   static get Instance(): ErrorReporterInterface {
     if (!LoggedErrorReporter.#instance) {
       const mockReport = (error: unknown) => {
-        console.error('error reported to mock instance:', error);
+        log((l) =>
+          l.error({
+            message: 'An error occurred',
+            error,
+            source: 'Edge Error Reporter instance',
+          }),
+        );
         return Promise.resolve();
       };
 

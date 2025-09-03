@@ -15,10 +15,15 @@ import { drizDbWithInit, type DbDatabaseType } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { ProviderMap } from './provider-map';
+import {
+  ProviderMap,
+  ProviderPrimaryNameType,
+  ProviderPrimaryNameTypeValues,
+} from './provider-map';
 import { log } from '@/lib/logger';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
+import { isKeyOf } from '@/lib/typescript';
 
 /**
  * Type representing a complete model record with provider information.
@@ -62,11 +67,42 @@ export type ModelWithQuota = ModelRecord & {
 export type ProviderModelNormalization = {
   provider: string;
   modelName: string;
-  modelId?: string;
-  providerId?: string;
+  modelId: string;
+  providerId: string;
   rethrow: () => void;
   get classification(): ModelClassification;
 };
+
+/**
+ * List of aliased model names.
+ */
+export const ModelAliasNameValues = ['hifi', 'lofi', 'embedding'] as const;
+
+export type ModelAliasNameType = (typeof ModelAliasNameValues)[number];
+
+/**
+ * Maps alias names to environment variables per provider.
+ */
+export const EnvironmentAliasMap: Record<
+  ProviderPrimaryNameType,
+  Record<ModelAliasNameType, string>
+> = {
+  azure: {
+    hifi: 'AZURE_OPENAI_DEPLOYMENT_HIFI',
+    lofi: 'AZURE_OPENAI_DEPLOYMENT_LOFI',
+    embedding: 'AZURE_OPENAI_DEPLOYMENT_EMBEDDING',
+  },
+  google: {
+    hifi: 'GOOGLE_GENERATIVE_HIFI',
+    lofi: 'GOOGLE_GENERATIVE_LOFI',
+    embedding: 'GOOGLE_GENERATIVE_EMBEDDING',
+  },
+  openai: {
+    hifi: 'OPENAI_HIFI',
+    lofi: 'OPENAI_LOFI',
+    embedding: 'OPENAI_EMBEDDING',
+  },
+} as const;
 
 /**
  * ModelMap provides centralized management of AI model configurations and quotas.
@@ -124,7 +160,6 @@ export class ModelMap {
     this.#initialized = false;
     this.#whenInitialized = Promise.withResolvers<boolean>();
     if (Array.isArray(modelsOrDb)) {
-      // Initialize with provided model records
       for (const [key, record] of modelsOrDb) {
         this.#providerModelToRecord.set(key, record);
         this.#idToRecord.set(record.id, record);
@@ -180,10 +215,26 @@ export class ModelMap {
   }
 
   /**
+   * Setup a mock instance of ModelMap for testing.
+   * @param records - The model records to initialize the map with.
+   * @returns The initialized ModelMap instance.
+   */
+  static setupMockInstance(
+    records: (readonly [string, ModelRecord])[],
+    quotas: (readonly [string, ModelQuotaRecord])[],
+  ): ModelMap {
+    this.#instance = new ModelMap(records);
+    for (const [key, record] of quotas) {
+      this.#instance.#modelIdToQuota.set(key, record);
+    }
+    return this.#instance;
+  }
+
+  /**
    * Reset the singleton instance (for testing or reinitialization).
    */
   static reset(): void {
-    this.#instance = undefined;
+    ModelMap.#instance = undefined;
   }
 
   /**
@@ -345,7 +396,6 @@ export class ModelMap {
         providerOrModel.modelId,
       );
     }
-
     // Parse provider:model format if present
     let provider: string;
     let parsedModelName: string;
@@ -357,8 +407,22 @@ export class ModelMap {
     } else {
       provider = providerOrModel?.trim() ?? '';
       parsedModelName = modelName?.trim() ?? '';
+      if (!parsedModelName) {
+        // Sometimes we get the model name and only the model name - usually when dealing with an alias (eg 'hifi') or unique model name.
+        // Apply common-sense provider detection rules to try and flesh this out.
+        // If it has 'gemini' or 'google' as a prefix it's a google model
+        if (
+          ['gemini-', 'google-'].some((prefix) => provider.startsWith(prefix))
+        ) {
+          parsedModelName = provider;
+          provider = 'google';
+        } else {
+          // Everything else defaults to azure
+          parsedModelName = provider;
+          provider = 'azure';
+        }
+      }
     }
-
     // Get provider ID from ProviderMap
     try {
       // Give maps a chance to finish initialization
@@ -368,6 +432,11 @@ export class ModelMap {
       ]);
       // Get provider ID from ProviderMap - note providermap.id is a synchronous function, so no await is necessary.
       const providerId = providerMap.id(provider);
+      const providerCanonicalName = providerId
+        ? isKeyOf(provider, ProviderPrimaryNameTypeValues)
+          ? provider
+          : providerMap.name(providerId)!
+        : undefined;
       // If provider ID was found then use it pull the model, otherwise set id to undefined
       const record = providerId
         ? this.#providerModelToRecord.get(`${providerId}:${parsedModelName}`)
@@ -375,10 +444,10 @@ export class ModelMap {
       const modelId = record?.id;
       // Return normalized results with an error rethrow callback
       return {
-        provider,
+        provider: providerCanonicalName!,
         modelName: parsedModelName,
-        modelId: modelId,
-        providerId: providerId || undefined,
+        modelId: modelId!,
+        providerId: providerId!,
         get classification(): ModelClassification {
           if (!modelId) {
             // HACK: undefined does not a modelclassification make,
@@ -436,12 +505,13 @@ export class ModelMap {
         extra: { providerOrModel, modelName },
         source: 'ModelMap.normalizeProviderModel',
       });
-      //  Return an empty result with a rethrow callback
+      // Yeah, i know...undefined as unknown as string is evil...but thats
+      // what the rethrow callback is for ;)
       return {
         provider,
-        modelId: undefined,
+        modelId: undefined as unknown as string,
         modelName: parsedModelName,
-        providerId: undefined,
+        providerId: undefined as unknown as string,
         classification: undefined as unknown as ModelClassification,
         rethrow: () => {
           throw loggedError;
@@ -491,14 +561,14 @@ export class ModelMap {
     await this.#ensureFreshCache();
 
     const {
-      providerId,
       modelName: normalizedModelName,
       rethrow,
+      providerId: normalizedProviderId,
     } = await this.normalizeProviderModel(provider, modelName);
 
     try {
       rethrow();
-      const key = `${providerId}:${normalizedModelName}`;
+      const key = `${normalizedProviderId}:${normalizedModelName}`;
       return this.#providerModelToRecord.get(key) || null;
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -578,7 +648,7 @@ export class ModelMap {
    * const modelInfo = await modelMap.getModelFromLanguageModelV1(model);
    * ```
    */
-  async getModelFromLanguageModelV1(
+  async getModelFromLanguageModel(
     languageModel: LanguageModel,
   ): Promise<ModelWithQuota | null> {
     try {

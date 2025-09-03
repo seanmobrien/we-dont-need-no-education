@@ -1,48 +1,30 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Mock ProviderMap before other imports
-const mockProviderMapInstance = {
-  id: jest.fn((provider: string) => {
-    // Map provider names to provider IDs
-    switch (provider) {
-      case 'azure':
-        return 'azure-openai.chat';
-      case 'google':
-        return 'google';
-      default:
-        return provider; // fallback to original value
-    }
-  }),
-  name: jest.fn().mockReturnValue('azure'),
-  record: jest.fn().mockReturnValue({
-    name: 'azure',
-    displayName: 'Azure OpenAI',
-    isActive: true,
-  }),
-  contains: jest.fn().mockReturnValue(true),
-  initialized: true,
-  whenInitialized: Promise.resolve(true),
-};
-
-jest.mock('@/lib/ai/services/model-stats/provider-map', () => ({
-  ProviderMap: {
-    getInstance: jest.fn().mockResolvedValue(mockProviderMapInstance),
-    Instance: mockProviderMapInstance,
-  },
-}));
 
 // Mock Redis and database before other imports
 jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
-jest.mock('@/lib/drizzle-db');
+
+// Fix the schema mock to have the correct structure
+jest.mock('@/lib/drizzle-db', () => {
+  const actualModule = jest.requireActual('@/lib/drizzle-db');
+  // The actualModule.schema contains the nested structure, we need to flatten it
+  const flatSchema = actualModule.schema.schema || actualModule.schema;
+  return {
+    ...actualModule,
+    schema: flatSchema,
+  };
+});
 
 import {
   getTokenStatsService,
   TokenStatsServiceType,
   TokenUsageData,
 } from '@/lib/ai/middleware/tokenStatsTracking';
-import {
-  reset 
- } from '@/lib/ai/services/model-stats/token-stats-service';
+import { reset } from '@/lib/ai/services/model-stats/token-stats-service';
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+//import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { setupMaps, PROVIDER_ID_AZURE, PROVIDER_ID_GOOGLE } from '@/__tests__/jest.mock-provider-model-maps';
 
 const mockRedisClient = {
   get: jest.fn(),
@@ -74,7 +56,7 @@ const mockDb = {
         Promise.resolve({
           id: 'test-model-id',
           providerId: 'azure-openai.chat',
-          modelName: 'hifi',
+          modelName: 'gpt-4.1',
           isActive: true,
         }),
       ),
@@ -84,30 +66,35 @@ const mockDb = {
 
 let tokenStatsService: TokenStatsServiceType;
 
+const mockConsole = hideConsoleOutput();
+
 beforeEach(() => {
   //jest.clearAllMocks();
+  //console.log('before test', schema.tokenConsumptionStats);
   reset();
+  setupMaps();
   tokenStatsService = getTokenStatsService();
-  
+
   // Reset mock implementations
   (getRedisClient as jest.Mock).mockResolvedValue(mockRedisClient);
-  // Note: drizDbWithInit is already mocked globally, no need to re-mock it
-  
+
   // Reset Redis client mocks
   mockRedisClient.get.mockReset();
   mockRedisClient.setEx.mockReset();
   mockRedisClient.multi.mockReset();
-  
-  // Reset ProviderMap mocks to ensure consistent provider IDs
-  mockProviderMapInstance.id.mockImplementation((provider: string) => {
-    if (provider === 'azure') return 'azure-openai.chat';
-    if (provider === 'google') return 'google';
-    return provider; // fallback
-  });
+  const multi = {
+    setEx: jest.fn(),
+    exec: jest.fn(),
+  };
+  mockRedisClient.multi.mockReturnValue(multi);
+});
+
+afterEach(() => {
+  mockConsole.dispose();
 });
 
 describe('TokenStatsService', () => {
-  describe('normalizeModelKey', () => {
+describe('normalizeModelKey', () => {
     it('should handle provider:model format', async () => {
       // Setup mock to return null for stats (zero stats)
       mockRedisClient.get.mockResolvedValue(null);
@@ -115,13 +102,13 @@ describe('TokenStatsService', () => {
       // When the FIRST parameter contains ':', it should extract provider and model from it
       // The second parameter should be ignored
       const result = await tokenStatsService.getTokenStats(
-        'azure:hifi',
+        'azure:gpt-4.1',
         'ignored',
       );
-      
+
       expect(result).not.toBeNull();
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_stats:azure-openai.chat:hifi:minute',
+        'token_stats:b555b85f-5b2f-45d8-a317-575a3ab50ff2:gpt-4.1:minute',
       );
     });
 
@@ -131,12 +118,12 @@ describe('TokenStatsService', () => {
 
       const result = await tokenStatsService.getTokenStats(
         'google',
-        'gemini-pro',
+        'gemini-2.0-flash',
       );
-      
+
       expect(result).not.toBeNull();
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_stats:google:gemini-pro:minute',
+        `token_stats:${PROVIDER_ID_GOOGLE}:gemini-2.0-flash:minute`,
       );
     });
   });
@@ -145,11 +132,11 @@ describe('TokenStatsService', () => {
     it('should return null when no quota is configured', async () => {
       mockRedisClient.get.mockResolvedValue(null);
 
-      const result = await tokenStatsService.getQuota('azure', 'hifi');
+      const result = await tokenStatsService.getQuota('azure', 'gpt-4.1');
 
       expect(result).toBeNull();
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_quota:azure-openai.chat:hifi',
+        `token_quota:${PROVIDER_ID_AZURE}:gpt-4.1`,
       );
     });
 
@@ -157,7 +144,7 @@ describe('TokenStatsService', () => {
       const mockQuota = {
         id: 'test-id',
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         maxTokensPerMessage: 1000,
         maxTokensPerMinute: 10000,
         maxTokensPerDay: 100000,
@@ -166,11 +153,11 @@ describe('TokenStatsService', () => {
 
       mockRedisClient.get.mockResolvedValue(JSON.stringify(mockQuota));
 
-      const result = await tokenStatsService.getQuota('azure', 'hifi');
+      const result = await tokenStatsService.getQuota('azure', 'gpt-4.1');
 
       expect(result).toEqual(mockQuota);
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_quota:azure-openai.chat:hifi',
+        `token_quota:${PROVIDER_ID_AZURE}:gpt-4.1`,
       );
     });
   });
@@ -179,10 +166,7 @@ describe('TokenStatsService', () => {
     it('should return zero stats when no data exists', async () => {
       mockRedisClient.get.mockResolvedValue(null);
 
-      const result = await tokenStatsService.getTokenStats(
-        'azure',
-        'hifi',
-      );
+      const result = await tokenStatsService.getTokenStats('azure', 'gpt-4.1');
 
       expect(result).toEqual({
         currentMinuteTokens: 0,
@@ -198,14 +182,11 @@ describe('TokenStatsService', () => {
       const mockDayData = { totalTokens: 2000 };
 
       mockRedisClient.get
-        .mockResolvedValueOnce(JSON.stringify(mockMinuteData))  // minute stats
-        .mockResolvedValueOnce(JSON.stringify(mockHourData))    // hour stats
-        .mockResolvedValueOnce(JSON.stringify(mockDayData));    // day stats
+        .mockResolvedValueOnce(JSON.stringify(mockMinuteData)) // minute stats
+        .mockResolvedValueOnce(JSON.stringify(mockHourData)) // hour stats
+        .mockResolvedValueOnce(JSON.stringify(mockDayData)); // day stats
 
-      const result = await tokenStatsService.getTokenStats(
-        'azure',
-        'hifi',
-      );
+      const result = await tokenStatsService.getTokenStats('azure', 'gpt-4.1');
 
       expect(result).toEqual({
         currentMinuteTokens: 100,
@@ -222,7 +203,7 @@ describe('TokenStatsService', () => {
 
       const result = await tokenStatsService.checkQuota(
         'azure',
-        'hifi',
+        'gpt-4.1',
         100,
       );
 
@@ -233,7 +214,7 @@ describe('TokenStatsService', () => {
       const mockQuota = {
         id: 'test-id',
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         maxTokensPerMessage: 500,
         maxTokensPerMinute: null,
         maxTokensPerDay: null,
@@ -246,7 +227,7 @@ describe('TokenStatsService', () => {
 
       const result = await tokenStatsService.checkQuota(
         'azure',
-        'hifi',
+        'gpt-4.1',
         1000, // Exceeds per-message limit of 500
       );
 
@@ -258,7 +239,7 @@ describe('TokenStatsService', () => {
       const mockQuota = {
         id: 'test-id',
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         maxTokensPerMessage: null,
         maxTokensPerMinute: 1000,
         maxTokensPerDay: null,
@@ -274,7 +255,7 @@ describe('TokenStatsService', () => {
 
       const result = await tokenStatsService.checkQuota(
         'azure',
-        'hifi',
+        'gpt-4.1',
         200, // 900 + 200 = 1100, exceeds limit of 1000
       );
 
@@ -286,7 +267,7 @@ describe('TokenStatsService', () => {
       const mockQuota = {
         id: 'test-id',
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         maxTokensPerMessage: 1000,
         maxTokensPerMinute: 10000,
         maxTokensPerDay: 100000,
@@ -301,7 +282,7 @@ describe('TokenStatsService', () => {
 
       const result = await tokenStatsService.checkQuota(
         'azure',
-        'hifi',
+        'gpt-4.1',
         400,
       );
 
@@ -320,23 +301,20 @@ describe('TokenStatsService', () => {
 
       mockRedisClient.get.mockResolvedValue(null); // no existing data
 
-      await tokenStatsService.safeRecordTokenUsage(
-        'azure',
-        'hifi',
-        usage,
-      );
+      await tokenStatsService.safeRecordTokenUsage('azure', 'gpt-4.1', usage);
 
       // Verify Redis was updated
       expect(mockRedisClient.multi).toHaveBeenCalled();
 
       // Verify database operations were attempted
-      // The actual database operations go through the global mock, 
+      // The actual database operations go through the global mock,
       // so we can't directly verify mockDb.insert was called.
       // But we can verify the method completed without throwing.
       expect(true).toBe(true); // This test just verifies no errors were thrown
     });
 
     it('should handle Redis and database errors gracefully', async () => {
+      mockConsole.setup();
       const usage: TokenUsageData = {
         promptTokens: 100,
         completionTokens: 150,
@@ -347,7 +325,7 @@ describe('TokenStatsService', () => {
 
       // Should not throw
       await expect(
-        tokenStatsService.safeRecordTokenUsage('azure', 'hifi', usage),
+        tokenStatsService.safeRecordTokenUsage('azure', 'gpt-4.1', usage),
       ).resolves.not.toThrow();
     });
   });
@@ -357,7 +335,7 @@ describe('TokenStatsService', () => {
       const mockQuota = {
         id: 'test-id',
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         maxTokensPerMessage: null,
         maxTokensPerMinute: 1000,
         maxTokensPerDay: null,
@@ -370,10 +348,7 @@ describe('TokenStatsService', () => {
         .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota
         .mockResolvedValue(JSON.stringify(mockStats)); // stats
 
-      const result = await tokenStatsService.getUsageReport(
-        'azure',
-        'hifi',
-      );
+      const result = await tokenStatsService.getUsageReport('azure', 'gpt-4.1');
 
       expect(result.quota).toEqual(mockQuota);
       expect(result.currentStats.currentMinuteTokens).toBe(500);

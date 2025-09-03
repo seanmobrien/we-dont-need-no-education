@@ -6,6 +6,7 @@ import { LanguageModelV2 } from '@ai-sdk/provider';
 import { LanguageModelQueue } from '@/lib/ai/services/chat';
 import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
 import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
+import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
@@ -18,10 +19,11 @@ describe('LanguageModelQueue', () => {
   let queue: LanguageModelQueue;
 
   beforeEach(() => {
+    setupMaps();
     // Create a mock LanguageModel
     mockModel = {
-      provider: 'test-provider',
-      modelId: 'test-model',
+      provider: 'azure',
+      modelId: 'gpt-4.1',
     } as LanguageModelV2;
 
     queue = new LanguageModelQueue({
@@ -32,7 +34,7 @@ describe('LanguageModelQueue', () => {
 
   afterEach(() => {
     queue.dispose();
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   describe('Constructor', () => {

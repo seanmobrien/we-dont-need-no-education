@@ -6,14 +6,14 @@ The State Management Protocol enables middleware in the language model processin
 
 ## Core Components
 
-### 1. StateManagementMiddleware
+### 1. MiddlewareStateManager
 
-The `StateManagementMiddleware` must be placed **first** in the middleware chain. It intercepts special protocol prompts and orchestrates state collection and restoration across all downstream middleware.
+The `MiddlewareStateManager` must be placed **first** in the middleware chain. It intercepts special protocol prompts and orchestrates state collection and restoration across all downstream middleware.
 
 ```typescript
 import { createStateManagementMiddleware } from '@/lib/ai/middleware/state-management';
 
-const stateManager = createStateManagementMiddleware();
+const stateManager = MiddlewareStateManager.Instance;
 ```
 
 ### 2. Protocol Constants
@@ -22,7 +22,7 @@ const stateManager = createStateManagementMiddleware();
 export const STATE_PROTOCOL = {
   COLLECT: '__COLLECT_MIDDLEWARE_STATE__',
   RESTORE: '__RESTORE_MIDDLEWARE_STATE__',
-  RESULT_KEY: '__MIDDLEWARE_STATE_RESULT__'
+  RESULT_KEY: '__MIDDLEWARE_STATE_RESULT__',
 } as const;
 ```
 
@@ -57,14 +57,14 @@ const statefulMiddleware = createStatefulMiddleware({
       middlewareState.requestCount++;
       middlewareState.lastPrompt = params.prompt as string;
       return await next({ model, params });
-    }
+    },
   },
   stateHandlers: {
     serialize: () => middlewareState,
     deserialize: (state) => {
       middlewareState = { ...state };
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -75,20 +75,20 @@ import { createSimpleStatefulMiddleware } from '@/lib/ai/middleware/state-manage
 
 const simpleStatefulMiddleware = createSimpleStatefulMiddleware(
   'my-middleware-id',
-  originalMiddleware
+  originalMiddleware,
 );
 ```
 
 ### Setting Up the Middleware Chain
 
 ```typescript
-import { 
+import {
   createStateManagementMiddleware,
   setNormalizedDefaultsMiddleware,
-  tokenStatsMiddleware
+  tokenStatsMiddleware,
 } from '@/lib/ai/middleware';
 
-const stateManager = createStateManagementMiddleware();
+const stateManager = MiddlewareStateManager.Instance;
 
 const wrappedModel = wrapLanguageModel({
   model: baseModel,
@@ -97,7 +97,7 @@ const wrappedModel = wrapLanguageModel({
     setNormalizedDefaultsMiddleware,
     tokenStatsMiddleware({ provider: 'azure', modelName: 'hifi' }),
     // ... other middleware
-  ]
+  ],
 });
 ```
 
@@ -109,9 +109,9 @@ import { STATE_PROTOCOL } from '@/lib/ai/middleware/state-management';
 async function collectChainState(model: LanguageModelV1) {
   const result = await generateText({
     model,
-    prompt: STATE_PROTOCOL.COLLECT // Magic string triggers collection
+    prompt: STATE_PROTOCOL.COLLECT, // Magic string triggers collection
   });
-  
+
   return new Map(JSON.parse(result.text));
 }
 
@@ -123,11 +123,14 @@ console.log('Collected states:', chainState);
 ### Restoring Middleware State
 
 ```typescript
-async function restoreChainState(model: LanguageModelV1, stateData: Map<string, any>) {
+async function restoreChainState(
+  model: LanguageModelV1,
+  stateData: Map<string, any>,
+) {
   await generateText({
     model,
     prompt: STATE_PROTOCOL.RESTORE,
-    stateData // Pass state data as parameter
+    stateData, // Pass state data as parameter
   });
 }
 
@@ -141,19 +144,22 @@ The protocol includes database support for middleware metadata:
 
 ```typescript
 // Drizzle schema
-export const middlewareMetadata = pgTable(
-  'middleware_metadata',
-  {
-    id: text().primaryKey().notNull(),
-    name: text().notNull(),
-    implementationPath: text('implementation_path').notNull(),
-    description: text(),
-    supportsStateSerialization: boolean('supports_state_serialization').default(false).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-    isActive: boolean('is_active').default(true).notNull(),
-  }
-);
+export const middlewareMetadata = pgTable('middleware_metadata', {
+  id: text().primaryKey().notNull(),
+  name: text().notNull(),
+  implementationPath: text('implementation_path').notNull(),
+  description: text(),
+  supportsStateSerialization: boolean('supports_state_serialization')
+    .default(false)
+    .notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+    .defaultNow()
+    .notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+});
 ```
 
 ## Middleware Integration Status
@@ -166,7 +172,7 @@ export const middlewareMetadata = pgTable(
 - **tokenStatsTracking**: Uses `createSimpleStatefulMiddleware` wrapper
 - **key-rate-limiter**: Uses `createStatefulMiddleware` with custom state handlers for rate limit context
 - **chat-history**: Uses `createStatefulMiddleware` with custom state handlers for processing queue state
-- **StateManagementMiddleware**: Core protocol implementation
+- **MiddlewareStateManager**: Core protocol implementation
 
 ### 🔄 Existing Middleware (Compatible but not yet wrapped)
 
@@ -190,7 +196,7 @@ The protocol is designed to be resilient:
 const stateCollection = new Map();
 const mockParams = {
   prompt: 'normal request',
-  [STATE_PROTOCOL.RESULT_KEY]: stateCollection
+  [STATE_PROTOCOL.RESULT_KEY]: stateCollection,
 };
 
 await middleware.wrapGenerate({ model, params: mockParams }, next);
@@ -200,6 +206,7 @@ expect(stateCollection.has('middleware-id')).toBe(true);
 ### Integration Tests
 
 Full end-to-end tests verify:
+
 - State collection across multiple middleware
 - State restoration functionality
 - Error handling scenarios
@@ -226,23 +233,23 @@ Full end-to-end tests verify:
 class RateLimitMiddleware implements StatefulMiddleware {
   private requestCount = 0;
   private resetTime = Date.now() + 60000;
-  
+
   getMiddlewareId() {
     return 'rate-limiter';
   }
-  
+
   serializeState() {
     return {
       requestCount: this.requestCount,
-      resetTime: this.resetTime
+      resetTime: this.resetTime,
     };
   }
-  
+
   deserializeState(state: any) {
     this.requestCount = state.requestCount || 0;
     this.resetTime = state.resetTime || Date.now() + 60000;
   }
-  
+
   // Standard middleware implementation
   get middleware(): LanguageModelV1Middleware {
     return createStatefulMiddleware({
@@ -252,15 +259,15 @@ class RateLimitMiddleware implements StatefulMiddleware {
           if (this.requestCount >= 10 && Date.now() < this.resetTime) {
             throw new Error('Rate limit exceeded');
           }
-          
+
           this.requestCount++;
           return await next({ model, params });
-        }
+        },
       },
       stateHandlers: {
         serialize: () => this.serializeState(),
-        deserialize: (state) => this.deserializeState(state)
-      }
+        deserialize: (state) => this.deserializeState(state),
+      },
     });
   }
 }
@@ -273,11 +280,12 @@ const model = wrapLanguageModel({
     stateManager.middleware,
     rateLimiter.middleware,
     // ... other middleware
-  ]
+  ],
 });
 ```
 
 This protocol enables powerful features like:
+
 - **Chat Message Queuing**: Preserve chat history across queue operations
 - **Distributed Processing**: Move conversations between different compute instances
 - **State Snapshots**: Create checkpoints for complex AI workflows

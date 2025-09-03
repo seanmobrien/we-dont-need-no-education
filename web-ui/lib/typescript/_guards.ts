@@ -27,9 +27,15 @@ export const isOperationCancelledError =
 export const isAbortablePromise = AbortablePromise.isAbortablePromise;
 
 interface IsKeyOfGuard {
+  // When called with a readonly array/tuple of literal keys, narrow the key to that array's element type
+  <T extends readonly (string | number | symbol)[]>(
+    key: unknown,
+    check: T,
+  ): key is T[number];
+  // Allow calling with no second argument or an explicit undefined/null to check only the key shape
+  <T extends object>(key: unknown, check?: undefined | null): key is keyof T;
   <T extends object>(key: unknown): key is keyof T;
-  <T extends string>(key: unknown, check: Array<T>): key is keyof T;
-  <T>(key: unknown, check: T): key is keyof T;
+  <T extends object>(key: unknown, check: T): key is keyof T;
 }
 
 /**
@@ -37,10 +43,11 @@ interface IsKeyOfGuard {
  * @param key - The value to check.
  * @returns True if the value is a key of the given type, false otherwise.
  */
-export const isKeyOf: IsKeyOfGuard = <T>(
+export const isKeyOf: IsKeyOfGuard = (
   key: unknown,
-  check?: T | Array<T>,
-): key is keyof T => {
+  check?: unknown,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): key is any => {
   if (check === undefined || check === null) {
     return false;
   }
@@ -50,10 +57,12 @@ export const isKeyOf: IsKeyOfGuard = <T>(
     typeof key === 'symbol'
   ) {
     if (Array.isArray(check)) {
-      return check.includes(key as T);
+      // runtime: check if any element equals the key
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (check as any[]).some((v) => v === key);
     }
-    if (typeof check === 'object') {
-      return key in check;
+    if (check && typeof check === 'object') {
+      return key in (check as Record<PropertyKey, unknown>);
     }
   }
   return false;

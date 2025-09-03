@@ -13,6 +13,7 @@ import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
 import {
   cacheWithRedis,
   setNormalizedDefaultsMiddleware,
+  MiddlewareStateManager,
   tokenStatsLoggingOnlyMiddleware,
 } from './middleware';
 
@@ -280,10 +281,16 @@ const getGoogleProvider = () => {
 let _providerRegistry: ReturnType<typeof createProviderRegistry> | undefined;
 export const getProviderRegistry = () => {
   if (_providerRegistry) return _providerRegistry;
-  _providerRegistry = createProviderRegistry({
-    azure: getAzureProvider(),
-    google: getGoogleProvider(),
-  });
+  _providerRegistry = createProviderRegistry(
+    {
+      azure: getAzureProvider(),
+      google: getGoogleProvider(),
+    },
+    {
+      languageModelMiddleware:
+        MiddlewareStateManager.Instance.getMiddlewareInstance(),
+    },
+  );
   return _providerRegistry;
 };
 

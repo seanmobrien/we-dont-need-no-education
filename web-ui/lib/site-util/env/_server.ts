@@ -46,9 +46,12 @@ const buildRawInstance = () => ({
   AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
   GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
   GOOGLE_GENERATIVE_AI_BASE_URL: process.env.GOOGLE_GENERATIVE_AI_BASE_URL,
+  GOOGLE_GENERATIVE_HIFI: process.env.GOOGLE_GENERATIVE_HIFI,
+  GOOGLE_GENERATIVE_LOFI: process.env.GOOGLE_GENERATIVE_LOFI,
+  GOOGLE_GENERATIVE_EMBEDDING: process.env.GOOGLE_GENERATIVE_EMBEDDING,
   REDIS_URL: process.env.REDIS_URL,
   REDIS_PASSWORD: process.env.REDIS_PASSWORD,
-  LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,    
+  LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,
   MEM0_DISABLED: process.env.MEM0_DISABLED,
   MEM0_API_HOST: process.env.MEM0_API_HOST,
   MEM0_UI_HOST: process.env.MEM0_UI_HOST,
@@ -57,6 +60,10 @@ const buildRawInstance = () => ({
   MEM0_PROJECT_ID: process.env.MEM0_PROJECT_ID,
   MEM0_API_KEY: process.env.MEM0_API_KEY,
   NODE_ENV: process.env.NODE_ENV,
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  OPENAI_HIFI: process.env.OPENAI_HIFI,
+  OPENAI_LOFI: process.env.OPENAI_LOFI,
+  OPENAI_EMBEDDING: process.env.OPENAI_EMBEDDING,
   TOKEN_BATCH_THRESHOLD: process.env.TOKEN_BATCH_THRESHOLD,
 });
 
@@ -132,6 +139,9 @@ const serverEnvSchema = z.object({
   GOOGLE_GENERATIVE_AI_BASE_URL: ZodProcessors.url().default(
     'https://generativelanguage.googleapis.com/v1beta',
   ),
+  GOOGLE_GENERATIVE_HIFI: z.string().default('gemini-2.5-pro'),
+  GOOGLE_GENERATIVE_LOFI: z.string().default('gemini-2.5-flash'),
+  GOOGLE_GENERATIVE_EMBEDDING: z.string().default('google-embedding'),
   REDIS_URL: z.string().min(1),
   REDIS_PASSWORD: z.string().min(1),
   LOCAL_DEV_AUTH_BYPASS_USER_ID: z.string().optional(),
@@ -143,6 +153,10 @@ const serverEnvSchema = z.object({
   MEM0_PROJECT_ID: ZodProcessors.nullableString().default(null),
   MEM0_API_KEY: z.string().optional().default('SKYNET'),
   NODE_ENV: z.string(),
+  OPENAI_API_KEY: z.string().optional(), // NOTE OpenAI direct model access not required
+  OPENAI_HIFI: z.string().default('gpt-5'),
+  OPENAI_LOFI: z.string().default('gpt-5-mini'),
+  OPENAI_EMBEDDING: z.string().default('text-embedding-3-large'),
 });
 
 export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;

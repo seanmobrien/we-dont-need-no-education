@@ -117,7 +117,6 @@ export class LoggedError implements Error {
           error: e,
           source,
           message,
-          stack: getStackTrace({ skip: 2 }),
           ...itsRecusionMan,
         });
         reporter()

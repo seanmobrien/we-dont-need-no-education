@@ -1,11 +1,14 @@
-import { debounce } from "@/lib/react-util/debounce";
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { debounce } from '@/lib/react-util/debounce';
 
 jest.useFakeTimers();
+const mockConsole = hideConsoleOutput();
 
 describe('debounce', () => {
   afterEach(() => {
     // jest.clearAllTimers();
     // jest.clearAllMocks();
+    mockConsole.dispose();
   });
 
   it('should call the function after the wait time', async () => {
@@ -42,7 +45,10 @@ describe('debounce', () => {
   });
 
   it('should reject with timeout if not called in time', async () => {
-    const fn = jest.fn(() => new Promise((resolve) => setTimeout(() => resolve(5), 300)));
+    mockConsole.setup();
+    const fn = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve(5), 300)),
+    );
     const debounced = debounce(fn, { wait: 100, timeout: 50 });
     const result = debounced();
     jest.advanceTimersByTime(151); // wait + timeout
@@ -58,7 +64,10 @@ describe('debounce', () => {
   });
 
   it('should reject if the function throws', async () => {
-    const fn = jest.fn(() => { throw new Error('fail'); });
+    mockConsole.setup();
+    const fn = jest.fn(() => {
+      throw new Error('fail');
+    });
     const debounced = debounce(fn, 10);
     const result = debounced();
     jest.advanceTimersByTime(10);
@@ -66,7 +75,9 @@ describe('debounce', () => {
   });
 
   it('should use default timeout if not specified', async () => {
-    const fn = jest.fn(() => new Promise((resolve) => setTimeout(() => resolve(5), 1000)));
+    const fn = jest.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve(5), 1000)),
+    );
     const debounced = debounce(fn, { wait: 10 });
     const result = debounced();
     jest.advanceTimersByTime(511); // wait + default timeout (500)

@@ -8,6 +8,7 @@ import {
   ErrorReporterConfig,
   ErrorReporterInterface,
 } from './types';
+import { isRunningOnEdge } from '../site-util/env';
 
 export { ErrorSeverity };
 
@@ -85,6 +86,52 @@ export class ErrorReporter implements ErrorReporterInterface {
     return ErrorReporter.instance;
   }
 
+  #createErrorReport(
+    error: Error | unknown,
+    severity: ErrorSeverity = ErrorSeverity.MEDIUM,
+    context: Partial<ErrorContext> = {},
+  ): ErrorReport {
+    let baseReport: ErrorReport;
+    // Check to see if this is an error report already
+    if (
+      typeof error === 'object' &&
+      !!error &&
+      'error' in error &&
+      isError(error.error) &&
+      'context' in error &&
+      !!error.context &&
+      'severity' in error &&
+      error.severity !== null &&
+      error.severity !== undefined
+    ) {
+      baseReport = error as ErrorReport;
+    } else {
+      // Ensure we have a proper Error object
+      const errorObj = this.normalizeError(error);
+      baseReport = {
+        error: errorObj,
+        severity,
+      } as ErrorReport;
+    }
+
+    // Enrich context with browser/environment data
+    const enrichedContext = this.enrichContext({
+      ...(baseReport.context ?? {}),
+      ...context,
+    });
+
+    // Create error report
+    return {
+      ...baseReport,
+      fingerprint: this.generateFingerprint(baseReport.error!, enrichedContext),
+      context: enrichedContext,
+      tags: {
+        ...(baseReport.tags ?? {}),
+        ...this.generateTags(baseReport.error!, enrichedContext),
+      },
+    };
+  }
+
   /**
    * Report an error with context and severity
    */
@@ -95,38 +142,26 @@ export class ErrorReporter implements ErrorReporterInterface {
   ): Promise<void> {
     try {
       // Ensure we have a proper Error object
-      const errorObj = this.normalizeError(error);
-
-      // Enrich context with browser/environment data
-      const enrichedContext = this.enrichContext(context);
-
-      // Create error report
-      const report: ErrorReport = {
-        error: errorObj,
-        severity,
-        context: enrichedContext,
-        fingerprint: this.generateFingerprint(errorObj, enrichedContext),
-        tags: this.generateTags(errorObj, enrichedContext),
-      };
+      const report = this.#createErrorReport(error, severity, context);
 
       if (this.config.enableStandardLogging) {
-        const { LoggedError } = await import(
-          '@/lib/react-util/errors/logged-error'
+        log((l) =>
+          l.error({
+            source: report.context.source ?? 'ErrorReporter',
+            error: report.error,
+            severity: report.severity,
+            fingerprint: report.fingerprint,
+            tags: report.tags,
+            context: report.context,
+          }),
         );
-        // Use LoggedError for consistent logging
-        LoggedError.isTurtlesAllTheWayDownBaby(errorObj, {
-          log: this.config.enableConsoleLogging,
-          source: 'ErrorReporter',
-          critical: severity === ErrorSeverity.CRITICAL,
-          ...enrichedContext,
-        });
       }
 
       // Console logging for development
       if (this.config.enableConsoleLogging) {
         console.group(`🐛 Error Report [${severity.toUpperCase()}]`);
-        console.error('Error:', errorObj);
-        console.table(enrichedContext);
+        console.error('Error:', report.error);
+        console.table(report.context);
         console.groupEnd();
       }
 
@@ -183,6 +218,9 @@ export class ErrorReporter implements ErrorReporterInterface {
    */
   public setupGlobalHandlers(): void {
     if (typeof window === 'undefined') return;
+    if (isRunningOnEdge()) {
+      console.log('setupGlobalHandlers::edge');
+    }
 
     // Unhandled errors
     window.addEventListener('error', (event) => {
@@ -303,6 +341,79 @@ export class ErrorReporter implements ErrorReporterInterface {
     }
   }
 
+  private async server_reportToApplicationInsights(
+    report: ErrorReport,
+  ): Promise<void> {
+    try {
+      // Dynamic import so code doesn't hard-depend on OpenTelemetry at runtime
+      const otel = await import('@opentelemetry/api');
+      const { trace, context, SpanStatusCode } =
+        otel as typeof import('@opentelemetry/api');
+
+      const activeSpan = trace.getSpan(context.active());
+      // Build safe attributes: ensure values are primitive (strings)
+      const safeAttributes: Record<string, string> = {
+        'error.fingerprint': report.fingerprint ?? '',
+        ...(report.tags ?? {}),
+        severity: String(report.severity),
+        context: JSON.stringify(report.context || {}),
+      };
+
+      // If there is an active and still-recording span, attach the error there.
+      // Span.isRecording() is the official guard to know if the span can accept events/attributes.
+      if (
+        activeSpan &&
+        typeof (activeSpan as { isRecording: () => boolean }).isRecording ===
+          'function' &&
+        (activeSpan as { isRecording: () => boolean }).isRecording()
+      ) {
+        try {
+          activeSpan.setAttributes(
+            safeAttributes as unknown as import('@opentelemetry/api').Attributes,
+          );
+        } catch {
+          // ignore attribute errors
+        }
+        activeSpan.recordException(report.error as unknown as Error);
+        activeSpan.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: report.error.message,
+        });
+        activeSpan.addEvent('error.reported', {
+          context: safeAttributes.context,
+        } as import('@opentelemetry/api').Attributes);
+        return;
+      }
+
+      // If there was an active span but it has ended (or no active span), create a new
+      // short-lived span that is linked to the original span context so the error stays
+      // correlated to the same trace.
+      const tracer = trace.getTracer('noeducation/error-reporter');
+      const links = activeSpan
+        ? [{ context: activeSpan.spanContext() }]
+        : undefined;
+      const span = tracer.startSpan('error.report', {
+        attributes:
+          safeAttributes as unknown as import('@opentelemetry/api').Attributes,
+        links,
+      });
+      try {
+        span.recordException(report.error as unknown as Error);
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: report.error.message,
+        });
+        span.addEvent('error.reported', {
+          context: safeAttributes.context,
+        } as import('@opentelemetry/api').Attributes);
+      } finally {
+        span.end();
+      }
+    } catch (err) {
+      log((l) => l.warn('OpenTelemetry error reporting failed', err));
+    }
+  }
+
   private async client_reportToApplicationInsights(
     report: ErrorReport,
   ): Promise<void> {
@@ -330,11 +441,15 @@ export class ErrorReporter implements ErrorReporterInterface {
   ): Promise<void> {
     // Implementation would depend on Application Insights setup
     // This is a placeholder for Azure Application Insights integration
-    if (typeof window === 'undefined' || process.env.NEXT_RUNTIME === 'EDGE') {
+    if (typeof window === 'undefined') {
+      await this.server_reportToApplicationInsights(report);
+      return;
+    }
+    if (process.env.NEXT_RUNTIME === 'EDGE') {
+      log((l) => l.debug('Would report to Application Insights:', report));
       return;
     }
     await this.client_reportToApplicationInsights(report);
-    log((l) => l.debug('Would report to Application Insights:', report));
   }
 
   /**

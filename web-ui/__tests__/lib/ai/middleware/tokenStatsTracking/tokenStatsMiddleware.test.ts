@@ -30,6 +30,8 @@ import {
   tokenStatsWithQuotaMiddleware,
   TokenStatsServiceType,
 } from '@/lib/ai/middleware/tokenStatsTracking';
+import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
+import { wrapLanguageModel } from 'ai';
 
 type MockTokenStats = {
   [k in keyof TokenStatsServiceType]: k extends 'mockClear'
@@ -57,8 +59,10 @@ describe('TokenStatsMiddleware', () => {
       },
       model: { modelId: 'test-model' },
     }) as any;
+
   beforeEach(() => {
     reset();
+    setupMaps();
   });
 
   describe('tokenStatsMiddleware', () => {
@@ -306,6 +310,36 @@ describe('TokenStatsMiddleware', () => {
       );
     });
 
+    it('should override provider and model', async () => {
+      const OVERRIDE_PROVIDER = 'override-provider';
+      const OVERRIDE_MODEL = 'override-model';
+      const ORIGINAL_MODEL = 'orig-model';
+      const ORIGINAL_PROVIDER = 'orig-provider';
+      const model: any = {
+        modelId: ORIGINAL_MODEL,
+        provider: ORIGINAL_PROVIDER,
+      };
+      let wrappedModel = wrapLanguageModel({
+        model,
+        middleware: tokenStatsMiddleware({
+          enableLogging: false,
+          provider: OVERRIDE_PROVIDER,
+          modelName: OVERRIDE_MODEL,
+        }),
+      });
+      expect(wrappedModel.modelId).toBe(OVERRIDE_MODEL);
+      expect(wrappedModel.provider).toBe(OVERRIDE_PROVIDER);
+      wrappedModel = wrapLanguageModel({
+        model,
+        middleware: tokenStatsMiddleware({
+          enableLogging: false,
+          provider: OVERRIDE_PROVIDER,
+          modelName: '',
+        }),
+      });
+      expect(wrappedModel.modelId).toBe(ORIGINAL_MODEL);
+    });
+
     it('should handle missing provider/model config', async () => {
       const middleware = tokenStatsMiddleware({
         enableLogging: false,
@@ -324,11 +358,7 @@ describe('TokenStatsMiddleware', () => {
 
       await middleware.wrapGenerate!(createMockContext(mockDoGenerate));
 
-      expect(mockTokenStatsService.safeRecordTokenUsage).toHaveBeenCalledWith(
-        'unknown',
-        'test-model',
-        expect.any(Object),
-      );
+      expect(mockTokenStatsService.safeRecordTokenUsage).not.toHaveBeenCalled();
     });
   });
 });

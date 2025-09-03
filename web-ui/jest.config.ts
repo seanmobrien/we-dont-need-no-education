@@ -19,6 +19,7 @@ const config: Config.InitialOptions = {
     // '**/?(*.)+(spec|test).(ts|tsx)',
     '!/.next/**',
     '!/.upstream/**',
+    '!/(rsc)/**',
   ], // Test file patterns
 
   // Concurrency configuration to prevent hanging issues
@@ -51,6 +52,7 @@ const config: Config.InitialOptions = {
     '<rootDir>/node_modules/(?!(react-error-boundary)/)',
     '<rootDir>/.next',
     '<rootDir>/.upstream',
+	'<rootDir>/(rsc)',
   ],
   collectCoverage: true, // Enable coverage collection
   //collectCoverage: false, // Enable coverage collection
@@ -61,6 +63,7 @@ const config: Config.InitialOptions = {
     //'!**/*.{jsx,tsx}', // Exclude JSX-based
     '!.next/**/*.*', // Exclude next build files
     '!.upstream/**/*.*', // Exclude upstream build files
+    '!(rsc)/**/*.*', // Exclude upstream build files
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats

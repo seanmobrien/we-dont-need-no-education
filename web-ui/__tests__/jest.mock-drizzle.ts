@@ -20,17 +20,33 @@
  * arrange fluent chains like: `db.from('table').select(...).where(...).execute()`.
  */
 export const QueryBuilderMethodValues = [
-  'from','select','where','orderBy','limit',
-  'offset','execute','innerJoin','fullJoin',
-  'groupBy', 'as', 'leftJoin'
+  'from',
+  'select',
+  'where',
+  'orderBy',
+  'limit',
+  'offset',
+  'execute',
+  'innerJoin',
+  'fullJoin',
+  'groupBy',
+  'as',
+  'leftJoin',
 ] as const;
+
+export const InsertBuilderMethodValues = [
+  'values',
+  'onConflictDoUpdate',
+] as const;
+export type InsertBuilderMethodType =
+  (typeof InsertBuilderMethodValues)[number];
 
 /**
  * Union of allowed query builder method names.
  *
  * Example: `let method: QueryBuilderMethodType = 'select'`.
  */
-export type QueryBuilderMethodType = typeof QueryBuilderMethodValues[number];
+export type QueryBuilderMethodType = (typeof QueryBuilderMethodValues)[number];
 
 /**
  * Minimal representation of a mock query record used by some tests.
@@ -120,6 +136,45 @@ export type MockDbQueryCallback = (
 export type IMockQueryBuilder = {
   /** Mapping of supported builder methods to Jest mocks. */
   [K in QueryBuilderMethodType]: jest.Mock;
+} & {
+  insert(...args: any[]): IMockInsertBuilder;
+  /**
+   * Seed the mock with rows or provide a callback to compute them dynamically.
+   *
+   * - When `v` is an array, it becomes the returned `rows`.
+   * - When `v` is a callback, it will receive a `MockDbQueryContext` and may
+   *   return rows or a `MockDbQueryResult` for fine-grained control.
+   *
+   * @typeParam T - Row shape stored in the mock
+   * @param v Rows array or async callback
+   * @param rows Optional override rows when `v` is a callback (rarely used)
+   * @param state Optional opaque state to carry through the mock
+   */
+  __setRecords: <T extends Record<string, unknown> = Record<string, unknown>>(
+    v: T[] | MockDbQueryCallback,
+    rows?: T[] | null,
+    state?: unknown,
+  ) => void;
+  /**
+   * Retrieve the currently seeded rows in a typed fashion.
+   * @typeParam T - Expected row shape
+   */
+  __getRecords: <T>() => T[];
+  /** Reset all jest mocks and internal state to their initial condition. */
+  __resetMocks: () => void;
+};
+
+/**
+ * Minimal, chainable query builder interface used in tests.
+ *
+ * All common builder methods are exposed as `jest.Mock`s to support
+ * fluent chaining and invocation inspection via `mock.calls`, `mock.results`, etc.
+ * In addition, a small control surface is provided to seed rows, inspect
+ * current records, and reset mocks between tests.
+ */
+export type IMockInsertBuilder = {
+  /** Mapping of supported builder methods to Jest mocks. */
+  [K in InsertBuilderMethodType]: jest.Mock<IMockInsertBuilder>;
 } & {
   /**
    * Seed the mock with rows or provide a callback to compute them dynamically.

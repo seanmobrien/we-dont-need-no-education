@@ -1,49 +1,60 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/**
- * Integration tests for chat history middleware supporting both streaming and text completions
- */
-import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
-import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
-import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 
 // Mock external dependencies
-jest.mock('@/lib/drizzle-db', () => ({
-  drizDb: jest.fn(() => ({
-    transaction: jest.fn((fn) =>
-      fn({
-        select: jest.fn(() => ({
-          from: jest.fn(() => ({
-            where: jest.fn(() => ({
-              limit: jest.fn(() => ({
-                execute: jest.fn(() => Promise.resolve([])),
+jest.mock('@/lib/drizzle-db', () => {
+  const schema = jest.requireActual('@/lib/drizzle-db/schema');
+  const exports = jest.requireActual('@/lib/drizzle-db');
+
+  return {
+    ...exports,
+    drizDb: jest.fn(() => ({
+      transaction: jest.fn((fn) =>
+        fn({
+          select: jest.fn(() => ({
+            from: jest.fn(() => ({
+              where: jest.fn(() => ({
+                limit: jest.fn(() => ({
+                  execute: jest.fn(() => Promise.resolve([])),
+                })),
               })),
             })),
           })),
-        })),
-        insert: jest.fn(() => ({
-          values: jest.fn(() => ({
-            returning: jest.fn(() => ({
-              execute: jest.fn(() => Promise.resolve([{ messageId: 1 }])),
+          insert: jest.fn(() => ({
+            values: jest.fn(() => ({
+              returning: jest.fn(() => ({
+                execute: jest.fn(() => Promise.resolve([{ messageId: 1 }])),
+              })),
+              execute: jest.fn(() => Promise.resolve()),
             })),
-            execute: jest.fn(() => Promise.resolve()),
           })),
-        })),
-        execute: jest.fn(() => Promise.resolve([{ allocate_scoped_ids: 1 }])),
-      }),
-    ),
-    query: {
-      chats: {
-        findFirst: jest.fn(() => Promise.resolve(null)),
+          execute: jest.fn(() => Promise.resolve([{ allocate_scoped_ids: 1 }])),
+        }),
+      ),
+      query: {
+        chats: {
+          findFirst: jest.fn(() => Promise.resolve(null)),
+        },
       },
-    },
-    update: jest.fn(() => ({
-      set: jest.fn(() => ({
-        where: jest.fn(() => Promise.resolve()),
+      update: jest.fn(() => ({
+        set: jest.fn(() => ({
+          where: jest.fn(() => Promise.resolve()),
+        })),
       })),
     })),
-  })),
-}));
+    schema,
+  };
+});
+
+/**
+ * Integration tests for chat history middleware supporting both streaming and text completions
+ */
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
+import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { schema, drizDb } from '@/lib/drizzle-db';
 
 jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
@@ -87,74 +98,98 @@ describe('Chat History Middleware Integration', () => {
     });
 
     it('should handle wrapGenerate method call', async () => {
-      // Arrange
-      const middleware = createChatHistoryMiddlewareEx(mockContext);
-      const mockDoGenerate = jest.fn(() =>
-        Promise.resolve({
-          text: 'Test response',
-          finishReason: 'stop',
-          usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
-          content: [{ type: 'text-delta', delta: 'Test response' }],
-        }),
-      );
+      const mockConsole = hideConsoleOutput();
+      mockConsole.setup();
 
-      const mockParams = {
-        prompt: [{ role: 'user', content: 'Hello' }],
-      };
+      try {
+        // Arrange
+        const middleware = createChatHistoryMiddlewareEx(mockContext);
+        const mockDoGenerate = jest.fn(() =>
+          Promise.resolve({
+            text: 'Test response',
+            finishReason: 'stop',
+            usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
+            content: [{ type: 'text-delta', delta: 'Test response' }],
+          }),
+        );
 
-      // Act
-      const result = await middleware.wrapGenerate!({
-        doGenerate: mockDoGenerate as any,
-        params: mockParams as any,
-      } as any);
+        const mockParams = {
+          prompt: [{ role: 'user', content: 'Hello' }],
+        };
 
-      // Assert
-      expect(result).toBeDefined();
-      expect((result.content[0] as any).delta).toBe('Test response');
-      expect(mockDoGenerate).toHaveBeenCalled();
+        // Act
+        const result = await middleware.wrapGenerate!({
+          doGenerate: mockDoGenerate as any,
+          params: mockParams as any,
+        } as any);
+
+        // Assert
+        expect(result).toBeDefined();
+        expect((result.content[0] as any).delta).toBe('Test response');
+        expect(mockDoGenerate).toHaveBeenCalled();
+      } finally {
+        mockConsole.dispose();
+      }
     });
 
     it('should handle wrapStream method call', async () => {
-      // Arrange
-      const middleware = createChatHistoryMiddlewareEx(mockContext);
+      const mockConsole = hideConsoleOutput();
+      mockConsole.setup();
 
-      // Create a simple mock stream
-      const mockStream = {
-        [Symbol.asyncIterator]: async function* () {
-          yield { type: 'text-delta', delta: 'Hello' };
-          yield { type: 'finish', finishReason: 'stop' };
-        },
-        pipeThrough: jest.fn(function (this: any) {
-          return this;
-        }),
-      };
+      try {
+        // Arrange
+        const middleware = createChatHistoryMiddlewareEx(mockContext);
 
-      const mockDoStream = jest.fn(() =>
-        Promise.resolve({
-          stream: mockStream,
-          rawCall: { rawPrompt: 'test', rawSettings: {} },
-          rawResponse: { headers: {} },
-        }),
-      );
+        // Create a simple mock stream
+        const mockStream = {
+          [Symbol.asyncIterator]: async function* () {
+            yield { type: 'text-delta', delta: 'Hello' };
+            yield { type: 'finish', finishReason: 'stop' };
+          },
+          pipeThrough: jest.fn(function (this: any) {
+            return this;
+          }),
+        };
 
-      const mockParams = {
-        prompt: [{ role: 'user', content: 'Hello' }],
-      };
+        const mockDoStream = jest.fn(() =>
+          Promise.resolve({
+            stream: mockStream,
+            rawCall: { rawPrompt: 'test', rawSettings: {} },
+            rawResponse: { headers: {} },
+          }),
+        );
 
-      // Act
-      const result = await middleware.wrapStream!({
-        doStream: mockDoStream as any,
-        params: mockParams as any,
-      } as any);
+        const mockParams = {
+          prompt: [{ role: 'user', content: 'Hello' }],
+        };
 
-      // Assert
-      expect(result).toBeDefined();
-      expect(result.stream).toBeDefined();
-      expect(mockDoStream).toHaveBeenCalled();
+        // Act
+        const result = await middleware.wrapStream!({
+          doStream: mockDoStream as any,
+          params: mockParams as any,
+        } as any);
+
+        // Assert
+        expect(result).toBeDefined();
+        expect(result.stream).toBeDefined();
+        expect(mockDoStream).toHaveBeenCalled();
+      } finally {
+        mockConsole.dispose();
+      }
     });
   });
 
   describe('Error Handling', () => {
+    const mockConsole = hideConsoleOutput();
+
+    beforeEach(() => {
+      mockConsole.setup();
+    });
+
+    afterEach(() => {
+      mockConsole.dispose();
+    });
+
     it('should gracefully handle database errors in wrapGenerate', async () => {
       // Arrange - Mock transaction to fail
       const mockDb = await import('@/lib/drizzle-db');
