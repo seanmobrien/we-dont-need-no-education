@@ -220,25 +220,27 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs \
-  && adduser --system --uid 1001 nextjs 
+  && adduser --system --uid 1001 nextjs \
+  && mkdir /app/scripts
 
 # Automatically leverage output traces to reduce image size
 
 COPY --link=true --from=builder /app/.next/standalone ./
 COPY --link=true --from=builder /app/.next/static ./.next/static
-COPY --link=true ./public ./public
+#COPY --link=true ./public ./public
+COPY --link=true --from=builder /app/public ./public
 
 # Copy rate retry script
-COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/
-COPY --link=true ./app/scripts/rate-retry-client.sh ./scripts/
-RUN chmod +x ./scripts/rate-retry-client.sh
+#COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/
+COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/rate-retry-client.sh
+#RUN chmod +x ./scripts/rate-retry-client.sh
 
 # Set up cron for rate retry processing
 RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.sh --host http://localhost:3000 --log-file /var/log/rate-retry.log" > /etc/crontabs/nextjs
 RUN crontab -u nextjs /etc/crontabs/nextjs
 
-# Ensure log directory exists
-RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app
+# Ensure log directory exists, set owner and execute modes
+RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app && chmod +x /app/scripts/rate-retry-client.sh
 
 USER nextjs
 
