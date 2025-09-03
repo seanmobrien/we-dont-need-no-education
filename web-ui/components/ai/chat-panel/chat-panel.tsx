@@ -18,12 +18,10 @@ import PublishIcon from '@mui/icons-material/Publish';
 import { useChat } from '@ai-sdk/react';
 import { UIMessage, DefaultChatTransport } from 'ai';
 import { ChatMenu } from './chat-menu';
-import {
-  AiModelType,
-  AnnotatedRetryMessage,
-  isAnnotatedRetryMessage,
-  generateChatId,
-} from '@/lib/ai/core';
+import { isAnnotatedRetryMessage } from '@/lib/ai/core/guards';
+import type { AiModelType } from '@/lib/ai/core/unions';
+import type { AnnotatedRetryMessage } from '@/lib/ai/core/types';
+import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
 import { log } from '@/lib/logger';
 import {
   /*enhancedChatFetch, */ useChatFetchWrapper,
@@ -66,23 +64,6 @@ const loadCurrentMessageState = (): UIMessage[] | undefined => {
     return undefined;
   }
   return JSON.parse(messages) as Array<UIMessage> | undefined;
-};
-
-const splitIds = (id: string): [string, string | undefined] => {
-  if (!id) {
-    log((l) => l.warn('No ID provided to splitIds, returning emtpy values.'));
-    return ['', undefined];
-  }
-  const splitIndex = id.indexOf(':');
-  if (splitIndex === -1) {
-    log((l) => l.warn('No ":" found in ID, returning as is.'));
-    return [id, undefined];
-  }
-  if (splitIndex === 0 || splitIndex === id.length - 1) {
-    log((l) => l.warn('Invalid ID format, returning empty values.'));
-    return ['', undefined];
-  }
-  return [id.slice(0, splitIndex), id.slice(splitIndex + 1)];
 };
 
 const stable_onFinish = ({ message }: { message: UIMessage }) => {
@@ -339,6 +320,7 @@ const ChatPanel = ({ page }: { page: string }) => {
           headers: {
             'x-active-model': withModel,
             'x-active-page': page,
+            // still available: x-write-enabled, x-memory-disabled, x-memory-disabled
           },
         },
       );

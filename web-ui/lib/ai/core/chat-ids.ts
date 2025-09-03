@@ -39,7 +39,9 @@ export const notCryptoSafeKeyHash = (str: string): string => {
  * @param seed - Optional. The seed value to initialize the random number generator. If not provided, a random seed is used.
  * @returns An object containing the seed used and the generated chat ID string.
  */
-export const generateChatId = (seed?: number | string): { seed: number; id: string } => {
+export const generateChatId = (
+  seed?: number | string,
+): { seed: number; id: string } => {
   // Does not need to be cryptographically secure, so we can use a simple seeded random function
   let actualSeed: number;
   if (!seed) {
@@ -57,10 +59,90 @@ export const generateChatId = (seed?: number | string): { seed: number; id: stri
     if (cb === undefined) {
       log((l) => l.error('Chat ID generation failed', { seed: actualSeed }));
     }
-    id += cb ?? '';    
+    id += cb ?? '';
   }
   return {
     seed: actualSeed,
     id,
   };
+};
+
+/**
+ * Splits a compound identifier into primary and secondary parts using the first colon (":") as a delimiter.
+ *
+ * The function is defensive and will never throw. It handles malformed inputs by returning empty or partial results,
+ * and emits warnings for non-ideal cases. No trimming or normalization is performed on the input.
+ *
+ * Behavior summary:
+ * - If `id` is falsy (e.g., empty string), returns ["", undefined].
+ * - If no colon is found, returns [id, undefined].
+ * - If the colon is the first or last character (e.g., ":foo" or "foo:"), returns ["", undefined].
+ * - Otherwise, returns [leftOfColon, rightOfColon].
+ *
+ * @param id - The identifier to split, typically in the form "primary:secondary".
+ * @returns A tuple containing the primary segment and an optional secondary segment: [primary, secondary | undefined].
+ *
+ * @remarks
+ * - Only the first colon is used as the split point; additional colons remain in the secondary segment.
+ * - This function does not trim whitespace or validate segment content.
+ * - Logs warnings for unexpected inputs and edge cases.
+ *
+ * @example
+ * // Basic usage with both parts
+ * const [chatId, messageId] = splitIds("chat123:msg456");
+ * // chatId === "chat123"
+ * // messageId === "msg456"
+ *
+ * @example
+ * // No secondary part present
+ * const [chatId, messageId] = splitIds("chat123");
+ * // chatId === "chat123"
+ * // messageId === undefined
+ *
+ * @example
+ * // Empty or falsy input
+ * const [chatId, messageId] = splitIds("");
+ * // chatId === ""
+ * // messageId === undefined
+ *
+ * @example
+ * // Invalid placement of delimiter
+ * splitIds(":msg");   // ["", undefined]
+ * splitIds("chat:");  // ["", undefined]
+ *
+ * @example
+ * // Only the first colon is used for splitting
+ * const [primary, secondary] = splitIds("a:b:c:d");
+ * // primary === "a"
+ * // secondary === "b:c:d"
+ *
+ * @example
+ * // Safe destructuring with defaults and recomposition
+ * const [primary, secondary] = splitIds(userInput ?? "");
+ * const canonicalId = secondary ? `${primary}:${secondary}` : primary;
+ *
+ * @example
+ * // Using with guards
+ * const [entityId, subId] = splitIds(sourceId);
+ * if (!subId) {
+ *   // Handle entity-level operations
+ * } else {
+ *   // Handle sub-entity operations
+ * }
+ */
+export const splitIds = (id: string): [string, string | undefined] => {
+  if (!id) {
+    log((l) => l.warn('No ID provided to splitIds, returning emtpy values.'));
+    return ['', undefined];
+  }
+  const splitIndex = id.indexOf(':');
+  if (splitIndex === -1) {
+    log((l) => l.warn('No ":" found in ID, returning as is.'));
+    return [id, undefined];
+  }
+  if (splitIndex === 0 || splitIndex === id.length - 1) {
+    log((l) => l.warn('Invalid ID format, returning empty values.'));
+    return ['', undefined];
+  }
+  return [id.slice(0, splitIndex), id.slice(splitIndex + 1)];
 };

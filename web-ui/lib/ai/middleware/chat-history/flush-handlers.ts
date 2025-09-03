@@ -1,10 +1,10 @@
 /**
  * @fileoverview Flush Handlers for Chat History Middleware
- * 
+ *
  * This module provides utility functions for handling the completion of chat turns,
  * including finalizing messages, updating turn status, generating chat titles,
  * and handling error scenarios during the flush operation.
- * 
+ *
  * @module lib/ai/middleware/chat-history/flush-handlers
  * @version 1.0.0
  * @since 2025-07-17
@@ -16,7 +16,10 @@ import { drizDb, schema } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
 import { instrumentFlushOperation } from './instrumentation';
-import { insertPendingAssistantMessage, reserveTurnId } from './import-incoming-message';
+import {
+  insertPendingAssistantMessage,
+  reserveTurnId,
+} from './import-incoming-message';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { summarizeMessageRecord } from '@/lib/ai/chat/message-optimizer-tools';
 
@@ -31,13 +34,13 @@ const DEFAULT_FLUSH_CONFIG: FlushConfig = {
 
 /**
  * Finalizes the assistant message by updating its content and marking it as complete.
- * 
+ *
  * This function updates the assistant message with the final accumulated text
  * and changes its status from "streaming" to "complete".
- * 
+ *
  * @param context - The flush context containing message details
  * @returns Promise that resolves when message is finalized
- * 
+ *
  * @example
  * ```typescript
  * await finalizeAssistantMessage({
@@ -49,8 +52,10 @@ const DEFAULT_FLUSH_CONFIG: FlushConfig = {
  * });
  * ```
  */
-export async function finalizeAssistantMessage(context: FlushContext): Promise<void> {
-  try{
+export async function finalizeAssistantMessage(
+  context: FlushContext,
+): Promise<void> {
+  try {
     if (!context.messageId) {
       if (!context.generatedText?.trim()) {
         log((l) =>
@@ -60,13 +65,13 @@ export async function finalizeAssistantMessage(context: FlushContext): Promise<v
           }),
         );
         return;
-      }    
-      await drizDb().transaction(async tx => {    
+      }
+      await drizDb().transaction(async (tx) => {
         let thisTurnId = context.turnId;
         if (!thisTurnId) {
           thisTurnId = await reserveTurnId(tx, context.chatId);
           context.turnId = thisTurnId;
-        }    
+        }
         await insertPendingAssistantMessage(
           tx,
           context.chatId,
@@ -74,20 +79,25 @@ export async function finalizeAssistantMessage(context: FlushContext): Promise<v
           0,
           0,
           context.generatedText,
-          2
         );
       });
-      return;      
+      return;
     }
 
     await drizDb()
       .update(schema.chatMessages)
-      .set(context.generatedText ? {
-        content: JSON.stringify([{type: 'text', text: context.generatedText}]),
-        statusId: 2, // complete status
-      } : {
-        statusId: 2, // complete status
-      })
+      .set(
+        context.generatedText
+          ? {
+              content: JSON.stringify([
+                { type: 'text', text: context.generatedText },
+              ]),
+              statusId: 2, // complete status
+            }
+          : {
+              statusId: 2, // complete status
+            },
+      )
       .where(
         and(
           eq(schema.chatMessages.chatId, context.chatId),
@@ -119,14 +129,14 @@ export async function finalizeAssistantMessage(context: FlushContext): Promise<v
 
 /**
  * Completes the chat turn by updating its status and recording performance metrics.
- * 
+ *
  * This function marks the turn as complete, records the completion timestamp,
  * and calculates the total latency for the turn.
- * 
+ *
  * @param context - The flush context containing turn details
  * @param latencyMs - The calculated latency in milliseconds
  * @returns Promise that resolves when turn is completed
- * 
+ *
  * @example
  * ```typescript
  * await completeChatTurn(context, 1250); // 1.25 seconds
@@ -168,9 +178,10 @@ export async function completeChatTurn(
           eq(schema.chatMessages.chatId, context.chatId),
           eq(schema.chatMessages.turnId, context.turnId!),
         ),
-      ).execute()
-      .then(x => x.map(
-        (m) =>
+      )
+      .execute()
+      .then((x) =>
+        x.map((m) =>
           // Process each message for summarization
           summarizeMessageRecord({
             chatId: m.chatId,
@@ -187,9 +198,10 @@ export async function completeChatTurn(
                 messageId: context.messageId,
               },
             });
-          return Promise.resolve();
-        })
-      ));
+            return Promise.resolve();
+          }),
+        ),
+      );
     log((l) =>
       l.debug('Chat turn completed', {
         chatId: context.chatId,
@@ -211,15 +223,15 @@ export async function completeChatTurn(
 
 /**
  * Generates and sets a chat title if one doesn't exist.
- * 
+ *
  * This function automatically generates a title for new chats based on the
  * first few words of the generated response. It only runs if the chat
  * doesn't already have a title.
- * 
+ *
  * @param context - The flush context containing chat details
  * @param config - Configuration for title generation
  * @returns Promise that resolves when title is set (or skipped)
- * 
+ *
  * @example
  * ```typescript
  * await generateChatTitle(context, {
@@ -255,7 +267,9 @@ export async function generateChatTitle(
     }
 
     // Generate title from first few words
-    const words = context.generatedText.split(' ').slice(0, config.titleWordCount);
+    const words = context.generatedText
+      .split(' ')
+      .slice(0, config.titleWordCount);
     const title = words.join(' ').substring(0, config.maxTitleLength);
 
     if (title.trim()) {
@@ -286,14 +300,14 @@ export async function generateChatTitle(
 
 /**
  * Marks a chat turn as failed due to an error during processing.
- * 
+ *
  * This function updates the turn status to "error", records the completion time,
  * and stores the error message for debugging purposes.
- * 
+ *
  * @param context - The flush context containing turn details
  * @param error - The error that caused the turn to fail
  * @returns Promise that resolves when turn is marked as failed
- * 
+ *
  * @example
  * ```typescript
  * await markTurnAsError(context, new Error('Database connection failed'));
@@ -351,17 +365,17 @@ export async function markTurnAsError(
 
 /**
  * Main flush handler that orchestrates the completion of a chat turn.
- * 
+ *
  * This function coordinates all the steps needed to properly complete a chat turn:
  * 1. Finalizes the assistant message
  * 2. Completes the turn with performance metrics
  * 3. Generates a chat title if needed
  * 4. Logs completion details
- * 
+ *
  * @param context - The flush context containing all necessary details
  * @param config - Optional configuration for flush behavior
  * @returns Promise resolving to the flush result
- * 
+ *
  * @example
  * ```typescript
  * const result = await handleFlush({
@@ -371,7 +385,7 @@ export async function markTurnAsError(
  *   generatedText: 'Hello, how can I help you?',
  *   startTime: Date.now() - 1250
  * });
- * 
+ *
  * if (result.success) {
  *   console.log(`Turn completed in ${result.latencyMs}ms`);
  * }

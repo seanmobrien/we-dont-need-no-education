@@ -9,6 +9,7 @@ import {
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 // import type { ChatRequestMessage } from '@/lib/ai/types';
 import { isAiLanguageModelType } from '@/lib/ai/core/guards';
+import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
 import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
 import { toolProviderSetFactory } from '@/lib/ai/mcp/toolProviderFactory';
@@ -18,7 +19,6 @@ import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { generateChatId } from '@/lib/ai/core';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import { ToolProviderSet } from '@/lib/ai/mcp/types';
@@ -75,6 +75,31 @@ const toolProviderFactory = ({
         ]),
   ]);
 
+const extractRequestParams = async (req: NextRequest) => {
+  // Pull messages and ID from body
+  const { messages, id } = (await req.json()) ?? {};
+  const modelFromRequest =
+    req.headers.get('x-active-model') ?? env('NEXT_PUBLIC_DEFAULT_AI_MODEL');
+  const writeEnabled = req.headers.get('x-write-enabled') === 'true';
+  const memoryDisabled = req.headers.get('x-memory-disabled') === 'true';
+  const activePage = req.headers.get('x-active-page') === 'true';
+  // Extract thread portion of id from message id
+  const [threadId] = splitIds(id ?? undefined);
+  // and return it all in a handly extractable payload
+  return {
+    activePage,
+    messages,
+    id,
+    threadId,
+    modelFromRequest,
+    writeEnabled,
+    memoryDisabled,
+    model: isAiLanguageModelType(modelFromRequest)
+      ? modelFromRequest
+      : env('NEXT_PUBLIC_DEFAULT_AI_MODEL'),
+  };
+};
+
 export const POST = wrapRouteRequest(
   async (req: NextRequest) => {
     const session = await auth();
@@ -85,24 +110,23 @@ export const POST = wrapRouteRequest(
     ) {
       return new Response('Unauthorized', { status: 401 });
     }
+    if (!session || !session.user) {
+      throw new Error('Unauthorized');
+    }
     const {
+      // activePage,
       messages,
       id,
-      data: {
-        model: modelFromRequest,
-        threadId,
-        writeEnabled = false,
-        memoryDisabled,
-      } = {},
-    } = (await req.json()) ?? {};
-    const model = isAiLanguageModelType(modelFromRequest)
-      ? modelFromRequest
-      : env('NEXT_PUBLIC_DEFAULT_AI_MODEL');
-
+      threadId,
+      // modelFromRequest,
+      writeEnabled,
+      memoryDisabled,
+      model,
+    } = await extractRequestParams(req);
+    // Validate args
     if (!Array.isArray(messages) || messages.length === 0) {
       return new Response('Invalid messages format', { status: 400 });
     }
-
     const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
     // Apply advanced tool message optimization with AI-powered summarization
     const optimizedMessages = await optimizeMessagesWithToolSummarization(
@@ -111,7 +135,6 @@ export const POST = wrapRouteRequest(
       session?.user?.id,
       chatHistoryId,
     );
-
     // Log optimization results for monitoring
     if (optimizedMessages.length !== messages.length) {
       log((l) =>
@@ -124,7 +147,7 @@ export const POST = wrapRouteRequest(
         }),
       );
     }
-
+    // Get tools
     try {
       toolProviders ??= await toolProviderFactory({
         req,
@@ -146,7 +169,7 @@ export const POST = wrapRouteRequest(
         model: baseModel,
         chatHistoryContext,
       });
-
+      // attach tools
       let isRateLimitError = false;
       let retryAfter = 0;
       toolProviders ??= await toolProviderFactory({
