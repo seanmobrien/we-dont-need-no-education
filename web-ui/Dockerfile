@@ -226,10 +226,11 @@ RUN addgroup --system --gid 1001 nodejs \
 
 COPY --link=true --from=builder /app/.next/standalone ./
 COPY --link=true --from=builder /app/.next/static ./.next/static
-COPY --link=true --from=builder /public ./public
+COPY --link=true ./public ./public
 
 # Copy rate retry script
 COPY --link=true --from=builder /app/scripts/rate-retry-client.sh ./scripts/
+COPY --link=true ./app/scripts/rate-retry-client.sh ./scripts/
 RUN chmod +x ./scripts/rate-retry-client.sh
 
 # Set up cron for rate retry processing
