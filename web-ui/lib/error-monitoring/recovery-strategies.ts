@@ -50,11 +50,7 @@ const uiOnly = (
 ): (() => void | Promise<void>) => {
   const recoveryAction =
     typeof action === 'string'
-      ? (recoveryStrategies && Array.isArray(recoveryStrategies)
-          ? recoveryStrategies
-              .flatMap((s) => s.actions)
-              .find((a) => a.id === action)
-          : undefined) ?? {
+      ? {
           id: action,
           label: `Action ${action} not found.`,
         }

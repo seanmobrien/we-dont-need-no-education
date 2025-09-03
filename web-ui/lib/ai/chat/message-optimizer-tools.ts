@@ -633,6 +633,7 @@ export const summarizeMessageRecord = async ({
   };
   if (write) {
     (await drizDbWithInit())
+      // Update the specific chat message identified by (chatId, turnId, messageId)
       .update(schema.chatMessages)
       .set({ optimizedContent: ret.optimizedContent })
       .where(isThisMessage)
@@ -645,12 +646,13 @@ export const summarizeMessageRecord = async ({
       .where(eq(schema.chats.id, chatId))
       .execute();
 
-    // Update the specific chat message identified by (chatId, turnId, messageId)
+    /*
     await qp
       .update(schema.chatMessages)
       .set({ optimizedContent: ret.optimizedContent })
       .where(isThisMessage)
       .execute();
+    */
   }
   return ret;
 };

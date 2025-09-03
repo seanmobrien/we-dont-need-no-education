@@ -280,7 +280,7 @@ export class ErrorReporter implements ErrorReporterInterface {
    */
   private generateFingerprint(error: Error, context: ErrorContext): string {
     const key = `${error.name}:${error.message}:${context.url || 'unknown'}`;
-    return btoa(key)
+    return btoa(decodeURIComponent(encodeURIComponent(key)))
       .replace(/[^a-zA-Z0-9]/g, '')
       .substring(0, 16);
   }

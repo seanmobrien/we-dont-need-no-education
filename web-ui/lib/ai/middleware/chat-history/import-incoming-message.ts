@@ -53,7 +53,10 @@ import { eq, desc } from 'drizzle-orm';
 import { log } from '@/lib/logger';
 import { getNextSequence, getNewMessages } from './utility';
 import { generateChatId } from '@/lib/ai/core';
-import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
+import type {
+  LanguageModelV2CallOptions,
+  LanguageModelV2ToolResultPart,
+} from '@ai-sdk/provider';
 
 // ============================================================================
 // Private Helper Functions
@@ -345,195 +348,124 @@ export const reserveMessageIds = async (
 };
 
 /**
- * Inserts all prompt messages in a single batch operation with tool call support.
+ * Inserts a pending assistant message row to begin streaming content.
  *
- * @remarks
- * This function processes and persists all incoming messages from the prompt array
- * in a single database operation for maximum efficiency. It handles various message
- * types including user messages, assistant responses, system instructions, and
- * tool interactions with proper relationship tracking.
- *
- * **Message Processing Features:**
- * - Batch insertion for optimal database performance
- * - Automatic content serialization for complex structures
- * - Tool call relationship detection and linking
- * - Role-based message categorization
- * - Sequential ordering preservation
- *
- * **Tool Call Relationship Tracking:**
- * - Tool response messages are linked to their originating calls
- * - Assistant messages with tool calls are properly identified
- * - Provider IDs enable correlation between tool calls and responses
- * - Supports both single and multi-tool calling scenarios
- *
- * **Content Serialization:**
- * - String content is preserved as-is for efficiency
- * - Complex content structures are JSON-serialized
- * - Maintains data integrity while enabling flexible content types
- *
- * **Important Limitations:**
- * - Current implementation doesn't fully support parallel tool calling
- * - Tool call linking assumes sequential processing order
- * - Complex tool call scenarios may require additional handling
- *
- * @param tx - Active database transaction for consistency
- * @param chatId - The chat ID these messages belong to
- * @param turnId - The turn ID these messages belong to
- * @param messageIds - Pre-allocated message IDs for insertion
- * @param prompt - Array of messages to insert
- * @param startOrder - Starting message order number
- * @returns Promise that resolves when all messages are inserted
- *
- * @example
- * ```typescript
- * // Insert conversation with tool call
- * await insertPromptMessages(transaction, 'chat_123', 5, [101, 102, 103], [
- *   { role: 'user', content: 'What\'s the weather?' },
- *   { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'call_1' }] },
- *   { role: 'tool', content: [{ toolCallId: 'call_1', result: 'Sunny, 72°F' }] }
- * ], 0);
- * ```
- */
-const insertPromptMessages = async (
-  tx: DbTransactionType,
-  chatId: string,
-  turnId: number,
-  messageIds: number[],
-  prompt: LanguageModelV2CallOptions['prompt'],
-  startOrder: number,
-) => {
-  let messageOrder = startOrder;
-  await tx
-    .insert(schema.chatMessages)
-    .values(
-      prompt.map((p, i) => {
-        let providerId: string | null = null;
-
-        // Tool call relationship detection and linking
-        // IMPORTANT: This logic does not scale to support parallel tool calling correctly.
-        if (p.role === 'tool') {
-          // Tool response message - link to original tool call
-          if (Array.isArray(p.content) && p.content.length > 0) {
-            providerId = p.content[0].toolCallId;
-          }
-        } else if (p.role === 'assistant') {
-          // Assistant message with tool calls - extract call ID for linking
-          if (Array.isArray(p.content)) {
-            const toolCall = p.content.find((x) => x.type === 'tool-call');
-            if (toolCall) {
-              providerId = toolCall.toolCallId;
-            }
-          }
-        }
-
-        return {
-          chatId: chatId,
-          turnId: turnId,
-          messageId: messageIds[i],
-          providerId, // Links tool calls to responses for relationship tracking
-          role: p.role as 'user' | 'assistant' | 'tool' | 'system',
-          content:
-            typeof p.content === 'string'
-              ? p.content
-              : JSON.stringify(p.content), // Serialize complex content structures
-          messageOrder: messageOrder++,
-          statusId: 2, // Complete status for imported messages
-        };
-      }),
-    )
-    .execute();
-};
-
-/**
- * Creates a pending assistant message record for streaming response handling.
- *
- * @remarks
- * This function prepares the database for an incoming assistant response by
- * creating a message record in "streaming" status. This enables real-time
- * updates during response generation and ensures proper message ordering
- * within the conversation turn.
- *
- * **Streaming Preparation:**
- * - Creates message record with empty content for population during streaming
- * - Sets status to 1 (streaming/in-progress) for real-time tracking
- * - Reserves proper position in message order sequence
- * - Returns complete record for subsequent updates
- *
- * **Status Management:**
- * - Initial status indicates response is being generated
- * - Content starts empty and will be populated during streaming
- * - Message order ensures proper conversation flow
- * - Record can be updated incrementally as response arrives
- *
- * **Integration with Streaming:**
- * - Provides foundation for real-time response updates
- * - Enables status tracking throughout response generation
- * - Supports incremental content updates
- * - Maintains conversation ordering during async operations
- *
- * @param tx - Active database transaction for consistency
- * @param chatId - The chat ID this message belongs to
- * @param turnId - The turn ID this message belongs to
- * @param assistantMessageId - Pre-allocated message ID for the response
- * @param messageOrder - Position in the message sequence
- * @returns Promise resolving to array containing the created message record
- *
- * @example
- * ```typescript
- * // Prepare for streaming assistant response
- * const [pendingMessage] = await insertPendingAssistantMessage(
- *   transaction, 'chat_123', 5, 104, 3
- * );
- * console.log(pendingMessage.statusId); // 1 (streaming)
- * console.log(pendingMessage.content);  // '' (empty, will be populated)
- * ```
+ * @param tx - Active transaction
+ * @param chatId - Chat identifier
+ * @param turnId - Turn identifier
+ * @param messageId - Pre-reserved message id
+ * @param messageOrder - Sequential order for the message
+ * @param content - Initial content payload (typically a JSON stringified text part array)
  */
 export const insertPendingAssistantMessage = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number,
-  assistantMessageId: number,
+  messageId: number,
   messageOrder: number,
-  content: string = '',
-  statusId: number = 1,
+  content: string,
 ) => {
-  let newMessageId: number | undefined = assistantMessageId;
-  if (!newMessageId) {
-    [newMessageId] = await reserveMessageIds(tx, chatId, turnId, 1);
-  }
-  if (!messageOrder) {
-    try {
-      messageOrder = (await getLastMessageOrder(tx, chatId)) + 1;
-    } catch {
-      messageOrder = 1;
-    }
-  }
-  // Content may or may not be in message format - normalize
-  let thisContent = content?.trim();
-  if (thisContent) {
-    try {
-      const check = JSON.parse(thisContent);
-      if (!Array.isArray(check)) {
-        thisContent = JSON.stringify([{ type: 'text', text: thisContent }]);
-      }
-    } catch {
-      thisContent = JSON.stringify([{ type: 'text', text: thisContent }]);
-    }
-  }
-  // Add record
-  return await tx
+  await tx
     .insert(schema.chatMessages)
     .values({
-      chatId: chatId,
-      turnId: turnId,
-      messageId: newMessageId,
+      chatId,
+      turnId,
+      messageId,
       role: 'assistant',
-      content: thisContent ?? '',
-      messageOrder: messageOrder,
-      statusId,
+      content,
+      messageOrder,
+      statusId: 1, // pending/in-progress
     })
+    // Use returning() to align with existing mocked insert chain in tests
     .returning()
     .execute();
+};
+
+const normalizeOutput = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return JSON.stringify(value ?? 'null');
+};
+// Extract tool-result input/output/error as strings for storage
+const getItemOutput = (
+  item: LanguageModelV2ToolResultPart,
+): { input?: string; error?: string; output?: string } => {
+  if (!item) return {};
+  const anyItem = item as unknown as { [key: string]: unknown };
+  let input: string | undefined;
+  if (anyItem.input != null) {
+    input =
+      typeof anyItem.input === 'string'
+        ? (anyItem.input as string)
+        : JSON.stringify(anyItem.input);
+  }
+  if (anyItem.error != null) {
+    return { error: normalizeOutput(anyItem.error), input };
+  }
+  const out = anyItem.output;
+  if (out == null) return { input };
+  if (typeof out === 'string') return { output: out, input };
+  if (out && typeof out === 'object') {
+    const maybe = (out as { value?: unknown }).value;
+    if (maybe !== undefined) {
+      return { output: normalizeOutput(maybe), input };
+    }
+  }
+  return { output: normalizeOutput(out), input };
+};
+
+type ToolStatus = 'pending' | 'result' | 'error' | 'content';
+type ToolInfo = {
+  toolCallId?: string;
+  toolName?: string;
+  input?: string;
+  output?: string;
+  error?: string;
+  status: ToolStatus;
+};
+
+// Type guards for content parts to avoid any
+const isToolCallPart = (
+  item: unknown,
+): item is {
+  type: 'tool-call';
+  toolCallId?: string;
+  toolName?: string;
+  input?: unknown;
+} => {
+  return (
+    !!item &&
+    typeof item === 'object' &&
+    (item as { type?: unknown }).type === 'tool-call'
+  );
+};
+const isToolResultPart = (
+  item: unknown,
+): item is {
+  type: 'tool-result';
+  toolCallId?: string;
+  toolName?: string;
+  output?: unknown;
+  error?: unknown;
+} => {
+  return (
+    !!item &&
+    typeof item === 'object' &&
+    (item as { type?: unknown }).type === 'tool-result'
+  );
+};
+
+// Safely parse JSON-like strings into objects/arrays; otherwise return original value
+const parseMaybeJson = (value: unknown): unknown => {
+  if (typeof value !== 'string') return value;
+  const s = value.trim();
+  if (!s || (s[0] !== '{' && s[0] !== '[')) return value;
+  try {
+    return JSON.parse(s);
+  } catch {
+    return value;
+  }
 };
 
 // ============================================================================
@@ -750,23 +682,27 @@ export const importIncomingMessage = async ({
   currentMessageOrder = lastMessageOrder + 1;
 
   if (newMessages?.length) {
-    // Reserve sequential message IDs for batch insertion (new messages + assistant response)
-    const messageIds = await reserveMessageIds(
-      tx,
-      chatId,
-      thisTurnId,
-      newMessages?.length ?? 0, // + 1, // +1 for pending assistant response
+    // Transform prompt into rows: tool-call/result -> single 'tool' row; other content grouped by role switches
+    const rows = flattenPromptToRows(
+      newMessages as LanguageModelV2CallOptions['prompt'],
     );
-    // If we have new messages, we can insert them
-    await insertPromptMessages(
-      tx,
-      chatId,
-      thisTurnId,
-      messageIds,
-      newMessages as LanguageModelV2CallOptions['prompt'], // Only insert new messages, not duplicates
-      currentMessageOrder,
-    );
-    currentMessageOrder += newMessages.length;
+    if (rows.length > 0) {
+      const messageIds = await reserveMessageIds(
+        tx,
+        chatId,
+        thisTurnId,
+        rows.length,
+      );
+      await insertPromptMessages(
+        tx,
+        chatId,
+        thisTurnId,
+        messageIds,
+        rows,
+        currentMessageOrder,
+      );
+      currentMessageOrder += rows.length;
+    }
   }
   // Return comprehensive context for continued processing
   return {
@@ -775,4 +711,159 @@ export const importIncomingMessage = async ({
     messageId: undefined as number | undefined,
     nextMessageOrder: currentMessageOrder,
   };
+};
+
+// Removed unused bucketization helpers (replaced by flattenPromptToRows)
+
+// Draft row shape for chat_messages insertion
+type ChatMessageRowDraft = {
+  role: 'user' | 'assistant' | 'tool' | 'system';
+  content?: Array<Record<string, unknown>> | string | null;
+  toolName?: string | null;
+  functionCall?: unknown | null;
+  toolResult?: unknown | null;
+  providerId?: string | null;
+  metadata?: unknown | null;
+};
+
+// Convert prompt into rows honoring requirements 1-3
+const flattenPromptToRows = (
+  prompt: LanguageModelV2CallOptions['prompt'],
+): ChatMessageRowDraft[] => {
+  const messages = Array.isArray(prompt) ? prompt : [prompt];
+  const rows: ChatMessageRowDraft[] = [];
+
+  let currentContentRow: {
+    role: ChatMessageRowDraft['role'];
+    parts: Array<Record<string, unknown>>;
+  } | null = null;
+
+  const flushContent = () => {
+    if (currentContentRow && currentContentRow.parts.length > 0) {
+      rows.push({
+        role: currentContentRow.role,
+        content: currentContentRow.parts,
+      });
+    }
+    currentContentRow = null;
+  };
+
+  const pushToolRow = (info: ToolInfo) => {
+    const row: ChatMessageRowDraft = {
+      role: 'tool',
+      content: null,
+      toolName: info.toolName ?? null,
+      providerId: info.toolCallId ?? null,
+      functionCall: info.input ? parseMaybeJson(info.input) : null,
+      toolResult: info.error
+        ? { error: info.error }
+        : info.output
+          ? parseMaybeJson(info.output)
+          : null,
+    };
+    rows.push(row);
+  };
+
+  const pushContentItem = (
+    role: ChatMessageRowDraft['role'],
+    value: unknown,
+  ) => {
+    const item =
+      typeof value === 'string'
+        ? { type: 'text', text: value }
+        : { type: 'text', text: normalizeOutput(value) };
+    if (!currentContentRow || currentContentRow.role !== role) {
+      flushContent();
+      currentContentRow = { role, parts: [item] };
+    } else {
+      currentContentRow.parts.push(item);
+    }
+  };
+
+  for (const message of messages) {
+    const role = (message.role as ChatMessageRowDraft['role']) ?? 'user';
+
+    if (typeof message.content === 'string') {
+      pushContentItem(role, message.content);
+      continue;
+    }
+    if (Array.isArray(message.content)) {
+      for (const part of message.content as unknown[]) {
+        if (!part) continue;
+        if (isToolCallPart(part)) {
+          flushContent();
+          pushToolRow({
+            status: 'pending',
+            toolCallId: part.toolCallId,
+            toolName: part.toolName,
+            input:
+              part.input != null
+                ? typeof part.input === 'string'
+                  ? part.input
+                  : JSON.stringify(part.input)
+                : undefined,
+          });
+          continue;
+        }
+        if (isToolResultPart(part)) {
+          flushContent();
+          const parsed = getItemOutput(part as LanguageModelV2ToolResultPart);
+          pushToolRow({
+            status: parsed.error ? 'error' : 'result',
+            toolCallId: (part as { toolCallId?: string }).toolCallId,
+            toolName: (part as { toolName?: string }).toolName,
+            input: parsed.input,
+            output: parsed.output,
+            error: parsed.error,
+          });
+          continue;
+        }
+        const value = (part as { value?: unknown }).value ?? part;
+        pushContentItem(role, value);
+      }
+      continue;
+    }
+    if (message.content != null) {
+      pushContentItem(role, message.content);
+    }
+  }
+
+  flushContent();
+  return rows;
+};
+
+const insertPromptMessages = async (
+  tx: DbTransactionType,
+  chatId: string,
+  turnId: number,
+  messageIds: number[],
+  rows: ChatMessageRowDraft[],
+  startOrder: number,
+) => {
+  let messageOrder = startOrder;
+
+  await tx
+    .insert(schema.chatMessages)
+    .values(
+      rows.map((row, i) => ({
+        chatId,
+        turnId,
+        messageId: messageIds[i],
+        role: row.role,
+        content:
+          typeof row.content === 'string'
+            ? row.content
+            : row.content != null
+              ? JSON.stringify(row.content)
+              : null,
+        toolName: row.toolName ?? null,
+        functionCall: row.functionCall ?? null,
+        toolResult: row.toolResult ?? null,
+        providerId: row.providerId ?? null,
+        metadata: row.metadata ?? null,
+        messageOrder: messageOrder++,
+        statusId: 2,
+      })),
+    )
+    .execute();
 };
