@@ -18,6 +18,7 @@ import {
 import type { FlushContext, FlushConfig } from '@/lib/ai/middleware/chat-history/types';
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { makeMockDb } from '@/__tests__/jest.setup';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the logger
 jest.mock('@/lib/logger', () => ({
@@ -120,6 +121,15 @@ describe('Flush Handlers - Compilation Fix Test', () => {
   });
 
   describe('generateChatTitle', () => {
+    const mockConsole = hideConsoleOutput();
+
+    beforeEach(() => {
+      mockConsole.setup();
+    });
+
+    afterEach(() => {
+      mockConsole.dispose();
+    });
     it('should skip title generation for empty text', async () => {
       // Arrange
       const contextWithEmptyText = { ...mockContext, generatedText: '' };
@@ -138,6 +148,15 @@ describe('Flush Handlers - Compilation Fix Test', () => {
   });
 
   describe('markTurnAsError', () => {
+    const mockConsole = hideConsoleOutput();
+
+    beforeEach(() => {
+      mockConsole.setup();
+    });
+
+    afterEach(() => {
+      mockConsole.dispose();
+    });
     it('should handle missing turnId gracefully', async () => {
       // Arrange
       const contextWithoutTurnId = { ...mockContext, turnId: undefined };

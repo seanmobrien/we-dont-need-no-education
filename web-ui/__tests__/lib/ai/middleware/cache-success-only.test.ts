@@ -28,6 +28,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateText, LanguageModelMiddleware, wrapLanguageModel } from 'ai';
 import { LanguageModelV2, LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 import { content } from 'googleapis/build/src/apis/content';
 
@@ -93,7 +94,11 @@ describe('Cache Success-Only Functionality', () => {
   });
 
   it('should NOT cache error responses', async () => {
-    const baseModel = openai('gpt-4o-mini');
+    const mockConsole = hideConsoleOutput();
+    mockConsole.setup();
+
+    try {
+      const baseModel = openai('gpt-4o-mini');
 
     const errorModel = wrapMockMiddleware(baseModel, {
       content: [{ type: 'text', text: '' }],
@@ -109,9 +114,12 @@ describe('Cache Success-Only Functionality', () => {
 
     expect(result.text).toBe('');
 
-    // Check metrics - should not show successful cache
-    const metrics = metricsCollector.getMetrics();
-    expect(metrics.successfulCaches).toBe(0);
+      // Check metrics - should not show successful cache
+      const metrics = metricsCollector.getMetrics();
+      expect(metrics.successfulCaches).toBe(0);
+    } finally {
+      mockConsole.dispose();
+    }
   });
 
   it('should NOT cache content filter responses initially', async () => {
@@ -138,7 +146,11 @@ describe('Cache Success-Only Functionality', () => {
   });
 
   it('should NOT cache responses with warnings initially', async () => {
-    const baseModel = openai('gpt-4o-mini');
+    const mockConsole = hideConsoleOutput();
+    mockConsole.setup();
+
+    try {
+      const baseModel = openai('gpt-4o-mini');
 
     const warningModel = wrapMockMiddleware(baseModel, {
       content: [{ type: 'text', text: 'Response with warnings' }],
@@ -154,10 +166,13 @@ describe('Cache Success-Only Functionality', () => {
 
     expect(result.text).toBe('Response with warnings');
 
-    // Check metrics
-    const metrics = metricsCollector.getMetrics();
-    expect(metrics.successfulCaches).toBe(0);
-    expect(metrics.problematicResponses).toBe(1);
+      // Check metrics
+      const metrics = metricsCollector.getMetrics();
+      expect(metrics.successfulCaches).toBe(0);
+      expect(metrics.problematicResponses).toBe(1);
+    } finally {
+      mockConsole.dispose();
+    }
   });
 
   it('should NOT cache empty text responses', async () => {

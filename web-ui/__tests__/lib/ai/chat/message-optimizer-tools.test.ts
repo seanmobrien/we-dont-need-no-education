@@ -1,3 +1,7 @@
+/**
+ * @jest-environment node
+ */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ToolUIPart, UIMessage } from 'ai';
 import {
