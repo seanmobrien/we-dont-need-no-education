@@ -8,9 +8,12 @@ import {
   ModelMap,
 } from '@/lib/ai/services/model-stats/model-map';
 
+export const PROVIDER_ID_AZURE = 'b555b85f-5b2f-45d8-a317-575a3ab50ff2';
+export const PROVIDER_ID_GOOGLE = '91cd42ab-e957-4035-8a2d-3d6c997b9538';
+export const MODEL_GPT4o = 'gpt-4o-mini';
 export const providerRecords: (readonly [string, ProviderMapEntry])[] = [
   [
-    'b555b85f-5b2f-45d8-a317-575a3ab50ff2',
+    PROVIDER_ID_AZURE,
     {
       name: 'azure',
       displayName: 'Azure OpenAI',
@@ -21,7 +24,7 @@ export const providerRecords: (readonly [string, ProviderMapEntry])[] = [
     },
   ],
   [
-    '91cd42ab-e957-4035-8a2d-3d6c997b9538',
+    PROVIDER_ID_GOOGLE,
     {
       name: 'google.generative-ai',
       baseUrl: null,

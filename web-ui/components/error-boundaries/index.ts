@@ -7,18 +7,15 @@ export { RenderErrorBoundaryFallback } from './renderFallback';
 
 // Client-side error management
 export { ClientErrorManager } from './ClientErrorManager';
-export type { 
-  ClientErrorManagerConfig, 
-  ErrorSuppressionRule 
-} from './ClientErrorManager';
-export { 
-  createSuppressionRule, 
-  useErrorSuppression 
+export type { ClientErrorManagerConfig, ErrorSuppressionRule } from './types';
+export {
+  createSuppressionRule,
+  useErrorSuppression,
 } from './ClientErrorManager';
 
 // Server-safe error managers for use in server components
 export { default as ErrorManager } from './ServerSafeErrorManager';
-export { 
+export {
   ConfigurableErrorManager,
   DevErrorManager,
   ProdErrorManager,
@@ -26,7 +23,7 @@ export {
 export type { ErrorManagerConfig } from './ServerSafeErrorManager';
 
 // Provider components
-export { 
+export {
   ErrorManagerProvider,
   DefaultErrorManager,
   DevErrorManager as DevErrorManagerClient,

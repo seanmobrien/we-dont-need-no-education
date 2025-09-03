@@ -50,6 +50,6 @@
     "node_modules",
     ".upstream/**/*.*",
     "**/.upstream/**/*.*",
-	"./(rsc)/**/*.*"
+    "./(rsc)/**/*.*"
   ]
 }

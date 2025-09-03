@@ -8,6 +8,7 @@ import {
   ErrorReporterConfig,
   ErrorReporterInterface,
 } from './types';
+import { isRunningOnEdge } from '../site-util/env';
 
 export { ErrorSeverity };
 
@@ -217,6 +218,9 @@ export class ErrorReporter implements ErrorReporterInterface {
    */
   public setupGlobalHandlers(): void {
     if (typeof window === 'undefined') return;
+    if (isRunningOnEdge()) {
+      console.log('setupGlobalHandlers::edge');
+    }
 
     // Unhandled errors
     window.addEventListener('error', (event) => {

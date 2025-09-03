@@ -19,7 +19,6 @@ import {
 import { ModelMap } from '../../services/model-stats/model-map';
 import { isModelResourceNotFoundError } from '../../services/chat/errors/model-resource-not-found-error';
 import { SerializableLanguageModelMiddleware } from '../state-management/types';
-// import { models } from '@/drizzle/schema';
 
 type DoGenerateReturnType = ReturnType<LanguageModelV2['doGenerate']>;
 type DoStreamReturnType = ReturnType<LanguageModelV2['doStream']>;

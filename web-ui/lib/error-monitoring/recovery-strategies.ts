@@ -3,7 +3,9 @@
  * Provides automatic and manual recovery mechanisms
  */
 
-import { clientNavigateSignIn, clientReload } from "../nextjs-util";
+import { log } from '../logger';
+import { clientNavigateSignIn, clientReload } from '../nextjs-util';
+import { isRunningOnEdge } from '../site-util/env';
 
 /**
  * Determines the type of error for appropriate recovery strategy
@@ -41,6 +43,33 @@ export interface RecoveryStrategy {
   actions: RecoveryAction[];
   defaultAction?: string; // ID of the default action
 }
+
+const uiOnly = (
+  action: RecoveryAction | string,
+  doIt: () => void,
+): (() => void | Promise<void>) => {
+  const recoveryAction =
+    typeof action === 'string'
+      ? (recoveryStrategies && Array.isArray(recoveryStrategies)
+          ? recoveryStrategies
+              .flatMap((s) => s.actions)
+              .find((a) => a.id === action)
+          : undefined) ?? {
+          id: action,
+          label: `Action ${action} not found.`,
+        }
+      : action;
+  if (typeof window !== 'undefined' && !isRunningOnEdge()) {
+    return doIt;
+  } else {
+    return () =>
+      log((l) =>
+        l.info(
+          `UI-only action ${recoveryAction.label} skipped in ${typeof window === 'undefined' ? 'server' : 'edge'} environment.`,
+        ),
+      );
+  }
+};
 
 /**
  * Analyzes an error and determines its type
@@ -100,7 +129,7 @@ export function classifyError(error: Error): ErrorType {
     message.includes('network') ||
     message.includes('connection') ||
     message.includes('timeout') ||
-    error.name === 'TypeError' && message.includes('failed to fetch')
+    (error.name === 'TypeError' && message.includes('failed to fetch'))
   ) {
     return ErrorType.NETWORK;
   }
@@ -148,7 +177,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'check-connection',
         label: 'Check Connection',
         description: 'Verify your internet connection',
-        action: () => {
+        action: uiOnly('check-connection', () => {
           if (navigator.onLine) {
             alert('Connection appears to be working. Please try again.');
           } else {
@@ -156,7 +185,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
               'No internet connection detected. Please check your connection.',
             );
           }
-        },
+        }),
       },
       {
         id: 'refresh-page',
@@ -183,10 +212,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'refresh-token',
         label: 'Refresh Session',
         description: 'Attempt to refresh authentication token',
-        action: async () => {
-          // Implementation would depend on authentication system
-          console.log('Attempting to refresh token...');
-        },
+        action: clientNavigateSignIn,
       },
     ],
     defaultAction: 'login-redirect',
@@ -199,17 +225,17 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'contact-admin',
         label: 'Contact Administrator',
         description: 'Request access from system administrator',
-        action: () => {
+        action: uiOnly('contact-admin', () => {
           alert(
             'You do not have permission to perform this action. Please contact your administrator.',
           );
-        },
+        }),
       },
       {
         id: 'go-back',
         label: 'Go Back',
         description: 'Return to the previous page',
-        action: () => window.history.back(),
+        action: uiOnly('go-back', () => window.history.back()),
       },
     ],
     defaultAction: 'contact-admin',
@@ -222,9 +248,9 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'wait-retry',
         label: 'Wait and Retry',
         description: 'Wait for rate limit to reset and try again',
-        action: () => {
+        action: uiOnly('wait-retry', () => {
           setTimeout(clientReload, 60000); // Wait 1 minute
-        },
+        }),
         automatic: true,
         delay: 60000,
       },
@@ -232,11 +258,11 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'reduce-requests',
         label: 'Reduce Activity',
         description: 'Slow down your requests and try again later',
-        action: () => {
+        action: uiOnly('reduce-requests', () =>
           alert(
             'Rate limit exceeded. Please slow down your requests and try again in a minute.',
-          );
-        },
+          ),
+        ),
       },
     ],
     defaultAction: 'wait-retry',
@@ -250,17 +276,17 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         label: 'Try Again Later',
         description:
           'Server is experiencing issues, try again in a few minutes',
-        action: () => {
+        action: uiOnly('retry-later', () => {
           alert(
             'Server is temporarily unavailable. Please try again in a few minutes.',
           );
-        },
+        }),
       },
       {
         id: 'contact-support',
         label: 'Contact Support',
         description: 'Report the issue to technical support',
-        action: () => {
+        action: uiOnly('contact-support', () => {
           const subject = encodeURIComponent('Server Error Report');
           const body = encodeURIComponent(
             'I encountered a server error while using the application.',
@@ -268,7 +294,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
           window.open(
             `mailto:support@example.com?subject=${subject}&body=${body}`,
           );
-        },
+        }),
       },
       {
         id: 'refresh-page',
@@ -287,11 +313,11 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'review-input',
         label: 'Review Input',
         description: 'Check your input and try again',
-        action: () => {
+        action: uiOnly('review-input', () => {
           alert(
             'Please review your input and correct any errors before trying again.',
           );
-        },
+        }),
       },
       {
         id: 'reset-form',
@@ -321,20 +347,18 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'clear-cache',
         label: 'Clear Browser Cache',
         description: 'Clear browser cache and reload',
-        action: () => {
-          if (typeof window !== 'undefined') {
-            if ('caches' in window) {
-              return caches
-                .keys()
-                .then((names) => {
-                  return Promise.all(names.map((name) => caches.delete(name)));
-                })
-                .then(clientReload);
-            } else {
-              clientReload();
-            }
+        action: uiOnly('clear-cache', () => {
+          if ('caches' in window) {
+            return caches
+              .keys()
+              .then((names) => {
+                return Promise.all(names.map((name) => caches.delete(name)));
+              })
+              .then(clientReload);
+          } else {
+            clientReload();
           }
-        },
+        }),
       },
     ],
     defaultAction: 'refresh-page',
@@ -353,7 +377,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
         id: 'report-bug',
         label: 'Report Bug',
         description: 'Report this unexpected error',
-        action: () => {
+        action: uiOnly('report-bug', () => {
           const subject = encodeURIComponent('Bug Report');
           const body = encodeURIComponent(
             'I encountered an unexpected error while using the application.',
@@ -361,7 +385,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
           window.open(
             `mailto:support@example.com?subject=${subject}&body=${body}`,
           );
-        },
+        }),
       },
     ],
     defaultAction: 'refresh-page',
@@ -373,7 +397,7 @@ export const recoveryStrategies: RecoveryStrategy[] = [
  */
 export function getRecoveryActions(error: Error): RecoveryAction[] {
   const errorType = classifyError(error);
-  const strategy = recoveryStrategies.find(s => s.errorType === errorType);
+  const strategy = recoveryStrategies.find((s) => s.errorType === errorType);
   return strategy?.actions || [];
 }
 
@@ -382,14 +406,14 @@ export function getRecoveryActions(error: Error): RecoveryAction[] {
  */
 export function getDefaultRecoveryAction(error: Error): RecoveryAction | null {
   const errorType = classifyError(error);
-  const strategy = recoveryStrategies.find(s => s.errorType === errorType);
-  
+  const strategy = recoveryStrategies.find((s) => s.errorType === errorType);
+
   if (!strategy) return null;
-  
+
   const defaultActionId = strategy.defaultAction;
   if (!defaultActionId) return strategy.actions[0] || null;
-  
-  return strategy.actions.find(a => a.id === defaultActionId) || null;
+
+  return strategy.actions.find((a) => a.id === defaultActionId) || null;
 }
 
 /**
@@ -397,16 +421,16 @@ export function getDefaultRecoveryAction(error: Error): RecoveryAction | null {
  */
 export async function attemptAutoRecovery(error: Error): Promise<boolean> {
   const defaultAction = getDefaultRecoveryAction(error);
-  
+
   if (!defaultAction || !defaultAction.automatic) {
     return false;
   }
-  
+
   try {
     if (defaultAction.delay) {
-      await new Promise(resolve => setTimeout(resolve, defaultAction.delay));
+      await new Promise((resolve) => setTimeout(resolve, defaultAction.delay));
     }
-    
+
     await defaultAction.action();
     return true;
   } catch (recoveryError) {

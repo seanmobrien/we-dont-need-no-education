@@ -3,7 +3,17 @@
 
 // Mock Redis and database before other imports
 jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
-//jest.mock('@/lib/drizzle-db');
+
+// Fix the schema mock to have the correct structure
+jest.mock('@/lib/drizzle-db', () => {
+  const actualModule = jest.requireActual('@/lib/drizzle-db');
+  // The actualModule.schema contains the nested structure, we need to flatten it
+  const flatSchema = actualModule.schema.schema || actualModule.schema;
+  return {
+    ...actualModule,
+    schema: flatSchema,
+  };
+});
 
 import {
   getTokenStatsService,
@@ -14,7 +24,7 @@ import { reset } from '@/lib/ai/services/model-stats/token-stats-service';
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 //import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
-import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
+import { setupMaps, PROVIDER_ID_AZURE, PROVIDER_ID_GOOGLE } from '@/__tests__/jest.mock-provider-model-maps';
 
 const mockRedisClient = {
   get: jest.fn(),
@@ -84,7 +94,7 @@ afterEach(() => {
 });
 
 describe('TokenStatsService', () => {
-  describe('normalizeModelKey', () => {
+describe('normalizeModelKey', () => {
     it('should handle provider:model format', async () => {
       // Setup mock to return null for stats (zero stats)
       mockRedisClient.get.mockResolvedValue(null);
@@ -98,7 +108,7 @@ describe('TokenStatsService', () => {
 
       expect(result).not.toBeNull();
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_stats:azure-openai.chat:gpt-4.1:minute',
+        'token_stats:b555b85f-5b2f-45d8-a317-575a3ab50ff2:gpt-4.1:minute',
       );
     });
 
@@ -108,12 +118,12 @@ describe('TokenStatsService', () => {
 
       const result = await tokenStatsService.getTokenStats(
         'google',
-        'gemini-pro',
+        'gemini-2.0-flash',
       );
 
       expect(result).not.toBeNull();
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_stats:google:gemini-pro:minute',
+        `token_stats:${PROVIDER_ID_GOOGLE}:gemini-2.0-flash:minute`,
       );
     });
   });
@@ -126,7 +136,7 @@ describe('TokenStatsService', () => {
 
       expect(result).toBeNull();
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_quota:azure-openai.chat:gpt-4.1',
+        `token_quota:${PROVIDER_ID_AZURE}:gpt-4.1`,
       );
     });
 
@@ -147,7 +157,7 @@ describe('TokenStatsService', () => {
 
       expect(result).toEqual(mockQuota);
       expect(mockRedisClient.get).toHaveBeenCalledWith(
-        'token_quota:azure-openai.chat:gpt-4.1',
+        `token_quota:${PROVIDER_ID_AZURE}:gpt-4.1`,
       );
     });
   });

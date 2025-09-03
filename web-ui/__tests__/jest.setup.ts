@@ -451,6 +451,7 @@ jest.mock('@/lib/site-util/env', () => {
       return process.env[key] || '';
     }),
     isRunningOnServer: jest.fn(() => typeof window === 'undefined'),
+    isRunningOnEdge: jest.fn(() => false),
   };
 });
 
