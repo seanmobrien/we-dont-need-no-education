@@ -397,16 +397,25 @@ export class LoggedError implements Error {
    *
    * @since 1.0.0
    */
-  static buildMessage(options: unknown): string {
+  static buildMessage(options: unknown, visited?: Set<unknown>): string {
     if (!options) {
       return 'null or undefined error';
     }
     if (isError(options)) {
       return options.message;
     }
-    return typeof options === 'object' && 'error' in options
-      ? this.buildMessage(options.error)
-      : options.toString();
+    if (typeof options === 'object' && options !== null && 'error' in options) {
+      if (!visited) {
+        visited = new Set();
+      }
+      if (visited.has(options)) {
+        return '[circular error reference]';
+      }
+      visited.add(options);
+      // @ts-expect-error: options.error may be any type
+      return this.buildMessage((options as any).error, visited);
+    }
+    return options.toString();
   }
 
   /**
