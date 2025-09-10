@@ -540,6 +540,20 @@ export class LoggedError implements Error {
         }
       }
     });
+    if (
+      isError(this.#error.cause) &&
+      this.#error.cause.name === 'PostgresError'
+    ) {
+      Object.entries(this.#error).forEach(([key, value]) => {
+        if (!(key in this) && !!value && typeof value !== 'function') {
+          if (typeof key === 'string' || typeof key === 'symbol') {
+            if (!this[key as string | symbol]) {
+              this[key as string | symbol] = value;
+            }
+          }
+        }
+      });
+    }
   }
   /**
    * Index signature to allow dynamic property access from the wrapped error.
@@ -635,7 +649,16 @@ export class LoggedError implements Error {
    * @since 1.0.0
    */
   get name(): string {
-    return this.#error.name;
+    const ret = this.#error?.name;
+    if (
+      ret === 'Error' &&
+      this.#error.cause &&
+      isError(this.#error.cause) &&
+      this.#error.cause.name === 'PostgresError'
+    ) {
+      return this.#error.cause.name;
+    }
+    return this.#error.name ?? 'Error';
   }
 
   /**

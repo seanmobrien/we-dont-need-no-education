@@ -109,7 +109,7 @@ export const toolCallbackArrayResultSchemaFactory = <T extends ZodRawShape>(
  * @param id - The string to validate as a UUID v4.
  * @returns `true` if the string is a valid UUID v4, otherwise `false`.
  */
-const isValidUuid = (id: string): boolean =>
+export const isValidUuid = (id: string): boolean =>
   /[0-9a-z]{8}-[0-9a-z]{4}-4[0-9a-z]{3}-[89ABab][0-9a-z]{3}-[0-9a-z]{12}/i.test(
     id,
   );

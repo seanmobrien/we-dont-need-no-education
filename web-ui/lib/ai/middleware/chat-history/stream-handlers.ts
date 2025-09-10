@@ -100,10 +100,10 @@ function ensureCreateResult(context: StreamHandlerContext): void {
         ? patch.currentMessageId
         : base.currentMessageId;
       out.currentMessageOrder = has('currentMessageOrder')
-        ? patch.currentMessageOrder
+        ? patch.currentMessageOrder!
         : base.currentMessageOrder;
       out.generatedText = has('generatedText')
-        ? patch.generatedText
+        ? patch.generatedText!
         : base.generatedText;
       out.toolCalls = (
         has('toolCalls')
@@ -582,6 +582,15 @@ export async function handleFinish(
     // Tests expect currentMessageId to be undefined in the finish result
     return context.createResult({ currentMessageId: undefined });
   } catch (error) {
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      data: {
+        chatId: context.chatId,
+        turnId: context.turnId,
+        usage: chunk.usage,
+      },
+      source: 'chat-middleware::stream-handler:handleFinish',
+    });
     log((l) =>
       l.error('Error handling finish chunk', {
         error,
