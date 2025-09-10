@@ -278,9 +278,26 @@ export interface StreamHandlerContext {
   generatedText: string;
 
   /**
+   * Structured collection of objects reconstructed from phased streaming
+   * parts (*-start / *-delta / *-end). Each entry is one logical object; for
+   * streaming objects (like tool-input) the final assembled form is pushed
+   * on *-end. Non-streaming generic *-start parts are pushed immediately as
+   * normalized objects with their '-start' suffix removed.
+   */
+  generatedJSON: Array<Record<string, unknown>>;
+
+  /**
    * A map of currently known tool calls that are awaiting response.
    */
   toolCalls: Map<string, ChatMessagesType>;
+
+  /**
+   * Creates a StreamHandlerResult from the current context.
+   * @returns The created StreamHandlerResult.
+   */
+  createResult: (
+    success?: boolean | Partial<StreamHandlerResult>,
+  ) => StreamHandlerResult;
 }
 
 /**
@@ -346,6 +363,12 @@ export interface StreamHandlerResult {
    * Contains all generated content up to this point in the response.
    */
   generatedText: string;
+
+  /**
+   * Updated accumulated JSON objects added to the pending stream.
+   * Contains all generated content included in the current message up to this point in the response.
+   */
+  generatedJSON: Array<Record<string, unknown>>;
 
   /**
    * Map of tool IDs to their corresponding chat messages.

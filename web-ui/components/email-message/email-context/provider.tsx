@@ -9,6 +9,7 @@ import React, {
   useCallback,
 } from 'react';
 import { EmailContext } from './types';
+import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
 
 const EmailContextInstance = createContext<EmailContext | undefined>(undefined);
 
@@ -23,14 +24,20 @@ export const EmailContextProvider = ({
     emailIdFromState,
   );
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const { setCaseFileId } = useChatPanelContext() ?? {
+    setCaseFileId: () => {},
+  };
+
   const setEmailId = useCallback(
     (id: string) => {
       if (id === emailId) {
         return;
       }
       setEmailIdState(id);
+      setCaseFileId(id);
     },
-    [emailId],
+    [emailId, setCaseFileId],
   );
   const contextValue = useRef<EmailContext>({
     emailId,

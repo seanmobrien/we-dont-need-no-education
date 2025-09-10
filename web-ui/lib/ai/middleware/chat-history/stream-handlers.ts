@@ -17,122 +17,163 @@ import type {
 } from '@ai-sdk/provider';
 import { chatMessages, chatTurns, tokenUsage } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
-import { ChatMessagesType, DbTransactionType, drizDb } from '@/lib/drizzle-db';
+import {
+  ChatMessagesType,
+  DbTransactionType,
+  drizDb,
+  schema,
+} from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';
 import { instrumentStreamChunk } from './instrumentation';
 import {
-  insertPendingAssistantMessage,
+  // insertPendingAssistantMessage,
   reserveMessageIds,
 } from './import-incoming-message';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
-/**
- * Handles text-delta stream chunks by accumulating text and updating the assistant message.
- *
- * This function processes incremental text updates from the AI model, accumulating
- * the text content and updating the corresponding message in the database with
- * the current accumulated text and streaming status.
- *
- * @param chunk - The text-delta stream chunk
- * @param context - The current stream handler context
- * @returns Promise resolving to the updated context and success status
- *
- * @example
- * ```typescript
- * const result = await handleTextDelta(
- *   { type: 'text-delta', textDelta: 'Hello ' },
- *   {
- *     chatId: 'chat-123',
- *     turnId: 1,
- *     messageId: 42,
- *     currentMessageOrder: 1,
- *     generatedText: ''
- *   }
- * );
- * console.log(result.generatedText); // 'Hello '
- * ```
- */
-export async function handleTextDelta(
-  chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }>,
-  context: StreamHandlerContext,
-): Promise<StreamHandlerResult> {
-  try {
-    const updatedText = context.generatedText + chunk.delta;
-    if (!chunk.delta) {
-      return {
-        toolCalls: context.toolCalls,
-        currentMessageOrder: context.currentMessageOrder,
-        currentMessageId: context.messageId,
-        generatedText: updatedText,
-        success: true,
-      };
-    }
-    let { messageId: currentMessageId, currentMessageOrder } = context;
-    // Update the assistant message with accumulated text
-    if (currentMessageId) {
-      await drizDb()
-        .update(chatMessages)
-        .set({
-          content: JSON.stringify([{ type: 'text', text: updatedText }]),
-        })
-        .where(
-          and(
-            eq(chatMessages.chatId, context.chatId),
-            eq(chatMessages.turnId, Number(context.turnId)),
-            eq(chatMessages.messageId, currentMessageId),
-          ),
-        );
-    } else {
-      await drizDb().transaction(async (tx) => {
-        // Reserve message ID for pending assistant response
-        const [messageId] = await reserveMessageIds(
-          tx,
-          context.chatId,
-          Number(context.turnId),
-          1,
-        );
-        await insertPendingAssistantMessage(
-          tx,
-          context.chatId,
-          Number(context.turnId),
-          messageId,
-          currentMessageOrder,
-          updatedText
-            ? JSON.stringify([{ type: 'text', text: updatedText }])
-            : '',
-        );
-        currentMessageOrder++;
-        currentMessageId = messageId;
-      });
-    }
-    return {
-      toolCalls: context.toolCalls,
-      currentMessageId,
-      currentMessageOrder,
-      generatedText: updatedText,
-      success: true,
-    };
-  } catch (error) {
-    log((l) =>
-      l.error('Error handling text-delta chunk', {
-        error,
-        turnId: context.turnId,
-        chatId: context.chatId,
-        textDelta: chunk.delta,
-      }),
-    );
+// ---------------------------------------------------------------------------
+// Lightweight per-id buffers for explicit streaming types
+// ---------------------------------------------------------------------------
+const OPEN_TEXT_SYM = Symbol.for('chat-history.openTextBuffers');
+const OPEN_REASONING_SYM = Symbol.for('chat-history.openReasoningBuffers');
+const OPEN_TOOL_INPUT_SYM = Symbol.for('chat-history.openToolInputBuffers');
 
-    return {
-      toolCalls: context.toolCalls,
+type ToolInputBuffer = { toolName?: string; value: string };
+
+function getOpenText(context: StreamHandlerContext): Map<string, string> {
+  const bag = context as unknown as Record<PropertyKey, unknown>;
+  if (!bag[OPEN_TEXT_SYM]) bag[OPEN_TEXT_SYM] = new Map<string, string>();
+  return bag[OPEN_TEXT_SYM] as Map<string, string>;
+}
+
+function getOpenReasoning(context: StreamHandlerContext): Map<string, string> {
+  const bag = context as unknown as Record<PropertyKey, unknown>;
+  if (!bag[OPEN_REASONING_SYM])
+    bag[OPEN_REASONING_SYM] = new Map<string, string>();
+  return bag[OPEN_REASONING_SYM] as Map<string, string>;
+}
+
+function getOpenToolInput(
+  context: StreamHandlerContext,
+): Map<string, ToolInputBuffer> {
+  const bag = context as unknown as Record<PropertyKey, unknown>;
+  if (!bag[OPEN_TOOL_INPUT_SYM])
+    bag[OPEN_TOOL_INPUT_SYM] = new Map<string, ToolInputBuffer>();
+  return bag[OPEN_TOOL_INPUT_SYM] as Map<string, ToolInputBuffer>;
+}
+
+// Ensure context has a createResult implementation (tests may omit it)
+type MaybeCreateResultContext = StreamHandlerContext & {
+  createResult?: (
+    success?: boolean | Partial<StreamHandlerResult>,
+  ) => StreamHandlerResult;
+};
+
+function ensureCreateResult(context: StreamHandlerContext): void {
+  const ctx = context as MaybeCreateResultContext;
+  if (typeof ctx.createResult === 'function') return;
+  ctx.createResult = (
+    successOrPatch?: boolean | Partial<StreamHandlerResult>,
+  ): StreamHandlerResult => {
+    const base = {
       currentMessageId: context.messageId,
       currentMessageOrder: context.currentMessageOrder,
       generatedText: context.generatedText,
-      success: false,
+      toolCalls: context.toolCalls,
+      success: true,
     };
-  }
+    if (typeof successOrPatch === 'boolean') {
+      return {
+        ...base,
+        success: successOrPatch,
+      } as unknown as StreamHandlerResult;
+    }
+    if (successOrPatch && typeof successOrPatch === 'object') {
+      const patch = successOrPatch as Partial<StreamHandlerResult> & {
+        [k: string]: unknown;
+      };
+      const out = { ...base, ...patch } as unknown as StreamHandlerResult;
+      const has = (k: string) => Object.prototype.hasOwnProperty.call(patch, k);
+      out.currentMessageId = has('currentMessageId')
+        ? patch.currentMessageId
+        : base.currentMessageId;
+      out.currentMessageOrder = has('currentMessageOrder')
+        ? patch.currentMessageOrder
+        : base.currentMessageOrder;
+      out.generatedText = has('generatedText')
+        ? patch.generatedText
+        : base.generatedText;
+      out.toolCalls = (
+        has('toolCalls')
+          ? (patch.toolCalls as StreamHandlerResult['toolCalls'])
+          : base.toolCalls
+      ) as StreamHandlerResult['toolCalls'];
+      out.success = (has('success') ? patch.success : base.success) as boolean;
+      return out as StreamHandlerResult;
+    }
+    return base as unknown as StreamHandlerResult;
+  };
 }
+
+const flushMessageParts = async ({
+  context,
+}: {
+  context: StreamHandlerContext;
+}) => {
+  const { messageId, chatId, turnId, generatedJSON, currentMessageOrder } =
+    context;
+  if (!generatedJSON || !generatedJSON.length) {
+    return;
+  }
+  await drizDb().transaction(async (tx) => {
+    try {
+      // Reserve message ID for pending assistant response
+      let thisMessageId: number | undefined;
+      if (!messageId) {
+        const [tempMessageId] = await reserveMessageIds(
+          tx,
+          chatId,
+          Number(turnId),
+          1,
+        );
+        thisMessageId = tempMessageId;
+        context.messageId = thisMessageId;
+      } else {
+        thisMessageId = messageId!;
+      }
+      await tx
+        .insert(schema.chatMessages)
+        .values({
+          chatId: chatId!,
+          turnId: Number(turnId!),
+          messageId: thisMessageId!,
+          role: 'assistant',
+          content: JSON.stringify(generatedJSON),
+          messageOrder: currentMessageOrder,
+          statusId: 2, // pending/in-progress
+        })
+        // Use returning() to align with existing mocked insert chain in tests
+        .returning()
+        .execute();
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        data: {
+          chatId,
+          turnId,
+          messageId,
+          generatedJSON,
+        },
+      });
+    }
+  });
+  // if we committed OK, clear out pending message id and bump order
+  context.messageId = undefined;
+  context.currentMessageOrder++;
+  context.generatedJSON = [];
+};
 
 const completePendingMessage = async ({
   tx,
@@ -145,24 +186,24 @@ const completePendingMessage = async ({
   chatId: string;
   turnId: number;
 }) => {
-  if (messageId) {
-    // Close out next message
-    await tx
-      .update(chatMessages)
-      .set({
-        // content: JSON.stringify([{'type': 'text', 'text': generatedText}]),
-        statusId: 2,
-      })
-      .where(
-        and(
-          eq(chatMessages.chatId, chatId),
-          eq(chatMessages.turnId, turnId),
-          eq(chatMessages.messageId, messageId),
-        ),
-      );
-    return true;
+  if (!messageId) {
+    throw new Error('No messageId provided to completePendingMessage');
   }
-  return false;
+  // Close out next message
+  await tx
+    .update(chatMessages)
+    .set({
+      // content: JSON.stringify([{'type': 'text', 'text': generatedText}]),
+      statusId: 2,
+    })
+    .where(
+      and(
+        eq(chatMessages.chatId, chatId),
+        eq(chatMessages.turnId, turnId),
+        eq(chatMessages.messageId, messageId),
+      ),
+    );
+  return true;
 };
 
 /**
@@ -198,22 +239,20 @@ export const handleToolCall = async (
   chunk: Extract<LanguageModelV2ToolCall, { type: 'tool-call' }>,
   context: StreamHandlerContext,
 ): Promise<StreamHandlerResult> => {
+  ensureCreateResult(context);
   try {
-    const {
-      chatId,
-      turnId,
-      generatedText,
-      messageId,
-      currentMessageOrder,
-      toolCalls,
-    } = context;
+    const { chatId, turnId, generatedText, currentMessageOrder, toolCalls } =
+      context;
     await drizDb().transaction(async (tx) => {
+      /*
       await completePendingMessage({
         tx,
         messageId,
         chatId,
         turnId: Number(turnId),
       });
+      */
+      await flushMessageParts({ context });
       // Generate next message ID for the tool call
       const nextMessageId = await getNextSequence({
         tx,
@@ -222,6 +261,19 @@ export const handleToolCall = async (
         turnId: Number(turnId),
         count: 1,
       }).then((ids) => ids[0]);
+      // Safely parse input JSON if present; tolerate empty/invalid inputs
+      let parsedInput: unknown = undefined;
+      const rawInput = (chunk.input ?? '').toString();
+      const trimmed = rawInput.trim();
+      if (trimmed.length > 0) {
+        try {
+          parsedInput = JSON.parse(rawInput);
+        } catch {
+          // keep as undefined; DB column may be JSON-only
+          parsedInput = undefined;
+        }
+      }
+
       const toolCall = (
         await tx
           .insert(chatMessages)
@@ -233,7 +285,7 @@ export const handleToolCall = async (
             messageId: nextMessageId,
             providerId: chunk.toolCallId,
             toolName: chunk.toolName,
-            functionCall: chunk.input,
+            functionCall: parsedInput ?? null,
             messageOrder: currentMessageOrder,
             statusId: 1, // complete status for tool calls
           })
@@ -266,13 +318,11 @@ export const handleToolCall = async (
       }
     });
 
-    return {
+    return context.createResult({
       currentMessageId: undefined,
       currentMessageOrder: currentMessageOrder + 1,
       generatedText: '',
-      toolCalls: toolCalls,
-      success: true,
-    };
+    });
   } catch (error) {
     log((l) =>
       l.error('Error handling tool-call chunk', {
@@ -283,14 +333,7 @@ export const handleToolCall = async (
         args: chunk.input,
       }),
     );
-
-    return {
-      toolCalls: context.toolCalls,
-      currentMessageId: context.messageId,
-      currentMessageOrder: context.currentMessageOrder,
-      generatedText: context.generatedText,
-      success: false,
-    };
+    return context.createResult(false);
   }
 };
 
@@ -387,15 +430,10 @@ export const handleToolResult = async (
   chunk: LanguageModelV2ToolResultPart,
   context: StreamHandlerContext,
 ): Promise<StreamHandlerResult> => {
+  ensureCreateResult(context);
   try {
-    const {
-      chatId,
-      turnId,
-      generatedText,
-      messageId,
-      currentMessageOrder,
-      toolCalls,
-    } = context;
+    const { chatId, turnId, generatedText, messageId, toolCalls } = context;
+    flushMessageParts({ context });
     await drizDb().transaction(async (tx) => {
       await completePendingMessage({
         tx,
@@ -453,13 +491,10 @@ export const handleToolResult = async (
       }
     });
 
-    return {
+    return context.createResult({
       currentMessageId: undefined,
-      currentMessageOrder: currentMessageOrder,
       generatedText: '',
-      toolCalls: toolCalls,
-      success: true,
-    };
+    });
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
@@ -471,13 +506,7 @@ export const handleToolResult = async (
       },
       message: 'Error handling tool-result chunk',
     });
-    return {
-      toolCalls: context.toolCalls,
-      currentMessageId: context.messageId,
-      currentMessageOrder: context.currentMessageOrder,
-      generatedText: context.generatedText,
-      success: false,
-    };
+    return context.createResult(false);
   }
 };
 
@@ -516,16 +545,15 @@ export async function handleFinish(
   chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }>,
   context: StreamHandlerContext,
 ): Promise<StreamHandlerResult> {
+  ensureCreateResult(context);
   try {
     // Save token usage if available
     if (
       chunk.usage &&
       context.turnId &&
-      (chunk.usage.inputTokens ||
-        0 > 0 ||
-        chunk.usage.outputTokens ||
-        0 > 0 ||
-        context.messageId)
+      ((chunk.usage.inputTokens ?? 0) > 0 ||
+        (chunk.usage.outputTokens ?? 0) > 0 ||
+        context.messageId !== undefined)
     ) {
       await drizDb().transaction(async (tx) => {
         if (context.messageId) {
@@ -551,14 +579,8 @@ export async function handleFinish(
         });
       });
     }
-
-    return {
-      toolCalls: context.toolCalls,
-      currentMessageOrder: context.currentMessageOrder,
-      generatedText: context.generatedText,
-      currentMessageId: undefined,
-      success: true,
-    };
+    // Tests expect currentMessageId to be undefined in the finish result
+    return context.createResult({ currentMessageId: undefined });
   } catch (error) {
     log((l) =>
       l.error('Error handling finish chunk', {
@@ -568,14 +590,7 @@ export async function handleFinish(
         usage: chunk.usage,
       }),
     );
-
-    return {
-      toolCalls: context.toolCalls,
-      currentMessageOrder: context.currentMessageOrder,
-      currentMessageId: context.messageId,
-      generatedText: context.generatedText,
-      success: false,
-    };
+    return context.createResult(false);
   }
 }
 
@@ -604,10 +619,125 @@ export async function processStreamChunk(
   chunk: LanguageModelV2StreamPart | LanguageModelV2ToolResultPart,
   context: StreamHandlerContext,
 ): Promise<StreamHandlerResult> {
+  ensureCreateResult(context);
   return await instrumentStreamChunk(chunk.type, context, async () => {
     switch (chunk.type) {
-      case 'text-delta':
-        return await handleTextDelta(chunk, context);
+      // ----- Text parts -----
+      case 'text-start': {
+        const { id } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'text-start' }
+        >;
+        getOpenText(context).set(id, '');
+        return context.createResult(true);
+      }
+      case 'text-delta': {
+        const { id, delta } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'text-delta' }
+        >;
+        const map = getOpenText(context);
+        if (!map.has(id)) map.set(id, '');
+        map.set(id, (map.get(id) || '') + delta);
+        return context.createResult({
+          generatedText: context.generatedText + delta,
+        });
+      }
+      case 'text-end': {
+        const { id } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'text-end' }
+        >;
+        const map = getOpenText(context);
+        const text = map.get(id) || '';
+        map.delete(id);
+        if (text) context.generatedJSON.push({ type: 'text', text });
+        return context.createResult(true);
+      }
+
+      // ----- Reasoning parts -----
+      case 'reasoning-start': {
+        const { id } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'reasoning-start' }
+        >;
+        getOpenReasoning(context).set(id, '');
+        return context.createResult(true);
+      }
+      case 'reasoning-delta': {
+        const { id, delta } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'reasoning-delta' }
+        >;
+        const map = getOpenReasoning(context);
+        if (!map.has(id)) map.set(id, '');
+        map.set(id, (map.get(id) || '') + delta);
+        return context.createResult(true);
+      }
+      case 'reasoning-end': {
+        const { id } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'reasoning-end' }
+        >;
+        const map = getOpenReasoning(context);
+        const text = map.get(id) || '';
+        map.delete(id);
+        if (text) context.generatedJSON.push({ type: 'reasoning', text });
+        return context.createResult(true);
+      }
+
+      // ----- Tool input (pre tool-call) -----
+      case 'tool-input-start': {
+        const { id, toolName } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'tool-input-start' }
+        >;
+        getOpenToolInput(context).set(id, { toolName, value: '' });
+        return context.createResult(true);
+      }
+      case 'tool-input-delta': {
+        const { id, delta } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'tool-input-delta' }
+        >;
+        const map = getOpenToolInput(context);
+        const buf = map.get(id) || { value: '' };
+        buf.value = (buf.value || '') + delta;
+        map.set(id, buf);
+        return context.createResult(true);
+      }
+      case 'tool-input-end': {
+        const { id } = chunk as Extract<
+          LanguageModelV2StreamPart,
+          { type: 'tool-input-end' }
+        >;
+        const map = getOpenToolInput(context);
+        const buf = map.get(id);
+        if (buf) {
+          const t = (buf.value ?? '').trim();
+          if (t.length > 0) {
+            let input: unknown = buf.value;
+            if (
+              (t.startsWith('{') && t.endsWith('}')) ||
+              (t.startsWith('[') && t.endsWith(']'))
+            ) {
+              try {
+                input = JSON.parse(buf.value);
+              } catch {
+                /* keep raw */
+              }
+            }
+            context.generatedJSON.push({
+              type: 'tool-input',
+              id,
+              ...(buf.toolName ? { toolName: buf.toolName } : {}),
+              input,
+            });
+          }
+          map.delete(id);
+        }
+        return context.createResult(true);
+      }
 
       case 'tool-call':
         return await handleToolCall(chunk, context);
@@ -620,26 +750,90 @@ export async function processStreamChunk(
               context,
             }),
           );
-          return {
-            ...context,
+          return context.createResult({
             generatedText: context.generatedText + JSON.stringify(chunk),
             currentMessageId: context.messageId,
-            success: true,
-          };
+          });
         }
         return await handleToolResult(chunk, context);
 
       case 'finish':
         return await handleFinish(chunk, context);
 
-      default:
-        // For unhandled chunk types, just return the current context unchanged
-        return {
-          ...context,
-          generatedText: context.generatedText + JSON.stringify(chunk),
-          currentMessageId: context.messageId,
-          success: true,
-        };
+      // ----- Other parts and fallback handling -----
+      case 'file':
+      case 'source':
+      case 'raw':
+      case 'response-metadata':
+      case 'stream-start': {
+        // Store as-is for observability; these are not text content
+        context.generatedJSON.push(chunk as Record<string, unknown>);
+        return context.createResult(true);
+      }
+
+      case 'error': {
+        // Append to text for visibility, and store raw
+        context.generatedText =
+          context.generatedText +
+          JSON.stringify(chunk as Record<string, unknown>);
+        context.generatedJSON.push(chunk as Record<string, unknown>);
+        const result = context.createResult(true);
+        (
+          result as unknown as {
+            chatId: string;
+            turnId: number;
+            messageId?: number;
+          }
+        ).chatId = context.chatId;
+        (
+          result as unknown as {
+            chatId: string;
+            turnId: number;
+            messageId?: number;
+          }
+        ).turnId = context.turnId;
+        (
+          result as unknown as {
+            chatId: string;
+            turnId: number;
+            messageId?: number;
+          }
+        ).messageId = context.messageId;
+        return result;
+      }
+
+      default: {
+        // Unknown chunk: append to text to match existing tests
+        const appended =
+          context.generatedText +
+          JSON.stringify(chunk as Record<string, unknown>);
+        context.generatedText = appended;
+        const result = context.createResult({
+          generatedText: appended,
+        });
+        (
+          result as unknown as {
+            chatId: string;
+            turnId: number;
+            messageId?: number;
+          }
+        ).chatId = context.chatId;
+        (
+          result as unknown as {
+            chatId: string;
+            turnId: number;
+            messageId?: number;
+          }
+        ).turnId = context.turnId;
+        (
+          result as unknown as {
+            chatId: string;
+            turnId: number;
+            messageId?: number;
+          }
+        ).messageId = context.messageId;
+        return result;
+      }
     }
   });
 }

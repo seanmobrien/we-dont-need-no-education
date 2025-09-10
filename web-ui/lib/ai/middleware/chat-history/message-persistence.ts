@@ -117,7 +117,6 @@ export const completeMessagePersistence = async (
       generatedText: completionContext.generatedText,
       startTime: completionContext.startTime,
     };
-
     // Handle completion using the existing flush logic
     const flushResult = await handleFlush(flushContext);
 

@@ -11,6 +11,8 @@ import {
 export const PROVIDER_ID_AZURE = 'b555b85f-5b2f-45d8-a317-575a3ab50ff2';
 export const PROVIDER_ID_GOOGLE = '91cd42ab-e957-4035-8a2d-3d6c997b9538';
 export const MODEL_GPT4o = 'gpt-4o-mini';
+export const MODEL_ID_GPT4 = '97e291f6-4396-472e-9cb5-13cc94291879';
+export const MODEL_ID_GPT4_NO_QUOTA = '97e291f6-4396-472e-9cb5-13cc94291880';
 export const providerRecords: (readonly [string, ProviderMapEntry])[] = [
   [
     PROVIDER_ID_AZURE,
@@ -87,6 +89,20 @@ export const modelRecords: (readonly [string, ModelRecord])[] = [
       displayName: 'Azure GPT-4.1',
       description:
         'High-fidelity Azure OpenAI GPT-4 model for complex reasoning and analysis',
+      isActive: true,
+      createdAt: '2025-08-01T14:18:55.625835+00:00',
+      updatedAt: '2025-08-01T14:18:55.625835+00:00',
+    },
+  ],
+  [
+    'b555b85f-5b2f-45d8-a317-575a3ab50ff2:gpt-4.1-no-quota',
+    {
+      id: '97e291f6-4396-472e-9cb5-13cc94291880',
+      providerId: 'b555b85f-5b2f-45d8-a317-575a3ab50ff2',
+      modelName: 'gpt-4.1-no-quota',
+      displayName: 'Azure GPT-4.1 No-Quota',
+      description:
+        'High-fidelity Azure OpenAI GPT-4 model for complex reasoning and analysis; no active quota record configured',
       isActive: true,
       createdAt: '2025-08-01T14:18:55.625835+00:00',
       updatedAt: '2025-08-01T14:18:55.625835+00:00',

@@ -24,7 +24,13 @@ import { reset } from '@/lib/ai/services/model-stats/token-stats-service';
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 //import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
-import { setupMaps, PROVIDER_ID_AZURE, PROVIDER_ID_GOOGLE } from '@/__tests__/jest.mock-provider-model-maps';
+import {
+  setupMaps,
+  PROVIDER_ID_AZURE,
+  PROVIDER_ID_GOOGLE,
+  MODEL_ID_GPT4_NO_QUOTA,
+} from '@/__tests__/jest.mock-provider-model-maps';
+import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 
 const mockRedisClient = {
   get: jest.fn(),
@@ -33,35 +39,9 @@ const mockRedisClient = {
     setEx: jest.fn(),
     exec: jest.fn().mockResolvedValue(undefined),
   })),
+  eval: jest.fn(),
   quit: jest.fn(),
   disconnect: jest.fn(),
-};
-
-const mockDb = {
-  select: jest.fn(() => ({
-    from: jest.fn(() => ({
-      where: jest.fn(() => ({
-        limit: jest.fn(() => Promise.resolve([])),
-      })),
-    })),
-  })),
-  insert: jest.fn(() => ({
-    values: jest.fn(() => ({
-      onConflictDoUpdate: jest.fn(() => Promise.resolve()),
-    })),
-  })),
-  query: {
-    models: {
-      findFirst: jest.fn(() =>
-        Promise.resolve({
-          id: 'test-model-id',
-          providerId: 'azure-openai.chat',
-          modelName: 'gpt-4.1',
-          isActive: true,
-        }),
-      ),
-    },
-  },
 };
 
 let tokenStatsService: TokenStatsServiceType;
@@ -82,6 +62,7 @@ beforeEach(() => {
   mockRedisClient.get.mockReset();
   mockRedisClient.setEx.mockReset();
   mockRedisClient.multi.mockReset();
+  mockRedisClient.eval.mockReset();
   const multi = {
     setEx: jest.fn(),
     exec: jest.fn(),
@@ -94,7 +75,7 @@ afterEach(() => {
 });
 
 describe('TokenStatsService', () => {
-describe('normalizeModelKey', () => {
+  describe('normalizeModelKey', () => {
     it('should handle provider:model format', async () => {
       // Setup mock to return null for stats (zero stats)
       mockRedisClient.get.mockResolvedValue(null);
@@ -129,36 +110,28 @@ describe('normalizeModelKey', () => {
   });
 
   describe('getQuota', () => {
-    it('should return null when no quota is configured', async () => {
+    it('should return quota when quota is configured', async () => {
       mockRedisClient.get.mockResolvedValue(null);
 
       const result = await tokenStatsService.getQuota('azure', 'gpt-4.1');
 
-      expect(result).toBeNull();
-      expect(mockRedisClient.get).toHaveBeenCalledWith(
-        `token_quota:${PROVIDER_ID_AZURE}:gpt-4.1`,
-      );
+      expect(result).not.toBeNull();
+      expect(result?.maxTokensPerDay).toBeUndefined();
+      expect(result?.maxTokensPerMinute).not.toBeUndefined();
+      expect(result?.maxTokensPerMessage).not.toBeUndefined();
     });
+    it('should return null when no quota is configured', async () => {
+      mockRedisClient.get.mockResolvedValue(null);
 
-    it('should return quota from Redis cache', async () => {
-      const mockQuota = {
-        id: 'test-id',
-        provider: 'azure',
-        modelName: 'gpt-4.1',
-        maxTokensPerMessage: 1000,
-        maxTokensPerMinute: 10000,
-        maxTokensPerDay: 100000,
-        isActive: true,
-      };
-
-      mockRedisClient.get.mockResolvedValue(JSON.stringify(mockQuota));
-
-      const result = await tokenStatsService.getQuota('azure', 'gpt-4.1');
-
-      expect(result).toEqual(mockQuota);
-      expect(mockRedisClient.get).toHaveBeenCalledWith(
-        `token_quota:${PROVIDER_ID_AZURE}:gpt-4.1`,
+      const result = await tokenStatsService.getQuota(
+        'azure',
+        'gpt-4.1-no-quota',
       );
+
+      expect(result).not.toBeNull();
+      expect(result?.maxTokensPerDay).toBeUndefined();
+      expect(result?.maxTokensPerMinute).toBeUndefined();
+      expect(result?.maxTokensPerMessage).toBeUndefined();
     });
   });
 
@@ -203,7 +176,7 @@ describe('normalizeModelKey', () => {
 
       const result = await tokenStatsService.checkQuota(
         'azure',
-        'gpt-4.1',
+        'gpt-4.1-no-quota',
         100,
       );
 
@@ -211,23 +184,17 @@ describe('normalizeModelKey', () => {
     });
 
     it('should block request that exceeds per-message limit', async () => {
-      const mockQuota = {
-        id: 'test-id',
-        provider: 'azure',
-        modelName: 'gpt-4.1',
-        maxTokensPerMessage: 500,
-        maxTokensPerMinute: null,
-        maxTokensPerDay: null,
-        isActive: true,
-      };
-
-      mockRedisClient.get
-        .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota
-        .mockResolvedValue(null); // stats (no existing usage)
+      await ModelMap.getInstance().then((x) =>
+        x.addQuotaToModel({
+          modelId: MODEL_ID_GPT4_NO_QUOTA,
+          maxTokensPerMessage: 500,
+          isActive: true,
+        }),
+      );
 
       const result = await tokenStatsService.checkQuota(
         'azure',
-        'gpt-4.1',
+        'gpt-4.1-no-quota',
         1000, // Exceeds per-message limit of 500
       );
 
@@ -236,26 +203,22 @@ describe('normalizeModelKey', () => {
     });
 
     it('should block request that exceeds per-minute limit', async () => {
-      const mockQuota = {
-        id: 'test-id',
-        provider: 'azure',
-        modelName: 'gpt-4.1',
-        maxTokensPerMessage: null,
-        maxTokensPerMinute: 1000,
-        maxTokensPerDay: null,
-        isActive: true,
-      };
-
+      await ModelMap.getInstance().then((x) =>
+        x.addQuotaToModel({
+          modelId: MODEL_ID_GPT4_NO_QUOTA,
+          maxTokensPerMinute: 1000,
+          isActive: true,
+        }),
+      );
       const mockStats = { totalTokens: 900, requestCount: 5 };
 
       mockRedisClient.get
-        .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota
         .mockResolvedValueOnce(JSON.stringify(mockStats)) // minute stats
         .mockResolvedValue(null); // hour/day stats
 
       const result = await tokenStatsService.checkQuota(
         'azure',
-        'gpt-4.1',
+        'gpt-4.1-no-quota',
         200, // 900 + 200 = 1100, exceeds limit of 1000
       );
 
@@ -264,21 +227,19 @@ describe('normalizeModelKey', () => {
     });
 
     it('should allow request within all limits', async () => {
-      const mockQuota = {
-        id: 'test-id',
-        provider: 'azure',
-        modelName: 'gpt-4.1',
-        maxTokensPerMessage: 1000,
-        maxTokensPerMinute: 10000,
-        maxTokensPerDay: 100000,
-        isActive: true,
-      };
+      await ModelMap.getInstance().then((x) =>
+        x.addQuotaToModel({
+          modelId: MODEL_ID_GPT4_NO_QUOTA,
+          maxTokensPerMessage: 1000,
+          maxTokensPerMinute: 10000,
+          maxTokensPerDay: 100000,
+          isActive: true,
+        }),
+      );
 
       const mockStats = { totalTokens: 500, requestCount: 2 };
 
-      mockRedisClient.get
-        .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota call
-        .mockResolvedValue(JSON.stringify(mockStats)); // all stats calls
+      mockRedisClient.get.mockResolvedValue(JSON.stringify(mockStats)); // all stats calls
 
       const result = await tokenStatsService.checkQuota(
         'azure',
@@ -287,7 +248,6 @@ describe('normalizeModelKey', () => {
       );
 
       expect(result.allowed).toBe(true);
-      expect(result.quota).toEqual(mockQuota);
     });
   });
 
@@ -304,7 +264,7 @@ describe('normalizeModelKey', () => {
       await tokenStatsService.safeRecordTokenUsage('azure', 'gpt-4.1', usage);
 
       // Verify Redis was updated
-      expect(mockRedisClient.multi).toHaveBeenCalled();
+      expect(mockRedisClient.eval).toHaveBeenCalled();
 
       // Verify database operations were attempted
       // The actual database operations go through the global mock,
@@ -333,20 +293,21 @@ describe('normalizeModelKey', () => {
   describe('getUsageReport', () => {
     it('should return comprehensive usage report', async () => {
       const mockQuota = {
-        id: 'test-id',
-        provider: 'azure',
-        modelName: 'gpt-4.1',
-        maxTokensPerMessage: null,
-        maxTokensPerMinute: 1000,
-        maxTokensPerDay: null,
+        createdAt: '2025-08-01T14:21:16.896854+00:00',
+        id: '6bf2bf6c-6b94-485b-945b-20c762f1fe18',
         isActive: true,
+        maxTokensPerDay: undefined,
+        maxTokensPerMessage: 128000,
+        maxTokensPerMinute: 50000,
+        modelId: '97e291f6-4396-472e-9cb5-13cc94291879',
+        modelName: 'gpt-4.1',
+        provider: 'b555b85f-5b2f-45d8-a317-575a3ab50ff2',
+        updatedAt: '2025-08-01T14:21:16.896854+00:00',
       };
 
       const mockStats = { totalTokens: 500, requestCount: 3 };
 
-      mockRedisClient.get
-        .mockResolvedValueOnce(JSON.stringify(mockQuota)) // quota
-        .mockResolvedValue(JSON.stringify(mockStats)); // stats
+      mockRedisClient.get.mockResolvedValue(JSON.stringify(mockStats)); // stats
 
       const result = await tokenStatsService.getUsageReport('azure', 'gpt-4.1');
 

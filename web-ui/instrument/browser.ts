@@ -101,7 +101,8 @@ const getAppInsights = () => {
           }
 
           if (envelope.baseType === 'ExceptionData') {
-            const exceptions = envelope.baseData && envelope.baseData.exceptions;
+            const exceptions =
+              envelope.baseData && envelope.baseData.exceptions;
             if (exceptions) {
               for (const exception of exceptions) {
                 if (
@@ -120,12 +121,11 @@ const getAppInsights = () => {
       appInsightState.appInsightInstance.addTelemetryInitializer((envelope) => {
         envelope.tags ??= {};
         envelope.tags['ai.cloud.role'] = config.serviceName;
-        envelope.tags['ai.cloud.roleInstance'] = (
-          `${config.attributes!['service.instance'] ?? 'service-instance'}-browser`
-        ).replace(
-          'WebUi--undefined',
-          'ObApps.ComplianceTheatre-WebUi',
-        );
+        envelope.tags['ai.cloud.roleInstance'] =
+          `${config.attributes!['service.instance'] ?? 'service-instance'}-browser`.replace(
+            'WebUi--undefined',
+            'ObApps.ComplianceTheatre-WebUi',
+          );
         envelope.data ??= {};
         envelope.data.baseData ??= {};
         envelope.data.baseData.properties ??= {};
@@ -146,9 +146,10 @@ const getAppInsights = () => {
 export { getAppInsights, getReactPlugin, getClickPlugin };
 
 const instrument = () => {
-  console.error(
-    'Instrumentation is not supported in the browser environment....Why are we getting here?',
+  console.log(
+    'Instrumentation is not supported in the browser environment....nothing to do.',
   );
+  return Promise.resolve(void 0);
 };
 
 export default instrument;

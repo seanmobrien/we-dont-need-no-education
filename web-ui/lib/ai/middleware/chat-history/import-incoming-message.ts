@@ -644,7 +644,6 @@ export const importIncomingMessage = async ({
   // Resolve and normalize chat ID from context
   const chatId = getChatId(context);
   let currentMessageOrder = 0;
-
   // Ensure chat session exists with proper metadata
   await upsertChat(tx, chatId, context);
 
@@ -735,14 +734,13 @@ const flattenPromptToRows = (
 
   let currentContentRow: {
     role: ChatMessageRowDraft['role'];
-    parts: Array<Record<string, unknown>>;
+    content: Array<Record<string, unknown>>;
   } | null = null;
 
   const flushContent = () => {
-    if (currentContentRow && currentContentRow.parts.length > 0) {
+    if (currentContentRow && currentContentRow.content.length > 0) {
       rows.push({
-        role: currentContentRow.role,
-        content: currentContentRow.parts,
+        ...currentContentRow,
       });
     }
     currentContentRow = null;
@@ -768,16 +766,82 @@ const flattenPromptToRows = (
     role: ChatMessageRowDraft['role'],
     value: unknown,
   ) => {
-    const item =
-      typeof value === 'string'
-        ? { type: 'text', text: value }
-        : { type: 'text', text: normalizeOutput(value) };
+    // early-exit on null/undefined/empty-string
+    if (!value) {
+      return;
+    }
+    let item: Record<string, unknown>;
+    // If we have an object we have to to some special handling
+    if (typeof value === 'object') {
+      if ('text' in value) {
+        // If it has a text property then just take it as is (note tools have already been removed by processContentPart)
+        item = value;
+      } else if (Array.isArray(value)) {
+        // If it's an array then we flatten it out by processing each item individually
+        for (const part of value as unknown[]) {
+          processContentPart(part, role);
+        }
+        // And then early exit - nothing left to do for this part
+        return;
+      } else {
+        // Otherwise, we stringify the object as a JSON text part (although honestly I think now that we're upgraded to v5 we could also prob just take as-is?)
+        item = { type: 'text', value: JSON.stringify(value) };
+      }
+    } else {
+      // Otherwise it's a non-object raw value, so we turn it into a text part
+      item = {
+        type: 'text',
+        text: typeof value === 'string' ? value : JSON.stringify(value),
+      };
+    }
+    // Append to the current content row or flush and start anew
     if (!currentContentRow || currentContentRow.role !== role) {
       flushContent();
-      currentContentRow = { role, parts: [item] };
+      currentContentRow = { role, content: [item] };
     } else {
-      currentContentRow.parts.push(item);
+      currentContentRow.content.push(item);
     }
+  };
+
+  const processContentPart = (
+    part: unknown,
+    role: ChatMessageRowDraft['role'],
+  ) => {
+    if (!part) return;
+    // Handle tool-calls special...
+    if (isToolCallPart(part)) {
+      flushContent();
+      pushToolRow({
+        status: 'pending',
+        toolCallId: part.toolCallId,
+        toolName: part.toolName,
+        input:
+          part.input != null
+            ? typeof part.input === 'string'
+              ? part.input
+              : JSON.stringify(part.input)
+            : undefined,
+      });
+      return;
+    }
+    // Handle tool-results special...
+    if (isToolResultPart(part)) {
+      // NOTE: This is why I wind up with duplicate tool rows...better if we try and grab the last item or otherwise search backwards to match up by call id?
+      flushContent();
+      const parsed = getItemOutput(part as LanguageModelV2ToolResultPart);
+      pushToolRow({
+        status: parsed.error ? 'error' : 'result',
+        toolCallId: (part as { toolCallId?: string }).toolCallId,
+        toolName: (part as { toolName?: string }).toolName,
+        input: parsed.input,
+        output: parsed.output,
+        error: parsed.error,
+      });
+      flushContent();
+      return;
+    }
+    // Otherwise fallback to normal content item processing
+    pushContentItem(role, part);
   };
 
   for (const message of messages) {
@@ -789,43 +853,18 @@ const flattenPromptToRows = (
     }
     if (Array.isArray(message.content)) {
       for (const part of message.content as unknown[]) {
-        if (!part) continue;
-        if (isToolCallPart(part)) {
-          flushContent();
-          pushToolRow({
-            status: 'pending',
-            toolCallId: part.toolCallId,
-            toolName: part.toolName,
-            input:
-              part.input != null
-                ? typeof part.input === 'string'
-                  ? part.input
-                  : JSON.stringify(part.input)
-                : undefined,
-          });
-          continue;
-        }
-        if (isToolResultPart(part)) {
-          flushContent();
-          const parsed = getItemOutput(part as LanguageModelV2ToolResultPart);
-          pushToolRow({
-            status: parsed.error ? 'error' : 'result',
-            toolCallId: (part as { toolCallId?: string }).toolCallId,
-            toolName: (part as { toolName?: string }).toolName,
-            input: parsed.input,
-            output: parsed.output,
-            error: parsed.error,
-          });
-          continue;
-        }
-        const value = (part as { value?: unknown }).value ?? part;
-        pushContentItem(role, value);
+        processContentPart(part, role);
       }
       continue;
     }
-    if (message.content != null) {
-      pushContentItem(role, message.content);
+    if (!!message.content) {
+      processContentPart(message.content, role);
+      continue;
     }
+    pushContentItem(
+      role,
+      'value' in message && !!message.value ? message.value : message,
+    );
   }
 
   flushContent();
@@ -848,7 +887,7 @@ const insertPromptMessages = async (
       rows.map((row, i) => ({
         chatId,
         turnId,
-        messageId: messageIds[i],
+        messageId: i < messageIds.length ? messageIds[i] : 0,
         role: row.role,
         content:
           typeof row.content === 'string'

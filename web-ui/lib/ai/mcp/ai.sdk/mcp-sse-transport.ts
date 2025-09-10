@@ -78,11 +78,18 @@
 
 // Original source: https://github.com/vercel/ai/blob/ai%404.3.16/packages/ai/core/tool/mcp/mcp-sse-transport.ts
 
-import { EventSourceParserStream } from '@ai-sdk/provider-utils';
+import {
+  EventSourceMessage,
+  EventSourceParserStream,
+} from '@ai-sdk/provider-utils';
 import { MCPTransport, MCPClientError } from 'ai';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
 import { fetch } from '@/lib/nextjs-util/fetch';
 import { log } from '@/lib/logger';
+import {
+  isAbortError,
+  LoggedError,
+} from '@/lib/react-util/errors/logged-error';
 
 /**
  * SSE-based transport implementation for Model Context Protocol (MCP).
@@ -118,9 +125,11 @@ export class SseMCPTransport implements MCPTransport {
   protected url: URL;
   /** Current connection status */
   protected connected = false;
-  /** SSE connection wrapper with close method */
+  /** SSE connection wrapper with close and optional destroy methods */
   protected sseConnection?: {
-    close: () => void;
+    close: () => Promise<void>;
+    /** Best-effort destroy: free underlying stream resources */
+    destroy?: () => Promise<void> | void;
   };
   /** HTTP headers to include in requests */
   private headers?: Record<string, string>;
@@ -225,6 +234,7 @@ export class SseMCPTransport implements MCPTransport {
       this.abortController = new AbortController();
 
       const establishConnection = async () => {
+        let reader: ReadableStream<EventSourceMessage> | undefined;
         try {
           const headers = new Headers(this.headers);
           headers.set('Accept', 'text/event-stream');
@@ -237,16 +247,107 @@ export class SseMCPTransport implements MCPTransport {
             const error = new MCPClientError({
               message: `MCP SSE Transport Error: ${response.status} ${response.statusText}`,
             });
+            LoggedError.isTurtlesAllTheWayDownBaby(error, {
+              log: true,
+              source: 'MCP SSE Transport::establishConnection',
+            });
             this.onerror?.(error);
             return reject(error);
           }
-
+          // Connection established, now wait for 'endpoint' event
           const stream = response.body
             .pipeThrough(new TextDecoderStream())
             .pipeThrough(new EventSourceParserStream());
-
+          // grab our reader and a typed alias for the stream so we can
+          // safely call optional methods like cancel() or destroy().
           const reader = stream.getReader();
+          const maybeStream = stream as unknown as {
+            cancel?: (reason?: unknown) => Promise<void> | void;
+            destroy?: () => void;
+          };
 
+          // Helper to read an error code safely without using `any`.
+          const getErrorCode = (err: unknown): string | undefined => {
+            if (err && typeof err === 'object') {
+              const c = (err as { code?: unknown }).code;
+              return typeof c === 'string' ? c : undefined;
+            }
+            return undefined;
+          };
+
+          // Serialized, idempotent destroy to avoid concurrent cancel() races
+          let destroyingPromise: Promise<void> | undefined;
+          const doDestroy = async (): Promise<void> => {
+            if (destroyingPromise) return destroyingPromise;
+            destroyingPromise = (async () => {
+              try {
+                // cancel the reader if present
+                try {
+                  await reader.cancel('Connection destroyed');
+                  log((l) => l.verbose('SSE reader cancelled by destroy'));
+                } catch (e) {
+                  // Ignore known race condition in Node's webstreams where cancel
+                  // may throw ERR_INVALID_STATE when the stream is locked.
+                  if (
+                    !isAbortError(e) &&
+                    getErrorCode(e) !== 'ERR_INVALID_STATE'
+                  ) {
+                    LoggedError.isTurtlesAllTheWayDownBaby(e, {
+                      message: 'Error cancelling SSE reader during destroy',
+                      log: true,
+                      source: 'MCP SSE Transport::doDestroy',
+                    });
+                  }
+                }
+
+                // Prefer node-style destroy when available, fallback to cancel()
+                try {
+                  if (typeof maybeStream.destroy === 'function') {
+                    maybeStream.destroy();
+                    log((l) =>
+                      l.verbose('Underlying SSE stream destroyed by destroy()'),
+                    );
+                  } else if (maybeStream.cancel) {
+                    await maybeStream.cancel('Connection destroyed');
+                    log((l) =>
+                      l.verbose('Underlying SSE stream cancelled by destroy()'),
+                    );
+                  }
+                } catch (e) {
+                  if (
+                    !isAbortError(e) &&
+                    getErrorCode(e) !== 'ERR_INVALID_STATE'
+                  ) {
+                    LoggedError.isTurtlesAllTheWayDownBaby(e, {
+                      message:
+                        'Error destroying/cancelling underlying stream during destroy',
+                      log: true,
+                      source: 'MCP SSE Transport::doDestroy',
+                    });
+                  }
+                }
+              } finally {
+                this.connected = false;
+              }
+            })();
+            return destroyingPromise;
+          };
+
+          this.sseConnection = {
+            close: async () => {
+              try {
+                await doDestroy();
+              } catch (e) {
+                LoggedError.isTurtlesAllTheWayDownBaby(e, {
+                  message: 'Error closing SSE connection',
+                  log: true,
+                  severity: 'warn',
+                  source: 'MCP SSE Transport::sseConnection.close',
+                });
+              }
+            },
+            destroy: doDestroy,
+          };
           const processEvents = async () => {
             try {
               while (true) {
@@ -296,27 +397,38 @@ export class SseMCPTransport implements MCPTransport {
               }
             } catch (error) {
               if (error instanceof Error && error.name === 'AbortError') {
-                log((l) =>
-                  l.warn('MCP SSE Transport: Connection aborted', error),
-                );
                 resolve();
                 return;
               }
+              LoggedError.isTurtlesAllTheWayDownBaby(error, {
+                message: `MCP SSE Transport: Connection error - ${LoggedError.buildMessage(error)}`,
+                log: true,
+                source: 'MCP SSE Transport::processEvents',
+              });
               this.onerror?.(error);
               reject(error);
             }
           };
 
-          this.sseConnection = {
-            close: () => reader.cancel(),
-          };
-
-          processEvents();
+          await processEvents();
         } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
+          if (isAbortError(error)) {
+            // no-op
+            this.sseConnection?.close();
+            resolve();
             return;
           }
-
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            message: `MCP SSE Transport: Connection error - ${LoggedError.buildMessage(error)}`,
+            log: true,
+            source: 'MCP SSE Transport::establishConnection',
+          });
+          this.sseConnection?.close();
+          (reader?.cancel(error) ?? Promise.resolve()).catch((e) => {
+            log((l) =>
+              l.verbose('Error cancelling reader after connection failure', e),
+            );
+          });
           this.onerror?.(error);
           reject(error);
         }
@@ -345,8 +457,21 @@ export class SseMCPTransport implements MCPTransport {
    */
   async close(): Promise<void> {
     this.connected = false;
-    this.sseConnection?.close();
+    const connection = this.sseConnection
+      ?.close()
+      .catch((e) => {
+        LoggedError.isTurtlesAllTheWayDownBaby(e, {
+          message: 'Error closing SSE connection',
+          log: true,
+          severity: 'warn',
+          source: 'MCP SSE Transport::close',
+        });
+      })
+      .finally(() => {
+        this.sseConnection = undefined;
+      });
     this.abortController?.abort();
+    await connection;
     this.onclose?.();
   }
 
@@ -395,10 +520,25 @@ export class SseMCPTransport implements MCPTransport {
         const error = new MCPClientError({
           message: `MCP SSE Transport Error: POSTing to endpoint (HTTP ${response.status}): ${text}`,
         });
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          data: {
+            status: response.status,
+            statusText: response.statusText,
+            body: text,
+            url: this.endpoint?.href,
+          },
+          source: 'MCP SSE Transport::send',
+        });
         this.onerror?.(error);
         return;
       }
     } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        message: `MCP SSE Transport: Send error - ${LoggedError.buildMessage(error)}`,
+        log: true,
+        source: 'MCP SSE Transport::send',
+      });
       this.onerror?.(error);
       return;
     }
@@ -425,6 +565,5 @@ export class SseMCPTransport implements MCPTransport {
  * @deprecated This function is included for compatibility but consider using
  * the schema validation directly in your application code.
  */
-export function deserializeMessage(line: string): JSONRPCMessage {
-  return JSONRPCMessageSchema.parse(JSON.parse(line));
-}
+export const deserializeMessage = (line: string): JSONRPCMessage =>
+  JSONRPCMessageSchema.parse(JSON.parse(line));

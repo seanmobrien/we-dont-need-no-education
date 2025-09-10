@@ -47,7 +47,6 @@ jest.mock('@/instrument/browser', () => ({
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
-import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
@@ -519,6 +518,7 @@ import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
 import postgres from 'postgres';
 import { resetGlobalCache } from '@/data-models/api/contact-cache';
+import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { drizDb } from '@/lib/drizzle-db';
 

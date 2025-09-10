@@ -683,6 +683,11 @@ describe('Import Incoming Message', () => {
       expect(result.nextMessageOrder).toBe(6); // 5 messages + 1 new assistant
     });
 
+    /**
+
+"[{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"test\"}]},{\"role\":\"assistant\",\"content\":[{\"type\":\"text\",\"text\":\"Hello! How can I assist you today? If you're running a test, everything seems to be working. Let me know what you need!\"}]},{\"role\":\"user\",\"content\":[{\"type\":\"text\",\"text\":\"ping\"}]},{\"role\":\"assistant\",\"content\":[{\"type\":\"tool-call\",\"toolCallId\":\"call_juCFW4lz0ScBOFe8Jdeh8Is5\",\"toolName\":\"playPingPong\",\"input\":{\"userPing\":\"ping\",\"assistantPong\":\"pong\",\"roundHistory\":[[\"ping\",\"pong\"]]}}]},{\"role\":\"tool\",\"content\":[{\"type\":\"tool-result\",\"toolCallId\":\"call_juCFW4lz0ScBOFe8Jdeh8Is5\",\"toolName\":\"playPingPong\",\"output\":{\"type\":\"json\",\"value\":{\"content\":[{\"type\":\"text\",\"text\":\"tool success\"}],\"isError\":false,\"structuredContent\":{\"result\":{\"isError\":false,\"value\":{\"result\":0}}}}}}]}
+ */
+
     it('should maintain consistency across all database operations', async () => {
       // This test ensures all operations use the same chatId and turnId
       const capturedValues: unknown[] = [];

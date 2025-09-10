@@ -35,23 +35,32 @@ export const countTokens = ({
   }
   try {
     // Normalize incoming prompt into OpenAI ChatCompletionMessageParam[]
-    const normalizeContentToParts = (content: unknown): { text: string }[] => {
-      if (content == null) return [];
-      if (Array.isArray(content)) {
-        return content.map((part) => {
-          if (
-            part !== null &&
-            typeof part === 'object' &&
-            'text' in (part as Record<string, unknown>)
-          ) {
-            const candidate = part as Record<string, unknown>;
-            const textVal = candidate['text'];
-            return { text: String(textVal ?? '') };
-          }
-          return { text: JSON.stringify(part) };
-        });
+    const normalizeContentToParts = (
+      content: unknown,
+    ): {
+      [K in string]: K extends 'text' ? string : unknown;
+    }[] => {
+      if (!content) {
+        return [];
       }
-      if (typeof content === 'string') return [{ text: content }];
+      if (typeof content !== 'object') {
+        return [{ text: String(content) }];
+      }
+      if ('text' in content) {
+        return [
+          ...('content' in content
+            ? normalizeContentToParts(content.content)
+            : []),
+          {
+            ...content,
+            content: undefined,
+            text: String(content.text),
+          },
+        ];
+      }
+      if (Array.isArray(content)) {
+        return content.flatMap(normalizeContentToParts);
+      }
       return [{ text: JSON.stringify(content) }];
     };
 
@@ -262,8 +271,8 @@ export const countTokens = ({
     }
 
     const functions: ChatCompletionCreateParams.Function[] = [
-      ...functionsFromPrompt,
-      ...functionsFromToolCalls,
+      // ...functionsFromPrompt,
+      // ...functionsFromToolCalls,
     ];
 
     // Determine function_call setting supported by the chat tokens estimator

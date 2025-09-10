@@ -67,7 +67,7 @@ describe('ModelMap with Full Mocking', () => {
           id: '97e291f6-4396-472e-9cb5-13cc94291879',
           isActive: true,
           modelName: 'gpt-4.1',
-          providerId: 'b555b85f-5b2f-45d8-a317-575a3ab50ff2',
+          providerId: PROVIDER_ID_AZURE,
           updatedAt: '2025-08-01T14:18:55.625835+00:00',
         }),
       );
@@ -126,11 +126,22 @@ describe('ModelMap with Full Mocking', () => {
     it('should normalize provider:model format correctly', async () => {
       const instance = ModelMap.Instance;
       const result = await instance.normalizeProviderModel(
-        'azure-openai.chat:gpt-4',
+        'azure-openai.chat:gpt-4.1',
       );
 
       expect(result.provider).toBe('azure');
-      expect(result.modelName).toBe('gpt-4');
+      expect(result.modelName).toBe('gpt-4.1');
+      expect(result.providerId).toBe(PROVIDER_ID_AZURE);
+    });
+
+    it('should support retrieving providerId:modelName format', async () => {
+      const instance = ModelMap.Instance;
+      const result = await instance.normalizeProviderModel(
+        PROVIDER_ID_AZURE + ':gpt-4.1',
+      );
+      result.rethrow();
+      expect(result.provider).toBe('azure');
+      expect(result.modelName).toBe('gpt-4.1');
       expect(result.providerId).toBe(PROVIDER_ID_AZURE);
     });
 

@@ -1,4 +1,5068 @@
-## Documentation:
+---
+title: RAG Agent
+description: Learn how to build a RAG Agent with the AI SDK and Next.js
+tags:
+  [
+    'rag',
+    'chatbot',
+    'next',
+    'embeddings',
+    'database',
+    'retrieval',
+    'memory',
+    'agent',
+  ]
+---
+
+# RAG Agent Guide
+
+In this guide, you will learn how to build a retrieval-augmented generation (RAG) agent.
+
+<video
+  src="/images/rag-guide-demo.mp4"
+  autoplay
+  height={540}
+  width={910}
+  controls
+  playsinline
+/>
+
+Before we dive in, let's look at what RAG is, and why we would want to use it.
+
+### What is RAG?
+
+RAG stands for retrieval augmented generation. In simple terms, RAG is the process of providing a Large Language Model (LLM) with specific information relevant to the prompt.
+
+### Why is RAG important?
+
+While LLMs are powerful, the information they can reason on is restricted to the data they were trained on. This problem becomes apparent when asking an LLM for information outside of their training data, like proprietary data or common knowledge that has occurred after the model’s training cutoff. RAG solves this problem by fetching information relevant to the prompt and then passing that to the model as context.
+
+To illustrate with a basic example, imagine asking the model for your favorite food:
+
+```txt
+**input**
+What is my favorite food?
+
+**generation**
+I don't have access to personal information about individuals, including their
+favorite foods.
+```
+
+Not surprisingly, the model doesn’t know. But imagine, alongside your prompt, the model received some extra context:
+
+```txt
+**input**
+Respond to the user's prompt using only the provided context.
+user prompt: 'What is my favorite food?'
+context: user loves chicken nuggets
+
+**generation**
+Your favorite food is chicken nuggets!
+```
+
+Just like that, you have augmented the model’s generation by providing relevant information to the query. Assuming the model has the appropriate information, it is now highly likely to return an accurate response to the users query. But how does it retrieve the relevant information? The answer relies on a concept called embedding.
+
+<Note>
+  You could fetch any context for your RAG application (eg. Google search).
+  Embeddings and Vector Databases are just a specific retrieval approach to
+  achieve semantic search.
+</Note>
+
+### Embedding
+
+[Embeddings](/docs/ai-sdk-core/embeddings) are a way to represent words, phrases, or images as vectors in a high-dimensional space. In this space, similar words are close to each other, and the distance between words can be used to measure their similarity.
+
+In practice, this means that if you embedded the words `cat` and `dog`, you would expect them to be plotted close to each other in vector space. The process of calculating the similarity between two vectors is called ‘cosine similarity’ where a value of 1 would indicate high similarity and a value of -1 would indicate high opposition.
+
+<Note>
+  Don’t worry if this seems complicated. a high level understanding is all you
+  need to get started! For a more in-depth introduction to embeddings, check out
+  [this guide](https://jalammar.github.io/illustrated-word2vec/).
+</Note>
+
+As mentioned above, embeddings are a way to represent the semantic meaning of **words and phrases**. The implication here is that the larger the input to your embedding, the lower quality the embedding will be. So how would you approach embedding content longer than a simple phrase?
+
+### Chunking
+
+Chunking refers to the process of breaking down a particular source material into smaller pieces. There are many different approaches to chunking and it’s worth experimenting as the most effective approach can differ by use case. A simple and common approach to chunking (and what you will be using in this guide) is separating written content by sentences.
+
+Once your source material is appropriately chunked, you can embed each one and then store the embedding and the chunk together in a database. Embeddings can be stored in any database that supports vectors. For this tutorial, you will be using [Postgres](https://www.postgresql.org/) alongside the [pgvector](https://github.com/pgvector/pgvector) plugin.
+
+<MDXImage
+  srcLight="/images/rag-guide-1.png"
+  srcDark="/images/rag-guide-1-dark.png"
+  width={800}
+  height={800}
+/>
+
+### All Together Now
+
+Combining all of this together, RAG is the process of enabling the model to respond with information outside of it’s training data by embedding a users query, retrieving the relevant source material (chunks) with the highest semantic similarity, and then passing them alongside the initial query as context. Going back to the example where you ask the model for your favorite food, the prompt preparation process would look like this.
+
+<MDXImage
+  srcLight="/images/rag-guide-2.png"
+  srcDark="/images/rag-guide-2-dark.png"
+  width={800}
+  height={800}
+/>
+
+By passing the appropriate context and refining the model’s objective, you are able to fully leverage its strengths as a reasoning machine.
+
+Onto the project!
+
+## Project Setup
+
+In this project, you will build a agent that will only respond with information that it has within its knowledge base. The agent will be able to both store and retrieve information. This project has many interesting use cases from customer support through to building your own second brain!
+
+This project will use the following stack:
+
+- [Next.js](https://nextjs.org) 14 (App Router)
+- [ AI SDK ](/docs)
+- [OpenAI](https://openai.com)
+- [ Drizzle ORM ](https://orm.drizzle.team)
+- [ Postgres ](https://www.postgresql.org/) with [ pgvector ](https://github.com/pgvector/pgvector)
+- [ shadcn-ui ](https://ui.shadcn.com) and [ TailwindCSS ](https://tailwindcss.com) for styling
+
+### Clone Repo
+
+To reduce the scope of this guide, you will be starting with a [repository](https://github.com/vercel/ai-sdk-rag-starter) that already has a few things set up for you:
+
+- Drizzle ORM (`lib/db`) including an initial migration and a script to migrate (`db:migrate`)
+- a basic schema for the `resources` table (this will be for source material)
+- a Server Action for creating a `resource`
+
+To get started, clone the starter repository with the following command:
+
+<Snippet
+text={[
+'git clone https://github.com/vercel/ai-sdk-rag-starter',
+'cd ai-sdk-rag-starter',
+]}
+/>
+
+First things first, run the following command to install the project’s dependencies:
+
+<Snippet text="pnpm install" />
+
+### Create Database
+
+You will need a Postgres database to complete this tutorial. If you don't have Postgres setup on your local machine you can:
+
+- Create a free Postgres database with Vercel (recommended - see instructions below); or
+- Follow [this guide](https://www.prisma.io/dataguide/postgresql/setting-up-a-local-postgresql-database) to set it up locally
+
+#### Setting up Postgres with Vercel
+
+To set up a Postgres instance on your Vercel account:
+
+1. Go to [Vercel.com](https://vercel.com) and make sure you're logged in
+1. Navigate to your team homepage
+1. Click on the **Integrations** tab
+1. Click **Browse Marketplace**
+1. Look for the **Storage** option in the sidebar
+1. Select the **Neon** option (recommended, but any other PostgreSQL database provider should work)
+1. Click **Install**, then click **Install** again in the top right corner
+1. On the "Get Started with Neon" page, click **Create Database** on the right
+1. Select your region (e.g., Washington, D.C., U.S. East)
+1. Turn off **Auth**
+1. Click **Continue**
+1. Name your database (you can use the default name or rename it to something like "RagTutorial")
+1. Click **Create** in the bottom right corner
+1. After seeing "Database created successfully", click **Done**
+1. You'll be redirected to your database instance
+1. In the Quick Start section, click **Show secrets**
+1. Copy the full `DATABASE_URL` environment variable
+
+### Migrate Database
+
+Once you have a Postgres database, you need to add the connection string as an environment secret.
+
+Make a copy of the `.env.example` file and rename it to `.env`.
+
+<Snippet text="cp .env.example .env" />
+
+Open the new `.env` file. You should see an item called `DATABASE_URL`. Copy in your database connection string after the equals sign.
+
+With that set up, you can now run your first database migration. Run the following command:
+
+<Snippet text="pnpm db:migrate" />
+
+This will first add the `pgvector` extension to your database. Then it will create a new table for your `resources` schema that is defined in `lib/db/schema/resources.ts`. This schema has four columns: `id`, `content`, `createdAt`, and `updatedAt`.
+
+<Note>
+  If you experience an error with the migration, see the [troubleshooting
+  section](#troubleshooting-migration-error) below.
+</Note>
+
+### OpenAI API Key
+
+For this guide, you will need an OpenAI API key. To generate an API key, go to [platform.openai.com](http://platform.openai.com/).
+
+Once you have your API key, paste it into your `.env` file (`OPENAI_API_KEY`).
+
+## Build
+
+Let’s build a quick task list of what needs to be done:
+
+1. Create a table in your database to store embeddings
+2. Add logic to chunk and create embeddings when creating resources
+3. Create an agent
+4. Give the agent tools to query / create resources for it’s knowledge base
+
+### Create Embeddings Table
+
+Currently, your application has one table (`resources`) which has a column (`content`) for storing content. Remember, each `resource` (source material) will have to be chunked, embedded, and then stored. Let’s create a table called `embeddings` to store these chunks.
+
+Create a new file (`lib/db/schema/embeddings.ts`) and add the following code:
+
+```tsx filename="lib/db/schema/embeddings.ts"
+import { nanoid } from '@/lib/utils';
+import { index, pgTable, text, varchar, vector } from 'drizzle-orm/pg-core';
+import { resources } from './resources';
+
+export const embeddings = pgTable(
+  'embeddings',
+  {
+    id: varchar('id', { length: 191 })
+      .primaryKey()
+      .$defaultFn(() => nanoid()),
+    resourceId: varchar('resource_id', { length: 191 }).references(
+      () => resources.id,
+      { onDelete: 'cascade' },
+    ),
+    content: text('content').notNull(),
+    embedding: vector('embedding', { dimensions: 1536 }).notNull(),
+  },
+  (table) => ({
+    embeddingIndex: index('embeddingIndex').using(
+      'hnsw',
+      table.embedding.op('vector_cosine_ops'),
+    ),
+  }),
+);
+```
+
+This table has four columns:
+
+- `id` - unique identifier
+- `resourceId` - a foreign key relation to the full source material
+- `content` - the plain text chunk
+- `embedding` - the vector representation of the plain text chunk
+
+To perform similarity search, you also need to include an index ([HNSW](https://github.com/pgvector/pgvector?tab=readme-ov-file#hnsw) or [IVFFlat](https://github.com/pgvector/pgvector?tab=readme-ov-file#ivfflat)) on this column for better performance.
+
+To push this change to the database, run the following command:
+
+<Snippet text="pnpm db:push" />
+
+### Add Embedding Logic
+
+Now that you have a table to store embeddings, it’s time to write the logic to create the embeddings.
+
+Create a file with the following command:
+
+<Snippet text="mkdir lib/ai && touch lib/ai/embedding.ts" />
+
+### Generate Chunks
+
+Remember, to create an embedding, you will start with a piece of source material (unknown length), break it down into smaller chunks, embed each chunk, and then save the chunk to the database. Let’s start by creating a function to break the source material into small chunks.
+
+```tsx filename="lib/ai/embedding.ts"
+const generateChunks = (input: string): string[] => {
+  return input
+    .trim()
+    .split('.')
+    .filter((i) => i !== '');
+};
+```
+
+This function will take an input string and split it by periods, filtering out any empty items. This will return an array of strings. It is worth experimenting with different chunking techniques in your projects as the best technique will vary.
+
+### Install AI SDK
+
+You will use the AI SDK to create embeddings. This will require two more dependencies, which you can install by running the following command:
+
+<Snippet text="pnpm add ai @ai-sdk/react @ai-sdk/openai" />
+
+This will install the [AI SDK](/docs), AI SDK's React hooks, and AI SDK's [OpenAI provider](/providers/ai-sdk-providers/openai).
+
+<Note>
+  The AI SDK is designed to be a unified interface to interact with any large
+  language model. This means that you can change model and providers with just
+  one line of code! Learn more about [available providers](/providers) and
+  [building custom providers](/providers/community-providers/custom-providers)
+  in the [providers](/providers) section.
+</Note>
+
+### Generate Embeddings
+
+Let’s add a function to generate embeddings. Copy the following code into your `lib/ai/embedding.ts` file.
+
+```tsx filename="lib/ai/embedding.ts" highlight="1-2,4,13-22"
+import { embedMany } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const embeddingModel = openai.embedding('text-embedding-ada-002');
+
+const generateChunks = (input: string): string[] => {
+  return input
+    .trim()
+    .split('.')
+    .filter((i) => i !== '');
+};
+
+export const generateEmbeddings = async (
+  value: string,
+): Promise<Array<{ embedding: number[]; content: string }>> => {
+  const chunks = generateChunks(value);
+  const { embeddings } = await embedMany({
+    model: embeddingModel,
+    values: chunks,
+  });
+  return embeddings.map((e, i) => ({ content: chunks[i], embedding: e }));
+};
+```
+
+In this code, you first define the model you want to use for the embeddings. In this example, you are using OpenAI’s `text-embedding-ada-002` embedding model.
+
+Next, you create an asynchronous function called `generateEmbeddings`. This function will take in the source material (`value`) as an input and return a promise of an array of objects, each containing an embedding and content. Within the function, you first generate chunks for the input. Then, you pass those chunks to the [`embedMany`](/docs/reference/ai-sdk-core/embed-many) function imported from the AI SDK which will return embeddings of the chunks you passed in. Finally, you map over and return the embeddings in a format that is ready to save in the database.
+
+### Update Server Action
+
+Open the file at `lib/actions/resources.ts`. This file has one function, `createResource`, which, as the name implies, allows you to create a resource.
+
+```tsx filename="lib/actions/resources.ts"
+'use server';
+
+import {
+  NewResourceParams,
+  insertResourceSchema,
+  resources,
+} from '@/lib/db/schema/resources';
+import { db } from '../db';
+
+export const createResource = async (input: NewResourceParams) => {
+  try {
+    const { content } = insertResourceSchema.parse(input);
+
+    const [resource] = await db
+      .insert(resources)
+      .values({ content })
+      .returning();
+
+    return 'Resource successfully created.';
+  } catch (e) {
+    if (e instanceof Error)
+      return e.message.length > 0 ? e.message : 'Error, please try again.';
+  }
+};
+```
+
+This function is a [Server Action](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations#with-client-components), as denoted by the `“use server”;` directive at the top of the file. This means that it can be called anywhere in your Next.js application. This function will take an input, run it through a [Zod](https://zod.dev) schema to ensure it adheres to the correct schema, and then creates a new resource in the database. This is the ideal location to generate and store embeddings of the newly created resources.
+
+Update the file with the following code:
+
+```tsx filename="lib/actions/resources.ts" highlight="9-10,21-27,29"
+'use server';
+
+import {
+  NewResourceParams,
+  insertResourceSchema,
+  resources,
+} from '@/lib/db/schema/resources';
+import { db } from '../db';
+import { generateEmbeddings } from '../ai/embedding';
+import { embeddings as embeddingsTable } from '../db/schema/embeddings';
+
+export const createResource = async (input: NewResourceParams) => {
+  try {
+    const { content } = insertResourceSchema.parse(input);
+
+    const [resource] = await db
+      .insert(resources)
+      .values({ content })
+      .returning();
+
+    const embeddings = await generateEmbeddings(content);
+    await db.insert(embeddingsTable).values(
+      embeddings.map((embedding) => ({
+        resourceId: resource.id,
+        ...embedding,
+      })),
+    );
+
+    return 'Resource successfully created and embedded.';
+  } catch (error) {
+    return error instanceof Error && error.message.length > 0
+      ? error.message
+      : 'Error, please try again.';
+  }
+};
+```
+
+First, you call the `generateEmbeddings` function created in the previous step, passing in the source material (`content`). Once you have your embeddings (`e`) of the source material, you can save them to the database, passing the `resourceId` alongside each embedding.
+
+### Create Root Page
+
+Great! Let's build the frontend. The AI SDK’s [`useChat`](/docs/reference/ai-sdk-ui/use-chat) hook allows you to easily create a conversational user interface for your agent.
+
+Replace your root page (`app/page.tsx`) with the following code.
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
+
+export default function Chat() {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat();
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      <div className="space-y-4">
+        {messages.map((m) => (
+          <div key={m.id} className="whitespace-pre-wrap">
+            <div>
+              <div className="font-bold">{m.role}</div>
+              {m.parts.map((part) => {
+                switch (part.type) {
+                  case 'text':
+                    return <p>{part.text}</p>;
+                }
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage({ text: input });
+          setInput('');
+        }}
+      >
+        <input
+          className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
+          value={input}
+          placeholder="Say something..."
+          onChange={(e) => setInput(e.currentTarget.value)}
+        />
+      </form>
+    </div>
+  );
+}
+```
+
+The `useChat` hook enables the streaming of chat messages from your AI provider (you will be using OpenAI), manages the state for chat input, and updates the UI automatically as new messages are received.
+
+Run the following command to start the Next.js dev server:
+
+<Snippet text="pnpm run dev" />
+
+Head to [http://localhost:3000](http://localhost:3000/). You should see an empty screen with an input bar floating at the bottom. Try to send a message. The message shows up in the UI for a fraction of a second and then disappears. This is because you haven’t set up the corresponding API route to call the model! By default, `useChat` will send a POST request to the `/api/chat` endpoint with the `messages` as the request body.
+
+<Note>You can customize the endpoint in the useChat configuration object</Note>
+
+### Create API Route
+
+In Next.js, you can create custom request handlers for a given route using [Route Handlers](https://nextjs.org/docs/app/building-your-application/routing/route-handlers). Route Handlers are defined in a `route.ts` file and can export HTTP methods like `GET`, `POST`, `PUT`, `PATCH` etc.
+
+Create a file at `app/api/chat/route.ts` by running the following command:
+
+<Snippet text="mkdir -p app/api/chat && touch app/api/chat/route.ts" />
+
+Open the file and add the following code:
+
+```tsx filename="app/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+In this code, you declare and export an asynchronous function called POST. You retrieve the `messages` from the request body and then pass them to the [`streamText`](/docs/reference/ai-sdk-core/stream-text) function imported from the AI SDK, alongside the model you would like to use. Finally, you return the model’s response in `UIMessageStreamResponse` format.
+
+Head back to the browser and try to send a message again. You should see a response from the model streamed directly in!
+
+### Refining your prompt
+
+While you now have a working agent, it isn't doing anything special.
+
+Let’s add system instructions to refine and restrict the model’s behavior. In this case, you want the model to only use information it has retrieved to generate responses. Update your route handler with the following code:
+
+```tsx filename="app/api/chat/route.ts" highlight="12-14"
+import { openai } from '@ai-sdk/openai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    system: `You are a helpful assistant. Check your knowledge base before answering any questions.
+    Only respond to questions using information from tool calls.
+    if no relevant information is found in the tool calls, respond, "Sorry, I don't know."`,
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+Head back to the browser and try to ask the model what your favorite food is. The model should now respond exactly as you instructed above (“Sorry, I don’t know”) given it doesn’t have any relevant information.
+
+In its current form, your agent is now, well, useless. How do you give the model the ability to add and query information?
+
+### Using Tools
+
+A [tool](/docs/foundations/tools) is a function that can be called by the model to perform a specific task. You can think of a tool like a program you give to the model that it can run as and when it deems necessary.
+
+Let’s see how you can create a tool to give the model the ability to create, embed and save a resource to your agents’ knowledge base.
+
+### Add Resource Tool
+
+Update your route handler with the following code:
+
+```tsx filename="app/api/chat/route.ts" highlight="18-29"
+import { createResource } from '@/lib/actions/resources';
+import { openai } from '@ai-sdk/openai';
+import { convertToModelMessages, streamText, tool, UIMessage } from 'ai';
+import { z } from 'zod';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    system: `You are a helpful assistant. Check your knowledge base before answering any questions.
+    Only respond to questions using information from tool calls.
+    if no relevant information is found in the tool calls, respond, "Sorry, I don't know."`,
+    messages: convertToModelMessages(messages),
+    tools: {
+      addResource: tool({
+        description: `add a resource to your knowledge base.
+          If the user provides a random piece of knowledge unprompted, use this tool without asking for confirmation.`,
+        inputSchema: z.object({
+          content: z
+            .string()
+            .describe('the content or resource to add to the knowledge base'),
+        }),
+        execute: async ({ content }) => createResource({ content }),
+      }),
+    },
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+In this code, you define a tool called `addResource`. This tool has three elements:
+
+- **description**: description of the tool that will influence when the tool is picked.
+- **inputSchema**: [Zod schema](/docs/foundations/tools#schema-specification-and-validation-with-zod) that defines the input necessary for the tool to run.
+- **execute**: An asynchronous function that is called with the arguments from the tool call.
+
+In simple terms, on each generation, the model will decide whether it should call the tool. If it deems it should call the tool, it will extract the input and then append a new `message` to the `messages` array of type `tool-call`. The AI SDK will then run the `execute` function with the parameters provided by the `tool-call` message.
+
+Head back to the browser and tell the model your favorite food. You should see an empty response in the UI. Did anything happen? Let’s see. Run the following command in a new terminal window.
+
+<Snippet text="pnpm db:studio" />
+
+This will start Drizzle Studio where we can view the rows in our database. You should see a new row in both the `embeddings` and `resources` table with your favorite food!
+
+Let’s make a few changes in the UI to communicate to the user when a tool has been called. Head back to your root page (`app/page.tsx`) and add the following code:
+
+```tsx filename="app/page.tsx" highlight="14-32"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
+
+export default function Chat() {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat();
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      <div className="space-y-4">
+        {messages.map((m) => (
+          <div key={m.id} className="whitespace-pre-wrap">
+            <div>
+              <div className="font-bold">{m.role}</div>
+              {m.parts.map((part) => {
+                switch (part.type) {
+                  case 'text':
+                    return <p>{part.text}</p>;
+                  case 'tool-addResource':
+                  case 'tool-getInformation':
+                    return (
+                      <p>
+                        call{part.state === 'output-available' ? 'ed' : 'ing'}{' '}
+                        tool: {part.type}
+                        <pre className="my-4 bg-zinc-100 p-2 rounded-sm">
+                          {JSON.stringify(part.input, null, 2)}
+                        </pre>
+                      </p>
+                    );
+                }
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage({ text: input });
+          setInput('');
+        }}
+      >
+        <input
+          className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl"
+          value={input}
+          placeholder="Say something..."
+          onChange={(e) => setInput(e.currentTarget.value)}
+        />
+      </form>
+    </div>
+  );
+}
+```
+
+With this change, you now conditionally render the tool that has been called directly in the UI. Save the file and head back to browser. Tell the model your favorite movie. You should see which tool is called in place of the model’s typical text response.
+
+<Note>
+  Don't worry about the `tool-getInformation` tool case in the switch statement
+  - we'll add that tool in a later section.
+</Note>
+
+### Improving UX with Multi-Step Calls
+
+It would be nice if the model could summarize the action too. However, technically, once the model calls a tool, it has completed its generation as it ‘generated’ a tool call. How could you achieve this desired behaviour?
+
+The AI SDK has a feature called [`stopWhen`](/docs/ai-sdk-core/tools-and-tool-calling#multi-step-calls) which allows stopping conditions when the model generates a tool call. If those stopping conditions haven't been hit, the AI SDK will automatically send tool call results back to the model!
+
+Open your root page (`api/chat/route.ts`) and add the following key to the `streamText` configuration object:
+
+```tsx filename="api/chat/route.ts" highlight="8,24"
+import { createResource } from '@/lib/actions/resources';
+import { openai } from '@ai-sdk/openai';
+import {
+  convertToModelMessages,
+  streamText,
+  tool,
+  UIMessage,
+  stepCountIs,
+} from 'ai';
+import { z } from 'zod';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    system: `You are a helpful assistant. Check your knowledge base before answering any questions.
+    Only respond to questions using information from tool calls.
+    if no relevant information is found in the tool calls, respond, "Sorry, I don't know."`,
+    messages: convertToModelMessages(messages),
+    stopWhen: stepCountIs(5),
+    tools: {
+      addResource: tool({
+        description: `add a resource to your knowledge base.
+          If the user provides a random piece of knowledge unprompted, use this tool without asking for confirmation.`,
+        inputSchema: z.object({
+          content: z
+            .string()
+            .describe('the content or resource to add to the knowledge base'),
+        }),
+        execute: async ({ content }) => createResource({ content }),
+      }),
+    },
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+Head back to the browser and tell the model your favorite pizza topping (note: pineapple is not an option). You should see a follow-up response from the model confirming the action.
+
+### Retrieve Resource Tool
+
+The model can now add and embed arbitrary information to your knowledge base. However, it still isn’t able to query it. Let’s create a new tool to allow the model to answer questions by finding relevant information in your knowledge base.
+
+To find similar content, you will need to embed the users query, search the database for semantic similarities, then pass those items to the model as context alongside the query. To achieve this, let’s update your embedding logic file (`lib/ai/embedding.ts`):
+
+```tsx filename="lib/ai/embedding.ts" highlight="1,3-5,27-34,36-49"
+import { embed, embedMany } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { db } from '../db';
+import { cosineDistance, desc, gt, sql } from 'drizzle-orm';
+import { embeddings } from '../db/schema/embeddings';
+
+const embeddingModel = openai.embedding('text-embedding-ada-002');
+
+const generateChunks = (input: string): string[] => {
+  return input
+    .trim()
+    .split('.')
+    .filter((i) => i !== '');
+};
+
+export const generateEmbeddings = async (
+  value: string,
+): Promise<Array<{ embedding: number[]; content: string }>> => {
+  const chunks = generateChunks(value);
+  const { embeddings } = await embedMany({
+    model: embeddingModel,
+    values: chunks,
+  });
+  return embeddings.map((e, i) => ({ content: chunks[i], embedding: e }));
+};
+
+export const generateEmbedding = async (value: string): Promise<number[]> => {
+  const input = value.replaceAll('\\n', ' ');
+  const { embedding } = await embed({
+    model: embeddingModel,
+    value: input,
+  });
+  return embedding;
+};
+
+export const findRelevantContent = async (userQuery: string) => {
+  const userQueryEmbedded = await generateEmbedding(userQuery);
+  const similarity = sql<number>`1 - (${cosineDistance(
+    embeddings.embedding,
+    userQueryEmbedded,
+  )})`;
+  const similarGuides = await db
+    .select({ name: embeddings.content, similarity })
+    .from(embeddings)
+    .where(gt(similarity, 0.5))
+    .orderBy((t) => desc(t.similarity))
+    .limit(4);
+  return similarGuides;
+};
+```
+
+In this code, you add two functions:
+
+- `generateEmbedding`: generate a single embedding from an input string
+- `findRelevantContent`: embeds the user’s query, searches the database for similar items, then returns relevant items
+
+With that done, it’s onto the final step: creating the tool.
+
+Go back to your route handler (`api/chat/route.ts`) and add a new tool called `getInformation`:
+
+```ts filename="api/chat/route.ts" highlight="11,37-43"
+import { createResource } from '@/lib/actions/resources';
+import { openai } from '@ai-sdk/openai';
+import {
+  convertToModelMessages,
+  streamText,
+  tool,
+  UIMessage,
+  stepCountIs,
+} from 'ai';
+import { z } from 'zod';
+import { findRelevantContent } from '@/lib/ai/embedding';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    messages: convertToModelMessages(messages),
+    stopWhen: stepCountIs(5),
+    system: `You are a helpful assistant. Check your knowledge base before answering any questions.
+    Only respond to questions using information from tool calls.
+    if no relevant information is found in the tool calls, respond, "Sorry, I don't know."`,
+    tools: {
+      addResource: tool({
+        description: `add a resource to your knowledge base.
+          If the user provides a random piece of knowledge unprompted, use this tool without asking for confirmation.`,
+        inputSchema: z.object({
+          content: z
+            .string()
+            .describe('the content or resource to add to the knowledge base'),
+        }),
+        execute: async ({ content }) => createResource({ content }),
+      }),
+      getInformation: tool({
+        description: `get information from your knowledge base to answer questions.`,
+        inputSchema: z.object({
+          question: z.string().describe('the users question'),
+        }),
+        execute: async ({ question }) => findRelevantContent(question),
+      }),
+    },
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+Head back to the browser, refresh the page, and ask for your favorite food. You should see the model call the `getInformation` tool, and then use the relevant information to formulate a response!
+
+## Conclusion
+
+Congratulations, you have successfully built an AI agent that can dynamically add and retrieve information to and from a knowledge base. Throughout this guide, you learned how to create and store embeddings, set up server actions to manage resources, and use tools to extend the capabilities of your agent.
+
+## Troubleshooting Migration Error
+
+If you experience an error with the migration, open your migration file (`lib/db/migrations/0000_yielding_bloodaxe.sql`), cut (copy and remove) the first line, and run it directly on your postgres instance. You should now be able to run the updated migration.
+
+If you're using the Vercel setup above, you can run the command directly by either:
+
+- Going to the Neon console and entering the command there, or
+- Going back to the Vercel platform, navigating to the Quick Start section of your database, and finding the PSQL connection command (second tab). This will connect to your instance in the terminal where you can run the command directly.
+
+[More info](https://github.com/vercel/ai-sdk-rag-starter/issues/1).
+
+---
+
+title: Multi-Modal Agent
+description: Learn how to build a multi-modal agent that can process images and PDFs with the AI SDK.
+tags: ['multi-modal', 'agent', 'images', 'pdf', 'vision', 'next']
+
+---
+
+# Multi-Modal Agent
+
+In this guide, you will build a multi-modal agent capable of understanding both images and PDFs.
+
+Multi-modal refers to the ability of the agent to understand and generate responses in multiple formats. In this guide, we'll focus on images and PDFs - two common document types that modern language models can process natively.
+
+<Note>
+  For a complete list of providers and their multi-modal capabilities, visit the
+  [providers documentation](/providers/ai-sdk-providers).
+</Note>
+
+We'll build this agent using OpenAI's GPT-4o, but the same code works seamlessly with other providers - you can switch between them by changing just one line of code.
+
+## Prerequisites
+
+To follow this quickstart, you'll need:
+
+- Node.js 18+ and pnpm installed on your local development machine.
+- An OpenAI API key.
+
+If you haven't obtained your OpenAI API key, you can do so by [signing up](https://platform.openai.com/signup/) on the OpenAI website.
+
+## Create Your Application
+
+Start by creating a new Next.js application. This command will create a new directory named `multi-modal-agent` and set up a basic Next.js application inside it.
+
+<div className="mb-4">
+  <Note>
+    Be sure to select yes when prompted to use the App Router. If you are
+    looking for the Next.js Pages Router quickstart guide, you can find it
+    [here](/docs/getting-started/nextjs-pages-router).
+  </Note>
+</div>
+
+<Snippet text="pnpm create next-app@latest multi-modal-agent" />
+
+Navigate to the newly created directory:
+
+<Snippet text="cd multi-modal-agent" />
+
+### Install dependencies
+
+Install `ai` and `@ai-sdk/openai`, the AI SDK package and the AI SDK's [ OpenAI provider ](/providers/ai-sdk-providers/openai) respectively.
+
+<Note>
+  The AI SDK is designed to be a unified interface to interact with any large
+  language model. This means that you can change model and providers with just
+  one line of code! Learn more about [available providers](/providers) and
+  [building custom providers](/providers/community-providers/custom-providers)
+  in the [providers](/providers) section.
+</Note>
+<div className="my-4">
+  <Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
+    <Tab>
+      <Snippet text="pnpm add ai @ai-sdk/react @ai-sdk/openai" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="npm install ai @ai-sdk/react @ai-sdk/openai" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="yarn add ai @ai-sdk/react @ai-sdk/openai" dark />
+    </Tab>
+
+    <Tab>
+      <Snippet text="bun add ai @ai-sdk/react @ai-sdk/openai" dark />
+    </Tab>
+
+  </Tabs>
+</div>
+
+### Configure OpenAI API key
+
+Create a `.env.local` file in your project root and add your OpenAI API Key. This key is used to authenticate your application with the OpenAI service.
+
+<Snippet text="touch .env.local" />
+
+Edit the `.env.local` file:
+
+```env filename=".env.local"
+OPENAI_API_KEY=xxxxxxxxx
+```
+
+Replace `xxxxxxxxx` with your actual OpenAI API key.
+
+<Note className="mb-4">
+  The AI SDK's OpenAI Provider will default to using the `OPENAI_API_KEY`
+  environment variable.
+</Note>
+
+## Implementation Plan
+
+To build a multi-modal agent, you will need to:
+
+- Create a Route Handler to handle incoming chat messages and generate responses.
+- Wire up the UI to display chat messages, provide a user input, and handle submitting new messages.
+- Add the ability to upload images and PDFs and attach them alongside the chat messages.
+
+## Create a Route Handler
+
+Create a route handler, `app/api/chat/route.ts` and add the following code:
+
+```tsx filename="app/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { streamText, convertToModelMessages, type UIMessage } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+Let's take a look at what is happening in this code:
+
+1. Define an asynchronous `POST` request handler and extract `messages` from the body of the request. The `messages` variable contains a history of the conversation between you and the agent and provides the agent with the necessary context to make the next generation.
+2. Convert the UI messages to model messages using `convertToModelMessages`, which transforms the UI-focused message format to the format expected by the language model.
+3. Call [`streamText`](/docs/reference/ai-sdk-core/stream-text), which is imported from the `ai` package. This function accepts a configuration object that contains a `model` provider (imported from `@ai-sdk/openai`) and `messages` (converted in step 2). You can pass additional [settings](/docs/ai-sdk-core/settings) to further customise the model's behaviour.
+4. The `streamText` function returns a [`StreamTextResult`](/docs/reference/ai-sdk-core/stream-text#result-object). This result object contains the [ `toUIMessageStreamResponse` ](/docs/reference/ai-sdk-core/stream-text#to-ui-message-stream-response) function which converts the result to a streamed response object.
+5. Finally, return the result to the client to stream the response.
+
+This Route Handler creates a POST request endpoint at `/api/chat`.
+
+## Wire up the UI
+
+Now that you have a Route Handler that can query a large language model (LLM), it's time to setup your frontend. [ AI SDK UI ](/docs/ai-sdk-ui) abstracts the complexity of a chat interface into one hook, [`useChat`](/docs/reference/ai-sdk-ui/use-chat).
+
+Update your root page (`app/page.tsx`) with the following code to show a list of chat messages and provide a user message input:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useState } from 'react';
+
+export default function Chat() {
+  const [input, setInput] = useState('');
+
+  const { messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map((m) => (
+        <div key={m.id} className="whitespace-pre-wrap">
+          {m.role === 'user' ? 'User: ' : 'AI: '}
+          {m.parts.map((part, index) => {
+            if (part.type === 'text') {
+              return <span key={`${m.id}-text-${index}`}>{part.text}</span>;
+            }
+            return null;
+          })}
+        </div>
+      ))}
+
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          sendMessage({
+            role: 'user',
+            parts: [{ type: 'text', text: input }],
+          });
+          setInput('');
+        }}
+        className="fixed bottom-0 w-full max-w-md mb-8 border border-gray-300 rounded shadow-xl"
+      >
+        <input
+          className="w-full p-2"
+          value={input}
+          placeholder="Say something..."
+          onChange={(e) => setInput(e.target.value)}
+        />
+      </form>
+    </div>
+  );
+}
+```
+
+<Note>
+  Make sure you add the `"use client"` directive to the top of your file. This
+  allows you to add interactivity with Javascript.
+</Note>
+
+This page utilizes the `useChat` hook, configured with `DefaultChatTransport` to specify the API endpoint. The `useChat` hook provides multiple utility functions and state variables:
+
+- `messages` - the current chat messages (an array of objects with `id`, `role`, and `parts` properties).
+- `sendMessage` - function to send a new message to the AI.
+- Each message contains a `parts` array that can include text, images, PDFs, and other content types.
+- Files are converted to data URLs before being sent to maintain compatibility across different environments.
+
+## Add File Upload
+
+To make your agent multi-modal, let's add the ability to upload and send both images and PDFs to the model. In v5, files are sent as part of the message's `parts` array. Files are converted to data URLs using the FileReader API before being sent to the server.
+
+Update your root page (`app/page.tsx`) with the following code:
+
+```tsx filename="app/page.tsx" highlight="4-5,10-12,15-39,46-81,87-97"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useRef, useState } from 'react';
+import Image from 'next/image';
+
+async function convertFilesToDataURLs(files: FileList) {
+  return Promise.all(
+    Array.from(files).map(
+      (file) =>
+        new Promise<{
+          type: 'file';
+          mediaType: string;
+          url: string;
+        }>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            resolve({
+              type: 'file',
+              mediaType: file.type,
+              url: reader.result as string,
+            });
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }),
+    ),
+  );
+}
+
+export default function Chat() {
+  const [input, setInput] = useState('');
+  const [files, setFiles] = useState<FileList | undefined>(undefined);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map((m) => (
+        <div key={m.id} className="whitespace-pre-wrap">
+          {m.role === 'user' ? 'User: ' : 'AI: '}
+          {m.parts.map((part, index) => {
+            if (part.type === 'text') {
+              return <span key={`${m.id}-text-${index}`}>{part.text}</span>;
+            }
+            if (part.type === 'file' && part.mediaType?.startsWith('image/')) {
+              return (
+                <Image
+                  key={`${m.id}-image-${index}`}
+                  src={part.url}
+                  width={500}
+                  height={500}
+                  alt={`attachment-${index}`}
+                />
+              );
+            }
+            if (part.type === 'file' && part.mediaType === 'application/pdf') {
+              return (
+                <iframe
+                  key={`${m.id}-pdf-${index}`}
+                  src={part.url}
+                  width={500}
+                  height={600}
+                  title={`pdf-${index}`}
+                />
+              );
+            }
+            return null;
+          })}
+        </div>
+      ))}
+
+      <form
+        className="fixed bottom-0 w-full max-w-md p-2 mb-8 border border-gray-300 rounded shadow-xl space-y-2"
+        onSubmit={async (event) => {
+          event.preventDefault();
+
+          const fileParts =
+            files && files.length > 0
+              ? await convertFilesToDataURLs(files)
+              : [];
+
+          sendMessage({
+            role: 'user',
+            parts: [{ type: 'text', text: input }, ...fileParts],
+          });
+
+          setInput('');
+          setFiles(undefined);
+
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }}
+      >
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          className=""
+          onChange={(event) => {
+            if (event.target.files) {
+              setFiles(event.target.files);
+            }
+          }}
+          multiple
+          ref={fileInputRef}
+        />
+        <input
+          className="w-full p-2"
+          value={input}
+          placeholder="Say something..."
+          onChange={(e) => setInput(e.target.value)}
+        />
+      </form>
+    </div>
+  );
+}
+```
+
+In this code, you:
+
+1. Add a helper function `convertFilesToDataURLs` to convert file uploads to data URLs.
+1. Create state to hold the input text, files, and a ref to the file input field.
+1. Configure `useChat` with `DefaultChatTransport` to specify the API endpoint.
+1. Display messages using the `parts` array structure, rendering text, images, and PDFs appropriately.
+1. Update the `onSubmit` function to send messages with the `sendMessage` function, including both text and file parts.
+1. Add a file input field to the form, including an `onChange` handler to handle updating the files state.
+
+## Running Your Application
+
+With that, you have built everything you need for your multi-modal agent! To start your application, use the command:
+
+<Snippet text="pnpm run dev" />
+
+Head to your browser and open http://localhost:3000. You should see an input field and a button to upload files.
+
+Try uploading an image or PDF and asking the model questions about it. Watch as the model's response is streamed back to you!
+
+## Using Other Providers
+
+With the AI SDK's unified provider interface you can easily switch to other providers that support multi-modal capabilities:
+
+```tsx filename="app/api/chat/route.ts"
+// Using Anthropic
+import { anthropic } from '@ai-sdk/anthropic';
+const result = streamText({
+  model: anthropic('claude-sonnet-4-20250514'),
+  messages: convertToModelMessages(messages),
+});
+
+// Using Google
+import { google } from '@ai-sdk/google';
+const result = streamText({
+  model: google('gemini-2.5-flash'),
+  messages: convertToModelMessages(messages),
+});
+```
+
+Install the provider package (`@ai-sdk/anthropic` or `@ai-sdk/google`) and update your API keys in `.env.local`. The rest of your code remains the same.
+
+<Note>
+  Different providers may have varying file size limits and performance
+  characteristics. Check the [provider
+  documentation](/providers/ai-sdk-providers) for specific details.
+</Note>
+
+## Where to Next?
+
+You've built a multi-modal AI agent using the AI SDK! Experiment and extend the functionality of this application further by exploring [tool calling](/docs/ai-sdk-core/tools-and-tool-calling).
+
+---
+
+title: Slackbot Agent Guide
+description: Learn how to use the AI SDK to build an AI Agent in Slack.
+tags: ['agents', 'chatbot']
+
+---
+
+# Building an AI Agent in Slack with the AI SDK
+
+In this guide, you will learn how to build a Slackbot powered by the AI SDK. The bot will be able to respond to direct messages and mentions in channels using the full context of the thread.
+
+## Slack App Setup
+
+Before we start building, you'll need to create and configure a Slack app:
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps)
+2. Click "Create New App" and choose "From scratch"
+3. Give your app a name and select your workspace
+4. Under "OAuth & Permissions", add the following bot token scopes:
+   - `app_mentions:read`
+   - `chat:write`
+   - `im:history`
+   - `im:write`
+   - `assistant:write`
+5. Install the app to your workspace (button under "OAuth Tokens" subsection)
+6. Copy the Bot User OAuth Token and Signing Secret for the next step
+7. Under App Home -> Show Tabs -> Chat Tab, check "Allow users to send Slash commands and messages from the chat tab"
+
+## Project Setup
+
+This project uses the following stack:
+
+- [AI SDK by Vercel](/docs)
+- [Slack Web API](https://api.slack.com/web)
+- [Vercel](https://vercel.com)
+- [OpenAI](https://openai.com)
+
+## Getting Started
+
+1. Clone [the repository](https://github.com/vercel-labs/ai-sdk-slackbot) and check out the `starter` branch
+
+<Snippet
+text={[
+'git clone https://github.com/vercel-labs/ai-sdk-slackbot.git',
+'cd ai-sdk-slackbot',
+'git checkout starter',
+]}
+/>
+
+2. Install dependencies
+
+<Snippet text={['pnpm install']} />
+
+## Project Structure
+
+The starter repository already includes:
+
+- Slack utilities (`lib/slack-utils.ts`) including functions for validating incoming requests, converting Slack threads to AI SDK compatible message formats, and getting the Slackbot's user ID
+- General utility functions (`lib/utils.ts`) including initial Exa setup
+- Files to handle the different types of Slack events (`lib/handle-messages.ts` and `lib/handle-app-mention.ts`)
+- An API endpoint (`POST`) for Slack events (`api/events.ts`)
+
+## Event Handler
+
+First, let's take a look at our API route (`api/events.ts`):
+
+```typescript
+import type { SlackEvent } from '@slack/web-api';
+import {
+  assistantThreadMessage,
+  handleNewAssistantMessage,
+} from '../lib/handle-messages';
+import { waitUntil } from '@vercel/functions';
+import { handleNewAppMention } from '../lib/handle-app-mention';
+import { verifyRequest, getBotId } from '../lib/slack-utils';
+
+export async function POST(request: Request) {
+  const rawBody = await request.text();
+  const payload = JSON.parse(rawBody);
+  const requestType = payload.type as 'url_verification' | 'event_callback';
+
+  // See https://api.slack.com/events/url_verification
+  if (requestType === 'url_verification') {
+    return new Response(payload.challenge, { status: 200 });
+  }
+
+  await verifyRequest({ requestType, request, rawBody });
+
+  try {
+    const botUserId = await getBotId();
+
+    const event = payload.event as SlackEvent;
+
+    if (event.type === 'app_mention') {
+      waitUntil(handleNewAppMention(event, botUserId));
+    }
+
+    if (event.type === 'assistant_thread_started') {
+      waitUntil(assistantThreadMessage(event));
+    }
+
+    if (
+      event.type === 'message' &&
+      !event.subtype &&
+      event.channel_type === 'im' &&
+      !event.bot_id &&
+      !event.bot_profile &&
+      event.bot_id !== botUserId
+    ) {
+      waitUntil(handleNewAssistantMessage(event, botUserId));
+    }
+
+    return new Response('Success!', { status: 200 });
+  } catch (error) {
+    console.error('Error generating response', error);
+    return new Response('Error generating response', { status: 500 });
+  }
+}
+```
+
+This file defines a `POST` function that handles incoming requests from Slack. First, you check the request type to see if it's a URL verification request. If it is, you respond with the challenge string provided by Slack. If it's an event callback, you verify the request and then have access to the event data. This is where you can implement your event handling logic.
+
+You then handle three types of events: `app_mention`, `assistant_thread_started`, and `message`:
+
+- For `app_mention`, you call `handleNewAppMention` with the event and the bot user ID.
+- For `assistant_thread_started`, you call `assistantThreadMessage` with the event.
+- For `message`, you call `handleNewAssistantMessage` with the event and the bot user ID.
+
+Finally, you respond with a success message to Slack. Note, each handler function is wrapped in a `waitUntil` function. Let's take a look at what this means and why it's important.
+
+### The waitUntil Function
+
+Slack expects a response within 3 seconds to confirm the request is being handled. However, generating AI responses can take longer. If you don't respond to the Slack request within 3 seconds, Slack will send another request, leading to another invocation of your API route, another call to the LLM, and ultimately another response to the user. To solve this, you can use the `waitUntil` function, which allows you to run your AI logic after the response is sent, without blocking the response itself.
+
+This means, your API endpoint will:
+
+1. Immediately respond to Slack (within 3 seconds)
+2. Continue processing the message asynchronously
+3. Send the AI response when it's ready
+
+## Event Handlers
+
+Let's look at how each event type is currently handled.
+
+### App Mentions
+
+When a user mentions your bot in a channel, the `app_mention` event is triggered. The `handleNewAppMention` function in `handle-app-mention.ts` processes these mentions:
+
+1. Checks if the message is from a bot to avoid infinite response loops
+2. Creates a status updater to show the bot is "thinking"
+3. If the mention is in a thread, it retrieves the thread history
+4. Calls the LLM with the message content (using the `generateResponse` function which you will implement in the next section)
+5. Updates the initial "thinking" message with the AI response
+
+Here's the code for the `handleNewAppMention` function:
+
+```typescript filename="lib/handle-app-mention.ts"
+import { AppMentionEvent } from '@slack/web-api';
+import { client, getThread } from './slack-utils';
+import { generateResponse } from './ai';
+
+const updateStatusUtil = async (
+  initialStatus: string,
+  event: AppMentionEvent,
+) => {
+  const initialMessage = await client.chat.postMessage({
+    channel: event.channel,
+    thread_ts: event.thread_ts ?? event.ts,
+    text: initialStatus,
+  });
+
+  if (!initialMessage || !initialMessage.ts)
+    throw new Error('Failed to post initial message');
+
+  const updateMessage = async (status: string) => {
+    await client.chat.update({
+      channel: event.channel,
+      ts: initialMessage.ts as string,
+      text: status,
+    });
+  };
+  return updateMessage;
+};
+
+export async function handleNewAppMention(
+  event: AppMentionEvent,
+  botUserId: string,
+) {
+  console.log('Handling app mention');
+  if (event.bot_id || event.bot_id === botUserId || event.bot_profile) {
+    console.log('Skipping app mention');
+    return;
+  }
+
+  const { thread_ts, channel } = event;
+  const updateMessage = await updateStatusUtil('is thinking...', event);
+
+  if (thread_ts) {
+    const messages = await getThread(channel, thread_ts, botUserId);
+    const result = await generateResponse(messages, updateMessage);
+    updateMessage(result);
+  } else {
+    const result = await generateResponse(
+      [{ role: 'user', content: event.text }],
+      updateMessage,
+    );
+    updateMessage(result);
+  }
+}
+```
+
+Now let's see how new assistant threads and messages are handled.
+
+### Assistant Thread Messages
+
+When a user starts a thread with your assistant, the `assistant_thread_started` event is triggered. The `assistantThreadMessage` function in `handle-messages.ts` handles this:
+
+1. Posts a welcome message to the thread
+2. Sets up suggested prompts to help users get started
+
+Here's the code for the `assistantThreadMessage` function:
+
+```typescript filename="lib/handle-messages.ts"
+import type { AssistantThreadStartedEvent } from '@slack/web-api';
+import { client } from './slack-utils';
+
+export async function assistantThreadMessage(
+  event: AssistantThreadStartedEvent,
+) {
+  const { channel_id, thread_ts } = event.assistant_thread;
+  console.log(`Thread started: ${channel_id} ${thread_ts}`);
+  console.log(JSON.stringify(event));
+
+  await client.chat.postMessage({
+    channel: channel_id,
+    thread_ts: thread_ts,
+    text: "Hello, I'm an AI assistant built with the AI SDK by Vercel!",
+  });
+
+  await client.assistant.threads.setSuggestedPrompts({
+    channel_id: channel_id,
+    thread_ts: thread_ts,
+    prompts: [
+      {
+        title: 'Get the weather',
+        message: 'What is the current weather in London?',
+      },
+      {
+        title: 'Get the news',
+        message: 'What is the latest Premier League news from the BBC?',
+      },
+    ],
+  });
+}
+```
+
+### Direct Messages
+
+For direct messages to your bot, the `message` event is triggered and the event is handled by the `handleNewAssistantMessage` function in `handle-messages.ts`:
+
+1. Verifies the message isn't from a bot
+2. Updates the status to show the response is being generated
+3. Retrieves the conversation history
+4. Calls the LLM with the conversation context
+5. Posts the LLM's response to the thread
+
+Here's the code for the `handleNewAssistantMessage` function:
+
+```typescript filename="lib/handle-messages.ts"
+import type { GenericMessageEvent } from '@slack/web-api';
+import { client, getThread } from './slack-utils';
+import { generateResponse } from './ai';
+
+export async function handleNewAssistantMessage(
+  event: GenericMessageEvent,
+  botUserId: string,
+) {
+  if (
+    event.bot_id ||
+    event.bot_id === botUserId ||
+    event.bot_profile ||
+    !event.thread_ts
+  )
+    return;
+
+  const { thread_ts, channel } = event;
+  const updateStatus = updateStatusUtil(channel, thread_ts);
+  updateStatus('is thinking...');
+
+  const messages = await getThread(channel, thread_ts, botUserId);
+  const result = await generateResponse(messages, updateStatus);
+
+  await client.chat.postMessage({
+    channel: channel,
+    thread_ts: thread_ts,
+    text: result,
+    unfurl_links: false,
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: result,
+        },
+      },
+    ],
+  });
+
+  updateStatus('');
+}
+```
+
+With the event handlers in place, let's now implement the AI logic.
+
+## Implementing AI Logic
+
+The core of our application is the `generateResponse` function in `lib/generate-response.ts`, which processes messages and generates responses using the AI SDK.
+
+Here's how to implement it:
+
+```typescript filename="lib/generate-response.ts"
+import { openai } from '@ai-sdk/openai';
+import { generateText, ModelMessage } from 'ai';
+
+export const generateResponse = async (
+  messages: ModelMessage[],
+  updateStatus?: (status: string) => void,
+) => {
+  const { text } = await generateText({
+    model: openai('gpt-4o-mini'),
+    system: `You are a Slack bot assistant. Keep your responses concise and to the point.
+    - Do not tag users.
+    - Current date is: ${new Date().toISOString().split('T')[0]}`,
+    messages,
+  });
+
+  // Convert markdown to Slack mrkdwn format
+  return text.replace(/\[(.*?)\]\((.*?)\)/g, '<$2|$1>').replace(/\*\*/g, '*');
+};
+```
+
+This basic implementation:
+
+1. Uses the AI SDK's `generateText` function to call OpenAI's `gpt-4o` model
+2. Provides a system prompt to guide the model's behavior
+3. Formats the response for Slack's markdown format
+
+## Enhancing with Tools
+
+The real power of the AI SDK comes from tools that enable your bot to perform actions. Let's add two useful tools:
+
+```typescript filename="lib/generate-response.ts"
+import { openai } from '@ai-sdk/openai';
+import { generateText, tool, ModelMessage, stepCountIs } from 'ai';
+import { z } from 'zod';
+import { exa } from './utils';
+
+export const generateResponse = async (
+  messages: ModelMessage[],
+  updateStatus?: (status: string) => void,
+) => {
+  const { text } = await generateText({
+    model: openai('gpt-4o'),
+    system: `You are a Slack bot assistant. Keep your responses concise and to the point.
+    - Do not tag users.
+    - Current date is: ${new Date().toISOString().split('T')[0]}
+    - Always include sources in your final response if you use web search.`,
+    messages,
+    stopWhen: stepCountIs(10),
+    tools: {
+      getWeather: tool({
+        description: 'Get the current weather at a location',
+        inputSchema: z.object({
+          latitude: z.number(),
+          longitude: z.number(),
+          city: z.string(),
+        }),
+        execute: async ({ latitude, longitude, city }) => {
+          updateStatus?.(`is getting weather for ${city}...`);
+
+          const response = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weathercode,relativehumidity_2m&timezone=auto`,
+          );
+
+          const weatherData = await response.json();
+          return {
+            temperature: weatherData.current.temperature_2m,
+            weatherCode: weatherData.current.weathercode,
+            humidity: weatherData.current.relativehumidity_2m,
+            city,
+          };
+        },
+      }),
+      searchWeb: tool({
+        description: 'Use this to search the web for information',
+        inputSchema: z.object({
+          query: z.string(),
+          specificDomain: z
+            .string()
+            .nullable()
+            .describe(
+              'a domain to search if the user specifies e.g. bbc.com. Should be only the domain name without the protocol',
+            ),
+        }),
+        execute: async ({ query, specificDomain }) => {
+          updateStatus?.(`is searching the web for ${query}...`);
+          const { results } = await exa.searchAndContents(query, {
+            livecrawl: 'always',
+            numResults: 3,
+            includeDomains: specificDomain ? [specificDomain] : undefined,
+          });
+
+          return {
+            results: results.map((result) => ({
+              title: result.title,
+              url: result.url,
+              snippet: result.text.slice(0, 1000),
+            })),
+          };
+        },
+      }),
+    },
+  });
+
+  // Convert markdown to Slack mrkdwn format
+  return text.replace(/\[(.*?)\]\((.*?)\)/g, '<$2|$1>').replace(/\*\*/g, '*');
+};
+```
+
+In this updated implementation:
+
+1. You added two tools:
+
+   - `getWeather`: Fetches weather data for a specified location
+   - `searchWeb`: Searches the web for information using the Exa API
+
+2. You set `stopWhen: stepCountIs(10)` to enable multi-step conversations. This defines the stopping conditions of your agent, when the model generates a tool call. This will automatically send any tool results back to the LLM to trigger additional tool calls or responses as the LLM deems necessary. This turns your LLM call from a one-off operation into a multi-step agentic flow.
+
+## How It Works
+
+When a user interacts with your bot:
+
+1. The Slack event is received and processed by your API endpoint
+2. The user's message and the thread history is passed to the `generateResponse` function
+3. The AI SDK processes the message and may invoke tools as needed
+4. The response is formatted for Slack and sent back to the user
+
+The tools are automatically invoked based on the user's intent. For example, if a user asks "What's the weather in London?", the AI will:
+
+1. Recognize this as a weather query
+2. Call the `getWeather` tool with London's coordinates (inferred by the LLM)
+3. Process the weather data
+4. Generate a final response, answering the user's question
+
+## Deploying the App
+
+1. Install the Vercel CLI
+
+<Snippet text={['pnpm install -g vercel']} />
+
+2. Deploy the app
+
+<Snippet text={['vercel deploy']} />
+
+3. Copy the deployment URL and update the Slack app's Event Subscriptions to point to your Vercel URL
+4. Go to your project's deployment settings (Your project -> Settings -> Environment Variables) and add your environment variables
+
+```bash
+SLACK_BOT_TOKEN=your_slack_bot_token
+SLACK_SIGNING_SECRET=your_slack_signing_secret
+OPENAI_API_KEY=your_openai_api_key
+EXA_API_KEY=your_exa_api_key
+```
+
+<Note>
+  Make sure to redeploy your app after updating environment variables.
+</Note>
+
+5. Head back to the [https://api.slack.com/](https://api.slack.com/) and navigate to the "Event Subscriptions" page. Enable events and add your deployment URL.
+
+```bash
+https://your-vercel-url.vercel.app/api/events
+```
+
+6. On the Events Subscription page, subscribe to the following events.
+   - `app_mention`
+   - `assistant_thread_started`
+   - `message:im`
+
+Finally, head to Slack and test the app by sending a message to the bot.
+
+## Next Steps
+
+You've built a Slack chatbot powered by the AI SDK! Here are some ways you could extend it:
+
+1. Add memory for specific users to give the LLM context of previous interactions
+2. Implement more tools like database queries or knowledge base searches
+3. Add support for rich message formatting with blocks
+4. Add analytics to track usage patterns
+
+<Note>
+  In a production environment, it is recommended to implement a robust queueing
+  system to ensure messages are properly handled.
+</Note>
+
+---
+
+title: Natural Language Postgres
+description: Learn how to build a Next.js app that lets you talk to a PostgreSQL database in natural language.
+tags: ['agents', 'next', 'tools']
+
+---
+
+# Natural Language Postgres Guide
+
+In this guide, you will learn how to build an app that uses AI to interact with a PostgreSQL database using natural language.
+
+The application will:
+
+- Generate SQL queries from a natural language input
+- Explain query components in plain English
+- Create a chart to visualise query results
+
+You can find a completed version of this project at [natural-language-postgres.vercel.app](https://natural-language-postgres.vercel.app).
+
+## Project setup
+
+This project uses the following stack:
+
+- [Next.js](https://nextjs.org) (App Router)
+- [AI SDK](/docs)
+- [OpenAI](https://openai.com)
+- [Zod](https://zod.dev)
+- [Postgres](https://www.postgresql.org/) with [ Vercel Postgres ](https://vercel.com/postgres)
+- [shadcn-ui](https://ui.shadcn.com) and [TailwindCSS](https://tailwindcss.com) for styling
+- [Recharts](https://recharts.org) for data visualization
+
+### Clone repo
+
+To focus on the AI-powered functionality rather than project setup and configuration we've prepared a starter repository which includes a database schema and a few components.
+
+Clone the starter repository and check out the `starter` branch:
+
+<Snippet
+text={[
+'git clone https://github.com/vercel-labs/natural-language-postgres',
+'cd natural-language-postgres',
+'git checkout starter',
+]}
+/>
+
+### Project setup and data
+
+Let's set up the project and seed the database with the dataset:
+
+1. Install dependencies:
+
+<Snippet text={['pnpm install']} />
+
+2. Copy the example environment variables file:
+
+<Snippet text={['cp .env.example .env']} />
+
+3. Add your environment variables to `.env`:
+
+```bash filename=".env"
+OPENAI_API_KEY="your_api_key_here"
+POSTGRES_URL="..."
+POSTGRES_PRISMA_URL="..."
+POSTGRES_URL_NO_SSL="..."
+POSTGRES_URL_NON_POOLING="..."
+POSTGRES_USER="..."
+POSTGRES_HOST="..."
+POSTGRES_PASSWORD="..."
+POSTGRES_DATABASE="..."
+```
+
+4. This project uses CB Insights' Unicorn Companies dataset. You can download the dataset by following these instructions:
+   - Navigate to [CB Insights Unicorn Companies](https://www.cbinsights.com/research-unicorn-companies)
+   - Enter in your email. You will receive a link to download the dataset.
+   - Save it as `unicorns.csv` in your project root
+
+<Note>
+  You will need a Postgres database to complete this tutorial. If you don't have
+  Postgres setup on your local machine you can: - Create a free Postgres
+  database with Vercel (recommended - see instructions below); or - Follow [this
+  guide](https://www.prisma.io/dataguide/postgresql/setting-up-a-local-postgresql-database)
+  to set it up locally
+</Note>
+
+#### Setting up Postgres with Vercel
+
+To set up a Postgres instance on your Vercel account:
+
+1. Go to [Vercel.com](https://vercel.com) and make sure you're logged in
+1. Navigate to your team homepage
+1. Click on the **Integrations** tab
+1. Click **Browse Marketplace**
+1. Look for the **Storage** option in the sidebar
+1. Select the **Neon** option (recommended, but any other PostgreSQL database provider should work)
+1. Click **Install**, then click **Install** again in the top right corner
+1. On the "Get Started with Neon" page, click **Create Database** on the right
+1. Select your region (e.g., Washington, D.C., U.S. East)
+1. Turn off **Auth**
+1. Click **Continue**
+1. Name your database (you can use the default name or rename it to something like "NaturalLanguagePostgres")
+1. Click **Create** in the bottom right corner
+1. After seeing "Database created successfully", click **Done**
+1. You'll be redirected to your database instance
+1. In the Quick Start section, click **Show secrets**
+1. Copy the full `DATABASE_URL` environment variable and use it to populate the Postgres environment variables in your `.env` file
+
+### About the dataset
+
+The Unicorn List dataset contains the following information about unicorn startups (companies with a valuation above $1bn):
+
+- Company name
+- Valuation
+- Date joined (unicorn status)
+- Country
+- City
+- Industry
+- Select investors
+
+This dataset contains over 1000 rows of data over 7 columns, giving us plenty of structured data to analyze. This makes it perfect for exploring various SQL queries that can reveal interesting insights about the unicorn startup ecosystem.
+
+5. Now that you have the dataset downloaded and added to your project, you can initialize the database with the following command:
+
+<Snippet text={['pnpm run seed']} />
+
+Note: this step can take a little while. You should see a message indicating the Unicorns table has been created and then that the database has been seeded successfully.
+
+<Note>
+  Remember, the dataset should be named `unicorns.csv` and located in root of
+  your project.
+</Note>
+
+6. Start the development server:
+
+<Snippet text={['pnpm run dev']} />
+
+Your application should now be running at [http://localhost:3000](http://localhost:3000).
+
+## Project structure
+
+The starter repository already includes everything that you will need, including:
+
+- Database seed script (`lib/seed.ts`)
+- Basic components built with shadcn/ui (`components/`)
+- Function to run SQL queries (`app/actions.ts`)
+- Type definitions for the database schema (`lib/types.ts`)
+
+### Existing components
+
+The application contains a single page in `app/page.tsx` that serves as the main interface.
+
+At the top, you'll find a header (`header.tsx`) displaying the application title and description. Below that is an input field and search button (`search.tsx`) where you can enter natural language queries.
+
+Initially, the page shows a collection of suggested example queries (`suggested-queries.tsx`) that you can click to quickly try out the functionality.
+
+When you submit a query:
+
+- The suggested queries section disappears and a loading state appears
+- Once complete, a card appears with "TODO - IMPLEMENT ABOVE" (`query-viewer.tsx`) which will eventually show your generated SQL
+- Below that is an empty results area with "No results found" (`results.tsx`)
+
+After you implement the core functionality:
+
+- The results section will display data in a table format
+- A toggle button will allow switching between table and chart views
+- The chart view will visualize your query results
+
+Let's implement the AI-powered functionality to bring it all together.
+
+## Building the application
+
+As a reminder, this application will have three main features:
+
+1. Generate SQL queries from natural language
+2. Create a chart from the query results
+3. Explain SQL queries in plain English
+
+For each of these features, you'll use the AI SDK via [ Server Actions ](https://react.dev/reference/rsc/server-actions) to interact with OpenAI's GPT-4o and GPT-4o-mini models. Server Actions are a powerful React Server Component feature that allows you to call server-side functions directly from your frontend code.
+
+Let's start with generating a SQL query from natural language.
+
+## Generate SQL queries
+
+### Providing context
+
+For the model to generate accurate SQL queries, it needs context about your database schema, tables, and relationships. You will communicate this information through a prompt that should include:
+
+1. Schema information
+2. Example data formats
+3. Available SQL operations
+4. Best practices for query structure
+5. Nuanced advice for specific fields
+
+Let's write a prompt that includes all of this information:
+
+```txt
+You are a SQL (postgres) and data visualization expert. Your job is to help the user write a SQL query to retrieve the data they need. The table schema is as follows:
+
+unicorns (
+  id SERIAL PRIMARY KEY,
+  company VARCHAR(255) NOT NULL UNIQUE,
+  valuation DECIMAL(10, 2) NOT NULL,
+  date_joined DATE,
+  country VARCHAR(255) NOT NULL,
+  city VARCHAR(255) NOT NULL,
+  industry VARCHAR(255) NOT NULL,
+  select_investors TEXT NOT NULL
+);
+
+Only retrieval queries are allowed.
+
+For things like industry, company names and other string fields, use the ILIKE operator and convert both the search term and the field to lowercase using LOWER() function. For example: LOWER(industry) ILIKE LOWER('%search_term%').
+
+Note: select_investors is a comma-separated list of investors. Trim whitespace to ensure you're grouping properly. Note, some fields may be null or have only one value.
+When answering questions about a specific field, ensure you are selecting the identifying column (ie. what is Vercel's valuation would select company and valuation').
+
+The industries available are:
+- healthcare & life sciences
+- consumer & retail
+- financial services
+- enterprise tech
+- insurance
+- media & entertainment
+- industrials
+- health
+
+If the user asks for a category that is not in the list, infer based on the list above.
+
+Note: valuation is in billions of dollars so 10b would be 10.0.
+Note: if the user asks for a rate, return it as a decimal. For example, 0.1 would be 10%.
+
+If the user asks for 'over time' data, return by year.
+
+When searching for UK or USA, write out United Kingdom or United States respectively.
+
+EVERY QUERY SHOULD RETURN QUANTITATIVE DATA THAT CAN BE PLOTTED ON A CHART! There should always be at least two columns. If the user asks for a single column, return the column and the count of the column. If the user asks for a rate, return the rate as a decimal. For example, 0.1 would be 10%.
+```
+
+There are several important elements of this prompt:
+
+- Schema description helps the model understand exactly what data fields to work with
+- Includes rules for handling queries based on common SQL patterns - for example, always using ILIKE for case-insensitive string matching
+- Explains how to handle edge cases in the dataset, like dealing with the comma-separated investors field and ensuring whitespace is properly handled
+- Instead of having the model guess at industry categories, it provides the exact list that exists in the data, helping avoid mismatches
+- The prompt helps standardize data transformations - like knowing to interpret "10b" as "10.0" billion dollars, or that rates should be decimal values
+- Clear rules ensure the query output will be chart-friendly by always including at least two columns of data that can be plotted
+
+This prompt structure provides a strong foundation for query generation, but you should experiment and iterate based on your specific needs and the model you're using.
+
+### Create a Server Action
+
+With the prompt done, let's create a Server Action.
+
+Open `app/actions.ts`. You should see one action already defined (`runGeneratedSQLQuery`).
+
+Add a new action. This action should be asynchronous and take in one parameter - the natural language query.
+
+```ts filename="app/actions.ts"
+/* ...rest of the file... */
+
+export const generateQuery = async (input: string) => {};
+```
+
+In this action, you'll use the `generateObject` function from the AI SDK which allows you to constrain the model's output to a pre-defined schema. This process, sometimes called structured output, ensures the model returns only the SQL query without any additional prefixes, explanations, or formatting that would require manual parsing.
+
+```ts filename="app/actions.ts"
+/* ...other imports... */
+import { generateObject } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+/* ...rest of the file... */
+
+export const generateQuery = async (input: string) => {
+  'use server';
+  try {
+    const result = await generateObject({
+      model: openai('gpt-4o'),
+      system: `You are a SQL (postgres) ...`, // SYSTEM PROMPT AS ABOVE - OMITTED FOR BREVITY
+      prompt: `Generate the query necessary to retrieve the data the user wants: ${input}`,
+      schema: z.object({
+        query: z.string(),
+      }),
+    });
+    return result.object.query;
+  } catch (e) {
+    console.error(e);
+    throw new Error('Failed to generate query');
+  }
+};
+```
+
+Note, you are constraining the output to a single string field called `query` using `zod`, a TypeScript schema validation library. This will ensure the model only returns the SQL query itself. The resulting generated query will then be returned.
+
+### Update the frontend
+
+With the Server Action in place, you can now update the frontend to call this action when the user submits a natural language query. In the root page (`app/page.tsx`), you should see a `handleSubmit` function that is called when the user submits a query.
+
+Import the `generateQuery` function and call it with the user's input.
+
+```typescript filename="app/page.tsx" highlight="21"
+/* ...other imports... */
+import { runGeneratedSQLQuery, generateQuery } from './actions';
+
+/* ...rest of the file... */
+
+const handleSubmit = async (suggestion?: string) => {
+  clearExistingData();
+
+  const question = suggestion ?? inputValue;
+  if (inputValue.length === 0 && !suggestion) return;
+
+  if (question.trim()) {
+    setSubmitted(true);
+  }
+
+  setLoading(true);
+  setLoadingStep(1);
+  setActiveQuery('');
+
+  try {
+    const query = await generateQuery(question);
+
+    if (query === undefined) {
+      toast.error('An error occurred. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    setActiveQuery(query);
+    setLoadingStep(2);
+
+    const companies = await runGeneratedSQLQuery(query);
+    const columns = companies.length > 0 ? Object.keys(companies[0]) : [];
+    setResults(companies);
+    setColumns(columns);
+
+    setLoading(false);
+  } catch (e) {
+    toast.error('An error occurred. Please try again.');
+    setLoading(false);
+  }
+};
+
+/* ...rest of the file... */
+```
+
+Now, when the user submits a natural language query (ie. "how many unicorns are from San Francisco?"), that question will be sent to your newly created Server Action. The Server Action will call the model, passing in your system prompt and the users query, and return the generated SQL query in a structured format. This query is then passed to the `runGeneratedSQLQuery` action to run the query against your database. The results are then saved in local state and displayed to the user.
+
+Save the file, make sure the dev server is running, and then head to `localhost:3000` in your browser. Try submitting a natural language query and see the generated SQL query and results. You should see a SQL query generated and displayed under the input field. You should also see the results of the query displayed in a table below the input field.
+
+Try clicking the SQL query to see the full query if it's too long to display in the input field. You should see a button on the right side of the input field with a question mark icon. Clicking this button currently does nothing, but you'll add the "explain query" functionality to it in the next step.
+
+## Explain SQL Queries
+
+Next, let's add the ability to explain SQL queries in plain English. This feature helps users understand how the generated SQL query works by breaking it down into logical sections.
+As with the SQL query generation, you'll need a prompt to guide the model when explaining queries.
+
+Let's craft a prompt for the explain query functionality:
+
+```txt
+You are a SQL (postgres) expert. Your job is to explain to the user write a SQL query you wrote to retrieve the data they asked for. The table schema is as follows:
+unicorns (
+  id SERIAL PRIMARY KEY,
+  company VARCHAR(255) NOT NULL UNIQUE,
+  valuation DECIMAL(10, 2) NOT NULL,
+  date_joined DATE,
+  country VARCHAR(255) NOT NULL,
+  city VARCHAR(255) NOT NULL,
+  industry VARCHAR(255) NOT NULL,
+  select_investors TEXT NOT NULL
+);
+
+When you explain you must take a section of the query, and then explain it. Each "section" should be unique. So in a query like: "SELECT * FROM unicorns limit 20", the sections could be "SELECT *", "FROM UNICORNS", "LIMIT 20".
+If a section doesn't have any explanation, include it, but leave the explanation empty.
+```
+
+Like the prompt for generating SQL queries, you provide the model with the schema of the database. Additionally, you provide an example of what each section of the query might look like. This helps the model understand the structure of the query and how to break it down into logical sections.
+
+### Create a Server Action
+
+Add a new Server Action to generate explanations for SQL queries.
+
+This action takes two parameters - the original natural language input and the generated SQL query.
+
+```ts filename="app/actions.ts"
+/* ...rest of the file... */
+
+export const explainQuery = async (input: string, sqlQuery: string) => {
+  'use server';
+  try {
+    const result = await generateObject({
+      model: openai('gpt-4o'),
+      system: `You are a SQL (postgres) expert. ...`, // SYSTEM PROMPT AS ABOVE - OMITTED FOR BREVITY
+      prompt: `Explain the SQL query you generated to retrieve the data the user wanted. Assume the user is not an expert in SQL. Break down the query into steps. Be concise.
+
+      User Query:
+      ${input}
+
+      Generated SQL Query:
+      ${sqlQuery}`,
+    });
+    return result.object;
+  } catch (e) {
+    console.error(e);
+    throw new Error('Failed to generate query');
+  }
+};
+```
+
+This action uses the `generateObject` function again. However, you haven't defined the schema yet. Let's define it in another file so it can also be used as a type in your components.
+
+Update your `lib/types.ts` file to include the schema for the explanations:
+
+```ts filename="lib/types.ts"
+import { z } from 'zod';
+
+/* ...rest of the file... */
+
+export const explanationSchema = z.object({
+  section: z.string(),
+  explanation: z.string(),
+});
+
+export type QueryExplanation = z.infer<typeof explanationSchema>;
+```
+
+This schema defines the structure of the explanation that the model will generate. Each explanation will have a `section` and an `explanation`. The `section` is the part of the query being explained, and the `explanation` is the plain English explanation of that section. Go back to your `actions.ts` file and import and use the `explanationSchema`:
+
+```ts filename="app/actions.ts" highlight="2,19,20"
+// other imports
+import { explanationSchema } from '@/lib/types';
+
+/* ...rest of the file... */
+
+export const explainQuery = async (input: string, sqlQuery: string) => {
+  'use server';
+  try {
+    const result = await generateObject({
+      model: openai('gpt-4o'),
+      system: `You are a SQL (postgres) expert. ...`, // SYSTEM PROMPT AS ABOVE - OMITTED FOR BREVITY
+      prompt: `Explain the SQL query you generated to retrieve the data the user wanted. Assume the user is not an expert in SQL. Break down the query into steps. Be concise.
+
+      User Query:
+      ${input}
+
+      Generated SQL Query:
+      ${sqlQuery}`,
+      schema: explanationSchema,
+      output: 'array',
+    });
+    return result.object;
+  } catch (e) {
+    console.error(e);
+    throw new Error('Failed to generate query');
+  }
+};
+```
+
+<Note>
+  You can use `output: "array"` to indicate to the model that you expect an
+  array of objects matching the schema to be returned.
+</Note>
+
+### Update query viewer
+
+Next, update the `query-viewer.tsx` component to display these explanations. The `handleExplainQuery` function is called every time the user clicks the question icon button on the right side of the query. Let's update this function to use the new `explainQuery` action:
+
+```ts filename="components/query-viewer.tsx" highlight="2,10,11"
+/* ...other imports... */
+import { explainQuery } from '@/app/actions';
+
+/* ...rest of the component... */
+
+const handleExplainQuery = async () => {
+  setQueryExpanded(true);
+  setLoadingExplanation(true);
+
+  const explanations = await explainQuery(inputValue, activeQuery);
+  setQueryExplanations(explanations);
+
+  setLoadingExplanation(false);
+};
+
+/* ...rest of the component... */
+```
+
+Now when users click the explanation button (the question mark icon), the component will:
+
+1. Show a loading state
+2. Send the active SQL query and the users natural language query to your Server Action
+3. The model will generate an array of explanations
+4. The explanations will be set in the component state and rendered in the UI
+
+Submit a new query and then click the explanation button. Hover over different elements of the query. You should see the explanations for each section!
+
+## Visualizing query results
+
+Finally, let's render the query results visually in a chart. There are two approaches you could take:
+
+1. Send both the query and data to the model and ask it to return the data in a visualization-ready format. While this provides complete control over the visualization, it requires the model to send back all of the data, which significantly increases latency and costs.
+
+2. Send the query and data to the model and ask it to generate a chart configuration (fixed-size and not many tokens) that maps your data appropriately. This configuration specifies how to visualize the information while delivering the insights from your natural language query. Importantly, this is done without requiring the model return the full dataset.
+
+Since you don't know the SQL query or data shape beforehand, let's use the second approach to dynamically generate chart configurations based on the query results and user intent.
+
+### Generate the chart configuration
+
+For this feature, you'll create a Server Action that takes the query results and the user's original natural language query to determine the best visualization approach. Your application is already set up to use `shadcn` charts (which uses [`Recharts`](https://recharts.org/en-US/) under the hood) so the model will need to generate:
+
+- Chart type (bar, line, area, or pie)
+- Axis mappings
+- Visual styling
+
+Let's start by defining the schema for the chart configuration in `lib/types.ts`:
+
+```ts filename="lib/types.ts"
+/* ...rest of the file... */
+
+export const configSchema = z
+  .object({
+    description: z
+      .string()
+      .describe(
+        'Describe the chart. What is it showing? What is interesting about the way the data is displayed?',
+      ),
+    takeaway: z.string().describe('What is the main takeaway from the chart?'),
+    type: z.enum(['bar', 'line', 'area', 'pie']).describe('Type of chart'),
+    title: z.string(),
+    xKey: z.string().describe('Key for x-axis or category'),
+    yKeys: z
+      .array(z.string())
+      .describe(
+        'Key(s) for y-axis values this is typically the quantitative column',
+      ),
+    multipleLines: z
+      .boolean()
+      .describe(
+        'For line charts only: whether the chart is comparing groups of data.',
+      )
+      .optional(),
+    measurementColumn: z
+      .string()
+      .describe(
+        'For line charts only: key for quantitative y-axis column to measure against (eg. values, counts etc.)',
+      )
+      .optional(),
+    lineCategories: z
+      .array(z.string())
+      .describe(
+        'For line charts only: Categories used to compare different lines or data series. Each category represents a distinct line in the chart.',
+      )
+      .optional(),
+    colors: z
+      .record(
+        z.string().describe('Any of the yKeys'),
+        z.string().describe('Color value in CSS format (e.g., hex, rgb, hsl)'),
+      )
+      .describe('Mapping of data keys to color values for chart elements')
+      .optional(),
+    legend: z.boolean().describe('Whether to show legend'),
+  })
+  .describe('Chart configuration object');
+
+export type Config = z.infer<typeof configSchema>;
+```
+
+<Note>
+  Replace the existing `export type Config = any;` type with the new one.
+</Note>
+
+This schema makes extensive use of Zod's `.describe()` function to give the model extra context about each of the key's you are expecting in the chart configuration. This will help the model understand the purpose of each key and generate more accurate results.
+
+Another important technique to note here is that you are defining `description` and `takeaway` fields. Not only are these useful for the user to quickly understand what the chart means and what they should take away from it, but they also force the model to generate a description of the data first, before it attempts to generate configuration attributes like axis and columns. This will help the model generate more accurate and relevant chart configurations.
+
+### Create the Server Action
+
+Create a new action in `app/actions.ts`:
+
+```ts
+/* ...other imports... */
+import { Config, configSchema, explanationsSchema, Result } from '@/lib/types';
+
+/* ...rest of the file... */
+
+export const generateChartConfig = async (
+  results: Result[],
+  userQuery: string,
+) => {
+  'use server';
+
+  try {
+    const { object: config } = await generateObject({
+      model: openai('gpt-4o'),
+      system: 'You are a data visualization expert.',
+      prompt: `Given the following data from a SQL query result, generate the chart config that best visualises the data and answers the users query.
+      For multiple groups use multi-lines.
+
+      Here is an example complete config:
+      export const chartConfig = {
+        type: "pie",
+        xKey: "month",
+        yKeys: ["sales", "profit", "expenses"],
+        colors: {
+          sales: "#4CAF50",    // Green for sales
+          profit: "#2196F3",   // Blue for profit
+          expenses: "#F44336"  // Red for expenses
+        },
+        legend: true
+      }
+
+      User Query:
+      ${userQuery}
+
+      Data:
+      ${JSON.stringify(results, null, 2)}`,
+      schema: configSchema,
+    });
+
+    // Override with shadcn theme colors
+    const colors: Record<string, string> = {};
+    config.yKeys.forEach((key, index) => {
+      colors[key] = `hsl(var(--chart-${index + 1}))`;
+    });
+
+    const updatedConfig = { ...config, colors };
+    return { config: updatedConfig };
+  } catch (e) {
+    console.error(e);
+    throw new Error('Failed to generate chart suggestion');
+  }
+};
+```
+
+### Update the chart component
+
+With the action in place, you'll want to trigger it automatically after receiving query results. This ensures the visualization appears almost immediately after data loads.
+
+Update the `handleSubmit` function in your root page (`app/page.tsx`) to generate and set the chart configuration after running the query:
+
+```typescript filename="app/page.tsx" highlight="38,39"
+/* ...other imports... */
+import { getCompanies, generateQuery, generateChartConfig } from './actions';
+
+/* ...rest of the file... */
+const handleSubmit = async (suggestion?: string) => {
+  clearExistingData();
+
+  const question = suggestion ?? inputValue;
+  if (inputValue.length === 0 && !suggestion) return;
+
+  if (question.trim()) {
+    setSubmitted(true);
+  }
+
+  setLoading(true);
+  setLoadingStep(1);
+  setActiveQuery('');
+
+  try {
+    const query = await generateQuery(question);
+
+    if (query === undefined) {
+      toast.error('An error occurred. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    setActiveQuery(query);
+    setLoadingStep(2);
+
+    const companies = await runGeneratedSQLQuery(query);
+    const columns = companies.length > 0 ? Object.keys(companies[0]) : [];
+    setResults(companies);
+    setColumns(columns);
+
+    setLoading(false);
+
+    const { config } = await generateChartConfig(companies, question);
+    setChartConfig(config);
+  } catch (e) {
+    toast.error('An error occurred. Please try again.');
+    setLoading(false);
+  }
+};
+
+/* ...rest of the file... */
+```
+
+Now when users submit queries, the application will:
+
+1. Generate and run the SQL query
+2. Display the table results
+3. Generate a chart configuration for the results
+4. Allow toggling between table and chart views
+
+Head back to the browser and test the application with a few queries. You should see the chart visualization appear after the table results.
+
+## Next steps
+
+You've built an AI-powered SQL analysis tool that can convert natural language to SQL queries, visualize query results, and explain SQL queries in plain English.
+
+You could, for example, extend the application to use your own data sources or add more advanced features like customizing the chart configuration schema to support more chart types and options. You could also add more complex SQL query generation capabilities.
+
+---
+
+title: Get started with Computer Use
+description: Get started with Claude's Computer Use capabilities with the AI SDK
+tags: ['computer-use', 'tools']
+
+---
+
+# Get started with Computer Use
+
+With the [release of Computer Use in Claude 3.5 Sonnet](https://www.anthropic.com/news/3-5-models-and-computer-use), you can now direct AI models to interact with computers like humans do - moving cursors, clicking buttons, and typing text. This capability enables automation of complex tasks while leveraging Claude's advanced reasoning abilities.
+
+The AI SDK is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) like Anthropic's Claude alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more. In this guide, you will learn how to integrate Computer Use into your AI SDK applications.
+
+<Note>
+  Computer Use is currently in beta with some [ limitations
+  ](https://docs.anthropic.com/en/docs/build-with-claude/computer-use#understand-computer-use-limitations).
+  The feature may be error-prone at times. Anthropic recommends starting with
+  low-risk tasks and implementing appropriate safety measures.
+</Note>
+
+## Computer Use
+
+Anthropic recently released a new version of the Claude 3.5 Sonnet model which is capable of 'Computer Use'. This allows the model to interact with computer interfaces through basic actions like:
+
+- Moving the cursor
+- Clicking buttons
+- Typing text
+- Taking screenshots
+- Reading screen content
+
+## How It Works
+
+Computer Use enables the model to read and interact with on-screen content through a series of coordinated steps. Here's how the process works:
+
+1. **Start with a prompt and tools**
+
+   Add Anthropic-defined Computer Use tools to your request and provide a task (prompt) for the model. For example: "save an image to your downloads folder."
+
+2. **Select the right tool**
+
+   The model evaluates which computer tools can help accomplish the task. It then sends a formatted `tool_call` to use the appropriate tool.
+
+3. **Execute the action and return results**
+
+   The AI SDK processes Claude's request by running the selected tool. The results can then be sent back to Claude through a `tool_result` message.
+
+4. **Complete the task through iterations**
+
+   Claude analyzes each result to determine if more actions are needed. It continues requesting tool use and processing results until it completes your task or requires additional input.
+
+### Available Tools
+
+There are three main tools available in the Computer Use API:
+
+1. **Computer Tool**: Enables basic computer control like mouse movement, clicking, and keyboard input
+2. **Text Editor Tool**: Provides functionality for viewing and editing text files
+3. **Bash Tool**: Allows execution of bash commands
+
+### Implementation Considerations
+
+Computer Use tools in the AI SDK are predefined interfaces that require your own implementation of the execution layer. While the SDK provides the type definitions and structure for these tools, you need to:
+
+1. Set up a controlled environment for Computer Use execution
+2. Implement core functionality like mouse control and keyboard input
+3. Handle screenshot capture and processing
+4. Set up rules and limits for how Claude can interact with your system
+
+The recommended approach is to start with [ Anthropic's reference implementation ](https://github.com/anthropics/anthropic-quickstarts/tree/main/computer-use-demo), which provides:
+
+- A containerized environment configured for safe Computer Use
+- Ready-to-use (Python) implementations of Computer Use tools
+- An agent loop for API interaction and tool execution
+- A web interface for monitoring and control
+
+This reference implementation serves as a foundation to understand the requirements before building your own custom solution.
+
+## Getting Started with the AI SDK
+
+<Note>
+  If you have never used the AI SDK before, start by following the [Getting
+  Started guide](/docs/getting-started).
+</Note>
+
+<Note>
+  For a working example of Computer Use implementation with Next.js and the AI
+  SDK, check out our [AI SDK Computer Use
+  Template](https://github.com/vercel-labs/ai-sdk-computer-use).
+</Note>
+
+First, ensure you have the AI SDK and [Anthropic AI SDK provider](/providers/ai-sdk-providers/anthropic) installed:
+
+<Snippet text="pnpm add ai @ai-sdk/anthropic" />
+
+You can add Computer Use to your AI SDK applications using provider-defined-client tools. These tools accept various input parameters (like display height and width in the case of the computer tool) and then require that you define an execute function.
+
+Here's how you could set up the Computer Tool with the AI SDK:
+
+```ts
+import { anthropic } from '@ai-sdk/anthropic';
+import { getScreenshot, executeComputerAction } from '@/utils/computer-use';
+
+const computerTool = anthropic.tools.computer_20250124({
+  displayWidthPx: 1920,
+  displayHeightPx: 1080,
+  execute: async ({ action, coordinate, text }) => {
+    switch (action) {
+      case 'screenshot': {
+        return {
+          type: 'image',
+          data: getScreenshot(),
+        };
+      }
+      default: {
+        return executeComputerAction(action, coordinate, text);
+      }
+    }
+  },
+  toModelOutput(result) {
+    return typeof result === 'string'
+      ? [{ type: 'text', text: result }]
+      : [{ type: 'image', data: result.data, mediaType: 'image/png' }];
+  },
+});
+```
+
+The `computerTool` handles two main actions: taking screenshots via `getScreenshot()` and executing computer actions like mouse movements and clicks through `executeComputerAction()`. Remember, you have to implement this execution logic (eg. the `getScreenshot` and `executeComputerAction` functions) to handle the actual computer interactions. The `execute` function should handle all low-level interactions with the operating system.
+
+Finally, to send tool results back to the model, use the [`toModelOutput()`](/docs/foundations/prompts#multi-modal-tool-results) function to convert text and image responses into a format the model can process. The AI SDK includes experimental support for these multi-modal tool results when using Anthropic's models.
+
+<Note>
+  Computer Use requires appropriate safety measures like using virtual machines,
+  limiting access to sensitive data, and implementing human oversight for
+  critical actions.
+</Note>
+
+### Using Computer Tools with Text Generation
+
+Once your tool is defined, you can use it with both the [`generateText`](/docs/reference/ai-sdk-core/generate-text) and [`streamText`](/docs/reference/ai-sdk-core/stream-text) functions.
+
+For one-shot text generation, use `generateText`:
+
+```ts
+const result = await generateText({
+  model: anthropic('claude-sonnet-4-20250514'),
+  prompt: 'Move the cursor to the center of the screen and take a screenshot',
+  tools: { computer: computerTool },
+});
+
+console.log(result.text);
+```
+
+For streaming responses, use `streamText` to receive updates in real-time:
+
+```ts
+const result = streamText({
+  model: anthropic('claude-sonnet-4-20250514'),
+  prompt: 'Open the browser and navigate to vercel.com',
+  tools: { computer: computerTool },
+});
+
+for await (const chunk of result.textStream) {
+  console.log(chunk);
+}
+```
+
+### Configure Multi-Step (Agentic) Generations
+
+To allow the model to perform multiple steps without user intervention, use the `stopWhen` parameter. This will automatically send any tool results back to the model to trigger a subsequent generation:
+
+```ts highlight="1,7"
+import { stepCountIs } from 'ai';
+
+const stream = streamText({
+  model: anthropic('claude-sonnet-4-20250514'),
+  prompt: 'Open the browser and navigate to vercel.com',
+  tools: { computer: computerTool },
+  stopWhen: stepCountIs(10), // experiment with this value based on your use case
+});
+```
+
+### Combine Multiple Tools
+
+You can combine multiple tools in a single request to enable more complex workflows. The AI SDK supports all three of Claude's Computer Use tools:
+
+```ts
+const computerTool = anthropic.tools.computer_20250124({
+  ...
+});
+
+const bashTool = anthropic.tools.bash_20250124({
+  execute: async ({ command, restart }) => execSync(command).toString()
+});
+
+const textEditorTool = anthropic.tools.textEditor_20250124({
+  execute: async ({
+    command,
+    path,
+    file_text,
+    insert_line,
+    new_str,
+    old_str,
+    view_range
+  }) => {
+    // Handle file operations based on command
+    switch(command) {
+      return executeTextEditorFunction({
+        command,
+        path,
+        fileText: file_text,
+        insertLine: insert_line,
+        newStr: new_str,
+        oldStr: old_str,
+        viewRange: view_range
+      });
+    }
+  }
+});
+
+
+const response = await generateText({
+  model: anthropic("claude-sonnet-4-20250514"),
+  prompt: "Create a new file called example.txt, write 'Hello World' to it, and run 'cat example.txt' in the terminal",
+  tools: {
+    computer: computerTool,
+    bash: bashTool,
+    str_replace_editor: textEditorTool,
+  },
+});
+```
+
+<Note>
+  Always implement appropriate [security measures](#security-measures) and
+  obtain user consent before enabling Computer Use in production applications.
+</Note>
+
+### Best Practices for Computer Use
+
+To get the best results when using Computer Use:
+
+1. Specify simple, well-defined tasks with explicit instructions for each step
+2. Prompt Claude to verify outcomes through screenshots
+3. Use keyboard shortcuts when UI elements are difficult to manipulate
+4. Include example screenshots for repeatable tasks
+5. Provide explicit tips in system prompts for known tasks
+
+## Security Measures
+
+Remember, Computer Use is a beta feature. Please be aware that it poses unique risks that are distinct from standard API features or chat interfaces. These risks are heightened when using Computer Use to interact with the internet. To minimize risks, consider taking precautions such as:
+
+1. Use a dedicated virtual machine or container with minimal privileges to prevent direct system attacks or accidents.
+2. Avoid giving the model access to sensitive data, such as account login information, to prevent information theft.
+3. Limit internet access to an allowlist of domains to reduce exposure to malicious content.
+4. Ask a human to confirm decisions that may result in meaningful real-world consequences as well as any tasks requiring affirmative consent, such as accepting cookies, executing financial transactions, or agreeing to terms of service.
+
+---
+
+title: Get started with Gemini 2.5
+description: Get started with Gemini 2.5 using the AI SDK.
+tags: ['getting-started']
+
+---
+
+# Get started with Gemini 2.5
+
+With the release of [Gemini 2.5](https://developers.googleblog.com/gemini-2-5-thinking-model-updates/), there has never been a better time to start building AI applications, particularly those that require complex reasoning capabilities and advanced intelligence.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) like Gemini 2.5 alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more.
+
+## Gemini 2.5
+
+Gemini 2.5 is Google's most advanced model family to date, offering exceptional capabilities across reasoning, instruction following, coding, and knowledge tasks. The Gemini 2.5 model family consists of:
+
+- [Gemini 2.5 Pro](https://ai.google.dev/gemini-api/docs/models#gemini-2.5-pro): Best for coding and highly complex tasks
+- [Gemini 2.5 Flash](https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash): Fast performance on everyday tasks
+- [Gemini 2.5 Flash-Lite](https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash-lite): Best for high volume cost-efficient tasks
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call Gemini 2.5 with the AI SDK:
+
+```ts
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: google('gemini-2.5-flash'),
+  prompt: 'Explain the concept of the Hilbert space.',
+});
+console.log(text);
+```
+
+### Thinking Capability
+
+The Gemini 2.5 series models use an internal "thinking process" that significantly improves their reasoning and multi-step planning abilities, making them highly effective for complex tasks such as coding, advanced mathematics, and data analysis.
+
+You can control the amount of thinking using the `thinkingConfig` provider option and specifying a thinking budget in tokens. Additionally, you can request thinking summaries by setting `includeThoughts` to `true`.
+
+```ts
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+const { text, reasoning } = await generateText({
+  model: google('gemini-2.5-flash'),
+  prompt: 'What is the sum of the first 10 prime numbers?',
+  providerOptions: {
+    google: {
+      thinkingConfig: {
+        thinkingBudget: 8192,
+        includeThoughts: true,
+      },
+    },
+  },
+});
+
+console.log(text); // text response
+console.log(reasoning); // reasoning summary
+```
+
+### Using Tools with the AI SDK
+
+Gemini 2.5 supports tool calling, allowing it to interact with external systems and perform discrete tasks. Here's an example of using tool calling with the AI SDK:
+
+```ts
+import { z } from 'zod';
+import { generateText, tool, stepCountIs } from 'ai';
+import { google } from '@ai-sdk/google';
+
+const result = await generateText({
+  model: google('gemini-2.5-flash'),
+  prompt: 'What is the weather in San Francisco?',
+  tools: {
+    weather: tool({
+      description: 'Get the weather in a location',
+      inputSchema: z.object({
+        location: z.string().describe('The location to get the weather for'),
+      }),
+      execute: async ({ location }) => ({
+        location,
+        temperature: 72 + Math.floor(Math.random() * 21) - 10,
+      }),
+    }),
+  },
+  stopWhen: stepCountIs(5), // Optional, enables multi step calling
+});
+
+console.log(result.text);
+
+console.log(result.steps);
+```
+
+### Using Google Search with Gemini
+
+With [search grounding](https://ai.google.dev/gemini-api/docs/google-search), Gemini can access to the latest information using Google search. Here's an example of using Google Search with the AI SDK:
+
+```ts
+import { google } from '@ai-sdk/google';
+import { GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+const { text, sources, providerMetadata } = await generateText({
+  model: google('gemini-2.5-flash'),
+  tools: {
+    google_search: google.tools.googleSearch({}),
+  },
+  prompt:
+    'List the top 5 San Francisco news from the past week.' +
+    'You must include the date of each article.',
+});
+
+// access the grounding metadata. Casting to the provider metadata type
+// is optional but provides autocomplete and type safety.
+const metadata = providerMetadata?.google as
+  | GoogleGenerativeAIProviderMetadata
+  | undefined;
+const groundingMetadata = metadata?.groundingMetadata;
+const safetyRatings = metadata?.safetyRatings;
+```
+
+### Building Interactive Interfaces
+
+AI SDK Core can be paired with [AI SDK UI](/docs/ai-sdk-ui/overview), another powerful component of the AI SDK, to streamline the process of building chat, completion, and assistant interfaces with popular frameworks like Next.js, Nuxt, SvelteKit, and SolidStart.
+
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently.
+
+With four main hooks — [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion), [`useObject`](/docs/reference/ai-sdk-ui/use-object), and [`useAssistant`](/docs/reference/ai-sdk-ui/use-assistant) — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+
+Let's explore building a chatbot with [Next.js](https://nextjs.org), the AI SDK, and Gemini 2.5 Flash:
+
+In a new Next.js application, first install the AI SDK and the Google Generative AI provider:
+
+<Snippet text="pnpm install ai @ai-sdk/google" />
+
+Then, create a route handler for the chat endpoint:
+
+```tsx filename="app/api/chat/route.ts"
+import { google } from '@ai-sdk/google';
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: google('gemini-2.5-flash'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+Finally, update the root page (`app/page.tsx`) to use the `useChat` hook:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
+
+export default function Chat() {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat();
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map((message) => (
+        <div key={message.id} className="whitespace-pre-wrap">
+          {message.role === 'user' ? 'User: ' : 'Gemini: '}
+          {message.parts.map((part, i) => {
+            switch (part.type) {
+              case 'text':
+                return <div key={`${message.id}-${i}`}>{part.text}</div>;
+            }
+          })}
+        </div>
+      ))}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage({ text: input });
+          setInput('');
+        }}
+      >
+        <input
+          className="fixed dark:bg-zinc-900 bottom-0 w-full max-w-md p-2 mb-8 border border-zinc-300 dark:border-zinc-800 rounded shadow-xl"
+          value={input}
+          placeholder="Say something..."
+          onChange={(e) => setInput(e.currentTarget.value)}
+        />
+      </form>
+    </div>
+  );
+}
+```
+
+The useChat hook on your root page (`app/page.tsx`) will make a request to your AI provider endpoint (`app/api/chat/route.ts`) whenever the user submits a message. The messages are then displayed in the chat UI.
+
+## Get Started
+
+Ready to dive in? Here's how you can begin:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the capabilities of the AI SDK.
+2. Check out practical examples at [ai-sdk.dev/examples](/examples) to see the SDK in action.
+3. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) at [ai-sdk.dev/docs/guides](/docs/guides).
+4. Use ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+5. Read more about the [Google Generative AI provider](/providers/ai-sdk-providers/google-generative-ai).
+
+---
+
+title: Get started with Claude 4
+description: Get started with Claude 4 using the AI SDK.
+tags: ['getting-started']
+
+---
+
+# Get started with Claude 4
+
+With the release of Claude 4, there has never been a better time to start building AI applications, particularly those that require complex reasoning capabilities and advanced intelligence.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) like Claude 4 alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more.
+
+## Claude 4
+
+Claude 4 is Anthropic's most advanced model family to date, offering exceptional capabilities across reasoning, instruction following, coding, and knowledge tasks. Available in two variants—Sonnet and Opus—Claude 4 delivers state-of-the-art performance with enhanced reliability and control. Claude 4 builds on the extended thinking capabilities introduced in Claude 3.7, allowing for even more sophisticated problem-solving through careful, step-by-step reasoning.
+
+Claude 4 excels at complex reasoning, code generation and analysis, detailed content creation, and agentic capabilities, making it ideal for powering sophisticated AI workflows, customer-facing agents, and applications requiring nuanced understanding and responses. Claude Opus 4 is an excellent coding model, leading on SWE-bench (72.5%) and Terminal-bench (43.2%), with the ability to sustain performance on long-running tasks that require focused effort and thousands of steps. Claude Sonnet 4 significantly improves on Sonnet 3.7, excelling in coding with 72.7% on SWE-bench while balancing performance and efficiency.
+
+### Prompt Engineering for Claude 4 Models
+
+Claude 4 models respond well to clear, explicit instructions. The following best practices can help achieve optimal performance:
+
+1. **Provide explicit instructions**: Clearly state what you want the model to do, including specific steps or formats for the response.
+2. **Include context and motivation**: Explain why a task is being performed to help the model better understand the underlying goals.
+3. **Avoid negative examples**: When providing examples, only demonstrate the behavior you want to see, not what you want to avoid.
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call Claude 4 Sonnet with the AI SDK:
+
+```ts
+import { anthropic } from '@ai-sdk/anthropic';
+import { generateText } from 'ai';
+
+const { text, reasoningText, reasoning } = await generateText({
+  model: anthropic('claude-sonnet-4-20250514'),
+  prompt: 'How will quantum computing impact cryptography by 2050?',
+});
+console.log(text);
+```
+
+### Reasoning Ability
+
+Claude 4 enhances the extended thinking capabilities first introduced in Claude 3.7 Sonnet—the ability to solve complex problems with careful, step-by-step reasoning. Additionally, both Opus 4 and Sonnet 4 can now use tools during extended thinking, allowing Claude to alternate between reasoning and tool use to improve responses. You can enable extended thinking using the `thinking` provider option and specifying a thinking budget in tokens. For interleaved thinking (where Claude can think in between tool calls) you'll need to enable a beta feature using the `anthropic-beta` header:
+
+```ts
+import { anthropic, AnthropicProviderOptions } from '@ai-sdk/anthropic';
+import { generateText } from 'ai';
+
+const { text, reasoningText, reasoning } = await generateText({
+  model: anthropic('claude-sonnet-4-20250514'),
+  prompt: 'How will quantum computing impact cryptography by 2050?',
+  providerOptions: {
+    anthropic: {
+      thinking: { type: 'enabled', budgetTokens: 15000 },
+    } satisfies AnthropicProviderOptions,
+  },
+  headers: {
+    'anthropic-beta': 'interleaved-thinking-2025-05-14',
+  },
+});
+
+console.log(text); // text response
+console.log(reasoningText); // reasoning text
+console.log(reasoning); // reasoning details including redacted reasoning
+```
+
+### Building Interactive Interfaces
+
+AI SDK Core can be paired with [AI SDK UI](/docs/ai-sdk-ui/overview), another powerful component of the AI SDK, to streamline the process of building chat, completion, and assistant interfaces with popular frameworks like Next.js, Nuxt, SvelteKit, and SolidStart.
+
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently.
+
+With four main hooks — [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion), [`useObject`](/docs/reference/ai-sdk-ui/use-object), and [`useAssistant`](/docs/reference/ai-sdk-ui/use-assistant) — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+
+Let's explore building a chatbot with [Next.js](https://nextjs.org), the AI SDK, and Claude Sonnet 4:
+
+In a new Next.js application, first install the AI SDK and the Anthropic provider:
+
+<Snippet text="pnpm install ai @ai-sdk/anthropic" />
+
+Then, create a route handler for the chat endpoint:
+
+```tsx filename="app/api/chat/route.ts"
+import { anthropic, AnthropicProviderOptions } from '@ai-sdk/anthropic';
+import { streamText, convertToModelMessages, type UIMessage } from 'ai';
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: anthropic('claude-sonnet-4-20250514'),
+    messages: convertToModelMessages(messages),
+    headers: {
+      'anthropic-beta': 'interleaved-thinking-2025-05-14',
+    },
+    providerOptions: {
+      anthropic: {
+        thinking: { type: 'enabled', budgetTokens: 15000 },
+      } satisfies AnthropicProviderOptions,
+    },
+  });
+
+  return result.toUIMessageStreamResponse({
+    sendReasoning: true,
+  });
+}
+```
+
+<Note>
+  You can forward the model's reasoning tokens to the client with
+  `sendReasoning: true` in the `toUIMessageStreamResponse` method.
+</Note>
+
+Finally, update the root page (`app/page.tsx`) to use the `useChat` hook:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useState } from 'react';
+
+export default function Page() {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({ api: '/api/chat' }),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-screen max-w-2xl mx-auto p-4">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`p-3 rounded-lg ${
+              message.role === 'user' ? 'bg-blue-50 ml-auto' : 'bg-gray-50'
+            }`}
+          >
+            <p className="font-semibold">
+              {message.role === 'user' ? 'You' : 'Claude 4'}
+            </p>
+            {message.parts.map((part, index) => {
+              if (part.type === 'text') {
+                return (
+                  <div key={index} className="mt-1">
+                    {part.text}
+                  </div>
+                );
+              }
+              if (part.type === 'reasoning') {
+                return (
+                  <pre
+                    key={index}
+                    className="bg-gray-100 p-2 rounded mt-2 text-xs overflow-x-auto"
+                  >
+                    <details>
+                      <summary className="cursor-pointer">
+                        View reasoning
+                      </summary>
+                      {part.text}
+                    </details>
+                  </pre>
+                );
+              }
+            })}
+          </div>
+        ))}
+      </div>
+      <form onSubmit={handleSubmit} className="flex gap-2">
+        <input
+          name="prompt"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          className="flex-1 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Ask Claude 4 something..."
+        />
+        <button
+          type="submit"
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  );
+}
+```
+
+<Note>
+  You can access the model's reasoning tokens with the `reasoning` part on the
+  message `parts`. The reasoning text is available in the `text` property of the
+  reasoning part.
+</Note>
+
+The useChat hook on your root page (`app/page.tsx`) will make a request to your LLM provider endpoint (`app/api/chat/route.ts`) whenever the user submits a message. The messages are then displayed in the chat UI.
+
+### Claude 4 Model Variants
+
+Claude 4 is available in two variants, each optimized for different use cases:
+
+- **Claude Sonnet 4**: Balanced performance suitable for most enterprise applications, with significant improvements over Sonnet 3.7.
+- **Claude Opus 4**: Anthropic's most powerful model and the best coding model available. Excels at sustained performance on long-running tasks that require focused effort and thousands of steps, with the ability to work continuously for several hours.
+
+## Get Started
+
+Ready to dive in? Here's how you can begin:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the capabilities of the AI SDK.
+2. Check out practical examples at [ai-sdk.dev/examples](/examples) to see the SDK in action.
+3. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) at [ai-sdk.dev/docs/guides](/docs/guides).
+4. Use ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+
+---
+
+title: OpenAI Responses API
+description: Get started with the OpenAI Responses API using the AI SDK.
+tags: ['getting-started', 'agents']
+
+---
+
+# Get started with OpenAI Responses API
+
+With the [release of OpenAI's responses API](https://openai.com/index/new-tools-for-building-agents/), there has never been a better time to start building AI applications, particularly those that require a deeper understanding of the world.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more.
+
+## OpenAI Responses API
+
+OpenAI recently released the Responses API, a brand new way to build applications on OpenAI's platform. The new API offers a way to persist chat history, a web search tool for grounding LLM responses, file search tool for finding relevant files, and a computer use tool for building agents that can interact with and operate computers. Let's explore how to use the Responses API with the AI SDK.
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call GPT-4o with the new Responses API using the AI SDK:
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const { text } = await generateText({
+  model: openai.responses('gpt-4o'),
+  prompt: 'Explain the concept of quantum entanglement.',
+});
+```
+
+### Generating Structured Data
+
+While text generation can be useful, you might want to generate structured JSON data. For example, you might want to extract information from text, classify data, or generate synthetic data. AI SDK Core provides two functions ([`generateObject`](/docs/reference/ai-sdk-core/generate-object) and [`streamObject`](/docs/reference/ai-sdk-core/stream-object)) to generate structured data, allowing you to constrain model outputs to a specific schema.
+
+```ts
+import { generateObject } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const { object } = await generateObject({
+  model: openai.responses('gpt-4o'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.object({ name: z.string(), amount: z.string() })),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+});
+```
+
+This code snippet will generate a type-safe recipe that conforms to the specified zod schema.
+
+### Using Tools with the AI SDK
+
+The Responses API supports tool calling out of the box, allowing it to interact with external systems and perform discrete tasks. Here's an example of using tool calling with the AI SDK:
+
+```ts
+import { generateText, tool } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const { text } = await generateText({
+  model: openai.responses('gpt-4o'),
+  prompt: 'What is the weather like today in San Francisco?',
+  tools: {
+    getWeather: tool({
+      description: 'Get the weather in a location',
+      inputSchema: z.object({
+        location: z.string().describe('The location to get the weather for'),
+      }),
+      execute: async ({ location }) => ({
+        location,
+        temperature: 72 + Math.floor(Math.random() * 21) - 10,
+      }),
+    }),
+  },
+  stopWhen: stepCountIs(5), // enable multi-step 'agentic' LLM calls
+});
+```
+
+This example demonstrates how `stopWhen` transforms a single LLM call into an agent. The `stopWhen: stepCountIs(5)` parameter allows the model to autonomously call tools, analyze results, and make additional tool calls as needed - turning what would be a simple one-shot completion into an intelligent agent that can chain multiple actions together to complete complex tasks.
+
+### Web Search Tool
+
+The Responses API introduces a built-in tool for grounding responses called `webSearch`. With this tool, the model can access the internet to find relevant information for its responses.
+
+```ts
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: openai.responses('gpt-4o-mini'),
+  prompt: 'What happened in San Francisco last week?',
+  tools: {
+    web_search_preview: openai.tools.webSearchPreview(),
+  },
+});
+
+console.log(result.text);
+console.log(result.sources);
+```
+
+The `webSearch` tool also allows you to specify query-specific metadata that can be used to improve the quality of the search results.
+
+```ts
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: openai.responses('gpt-4o-mini'),
+  prompt: 'What happened in San Francisco last week?',
+  tools: {
+    web_search_preview: openai.tools.webSearchPreview({
+      searchContextSize: 'high',
+      userLocation: {
+        type: 'approximate',
+        city: 'San Francisco',
+        region: 'California',
+      },
+    }),
+  },
+});
+
+console.log(result.text);
+console.log(result.sources);
+```
+
+## Using Persistence
+
+With the Responses API, you can persist chat history with OpenAI across requests. This allows you to send just the user's last message and OpenAI can access the entire chat history:
+
+```tsx filename="app/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+const result1 = await generateText({
+  model: openai.responses('gpt-4o-mini'),
+  prompt: 'Invent a new holiday and describe its traditions.',
+});
+
+const result2 = await generateText({
+  model: openai.responses('gpt-4o-mini'),
+  prompt: 'Summarize in 2 sentences',
+  providerOptions: {
+    openai: {
+      previousResponseId: result1.providerMetadata?.openai.responseId as string,
+    },
+  },
+});
+```
+
+## Migrating from Completions API
+
+Migrating from the OpenAI Completions API (via the AI SDK) to the new Responses API is simple. To migrate, simply change your provider instance from `openai(modelId)` to `openai.responses(modelId)`:
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// Completions API
+const { text } = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Explain the concept of quantum entanglement.',
+});
+
+// Responses API
+const { text } = await generateText({
+  model: openai.responses('gpt-4o'),
+  prompt: 'Explain the concept of quantum entanglement.',
+});
+```
+
+When using the Responses API, provider specific options that were previously specified on the model provider instance have now moved to the `providerOptions` object:
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// Completions API
+const { text } = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Explain the concept of quantum entanglement.',
+  providerOptions: {
+    openai: {
+      parallelToolCalls: false,
+    },
+  },
+});
+
+// Responses API
+const { text } = await generateText({
+  model: openai.responses('gpt-4o'),
+  prompt: 'Explain the concept of quantum entanglement.',
+  providerOptions: {
+    openai: {
+      parallelToolCalls: false,
+    },
+  },
+});
+```
+
+## Get Started
+
+Ready to get started? Here's how you can dive in:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the full capabilities of the AI SDK.
+2. Check out practical examples at [ai-sdk.dev/examples](/examples) to see the SDK in action and get inspired for your own projects.
+3. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) and multi-modal chat at [ai-sdk.dev/docs/guides](/docs/guides).
+4. Check out ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+
+---
+
+title: Get started with Claude 3.7 Sonnet
+description: Get started with Claude 3.7 Sonnet using the AI SDK.
+tags: ['getting-started']
+
+---
+
+# Get started with Claude 3.7 Sonnet
+
+With the [release of Claude 3.7 Sonnet](https://www.anthropic.com/news/claude-3-7-sonnet), there has never been a better time to start building AI applications, particularly those that require complex reasoning capabilities.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) like Claude 3.7 Sonnet alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more.
+
+## Claude 3.7 Sonnet
+
+Claude 3.7 Sonnet is Anthropic's most intelligent model to date and the first Claude model to offer extended thinking—the ability to solve complex problems with careful, step-by-step reasoning. With Claude 3.7 Sonnet, you can balance speed and quality by choosing between standard thinking for near-instant responses or extended thinking or advanced reasoning. Claude 3.7 Sonnet is state-of-the-art for coding, and delivers advancements in computer use, agentic capabilities, complex reasoning, and content generation. With frontier performance and more control over speed, Claude 3.7 Sonnet is a great choice for powering AI agents, especially customer-facing agents, and complex AI workflows.
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call Claude 3.7 Sonnet with the AI SDK:
+
+```ts
+import { anthropic } from '@ai-sdk/anthropic';
+import { generateText } from 'ai';
+
+const { text, reasoning, reasoningDetails } = await generateText({
+  model: anthropic('claude-3-7-sonnet-20250219'),
+  prompt: 'How many people will live in the world in 2040?',
+});
+console.log(text); // text response
+```
+
+The unified interface also means that you can easily switch between providers by changing just two lines of code. For example, to use Claude 3.7 Sonnet via Amazon Bedrock:
+
+```ts
+import { bedrock } from '@ai-sdk/amazon-bedrock';
+import { generateText } from 'ai';
+
+const { reasoning, text } = await generateText({
+  model: bedrock('anthropic.claude-3-7-sonnet-20250219-v1:0'),
+  prompt: 'How many people will live in the world in 2040?',
+});
+```
+
+### Reasoning Ability
+
+Claude 3.7 Sonnet introduces a new extended thinking—the ability to solve complex problems with careful, step-by-step reasoning. You can enable it using the `thinking` provider option and specifying a thinking budget in tokens:
+
+```ts
+import { anthropic, AnthropicProviderOptions } from '@ai-sdk/anthropic';
+import { generateText } from 'ai';
+
+const { text, reasoning, reasoningDetails } = await generateText({
+  model: anthropic('claude-3-7-sonnet-20250219'),
+  prompt: 'How many people will live in the world in 2040?',
+  providerOptions: {
+    anthropic: {
+      thinking: { type: 'enabled', budgetTokens: 12000 },
+    } satisfies AnthropicProviderOptions,
+  },
+});
+
+console.log(reasoning); // reasoning text
+console.log(reasoningDetails); // reasoning details including redacted reasoning
+console.log(text); // text response
+```
+
+### Building Interactive Interfaces
+
+AI SDK Core can be paired with [AI SDK UI](/docs/ai-sdk-ui/overview), another powerful component of the AI SDK, to streamline the process of building chat, completion, and assistant interfaces with popular frameworks like Next.js, Nuxt, and SvelteKit.
+
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently.
+
+With four main hooks — [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion), and [`useObject`](/docs/reference/ai-sdk-ui/use-object) — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+
+Let's explore building a chatbot with [Next.js](https://nextjs.org), the AI SDK, and Claude 3.7 Sonnet:
+
+In a new Next.js application, first install the AI SDK and the Anthropic provider:
+
+<Snippet text="pnpm install ai @ai-sdk/anthropic" />
+
+Then, create a route handler for the chat endpoint:
+
+```tsx filename="app/api/chat/route.ts"
+import { anthropic, AnthropicProviderOptions } from '@ai-sdk/anthropic';
+import { streamText, convertToModelMessages, type UIMessage } from 'ai';
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: anthropic('claude-3-7-sonnet-20250219'),
+    messages: convertToModelMessages(messages),
+    providerOptions: {
+      anthropic: {
+        thinking: { type: 'enabled', budgetTokens: 12000 },
+      } satisfies AnthropicProviderOptions,
+    },
+  });
+
+  return result.toUIMessageStreamResponse({
+    sendReasoning: true,
+  });
+}
+```
+
+<Note>
+  You can forward the model's reasoning tokens to the client with
+  `sendReasoning: true` in the `toUIMessageStreamResponse` method.
+</Note>
+
+Finally, update the root page (`app/page.tsx`) to use the `useChat` hook:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useState } from 'react';
+
+export default function Page() {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat({
+    transport: new DefaultChatTransport({ api: '/api/chat' }),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <>
+      {messages.map((message) => (
+        <div key={message.id}>
+          {message.role === 'user' ? 'User: ' : 'AI: '}
+          {message.parts.map((part, index) => {
+            // text parts:
+            if (part.type === 'text') {
+              return <div key={index}>{part.text}</div>;
+            }
+            // reasoning parts:
+            if (part.type === 'reasoning') {
+              return <pre key={index}>{part.text}</pre>;
+            }
+          })}
+        </div>
+      ))}
+      <form onSubmit={handleSubmit}>
+        <input
+          name="prompt"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button type="submit">Send</button>
+      </form>
+    </>
+  );
+}
+```
+
+<Note>
+  You can access the model's reasoning tokens with the `reasoning` part on the
+  message `parts`.
+</Note>
+
+The useChat hook on your root page (`app/page.tsx`) will make a request to your LLM provider endpoint (`app/api/chat/route.ts`) whenever the user submits a message. The messages are then displayed in the chat UI.
+
+## Get Started
+
+Ready to dive in? Here's how you can begin:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the capabilities of the AI SDK.
+2. Check out practical examples at [ai-sdk.dev/examples](/examples) to see the SDK in action.
+3. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) at [ai-sdk.dev/docs/guides](/docs/guides).
+4. Use ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+
+Claude 3.7 Sonnet opens new opportunities for reasoning-intensive AI applications. Start building today and leverage the power of advanced reasoning in your AI projects.
+
+---
+
+title: Get started with Llama 3.1
+description: Get started with Llama 3.1 using the AI SDK.
+tags: ['getting-started']
+
+---
+
+# Get started with Llama 3.1
+
+<Note>
+  The current generation of Llama models is 3.3. Please note that while this
+  guide focuses on Llama 3.1, the newer Llama 3.3 models are now available and
+  may offer improved capabilities. The concepts and integration techniques
+  described here remain applicable, though you may want to use the latest
+  generation models for optimal performance.
+</Note>
+
+With the [release of Llama 3.1](https://ai.meta.com/blog/meta-llama-3-1/), there has never been a better time to start building AI applications.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI application with large language models (LLMs) like Llama 3.1 alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more
+
+## Llama 3.1
+
+The release of Meta's Llama 3.1 is an important moment in AI development. As the first state-of-the-art open weight AI model, Llama 3.1 is helping accelerate developers building AI apps. Available in 8B, 70B, and 405B sizes, these instruction-tuned models work well for tasks like dialogue generation, translation, reasoning, and code generation.
+
+## Benchmarks
+
+Llama 3.1 surpasses most available open-source chat models on common industry benchmarks and even outperforms some closed-source models, offering superior performance in language nuances, contextual understanding, and complex multi-step tasks. The models' refined post-training processes significantly improve response alignment, reduce false refusal rates, and enhance answer diversity, making Llama 3.1 a powerful and accessible tool for building generative AI applications.
+
+![Llama 3.1 Benchmarks](/images/llama-3_1-benchmarks.png)
+Source: [Meta AI - Llama 3.1 Model Card](https://github.com/meta-llama/llama-models/blob/main/models/llama3_1/MODEL_CARD.md)
+
+## Choosing Model Size
+
+Llama 3.1 includes a new 405B parameter model, becoming the largest open-source model available today. This model is designed to handle the most complex and demanding tasks.
+
+When choosing between the different sizes of Llama 3.1 models (405B, 70B, 8B), consider the trade-off between performance and computational requirements. The 405B model offers the highest accuracy and capability for complex tasks but requires significant computational resources. The 70B model provides a good balance of performance and efficiency for most applications, while the 8B model is suitable for simpler tasks or resource-constrained environments where speed and lower computational overhead are priorities.
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call Llama 3.1 (using [DeepInfra](https://deepinfra.com)) with the AI SDK:
+
+```ts
+import { deepinfra } from '@ai-sdk/deepinfra';
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: deepinfra('meta-llama/Meta-Llama-3.1-405B-Instruct'),
+  prompt: 'What is love?',
+});
+```
+
+<Note>
+  Llama 3.1 is available to use with many AI SDK providers including
+  [DeepInfra](/providers/ai-sdk-providers/deepinfra), [Amazon
+  Bedrock](/providers/ai-sdk-providers/amazon-bedrock),
+  [Baseten](/providers/openai-compatible-providers/baseten)
+  [Fireworks](/providers/ai-sdk-providers/fireworks), and more.
+</Note>
+
+AI SDK Core abstracts away the differences between model providers, allowing you to focus on building great applications. Prefer to use [Amazon Bedrock](/providers/ai-sdk-providers/amazon-bedrock)? The unified interface also means that you can easily switch between models by changing just two lines of code.
+
+```tsx highlight="2,5"
+import { generateText } from 'ai';
+import { bedrock } from '@ai-sdk/amazon-bedrock';
+
+const { text } = await generateText({
+  model: bedrock('meta.llama3-1-405b-instruct-v1'),
+  prompt: 'What is love?',
+});
+```
+
+### Streaming the Response
+
+To stream the model's response as it's being generated, update your code snippet to use the [`streamText`](/docs/reference/ai-sdk-core/stream-text) function.
+
+```tsx
+import { streamText } from 'ai';
+import { deepinfra } from '@ai-sdk/deepinfra';
+
+const { textStream } = streamText({
+  model: deepinfra('meta-llama/Meta-Llama-3.1-405B-Instruct'),
+  prompt: 'What is love?',
+});
+```
+
+### Generating Structured Data
+
+While text generation can be useful, you might want to generate structured JSON data. For example, you might want to extract information from text, classify data, or generate synthetic data. AI SDK Core provides two functions ([`generateObject`](/docs/reference/ai-sdk-core/generate-object) and [`streamObject`](/docs/reference/ai-sdk-core/stream-object)) to generate structured data, allowing you to constrain model outputs to a specific schema.
+
+```ts
+import { generateObject } from 'ai';
+import { deepinfra } from '@ai-sdk/deepinfra';
+import { z } from 'zod';
+
+const { object } = await generateObject({
+  model: deepinfra('meta-llama/Meta-Llama-3.1-70B-Instruct'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.object({ name: z.string(), amount: z.string() })),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+});
+```
+
+This code snippet will generate a type-safe recipe that conforms to the specified zod schema.
+
+### Tools
+
+While LLMs have incredible generation capabilities, they struggle with discrete tasks (e.g. mathematics) and interacting with the outside world (e.g. getting the weather). The solution: tools, which are like programs that you provide to the model, which it can choose to call as necessary.
+
+### Using Tools with the AI SDK
+
+The AI SDK supports tool usage across several of its functions, including [`generateText`](/docs/reference/ai-sdk-core/generate-text) and [`streamUI`](/docs/reference/ai-sdk-rsc/stream-ui). By passing one or more tools to the `tools` parameter, you can extend the capabilities of LLMs, allowing them to perform discrete tasks and interact with external systems.
+
+Here's an example of how you can use a tool with the AI SDK and Llama 3.1:
+
+```ts
+import { generateText, tool } from 'ai';
+import { deepinfra } from '@ai-sdk/deepinfra';
+import { z } from 'zod';
+
+const { text } = await generateText({
+  model: deepinfra('meta-llama/Meta-Llama-3.1-70B-Instruct'),
+  prompt: 'What is the weather like today?',
+  tools: {
+    getWeather: tool({
+      description: 'Get the weather in a location',
+      inputSchema: z.object({
+        location: z.string().describe('The location to get the weather for'),
+      }),
+      execute: async ({ location }) => ({
+        location,
+        temperature: 72 + Math.floor(Math.random() * 21) - 10,
+      }),
+    }),
+  },
+});
+```
+
+In this example, the `getWeather` tool allows the model to fetch real-time weather data, enhancing its ability to provide accurate and up-to-date information.
+
+### Agents
+
+Agents take your AI applications a step further by allowing models to execute multiple steps (i.e. tools) in a non-deterministic way, making decisions based on context and user input.
+
+Agents use LLMs to choose the next step in a problem-solving process. They can reason at each step and make decisions based on the evolving context.
+
+### Implementing Agents with the AI SDK
+
+The AI SDK supports agent implementation through the `maxSteps` parameter. This allows the model to make multiple decisions and tool calls in a single interaction.
+
+Here's an example of an agent that solves math problems:
+
+```tsx
+import { generateText, tool } from 'ai';
+import { deepinfra } from '@ai-sdk/deepinfra';
+import * as mathjs from 'mathjs';
+import { z } from 'zod';
+
+const problem =
+  'Calculate the profit for a day if revenue is $5000 and expenses are $3500.';
+
+const { text: answer } = await generateText({
+  model: deepinfra('meta-llama/Meta-Llama-3.1-70B-Instruct'),
+  system:
+    'You are solving math problems. Reason step by step. Use the calculator when necessary.',
+  prompt: problem,
+  tools: {
+    calculate: tool({
+      description: 'A tool for evaluating mathematical expressions.',
+      inputSchema: z.object({ expression: z.string() }),
+      execute: async ({ expression }) => mathjs.evaluate(expression),
+    }),
+  },
+  maxSteps: 5,
+});
+```
+
+In this example, the agent can use the calculator tool multiple times if needed, reasoning through the problem step by step.
+
+### Building Interactive Interfaces
+
+AI SDK Core can be paired with [AI SDK UI](/docs/ai-sdk-ui/overview), another powerful component of the AI SDK, to streamline the process of building chat, completion, and assistant interfaces with popular frameworks like Next.js, Nuxt, and SvelteKit.
+
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently.
+
+With four main hooks — [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion), and [`useObject`](/docs/reference/ai-sdk-ui/use-object) — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+
+Let's explore building a chatbot with [Next.js](https://nextjs.org), the AI SDK, and Llama 3.1 (via [DeepInfra](https://deepinfra.com)):
+
+```tsx filename="app/api/chat/route.ts"
+import { deepinfra } from '@ai-sdk/deepinfra';
+import { convertToModelMessages, streamText } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = streamText({
+    model: deepinfra('meta-llama/Meta-Llama-3.1-70B-Instruct'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+
+export default function Page() {
+  const { messages, input, handleInputChange, handleSubmit } = useChat();
+
+  return (
+    <>
+      {messages.map((message) => (
+        <div key={message.id}>
+          {message.role === 'user' ? 'User: ' : 'AI: '}
+          {message.content}
+        </div>
+      ))}
+      <form onSubmit={handleSubmit}>
+        <input name="prompt" value={input} onChange={handleInputChange} />
+        <button type="submit">Submit</button>
+      </form>
+    </>
+  );
+}
+```
+
+The useChat hook on your root page (`app/page.tsx`) will make a request to your AI provider endpoint (`app/api/chat/route.ts`) whenever the user submits a message. The messages are then streamed back in real-time and displayed in the chat UI.
+
+This enables a seamless chat experience where the user can see the AI response as soon as it is available, without having to wait for the entire response to be received.
+
+### Going Beyond Text
+
+The AI SDK's React Server Components (RSC) API enables you to create rich, interactive interfaces that go beyond simple text generation. With the [`streamUI`](/docs/reference/ai-sdk-rsc/stream-ui) function, you can dynamically stream React components from the server to the client.
+
+Let's dive into how you can leverage tools with [AI SDK RSC](/docs/ai-sdk-rsc/overview) to build a generative user interface with Next.js (App Router).
+
+First, create a Server Action.
+
+```tsx filename="app/actions.tsx"
+'use server';
+
+import { streamUI } from '@ai-sdk/rsc';
+import { deepinfra } from '@ai-sdk/deepinfra';
+import { z } from 'zod';
+
+export async function streamComponent() {
+  const result = await streamUI({
+    model: deepinfra('meta-llama/Meta-Llama-3.1-70B-Instruct'),
+    prompt: 'Get the weather for San Francisco',
+    text: ({ content }) => <div>{content}</div>,
+    tools: {
+      getWeather: {
+        description: 'Get the weather for a location',
+        inputSchema: z.object({ location: z.string() }),
+        generate: async function* ({ location }) {
+          yield <div>loading...</div>;
+          const weather = '25c'; // await getWeather(location);
+          return (
+            <div>
+              the weather in {location} is {weather}.
+            </div>
+          );
+        },
+      },
+    },
+  });
+  return result.value;
+}
+```
+
+In this example, if the model decides to use the `getWeather` tool, it will first yield a `div` while fetching the weather data, then return a weather component with the fetched data (note: static data in this example). This allows for a more dynamic and responsive UI that can adapt based on the AI's decisions and external data.
+
+On the frontend, you can call this Server Action like any other asynchronous function in your application. In this case, the function returns a regular React component.
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useState } from 'react';
+import { streamComponent } from './actions';
+
+export default function Page() {
+  const [component, setComponent] = useState<React.ReactNode>();
+
+  return (
+    <div>
+      <form
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setComponent(await streamComponent());
+        }}
+      >
+        <button>Stream Component</button>
+      </form>
+      <div>{component}</div>
+    </div>
+  );
+}
+```
+
+To see AI SDK RSC in action, check out our open-source [Next.js Gemini Chatbot](https://gemini.vercel.ai/).
+
+## Migrate from OpenAI
+
+One of the key advantages of the AI SDK is its unified API, which makes it incredibly easy to switch between different AI models and providers. This flexibility is particularly useful when you want to migrate from one model to another, such as moving from OpenAI's GPT models to Meta's Llama models hosted on DeepInfra.
+
+Here's how simple the migration process can be:
+
+**OpenAI Example:**
+
+```tsx
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const { text } = await generateText({
+  model: openai('gpt-4.1'),
+  prompt: 'What is love?',
+});
+```
+
+**Llama on DeepInfra Example:**
+
+```tsx
+import { generateText } from 'ai';
+import { deepinfra } from '@ai-sdk/deepinfra';
+
+const { text } = await generateText({
+  model: deepinfra('meta-llama/Meta-Llama-3.1-70B-Instruct'),
+  prompt: 'What is love?',
+});
+```
+
+Thanks to the unified API, the core structure of the code remains the same. The main differences are:
+
+1. Creating a DeepInfra client
+2. Changing the model name from `openai("gpt-4.1")` to `deepinfra("meta-llama/Meta-Llama-3.1-70B-Instruct")`.
+
+With just these few changes, you've migrated from using OpenAI's GPT-4-Turbo to Meta's Llama 3.1 hosted on DeepInfra. The `generateText` function and its usage remain identical, showcasing the power of the AI SDK's unified API.
+
+This feature allows you to easily experiment with different models, compare their performance, and choose the best one for your specific use case without having to rewrite large portions of your codebase.
+
+## Prompt Engineering and Fine-tuning
+
+While the Llama 3.1 family of models are powerful out-of-the-box, their performance can be enhanced through effective prompt engineering and fine-tuning techniques.
+
+### Prompt Engineering
+
+Prompt engineering is the practice of crafting input prompts to elicit desired outputs from language models. It involves structuring and phrasing prompts in ways that guide the model towards producing more accurate, relevant, and coherent responses.
+
+For more information on prompt engineering techniques (specific to Llama models), check out these resources:
+
+- [Official Llama 3.1 Prompt Guide](https://llama.meta.com/docs/how-to-guides/prompting)
+- [Prompt Engineering with Llama 3](https://github.com/amitsangani/Llama/blob/main/Llama_3_Prompt_Engineering.ipynb)
+- [How to prompt Llama 3](https://huggingface.co/blog/llama3#how-to-prompt-llama-3)
+
+### Fine-tuning
+
+Fine-tuning involves further training a pre-trained model on a specific dataset or task to customize its performance for particular use cases. This process allows you to adapt Llama 3.1 to your specific domain or application, potentially improving its accuracy and relevance for your needs.
+
+To learn more about fine-tuning Llama models, check out these resources:
+
+- [Official Fine-tuning Llama Guide](https://llama.meta.com/docs/how-to-guides/fine-tuning)
+- [Fine-tuning and Inference with Llama 3](https://docs.inferless.com/how-to-guides/how-to-finetune--and-inference-llama3)
+- [Fine-tuning Models with Fireworks AI](https://docs.fireworks.ai/fine-tuning/fine-tuning-models)
+- [Fine-tuning Llama with Modal](https://modal.com/docs/examples/llm-finetuning)
+
+## Conclusion
+
+The AI SDK offers a powerful and flexible way to integrate cutting-edge AI models like Llama 3.1 into your applications. With AI SDK Core, you can seamlessly switch between different AI models and providers by changing just two lines of code. This flexibility allows for quick experimentation and adaptation, reducing the time required to change models from days to minutes.
+
+The AI SDK ensures that your application remains clean and modular, accelerating development and future-proofing against the rapidly evolving landscape.
+
+Ready to get started? Here's how you can dive in:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the full capabilities of the AI SDK.
+2. Check out practical examples at [ai-sdk.dev/examples](/examples) to see the SDK in action and get inspired for your own projects.
+3. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) and multi-modal chat at [ai-sdk.dev/docs/guides](/docs/guides).
+4. Check out ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+
+---
+
+title: Get started with GPT-5
+description: Get started with GPT-5 using the AI SDK.
+tags: ['getting-started']
+
+---
+
+# Get started with OpenAI GPT-5
+
+With the [release of OpenAI's GPT-5 model](https://openai.com/index/introducing-gpt-5), there has never been a better time to start building AI applications with advanced capabilities like verbosity control, web search, and native multi-modal understanding.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) like OpenAI GPT-5 alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more.
+
+## OpenAI GPT-5
+
+OpenAI's GPT-5 represents their latest advancement in language models, offering powerful new features including verbosity control for tailored response lengths, integrated web search capabilities, reasoning summaries for transparency, and native support for text, images, audio, and PDFs. The model is available in three variants: `gpt-5`, `gpt-5-mini` for faster, more cost-effective processing, and `gpt-5-nano` for ultra-efficient operations.
+
+### Prompt Engineering for GPT-5
+
+Here are the key strategies for effective prompting:
+
+#### Core Principles
+
+1. **Be precise and unambiguous**: Avoid contradictory or ambiguous instructions. GPT-5 performs best with clear, explicit guidance.
+2. **Use structured prompts**: Leverage XML-like tags to organize different sections of your instructions for better clarity.
+3. **Natural language works best**: While being precise, write prompts as you would explain to a skilled colleague.
+
+#### Prompting Techniques
+
+**1. Agentic Workflow Control**
+
+- Adjust the `reasoning_effort` parameter to calibrate model autonomy
+- Set clear stop conditions and define explicit tool call budgets
+- Provide guidance on exploration depth and persistence
+
+```ts
+// Example with reasoning effort control
+const result = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'Analyze this complex dataset and provide insights.',
+  providerOptions: {
+    openai: {
+      reasoning_effort: 'high', // Increases autonomous exploration
+    },
+  },
+});
+```
+
+**2. Structured Prompt Format**
+Use XML-like tags to organize your prompts:
+
+```
+<context_gathering>
+Goal: Extract key performance metrics from the report
+Method: Focus on quantitative data and year-over-year comparisons
+Early stop criteria: Stop after finding 5 key metrics
+</context_gathering>
+
+<task>
+Analyze the attached financial report and identify the most important metrics.
+</task>
+```
+
+**3. Tool Calling Best Practices**
+
+- Use tool preambles to provide clear upfront plans
+- Define safe vs. unsafe actions for different tools
+- Create structured updates about tool call progress
+
+**4. Verbosity Control**
+
+- Use the `textVerbosity` parameter to control response length programmatically
+- Override with natural language when needed for specific contexts
+- Balance between conciseness and completeness
+
+**5. Optimization Workflow**
+
+- Start with a clear, simple prompt
+- Test and identify areas of ambiguity or confusion
+- Iteratively refine by removing contradictions
+- Consider using OpenAI's Prompt Optimizer tool for complex prompts
+- Document successful patterns for reuse
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call OpenAI GPT-5 with the AI SDK:
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const { text } = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'Explain the concept of quantum entanglement.',
+});
+```
+
+### Generating Structured Data
+
+While text generation can be useful, you might want to generate structured JSON data. For example, you might want to extract information from text, classify data, or generate synthetic data. AI SDK Core provides two functions ([`generateObject`](/docs/reference/ai-sdk-core/generate-object) and [`streamObject`](/docs/reference/ai-sdk-core/stream-object)) to generate structured data, allowing you to constrain model outputs to a specific schema.
+
+```ts
+import { generateObject } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const { object } = await generateObject({
+  model: openai('gpt-5'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.object({ name: z.string(), amount: z.string() })),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+});
+```
+
+This code snippet will generate a type-safe recipe that conforms to the specified zod schema.
+
+### Verbosity Control
+
+One of GPT-5's new features is verbosity control, allowing you to adjust response length without modifying your prompt:
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// Concise response
+const { text: conciseText } = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'Explain quantum computing.',
+  providerOptions: {
+    openai: {
+      textVerbosity: 'low', // Produces terse, minimal responses
+    },
+  },
+});
+
+// Detailed response
+const { text: detailedText } = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'Explain quantum computing.',
+  providerOptions: {
+    openai: {
+      textVerbosity: 'high', // Produces comprehensive, detailed responses
+    },
+  },
+});
+```
+
+### Web Search
+
+GPT-5 can access real-time information through the integrated web search tool:
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const result = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'What are the latest developments in AI this week?',
+  tools: {
+    web_search: openai.tools.webSearch({
+      searchContextSize: 'high',
+    }),
+  },
+});
+
+// Access URL sources
+const sources = result.sources;
+```
+
+### Reasoning Summaries
+
+For transparency into GPT-5's thought process, enable reasoning summaries:
+
+```ts
+import { openai } from '@ai-sdk/openai';
+import { streamText } from 'ai';
+
+const result = streamText({
+  model: openai.responses('gpt-5'),
+  prompt:
+    'Solve this logic puzzle: If all roses are flowers and some flowers fade quickly, do all roses fade quickly?',
+  providerOptions: {
+    openai: {
+      reasoningSummary: 'detailed', // 'auto' for condensed or 'detailed' for comprehensive
+    },
+  },
+});
+
+// Stream reasoning and text separately
+for await (const part of result.fullStream) {
+  if (part.type === 'reasoning') {
+    console.log(part.textDelta);
+  } else if (part.type === 'text-delta') {
+    process.stdout.write(part.textDelta);
+  }
+}
+```
+
+### Using Tools with the AI SDK
+
+GPT-5 supports tool calling out of the box, allowing it to interact with external systems and perform discrete tasks. Here's an example of using tool calling with the AI SDK:
+
+```ts
+import { generateText, tool } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const { toolResults } = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'What is the weather like today in San Francisco?',
+  tools: {
+    getWeather: tool({
+      description: 'Get the weather in a location',
+      inputSchema: z.object({
+        location: z.string().describe('The location to get the weather for'),
+      }),
+      execute: async ({ location }) => ({
+        location,
+        temperature: 72 + Math.floor(Math.random() * 21) - 10,
+      }),
+    }),
+  },
+});
+```
+
+### Building Interactive Interfaces
+
+AI SDK Core can be paired with [AI SDK UI](/docs/ai-sdk-ui/overview), another powerful component of the AI SDK, to streamline the process of building chat, completion, and assistant interfaces with popular frameworks like Next.js, Nuxt, and SvelteKit.
+
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently.
+
+With four main hooks — [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion), and [`useObject`](/docs/reference/ai-sdk-ui/use-object) — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+
+Let's explore building a chatbot with [Next.js](https://nextjs.org), the AI SDK, and OpenAI GPT-5:
+
+In a new Next.js application, first install the AI SDK and the OpenAI provider:
+
+<Snippet text="pnpm install ai @ai-sdk/openai @ai-sdk/react" />
+
+Then, create a route handler for the chat endpoint:
+
+```tsx filename="app/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+
+// Allow responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-5'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+Finally, update the root page (`app/page.tsx`) to use the `useChat` hook:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
+
+export default function Page() {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat({});
+
+  return (
+    <>
+      {messages.map((message) => (
+        <div key={message.id}>
+          {message.role === 'user' ? 'User: ' : 'AI: '}
+          {message.parts.map((part, index) => {
+            if (part.type === 'text') {
+              return <span key={index}>{part.text}</span>;
+            }
+            return null;
+          })}
+        </div>
+      ))}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (input.trim()) {
+            sendMessage({ text: input });
+            setInput('');
+          }
+        }}
+      >
+        <input
+          name="prompt"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button type="submit">Submit</button>
+      </form>
+    </>
+  );
+}
+```
+
+The useChat hook on your root page (`app/page.tsx`) will make a request to your AI provider endpoint (`app/api/chat/route.ts`) whenever the user submits a message. The messages are then displayed in the chat UI.
+
+## Get Started
+
+Ready to get started? Here's how you can dive in:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the full capabilities of the AI SDK.
+2. Check out practical examples at [ai-sdk.dev/cookbook](/cookbook) to see the SDK in action and get inspired for your own projects.
+3. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) and multi-modal chat at [ai-sdk.dev/cookbook/guides](/cookbook/guides).
+4. Check out ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+
+---
+
+title: Get started with OpenAI o1
+description: Get started with OpenAI o1 using the AI SDK.
+tags: ['getting-started', 'reasoning']
+
+---
+
+# Get started with OpenAI o1
+
+With the [release of OpenAI's o1 series models](https://openai.com/index/learning-to-reason-with-llms/), there has never been a better time to start building AI applications, particularly those that require complex reasoning capabilities.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) like OpenAI o1 alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more.
+
+## OpenAI o1
+
+OpenAI released a series of AI models designed to spend more time thinking before responding. They can reason through complex tasks and solve harder problems than previous models in science, coding, and math. These models, named the o1 series, are trained with reinforcement learning and can "think before they answer". As a result, they are able to produce a long internal chain of thought before responding to a prompt.
+
+The main reasoning model available in the API is:
+
+1. [**o1**](https://platform.openai.com/docs/models#o1): Designed to reason about hard problems using broad general knowledge about the world.
+
+| Model | Streaming           | Tools               | Object Generation   | Reasoning Effort    |
+| ----- | ------------------- | ------------------- | ------------------- | ------------------- |
+| o1    | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+
+### Benchmarks
+
+OpenAI o1 models excel in scientific reasoning, with impressive performance across various domains:
+
+- Ranking in the 89th percentile on competitive programming questions (Codeforces)
+- Placing among the top 500 students in the US in a qualifier for the USA Math Olympiad (AIME)
+- Exceeding human PhD-level accuracy on a benchmark of physics, biology, and chemistry problems (GPQA)
+
+[Source](https://openai.com/index/learning-to-reason-with-llms/)
+
+### Prompt Engineering for o1 Models
+
+The o1 models perform best with straightforward prompts. Some prompt engineering techniques, like few-shot prompting or instructing the model to "think step by step," may not enhance performance and can sometimes hinder it. Here are some best practices:
+
+1. Keep prompts simple and direct: The models excel at understanding and responding to brief, clear instructions without the need for extensive guidance.
+2. Avoid chain-of-thought prompts: Since these models perform reasoning internally, prompting them to "think step by step" or "explain your reasoning" is unnecessary.
+3. Use delimiters for clarity: Use delimiters like triple quotation marks, XML tags, or section titles to clearly indicate distinct parts of the input, helping the model interpret different sections appropriately.
+4. Limit additional context in retrieval-augmented generation (RAG): When providing additional context or documents, include only the most relevant information to prevent the model from overcomplicating its response.
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call OpenAI o1 with the AI SDK:
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const { text } = await generateText({
+  model: openai('o1'),
+  prompt: 'Explain the concept of quantum entanglement.',
+});
+```
+
+<Note>
+  To use the o1 model, you must either be using @ai-sdk/openai version 0.0.59 or
+  greater, or set `temperature: 1`.
+</Note>
+
+AI SDK Core abstracts away the differences between model providers, allowing you to focus on building great applications. The unified interface also means that you can easily switch between models by changing just one line of code.
+
+```ts highlight="5"
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const { text } = await generateText({
+  model: openai('o1'),
+  prompt: 'Explain the concept of quantum entanglement.',
+});
+```
+
+<Note>
+  System messages are automatically converted to OpenAI developer messages.
+</Note>
+
+### Refining Reasoning Effort
+
+You can control the amount of reasoning effort expended by o1 through the `reasoningEffort` parameter.
+This parameter can be set to `'low'`, `'medium'`, or `'high'` to adjust how much time and computation the model spends on internal reasoning before producing a response.
+
+```ts highlight="9"
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// Reduce reasoning effort for faster responses
+const { text } = await generateText({
+  model: openai('o1'),
+  prompt: 'Explain quantum entanglement briefly.',
+  providerOptions: {
+    openai: { reasoningEffort: 'low' },
+  },
+});
+```
+
+<Note>
+  The `reasoningEffort` parameter is only supported by o1 and has no effect on
+  other models.
+</Note>
+
+### Generating Structured Data
+
+While text generation can be useful, you might want to generate structured JSON data. For example, you might want to extract information from text, classify data, or generate synthetic data. AI SDK Core provides two functions ([`generateObject`](/docs/reference/ai-sdk-core/generate-object) and [`streamObject`](/docs/reference/ai-sdk-core/stream-object)) to generate structured data, allowing you to constrain model outputs to a specific schema.
+
+```ts
+import { generateObject } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const { object } = await generateObject({
+  model: openai('o1'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.object({ name: z.string(), amount: z.string() })),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+});
+```
+
+This code snippet will generate a type-safe recipe that conforms to the specified zod schema.
+
+<Note>Structured object generation is supported with o1.</Note>
+
+### Tools
+
+While LLMs have incredible generation capabilities, they struggle with discrete tasks (e.g. mathematics) and interacting with the outside world (e.g. getting the weather). The solution: [tools](/docs/foundations/tools), which are like programs that you provide to the model, which it can choose to call as necessary.
+
+### Using Tools with the AI SDK
+
+The AI SDK supports tool usage across several of its functions, like [`generateText`](/docs/reference/ai-sdk-core/generate-text) and [`streamText`](/docs/reference/ai-sdk-core/stream-text). By passing one or more tools to the `tools` parameter, you can extend the capabilities of LLMs, allowing them to perform discrete tasks and interact with external systems.
+
+Here's an example of how you can use a tool with the AI SDK and o1:
+
+```ts
+import { generateText, tool } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const { text } = await generateText({
+  model: openai('o1'),
+  prompt: 'What is the weather like today?',
+  tools: {
+    getWeather: tool({
+      description: 'Get the weather in a location',
+      inputSchema: z.object({
+        location: z.string().describe('The location to get the weather for'),
+      }),
+      execute: async ({ location }) => ({
+        location,
+        temperature: 72 + Math.floor(Math.random() * 21) - 10,
+      }),
+    }),
+  },
+});
+```
+
+In this example, the `getWeather` tool allows the model to fetch real-time weather data (simulated for simplicity), enhancing its ability to provide accurate and up-to-date information.
+
+<Note>Tools are compatible with o1.</Note>
+
+### Building Interactive Interfaces
+
+AI SDK Core can be paired with [AI SDK UI](/docs/ai-sdk-ui/overview), another powerful component of the AI SDK, to streamline the process of building chat, completion, and assistant interfaces with popular frameworks like Next.js, Nuxt, and SvelteKit.
+
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently.
+
+With four main hooks — [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion), and [`useObject`](/docs/reference/ai-sdk-ui/use-object) — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+
+Let's explore building a chatbot with [Next.js](https://nextjs.org), the AI SDK, and OpenAI o1:
+
+```tsx filename="app/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+
+// Allow responses up to 5 minutes
+export const maxDuration = 300;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('o1'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+
+export default function Page() {
+  const { messages, input, handleInputChange, handleSubmit, error } = useChat();
+
+  return (
+    <>
+      {messages.map((message) => (
+        <div key={message.id}>
+          {message.role === 'user' ? 'User: ' : 'AI: '}
+          {message.content}
+        </div>
+      ))}
+      <form onSubmit={handleSubmit}>
+        <input name="prompt" value={input} onChange={handleInputChange} />
+        <button type="submit">Submit</button>
+      </form>
+    </>
+  );
+}
+```
+
+The useChat hook on your root page (`app/page.tsx`) will make a request to your AI provider endpoint (`app/api/chat/route.ts`) whenever the user submits a message. The messages are then displayed in the chat UI.
+
+## Get Started
+
+Ready to get started? Here's how you can dive in:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the full capabilities of the AI SDK.
+1. Check out our support for the o1 series of reasoning models in the [OpenAI Provider](/providers/ai-sdk-providers/openai#reasoning-models).
+1. Check out practical examples at [ai-sdk.dev/examples](/examples) to see the SDK in action and get inspired for your own projects.
+1. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) and multi-modal chat at [ai-sdk.dev/docs/guides](/docs/guides).
+1. Check out ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+
+---
+
+title: Get started with OpenAI o3-mini
+description: Get started with OpenAI o3-mini using the AI SDK.
+tags: ['getting-started', 'reasoning']
+
+---
+
+# Get started with OpenAI o3-mini
+
+With the [release of OpenAI's o3-mini model](https://openai.com/index/openai-o3-mini/), there has never been a better time to start building AI applications, particularly those that require complex STEM reasoning capabilities.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) like OpenAI o3-mini alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more.
+
+## OpenAI o3-mini
+
+OpenAI recently released a new AI model optimized for STEM reasoning that excels in science, math, and coding tasks. o3-mini matches o1's performance in these domains while delivering faster responses and lower costs. The model supports tool calling, structured outputs, and system messages, making it a great option for a wide range of applications.
+
+o3-mini offers three reasoning effort levels:
+
+1. [**Low**]: Optimized for speed while maintaining solid reasoning capabilities
+2. [**Medium**]: Balanced approach matching o1's performance levels
+3. [**High**]: Enhanced reasoning power exceeding o1 in many STEM domains
+
+| Model   | Streaming           | Tool Calling        | Structured Output   | Reasoning Effort    | Image Input         |
+| ------- | ------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| o3-mini | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+
+### Benchmarks
+
+OpenAI o3-mini demonstrates impressive performance across technical domains:
+
+- 87.3% accuracy on AIME competition math questions
+- 79.7% accuracy on PhD-level science questions (GPQA Diamond)
+- 2130 Elo rating on competitive programming (Codeforces)
+- 49.3% accuracy on verified software engineering tasks (SWE-bench)
+
+<Note>These benchmark results are using high reasoning effort setting.</Note>
+
+[Source](https://openai.com/index/openai-o3-mini/)
+
+### Prompt Engineering for o3-mini
+
+The o3-mini model performs best with straightforward prompts. Some prompt engineering techniques, like few-shot prompting or instructing the model to "think step by step," may not enhance performance and can sometimes hinder it. Here are some best practices:
+
+1. Keep prompts simple and direct: The model excels at understanding and responding to brief, clear instructions without the need for extensive guidance.
+2. Avoid chain-of-thought prompts: Since the model performs reasoning internally, prompting it to "think step by step" or "explain your reasoning" is unnecessary.
+3. Use delimiters for clarity: Use delimiters like triple quotation marks, XML tags, or section titles to clearly indicate distinct parts of the input.
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call OpenAI o3-mini with the AI SDK:
+
+```ts
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const { text } = await generateText({
+  model: openai('o3-mini'),
+  prompt: 'Explain the concept of quantum entanglement.',
+});
+```
+
+<Note>
+  To use o3-mini, you must be using @ai-sdk/openai version 1.1.9 or greater.
+</Note>
+
+<Note>
+  System messages are automatically converted to OpenAI developer messages.
+</Note>
+
+### Refining Reasoning Effort
+
+You can control the amount of reasoning effort expended by o3-mini through the `reasoningEffort` parameter.
+This parameter can be set to `low`, `medium`, or `high` to adjust how much time and computation the model spends on internal reasoning before producing a response.
+
+```ts highlight="9"
+import { generateText } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+// Reduce reasoning effort for faster responses
+const { text } = await generateText({
+  model: openai('o3-mini'),
+  prompt: 'Explain quantum entanglement briefly.',
+  providerOptions: {
+    openai: { reasoningEffort: 'low' },
+  },
+});
+```
+
+### Generating Structured Data
+
+While text generation can be useful, you might want to generate structured JSON data. For example, you might want to extract information from text, classify data, or generate synthetic data. AI SDK Core provides two functions ([`generateObject`](/docs/reference/ai-sdk-core/generate-object) and [`streamObject`](/docs/reference/ai-sdk-core/stream-object)) to generate structured data, allowing you to constrain model outputs to a specific schema.
+
+```ts
+import { generateObject } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const { object } = await generateObject({
+  model: openai('o3-mini'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.object({ name: z.string(), amount: z.string() })),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+});
+```
+
+This code snippet will generate a type-safe recipe that conforms to the specified zod schema.
+
+### Using Tools with the AI SDK
+
+o3-mini supports tool calling out of the box, allowing it to interact with external systems and perform discrete tasks. Here's an example of using tool calling with the AI SDK:
+
+```ts
+import { generateText, tool } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
+
+const { text } = await generateText({
+  model: openai('o3-mini'),
+  prompt: 'What is the weather like today in San Francisco?',
+  tools: {
+    getWeather: tool({
+      description: 'Get the weather in a location',
+      inputSchema: z.object({
+        location: z.string().describe('The location to get the weather for'),
+      }),
+      execute: async ({ location }) => ({
+        location,
+        temperature: 72 + Math.floor(Math.random() * 21) - 10,
+      }),
+    }),
+  },
+});
+```
+
+In this example, the `getWeather` tool allows the model to fetch real-time weather data (simulated for simplicity), enhancing its ability to provide accurate and up-to-date information.
+
+### Building Interactive Interfaces
+
+AI SDK Core can be paired with [AI SDK UI](/docs/ai-sdk-ui/overview), another powerful component of the AI SDK, to streamline the process of building chat, completion, and assistant interfaces with popular frameworks like Next.js, Nuxt, and SvelteKit.
+
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently.
+
+With four main hooks — [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion), and [`useObject`](/docs/reference/ai-sdk-ui/use-object) — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+
+Let's explore building a chatbot with [Next.js](https://nextjs.org), the AI SDK, and OpenAI o3-mini:
+
+In a new Next.js application, first install the AI SDK and the DeepSeek provider:
+
+<Snippet text="pnpm install ai @ai-sdk/openai @ai-sdk/react" />
+
+Then, create a route handler for the chat endpoint:
+
+```tsx filename="app/api/chat/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+
+// Allow responses up to 5 minutes
+export const maxDuration = 300;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('o3-mini'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+Finally, update the root page (`app/page.tsx`) to use the `useChat` hook:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+
+export default function Page() {
+  const { messages, input, handleInputChange, handleSubmit, error } = useChat();
+
+  return (
+    <>
+      {messages.map((message) => (
+        <div key={message.id}>
+          {message.role === 'user' ? 'User: ' : 'AI: '}
+          {message.content}
+        </div>
+      ))}
+      <form onSubmit={handleSubmit}>
+        <input name="prompt" value={input} onChange={handleInputChange} />
+        <button type="submit">Submit</button>
+      </form>
+    </>
+  );
+}
+```
+
+The useChat hook on your root page (`app/page.tsx`) will make a request to your AI provider endpoint (`app/api/chat/route.ts`) whenever the user submits a message. The messages are then displayed in the chat UI.
+
+## Get Started
+
+Ready to get started? Here's how you can dive in:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the full capabilities of the AI SDK.
+2. Check out our support for o3-mini in the [OpenAI Provider](/providers/ai-sdk-providers/openai#reasoning-models).
+3. Check out practical examples at [ai-sdk.dev/examples](/examples) to see the SDK in action and get inspired for your own projects.
+4. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) and multi-modal chat at [ai-sdk.dev/docs/guides](/docs/guides).
+5. Check out ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+
+---
+
+title: Get started with DeepSeek R1
+description: Get started with DeepSeek R1 using the AI SDK.
+tags: ['getting-started', 'reasoning']
+
+---
+
+# Get started with DeepSeek R1
+
+With the [release of DeepSeek R1](https://api-docs.deepseek.com/news/news250528), there has never been a better time to start building AI applications, particularly those that require complex reasoning capabilities.
+
+The [AI SDK](/) is a powerful TypeScript toolkit for building AI applications with large language models (LLMs) like DeepSeek R1 alongside popular frameworks like React, Next.js, Vue, Svelte, Node.js, and more.
+
+## DeepSeek R1
+
+DeepSeek R1 is a series of advanced AI models designed to tackle complex reasoning tasks in science, coding, and mathematics. These models are optimized to "think before they answer," producing detailed internal chains of thought that aid in solving challenging problems.
+
+The series includes two primary variants:
+
+- **DeepSeek R1-Zero**: Trained exclusively with reinforcement learning (RL) without any supervised fine-tuning. It exhibits advanced reasoning capabilities but may struggle with readability and formatting.
+- **DeepSeek R1**: Combines reinforcement learning with cold-start data and supervised fine-tuning to improve both reasoning performance and the readability of outputs.
+
+### Benchmarks
+
+DeepSeek R1 models excel in reasoning tasks, delivering competitive performance across key benchmarks:
+
+- **AIME 2024 (Pass\@1)**: 79.8%
+- **MATH-500 (Pass\@1)**: 97.3%
+- **Codeforces (Percentile)**: Top 4% (96.3%)
+- **GPQA Diamond (Pass\@1)**: 71.5%
+
+[Source](https://github.com/deepseek-ai/DeepSeek-R1?tab=readme-ov-file#4-evaluation-results)
+
+### Prompt Engineering for DeepSeek R1 Models
+
+DeepSeek R1 models excel with structured and straightforward prompts. The following best practices can help achieve optimal performance:
+
+1. **Use a structured format**: Leverage the model’s preferred output structure with `<think>` tags for reasoning and `<answer>` tags for the final result.
+2. **Prefer zero-shot prompts**: Avoid few-shot prompting as it can degrade performance; instead, directly state the problem clearly.
+3. **Specify output expectations**: Guide the model by defining desired formats, such as markdown for readability or XML-like tags for clarity.
+
+## Getting Started with the AI SDK
+
+The AI SDK is the TypeScript toolkit designed to help developers build AI-powered applications with React, Next.js, Vue, Svelte, Node.js, and more. Integrating LLMs into applications is complicated and heavily dependent on the specific model provider you use.
+
+The AI SDK abstracts away the differences between model providers, eliminates boilerplate code for building chatbots, and allows you to go beyond text output to generate rich, interactive components.
+
+At the center of the AI SDK is [AI SDK Core](/docs/ai-sdk-core/overview), which provides a unified API to call any LLM. The code snippet below is all you need to call DeepSeek R1 with the AI SDK:
+
+```ts
+import { deepseek } from '@ai-sdk/deepseek';
+import { generateText } from 'ai';
+
+const { reasoningText, text } = await generateText({
+  model: deepseek('deepseek-reasoner'),
+  prompt: 'Explain quantum entanglement.',
+});
+```
+
+The unified interface also means that you can easily switch between providers by changing just two lines of code. For example, to use DeepSeek R1 via Fireworks:
+
+```ts
+import { fireworks } from '@ai-sdk/fireworks';
+import {
+  generateText,
+  wrapLanguageModel,
+  extractReasoningMiddleware,
+} from 'ai';
+
+// middleware to extract reasoning tokens
+const enhancedModel = wrapLanguageModel({
+  model: fireworks('accounts/fireworks/models/deepseek-r1'),
+  middleware: extractReasoningMiddleware({ tagName: 'think' }),
+});
+
+const { reasoningText, text } = await generateText({
+  model: enhancedModel,
+  prompt: 'Explain quantum entanglement.',
+});
+```
+
+Or to use Groq's `deepseek-r1-distill-llama-70b` model:
+
+```ts
+import { groq } from '@ai-sdk/groq';
+import {
+  generateText,
+  wrapLanguageModel,
+  extractReasoningMiddleware,
+} from 'ai';
+
+// middleware to extract reasoning tokens
+const enhancedModel = wrapLanguageModel({
+  model: groq('deepseek-r1-distill-llama-70b'),
+  middleware: extractReasoningMiddleware({ tagName: 'think' }),
+});
+
+const { reasoningText, text } = await generateText({
+  model: enhancedModel,
+  prompt: 'Explain quantum entanglement.',
+});
+```
+
+<Note id="deepseek-r1-middleware">
+The AI SDK provides a [middleware](/docs/ai-sdk-core/middleware)
+(`extractReasoningMiddleware`) that can be used to extract the reasoning
+tokens from the model's output.
+
+When using DeepSeek-R1 series models with third-party providers like Together AI, we recommend using the `startWithReasoning`
+option in the `extractReasoningMiddleware` function, as they tend to bypass thinking patterns.
+
+</Note>
+
+### Model Provider Comparison
+
+You can use DeepSeek R1 with the AI SDK through various providers. Here's a comparison of the providers that support DeepSeek R1:
+
+| Provider                                                | Model ID                                                                                                          | Reasoning Tokens    |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------- |
+| [DeepSeek](/providers/ai-sdk-providers/deepseek)        | [`deepseek-reasoner`](https://api-docs.deepseek.com/guides/reasoning_model)                                       | <Check size={18} /> |
+| [Fireworks](/providers/ai-sdk-providers/fireworks)      | [`accounts/fireworks/models/deepseek-r1`](https://fireworks.ai/models/fireworks/deepseek-r1)                      | Requires Middleware |
+| [Groq](/providers/ai-sdk-providers/groq)                | [`deepseek-r1-distill-llama-70b`](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Llama-70B)               | Requires Middleware |
+| [Azure](/providers/ai-sdk-providers/azure)              | [`DeepSeek-R1`](https://ai.azure.com/explore/models/DeepSeek-R1/version/1/registry/azureml-deepseek#code-samples) | Requires Middleware |
+| [Together AI](/providers/ai-sdk-providers/togetherai)   | [`deepseek-ai/DeepSeek-R1`](https://www.together.ai/models/deepseek-r1)                                           | Requires Middleware |
+| [FriendliAI](/providers/community-providers/friendliai) | [`deepseek-r1`](https://huggingface.co/deepseek-ai/DeepSeek-R1)                                                   | Requires Middleware |
+| [LangDB](/providers/community-providers/langdb)         | [`deepseek/deepseek-reasoner`](https://docs.langdb.ai/guides/deepseek)                                            | Requires Middleware |
+
+### Building Interactive Interfaces
+
+AI SDK Core can be paired with [AI SDK UI](/docs/ai-sdk-ui/overview), another powerful component of the AI SDK, to streamline the process of building chat, completion, and assistant interfaces with popular frameworks like Next.js, Nuxt, and SvelteKit.
+
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently.
+
+With four main hooks — [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion), and [`useObject`](/docs/reference/ai-sdk-ui/use-object) — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+
+Let's explore building a chatbot with [Next.js](https://nextjs.org), the AI SDK, and DeepSeek R1:
+
+In a new Next.js application, first install the AI SDK and the DeepSeek provider:
+
+<Snippet text="pnpm install ai @ai-sdk/deepseek @ai-sdk/react" />
+
+Then, create a route handler for the chat endpoint:
+
+```tsx filename="app/api/chat/route.ts"
+import { deepseek } from '@ai-sdk/deepseek';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: deepseek('deepseek-reasoner'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse({
+    sendReasoning: true,
+  });
+}
+```
+
+<Note>
+  You can forward the model's reasoning tokens to the client with
+  `sendReasoning: true` in the `toDataStreamResponse` method.
+</Note>
+
+Finally, update the root page (`app/page.tsx`) to use the `useChat` hook:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
+
+export default function Page() {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat();
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <>
+      {messages.map((message) => (
+        <div key={message.id}>
+          {message.role === 'user' ? 'User: ' : 'AI: '}
+          {message.parts.map((part, index) => {
+            if (part.type === 'reasoning') {
+              return <pre key={index}>{part.text}</pre>;
+            }
+            if (part.type === 'text') {
+              return <span key={index}>{part.text}</span>;
+            }
+            return null;
+          })}
+        </div>
+      ))}
+      <form onSubmit={handleSubmit}>
+        <input
+          name="prompt"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button type="submit">Submit</button>
+      </form>
+    </>
+  );
+}
+```
+
+<Note>
+  You can access the model's reasoning tokens through the `parts` array on the
+  `message` object, where reasoning parts have `type: 'reasoning'`.
+</Note>
+
+The useChat hook on your root page (`app/page.tsx`) will make a request to your AI provider endpoint (`app/api/chat/route.ts`) whenever the user submits a message. The messages are then displayed in the chat UI.
+
+## Limitations
+
+While DeepSeek R1 models are powerful, they have certain limitations:
+
+- No tool-calling support: DeepSeek R1 cannot directly interact with APIs or external tools.
+- No object generation support: DeepSeek R1 does not support structured object generation. However, you can combine it with models that support structured object generation (like gpt-4o-mini) to generate objects. See the [structured object generation with a reasoning model recipe](/cookbook/node/generate-object-reasoning) for more information.
+
+## Get Started
+
+Ready to dive in? Here's how you can begin:
+
+1. Explore the documentation at [ai-sdk.dev/docs](/docs) to understand the capabilities of the AI SDK.
+2. Check out practical examples at [ai-sdk.dev/examples](/examples) to see the SDK in action.
+3. Dive deeper with advanced guides on topics like Retrieval-Augmented Generation (RAG) at [ai-sdk.dev/docs/guides](/docs/guides).
+4. Use ready-to-deploy AI templates at [vercel.com/templates?type=ai](https://vercel.com/templates?type=ai).
+
+DeepSeek R1 opens new opportunities for reasoning-intensive AI applications. Start building today and leverage the power of advanced reasoning in your AI projects.
+
+---
+
+title: Guides
+description: Learn how to build AI applications with the AI SDK
+
+---
+
+# Guides
+
+These use-case specific guides are intended to help you build real applications with the AI SDK.
+
+<IndexCards
+cards={[
+{
+title: 'RAG Agent',
+description:
+'Learn how to build a RAG Agent with the AI SDK and Next.js.',
+href: '/cookbook/guides/rag-chatbot',
+},
+{
+title: 'Multi-Modal Agent',
+description:
+'Learn how to build a multi-modal agent that can process images and PDFs with the AI SDK.',
+href: '/cookbook/guides/multi-modal-chatbot',
+},
+{
+title: 'Slackbot Agent',
+description: 'Learn how to use the AI SDK to build an AI Agent in Slack.',
+href: '/cookbook/guides/slackbot',
+},
+{
+title: 'Natural Language Postgres (SQL Agent)',
+description:
+'Learn how to build a Next.js app that lets you talk to a PostgreSQL database in natural language.',
+href: '/cookbook/guides/natural-language-postgres',
+},
+{
+title: 'Get started with Computer Use',
+description:
+"Get started with Claude's Computer Use capabilities with the AI SDK.",
+href: '/cookbook/guides/computer-use',
+},
+{
+title: 'Get started with Gemini 2.5',
+description: 'Get started with Gemini 2.5 using the AI SDK.',
+href: '/cookbook/guides/gemini-2-5',
+},
+{
+title: 'Get started with Claude 4',
+description: 'Get started with Claude 4 using the AI SDK.',
+href: '/cookbook/guides/claude-4',
+},
+{
+title: 'OpenAI Responses API',
+description:
+'Get started with the OpenAI Responses API using the AI SDK.',
+href: '/cookbook/guides/openai-responses',
+},
+{
+title: 'Get started with Claude 3.7 Sonnet',
+description: 'Get started with Claude 3.7 Sonnet using the AI SDK.',
+href: '/cookbook/guides/sonnet-3-7',
+},
+{
+title: 'Get started with Llama 3.1',
+description: 'Get started with Llama 3.1 using the AI SDK.',
+href: '/cookbook/guides/llama-3_1',
+},
+{
+title: 'Get started with GPT-5',
+description: 'Get started with GPT-5 using the AI SDK.',
+href: '/cookbook/guides/gpt-5',
+},
+{
+title: 'Get started with OpenAI o1',
+description: 'Get started with OpenAI o1 using the AI SDK.',
+href: '/cookbook/guides/o1',
+},
+{
+title: 'Get started with OpenAI o3-mini',
+description: 'Get started with OpenAI o3-mini using the AI SDK.',
+href: '/cookbook/guides/o3',
+},
+{
+title: 'Get started with DeepSeek R1',
+description: 'Get started with DeepSeek R1 using the AI SDK.',
+href: '/cookbook/guides/r1',
+},
+]}
+/>
+
+---
 
 title: Node.js HTTP Server
 description: Learn how to use the AI SDK in a Node.js HTTP server
@@ -25,9 +5089,9 @@ curl -X POST http://localhost:8080
 
 **Full example**: [github.com/vercel/ai/examples/node-http-server](https://github.com/vercel/ai/tree/main/examples/node-http-server)
 
-### Data Stream
+### UI Message Stream
 
-You can use the `pipeDataStreamToResponse` method to pipe the stream data to the server response.
+You can use the `pipeUIMessageStreamToResponse` method to pipe the stream data to the server response.
 
 ```ts filename='index.ts'
 import { openai } from '@ai-sdk/openai';
@@ -40,38 +5104,61 @@ createServer(async (req, res) => {
     prompt: 'Invent a new holiday and describe its traditions.',
   });
 
-  result.pipeDataStreamToResponse(res);
+  result.pipeUIMessageStreamToResponse(res);
 }).listen(8080);
 ```
 
 ### Sending Custom Data
 
-`pipeDataStreamToResponse` can be used to send custom data to the client.
+`createUIMessageStream` and `pipeUIMessageStreamToResponse` can be used to send custom data to the client.
 
-```ts filename='index.ts' highlight="6-9,16"
+```ts filename='index.ts'
 import { openai } from '@ai-sdk/openai';
-import { pipeDataStreamToResponse, streamText } from 'ai';
+import {
+  createUIMessageStream,
+  pipeUIMessageStreamToResponse,
+  streamText,
+} from 'ai';
 import { createServer } from 'http';
 
 createServer(async (req, res) => {
-  // immediately start streaming the response
-  pipeDataStreamToResponse(res, {
-    execute: async (dataStreamWriter) => {
-      dataStreamWriter.writeData('initialized call');
+  switch (req.url) {
+    case '/stream-data': {
+      const stream = createUIMessageStream({
+        execute: ({ writer }) => {
+          // write some custom data
+          writer.write({ type: 'start' });
 
-      const result = streamText({
-        model: openai('gpt-4o'),
-        prompt: 'Invent a new holiday and describe its traditions.',
+          writer.write({
+            type: 'data-custom',
+            data: {
+              custom: 'Hello, world!',
+            },
+          });
+
+          const result = streamText({
+            model: openai('gpt-4o'),
+            prompt: 'Invent a new holiday and describe its traditions.',
+          });
+
+          writer.merge(
+            result.toUIMessageStream({
+              sendStart: false,
+              onError: (error) => {
+                // Error messages are masked by default for security reasons.
+                // If you want to expose the error message to the client, you can do so here:
+                return error instanceof Error ? error.message : String(error);
+              },
+            }),
+          );
+        },
       });
 
-      result.mergeIntoDataStream(dataStreamWriter);
-    },
-    onError: (error) => {
-      // Error messages are masked by default for security reasons.
-      // If you want to expose the error message to the client, you can do so here:
-      return error instanceof Error ? error.message : String(error);
-    },
-  });
+      pipeUIMessageStreamToResponse({ stream, response: res });
+
+      break;
+    }
+  }
 }).listen(8080);
 ```
 
@@ -125,9 +5212,9 @@ curl -X POST http://localhost:8080
 
 **Full example**: [github.com/vercel/ai/examples/express](https://github.com/vercel/ai/tree/main/examples/express)
 
-### Data Stream
+### UI Message Stream
 
-You can use the `pipeDataStreamToResponse` method to pipe the stream data to the server response.
+You can use the `pipeUIMessageStreamToResponse` method to pipe the stream data to the server response.
 
 ```ts filename='index.ts'
 import { openai } from '@ai-sdk/openai';
@@ -142,7 +5229,7 @@ app.post('/', async (req: Request, res: Response) => {
     prompt: 'Invent a new holiday and describe its traditions.',
   });
 
-  result.pipeDataStreamToResponse(res);
+  result.pipeUIMessageStreamToResponse(res);
 });
 
 app.listen(8080, () => {
@@ -152,33 +5239,41 @@ app.listen(8080, () => {
 
 ### Sending Custom Data
 
-`pipeDataStreamToResponse` can be used to send custom data to the client.
+`pipeUIMessageStreamToResponse` can be used to send custom data to the client.
 
-```ts filename='index.ts' highlight="8-11,18"
+```ts filename='index.ts'
 import { openai } from '@ai-sdk/openai';
-import { pipeDataStreamToResponse, streamText } from 'ai';
+import {
+  createUIMessageStream,
+  pipeUIMessageStreamToResponse,
+  streamText,
+} from 'ai';
 import express, { Request, Response } from 'express';
 
 const app = express();
 
-app.post('/stream-data', async (req: Request, res: Response) => {
-  // immediately start streaming the response
-  pipeDataStreamToResponse(res, {
-    execute: async (dataStreamWriter) => {
-      dataStreamWriter.writeData('initialized call');
+app.post('/custom-data-parts', async (req: Request, res: Response) => {
+  pipeUIMessageStreamToResponse({
+    response: res,
+    stream: createUIMessageStream({
+      execute: async ({ writer }) => {
+        writer.write({ type: 'start' });
 
-      const result = streamText({
-        model: openai('gpt-4o'),
-        prompt: 'Invent a new holiday and describe its traditions.',
-      });
+        writer.write({
+          type: 'data-custom',
+          data: {
+            custom: 'Hello, world!',
+          },
+        });
 
-      result.mergeIntoDataStream(dataStreamWriter);
-    },
-    onError: (error) => {
-      // Error messages are masked by default for security reasons.
-      // If you want to expose the error message to the client, you can do so here:
-      return error instanceof Error ? error.message : String(error);
-    },
+        const result = streamText({
+          model: openai('gpt-4o'),
+          prompt: 'Invent a new holiday and describe its traditions.',
+        });
+
+        writer.merge(result.toUIMessageStream({ sendStart: false }));
+      },
+    }),
   });
 });
 
@@ -191,7 +5286,7 @@ app.listen(8080, () => {
 
 You can send a text stream to the client using `pipeTextStreamToResponse`.
 
-```ts filename='index.ts' highlight="13"
+```ts filename='index.ts'
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import express, { Request, Response } from 'express';
@@ -243,16 +5338,15 @@ curl -X POST http://localhost:8080
 
 **Full example**: [github.com/vercel/ai/examples/hono](https://github.com/vercel/ai/tree/main/examples/hono)
 
-### Data Stream
+### UI Message Stream
 
-You can use the `toDataStream` method to get a data stream from the result and then pipe it to the response.
+You can use the `toUIMessageStreamResponse` method to create a properly formatted streaming response.
 
 ```ts filename='index.ts'
 import { openai } from '@ai-sdk/openai';
 import { serve } from '@hono/node-server';
 import { streamText } from 'ai';
 import { Hono } from 'hono';
-import { stream } from 'hono/streaming';
 
 const app = new Hono();
 
@@ -261,57 +5355,7 @@ app.post('/', async (c) => {
     model: openai('gpt-4o'),
     prompt: 'Invent a new holiday and describe its traditions.',
   });
-
-  // Mark the response as a v1 data stream:
-  c.header('X-Vercel-AI-Data-Stream', 'v1');
-  c.header('Content-Type', 'text/plain; charset=utf-8');
-
-  return stream(c, (stream) => stream.pipe(result.toDataStream()));
-});
-
-serve({ fetch: app.fetch, port: 8080 });
-```
-
-### Sending Custom Data
-
-`createDataStream` can be used to send custom data to the client.
-
-```ts filename='index.ts' highlight="10-13,20"
-import { openai } from '@ai-sdk/openai';
-import { serve } from '@hono/node-server';
-import { createDataStream, streamText } from 'ai';
-import { Hono } from 'hono';
-import { stream } from 'hono/streaming';
-
-const app = new Hono();
-
-app.post('/stream-data', async (c) => {
-  // immediately start streaming the response
-  const dataStream = createDataStream({
-    execute: async (dataStreamWriter) => {
-      dataStreamWriter.writeData('initialized call');
-
-      const result = streamText({
-        model: openai('gpt-4o'),
-        prompt: 'Invent a new holiday and describe its traditions.',
-      });
-
-      result.mergeIntoDataStream(dataStreamWriter);
-    },
-    onError: (error) => {
-      // Error messages are masked by default for security reasons.
-      // If you want to expose the error message to the client, you can do so here:
-      return error instanceof Error ? error.message : String(error);
-    },
-  });
-
-  // Mark the response as a v1 data stream:
-  c.header('X-Vercel-AI-Data-Stream', 'v1');
-  c.header('Content-Type', 'text/plain; charset=utf-8');
-
-  return stream(c, (stream) =>
-    stream.pipe(dataStream.pipeThrough(new TextEncoderStream())),
-  );
+  return result.toUIMessageStreamResponse();
 });
 
 serve({ fetch: app.fetch, port: 8080 });
@@ -319,26 +5363,74 @@ serve({ fetch: app.fetch, port: 8080 });
 
 ### Text Stream
 
-You can use the `textStream` property to get a text stream from the result and then pipe it to the response.
+You can use the `toTextStreamResponse` method to return a text stream response.
 
-```ts filename='index.ts' highlight="17"
+```ts filename='index.ts'
 import { openai } from '@ai-sdk/openai';
 import { serve } from '@hono/node-server';
 import { streamText } from 'ai';
 import { Hono } from 'hono';
-import { stream } from 'hono/streaming';
 
 const app = new Hono();
 
-app.post('/', async (c) => {
+app.post('/text', async (c) => {
   const result = streamText({
     model: openai('gpt-4o'),
-    prompt: 'Invent a new holiday and describe its traditions.',
+    prompt: 'Write a short poem about coding.',
   });
+  return result.toTextStreamResponse();
+});
 
-  c.header('Content-Type', 'text/plain; charset=utf-8');
+serve({ fetch: app.fetch, port: 8080 });
+```
 
-  return stream(c, (stream) => stream.pipe(result.textStream));
+### Sending Custom Data
+
+You can use `createUIMessageStream` and `createUIMessageStreamResponse` to send custom data to the client.
+
+```ts filename='index.ts'
+import { openai } from '@ai-sdk/openai';
+import { serve } from '@hono/node-server';
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+} from 'ai';
+import { Hono } from 'hono';
+
+const app = new Hono();
+
+app.post('/stream-data', async (c) => {
+  // immediately start streaming the response
+  const stream = createUIMessageStream({
+    execute: ({ writer }) => {
+      writer.write({ type: 'start' });
+
+      writer.write({
+        type: 'data-custom',
+        data: {
+          custom: 'Hello, world!',
+        },
+      });
+
+      const result = streamText({
+        model: openai('gpt-4o'),
+        prompt: 'Invent a new holiday and describe its traditions.',
+      });
+
+      writer.merge(
+        result.toUIMessageStream({
+          sendStart: false,
+          onError: (error) => {
+            // Error messages are masked by default for security reasons.
+            // If you want to expose the error message to the client, you can do so here:
+            return error instanceof Error ? error.message : String(error);
+          },
+        }),
+      );
+    },
+  });
+  return createUIMessageStreamResponse({ stream });
 });
 
 serve({ fetch: app.fetch, port: 8080 });
@@ -490,9 +5582,9 @@ The examples show how to implement a Nest.js controller that uses the AI SDK to 
 
 **Full example**: [github.com/vercel/ai/examples/nest](https://github.com/vercel/ai/tree/main/examples/nest)
 
-### Data Stream
+### UI Message Stream
 
-You can use the `pipeDataStreamToResponse` method to get a data stream from the result and then pipe it to the response.
+You can use the `pipeUIMessageStreamToResponse` method to pipe the stream data to the server response.
 
 ```ts filename='app.controller.ts'
 import { Controller, Post, Res } from '@nestjs/common';
@@ -502,49 +5594,65 @@ import { Response } from 'express';
 
 @Controller()
 export class AppController {
-  @Post()
-  async example(@Res() res: Response) {
+  @Post('/')
+  async root(@Res() res: Response) {
     const result = streamText({
       model: openai('gpt-4o'),
       prompt: 'Invent a new holiday and describe its traditions.',
     });
 
-    result.pipeDataStreamToResponse(res);
+    result.pipeUIMessageStreamToResponse(res);
   }
 }
 ```
 
 ### Sending Custom Data
 
-`pipeDataStreamToResponse` can be used to send custom data to the client.
+`createUIMessageStream` and `pipeUIMessageStreamToResponse` can be used to send custom data to the client.
 
-```ts filename='app.controller.ts' highlight="10-12,19"
+```ts filename='app.controller.ts'
 import { Controller, Post, Res } from '@nestjs/common';
 import { openai } from '@ai-sdk/openai';
-import { pipeDataStreamToResponse, streamText } from 'ai';
+import {
+  createUIMessageStream,
+  streamText,
+  pipeUIMessageStreamToResponse,
+} from 'ai';
 import { Response } from 'express';
 
 @Controller()
 export class AppController {
   @Post('/stream-data')
-  async streamData(@Res() res: Response) {
-    pipeDataStreamToResponse(res, {
-      execute: async (dataStreamWriter) => {
-        dataStreamWriter.writeData('initialized call');
+  async streamData(@Res() response: Response) {
+    const stream = createUIMessageStream({
+      execute: ({ writer }) => {
+        // write some data
+        writer.write({ type: 'start' });
+
+        writer.write({
+          type: 'data-custom',
+          data: {
+            custom: 'Hello, world!',
+          },
+        });
 
         const result = streamText({
           model: openai('gpt-4o'),
           prompt: 'Invent a new holiday and describe its traditions.',
         });
-
-        result.mergeIntoDataStream(dataStreamWriter);
-      },
-      onError: (error) => {
-        // Error messages are masked by default for security reasons.
-        // If you want to expose the error message to the client, you can do so here:
-        return error instanceof Error ? error.message : String(error);
+        writer.merge(
+          result.toUIMessageStream({
+            sendStart: false,
+            onError: (error) => {
+              // Error messages are masked by default for security reasons.
+              // If you want to expose the error message to the client, you can do so here:
+              return error instanceof Error ? error.message : String(error);
+            },
+          }),
+        );
       },
     });
+    pipeUIMessageStreamToResponse({ stream, response });
   }
 }
 ```
@@ -553,7 +5661,7 @@ export class AppController {
 
 You can use the `pipeTextStreamToResponse` method to get a text stream from the result and then pipe it to the response.
 
-```ts filename='app.controller.ts' highlight="15"
+```ts filename='app.controller.ts'
 import { Controller, Post, Res } from '@nestjs/common';
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
@@ -658,388 +5766,6 @@ Based on the above documentation, answer the following:
 
 ---
 
-title: AI SDK 5 Alpha
-description: Get started with the Alpha version of AI SDK 5.
-
----
-
-# Announcing AI SDK 5 Alpha
-
-<Note type="warning">
-  This is an early preview — AI SDK 5 is under active development. APIs may
-  change without notice. Pin to specific versions as breaking changes may occur
-  even in patch releases.
-</Note>
-
-## Alpha Version Guidance
-
-The AI SDK 5 Alpha is intended for:
-
-- Exploration and early prototypes
-- Green-field projects where you can experiment freely
-- Development environments where you can tolerate breaking changes
-
-This Alpha release is **not recommended** for:
-
-- Production applications
-- Projects that require stable APIs
-- Existing applications that would need migration paths
-
-During this Alpha phase, we expect to make significant, potentially breaking changes to the API surface. We're sharing early to gather feedback and improve the SDK before stabilization. Your input is invaluable—please share your experiences through GitHub issues or discussions to help shape the final release.
-
-<Note type="warning">
-  We expect bugs in this Alpha release. To help us improve the SDK, please [file
-  bug reports on GitHub](https://github.com/vercel/ai/issues/new/choose). Your
-  reports directly contribute to making the final release more stable and
-  reliable.
-</Note>
-
-## Installation
-
-To install the AI SDK 5 - Alpha, run the following command:
-
-```bash
-# replace with your provider and framework
-npm install ai@alpha @ai-sdk/[your-provider]@alpha @ai-sdk/[your-framework]@alpha
-```
-
-<Note type="warning">
-  APIs may change without notice. Pin to specific versions as breaking changes
-  may occur even in patch releases.
-</Note>
-
-## What's new in AI SDK 5?
-
-AI SDK 5 is a complete redesign of the AI SDK's protocol and architecture based on everything we've learned over the last two years of real-world usage. We've also modernized the UI and protocols that have remained largely unchanged since AI SDK v2/3, creating a strong foundation for the future.
-
-### Why AI SDK 5?
-
-When we originally designed the v1 protocol over a year ago, the standard interaction pattern with language models was simple: text in, text or tool call out. But today's LLMs go way beyond text and tool calls, generating reasoning, sources, images and more. Additionally, new use-cases like computer using agents introduce a fundamentally new approach to interacting with language models that made it near-impossible to support in a unified approach with our original architecture.
-
-We needed a protocol designed for this new reality. While this is a breaking change that we don't take lightly, it's provided an opportunity to rebuild the foundation and add powerful new features.
-
-While we've designed AI SDK 5 to be a substantial improvement over previous versions, we're still in active development. You might encounter bugs or unexpected behavior. We'd greatly appreciate your feedback and bug reports—they're essential to making this release better. Please share your experiences and suggestions with us through [GitHub issues](https://github.com/vercel/ai/issues/new/choose) or [GitHub discussions](https://github.com/vercel/ai/discussions).
-
-## New Features
-
-- [**LanguageModel**](#LanguageModel) - new redesigned architecture
-- [**Message Overhaul**](#message-overhaul) - new `UIMessage` and `ModelMessage` types
-- [**ChatStore**](#chatstore) - new `useChat` architecture
-- [**Server-Sent Events (SSE)**](#server-sent-events-sse) - new standardised protocol for sending UI messages to the client
-- [**Agentic Control**](#agentic-control) - new primitives for building agentic systems
-
-## LanguageModel
-
-LanguageModel represents a complete redesign of how the AI SDK communicates with language models, adapting to the increasingly complex outputs modern AI systems generate. The new LanguageModel treats all LLM outputs as content parts, enabling more consistent handling of text, images, reasoning, sources, and other response types. It now has:
-
-- **Content-First Design** - Rather than separating text, reasoning, and tool calls, everything is now represented as ordered content parts in a unified array
-- **Improved Type Safety** - The new LanguageModel provides better TypeScript type guarantees, making it easier to work with different content types
-- **Simplified Extensibility** - Adding support for new model capabilities no longer requires changes to the core structure
-
-## Message Overhaul
-
-AI SDK 5 introduces a completely redesigned message system with two message types that address the dual needs of what you render in your UI and what you send to the model. Context is crucial for effective language model generations, and these two message types serve distinct purposes:
-
-- **UIMessage** represents the complete conversation history for your interface, preserving all message parts (text, images, data), metadata (creation timestamps, generation times), and UI state—regardless of length.
-
-- **ModelMessage** is optimized for sending to language models, considering token input constraints. It strips away UI-specific metadata and irrelevant content.
-
-With this change, you will be required to explicitly convert your `UIMessage`s to `ModelMessage`s before sending them to the model.
-
-```ts highlight="9"
-import { openai } from '@ai-sdk/openai';
-import { convertToModelMessages, streamText, UIMessage } from 'ai';
-
-export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
-
-  const result = streamText({
-    model: openai('gpt-4o'),
-    messages: convertToModelMessages(messages),
-  });
-
-  return result.toUIMessageStreamResponse();
-}
-```
-
-<Note>
-  This separation is essential as you cannot use a single message format for
-  both purposes. The state you save should always be the UIMessage format to
-  prevent information loss, with explicit conversion to ModelMessage when
-  communicating with language models.
-</Note>
-
-The new message system has made possible several highly requested features:
-
-- **Type-safe Message Metadata** - add structured information per message
-- **New Stream Writer** - stream any part type (reasoning, sources, etc.) retaining proper order
-- **Data Parts** - stream type-safe arbitrary data parts for dynamic UI components
-
-### Message metadata
-
-Metadata allows you to attach structured information to individual messages, making it easier to track important details like response time, token usage, or model specifications. This information can enhance your UI with contextual data without embedding it in the message content itself.
-
-To add metadata to a message, first define the metadata schema:
-
-```ts filename="app/api/chat/example-metadata-schema.ts"
-export const exampleMetadataSchema = z.object({
-  duration: z.number().optional(),
-  model: z.string().optional(),
-  totalTokens: z.number().optional(),
-});
-
-export type ExampleMetadata = z.infer<typeof exampleMetadataSchema>;
-```
-
-Then add the metadata using the `message.metadata` property on the `toUIMessageStreamResponse()` utility:
-
-```ts filename="app/api/chat/route.ts"
-import { openai } from '@ai-sdk/openai';
-import { convertToModelMessages, streamText, UIMessage } from 'ai';
-import { ExampleMetadata } from './example-metadata-schema';
-
-export async function POST(req: Request) {
-  const { messages }: { messages: UIMessage[] } = await req.json();
-
-  const startTime = Date.now();
-  const result = streamText({
-    model: openai('gpt-4o'),
-    prompt: convertToModelMessages(messages),
-  });
-
-  return result.toUIMessageStreamResponse({
-    messageMetadata: ({ part }): ExampleMetadata | undefined => {
-      // send custom information to the client on start:
-      if (part.type === 'start') {
-        return {
-          model: 'gpt-4o', // initial model id
-        };
-      }
-
-      // send additional model information on finish-step:
-      if (part.type === 'finish-step') {
-        return {
-          model: part.response.modelId, // update with the actual model id
-          duration: Date.now() - startTime,
-        };
-      }
-
-      // when the message is finished, send additional information:
-      if (part.type === 'finish') {
-        return {
-          totalTokens: part.totalUsage.totalTokens,
-        };
-      }
-    },
-  });
-}
-```
-
-Finally, specify the message metadata schema on the client and then render the (type-safe) metadata in your UI:
-
-```tsx filename="app/page.tsx"
-import { zodSchema } from '@ai-sdk/provider-utils';
-import { useChat } from '@ai-sdk/react';
-import { defaultChatStore } from 'ai';
-import { exampleMetadataSchema } from '@/api/chat/example-metadata-schema';
-
-export default function Chat() {
-  const { messages } = useChat({
-    chatStore: defaultChatStore({
-      api: '/api/use-chat',
-      messageMetadataSchema: zodSchema(exampleMetadataSchema),
-    }),
-  });
-
-  return (
-    <div>
-      {messages.map((message) => {
-        const { metadata } = message;
-        return (
-          <div key={message.id} className="whitespace-pre-wrap">
-            {metadata?.duration && <div>Duration: {metadata.duration}ms</div>}
-            {metadata?.model && <div>Model: {metadata.model}</div>}
-            {metadata?.totalTokens && (
-              <div>Total tokens: {metadata.totalTokens}</div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-```
-
-### UI Message Stream
-
-The UI Message Stream enables streaming any content parts from the server to the client. With this stream, you can send structured data like custom sources from your RAG pipeline directly to your UI. The stream writer is simply a utility that makes it easy to write to this message stream.
-
-```ts
-const stream = createUIMessageStream({
-  execute: (writer) => {
-    // stream custom sources
-    writer.write({
-      type: 'source',
-      value: {
-        type: 'source',
-        sourceType: 'url',
-        id: 'source-1',
-        url: 'https://example.com',
-        title: 'Example Source',
-      },
-    });
-  },
-});
-```
-
-On the client, these will be added to the ordered `message.parts` array.
-
-### Data Parts
-
-The new stream writer also enables a type-safe way to stream arbitrary data from the server to the client and display it in your UI.
-
-You can create and stream custom data parts on the server:
-
-```tsx
-// On the server
-const stream = createUIMessageStream({
-  execute: (writer) => {
-    // Initial update
-    writer.write({
-      type: 'data-weather', // Custom type
-      id: toolCallId, // ID for updates
-      data: { city, status: 'loading' }, // Your data
-    });
-
-    // Later, update the same part
-    writer.write({
-      type: 'data-weather',
-      id: toolCallId,
-      data: { city, weather, status: 'success' },
-    });
-  },
-});
-```
-
-On the client, you can render these parts with full type safety:
-
-```tsx
-{
-  message.parts
-    .filter((part) => part.type === 'data-weather') // type-safe
-    .map((part, index) => (
-      <Weather
-        key={index}
-        city={part.data.city} // type-safe
-        weather={part.data.weather} // type-safe
-        status={part.data.status} // type-safe
-      />
-    ));
-}
-```
-
-Data parts appear in the `message.parts` array along with other content, maintaining the proper ordering of the conversation. You can update parts by referencing the same ID, enabling dynamic experiences like collaborative artifacts.
-
-## ChatStore
-
-AI SDK 5 introduces a new `useChat` architecture with ChatStore and ChatTransport components. These two core building blocks make state management and API integration more flexible, allowing you to compose reactive UI bindings, share chat state across multiple instances, and swap out your backend protocol without rewriting application logic.
-
-The `ChatStore` is responsible for:
-
-- **Managing multiple chats** – access and switch between conversations seamlessly.
-- **Processing response streams** – handle streams from the server and synchronize state (e.g. when there are concurrent client-side tool results).
-- **Caching and synchronizing** – share state (messages, status, errors) between `useChat` hooks.
-
-You can create a basic ChatStore with the helper function:
-
-```ts
-import { defaultChatStore } from 'ai';
-
-const chatStore = defaultChatStore({
-  api: '/api/chat', // your chat endpoint
-  maxSteps: 5, // optional: limit LLM calls in tool chains
-  chats: {}, // optional: preload previous chat sessions
-});
-
-import { useChat } from '@ai-sdk/react';
-const { messages, input, handleSubmit } = useChat({ chatStore });
-```
-
-## Server-Sent Events (SSE)
-
-AI SDK 5 now uses Server-Sent Events (SSE) instead of a custom streaming protocol. SSE is a common web standard for sending data from servers to browsers. This switch has several advantages:
-
-- **Works everywhere** - Uses technology that works in all major browsers and platforms
-- **Easier to troubleshoot** - You can see the data stream in browser developer tools
-- **Simple to build upon** - Adding new features is more straightforward
-- **More stable** - Built on proven technology that many developers already use
-
-## Agentic Control
-
-AI SDK 5 introduces new features for building agents that help you control model behavior more precisely.
-
-### prepareStep
-
-The `prepareStep` function gives you fine-grained control over each step in a multi-step agent. It's called before a step starts and allows you to:
-
-- Dynamically change the model used for specific steps
-- Force specific tool selections for particular steps
-- Limit which tools are available during specific steps
-- Examine the context of previous steps before proceeding
-
-```ts
-const result = await generateText({
-  // ...
-  experimental_prepareStep: async ({ model, stepNumber, maxSteps, steps }) => {
-    if (stepNumber === 0) {
-      return {
-        // use a different model for this step:
-        model: modelForThisParticularStep,
-        // force a tool choice for this step:
-        toolChoice: { type: 'tool', toolName: 'tool1' },
-        // limit the tools that are available for this step:
-        experimental_activeTools: ['tool1'],
-      };
-    }
-    // when nothing is returned, the default settings are used
-  },
-});
-```
-
-This makes it easier to build AI systems that adapt their capabilities based on the current context and task requirements.
-
-### continueUntil
-
-The `continueUntil` parameter lets you define stopping conditions for your agent. Instead of running indefinitely, you can specify exactly when the agent should terminate based on various conditions:
-
-- Reaching a maximum number of steps
-- Calling a specific tool
-- Satisfying any custom condition you define
-
-```ts
-const result = generateText({
-  // ...
-  // stop loop at 5 steps
-  continueUntil: maxSteps(5),
-});
-
-const result = generateText({
-  // ...
-  // stop loop when weather tool called
-  continueUntil: hasToolCall('weather'),
-});
-
-const result = generateText({
-  // ...
-  // stop loop at your own custom condition
-  continueUntil: maxTotalTokens(20000),
-});
-```
-
-These agentic controls form the foundation for building more reliable, controllable AI systems that can tackle complex problems while remaining within well-defined constraints.
-
----
-
 title: Overview
 description: An overview of AI SDK Core.
 
@@ -1101,7 +5827,7 @@ You can generate text using the [`generateText`](/docs/reference/ai-sdk-core/gen
 import { generateText } from 'ai';
 
 const { text } = await generateText({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   prompt: 'Write a vegetarian lasagna recipe for 4 people.',
 });
 ```
@@ -1112,7 +5838,7 @@ You can use more [advanced prompts](./prompts) to generate text with more comple
 import { generateText } from 'ai';
 
 const { text } = await generateText({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   system:
     'You are a professional writer. ' +
     'You write simple, clear, and concise content.',
@@ -1122,11 +5848,23 @@ const { text } = await generateText({
 
 The result object of `generateText` contains several promises that resolve when all required data is available:
 
+- `result.content`: The content that was generated in the last step.
 - `result.text`: The generated text.
-- `result.reasoning`: The reasoning text of the model (only available for some models).
-- `result.sources`: Sources that have been used as input to generate the response (only available for some models).
+- `result.reasoning`: The full reasoning that the model has generated in the last step.
+- `result.reasoningText`: The reasoning text of the model (only available for some models).
+- `result.files`: The files that were generated in the last step.
+- `result.sources`: Sources that have been used as references in the last step (only available for some models).
+- `result.toolCalls`: The tool calls that were made in the last step.
+- `result.toolResults`: The results of the tool calls from the last step.
 - `result.finishReason`: The reason the model finished generating text.
-- `result.usage`: The usage of the model during text generation.
+- `result.usage`: The usage of the model during the final step of text generation.
+- `result.totalUsage`: The total usage across all steps (for multi-step generations).
+- `result.warnings`: Warnings from the model provider (e.g. unsupported settings).
+- `result.request`: Additional request information.
+- `result.response`: Additional response information, including response messages and body.
+- `result.providerMetadata`: Additional provider-specific metadata.
+- `result.steps`: Details for all steps, useful for getting information about intermediate steps.
+- `result.experimental_output`: The generated structured output using the `experimental_output` specification.
 
 ### Accessing response headers & body
 
@@ -1156,7 +5894,7 @@ AI SDK Core provides the [`streamText`](/docs/reference/ai-sdk-core/stream-text)
 import { streamText } from 'ai';
 
 const result = streamText({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   prompt: 'Invent a new holiday and describe its traditions.',
 });
 
@@ -1180,8 +5918,8 @@ UI](/examples/next-pages/basics/streaming-text-generation) and [AI SDK
 RSC](/examples/next-app/basics/streaming-text-generation).
 The result object contains several helper functions to make the integration into [AI SDK UI](/docs/ai-sdk-ui) easier:
 
-- `result.toDataStreamResponse()`: Creates a data stream HTTP response (with tool calls etc.) that can be used in a Next.js App Router API route.
-- `result.pipeDataStreamToResponse()`: Writes data stream delta output to a Node.js response-like object.
+- `result.toUIMessageStreamResponse()`: Creates a UI Message stream HTTP response (with tool calls etc.) that can be used in a Next.js App Router API route.
+- `result.pipeUIMessageStreamToResponse()`: Writes UI Message stream delta output to a Node.js response-like object.
 - `result.toTextStreamResponse()`: Creates a simple text stream HTTP response.
 - `result.pipeTextStreamToResponse()`: Writes text delta output to a Node.js response-like object.
 
@@ -1192,11 +5930,22 @@ The result object contains several helper functions to make the integration into
 
 It also provides several promises that resolve when the stream is finished:
 
+- `result.content`: The content that was generated in the last step.
 - `result.text`: The generated text.
-- `result.reasoning`: The reasoning text of the model (only available for some models).
-- `result.sources`: Sources that have been used as input to generate the response (only available for some models).
+- `result.reasoning`: The full reasoning that the model has generated.
+- `result.reasoningText`: The reasoning text of the model (only available for some models).
+- `result.files`: Files that have been generated by the model in the last step.
+- `result.sources`: Sources that have been used as references in the last step (only available for some models).
+- `result.toolCalls`: The tool calls that have been executed in the last step.
+- `result.toolResults`: The tool results that have been generated in the last step.
 - `result.finishReason`: The reason the model finished generating text.
-- `result.usage`: The usage of the model during text generation.
+- `result.usage`: The usage of the model during the final step of text generation.
+- `result.totalUsage`: The total usage across all steps (for multi-step generations).
+- `result.warnings`: Warnings from the model provider (e.g. unsupported settings).
+- `result.steps`: Details for all steps, useful for getting information about intermediate steps.
+- `result.request`: Additional request information from the last step.
+- `result.response`: Additional response information from the last step.
+- `result.providerMetadata`: Additional provider-specific metadata from the last step.
 
 ### `onError` callback
 
@@ -1209,7 +5958,7 @@ To log errors, you can provide an `onError` callback that is triggered when an e
 import { streamText } from 'ai';
 
 const result = streamText({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   prompt: 'Invent a new holiday and describe its traditions.',
   onError({ error }) {
     console.error(error); // your error logging logic here
@@ -1223,23 +5972,24 @@ When using `streamText`, you can provide an `onChunk` callback that is triggered
 
 It receives the following chunk types:
 
-- `text-delta`
+- `text`
 - `reasoning`
 - `source`
 - `tool-call`
+- `tool-input-start`
+- `tool-input-delta`
 - `tool-result`
-- `tool-call-streaming-start` (when `toolCallStreaming` is enabled)
-- `tool-call-delta` (when `toolCallStreaming` is enabled)
+- `raw`
 
 ```tsx highlight="6-11"
 import { streamText } from 'ai';
 
 const result = streamText({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   prompt: 'Invent a new holiday and describe its traditions.',
   onChunk({ chunk }) {
     // implement your own logic here, e.g.:
-    if (chunk.type === 'text-delta') {
+    if (chunk.type === 'text') {
       console.log(chunk.text);
     }
   },
@@ -1251,15 +6001,15 @@ const result = streamText({
 When using `streamText`, you can provide an `onFinish` callback that is triggered when the stream is finished (
 [API Reference](/docs/reference/ai-sdk-core/stream-text#on-finish)
 ).
-It contains the text, usage information, finish reason, messages, and more:
+It contains the text, usage information, finish reason, messages, steps, total usage, and more:
 
 ```tsx highlight="6-8"
 import { streamText } from 'ai';
 
 const result = streamText({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   prompt: 'Invent a new holiday and describe its traditions.',
-  onFinish({ text, finishReason, usage, response }) {
+  onFinish({ text, finishReason, usage, response, steps, totalUsage }) {
     // your own logic, e.g. for saving the chat history or recording usage
 
     const messages = response.messages; // messages that were generated
@@ -1278,10 +6028,10 @@ import { streamText } from 'ai';
 import { z } from 'zod';
 
 const result = streamText({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   tools: {
     cityAttractions: {
-      parameters: z.object({ city: z.string() }),
+      inputSchema: z.object({ city: z.string() }),
       execute: async ({ city }) => ({
         attractions: ['attraction1', 'attraction2', 'attraction3'],
       }),
@@ -1292,16 +6042,44 @@ const result = streamText({
 
 for await (const part of result.fullStream) {
   switch (part.type) {
+    case 'start': {
+      // handle start of stream
+      break;
+    }
+    case 'start-step': {
+      // handle start of step
+      break;
+    }
+    case 'text-start': {
+      // handle text start
+      break;
+    }
     case 'text-delta': {
       // handle text delta here
       break;
     }
-    case 'reasoning': {
-      // handle reasoning here
+    case 'text-end': {
+      // handle text end
+      break;
+    }
+    case 'reasoning-start': {
+      // handle reasoning start
+      break;
+    }
+    case 'reasoning-delta': {
+      // handle reasoning delta here
+      break;
+    }
+    case 'reasoning-end': {
+      // handle reasoning end
       break;
     }
     case 'source': {
       // handle source here
+      break;
+    }
+    case 'file': {
+      // handle file here
       break;
     }
     case 'tool-call': {
@@ -1313,6 +6091,18 @@ for await (const part of result.fullStream) {
       }
       break;
     }
+    case 'tool-input-start': {
+      // handle tool input start
+      break;
+    }
+    case 'tool-input-delta': {
+      // handle tool input delta
+      break;
+    }
+    case 'tool-input-end': {
+      // handle tool input end
+      break;
+    }
     case 'tool-result': {
       switch (part.toolName) {
         case 'cityAttractions': {
@@ -1322,12 +6112,24 @@ for await (const part of result.fullStream) {
       }
       break;
     }
+    case 'tool-error': {
+      // handle tool error
+      break;
+    }
+    case 'finish-step': {
+      // handle finish step
+      break;
+    }
     case 'finish': {
       // handle finish here
       break;
     }
     case 'error': {
       // handle error here
+      break;
+    }
+    case 'raw': {
+      // handle raw value
       break;
     }
   }
@@ -1374,9 +6176,9 @@ const upperCaseTransform =
     new TransformStream<TextStreamPart<TOOLS>, TextStreamPart<TOOLS>>({
       transform(chunk, controller) {
         controller.enqueue(
-          // for text-delta chunks, convert the text to uppercase:
-          chunk.type === 'text-delta'
-            ? { ...chunk, textDelta: chunk.textDelta.toUpperCase() }
+          // for text chunks, convert the text to uppercase:
+          chunk.type === 'text'
+            ? { ...chunk, text: chunk.text.toUpperCase() }
             : chunk,
         );
       },
@@ -1399,18 +6201,18 @@ const stopWordTransform =
       // stream buffering and scanning to correctly emit prior text
       // and to detect all STOP occurrences.
       transform(chunk, controller) {
-        if (chunk.type !== 'text-delta') {
+        if (chunk.type !== 'text') {
           controller.enqueue(chunk);
           return;
         }
 
-        if (chunk.textDelta.includes('STOP')) {
+        if (chunk.text.includes('STOP')) {
           // stop the stream
           stopStream();
 
-          // simulate the step-finish event
+          // simulate the finish-step event
           controller.enqueue({
-            type: 'step-finish',
+            type: 'finish-step',
             finishReason: 'stop',
             logprobs: undefined,
             usage: {
@@ -1484,7 +6286,10 @@ When you use `generateText`, you can access the sources using the `sources` prop
 
 ```ts
 const result = await generateText({
-  model: google('gemini-2.0-flash-exp', { useSearchGrounding: true }),
+  model: google('gemini-2.5-flash'),
+  tools: {
+    google_search: google.tools.googleSearch({}),
+  },
   prompt: 'List the top 5 San Francisco news from the past week.',
 });
 
@@ -1503,62 +6308,25 @@ When you use `streamText`, you can access the sources using the `fullStream` pro
 
 ```tsx
 const result = streamText({
-  model: google('gemini-2.0-flash-exp', { useSearchGrounding: true }),
+  model: google('gemini-2.5-flash'),
+  tools: {
+    google_search: google.tools.googleSearch({}),
+  },
   prompt: 'List the top 5 San Francisco news from the past week.',
 });
 
 for await (const part of result.fullStream) {
-  if (part.type === 'source' && part.source.sourceType === 'url') {
-    console.log('ID:', part.source.id);
-    console.log('Title:', part.source.title);
-    console.log('URL:', part.source.url);
-    console.log('Provider metadata:', part.source.providerMetadata);
+  if (part.type === 'source' && part.sourceType === 'url') {
+    console.log('ID:', part.id);
+    console.log('Title:', part.title);
+    console.log('URL:', part.url);
+    console.log('Provider metadata:', part.providerMetadata);
     console.log();
   }
 }
 ```
 
 The sources are also available in the `result.sources` promise.
-
-## Generating Long Text
-
-Most language models have an output limit that is much shorter than their context window.
-This means that you cannot generate long text in one go,
-but it is possible to add responses back to the input and continue generating
-to create longer text.
-
-`generateText` and `streamText` support such continuations for long text generation using the experimental `continueSteps` setting:
-
-```tsx highlight="5-6,9-10"
-import { openai } from '@ai-sdk/openai';
-import { generateText } from 'ai';
-
-const {
-  text, // combined text
-  usage, // combined usage of all steps
-} = await generateText({
-  model: openai('gpt-4o'), // 4096 output tokens
-  maxSteps: 5, // enable multi-step calls
-  experimental_continueSteps: true,
-  prompt:
-    'Write a book about Roman history, ' +
-    'from the founding of the city of Rome ' +
-    'to the fall of the Western Roman Empire. ' +
-    'Each chapter MUST HAVE at least 1000 words.',
-});
-```
-
-<Note>
-  When `experimental_continueSteps` is enabled, only full words are streamed in
-  `streamText`, and both `generateText` and `streamText` might drop the trailing
-  tokens of some calls to prevent whitespace issues.
-</Note>
-
-<Note type="warning">
-  Some models might not always stop correctly on their own and keep generating
-  until `maxSteps` is reached. You can hint the model to stop by e.g. using a
-  system message such as "Stop when sufficient information was provided."
-</Note>
 
 ## Examples
 
@@ -1622,7 +6390,7 @@ However, you need to manually provide schemas and then validate the generated da
 The AI SDK standardises structured object generation across model providers
 with the [`generateObject`](/docs/reference/ai-sdk-core/generate-object)
 and [`streamObject`](/docs/reference/ai-sdk-core/stream-object) functions.
-You can use both functions with different output strategies, e.g. `array`, `object`, or `no-schema`,
+You can use both functions with different output strategies, e.g. `array`, `object`, `enum`, or `no-schema`,
 and with different generation modes, e.g. `auto`, `tool`, or `json`.
 You can use [Zod schemas](/docs/reference/ai-sdk-core/zod-schema), [Valibot](/docs/reference/ai-sdk-core/valibot-schema), or [JSON schemas](/docs/reference/ai-sdk-core/json-schema) to specify the shape of the data that you want,
 and the AI model will generate data that conforms to that structure.
@@ -1642,7 +6410,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 
 const { object } = await generateObject({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   schema: z.object({
     recipe: z.object({
       name: z.string(),
@@ -1666,9 +6434,9 @@ e.g. to access some provider-specific headers or body content.
 You can access the raw response headers and body using the `response` property:
 
 ```ts
-import { generateText } from 'ai';
+import { generateObject } from 'ai';
 
-const result = await generateText({
+const result = await generateObject({
   // ...
 });
 
@@ -1718,7 +6486,7 @@ const result = streamObject({
 
 ## Output Strategy
 
-You can use both functions with different output strategies, e.g. `array`, `object`, or `no-schema`.
+You can use both functions with different output strategies, e.g. `array`, `object`, `enum`, or `no-schema`.
 
 ### Object
 
@@ -1737,7 +6505,7 @@ import { streamObject } from 'ai';
 import { z } from 'zod';
 
 const { elementStream } = streamObject({
-  model: openai('gpt-4-turbo'),
+  model: openai('gpt-4.1'),
   output: 'array',
   schema: z.object({
     name: z.string(),
@@ -1766,7 +6534,7 @@ and provide a list of possible values in the `enum` parameter.
 import { generateObject } from 'ai';
 
 const { object } = await generateObject({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   output: 'enum',
   enum: ['action', 'comedy', 'drama', 'horror', 'sci-fi'],
   prompt:
@@ -1788,24 +6556,11 @@ import { openai } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 
 const { object } = await generateObject({
-  model: openai('gpt-4-turbo'),
+  model: openai('gpt-4.1'),
   output: 'no-schema',
   prompt: 'Generate a lasagna recipe.',
 });
 ```
-
-## Generation Mode
-
-While some models (like OpenAI) natively support object generation, others require alternative methods, like modified [tool calling](/docs/ai-sdk-core/tools-and-tool-calling). The `generateObject` function allows you to specify the method it will use to return structured data.
-
-- `auto`: The provider will choose the best mode for the model. This recommended mode is used by default.
-- `tool`: A tool with the JSON schema as parameters is provided and the provider is instructed to use it.
-- `json`: The response format is set to JSON when supported by the provider, e.g. via json modes or grammar-guided generation. If grammar-guided generation is not supported, the JSON schema and instructions to generate JSON that conforms to the schema are injected into the system prompt.
-
-<Note>
-  Please note that not every provider supports all generation modes. Some
-  providers do not support object generation at all.
-</Note>
 
 ## Schema Name and Description
 
@@ -1816,7 +6571,7 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 
 const { object } = await generateObject({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   schemaName: 'Recipe',
   schemaDescription: 'A recipe for a dish.',
   schema: z.object({
@@ -1826,6 +6581,41 @@ const { object } = await generateObject({
   }),
   prompt: 'Generate a lasagna recipe.',
 });
+```
+
+## Accessing Reasoning
+
+You can access the reasoning used by the language model to generate the object via the `reasoning` property on the result. This property contains a string with the model's thought process, if available.
+
+```ts
+import { openai, OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
+import { generateObject } from 'ai';
+import { z } from 'zod/v4';
+
+const result = await generateObject({
+  model: openai('gpt-5'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(
+        z.object({
+          name: z.string(),
+          amount: z.string(),
+        }),
+      ),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+  providerOptions: {
+    openai: {
+      strictJsonSchema: true,
+      reasoningSummary: 'detailed',
+    } satisfies OpenAIResponsesProviderOptions,
+  },
+});
+
+console.log(result.reasoning);
 ```
 
 ## Error Handling
@@ -2002,7 +6792,7 @@ link: '/examples/next-app/basics/streaming-object-generation',
 ---
 
 title: Tool Calling
-description: Learn about tool calling and multi-step calls (using maxSteps) with AI SDK Core.
+description: Learn about tool calling and multi-step calls (using stopWhen) with AI SDK Core.
 
 ---
 
@@ -2012,8 +6802,8 @@ As covered under Foundations, [tools](/docs/foundations/tools) are objects that 
 AI SDK Core tools contain three elements:
 
 - **`description`**: An optional description of the tool that can influence when the tool is picked.
-- **`parameters`**: A [Zod schema](/docs/foundations/tools#schemas) or a [JSON schema](/docs/reference/ai-sdk-core/json-schema) that defines the parameters. The schema is consumed by the LLM, and also used to validate the LLM tool calls.
-- **`execute`**: An optional async function that is called with the arguments from the tool call. It produces a value of type `RESULT` (generic type). It is optional because you might want to forward tool calls to the client or to a queue instead of executing them in the same process.
+- **`inputSchema`**: A [Zod schema](/docs/foundations/tools#schemas) or a [JSON schema](/docs/reference/ai-sdk-core/json-schema) that defines the input parameters. The schema is consumed by the LLM, and also used to validate the LLM tool calls.
+- **`execute`**: An optional async function that is called with the inputs from the tool call. It produces a value of type `RESULT` (generic type). It is optional because you might want to forward tool calls to the client or to a queue instead of executing them in the same process.
 
 <Note className="mb-2">
   You can use the [`tool`](/docs/reference/ai-sdk-core/tool) helper function to
@@ -2027,11 +6817,11 @@ import { z } from 'zod';
 import { generateText, tool } from 'ai';
 
 const result = await generateText({
-  model: yourModel,
+  model: 'openai/gpt-4o',
   tools: {
     weather: tool({
       description: 'Get the weather in a location',
-      parameters: z.object({
+      inputSchema: z.object({
         location: z.string().describe('The location to get the weather for'),
       }),
       execute: async ({ location }) => ({
@@ -2052,18 +6842,16 @@ const result = await generateText({
 Tool calling is not restricted to only text generation.
 You can also use it to render user interfaces (Generative UI).
 
-## Multi-Step Calls (using maxSteps)
+## Multi-Step Calls (using stopWhen)
 
-With the `maxSteps` setting, you can enable multi-step calls in `generateText` and `streamText`. When `maxSteps` is set to a number greater than 1 and the model generates a tool call, the AI SDK will trigger a new generation passing in the tool result until there
-are no further tool calls or the maximum number of tool steps is reached.
+With the `stopWhen` setting, you can enable multi-step calls in `generateText` and `streamText`. When `stopWhen` is set and the model generates a tool call, the AI SDK will trigger a new generation passing in the tool result until there are no further tool calls or the stopping condition is met.
 
 <Note>
-  To decide what value to set for `maxSteps`, consider the most complex task the
-  call might handle and the number of sequential steps required for completion,
-  rather than just the number of available tools.
+  The `stopWhen` conditions are only evaluated when the last step contains tool
+  results.
 </Note>
 
-By default, when you use `generateText` or `streamText`, it triggers a single generation (`maxSteps: 1`). This works well for many use cases where you can rely on the model's training data to generate a response. However, when you provide tools, the model now has the choice to either generate a normal text response, or generate a tool call. If the model generates a tool call, it's generation is complete and that step is finished.
+By default, when you use `generateText` or `streamText`, it triggers a single generation. This works well for many use cases where you can rely on the model's training data to generate a response. However, when you provide tools, the model now has the choice to either generate a normal text response, or generate a tool call. If the model generates a tool call, it's generation is complete and that step is finished.
 
 You may want the model to generate text after the tool has been executed, either to summarize the tool results in the context of the users query. In many cases, you may also want the model to use multiple tools in a single response. This is where multi-step calls come in.
 
@@ -2081,16 +6869,16 @@ In the following example, there are two steps:
    1. The tool result is sent to the model.
    1. The model generates a response considering the tool result.
 
-```ts highlight="18"
+```ts highlight="18-19"
 import { z } from 'zod';
-import { generateText, tool } from 'ai';
+import { generateText, tool, stepCountIs } from 'ai';
 
 const { text, steps } = await generateText({
-  model: yourModel,
+  model: 'openai/gpt-4o',
   tools: {
     weather: tool({
       description: 'Get the weather in a location',
-      parameters: z.object({
+      inputSchema: z.object({
         location: z.string().describe('The location to get the weather for'),
       }),
       execute: async ({ location }) => ({
@@ -2099,7 +6887,7 @@ const { text, steps } = await generateText({
       }),
     }),
   },
-  maxSteps: 5, // allow up to 5 steps
+  stopWhen: stepCountIs(5), // stop after a maximum of 5 steps if tools were called
   prompt: 'What is the weather in San Francisco?',
 });
 ```
@@ -2118,8 +6906,8 @@ It contains all the text, tool calls, tool results, and more from each step.
 import { generateText } from 'ai';
 
 const { steps } = await generateText({
-  model: openai('gpt-4-turbo'),
-  maxSteps: 10,
+  model: openai('gpt-4o'),
+  stopWhen: stepCountIs(10),
   // ...
 });
 
@@ -2145,30 +6933,26 @@ const result = await generateText({
 });
 ```
 
-### `experimental_prepareStep` callback
+### `prepareStep` callback
 
-<Note type="warning">
-  The `experimental_prepareStep` callback is experimental and may change in the
-  future. It is only available in the `generateText` function.
-</Note>
-
-The `experimental_prepareStep` callback is called before a step is started.
+The `prepareStep` callback is called before a step is started.
 
 It is called with the following parameters:
 
 - `model`: The model that was passed into `generateText`.
-- `maxSteps`: The maximum number of steps that was passed into `generateText`.
+- `stopWhen`: The stopping condition that was passed into `generateText`.
 - `stepNumber`: The number of the step that is being executed.
 - `steps`: The steps that have been executed so far.
+- `messages`: The messages that will be sent to the model for the current step.
 
-You can use it to provide different settings for a step.
+You can use it to provide different settings for a step, including modifying the input messages.
 
 ```tsx highlight="5-7"
 import { generateText } from 'ai';
 
 const result = await generateText({
   // ...
-  experimental_prepareStep: async ({ model, stepNumber, maxSteps, steps }) => {
+  prepareStep: async ({ model, stepNumber, steps, messages }) => {
     if (stepNumber === 0) {
       return {
         // use a different model for this step:
@@ -2176,13 +6960,30 @@ const result = await generateText({
         // force a tool choice for this step:
         toolChoice: { type: 'tool', toolName: 'tool1' },
         // limit the tools that are available for this step:
-        experimental_activeTools: ['tool1'],
+        activeTools: ['tool1'],
       };
     }
 
     // when nothing is returned, the default settings are used
   },
 });
+```
+
+#### Message Modification for Longer Agentic Loops
+
+In longer agentic loops, you can use the `messages` parameter to modify the input messages for each step. This is particularly useful for prompt compression:
+
+```tsx
+prepareStep: async ({ stepNumber, steps, messages }) => {
+  // Compress conversation history for longer loops
+  if (messages.length > 20) {
+    return {
+      messages: messages.slice(-10),
+    };
+  }
+
+  return {};
+},
 ```
 
 ## Response Messages
@@ -2194,12 +6995,12 @@ Both `generateText` and `streamText` have a `response.messages` property that yo
 add the assistant and tool messages to your conversation history.
 It is also available in the `onFinish` callback of `streamText`.
 
-The `response.messages` property contains an array of `CoreMessage` objects that you can add to your conversation history:
+The `response.messages` property contains an array of `ModelMessage` objects that you can add to your conversation history:
 
 ```ts
-import { generateText } from 'ai';
+import { generateText, ModelMessage } from 'ai';
 
-const messages: CoreMessage[] = [
+const messages: ModelMessage[] = [
   // ...
 ];
 
@@ -2210,6 +7011,105 @@ const { response } = await generateText({
 
 // add the response messages to your conversation history:
 messages.push(...response.messages); // streamText: ...((await response).messages)
+```
+
+## Dynamic Tools
+
+AI SDK Core supports dynamic tools for scenarios where tool schemas are not known at compile time. This is useful for:
+
+- MCP (Model Context Protocol) tools without schemas
+- User-defined functions at runtime
+- Tools loaded from external sources
+
+### Using dynamicTool
+
+The `dynamicTool` helper creates tools with unknown input/output types:
+
+```ts
+import { dynamicTool } from 'ai';
+import { z } from 'zod';
+
+const customTool = dynamicTool({
+  description: 'Execute a custom function',
+  inputSchema: z.object({}),
+  execute: async (input) => {
+    // input is typed as 'unknown'
+    // You need to validate/cast it at runtime
+    const { action, parameters } = input as any;
+
+    // Execute your dynamic logic
+    return { result: `Executed ${action}` };
+  },
+});
+```
+
+### Type-Safe Handling
+
+When using both static and dynamic tools, use the `dynamic` flag for type narrowing:
+
+```ts
+const result = await generateText({
+  model: 'openai/gpt-4o',
+  tools: {
+    // Static tool with known types
+    weather: weatherTool,
+    // Dynamic tool
+    custom: dynamicTool({
+      /* ... */
+    }),
+  },
+  onStepFinish: ({ toolCalls, toolResults }) => {
+    // Type-safe iteration
+    for (const toolCall of toolCalls) {
+      if (toolCall.dynamic) {
+        // Dynamic tool: input is 'unknown'
+        console.log('Dynamic:', toolCall.toolName, toolCall.input);
+        continue;
+      }
+
+      // Static tool: full type inference
+      switch (toolCall.toolName) {
+        case 'weather':
+          console.log(toolCall.input.location); // typed as string
+          break;
+      }
+    }
+  },
+});
+```
+
+## Preliminary Tool Results
+
+You can return an `AsyncIterable` over multiple results.
+In this case, the last value from the iterable is the final tool result.
+
+This can be used in combination with generator functions to e.g. stream status information
+during the tool execution:
+
+```ts
+tool({
+  description: 'Get the current weather.',
+  inputSchema: z.object({
+    location: z.string(),
+  }),
+  async *execute({ location }) {
+    yield {
+      status: 'loading' as const,
+      text: `Getting weather for ${location}`,
+      weather: undefined,
+    };
+
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    const temperature = 72 + Math.floor(Math.random() * 21) - 10;
+
+    yield {
+      status: 'success' as const,
+      text: `The weather in ${location} is ${temperature}°F`,
+      temperature,
+    };
+  },
+});
 ```
 
 ## Tool Choice
@@ -2227,11 +7127,11 @@ import { z } from 'zod';
 import { generateText, tool } from 'ai';
 
 const result = await generateText({
-  model: yourModel,
+  model: 'openai/gpt-4o',
   tools: {
     weather: tool({
       description: 'Get the weather in a location',
-      parameters: z.object({
+      inputSchema: z.object({
         location: z.string().describe('The location to get the weather for'),
       }),
       execute: async ({ location }) => ({
@@ -2255,36 +7155,45 @@ The ID of the tool call is forwarded to the tool execution.
 You can use it e.g. when sending tool-call related information with stream data.
 
 ```ts highlight="14-20"
-import { StreamData, streamText, tool } from 'ai';
+import {
+  streamText,
+  tool,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+} from 'ai';
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  const data = new StreamData();
-
-  const result = streamText({
-    // ...
-    messages,
-    tools: {
-      myTool: tool({
+  const stream = createUIMessageStream({
+    execute: ({ writer }) => {
+      const result = streamText({
         // ...
-        execute: async (args, { toolCallId }) => {
-          // return e.g. custom status for tool call
-          data.appendMessageAnnotation({
-            type: 'tool-status',
-            toolCallId,
-            status: 'in-progress',
-          });
-          // ...
+        messages,
+        tools: {
+          myTool: tool({
+            // ...
+            execute: async (args, { toolCallId }) => {
+              // return e.g. custom status for tool call
+              writer.write({
+                type: 'data-tool-status',
+                id: toolCallId,
+                data: {
+                  name: 'myTool',
+                  status: 'in-progress',
+                },
+              });
+              // ...
+            },
+          }),
         },
-      }),
-    },
-    onFinish() {
-      data.close();
+      });
+
+      writer.merge(result.toUIMessageStream());
     },
   });
 
-  return result.toDataStreamResponse({ data });
+  return createUIMessageStreamResponse({ stream });
 }
 ```
 
@@ -2304,7 +7213,7 @@ const result = await generateText({
       // ...
       execute: async (args, { messages }) => {
         // use the message history in e.g. calls to other language models
-        return something;
+        return { ... };
       },
     }),
   },
@@ -2321,12 +7230,12 @@ import { z } from 'zod';
 import { generateText, tool } from 'ai';
 
 const result = await generateText({
-  model: yourModel,
+  model: 'openai/gpt-4.1',
   abortSignal: myAbortSignal, // signal that will be forwarded to tools
   tools: {
     weather: tool({
       description: 'Get the weather in a location',
-      parameters: z.object({ location: z.string() }),
+      inputSchema: z.object({ location: z.string() }),
       execute: async ({ location }, { abortSignal }) => {
         return fetch(
           `https://api.weatherapi.com/v1/current.json?q=${location}`,
@@ -2336,6 +7245,27 @@ const result = await generateText({
     }),
   },
   prompt: 'What is the weather in San Francisco?',
+});
+```
+
+### Context (experimental)
+
+You can pass in arbitrary context from `generateText` or `streamText` via the `experimental_context` setting.
+This context is available in the `experimental_context` tool execution option.
+
+```ts
+const result = await generateText({
+  // ...
+  tools: {
+    someTool: tool({
+      // ...
+      execute: async (input, { experimental_context: context }) => {
+        const typedContext = context as { example: string }; // or use type validation library
+        // ...
+      },
+    }),
+  },
+  experimental_context: { example: '123' },
 });
 ```
 
@@ -2352,30 +7282,30 @@ on the tool that has been invoked.
 Similarly, the tool results are typed with `ToolResult<NAME extends string, ARGS, RESULT>`.
 
 The tools in `streamText` and `generateText` are defined as a `ToolSet`.
-The type inference helpers `ToolCallUnion<TOOLS extends ToolSet>`
-and `ToolResultUnion<TOOLS extends ToolSet>` can be used to
+The type inference helpers `TypedToolCall<TOOLS extends ToolSet>`
+and `TypedToolResult<TOOLS extends ToolSet>` can be used to
 extract the tool call and tool result types from the tools.
 
 ```ts highlight="18-19,23-24"
 import { openai } from '@ai-sdk/openai';
-import { ToolCallUnion, ToolResultUnion, generateText, tool } from 'ai';
+import { TypedToolCall, TypedToolResult, generateText, tool } from 'ai';
 import { z } from 'zod';
 
 const myToolSet = {
   firstTool: tool({
     description: 'Greets the user',
-    parameters: z.object({ name: z.string() }),
+    inputSchema: z.object({ name: z.string() }),
     execute: async ({ name }) => `Hello, ${name}!`,
   }),
   secondTool: tool({
     description: 'Tells the user their age',
-    parameters: z.object({ age: z.number() }),
+    inputSchema: z.object({ age: z.number() }),
     execute: async ({ age }) => `You are ${age} years old!`,
   }),
 };
 
-type MyToolCall = ToolCallUnion<typeof myToolSet>;
-type MyToolResult = ToolResultUnion<typeof myToolSet>;
+type MyToolCall = TypedToolCall<typeof myToolSet>;
+type MyToolResult = TypedToolResult<typeof myToolSet>;
 
 async function generateSomething(prompt: string): Promise<{
   text: string;
@@ -2383,7 +7313,7 @@ async function generateSomething(prompt: string): Promise<{
   toolResults: Array<MyToolResult>; // typed tool results
 }> {
   return generateText({
-    model: openai('gpt-4o'),
+    model: openai('gpt-4.1'),
     tools: myToolSet,
     prompt,
   });
@@ -2395,13 +7325,14 @@ async function generateSomething(prompt: string): Promise<{
 The AI SDK has three tool-call related errors:
 
 - [`NoSuchToolError`](/docs/reference/ai-sdk-errors/ai-no-such-tool-error): the model tries to call a tool that is not defined in the tools object
-- [`InvalidToolArgumentsError`](/docs/reference/ai-sdk-errors/ai-invalid-tool-arguments-error): the model calls a tool with arguments that do not match the tool's parameters
-- [`ToolExecutionError`](/docs/reference/ai-sdk-errors/ai-tool-execution-error): an error that occurred during tool execution
+- [`InvalidToolInputError`](/docs/reference/ai-sdk-errors/ai-invalid-tool-input-error): the model calls a tool with inputs that do not match the tool's input schema
 - [`ToolCallRepairError`](/docs/reference/ai-sdk-errors/ai-tool-call-repair-error): an error that occurred during tool call repair
+
+When tool execution fails (errors thrown by your tool's `execute` function), the AI SDK adds them as `tool-error` content parts to enable automated LLM roundtrips in multi-step scenarios.
 
 ### `generateText`
 
-`generateText` throws errors and can be handled using a `try`/`catch` block:
+`generateText` throws errors for tool schema validation issues and other errors, and can be handled using a `try`/`catch` block. Tool execution errors appear as `tool-error` parts in the result steps:
 
 ```ts
 try {
@@ -2411,35 +7342,50 @@ try {
 } catch (error) {
   if (NoSuchToolError.isInstance(error)) {
     // handle the no such tool error
-  } else if (InvalidToolArgumentsError.isInstance(error)) {
-    // handle the invalid tool arguments error
-  } else if (ToolExecutionError.isInstance(error)) {
-    // handle the tool execution error
+  } else if (InvalidToolInputError.isInstance(error)) {
+    // handle the invalid tool inputs error
   } else {
     // handle other errors
   }
 }
 ```
 
+Tool execution errors are available in the result steps:
+
+```ts
+const { steps } = await generateText({
+  // ...
+});
+
+// check for tool errors in the steps
+const toolErrors = steps.flatMap((step) =>
+  step.content.filter((part) => part.type === 'tool-error'),
+);
+
+toolErrors.forEach((toolError) => {
+  console.log('Tool error:', toolError.error);
+  console.log('Tool name:', toolError.toolName);
+  console.log('Tool input:', toolError.input);
+});
+```
+
 ### `streamText`
 
-`streamText` sends the errors as part of the full stream. The error parts contain the error object.
+`streamText` sends errors as part of the full stream. Tool execution errors appear as `tool-error` parts, while other errors appear as `error` parts.
 
-When using `toDataStreamResponse`, you can pass an `getErrorMessage` function to extract the error message from the error part and forward it as part of the data stream response:
+When using `toUIMessageStreamResponse`, you can pass an `onError` function to extract the error message from the error part and forward it as part of the stream response:
 
 ```ts
 const result = streamText({
   // ...
 });
 
-return result.toDataStreamResponse({
-  getErrorMessage: (error) => {
+return result.toUIMessageStreamResponse({
+  onError: (error) => {
     if (NoSuchToolError.isInstance(error)) {
       return 'The model tried to call a unknown tool.';
-    } else if (InvalidToolArgumentsError.isInstance(error)) {
-      return 'The model called a tool with invalid arguments.';
-    } else if (ToolExecutionError.isInstance(error)) {
-      return 'An error occurred during tool execution.';
+    } else if (InvalidToolInputError.isInstance(error)) {
+      return 'The model called a tool with invalid inputs.';
     } else {
       return 'An unknown error occurred.';
     }
@@ -2454,15 +7400,20 @@ return result.toDataStreamResponse({
 </Note>
 
 Language models sometimes fail to generate valid tool calls,
-especially when the parameters are complex or the model is smaller.
+especially when the input schema is complex or the model is smaller.
+
+If you use multiple steps, those failed tool calls will be sent back to the LLM
+in the next step to give it an opportunity to fix it.
+However, you may want to control how invalid tool calls are repaired without requiring
+additional steps that pollute the message history.
 
 You can use the `experimental_repairToolCall` function to attempt to repair the tool call
 with a custom function.
 
 You can use different strategies to repair the tool call:
 
-- Use a model with structured outputs to generate the arguments.
-- Send the messages, system prompt, and tool schema to a stronger model to generate the arguments.
+- Use a model with structured outputs to generate the inputs.
+- Send the messages, system prompt, and tool schema to a stronger model to generate the inputs.
 - Provide more specific repair instructions based on which tool was called.
 
 ### Example: Use a model with structured outputs for repair
@@ -2479,7 +7430,7 @@ const result = await generateText({
   experimental_repairToolCall: async ({
     toolCall,
     tools,
-    parameterSchema,
+    inputSchema,
     error,
   }) => {
     if (NoSuchToolError.isInstance(error)) {
@@ -2489,19 +7440,19 @@ const result = await generateText({
     const tool = tools[toolCall.toolName as keyof typeof tools];
 
     const { object: repairedArgs } = await generateObject({
-      model: openai('gpt-4o', { structuredOutputs: true }),
-      schema: tool.parameters,
+      model: openai('gpt-4.1'),
+      schema: tool.inputSchema,
       prompt: [
         `The model tried to call the tool "${toolCall.toolName}"` +
-          ` with the following arguments:`,
-        JSON.stringify(toolCall.args),
+          ` with the following inputs:`,
+        JSON.stringify(toolCall.input),
         `The tool accepts the following schema:`,
-        JSON.stringify(parameterSchema(toolCall)),
-        'Please fix the arguments.',
+        JSON.stringify(inputSchema(toolCall)),
+        'Please fix the inputs.',
       ].join('\n'),
     });
 
-    return { ...toolCall, args: JSON.stringify(repairedArgs) };
+    return { ...toolCall, input: JSON.stringify(repairedArgs) };
   },
 });
 ```
@@ -2536,7 +7487,7 @@ const result = await generateText({
               type: 'tool-call',
               toolCallId: toolCall.toolCallId,
               toolName: toolCall.toolName,
-              args: toolCall.args,
+              input: toolCall.input,
             },
           ],
         },
@@ -2547,7 +7498,7 @@ const result = await generateText({
               type: 'tool-result',
               toolCallId: toolCall.toolCallId,
               toolName: toolCall.toolName,
-              result: error.message,
+              output: error.message,
             },
           ],
         },
@@ -2564,7 +7515,7 @@ const result = await generateText({
           toolCallType: 'function' as const,
           toolCallId: toolCall.toolCallId,
           toolName: toolCall.toolName,
-          args: JSON.stringify(newToolCall.args),
+          input: JSON.stringify(newToolCall.input),
         }
       : null;
   },
@@ -2573,13 +7524,9 @@ const result = await generateText({
 
 ## Active Tools
 
-<Note type="warning">
-  The `activeTools` property is experimental and may change in the future.
-</Note>
-
 Language models can only handle a limited number of tools at a time, depending on the model.
 To allow for static typing using a large number of tools and limiting the available tools to the model at the same time,
-the AI SDK provides the `experimental_activeTools` property.
+the AI SDK provides the `activeTools` property.
 
 It is an array of tool names that are currently active.
 By default, the value is `undefined` and all tools are active.
@@ -2589,9 +7536,9 @@ import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 
 const { text } = await generateText({
-  model: openai('gpt-4o'),
+  model: openai('gpt-4.1'),
   tools: myToolSet,
-  experimental_activeTools: ['firstTool'],
+  activeTools: ['firstTool'],
 });
 ```
 
@@ -2604,7 +7551,7 @@ const { text } = await generateText({
 In order to send multi-modal tool results, e.g. screenshots, back to the model,
 they need to be converted into a specific format.
 
-AI SDK Core tools have an optional `experimental_toToolResultContent` function
+AI SDK Core tools have an optional `toModelOutput` function
 that converts the tool result into a content part.
 
 Here is an example for converting a screenshot into a content part:
@@ -2632,10 +7579,14 @@ const result = await generateText({
       },
 
       // map to tool result content for LLM consumption:
-      experimental_toToolResultContent(result) {
-        return typeof result === 'string'
-          ? [{ type: 'text', text: result }]
-          : [{ type: 'image', data: result.data, mimeType: 'image/png' }];
+      toModelOutput(result) {
+        return {
+          type: 'content',
+          value:
+            typeof result === 'string'
+              ? [{ type: 'text', text: result }]
+              : [{ type: 'image', data: result.data, mediaType: 'image/png' }],
+        };
       },
     }),
   },
@@ -2657,7 +7608,7 @@ import { z } from 'zod';
 // the `tool` helper function ensures correct type inference:
 export const weatherTool = tool({
   description: 'Get the weather in a location',
-  parameters: z.object({
+  inputSchema: z.object({
     location: z.string().describe('The location to get the weather for'),
   }),
   execute: async ({ location }) => ({
@@ -2763,7 +7714,7 @@ const mcpClient = await experimental_createMCPClient({
 const tools = await mcpClient.tools();
 
 const result = await streamText({
-  model: openai('gpt-4o'),
+  model: openai('gpt-4.1'),
   tools,
   prompt: 'What is the weather in Brooklyn, New York?',
   onFinish: async () => {
@@ -2820,14 +7771,14 @@ import { z } from 'zod';
 const tools = await mcpClient.tools({
   schemas: {
     'get-data': {
-      parameters: z.object({
+      inputSchema: z.object({
         query: z.string().describe('The data query'),
         format: z.enum(['json', 'text']).optional(),
       }),
     },
-    // For tools with zero arguments, you should use an empty object:
+    // For tools with zero inputs, you should use an empty object:
     'tool-with-no-args': {
-      parameters: z.object({}),
+      inputSchema: z.object({}),
     },
   },
 });
@@ -2889,7 +7840,7 @@ When you create prompts that include tools, getting good results can be tricky a
 
 Here are a few tips to help you get the best results:
 
-1. Use a model that is strong at tool calling, such as `gpt-4` or `gpt-4-turbo`. Weaker models will often struggle to call tools effectively and flawlessly.
+1. Use a model that is strong at tool calling, such as `gpt-4` or `gpt-4.1`. Weaker models will often struggle to call tools effectively and flawlessly.
 1. Keep the number of tools low, e.g. to 5 or less.
 1. Keep the complexity of the tool parameters low. Complex Zod schemas with many nested and optional elements, unions, etc. can be challenging for the model to work with.
 1. Use semantically meaningful names for your tools, parameters, parameter properties, etc. The more information you pass to the model, the better it can understand what you want.
@@ -2911,7 +7862,7 @@ and then use a Zod transformer to convert the string to a Date object.
 
 ```ts highlight="7-10"
 const result = await generateObject({
-  model: openai('gpt-4-turbo'),
+  model: openai('gpt-4.1'),
   schema: z.object({
     events: z.array(
       z.object({
@@ -2926,6 +7877,65 @@ const result = await generateObject({
   prompt: 'List 5 important events from the year 2000.',
 });
 ```
+
+#### Optional Parameters
+
+When working with tools that have optional parameters, you may encounter compatibility issues with certain providers that use strict schema validation.
+
+<Note>
+  This is particularly relevant for OpenAI models with structured outputs
+  (strict mode).
+</Note>
+
+For maximum compatibility, optional parameters should use `.nullable()` instead of `.optional()`:
+
+```ts highlight="6,7,16,17"
+// This may fail with strict schema validation
+const failingTool = tool({
+  description: 'Execute a command',
+  inputSchema: z.object({
+    command: z.string(),
+    workdir: z.string().optional(), // This can cause errors
+    timeout: z.string().optional(),
+  }),
+});
+
+// This works with strict schema validation
+const workingTool = tool({
+  description: 'Execute a command',
+  inputSchema: z.object({
+    command: z.string(),
+    workdir: z.string().nullable(), // Use nullable instead
+    timeout: z.string().nullable(),
+  }),
+});
+```
+
+#### Temperature Settings
+
+For tool calls and object generation, it's recommended to use `temperature: 0` to ensure deterministic and consistent results:
+
+```ts highlight="3"
+const result = await generateText({
+  model: openai('gpt-4o'),
+  temperature: 0, // Recommended for tool calls
+  tools: {
+    myTool: tool({
+      description: 'Execute a command',
+      inputSchema: z.object({
+        command: z.string(),
+      }),
+    }),
+  },
+  prompt: 'Execute the ls command',
+});
+```
+
+Lower temperature values reduce randomness in model outputs, which is particularly important when the model needs to:
+
+- Generate structured data with specific formats
+- Make precise tool calls with correct parameters
+- Follow strict schemas consistently
 
 ## Debugging
 
@@ -2975,8 +7985,8 @@ All AI SDK functions support the following common settings in addition to the mo
 
 ```ts highlight="3-5"
 const result = await generateText({
-  model: yourModel,
-  maxTokens: 512,
+  model: 'openai/gpt-4.1',
+  maxOutputTokens: 512,
   temperature: 0.3,
   maxRetries: 5,
   prompt: 'Invent a new holiday and describe its traditions.',
@@ -2990,7 +8000,7 @@ const result = await generateText({
   generated.
 </Note>
 
-### `maxTokens`
+### `maxOutputTokens`
 
 Maximum number of tokens to generate.
 
@@ -3002,6 +8012,8 @@ The value is passed through to the provider. The range depends on the provider a
 For most providers, `0` means almost deterministic results, and higher values mean more randomness.
 
 It is recommended to set either `temperature` or `topP`, but not both.
+
+<Note>In AI SDK 5.0, temperature is no longer set to `0` by default.</Note>
 
 ### `topP`
 
@@ -3110,7 +8122,7 @@ In this space, similar words are close to each other, and the distance between w
 
 The AI SDK provides the [`embed`](/docs/reference/ai-sdk-core/embed) function to embed single values, which is useful for tasks such as finding similar words
 or phrases or clustering text.
-You can use it with embeddings models, e.g. `openai.embedding('text-embedding-3-large')` or `mistral.embedding('mistral-embed')`.
+You can use it with embeddings models, e.g. `openai.textEmbeddingModel('text-embedding-3-large')` or `mistral.textEmbeddingModel('mistral-embed')`.
 
 ```tsx
 import { embed } from 'ai';
@@ -3118,7 +8130,7 @@ import { openai } from '@ai-sdk/openai';
 
 // 'embedding' is a single embedding object (number[])
 const { embedding } = await embed({
-  model: openai.embedding('text-embedding-3-small'),
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
   value: 'sunny day at the beach',
 });
 ```
@@ -3130,7 +8142,7 @@ it is often useful to embed many values at once (batch embedding).
 
 The AI SDK provides the [`embedMany`](/docs/reference/ai-sdk-core/embed-many) function for this purpose.
 Similar to `embed`, you can use it with embeddings models,
-e.g. `openai.embedding('text-embedding-3-large')` or `mistral.embedding('mistral-embed')`.
+e.g. `openai.textEmbeddingModel('text-embedding-3-large')` or `mistral.textEmbeddingModel('mistral-embed')`.
 
 ```tsx
 import { openai } from '@ai-sdk/openai';
@@ -3139,7 +8151,7 @@ import { embedMany } from 'ai';
 // 'embeddings' is an array of embedding objects (number[][]).
 // It is sorted in the same order as the input values.
 const { embeddings } = await embedMany({
-  model: openai.embedding('text-embedding-3-small'),
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
   values: [
     'sunny day at the beach',
     'rainy afternoon in the city',
@@ -3159,7 +8171,7 @@ import { openai } from '@ai-sdk/openai';
 import { cosineSimilarity, embedMany } from 'ai';
 
 const { embeddings } = await embedMany({
-  model: openai.embedding('text-embedding-3-small'),
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
   values: ['sunny day at the beach', 'rainy afternoon in the city'],
 });
 
@@ -3178,7 +8190,7 @@ import { openai } from '@ai-sdk/openai';
 import { embed } from 'ai';
 
 const { embedding, usage } = await embed({
-  model: openai.embedding('text-embedding-3-small'),
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
   value: 'sunny day at the beach',
 });
 
@@ -3186,6 +8198,44 @@ console.log(usage); // { tokens: 10 }
 ```
 
 ## Settings
+
+### Provider Options
+
+Embedding model settings can be configured using `providerOptions` for provider-specific parameters:
+
+```ts highlight={"5-9"}
+import { openai } from '@ai-sdk/openai';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
+  value: 'sunny day at the beach',
+  providerOptions: {
+    openai: {
+      dimensions: 512, // Reduce embedding dimensions
+    },
+  },
+});
+```
+
+### Parallel Requests
+
+The `embedMany` function now supports parallel processing with configurable `maxParallelCalls` to optimize performance:
+
+```ts highlight={"4"}
+import { openai } from '@ai-sdk/openai';
+import { embedMany } from 'ai';
+
+const { embeddings, usage } = await embedMany({
+  maxParallelCalls: 2, // Limit parallel requests
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
+  values: [
+    'sunny day at the beach',
+    'rainy afternoon in the city',
+    'snowy night in the mountains',
+  ],
+});
+```
 
 ### Retries
 
@@ -3198,7 +8248,7 @@ import { openai } from '@ai-sdk/openai';
 import { embed } from 'ai';
 
 const { embedding } = await embed({
-  model: openai.embedding('text-embedding-3-small'),
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
   value: 'sunny day at the beach',
   maxRetries: 0, // Disable retries
 });
@@ -3215,7 +8265,7 @@ import { openai } from '@ai-sdk/openai';
 import { embed } from 'ai';
 
 const { embedding } = await embed({
-  model: openai.embedding('text-embedding-3-small'),
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
   value: 'sunny day at the beach',
   abortSignal: AbortSignal.timeout(1000), // Abort after 1 second
 });
@@ -3231,10 +8281,26 @@ import { openai } from '@ai-sdk/openai';
 import { embed } from 'ai';
 
 const { embedding } = await embed({
-  model: openai.embedding('text-embedding-3-small'),
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
   value: 'sunny day at the beach',
   headers: { 'X-Custom-Header': 'custom-value' },
 });
+```
+
+## Response Information
+
+Both `embed` and `embedMany` return response information that includes the raw provider response:
+
+```ts highlight={"4,9"}
+import { openai } from '@ai-sdk/openai';
+import { embed } from 'ai';
+
+const { embedding, response } = await embed({
+  model: openai.textEmbeddingModel('text-embedding-3-small'),
+  value: 'sunny day at the beach',
+});
+
+console.log(response); // Raw provider response
 ```
 
 ## Embedding Providers & Models
@@ -3246,6 +8312,7 @@ Several providers offer embedding models:
 | [OpenAI](/providers/ai-sdk-providers/openai#embedding-models)                             | `text-embedding-3-large`        | 3072                 |
 | [OpenAI](/providers/ai-sdk-providers/openai#embedding-models)                             | `text-embedding-3-small`        | 1536                 |
 | [OpenAI](/providers/ai-sdk-providers/openai#embedding-models)                             | `text-embedding-ada-002`        | 1536                 |
+| [Google Generative AI](/providers/ai-sdk-providers/google-generative-ai#embedding-models) | `gemini-embedding-001`          | 3072                 |
 | [Google Generative AI](/providers/ai-sdk-providers/google-generative-ai#embedding-models) | `text-embedding-004`            | 768                  |
 | [Mistral](/providers/ai-sdk-providers/mistral#embedding-models)                           | `mistral-embed`                 | 1024                 |
 | [Cohere](/providers/ai-sdk-providers/cohere#embedding-models)                             | `embed-english-v3.0`            | 1024                 |
@@ -3255,7 +8322,7 @@ Several providers offer embedding models:
 | [Cohere](/providers/ai-sdk-providers/cohere#embedding-models)                             | `embed-english-v2.0`            | 4096                 |
 | [Cohere](/providers/ai-sdk-providers/cohere#embedding-models)                             | `embed-english-light-v2.0`      | 1024                 |
 | [Cohere](/providers/ai-sdk-providers/cohere#embedding-models)                             | `embed-multilingual-v2.0`       | 768                  |
-| [Amazon Bedrock](/providers/ai-sdk-providers/amazon-bedrock#embedding-models)             | `amazon.titan-embed-text-v1`    | 1024                 |
+| [Amazon Bedrock](/providers/ai-sdk-providers/amazon-bedrock#embedding-models)             | `amazon.titan-embed-text-v1`    | 1536                 |
 | [Amazon Bedrock](/providers/ai-sdk-providers/amazon-bedrock#embedding-models)             | `amazon.titan-embed-text-v2:0`  | 1024                 |
 
 ---
@@ -3349,16 +8416,13 @@ const { images } = await generateImage({
 
 Each image model has an internal limit on how many images it can generate in a single API call. The AI SDK manages this automatically by batching requests appropriately when you request multiple images using the `n` parameter. By default, the SDK uses provider-documented limits (for example, DALL-E 3 can only generate 1 image per call, while DALL-E 2 supports up to 10).
 
-If needed, you can override this behavior using the `maxImagesPerCall` setting when configuring your model. This is particularly useful when working with new or custom models where the default batch size might not be optimal:
+If needed, you can override this behavior using the `maxImagesPerCall` setting when generating your image. This is particularly useful when working with new or custom models where the default batch size might not be optimal:
 
 ```tsx
-const model = openai.image('dall-e-2', {
-  maxImagesPerCall: 5, // Override the default batch size
-});
-
 const { images } = await generateImage({
-  model,
+  model: openai.image('dall-e-2'),
   prompt: 'Santa Claus driving a Cadillac',
+  maxImagesPerCall: 5, // Override the default batch size
   n: 10, // Will make 2 calls of 5 images each
 });
 ```
@@ -3428,7 +8492,7 @@ import { experimental_generateImage as generateImage } from 'ai';
 
 const { image } = await generateImage({
   model: openai.image('dall-e-3'),
-  value: 'sunny day at the beach',
+  prompt: 'Santa Claus driving a Cadillac',
   headers: { 'X-Custom-Header': 'custom-value' },
 });
 ```
@@ -3443,6 +8507,28 @@ const { image, warnings } = await generateImage({
   prompt: 'Santa Claus driving a Cadillac',
 });
 ```
+
+### Additional provider-specific meta data
+
+Some providers expose additional meta data for the result overall or per image.
+
+```tsx
+const prompt = 'Santa Claus driving a Cadillac';
+
+const { image, providerMetadata } = await generateImage({
+  model: openai.image('dall-e-3'),
+  prompt,
+});
+
+const revisedPrompt = providerMetadata.openai.images[0]?.revisedPrompt;
+
+console.log({
+  prompt,
+  revisedPrompt,
+});
+```
+
+The outer key of the returned `providerMetadata` is the provider name. The inner values are the metadata. An `images` key is always present in the metadata and is an array with the same length as the top level `images` key.
 
 ### Error Handling
 
@@ -3490,12 +8576,12 @@ const result = await generateText({
 });
 
 for (const file of result.files) {
-  if (file.mimeType.startsWith('image/')) {
+  if (file.mediaType.startsWith('image/')) {
     // The file object provides multiple data formats:
     // Access images as base64 string, Uint8Array binary data, or check type
     // - file.base64: string (data URL format)
     // - file.uint8Array: Uint8Array (binary data)
-    // - file.mimeType: string (e.g. "image/png")
+    // - file.mediaType: string (e.g. "image/png")
   }
 }
 ```
@@ -3526,6 +8612,7 @@ for (const file of result.files) {
 | [DeepInfra](/providers/ai-sdk-providers/deepinfra#image-models)           | `stabilityai/sdxl-turbo`                                     | 1:1, 16:9, 1:9, 3:2, 2:3, 4:5, 5:4, 9:16, 9:21                                                                                                                      |
 | [Replicate](/providers/ai-sdk-providers/replicate)                        | `black-forest-labs/flux-schnell`                             | 1:1, 2:3, 3:2, 4:5, 5:4, 16:9, 9:16, 9:21, 21:9                                                                                                                     |
 | [Replicate](/providers/ai-sdk-providers/replicate)                        | `recraft-ai/recraft-v3`                                      | 1024x1024, 1365x1024, 1024x1365, 1536x1024, 1024x1536, 1820x1024, 1024x1820, 1024x2048, 2048x1024, 1434x1024, 1024x1434, 1024x1280, 1280x1024, 1024x1707, 1707x1024 |
+| [Google](/providers/ai-sdk-providers/google#image-models)                 | `imagen-3.0-generate-002`                                    | 1:1, 3:4, 4:3, 9:16, 16:9                                                                                                                                           |
 | [Google Vertex](/providers/ai-sdk-providers/google-vertex#image-models)   | `imagen-3.0-generate-002`                                    | 1:1, 3:4, 4:3, 9:16, 16:9                                                                                                                                           |
 | [Google Vertex](/providers/ai-sdk-providers/google-vertex#image-models)   | `imagen-3.0-fast-generate-001`                               | 1:1, 3:4, 4:3, 9:16, 16:9                                                                                                                                           |
 | [Fireworks](/providers/ai-sdk-providers/fireworks#image-models)           | `accounts/fireworks/models/flux-1-dev-fp8`                   | 1:1, 2:3, 3:2, 4:5, 5:4, 16:9, 9:16, 9:21, 21:9                                                                                                                     |
@@ -3744,12 +8831,26 @@ function to generate speech from text using a speech model.
 ```ts
 import { experimental_generateSpeech as generateSpeech } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { readFile } from 'fs/promises';
 
 const audio = await generateSpeech({
   model: openai.speech('tts-1'),
   text: 'Hello, world!',
   voice: 'alloy',
+});
+```
+
+### Language Setting
+
+You can specify the language for speech generation (provider support varies):
+
+```ts
+import { experimental_generateSpeech as generateSpeech } from 'ai';
+import { lmnt } from '@ai-sdk/lmnt';
+
+const audio = await generateSpeech({
+  model: lmnt.speech('aurora'),
+  text: 'Hola, mundo!',
+  language: 'es', // Spanish
 });
 ```
 
@@ -3765,10 +8866,9 @@ const audio = audio.audioData; // audio data e.g. Uint8Array
 
 You can set model-specific settings with the `providerOptions` parameter.
 
-```ts highlight="8-12"
+```ts highlight="7-11"
 import { experimental_generateSpeech as generateSpeech } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { readFile } from 'fs/promises';
 
 const audio = await generateSpeech({
   model: openai.speech('tts-1'),
@@ -3787,10 +8887,9 @@ const audio = await generateSpeech({
 type [`AbortSignal`](https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal)
 that you can use to abort the speech generation process or set a timeout.
 
-```ts highlight="8"
+```ts highlight="7"
 import { openai } from '@ai-sdk/openai';
 import { experimental_generateSpeech as generateSpeech } from 'ai';
-import { readFile } from 'fs/promises';
 
 const audio = await generateSpeech({
   model: openai.speech('tts-1'),
@@ -3804,10 +8903,9 @@ const audio = await generateSpeech({
 `generateSpeech` accepts an optional `headers` parameter of type `Record<string, string>`
 that you can use to add custom headers to the speech generation request.
 
-```ts highlight="8"
+```ts highlight="7"
 import { openai } from '@ai-sdk/openai';
 import { experimental_generateSpeech as generateSpeech } from 'ai';
-import { readFile } from 'fs/promises';
 
 const audio = await generateSpeech({
   model: openai.speech('tts-1'),
@@ -3823,7 +8921,6 @@ Warnings (e.g. unsupported parameters) are available on the `warnings` property.
 ```ts
 import { openai } from '@ai-sdk/openai';
 import { experimental_generateSpeech as generateSpeech } from 'ai';
-import { readFile } from 'fs/promises';
 
 const audio = await generateSpeech({
   model: openai.speech('tts-1'),
@@ -3853,7 +8950,6 @@ import {
   AI_NoAudioGeneratedError,
 } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { readFile } from 'fs/promises';
 
 try {
   await generateSpeech({
@@ -3871,14 +8967,20 @@ try {
 
 ## Speech Models
 
-| Provider                                                   | Model             |
-| ---------------------------------------------------------- | ----------------- |
-| [OpenAI](/providers/ai-sdk-providers/openai#speech-models) | `tts-1`           |
-| [OpenAI](/providers/ai-sdk-providers/openai#speech-models) | `tts-1-hd`        |
-| [OpenAI](/providers/ai-sdk-providers/openai#speech-models) | `gpt-4o-mini-tts` |
-| [LMNT](/providers/ai-sdk-providers/lmnt#speech-models)     | `aurora`          |
-| [LMNT](/providers/ai-sdk-providers/lmnt#speech-models)     | `blizzard`        |
-| [Hume](/providers/ai-sdk-providers/hume#speech-models)     | `default`         |
+| Provider                                                           | Model                    |
+| ------------------------------------------------------------------ | ------------------------ |
+| [OpenAI](/providers/ai-sdk-providers/openai#speech-models)         | `tts-1`                  |
+| [OpenAI](/providers/ai-sdk-providers/openai#speech-models)         | `tts-1-hd`               |
+| [OpenAI](/providers/ai-sdk-providers/openai#speech-models)         | `gpt-4o-mini-tts`        |
+| [ElevenLabs](/providers/ai-sdk-providers/elevenlabs#speech-models) | `eleven_v3`              |
+| [ElevenLabs](/providers/ai-sdk-providers/elevenlabs#speech-models) | `eleven_multilingual_v2` |
+| [ElevenLabs](/providers/ai-sdk-providers/elevenlabs#speech-models) | `eleven_flash_v2_5`      |
+| [ElevenLabs](/providers/ai-sdk-providers/elevenlabs#speech-models) | `eleven_flash_v2`        |
+| [ElevenLabs](/providers/ai-sdk-providers/elevenlabs#speech-models) | `eleven_turbo_v2_5`      |
+| [ElevenLabs](/providers/ai-sdk-providers/elevenlabs#speech-models) | `eleven_turbo_v2`        |
+| [LMNT](/providers/ai-sdk-providers/lmnt#speech-models)             | `aurora`                 |
+| [LMNT](/providers/ai-sdk-providers/lmnt#speech-models)             | `blizzard`               |
+| [Hume](/providers/ai-sdk-providers/hume#speech-models)             | `default`                |
 
 Above are a small subset of the speech models supported by the AI SDK providers. For more, see the respective provider documentation.
 
@@ -3993,28 +9095,65 @@ const model = wrapLanguageModel({
   middleware: defaultSettingsMiddleware({
     settings: {
       temperature: 0.5,
-      maxTokens: 800,
-      // note: use providerMetadata instead of providerOptions here:
-      providerMetadata: { openai: { store: false } },
+      maxOutputTokens: 800,
+      providerOptions: { openai: { store: false } },
     },
   }),
 });
 ```
+
+## Community Middleware
+
+The AI SDK provides a Language Model Middleware specification. Community members can develop middleware that adheres to this specification, making it compatible with the AI SDK ecosystem.
+
+Here are some community middlewares that you can explore:
+
+### Custom tool call parser
+
+The [Custom tool call parser](https://github.com/minpeter/ai-sdk-tool-call-middleware) middleware extends tool call capabilities to models that don't natively support the OpenAI-style `tools` parameter. This includes many self-hosted and third-party models that lack native function calling features.
+
+<Note>
+  Using this middleware on models that support native function calls may result
+  in unintended performance degradation, so check whether your model supports
+  native function calls before deciding to use it.
+</Note>
+
+This middleware enables function calling capabilities by converting function schemas into prompt instructions and parsing the model's responses into structured function calls. It works by transforming the JSON function definitions into natural language instructions the model can understand, then analyzing the generated text to extract function call attempts. This approach allows developers to use the same function calling API across different model providers, even with models that don't natively support the OpenAI-style function calling format, providing a consistent function calling experience regardless of the underlying model implementation.
+
+The `@ai-sdk-tool/parser` package offers three middleware variants:
+
+- `createToolMiddleware`: A flexible function for creating custom tool call middleware tailored to specific models
+- `hermesToolMiddleware`: Ready-to-use middleware for Hermes & Qwen format function calls
+- `gemmaToolMiddleware`: Pre-configured middleware for Gemma 3 model series function call format
+
+Here's how you can enable function calls with Gemma models that don't support them natively:
+
+```ts
+import { wrapLanguageModel } from 'ai';
+import { gemmaToolMiddleware } from '@ai-sdk-tool/parser';
+
+const model = wrapLanguageModel({
+  model: openrouter('google/gemma-3-27b-it'),
+  middleware: gemmaToolMiddleware,
+});
+```
+
+Find more examples at this [link](https://github.com/minpeter/ai-sdk-tool-call-middleware/tree/main/examples/core/src).
 
 ## Implementing Language Model Middleware
 
 <Note>
   Implementing language model middleware is advanced functionality and requires
   a solid understanding of the [language model
-  specification](https://github.com/vercel/ai/blob/main/packages/provider/src/language-model/v1/language-model-v1.ts).
+  specification](https://github.com/vercel/ai/blob/v5/packages/provider/src/language-model/v2/language-model-v2.ts).
 </Note>
 
 You can implement any of the following three function to modify the behavior of the language model:
 
 1. `transformParams`: Transforms the parameters before they are passed to the language model, for both `doGenerate` and `doStream`.
-2. `wrapGenerate`: Wraps the `doGenerate` method of the [language model](https://github.com/vercel/ai/blob/main/packages/provider/src/language-model/v1/language-model-v1.ts).
+2. `wrapGenerate`: Wraps the `doGenerate` method of the [language model](https://github.com/vercel/ai/blob/v5/packages/provider/src/language-model/v2/language-model-v2.ts).
    You can modify the parameters, call the language model, and modify the result.
-3. `wrapStream`: Wraps the `doStream` method of the [language model](https://github.com/vercel/ai/blob/main/packages/provider/src/language-model/v1/language-model-v1.ts).
+3. `wrapStream`: Wraps the `doStream` method of the [language model](https://github.com/vercel/ai/blob/v5/packages/provider/src/language-model/v2/language-model-v2.ts).
    You can modify the parameters, call the language model, and modify the result.
 
 Here are some examples of how to implement language model middleware:
@@ -4031,9 +9170,12 @@ Here are some examples of how to implement language model middleware:
 This example shows how to log the parameters and generated text of a language model call.
 
 ```ts
-import type { LanguageModelMiddleware, LanguageModelStreamPart } from 'ai';
+import type {
+  LanguageModelV2Middleware,
+  LanguageModelV2StreamPart,
+} from '@ai-sdk/provider';
 
-export const yourLogMiddleware: LanguageModelMiddleware = {
+export const yourLogMiddleware: LanguageModelV2Middleware = {
   wrapGenerate: async ({ doGenerate, params }) => {
     console.log('doGenerate called');
     console.log(`params: ${JSON.stringify(params, null, 2)}`);
@@ -4053,14 +9195,31 @@ export const yourLogMiddleware: LanguageModelMiddleware = {
     const { stream, ...rest } = await doStream();
 
     let generatedText = '';
+    const textBlocks = new Map<string, string>();
 
     const transformStream = new TransformStream<
-      LanguageModelStreamPart,
-      LanguageModelStreamPart
+      LanguageModelV2StreamPart,
+      LanguageModelV2StreamPart
     >({
       transform(chunk, controller) {
-        if (chunk.type === 'text-delta') {
-          generatedText += chunk.textDelta;
+        switch (chunk.type) {
+          case 'text-start': {
+            textBlocks.set(chunk.id, '');
+            break;
+          }
+          case 'text-delta': {
+            const existing = textBlocks.get(chunk.id) || '';
+            textBlocks.set(chunk.id, existing + chunk.delta);
+            generatedText += chunk.delta;
+            break;
+          }
+          case 'text-end': {
+            console.log(
+              `Text block ${chunk.id} completed:`,
+              textBlocks.get(chunk.id),
+            );
+            break;
+          }
         }
 
         controller.enqueue(chunk);
@@ -4085,11 +9244,11 @@ export const yourLogMiddleware: LanguageModelMiddleware = {
 This example shows how to build a simple cache for the generated text of a language model call.
 
 ```ts
-import type { LanguageModelMiddleware } from 'ai';
+import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
 
 const cache = new Map<string, any>();
 
-export const yourCacheMiddleware: LanguageModelMiddleware = {
+export const yourCacheMiddleware: LanguageModelV2Middleware = {
   wrapGenerate: async ({ doGenerate, params }) => {
     const cacheKey = JSON.stringify(params);
 
@@ -4119,9 +9278,9 @@ This example shows how to use RAG as middleware.
 </Note>
 
 ```ts
-import type { LanguageModelMiddleware } from 'ai';
+import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
 
-export const yourRagMiddleware: LanguageModelMiddleware = {
+export const yourRagMiddleware: LanguageModelV2Middleware = {
   transformParams: async ({ params }) => {
     const lastUserMessageText = getLastUserMessageText({
       prompt: params.prompt,
@@ -4148,9 +9307,9 @@ Guard rails are a way to ensure that the generated text of a language model call
 is safe and appropriate. This example shows how to use guardrails as middleware.
 
 ```ts
-import type { LanguageModelMiddleware } from 'ai';
+import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
 
-export const yourGuardrailMiddleware: LanguageModelMiddleware = {
+export const yourGuardrailMiddleware: LanguageModelV2Middleware = {
   wrapGenerate: async ({ doGenerate }) => {
     const { text, ...rest } = await doGenerate();
 
@@ -4172,9 +9331,10 @@ To send and access custom metadata in Middleware, you can use `providerOptions`.
 
 ```ts
 import { openai } from '@ai-sdk/openai';
-import { generateText, wrapLanguageModel, LanguageModelMiddleware } from 'ai';
+import { generateText, wrapLanguageModel } from 'ai';
+import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
 
-export const yourLogMiddleware: LanguageModelMiddleware = {
+export const yourLogMiddleware: LanguageModelV2Middleware = {
   wrapGenerate: async ({ doGenerate, params }) => {
     console.log('METADATA', params?.providerMetadata?.yourLogMiddleware);
     const result = await doGenerate();
@@ -4230,16 +9390,40 @@ with pre-configured settings.
 
 ```ts
 import { openai as originalOpenAI } from '@ai-sdk/openai';
-import { customProvider } from 'ai';
+import {
+  customProvider,
+  defaultSettingsMiddleware,
+  wrapLanguageModel,
+} from 'ai';
 
-// custom provider with different model settings:
+// custom provider with different provider options:
 export const openai = customProvider({
   languageModels: {
-    // replacement model with custom settings:
-    'gpt-4o': originalOpenAI('gpt-4o', { structuredOutputs: true }),
-    // alias model with custom settings:
-    'gpt-4o-mini-structured': originalOpenAI('gpt-4o-mini', {
-      structuredOutputs: true,
+    // replacement model with custom provider options:
+    'gpt-4o': wrapLanguageModel({
+      model: originalOpenAI('gpt-4o'),
+      middleware: defaultSettingsMiddleware({
+        settings: {
+          providerOptions: {
+            openai: {
+              reasoningEffort: 'high',
+            },
+          },
+        },
+      }),
+    }),
+    // alias model with custom provider options:
+    'gpt-4o-mini-high-reasoning': wrapLanguageModel({
+      model: originalOpenAI('gpt-4o-mini'),
+      middleware: defaultSettingsMiddleware({
+        settings: {
+          providerOptions: {
+            openai: {
+              reasoningEffort: 'high',
+            },
+          },
+        },
+      }),
     }),
   },
   fallbackProvider: originalOpenAI,
@@ -4272,17 +9456,43 @@ You can limit the available models in the system, even if you have multiple prov
 ```ts
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
-import { customProvider } from 'ai';
+import {
+  customProvider,
+  defaultSettingsMiddleware,
+  wrapLanguageModel,
+} from 'ai';
 
 export const myProvider = customProvider({
   languageModels: {
     'text-medium': anthropic('claude-3-5-sonnet-20240620'),
     'text-small': openai('gpt-4o-mini'),
-    'structure-medium': openai('gpt-4o', { structuredOutputs: true }),
-    'structure-fast': openai('gpt-4o-mini', { structuredOutputs: true }),
+    'reasoning-medium': wrapLanguageModel({
+      model: openai('gpt-4o'),
+      middleware: defaultSettingsMiddleware({
+        settings: {
+          providerOptions: {
+            openai: {
+              reasoningEffort: 'high',
+            },
+          },
+        },
+      }),
+    }),
+    'reasoning-fast': wrapLanguageModel({
+      model: openai('gpt-4o-mini'),
+      middleware: defaultSettingsMiddleware({
+        settings: {
+          providerOptions: {
+            openai: {
+              reasoningEffort: 'high',
+            },
+          },
+        },
+      }),
+    }),
   },
   embeddingModels: {
-    emdedding: openai.textEmbeddingModel('text-embedding-3-small'),
+    embedding: openai.textEmbeddingModel('text-embedding-3-small'),
   },
   // no fallback provider
 });
@@ -4315,6 +9525,7 @@ export const registry = createProviderRegistry({
 By default, the registry uses `:` as the separator between provider and model IDs. You can customize this separator:
 
 ```ts filename={"registry.ts"}
+import { createProviderRegistry } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { openai } from '@ai-sdk/openai';
 
@@ -4337,9 +9548,9 @@ import { generateText } from 'ai';
 import { registry } from './registry';
 
 const { text } = await generateText({
-  model: registry.languageModel('openai:gpt-4-turbo'), // default separator
+  model: registry.languageModel('openai:gpt-4.1'), // default separator
   // or with custom separator:
-  // model: customSeparatorRegistry.languageModel('openai > gpt-4-turbo'),
+  // model: customSeparatorRegistry.languageModel('openai > gpt-4.1'),
   prompt: 'Invent a new holiday and describe its traditions.',
 });
 ```
@@ -4427,8 +9638,8 @@ export const registry = createProviderRegistry(
           model: anthropic('claude-3-7-sonnet-20250219'),
           middleware: defaultSettingsMiddleware({
             settings: {
-              maxTokens: 100000, // example default setting
-              providerMetadata: {
+              maxOutputTokens: 100000, // example default setting
+              providerOptions: {
                 anthropic: {
                   thinking: {
                     type: 'enabled',
@@ -4458,6 +9669,43 @@ export const registry = createProviderRegistry(
 const model = registry.languageModel('anthropic > reasoning');
 ```
 
+## Global Provider Configuration
+
+The AI SDK 5 includes a global provider feature that allows you to specify a model using just a plain model ID string:
+
+```ts
+import { streamText } from 'ai';
+
+const result = await streamText({
+  model: 'openai/gpt-4o', // Uses the global provider (defaults to AI Gateway)
+  prompt: 'Invent a new holiday and describe its traditions.',
+});
+```
+
+By default, the global provider is set to the Vercel AI Gateway.
+
+### Customizing the Global Provider
+
+You can set your own preferred global provider:
+
+```ts filename="setup.ts"
+import { openai } from '@ai-sdk/openai';
+
+// Initialize once during startup:
+globalThis.AI_SDK_DEFAULT_PROVIDER = openai;
+```
+
+```ts filename="app.ts"
+import { streamText } from 'ai';
+
+const result = await streamText({
+  model: 'gpt-4o', // Uses OpenAI provider without prefix
+  prompt: 'Invent a new holiday and describe its traditions.',
+});
+```
+
+This simplifies provider usage and makes it easier to switch between providers without changing your model references throughout your codebase.
+
 ---
 
 title: Error Handling
@@ -4476,7 +9724,7 @@ import { generateText } from 'ai';
 
 try {
   const { text } = await generateText({
-    model: yourModel,
+    model: 'openai/gpt-4.1',
     prompt: 'Write a vegetarian lasagna recipe for 4 people.',
   });
 } catch (error) {
@@ -4497,7 +9745,7 @@ import { generateText } from 'ai';
 
 try {
   const { textStream } = streamText({
-    model: yourModel,
+    model: 'openai/gpt-4.1',
     prompt: 'Write a vegetarian lasagna recipe for 4 people.',
   });
 
@@ -4516,12 +9764,12 @@ You can handle those parts similar to other parts.
 It is recommended to also add a try-catch block for errors that
 happen outside of the streaming.
 
-```ts highlight="13-17"
+```ts highlight="13-21"
 import { generateText } from 'ai';
 
 try {
   const { fullStream } = streamText({
-    model: yourModel,
+    model: 'openai/gpt-4.1',
     prompt: 'Write a vegetarian lasagna recipe for 4 people.',
   });
 
@@ -4534,10 +9782,74 @@ try {
         // handle error
         break;
       }
+
+      case 'abort': {
+        // handle stream abort
+        break;
+      }
+
+      case 'tool-error': {
+        const error = part.error;
+        // handle error
+        break;
+      }
     }
   }
 } catch (error) {
   // handle error
+}
+```
+
+## Handling stream aborts
+
+When streams are aborted (e.g., via chat stop button), you may want to perform cleanup operations like updating stored messages in your UI. Use the `onAbort` callback to handle these cases.
+
+The `onAbort` callback is called when a stream is aborted via `AbortSignal`, but `onFinish` is not called. This ensures you can still update your UI state appropriately.
+
+```ts highlight="5-9"
+import { streamText } from 'ai';
+
+const { textStream } = streamText({
+  model: 'openai/gpt-4.1',
+  prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+  onAbort: ({ steps }) => {
+    // Update stored messages or perform cleanup
+    console.log('Stream aborted after', steps.length, 'steps');
+  },
+  onFinish: ({ steps, totalUsage }) => {
+    // This is called on normal completion
+    console.log('Stream completed normally');
+  },
+});
+
+for await (const textPart of textStream) {
+  process.stdout.write(textPart);
+}
+```
+
+The `onAbort` callback receives:
+
+- `steps`: An array of all completed steps before the abort
+
+You can also handle abort events directly in the stream:
+
+```ts highlight="10-13"
+import { streamText } from 'ai';
+
+const { fullStream } = streamText({
+  model: 'openai/gpt-4.1',
+  prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+});
+
+for await (const chunk of fullStream) {
+  switch (chunk.type) {
+    case 'abort': {
+      // Handle abort directly in stream
+      console.log('Stream was aborted');
+      break;
+    }
+    // ... handle other part types
+  }
 }
 ```
 
@@ -4556,8 +9868,8 @@ and calling them is slow and expensive.
 To enable you to unit test your code that uses the AI SDK, the AI SDK Core
 includes mock providers and test helpers. You can import the following helpers from `ai/test`:
 
-- `MockEmbeddingModelV2`: A mock embedding model using the [embedding model v1 specification](https://github.com/vercel/ai/blob/main/packages/provider/src/embedding-model/v1/embedding-model-v1.ts).
-- `MockLanguageModel`: A mock language model using the [language model v1 specification](https://github.com/vercel/ai/blob/main/packages/provider/src/language-model/v1/language-model-v1.ts).
+- `MockEmbeddingModelV2`: A mock embedding model using the [embedding model v2 specification](https://github.com/vercel/ai/blob/v5/packages/provider/src/embedding-model/v2/embedding-model-v2.ts).
+- `MockLanguageModelV2`: A mock language model using the [language model v2 specification](https://github.com/vercel/ai/blob/v5/packages/provider/src/language-model/v2/language-model-v2.ts).
 - `mockId`: Provides an incrementing integer ID.
 - `mockValues`: Iterates over an array of values with each call. Returns the last value when the array is exhausted.
 - [`simulateReadableStream`](/docs/reference/ai-sdk-core/simulate-readable-stream): Simulates a readable stream with delays.
@@ -4574,15 +9886,15 @@ You can use the test helpers with the AI Core functions in your unit tests:
 
 ```ts
 import { generateText } from 'ai';
-import { MockLanguageModel } from 'ai/test';
+import { MockLanguageModelV2 } from 'ai/test';
 
 const result = await generateText({
-  model: new MockLanguageModel({
+  model: new MockLanguageModelV2({
     doGenerate: async () => ({
-      rawCall: { rawPrompt: null, rawSettings: {} },
       finishReason: 'stop',
-      usage: { promptTokens: 10, completionTokens: 20 },
-      text: `Hello, world!`,
+      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      content: [{ type: 'text', text: `Hello, world!` }],
+      warnings: [],
     }),
   }),
   prompt: 'Hello, test!',
@@ -4593,25 +9905,26 @@ const result = await generateText({
 
 ```ts
 import { streamText, simulateReadableStream } from 'ai';
-import { MockLanguageModel } from 'ai/test';
+import { MockLanguageModelV2 } from 'ai/test';
 
 const result = streamText({
-  model: new MockLanguageModel({
+  model: new MockLanguageModelV2({
     doStream: async () => ({
       stream: simulateReadableStream({
         chunks: [
-          { type: 'text-delta', textDelta: 'Hello' },
-          { type: 'text-delta', textDelta: ', ' },
-          { type: 'text-delta', textDelta: `world!` },
+          { type: 'text-start', id: 'text-1' },
+          { type: 'text-delta', id: 'text-1', delta: 'Hello' },
+          { type: 'text-delta', id: 'text-1', delta: ', ' },
+          { type: 'text-delta', id: 'text-1', delta: 'world!' },
+          { type: 'text-end', id: 'text-1' },
           {
             type: 'finish',
             finishReason: 'stop',
             logprobs: undefined,
-            usage: { completionTokens: 10, promptTokens: 3 },
+            usage: { inputTokens: 3, outputTokens: 10, totalTokens: 13 },
           },
         ],
       }),
-      rawCall: { rawPrompt: null, rawSettings: {} },
     }),
   }),
   prompt: 'Hello, test!',
@@ -4622,17 +9935,16 @@ const result = streamText({
 
 ```ts
 import { generateObject } from 'ai';
-import { MockLanguageModel } from 'ai/test';
+import { MockLanguageModelV2 } from 'ai/test';
 import { z } from 'zod';
 
 const result = await generateObject({
-  model: new MockLanguageModel({
-    defaultObjectGenerationMode: 'json',
+  model: new MockLanguageModelV2({
     doGenerate: async () => ({
-      rawCall: { rawPrompt: null, rawSettings: {} },
       finishReason: 'stop',
-      usage: { promptTokens: 10, completionTokens: 20 },
-      text: `{"content":"Hello, world!"}`,
+      usage: { inputTokens: 10, outputTokens: 20, totalTokens: 30 },
+      content: [{ type: 'text', text: `{"content":"Hello, world!"}` }],
+      warnings: [],
     }),
   }),
   schema: z.object({ content: z.string() }),
@@ -4644,30 +9956,30 @@ const result = await generateObject({
 
 ```ts
 import { streamObject, simulateReadableStream } from 'ai';
-import { MockLanguageModel } from 'ai/test';
+import { MockLanguageModelV2 } from 'ai/test';
 import { z } from 'zod';
 
 const result = streamObject({
-  model: new MockLanguageModel({
-    defaultObjectGenerationMode: 'json',
+  model: new MockLanguageModelV2({
     doStream: async () => ({
       stream: simulateReadableStream({
         chunks: [
-          { type: 'text-delta', textDelta: '{ ' },
-          { type: 'text-delta', textDelta: '"content": ' },
-          { type: 'text-delta', textDelta: `"Hello, ` },
-          { type: 'text-delta', textDelta: `world` },
-          { type: 'text-delta', textDelta: `!"` },
-          { type: 'text-delta', textDelta: ' }' },
+          { type: 'text-start', id: 'text-1' },
+          { type: 'text-delta', id: 'text-1', delta: '{ ' },
+          { type: 'text-delta', id: 'text-1', delta: '"content": ' },
+          { type: 'text-delta', id: 'text-1', delta: `"Hello, ` },
+          { type: 'text-delta', id: 'text-1', delta: `world` },
+          { type: 'text-delta', id: 'text-1', delta: `!"` },
+          { type: 'text-delta', id: 'text-1', delta: ' }' },
+          { type: 'text-end', id: 'text-1' },
           {
             type: 'finish',
             finishReason: 'stop',
             logprobs: undefined,
-            usage: { completionTokens: 10, promptTokens: 3 },
+            usage: { inputTokens: 3, outputTokens: 10, totalTokens: 13 },
           },
         ],
       }),
-      rawCall: { rawPrompt: null, rawSettings: {} },
     }),
   }),
   schema: z.object({ content: z.string() }),
@@ -4675,9 +9987,9 @@ const result = streamObject({
 });
 ```
 
-### Simulate Data Stream Protocol Responses
+### Simulate UI Message Stream Responses
 
-You can also simulate [Data Stream Protocol](/docs/ai-sdk-ui/stream-protocol#data-stream-protocol) responses for testing,
+You can also simulate [UI Message Stream](/docs/ai-sdk-ui/stream-protocol#ui-message-stream) responses for testing,
 debugging, or demonstration purposes.
 
 Here is a Next example:
@@ -4691,18 +10003,23 @@ export async function POST(req: Request) {
       initialDelayInMs: 1000, // Delay before the first chunk
       chunkDelayInMs: 300, // Delay between chunks
       chunks: [
-        `0:"This"\n`,
-        `0:" is an"\n`,
-        `0:"example."\n`,
-        `e:{"finishReason":"stop","usage":{"promptTokens":20,"completionTokens":50},"isContinued":false}\n`,
-        `d:{"finishReason":"stop","usage":{"promptTokens":20,"completionTokens":50}}\n`,
+        `data: {"type":"start","messageId":"msg-123"}\n\n`,
+        `data: {"type":"text-start","id":"text-1"}\n\n`,
+        `data: {"type":"text-delta","id":"text-1","delta":"This"}\n\n`,
+        `data: {"type":"text-delta","id":"text-1","delta":" is an"}\n\n`,
+        `data: {"type":"text-delta","id":"text-1","delta":" example."}\n\n`,
+        `data: {"type":"text-end","id":"text-1"}\n\n`,
+        `data: {"type":"finish"}\n\n`,
+        `data: [DONE]\n\n`,
       ],
     }).pipeThrough(new TextEncoderStream()),
     {
       status: 200,
       headers: {
-        'X-Vercel-AI-Data-Stream': 'v1',
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'x-vercel-ai-ui-message-stream': 'v1',
       },
     },
   );
@@ -4737,7 +10054,7 @@ You can then use the `experimental_telemetry` option to enable telemetry on spec
 
 ```ts highlight="4"
 const result = await generateText({
-  model: openai('gpt-4-turbo'),
+  model: openai('gpt-4.1'),
   prompt: 'Write a short story about a cat.',
   experimental_telemetry: { isEnabled: true },
 });
@@ -4756,7 +10073,7 @@ and `metadata` to include additional information in the telemetry data.
 
 ```ts highlight="6-10"
 const result = await generateText({
-  model: openai('gpt-4-turbo'),
+  model: openai('gpt-4.1'),
   prompt: 'Write a short story about a cat.',
   experimental_telemetry: {
     isEnabled: true,
@@ -4777,7 +10094,7 @@ you want your traces to use a `TracerProvider` other than the one provided by th
 ```ts highlight="7"
 const tracerProvider = new NodeTracerProvider();
 const result = await generateText({
-  model: openai('gpt-4-turbo'),
+  model: openai('gpt-4.1'),
   prompt: 'Write a short story about a cat.',
   experimental_telemetry: {
     isEnabled: true,
@@ -4801,18 +10118,17 @@ const result = await generateText({
   - `ai.response.text`: the text that was generated
   - `ai.response.toolCalls`: the tool calls that were made as part of the generation (stringified JSON)
   - `ai.response.finishReason`: the reason why the generation finished
-  - `ai.settings.maxSteps`: the maximum number of steps that were set
+  - `ai.settings.maxOutputTokens`: the maximum number of output tokens that were set
 
 - `ai.generateText.doGenerate` (span): a provider doGenerate call. It can contain `ai.toolCall` spans.
   It contains the [call LLM span information](#call-llm-span-information) and the following attributes:
 
   - `operation.name`: `ai.generateText.doGenerate` and the functionId that was set through `telemetry.functionId`
   - `ai.operationId`: `"ai.generateText.doGenerate"`
-  - `ai.prompt.format`: the format of the prompt
   - `ai.prompt.messages`: the messages that were passed into the provider
-  - `ai.prompt.tools`: array of stringified tool definitions. The tools can be of type `function` or `provider-defined`.
-    Function tools have a `name`, `description` (optional), and `parameters` (JSON schema).
-    Provider-defined tools have a `name`, `id`, and `args` (Record).
+  - `ai.prompt.tools`: array of stringified tool definitions. The tools can be of type `function` or `provider-defined-client`.
+    Function tools have a `name`, `description` (optional), and `inputSchema` (JSON schema).
+    Provider-defined-client tools have a `name`, `id`, and `input` (Record).
   - `ai.prompt.toolChoice`: the stringified tool choice setting (JSON). It has a `type` property
     (`auto`, `none`, `required`, `tool`), and if the type is `tool`, a `toolName` property with the specific tool.
   - `ai.response.text`: the text that was generated
@@ -4834,7 +10150,7 @@ const result = await generateText({
   - `ai.response.text`: the text that was generated
   - `ai.response.toolCalls`: the tool calls that were made as part of the generation (stringified JSON)
   - `ai.response.finishReason`: the reason why the generation finished
-  - `ai.settings.maxSteps`: the maximum number of steps that were set
+  - `ai.settings.maxOutputTokens`: the maximum number of output tokens that were set
 
 - `ai.streamText.doStream` (span): a provider doStream call.
   This span contains an `ai.stream.firstChunk` event and `ai.toolCall` spans.
@@ -4842,11 +10158,10 @@ const result = await generateText({
 
   - `operation.name`: `ai.streamText.doStream` and the functionId that was set through `telemetry.functionId`
   - `ai.operationId`: `"ai.streamText.doStream"`
-  - `ai.prompt.format`: the format of the prompt
   - `ai.prompt.messages`: the messages that were passed into the provider
-  - `ai.prompt.tools`: array of stringified tool definitions. The tools can be of type `function` or `provider-defined`.
-    Function tools have a `name`, `description` (optional), and `parameters` (JSON schema).
-    Provider-defined tools have a `name`, `id`, and `args` (Record).
+  - `ai.prompt.tools`: array of stringified tool definitions. The tools can be of type `function` or `provider-defined-client`.
+    Function tools have a `name`, `description` (optional), and `inputSchema` (JSON schema).
+    Provider-defined-client tools have a `name`, `id`, and `input` (Record).
   - `ai.prompt.toolChoice`: the stringified tool choice setting (JSON). It has a `type` property
     (`auto`, `none`, `required`, `tool`), and if the type is `tool`, a `toolName` property with the specific tool.
   - `ai.response.text`: the text that was generated
@@ -4880,7 +10195,6 @@ It also records a `ai.stream.firstChunk` event when the first chunk of the strea
   - `ai.schema.name`: the name of the schema that was passed into the `generateObject` function
   - `ai.schema.description`: the description of the schema that was passed into the `generateObject` function
   - `ai.response.object`: the object that was generated (stringified JSON)
-  - `ai.settings.mode`: the object generation mode, e.g. `json`
   - `ai.settings.output`: the output type that was used, e.g. `object` or `no-schema`
 
 - `ai.generateObject.doGenerate` (span): a provider doGenerate call.
@@ -4888,10 +10202,8 @@ It also records a `ai.stream.firstChunk` event when the first chunk of the strea
 
   - `operation.name`: `ai.generateObject.doGenerate` and the functionId that was set through `telemetry.functionId`
   - `ai.operationId`: `"ai.generateObject.doGenerate"`
-  - `ai.prompt.format`: the format of the prompt
   - `ai.prompt.messages`: the messages that were passed into the provider
   - `ai.response.object`: the object that was generated (stringified JSON)
-  - `ai.settings.mode`: the object generation mode
   - `ai.response.finishReason`: the reason why the generation finished
 
 ### streamObject function
@@ -4908,7 +10220,6 @@ It also records a `ai.stream.firstChunk` event when the first chunk of the strea
   - `ai.schema.name`: the name of the schema that was passed into the `streamObject` function
   - `ai.schema.description`: the description of the schema that was passed into the `streamObject` function
   - `ai.response.object`: the object that was generated (stringified JSON)
-  - `ai.settings.mode`: the object generation mode, e.g. `json`
   - `ai.settings.output`: the output type that was used, e.g. `object` or `no-schema`
 
 - `ai.streamObject.doStream` (span): a provider doStream call.
@@ -4917,9 +10228,7 @@ It also records a `ai.stream.firstChunk` event when the first chunk of the strea
 
   - `operation.name`: `ai.streamObject.doStream` and the functionId that was set through `telemetry.functionId`
   - `ai.operationId`: `"ai.streamObject.doStream"`
-  - `ai.prompt.format`: the format of the prompt
   - `ai.prompt.messages`: the messages that were passed into the provider
-  - `ai.settings.mode`: the object generation mode
   - `ai.response.object`: the object that was generated (stringified JSON)
   - `ai.response.msToFirstChunk`: the time it took to receive the first chunk
   - `ai.response.finishReason`: the reason why the generation finished
@@ -4978,6 +10287,7 @@ Many spans that use LLMs (`ai.generateText`, `ai.generateText.doGenerate`, `ai.s
 - `ai.model.id`: the id of the model
 - `ai.model.provider`: the provider of the model
 - `ai.request.headers.*`: the request headers that were passed in through `headers`
+- `ai.response.providerMetadata`: provider specific metadata returned with the generation response
 - `ai.settings.maxRetries`: the maximum number of retries that were set
 - `ai.telemetry.functionId`: the functionId that was set through `telemetry.functionId`
 - `ai.telemetry.metadata.*`: the metadata that was passed in through `telemetry.metadata`
@@ -5029,8 +10339,8 @@ Tool call spans (`ai.toolCall`) contain the following attributes:
 - `ai.operationId`: `"ai.toolCall"`
 - `ai.toolCall.name`: the name of the tool
 - `ai.toolCall.id`: the id of the tool call
-- `ai.toolCall.args`: the parameters of the tool call
-- `ai.toolCall.result`: the result of the tool call. Only available if the tool call is successful and the result is serializable.
+- `ai.toolCall.args`: the input parameters of the tool call
+- `ai.toolCall.result`: the output result of the tool call. Only available if the tool call is successful and the result is serializable.
 
 ---
 
@@ -5043,31 +10353,38 @@ description: An overview of AI SDK UI.
 
 AI SDK UI is designed to help you build interactive chat, completion, and assistant applications with ease. It is a **framework-agnostic toolkit**, streamlining the integration of advanced AI functionalities into your applications.
 
-AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently. With four main hooks — **`useChat`**, **`useCompletion`**, **`useObject`**, and **`useAssistant`** — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
+AI SDK UI provides robust abstractions that simplify the complex tasks of managing chat streams and UI updates on the frontend, enabling you to develop dynamic AI-driven interfaces more efficiently. With three main hooks — **`useChat`**, **`useCompletion`**, and **`useObject`** — you can incorporate real-time chat capabilities, text completions, streamed JSON, and interactive assistant features into your app.
 
 - **[`useChat`](/docs/ai-sdk-ui/chatbot)** offers real-time streaming of chat messages, abstracting state management for inputs, messages, loading, and errors, allowing for seamless integration into any UI design.
 - **[`useCompletion`](/docs/ai-sdk-ui/completion)** enables you to handle text completions in your applications, managing the prompt input and automatically updating the UI as new completions are streamed.
 - **[`useObject`](/docs/ai-sdk-ui/object-generation)** is a hook that allows you to consume streamed JSON objects, providing a simple way to handle and display structured data in your application.
-- **[`useAssistant`](/docs/ai-sdk-ui/openai-assistants)** is designed to facilitate interaction with OpenAI-compatible assistant APIs, managing UI state and updating it automatically as responses are streamed.
 
 These hooks are designed to reduce the complexity and time required to implement AI interactions, letting you focus on creating exceptional user experiences.
 
 ## UI Framework Support
 
-AI SDK UI supports the following frameworks: [React](https://react.dev/), [Svelte](https://svelte.dev/), [Vue.js](https://vuejs.org/), and [SolidJS](https://www.solidjs.com/) (deprecated).
+AI SDK UI supports the following frameworks: [React](https://react.dev/), [Svelte](https://svelte.dev/), [Vue.js](https://vuejs.org/), and [Angular](https://angular.dev/).
 Here is a comparison of the supported functions across these frameworks:
 
-| Function                                                  | React               | Svelte                               | Vue.js              | SolidJS (deprecated) |
-| --------------------------------------------------------- | ------------------- | ------------------------------------ | ------------------- | -------------------- |
-| [useChat](/docs/reference/ai-sdk-ui/use-chat)             | <Check size={18} /> | <Check size={18} /> Chat             | <Check size={18} /> | <Check size={18} />  |
-| [useCompletion](/docs/reference/ai-sdk-ui/use-completion) | <Check size={18} /> | <Check size={18} /> Completion       | <Check size={18} /> | <Check size={18} />  |
-| [useObject](/docs/reference/ai-sdk-ui/use-object)         | <Check size={18} /> | <Check size={18} /> StructuredObject | <Cross size={18} /> | <Check size={18} />  |
-| [useAssistant](/docs/reference/ai-sdk-ui/use-assistant)   | <Check size={18} /> | <Cross size={18} />                  | <Check size={18} /> | <Check size={18} />  |
+| Function                                                  | React               | Svelte                               | Vue.js              | Angular                              |
+| --------------------------------------------------------- | ------------------- | ------------------------------------ | ------------------- | ------------------------------------ |
+| [useChat](/docs/reference/ai-sdk-ui/use-chat)             | <Check size={18} /> | <Check size={18} /> Chat             | <Check size={18} /> | <Check size={18} /> Chat             |
+| [useCompletion](/docs/reference/ai-sdk-ui/use-completion) | <Check size={18} /> | <Check size={18} /> Completion       | <Check size={18} /> | <Check size={18} /> Completion       |
+| [useObject](/docs/reference/ai-sdk-ui/use-object)         | <Check size={18} /> | <Check size={18} /> StructuredObject | <Cross size={18} /> | <Check size={18} /> StructuredObject |
 
 <Note>
   [Contributions](https://github.com/vercel/ai/blob/main/CONTRIBUTING.md) are
   welcome to implement missing features for non-React frameworks.
 </Note>
+
+## Framework Examples
+
+Explore these example implementations for different frameworks:
+
+- [**Next.js**](https://github.com/vercel/ai/tree/main/examples/next-openai)
+- [**Nuxt**](https://github.com/vercel/ai/tree/main/examples/nuxt-openai)
+- [**SvelteKit**](https://github.com/vercel/ai/tree/main/examples/sveltekit-openai)
+- [**Angular**](https://github.com/vercel/ai/tree/main/examples/angular)
 
 ## API Reference
 
@@ -5100,22 +10417,46 @@ Let's start with the following example first.
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useState } from 'react';
 
 export default function Page() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat({});
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+  const [input, setInput] = useState('');
 
   return (
     <>
       {messages.map((message) => (
         <div key={message.id}>
           {message.role === 'user' ? 'User: ' : 'AI: '}
-          {message.content}
+          {message.parts.map((part, index) =>
+            part.type === 'text' ? <span key={index}>{part.text}</span> : null,
+          )}
         </div>
       ))}
 
-      <form onSubmit={handleSubmit}>
-        <input name="prompt" value={input} onChange={handleInputChange} />
-        <button type="submit">Submit</button>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (input.trim()) {
+            sendMessage({ text: input });
+            setInput('');
+          }
+        }}
+      >
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          disabled={status !== 'ready'}
+          placeholder="Say something..."
+        />
+        <button type="submit" disabled={status !== 'ready'}>
+          Submit
+        </button>
       </form>
     </>
   );
@@ -5124,21 +10465,21 @@ export default function Page() {
 
 ```ts filename='app/api/chat/route.ts'
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
-    model: openai('gpt-4-turbo'),
+    model: openai('gpt-4.1'),
     system: 'You are a helpful assistant.',
-    messages,
+    messages: convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 ```
 
@@ -5150,7 +10491,7 @@ export async function POST(req: Request) {
   and complex chat UIs.
 </Note>
 
-In the `Page` component, the `useChat` hook will request to your AI provider endpoint whenever the user submits a message.
+In the `Page` component, the `useChat` hook will request to your AI provider endpoint whenever the user sends a message using `sendMessage`.
 The messages are then streamed back in real-time and displayed in the chat UI.
 
 This enables a seamless chat experience where the user can see the AI response as soon as it is available,
@@ -5158,7 +10499,7 @@ without having to wait for the entire response to be received.
 
 ## Customized UI
 
-`useChat` also provides ways to manage the chat message and input states via code, show status, and update messages without being triggered by user interactions.
+`useChat` also provides ways to manage the chat message states via code, show status, and update messages without being triggered by user interactions.
 
 ### Status
 
@@ -5175,21 +10516,29 @@ You can use `status` for e.g. the following purposes:
 - To show a "Stop" button to abort the current message.
 - To disable the submit button.
 
-```tsx filename='app/page.tsx' highlight="6,20-27,34"
+```tsx filename='app/page.tsx' highlight="6,22-29,36"
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useState } from 'react';
 
 export default function Page() {
-  const { messages, input, handleInputChange, handleSubmit, status, stop } =
-    useChat({});
+  const { messages, sendMessage, status, stop } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+  const [input, setInput] = useState('');
 
   return (
     <>
       {messages.map((message) => (
         <div key={message.id}>
           {message.role === 'user' ? 'User: ' : 'AI: '}
-          {message.content}
+          {message.parts.map((part, index) =>
+            part.type === 'text' ? <span key={index}>{part.text}</span> : null,
+          )}
         </div>
       ))}
 
@@ -5202,14 +10551,24 @@ export default function Page() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (input.trim()) {
+            sendMessage({ text: input });
+            setInput('');
+          }
+        }}
+      >
         <input
-          name="prompt"
           value={input}
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           disabled={status !== 'ready'}
+          placeholder="Say something..."
         />
-        <button type="submit">Submit</button>
+        <button type="submit" disabled={status !== 'ready'}>
+          Submit
+        </button>
       </form>
     </>
   );
@@ -5227,20 +10586,29 @@ It can be used to display an error message, disable the submit button, or show a
   server.
 </Note>
 
-```tsx file="app/page.tsx" highlight="6,18-25,31"
+```tsx file="app/page.tsx" highlight="6,20-27,33"
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useState } from 'react';
 
 export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit, error, reload } =
-    useChat({});
+  const { messages, sendMessage, error, reload } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+  const [input, setInput] = useState('');
 
   return (
     <div>
       {messages.map((m) => (
         <div key={m.id}>
-          {m.role}: {m.content}
+          {m.role}:{' '}
+          {m.parts.map((part, index) =>
+            part.type === 'text' ? <span key={index}>{part.text}</span> : null,
+          )}
         </div>
       ))}
 
@@ -5253,10 +10621,18 @@ export default function Chat() {
         </>
       )}
 
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (input.trim()) {
+            sendMessage({ text: input });
+            setInput('');
+          }
+        }}
+      >
         <input
           value={input}
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           disabled={error != null}
         />
       </form>
@@ -5274,7 +10650,7 @@ Sometimes, you may want to directly modify some existing messages. For example, 
 The `setMessages` function can help you achieve these tasks:
 
 ```tsx
-const { messages, setMessages, ... } = useChat()
+const { messages, setMessages } = useChat()
 
 const handleDelete = (id) => {
   setMessages(messages.filter(message => message.id !== id))
@@ -5284,7 +10660,11 @@ return <>
   {messages.map(message => (
     <div key={message.id}>
       {message.role === 'user' ? 'User: ' : 'AI: '}
-      {message.content}
+      {message.parts.map((part, index) => (
+        part.type === 'text' ? (
+          <span key={index}>{part.text}</span>
+        ) : null
+      ))}
       <button onClick={() => handleDelete(message.id)}>Delete</button>
     </div>
   ))}
@@ -5293,33 +10673,12 @@ return <>
 
 You can think of `messages` and `setMessages` as a pair of `state` and `setState` in React.
 
-### Controlled input
-
-In the initial example, we have `handleSubmit` and `handleInputChange` callbacks that manage the input changes and form submissions. These are handy for common use cases, but you can also use uncontrolled APIs for more advanced scenarios such as form validation or customized components.
-
-The following example demonstrates how to use more granular APIs like `setInput` and `append` with your custom input and submit button components:
-
-```tsx
-const { input, setInput, append } = useChat()
-
-return <>
-  <MyCustomInput value={input} onChange={value => setInput(value)} />
-  <MySubmitButton onClick={() => {
-    // Send a new message to the AI provider
-    append({
-      role: 'user',
-      content: input,
-    })
-  }}/>
-  ...
-```
-
 ### Cancellation and regeneration
 
 It's also a common use case to abort the response message while it's still streaming back from the AI provider. You can do this by calling the `stop` function returned by the `useChat` hook.
 
 ```tsx
-const { stop, status, ... } = useChat()
+const { stop, status } = useChat()
 
 return <>
   <button onClick={stop} disabled={!(status === 'streaming' || status === 'submitted')}>Stop</button>
@@ -5328,15 +10687,22 @@ return <>
 
 When the user clicks the "Stop" button, the fetch request will be aborted. This avoids consuming unnecessary resources and improves the UX of your chatbot application.
 
-Similarly, you can also request the AI provider to reprocess the last message by calling the `reload` function returned by the `useChat` hook:
+Similarly, you can also request the AI provider to reprocess the last message by calling the `regenerate` function returned by the `useChat` hook:
 
 ```tsx
-const { reload, status, ... } = useChat()
+const { regenerate, status } = useChat();
 
-return <>
-  <button onClick={reload} disabled={!(status === 'ready' || status === 'error')}>Regenerate</button>
-  ...
-</>
+return (
+  <>
+    <button
+      onClick={regenerate}
+      disabled={!(status === 'ready' || status === 'error')}
+    >
+      Regenerate
+    </button>
+    ...
+  </>
+);
 ```
 
 When the user clicks the "Regenerate" button, the AI provider will regenerate the last message and replace the current one correspondingly.
@@ -5359,85 +10725,165 @@ const { messages, ... } = useChat({
 
 `useChat` provides optional event callbacks that you can use to handle different stages of the chatbot lifecycle:
 
-- `onFinish`: Called when the assistant message is completed
+- `onFinish`: Called when the assistant response is completed. The event includes the response message, all messages, and flags for abort, disconnect, and errors.
 - `onError`: Called when an error occurs during the fetch request.
-- `onResponse`: Called when the response from the API is received.
+- `onData`: Called whenever a data part is received.
 
 These callbacks can be used to trigger additional actions, such as logging, analytics, or custom UI updates.
 
 ```tsx
-import { Message } from '@ai-sdk/react';
+import { UIMessage } from 'ai';
 
 const {
   /* ... */
 } = useChat({
-  onFinish: (message, { usage, finishReason }) => {
-    console.log('Finished streaming message:', message);
-    console.log('Token usage:', usage);
-    console.log('Finish reason:', finishReason);
+  onFinish: ({ message, messages, isAbort, isDisconnect, isError }) => {
+    // use information to e.g. update other UI states
   },
   onError: (error) => {
     console.error('An error occurred:', error);
   },
-  onResponse: (response) => {
-    console.log('Received HTTP response from server:', response);
+  onData: (data) => {
+    console.log('Received data part from server:', data);
   },
 });
 ```
 
-It's worth noting that you can abort the processing by throwing an error in the `onResponse` callback. This will trigger the `onError` callback and stop the message from being appended to the chat UI. This can be useful for handling unexpected responses from the AI provider.
+It's worth noting that you can abort the processing by throwing an error in the `onData` callback. This will trigger the `onError` callback and stop the message from being appended to the chat UI. This can be useful for handling unexpected responses from the AI provider.
 
 ## Request Configuration
 
 ### Custom headers, body, and credentials
 
-By default, the `useChat` hook sends a HTTP POST request to the `/api/chat` endpoint with the message list as the request body. You can customize the request by passing additional options to the `useChat` hook:
+By default, the `useChat` hook sends a HTTP POST request to the `/api/chat` endpoint with the message list as the request body. You can customize the request in two ways:
+
+#### Hook-Level Configuration (Applied to all requests)
+
+You can configure transport-level options that will be applied to all requests made by the hook:
 
 ```tsx
-const { messages, input, handleInputChange, handleSubmit } = useChat({
-  api: '/api/custom-chat',
-  headers: {
-    Authorization: 'your_token',
-  },
-  body: {
-    user_id: '123',
-  },
-  credentials: 'same-origin',
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+
+const { messages, sendMessage } = useChat({
+  transport: new DefaultChatTransport({
+    api: '/api/custom-chat',
+    headers: {
+      Authorization: 'your_token',
+    },
+    body: {
+      user_id: '123',
+    },
+    credentials: 'same-origin',
+  }),
 });
 ```
 
-In this example, the `useChat` hook sends a POST request to the `/api/custom-chat` endpoint with the specified headers, additional body fields, and credentials for that fetch request. On your server side, you can handle the request with these additional information.
+#### Dynamic Hook-Level Configuration
+
+You can also provide functions that return configuration values. This is useful for authentication tokens that need to be refreshed, or for configuration that depends on runtime conditions:
+
+```tsx
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+
+const { messages, sendMessage } = useChat({
+  transport: new DefaultChatTransport({
+    api: '/api/custom-chat',
+    headers: () => ({
+      Authorization: `Bearer ${getAuthToken()}`,
+      'X-User-ID': getCurrentUserId(),
+    }),
+    body: () => ({
+      sessionId: getCurrentSessionId(),
+      preferences: getUserPreferences(),
+    }),
+    credentials: () => 'include',
+  }),
+});
+```
+
+<Note>
+  For component state that changes over time, use `useRef` to store the current
+  value and reference `ref.current` in your configuration function, or prefer
+  request-level options (see next section) for better reliability.
+</Note>
+
+#### Request-Level Configuration (Recommended)
+
+<Note>
+  **Recommended**: Use request-level options for better flexibility and control.
+  Request-level options take precedence over hook-level options and allow you to
+  customize each request individually.
+</Note>
+
+```tsx
+// Pass options as the second parameter to sendMessage
+sendMessage(
+  { text: input },
+  {
+    headers: {
+      Authorization: 'Bearer token123',
+      'X-Custom-Header': 'custom-value',
+    },
+    body: {
+      temperature: 0.7,
+      max_tokens: 100,
+      user_id: '123',
+    },
+    metadata: {
+      userId: 'user123',
+      sessionId: 'session456',
+    },
+  },
+);
+```
+
+The request-level options are merged with hook-level options, with request-level options taking precedence. On your server side, you can handle the request with this additional information.
 
 ### Setting custom body fields per request
 
-You can configure custom `body` fields on a per-request basis using the `body` option of the `handleSubmit` function.
+You can configure custom `body` fields on a per-request basis using the second parameter of the `sendMessage` function.
 This is useful if you want to pass in additional information to your backend that is not part of the message list.
 
-```tsx filename="app/page.tsx" highlight="18-20"
+```tsx filename="app/page.tsx" highlight="20-25"
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
 
 export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
+  const { messages, sendMessage } = useChat();
+  const [input, setInput] = useState('');
+
   return (
     <div>
       {messages.map((m) => (
         <div key={m.id}>
-          {m.role}: {m.content}
+          {m.role}:{' '}
+          {m.parts.map((part, index) =>
+            part.type === 'text' ? <span key={index}>{part.text}</span> : null,
+          )}
         </div>
       ))}
 
       <form
         onSubmit={(event) => {
-          handleSubmit(event, {
-            body: {
-              customKey: 'customValue',
-            },
-          });
+          event.preventDefault();
+          if (input.trim()) {
+            sendMessage(
+              { text: input },
+              {
+                body: {
+                  customKey: 'customValue',
+                },
+              },
+            );
+            setInput('');
+          }
         }}
       >
-        <input value={input} onChange={handleInputChange} />
+        <input value={input} onChange={(e) => setInput(e.target.value)} />
       </form>
     </div>
   );
@@ -5446,13 +10892,178 @@ export default function Chat() {
 
 You can retrieve these custom fields on your server side by destructuring the request body:
 
-```ts filename="app/api/chat/route.ts" highlight="3"
+```ts filename="app/api/chat/route.ts" highlight="3,4"
 export async function POST(req: Request) {
-  // Extract addition information ("customKey") from the body of the request:
-  const { messages, customKey } = await req.json();
+  // Extract additional information ("customKey") from the body of the request:
+  const { messages, customKey }: { messages: UIMessage[]; customKey: string } =
+    await req.json();
   //...
 }
 ```
+
+## Message Metadata
+
+You can attach custom metadata to messages for tracking information like timestamps, model details, and token usage.
+
+```ts
+// Server: Send metadata about the message
+return result.toUIMessageStreamResponse({
+  messageMetadata: ({ part }) => {
+    if (part.type === 'start') {
+      return {
+        createdAt: Date.now(),
+        model: 'gpt-4o',
+      };
+    }
+
+    if (part.type === 'finish') {
+      return {
+        totalTokens: part.totalUsage.totalTokens,
+      };
+    }
+  },
+});
+```
+
+```tsx
+// Client: Access metadata via message.metadata
+{
+  messages.map((message) => (
+    <div key={message.id}>
+      {message.role}:{' '}
+      {message.metadata?.createdAt &&
+        new Date(message.metadata.createdAt).toLocaleTimeString()}
+      {/* Render message content */}
+      {message.parts.map((part, index) =>
+        part.type === 'text' ? <span key={index}>{part.text}</span> : null,
+      )}
+      {/* Show token count if available */}
+      {message.metadata?.totalTokens && (
+        <span>{message.metadata.totalTokens} tokens</span>
+      )}
+    </div>
+  ));
+}
+```
+
+For complete examples with type safety and advanced use cases, see the [Message Metadata documentation](/docs/ai-sdk-ui/message-metadata).
+
+## Transport Configuration
+
+You can configure custom transport behavior using the `transport` option to customize how messages are sent to your API:
+
+```tsx filename="app/page.tsx"
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+
+export default function Chat() {
+  const { messages, sendMessage } = useChat({
+    id: 'my-chat',
+    transport: new DefaultChatTransport({
+      prepareSendMessagesRequest: ({ id, messages }) => {
+        return {
+          body: {
+            id,
+            message: messages[messages.length - 1],
+          },
+        };
+      },
+    }),
+  });
+
+  // ... rest of your component
+}
+```
+
+The corresponding API route receives the custom request format:
+
+```ts filename="app/api/chat/route.ts"
+export async function POST(req: Request) {
+  const { id, message } = await req.json();
+
+  // Load existing messages and add the new one
+  const messages = await loadMessages(id);
+  messages.push(message);
+
+  const result = streamText({
+    model: openai('gpt-4.1'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+### Advanced: Trigger-based routing
+
+For more complex scenarios like message regeneration, you can use trigger-based routing:
+
+```tsx filename="app/page.tsx"
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+
+export default function Chat() {
+  const { messages, sendMessage, regenerate } = useChat({
+    id: 'my-chat',
+    transport: new DefaultChatTransport({
+      prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
+        if (trigger === 'submit-user-message') {
+          return {
+            body: {
+              trigger: 'submit-user-message',
+              id,
+              message: messages[messages.length - 1],
+              messageId,
+            },
+          };
+        } else if (trigger === 'regenerate-assistant-message') {
+          return {
+            body: {
+              trigger: 'regenerate-assistant-message',
+              id,
+              messageId,
+            },
+          };
+        }
+        throw new Error(`Unsupported trigger: ${trigger}`);
+      },
+    }),
+  });
+
+  // ... rest of your component
+}
+```
+
+The corresponding API route would handle different triggers:
+
+```ts filename="app/api/chat/route.ts"
+export async function POST(req: Request) {
+  const { trigger, id, message, messageId } = await req.json();
+
+  const chat = await readChat(id);
+  let messages = chat.messages;
+
+  if (trigger === 'submit-user-message') {
+    // Handle new user message
+    messages = [...messages, message];
+  } else if (trigger === 'regenerate-assistant-message') {
+    // Handle message regeneration - remove messages after messageId
+    const messageIndex = messages.findIndex((m) => m.id === messageId);
+    if (messageIndex !== -1) {
+      messages = messages.slice(0, messageIndex);
+    }
+  }
+
+  const result = streamText({
+    model: openai('gpt-4.1'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+To learn more about building custom transports, refer to the [Transport API documentation](/docs/ai-sdk-ui/transport).
 
 ## Controlling the response stream
 
@@ -5466,18 +11077,18 @@ You can forward error messages or send your own error message by providing a `ge
 
 ```ts filename="app/api/chat/route.ts" highlight="13-27"
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
-    model: openai('gpt-4o'),
-    messages,
+    model: openai('gpt-4.1'),
+    messages: convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse({
-    getErrorMessage: (error) => {
+  return result.toUIMessageStreamResponse({
+    onError: (error) => {
       if (error == null) {
         return 'unknown error';
       }
@@ -5498,22 +11109,108 @@ export async function POST(req: Request) {
 
 ### Usage Information
 
-By default, the usage information is sent back to the client. You can disable it by setting the `sendUsage` option to `false`:
+Track token consumption and resource usage with [message metadata](/docs/ai-sdk-ui/message-metadata):
 
-```ts filename="app/api/chat/route.ts" highlight="13"
+1. Define a custom metadata type with usage fields (optional, for type safety)
+2. Attach usage data using `messageMetadata` in your response
+3. Display usage metrics in your UI components
+
+Usage data is attached as metadata to messages and becomes available once the model completes its response generation.
+
+```ts
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import {
+  convertToModelMessages,
+  streamText,
+  UIMessage,
+  type LanguageModelUsage,
+} from 'ai';
+
+// Create a new metadata type (optional for type-safety)
+type MyMetadata = {
+  totalUsage: LanguageModelUsage;
+};
+
+// Create a new custom message type with your own metadata
+export type MyUIMessage = UIMessage<MyMetadata>;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: MyUIMessage[] } = await req.json();
 
   const result = streamText({
     model: openai('gpt-4o'),
-    messages,
+    messages: convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse({
-    sendUsage: false,
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    messageMetadata: ({ part }) => {
+      // Send total usage when generation is finished
+      if (part.type === 'finish') {
+        return { totalUsage: part.totalUsage };
+      }
+    },
+  });
+}
+```
+
+Then, on the client, you can access the message-level metadata.
+
+```tsx
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import type { MyUIMessage } from './api/chat/route';
+import { DefaultChatTransport } from 'ai';
+
+export default function Chat() {
+  // Use custom message type defined on the server (optional for type-safety)
+  const { messages } = useChat<MyUIMessage>({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+
+  return (
+    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
+      {messages.map((m) => (
+        <div key={m.id} className="whitespace-pre-wrap">
+          {m.role === 'user' ? 'User: ' : 'AI: '}
+          {m.parts.map((part) => {
+            if (part.type === 'text') {
+              return part.text;
+            }
+          })}
+          {/* Render usage via metadata */}
+          {m.metadata?.totalUsage && (
+            <div>Total usage: {m.metadata?.totalUsage.totalTokens} tokens</div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+You can also access your metadata from the `onFinish` callback of `useChat`:
+
+```tsx
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import type { MyUIMessage } from './api/chat/route';
+import { DefaultChatTransport } from 'ai';
+
+export default function Chat() {
+  // Use custom message type defined on the server (optional for type-safety)
+  const { messages } = useChat<MyUIMessage>({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+    onFinish: ({ message }) => {
+      // Access message metadata via onFinish callback
+      console.log(message.metadata?.totalUsage);
+    },
   });
 }
 ```
@@ -5526,10 +11223,13 @@ export async function POST(req: Request) {
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { TextStreamChatTransport } from 'ai';
 
 export default function Chat() {
   const { messages } = useChat({
-    streamProtocol: 'text',
+    transport: new TextStreamChatTransport({
+      api: '/api/chat',
+    }),
   });
 
   return <>...</>;
@@ -5540,42 +11240,9 @@ This configuration also works with other backend servers that stream plain text.
 Check out the [stream protocol guide](/docs/ai-sdk-ui/stream-protocol) for more information.
 
 <Note>
-  When using `streamProtocol: 'text'`, tool calls, usage information and finish
+  When using `TextStreamChatTransport`, tool calls, usage information and finish
   reasons are not available.
 </Note>
-
-## Empty Submissions
-
-You can configure the `useChat` hook to allow empty submissions by setting the `allowEmptySubmit` option to `true`.
-
-```tsx filename="app/page.tsx" highlight="18"
-'use client';
-
-import { useChat } from '@ai-sdk/react';
-
-export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
-  return (
-    <div>
-      {messages.map((m) => (
-        <div key={m.id}>
-          {m.role}: {m.content}
-        </div>
-      ))}
-
-      <form
-        onSubmit={(event) => {
-          handleSubmit(event, {
-            allowEmptySubmit: true,
-          });
-        }}
-      >
-        <input value={input} onChange={handleInputChange} />
-      </form>
-    </div>
-  );
-}
-```
 
 ## Reasoning
 
@@ -5586,17 +11253,17 @@ You can forward them to the client with the `sendReasoning` option:
 
 ```ts filename="app/api/chat/route.ts" highlight="13"
 import { deepseek } from '@ai-sdk/deepseek';
-import { streamText } from 'ai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
     model: deepseek('deepseek-reasoner'),
-    messages,
+    messages: convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse({
+  return result.toUIMessageStreamResponse({
     sendReasoning: true,
   });
 }
@@ -5604,8 +11271,7 @@ export async function POST(req: Request) {
 
 On the client side, you can access the reasoning parts of the message object.
 
-They have a `details` property that contains the reasoning and redacted reasoning parts.
-You can also use `reasoning` to access just the reasoning as a string.
+Reasoning parts have a `text` property that contains the reasoning content.
 
 ```tsx filename="app/page.tsx"
 messages.map((message) => (
@@ -5619,13 +11285,7 @@ messages.map((message) => (
 
       // reasoning parts:
       if (part.type === 'reasoning') {
-        return (
-          <pre key={index}>
-            {part.details.map((detail) =>
-              detail.type === 'text' ? detail.text : '<redacted>',
-            )}
-          </pre>
-        );
+        return <pre key={index}>{part.text}</pre>;
       }
     })}
   </div>
@@ -5642,45 +11302,50 @@ You can forward them to the client with the `sendSources` option:
 
 ```ts filename="app/api/chat/route.ts" highlight="13"
 import { perplexity } from '@ai-sdk/perplexity';
-import { streamText } from 'ai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
     model: perplexity('sonar-pro'),
-    messages,
+    messages: convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse({
+  return result.toUIMessageStreamResponse({
     sendSources: true,
   });
 }
 ```
 
 On the client side, you can access source parts of the message object.
-Here is an example that renders the sources as links at the bottom of the message:
+There are two types of sources: `source-url` for web pages and `source-document` for documents.
+Here is an example that renders both types of sources:
 
 ```tsx filename="app/page.tsx"
 messages.map((message) => (
   <div key={message.id}>
     {message.role === 'user' ? 'User: ' : 'AI: '}
+
+    {/* Render URL sources */}
     {message.parts
-      .filter((part) => part.type !== 'source')
-      .map((part, index) => {
-        if (part.type === 'text') {
-          return <div key={index}>{part.text}</div>;
-        }
-      })}
-    {message.parts
-      .filter((part) => part.type === 'source')
+      .filter((part) => part.type === 'source-url')
       .map((part) => (
-        <span key={`source-${part.source.id}`}>
+        <span key={`source-${part.id}`}>
           [
-          <a href={part.source.url} target="_blank">
-            {part.source.title ?? new URL(part.source.url).hostname}
+          <a href={part.url} target="_blank">
+            {part.title ?? new URL(part.url).hostname}
           </a>
           ]
+        </span>
+      ))}
+
+    {/* Render document sources */}
+    {message.parts
+      .filter((part) => part.type === 'source-document')
+      .map((part) => (
+        <span key={`source-${part.id}`}>
+          [<span>{part.title ?? `Document ${part.id}`}</span>]
         </span>
       ))}
   </div>
@@ -5701,21 +11366,19 @@ messages.map((message) => (
     {message.parts.map((part, index) => {
       if (part.type === 'text') {
         return <div key={index}>{part.text}</div>;
-      } else if (part.type === 'file' && part.mimeType.startsWith('image/')) {
-        return (
-          <img key={index} src={`data:${part.mimeType};base64,${part.data}`} />
-        );
+      } else if (part.type === 'file' && part.mediaType.startsWith('image/')) {
+        return <img key={index} src={part.url} alt="Generated image" />;
       }
     })}
   </div>
 ));
 ```
 
-## Attachments (Experimental)
+## Attachments
 
-The `useChat` hook supports sending attachments along with a message as well as rendering them on the client. This can be useful for building applications that involve sending images, files, or other media content to the AI provider.
+The `useChat` hook supports sending file attachments along with a message as well as rendering them on the client. This can be useful for building applications that involve sending images, files, or other media content to the AI provider.
 
-There are two ways to send attachments with a message, either by providing a `FileList` object or a list of URLs to the `handleSubmit` function:
+There are two ways to send files with a message: using a `FileList` object from file inputs or using an array of file objects.
 
 ### FileList
 
@@ -5735,9 +11398,9 @@ import { useChat } from '@ai-sdk/react';
 import { useRef, useState } from 'react';
 
 export default function Page() {
-  const { messages, input, handleSubmit, handleInputChange, status } =
-    useChat();
+  const { messages, sendMessage, status } = useChat();
 
+  const [input, setInput] = useState('');
   const [files, setFiles] = useState<FileList | undefined>(undefined);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -5749,21 +11412,20 @@ export default function Page() {
             <div>{`${message.role}: `}</div>
 
             <div>
-              {message.content}
+              {message.parts.map((part, index) => {
+                if (part.type === 'text') {
+                  return <span key={index}>{part.text}</span>;
+                }
 
-              <div>
-                {message.experimental_attachments
-                  ?.filter((attachment) =>
-                    attachment.contentType.startsWith('image/'),
-                  )
-                  .map((attachment, index) => (
-                    <img
-                      key={`${message.id}-${index}`}
-                      src={attachment.url}
-                      alt={attachment.name}
-                    />
-                  ))}
-              </div>
+                if (
+                  part.type === 'file' &&
+                  part.mediaType?.startsWith('image/')
+                ) {
+                  return <img key={index} src={part.url} alt={part.filename} />;
+                }
+
+                return null;
+              })}
             </div>
           </div>
         ))}
@@ -5771,14 +11433,18 @@ export default function Page() {
 
       <form
         onSubmit={(event) => {
-          handleSubmit(event, {
-            experimental_attachments: files,
-          });
+          event.preventDefault();
+          if (input.trim()) {
+            sendMessage({
+              text: input,
+              files,
+            });
+            setInput('');
+            setFiles(undefined);
 
-          setFiles(undefined);
-
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
           }
         }}
       >
@@ -5795,7 +11461,7 @@ export default function Page() {
         <input
           value={input}
           placeholder="Send message..."
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           disabled={status !== 'ready'}
         />
       </form>
@@ -5804,32 +11470,32 @@ export default function Page() {
 }
 ```
 
-### URLs
+### File Objects
 
-You can also send URLs as attachments along with a message. This can be useful for sending links to external resources or media content.
-
-> **Note:** The URL can also be a data URL, which is a base64-encoded string that represents the content of a file. Currently, only `image/*` content types get automatically converted into [multi-modal content parts](/docs/foundations/prompts#multi-modal-messages). You will need to handle other content types manually.
+You can also send files as objects along with a message. This can be useful for sending pre-uploaded files or data URLs.
 
 ```tsx filename="app/page.tsx"
 'use client';
 
 import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
-import { Attachment } from '@ai-sdk/ui-utils';
+import { FileUIPart } from 'ai';
 
 export default function Page() {
-  const { messages, input, handleSubmit, handleInputChange, status } =
-    useChat();
+  const { messages, sendMessage, status } = useChat();
 
-  const [attachments] = useState<Attachment[]>([
+  const [input, setInput] = useState('');
+  const [files] = useState<FileUIPart[]>([
     {
-      name: 'earth.png',
-      contentType: 'image/png',
+      type: 'file',
+      filename: 'earth.png',
+      mediaType: 'image/png',
       url: 'https://example.com/earth.png',
     },
     {
-      name: 'moon.png',
-      contentType: 'image/png',
+      type: 'file',
+      filename: 'moon.png',
+      mediaType: 'image/png',
       url: 'data:image/png;base64,iVBORw0KGgo...',
     },
   ]);
@@ -5842,21 +11508,20 @@ export default function Page() {
             <div>{`${message.role}: `}</div>
 
             <div>
-              {message.content}
+              {message.parts.map((part, index) => {
+                if (part.type === 'text') {
+                  return <span key={index}>{part.text}</span>;
+                }
 
-              <div>
-                {message.experimental_attachments
-                  ?.filter((attachment) =>
-                    attachment.contentType?.startsWith('image/'),
-                  )
-                  .map((attachment, index) => (
-                    <img
-                      key={`${message.id}-${index}`}
-                      src={attachment.url}
-                      alt={attachment.name}
-                    />
-                  ))}
-              </div>
+                if (
+                  part.type === 'file' &&
+                  part.mediaType?.startsWith('image/')
+                ) {
+                  return <img key={index} src={part.url} alt={part.filename} />;
+                }
+
+                return null;
+              })}
             </div>
           </div>
         ))}
@@ -5864,15 +11529,20 @@ export default function Page() {
 
       <form
         onSubmit={(event) => {
-          handleSubmit(event, {
-            experimental_attachments: attachments,
-          });
+          event.preventDefault();
+          if (input.trim()) {
+            sendMessage({
+              text: input,
+              files,
+            });
+            setInput('');
+          }
         }}
       >
         <input
           value={input}
           placeholder="Send message..."
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           disabled={status !== 'ready'}
         />
       </form>
@@ -5880,6 +11550,113 @@ export default function Page() {
   );
 }
 ```
+
+## Type Inference for Tools
+
+When working with tools in TypeScript, AI SDK UI provides type inference helpers to ensure type safety for your tool inputs and outputs.
+
+### InferUITool
+
+The `InferUITool` type helper infers the input and output types of a single tool for use in UI messages:
+
+```tsx
+import { InferUITool } from 'ai';
+import { z } from 'zod';
+
+const weatherTool = {
+  description: 'Get the current weather',
+  inputSchema: z.object({
+    location: z.string().describe('The city and state'),
+  }),
+  execute: async ({ location }) => {
+    return `The weather in ${location} is sunny.`;
+  },
+};
+
+// Infer the types from the tool
+type WeatherUITool = InferUITool<typeof weatherTool>;
+// This creates a type with:
+// {
+//   input: { location: string };
+//   output: string;
+// }
+```
+
+### InferUITools
+
+The `InferUITools` type helper infers the input and output types of a `ToolSet`:
+
+```tsx
+import { InferUITools, ToolSet } from 'ai';
+import { z } from 'zod';
+
+const tools = {
+  weather: {
+    description: 'Get the current weather',
+    inputSchema: z.object({
+      location: z.string().describe('The city and state'),
+    }),
+    execute: async ({ location }) => {
+      return `The weather in ${location} is sunny.`;
+    },
+  },
+  calculator: {
+    description: 'Perform basic arithmetic',
+    inputSchema: z.object({
+      operation: z.enum(['add', 'subtract', 'multiply', 'divide']),
+      a: z.number(),
+      b: z.number(),
+    }),
+    execute: async ({ operation, a, b }) => {
+      switch (operation) {
+        case 'add':
+          return a + b;
+        case 'subtract':
+          return a - b;
+        case 'multiply':
+          return a * b;
+        case 'divide':
+          return a / b;
+      }
+    },
+  },
+} satisfies ToolSet;
+
+// Infer the types from the tool set
+type MyUITools = InferUITools<typeof tools>;
+// This creates a type with:
+// {
+//   weather: { input: { location: string }; output: string };
+//   calculator: { input: { operation: 'add' | 'subtract' | 'multiply' | 'divide'; a: number; b: number }; output: number };
+// }
+```
+
+### Using Inferred Types
+
+You can use these inferred types to create a custom UIMessage type and pass it to various AI SDK UI functions:
+
+```tsx
+import { InferUITools, UIMessage, UIDataTypes } from 'ai';
+
+type MyUITools = InferUITools<typeof tools>;
+type MyUIMessage = UIMessage<never, UIDataTypes, MyUITools>;
+```
+
+Pass the custom type to `useChat` or `createUIMessageStream`:
+
+```tsx
+import { useChat } from '@ai-sdk/react';
+import { createUIMessageStream } from 'ai';
+import type { MyUIMessage } from './types';
+
+// With useChat
+const { messages } = useChat<MyUIMessage>();
+
+// With createUIMessageStream
+const stream = createUIMessageStream<MyUIMessage>(/* ... */);
+```
+
+This provides full type safety for tool inputs and outputs on the client and server.
 
 ---
 
@@ -5906,7 +11683,7 @@ we need to create a new chat and redirect to the chat page with the new chat ID.
 
 ```tsx filename="app/chat/page.tsx"
 import { redirect } from 'next/navigation';
-import { createChat } from '@tools/chat-store';
+import { createChat } from '@util/chat-store';
 
 export default async function Page() {
   const id = await createChat(); // create a new chat
@@ -5919,7 +11696,7 @@ In a real-world application, you would use a database or a cloud storage service
 and get the chat ID from the database.
 That being said, the function interfaces are designed to be easily replaced with other implementations.
 
-```tsx filename="tools/chat-store.ts"
+```tsx filename="util/chat-store.ts"
 import { generateId } from 'ai';
 import { existsSync, mkdirSync } from 'fs';
 import { writeFile } from 'fs/promises';
@@ -5940,49 +11717,177 @@ function getChatFile(id: string): string {
 
 ## Loading an existing chat
 
-When the user navigates to the chat page with a chat ID, we need to load the chat messages and display them.
-
-```tsx filename="app/chat/[id]/page.tsx"
-import { loadChat } from '@tools/chat-store';
-import Chat from '@ui/chat';
-
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const { id } = await props.params; // get the chat ID from the URL
-  const messages = await loadChat(id); // load the chat messages
-  return <Chat id={id} initialMessages={messages} />; // display the chat
-}
-```
+When the user navigates to the chat page with a chat ID, we need to load the chat messages from storage.
 
 The `loadChat` function in our file-based chat store is implemented as follows:
 
-```tsx filename="tools/chat-store.ts"
-import { Message } from 'ai';
+```tsx filename="util/chat-store.ts"
+import { UIMessage } from 'ai';
 import { readFile } from 'fs/promises';
 
-export async function loadChat(id: string): Promise<Message[]> {
+export async function loadChat(id: string): Promise<UIMessage[]> {
   return JSON.parse(await readFile(getChatFile(id), 'utf8'));
 }
 
 // ... rest of the file
 ```
 
-The display component is a simple chat component that uses the `useChat` hook to
-send and receive messages:
+## Validating messages on the server
 
-```tsx filename="ui/chat.tsx" highlight="10-12"
+When processing messages on the server that contain tool calls, custom metadata, or data parts, you should validate them using `validateUIMessages` before sending them to the model.
+
+### Validation with tools
+
+When your messages include tool calls, validate them against your tool definitions:
+
+```tsx filename="app/api/chat/route.ts" highlight="7-25,32-37"
+import {
+  convertToModelMessages,
+  streamText,
+  UIMessage,
+  validateUIMessages,
+  tool,
+} from 'ai';
+import { z } from 'zod';
+import { loadChat, saveChat } from '@util/chat-store';
+import { openai } from '@ai-sdk/openai';
+import { dataPartsSchema, metadataSchema } from '@util/schemas';
+
+// Define your tools
+const tools = {
+  weather: tool({
+    description: 'Get weather information',
+    parameters: z.object({
+      location: z.string(),
+      units: z.enum(['celsius', 'fahrenheit']),
+    }),
+    execute: async ({ location, units }) => {
+      /* tool implementation */
+    },
+  }),
+  // other tools
+};
+
+export async function POST(req: Request) {
+  const { message, id } = await req.json();
+
+  // Load previous messages from database
+  const previousMessages = await loadChat(id);
+
+  // Append new message to previousMessages messages
+  const messages = [...previousMessages, message];
+
+  // Validate loaded messages against
+  // tools, data parts schema, and metadata schema
+  const validatedMessages = await validateUIMessages({
+    messages,
+    tools, // Ensures tool calls in messages match current schemas
+    dataPartsSchema,
+    metadataSchema,
+  });
+
+  const result = streamText({
+    model: openai('gpt-4o-mini'),
+    messages: convertToModelMessages(validatedMessages),
+    tools,
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onFinish: ({ messages }) => {
+      saveChat({ chatId: id, messages });
+    },
+  });
+}
+```
+
+### Handling validation errors
+
+Handle validation errors gracefully when messages from the database don't match current schemas:
+
+```tsx filename="app/api/chat/route.ts" highlight="3,10-24"
+import {
+  convertToModelMessages,
+  streamText,
+  validateUIMessages,
+  TypeValidationError,
+} from 'ai';
+import { type MyUIMessage } from '@/types';
+
+export async function POST(req: Request) {
+  const { message, id } = await req.json();
+
+  // Load and validate messages from database
+  let validatedMessages: MyUIMessage[];
+
+  try {
+    const previousMessages = await loadMessagesFromDB(id);
+    validatedMessages = await validateUIMessages({
+      // append the new message to the previous messages:
+      messages: [...previousMessages, message],
+      tools,
+      metadataSchema,
+    });
+  } catch (error) {
+    if (error instanceof TypeValidationError) {
+      // Log validation error for monitoring
+      console.error('Database messages validation failed:', error);
+      // Could implement message migration or filtering here
+      // For now, start with empty history
+      validatedMessages = [];
+    } else {
+      throw error;
+    }
+  }
+
+  // Continue with validated messages...
+}
+```
+
+## Displaying the chat
+
+Once messages are loaded from storage, you can display them in your chat UI. Here's how to set up the page component and the chat display:
+
+```tsx filename="app/chat/[id]/page.tsx"
+import { loadChat } from '@util/chat-store';
+import Chat from '@ui/chat';
+
+export default async function Page(props: { params: Promise<{ id: string }> }) {
+  const { id } = await props.params;
+  const messages = await loadChat(id);
+  return <Chat id={id} initialMessages={messages} />;
+}
+```
+
+The chat component uses the `useChat` hook to manage the conversation:
+
+```tsx filename="ui/chat.tsx" highlight="10-16"
 'use client';
 
-import { Message, useChat } from '@ai-sdk/react';
+import { UIMessage, useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import { useState } from 'react';
 
 export default function Chat({
   id,
   initialMessages,
-}: { id?: string | undefined; initialMessages?: Message[] } = {}) {
-  const { input, handleInputChange, handleSubmit, messages } = useChat({
+}: { id?: string | undefined; initialMessages?: UIMessage[] } = {}) {
+  const [input, setInput] = useState('');
+  const { sendMessage, messages } = useChat({
     id, // use the provided chat ID
-    initialMessages, // initial messages if provided
-    sendExtraMessageFields: true, // send id and createdAt for each message
+    messages: initialMessages, // load initial messages
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
   });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
 
   // simplified rendering code, extend as needed:
   return (
@@ -5990,12 +11895,19 @@ export default function Chat({
       {messages.map((m) => (
         <div key={m.id}>
           {m.role === 'user' ? 'User: ' : 'AI: '}
-          {m.content}
+          {m.parts
+            .map((part) => (part.type === 'text' ? part.text : ''))
+            .join('')}
         </div>
       ))}
 
       <form onSubmit={handleSubmit}>
-        <input value={input} onChange={handleInputChange} />
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type a message..."
+        />
+        <button type="submit">Send</button>
       </form>
     </div>
   );
@@ -6005,63 +11917,61 @@ export default function Chat({
 ## Storing messages
 
 `useChat` sends the chat id and the messages to the backend.
-We have enabled the `sendExtraMessageFields` option to send the id and createdAt fields,
-meaning that we store messages in the `useChat` message format.
 
 <Note>
-  The `useChat` message format is different from the `CoreMessage` format. The
+  The `useChat` message format is different from the `ModelMessage` format. The
   `useChat` message format is designed for frontend display, and contains
   additional fields such as `id` and `createdAt`. We recommend storing the
   messages in the `useChat` message format.
+
+When loading messages from storage that contain tools, metadata, or custom data
+parts, validate them using `validateUIMessages` before processing (see the
+[validation section](#validating-messages-from-database) above).
+
 </Note>
 
-Storing messages is done in the `onFinish` callback of the `streamText` function.
-`onFinish` receives the messages from the AI response as a `CoreMessage[]`,
-and we use the [`appendResponseMessages`](/docs/reference/ai-sdk-ui/append-response-messages)
-helper to append the AI response messages to the chat messages.
+Storing messages is done in the `onFinish` callback of the `toUIMessageStreamResponse` function.
+`onFinish` receives the complete messages including the new AI response as `UIMessage[]`.
 
-```tsx filename="app/api/chat/route.ts" highlight="6,11-19"
+```tsx filename="app/api/chat/route.ts" highlight="6,11-17"
 import { openai } from '@ai-sdk/openai';
-import { appendResponseMessages, streamText } from 'ai';
-import { saveChat } from '@tools/chat-store';
+import { saveChat } from '@util/chat-store';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
 
 export async function POST(req: Request) {
-  const { messages, id } = await req.json();
+  const { messages, chatId }: { messages: UIMessage[]; chatId: string } =
+    await req.json();
 
   const result = streamText({
     model: openai('gpt-4o-mini'),
-    messages,
-    async onFinish({ response }) {
-      await saveChat({
-        id,
-        messages: appendResponseMessages({
-          messages,
-          responseMessages: response.messages,
-        }),
-      });
-    },
+    messages: convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onFinish: ({ messages }) => {
+      saveChat({ chatId, messages });
+    },
+  });
 }
 ```
 
 The actual storage of the messages is done in the `saveChat` function, which in
 our file-based chat store is implemented as follows:
 
-```tsx filename="tools/chat-store.ts"
-import { Message } from 'ai';
+```tsx filename="util/chat-store.ts"
+import { UIMessage } from 'ai';
 import { writeFile } from 'fs/promises';
 
 export async function saveChat({
-  id,
+  chatId,
   messages,
 }: {
-  id: string;
-  messages: Message[];
+  chatId: string;
+  messages: UIMessage[];
 }): Promise<void> {
   const content = JSON.stringify(messages, null, 2);
-  await writeFile(getChatFile(id), content);
+  await writeFile(getChatFile(chatId), content);
 }
 
 // ... rest of the file
@@ -6072,27 +11982,26 @@ export async function saveChat({
 In addition to a chat ID, each message has an ID.
 You can use this message ID to e.g. manipulate individual messages.
 
-The IDs for user messages are generated by the `useChat` hook on the client,
-and the IDs for AI response messages are generated by `streamText`.
+### Client-side vs Server-side ID Generation
 
-You can control the ID format by providing ID generators
-(see [`createIdGenerator()`](/docs/reference/ai-sdk-core/create-id-generator):
+By default, message IDs are generated client-side:
 
-```tsx filename="ui/chat.tsx" highlight="8-12"
-import { createIdGenerator } from 'ai';
-import { useChat } from '@ai-sdk/react';
+- User message IDs are generated by the `useChat` hook on the client
+- AI response message IDs are generated by `streamText` on the server
 
-const {
-  // ...
-} = useChat({
-  // ...
-  // id format for client-side messages:
-  generateId: createIdGenerator({
-    prefix: 'msgc',
-    size: 16,
-  }),
-});
-```
+For applications without persistence, client-side ID generation works perfectly.
+However, **for persistence, you need server-side generated IDs** to ensure consistency across sessions and prevent ID conflicts when messages are stored and retrieved.
+
+### Setting Up Server-side ID Generation
+
+When implementing persistence, you have two options for generating server-side IDs:
+
+1. **Using `generateMessageId` in `toUIMessageStreamResponse`**
+2. **Setting IDs in your start message part with `createUIMessageStream`**
+
+#### Option 1: Using `generateMessageId` in `toUIMessageStreamResponse`
+
+You can control the ID format by providing ID generators using [`createIdGenerator()`](/docs/reference/ai-sdk-core/create-id-generator):
 
 ```tsx filename="app/api/chat/route.ts" highlight="7-11"
 import { createIdGenerator, streamText } from 'ai';
@@ -6101,42 +12010,111 @@ export async function POST(req: Request) {
   // ...
   const result = streamText({
     // ...
-    // id format for server-side messages:
-    experimental_generateMessageId: createIdGenerator({
-      prefix: 'msgs',
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    // Generate consistent server-side IDs for persistence:
+    generateMessageId: createIdGenerator({
+      prefix: 'msg',
       size: 16,
     }),
+    onFinish: ({ messages }) => {
+      saveChat({ chatId, messages });
+    },
   });
-  // ...
 }
 ```
+
+#### Option 2: Setting IDs with `createUIMessageStream`
+
+Alternatively, you can use `createUIMessageStream` to control the message ID by writing a start message part:
+
+```tsx filename="app/api/chat/route.ts" highlight="8-18"
+import {
+  generateId,
+  streamText,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+} from 'ai';
+
+export async function POST(req: Request) {
+  const { messages, chatId } = await req.json();
+
+  const stream = createUIMessageStream({
+    execute: ({ writer }) => {
+      // Write start message part with custom ID
+      writer.write({
+        type: 'start',
+        messageId: generateId(), // Generate server-side ID for persistence
+      });
+
+      const result = streamText({
+        model: openai('gpt-4o-mini'),
+        messages: convertToModelMessages(messages),
+      });
+
+      writer.merge(result.toUIMessageStream({ sendStart: false })); // omit start message part
+    },
+    originalMessages: messages,
+    onFinish: ({ responseMessage }) => {
+      // save your chat here
+    },
+  });
+
+  return createUIMessageStreamResponse({ stream });
+}
+```
+
+<Note>
+  For client-side applications that don't require persistence, you can still customize client-side ID generation:
+
+```tsx filename="ui/chat.tsx"
+import { createIdGenerator } from 'ai';
+import { useChat } from '@ai-sdk/react';
+
+const { ... } = useChat({
+  generateId: createIdGenerator({
+    prefix: 'msgc',
+    size: 16,
+  }),
+  // ...
+});
+```
+
+</Note>
 
 ## Sending only the last message
 
 Once you have implemented message persistence, you might want to send only the last message to the server.
 This reduces the amount of data sent to the server on each request and can improve performance.
 
-To achieve this, you can provide an `experimental_prepareRequestBody` function to the `useChat` hook (React only).
+To achieve this, you can provide a `prepareSendMessagesRequest` function to the transport.
 This function receives the messages and the chat ID, and returns the request body to be sent to the server.
 
-```tsx filename="ui/chat.tsx" highlight="7-10"
+```tsx filename="ui/chat.tsx" highlight="7-12"
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 
 const {
   // ...
 } = useChat({
   // ...
-  // only send the last message to the server:
-  experimental_prepareRequestBody({ messages, id }) {
-    return { message: messages[messages.length - 1], id };
-  },
+  transport: new DefaultChatTransport({
+    api: '/api/chat',
+    // only send the last message to the server:
+    prepareSendMessagesRequest({ messages, id }) {
+      return { body: { message: messages[messages.length - 1], id } };
+    },
+  }),
 });
 ```
 
-On the server, you can then load the previous messages and append the new message to the previous messages:
+On the server, you can then load the previous messages and append the new message to the previous messages. If your messages contain tools, metadata, or custom data parts, you should validate them:
 
-```tsx filename="app/api/chat/route.ts" highlight="2-9"
-import { appendClientMessage } from 'ai';
+```tsx filename="app/api/chat/route.ts" highlight="2-11,14-18"
+import { convertToModelMessages, UIMessage, validateUIMessages } from 'ai';
+// import your tools and schemas
 
 export async function POST(req: Request) {
   // get the last message from the client:
@@ -6145,18 +12123,26 @@ export async function POST(req: Request) {
   // load the previous messages from the server:
   const previousMessages = await loadChat(id);
 
-  // append the new message to the previous messages:
-  const messages = appendClientMessage({
-    messages: previousMessages,
-    message,
+  // validate messages if they contain tools, metadata, or data parts:
+  const validatedMessages = await validateUIMessages({
+    // append the new message to the previous messages:
+    messages: [...previousMessages, message],
+    tools, // if using tools
+    metadataSchema, // if using custom metadata
+    dataSchemas, // if using custom data parts
   });
 
   const result = streamText({
     // ...
-    messages,
+    messages: convertToModelMessages(validatedMessages),
   });
 
-  // ...
+  return result.toUIMessageStreamResponse({
+    originalMessages: validatedMessages,
+    onFinish: ({ messages }) => {
+      saveChat({ chatId: id, messages });
+    },
+  });
 }
 ```
 
@@ -6173,32 +12159,29 @@ and then save the result as usual.
 `consumeStream` effectively removes the backpressure,
 meaning that the result is stored even when the client has already disconnected.
 
-```tsx filename="app/api/chat/route.ts" highlight="21-23"
-import { appendResponseMessages, streamText } from 'ai';
-import { saveChat } from '@tools/chat-store';
+```tsx filename="app/api/chat/route.ts" highlight="19-21"
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+import { saveChat } from '@util/chat-store';
 
 export async function POST(req: Request) {
-  const { messages, id } = await req.json();
+  const { messages, chatId }: { messages: UIMessage[]; chatId: string } =
+    await req.json();
 
   const result = streamText({
     model,
-    messages,
-    async onFinish({ response }) {
-      await saveChat({
-        id,
-        messages: appendResponseMessages({
-          messages,
-          responseMessages: response.messages,
-        }),
-      });
-    },
+    messages: convertToModelMessages(messages),
   });
 
   // consume the stream to ensure it runs to completion & triggers onFinish
   // even when the client response is aborted:
   result.consumeStream(); // no await
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    onFinish: ({ messages }) => {
+      saveChat({ chatId, messages });
+    },
+  });
 }
 ```
 
@@ -6211,279 +12194,273 @@ When the client reloads the page after a disconnect, the chat will be restored f
   streaming is not yet complete.
 </Note>
 
-## Resuming ongoing streams
+For more robust handling of disconnects, you may want to add resumability on disconnects. Check out the [Chatbot Resume Streams](/docs/ai-sdk-ui/chatbot-resume-streams) documentation to learn more.
 
-<Note>This feature is experimental and may change in future versions.</Note>
+---
 
-The `useChat` hook has experimental support for resuming an ongoing chat generation stream by any client, either after a network disconnect or by reloading the chat page. This can be useful for building applications that involve long-running conversations or for ensuring that messages are not lost in case of network failures.
+title: Chatbot Resume Streams
+description: Learn how to resume chatbot streams after client disconnects.
 
-The following are the pre-requisities for your chat application to support resumable streams:
+---
 
-- Installing the [`resumable-stream`](https://www.npmjs.com/package/resumable-stream) package that helps create and manage the publisher/subscriber mechanism of the streams.
-- Creating a [Redis](https://vercel.com/marketplace/redis) instance to store the stream state.
-- Creating a table that tracks the stream IDs associated with a chat.
+# Chatbot Resume Streams
 
-To resume a chat stream, you will use the `experimental_resume` function returned by the `useChat` hook. You will call this function during the initial mount of the hook inside the main chat component.
+`useChat` supports resuming ongoing streams after page reloads. Use this feature to build applications with long-running generations.
 
-```tsx filename="app/components/chat.tsx"
+<Note type="warning">
+  Stream resumption is not compatible with abort functionality. Closing a tab or
+  refreshing the page triggers an abort signal that will break the resumption
+  mechanism. Do not use `resume: true` if you need abort functionality in your
+  application. See
+  [troubleshooting](/docs/troubleshooting/abort-breaks-resumable-streams) for
+  more details.
+</Note>
+
+## How stream resumption works
+
+Stream resumption requires persistence for messages and active streams in your application. The AI SDK provides tools to connect to storage, but you need to set up the storage yourself.
+
+**The AI SDK provides:**
+
+- A `resume` option in `useChat` that automatically reconnects to active streams
+- Access to the outgoing stream through the `consumeSseStream` callback
+- Automatic HTTP requests to your resume endpoints
+
+**You build:**
+
+- Storage to track which stream belongs to each chat
+- Redis to store the UIMessage stream
+- Two API endpoints: POST to create streams, GET to resume them
+- Integration with [`resumable-stream`](https://www.npmjs.com/package/resumable-stream) to manage Redis storage
+
+## Prerequisites
+
+To implement resumable streams in your chat application, you need:
+
+1. **The `resumable-stream` package** - Handles the publisher/subscriber mechanism for streams
+2. **A Redis instance** - Stores stream data (e.g. [Redis through Vercel](https://vercel.com/marketplace/redis))
+3. **A persistence layer** - Tracks which stream ID is active for each chat (e.g. database)
+
+## Implementation
+
+### 1. Client-side: Enable stream resumption
+
+Use the `resume` option in the `useChat` hook to enable stream resumption. When `resume` is true, the hook automatically attempts to reconnect to any active stream for the chat on mount:
+
+```tsx filename="app/chat/[chatId]/chat.tsx"
 'use client';
 
 import { useChat } from '@ai-sdk/react';
-import { Input } from '@/components/input';
-import { Messages } from '@/components/messages';
+import { DefaultChatTransport, type UIMessage } from 'ai';
 
-export function Chat() {
-  const { experimental_resume } = useChat({ id });
-
-  useEffect(() => {
-    experimental_resume();
-
-    // we use an empty dependency array to
-    // ensure this effect runs only once
-  }, []);
-
-  return (
-    <div>
-      <Messages />
-      <Input />
-    </div>
-  );
-}
-```
-
-For a more resilient implementation that handles race conditions that can occur in-flight during a resume request, you can use the following `useAutoResume` hook. This will automatically process the `append-message` SSE data part streamed by the server.
-
-```tsx filename="app/hooks/use-auto-resume.ts"
-'use client';
-
-import { useEffect } from 'react';
-import type { UIMessage } from 'ai';
-import type { UseChatHelpers } from '@ai-sdk/react';
-
-export type DataPart = { type: 'append-message'; message: string };
-
-export interface Props {
-  autoResume: boolean;
-  initialMessages: UIMessage[];
-  experimental_resume: UseChatHelpers['experimental_resume'];
-  data: UseChatHelpers['data'];
-  setMessages: UseChatHelpers['setMessages'];
-}
-
-export function useAutoResume({
-  autoResume,
-  initialMessages,
-  experimental_resume,
-  data,
-  setMessages,
-}: Props) {
-  useEffect(() => {
-    if (!autoResume) return;
-
-    const mostRecentMessage = initialMessages.at(-1);
-
-    if (mostRecentMessage?.role === 'user') {
-      experimental_resume();
-    }
-
-    // we intentionally run this once
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (!data || data.length === 0) return;
-
-    const dataPart = data[0] as DataPart;
-
-    if (dataPart.type === 'append-message') {
-      const message = JSON.parse(dataPart.message) as UIMessage;
-      setMessages([...initialMessages, message]);
-    }
-  }, [data, initialMessages, setMessages]);
-}
-```
-
-You can then use this hook in your chat component as follows.
-
-```tsx filename="app/components/chat.tsx"
-'use client';
-
-import { useChat } from '@ai-sdk/react';
-import { Input } from '@/components/input';
-import { Messages } from '@/components/messages';
-import { useAutoResume } from '@/hooks/use-auto-resume';
-
-export function Chat() {
-  const { experimental_resume, data, setMessages } = useChat({ id });
-
-  useAutoResume({
-    autoResume: true,
-    initialMessages: [],
-    experimental_resume,
-    data,
-    setMessages,
+export function Chat({
+  chatData,
+  resume = false,
+}: {
+  chatData: { id: string; messages: UIMessage[] };
+  resume?: boolean;
+}) {
+  const { messages, sendMessage, status } = useChat({
+    id: chatData.id,
+    messages: chatData.messages,
+    resume, // Enable automatic stream resumption
+    transport: new DefaultChatTransport({
+      // You must send the id of the chat
+      prepareSendMessagesRequest: ({ id, messages }) => {
+        return {
+          body: {
+            id,
+            message: messages[messages.length - 1],
+          },
+        };
+      },
+    }),
   });
 
-  return (
-    <div>
-      <Messages />
-      <Input />
-    </div>
-  );
+  return <div>{/* Your chat UI */}</div>;
 }
 ```
 
-The `experimental_resume` function makes a `GET` request to your configured chat endpoint (or `/api/chat` by default) whenever your client calls it. If there’s an active stream, it will pick up where it left off, otherwise it simply finishes without error.
+<Note>
+  You must send the chat ID with each request (see
+  `prepareSendMessagesRequest`).
+</Note>
 
-The `GET` request automatically appends the `chatId` query parameter to the URL to help identify the chat the request belongs to. Using the `chatId`, you can look up the most recent stream ID from the database and resume the stream.
+When you enable `resume`, the `useChat` hook makes a `GET` request to `/api/chat/[id]/stream` on mount to check for and resume any active streams.
 
-```bash
-GET /api/chat?chatId=<your-chat-id>
-```
+Let's start by creating the POST handler to create the resumable stream.
 
-Earlier, you must've implemented the `POST` handler for the `/api/chat` route to create new chat generations. When using `experimental_resume`, you must also implement the `GET` handler for `/api/chat` route to resume streams.
+### 2. Create the POST handler
 
-### 1. Implement the GET handler
-
-Add a `GET` method to `/api/chat` that:
-
-1. Reads `chatId` from the query string
-2. Validates it’s present
-3. Loads any stored stream IDs for that chat
-4. Returns the latest one to `streamContext.resumableStream()`
-5. Falls back to an empty stream if it’s already closed
+The POST handler creates resumable streams using the `consumeSseStream` callback:
 
 ```ts filename="app/api/chat/route.ts"
-import { loadStreams } from '@/util/chat-store';
-import { createDataStream, getMessagesByChatId } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { readChat, saveChat } from '@util/chat-store';
+import {
+  convertToModelMessages,
+  generateId,
+  streamText,
+  type UIMessage,
+} from 'ai';
 import { after } from 'next/server';
 import { createResumableStreamContext } from 'resumable-stream';
 
-const streamContext = createResumableStreamContext({
-  waitUntil: after,
-});
+export async function POST(req: Request) {
+  const {
+    message,
+    id,
+  }: {
+    message: UIMessage | undefined;
+    id: string;
+  } = await req.json();
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const chatId = searchParams.get('chatId');
+  const chat = await readChat(id);
+  let messages = chat.messages;
 
-  if (!chatId) {
-    return new Response('id is required', { status: 400 });
-  }
+  messages = [...messages, message!];
 
-  const streamIds = await loadStreams(chatId);
+  // Clear any previous active stream and save the user message
+  saveChat({ id, messages, activeStreamId: null });
 
-  if (!streamIds.length) {
-    return new Response('No streams found', { status: 404 });
-  }
-
-  const recentStreamId = streamIds.at(-1);
-
-  if (!recentStreamId) {
-    return new Response('No recent stream found', { status: 404 });
-  }
-
-  const emptyDataStream = createDataStream({
-    execute: () => {},
+  const result = streamText({
+    model: openai('gpt-4o-mini'),
+    messages: convertToModelMessages(messages),
   });
 
-  const stream = await streamContext.resumableStream(
-    recentStreamId,
-    () => emptyDataStream,
-  );
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages,
+    generateMessageId: generateId,
+    onFinish: ({ messages }) => {
+      // Clear the active stream when finished
+      saveChat({ id, messages, activeStreamId: null });
+    },
+    async consumeSseStream({ stream }) {
+      const streamId = generateId();
 
-  if (stream) {
-    return new Response(stream, { status: 200 });
-  }
+      // Create a resumable stream from the SSE stream
+      const streamContext = createResumableStreamContext({ waitUntil: after });
+      await streamContext.createNewResumableStream(streamId, () => stream);
 
-  /*
-   * For when the generation is "active" during SSR but the
-   * resumable stream has concluded after reaching this point.
-   */
-
-  const messages = await getMessagesByChatId({ id: chatId });
-  const mostRecentMessage = messages.at(-1);
-
-  if (!mostRecentMessage || mostRecentMessage.role !== 'assistant') {
-    return new Response(emptyDataStream, { status: 200 });
-  }
-
-  const messageCreatedAt = new Date(mostRecentMessage.createdAt);
-
-  const streamWithMessage = createDataStream({
-    execute: (buffer) => {
-      buffer.writeData({
-        type: 'append-message',
-        message: JSON.stringify(mostRecentMessage),
-      });
+      // Update the chat with the active stream ID
+      saveChat({ id, activeStreamId: streamId });
     },
   });
-
-  return new Response(streamWithMessage, { status: 200 });
 }
 ```
 
-After you've implemented the `GET` handler, you can update the `POST` handler to handle the creation of resumable streams.
+### 3. Implement the GET handler
 
-### 2. Update the POST handler
+Create a GET handler at `/api/chat/[id]/stream` that:
 
-When you create a brand-new chat completion, you must:
+1. Reads the chat ID from the route params
+2. Loads the chat data to check for an active stream
+3. Returns 204 (No Content) if no stream is active
+4. Resumes the existing stream if one is found
 
-1. Generate a fresh `streamId`
-2. Persist it alongside your `chatId`
-3. Kick off a `createDataStream` that pipes tokens as they arrive
-4. Hand that new stream to `streamContext.resumableStream()`
-
-```ts filename="app/api/chat/route.ts"
-import {
-  appendResponseMessages,
-  createDataStream,
-  generateId,
-  streamText,
-} from 'ai';
-import { appendStreamId, saveChat } from '@/util/chat-store';
+```ts filename="app/api/chat/[id]/stream/route.ts"
+import { readChat } from '@util/chat-store';
+import { UI_MESSAGE_STREAM_HEADERS } from 'ai';
+import { after } from 'next/server';
 import { createResumableStreamContext } from 'resumable-stream';
 
-const streamContext = createResumableStreamContext({
-  waitUntil: after,
-});
+export async function GET(
+  _: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
 
-async function POST(request: Request) {
-  const { id, messages } = await req.json();
-  const streamId = generateId();
+  const chat = await readChat(id);
 
-  // Record this new stream so we can resume later
-  await appendStreamId({ chatId: id, streamId });
+  if (chat.activeStreamId == null) {
+    // no content response when there is no active stream
+    return new Response(null, { status: 204 });
+  }
 
-  // Build the data stream that will emit tokens
-  const stream = createDataStream({
-    execute: (dataStream) => {
-      const result = streamText({
-        model: openai('gpt-4o'),
-        messages,
-        onFinish: async ({ response }) => {
-          await saveChat({
-            id,
-            messages: appendResponseMessages({
-              messages,
-              responseMessages: response.messages,
-            }),
-          });
-        },
-      });
-
-      // Return a resumable stream to the client
-      result.mergeIntoDataStream(dataStream);
-    },
+  const streamContext = createResumableStreamContext({
+    waitUntil: after,
   });
 
   return new Response(
-    await streamContext.resumableStream(streamId, () => stream),
+    await streamContext.resumeExistingStream(chat.activeStreamId),
+    { headers: UI_MESSAGE_STREAM_HEADERS },
   );
 }
 ```
 
-With both handlers, your clients can now gracefully resume ongoing streams.
+<Note>
+  The `after` function from Next.js allows work to continue after the response
+  has been sent. This ensures that the resumable stream persists in Redis even
+  after the initial response is returned to the client, enabling reconnection
+  later.
+</Note>
+
+## How it works
+
+### Request lifecycle
+
+![Diagram showing the architecture and lifecycle of resumable stream requests](https://e742qlubrjnjqpp0.public.blob.vercel-storage.com/resume-stream-diagram.png)
+
+The diagram above shows the complete lifecycle of a resumable stream:
+
+1. **Stream creation**: When you send a new message, the POST handler uses `streamText` to generate the response. The `consumeSseStream` callback creates a resumable stream with a unique ID and stores it in Redis through the `resumable-stream` package
+2. **Stream tracking**: Your persistence layer saves the `activeStreamId` in the chat data
+3. **Client reconnection**: When the client reconnects (page reload), the `resume` option triggers a GET request to `/api/chat/[id]/stream`
+4. **Stream recovery**: The GET handler checks for an `activeStreamId` and uses `resumeExistingStream` to reconnect. If no active stream exists, it returns a 204 (No Content) response
+5. **Completion cleanup**: When the stream finishes, the `onFinish` callback clears the `activeStreamId` by setting it to `null`
+
+## Customize the resume endpoint
+
+By default, the `useChat` hook makes a GET request to `/api/chat/[id]/stream` when resuming. Customize this endpoint, credentials, and headers, using the `prepareReconnectToStreamRequest` option in `DefaultChatTransport`:
+
+```tsx filename="app/chat/[chatId]/chat.tsx"
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+
+export function Chat({ chatData, resume }) {
+  const { messages, sendMessage } = useChat({
+    id: chatData.id,
+    messages: chatData.messages,
+    resume,
+    transport: new DefaultChatTransport({
+      // Customize reconnect settings (optional)
+      prepareReconnectToStreamRequest: ({ id }) => {
+        return {
+          api: `/api/chat/${id}/stream`, // Default pattern
+          // Or use a different pattern:
+          // api: `/api/streams/${id}/resume`,
+          // api: `/api/resume-chat?id=${id}`,
+          credentials: 'include', // Include cookies/auth
+          headers: {
+            Authorization: 'Bearer token',
+            'X-Custom-Header': 'value',
+          },
+        };
+      },
+    }),
+  });
+
+  return <div>{/* Your chat UI */}</div>;
+}
+```
+
+This lets you:
+
+- Match your existing API route structure
+- Add query parameters or custom paths
+- Integrate with different backend architectures
+
+## Important considerations
+
+- **Incompatibility with abort**: Stream resumption is not compatible with abort functionality. Closing a tab or refreshing the page triggers an abort signal that will break the resumption mechanism. Do not use `resume: true` if you need abort functionality in your application
+- **Stream expiration**: Streams in Redis expire after a set time (configurable in the `resumable-stream` package)
+- **Multiple clients**: Multiple clients can connect to the same stream simultaneously
+- **Error handling**: When no active stream exists, the GET handler returns a 204 (No Content) status code
+- **Security**: Ensure proper authentication and authorization for both creating and resuming streams
+- **Race conditions**: Clear the `activeStreamId` when starting a new stream to prevent resuming outdated streams
+
+<br />
+<GithubLink link="https://github.com/vercel/ai/blob/main/examples/next" />
 
 ---
 
@@ -6509,23 +12486,22 @@ The flow is as follows:
 1. All tool calls are forwarded to the client.
 1. Server-side tools are executed using their `execute` method and their results are forwarded to the client.
 1. Client-side tools that should be automatically executed are handled with the `onToolCall` callback.
-   You can return the tool result from the callback.
+   You must call `addToolResult` to provide the tool result.
 1. Client-side tool that require user interactions can be displayed in the UI.
    The tool calls and results are available as tool invocation parts in the `parts` property of the last assistant message.
 1. When the user interaction is done, `addToolResult` can be used to add the tool result to the chat.
-1. When there are tool calls in the last assistant message and all tool results are available, the client sends the updated messages back to the server.
+1. The chat can be configured to automatically submit when all tool results are available using `sendAutomaticallyWhen`.
    This triggers another iteration of this flow.
 
-The tool call and tool executions are integrated into the assistant message as tool invocation parts.
-A tool invocation is at first a tool call, and then it becomes a tool result when the tool is executed.
+The tool calls and tool executions are integrated into the assistant message as typed tool parts.
+A tool part is at first a tool call, and then it becomes a tool result when the tool is executed.
 The tool result contains all information about the tool call as well as the result of the tool execution.
 
 <Note>
-  In order to automatically send another request to the server when all tool
-  calls are server-side, you need to set
-  [`maxSteps`](/docs/reference/ai-sdk-ui/use-chat#max-steps) to a value greater
-  than 1 in the `useChat` options. It is disabled by default for backward
-  compatibility.
+  Tool result submission can be configured using the `sendAutomaticallyWhen`
+  option. You can use the `lastAssistantMessageIsCompleteWithToolCalls` helper
+  to automatically submit when all tool results are available. This simplifies
+  the client-side code while still allowing full control when needed.
 </Note>
 
 ## Example
@@ -6540,23 +12516,23 @@ In this example, we'll use three tools:
 
 ```tsx filename='app/api/chat/route.ts'
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
 import { z } from 'zod';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
     model: openai('gpt-4o'),
-    messages,
+    messages: convertToModelMessages(messages),
     tools: {
       // server-side tool with execute function:
       getWeatherInformation: {
         description: 'show the weather in a given city to the user',
-        parameters: z.object({ city: z.string() }),
+        inputSchema: z.object({ city: z.string() }),
         execute: async ({}: { city: string }) => {
           const weatherOptions = ['sunny', 'cloudy', 'rainy', 'snowy', 'windy'];
           return weatherOptions[
@@ -6567,7 +12543,7 @@ export async function POST(req: Request) {
       // client-side tool that starts user interaction:
       askForConfirmation: {
         description: 'Ask the user for confirmation.',
-        parameters: z.object({
+        inputSchema: z.object({
           message: z.string().describe('The message to ask for confirmation.'),
         }),
       },
@@ -6575,58 +12551,79 @@ export async function POST(req: Request) {
       getLocation: {
         description:
           'Get the user location. Always ask for confirmation before using this tool.',
-        parameters: z.object({}),
+        inputSchema: z.object({}),
       },
     },
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 ```
 
 ### Client-side page
 
 The client-side page uses the `useChat` hook to create a chatbot application with real-time message streaming.
-Tool invocations are displayed in the chat UI as tool invocation parts.
+Tool calls are displayed in the chat UI as typed tool parts.
 Please make sure to render the messages using the `parts` property of the message.
 
 There are three things worth mentioning:
 
 1. The [`onToolCall`](/docs/reference/ai-sdk-ui/use-chat#on-tool-call) callback is used to handle client-side tools that should be automatically executed.
    In this example, the `getLocation` tool is a client-side tool that returns a random city.
+   You call `addToolResult` to provide the result (without `await` to avoid potential deadlocks).
 
-2. The `toolInvocations` property of the last assistant message contains all tool calls and results.
+   <Note>
+     Always check `if (toolCall.dynamic)` first in your `onToolCall` handler.
+     Without this check, TypeScript will throw an error like: `Type 'string' is
+     not assignable to type '"toolName1" | "toolName2"'` when you try to use
+     `toolCall.toolName` in `addToolResult`.
+   </Note>
+
+2. The [`sendAutomaticallyWhen`](/docs/reference/ai-sdk-ui/use-chat#send-automatically-when) option with `lastAssistantMessageIsCompleteWithToolCalls` helper automatically submits when all tool results are available.
+
+3. The `parts` array of assistant messages contains tool parts with typed names like `tool-askForConfirmation`.
    The client-side tool `askForConfirmation` is displayed in the UI.
    It asks the user for confirmation and displays the result once the user confirms or denies the execution.
-   The result is added to the chat using `addToolResult`.
+   The result is added to the chat using `addToolResult` with the `tool` parameter for type safety.
 
-3. The [`maxSteps`](/docs/reference/ai-sdk-ui/use-chat#max-steps) option is set to 5.
-   This enables several tool use iterations between the client and the server.
-
-```tsx filename='app/page.tsx' highlight="9,12,31"
+```tsx filename='app/page.tsx' highlight="2,6,10,14-20"
 'use client';
 
-import { ToolInvocation } from 'ai';
 import { useChat } from '@ai-sdk/react';
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithToolCalls,
+} from 'ai';
+import { useState } from 'react';
 
 export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit, addToolResult } =
-    useChat({
-      maxSteps: 5,
+  const { messages, sendMessage, addToolResult } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
 
-      // run client-side tools that are automatically executed:
-      async onToolCall({ toolCall }) {
-        if (toolCall.toolName === 'getLocation') {
-          const cities = [
-            'New York',
-            'Los Angeles',
-            'Chicago',
-            'San Francisco',
-          ];
-          return cities[Math.floor(Math.random() * cities.length)];
-        }
-      },
-    });
+    sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+
+    // run client-side tools that are automatically executed:
+    async onToolCall({ toolCall }) {
+      // Check if it's a dynamic tool first for proper type narrowing
+      if (toolCall.dynamic) {
+        return;
+      }
+
+      if (toolCall.toolName === 'getLocation') {
+        const cities = ['New York', 'Los Angeles', 'Chicago', 'San Francisco'];
+
+        // No await - avoids potential deadlocks
+        addToolResult({
+          tool: 'getLocation',
+          toolCallId: toolCall.toolCallId,
+          output: cities[Math.floor(Math.random() * cities.length)],
+        });
+      }
+    },
+  });
+  const [input, setInput] = useState('');
 
   return (
     <>
@@ -6639,93 +12636,109 @@ export default function Chat() {
               case 'text':
                 return part.text;
 
-              // for tool invocations, distinguish between the tools and the state:
-              case 'tool-invocation': {
-                const callId = part.toolInvocation.toolCallId;
+              // for tool parts, use the typed tool part names:
+              case 'tool-askForConfirmation': {
+                const callId = part.toolCallId;
 
-                switch (part.toolInvocation.toolName) {
-                  case 'askForConfirmation': {
-                    switch (part.toolInvocation.state) {
-                      case 'call':
-                        return (
-                          <div key={callId}>
-                            {part.toolInvocation.args.message}
-                            <div>
-                              <button
-                                onClick={() =>
-                                  addToolResult({
-                                    toolCallId: callId,
-                                    result: 'Yes, confirmed.',
-                                  })
-                                }
-                              >
-                                Yes
-                              </button>
-                              <button
-                                onClick={() =>
-                                  addToolResult({
-                                    toolCallId: callId,
-                                    result: 'No, denied',
-                                  })
-                                }
-                              >
-                                No
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      case 'result':
-                        return (
-                          <div key={callId}>
-                            Location access allowed:{' '}
-                            {part.toolInvocation.result}
-                          </div>
-                        );
-                    }
-                    break;
-                  }
-
-                  case 'getLocation': {
-                    switch (part.toolInvocation.state) {
-                      case 'call':
-                        return <div key={callId}>Getting location...</div>;
-                      case 'result':
-                        return (
-                          <div key={callId}>
-                            Location: {part.toolInvocation.result}
-                          </div>
-                        );
-                    }
-                    break;
-                  }
-
-                  case 'getWeatherInformation': {
-                    switch (part.toolInvocation.state) {
-                      // example of pre-rendering streaming tool calls:
-                      case 'partial-call':
-                        return (
-                          <pre key={callId}>
-                            {JSON.stringify(part.toolInvocation, null, 2)}
-                          </pre>
-                        );
-                      case 'call':
-                        return (
-                          <div key={callId}>
-                            Getting weather information for{' '}
-                            {part.toolInvocation.args.city}...
-                          </div>
-                        );
-                      case 'result':
-                        return (
-                          <div key={callId}>
-                            Weather in {part.toolInvocation.args.city}:{' '}
-                            {part.toolInvocation.result}
-                          </div>
-                        );
-                    }
-                    break;
-                  }
+                switch (part.state) {
+                  case 'input-streaming':
+                    return (
+                      <div key={callId}>Loading confirmation request...</div>
+                    );
+                  case 'input-available':
+                    return (
+                      <div key={callId}>
+                        {part.input.message}
+                        <div>
+                          <button
+                            onClick={() =>
+                              addToolResult({
+                                tool: 'askForConfirmation',
+                                toolCallId: callId,
+                                output: 'Yes, confirmed.',
+                              })
+                            }
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() =>
+                              addToolResult({
+                                tool: 'askForConfirmation',
+                                toolCallId: callId,
+                                output: 'No, denied',
+                              })
+                            }
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  case 'output-available':
+                    return (
+                      <div key={callId}>
+                        Location access allowed: {part.output}
+                      </div>
+                    );
+                  case 'output-error':
+                    return <div key={callId}>Error: {part.errorText}</div>;
                 }
+                break;
+              }
+
+              case 'tool-getLocation': {
+                const callId = part.toolCallId;
+
+                switch (part.state) {
+                  case 'input-streaming':
+                    return (
+                      <div key={callId}>Preparing location request...</div>
+                    );
+                  case 'input-available':
+                    return <div key={callId}>Getting location...</div>;
+                  case 'output-available':
+                    return <div key={callId}>Location: {part.output}</div>;
+                  case 'output-error':
+                    return (
+                      <div key={callId}>
+                        Error getting location: {part.errorText}
+                      </div>
+                    );
+                }
+                break;
+              }
+
+              case 'tool-getWeatherInformation': {
+                const callId = part.toolCallId;
+
+                switch (part.state) {
+                  // example of pre-rendering streaming tool inputs:
+                  case 'input-streaming':
+                    return (
+                      <pre key={callId}>{JSON.stringify(part, null, 2)}</pre>
+                    );
+                  case 'input-available':
+                    return (
+                      <div key={callId}>
+                        Getting weather information for {part.input.city}...
+                      </div>
+                    );
+                  case 'output-available':
+                    return (
+                      <div key={callId}>
+                        Weather in {part.input.city}: {part.output}
+                      </div>
+                    );
+                  case 'output-error':
+                    return (
+                      <div key={callId}>
+                        Error getting weather for {part.input.city}:{' '}
+                        {part.errorText}
+                      </div>
+                    );
+                }
+                break;
               }
             }
           })}
@@ -6733,36 +12746,84 @@ export default function Chat() {
         </div>
       ))}
 
-      <form onSubmit={handleSubmit}>
-        <input value={input} onChange={handleInputChange} />
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (input.trim()) {
+            sendMessage({ text: input });
+            setInput('');
+          }
+        }}
+      >
+        <input value={input} onChange={(e) => setInput(e.target.value)} />
       </form>
     </>
   );
 }
 ```
 
-## Tool call streaming
+## Dynamic Tools
 
-You can stream tool calls while they are being generated by enabling the
-`toolCallStreaming` option in `streamText`.
+When using dynamic tools (tools with unknown types at compile time), the UI parts use a generic `dynamic-tool` type instead of specific tool types:
 
-```tsx filename='app/api/chat/route.ts' highlight="5"
-export async function POST(req: Request) {
-  // ...
+```tsx filename='app/page.tsx'
+{
+  message.parts.map((part, index) => {
+    switch (part.type) {
+      // Static tools with specific (`tool-${toolName}`) types
+      case 'tool-getWeatherInformation':
+        return <WeatherDisplay part={part} />;
 
-  const result = streamText({
-    toolCallStreaming: true,
-    // ...
+      // Dynamic tools use generic `dynamic-tool` type
+      case 'dynamic-tool':
+        return (
+          <div key={index}>
+            <h4>Tool: {part.toolName}</h4>
+            {part.state === 'input-streaming' && (
+              <pre>{JSON.stringify(part.input, null, 2)}</pre>
+            )}
+            {part.state === 'output-available' && (
+              <pre>{JSON.stringify(part.output, null, 2)}</pre>
+            )}
+            {part.state === 'output-error' && (
+              <div>Error: {part.errorText}</div>
+            )}
+          </div>
+        );
+    }
   });
-
-  return result.toDataStreamResponse();
 }
 ```
 
-When the flag is enabled, partial tool calls will be streamed as part of the data stream.
+Dynamic tools are useful when integrating with:
+
+- MCP (Model Context Protocol) tools without schemas
+- User-defined functions loaded at runtime
+- External tool providers
+
+## Tool call streaming
+
+Tool call streaming is **enabled by default** in AI SDK 5.0, allowing you to stream tool calls while they are being generated. This provides a better user experience by showing tool inputs as they are generated in real-time.
+
+```tsx filename='app/api/chat/route.ts'
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    messages: convertToModelMessages(messages),
+    // toolCallStreaming is enabled by default in v5
+    // ...
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+With tool call streaming enabled, partial tool calls are streamed as part of the data stream.
 They are available through the `useChat` hook.
-The tool invocation parts of assistant messages will also contain partial tool calls.
-You can use the `state` property of the tool invocation to render the correct UI.
+The typed tool parts of assistant messages will also contain partial tool calls.
+You can use the `state` property of the tool part to render the correct UI.
 
 ```tsx filename='app/page.tsx' highlight="9,10"
 export default function Chat() {
@@ -6772,15 +12833,20 @@ export default function Chat() {
       {messages?.map((message) => (
         <div key={message.id}>
           {message.parts.map((part) => {
-            if (part.type === 'tool-invocation') {
-              switch (part.toolInvocation.state) {
-                case 'partial-call':
-                  return <>render partial tool call</>;
-                case 'call':
-                  return <>render full tool call</>;
-                case 'result':
-                  return <>render tool result</>;
-              }
+            switch (part.type) {
+              case 'tool-askForConfirmation':
+              case 'tool-getLocation':
+              case 'tool-getWeatherInformation':
+                switch (part.state) {
+                  case 'input-streaming':
+                    return <pre>{JSON.stringify(part.input, null, 2)}</pre>;
+                  case 'input-available':
+                    return <pre>{JSON.stringify(part.input, null, 2)}</pre>;
+                  case 'output-available':
+                    return <pre>{JSON.stringify(part.output, null, 2)}</pre>;
+                  case 'output-error':
+                    return <div>Error: {part.errorText}</div>;
+                }
             }
           })}
         </div>
@@ -6793,7 +12859,7 @@ export default function Chat() {
 ## Step start parts
 
 When you are using multi-step tool calls, the AI SDK will add step start parts to the assistant messages.
-If you want to display boundaries between tool invocations, you can use the `step-start` parts as follows:
+If you want to display boundaries between tool calls, you can use the `step-start` parts as follows:
 
 ```tsx filename='app/page.tsx'
 // ...
@@ -6809,7 +12875,9 @@ message.parts.map((part, index) => {
       ) : null;
     case 'text':
     // ...
-    case 'tool-invocation':
+    case 'tool-askForConfirmation':
+    case 'tool-getLocation':
+    case 'tool-getWeatherInformation':
     // ...
   }
 });
@@ -6823,19 +12891,19 @@ This works when all invoked tools have an `execute` function on the server side.
 
 ```tsx filename='app/api/chat/route.ts' highlight="15-21,24"
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { convertToModelMessages, streamText, UIMessage, stepCountIs } from 'ai';
 import { z } from 'zod';
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
     model: openai('gpt-4o'),
-    messages,
+    messages: convertToModelMessages(messages),
     tools: {
       getWeatherInformation: {
         description: 'show the weather in a given city to the user',
-        parameters: z.object({ city: z.string() }),
+        inputSchema: z.object({ city: z.string() }),
         // tool has execute function:
         execute: async ({}: { city: string }) => {
           const weatherOptions = ['sunny', 'cloudy', 'rainy', 'snowy', 'windy'];
@@ -6845,10 +12913,10 @@ export async function POST(req: Request) {
         },
       },
     },
-    maxSteps: 5,
+    stopWhen: stepCountIs(5),
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 ```
 
@@ -6857,7 +12925,7 @@ export async function POST(req: Request) {
 Language models can make errors when calling tools.
 By default, these errors are masked for security reasons, and show up as "An error occurred" in the UI.
 
-To surface the errors, you can use the `getErrorMessage` function when calling `toDataStreamResponse`.
+To surface the errors, you can use the `onError` function when calling `toUIMessageResponse`.
 
 ```tsx
 export function errorHandler(error: unknown) {
@@ -6882,15 +12950,15 @@ const result = streamText({
   // ...
 });
 
-return result.toDataStreamResponse({
-  getErrorMessage: errorHandler,
+return result.toUIMessageStreamResponse({
+  onError: errorHandler,
 });
 ```
 
-In case you are using `createDataStreamResponse`, you can use the `onError` function when calling `toDataStreamResponse`:
+In case you are using `createUIMessageResponse`, you can use the `onError` function when calling `toUIMessageResponse`:
 
 ```tsx
-const response = createDataStreamResponse({
+const response = createUIMessageResponse({
   // ...
   async execute(dataStream) {
     // ...
@@ -6935,23 +13003,38 @@ Start with a basic chat implementation using the `useChat` hook:
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
 
 export default function Page() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage({ text: input });
+    setInput('');
+  };
 
   return (
     <div>
       {messages.map((message) => (
         <div key={message.id}>
           <div>{message.role === 'user' ? 'User: ' : 'AI: '}</div>
-          <div>{message.content}</div>
+          <div>
+            {message.parts.map((part, index) => {
+              if (part.type === 'text') {
+                return <span key={index}>{part.text}</span>;
+              }
+              return null;
+            })}
+          </div>
         </div>
       ))}
 
       <form onSubmit={handleSubmit}>
         <input
           value={input}
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
         />
         <button type="submit">Send</button>
@@ -6965,19 +13048,19 @@ To handle the chat requests and model responses, set up an API route:
 
 ```ts filename="app/api/chat/route.ts"
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { streamText, convertToModelMessages, UIMessage, stepCountIs } from 'ai';
 
 export async function POST(request: Request) {
-  const { messages } = await request.json();
+  const { messages }: { messages: UIMessage[] } = await request.json();
 
   const result = streamText({
     model: openai('gpt-4o'),
     system: 'You are a friendly assistant!',
-    messages,
-    maxSteps: 5,
+    messages: convertToModelMessages(messages),
+    stopWhen: stepCountIs(5),
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 ```
 
@@ -6995,7 +13078,7 @@ import { z } from 'zod';
 
 export const weatherTool = createTool({
   description: 'Display the weather for a location',
-  parameters: z.object({
+  inputSchema: z.object({
     location: z.string().describe('The location to get the weather for'),
   }),
   execute: async function ({ location }) {
@@ -7015,23 +13098,23 @@ In this file, you've created a tool called `weatherTool`. This tool simulates fe
 
 Update the API route to include the tool you've defined:
 
-```ts filename="app/api/chat/route.ts" highlight="3,13"
+```ts filename="app/api/chat/route.ts" highlight="3,8,14"
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { streamText, convertToModelMessages, UIMessage, stepCountIs } from 'ai';
 import { tools } from '@/ai/tools';
 
 export async function POST(request: Request) {
-  const { messages } = await request.json();
+  const { messages }: { messages: UIMessage[] } = await request.json();
 
   const result = streamText({
     model: openai('gpt-4o'),
     system: 'You are a friendly assistant!',
-    messages,
-    maxSteps: 5,
+    messages: convertToModelMessages(messages),
+    stopWhen: stepCountIs(5),
     tools,
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 ```
 
@@ -7065,48 +13148,56 @@ This component will display the weather information for a given location. It tak
 
 Now that you have your tool and corresponding React component, let's integrate them into your chat interface. You'll render the Weather component when the model calls the weather tool.
 
-To check if the model has called a tool, you can use the `toolInvocations` property of the message object. This property contains information about any tools that were invoked in that generation including `toolCallId`, `toolName`, `args`, `toolState`, and `result`.
+To check if the model has called a tool, you can check the `parts` array of the UIMessage object for tool-specific parts. In AI SDK 5.0, tool parts use typed naming: `tool-${toolName}` instead of generic types.
 
 Update your `page.tsx` file:
 
-```tsx filename="app/page.tsx" highlight="4,16-39"
+```tsx filename="app/page.tsx" highlight="4,9,14-15,19-46"
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
 import { Weather } from '@/components/weather';
 
 export default function Page() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat();
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage({ text: input });
+    setInput('');
+  };
 
   return (
     <div>
       {messages.map((message) => (
         <div key={message.id}>
           <div>{message.role === 'user' ? 'User: ' : 'AI: '}</div>
-          <div>{message.content}</div>
-
           <div>
-            {message.toolInvocations?.map((toolInvocation) => {
-              const { toolName, toolCallId, state } = toolInvocation;
-
-              if (state === 'result') {
-                if (toolName === 'displayWeather') {
-                  const { result } = toolInvocation;
-                  return (
-                    <div key={toolCallId}>
-                      <Weather {...result} />
-                    </div>
-                  );
-                }
-              } else {
-                return (
-                  <div key={toolCallId}>
-                    {toolName === 'displayWeather' ? (
-                      <div>Loading weather...</div>
-                    ) : null}
-                  </div>
-                );
+            {message.parts.map((part, index) => {
+              if (part.type === 'text') {
+                return <span key={index}>{part.text}</span>;
               }
+
+              if (part.type === 'tool-displayWeather') {
+                switch (part.state) {
+                  case 'input-available':
+                    return <div key={index}>Loading weather...</div>;
+                  case 'output-available':
+                    return (
+                      <div key={index}>
+                        <Weather {...part.output} />
+                      </div>
+                    );
+                  case 'output-error':
+                    return <div key={index}>Error: {part.errorText}</div>;
+                  default:
+                    return null;
+                }
+              }
+
+              return null;
             })}
           </div>
         </div>
@@ -7115,7 +13206,7 @@ export default function Page() {
       <form onSubmit={handleSubmit}>
         <input
           value={input}
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
         />
         <button type="submit">Send</button>
@@ -7127,10 +13218,10 @@ export default function Page() {
 
 In this updated code snippet, you:
 
-1. Check if the message has `toolInvocations`.
-2. Check if the tool invocation state is 'result'.
-3. If it's a result and the tool name is 'displayWeather', render the Weather component.
-4. If the tool invocation state is not 'result', show a loading message.
+1. Use manual input state management with `useState` instead of the built-in `input` and `handleInputChange`.
+2. Use `sendMessage` instead of `handleSubmit` to send messages.
+3. Check the `parts` array of each message for different content types.
+4. Handle tool parts with type `tool-displayWeather` and their different states (`input-available`, `output-available`, `output-error`).
 
 This approach allows you to dynamically render UI components based on the model's responses, creating a more interactive and context-aware chat experience.
 
@@ -7146,7 +13237,7 @@ To add more tools, simply define them in your `ai/tools.ts` file:
 // Add a new stock tool
 export const stockTool = createTool({
   description: 'Get price for a stock',
-  parameters: z.object({
+  inputSchema: z.object({
     symbol: z.string().describe('The stock symbol to get the price for'),
   }),
   execute: async function ({ symbol }) {
@@ -7188,48 +13279,66 @@ Finally, update your `page.tsx` file to include the new Stock component:
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
 import { Weather } from '@/components/weather';
 import { Stock } from '@/components/stock';
 
 export default function Page() {
-  const { messages, input, setInput, handleSubmit } = useChat();
+  const [input, setInput] = useState('');
+  const { messages, sendMessage } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage({ text: input });
+    setInput('');
+  };
 
   return (
     <div>
       {messages.map((message) => (
         <div key={message.id}>
           <div>{message.role}</div>
-          <div>{message.content}</div>
-
           <div>
-            {message.toolInvocations?.map((toolInvocation) => {
-              const { toolName, toolCallId, state } = toolInvocation;
-
-              if (state === 'result') {
-                if (toolName === 'displayWeather') {
-                  const { result } = toolInvocation;
-                  return (
-                    <div key={toolCallId}>
-                      <Weather {...result} />
-                    </div>
-                  );
-                } else if (toolName === 'getStockPrice') {
-                  const { result } = toolInvocation;
-                  return <Stock key={toolCallId} {...result} />;
-                }
-              } else {
-                return (
-                  <div key={toolCallId}>
-                    {toolName === 'displayWeather' ? (
-                      <div>Loading weather...</div>
-                    ) : toolName === 'getStockPrice' ? (
-                      <div>Loading stock price...</div>
-                    ) : (
-                      <div>Loading...</div>
-                    )}
-                  </div>
-                );
+            {message.parts.map((part, index) => {
+              if (part.type === 'text') {
+                return <span key={index}>{part.text}</span>;
               }
+
+              if (part.type === 'tool-displayWeather') {
+                switch (part.state) {
+                  case 'input-available':
+                    return <div key={index}>Loading weather...</div>;
+                  case 'output-available':
+                    return (
+                      <div key={index}>
+                        <Weather {...part.output} />
+                      </div>
+                    );
+                  case 'output-error':
+                    return <div key={index}>Error: {part.errorText}</div>;
+                  default:
+                    return null;
+                }
+              }
+
+              if (part.type === 'tool-getStockPrice') {
+                switch (part.state) {
+                  case 'input-available':
+                    return <div key={index}>Loading stock price...</div>;
+                  case 'output-available':
+                    return (
+                      <div key={index}>
+                        <Stock {...part.output} />
+                      </div>
+                    );
+                  case 'output-error':
+                    return <div key={index}>Error: {part.errorText}</div>;
+                  default:
+                    return null;
+                }
+              }
+
+              return null;
             })}
           </div>
         </div>
@@ -7239,9 +13348,7 @@ export default function Page() {
         <input
           type="text"
           value={input}
-          onChange={(event) => {
-            setInput(event.target.value);
-          }}
+          onChange={(e) => setInput(e.target.value)}
         />
         <button type="submit">Send</button>
       </form>
@@ -7262,6 +13369,10 @@ description: Learn how to use the useCompletion hook.
 # Completion
 
 The `useCompletion` hook allows you to create a user interface to handle text completions in your application. It enables the streaming of text completions from your AI provider, manages the state for chat input, and updates the UI automatically as new messages are received.
+
+<Note>
+  The `useCompletion` hook is now part of the `@ai-sdk/react` package.
+</Note>
 
 In this guide, you will learn how to use the `useCompletion` hook in your application to generate text completions and stream them in real-time to your users.
 
@@ -7307,7 +13418,7 @@ export async function POST(req: Request) {
     prompt,
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 ```
 
@@ -7407,8 +13518,8 @@ const { ... } = useCompletion({
   onResponse: (response: Response) => {
     console.log('Received response from server:', response)
   },
-  onFinish: (message: Message) => {
-    console.log('Finished streaming message:', message)
+  onFinish: (prompt: string, completion: string) => {
+    console.log('Finished streaming completion:', completion)
   },
   onError: (error: Error) => {
     console.error('An error occurred:', error)
@@ -7526,10 +13637,68 @@ export async function POST(req: Request) {
   const context = await req.json();
 
   const result = streamObject({
-    model: openai('gpt-4-turbo'),
+    model: openai('gpt-4.1'),
     schema: notificationSchema,
     prompt:
       `Generate 3 notifications for a messages app in this context:` + context,
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+## Enum Output Mode
+
+When you need to classify or categorize input into predefined options, you can use the `enum` output mode with `useObject`. This requires a specific schema structure where the object has `enum` as a key with `z.enum` containing your possible values.
+
+### Example: Text Classification
+
+This example shows how to build a simple text classifier that categorizes statements as true or false.
+
+#### Client
+
+When using `useObject` with enum output mode, your schema must be an object with `enum` as the key:
+
+```tsx filename='app/classify/page.tsx'
+'use client';
+
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import { z } from 'zod';
+
+export default function ClassifyPage() {
+  const { object, submit, isLoading } = useObject({
+    api: '/api/classify',
+    schema: z.object({ enum: z.enum(['true', 'false']) }),
+  });
+
+  return (
+    <>
+      <button onClick={() => submit('The earth is flat')} disabled={isLoading}>
+        Classify statement
+      </button>
+
+      {object && <div>Classification: {object.enum}</div>}
+    </>
+  );
+}
+```
+
+#### Server
+
+On the server, use `streamObject` with `output: 'enum'` to stream the classification result:
+
+```typescript filename='app/api/classify/route.ts'
+import { openai } from '@ai-sdk/openai';
+import { streamObject } from 'ai';
+
+export async function POST(req: Request) {
+  const context = await req.json();
+
+  const result = streamObject({
+    model: openai('gpt-4.1'),
+    output: 'enum',
+    enum: ['true', 'false'],
+    prompt: `Classify this statement as true or false: ${context}`,
   });
 
   return result.toTextStreamResponse();
@@ -7726,223 +13895,8 @@ const { submit, object } = useObject({
 
 ---
 
-title: OpenAI Assistants
-description: Learn how to use the useAssistant hook.
-
----
-
-# OpenAI Assistants
-
-The `useAssistant` hook allows you to handle the client state when interacting with an OpenAI compatible assistant API.
-This hook is useful when you want to integrate assistant capabilities into your application,
-with the UI updated automatically as the assistant is streaming its execution.
-
-The `useAssistant` hook is supported in `@ai-sdk/react`, `ai/svelte`, and `ai/vue`.
-
-## Example
-
-```tsx filename='app/page.tsx'
-'use client';
-
-import { Message, useAssistant } from '@ai-sdk/react';
-
-export default function Chat() {
-  const { status, messages, input, submitMessage, handleInputChange } =
-    useAssistant({ api: '/api/assistant' });
-
-  return (
-    <div>
-      {messages.map((m: Message) => (
-        <div key={m.id}>
-          <strong>{`${m.role}: `}</strong>
-          {m.role !== 'data' && m.content}
-          {m.role === 'data' && (
-            <>
-              {(m.data as any).description}
-              <br />
-              <pre className={'bg-gray-200'}>
-                {JSON.stringify(m.data, null, 2)}
-              </pre>
-            </>
-          )}
-        </div>
-      ))}
-
-      {status === 'in_progress' && <div />}
-
-      <form onSubmit={submitMessage}>
-        <input
-          disabled={status !== 'awaiting_message'}
-          value={input}
-          placeholder="What is the temperature in the living room?"
-          onChange={handleInputChange}
-        />
-      </form>
-    </div>
-  );
-}
-```
-
-```tsx filename='app/api/assistant/route.ts'
-import { AssistantResponse } from 'ai';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
-});
-
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
-
-export async function POST(req: Request) {
-  // Parse the request body
-  const input: {
-    threadId: string | null;
-    message: string;
-  } = await req.json();
-
-  // Create a thread if needed
-  const threadId = input.threadId ?? (await openai.beta.threads.create({})).id;
-
-  // Add a message to the thread
-  const createdMessage = await openai.beta.threads.messages.create(threadId, {
-    role: 'user',
-    content: input.message,
-  });
-
-  return AssistantResponse(
-    { threadId, messageId: createdMessage.id },
-    async ({ forwardStream, sendDataMessage }) => {
-      // Run the assistant on the thread
-      const runStream = openai.beta.threads.runs.stream(threadId, {
-        assistant_id:
-          process.env.ASSISTANT_ID ??
-          (() => {
-            throw new Error('ASSISTANT_ID is not set');
-          })(),
-      });
-
-      // forward run status would stream message deltas
-      let runResult = await forwardStream(runStream);
-
-      // status can be: queued, in_progress, requires_action, cancelling, cancelled, failed, completed, or expired
-      while (
-        runResult?.status === 'requires_action' &&
-        runResult.required_action?.type === 'submit_tool_outputs'
-      ) {
-        const tool_outputs =
-          runResult.required_action.submit_tool_outputs.tool_calls.map(
-            (toolCall: any) => {
-              const parameters = JSON.parse(toolCall.function.arguments);
-
-              switch (toolCall.function.name) {
-                // configure your tool calls here
-
-                default:
-                  throw new Error(
-                    `Unknown tool call function: ${toolCall.function.name}`,
-                  );
-              }
-            },
-          );
-
-        runResult = await forwardStream(
-          openai.beta.threads.runs.submitToolOutputsStream(
-            threadId,
-            runResult.id,
-            { tool_outputs },
-          ),
-        );
-      }
-    },
-  );
-}
-```
-
-## Customized UI
-
-`useAssistant` also provides ways to manage the chat message and input states via code and show loading and error states.
-
-### Loading and error states
-
-To show a loading spinner while the assistant is running the thread, you can use the `status` state returned by the `useAssistant` hook:
-
-```tsx
-const { status, ... } = useAssistant()
-
-return(
-  <>
-    {status === "in_progress" ? <Spinner /> : null}
-  </>
-)
-```
-
-Similarly, the `error` state reflects the error object thrown during the fetch request. It can be used to display an error message, or show a toast notification:
-
-```tsx
-const { error, ... } = useAssistant()
-
-useEffect(() => {
-  if (error) {
-    toast.error(error.message)
-  }
-}, [error])
-
-// Or display the error message in the UI:
-return (
-  <>
-    {error ? <div>{error.message}</div> : null}
-  </>
-)
-```
-
-### Controlled input
-
-In the initial example, we have `handleSubmit` and `handleInputChange` callbacks that manage the input changes and form submissions. These are handy for common use cases, but you can also use uncontrolled APIs for more advanced scenarios such as form validation or customized components.
-
-The following example demonstrates how to use more granular APIs like `append` with your custom input and submit button components:
-
-```tsx
-const { append } = useAssistant();
-
-return (
-  <>
-    <MySubmitButton
-      onClick={() => {
-        // Send a new message to the AI provider
-        append({
-          role: 'user',
-          content: input,
-        });
-      }}
-    />
-  </>
-);
-```
-
-## Configure Request Options
-
-By default, the `useAssistant` hook sends a HTTP POST request to the `/api/assistant` endpoint with the prompt as part of the request body. You can customize the request by passing additional options to the `useAssistant` hook:
-
-```tsx
-const { messages, input, handleInputChange, handleSubmit } = useAssistant({
-  api: '/api/custom-completion',
-  headers: {
-    Authorization: 'your_token',
-  },
-  body: {
-    user_id: '123',
-  },
-  credentials: 'same-origin',
-});
-```
-
-In this example, the `useAssistant` hook sends a POST request to the `/api/custom-completion` endpoint with the specified headers, additional body fields, and credentials for that fetch request. On your server side, you can handle the request with these additional information.
-
----
-
 title: Streaming Custom Data
-description: Learn how to stream custom data to the client.
+description: Learn how to stream custom data from the server to the client.
 
 ---
 
@@ -7953,194 +13907,390 @@ For example, you may want to send status information, the message ids after stor
 or references to content that the language model is referring to.
 
 The AI SDK provides several helpers that allows you to stream additional data to the client
-and attach it either to the `Message` or to the `data` object of the `useChat` hook:
+and attach it to the `UIMessage` parts array:
 
-- `createDataStream`: creates a data stream
-- `createDataStreamResponse`: creates a response object that streams data
-- `pipeDataStreamToResponse`: pipes a data stream to a server response object
+- `createUIMessageStream`: creates a data stream
+- `createUIMessageStreamResponse`: creates a response object that streams data
+- `pipeUIMessageStreamToResponse`: pipes a data stream to a server response object
 
-The data is streamed as part of the response stream.
+The data is streamed as part of the response stream using Server-Sent Events.
 
-## Sending Custom Data from the Server
+## Setting Up Type-Safe Data Streaming
 
-In your server-side route handler, you can use `createDataStreamResponse` and `pipeDataStreamToResponse` in combination with `streamText`.
-You need to:
+First, define your custom message type with data part schemas for type safety:
 
-1. Call `createDataStreamResponse` or `pipeDataStreamToResponse` to get a callback function with a `DataStreamWriter`.
-2. Write to the `DataStreamWriter` to stream additional data.
-3. Merge the `streamText` result into the `DataStreamWriter`.
-4. Return the response from `createDataStreamResponse` (if that method is used)
+```tsx filename="ai/types.ts"
+import { UIMessage } from 'ai';
 
-Here is an example:
+// Define your custom message type with data part schemas
+export type MyUIMessage = UIMessage<
+  never, // metadata type
+  {
+    weather: {
+      city: string;
+      weather?: string;
+      status: 'loading' | 'success';
+    };
+    notification: {
+      message: string;
+      level: 'info' | 'warning' | 'error';
+    };
+  } // data parts type
+>;
+```
 
-```tsx filename="route.ts" highlight="7-10,16,19-23,25-26,30"
+## Streaming Data from the Server
+
+In your server-side route handler, you can create a `UIMessageStream` and then pass it to `createUIMessageStreamResponse`:
+
+```tsx filename="route.ts"
 import { openai } from '@ai-sdk/openai';
-import { generateId, createDataStreamResponse, streamText } from 'ai';
+import {
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  streamText,
+  convertToModelMessages,
+} from 'ai';
+import type { MyUIMessage } from '@/ai/types';
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  // immediately start streaming (solves RAG issues with status, etc.)
-  return createDataStreamResponse({
-    execute: (dataStream) => {
-      dataStream.writeData('initialized call');
+  const stream = createUIMessageStream<MyUIMessage>({
+    execute: ({ writer }) => {
+      // 1. Send initial status (transient - won't be added to message history)
+      writer.write({
+        type: 'data-notification',
+        data: { message: 'Processing your request...', level: 'info' },
+        transient: true, // This part won't be added to message history
+      });
 
-      const result = streamText({
-        model: openai('gpt-4o'),
-        messages,
-        onChunk() {
-          dataStream.writeMessageAnnotation({ chunk: '123' });
-        },
-        onFinish() {
-          // message annotation:
-          dataStream.writeMessageAnnotation({
-            id: generateId(), // e.g. id from saved DB record
-            other: 'information',
-          });
-
-          // call annotation:
-          dataStream.writeData('call completed');
+      // 2. Send sources (useful for RAG use cases)
+      writer.write({
+        type: 'source',
+        value: {
+          type: 'source',
+          sourceType: 'url',
+          id: 'source-1',
+          url: 'https://weather.com',
+          title: 'Weather Data Source',
         },
       });
 
-      result.mergeIntoDataStream(dataStream);
-    },
-    onError: (error) => {
-      // Error messages are masked by default for security reasons.
-      // If you want to expose the error message to the client, you can do so here:
-      return error instanceof Error ? error.message : String(error);
+      // 3. Send data parts with loading state
+      writer.write({
+        type: 'data-weather',
+        id: 'weather-1',
+        data: { city: 'San Francisco', status: 'loading' },
+      });
+
+      const result = streamText({
+        model: openai('gpt-4.1'),
+        messages: convertToModelMessages(messages),
+        onFinish() {
+          // 4. Update the same data part (reconciliation)
+          writer.write({
+            type: 'data-weather',
+            id: 'weather-1', // Same ID = update existing part
+            data: {
+              city: 'San Francisco',
+              weather: 'sunny',
+              status: 'success',
+            },
+          });
+
+          // 5. Send completion notification (transient)
+          writer.write({
+            type: 'data-notification',
+            data: { message: 'Request completed', level: 'info' },
+            transient: true, // Won't be added to message history
+          });
+        },
+      });
+
+      writer.merge(result.toUIMessageStream());
     },
   });
+
+  return createUIMessageStreamResponse({ stream });
 }
 ```
 
 <Note>
   You can also send stream data from custom backends, e.g. Python / FastAPI,
-  using the [Data Stream
-  Protocol](/docs/ai-sdk-ui/stream-protocol#data-stream-protocol).
+  using the [UI Message Stream
+  Protocol](/docs/ai-sdk-ui/stream-protocol#ui-message-stream-protocol).
 </Note>
 
-## Sending Custom Sources
+## Types of Streamable Data
 
-You can send custom sources to the client using the `writeSource` method on the `DataStreamWriter`:
+### Data Parts (Persistent)
 
-```tsx filename="route.ts" highlight="9-15"
-import { openai } from '@ai-sdk/openai';
-import { createDataStreamResponse, streamText } from 'ai';
+Regular data parts are added to the message history and appear in `message.parts`:
 
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-
-  return createDataStreamResponse({
-    execute: (dataStream) => {
-      // write a custom url source to the stream:
-      dataStream.writeSource({
-        sourceType: 'url',
-        id: 'source-1',
-        url: 'https://example.com',
-        title: 'Example Source',
-      });
-
-      const result = streamText({
-        model: openai('gpt-4o'),
-        messages,
-      });
-
-      result.mergeIntoDataStream(dataStream);
-    },
-  });
-}
+```tsx
+writer.write({
+  type: 'data-weather',
+  id: 'weather-1', // Optional: enables reconciliation
+  data: { city: 'San Francisco', status: 'loading' },
+});
 ```
 
-## Processing Custom Data in `useChat`
+### Sources
 
-The `useChat` hook automatically processes the streamed data and makes it available to you.
+Sources are useful for RAG implementations where you want to show which documents or URLs were referenced:
 
-### Accessing Data
+```tsx
+writer.write({
+  type: 'source',
+  value: {
+    type: 'source',
+    sourceType: 'url',
+    id: 'source-1',
+    url: 'https://example.com',
+    title: 'Example Source',
+  },
+});
+```
 
-On the client, you can destructure `data` from the `useChat` hook which stores all `StreamData`
-as a `JSONValue[]`.
+### Transient Data Parts (Ephemeral)
+
+Transient parts are sent to the client but not added to the message history. They are only accessible via the `onData` useChat handler:
+
+```tsx
+// server
+writer.write({
+  type: 'data-notification',
+  data: { message: 'Processing...', level: 'info' },
+  transient: true, // Won't be added to message history
+});
+
+// client
+const [notification, setNotification] = useState();
+
+const { messages } = useChat({
+  onData: ({ data, type }) => {
+    if (type === 'data-notification') {
+      setNotification({ message: data.message, level: data.level });
+    }
+  },
+});
+```
+
+## Data Part Reconciliation
+
+When you write to a data part with the same ID, the client automatically reconciles and updates that part. This enables powerful dynamic experiences like:
+
+- **Collaborative artifacts** - Update code, documents, or designs in real-time
+- **Progressive data loading** - Show loading states that transform into final results
+- **Live status updates** - Update progress bars, counters, or status indicators
+- **Interactive components** - Build UI elements that evolve based on user interaction
+
+The reconciliation happens automatically - simply use the same `id` when writing to the stream.
+
+## Processing Data on the Client
+
+### Using the onData Callback
+
+The `onData` callback is essential for handling streaming data, especially transient parts:
 
 ```tsx filename="page.tsx"
 import { useChat } from '@ai-sdk/react';
+import type { MyUIMessage } from '@/ai/types';
 
-const { data } = useChat();
+const { messages } = useChat<MyUIMessage>({
+  api: '/api/chat',
+  onData: (dataPart) => {
+    // Handle all data parts as they arrive (including transient parts)
+    console.log('Received data part:', dataPart);
+
+    // Handle different data part types
+    if (dataPart.type === 'data-weather') {
+      console.log('Weather update:', dataPart.data);
+    }
+
+    // Handle transient notifications (ONLY available here, not in message.parts)
+    if (dataPart.type === 'data-notification') {
+      showToast(dataPart.data.message, dataPart.data.level);
+    }
+  },
+});
 ```
 
-### Accessing Message Annotations
+**Important:** Transient data parts are **only** available through the `onData` callback. They will not appear in the `message.parts` array since they're not added to message history.
 
-Each message from the `useChat` hook has an optional `annotations` property that contains
-the message annotations sent from the server.
+### Rendering Persistent Data Parts
 
-Since the shape of the annotations depends on what you send from the server,
-you have to destructure them in a type-safe way on the client side.
+You can filter and render data parts from the message parts array:
 
-Here we just show the annotations as a JSON string:
-
-```tsx filename="page.tsx" highlight="9"
-import { Message, useChat } from '@ai-sdk/react';
-
-const { messages } = useChat();
-
+```tsx filename="page.tsx"
 const result = (
   <>
-    {messages?.map((m: Message) => (
-      <div key={m.id}>
-        {m.annotations && <>{JSON.stringify(m.annotations)}</>}
+    {messages?.map((message) => (
+      <div key={message.id}>
+        {/* Render weather data parts */}
+        {message.parts
+          .filter((part) => part.type === 'data-weather')
+          .map((part, index) => (
+            <div key={index} className="weather-widget">
+              {part.data.status === 'loading' ? (
+                <>Getting weather for {part.data.city}...</>
+              ) : (
+                <>
+                  Weather in {part.data.city}: {part.data.weather}
+                </>
+              )}
+            </div>
+          ))}
+
+        {/* Render text content */}
+        {message.parts
+          .filter((part) => part.type === 'text')
+          .map((part, index) => (
+            <div key={index}>{part.text}</div>
+          ))}
+
+        {/* Render sources */}
+        {message.parts
+          .filter((part) => part.type === 'source')
+          .map((part, index) => (
+            <div key={index} className="source">
+              Source: <a href={part.url}>{part.title}</a>
+            </div>
+          ))}
       </div>
     ))}
   </>
 );
 ```
 
-### Updating and Clearing Data
-
-You can update and clear the `data` object of the `useChat` hook using the `setData` function.
+### Complete Example
 
 ```tsx filename="page.tsx"
-const { setData } = useChat();
-
-// clear existing data
-setData(undefined);
-
-// set new data
-setData([{ test: 'value' }]);
-
-// transform existing data, e.g. adding additional values:
-setData((currentData) => [...currentData, { test: 'value' }]);
-```
-
-#### Example: Clear on Submit
-
-```tsx filename="page.tsx" highlight="18-21"
 'use client';
 
-import { Message, useChat } from '@ai-sdk/react';
+import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
+import type { MyUIMessage } from '@/ai/types';
 
 export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit, data, setData } =
-    useChat();
+  const [input, setInput] = useState('');
+
+  const { messages, sendMessage } = useChat<MyUIMessage>({
+    api: '/api/chat',
+    onData: (dataPart) => {
+      // Handle transient notifications
+      if (dataPart.type === 'data-notification') {
+        console.log('Notification:', dataPart.data.message);
+      }
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage({ text: input });
+    setInput('');
+  };
 
   return (
     <>
-      {data && <pre>{JSON.stringify(data, null, 2)}</pre>}
+      {messages?.map((message) => (
+        <div key={message.id}>
+          {message.role === 'user' ? 'User: ' : 'AI: '}
 
-      {messages?.map((m: Message) => (
-        <div key={m.id}>{`${m.role}: ${m.content}`}</div>
+          {/* Render weather data */}
+          {message.parts
+            .filter((part) => part.type === 'data-weather')
+            .map((part, index) => (
+              <span key={index} className="weather-update">
+                {part.data.status === 'loading' ? (
+                  <>Getting weather for {part.data.city}...</>
+                ) : (
+                  <>
+                    Weather in {part.data.city}: {part.data.weather}
+                  </>
+                )}
+              </span>
+            ))}
+
+          {/* Render text content */}
+          {message.parts
+            .filter((part) => part.type === 'text')
+            .map((part, index) => (
+              <div key={index}>{part.text}</div>
+            ))}
+        </div>
       ))}
 
-      <form
-        onSubmit={(e) => {
-          setData(undefined); // clear stream data
-          handleSubmit(e);
-        }}
-      >
-        <input value={input} onChange={handleInputChange} />
+      <form onSubmit={handleSubmit}>
+        <input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Ask about the weather..."
+        />
+        <button type="submit">Send</button>
       </form>
     </>
   );
 }
 ```
+
+## Use Cases
+
+- **RAG Applications** - Stream sources and retrieved documents
+- **Real-time Status** - Show loading states and progress updates
+- **Collaborative Tools** - Stream live updates to shared artifacts
+- **Analytics** - Send usage data without cluttering message history
+- **Notifications** - Display temporary alerts and status messages
+
+## Message Metadata vs Data Parts
+
+Both [message metadata](/docs/ai-sdk-ui/message-metadata) and data parts allow you to send additional information alongside messages, but they serve different purposes:
+
+### Message Metadata
+
+Message metadata is best for **message-level information** that describes the message as a whole:
+
+- Attached at the message level via `message.metadata`
+- Sent using the `messageMetadata` callback in `toUIMessageStreamResponse`
+- Ideal for: timestamps, model info, token usage, user context
+- Type-safe with custom metadata types
+
+```ts
+// Server: Send metadata about the message
+return result.toUIMessageStreamResponse({
+  messageMetadata: ({ part }) => {
+    if (part.type === 'finish') {
+      return {
+        model: part.response.modelId,
+        totalTokens: part.totalUsage.totalTokens,
+        createdAt: Date.now(),
+      };
+    }
+  },
+});
+```
+
+### Data Parts
+
+Data parts are best for streaming **dynamic arbitrary data**:
+
+- Added to the message parts array via `message.parts`
+- Streamed using `createUIMessageStream` and `writer.write()`
+- Can be reconciled/updated using the same ID
+- Support transient parts that don't persist
+- Ideal for: dynamic content, loading states, interactive components
+
+```ts
+// Server: Stream data as part of message content
+writer.write({
+  type: 'data-weather',
+  id: 'weather-1',
+  data: { city: 'San Francisco', status: 'loading' },
+});
+```
+
+For more details on message metadata, see the [Message Metadata documentation](/docs/ai-sdk-ui/message-metadata).
 
 ---
 
@@ -8149,7 +14299,61 @@ description: Learn how to handle errors in the AI SDK UI
 
 ---
 
-# Error Handling
+# Error Handling and warnings
+
+## Warnings
+
+The AI SDK shows warnings when something might not work as expected. These warnings help you fix problems before they cause errors.
+
+### When Warnings Appear
+
+Warnings are shown in the browser console when:
+
+- **Unsupported settings**: You use a setting that the AI model doesn't support
+- **Unsupported tools**: You use a tool that the AI model can't use
+- **Other issues**: The AI model reports other problems
+
+### Warning Messages
+
+All warnings start with "AI SDK Warning:" so you can easily find them. For example:
+
+```
+AI SDK Warning: The "temperature" setting is not supported by this model
+AI SDK Warning: The tool "calculator" is not supported by this model
+```
+
+### Turning Off Warnings
+
+By default, warnings are shown in the console. You can control this behavior:
+
+#### Turn Off All Warnings
+
+Set a global variable to turn off warnings completely:
+
+```ts
+globalThis.AI_SDK_LOG_WARNINGS = false;
+```
+
+#### Custom Warning Handler
+
+You can also provide your own function to handle warnings:
+
+```ts
+globalThis.AI_SDK_LOG_WARNINGS = (warnings) => {
+  // Handle warnings your own way
+  warnings.forEach((warning) => {
+    // Your custom logic here
+    console.log('Custom warning:', warning);
+  });
+};
+```
+
+<Note>
+  Custom warning functions are experimental and can change in patch releases
+  without notice.
+</Note>
+
+## Error Handling
 
 ### Error Helper Object
 
@@ -8162,27 +14366,38 @@ You can use the error object to show an error message, disable the submit button
   server.
 </Note>
 
-```tsx file="app/page.tsx" highlight="7,17-24,30"
+```tsx file="app/page.tsx" highlight="7,18-25,31"
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
 
 export default function Chat() {
-  const { messages, input, handleInputChange, handleSubmit, error, reload } =
-    useChat({});
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, error, regenerate } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage({ text: input });
+    setInput('');
+  };
 
   return (
     <div>
       {messages.map((m) => (
         <div key={m.id}>
-          {m.role}: {m.content}
+          {m.role}:{' '}
+          {m.parts
+            .filter((part) => part.type === 'text')
+            .map((part) => part.text)
+            .join('')}
         </div>
       ))}
 
       {error && (
         <>
           <div>An error occurred.</div>
-          <button type="button" onClick={() => reload()}>
+          <button type="button" onClick={() => regenerate()}>
             Retry
           </button>
         </>
@@ -8191,7 +14406,7 @@ export default function Chat() {
       <form onSubmit={handleSubmit}>
         <input
           value={input}
-          onChange={handleInputChange}
+          onChange={(e) => setInput(e.target.value)}
           disabled={error != null}
         />
       </form>
@@ -8204,41 +14419,43 @@ export default function Chat() {
 
 Alternatively you can write a custom submit handler that replaces the last message when an error is present.
 
-```tsx file="app/page.tsx" highlight="15-21,33"
+```tsx file="app/page.tsx" highlight="17-23,35"
 'use client';
 
 import { useChat } from '@ai-sdk/react';
+import { useState } from 'react';
 
 export default function Chat() {
-  const {
-    handleInputChange,
-    handleSubmit,
-    error,
-    input,
-    messages,
-    setMessages,
-  } = useChat({});
+  const [input, setInput] = useState('');
+  const { sendMessage, error, messages, setMessages } = useChat();
 
   function customSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
     if (error != null) {
       setMessages(messages.slice(0, -1)); // remove last message
     }
 
-    handleSubmit(event);
+    sendMessage({ text: input });
+    setInput('');
   }
 
   return (
     <div>
       {messages.map((m) => (
         <div key={m.id}>
-          {m.role}: {m.content}
+          {m.role}:{' '}
+          {m.parts
+            .filter((part) => part.type === 'text')
+            .map((part) => part.text)
+            .join('')}
         </div>
       ))}
 
       {error && <div>An error occurred.</div>}
 
       <form onSubmit={customSubmit}>
-        <input value={input} onChange={handleInputChange} />
+        <input value={input} onChange={(e) => setInput(e.target.value)} />
       </form>
     </div>
   );
@@ -8247,10 +14464,10 @@ export default function Chat() {
 
 ### Error Handling Callback
 
-Errors can be processed by passing an [`onError`](/docs/reference/ai-sdk-ui/use-chat#on-error) callback function as an option to the [`useChat`](/docs/reference/ai-sdk-ui/use-chat), [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion) or [`useAssistant`](/docs/reference/ai-sdk-ui/use-assistant) hooks.
+Errors can be processed by passing an [`onError`](/docs/reference/ai-sdk-ui/use-chat#on-error) callback function as an option to the [`useChat`](/docs/reference/ai-sdk-ui/use-chat) or [`useCompletion`](/docs/reference/ai-sdk-ui/use-completion) hooks.
 The callback function receives an error object as an argument.
 
-```tsx file="app/page.tsx" highlight="8-11"
+```tsx file="app/page.tsx" highlight="6-9"
 import { useChat } from '@ai-sdk/react';
 
 export default function Page() {
@@ -8278,47 +14495,381 @@ export async function POST(req: Request) {
 
 ---
 
-title: Smooth streaming japanese text
-description: Learn how to stream smooth stream japanese text
+title: Transport
+description: Learn how to use custom transports with useChat.
 
 ---
 
-# Smooth streaming japanese text
+# Transport
 
-You can smooth stream japanese text by using the `smoothStream` function, and the following regex that splits either on words of japanese characters:
+The `useChat` transport system provides fine-grained control over how messages are sent to your API endpoints and how responses are processed. This is particularly useful for alternative communication protocols like WebSockets, custom authentication patterns, or specialized backend integrations.
 
-```tsx filename="page.tsx"
-import { smoothStream } from 'ai';
+## Default Transport
+
+By default, `useChat` uses HTTP POST requests to send messages to `/api/chat`:
+
+```tsx
 import { useChat } from '@ai-sdk/react';
 
-const { data } = useChat({
-  experimental_transform: smoothStream({
-    chunking: /[\u3040-\u309F\u30A0-\u30FF]|\S+\s+/,
+// Uses default HTTP transport
+const { messages, sendMessage } = useChat();
+```
+
+This is equivalent to:
+
+```tsx
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+
+const { messages, sendMessage } = useChat({
+  transport: new DefaultChatTransport({
+    api: '/api/chat',
   }),
 });
 ```
 
----
+## Custom Transport Configuration
 
-title: Smooth streaming chinese text
-description: Learn how to stream smooth stream chinese text
+Configure the default transport with custom options:
 
----
-
-# Smooth streaming chinese text
-
-You can smooth stream chinese text by using the `smoothStream` function, and the following regex that splits either on words of chinese characters:
-
-```tsx filename="page.tsx"
-import { smoothStream } from 'ai';
+```tsx
 import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
 
-const { data } = useChat({
-  experimental_transform: smoothStream({
-    chunking: /[\u4E00-\u9FFF]|\S+\s+/,
+const { messages, sendMessage } = useChat({
+  transport: new DefaultChatTransport({
+    api: '/api/custom-chat',
+    headers: {
+      Authorization: 'Bearer your-token',
+      'X-API-Version': '2024-01',
+    },
+    credentials: 'include',
   }),
 });
 ```
+
+### Dynamic Configuration
+
+You can also provide functions that return configuration values. This is useful for authentication tokens that need to be refreshed, or for configuration that depends on runtime conditions:
+
+```tsx
+const { messages, sendMessage } = useChat({
+  transport: new DefaultChatTransport({
+    api: '/api/chat',
+    headers: () => ({
+      Authorization: `Bearer ${getAuthToken()}`,
+      'X-User-ID': getCurrentUserId(),
+    }),
+    body: () => ({
+      sessionId: getCurrentSessionId(),
+      preferences: getUserPreferences(),
+    }),
+    credentials: () => 'include',
+  }),
+});
+```
+
+### Request Transformation
+
+Transform requests before sending to your API:
+
+```tsx
+const { messages, sendMessage } = useChat({
+  transport: new DefaultChatTransport({
+    api: '/api/chat',
+    prepareSendMessagesRequest: ({ id, messages, trigger, messageId }) => {
+      return {
+        headers: {
+          'X-Session-ID': id,
+        },
+        body: {
+          messages: messages.slice(-10), // Only send last 10 messages
+          trigger,
+          messageId,
+        },
+      };
+    },
+  }),
+});
+```
+
+## Building Custom Transports
+
+To understand how to build your own transport, refer to the source code of the default implementation:
+
+- **[DefaultChatTransport](https://github.com/vercel/ai/blob/main/packages/ai/src/ui/default-chat-transport.ts)** - The complete default HTTP transport implementation
+- **[HttpChatTransport](https://github.com/vercel/ai/blob/main/packages/ai/src/ui/http-chat-transport.ts)** - Base HTTP transport with request handling
+- **[ChatTransport Interface](https://github.com/vercel/ai/blob/main/packages/ai/src/ui/chat-transport.ts)** - The transport interface you need to implement
+
+These implementations show you exactly how to:
+
+- Handle the `sendMessages` method
+- Process UI message streams
+- Transform requests and responses
+- Handle errors and connection management
+
+The transport system gives you complete control over how your chat application communicates, enabling integration with any backend protocol or service.
+
+---
+
+title: Reading UIMessage Streams
+description: Learn how to read UIMessage streams.
+
+---
+
+# Reading UI Message Streams
+
+`UIMessage` streams are useful outside of traditional chat use cases. You can consume them for terminal UIs, custom stream processing on the client, or React Server Components (RSC).
+
+The `readUIMessageStream` helper transforms a stream of `UIMessageChunk` objects into an `AsyncIterableStream` of `UIMessage` objects, allowing you to process messages as they're being constructed.
+
+## Basic Usage
+
+```tsx
+import { openai } from '@ai-sdk/openai';
+import { readUIMessageStream, streamText } from 'ai';
+
+async function main() {
+  const result = streamText({
+    model: openai('gpt-4o'),
+    prompt: 'Write a short story about a robot.',
+  });
+
+  for await (const uiMessage of readUIMessageStream({
+    stream: result.toUIMessageStream(),
+  })) {
+    console.log('Current message state:', uiMessage);
+  }
+}
+```
+
+## Tool Calls Integration
+
+Handle streaming responses that include tool calls:
+
+```tsx
+import { openai } from '@ai-sdk/openai';
+import { readUIMessageStream, streamText, tool } from 'ai';
+import { z } from 'zod';
+
+async function handleToolCalls() {
+  const result = streamText({
+    model: openai('gpt-4o'),
+    tools: {
+      weather: tool({
+        description: 'Get the weather in a location',
+        inputSchema: z.object({
+          location: z.string().describe('The location to get the weather for'),
+        }),
+        execute: ({ location }) => ({
+          location,
+          temperature: 72 + Math.floor(Math.random() * 21) - 10,
+        }),
+      }),
+    },
+    prompt: 'What is the weather in Tokyo?',
+  });
+
+  for await (const uiMessage of readUIMessageStream({
+    stream: result.toUIMessageStream(),
+  })) {
+    // Handle different part types
+    uiMessage.parts.forEach((part) => {
+      switch (part.type) {
+        case 'text':
+          console.log('Text:', part.text);
+          break;
+        case 'tool-call':
+          console.log('Tool called:', part.toolName, 'with args:', part.args);
+          break;
+        case 'tool-result':
+          console.log('Tool result:', part.result);
+          break;
+      }
+    });
+  }
+}
+```
+
+## Resuming Conversations
+
+Resume streaming from a previous message state:
+
+```tsx
+import { readUIMessageStream, streamText } from 'ai';
+
+async function resumeConversation(lastMessage: UIMessage) {
+  const result = streamText({
+    model: openai('gpt-4o'),
+    messages: [
+      { role: 'user', content: 'Continue our previous conversation.' },
+    ],
+  });
+
+  // Resume from the last message
+  for await (const uiMessage of readUIMessageStream({
+    stream: result.toUIMessageStream(),
+    message: lastMessage, // Resume from this message
+  })) {
+    console.log('Resumed message:', uiMessage);
+  }
+}
+```
+
+---
+
+title: Message Metadata
+description: Learn how to attach and use metadata with messages in AI SDK UI
+
+---
+
+# Message Metadata
+
+Message metadata allows you to attach custom information to messages at the message level. This is useful for tracking timestamps, model information, token usage, user context, and other message-level data.
+
+## Overview
+
+Message metadata differs from [data parts](/docs/ai-sdk-ui/streaming-data) in that it's attached at the message level rather than being part of the message content. While data parts are ideal for dynamic content that forms part of the message, metadata is perfect for information about the message itself.
+
+## Getting Started
+
+Here's a simple example of using message metadata to track timestamps and model information:
+
+### Defining Metadata Types
+
+First, define your metadata type for type safety:
+
+```tsx filename="app/types.ts"
+import { UIMessage } from 'ai';
+import { z } from 'zod';
+
+// Define your metadata schema
+export const messageMetadataSchema = z.object({
+  createdAt: z.number().optional(),
+  model: z.string().optional(),
+  totalTokens: z.number().optional(),
+});
+
+export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
+
+// Create a typed UIMessage
+export type MyUIMessage = UIMessage<MessageMetadata>;
+```
+
+### Sending Metadata from the Server
+
+Use the `messageMetadata` callback in `toUIMessageStreamResponse` to send metadata at different streaming stages:
+
+```ts filename="app/api/chat/route.ts" highlight="11-20"
+import { openai } from '@ai-sdk/openai';
+import { convertToModelMessages, streamText } from 'ai';
+import type { MyUIMessage } from '@/types';
+
+export async function POST(req: Request) {
+  const { messages }: { messages: MyUIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: openai('gpt-4o'),
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse({
+    originalMessages: messages, // pass this in for type-safe return objects
+    messageMetadata: ({ part }) => {
+      // Send metadata when streaming starts
+      if (part.type === 'start') {
+        return {
+          createdAt: Date.now(),
+          model: 'gpt-4o',
+        };
+      }
+
+      // Send additional metadata when streaming completes
+      if (part.type === 'finish') {
+        return {
+          totalTokens: part.totalUsage.totalTokens,
+        };
+      }
+    },
+  });
+}
+```
+
+<Note>
+  To enable type-safe metadata return object in `messageMetadata`, pass in the
+  `originalMessages` parameter typed to your UIMessage type.
+</Note>
+
+### Accessing Metadata on the Client
+
+Access metadata through the `message.metadata` property:
+
+```tsx filename="app/page.tsx" highlight="8,18-23"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport } from 'ai';
+import type { MyUIMessage } from '@/types';
+
+export default function Chat() {
+  const { messages } = useChat<MyUIMessage>({
+    transport: new DefaultChatTransport({
+      api: '/api/chat',
+    }),
+  });
+
+  return (
+    <div>
+      {messages.map((message) => (
+        <div key={message.id}>
+          <div>
+            {message.role === 'user' ? 'User: ' : 'AI: '}
+            {message.metadata?.createdAt && (
+              <span className="text-sm text-gray-500">
+                {new Date(message.metadata.createdAt).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+
+          {/* Render message content */}
+          {message.parts.map((part, index) =>
+            part.type === 'text' ? <div key={index}>{part.text}</div> : null,
+          )}
+
+          {/* Display additional metadata */}
+          {message.metadata?.totalTokens && (
+            <div className="text-xs text-gray-400">
+              {message.metadata.totalTokens} tokens
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+<Note>
+  For streaming arbitrary data that changes during generation, consider using
+  [data parts](/docs/ai-sdk-ui/streaming-data) instead.
+</Note>
+
+## Common Use Cases
+
+Message metadata is ideal for:
+
+- **Timestamps**: When messages were created or completed
+- **Model Information**: Which AI model was used
+- **Token Usage**: Track costs and usage limits
+- **User Context**: User IDs, session information
+- **Performance Metrics**: Generation time, time to first token
+- **Quality Indicators**: Finish reason, confidence scores
+
+## See Also
+
+- [Chatbot Guide](/docs/ai-sdk-ui/chatbot#message-metadata) - Message metadata in the context of building chatbots
+- [Streaming Data](/docs/ai-sdk-ui/streaming-data#message-metadata-vs-data-parts) - Comparison with data parts
+- [UIMessage Reference](/docs/reference/ai-sdk-core/ui-message) - Complete UIMessage type reference
 
 ---
 
@@ -8583,30 +15134,30 @@ if (InvalidResponseDataError.isInstance(error)) {
 
 ---
 
-title: AI_InvalidToolArgumentsError
-description: Learn how to fix AI_InvalidToolArgumentsError
+title: AI_InvalidToolInputError
+description: Learn how to fix AI_InvalidToolInputError
 
 ---
 
-# AI_InvalidToolArgumentsError
+# AI_InvalidToolInputError
 
-This error occurs when invalid tool argument was provided.
+This error occurs when invalid tool input was provided.
 
 ## Properties
 
-- `toolName`: The name of the tool with invalid arguments
-- `toolArgs`: The invalid tool arguments
+- `toolName`: The name of the tool with invalid inputs
+- `toolArgs`: The invalid tool inputs
 - `message`: The error message
 - `cause`: The cause of the error
 
 ## Checking for this Error
 
-You can check if an error is an instance of `AI_InvalidToolArgumentsError` using:
+You can check if an error is an instance of `AI_InvalidToolInputError` using:
 
 ```typescript
-import { InvalidToolArgumentsError } from 'ai';
+import { InvalidToolInputError } from 'ai';
 
-if (InvalidToolArgumentsError.isInstance(error)) {
+if (InvalidToolInputError.isInstance(error)) {
   // Handle the error
 }
 ```
@@ -9076,11 +15627,11 @@ description: Learn how to fix AI SDK ToolCallRepairError
 
 This error occurs when there is a failure while attempting to repair an invalid tool call.
 This typically happens when the AI attempts to fix either
-a `NoSuchToolError` or `InvalidToolArgumentsError`.
+a `NoSuchToolError` or `InvalidToolInputError`.
 
 ## Properties
 
-- `originalError`: The original error that triggered the repair attempt (either `NoSuchToolError` or `InvalidToolArgumentsError`)
+- `originalError`: The original error that triggered the repair attempt (either `NoSuchToolError` or `InvalidToolInputError`)
 - `message`: The error message
 - `cause`: The underlying error that caused the repair to fail
 
@@ -9092,37 +15643,6 @@ You can check if an error is an instance of `ToolCallRepairError` using:
 import { ToolCallRepairError } from 'ai';
 
 if (ToolCallRepairError.isInstance(error)) {
-  // Handle the error
-}
-```
-
----
-
-title: AI_ToolExecutionError
-description: Learn how to fix AI_ToolExecutionError
-
----
-
-# AI_ToolExecutionError
-
-This error occurs when there is a failure during the execution of a tool.
-
-## Properties
-
-- `toolName`: The name of the tool that failed
-- `toolArgs`: The arguments passed to the tool
-- `toolCallId`: The ID of the tool call that failed
-- `message`: The error message
-- `cause`: The underlying error that caused the tool execution to fail
-
-## Checking for this Error
-
-You can check if an error is an instance of `AI_ToolExecutionError` using:
-
-```typescript
-import { ToolExecutionError } from 'ai';
-
-if (ToolExecutionError.isInstance(error)) {
   // Handle the error
 }
 ```
@@ -9185,6 +15705,6522 @@ if (UnsupportedFunctionalityError.isInstance(error)) {
 
 ---
 
+title: Setup
+description: How to install and set up AI Elements components in your project
+
+---
+
+# Setup
+
+Installing AI Elements is straightforward and can be done in a couple of ways. You can use the dedicated CLI command for the fastest setup, or integrate via the standard shadcn/ui CLI if you’ve already adopted shadcn’s workflow.
+
+<ElementsInstaller />
+
+## Prerequisites
+
+Before installing AI Elements, make sure your environment meets the following requirements:
+
+- [Node.js](https://nodejs.org/en/download/), version 18 or later
+- A [Next.js](https://nextjs.org/) project with the [AI SDK](https://ai-sdk.dev/) installed.
+- [shadcn/ui](https://ui.shadcn.com/) installed in your project. If you don't have it installed, running any install command will automatically install it for you.
+- We also highly recommend using the [AI Gateway](https://vercel.com/docs/ai-gateway) and adding `AI_GATEWAY_API_KEY` to your `env.local` so you don't have to use an API key from every provider. AI Gateway also gives $5 in usage per month so you can experiment with models. You can obtain an API key [here](https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys&title=Get%20your%20AI%20Gateway%20key).
+
+## Installing Components
+
+You can install AI Elements components using either the AI Elements CLI or the shadcn/ui CLI. Both achieve the same result: adding the selected component’s code and any needed dependencies to your project.
+
+The CLI will download the component’s code and integrate it into your project’s directory (usually under your components folder). By default, AI Elements components are added to the `@/components/ai-elements/` directory (or whatever folder you’ve configured in your shadcn components settings).
+
+After running the command, you should see a confirmation in your terminal that the files were added. You can then proceed to use the component in your code.
+
+---
+
+title: Usage
+description: Learn how to use AI Elements components in your application.
+
+---
+
+# Usage
+
+Once an AI Elements component is installed, you can import it and use it in your application like any other React component. The components are added as part of your codebase (not hidden in a library), so the usage feels very natural.
+
+## Example
+
+After installing AI Elements components, you can use them in your application like any other React component. For example:
+
+```tsx title="conversation.tsx"
+'use client';
+
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+} from '@/components/ai-elements/message';
+import { useChat } from '@ai-sdk/react';
+import { Response } from '@/components/ai-elements/response';
+
+const Example = () => {
+  const { messages } = useChat();
+
+  return (
+    <>
+      {messages.map(({ role, parts }, index) => (
+        <Message from={role} key={index}>
+          <MessageContent>
+            {parts.map((part, i) => {
+              switch (part.type) {
+                case 'text':
+                  return <Response key={`${role}-${i}`}>{part.text}</Response>;
+              }
+            })}
+          </MessageContent>
+        </Message>
+      ))}
+    </>
+  );
+};
+
+export default Example;
+```
+
+In the example above, we import the `Message` component from our AI Elements directory and include it in our JSX. Then, we compose the component with the `MessageContent` and `Response` subcomponents. You can style or configure the component just as you would if you wrote it yourself – since the code lives in your project, you can even open the component file to see how it works or make custom modifications.
+
+## Extensibility
+
+All AI Elements components take as many primitive attributes as possible. For example, the `Message` component extends `HTMLAttributes<HTMLDivElement>`, so you can pass any props that a `div` supports. This makes it easy to extend the component with your own styles or functionality.
+
+## Customization
+
+<Note>
+  If you re-install AI Elements by rerunning `npx ai-elements@latest`, the CLI
+  will ask before overwriting the file so you can save any custom changes you
+  made.
+</Note>
+
+After installation, no additional setup is needed. The component’s styles (Tailwind CSS classes) and scripts are already integrated. You can start interacting with the component in your app immediately.
+
+For example, if you'd like to remove the rounding on `Message`, you can go to `components/ai-elements/message.tsx` and remove `rounded-lg` as follows:
+
+```tsx filename="components/ai-elements/message.tsx" highlight="8"
+export const MessageContent = ({
+  children,
+  className,
+  ...props
+}: MessageContentProps) => (
+  <div
+    className={cn(
+      'flex flex-col gap-2 text-sm text-foreground',
+      'group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground group-[.is-user]:px-4 group-[.is-user]:py-3',
+      className,
+    )}
+    {...props}
+  >
+    <div className="is-user:dark">{children}</div>
+  </div>
+);
+```
+
+---
+
+title: Troubleshooting
+description: What to do if you run into issues with AI Elements.
+
+---
+
+# Troubleshooting
+
+## Why are my components not styled?
+
+Make sure your project is configured correctly for shadcn/ui in Tailwind 4 - this means having a `globals.css` file that imports Tailwind and includes the shadcn/ui base styles.
+
+## I ran the AI Elements CLI but nothing was added to my project
+
+Double-check that:
+
+- Your current working directory is the root of your project (where `package.json` lives).
+- Your components.json file (if using shadcn-style config) is set up correctly.
+- You’re using the latest version of the AI Elements CLI:
+
+```bash
+npx ai-elements@latest
+```
+
+If all else fails, feel free to open an [issue on GitHub](https://github.com/vercel/ai-elements/issues).
+
+## Theme switching doesn’t work — my app stays in light mode
+
+Ensure your app is using the same data-theme system that shadcn/ui and AI Elements expect. The default implementation toggles a data-theme attribute on the `<html>` element. Make sure your tailwind.config.js is using class or data- selectors accordingly:
+
+## The component imports fail with “module not found”
+
+Check the file exists. If it does, make sure your `tsconfig.json` has a proper paths alias for `@/` i.e.
+
+```json title="tsconfig.json"
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
+  }
+}
+```
+
+## My AI coding assistant can't access AI Elements components
+
+1. Verify your config file syntax is valid JSON.
+2. Check that the file path is correct for your AI tool.
+3. Restart your coding assistant after making changes.
+4. Ensure you have a stable internet connection.
+
+## Still stuck?
+
+If none of these answers help, open an [issue on GitHub](https://github.com/vercel/ai-elements/issues) and someone will be happy to assist.
+
+---
+
+title: Introduction
+description: What is AI Elements and why you should use it.
+
+---
+
+# AI Elements
+
+[AI Elements](https://www.npmjs.com/package/ai-elements) is a component library and custom registry built on top of [shadcn/ui](https://ui.shadcn.com/) to help you build AI-native applications faster. It provides pre-built components like conversations, messages and more.
+
+You can install it with:
+
+<ElementsInstaller />
+
+Here are some basic examples of what you can achieve using components from AI Elements.
+
+<ElementsDemo />
+
+## Components
+
+<ElementHeader name="Actions" path="actions" />
+
+<Preview path="actions" />
+
+<ElementHeader name="Artifact" path="artifact" />
+
+<Preview path="artifact" />
+
+<ElementHeader name="Branch" path="branch" />
+
+<Preview path="branch" />
+
+<ElementHeader name="Chain of Thought" path="chain-of-thought" />
+
+<Preview path="chain-of-thought" />
+
+<ElementHeader name="Code Block" path="code-block" />
+
+<Preview path="code-block" />
+
+<ElementHeader name="Context" path="context" />
+
+<Preview path="context" />
+
+<ElementHeader name="Conversation" path="conversation" />
+
+<Preview path="conversation" className="p-0" />
+
+<ElementHeader name="Image" path="image" />
+
+<Preview path="image" />
+
+<ElementHeader name="Loader" path="loader" />
+
+<Preview path="loader" />
+
+<ElementHeader name="Message" path="message" />
+
+<Preview path="message" />
+
+<ElementHeader name="Open In Chat" path="open-in-chat" />
+
+<Preview path="open-in-chat" />
+
+<ElementHeader name="Prompt Input" path="prompt-input" />
+
+<Preview path="prompt-input" />
+
+<ElementHeader name="Reasoning" path="reasoning" />
+
+<Preview path="reasoning" />
+
+<ElementHeader name="Response" path="response" />
+
+<Preview path="response" />
+
+<ElementHeader name="Sources" path="sources" />
+
+<Preview path="sources" />
+
+<ElementHeader name="Suggestion" path="suggestion" />
+
+<Preview path="suggestion" />
+
+<ElementHeader name="Task" path="task" />
+
+<Preview path="task" />
+
+<ElementHeader name="Tool" path="tool" />
+
+<Preview path="tool" />
+
+<ElementHeader name="Web Preview" path="web-preview" />
+
+<Preview path="web-preview" />
+
+<ElementHeader name="Inline Citation" path="inline-citation" />
+
+<Preview path="inline-citation" />
+
+## View the [source code](https://github.com/vercel/ai-elements) for all components on GitHub.
+
+title: Chatbot
+description: An example of how to use the AI Elements to build a chatbot.
+
+---
+
+# Chatbot
+
+An example of how to use the AI Elements to build a chatbot.
+
+<Preview path="chatbot" type="block" className="p-0" />
+
+## Tutorial
+
+Let's walk through how to build a chatbot using AI Elements and AI SDK. Our example will include reasoning, web search with citations, and a model picker.
+
+### Setup
+
+First, set up a new Next.js repo and cd into it by running the following command (make sure you choose to use Tailwind the project setup):
+
+```bash filename="Terminal"
+npx create-next-app@latest ai-chatbot && cd ai-chatbot
+```
+
+Run the following command to install AI Elements. This will also set up shadcn/ui if you haven't already configured it:
+
+```bash filename="Terminal"
+npx ai-elements@latest
+```
+
+Now, install the AI SDK dependencies:
+
+<div className="my-4">
+  <Tabs items={['pnpm', 'npm', 'yarn']}>
+    <Tab>
+      <Snippet text="pnpm add ai @ai-sdk/react zod" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="npm install ai @ai-sdk/react zod" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="yarn add ai @ai-sdk/react zod" dark />
+    </Tab>
+  </Tabs>
+</div>
+
+In order to use the providers, let's configure an AI Gateway API key. Create a `.env.local` in your root directory and navigate [here](https://vercel.com/d?to=%2F%5Bteam%5D%2F%7E%2Fai%2Fapi-keys&title=Get%20your%20AI%20Gateway%20key) to create a token, then paste it in your `.env.local`.
+
+We're now ready to start building our app!
+
+### Client
+
+In your `app/page.tsx`, replace the code with the file below.
+
+Here, we use the `PromptInput` component with its compound components to build a rich input experience with file attachments, model picker, and action menu. The input component uses the new `PromptInputMessage` type for handling both text and file attachments.
+
+The whole chat lives in a `Conversation`. We switch on `message.parts` and render the respective part within `Message`, `Reasoning`, and `Sources`. We also use `status` from `useChat` to stream reasoning tokens, as well as render `Loader`.
+
+```tsx filanem="app/page.tsx"
+'use client';
+
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import {
+  PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputButton,
+  type PromptInputMessage,
+  PromptInputModelSelect,
+  PromptInputModelSelectContent,
+  PromptInputModelSelectItem,
+  PromptInputModelSelectTrigger,
+  PromptInputModelSelectValue,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputTools,
+} from '@/components/ai-elements/prompt-input';
+import {
+  Actions
+  ActionsTrigger,
+  ActionsContent,
+} from '@/components/ai-elements/actions';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import { Response } from '@/components/ai-elements/response';
+import { GlobeIcon } from 'lucide-react';
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from '@/components/ai-elements/sources';
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai-elements/reasoning';
+import { Loader } from '@/components/ai-elements/loader';
+
+const models = [
+  {
+    name: 'GPT 4o',
+    value: 'openai/gpt-4o',
+  },
+  {
+    name: 'Deepseek R1',
+    value: 'deepseek/deepseek-r1',
+  },
+];
+
+const ChatBotDemo = () => {
+  const [input, setInput] = useState('');
+  const [model, setModel] = useState<string>(models[0].value);
+  const [webSearch, setWebSearch] = useState(false);
+  const { messages, sendMessage, status } = useChat();
+
+  const handleSubmit = (message: PromptInputMessage) => {
+    const hasText = Boolean(message.text);
+    const hasAttachments = Boolean(message.files?.length);
+
+    if (!(hasText || hasAttachments)) {
+      return;
+    }
+
+    sendMessage(
+      {
+        text: message.text || 'Sent with attachments',
+        files: message.files
+      },
+      {
+        body: {
+          model: model,
+          webSearch: webSearch,
+        },
+      },
+    );
+    setInput('');
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full h-screen">
+      <div className="flex flex-col h-full">
+        <Conversation className="h-full">
+          <ConversationContent>
+            {messages.map((message) => (
+              <div key={message.id}>
+                {message.role === 'assistant' && message.parts.filter((part) => part.type === 'source-url').length > 0 && (
+                  <Sources>
+                    <SourcesTrigger
+                      count={
+                        message.parts.filter(
+                          (part) => part.type === 'source-url',
+                        ).length
+                      }
+                    />
+                    {message.parts.filter((part) => part.type === 'source-url').map((part, i) => (
+                      <SourcesContent key={`${message.id}-${i}`}>
+                        <Source
+                          key={`${message.id}-${i}`}
+                          href={part.url}
+                          title={part.url}
+                        />
+                      </SourcesContent>
+                    ))}
+                  </Sources>
+                )}
+                {message.parts.map((part, i) => {
+                  switch (part.type) {
+                    case 'text':
+                      return (
+                        <Fragment key={`${message.id}-${i}`}>
+                          <Message from={message.role}>
+                            <MessageContent>
+                              <Response>
+                                {part.text}
+                              </Response>
+                            </MessageContent>
+                          </Message>
+                          {message.role === 'assistant' && i === messages.length - 1 && (
+                            <Actions className="mt-2">
+                              <Action
+                                onClick={() => regenerate()}
+                                label="Retry"
+                              >
+                                <RefreshCcwIcon className="size-3" />
+                              </Action>
+                              <Action
+                                onClick={() =>
+                                  navigator.clipboard.writeText(part.text)
+                                }
+                                label="Copy"
+                              >
+                                <CopyIcon className="size-3" />
+                              </Action>
+                            </Actions>
+                          )}
+                        </Fragment>
+                      );
+                    case 'reasoning':
+                      return (
+                        <Reasoning
+                          key={`${message.id}-${i}`}
+                          className="w-full"
+                          isStreaming={status === 'streaming' && i === message.parts.length - 1 && message.id === messages.at(-1)?.id}
+                        >
+                          <ReasoningTrigger />
+                          <ReasoningContent>{part.text}</ReasoningContent>
+                        </Reasoning>
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </div>
+            ))}
+            {status === 'submitted' && <Loader />}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <PromptInput onSubmit={handleSubmit} className="mt-4" globalDrop multiple>
+          <PromptInputBody>
+            <PromptInputAttachments>
+              {(attachment) => <PromptInputAttachment data={attachment} />}
+            </PromptInputAttachments>
+            <PromptInputTextarea
+              onChange={(e) => setInput(e.target.value)}
+              value={input}
+            />
+          </PromptInputBody>
+          <PromptInputToolbar>
+            <PromptInputTools>
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger />
+                <PromptInputActionMenuContent>
+                  <PromptInputActionAddAttachments />
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
+              <PromptInputButton
+                variant={webSearch ? 'default' : 'ghost'}
+                onClick={() => setWebSearch(!webSearch)}
+              >
+                <GlobeIcon size={16} />
+                <span>Search</span>
+              </PromptInputButton>
+              <PromptInputModelSelect
+                onValueChange={(value) => {
+                  setModel(value);
+                }}
+                value={model}
+              >
+                <PromptInputModelSelectTrigger>
+                  <PromptInputModelSelectValue />
+                </PromptInputModelSelectTrigger>
+                <PromptInputModelSelectContent>
+                  {models.map((model) => (
+                    <PromptInputModelSelectItem key={model.value} value={model.value}>
+                      {model.name}
+                    </PromptInputModelSelectItem>
+                  ))}
+                </PromptInputModelSelectContent>
+              </PromptInputModelSelect>
+            </PromptInputTools>
+            <PromptInputSubmit disabled={!input && !status} status={status} />
+          </PromptInputToolbar>
+        </PromptInput>
+      </div>
+    </div>
+  );
+};
+
+export default ChatBotDemo;
+```
+
+### Server
+
+Create a new route handler `app/api/chat/route.ts` and paste in the following code. We're using `perplexity/sonar` for web search because by default the model returns search results. We also pass `sendSources` and `sendReasoning` to `toUIMessageStreamResponse` in order to receive as parts on the frontend. The handler now also accepts file attachments from the client.
+
+```ts filename="app/api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const {
+    messages,
+    model,
+    webSearch,
+  }: {
+    messages: UIMessage[];
+    model: string;
+    webSearch: boolean;
+  } = await req.json();
+
+  const result = streamText({
+    model: webSearch ? 'perplexity/sonar' : model,
+    messages: convertToModelMessages(messages),
+    system:
+      'You are a helpful assistant that can answer questions and help with tasks',
+  });
+
+  // send sources and reasoning back to the client
+  return result.toUIMessageStreamResponse({
+    sendSources: true,
+    sendReasoning: true,
+  });
+}
+```
+
+You now have a working chatbot app with file attachment support! The chatbot can handle both text and file inputs through the action menu. Feel free to explore other components like [`Tool`](/elements/components/tool) or [`Task`](/elements/components/task) to extend your app, or view the other examples.
+
+---
+
+title: Examples
+description: Examples of how to use the AI Elements.
+
+---
+
+# Examples
+
+This section provides practical examples of how to combine AI Elements—such as `Conversation`, `Message`, `Input`, and more—to build complete, interactive chat interfaces. By leveraging these building blocks, you can create sophisticated conversational experiences that are both user-friendly and highly customizable.
+
+Explore the following examples to see how individual components work together in real-world scenarios. Each example demonstrates how to assemble elements into cohesive layouts, manage user input, display AI responses, and enhance conversations with features like suggestions, sources, and reasoning. Whether you're building a simple chatbot or a complex AI assistant, these examples will help you get started quickly and inspire your own interface designs.
+
+---
+
+title: v0 clone
+description: An example of how to use the AI Elements to build a v0 clone.
+
+---
+
+# v0 clone
+
+An example of how to use the AI Elements to build a v0 clone.
+
+## Tutorial
+
+Let's walk through how to build a v0 clone using AI Elements and the [v0 Platform API](https://v0.dev/docs/api/platform).
+
+### Setup
+
+First, set up a new Next.js repo and cd into it by running the following command (make sure you choose to use Tailwind the project setup):
+
+```bash filename="Terminal"
+npx create-next-app@latest v0-clone && cd v0-clone
+```
+
+Run the following command to install shadcn/ui and AI Elements.
+
+```bash filename="Terminal"
+npx shadcn@latest init && npx ai-elements@latest
+```
+
+Now, install the v0 sdk:
+
+<div className="my-4">
+  <Tabs items={['pnpm', 'npm', 'yarn']}>
+    <Tab>
+      <Snippet text="pnpm add v0-sdk" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="npm install v0-sdk" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="yarn add v0-sdk" dark />
+    </Tab>
+  </Tabs>
+</div>
+
+In order to use the providers, let's configure a v0 API key. Create a `.env.local` in your root directory and navigate to your [v0 account settings](https://v0.dev/chat/settings/keys) to create a token, then paste it in your `.env.local` as `V0_API_KEY`.
+
+We're now ready to start building our app!
+
+### Client
+
+In your `app/page.tsx`, replace the code with the file below.
+
+Here, we use `Conversation` to wrap the conversation code, and the `WebPreview` component to render the URL returned from the v0 API.
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useState } from 'react';
+
+import {
+  PromptInput,
+  type PromptInputMessage,
+  PromptInputSubmit,
+  PromptInputTextarea,
+} from '@/components/ai-elements/prompt-input';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import {
+  Conversation,
+  ConversationContent,
+} from '@/components/ai-elements/conversation';
+import {
+  WebPreview,
+  WebPreviewNavigation,
+  WebPreviewUrl,
+  WebPreviewBody,
+} from '@/components/ai-elements/web-preview';
+import { Loader } from '@/components/ai-elements/loader';
+import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion';
+
+interface Chat {
+  id: string;
+  demo: string;
+}
+
+export default function Home() {
+  const [message, setMessage] = useState('');
+  const [currentChat, setCurrentChat] = useState<Chat | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [chatHistory, setChatHistory] = useState<
+    Array<{
+      type: 'user' | 'assistant';
+      content: string;
+    }>
+  >([]);
+
+  const handleSendMessage = async (promptMessage: PromptInputMessage) => {
+    const hasText = Boolean(promptMessage.text);
+    const hasAttachments = Boolean(promptMessage.files?.length);
+
+    if (!(hasText || hasAttachments) || isLoading) return;
+
+    const userMessage = promptMessage.text?.trim() || 'Sent with attachments';
+    setMessage('');
+    setIsLoading(true);
+
+    setChatHistory((prev) => [...prev, { type: 'user', content: userMessage }]);
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          chatId: currentChat?.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create chat');
+      }
+
+      const chat: Chat = await response.json();
+      setCurrentChat(chat);
+
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          type: 'assistant',
+          content: 'Generated new app preview. Check the preview panel!',
+        },
+      ]);
+    } catch (error) {
+      console.error('Error:', error);
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          type: 'assistant',
+          content:
+            'Sorry, there was an error creating your app. Please try again.',
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="h-screen flex">
+      {/* Chat Panel */}
+      <div className="w-1/2 flex flex-col border-r">
+        {/* Header */}
+        <div className="border-b p-3 h-14 flex items-center justify-between">
+          <h1 className="text-lg font-semibold">v0 Clone</h1>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {chatHistory.length === 0 ? (
+            <div className="text-center font-semibold mt-8">
+              <p className="text-3xl mt-4">What can we build together?</p>
+            </div>
+          ) : (
+            <>
+              <Conversation>
+                <ConversationContent>
+                  {chatHistory.map((msg, index) => (
+                    <Message from={msg.type} key={index}>
+                      <MessageContent>{msg.content}</MessageContent>
+                    </Message>
+                  ))}
+                </ConversationContent>
+              </Conversation>
+              {isLoading && (
+                <Message from="assistant">
+                  <MessageContent>
+                    <div className="flex items-center gap-2">
+                      <Loader />
+                      Creating your app...
+                    </div>
+                  </MessageContent>
+                </Message>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Input */}
+        <div className="border-t p-4">
+          {!currentChat && (
+            <Suggestions>
+              <Suggestion
+                onClick={() =>
+                  setMessage('Create a responsive navbar with Tailwind CSS')
+                }
+                suggestion="Create a responsive navbar with Tailwind CSS"
+              />
+              <Suggestion
+                onClick={() => setMessage('Build a todo app with React')}
+                suggestion="Build a todo app with React"
+              />
+              <Suggestion
+                onClick={() =>
+                  setMessage('Make a landing page for a coffee shop')
+                }
+                suggestion="Make a landing page for a coffee shop"
+              />
+            </Suggestions>
+          )}
+          <div className="flex gap-2">
+            <PromptInput
+              onSubmit={handleSendMessage}
+              className="mt-4 w-full max-w-2xl mx-auto relative"
+            >
+              <PromptInputTextarea
+                onChange={(e) => setMessage(e.target.value)}
+                value={message}
+                className="pr-12 min-h-[60px]"
+              />
+              <PromptInputSubmit
+                className="absolute bottom-1 right-1"
+                disabled={!message}
+                status={isLoading ? 'streaming' : 'ready'}
+              />
+            </PromptInput>
+          </div>
+        </div>
+      </div>
+
+      {/* Preview Panel */}
+      <div className="w-1/2 flex flex-col">
+        <WebPreview>
+          <WebPreviewNavigation>
+            <WebPreviewUrl
+              readOnly
+              placeholder="Your app here..."
+              value={currentChat?.demo}
+            />
+          </WebPreviewNavigation>
+          <WebPreviewBody src={currentChat?.demo} />
+        </WebPreview>
+      </div>
+    </div>
+  );
+}
+```
+
+In this case, we'll also edit the base component `components/ai-elements/web-preview.tsx` in order to best match with our theme.
+
+```tsx filename="components/ai-elements/web-preview.tsx" highlight="5,24"
+  return (
+    <WebPreviewContext.Provider value={contextValue}>
+      <div
+        className={cn(
+          'flex size-full flex-col bg-card', // remove rounded-lg border
+          className,
+        )}
+        {...props}
+      >
+        {children}
+      </div>
+    </WebPreviewContext.Provider>
+  );
+};
+
+export type WebPreviewNavigationProps = ComponentProps<'div'>;
+
+export const WebPreviewNavigation = ({
+  className,
+  children,
+  ...props
+}: WebPreviewNavigationProps) => (
+  <div
+    className={cn('flex items-center gap-1 border-b p-2 h-14', className)} // add h-14
+    {...props}
+  >
+    {children}
+  </div>
+);
+```
+
+### Server
+
+Create a new route handler `app/api/chat/route.ts` and paste in the following code. We use the v0 SDK to manage chats.
+
+```ts filename="app/api/chat/route.ts"
+import { NextRequest, NextResponse } from 'next/server';
+import { v0 } from 'v0-sdk';
+
+export async function POST(request: NextRequest) {
+  try {
+    const { message, chatId } = await request.json();
+
+    if (!message) {
+      return NextResponse.json(
+        { error: 'Message is required' },
+        { status: 400 },
+      );
+    }
+
+    let chat;
+
+    if (chatId) {
+      // continue existing chat
+      chat = await v0.chats.sendMessage({
+        chatId: chatId,
+        message,
+      });
+    } else {
+      // create new chat
+      chat = await v0.chats.create({
+        message,
+      });
+    }
+
+    return NextResponse.json({
+      id: chat.id,
+      demo: chat.demo,
+    });
+  } catch (error) {
+    console.error('V0 API Error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process request' },
+      { status: 500 },
+    );
+  }
+}
+```
+
+To start your server, run `pnpm dev`, navigate to `localhost:3000` and try building an app!
+
+You now have a working v0 clone you can build off of! Feel free to explore the [v0 Platform API](https://v0.dev/docs/api/platform) and components like [`Reasoning`](/elements/components/reasoning) and [`Task`](/elements/components/task) to extend your app, or view the other examples.
+
+---
+
+title: Actions
+description: A row of composable action buttons for AI responses, including retry, like, dislike, copy, share, and custom actions.
+
+---
+
+# Actions
+
+The `Actions` component provides a flexible row of action buttons for AI responses with common actions like retry, like, dislike, copy, and share.
+
+<Preview path="actions" />
+
+## Installation
+
+<ElementsInstaller path="actions" />
+
+## Usage
+
+```tsx
+import { Actions, Action } from '@/components/ai-elements/actions';
+import { ThumbsUpIcon } from 'lucide-react';
+```
+
+```tsx
+<Actions className="mt-2">
+  <Action label="Like">
+    <ThumbsUpIcon className="size-4" />
+  </Action>
+</Actions>
+```
+
+## Usage with AI SDK
+
+Build a simple chat UI where the user can copy or regenerate the most recent message.
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useState } from 'react';
+import { Actions, Action } from '@/components/ai-elements/actions';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Response } from '@/components/ai-elements/response';
+import { RefreshCcwIcon, CopyIcon } from 'lucide-react';
+import { useChat } from '@ai-sdk/react';
+import { Fragment } from 'react';
+
+const ActionsDemo = () => {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status, regenerate } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message, messageIndex) => (
+              <Fragment key={message.id}>
+                {message.parts.map((part, i) => {
+                  switch (part.type) {
+                    case 'text':
+                      const isLastMessage =
+                        messageIndex === messages.length - 1;
+
+                      return (
+                        <Fragment key={`${message.id}-${i}`}>
+                          <Message from={message.role}>
+                            <MessageContent>
+                              <Response>{part.text}</Response>
+                            </MessageContent>
+                          </Message>
+                          {message.role === 'assistant' && isLastMessage && (
+                            <Actions>
+                              <Action
+                                onClick={() => regenerate()}
+                                label="Retry"
+                              >
+                                <RefreshCcwIcon className="size-3" />
+                              </Action>
+                              <Action
+                                onClick={() =>
+                                  navigator.clipboard.writeText(part.text)
+                                }
+                                label="Copy"
+                              >
+                                <CopyIcon className="size-3" />
+                              </Action>
+                            </Actions>
+                          )}
+                        </Fragment>
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </Fragment>
+            ))}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Say something..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default ActionsDemo;
+```
+
+Add the following route to your backend:
+
+```tsx filename="api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { model, messages }: { messages: UIMessage[]; model: string } =
+    await req.json();
+
+  const result = streamText({
+    model: 'openai/gpt-4o',
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+- Row of composable action buttons with consistent styling
+- Support for custom actions with tooltips
+- State management for toggle actions (like, dislike, favorite)
+- Keyboard accessible with proper ARIA labels
+- Clipboard and Web Share API integration
+- TypeScript support with proper type definitions
+- Consistent with design system styling
+
+## Examples
+
+<Preview path="actions-hover" />
+
+## Props
+
+### `<Actions />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'HTML attributes to spread to the root div.',
+},
+]}
+/>
+
+### `<Action />`
+
+<PropertiesTable
+content={[
+{
+name: 'tooltip',
+type: 'string',
+description: 'Optional tooltip text shown on hover.',
+isOptional: true,
+},
+{
+name: 'label',
+type: 'string',
+description:
+'Accessible label for screen readers. Also used as fallback if tooltip is not provided.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+},
+]}
+/>
+
+---
+
+title: Artifact
+description: A container component for displaying generated content like code, documents, or other outputs with built-in actions.
+
+---
+
+# Artifact
+
+The `Artifact` component provides a structured container for displaying generated content like code, documents, or other outputs with built-in header actions.
+
+<Preview path="artifact" />
+
+## Installation
+
+<ElementsInstaller path="artifact" />
+
+## Usage
+
+```tsx
+import {
+  Artifact,
+  ArtifactAction,
+  ArtifactActions,
+  ArtifactContent,
+  ArtifactDescription,
+  ArtifactHeader,
+  ArtifactTitle,
+} from '@/components/ai-elements/artifact';
+```
+
+```tsx
+<Artifact>
+  <ArtifactHeader>
+    <div>
+      <ArtifactTitle>Dijkstra's Algorithm Implementation</ArtifactTitle>
+      <ArtifactDescription>Updated 1 minute ago</ArtifactDescription>
+    </div>
+    <ArtifactActions>
+      <ArtifactAction
+        icon={CopyIcon}
+        label="Copy"
+        tooltip="Copy to clipboard"
+      />
+    </ArtifactActions>
+  </ArtifactHeader>
+  <ArtifactContent>{/* Your content here */}</ArtifactContent>
+</Artifact>
+```
+
+## Features
+
+- Structured container with header and content areas
+- Built-in header with title and description support
+- Flexible action buttons with tooltips
+- Customizable styling for all subcomponents
+- Support for close buttons and action groups
+- Clean, modern design with border and shadow
+- Responsive layout that adapts to content
+- TypeScript support with proper type definitions
+- Composable architecture for maximum flexibility
+
+## Examples
+
+### With Code Display
+
+<Preview path="artifact" />
+
+## Props
+
+### `<Artifact />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description:
+'Any other props are spread to the underlying div element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ArtifactHeader />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description:
+'Any other props are spread to the underlying div element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ArtifactTitle />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLParagraphElement>',
+description:
+'Any other props are spread to the underlying paragraph element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ArtifactDescription />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLParagraphElement>',
+description:
+'Any other props are spread to the underlying paragraph element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ArtifactActions />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description:
+'Any other props are spread to the underlying div element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ArtifactAction />`
+
+<PropertiesTable
+content={[
+{
+name: 'tooltip',
+type: 'string',
+description: 'Tooltip text to display on hover.',
+isOptional: true,
+},
+{
+name: 'label',
+type: 'string',
+description: 'Screen reader label for the action button.',
+isOptional: true,
+},
+{
+name: 'icon',
+type: 'LucideIcon',
+description: 'Lucide icon component to display in the button.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ArtifactClose />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ArtifactContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description:
+'Any other props are spread to the underlying div element.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Branch
+description: Manages multiple versions of AI messages, allowing users to navigate between different response branches.
+
+---
+
+# Branch
+
+The `Branch` component manages multiple versions of AI messages, allowing users to navigate between different response branches. It provides a clean, modern interface with customizable themes and keyboard-accessible navigation buttons.
+
+<Preview path="branch" />
+
+## Installation
+
+<ElementsInstaller path="branch" />
+
+## Usage
+
+```tsx
+import {
+  Branch,
+  BranchMessages,
+  BranchNext,
+  BranchPage,
+  BranchPrevious,
+  BranchSelector,
+} from '@/components/ai-elements/branch';
+```
+
+```tsx
+<Branch defaultBranch={0}>
+  <BranchMessages>
+    <Message from="user">
+      <MessageContent>Hello</MessageContent>
+    </Message>
+    <Message from="user">
+      <MessageContent>Hi!</MessageContent>
+    </Message>
+  </BranchMessages>
+  <BranchSelector from="user">
+    <BranchPrevious />
+    <BranchPage />
+    <BranchNext />
+  </BranchSelector>
+</Branch>
+```
+
+## Usage with AI SDK
+
+<Note>
+  Branching is an advanced use case that you can implement yourself to suit your
+  application's needs. While the AI SDK does not provide built-in support for
+  branching, you have full flexibility to design and manage multiple response
+  paths as required.
+</Note>
+
+## Features
+
+- Context-based state management for multiple message branches
+- Navigation controls for moving between branches (previous/next)
+- Uses CSS to prevent re-rendering of branches when switching
+- Branch counter showing current position (e.g., "1 of 3")
+- Automatic branch tracking and synchronization
+- Callbacks for branch change and navigation using `onBranchChange`
+- Support for custom branch change callbacks
+- Responsive design with mobile-friendly controls
+- Clean, modern styling with customizable themes
+- Keyboard-accessible navigation buttons
+
+## Props
+
+### `<Branch />`
+
+<PropertiesTable
+content={[
+{
+name: 'defaultBranch',
+type: 'number',
+description: 'The index of the branch to show by default (default: 0).',
+isOptional: true,
+},
+{
+name: 'onBranchChange',
+type: '(branchIndex: number) => void',
+description: 'Callback fired when the branch changes.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+},
+]}
+/>
+
+### `<BranchMessages />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+},
+]}
+/>
+
+### `<BranchSelector />`
+
+<PropertiesTable
+content={[
+{
+name: 'from',
+type: 'UIMessage["role"]',
+description:
+'Aligns the selector for user, assistant or system messages.',
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the selector container.',
+},
+]}
+/>
+
+### `<BranchPrevious />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+},
+]}
+/>
+
+### `<BranchNext />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+},
+]}
+/>
+
+### `<BranchPage />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLSpanElement>',
+description: 'Any other props are spread to the underlying span element.',
+},
+]}
+/>
+
+---
+
+title: Chain of Thought
+description: A collapsible component that visualizes AI reasoning steps with support for search results, images, and step-by-step progress indicators.
+
+---
+
+# Chain of Thought
+
+The `ChainOfThought` component provides a visual representation of an AI's reasoning process, showing step-by-step thinking with support for search results, images, and progress indicators. It helps users understand how AI arrives at conclusions.
+
+<Preview path="chain-of-thought" />
+
+## Installation
+
+<ElementsInstaller path="chain-of-thought" />
+
+## Usage
+
+```tsx
+import {
+  ChainOfThought,
+  ChainOfThoughtContent,
+  ChainOfThoughtHeader,
+  ChainOfThoughtImage,
+  ChainOfThoughtSearchResult,
+  ChainOfThoughtSearchResults,
+  ChainOfThoughtStep,
+} from '@/components/ai-elements/chain-of-thought';
+```
+
+```tsx
+<ChainOfThought defaultOpen>
+  <ChainOfThoughtHeader />
+  <ChainOfThoughtContent>
+    <ChainOfThoughtStep
+      icon={SearchIcon}
+      label="Searching for information"
+      status="complete"
+    >
+      <ChainOfThoughtSearchResults>
+        <ChainOfThoughtSearchResult>Result 1</ChainOfThoughtSearchResult>
+      </ChainOfThoughtSearchResults>
+    </ChainOfThoughtStep>
+  </ChainOfThoughtContent>
+</ChainOfThought>
+```
+
+## Features
+
+- Collapsible interface with smooth animations powered by Radix UI
+- Step-by-step visualization of AI reasoning process
+- Support for different step statuses (complete, active, pending)
+- Built-in search results display with badge styling
+- Image support with captions for visual content
+- Custom icons for different step types
+- Context-aware components using React Context API
+- Fully typed with TypeScript
+- Accessible with keyboard navigation support
+- Responsive design that adapts to different screen sizes
+- Smooth fade and slide animations for content transitions
+- Composable architecture for flexible customization
+
+## Props
+
+### `<ChainOfThought />`
+
+<PropertiesTable
+content={[
+{
+name: 'open',
+type: 'boolean',
+description:
+'Controlled open state of the collapsible.',
+isOptional: true,
+},
+{
+name: 'defaultOpen',
+type: 'boolean',
+description:
+'Default open state when uncontrolled. Defaults to false.',
+isOptional: true,
+},
+{
+name: 'onOpenChange',
+type: '(open: boolean) => void',
+description:
+'Callback when the open state changes.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description:
+'Any other props are spread to the root div element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ChainOfThoughtHeader />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: 'React.ReactNode',
+description:
+'Custom header text. Defaults to "Chain of Thought".',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+description:
+'Any other props are spread to the CollapsibleTrigger component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ChainOfThoughtStep />`
+
+<PropertiesTable
+content={[
+{
+name: 'icon',
+type: 'LucideIcon',
+description:
+'Icon to display for the step. Defaults to DotIcon.',
+isOptional: true,
+},
+{
+name: 'label',
+type: 'string',
+description:
+'The main text label for the step.',
+isOptional: false,
+},
+{
+name: 'description',
+type: 'string',
+description:
+'Optional description text shown below the label.',
+isOptional: true,
+},
+{
+name: 'status',
+type: '"complete" | "active" | "pending"',
+description:
+'Visual status of the step. Defaults to "complete".',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description:
+'Any other props are spread to the root div element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ChainOfThoughtSearchResults />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description:
+'Any props are spread to the container div element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ChainOfThoughtSearchResult />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Badge>',
+description:
+'Any props are spread to the Badge component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ChainOfThoughtContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CollapsibleContent>',
+description:
+'Any props are spread to the CollapsibleContent component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ChainOfThoughtImage />`
+
+<PropertiesTable
+content={[
+{
+name: 'caption',
+type: 'string',
+description:
+'Optional caption text displayed below the image.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description:
+'Any other props are spread to the container div element.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Code Block
+description: Provides syntax highlighting, line numbers, and copy to clipboard functionality for code blocks.
+icon: Braces
+
+---
+
+# Code Block
+
+The `CodeBlock` component provides syntax highlighting, line numbers, and copy to clipboard functionality for code blocks.
+
+<Preview path="code-block" />
+
+## Installation
+
+<ElementsInstaller path="code-block" />
+
+## Usage
+
+```tsx
+import {
+  CodeBlock,
+  CodeBlockCopyButton,
+} from '@/components/ai-elements/code-block';
+```
+
+```tsx
+<CodeBlock data={"console.log('hello world')"} language="jsx">
+  <CodeBlockCopyButton
+    onCopy={() => console.log('Copied code to clipboard')}
+    onError={() => console.error('Failed to copy code to clipboard')}
+  />
+</CodeBlock>
+```
+
+## Usage with AI SDK
+
+Build a simple code generation tool using the [`experimental_useObject`](https://ai-sdk.dev/docs/reference/ai-sdk-ui/use-object) hook.
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import { codeBlockSchema } from '@/app/api/codegen/route';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import {
+  CodeBlock,
+  CodeBlockCopyButton,
+} from '@/components/ai-elements/code-block';
+import { useState } from 'react';
+
+export default function Page() {
+  const [input, setInput] = useState('');
+  const { object, submit, isLoading } = useObject({
+    api: '/api/codegen',
+    schema: codeBlockSchema,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      submit(input);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-auto mb-4">
+          {object?.code && object?.language && (
+            <CodeBlock
+              code={object.code}
+              language={object.language}
+              showLineNumbers={true}
+            >
+              <CodeBlockCopyButton />
+            </CodeBlock>
+          )}
+        </div>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Generate a React todolist component"
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={isLoading ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+}
+```
+
+Add the following route to your backend:
+
+```tsx filename="api/codegen/route.ts"
+import { streamObject } from 'ai';
+import { z } from 'zod';
+
+export const codeBlockSchema = z.object({
+  language: z.string(),
+  filename: z.string(),
+  code: z.string(),
+});
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const context = await req.json();
+
+  const result = streamObject({
+    model: 'openai/gpt-4o',
+    schema: codeBlockSchema,
+    prompt:
+      `You are a helpful coding assitant. Only generate code, no markdown formatting or backticks, or text.` +
+      context,
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+## Features
+
+- Syntax highlighting with react-syntax-highlighter
+- Line numbers (optional)
+- Copy to clipboard functionality
+- Automatic light/dark theme switching
+- Customizable styles
+- Accessible design
+
+## Examples
+
+### Dark Mode
+
+To use the `CodeBlock` component in dark mode, you can wrap it in a `div` with the `dark` class.
+
+<Preview path="code-block-dark" />
+
+## Props
+
+### `<CodeBlock />`
+
+<PropertiesTable
+content={[
+{
+name: 'code',
+type: 'string',
+description: 'The code content to display.',
+},
+{
+name: 'language',
+type: 'string',
+description: 'The programming language for syntax highlighting.',
+},
+{
+name: 'showLineNumbers',
+type: 'boolean',
+description: 'Whether to show line numbers. Default: false.',
+isOptional: true,
+},
+{
+name: 'children',
+type: 'React.ReactNode',
+description:
+'Child elements (like CodeBlockCopyButton) positioned in the top-right corner.',
+isOptional: true,
+},
+{
+name: 'className',
+type: 'string',
+description: 'Additional CSS classes to apply to the root container.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<CodeBlockCopyButton />`
+
+<PropertiesTable
+content={[
+{
+name: 'onCopy',
+type: '() => void',
+description: 'Callback fired after a successful copy.',
+isOptional: true,
+},
+{
+name: 'onError',
+type: '(error: Error) => void',
+description: 'Callback fired if copying fails.',
+isOptional: true,
+},
+{
+name: 'timeout',
+type: 'number',
+description: 'How long to show the copied state (ms). Default: 2000.',
+isOptional: true,
+},
+{
+name: 'children',
+type: 'React.ReactNode',
+description:
+'Custom content for the button. Defaults to copy/check icons.',
+isOptional: true,
+},
+{
+name: 'className',
+type: 'string',
+description: 'Additional CSS classes to apply to the button.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Context
+description: A compound component system for displaying AI model context window usage, token consumption, and cost estimation.
+
+---
+
+# Context
+
+The `Context` component provides a comprehensive view of AI model usage through a compound component system. It displays context window utilization, token consumption breakdown (input, output, reasoning, cache), and cost estimation in an interactive hover card interface.
+
+<Preview path="context" />
+
+## Installation
+
+<ElementsInstaller path="context" />
+
+## Usage
+
+```tsx
+import {
+  Context,
+  ContextTrigger,
+  ContextContent,
+  ContextContentHeader,
+  ContextContentBody,
+  ContextContentFooter,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextReasoningUsage,
+  ContextCacheUsage,
+} from '@/components/ai-elements/context';
+```
+
+```tsx
+<Context
+  maxTokens={128000}
+  usedTokens={40000}
+  usage={{
+    inputTokens: 32000,
+    outputTokens: 8000,
+    totalTokens: 40000,
+    cachedInputTokens: 0,
+    reasoningTokens: 0,
+  }}
+  modelId="openai:gpt-4"
+>
+  <ContextTrigger />
+  <ContextContent>
+    <ContextContentHeader />
+    <ContextContentBody>
+      <ContextInputUsage />
+      <ContextOutputUsage />
+      <ContextReasoningUsage />
+      <ContextCacheUsage />
+    </ContextContentBody>
+    <ContextContentFooter />
+  </ContextContent>
+</Context>
+```
+
+## Features
+
+- **Compound Component Architecture**: Flexible composition of context display elements
+- **Visual Progress Indicator**: Circular SVG progress ring showing context usage percentage
+- **Token Breakdown**: Detailed view of input, output, reasoning, and cached tokens
+- **Cost Estimation**: Real-time cost calculation using the `tokenlens` library
+- **Intelligent Formatting**: Automatic token count formatting (K, M, B suffixes)
+- **Interactive Hover Card**: Detailed information revealed on hover
+- **Context Provider Pattern**: Clean data flow through React Context API
+- **TypeScript Support**: Full type definitions for all components
+- **Accessible Design**: Proper ARIA labels and semantic HTML
+- **Theme Integration**: Uses currentColor for automatic theme adaptation
+
+## Props
+
+### `<Context />`
+
+<PropertiesTable
+content={[
+{
+name: 'maxTokens',
+type: 'number',
+description:
+'The total context window size in tokens.',
+isOptional: false,
+},
+{
+name: 'usedTokens',
+type: 'number',
+description:
+'The number of tokens currently used.',
+isOptional: false,
+},
+{
+name: 'usage',
+type: 'LanguageModelUsage',
+description:
+'Detailed token usage breakdown from the AI SDK (input, output, reasoning, cached tokens).',
+isOptional: true,
+},
+{
+name: 'modelId',
+type: 'ModelId',
+description:
+'Model identifier for cost calculation (e.g., "openai:gpt-4", "anthropic:claude-3-opus").',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'ComponentProps<HoverCard>',
+description:
+'Any other props are spread to the HoverCard component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ContextTrigger />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: 'React.ReactNode',
+description:
+'Custom trigger element. If not provided, renders a default button with percentage and icon.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'ComponentProps<Button>',
+description:
+'Props spread to the default button element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ContextContent />`
+
+<PropertiesTable
+content={[
+{
+name: 'className',
+type: 'string',
+description:
+'Additional CSS classes for the hover card content.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'ComponentProps<HoverCardContent>',
+description:
+'Props spread to the HoverCardContent component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ContextContentHeader />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: 'React.ReactNode',
+description:
+'Custom header content. If not provided, renders percentage and token count with progress bar.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'ComponentProps<div>',
+description:
+'Props spread to the header div element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ContextContentBody />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: 'React.ReactNode',
+description:
+'Body content, typically containing usage breakdown components.',
+isOptional: false,
+},
+{
+name: '[...props]',
+type: 'ComponentProps<div>',
+description:
+'Props spread to the body div element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ContextContentFooter />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: 'React.ReactNode',
+description:
+'Custom footer content. If not provided, renders total cost when modelId is provided.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'ComponentProps<div>',
+description:
+'Props spread to the footer div element.',
+isOptional: true,
+},
+]}
+/>
+
+### Usage Components
+
+All usage components (`ContextInputUsage`, `ContextOutputUsage`, `ContextReasoningUsage`, `ContextCacheUsage`) share the same props:
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: 'React.ReactNode',
+description:
+'Custom content. If not provided, renders token count and cost for the respective usage type.',
+isOptional: true,
+},
+{
+name: 'className',
+type: 'string',
+description:
+'Additional CSS classes.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'ComponentProps<div>',
+description:
+'Props spread to the div element.',
+isOptional: true,
+},
+]}
+/>
+
+## Component Architecture
+
+The Context component uses a compound component pattern with React Context for data sharing:
+
+1. **`<Context>`** - Root provider component that holds all context data
+2. **`<ContextTrigger>`** - Interactive trigger element (default: button with percentage)
+3. **`<ContextContent>`** - Hover card content container
+4. **`<ContextContentHeader>`** - Header section with progress visualization
+5. **`<ContextContentBody>`** - Body section for usage breakdowns
+6. **`<ContextContentFooter>`** - Footer section for total cost
+7. **Usage Components** - Individual token usage displays (Input, Output, Reasoning, Cache)
+
+## Token Formatting
+
+The component uses `Intl.NumberFormat` with compact notation for automatic formatting:
+
+- Under 1,000: Shows exact count (e.g., "842")
+- 1,000+: Shows with K suffix (e.g., "32K")
+- 1,000,000+: Shows with M suffix (e.g., "1.5M")
+- 1,000,000,000+: Shows with B suffix (e.g., "2.1B")
+
+## Cost Calculation
+
+When a `modelId` is provided, the component automatically calculates costs using the `tokenlens` library:
+
+- **Input tokens**: Cost based on model's input pricing
+- **Output tokens**: Cost based on model's output pricing
+- **Reasoning tokens**: Special pricing for reasoning-capable models
+- **Cached tokens**: Reduced pricing for cached input tokens
+- **Total cost**: Sum of all token type costs
+
+Costs are formatted using `Intl.NumberFormat` with USD currency.
+
+## Styling
+
+The component uses Tailwind CSS classes and follows your design system:
+
+- Progress indicator uses `currentColor` for theme adaptation
+- Hover card has customizable width and padding
+- Footer has a secondary background for visual separation
+- All text sizes use the `text-xs` class for consistency
+- Muted foreground colors for secondary information
+
+---
+
+title: Conversation
+description: Wraps messages and automatically scrolls to the bottom. Also includes a scroll button that appears when not at the bottom.
+
+---
+
+# Conversation
+
+The `Conversation` component wraps messages and automatically scrolls to the bottom. Also includes a scroll button that appears when not at the bottom.
+
+<Preview path="conversation" className="p-0" />
+
+## Installation
+
+<ElementsInstaller path="conversation" />
+
+## Usage
+
+```tsx
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+```
+
+```tsx
+<Conversation className="relative w-full" style={{ height: '500px' }}>
+  <ConversationContent>
+    {messages.length === 0 ? (
+      <ConversationEmptyState
+        icon={<MessageSquare className="size-12" />}
+        title="No messages yet"
+        description="Start a conversation to see messages here"
+      />
+    ) : (
+      messages.map((message) => (
+        <Message from={message.from} key={message.id}>
+          <MessageContent>{message.content}</MessageContent>
+        </Message>
+      ))
+    )}
+  </ConversationContent>
+  <ConversationScrollButton />
+</Conversation>
+```
+
+## Usage with AI SDK
+
+Build a simple conversational UI with `Conversation` and [`PromptInput`](/elements/components/prompt-input):
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { MessageSquare } from 'lucide-react';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import { Response } from '@/components/ai-elements/response';
+
+const ConversationDemo = () => {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.length === 0 ? (
+              <ConversationEmptyState
+                icon={<MessageSquare className="size-12" />}
+                title="Start a conversation"
+                description="Type a message below to begin chatting"
+              />
+            ) : (
+              messages.map((message) => (
+                <Message from={message.role} key={message.id}>
+                  <MessageContent>
+                    {message.parts.map((part, i) => {
+                      switch (part.type) {
+                        case 'text': // we don't use any reasoning or tool calls in this example
+                          return (
+                            <Response key={`${message.id}-${i}`}>
+                              {part.text}
+                            </Response>
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
+                  </MessageContent>
+                </Message>
+              ))
+            )}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Say something..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default ConversationDemo;
+```
+
+Add the following route to your backend:
+
+```tsx filename="api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: 'openai/gpt-4o',
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+- Automatic scrolling to the bottom when new messages are added
+- Smooth scrolling behavior with configurable animation
+- Scroll button that appears when not at the bottom
+- Responsive design with customizable padding and spacing
+- Flexible content layout with consistent message spacing
+- Accessible with proper ARIA roles for screen readers
+- Customizable styling through className prop
+- Support for any number of child message components
+
+## Props
+
+### `<Conversation />`
+
+<PropertiesTable
+content={[
+{
+name: 'contextRef',
+type: 'React.Ref<StickToBottomContext>',
+description: 'Optional ref to access the StickToBottom context object.',
+},
+{
+name: 'instance',
+type: 'StickToBottomInstance',
+description:
+'Optional instance for controlling the StickToBottom component.',
+},
+{
+name: 'children',
+type: '((context: StickToBottomContext) => ReactNode) | ReactNode',
+description:
+'Render prop or ReactNode for custom rendering with context.',
+},
+{
+name: '[...props]',
+type: 'Omit<React.HTMLAttributes<HTMLDivElement>, "children">',
+description: 'Any other props are spread to the root div.',
+},
+]}
+/>
+
+### `<ConversationContent />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: '((context: StickToBottomContext) => ReactNode) | ReactNode',
+description:
+'Render prop or ReactNode for custom rendering with context.',
+},
+{
+name: '[...props]',
+type: 'Omit<React.HTMLAttributes<HTMLDivElement>, "children">',
+description: 'Any other props are spread to the root div.',
+},
+]}
+/>
+
+### `<ConversationEmptyState />`
+
+<PropertiesTable
+content={[
+{
+name: 'title',
+type: 'string',
+description:
+'The title text to display. Defaults to "No messages yet".',
+},
+{
+name: 'description',
+type: 'string',
+description:
+'The description text to display. Defaults to "Start a conversation to see messages here".',
+},
+{
+name: 'icon',
+type: 'React.ReactNode',
+description: 'Optional icon to display above the text.',
+},
+{
+name: 'children',
+type: 'React.ReactNode',
+description: 'Optional additional content to render below the text.',
+},
+{
+name: '[...props]',
+type: 'ComponentProps<"div">',
+description: 'Any other props are spread to the root div.',
+},
+]}
+/>
+
+### `<ConversationScrollButton />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+},
+]}
+/>
+
+---
+
+title: Image
+description: Displays AI-generated images from the AI SDK.
+
+---
+
+# Image
+
+The `Image` component displays AI-generated images from the AI SDK. It accepts a [`Experimental_GeneratedImage`](/docs/reference/ai-sdk-core/generate-image) object from the AI SDK's `generateImage` function and automatically renders it as an image.
+
+<Preview path="image" />
+
+## Installation
+
+<ElementsInstaller path="image" />
+
+## Usage
+
+```tsx
+import { Image } from '@/components/ai-elements/image';
+```
+
+```tsx
+<Image
+  base64="valid base64 string"
+  mediaType: 'image/jpeg',
+  uint8Array: new Uint8Array([]),
+  alt="Example generated image"
+  className="h-[150px] aspect-square border"
+/>
+```
+
+## Usage with AI SDK
+
+Build a simple app allowing a user to generate an image given a prompt.
+
+Install the `@ai-sdk/openai` package:
+
+<div className="my-4">
+  <Tabs items={['pnpm', 'npm', 'yarn']}>
+    <Tab>
+      <Snippet text="pnpm add @ai-sdk/openai" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="npm install @ai-sdk/openai" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="yarn add @ai-sdk/openai" dark />
+    </Tab>
+  </Tabs>
+</div>
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { Image } from '@/components/ai-elements/image';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { useState } from 'react';
+import { Loader } from '@/components/ai-elements/loader';
+
+const ImageDemo = () => {
+  const [prompt, setPrompt] = useState('A futuristic cityscape at sunset');
+  const [imageData, setImageData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prompt.trim()) return;
+    setPrompt('');
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/image', {
+        method: 'POST',
+        body: JSON.stringify({ prompt: prompt.trim() }),
+      });
+
+      const data = await response.json();
+
+      setImageData(data);
+    } catch (error) {
+      console.error('Error generating image:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto p-4">
+          {imageData && (
+            <div className="flex justify-center">
+              <Image
+                {...imageData}
+                alt="Generated image"
+                className="h-[300px] aspect-square border rounded-lg"
+              />
+            </div>
+          )}
+          {isLoading && <Loader />}
+        </div>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={prompt}
+            placeholder="Describe the image you want to generate..."
+            onChange={(e) => setPrompt(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={isLoading ? 'submitted' : 'ready'}
+            disabled={!prompt.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default ImageDemo;
+```
+
+Add the following route to your backend:
+
+```ts filename="app/api/image/route.ts"
+import { openai } from '@ai-sdk/openai';
+import { experimental_generateImage } from 'ai';
+
+export async function POST(req: Request) {
+  const { prompt }: { prompt: string } = await req.json();
+
+  const { image } = await experimental_generateImage({
+    model: openai.image('dall-e-3'),
+    prompt: prompt,
+    size: '1024x1024',
+  });
+
+  return Response.json({
+    base64: image.base64,
+    uint8Array: image.uint8Array,
+    mediaType: image.mediaType,
+  });
+}
+```
+
+## Features
+
+- Accepts `Experimental_GeneratedImage` objects directly from the AI SDK
+- Automatically creates proper data URLs from base64-encoded image data
+- Supports all standard HTML image attributes
+- Responsive by default with `max-w-full h-auto` styling
+- Customizable with additional CSS classes
+- Includes proper TypeScript types for AI SDK compatibility
+
+## Props
+
+### `<Image />`
+
+<PropertiesTable
+content={[
+{
+name: 'alt',
+type: 'string',
+description: 'Alternative text for the image.',
+isOptional: true,
+},
+{
+name: 'className',
+type: 'string',
+description: 'Additional CSS classes to apply to the image.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'Experimental_GeneratedImage',
+description: 'The image data to display, as returned by the AI SDK.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Components
+description: Components for building chat interfaces.
+
+---
+
+# Components
+
+A comprehensive collection of React components designed for building modern AI chat interfaces. These components provide the essential building blocks you need to create interactive, accessible, and user-friendly conversational experiences.
+
+## Foundation Components
+
+The core building blocks that form the structure of any chat interface. These components handle the fundamental aspects of displaying conversations, managing user input, and presenting AI responses in an organized, scrollable format.
+
+**What you'll find:**
+
+- Conversation containers that manage message flow and scrolling behavior
+- Message display components with proper alignment and styling
+- Input interfaces with auto-sizing and keyboard shortcuts
+- Response rendering with markdown support and syntax highlighting
+
+## Interactive Elements
+
+Components that enhance user engagement and provide dynamic functionality beyond basic text exchange. These elements make conversations more intuitive and provide users with multiple ways to interact with AI systems.
+
+**What you'll find:**
+
+- Action buttons for common response interactions (retry, like, copy, share)
+- Navigation controls for exploring different conversation branches
+- Quick suggestion systems for common inputs and actions
+- Collapsible interfaces for detailed tool and process information
+- Interactive elements that respond to user actions and preferences
+
+## Content Enhancement
+
+Specialized components for displaying AI-generated content, metadata, and contextual information. These components help users understand how AI responses were generated and provide transparency into the reasoning process.
+
+**What you'll find:**
+
+- Expandable reasoning displays that show AI thought processes
+- Source and citation components for research-backed responses
+- Status indicators for ongoing processes and tool executions
+- Rich content rendering for various data types and formats
+
+## Design Philosophy
+
+Every component in this collection is built with consistent principles:
+
+**Accessibility First**
+
+- Full keyboard navigation support
+- Screen reader compatibility with proper ARIA attributes
+- High contrast and readable typography
+- Focus management for complex interactions
+
+**Responsive by Design**
+
+- Mobile-friendly touch targets and controls
+- Adaptive layouts that work across screen sizes
+- Touch-optimized interactions for mobile devices
+- Consistent experience across desktop and mobile
+
+**Modern Development**
+
+- TypeScript support with comprehensive type definitions
+- Composable architecture for flexible implementations
+- Theme integration supporting light and dark modes
+- Built with modern React patterns and best practices
+
+**Performance Optimized**
+
+- Efficient rendering with minimal re-renders
+- Lazy loading and code splitting where appropriate
+- Optimized bundle sizes for fast loading
+- Smooth animations and transitions
+
+## Building Your Interface
+
+These components are designed to work together seamlessly while remaining flexible enough to use independently. Whether you're building a simple chat interface or a complex conversational AI application, you can mix and match components to create the exact experience your users need.
+
+Each component includes comprehensive documentation with examples, API references, and implementation guidance to help you integrate them into your project quickly and effectively.
+
+---
+
+title: Inline Citation
+description: A hoverable citation component that displays source information and quotes inline with text, perfect for AI-generated content with references.
+
+---
+
+# Inline Citation
+
+The `InlineCitation` component provides a way to display citations inline with text content, similar to academic papers or research documents. It consists of a citation pill that shows detailed source information on hover, making it perfect for AI-generated content that needs to reference sources.
+
+<Preview path="inline-citation" />
+
+## Installation
+
+<ElementsInstaller path="inline-citation" />
+
+## Usage
+
+```tsx
+import {
+  InlineCitation,
+  InlineCitationCard,
+  InlineCitationCardBody,
+  InlineCitationCardTrigger,
+  InlineCitationCarousel,
+  InlineCitationCarouselContent,
+  InlineCitationCarouselItem,
+  InlineCitationCarouselHeader,
+  InlineCitationCarouselIndex,
+  InlineCitationSource,
+  InlineCitationText,
+} from '@/components/ai-elements/inline-citation';
+```
+
+```tsx
+<InlineCitation>
+  <InlineCitationText>{citation.text}</InlineCitationText>
+  <InlineCitationCard>
+    <InlineCitationCardTrigger
+      sources={citation.sources.map((source) => source.url)}
+    />
+    <InlineCitationCardBody>
+      <InlineCitationCarousel>
+        <InlineCitationCarouselHeader>
+          <InlineCitationCarouselIndex />
+        </InlineCitationCarouselHeader>
+        <InlineCitationCarouselContent>
+          <InlineCitationCarouselItem>
+            <InlineCitationSource
+              title="AI SDK"
+              url="https://ai-sdk.dev"
+              description="The AI Toolkit for TypeScript"
+            />
+          </InlineCitationCarouselItem>
+        </InlineCitationCarouselContent>
+      </InlineCitationCarousel>
+    </InlineCitationCardBody>
+  </InlineCitationCard>
+</InlineCitation>
+```
+
+## Usage with AI SDK
+
+Build citations for AI-generated content using [`experimental_generateObject`](/docs/reference/ai-sdk-ui/use-object).
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import {
+  InlineCitation,
+  InlineCitationText,
+  InlineCitationCard,
+  InlineCitationCardTrigger,
+  InlineCitationCardBody,
+  InlineCitationCarousel,
+  InlineCitationCarouselContent,
+  InlineCitationCarouselItem,
+  InlineCitationCarouselHeader,
+  InlineCitationCarouselIndex,
+  InlineCitationCarouselPrev,
+  InlineCitationCarouselNext,
+  InlineCitationSource,
+  InlineCitationQuote,
+} from '@/components/ai-elements/inline-citation';
+import { Button } from '@/components/ui/button';
+import { citationSchema } from '@/app/api/citation/route';
+
+const CitationDemo = () => {
+  const { object, submit, isLoading } = useObject({
+    api: '/api/citation',
+    schema: citationSchema,
+  });
+
+  const handleSubmit = (topic: string) => {
+    submit({ prompt: topic });
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="flex gap-2 mb-6">
+        <Button
+          onClick={() => handleSubmit('artificial intelligence')}
+          disabled={isLoading}
+          variant="outline"
+        >
+          Generate AI Content
+        </Button>
+        <Button
+          onClick={() => handleSubmit('climate change')}
+          disabled={isLoading}
+          variant="outline"
+        >
+          Generate Climate Content
+        </Button>
+      </div>
+
+      {isLoading && !object && (
+        <div className="text-muted-foreground">
+          Generating content with citations...
+        </div>
+      )}
+
+      {object?.content && (
+        <div className="prose prose-sm max-w-none">
+          <p className="leading-relaxed">
+            {object.content.split(/(\[\d+\])/).map((part, index) => {
+              const citationMatch = part.match(/\[(\d+)\]/);
+              if (citationMatch) {
+                const citationNumber = citationMatch[1];
+                const citation = object.citations?.find(
+                  (c: any) => c.number === citationNumber,
+                );
+
+                if (citation) {
+                  return (
+                    <InlineCitation key={index}>
+                      <InlineCitationCard>
+                        <InlineCitationCardTrigger sources={[citation.url]} />
+                        <InlineCitationCardBody>
+                          <InlineCitationCarousel>
+                            <InlineCitationCarouselHeader>
+                              <InlineCitationCarouselPrev />
+                              <InlineCitationCarouselNext />
+                              <InlineCitationCarouselIndex />
+                            </InlineCitationCarouselHeader>
+                            <InlineCitationCarouselContent>
+                              <InlineCitationCarouselItem>
+                                <InlineCitationSource
+                                  title={citation.title}
+                                  url={citation.url}
+                                  description={citation.description}
+                                />
+                                {citation.quote && (
+                                  <InlineCitationQuote>
+                                    {citation.quote}
+                                  </InlineCitationQuote>
+                                )}
+                              </InlineCitationCarouselItem>
+                            </InlineCitationCarouselContent>
+                          </InlineCitationCarousel>
+                        </InlineCitationCardBody>
+                      </InlineCitationCard>
+                    </InlineCitation>
+                  );
+                }
+              }
+              return part;
+            })}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default CitationDemo;
+```
+
+Add the following route to your backend:
+
+```ts filename="app/api/citation/route.ts"
+import { streamObject } from 'ai';
+import { z } from 'zod';
+
+export const citationSchema = z.object({
+  content: z.string(),
+  citations: z.array(
+    z.object({
+      number: z.string(),
+      title: z.string(),
+      url: z.string(),
+      description: z.string().optional(),
+      quote: z.string().optional(),
+    }),
+  ),
+});
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { prompt } = await req.json();
+
+  const result = streamObject({
+    model: 'openai/gpt-4o',
+    schema: citationSchema,
+    prompt: `Generate a well-researched paragraph about ${prompt} with proper citations. 
+    
+    Include:
+    - A comprehensive paragraph with inline citations marked as [1], [2], etc.
+    - 2-3 citations with realistic source information
+    - Each citation should have a title, URL, and optional description/quote
+    - Make the content informative and the sources credible
+    
+    Format citations as numbered references within the text.`,
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+## Features
+
+- Hover interaction to reveal detailed citation information
+- **Carousel navigation** for multiple citations with prev/next controls
+- **Live index tracking** showing current slide position (e.g., "1/5")
+- Support for source titles, URLs, and descriptions
+- Optional quote blocks for relevant excerpts
+- Composable architecture for flexible citation formats
+- Accessible design with proper keyboard navigation
+- Seamless integration with AI-generated content
+- Clean visual design that doesn't disrupt reading flow
+- Smart badge display showing source hostname and count
+
+## Props
+
+### `<InlineCitation />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"span">',
+description: 'Any other props are spread to the root span element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationText />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"span">',
+description: 'Any other props are spread to the underlying span element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCard />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"span">',
+description: 'Any other props are spread to the HoverCard component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCardTrigger />`
+
+<PropertiesTable
+content={[
+{
+name: 'sources',
+type: 'string[]',
+description:
+'Array of source URLs. The length determines the number displayed in the badge.',
+isOptional: false,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<"button">',
+description:
+'Any other props are spread to the underlying button element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCardBody />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description: 'Any other props are spread to the underlying div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCarousel />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Carousel>',
+description:
+'Any other props are spread to the underlying Carousel component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCarouselContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description:
+'Any other props are spread to the underlying CarouselContent component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCarouselItem />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description: 'Any other props are spread to the underlying div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCarouselHeader />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description: 'Any other props are spread to the underlying div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCarouselIndex />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description:
+'Any other props are spread to the underlying div. Children will override the default index display.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCarouselPrev />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CarouselPrevious>',
+description:
+'Any other props are spread to the underlying CarouselPrevious component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationCarouselNext />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CarouselNext>',
+description:
+'Any other props are spread to the underlying CarouselNext component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationSource />`
+
+<PropertiesTable
+content={[
+{
+name: 'title',
+type: 'string',
+description: 'The title of the source.',
+isOptional: true,
+},
+{
+name: 'url',
+type: 'string',
+description: 'The URL of the source.',
+isOptional: true,
+},
+{
+name: 'description',
+type: 'string',
+description: 'A brief description of the source.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description: 'Any other props are spread to the underlying div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<InlineCitationQuote />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"blockquote">',
+description:
+'Any other props are spread to the underlying blockquote element.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Loader
+description: A spinning loader component for indicating loading states in AI applications.
+
+---
+
+# Loader
+
+The `Loader` component provides a spinning animation to indicate loading states in your AI applications. It includes both a customizable wrapper component and the underlying icon for flexible usage.
+
+<Preview path="loader" />
+
+## Installation
+
+<ElementsInstaller path="loader" />
+
+## Usage
+
+```tsx
+import { Loader } from '@/components/ai-elements/loader';
+```
+
+```tsx
+<Loader />
+```
+
+## Usage with AI SDK
+
+Build a simple chat app that displays a loader before it the response streans by using `status === "submitted"`.
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Loader } from '@/components/ai-elements/loader';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+
+const LoaderDemo = () => {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case 'text':
+                        return (
+                          <div key={`${message.id}-${i}`}>{part.text}</div>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+            {status === 'submitted' && <Loader />}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Say something..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default LoaderDemo;
+```
+
+Add the following route to your backend:
+
+```ts filename="app/api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { model, messages }: { messages: UIMessage[]; model: string } =
+    await req.json();
+
+  const result = streamText({
+    model: 'openai/gpt-4o',
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+- Clean, modern spinning animation using CSS animations
+- Configurable size with the `size` prop
+- Customizable styling with CSS classes
+- Built-in `animate-spin` animation with proper centering
+- Exports both `AILoader` wrapper and `LoaderIcon` for flexible usage
+- Supports all standard HTML div attributes
+- TypeScript support with proper type definitions
+- Optimized SVG icon with multiple opacity levels for smooth animation
+- Uses `currentColor` for proper theme integration
+- Responsive and accessible design
+
+## Examples
+
+### Different Sizes
+
+<Preview path="loader-sizes" />
+
+### Custom Styling
+
+<Preview path="loader-custom" />
+
+## Props
+
+### `<Loader />`
+
+<PropertiesTable
+content={[
+{
+name: 'size',
+type: 'number',
+description:
+'The size (width and height) of the loader in pixels. Defaults to 16.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Message
+description: Displays a chat interface message from either a user or an AI.
+
+---
+
+# Message
+
+The `Message` component displays a chat interface message from either a user or an AI. It includes an avatar, a name, and a message content.
+
+<Preview path="message" />
+
+## Installation
+
+<ElementsInstaller path="message" />
+
+## Usage
+
+```tsx
+import { Message, MessageContent } from '@/components/ai-elements/message';
+```
+
+```tsx
+// Default contained variant
+<Message from="user">
+  <MessageContent>Hi there!</MessageContent>
+</Message>
+
+// Flat variant for a minimalist look
+<Message from="assistant">
+  <MessageContent variant="flat">Hello! How can I help you today?</MessageContent>
+</Message>
+```
+
+## Usage with AI SDK
+
+Render messages in a list with `useChat`.
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import { useChat } from '@ai-sdk/react';
+import { Response } from '@/components/ai-elements/response';
+
+const MessageDemo = () => {
+  const { messages } = useChat();
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        {messages.map((message) => (
+          <Message from={message.role} key={message.id}>
+            <MessageContent>
+              {message.parts.map((part, i) => {
+                switch (part.type) {
+                  case 'text': // we don't use any reasoning or tool calls in this example
+                    return (
+                      <Response key={`${message.id}-${i}`}>
+                        {part.text}
+                      </Response>
+                    );
+                  default:
+                    return null;
+                }
+              })}
+            </MessageContent>
+          </Message>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default MessageDemo;
+```
+
+## Features
+
+- Displays messages from both the user and AI assistant with distinct styling.
+- Two visual variants: **contained** (default) and **flat** for different design preferences.
+- Includes avatar images for message senders with fallback initials.
+- Shows the sender's name through avatar fallbacks.
+- Automatically aligns user and assistant messages on opposite sides.
+- Uses different background colors for user and assistant messages.
+- Accepts any React node as message content.
+
+## Variants
+
+### Contained (default)
+
+The **contained** variant provides distinct visual separation with colored backgrounds:
+
+- User messages appear with primary background color and are right-aligned
+- Assistant messages have secondary background color and are left-aligned
+- Both message types have padding and rounded corners
+
+### Flat
+
+The **flat** variant offers a minimalist design that matches modern AI interfaces like ChatGPT and Gemini:
+
+- User messages use softer secondary colors with subtle borders
+- Assistant messages display full-width without background or padding
+- Creates a cleaner, more streamlined conversation appearance
+
+## Notes
+
+Always render the `AIMessageContent` first, then the `AIMessageAvatar`. The `AIMessage` component is a wrapper that determines the alignment of the message.
+
+## Examples
+
+### Render Markdown
+
+We can use the [`Response`](/elements/components/response) component to render markdown content.
+
+<Preview path="message-markdown" />
+
+### Flat Variant
+
+The flat variant provides a minimalist design that matches modern AI interfaces.
+
+<Preview path="message-flat" />
+
+## Props
+
+### `<Message />`
+
+<PropertiesTable
+content={[
+{
+name: 'from',
+type: 'UIMessage["role"]',
+description:
+'The role of the message sender ("user", "assistant", or "system").',
+isOptional: false,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<MessageContent />`
+
+<PropertiesTable
+content={[
+{
+name: 'variant',
+type: '"contained" | "flat"',
+description: 'Visual style variant. "contained" (default) shows colored backgrounds, "flat" provides a minimalist design.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the content div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<MessageAvatar />`
+
+<PropertiesTable
+content={[
+{
+name: 'src',
+type: 'string',
+description: 'The URL of the avatar image.',
+isOptional: false,
+},
+{
+name: 'name',
+type: 'string',
+description:
+'The name to use for the avatar fallback (first 2 letters shown if image is missing).',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Avatar>',
+description:
+'Any other props are spread to the underlying Avatar component.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Open In Chat
+description: A dropdown menu for opening queries in various AI chat platforms including ChatGPT, Claude, T3, Scira, and v0.
+
+---
+
+# Open In Chat
+
+The `OpenIn` component provides a dropdown menu that allows users to open queries in different AI chat platforms with a single click.
+
+<Preview path="open-in-chat" />
+
+## Installation
+
+<ElementsInstaller path="open-in-chat" />
+
+## Usage
+
+```tsx
+import {
+  OpenIn,
+  OpenInChatGPT,
+  OpenInClaude,
+  OpenInContent,
+  OpenInScira,
+  OpenInT3,
+  OpenInTrigger,
+  OpenInv0,
+} from '@/components/ai-elements/open-in-chat';
+```
+
+```tsx
+<OpenIn query="How can I implement authentication in Next.js?">
+  <OpenInTrigger />
+  <OpenInContent>
+    <OpenInChatGPT />
+    <OpenInClaude />
+    <OpenInT3 />
+    <OpenInScira />
+    <OpenInv0 />
+  </OpenInContent>
+</OpenIn>
+```
+
+## Features
+
+- Pre-configured links to popular AI chat platforms
+- Context-based query passing for cleaner API
+- Customizable dropdown trigger button
+- Automatic URL parameter encoding for queries
+- Support for ChatGPT, Claude, T3 Chat, Scira AI, and v0
+- Branded icons for each platform
+- TypeScript support with proper type definitions
+- Accessible dropdown menu with keyboard navigation
+- External link indicators for clarity
+
+## Supported Platforms
+
+- **ChatGPT** - Opens query in OpenAI's ChatGPT with search hints
+- **Claude** - Opens query in Anthropic's Claude AI
+- **T3 Chat** - Opens query in T3 Chat platform
+- **Scira AI** - Opens query in Scira's AI assistant
+- **v0** - Opens query in Vercel's v0 platform
+
+## Props
+
+### `<OpenIn />`
+
+<PropertiesTable
+content={[
+{
+name: 'query',
+type: 'string',
+description: 'The query text to be sent to all AI platforms.',
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof DropdownMenu>',
+description: 'Props to spread to the underlying radix-ui DropdownMenu component.',
+},
+]}
+/>
+
+### `<OpenInTrigger />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: 'React.ReactNode',
+description: 'Custom trigger button. Defaults to "Open in chat" button with chevron icon.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof DropdownMenuTrigger>',
+description: 'Props to spread to the underlying DropdownMenuTrigger component.',
+},
+]}
+/>
+
+### `<OpenInContent />`
+
+<PropertiesTable
+content={[
+{
+name: 'className',
+type: 'string',
+description: 'Additional CSS classes to apply to the dropdown content.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof DropdownMenuContent>',
+description: 'Props to spread to the underlying DropdownMenuContent component.',
+},
+]}
+/>
+
+### `<OpenInChatGPT />`, `<OpenInClaude />`, `<OpenInT3 />`, `<OpenInScira />`, `<OpenInv0 />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof DropdownMenuItem>',
+description: 'Props to spread to the underlying DropdownMenuItem component. The query is automatically provided via context from the parent OpenIn component.',
+},
+]}
+/>
+
+### `<OpenInItem />`, `<OpenInLabel />`, `<OpenInSeparator />`
+
+## Additional composable components for custom dropdown menu items, labels, and separators that follow the same props pattern as their underlying radix-ui counterparts.
+
+title: Prompt Input
+description: Allows a user to send a message with file attachments to a large language model. It includes a textarea, file upload capabilities, a submit button, and a dropdown for selecting the model.
+
+---
+
+# Prompt Input
+
+The `PromptInput` component allows a user to send a message with file attachments to a large language model. It includes a textarea, file upload capabilities, a submit button, and a dropdown for selecting the model.
+
+<Preview path="prompt-input" />
+
+## Installation
+
+<ElementsInstaller path="prompt-input" />
+
+## Usage
+
+```tsx
+import {
+  PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuItem,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputButton,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputTools,
+  usePromptInputAttachments,
+} from '@/components/ai-elements/prompt-input';
+```
+
+```tsx
+<PromptInput onSubmit={() => {}} className="mt-4 relative">
+  <PromptInputBody>
+    <PromptInputAttachments>
+      {(attachment) => <PromptInputAttachment data={attachment} />}
+    </PromptInputAttachments>
+    <PromptInputTextarea onChange={(e) => {}} value={''} />
+  </PromptInputBody>
+  <PromptInputToolbar>
+    <PromptInputTools>
+      <PromptInputActionMenu>
+        <PromptInputActionMenuTrigger />
+        <PromptInputActionMenuContent>
+          <PromptInputActionAddAttachments />
+        </PromptInputActionMenuContent>
+      </PromptInputActionMenu>
+    </PromptInputTools>
+    <PromptInputSubmit disabled={false} status={'ready'} />
+  </PromptInputToolbar>
+</PromptInput>
+```
+
+## Usage with AI SDK
+
+Built a fully functional chat app using `PromptInput`, [`Conversation`](/elements/components/conversation) with a model picker:
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import {
+  PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputButton,
+  type PromptInputMessage,
+  PromptInputModelSelect,
+  PromptInputModelSelectContent,
+  PromptInputModelSelectItem,
+  PromptInputModelSelectTrigger,
+  PromptInputModelSelectValue,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputTools,
+} from '@/components/ai-elements/prompt-input';
+import { GlobeIcon, MicIcon } from 'lucide-react';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import { Response } from '@/components/ai-elements/response';
+
+const models = [
+  { id: 'gpt-4o', name: 'GPT-4o' },
+  { id: 'claude-opus-4-20250514', name: 'Claude 4 Opus' },
+];
+
+const InputDemo = () => {
+  const [text, setText] = useState<string>('');
+  const [model, setModel] = useState<string>(models[0].id);
+  const [useMicrophone, setUseMicrophone] = useState<boolean>(false);
+  const [useWebSearch, setUseWebSearch] = useState<boolean>(false);
+
+  const { messages, status, sendMessage } = useChat();
+
+  const handleSubmit = (message: PromptInputMessage) => {
+    const hasText = Boolean(message.text);
+    const hasAttachments = Boolean(message.files?.length);
+
+    if (!(hasText || hasAttachments)) {
+      return;
+    }
+
+    sendMessage(
+      {
+        text: message.text || 'Sent with attachments',
+        files: message.files,
+      },
+      {
+        body: {
+          model: model,
+          webSearch: useWebSearch,
+        },
+      },
+    );
+    setText('');
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case 'text':
+                        return (
+                          <Response key={`${message.id}-${i}`}>
+                            {part.text}
+                          </Response>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <PromptInput
+          onSubmit={handleSubmit}
+          className="mt-4"
+          globalDrop
+          multiple
+        >
+          <PromptInputBody>
+            <PromptInputAttachments>
+              {(attachment) => <PromptInputAttachment data={attachment} />}
+            </PromptInputAttachments>
+            <PromptInputTextarea
+              onChange={(e) => setText(e.target.value)}
+              value={text}
+            />
+          </PromptInputBody>
+          <PromptInputToolbar>
+            <PromptInputTools>
+              <PromptInputActionMenu>
+                <PromptInputActionMenuTrigger />
+                <PromptInputActionMenuContent>
+                  <PromptInputActionAddAttachments />
+                </PromptInputActionMenuContent>
+              </PromptInputActionMenu>
+              <PromptInputButton
+                onClick={() => setUseMicrophone(!useMicrophone)}
+                variant={useMicrophone ? 'default' : 'ghost'}
+              >
+                <MicIcon size={16} />
+                <span className="sr-only">Microphone</span>
+              </PromptInputButton>
+              <PromptInputButton
+                onClick={() => setUseWebSearch(!useWebSearch)}
+                variant={useWebSearch ? 'default' : 'ghost'}
+              >
+                <GlobeIcon size={16} />
+                <span>Search</span>
+              </PromptInputButton>
+              <PromptInputModelSelect
+                onValueChange={(value) => {
+                  setModel(value);
+                }}
+                value={model}
+              >
+                <PromptInputModelSelectTrigger>
+                  <PromptInputModelSelectValue />
+                </PromptInputModelSelectTrigger>
+                <PromptInputModelSelectContent>
+                  {models.map((model) => (
+                    <PromptInputModelSelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </PromptInputModelSelectItem>
+                  ))}
+                </PromptInputModelSelectContent>
+              </PromptInputModelSelect>
+            </PromptInputTools>
+            <PromptInputSubmit disabled={!text && !status} status={status} />
+          </PromptInputToolbar>
+        </PromptInput>
+      </div>
+    </div>
+  );
+};
+
+export default InputDemo;
+```
+
+Add the following route to your backend:
+
+```ts filename="app/api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const {
+    model,
+    messages,
+    webSearch,
+  }: {
+    messages: UIMessage[];
+    model: string;
+    webSearch?: boolean;
+  } = await req.json();
+
+  const result = streamText({
+    model: webSearch ? 'perplexity/sonar' : model,
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+- Auto-resizing textarea that adjusts height based on content
+- File attachment support with drag-and-drop
+- Image preview for image attachments
+- Configurable file constraints (max files, max size, accepted types)
+- Automatic submit button icons based on status
+- Support for keyboard shortcuts (Enter to submit, Shift+Enter for new line)
+- Customizable min/max height for the textarea
+- Flexible toolbar with support for custom actions and tools
+- Built-in model selection dropdown
+- Responsive design with mobile-friendly controls
+- Clean, modern styling with customizable themes
+- Form-based submission handling
+- Hidden file input sync for native form posts
+- Global document drop support (opt-in)
+
+## Props
+
+### `<PromptInput />`
+
+<PropertiesTable
+content={[
+{
+name: 'onSubmit',
+type: '(message: PromptInputMessage, event: FormEvent) => void',
+description: 'Handler called when the form is submitted with message text and files.',
+isOptional: false,
+},
+{
+name: 'accept',
+type: 'string',
+description: 'File types to accept (e.g., "image/\*"). Leave undefined for any.',
+isOptional: true,
+},
+{
+name: 'multiple',
+type: 'boolean',
+description: 'Whether to allow multiple file selection.',
+isOptional: true,
+},
+{
+name: 'globalDrop',
+type: 'boolean',
+description: 'When true, accepts file drops anywhere on the document.',
+isOptional: true,
+},
+{
+name: 'syncHiddenInput',
+type: 'boolean',
+description: 'Render a hidden input with given name for native form posts.',
+isOptional: true,
+},
+{
+name: 'maxFiles',
+type: 'number',
+description: 'Maximum number of files allowed.',
+isOptional: true,
+},
+{
+name: 'maxFileSize',
+type: 'number',
+description: 'Maximum file size in bytes.',
+isOptional: true,
+},
+{
+name: 'onError',
+type: '(err: { code: "max_files" | "max_file_size" | "accept", message: string }) => void',
+description: 'Handler for file validation errors.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLFormElement>',
+description: 'Any other props are spread to the root form element.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputTextarea />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Textarea>',
+description:
+'Any other props are spread to the underlying Textarea component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputToolbar />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the toolbar div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputTools />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the tools div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputButton />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputSubmit />`
+
+<PropertiesTable
+content={[
+{
+name: 'status',
+type: 'ChatStatus',
+description: 'Current chat status to determine button icon (submitted, streaming, error).',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputModelSelect />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Select>',
+description:
+'Any other props are spread to the underlying Select component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputModelSelectTrigger />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof SelectTrigger>',
+description:
+'Any other props are spread to the underlying SelectTrigger component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputModelSelectContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof SelectContent>',
+description:
+'Any other props are spread to the underlying SelectContent component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputModelSelectItem />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof SelectItem>',
+description:
+'Any other props are spread to the underlying SelectItem component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputModelSelectValue />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof SelectValue>',
+description:
+'Any other props are spread to the underlying SelectValue component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputBody />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the body div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputAttachments />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: '(attachment: FileUIPart & { id: string }) => React.ReactNode',
+description: 'Render function for each attachment.',
+isOptional: false,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the attachments container.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputAttachment />`
+
+<PropertiesTable
+content={[
+{
+name: 'data',
+type: 'FileUIPart & { id: string }',
+description: 'The attachment data to display.',
+isOptional: false,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the attachment div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputActionMenu />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof DropdownMenu>',
+description:
+'Any other props are spread to the underlying DropdownMenu component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputActionMenuTrigger />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying Button component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputActionMenuContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof DropdownMenuContent>',
+description:
+'Any other props are spread to the underlying DropdownMenuContent component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputActionMenuItem />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof DropdownMenuItem>',
+description:
+'Any other props are spread to the underlying DropdownMenuItem component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<PromptInputActionAddAttachments />`
+
+<PropertiesTable
+content={[
+{
+name: 'label',
+type: 'string',
+description: 'Label for the menu item. Defaults to "Add photos or files".',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof DropdownMenuItem>',
+description:
+'Any other props are spread to the underlying DropdownMenuItem component.',
+isOptional: true,
+},
+]}
+/>
+
+## Hooks
+
+### `usePromptInputAttachments`
+
+Access and manage file attachments within a PromptInput context.
+
+```tsx
+const attachments = usePromptInputAttachments();
+
+// Available methods:
+attachments.files; // Array of current attachments
+attachments.add(files); // Add new files
+attachments.remove(id); // Remove an attachment by ID
+attachments.clear(); // Clear all attachments
+attachments.openFileDialog(); // Open file selection dialog
+```
+
+---
+
+title: Reasoning
+description: A collapsible component that displays AI reasoning content, automatically opening during streaming and closing when finished.
+
+---
+
+# Reasoning
+
+The `Reasoning` component displays AI reasoning content, automatically opening during streaming and closing when finished.
+
+<Preview path="reasoning" />
+
+## Installation
+
+<ElementsInstaller path="reasoning" />
+
+## Usage
+
+```tsx
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai-elements/reasoning';
+```
+
+```tsx
+<Reasoning className="w-full" isStreaming={false}>
+  <ReasoningTrigger />
+  <ReasoningContent>I need to computer the square of 2.</ReasoningContent>
+</Reasoning>
+```
+
+## Usage with AI SDK
+
+Build a chatbot with reasoning using Deepseek R1.
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from '@/components/ai-elements/reasoning';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Loader } from '@/components/ai-elements/loader';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+import { Response } from @/components/ai-elements/response';
+
+const ReasoningDemo = () => {
+  const [input, setInput] = useState('');
+
+  const { messages, sendMessage, status } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage({ text: input });
+    setInput('');
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case 'text':
+                        return (
+                          <Response key={`${message.id}-${i}`}>
+                            {part.text}
+                          </Response>
+                        );
+                      case 'reasoning':
+                        return (
+                          <Reasoning
+                            key={`${message.id}-${i}`}
+                            className="w-full"
+                            isStreaming={status === 'streaming' && i === message.parts.length - 1 && message.id === messages.at(-1)?.id}
+                          >
+                            <ReasoningTrigger />
+                            <ReasoningContent>{part.text}</ReasoningContent>
+                          </Reasoning>
+                        );
+                    }
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+            {status === 'submitted' && <Loader />}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+
+        <PromptInput
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Say something..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </PromptInput>
+      </div>
+    </div>
+  );
+};
+
+export default ReasoningDemo;
+```
+
+Add the following route to your backend:
+
+```ts filename="app/api/chat/route.ts"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { model, messages }: { messages: UIMessage[]; model: string } =
+    await req.json();
+
+  const result = streamText({
+    model: 'deepseek/deepseek-r1',
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse({
+    sendReasoning: true,
+  });
+}
+```
+
+## Features
+
+- Automatically opens when streaming content and closes when finished
+- Manual toggle control for user interaction
+- Smooth animations and transitions powered by Radix UI
+- Visual streaming indicator with pulsing animation
+- Composable architecture with separate trigger and content components
+- Built with accessibility in mind including keyboard navigation
+- Responsive design that works across different screen sizes
+- Seamlessly integrates with both light and dark themes
+- Built on top of shadcn/ui Collapsible primitives
+- TypeScript support with proper type definitions
+
+## Props
+
+### `<Reasoning />`
+
+<PropertiesTable
+content={[
+{
+name: 'isStreaming',
+type: 'boolean',
+description:
+'Whether the reasoning is currently streaming (auto-opens and closes the panel).',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Collapsible>',
+description:
+'Any other props are spread to the underlying Collapsible component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ReasoningTrigger />`
+
+<PropertiesTable
+content={[
+{
+name: 'title',
+type: 'string',
+description:
+'Optional title to display in the trigger (default: "Reasoning").',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+description:
+'Any other props are spread to the underlying CollapsibleTrigger component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ReasoningContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CollapsibleContent>',
+description:
+'Any other props are spread to the underlying CollapsibleContent component.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Response
+description: A component that renders a Markdown response from a large language model.
+
+---
+
+# Response
+
+The `Response` component renders a Markdown response from a large language model. It uses [Streamdown](https://streamdown.ai/) under the hood to render the markdown.
+
+<Preview path="response" />
+
+## Installation
+
+<ElementsInstaller path="response" />
+
+After adding the component, you'll need to add the following to your `globals.css` file:
+
+```css
+@source "../node_modules/streamdown/dist/index.js";
+```
+
+This will ensure that the Streamdown styles are applied to your project. See [Streamdown's documentation](https://streamdown.ai/) for more details.
+
+## Usage
+
+```tsx
+import { Response } from '@/components/ai-elements/response';
+```
+
+```tsx
+<Response>**Hi there.** I am an AI model designed to help you.</Response>
+```
+
+## Usage with AI SDK
+
+Populate a markdown response with messages from [`useChat`](/docs/reference/ai-sdk-ui/use-chat).
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import { useChat } from '@ai-sdk/react';
+import { Response } from '@/components/ai-elements/response';
+
+const ResponseDemo = () => {
+  const { messages } = useChat();
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <Conversation>
+          <ConversationContent>
+            {messages.map((message) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case 'text': // we don't use any reasoning or tool calls in this example
+                        return (
+                          <Response key={`${message.id}-${i}`}>
+                            {part.text}
+                          </Response>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </MessageContent>
+              </Message>
+            ))}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+      </div>
+    </div>
+  );
+};
+
+export default ResponseDemo;
+```
+
+## Features
+
+- Renders markdown content with support for paragraphs, links, and code blocks
+- Supports GFM features like tables, task lists, and strikethrough text via remark-gfm
+- Supports rendering Math Equations via rehype-katex
+- **Smart streaming support** - automatically completes incomplete formatting during real-time text streaming
+- Code blocks are rendered with syntax highlighting for various programming languages
+- Code blocks include a button to easily copy code to clipboard
+- Adapts to different screen sizes while maintaining readability
+- Seamlessly integrates with both light and dark themes
+- Customizable appearance through className props and Tailwind CSS utilities
+- Built with accessibility in mind for all users
+
+## Props
+
+### `<Response />`
+
+<PropertiesTable
+content={[
+{
+name: 'children',
+type: 'string',
+description: 'The markdown content to render.',
+},
+{
+name: 'parseIncompleteMarkdown',
+type: 'boolean',
+description: 'Whether to parse and fix incomplete markdown syntax (e.g., unclosed code blocks or lists).',
+default: 'true',
+isOptional: true,
+},
+{
+name: 'className',
+type: 'string',
+description: 'CSS class names to apply to the wrapper div element.',
+isOptional: true,
+},
+{
+name: 'components',
+type: 'object',
+description: 'Custom React components to use for rendering markdown elements (e.g., custom heading, paragraph, code block components).',
+isOptional: true,
+},
+{
+name: 'allowedImagePrefixes',
+type: 'string[]',
+description: 'Array of allowed URL prefixes for images. Use ["*"] to allow all images.',
+default: '["*"]',
+isOptional: true,
+},
+{
+name: 'allowedLinkPrefixes',
+type: 'string[]',
+description: 'Array of allowed URL prefixes for links. Use ["*"] to allow all links.',
+default: '["*"]',
+isOptional: true,
+},
+{
+name: 'defaultOrigin',
+type: 'string',
+description: 'Default origin to use for relative URLs in links and images.',
+isOptional: true,
+},
+{
+name: 'rehypePlugins',
+type: 'array',
+description: 'Array of rehype plugins to use for processing HTML. Includes KaTeX for math rendering by default.',
+default: '[rehypeKatex]',
+isOptional: true,
+},
+{
+name: 'remarkPlugins',
+type: 'array',
+description: 'Array of remark plugins to use for processing markdown. Includes GitHub Flavored Markdown and math support by default.',
+default: '[remarkGfm, remarkMath]',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Sources
+description: A component that allows a user to view the sources or citations used to generate a response.
+
+---
+
+# Sources
+
+The `Sources` component allows a user to view the sources or citations used to generate a response.
+
+<Preview path="sources" />
+
+## Installation
+
+<ElementsInstaller path="sources" />
+
+## Usage
+
+```tsx
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from '@/components/ai-elements/sources';
+```
+
+```tsx
+<Sources>
+  <SourcesTrigger count={1} />
+  <SourcesContent>
+    <Source href="https://ai-sdk.dev" title="AI SDK" />
+  </SourcesContent>
+</Sources>
+```
+
+## Usage with AI SDK
+
+Build a simple web search agent with Perplexity Sonar.
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from '@/components/ai-elements/sources';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import { Response } from '@/components/ai-elements/response';
+import { useState } from 'react';
+import { DefaultChatTransport } from 'ai';
+
+const SourceDemo = () => {
+  const [input, setInput] = useState('');
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/sources',
+    }),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-auto mb-4">
+          <Conversation>
+            <ConversationContent>
+              {messages.map((message) => (
+                <div key={message.id}>
+                  {message.role === 'assistant' && (
+                    <Sources>
+                      <SourcesTrigger
+                        count={
+                          message.parts.filter(
+                            (part) => part.type === 'source-url',
+                          ).length
+                        }
+                      />
+                      {message.parts.map((part, i) => {
+                        switch (part.type) {
+                          case 'source-url':
+                            return (
+                              <SourcesContent key={`${message.id}-${i}`}>
+                                <Source
+                                  key={`${message.id}-${i}`}
+                                  href={part.url}
+                                  title={part.url}
+                                />
+                              </SourcesContent>
+                            );
+                        }
+                      })}
+                    </Sources>
+                  )}
+                  <Message from={message.role} key={message.id}>
+                    <MessageContent>
+                      {message.parts.map((part, i) => {
+                        switch (part.type) {
+                          case 'text':
+                            return (
+                              <Response key={`${message.id}-${i}`}>
+                                {part.text}
+                              </Response>
+                            );
+                          default:
+                            return null;
+                        }
+                      })}
+                    </MessageContent>
+                  </Message>
+                </div>
+              ))}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
+        </div>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="mt-4 w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={input}
+            placeholder="Ask a question and search the..."
+            onChange={(e) => setInput(e.currentTarget.value)}
+            className="pr-12"
+          />
+          <PromptInputSubmit
+            status={status === 'streaming' ? 'streaming' : 'ready'}
+            disabled={!input.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default SourceDemo;
+```
+
+Add the following route to your backend:
+
+```tsx filename="api/chat/route.ts"
+import { convertToModelMessages, streamText, UIMessage } from 'ai';
+import { perplexity } from '@ai-sdk/perplexity';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: 'perplexity/sonar',
+    system:
+      'You are a helpful assistant. Keep your responses short (< 100 words) unless you are asked for more details. ALWAYS USE SEARCH.',
+    messages: convertToModelMessages(messages),
+  });
+
+  return result.toUIMessageStreamResponse({
+    sendSources: true,
+  });
+}
+```
+
+## Features
+
+- Collapsible component that allows a user to view the sources or citations used to generate a response
+- Customizable trigger and content components
+- Support for custom sources or citations
+- Responsive design with mobile-friendly controls
+- Clean, modern styling with customizable themes
+
+## Examples
+
+### Custom rendering
+
+<Preview path="sources-custom" />
+
+## Props
+
+### `<Sources />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<SourcesTrigger />`
+
+<PropertiesTable
+content={[
+{
+name: 'count',
+type: 'number',
+description: 'The number of sources to display in the trigger.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ButtonHTMLAttributes<HTMLButtonElement>',
+description: 'Any other props are spread to the trigger button.',
+isOptional: true,
+},
+]}
+/>
+
+### `<SourcesContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the content container.',
+isOptional: true,
+},
+]}
+/>
+
+### `<Source />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.AnchorHTMLAttributes<HTMLAnchorElement>',
+description: 'Any other props are spread to the anchor element.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Suggestion
+description: A suggestion component that displays a horizontal row of clickable suggestions for user interaction.
+
+---
+
+# Suggestion
+
+The `Suggestion` component displays a horizontal row of clickable suggestions for user interaction.
+
+<Preview path="suggestion" />
+
+## Installation
+
+<ElementsInstaller path="suggestion" />
+
+## Usage
+
+```tsx
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+```
+
+```tsx
+<Suggestions>
+  <Suggestion suggestion="What are the latest trends in AI?" />
+</Suggestions>
+```
+
+## Usage with AI SDK
+
+Build a simple input with suggestions users can click to send a message to the LLM.
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
+import { useState } from 'react';
+import { useChat } from '@ai-sdk/react';
+
+const suggestions = [
+  'Can you explain how to play tennis?',
+  'What is the weather in Tokyo?',
+  'How do I make a really good fish taco?',
+];
+
+const SuggestionDemo = () => {
+  const [input, setInput] = useState('');
+  const { sendMessage, status } = useChat();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (input.trim()) {
+      sendMessage({ text: input });
+      setInput('');
+    }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage({ text: suggestion });
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex flex-col gap-4">
+          <Suggestions>
+            {suggestions.map((suggestion) => (
+              <Suggestion
+                key={suggestion}
+                onClick={handleSuggestionClick}
+                suggestion={suggestion}
+              />
+            ))}
+          </Suggestions>
+          <Input
+            onSubmit={handleSubmit}
+            className="mt-4 w-full max-w-2xl mx-auto relative"
+          >
+            <PromptInputTextarea
+              value={input}
+              placeholder="Say something..."
+              onChange={(e) => setInput(e.currentTarget.value)}
+              className="pr-12"
+            />
+            <PromptInputSubmit
+              status={status === 'streaming' ? 'streaming' : 'ready'}
+              disabled={!input.trim()}
+              className="absolute bottom-1 right-1"
+            />
+          </Input>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SuggestionDemo;
+```
+
+## Features
+
+- Horizontal row of clickable suggestion buttons
+- Customizable styling with variant and size options
+- Flexible layout that wraps suggestions on smaller screens
+- onClick callback that emits the selected suggestion string
+- Support for both individual suggestions and suggestion lists
+- Clean, modern styling with hover effects
+- Responsive design with mobile-friendly touch targets
+- TypeScript support with proper type definitions
+
+## Examples
+
+### Usage with AI Input
+
+<Preview path="suggestion-input" />
+
+## Props
+
+### `<Suggestions />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof ScrollArea>',
+description:
+'Any other props are spread to the underlying ScrollArea component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<Suggestion />`
+
+<PropertiesTable
+content={[
+{
+name: 'suggestion',
+type: 'string',
+description: 'The suggestion string to display and emit on click.',
+isOptional: false,
+},
+{
+name: 'onClick',
+type: '(suggestion: string) => void',
+description: 'Callback fired when the suggestion is clicked.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'Omit<React.ComponentProps<typeof Button>, "onClick">',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Task
+description: A collapsible task list component for displaying AI workflow progress, with status indicators and optional descriptions.
+
+---
+
+# Task
+
+The `Task` component provides a structured way to display task lists or workflow progress with collapsible details, status indicators, and progress tracking. It consists of a main `Task` container with `TaskTrigger` for the clickable header and `TaskContent` for the collapsible content area.
+
+<Preview path="task" />
+
+## Installation
+
+<ElementsInstaller path="task" />
+
+## Usage
+
+```tsx
+import {
+  Task,
+  TaskContent,
+  TaskItem,
+  TaskItemFile,
+  TaskTrigger,
+} from '@/components/ai-elements/task';
+```
+
+```tsx
+<Task className="w-full">
+  <TaskTrigger title="Found project files" />
+  <TaskContent>
+    <TaskItem>
+      Read <TaskItemFile>index.md</TaskItemFile>
+    </TaskItem>
+  </TaskContent>
+</Task>
+```
+
+## Usage with AI SDK
+
+Build a mock async programming agent using [`experimental_generateObject`](/docs/reference/ai-sdk-ui/use-object).
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { experimental_useObject as useObject } from '@ai-sdk/react';
+import {
+  Task,
+  TaskItem,
+  TaskItemFile,
+  TaskTrigger,
+  TaskContent,
+} from '@/components/ai-elements/task';
+import { Button } from '@/components/ui/button';
+import { tasksSchema } from '@/app/api/task/route';
+import {
+  SiReact,
+  SiTypescript,
+  SiJavascript,
+  SiCss,
+  SiHtml5,
+  SiJson,
+  SiMarkdown,
+} from '@icons-pack/react-simple-icons';
+
+const iconMap = {
+  react: { component: SiReact, color: '#149ECA' },
+  typescript: { component: SiTypescript, color: '#3178C6' },
+  javascript: { component: SiJavascript, color: '#F7DF1E' },
+  css: { component: SiCss, color: '#1572B6' },
+  html: { component: SiHtml5, color: '#E34F26' },
+  json: { component: SiJson, color: '#000000' },
+  markdown: { component: SiMarkdown, color: '#000000' },
+};
+
+const TaskDemo = () => {
+  const { object, submit, isLoading } = useObject({
+    api: '/api/agent',
+    schema: tasksSchema,
+  });
+
+  const handleSubmit = (taskType: string) => {
+    submit({ prompt: taskType });
+  };
+
+  const renderTaskItem = (item: any, index: number) => {
+    if (item?.type === 'file' && item.file) {
+      const iconInfo = iconMap[item.file.icon as keyof typeof iconMap];
+      if (iconInfo) {
+        const IconComponent = iconInfo.component;
+        return (
+          <span className="inline-flex items-center gap-1" key={index}>
+            {item.text}
+            <TaskItemFile>
+              <IconComponent
+                color={item.file.color || iconInfo.color}
+                className="size-4"
+              />
+              <span>{item.file.name}</span>
+            </TaskItemFile>
+          </span>
+        );
+      }
+    }
+    return item?.text || '';
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex gap-2 mb-6 flex-wrap">
+          <Button
+            onClick={() => handleSubmit('React component development')}
+            disabled={isLoading}
+            variant="outline"
+          >
+            React Development
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-auto space-y-4">
+          {isLoading && !object && (
+            <div className="text-muted-foreground">Generating tasks...</div>
+          )}
+
+          {object?.tasks?.map((task: any, taskIndex: number) => (
+            <Task key={taskIndex} defaultOpen={taskIndex === 0}>
+              <TaskTrigger title={task.title || 'Loading...'} />
+              <TaskContent>
+                {task.items?.map((item: any, itemIndex: number) => (
+                  <TaskItem key={itemIndex}>
+                    {renderTaskItem(item, itemIndex)}
+                  </TaskItem>
+                ))}
+              </TaskContent>
+            </Task>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskDemo;
+```
+
+Add the following route to your backend:
+
+```ts filename="app/api/agent.ts"
+import { streamObject } from 'ai';
+import { z } from 'zod';
+
+export const taskItemSchema = z.object({
+  type: z.enum(['text', 'file']),
+  text: z.string(),
+  file: z
+    .object({
+      name: z.string(),
+      icon: z.string(),
+      color: z.string().optional(),
+    })
+    .optional(),
+});
+
+export const taskSchema = z.object({
+  title: z.string(),
+  items: z.array(taskItemSchema),
+  status: z.enum(['pending', 'in_progress', 'completed']),
+});
+
+export const tasksSchema = z.object({
+  tasks: z.array(taskSchema),
+});
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { prompt } = await req.json();
+
+  const result = streamObject({
+    model: 'openai/gpt-4o',
+    schema: tasksSchema,
+    prompt: `You are an AI assistant that generates realistic development task workflows. Generate a set of tasks that would occur during ${prompt}.
+
+    Each task should have:
+    - A descriptive title
+    - Multiple task items showing the progression
+    - Some items should be plain text, others should reference files
+    - Use realistic file names and appropriate file types
+    - Status should progress from pending to in_progress to completed
+
+    For file items, use these icon types: 'react', 'typescript', 'javascript', 'css', 'html', 'json', 'markdown'
+
+    Generate 3-4 tasks total, with 4-6 items each.`,
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+## Features
+
+- Visual icons for pending, in-progress, completed, and error states
+- Expandable content for task descriptions and additional information
+- Built-in progress counter showing completed vs total tasks
+- Optional progressive reveal of tasks with customizable timing
+- Support for custom content within task items
+- Full type safety with proper TypeScript definitions
+- Keyboard navigation and screen reader support
+
+## Props
+
+### `<Task />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Collapsible>',
+description:
+'Any other props are spread to the root Collapsible component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<TaskTrigger />`
+
+<PropertiesTable
+content={[
+{
+name: 'title',
+type: 'string',
+description:
+'The title of the task that will be displayed in the trigger.',
+isOptional: false,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+description:
+'Any other props are spread to the CollapsibleTrigger component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<TaskContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CollapsibleContent>',
+description:
+'Any other props are spread to the CollapsibleContent component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<TaskItem />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description: 'Any other props are spread to the underlying div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<TaskItemFile />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description: 'Any other props are spread to the underlying div.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Tool
+description: A collapsible component for displaying tool invocation details in AI chatbot interfaces.
+
+---
+
+# Tool
+
+The `Tool` component displays a collapsible interface for showing/hiding tool details. It is designed to take the `ToolUIPart` type from the AI SDK and display it in a collapsible interface.
+
+<Preview path="tool" />
+
+## Installation
+
+<ElementsInstaller path="tool" />
+
+## Usage
+
+```tsx
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolOutput,
+  ToolInput,
+} from '@/components/ai-elements/tool';
+```
+
+```tsx
+<Tool>
+  <ToolHeader type="tool-call" state={'output-available' as const} />
+  <ToolContent>
+    <ToolInput input="Input to tool call" />
+    <ToolOutput errorText="Error" output="Output from tool call" />
+  </ToolContent>
+</Tool>
+```
+
+## Usage in AI SDK
+
+Build a simple stateful weather app that renders the last message in a tool using [`useChat`](/docs/reference/ai-sdk-ui/use-chat).
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import { useChat } from '@ai-sdk/react';
+import { DefaultChatTransport, type ToolUIPart } from 'ai';
+import { Button } from '@/components/ui/button';
+import { Response } from '@/components/ai-elements/response';
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from '@/components/ai-elements/tool';
+
+type WeatherToolInput = {
+  location: string;
+  units: 'celsius' | 'fahrenheit';
+};
+
+type WeatherToolOutput = {
+  location: string;
+  temperature: string;
+  conditions: string;
+  humidity: string;
+  windSpeed: string;
+  lastUpdated: string;
+};
+
+type WeatherToolUIPart = ToolUIPart<{
+  fetch_weather_data: {
+    input: WeatherToolInput;
+    output: WeatherToolOutput;
+  };
+}>;
+
+const Example = () => {
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: '/api/weather',
+    }),
+  });
+
+  const handleWeatherClick = () => {
+    sendMessage({ text: 'Get weather data for San Francisco in fahrenheit' });
+  };
+
+  const latestMessage = messages[messages.length - 1];
+  const weatherTool = latestMessage?.parts?.find(
+    (part) => part.type === 'tool-fetch_weather_data',
+  ) as WeatherToolUIPart | undefined;
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="space-y-4">
+          <Button onClick={handleWeatherClick} disabled={status !== 'ready'}>
+            Get Weather for San Francisco
+          </Button>
+
+          {weatherTool && (
+            <Tool defaultOpen={true}>
+              <ToolHeader
+                type="tool-fetch_weather_data"
+                state={weatherTool.state}
+              />
+              <ToolContent>
+                <ToolInput input={weatherTool.input} />
+                <ToolOutput
+                  output={
+                    <Response>
+                      {formatWeatherResult(weatherTool.output)}
+                    </Response>
+                  }
+                  errorText={weatherTool.errorText}
+                />
+              </ToolContent>
+            </Tool>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+function formatWeatherResult(result: WeatherToolOutput): string {
+  return `**Weather for ${result.location}**
+
+**Temperature:** ${result.temperature}  
+**Conditions:** ${result.conditions}  
+**Humidity:** ${result.humidity}  
+**Wind Speed:** ${result.windSpeed}  
+
+*Last updated: ${result.lastUpdated}*`;
+}
+
+export default Example;
+```
+
+Add the following route to your backend:
+
+```ts filename="app/api/weather/route.tsx"
+import { streamText, UIMessage, convertToModelMessages } from 'ai';
+import { z } from 'zod';
+
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
+
+export async function POST(req: Request) {
+  const { messages }: { messages: UIMessage[] } = await req.json();
+
+  const result = streamText({
+    model: 'openai/gpt-4o',
+    messages: convertToModelMessages(messages),
+    tools: {
+      fetch_weather_data: {
+        description: 'Fetch weather information for a specific location',
+        parameters: z.object({
+          location: z
+            .string()
+            .describe('The city or location to get weather for'),
+          units: z
+            .enum(['celsius', 'fahrenheit'])
+            .default('celsius')
+            .describe('Temperature units'),
+        }),
+        inputSchema: z.object({
+          location: z.string(),
+          units: z.enum(['celsius', 'fahrenheit']).default('celsius'),
+        }),
+        execute: async ({ location, units }) => {
+          await new Promise((resolve) => setTimeout(resolve, 1500));
+
+          const temp =
+            units === 'celsius'
+              ? Math.floor(Math.random() * 35) + 5
+              : Math.floor(Math.random() * 63) + 41;
+
+          return {
+            location,
+            temperature: `${temp}°${units === 'celsius' ? 'C' : 'F'}`,
+            conditions: 'Sunny',
+            humidity: `12%`,
+            windSpeed: `35 ${units === 'celsius' ? 'km/h' : 'mph'}`,
+            lastUpdated: new Date().toLocaleString(),
+          };
+        },
+      },
+    },
+  });
+
+  return result.toUIMessageStreamResponse();
+}
+```
+
+## Features
+
+- Collapsible interface for showing/hiding tool details
+- Visual status indicators with icons and badges
+- Support for multiple tool execution states (pending, running, completed, error)
+- Formatted parameter display with JSON syntax highlighting
+- Result and error handling with appropriate styling
+- Composable structure for flexible layouts
+- Accessible keyboard navigation and screen reader support
+- Consistent styling that matches your design system
+- Auto-opens completed tools by default for better UX
+
+## Examples
+
+### Input Streaming (Pending)
+
+Shows a tool in its initial state while parameters are being processed.
+
+<Preview path="tool-input-streaming" />
+
+### Input Available (Running)
+
+Shows a tool that's actively executing with its parameters.
+
+<Preview path="tool-input-available" />
+
+### Output Available (Completed)
+
+Shows a completed tool with successful results. Opens by default to show the results. In this instance, the output is a JSON object, so we can use the `CodeBlock` component to display it.
+
+<Preview path="tool-output-available" />
+
+### Output Error
+
+Shows a tool that encountered an error during execution. Opens by default to display the error.
+
+<Preview path="tool-output-error" />
+
+## Props
+
+### `<Tool />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Collapsible>',
+description:
+'Any other props are spread to the root Collapsible component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ToolHeader />`
+
+<PropertiesTable
+content={[
+{
+name: 'type',
+type: 'ToolUIPart["type"]',
+description: 'The type/name of the tool.',
+isOptional: false,
+},
+{
+name: 'state',
+type: 'ToolUIPart["state"]',
+description:
+'The current state of the tool (input-streaming, input-available, output-available, or output-error).',
+isOptional: false,
+},
+{
+name: 'className',
+type: 'string',
+description: 'Additional CSS classes to apply to the header.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CollapsibleTrigger>',
+description: 'Any other props are spread to the CollapsibleTrigger.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ToolContent />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof CollapsibleContent>',
+description: 'Any other props are spread to the CollapsibleContent.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ToolInput />`
+
+<PropertiesTable
+content={[
+{
+name: 'input',
+type: 'ToolUIPart["input"]',
+description:
+'The input parameters passed to the tool, displayed as formatted JSON.',
+isOptional: false,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description: 'Any other props are spread to the underlying div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<ToolOutput />`
+
+<PropertiesTable
+content={[
+{
+name: 'output',
+type: 'React.ReactNode',
+description: 'The output/result of the tool execution.',
+isOptional: false,
+},
+{
+name: 'errorText',
+type: 'ToolUIPart["errorText"]',
+description: 'An error message if the tool execution failed.',
+isOptional: false,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<"div">',
+description: 'Any other props are spread to the underlying div.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: Web Preview
+description: A composable component for previewing the result of a generated UI, with support for live examples and code display.
+
+---
+
+# WebPreview
+
+The `WebPreview` component provides a flexible way to showcase the result of a generated UI component, along with its source code. It is designed for documentation and demo purposes, allowing users to interact with live examples and view the underlying implementation.
+
+<Preview path="web-preview" />
+
+## Installation
+
+<ElementsInstaller path="web-preview" />
+
+## Usage
+
+```tsx
+import {
+  WebPreview,
+  WebPreviewNavigation,
+  WebPreviewUrl,
+  WebPreviewBody,
+} from '@/components/ai-elements/web-preview';
+```
+
+```tsx
+<WebPreview defaultUrl="https://ai-sdk.dev" style={{ height: '400px' }}>
+  <WebPreviewNavigation>
+    <WebPreviewUrl src="https://ai-sdk.dev" />
+  </WebPreviewNavigation>
+  <WebPreviewBody src="https://ai-sdk.dev" />
+</WebPreview>
+```
+
+## Usage with AI SDK
+
+Build a simple v0 clone using the [v0 Platform API](https://v0.dev/docs/api/platform).
+
+Install the `v0-sdk` package:
+
+<div className="my-4">
+  <Tabs items={['pnpm', 'npm', 'yarn']}>
+    <Tab>
+      <Snippet text="pnpm add v0-sdk" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="npm install v0-sdk" dark />
+    </Tab>
+    <Tab>
+      <Snippet text="yarn add v0-sdk" dark />
+    </Tab>
+  </Tabs>
+</div>
+
+Add the following component to your frontend:
+
+```tsx filename="app/page.tsx"
+'use client';
+
+import {
+  WebPreview,
+  WebPreviewBody,
+  WebPreviewNavigation,
+  WebPreviewUrl,
+} from '@/components/ai-elements/web-preview';
+import { useState } from 'react';
+import {
+  Input,
+  PromptInputTextarea,
+  PromptInputSubmit,
+} from '@/components/ai-elements/prompt-input';
+import { Loader } from '../ai-elements/loader';
+
+const WebPreviewDemo = () => {
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!prompt.trim()) return;
+    setPrompt('');
+
+    setIsGenerating(true);
+    try {
+      const response = await fetch('/api/v0', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await response.json();
+      setPreviewUrl(data.demo || '/');
+      console.log('Generation finished:', data);
+    } catch (error) {
+      console.error('Generation failed:', error);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto p-6 relative size-full rounded-lg border h-[600px]">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 mb-4">
+          {isGenerating ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <Loader />
+              <p className="mt-4 text-muted-foreground">
+                Generating app, this may take a few seconds...
+              </p>
+            </div>
+          ) : previewUrl ? (
+            <WebPreview defaultUrl={previewUrl}>
+              <WebPreviewNavigation>
+                <WebPreviewUrl />
+              </WebPreviewNavigation>
+              <WebPreviewBody src={previewUrl} />
+            </WebPreview>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground">
+              Your generated app will appear here
+            </div>
+          )}
+        </div>
+
+        <Input
+          onSubmit={handleSubmit}
+          className="w-full max-w-2xl mx-auto relative"
+        >
+          <PromptInputTextarea
+            value={prompt}
+            placeholder="Describe the app you want to build..."
+            onChange={(e) => setPrompt(e.currentTarget.value)}
+            className="pr-12 min-h-[60px]"
+          />
+          <PromptInputSubmit
+            status={isGenerating ? 'streaming' : 'ready'}
+            disabled={!prompt.trim()}
+            className="absolute bottom-1 right-1"
+          />
+        </Input>
+      </div>
+    </div>
+  );
+};
+
+export default WebPreviewDemo;
+```
+
+Add the following route to your backend:
+
+```ts filename="app/api/v0/route.ts"
+import { v0 } from 'v0-sdk';
+
+export async function POST(req: Request) {
+  const { prompt }: { prompt: string } = await req.json();
+
+  const result = await v0.chats.create({
+    system: 'You are an expert coder',
+    message: prompt,
+    modelConfiguration: {
+      modelId: 'v0-1.5-sm',
+      imageGenerations: false,
+      thinking: false,
+    },
+  });
+
+  return Response.json({
+    demo: result.demo,
+    webUrl: result.webUrl,
+  });
+}
+```
+
+## Features
+
+- Live preview of UI components
+- Composable architecture with dedicated sub-components
+- Responsive design modes (Desktop, Tablet, Mobile)
+- Navigation controls with back/forward functionality
+- URL input and example selector
+- Full screen mode support
+- Console logging with timestamps
+- Context-based state management
+- Consistent styling with the design system
+- Easy integration into documentation pages
+
+## Props
+
+### `<WebPreview />`
+
+<PropertiesTable
+content={[
+{
+name: 'defaultUrl',
+type: 'string',
+description:
+'The initial URL to load in the preview (default: empty string).',
+isOptional: true,
+},
+{
+name: 'onUrlChange',
+type: '(url: string) => void',
+description: 'Callback fired when the URL changes.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+isOptional: true,
+},
+]}
+/>
+
+### `<WebPreviewNavigation />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the navigation container.',
+isOptional: true,
+},
+]}
+/>
+
+### `<WebPreviewNavigationButton />`
+
+<PropertiesTable
+content={[
+{
+name: 'tooltip',
+type: 'string',
+description: 'Tooltip text to display on hover.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Button>',
+description:
+'Any other props are spread to the underlying shadcn/ui Button component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<WebPreviewUrl />`
+
+<PropertiesTable
+content={[
+{
+name: '[...props]',
+type: 'React.ComponentProps<typeof Input>',
+description:
+'Any other props are spread to the underlying shadcn/ui Input component.',
+isOptional: true,
+},
+]}
+/>
+
+### `<WebPreviewBody />`
+
+<PropertiesTable
+content={[
+{
+name: 'loading',
+type: 'React.ReactNode',
+description: 'Optional loading indicator to display over the preview.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.IframeHTMLAttributes<HTMLIFrameElement>',
+description: 'Any other props are spread to the underlying iframe.',
+isOptional: true,
+},
+]}
+/>
+
+### `<WebPreviewConsole />`
+
+<PropertiesTable
+content={[
+{
+name: 'logs',
+type: 'Array<{ level: "log" | "warn" | "error"; message: string; timestamp: Date }>',
+description: 'Console log entries to display in the console panel.',
+isOptional: true,
+},
+{
+name: '[...props]',
+type: 'React.HTMLAttributes<HTMLDivElement>',
+description: 'Any other props are spread to the root div.',
+isOptional: true,
+},
+]}
+/>
+
+---
+
+title: AI Gateway
+description: Learn how to use the AI Gateway provider with the AI SDK.
+
+---
+
+# AI Gateway Provider
+
+The [AI Gateway](https://vercel.com/docs/ai-gateway) provider connects you to models from multiple AI providers through a single interface. Instead of integrating with each provider separately, you can access OpenAI, Anthropic, Google, Meta, xAI, and other providers and their models.
+
+## Features
+
+- Access models from multiple providers without having to install additional provider modules/dependencies
+- Use the same code structure across different AI providers
+- Switch between models and providers easily
+- Automatic authentication when deployed on Vercel
+- View pricing information across providers
+- Observability for AI model usage through the Vercel dashboard
+
+## Setup
+
+The Vercel AI Gateway provider is part of the AI SDK.
+
+## Basic Usage
+
+For most use cases, you can use the AI Gateway directly with a model string:
+
+```ts
+// use plain model string with global provider
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: 'openai/gpt-5',
+  prompt: 'Hello world',
+});
+```
+
+```ts
+// use provider instance
+import { generateText, gateway } from 'ai';
+
+const { text } = await generateText({
+  model: gateway('openai/gpt-5'),
+  prompt: 'Hello world',
+});
+```
+
+The AI SDK automatically uses the AI Gateway when you pass a model string in the `creator/model-name` format.
+
+## Provider Instance
+
+You can also import the default provider instance `gateway` from `ai`:
+
+```ts
+import { gateway } from 'ai';
+```
+
+You may want to create a custom provider instance when you need to:
+
+- Set custom configuration options (API key, base URL, headers)
+- Use the provider in a [provider registry](/docs/ai-sdk-core/provider-registry)
+- Wrap the provider with [middleware](/docs/ai-sdk-core/middleware)
+- Use different settings for different parts of your application
+
+To create a custom provider instance, import `createGateway` from `ai`:
+
+```ts
+import { createGateway } from 'ai';
+
+const gateway = createGateway({
+  apiKey: process.env.AI_GATEWAY_API_KEY ?? '',
+});
+```
+
+You can use the following optional settings to customize the AI Gateway provider instance:
+
+- **baseURL** _string_
+
+  Use a different URL prefix for API calls. The default prefix is `https://ai-gateway.vercel.sh/v1/ai`.
+
+- **apiKey** _string_
+
+  API key that is being sent using the `Authorization` header. It defaults to
+  the `AI_GATEWAY_API_KEY` environment variable.
+
+- **headers** _Record&lt;string,string&gt;_
+
+  Custom headers to include in the requests.
+
+- **fetch** _(input: RequestInfo, init?: RequestInit) => Promise&lt;Response&gt;_
+
+  Custom [fetch](https://developer.mozilla.org/en-US/docs/Web/API/fetch) implementation.
+  Defaults to the global `fetch` function.
+  You can use it as a middleware to intercept requests,
+  or to provide a custom fetch implementation for e.g. testing.
+
+- **metadataCacheRefreshMillis** _number_
+
+  How frequently to refresh the metadata cache in milliseconds. Defaults to 5 minutes (300,000ms).
+
+## Authentication
+
+The Gateway provider supports two authentication methods:
+
+### API Key Authentication
+
+Set your API key via environment variable:
+
+```bash
+AI_GATEWAY_API_KEY=your_api_key_here
+```
+
+Or pass it directly to the provider:
+
+```ts
+import { createGateway } from 'ai';
+
+const gateway = createGateway({
+  apiKey: 'your_api_key_here',
+});
+```
+
+### OIDC Authentication (Vercel Deployments)
+
+When deployed to Vercel, the AI Gateway provider supports authenticating using [OIDC (OpenID Connect)
+tokens](https://vercel.com/docs/oidc) without API Keys.
+
+#### How OIDC Authentication Works
+
+1. **In Production/Preview Deployments**:
+
+   - OIDC authentication is automatically handled
+   - No manual configuration needed
+   - Tokens are automatically obtained and refreshed
+
+2. **In Local Development**:
+   - First, install and authenticate with the [Vercel CLI](https://vercel.com/docs/cli)
+   - Run `vercel env pull` to download your project's OIDC token locally
+   - For automatic token management:
+     - Use `vercel dev` to start your development server - this will handle token refreshing automatically
+   - For manual token management:
+     - If not using `vercel dev`, note that OIDC tokens expire after 12 hours
+     - You'll need to run `vercel env pull` again to refresh the token before it expires
+
+<Note>
+  If an API Key is present (either passed directly or via environment), it will
+  always be used, even if invalid.
+</Note>
+
+Read more about using OIDC tokens in the [Vercel AI Gateway docs](https://vercel.com/docs/ai-gateway#using-the-ai-gateway-with-a-vercel-oidc-token).
+
+## Language Models
+
+You can create language models using a provider instance. The first argument is the model ID in the format `creator/model-name`:
+
+```ts
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: 'openai/gpt-5',
+  prompt: 'Explain quantum computing in simple terms',
+});
+```
+
+AI Gateway language models can also be used in the `streamText`, `generateObject`, and `streamObject` functions (see [AI SDK Core](/docs/ai-sdk-core)).
+
+## Available Models
+
+The AI Gateway supports models from OpenAI, Anthropic, Google, Meta, xAI, Mistral, DeepSeek, Amazon Bedrock, Cohere, Perplexity, Alibaba, and other providers.
+
+For the complete list of available models, see the [AI Gateway documentation](https://vercel.com/docs/ai-gateway).
+
+## Dynamic Model Discovery
+
+You can discover available models programmatically:
+
+```ts
+import { gateway, generateText } from 'ai';
+
+const availableModels = await gateway.getAvailableModels();
+
+// List all available models
+availableModels.models.forEach((model) => {
+  console.log(`${model.id}: ${model.name}`);
+  if (model.description) {
+    console.log(`  Description: ${model.description}`);
+  }
+  if (model.pricing) {
+    console.log(`  Input: $${model.pricing.input}/token`);
+    console.log(`  Output: $${model.pricing.output}/token`);
+    if (model.pricing.cachedInputTokens) {
+      console.log(
+        `  Cached input (read): $${model.pricing.cachedInputTokens}/token`,
+      );
+    }
+    if (model.pricing.cacheCreationInputTokens) {
+      console.log(
+        `  Cache creation (write): $${model.pricing.cacheCreationInputTokens}/token`,
+      );
+    }
+  }
+});
+
+// Use any discovered model with plain string
+const { text } = await generateText({
+  model: availableModels.models[0].id, // e.g., 'openai/gpt-4o'
+  prompt: 'Hello world',
+});
+```
+
+## Examples
+
+### Basic Text Generation
+
+```ts
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: 'anthropic/claude-sonnet-4',
+  prompt: 'Write a haiku about programming',
+});
+
+console.log(text);
+```
+
+### Streaming
+
+```ts
+import { streamText } from 'ai';
+
+const { textStream } = await streamText({
+  model: 'openai/gpt-5',
+  prompt: 'Explain the benefits of serverless architecture',
+});
+
+for await (const textPart of textStream) {
+  process.stdout.write(textPart);
+}
+```
+
+### Tool Usage
+
+```ts
+import { generateText, tool } from 'ai';
+import { z } from 'zod';
+
+const { text } = await generateText({
+  model: 'xai/grok-4',
+  prompt: 'What is the weather like in San Francisco?',
+  tools: {
+    getWeather: tool({
+      description: 'Get the current weather for a location',
+      parameters: z.object({
+        location: z.string().describe('The location to get weather for'),
+      }),
+      execute: async ({ location }) => {
+        // Your weather API call here
+        return `It's sunny in ${location}`;
+      },
+    }),
+  },
+});
+```
+
+## Provider Options
+
+When using provider-specific options, use the actual provider name (e.g. `anthropic` not `gateway`) as the key:
+
+```ts
+// with model string
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: 'anthropic/claude-sonnet-4',
+  prompt: 'Explain quantum computing',
+  providerOptions: {
+    anthropic: {
+      thinking: { type: 'enabled', budgetTokens: 12000 },
+    },
+  },
+});
+```
+
+```ts
+// with provider instance
+import { gateway, generateText } from 'ai';
+
+const { text } = await generateText({
+  model: gateway('anthropic/claude-sonnet-4'),
+  prompt: 'Explain quantum computing',
+  providerOptions: {
+    anthropic: {
+      thinking: { type: 'enabled', budgetTokens: 12000 },
+    },
+  },
+});
+```
+
+The AI Gateway provider also accepts its own set of options. Refer to the [AI Gateway provider options documentation](https://vercel.com/docs/ai-gateway/provider-options).
+
+## Model Capabilities
+
+Model capabilities depend on the specific provider and model you're using. For detailed capability information, see:
+
+- [AI Gateway provider options](https://vercel.com/docs/ai-gateway/provider-options#available-providers) for an overview of available providers
+- Individual [AI SDK provider pages](/providers/ai-sdk-providers) for specific model capabilities and features
+
+---
+
 title: xAI Grok
 description: Learn how to use xAI Grok.
 
@@ -9199,7 +22235,7 @@ The [xAI Grok](https://x.ai) provider contains language model support for the [x
 The xAI Grok provider is available via the `@ai-sdk/xai` module. You can
 install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/xai" dark />
 </Tab>
@@ -9209,6 +22245,10 @@ install it with
 <Tab>
 <Snippet text="yarn add @ai-sdk/xai" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/xai" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -9256,7 +22296,7 @@ You can use the following optional settings to customize the xAI provider instan
 ## Language Models
 
 You can create [xAI models](https://console.x.ai) using a provider instance. The
-first argument is the model id, e.g. `grok-beta`.
+first argument is the model id, e.g. `grok-3`.
 
 ```ts
 const model = xai('grok-3');
@@ -9279,29 +22319,13 @@ const { text } = await generateText({
 xAI language models can also be used in the `streamText`, `generateObject`, and `streamObject` functions
 (see [AI SDK Core](/docs/ai-sdk-core)).
 
-### Chat Models
+### Provider Options
 
-xAI chat models also support some model specific settings that are not part of
-the [standard call settings](/docs/ai-sdk-core/settings). You can pass them as
-an options argument:
-
-```ts
-const model = xai('grok-3', {
-  user: 'test-user', // optional unique user identifier
-});
-```
-
-The following optional settings are available for xAI chat models:
-
-- **user** _string_
-
-  A unique identifier representing your end-user, which can help xAI to
-  monitor and detect abuse.
-
-xAI chat models also support some model specific provider options. You can pass them in `providerOptions` argument:
+xAI chat models support additional provider options that are not part of
+the [standard call settings](/docs/ai-sdk-core/settings). You can pass them in the `providerOptions` argument:
 
 ```ts
-const model = xai('grok-3');
+const model = xai('grok-3-mini');
 
 await generateText({
   model,
@@ -9315,24 +22339,298 @@ await generateText({
 
 The following optional provider options are available for xAI chat models:
 
-- **reasoningEffort** _'low' | 'medium' | 'high'_
+- **reasoningEffort** _'low' | 'high'_
 
-  Reasoning effort for reasoning models. Defaults to `medium`. If you use
-  `providerOptions` to set the `reasoningEffort` option, this
-  model setting will be ignored.
+  Reasoning effort for reasoning models. Only supported by `grok-3-mini` and `grok-3-mini-fast` models.
+
+## Live Search
+
+xAI models support Live Search functionality, allowing them to query real-time data from various sources and include it in responses with citations.
+
+### Basic Search
+
+To enable search, specify `searchParameters` with a search mode:
+
+```ts
+import { xai } from '@ai-sdk/xai';
+import { generateText } from 'ai';
+
+const { text, sources } = await generateText({
+  model: xai('grok-3-latest'),
+  prompt: 'What are the latest developments in AI?',
+  providerOptions: {
+    xai: {
+      searchParameters: {
+        mode: 'auto', // 'auto', 'on', or 'off'
+        returnCitations: true,
+        maxSearchResults: 5,
+      },
+    },
+  },
+});
+
+console.log(text);
+console.log('Sources:', sources);
+```
+
+### Search Parameters
+
+The following search parameters are available:
+
+- **mode** _'auto' | 'on' | 'off'_
+
+  Search mode preference:
+
+  - `'auto'` (default): Model decides whether to search
+  - `'on'`: Always enables search
+  - `'off'`: Disables search completely
+
+- **returnCitations** _boolean_
+
+  Whether to return citations in the response. Defaults to `true`.
+
+- **fromDate** _string_
+
+  Start date for search data in ISO8601 format (`YYYY-MM-DD`).
+
+- **toDate** _string_
+
+  End date for search data in ISO8601 format (`YYYY-MM-DD`).
+
+- **maxSearchResults** _number_
+
+  Maximum number of search results to consider. Defaults to 20, max 50.
+
+- **sources** _Array&lt;SearchSource&gt;_
+
+  Data sources to search from. Defaults to `["web", "x"]` if not specified.
+
+### Search Sources
+
+You can specify different types of data sources for search:
+
+#### Web Search
+
+```ts
+const result = await generateText({
+  model: xai('grok-3-latest'),
+  prompt: 'Best ski resorts in Switzerland',
+  providerOptions: {
+    xai: {
+      searchParameters: {
+        mode: 'on',
+        sources: [
+          {
+            type: 'web',
+            country: 'CH', // ISO alpha-2 country code
+            allowedWebsites: ['ski.com', 'snow-forecast.com'],
+            safeSearch: true,
+          },
+        ],
+      },
+    },
+  },
+});
+```
+
+#### Web source parameters
+
+- **country** _string_: ISO alpha-2 country code
+- **allowedWebsites** _string[]_: Max 5 allowed websites
+- **excludedWebsites** _string[]_: Max 5 excluded websites
+- **safeSearch** _boolean_: Enable safe search (default: true)
+
+#### X (Twitter) Search
+
+```ts
+const result = await generateText({
+  model: xai('grok-3-latest'),
+  prompt: 'Latest updates on Grok AI',
+  providerOptions: {
+    xai: {
+      searchParameters: {
+        mode: 'on',
+        sources: [
+          {
+            type: 'x',
+            xHandles: ['grok', 'xai'],
+          },
+        ],
+      },
+    },
+  },
+});
+```
+
+#### X source parameters
+
+- **xHandles** _string[]_: Array of X handles to search (without @ symbol)
+
+#### News Search
+
+```ts
+const result = await generateText({
+  model: xai('grok-3-latest'),
+  prompt: 'Recent tech industry news',
+  providerOptions: {
+    xai: {
+      searchParameters: {
+        mode: 'on',
+        sources: [
+          {
+            type: 'news',
+            country: 'US',
+            excludedWebsites: ['tabloid.com'],
+            safeSearch: true,
+          },
+        ],
+      },
+    },
+  },
+});
+```
+
+#### News source parameters
+
+- **country** _string_: ISO alpha-2 country code
+- **excludedWebsites** _string[]_: Max 5 excluded websites
+- **safeSearch** _boolean_: Enable safe search (default: true)
+
+#### RSS Feed Search
+
+```ts
+const result = await generateText({
+  model: xai('grok-3-latest'),
+  prompt: 'Latest status updates',
+  providerOptions: {
+    xai: {
+      searchParameters: {
+        mode: 'on',
+        sources: [
+          {
+            type: 'rss',
+            links: ['https://status.x.ai/feed.xml'],
+          },
+        ],
+      },
+    },
+  },
+});
+```
+
+#### RSS source parameters
+
+- **links** _string[]_: Array of RSS feed URLs (max 1 currently supported)
+
+### Multiple Sources
+
+You can combine multiple data sources in a single search:
+
+```ts
+const result = await generateText({
+  model: xai('grok-3-latest'),
+  prompt: 'Comprehensive overview of recent AI breakthroughs',
+  providerOptions: {
+    xai: {
+      searchParameters: {
+        mode: 'on',
+        returnCitations: true,
+        maxSearchResults: 15,
+        sources: [
+          {
+            type: 'web',
+            allowedWebsites: ['arxiv.org', 'openai.com'],
+          },
+          {
+            type: 'news',
+            country: 'US',
+          },
+          {
+            type: 'x',
+            xHandles: ['openai', 'deepmind'],
+          },
+        ],
+      },
+    },
+  },
+});
+```
+
+### Sources and Citations
+
+When search is enabled with `returnCitations: true`, the response includes sources that were used to generate the answer:
+
+```ts
+const { text, sources } = await generateText({
+  model: xai('grok-3-latest'),
+  prompt: 'What are the latest developments in AI?',
+  providerOptions: {
+    xai: {
+      searchParameters: {
+        mode: 'auto',
+        returnCitations: true,
+      },
+    },
+  },
+});
+
+// Access the sources used
+for (const source of sources) {
+  if (source.sourceType === 'url') {
+    console.log('Source:', source.url);
+  }
+}
+```
+
+### Streaming with Search
+
+Live Search works with streaming responses. Citations are included when the stream completes:
+
+```ts
+import { streamText } from 'ai';
+
+const result = streamText({
+  model: xai('grok-3-latest'),
+  prompt: 'What has happened in tech recently?',
+  providerOptions: {
+    xai: {
+      searchParameters: {
+        mode: 'auto',
+        returnCitations: true,
+      },
+    },
+  },
+});
+
+for await (const textPart of result.textStream) {
+  process.stdout.write(textPart);
+}
+
+console.log('Sources:', await result.sources);
+```
 
 ## Model Capabilities
 
-| Model                | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
-| -------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `grok-3`             | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `grok-3-fast`        | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `grok-3-mini`        | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `grok-3-mini-fast`   | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `grok-2-1212`        | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `grok-2-vision-1212` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `grok-beta`          | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `grok-vision-beta`   | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| Model                     | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      | Reasoning           |
+| ------------------------- | ------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `grok-code-fast-1`        | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `grok-4`                  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-3`                  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-3-latest`           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-3-fast`             | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-3-fast-latest`      | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-3-mini`             | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `grok-3-mini-latest`      | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `grok-3-mini-fast`        | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `grok-3-mini-fast-latest` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `grok-2`                  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-2-latest`           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-2-1212`             | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-2-vision`           | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-2-vision-latest`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-2-vision-1212`      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-beta`               | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `grok-vision-beta`        | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 
 <Note>
   The table above lists popular models. Please see the [xAI
@@ -9343,7 +22641,7 @@ The following optional provider options are available for xAI chat models:
 
 ## Image Models
 
-You can create xAI image models using the `.imageModel()` factory method. For more on image generation with the AI SDK see [generateImage()](/docs/reference/ai-sdk-core/generate-image).
+You can create xAI image models using the `.image()` factory method. For more on image generation with the AI SDK see [generateImage()](/docs/reference/ai-sdk-core/generate-image).
 
 ```ts
 import { xai } from '@ai-sdk/xai';
@@ -9369,10 +22667,9 @@ import { xai } from '@ai-sdk/xai';
 import { experimental_generateImage as generateImage } from 'ai';
 
 const { images } = await generateImage({
-  model: xai.image('grok-2-image', {
-    maxImagesPerCall: 5, // Default is 10
-  }),
+  model: xai.image('grok-2-image'),
   prompt: 'A futuristic cityscape at sunset',
+  maxImagesPerCall: 5, // Default is 10
   n: 2, // Generate 2 images
 });
 ```
@@ -9392,7 +22689,7 @@ description: Learn how to use Vercel's v0 models with the AI SDK.
 
 # Vercel Provider
 
-The [Vercel](https://vercel.com) provider gives you access to the [v0 API](https://vercel.com/docs/v0/api), designed for building modern web applications. The `v0-1.0-md` model supports text and image inputs and provides fast streaming responses.
+The [Vercel](https://vercel.com) provider gives you access to the [v0 API](https://vercel.com/docs/v0/api), designed for building modern web applications. The v0 models support text and image inputs and provide fast streaming responses.
 
 You can create your Vercel API key at [v0.dev](https://v0.dev/chat/settings/keys).
 
@@ -9408,14 +22705,13 @@ You can create your Vercel API key at [v0.dev](https://v0.dev/chat/settings/keys
 - **Framework aware completions**: Evaluated on modern stacks like Next.js and Vercel
 - **Auto-fix**: Identifies and corrects common coding issues during generation
 - **Quick edit**: Streams inline edits as they're available
-- **OpenAI compatible**: Can be used with any tool or SDK that supports OpenAI's API format
 - **Multimodal**: Supports both text and image inputs
 
 ## Setup
 
 The Vercel provider is available via the `@ai-sdk/vercel` module. You can install it with:
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/vercel" dark />
 </Tab>
@@ -9425,6 +22721,10 @@ The Vercel provider is available via the `@ai-sdk/vercel` module. You can instal
 <Tab>
 <Snippet text="yarn add @ai-sdk/vercel" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/vercel" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -9483,30 +22783,21 @@ const { text } = await generateText({
 
 Vercel language models can also be used in the `streamText` function (see [AI SDK Core](/docs/ai-sdk-core)).
 
-## Example with AI SDK
-
-```ts
-import { generateText } from 'ai';
-import { createVercel } from '@ai-sdk/vercel';
-
-const vercel = createVercel({
-  baseURL: 'https://api.v0.dev/v1',
-  apiKey: process.env.VERCEL_API_KEY,
-});
-
-const { text } = await generateText({
-  model: vercel('v0-1.0-md'),
-  prompt: 'Create a Next.js AI chatbot with authentication',
-});
-```
-
 ## Models
 
-### v0-1.0-md
+### v0-1.5-md
 
-The `v0-1.0-md` model is the default model served by the v0 API.
+The `v0-1.5-md` model is for everyday tasks and UI generation.
 
-Capabilities:
+### v0-1.5-lg
+
+The `v0-1.5-lg` model is for advanced thinking or reasoning.
+
+### v0-1.0-md (legacy)
+
+The `v0-1.0-md` model is the legacy model served by the v0 API.
+
+All v0 models have the following capabilities:
 
 - Supports text and image inputs (multimodal)
 - Supports function/tool calls
@@ -9517,6 +22808,8 @@ Capabilities:
 
 | Model       | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
 | ----------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `v0-1.5-md` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `v0-1.5-lg` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `v0-1.0-md` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 
 ---
@@ -9534,7 +22827,7 @@ The [OpenAI](https://openai.com/) provider contains language model support for t
 
 The OpenAI provider is available in the `@ai-sdk/openai` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/openai" dark />
 </Tab>
@@ -9544,6 +22837,10 @@ The OpenAI provider is available in the `@ai-sdk/openai` module. You can install
 <Tab>
 <Snippet text="yarn add @ai-sdk/openai" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/openai" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -9561,7 +22858,9 @@ import { createOpenAI } from '@ai-sdk/openai';
 
 const openai = createOpenAI({
   // custom settings, e.g.
-  compatibility: 'strict', // strict mode, enable when using the OpenAI API
+  headers: {
+    'header-name': 'header-value',
+  },
 });
 ```
 
@@ -9601,32 +22900,30 @@ You can use the following optional settings to customize the OpenAI provider ins
   You can use it as a middleware to intercept requests,
   or to provide a custom fetch implementation for e.g. testing.
 
-- **compatibility** _"strict" | "compatible"_
-
-  OpenAI compatibility mode. Should be set to `strict` when using the OpenAI API,
-  and `compatible` when using 3rd party providers. In `compatible` mode, newer
-  information such as `streamOptions` are not being sent, resulting in `NaN`
-  token usage. Defaults to 'compatible'.
-
 ## Language Models
 
 The OpenAI provider instance is a function that you can invoke to create a language model:
 
 ```ts
-const model = openai('gpt-4-turbo');
+const model = openai('gpt-5');
 ```
 
 It automatically selects the correct API based on the model id.
 You can also pass additional settings in the second argument:
 
 ```ts
-const model = openai('gpt-4-turbo', {
+const model = openai('gpt-5', {
   // additional settings
 });
 ```
 
 The available options depend on the API that's automatically chosen for the model (see below).
-If you want to explicitly select a specific model API, you can use `.chat` or `.completion`.
+If you want to explicitly select a specific model API, you can use `.responses`, `.chat`, or `.completion`.
+
+<Note>
+  Since AI SDK 5, the OpenAI responses API is called by default (unless you
+  specify e.g. 'openai.chat')
+</Note>
 
 ### Example
 
@@ -9637,13 +22934,427 @@ import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 
 const { text } = await generateText({
-  model: openai('gpt-4-turbo'),
+  model: openai('gpt-5'),
   prompt: 'Write a vegetarian lasagna recipe for 4 people.',
 });
 ```
 
 OpenAI language models can also be used in the `streamText`, `generateObject`, and `streamObject` functions
 (see [AI SDK Core](/docs/ai-sdk-core)).
+
+### Responses Models
+
+You can use the OpenAI responses API with the `openai(modelId)` or `openai.responses(modelId)` factory methods. It is the default API that is used by the OpenAI provider (since AI SDK 5).
+
+```ts
+const model = openai('gpt-5');
+```
+
+Further configuration can be done using OpenAI provider options.
+You can validate the provider options using the `OpenAIResponsesProviderOptions` type.
+
+```ts
+import { openai, OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: openai('gpt-5'), // or openai.responses('gpt-5')
+  providerOptions: {
+    openai: {
+      parallelToolCalls: false,
+      store: false,
+      user: 'user_123',
+      // ...
+    } satisfies OpenAIResponsesProviderOptions,
+  },
+  // ...
+});
+```
+
+The following provider options are available:
+
+- **parallelToolCalls** _boolean_
+  Whether to use parallel tool calls. Defaults to `true`.
+
+- **store** _boolean_
+
+  Whether to store the generation. Defaults to `true`.
+
+  When using reasoning models (o1, o3, o4-mini) with multi-step tool calls and `store: false`,
+  include `['reasoning.encrypted_content']` in the `include` option to ensure reasoning
+  content is available across conversation steps.
+
+- **metadata** _Record&lt;string, string&gt;_
+  Additional metadata to store with the generation.
+
+- **previousResponseId** _string_
+  The ID of the previous response. You can use it to continue a conversation. Defaults to `undefined`.
+
+- **instructions** _string_
+  Instructions for the model.
+  They can be used to change the system or developer message when continuing a conversation using the `previousResponseId` option.
+  Defaults to `undefined`.
+
+- **user** _string_
+  A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Defaults to `undefined`.
+
+- **reasoningEffort** _'minimal' | 'low' | 'medium' | 'high'_
+  Reasoning effort for reasoning models. Defaults to `medium`. If you use `providerOptions` to set the `reasoningEffort` option, this model setting will be ignored.
+
+- **reasoningSummary** _'auto' | 'detailed'_
+  Controls whether the model returns its reasoning process. Set to `'auto'` for a condensed summary, `'detailed'` for more comprehensive reasoning. Defaults to `undefined` (no reasoning summaries). When enabled, reasoning summaries appear in the stream as events with type `'reasoning'` and in non-streaming responses within the `reasoning` field.
+
+- **strictJsonSchema** _boolean_
+  Whether to use strict JSON schema validation. Defaults to `false`.
+
+- **serviceTier** _'auto' | 'flex' | 'priority'_
+  Service tier for the request. Set to 'flex' for 50% cheaper processing
+  at the cost of increased latency (available for o3, o4-mini, and gpt-5 models).
+  Set to 'priority' for faster processing with Enterprise access (available for gpt-4, gpt-5, gpt-5-mini, o3, o4-mini; gpt-5-nano is not supported).
+  Defaults to 'auto'.
+
+- **textVerbosity** _'low' | 'medium' | 'high'_
+  Controls the verbosity of the model's response. Lower values result in more concise responses,
+  while higher values result in more verbose responses. Defaults to `'medium'`.
+
+- **include** _Array&lt;string&gt;_
+  Specifies additional content to include in the response. Supported values:
+  `['reasoning.encrypted_content']` for accessing reasoning content across conversation steps,
+  and `['file_search_call.results']` for including file search results in responses.
+  Defaults to `undefined`.
+
+- **promptCacheKey** _string_
+  A cache key for manual prompt caching control. Used by OpenAI to cache responses for similar requests to optimize your cache hit rates.
+
+- **safetyIdentifier** _string_
+  A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies. The IDs should be a string that uniquely identifies each user.
+
+The OpenAI responses provider also returns provider-specific metadata:
+
+```ts
+const { providerMetadata } = await generateText({
+  model: openai.responses('gpt-5'),
+});
+
+const openaiMetadata = providerMetadata?.openai;
+```
+
+The following OpenAI-specific metadata is returned:
+
+- **responseId** _string_
+  The ID of the response. Can be used to continue a conversation.
+
+- **cachedPromptTokens** _number_
+  The number of prompt tokens that were a cache hit.
+
+- **reasoningTokens** _number_
+  The number of reasoning tokens that the model generated.
+
+#### Web Search
+
+The OpenAI responses API supports web search through the `openai.tools.webSearch` tool.
+
+```ts
+const result = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'What happened in San Francisco last week?',
+  tools: {
+    web_search: openai.tools.webSearch({
+      // optional configuration:
+      searchContextSize: 'high',
+      userLocation: {
+        type: 'approximate',
+        city: 'San Francisco',
+        region: 'California',
+      },
+    }),
+  },
+  // Force web search tool (optional):
+  toolChoice: { type: 'tool', toolName: 'web_search' },
+});
+
+// URL sources
+const sources = result.sources;
+```
+
+#### Reasoning Output
+
+For reasoning models like `gpt-5`, you can enable reasoning summaries to see the model's thought process. Different models support different summarizers—for example, `o4-mini` supports detailed summaries. Set `reasoningSummary: "auto"` to automatically receive the richest level available.
+
+```ts highlight="8-9,16"
+import { openai } from '@ai-sdk/openai';
+import { streamText } from 'ai';
+
+const result = streamText({
+  model: openai('gpt-5'),
+  prompt: 'Tell me about the Mission burrito debate in San Francisco.',
+  providerOptions: {
+    openai: {
+      reasoningSummary: 'detailed', // 'auto' for condensed or 'detailed' for comprehensive
+    },
+  },
+});
+
+for await (const part of result.fullStream) {
+  if (part.type === 'reasoning') {
+    console.log(`Reasoning: ${part.textDelta}`);
+  } else if (part.type === 'text-delta') {
+    process.stdout.write(part.textDelta);
+  }
+}
+```
+
+For non-streaming calls with `generateText`, the reasoning summaries are available in the `reasoning` field of the response:
+
+```ts highlight="8-9,13"
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'Tell me about the Mission burrito debate in San Francisco.',
+  providerOptions: {
+    openai: {
+      reasoningSummary: 'auto',
+    },
+  },
+});
+console.log('Reasoning:', result.reasoning);
+```
+
+Learn more about reasoning summaries in the [OpenAI documentation](https://platform.openai.com/docs/guides/reasoning?api-mode=responses#reasoning-summaries).
+
+#### Verbosity Control
+
+You can control the length and detail of model responses using the `textVerbosity` parameter:
+
+```ts
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: openai('gpt-5-mini'),
+  prompt: 'Write a poem about a boy and his first pet dog.',
+  providerOptions: {
+    openai: {
+      textVerbosity: 'low', // 'low' for concise, 'medium' (default), or 'high' for verbose
+    },
+  },
+});
+```
+
+The `textVerbosity` parameter scales output length without changing the underlying prompt:
+
+- `'low'`: Produces terse, minimal responses
+- `'medium'`: Balanced detail (default)
+- `'high'`: Verbose responses with comprehensive detail
+
+#### File Search
+
+The OpenAI responses API supports file search through the `openai.tools.fileSearch` tool.
+
+You can force the use of the file search tool by setting the `toolChoice` parameter to `{ type: 'tool', toolName: 'file_search' }`.
+
+```ts
+const result = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'What does the document say about user authentication?',
+  tools: {
+    file_search: openai.tools.fileSearch({
+      // optional configuration:
+      vectorStoreIds: ['vs_123', 'vs_456'],
+      maxNumResults: 10,
+      ranking: {
+        ranker: 'auto',
+      },
+      filters: {
+        type: 'and',
+        filters: [
+          { key: 'author', type: 'eq', value: 'John Doe' },
+          { key: 'date', type: 'gte', value: '2023-01-01' },
+        ],
+      },
+    }),
+  },
+  // Force file search tool:
+  toolChoice: { type: 'tool', toolName: 'file_search' },
+});
+```
+
+<Note>
+  The tool must be named `file_search` when using OpenAI's file search
+  functionality. This name is required by OpenAI's API specification and cannot
+  be customized.
+</Note>
+
+#### Code Interpreter
+
+The OpenAI responses API supports the code interpreter tool through the `openai.tools.codeInterpreter` tool. This allows models to write and execute Python code.
+
+```ts
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: openai('gpt-5'),
+  prompt: 'Write and run Python code to calculate the factorial of 10',
+  tools: {
+    code_interpreter: openai.tools.codeInterpreter({
+      // optional configuration:
+      container: {
+        fileIds: ['file-123', 'file-456'], // optional file IDs to make available
+      },
+    }),
+  },
+});
+```
+
+The code interpreter tool can be configured with:
+
+- **container**: Either a container ID string or an object with `fileIds` to specify uploaded files that should be available to the code interpreter
+
+<Note>
+  The tool must be named `code_interpreter` when using OpenAI's code interpreter
+  functionality. This name is required by OpenAI's API specification and cannot
+  be customized.
+</Note>
+
+#### Image Support
+
+The OpenAI Responses API supports Image inputs for appropriate models.
+You can pass Image files as part of the message content using the 'image' type:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-5'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: 'Please describe the image.',
+        },
+        {
+          type: 'image',
+          image: fs.readFileSync('./data/image.png'),
+        },
+      ],
+    },
+  ],
+});
+```
+
+The model will have access to the image and will respond to questions about it.
+The image should be passed using the `image` field.
+
+You can also pass a file-id from the OpenAI Files API.
+
+```ts
+{
+  type: 'image',
+  image: 'file-8EFBcWHsQxZV7YGezBC1fq'
+}
+```
+
+You can also pass the URL of an image.
+
+```ts
+{
+  type: 'image',
+  image: 'https://sample.edu/image.png',
+}
+```
+
+#### PDF support
+
+The OpenAI Responses API supports reading PDF files.
+You can pass PDF files as part of the message content using the `file` type:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-5'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: 'What is an embedding model?',
+        },
+        {
+          type: 'file',
+          data: fs.readFileSync('./data/ai.pdf'),
+          mediaType: 'application/pdf',
+          filename: 'ai.pdf', // optional
+        },
+      ],
+    },
+  ],
+});
+```
+
+You can also pass a file-id from the OpenAI Files API.
+
+```ts
+{
+  type: 'file',
+  data: 'file-8EFBcWHsQxZV7YGezBC1fq',
+  mediaType: 'application/pdf',
+}
+```
+
+You can also pass the URL of a pdf.
+
+```ts
+{
+  type: 'file',
+  data: 'https://sample.edu/example.pdf',
+  mediaType: 'application/pdf',
+  filename: 'ai.pdf', // optional
+}
+```
+
+The model will have access to the contents of the PDF file and
+respond to questions about it.
+The PDF file should be passed using the `data` field,
+and the `mediaType` should be set to `'application/pdf'`.
+
+#### Structured Outputs
+
+The OpenAI Responses API supports structured outputs. You can enforce structured outputs using `generateObject` or `streamObject`, which expose a `schema` option. Additionally, you can pass a Zod or JSON Schema object to the `experimental_output` option when using `generateText` or `streamText`.
+
+```ts
+// Using generateObject
+const result = await generateObject({
+  model: openai('gpt-4.1'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(
+        z.object({
+          name: z.string(),
+          amount: z.string(),
+        }),
+      ),
+      steps: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a lasagna recipe.',
+});
+
+// Using generateText
+const result = await generateText({
+  model: openai('gpt-4.1'),
+  prompt: 'How do I make a pizza?',
+  experimental_output: Output.object({
+    schema: z.object({
+      ingredients: z.array(z.string()),
+      steps: z.array(z.string()),
+    }),
+  }),
+});
+```
 
 ### Chat Models
 
@@ -9652,23 +23363,30 @@ The first argument is the model id, e.g. `gpt-4`.
 The OpenAI chat models support tool calls and some have multi-modal capabilities.
 
 ```ts
-const model = openai.chat('gpt-3.5-turbo');
+const model = openai.chat('gpt-5');
 ```
 
-OpenAI chat models support also some model specific settings that are not part of the [standard call settings](/docs/ai-sdk-core/settings).
-You can pass them as an options argument:
+OpenAI chat models support also some model specific provider options that are not part of the [standard call settings](/docs/ai-sdk-core/settings).
+You can pass them in the `providerOptions` argument:
 
 ```ts
-const model = openai.chat('gpt-3.5-turbo', {
-  logitBias: {
-    // optional likelihood for specific tokens
-    '50256': -100,
+const model = openai.chat('gpt-5');
+
+await generateText({
+  model,
+  providerOptions: {
+    openai: {
+      logitBias: {
+        // optional likelihood for specific tokens
+        '50256': -100,
+      },
+      user: 'test-user', // optional unique user identifier
+    },
   },
-  user: 'test-user', // optional unique user identifier
 });
 ```
 
-The following optional settings are available for OpenAI chat models:
+The following optional provider options are available for OpenAI chat models:
 
 - **logitBias** _Record&lt;number, number&gt;_
 
@@ -9700,51 +23418,68 @@ The following optional settings are available for OpenAI chat models:
 
   Whether to enable parallel function calling during tool use. Defaults to `true`.
 
-- **useLegacyFunctionCalls** _boolean_
-
-  Whether to use legacy function calling. Defaults to false.
-
-  Required by some open source inference engines which do not support the `tools` API. May also
-  provide a workaround for `parallelToolCalls` resulting in the provider buffering tool calls,
-  which causes `streamObject` to be non-streaming.
-
-  Prefer setting `parallelToolCalls: false` over this option.
-
-- **structuredOutputs** _boolean_
-
-  Whether to use [structured outputs](#structured-outputs).
-  Defaults to `false` for normal models, and `true` for reasoning models.
-
-  When enabled, tool calls and object generation will be strict and follow the provided schema.
-
 - **user** _string_
 
   A unique identifier representing your end-user, which can help OpenAI to
   monitor and detect abuse. [Learn more](https://platform.openai.com/docs/guides/safety-best-practices/end-user-ids).
 
-- **downloadImages** _boolean_
-
-  Automatically download images and pass the image as data to the model.
-  OpenAI supports image URLs for public models, so this is only needed for
-  private models or when the images are not publicly accessible.
-  Defaults to `false`.
-
-- **simulateStreaming** _boolean_
-
-  Simulates streaming by using a normal generate call and returning it as a stream.
-  Enable this if the model that you are using does not support streaming.
-  Defaults to `false`.
-
-- **reasoningEffort** _'low' | 'medium' | 'high'_
+- **reasoningEffort** _'minimal' | 'low' | 'medium' | 'high'_
 
   Reasoning effort for reasoning models. Defaults to `medium`. If you use
   `providerOptions` to set the `reasoningEffort` option, this
   model setting will be ignored.
 
+- **structuredOutputs** _boolean_
+
+  Whether to use structured outputs.
+  Defaults to `true`.
+
+  When enabled, tool calls and object generation will be strict and follow the provided schema.
+
+- **maxCompletionTokens** _number_
+
+  Maximum number of completion tokens to generate. Useful for reasoning models.
+
+- **store** _boolean_
+
+  Whether to enable persistence in Responses API.
+
+- **metadata** _Record&lt;string, string&gt;_
+
+  Metadata to associate with the request.
+
+- **prediction** _Record&lt;string, any&gt;_
+
+  Parameters for prediction mode.
+
+- **serviceTier** _'auto' | 'flex'_
+
+  Service tier for the request. Set to 'flex' for 50% cheaper processing
+  at the cost of increased latency. Only available for o3, o4-mini, and gpt-5 models.
+  Defaults to 'auto'.
+
+- **strictJsonSchema** _boolean_
+
+  Whether to use strict JSON schema validation.
+  Defaults to `false`.
+
+- **textVerbosity** _'low' | 'medium' | 'high'_
+
+  Controls the verbosity of the model's responses. Lower values will result in more concise responses, while higher values will result in more verbose responses.
+
+- **promptCacheKey** _string_
+
+  A cache key for manual prompt caching control. Used by OpenAI to cache responses for similar requests to optimize your cache hit rates.
+
+- **safetyIdentifier** _string_
+
+  A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies. The IDs should be a string that uniquely identifies each user.
+
 #### Reasoning
 
 OpenAI has introduced the `o1`,`o3`, and `o4` series of [reasoning models](https://platform.openai.com/docs/guides/reasoning).
-Currently, `o4-mini`, `o3`, `o3-mini`, `o1`, `o1-mini`, and `o1-preview` are available.
+Currently, `o4-mini`, `o3`, `o3-mini`, and `o1` are available via both the chat and responses APIs. The
+models `codex-mini-latest` and `computer-use-preview` are available only via the [responses API](#responses-models).
 
 Reasoning models currently only generate text, have several limitations, and are only supported using `generateText` and `streamText`.
 
@@ -9761,7 +23496,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 
 const { text, usage, providerMetadata } = await generateText({
-  model: openai('o3-mini'),
+  model: openai.chat('gpt-5'),
   prompt: 'Invent a new holiday and describe its traditions.',
   providerOptions: {
     openai: {
@@ -9779,28 +23514,24 @@ console.log('Usage:', {
 
 <Note>
   System messages are automatically converted to OpenAI developer messages for
-  reasoning models when supported. For models that do not support developer
-  messages, such as `o1-preview`, system messages are removed and a warning is
-  added.
+  reasoning models when supported.
 </Note>
 
 <Note>
-  Reasoning models like `o1-mini` and `o1-preview` require additional runtime
-  inference to complete their reasoning phase before generating a response. This
-  introduces longer latency compared to other models, with `o1-preview`
-  exhibiting significantly more inference time than `o1-mini`.
+  Reasoning models require additional runtime inference to complete their
+  reasoning phase before generating a response. This introduces longer latency
+  compared to other models.
 </Note>
 
 <Note>
-  `maxTokens` is automatically mapped to `max_completion_tokens` for reasoning
-  models.
+  `maxOutputTokens` is automatically mapped to `max_completion_tokens` for
+  reasoning models.
 </Note>
 
 #### Structured Outputs
 
-You can enable [OpenAI structured outputs](https://openai.com/index/introducing-structured-outputs-in-the-api/) by setting the `structuredOutputs` option to `true`.
-Structured outputs are a form of grammar-guided generation.
-The JSON schema is used as a grammar and the outputs will always conform to the schema.
+Structured outputs are enabled by default.
+You can disable them by setting the `structuredOutputs` option to `false`.
 
 ```ts highlight="7"
 import { openai } from '@ai-sdk/openai';
@@ -9808,9 +23539,12 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 
 const result = await generateObject({
-  model: openai('gpt-4o-2024-08-06', {
-    structuredOutputs: true,
-  }),
+  model: openai.chat('gpt-4o-2024-08-06'),
+  providerOptions: {
+    openai: {
+      structuredOutputs: false,
+    },
+  },
   schemaName: 'recipe',
   schemaDescription: 'A recipe for lasagna.',
   schema: z.object({
@@ -9840,6 +23574,70 @@ You need to change Zod `.nullish()` and `.optional()` to `.nullable()`.
 
 </Note>
 
+#### Logprobs
+
+OpenAI provides logprobs information for completion/chat models.
+You can access it in the `providerMetadata` object.
+
+```ts highlight="11"
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: openai.chat('gpt-5'),
+  prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+  providerOptions: {
+    openai: {
+      // this can also be a number,
+      // refer to logprobs provider options section for more
+      logprobs: true,
+    },
+  },
+});
+
+const openaiMetadata = (await result.providerMetadata)?.openai;
+
+const logprobs = openaiMetadata?.logprobs;
+```
+
+#### Image Support
+
+The OpenAI Chat API supports Image inputs for appropriate models.
+You can pass Image files as part of the message content using the 'image' type:
+
+```ts
+const result = await generateText({
+  model: openai.chat('gpt-5'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: 'Please describe the image.',
+        },
+        {
+          type: 'image',
+          image: fs.readFileSync('./data/image.png'),
+        },
+      ],
+    },
+  ],
+});
+```
+
+The model will have access to the image and will respond to questions about it.
+The image should be passed using the `image` field.
+
+You can also pass the URL of an image.
+
+```ts
+{
+  type: 'image',
+  image: 'https://sample.edu/image.png',
+}
+```
+
 #### PDF support
 
 The OpenAI Chat API supports reading PDF files.
@@ -9847,7 +23645,7 @@ You can pass PDF files as part of the message content using the `file` type:
 
 ```ts
 const result = await generateText({
-  model: openai('gpt-4o'),
+  model: openai.chat('gpt-5'),
   messages: [
     {
       role: 'user',
@@ -9859,7 +23657,7 @@ const result = await generateText({
         {
           type: 'file',
           data: fs.readFileSync('./data/ai.pdf'),
-          mimeType: 'application/pdf',
+          mediaType: 'application/pdf',
           filename: 'ai.pdf', // optional
         },
       ],
@@ -9871,7 +23669,28 @@ const result = await generateText({
 The model will have access to the contents of the PDF file and
 respond to questions about it.
 The PDF file should be passed using the `data` field,
-and the `mimeType` should be set to `'application/pdf'`.
+and the `mediaType` should be set to `'application/pdf'`.
+
+You can also pass a file-id from the OpenAI Files API.
+
+```ts
+{
+  type: 'file',
+  data: 'file-8EFBcWHsQxZV7YGezBC1fq',
+  mediaType: 'application/pdf',
+}
+```
+
+You can also pass the URL of a PDF.
+
+```ts
+{
+  type: 'file',
+  data: 'https://sample.edu/example.pdf',
+  mediaType: 'application/pdf',
+  filename: 'ai.pdf', // optional
+}
+```
 
 #### Predicted Outputs
 
@@ -9881,7 +23700,7 @@ You can enable predicted outputs by adding the `prediction` option to the `provi
 
 ```ts highlight="15-18"
 const result = streamText({
-  model: openai('gpt-4o'),
+  model: openai.chat('gpt-5'),
   messages: [
     {
       role: 'user',
@@ -9925,7 +23744,7 @@ You can use the `openai` provider option to set the [image input detail](https:/
 
 ```ts highlight="13-16"
 const result = await generateText({
-  model: openai('gpt-4o'),
+  model: openai.chat('gpt-5'),
   messages: [
     {
       role: 'user',
@@ -9949,7 +23768,7 @@ const result = await generateText({
 
 <Note type="warning">
   Because the `UIMessage` type (used by AI SDK UI hooks like `useChat`) does not
-  support the `providerOptions` property, you can use `convertToCoreMessages`
+  support the `providerOptions` property, you can use `convertToModelMessages`
   first before passing the messages to functions like `generateText` or
   `streamText`. For more details on `providerOptions` usage, see
   [here](/docs/foundations/prompts#provider-options).
@@ -9968,7 +23787,7 @@ import 'dotenv/config';
 
 async function main() {
   const { text, usage } = await generateText({
-    model: openai('gpt-4o-mini'),
+    model: openai.chat('gpt-4o-mini'),
     prompt: 'Who worked on the original macintosh?',
     providerOptions: {
       openai: {
@@ -9991,7 +23810,7 @@ main().catch(console.error);
 #### Prompt Caching
 
 OpenAI has introduced [Prompt Caching](https://platform.openai.com/docs/guides/prompt-caching) for supported models
-including `gpt-4o`, `gpt-4o-mini`, `o1-preview`, and `o1-mini`.
+including `gpt-4o` and `gpt-4o-mini`.
 
 - Prompt caching is automatically enabled for these models, when the prompt is 1024 tokens or longer. It does
   not need to be explicitly enabled.
@@ -10005,8 +23824,30 @@ import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 
 const { text, usage, providerMetadata } = await generateText({
-  model: openai('gpt-4o-mini'),
+  model: openai.chat('gpt-4o-mini'),
   prompt: `A 1024-token or longer prompt...`,
+});
+
+console.log(`usage:`, {
+  ...usage,
+  cachedPromptTokens: providerMetadata?.openai?.cachedPromptTokens,
+});
+```
+
+To improve cache hit rates, you can manually control caching using the `promptCacheKey` option:
+
+```ts highlight="7-11"
+import { openai } from '@ai-sdk/openai';
+import { generateText } from 'ai';
+
+const { text, usage, providerMetadata } = await generateText({
+  model: openai.chat('gpt-5'),
+  prompt: `A 1024-token or longer prompt...`,
+  providerOptions: {
+    openai: {
+      promptCacheKey: 'my-custom-cache-key-123',
+    },
+  },
 });
 
 console.log(`usage:`, {
@@ -10029,7 +23870,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
 
 const result = await generateText({
-  model: openai('gpt-4o-audio-preview'),
+  model: openai.chat('gpt-4o-audio-preview'),
   messages: [
     {
       role: 'user',
@@ -10037,238 +23878,12 @@ const result = await generateText({
         { type: 'text', text: 'What is the audio saying?' },
         {
           type: 'file',
-          mimeType: 'audio/mpeg',
+          mediaType: 'audio/mpeg',
           data: fs.readFileSync('./data/galileo.mp3'),
         },
       ],
     },
   ],
-});
-```
-
-### Responses Models
-
-You can use the OpenAI responses API with the `openai.responses(modelId)` factory method.
-
-```ts
-const model = openai.responses('gpt-4o-mini');
-```
-
-Further configuration can be done using OpenAI provider options.
-You can validate the provider options using the `OpenAIResponsesProviderOptions` type.
-
-```ts
-import { openai, OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { generateText } from 'ai';
-
-const result = await generateText({
-  model: openai.responses('gpt-4o-mini'),
-  providerOptions: {
-    openai: {
-      parallelToolCalls: false,
-      store: false,
-      user: 'user_123',
-      // ...
-    } satisfies OpenAIResponsesProviderOptions,
-  },
-  // ...
-});
-```
-
-The following provider options are available:
-
-- **parallelToolCalls** _boolean_
-  Whether to use parallel tool calls. Defaults to `true`.
-
-- **store** _boolean_
-  Whether to store the generation. Defaults to `true`.
-
-- **metadata** _Record&lt;string, string&gt;_
-  Additional metadata to store with the generation.
-
-- **previousResponseId** _string_
-  The ID of the previous response. You can use it to continue a conversation. Defaults to `undefined`.
-
-- **instructions** _string_
-  Instructions for the model.
-  They can be used to change the system or developer message when continuing a conversation using the `previousResponseId` option.
-  Defaults to `undefined`.
-
-- **user** _string_
-  A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. Defaults to `undefined`.
-
-- **reasoningEffort** _'low' | 'medium' | 'high'_
-  Reasoning effort for reasoning models. Defaults to `medium`. If you use `providerOptions` to set the `reasoningEffort` option, this model setting will be ignored.
-
-- **reasoningSummary** _'auto' | 'detailed'_
-  Controls whether the model returns its reasoning process. Set to `'auto'` for a condensed summary, `'detailed'` for more comprehensive reasoning. Defaults to `undefined` (no reasoning summaries). When enabled, reasoning summaries appear in the stream as events with type `'reasoning'` and in non-streaming responses within the `reasoning` field.
-
-- **strictSchemas** _boolean_
-  Whether to use strict JSON schemas in tools and when generating JSON outputs. Defaults to `true`.
-
-The OpenAI responses provider also returns provider-specific metadata:
-
-```ts
-const { providerMetadata } = await generateText({
-  model: openai.responses('gpt-4o-mini'),
-});
-
-const openaiMetadata = providerMetadata?.openai;
-```
-
-The following OpenAI-specific metadata is returned:
-
-- **responseId** _string_
-  The ID of the response. Can be used to continue a conversation.
-
-- **cachedPromptTokens** _number_
-  The number of prompt tokens that were a cache hit.
-
-- **reasoningTokens** _number_
-  The number of reasoning tokens that the model generated.
-
-#### Web Search
-
-The OpenAI responses provider supports web search through the `openai.tools.webSearchPreview` tool.
-
-You can force the use of the web search tool by setting the `toolChoice` parameter to `{ type: 'tool', toolName: 'web_search_preview' }`.
-
-```ts
-const result = await generateText({
-  model: openai.responses('gpt-4o-mini'),
-  prompt: 'What happened in San Francisco last week?',
-  tools: {
-    web_search_preview: openai.tools.webSearchPreview({
-      // optional configuration:
-      searchContextSize: 'high',
-      userLocation: {
-        type: 'approximate',
-        city: 'San Francisco',
-        region: 'California',
-      },
-    }),
-  },
-  // Force web search tool:
-  toolChoice: { type: 'tool', toolName: 'web_search_preview' },
-});
-
-// URL sources
-const sources = result.sources;
-```
-
-#### Reasoning Summaries
-
-For reasoning models like `o3-mini`, `o3`, and `o4-mini`, you can enable reasoning summaries to see the model's thought process. Different models support different summarizers—for example, `o4-mini` supports detailed summaries. Set `reasoningSummary: "auto"` to automatically receive the richest level available.
-
-```ts highlight="8-9,16"
-import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
-
-const result = streamText({
-  model: openai.responses('o4-mini'),
-  prompt: 'Tell me about the Mission burrito debate in San Francisco.',
-  providerOptions: {
-    openai: {
-      reasoningSummary: 'detailed', // 'auto' for condensed or 'detailed' for comprehensive
-    },
-  },
-});
-
-for await (const part of result.fullStream) {
-  if (part.type === 'reasoning') {
-    console.log(`Reasoning: ${part.textDelta}`);
-  } else if (part.type === 'text-delta') {
-    process.stdout.write(part.textDelta);
-  }
-}
-```
-
-For non-streaming calls with `generateText`, the reasoning summaries are available in the `reasoning` field of the response:
-
-```ts highlight="8-9,13"
-import { openai } from '@ai-sdk/openai';
-import { generateText } from 'ai';
-
-const result = await generateText({
-  model: openai.responses('o3-mini'),
-  prompt: 'Tell me about the Mission burrito debate in San Francisco.',
-  providerOptions: {
-    openai: {
-      reasoningSummary: 'auto',
-    },
-  },
-});
-console.log('Reasoning:', result.reasoning);
-```
-
-Learn more about reasoning summaries in the [OpenAI documentation](https://platform.openai.com/docs/guides/reasoning?api-mode=responses#reasoning-summaries).
-
-#### PDF support
-
-The OpenAI Responses API supports reading PDF files.
-You can pass PDF files as part of the message content using the `file` type:
-
-```ts
-const result = await generateText({
-  model: openai.responses('gpt-4o'),
-  messages: [
-    {
-      role: 'user',
-      content: [
-        {
-          type: 'text',
-          text: 'What is an embedding model?',
-        },
-        {
-          type: 'file',
-          data: fs.readFileSync('./data/ai.pdf'),
-          mimeType: 'application/pdf',
-          filename: 'ai.pdf', // optional
-        },
-      ],
-    },
-  ],
-});
-```
-
-The model will have access to the contents of the PDF file and
-respond to questions about it.
-The PDF file should be passed using the `data` field,
-and the `mimeType` should be set to `'application/pdf'`.
-
-#### Structured Outputs
-
-The OpenAI Responses API supports structured outputs. You can enforce structured outputs using `generateObject` or `streamObject`, which expose a `schema` option. Additionally, you can pass a Zod or JSON Schema object to the `experimental_output` option when using `generateText` or `streamText`.
-
-```ts
-// Using generateObject
-const result = await generateObject({
-  model: openai.responses('gpt-4.1'),
-  schema: z.object({
-    recipe: z.object({
-      name: z.string(),
-      ingredients: z.array(
-        z.object({
-          name: z.string(),
-          amount: z.string(),
-        }),
-      ),
-      steps: z.array(z.string()),
-    }),
-  }),
-  prompt: 'Generate a lasagna recipe.',
-});
-
-// Using generateText
-const result = await generateText({
-  model: openai.responses('gpt-4.1'),
-  prompt: 'How do I make a pizza?',
-  experimental_output: Output.object({
-    schema: z.object({
-      ingredients: z.array(z.string()),
-      steps: z.array(z.string()),
-    }),
-  }),
 });
 ```
 
@@ -10286,18 +23901,24 @@ OpenAI completion models support also some model specific settings that are not 
 You can pass them as an options argument:
 
 ```ts
-const model = openai.completion('gpt-3.5-turbo-instruct', {
-  echo: true, // optional, echo the prompt in addition to the completion
-  logitBias: {
-    // optional likelihood for specific tokens
-    '50256': -100,
+const model = openai.completion('gpt-3.5-turbo-instruct');
+
+await model.doGenerate({
+  providerOptions: {
+    openai: {
+      echo: true, // optional, echo the prompt in addition to the completion
+      logitBias: {
+        // optional likelihood for specific tokens
+        '50256': -100,
+      },
+      suffix: 'some text', // optional suffix that comes after a completion of inserted text
+      user: 'test-user', // optional unique user identifier
+    },
   },
-  suffix: 'some text', // optional suffix that comes after a completion of inserted text
-  user: 'test-user', // optional unique user identifier
 });
 ```
 
-The following optional settings are available for OpenAI completion models:
+The following optional provider options are available for OpenAI completion models:
 
 - **echo**: _boolean_
 
@@ -10353,12 +23974,14 @@ The following optional settings are available for OpenAI completion models:
 | `gpt-4`                | <Cross size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `gpt-3.5-turbo`        | <Cross size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `o1`                   | <Check size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `o1-mini`              | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `o1-preview`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 | `o3-mini`              | <Cross size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `o3`                   | <Check size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `o4-mini`              | <Check size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `chatgpt-4o-latest`    | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `gpt-5`                | <Check size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `gpt-5-mini`           | <Check size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `gpt-5-nano`           | <Check size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `gpt-5-chat-latest`    | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 
 <Note>
   The table above lists popular models. Please see the [OpenAI
@@ -10370,23 +23993,32 @@ The following optional settings are available for OpenAI completion models:
 ## Embedding Models
 
 You can create models that call the [OpenAI embeddings API](https://platform.openai.com/docs/api-reference/embeddings)
-using the `.embedding()` factory method.
+using the `.textEmbedding()` factory method.
 
 ```ts
-const model = openai.embedding('text-embedding-3-large');
+const model = openai.textEmbedding('text-embedding-3-large');
 ```
 
-OpenAI embedding models support several additional settings.
+OpenAI embedding models support several additional provider options.
 You can pass them as an options argument:
 
 ```ts
-const model = openai.embedding('text-embedding-3-large', {
-  dimensions: 512 // optional, number of dimensions for the embedding
-  user: 'test-user' // optional unique user identifier
-})
+import { openai } from '@ai-sdk/openai';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: openai.textEmbedding('text-embedding-3-large'),
+  value: 'sunny day at the beach',
+  providerOptions: {
+    openai: {
+      dimensions: 512, // optional, number of dimensions for the embedding
+      user: 'test-user', // optional unique user identifier
+    },
+  },
+});
 ```
 
-The following optional settings are available for OpenAI embedding models:
+The following optional provider options are available for OpenAI embedding models:
 
 - **dimensions**: _number_
 
@@ -10431,7 +24063,7 @@ const model = openai.image('dall-e-3');
 You can pass optional `providerOptions` to the image model. These are prone to change by OpenAI and are model dependent. For example, the `gpt-image-1` model supports the `quality` option:
 
 ```ts
-const { image } = await generateImage({
+const { image, providerMetadata } = await generateImage({
   model: openai.image('gpt-image-1'),
   prompt: 'A salamander at sunrise in a forest pond in the Seychelles.',
   providerOptions: {
@@ -10441,6 +24073,8 @@ const { image } = await generateImage({
 ```
 
 For more on `generateImage()` see [Image Generation](/docs/ai-sdk-core/image-generation).
+
+OpenAI's image models may return a revised prompt for each image. It can be access at `providerMetadata.openai.images[0]?.revisedPrompt`.
 
 For more information on the available OpenAI image model options, see the [OpenAI API reference](https://platform.openai.com/docs/api-reference/images/create).
 
@@ -10466,6 +24100,27 @@ const result = await transcribe({
   audio: new Uint8Array([1, 2, 3, 4]),
   providerOptions: { openai: { language: 'en' } },
 });
+```
+
+To get word-level timestamps, specify the granularity:
+
+```ts highlight="8-9"
+import { experimental_transcribe as transcribe } from 'ai';
+import { openai } from '@ai-sdk/openai';
+
+const result = await transcribe({
+  model: openai.transcription('whisper-1'),
+  audio: new Uint8Array([1, 2, 3, 4]),
+  providerOptions: {
+    openai: {
+      //timestampGranularities: ['word'],
+      timestampGranularities: ['segment'],
+    },
+  },
+});
+
+// Access word-level timestamps
+console.log(result.segments); // Array of segments with startSecond/endSecond
 ```
 
 The following provider options are available:
@@ -10564,7 +24219,7 @@ The [Azure OpenAI](https://azure.microsoft.com/en-us/products/ai-services/openai
 
 The Azure OpenAI provider is available in the `@ai-sdk/azure` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/azure" dark />
 </Tab>
@@ -10574,6 +24229,10 @@ The Azure OpenAI provider is available in the `@ai-sdk/azure` module. You can in
 <Tab>
 <Snippet text="yarn add @ai-sdk/azure" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/azure" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -10602,7 +24261,7 @@ You can use the following optional settings to customize the OpenAI provider ins
   Azure resource name.
   It defaults to the `AZURE_RESOURCE_NAME` environment variable.
 
-  The resource name is used in the assembled URL: `https://{resourceName}.openai.azure.com/openai/deployments/{modelId}{path}`.
+  The resource name is used in the assembled URL: `https://{resourceName}.openai.azure.com/openai/v1{path}`.
   You can use `baseURL` instead to specify the URL prefix.
 
 - **apiKey** _string_
@@ -10613,7 +24272,7 @@ You can use the following optional settings to customize the OpenAI provider ins
 - **apiVersion** _string_
 
   Sets a custom [api version](https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation).
-  Defaults to `2024-10-01-preview`.
+  Defaults to `preview`.
 
 - **baseURL** _string_
 
@@ -10622,7 +24281,7 @@ You can use the following optional settings to customize the OpenAI provider ins
   Either this or `resourceName` can be used.
   When a baseURL is provided, the resourceName is ignored.
 
-  With a baseURL, the resolved URL is `{baseURL}/{modelId}{path}`.
+  With a baseURL, the resolved URL is `{baseURL}/v1{path}`.
 
 - **headers** _Record&lt;string,string&gt;_
 
@@ -10634,6 +24293,16 @@ You can use the following optional settings to customize the OpenAI provider ins
   Defaults to the global `fetch` function.
   You can use it as a middleware to intercept requests,
   or to provide a custom fetch implementation for e.g. testing.
+
+- **useDeploymentBasedUrls** _boolean_
+
+  Use deployment-based URLs for API calls. Set to `true` to use the legacy deployment format:
+  `{baseURL}/deployments/{deploymentId}{path}?api-version={apiVersion}` instead of
+  `{baseURL}/v1{path}?api-version={apiVersion}`.
+  Defaults to `false`.
+
+  This option is useful for compatibility with certain Azure OpenAI models or deployments
+  that require the legacy endpoint format.
 
 ## Language Models
 
@@ -10723,23 +24392,32 @@ const { text } = await generateText({
 
 <Note>
   The URL for calling Azure chat models will be constructed as follows:
-  `https://RESOURCE_NAME.openai.azure.com/openai/deployments/DEPLOYMENT_NAME/chat/completions?api-version=API_VERSION`
+  `https://RESOURCE_NAME.openai.azure.com/openai/v1/chat/completions?api-version=preview`
 </Note>
 
 Azure OpenAI chat models support also some model specific settings that are not part of the [standard call settings](/docs/ai-sdk-core/settings).
 You can pass them as an options argument:
 
 ```ts
-const model = azure('your-deployment-name', {
-  logitBias: {
-    // optional likelihood for specific tokens
-    '50256': -100,
+import { azure } from '@ai-sdk/azure';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: azure('your-deployment-name'),
+  prompt: 'Write a short story about a robot.',
+  providerOptions: {
+    azure: {
+      logitBias: {
+        // optional likelihood for specific tokens
+        '50256': -100,
+      },
+      user: 'test-user', // optional unique user identifier
+    },
   },
-  user: 'test-user', // optional unique user identifier
 });
 ```
 
-The following optional settings are available for OpenAI chat models:
+The following optional provider options are available for OpenAI chat models:
 
 - **logitBias** _Record&lt;number, number&gt;_
 
@@ -10830,8 +24508,8 @@ The following provider options are available:
 - **reasoningEffort** _'low' | 'medium' | 'high'_
   Reasoning effort for reasoning models. Defaults to `medium`. If you use `providerOptions` to set the `reasoningEffort` option, this model setting will be ignored.
 
-- **strictSchemas** _boolean_
-  Whether to use strict JSON schemas in tools and when generating JSON outputs. Defaults to `true`.
+- **strictJsonSchema** _boolean_
+  Whether to use strict JSON schema validation. Defaults to `false`.
 
 The Azure OpenAI responses provider also returns provider-specific metadata:
 
@@ -10873,7 +24551,7 @@ const result = await generateText({
         {
           type: 'file',
           data: fs.readFileSync('./data/ai.pdf'),
-          mimeType: 'application/pdf',
+          mediaType: 'application/pdf',
           filename: 'ai.pdf', // optional
         },
       ],
@@ -10885,7 +24563,7 @@ const result = await generateText({
 The model will have access to the contents of the PDF file and
 respond to questions about it.
 The PDF file should be passed using the `data` field,
-and the `mimeType` should be set to `'application/pdf'`.
+and the `mediaType` should be set to `'application/pdf'`.
 
 ### Completion Models
 
@@ -10901,18 +24579,27 @@ OpenAI completion models support also some model specific settings that are not 
 You can pass them as an options argument:
 
 ```ts
-const model = azure.completion('your-gpt-35-turbo-instruct-deployment', {
-  echo: true, // optional, echo the prompt in addition to the completion
-  logitBias: {
-    // optional likelihood for specific tokens
-    '50256': -100,
+import { azure } from '@ai-sdk/azure';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: azure.completion('your-gpt-35-turbo-instruct-deployment'),
+  prompt: 'Write a haiku about coding.',
+  providerOptions: {
+    azure: {
+      echo: true, // optional, echo the prompt in addition to the completion
+      logitBias: {
+        // optional likelihood for specific tokens
+        '50256': -100,
+      },
+      suffix: 'some text', // optional suffix that comes after a completion of inserted text
+      user: 'test-user', // optional unique user identifier
+    },
   },
-  suffix: 'some text', // optional suffix that comes after a completion of inserted text
-  user: 'test-user', // optional unique user identifier
 });
 ```
 
-The following optional settings are available for Azure OpenAI completion models:
+The following optional provider options are available for Azure OpenAI completion models:
 
 - **echo**: _boolean_
 
@@ -10957,23 +24644,32 @@ The following optional settings are available for Azure OpenAI completion models
 ## Embedding Models
 
 You can create models that call the Azure OpenAI embeddings API
-using the `.embedding()` factory method.
+using the `.textEmbedding()` factory method.
 
 ```ts
-const model = azure.embedding('your-embedding-deployment');
+const model = azure.textEmbedding('your-embedding-deployment');
 ```
 
 Azure OpenAI embedding models support several additional settings.
 You can pass them as an options argument:
 
 ```ts
-const model = azure.embedding('your-embedding-deployment', {
-  dimensions: 512 // optional, number of dimensions for the embedding
-  user: 'test-user' // optional unique user identifier
-})
+import { azure } from '@ai-sdk/azure';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: azure.textEmbedding('your-embedding-deployment'),
+  value: 'sunny day at the beach',
+  providerOptions: {
+    azure: {
+      dimensions: 512, // optional, number of dimensions for the embedding
+      user: 'test-user', // optional unique user identifier
+    },
+  },
+});
 ```
 
-The following optional settings are available for Azure OpenAI embedding models:
+The following optional provider options are available for Azure OpenAI embedding models:
 
 - **dimensions**: _number_
 
@@ -10987,18 +24683,25 @@ The following optional settings are available for Azure OpenAI embedding models:
 
 ## Image Models
 
-You can create models that call the Azure OpenAI image generation API (DALL-E) using the `.imageModel()` factory method. The first argument is your deployment name for the DALL-E model.
+You can create models that call the Azure OpenAI image generation API (DALL-E) using the `.image()` factory method. The first argument is your deployment name for the DALL-E model.
 
 ```ts
-const model = azure.imageModel('your-dalle-deployment-name');
+const model = azure.image('your-dalle-deployment-name');
 ```
 
-Azure OpenAI image models support several additional settings. You can pass them as an options argument:
+Azure OpenAI image models support several additional settings. You can pass them as `providerOptions.azure` when generating the image:
 
 ```ts
-const model = azure.imageModel('your-dalle-deployment-name', {
-  user: 'test-user', // optional unique user identifier
-  responseFormat: 'url', // 'url' or 'b64_json', defaults to 'url'
+await generateImage({
+  model: azure.image('your-dalle-deployment-name'),
+  prompt: 'A photorealistic image of a cat astronaut floating in space',
+  size: '1024x1024', // '1024x1024', '1792x1024', or '1024x1792' for DALL-E 3
+  providerOptions: {
+    azure: {
+      user: 'test-user', // optional unique user identifier
+      responseFormat: 'url', // 'url' or 'b64_json', defaults to 'url'
+    },
+  },
 });
 ```
 
@@ -11011,7 +24714,7 @@ import { azure } from '@ai-sdk/azure';
 import { experimental_generateImage as generateImage } from 'ai';
 
 const { image } = await generateImage({
-  model: azure.imageModel('your-dalle-deployment-name'),
+  model: azure.image('your-dalle-deployment-name'),
   prompt: 'A photorealistic image of a cat astronaut floating in space',
   size: '1024x1024', // '1024x1024', '1792x1024', or '1024x1792' for DALL-E 3
 });
@@ -11048,6 +24751,19 @@ The first argument is the model id e.g. `whisper-1`.
 ```ts
 const model = azure.transcription('whisper-1');
 ```
+
+<Note>
+  If you encounter a "DeploymentNotFound" error with transcription models,
+  try enabling deployment-based URLs:
+  
+  ```ts
+  const azure = createAzure({
+    useDeploymentBasedUrls: true,
+  });
+  ```
+  
+  This uses the legacy endpoint format which may be required for certain Azure OpenAI deployments.
+</Note>
 
 You can also pass additional provider-specific options using the `providerOptions` argument. For example, supplying the input language in ISO-639-1 (e.g. `en`) format will improve accuracy and latency.
 
@@ -11110,7 +24826,7 @@ The [Anthropic](https://www.anthropic.com/) provider contains language model sup
 
 The Anthropic provider is available in the `@ai-sdk/anthropic` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/anthropic" dark />
 </Tab>
@@ -11120,6 +24836,10 @@ The Anthropic provider is available in the `@ai-sdk/anthropic` module. You can i
 <Tab>
 <Snippet text="yarn add @ai-sdk/anthropic" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/anthropic" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -11194,7 +24914,7 @@ Anthropic language models can also be used in the `streamText`, `generateObject`
   instead of streaming it incrementally.
 </Note>
 
-The following optional settings are available for Anthropic models:
+The following optional provider options are available for Anthropic models:
 
 - `sendReasoning` _boolean_
 
@@ -11203,9 +24923,13 @@ The following optional settings are available for Anthropic models:
   If you are experiencing issues with the model handling requests involving
   reasoning content, you can set this to `false` to omit them from the request.
 
+- `thinking` _object_
+
+  Optional. See [Reasoning section](#reasoning) for more details.
+
 ### Reasoning
 
-Anthropic has reasoning support for `claude-4-opus-20250514`, `claude-4-sonnet-20250514`, and `claude-3-7-sonnet-20250219` models.
+Anthropic has reasoning support for `claude-opus-4-20250514`, `claude-sonnet-4-20250514`, and `claude-3-7-sonnet-20250219` models.
 
 You can enable it using the `thinking` provider option
 and specifying a thinking budget in tokens.
@@ -11215,7 +24939,7 @@ import { anthropic, AnthropicProviderOptions } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
 
 const { text, reasoning, reasoningDetails } = await generateText({
-  model: anthropic('claude-4-opus-20250514'),
+  model: anthropic('claude-opus-4-20250514'),
   prompt: 'How many people will live in the world in 2040?',
   providerOptions: {
     anthropic: {
@@ -11233,13 +24957,6 @@ See [AI SDK UI: Chatbot](/docs/ai-sdk-ui/chatbot#reasoning) for more details
 on how to integrate reasoning into your chatbot.
 
 ### Cache Control
-
-<Note>
-  Anthropic cache control was originally a beta feature and required passing an
-  opt-in `cacheControl` setting when creating the model instance. It is now
-  Generally Available and enabled by default. The `cacheControl` setting is no
-  longer needed and will be removed in a future release.
-</Note>
 
 In the messages and message parts, you can use the `providerOptions` property to set cache control breakpoints.
 You need to set the `anthropic` property in the `providerOptions` object to `{ cacheControl: { type: 'ephemeral' } }` to set a cache control breakpoint.
@@ -11278,7 +24995,7 @@ const result = await generateText({
 
 console.log(result.text);
 console.log(result.providerMetadata?.anthropic);
-// e.g. { cacheCreationInputTokens: 2118, cacheReadInputTokens: 0 }
+// e.g. { cacheCreationInputTokens: 2118 }
 ```
 
 You can also use cache control on system messages by providing multiple system messages at the head of your messages array:
@@ -11306,6 +25023,65 @@ const result = await generateText({
 });
 ```
 
+Cache control for tools:
+
+```ts
+const result = await generateText({
+  model: anthropic('claude-3-5-haiku-latest'),
+  tools: {
+    cityAttractions: tool({
+      inputSchema: z.object({ city: z.string() }),
+      providerOptions: {
+        anthropic: {
+          cacheControl: { type: 'ephemeral' },
+        },
+      },
+    }),
+  },
+  messages: [
+    {
+      role: 'user',
+      content: 'User prompt',
+    },
+  ],
+});
+```
+
+#### Longer cache TTL
+
+Anthropic also supports a longer 1-hour cache duration. At time of writing,
+[this is currently in beta](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#1-hour-cache-duration),
+so you must pass a `'anthropic-beta'` header set to `'extended-cache-ttl-2025-04-11'`.
+
+Here's an example:
+
+```ts
+const result = await generateText({
+  model: anthropic('claude-3-5-haiku-latest'),
+  headers: {
+    'anthropic-beta': 'extended-cache-ttl-2025-04-11',
+  },
+  messages: [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: 'Long cached message',
+          providerOptions: {
+            anthropic: {
+              cacheControl: { type: 'ephemeral', ttl: '1h' },
+            },
+          },
+        },
+      ],
+    },
+  ],
+});
+```
+
+#### Limitations
+
 The minimum cacheable prompt length is:
 
 - 1024 tokens for Claude 3.7 Sonnet, Claude 3.5 Sonnet and Claude 3 Opus
@@ -11317,7 +25093,7 @@ For more on prompt caching with Anthropic, see [Anthropic's Cache Control docume
 
 <Note type="warning">
   Because the `UIMessage` type (used by AI SDK UI hooks like `useChat`) does not
-  support the `providerOptions` property, you can use `convertToCoreMessages`
+  support the `providerOptions` property, you can use `convertToModelMessages`
   first before passing the messages to functions like `generateText` or
   `streamText`. For more details on `providerOptions` usage, see
   [here](/docs/foundations/prompts#provider-options).
@@ -11325,7 +25101,7 @@ For more on prompt caching with Anthropic, see [Anthropic's Cache Control docume
 
 ### Computer Use
 
-Anthropic provides three built-in tools that can be used to interact with external systems:
+Anthropic provides three provider-defined tools that can be used to interact with external systems:
 
 1. **Bash Tool**: Allows running bash commands.
 2. **Text Editor Tool**: Provides functionality for viewing and editing text files.
@@ -11353,7 +25129,28 @@ Parameters:
 
 #### Text Editor Tool
 
-The Text Editor Tool provides functionality for viewing and editing text files:
+The Text Editor Tool provides functionality for viewing and editing text files.
+
+**For Claude 4 models (Opus & Sonnet):**
+
+```ts
+const textEditorTool = anthropic.tools.textEditor_20250429({
+  execute: async ({
+    command,
+    path,
+    file_text,
+    insert_line,
+    new_str,
+    old_str,
+    view_range,
+  }) => {
+    // Implement your text editing logic here
+    // Return the result of the text editing operation
+  },
+});
+```
+
+**For Claude 3.5 Sonnet and earlier models:**
 
 ```ts
 const textEditorTool = anthropic.tools.textEditor_20241022({
@@ -11374,7 +25171,7 @@ const textEditorTool = anthropic.tools.textEditor_20241022({
 
 Parameters:
 
-- `command` ('view' | 'create' | 'str_replace' | 'insert' | 'undo_edit'): The command to run.
+- `command` ('view' | 'create' | 'str_replace' | 'insert' | 'undo_edit'): The command to run. Note: `undo_edit` is only available in Claude 3.5 Sonnet and earlier models.
 - `path` (string): Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`.
 - `file_text` (string, optional): Required for `create` command, with the content of the file to be created.
 - `insert_line` (number, optional): Required for `insert` command. The line number after which to insert the new string.
@@ -11382,15 +25179,29 @@ Parameters:
 - `old_str` (string, optional): Required for `str_replace` command, containing the string to replace.
 - `view_range` (number[], optional): Optional for `view` command to specify line range to show.
 
-When using the Text Editor Tool, make sure to name the key in the tools object `str_replace_editor`.
+When using the Text Editor Tool, make sure to name the key in the tools object correctly:
+
+- **Claude 4 models**: Use `str_replace_based_edit_tool`
+- **Claude 3.5 Sonnet and earlier**: Use `str_replace_editor`
 
 ```ts
+// For Claude 4 models
+const response = await generateText({
+  model: anthropic('claude-opus-4-20250514'),
+  prompt:
+    "Create a new file called example.txt, write 'Hello World' to it, and run 'cat example.txt' in the terminal",
+  tools: {
+    str_replace_based_edit_tool: textEditorTool, // Claude 4 tool name
+  },
+});
+
+// For Claude 3.5 Sonnet and earlier
 const response = await generateText({
   model: anthropic('claude-3-5-sonnet-20241022'),
   prompt:
     "Create a new file called example.txt, write 'Hello World' to it, and run 'cat example.txt' in the terminal",
   tools: {
-    str_replace_editor: textEditorTool,
+    str_replace_editor: textEditorTool, // Earlier models tool name
   },
 });
 ```
@@ -11430,10 +25241,10 @@ const computerTool = anthropic.tools.computer_20241022({
   },
 
   // map to tool result content for LLM consumption:
-  experimental_toToolResultContent(result) {
+  toModelOutput(result) {
     return typeof result === 'string'
       ? [{ type: 'text', text: result }]
-      : [{ type: 'image', data: result.data, mimeType: 'image/png' }];
+      : [{ type: 'image', data: result.data, mediaType: 'image/png' }];
   },
 });
 ```
@@ -11445,6 +25256,189 @@ Parameters:
 - `text` (string, optional): Required for `type` and `key` actions.
 
 These tools can be used in conjunction with the `sonnet-3-5-sonnet-20240620` model to enable more complex interactions and tasks.
+
+### Web Search
+
+Anthropic provides a provider-defined web search tool that gives Claude direct access to real-time web content, allowing it to answer questions with up-to-date information beyond its knowledge cutoff.
+
+<Note>
+  Web search must be enabled in your organization's [Console
+  settings](https://console.anthropic.com/settings/privacy).
+</Note>
+
+You can enable web search using the provider-defined web search tool:
+
+```ts
+import { anthropic } from '@ai-sdk/anthropic';
+import { generateText } from 'ai';
+
+const webSearchTool = anthropic.tools.webSearch_20250305({
+  maxUses: 5,
+});
+
+const result = await generateText({
+  model: anthropic('claude-opus-4-20250514'),
+  prompt: 'What are the latest developments in AI?',
+  tools: {
+    web_search: webSearchTool,
+  },
+});
+```
+
+#### Configuration Options
+
+The web search tool supports several configuration options:
+
+- **maxUses** _number_
+
+  Maximum number of web searches Claude can perform during the conversation.
+
+- **allowedDomains** _string[]_
+
+  Optional list of domains that Claude is allowed to search. If provided, searches will be restricted to these domains.
+
+- **blockedDomains** _string[]_
+
+  Optional list of domains that Claude should avoid when searching.
+
+- **userLocation** _object_
+
+  Optional user location information to provide geographically relevant search results.
+
+```ts
+const webSearchTool = anthropic.tools.webSearch_20250305({
+  maxUses: 3,
+  allowedDomains: ['techcrunch.com', 'wired.com'],
+  blockedDomains: ['example-spam-site.com'],
+  userLocation: {
+    type: 'approximate',
+    country: 'US',
+    region: 'California',
+    city: 'San Francisco',
+    timezone: 'America/Los_Angeles',
+  },
+});
+
+const result = await generateText({
+  model: anthropic('claude-opus-4-20250514'),
+  prompt: 'Find local news about technology',
+  tools: {
+    web_search: webSearchTool,
+  },
+});
+```
+
+#### Error Handling
+
+Web search errors are handled differently depending on whether you're using streaming or non-streaming:
+
+**Non-streaming (`generateText`, `generateObject`):**
+Web search errors throw exceptions that you can catch:
+
+```ts
+try {
+  const result = await generateText({
+    model: anthropic('claude-opus-4-20250514'),
+    prompt: 'Search for something',
+    tools: {
+      web_search: webSearchTool,
+    },
+  });
+} catch (error) {
+  if (error.message.includes('Web search failed')) {
+    console.log('Search error:', error.message);
+    // Handle search error appropriately
+  }
+}
+```
+
+**Streaming (`streamText`, `streamObject`):**
+Web search errors are delivered as error parts in the stream:
+
+```ts
+const result = await streamText({
+  model: anthropic('claude-opus-4-20250514'),
+  prompt: 'Search for something',
+  tools: {
+    web_search: webSearchTool,
+  },
+});
+
+for await (const part of result.textStream) {
+  if (part.type === 'error') {
+    console.log('Search error:', part.error);
+    // Handle search error appropriately
+  }
+}
+```
+
+## Code Execution
+
+Anthropic provides a provider-defined code execution tool that gives Claude direct access to a real Python environment allowing it to execute code to inform its responses.
+
+You can enable code execution using the provider-defined code execution tool:
+
+```ts
+import { anthropic } from '@ai-sdk/anthropic';
+import { generateText } from 'ai';
+const codeExecutionTool = anthropic.tools.codeExecution_20250522();
+const result = await generateText({
+  model: anthropic('claude-opus-4-20250514'),
+  prompt:
+    'Calculate the mean and standard deviation of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]',
+  tools: {
+    code_execution: codeExecutionTool,
+  },
+});
+```
+
+#### Error Handling
+
+Code execution errors are handled differently depending on whether you're using streaming or non-streaming:
+
+**Non-streaming (`generateText`, `generateObject`):**
+Code execution errors are delivered as tool result parts in the response:
+
+```ts
+const result = await generateText({
+  model: anthropic('claude-opus-4-20250514'),
+  prompt: 'Execute some Python script',
+  tools: {
+    code_execution: codeExecutionTool,
+  },
+});
+
+const toolErrors = result.content?.filter(
+  (content) => content.type === 'tool-error',
+);
+
+toolErrors?.forEach((error) => {
+  console.error('Tool execution error:', {
+    toolName: error.toolName,
+    toolCallId: error.toolCallId,
+    error: error.error,
+  });
+});
+```
+
+**Streaming (`streamText`, `streamObject`):**
+Code execution errors are delivered as error parts in the stream:
+
+```ts
+const result = await streamText({
+  model: anthropic('claude-opus-4-20250514'),
+  prompt: 'Execute some Python script',
+  tools: {
+    code_execution: codeExecutionTool,
+  },
+});
+for await (const part of result.textStream) {
+  if (part.type === 'error') {
+    console.log('Code execution error:', part.error);
+    // Handle code execution error appropriately
+  }
+}
+```
 
 ### PDF support
 
@@ -11493,7 +25487,7 @@ const result = await generateText({
         {
           type: 'file',
           data: fs.readFileSync('./data/ai.pdf'),
-          mimeType: 'application/pdf',
+          mediaType: 'application/pdf',
         },
       ],
     },
@@ -11504,21 +25498,21 @@ const result = await generateText({
 The model will have access to the contents of the PDF file and
 respond to questions about it.
 The PDF file should be passed using the `data` field,
-and the `mimeType` should be set to `'application/pdf'`.
+and the `mediaType` should be set to `'application/pdf'`.
 
 ### Model Capabilities
 
-| Model                        | Image Input         | Object Generation   | Tool Usage          | Computer Use        |
-| ---------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `claude-4-opus-20250514`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `claude-4-sonnet-20250514`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `claude-3-7-sonnet-20250219` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `claude-3-5-sonnet-20241022` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `claude-3-5-sonnet-20240620` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
-| `claude-3-5-haiku-20241022`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
-| `claude-3-opus-20240229`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
-| `claude-3-sonnet-20240229`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
-| `claude-3-haiku-20240307`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| Model                        | Image Input         | Object Generation   | Tool Usage          | Computer Use        | Web Search          |
+| ---------------------------- | ------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `claude-opus-4-20250514`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `claude-sonnet-4-20250514`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `claude-3-7-sonnet-20250219` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `claude-3-5-sonnet-20241022` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `claude-3-5-sonnet-20240620` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Check size={18} /> |
+| `claude-3-5-haiku-20241022`  | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Check size={18} /> |
+| `claude-3-opus-20240229`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `claude-3-sonnet-20240229`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `claude-3-haiku-20240307`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 
 <Note>
   The table above lists popular models. Please see the [Anthropic
@@ -11542,7 +25536,7 @@ The Amazon Bedrock provider for the [AI SDK](/docs) contains language model supp
 
 The Bedrock provider is available in the `@ai-sdk/amazon-bedrock` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/amazon-bedrock" dark />
 </Tab>
@@ -11552,6 +25546,10 @@ The Bedrock provider is available in the `@ai-sdk/amazon-bedrock` module. You ca
 <Tab>
 <Snippet text="yarn add @ai-sdk/amazon-bedrock" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/amazon-bedrock" dark />
+  </Tab>
 </Tabs>
 
 ### Prerequisites
@@ -11612,7 +25610,7 @@ _Usage:_
 
 `@aws-sdk/credential-providers` package provides a set of credential providers that can be used to create a credential provider chain.
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @aws-sdk/credential-providers" dark />
 </Tab>
@@ -11622,6 +25620,10 @@ _Usage:_
 <Tab>
 <Snippet text="yarn add @aws-sdk/credential-providers" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @aws-sdk/credential-providers" dark />
+  </Tab>
 </Tabs>
 
 ```ts
@@ -11700,12 +25702,19 @@ The first argument is the model id, e.g. `meta.llama3-70b-instruct-v1:0`.
 const model = bedrock('meta.llama3-70b-instruct-v1:0');
 ```
 
-Amazon Bedrock models also support some model specific settings that are not part of the [standard call settings](/docs/ai-sdk-core/settings).
-You can pass them as an options argument:
+Amazon Bedrock models also support some model specific provider options that are not part of the [standard call settings](/docs/ai-sdk-core/settings).
+You can pass them in the `providerOptions` argument:
 
 ```ts
-const model = bedrock('anthropic.claude-3-sonnet-20240229-v1:0', {
-  additionalModelRequestFields: { top_k: 350 },
+const model = bedrock('anthropic.claude-3-sonnet-20240229-v1:0');
+
+await generateText({
+  model,
+  providerOptions: {
+    anthropic: {
+      additionalModelRequestFields: { top_k: 350 },
+    },
+  },
 });
 ```
 
@@ -11749,7 +25758,7 @@ const result = await generateText({
         {
           type: 'file',
           data: fs.readFileSync('./data/ai.pdf'),
-          mimeType: 'application/pdf',
+          mediaType: 'application/pdf',
         },
       ],
     },
@@ -11763,7 +25772,8 @@ You can use the `bedrock` provider options to utilize [Amazon Bedrock Guardrails
 
 ```ts
 const result = await generateText({
-  bedrock('anthropic.claude-3-sonnet-20240229-v1:0'),
+  model: bedrock('anthropic.claude-3-sonnet-20240229-v1:0'),
+  prompt: 'Write a story about space exploration.',
   providerOptions: {
     bedrock: {
       guardrailConfig: {
@@ -11888,7 +25898,7 @@ console.log(
 
 Amazon Bedrock has reasoning support for the `claude-3-7-sonnet-20250219` model.
 
-You can enable it using the `reasoning_config` provider option and specifying a thinking budget in tokens (minimum: `1024`, maximum: `64000`).
+You can enable it using the `reasoningConfig` provider option and specifying a thinking budget in tokens (minimum: `1024`, maximum: `64000`).
 
 ```ts
 import { bedrock } from '@ai-sdk/amazon-bedrock';
@@ -11912,41 +25922,228 @@ console.log(text); // text response
 See [AI SDK UI: Chatbot](/docs/ai-sdk-ui/chatbot#reasoning) for more details
 on how to integrate reasoning into your chatbot.
 
+## Computer Use
+
+Via Anthropic, Amazon Bedrock provides three provider-defined tools that can be used to interact with external systems:
+
+1. **Bash Tool**: Allows running bash commands.
+2. **Text Editor Tool**: Provides functionality for viewing and editing text files.
+3. **Computer Tool**: Enables control of keyboard and mouse actions on a computer.
+
+They are available via the `tools` property of the provider instance.
+
+### Bash Tool
+
+The Bash Tool allows running bash commands. Here's how to create and use it:
+
+```ts
+const bashTool = anthropic.tools.bash_20241022({
+  execute: async ({ command, restart }) => {
+    // Implement your bash command execution logic here
+    // Return the result of the command execution
+  },
+});
+```
+
+Parameters:
+
+- `command` (string): The bash command to run. Required unless the tool is being restarted.
+- `restart` (boolean, optional): Specifying true will restart this tool.
+
+### Text Editor Tool
+
+The Text Editor Tool provides functionality for viewing and editing text files.
+
+**For Claude 4 models (Opus & Sonnet):**
+
+```ts
+const textEditorTool = anthropic.tools.textEditor_20250429({
+  execute: async ({
+    command,
+    path,
+    file_text,
+    insert_line,
+    new_str,
+    old_str,
+    view_range,
+  }) => {
+    // Implement your text editing logic here
+    // Return the result of the text editing operation
+  },
+});
+```
+
+**For Claude 3.5 Sonnet and earlier models:**
+
+```ts
+const textEditorTool = anthropic.tools.textEditor_20241022({
+  execute: async ({
+    command,
+    path,
+    file_text,
+    insert_line,
+    new_str,
+    old_str,
+    view_range,
+  }) => {
+    // Implement your text editing logic here
+    // Return the result of the text editing operation
+  },
+});
+```
+
+Parameters:
+
+- `command` ('view' | 'create' | 'str_replace' | 'insert' | 'undo_edit'): The command to run. Note: `undo_edit` is only available in Claude 3.5 Sonnet and earlier models.
+- `path` (string): Absolute path to file or directory, e.g. `/repo/file.py` or `/repo`.
+- `file_text` (string, optional): Required for `create` command, with the content of the file to be created.
+- `insert_line` (number, optional): Required for `insert` command. The line number after which to insert the new string.
+- `new_str` (string, optional): New string for `str_replace` or `insert` commands.
+- `old_str` (string, optional): Required for `str_replace` command, containing the string to replace.
+- `view_range` (number[], optional): Optional for `view` command to specify line range to show.
+
+When using the Text Editor Tool, make sure to name the key in the tools object correctly:
+
+- **Claude 4 models**: Use `str_replace_based_edit_tool`
+- **Claude 3.5 Sonnet and earlier**: Use `str_replace_editor`
+
+```ts
+// For Claude 4 models
+const response = await generateText({
+  model: bedrock('us.anthropic.claude-sonnet-4-20250514-v1:0'),
+  prompt:
+    "Create a new file called example.txt, write 'Hello World' to it, and run 'cat example.txt' in the terminal",
+  tools: {
+    str_replace_based_edit_tool: textEditorTool, // Claude 4 tool name
+  },
+});
+
+// For Claude 3.5 Sonnet and earlier
+const response = await generateText({
+  model: bedrock('anthropic.claude-3-5-sonnet-20241022-v2:0'),
+  prompt:
+    "Create a new file called example.txt, write 'Hello World' to it, and run 'cat example.txt' in the terminal",
+  tools: {
+    str_replace_editor: textEditorTool, // Earlier models tool name
+  },
+});
+```
+
+### Computer Tool
+
+The Computer Tool enables control of keyboard and mouse actions on a computer:
+
+```ts
+const computerTool = anthropic.tools.computer_20241022({
+  displayWidthPx: 1920,
+  displayHeightPx: 1080,
+  displayNumber: 0, // Optional, for X11 environments
+
+  execute: async ({ action, coordinate, text }) => {
+    // Implement your computer control logic here
+    // Return the result of the action
+
+    // Example code:
+    switch (action) {
+      case 'screenshot': {
+        // multipart result:
+        return {
+          type: 'image',
+          data: fs
+            .readFileSync('./data/screenshot-editor.png')
+            .toString('base64'),
+        };
+      }
+      default: {
+        console.log('Action:', action);
+        console.log('Coordinate:', coordinate);
+        console.log('Text:', text);
+        return `executed ${action}`;
+      }
+    }
+  },
+
+  // map to tool result content for LLM consumption:
+  toModelOutput(result) {
+    return typeof result === 'string'
+      ? [{ type: 'text', text: result }]
+      : [{ type: 'image', data: result.data, mediaType: 'image/png' }];
+  },
+});
+```
+
+Parameters:
+
+- `action` ('key' | 'type' | 'mouse_move' | 'left_click' | 'left_click_drag' | 'right_click' | 'middle_click' | 'double_click' | 'screenshot' | 'cursor_position'): The action to perform.
+- `coordinate` (number[], optional): Required for `mouse_move` and `left_click_drag` actions. Specifies the (x, y) coordinates.
+- `text` (string, optional): Required for `type` and `key` actions.
+
+These tools can be used in conjunction with the `anthropic.claude-3-5-sonnet-20240620-v1:0` model to enable more complex interactions and tasks.
+
 ### Model Capabilities
 
-| Model                                       | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
-| ------------------------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `amazon.titan-tg1-large`                    | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `amazon.titan-text-express-v1`              | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `amazon.nova-micro-v1:0`                    | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `amazon.nova-lite-v1:0`                     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `amazon.nova-pro-v1:0`                      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `anthropic.claude-3-7-sonnet-20250219-v1:0` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `anthropic.claude-3-5-sonnet-20241022-v2:0` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `anthropic.claude-3-5-sonnet-20240620-v1:0` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `anthropic.claude-3-5-haiku-20241022-v1:0`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
-| `anthropic.claude-3-opus-20240229-v1:0`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `anthropic.claude-3-sonnet-20240229-v1:0`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `anthropic.claude-3-haiku-20240307-v1:0`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `anthropic.claude-v2:1`                     | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `cohere.command-r-v1:0`                     | <Cross size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> |
-| `cohere.command-r-plus-v1:0`                | <Cross size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> |
-| `deepseek.r1-v1:0`                          | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama2-13b-chat-v1`                   | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama2-70b-chat-v1`                   | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-8b-instruct-v1:0`              | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-70b-instruct-v1:0`             | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-1-8b-instruct-v1:0`            | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-1-70b-instruct-v1:0`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-1-405b-instruct-v1:0`          | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-2-1b-instruct-v1:0`            | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-2-3b-instruct-v1:0`            | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-2-11b-instruct-v1:0`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `meta.llama3-2-90b-instruct-v1:0`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `mistral.mistral-7b-instruct-v0:2`          | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `mistral.mixtral-8x7b-instruct-v0:1`        | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `mistral.mistral-large-2402-v1:0`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `mistral.mistral-small-2402-v1:0`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| Model                                          | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
+| ---------------------------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `amazon.titan-tg1-large`                       | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `amazon.titan-text-express-v1`                 | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `amazon.titan-text-lite-v1`                    | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `us.amazon.nova-premier-v1:0`                  | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.amazon.nova-pro-v1:0`                      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.amazon.nova-lite-v1:0`                     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.amazon.nova-micro-v1:0`                    | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-sonnet-4-20250514-v1:0`      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-opus-4-20250514-v1:0`        | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-opus-4-1-20250805-v1:0`      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-3-7-sonnet-20250219-v1:0`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-3-5-sonnet-20241022-v2:0`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-3-5-sonnet-20240620-v1:0`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-3-5-haiku-20241022-v1:0`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `anthropic.claude-3-opus-20240229-v1:0`        | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-3-sonnet-20240229-v1:0`      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-3-haiku-20240307-v1:0`       | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-sonnet-4-20250514-v1:0`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-opus-4-20250514-v1:0`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-opus-4-1-20250805-v1:0`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-3-7-sonnet-20250219-v1:0` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-3-5-sonnet-20241022-v2:0` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-3-5-sonnet-20240620-v1:0` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-3-5-haiku-20241022-v1:0`  | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `us.anthropic.claude-3-sonnet-20240229-v1:0`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-3-opus-20240229-v1:0`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.anthropic.claude-3-haiku-20240307-v1:0`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `anthropic.claude-v2`                          | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `anthropic.claude-v2:1`                        | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `anthropic.claude-instant-v1`                  | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `cohere.command-text-v14`                      | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `cohere.command-light-text-v14`                | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `cohere.command-r-v1:0`                        | <Cross size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `cohere.command-r-plus-v1:0`                   | <Cross size={18} /> | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `us.deepseek.r1-v1:0`                          | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `meta.llama3-8b-instruct-v1:0`                 | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta.llama3-70b-instruct-v1:0`                | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta.llama3-1-8b-instruct-v1:0`               | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta.llama3-1-70b-instruct-v1:0`              | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta.llama3-1-405b-instruct-v1:0`             | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta.llama3-2-1b-instruct-v1:0`               | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta.llama3-2-3b-instruct-v1:0`               | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta.llama3-2-11b-instruct-v1:0`              | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta.llama3-2-90b-instruct-v1:0`              | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `us.meta.llama3-2-1b-instruct-v1:0`            | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.meta.llama3-2-3b-instruct-v1:0`            | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.meta.llama3-2-11b-instruct-v1:0`           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.meta.llama3-2-90b-instruct-v1:0`           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.meta.llama3-1-8b-instruct-v1:0`            | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.meta.llama3-1-70b-instruct-v1:0`           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.meta.llama3-3-70b-instruct-v1:0`           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.meta.llama4-scout-17b-instruct-v1:0`       | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `us.meta.llama4-maverick-17b-instruct-v1:0`    | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `mistral.mistral-7b-instruct-v0:2`             | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `mistral.mixtral-8x7b-instruct-v0:1`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `mistral.mistral-large-2402-v1:0`              | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `mistral.mistral-small-2402-v1:0`              | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `us.mistral.pixtral-large-2502-v1:0`           | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `openai.gpt-oss-120b-1:0`                      | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `openai.gpt-oss-20b-1:0`                       | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 
 <Note>
   The table above lists popular models. Please see the [Amazon Bedrock
@@ -11958,23 +26155,34 @@ on how to integrate reasoning into your chatbot.
 ## Embedding Models
 
 You can create models that call the Bedrock API [Bedrock API](https://docs.aws.amazon.com/bedrock/latest/userguide/titan-embedding-models.html)
-using the `.embedding()` factory method.
+using the `.textEmbedding()` factory method.
 
 ```ts
-const model = bedrock.embedding('amazon.titan-embed-text-v1');
+const model = bedrock.textEmbedding('amazon.titan-embed-text-v1');
 ```
 
 Bedrock Titan embedding model amazon.titan-embed-text-v2:0 supports several additional settings.
 You can pass them as an options argument:
 
 ```ts
-const model = bedrock.embedding('amazon.titan-embed-text-v2:0', {
-  dimensions: 512 // optional, number of dimensions for the embedding
-  normalize: true // optional  normalize the output embeddings
-})
+import { bedrock } from '@ai-sdk/amazon-bedrock';
+import { embed } from 'ai';
+
+const model = bedrock.textEmbedding('amazon.titan-embed-text-v2:0');
+
+const { embedding } = await embed({
+  model,
+  value: 'sunny day at the beach',
+  providerOptions: {
+    bedrock: {
+      dimensions: 512, // optional, number of dimensions for the embedding
+      normalize: true, // optional, normalize the output embeddings
+    },
+  },
+});
 ```
 
-The following optional settings are available for Bedrock Titan embedding models:
+The following optional provider options are available for Bedrock Titan embedding models:
 
 - **dimensions**: _number_
 
@@ -11990,6 +26198,8 @@ The following optional settings are available for Bedrock Titan embedding models
 | ------------------------------ | ------------------ | ------------------- |
 | `amazon.titan-embed-text-v1`   | 1536               | <Cross size={18} /> |
 | `amazon.titan-embed-text-v2:0` | 1024               | <Check size={18} /> |
+| `cohere.embed-english-v3`      | 1024               | <Cross size={18} /> |
+| `cohere.embed-multilingual-v3` | 1024               | <Cross size={18} /> |
 
 ## Image Models
 
@@ -12000,7 +26210,8 @@ For more on the Amazon Nova Canvas image model, see the [Nova Canvas
 Overview](https://docs.aws.amazon.com/ai/responsible-ai/nova-canvas/overview.html).
 
 <Note>
-  The `amazon.nova-canvas-v1:0` model is available in the `us-east-1` region.
+  The `amazon.nova-canvas-v1:0` model is available in the `us-east-1`,
+  `eu-west-1`, and `ap-northeast-1` regions.
 </Note>
 
 ```ts
@@ -12014,7 +26225,7 @@ import { bedrock } from '@ai-sdk/amazon-bedrock';
 import { experimental_generateImage as generateImage } from 'ai';
 
 const { image } = await generateImage({
-  model: bedrock.imageModel('amazon.nova-canvas-v1:0'),
+  model: bedrock.image('amazon.nova-canvas-v1:0'),
   prompt: 'A beautiful sunset over a calm ocean',
   size: '512x512',
   seed: 42,
@@ -12028,13 +26239,42 @@ import { bedrock } from '@ai-sdk/amazon-bedrock';
 import { experimental_generateImage as generateImage } from 'ai';
 
 const { image } = await generateImage({
-  model: bedrock.imageModel('amazon.nova-canvas-v1:0'),
+  model: bedrock.image('amazon.nova-canvas-v1:0'),
   prompt: 'A beautiful sunset over a calm ocean',
   size: '512x512',
   seed: 42,
-  providerOptions: { bedrock: { quality: 'premium' } },
+  providerOptions: {
+    bedrock: {
+      quality: 'premium',
+      negativeText: 'blurry, low quality',
+      cfgScale: 7.5,
+      style: 'PHOTOREALISM',
+    },
+  },
 });
 ```
+
+The following optional provider options are available for Amazon Nova Canvas:
+
+- **quality** _string_
+
+  The quality level for image generation. Accepts `'standard'` or `'premium'`.
+
+- **negativeText** _string_
+
+  Text describing what you don't want in the generated image.
+
+- **cfgScale** _number_
+
+  Controls how closely the generated image adheres to the prompt. Higher values result in images that are more closely aligned to the prompt.
+
+- **style** _string_
+
+  Predefined visual style for image generation.  
+  Accepts one of:
+  `3D_ANIMATED_FAMILY_FILM` · `DESIGN_SKETCH` · `FLAT_VECTOR_ILLUSTRATION` ·  
+  `GRAPHIC_NOVEL_ILLUSTRATION` · `MAXIMALISM` · `MIDCENTURY_RETRO` ·  
+  `PHOTOREALISM` · `SOFT_DIGITAL_PAINTING`.
 
 Documentation for additional settings can be found within the [Amazon Bedrock
 User Guide for Amazon Nova
@@ -12042,10 +26282,14 @@ Documentation](https://docs.aws.amazon.com/nova/latest/userguide/image-gen-req-r
 
 ### Image Model Settings
 
-When creating an image model, you can customize the generation behavior with optional settings:
+You can customize the generation behavior with optional options:
 
 ```ts
-const model = bedrock.imageModel('amazon.nova-canvas-v1:0', {
+await generateImage({
+  model: bedrock.image('amazon.nova-canvas-v1:0'),
+  prompt: 'A beautiful sunset over a calm ocean',
+  size: '512x512',
+  seed: 42,
   maxImagesPerCall: 1, // Maximum number of images to generate per API call
 });
 ```
@@ -12160,7 +26404,7 @@ The [Groq](https://groq.com/) provider contains language model support for the G
 The Groq provider is available via the `@ai-sdk/groq` module.
 You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/groq" dark />
 </Tab>
@@ -12170,6 +26414,10 @@ You can install it with
 <Tab>
 <Snippet text="yarn add @ai-sdk/groq" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/groq" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -12234,15 +26482,131 @@ import { groq } from '@ai-sdk/groq';
 import { generateText } from 'ai';
 
 const result = await generateText({
-  model: groq('qwen-qwq-32b'),
+  model: groq('qwen/qwen3-32b'),
   providerOptions: {
-    groq: { reasoningFormat: 'parsed' },
+    groq: {
+      reasoningFormat: 'parsed',
+      reasoningEffort: 'default',
+      parallelToolCalls: true, // Enable parallel function calling (default: true)
+      user: 'user-123', // Unique identifier for end-user (optional)
+      serviceTier: 'flex', // Use flex tier for higher throughput (optional)
+    },
   },
   prompt: 'How many "r"s are in the word "strawberry"?',
 });
 ```
 
+The following optional provider options are available for Groq language models:
+
+- **reasoningFormat** _'parsed' | 'raw' | 'hidden'_
+
+  Controls how reasoning is exposed in the generated text. Only supported by reasoning models like `qwen-qwq-32b` and `deepseek-r1-distill-*` models.
+
+  For a complete list of reasoning models and their capabilities, see [Groq's reasoning models documentation](https://console.groq.com/docs/reasoning).
+
+- **reasoningEffort** _'low' | 'meduim' | 'high' | 'none' | 'default'_
+
+  Controls the level of effort the model will put into reasoning.
+
+  - `qwen/qwen3-32b`
+    - Supported values:
+      - `none`: Disable reasoning. The model will not use any reasoning tokens.
+      - `default`: Enable reasoning.
+  - `gpt-oss20b/gpt-oss120b`
+    - Supported values:
+      - `low`: Use a low level of reasoning effort.
+      - `medium`: Use a medium level of reasoning effort.
+      - `high`: Use a high level of reasoning effort.
+
+  Defaults to `default` for `qwen/qwen3-32b.`
+
+- **structuredOutputs** _boolean_
+
+  Whether to use structured outputs.
+
+  Defaults to `true`.
+
+  When enabled, object generation will use the `json_schema` format instead of `json_object` format, providing more reliable structured outputs.
+
+- **parallelToolCalls** _boolean_
+
+  Whether to enable parallel function calling during tool use. Defaults to `true`.
+
+- **user** _string_
+
+  A unique identifier representing your end-user, which can help with monitoring and abuse detection.
+
+- **serviceTier** _'on_demand' | 'flex' | 'auto'_
+
+  Service tier for the request. Defaults to `'on_demand'`.
+
+  - `'on_demand'`: Default tier with consistent performance and fairness
+  - `'flex'`: Higher throughput tier (10x rate limits) optimized for workloads that can handle occasional request failures
+  - `'auto'`: Uses on_demand rate limits first, then falls back to flex tier if exceeded
+
+  For more details about service tiers and their benefits, see [Groq's Flex Processing documentation](https://console.groq.com/docs/flex-processing).
+
 <Note>Only Groq reasoning models support the `reasoningFormat` option.</Note>
+
+#### Structured Outputs
+
+Structured outputs are enabled by default for Groq models.
+You can disable them by setting the `structuredOutputs` option to `false`.
+
+```ts
+import { groq } from '@ai-sdk/groq';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+
+const result = await generateObject({
+  model: groq('moonshotai/kimi-k2-instruct'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.string()),
+      instructions: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a simple pasta recipe.',
+});
+
+console.log(JSON.stringify(result.object, null, 2));
+```
+
+You can disable structured outputs for models that don't support them:
+
+```ts highlight="9"
+import { groq } from '@ai-sdk/groq';
+import { generateObject } from 'ai';
+import { z } from 'zod';
+
+const result = await generateObject({
+  model: groq('gemma2-9b-it'),
+  providerOptions: {
+    groq: {
+      structuredOutputs: false,
+    },
+  },
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.string()),
+      instructions: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a simple pasta recipe in JSON format.',
+});
+
+console.log(JSON.stringify(result.object, null, 2));
+```
+
+<Note type="warning">
+  Structured outputs are only supported by newer Groq models like
+  `moonshotai/kimi-k2-instruct`. For unsupported models, you can disable
+  structured outputs by setting `structuredOutputs: false`. When disabled, Groq
+  uses the `json_object` format which requires the word "JSON" to be included in
+  your messages.
+</Note>
 
 ### Example
 
@@ -12258,29 +26622,184 @@ const { text } = await generateText({
 });
 ```
 
+### Image Input
+
+Groq's multi-modal models like `meta-llama/llama-4-scout-17b-16e-instruct` support image inputs. You can include images in your messages using either URLs or base64-encoded data:
+
+```ts
+import { groq } from '@ai-sdk/groq';
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'What do you see in this image?' },
+        {
+          type: 'image',
+          image: 'https://example.com/image.jpg',
+        },
+      ],
+    },
+  ],
+});
+```
+
+You can also use base64-encoded images:
+
+```ts
+import { groq } from '@ai-sdk/groq';
+import { generateText } from 'ai';
+import { readFileSync } from 'fs';
+
+const imageData = readFileSync('path/to/image.jpg', 'base64');
+
+const { text } = await generateText({
+  model: groq('meta-llama/llama-4-scout-17b-16e-instruct'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'Describe this image in detail.' },
+        {
+          type: 'image',
+          image: `data:image/jpeg;base64,${imageData}`,
+        },
+      ],
+    },
+  ],
+});
+```
+
 ## Model Capabilities
 
-| Model                                       | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
-| ------------------------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `meta-llama/llama-4-scout-17b-16e-instruct` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemma2-9b-it`                              | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `llama-3.3-70b-versatile`                   | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `llama-3.1-8b-instant`                      | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `llama-guard-3-8b`                          | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `llama3-70b-8192`                           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `llama3-8b-8192`                            | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `mixtral-8x7b-32768`                        | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `qwen-qwq-32b`                              | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `mistral-saba-24b`                          | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `qwen-2.5-32b`                              | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `deepseek-r1-distill-qwen-32b`              | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `deepseek-r1-distill-llama-70b`             | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| Model                                           | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
+| ----------------------------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `gemma2-9b-it`                                  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `llama-3.1-8b-instant`                          | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `llama-3.3-70b-versatile`                       | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `meta-llama/llama-guard-4-12b`                  | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `deepseek-r1-distill-llama-70b`                 | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `meta-llama/llama-4-maverick-17b-128e-instruct` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `meta-llama/llama-4-scout-17b-16e-instruct`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `meta-llama/llama-prompt-guard-2-22m`           | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `meta-llama/llama-prompt-guard-2-86m`           | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `moonshotai/kimi-k2-instruct`                   | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `qwen/qwen3-32b`                                | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `llama-guard-3-8b`                              | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `llama3-70b-8192`                               | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `llama3-8b-8192`                                | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `mixtral-8x7b-32768`                            | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `qwen-qwq-32b`                                  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `qwen-2.5-32b`                                  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `deepseek-r1-distill-qwen-32b`                  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `openai/gpt-oss-20b`                            | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `openai/gpt-oss-120b`                           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 
 <Note>
-  The table above lists popular models. Please see the [Groq
-  docs](https://console.groq.com/docs/models) for a full list of available
-  models. The table above lists popular models. You can also pass any available
-  provider model ID as a string if needed.
+  The tables above list the most commonly used models. Please see the [Groq
+  docs](https://console.groq.com/docs/models) for a complete list of available
+  models. You can also pass any available provider model ID as a string if
+  needed.
+</Note>
+
+## Browser Search Tool
+
+Groq provides a browser search tool that offers interactive web browsing capabilities. Unlike traditional web search, browser search navigates websites interactively, providing more detailed and comprehensive results.
+
+### Supported Models
+
+Browser search is only available for these specific models:
+
+- `openai/gpt-oss-20b`
+- `openai/gpt-oss-120b`
+
+<Note type="warning">
+  Browser search will only work with the supported models listed above. Using it
+  with other models will generate a warning and the tool will be ignored.
+</Note>
+
+### Basic Usage
+
+```ts
+import { groq } from '@ai-sdk/groq';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: groq('openai/gpt-oss-120b'), // Must use supported model
+  prompt:
+    'What are the latest developments in AI? Please search for recent news.',
+  tools: {
+    browser_search: groq.tools.browserSearch({}),
+  },
+  toolChoice: 'required', // Ensure the tool is used
+});
+
+console.log(result.text);
+```
+
+### Streaming Example
+
+```ts
+import { groq } from '@ai-sdk/groq';
+import { streamText } from 'ai';
+
+const result = streamText({
+  model: groq('openai/gpt-oss-120b'),
+  prompt: 'Search for the latest tech news and summarize it.',
+  tools: {
+    browser_search: groq.tools.browserSearch({}),
+  },
+  toolChoice: 'required',
+});
+
+for await (const delta of result.fullStream) {
+  if (delta.type === 'text-delta') {
+    process.stdout.write(delta.text);
+  }
+}
+```
+
+### Key Features
+
+- **Interactive Browsing**: Navigates websites like a human user
+- **Comprehensive Results**: More detailed than traditional search snippets
+- **Server-side Execution**: Runs on Groq's infrastructure, no setup required
+- **Powered by Exa**: Uses Exa search engine for optimal results
+- **Currently Free**: Available at no additional charge during beta
+
+### Best Practices
+
+- Use `toolChoice: 'required'` to ensure the browser search is activated
+- Only supported on `openai/gpt-oss-20b` and `openai/gpt-oss-120b` models
+- The tool works automatically - no configuration parameters needed
+- Server-side execution means no additional API keys or setup required
+
+### Model Validation
+
+The provider automatically validates model compatibility:
+
+```ts
+// ✅ Supported - will work
+const result = await generateText({
+  model: groq('openai/gpt-oss-120b'),
+  tools: { browser_search: groq.tools.browserSearch({}) },
+});
+
+// ❌ Unsupported - will show warning and ignore tool
+const result = await generateText({
+  model: groq('gemma2-9b-it'),
+  tools: { browser_search: groq.tools.browserSearch({}) },
+});
+// Warning: "Browser search is only supported on models: openai/gpt-oss-20b, openai/gpt-oss-120b"
+```
+
+<Note>
+  For more details about browser search capabilities and limitations, see the
+  [Groq Browser Search
+  Documentation](https://console.groq.com/docs/browser-search).
 </Note>
 
 ## Transcription Models
@@ -12334,8 +26853,8 @@ The following provider options are available:
 | Model                        | Transcription       | Duration            | Segments            | Language            |
 | ---------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
 | `whisper-large-v3`           | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `whisper-large-v3-turbo`     | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `distil-whisper-large-v3-en` | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `whisper-large-v3-turbo`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `distil-whisper-large-v3-en` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 
 ---
 
@@ -12352,7 +26871,7 @@ description: Learn how to use Fal AI models with the AI SDK.
 
 The Fal provider is available via the `@ai-sdk/fal` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/fal" dark />
 </Tab>
@@ -12362,6 +26881,10 @@ The Fal provider is available via the `@ai-sdk/fal` module. You can install it w
 <Tab>
 <Snippet text="yarn add @ai-sdk/fal" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/fal" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -12420,8 +26943,8 @@ import { fal } from '@ai-sdk/fal';
 import { experimental_generateImage as generateImage } from 'ai';
 import fs from 'fs';
 
-const { image } = await generateImage({
-  model: fal.image('fal-ai/fast-sdxl'),
+const { image, providerMetadata } = await generateImage({
+  model: fal.image('fal-ai/flux/dev'),
   prompt: 'A serene mountain landscape at sunset',
 });
 
@@ -12430,19 +26953,33 @@ fs.writeFileSync(filename, image.uint8Array);
 console.log(`Image saved to ${filename}`);
 ```
 
+Fal image models may return additional information for the images and the request.
+
+Here are some examples of properties that may be set for each image
+
+```js
+providerMetadata.fal.images[0].nsfw; // boolean, image is not safe for work
+providerMetadata.fal.images[0].width; // number, image width
+providerMetadata.fal.images[0].height; // number, image height
+providerMetadata.fal.images[0].content_type; // string, mime type of the image
+```
+
 ### Model Capabilities
 
-Fal offers many models optimized for different use cases. Here are a few popular examples. For a full list of models, see the [Fal AI documentation](https://fal.ai/models).
+Fal offers many models optimized for different use cases. Here are a few popular examples. For a full list of models, see the [Fal AI Search Page](https://fal.ai/explore/search).
 
-| Model                               | Description                                                                                                                                            |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `fal-ai/fast-sdxl`                  | High-speed SDXL model optimized for quick inference with up to 4x faster speeds                                                                        |
-| `fal-ai/flux-lora`                  | Super fast endpoint for the FLUX.1 [dev] model with LoRA support, enabling rapid and high-quality image generation using pre-trained LoRA adaptations. |
-| `fal-ai/flux-pro/v1.1-ultra`        | Professional-grade image generation with up to 2K resolution and enhanced photorealism                                                                 |
-| `fal-ai/ideogram/v2`                | Specialized for high-quality posters and logos with exceptional typography handling                                                                    |
-| `fal-ai/recraft-v3`                 | SOTA in image generation with vector art and brand style capabilities                                                                                  |
-| `fal-ai/stable-diffusion-3.5-large` | Advanced MMDiT model with improved typography and complex prompt understanding                                                                         |
-| `fal-ai/hyper-sdxl`                 | Performance-optimized SDXL variant with enhanced creative capabilities                                                                                 |
+| Model                                          | Description                                                                                                                       |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `fal-ai/flux/dev`                              | FLUX.1 [dev] model for high-quality image generation                                                                              |
+| `fal-ai/flux-pro/kontext`                      | FLUX.1 Kontext [pro] handles both text and reference images as inputs, enabling targeted edits and complex transformations        |
+| `fal-ai/flux-pro/kontext/max`                  | FLUX.1 Kontext [max] with improved prompt adherence and typography generation                                                     |
+| `fal-ai/flux-lora`                             | Super fast endpoint for FLUX.1 with LoRA support                                                                                  |
+| `fal-ai/ideogram/character`                    | Generate consistent character appearances across multiple images. Maintain facial features, proportions, and distinctive traits   |
+| `fal-ai/qwen-image`                            | Qwen-Image foundation model with significant advances in complex text rendering and precise image editing                         |
+| `fal-ai/omnigen-v2`                            | Unified image generation model for Image Editing, Personalized Image Generation, Virtual Try-On, Multi Person Generation and more |
+| `fal-ai/bytedance/dreamina/v3.1/text-to-image` | Dreamina showcases superior picture effects with improvements in aesthetics, precise and diverse styles, and rich details         |
+| `fal-ai/recraft/v3/text-to-image`              | SOTA in image generation with vector art and brand style capabilities                                                             |
+| `fal-ai/wan/v2.2-a14b/text-to-image`           | High-resolution, photorealistic images with fine-grained detail                                                                   |
 
 Fal models support the following aspect ratios:
 
@@ -12463,6 +27000,36 @@ Key features of Fal models include:
 - Support for real-time infrastructure
 - Cost-effective scaling with pay-per-use pricing
 - LoRA training capabilities for model personalization
+
+#### Modify Image
+
+Transform existing images using text prompts.
+
+```ts
+// Example: Modify existing image
+await generateImage({
+  model: fal.image('fal-ai/flux-pro/kontext'),
+  prompt: 'Put a donut next to the flour.',
+  providerOptions: {
+    fal: {
+      image_url:
+        'https://v3.fal.media/files/rabbit/rmgBxhwGYb2d3pl3x9sKf_output.png',
+    },
+  },
+});
+```
+
+### Provider Options
+
+Fal image models support flexible provider options through the `providerOptions.fal` object. You can pass any parameters supported by the specific Fal model's API. Common options include:
+
+- **image_url** - Reference image URL for image-to-image generation
+- **strength** - Controls how much the output differs from the input image
+- **guidance_scale** - Controls adherence to the prompt
+- **num_inference_steps** - Number of denoising steps
+- **safety_checker** - Enable/disable safety filtering
+
+Refer to the [Fal AI model documentation](https://fal.ai/models) for model-specific parameters.
 
 ### Advanced Features
 
@@ -12514,7 +27081,7 @@ The following provider options are available:
 
 - **chunkLevel** _string_
   Level of the chunks to return. Either 'segment' or 'word'.
-  Default value: "word"
+  Default value: "segment"
   Optional.
 
 - **version** _string_
@@ -12538,6 +27105,58 @@ The following provider options are available:
 | `whisper` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `wizper`  | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 
+## Speech Models
+
+You can create models that call Fal text-to-speech endpoints using the `.speech()` factory method.
+
+### Basic Usage
+
+```ts
+import { experimental_generateSpeech as generateSpeech } from 'ai';
+import { fal } from '@ai-sdk/fal';
+
+const result = await generateSpeech({
+  model: fal.speech('fal-ai/minimax/speech-02-hd'),
+  text: 'Hello from the AI SDK!',
+});
+```
+
+### Model Capabilities
+
+| Model                                     | Description                                                                                                                                                           |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fal-ai/minimax/voice-clone`              | Clone a voice from a sample audio and generate speech from text prompts                                                                                               |
+| `fal-ai/minimax/voice-design`             | Design a personalized voice from a text description and generate speech from text prompts                                                                             |
+| `fal-ai/dia-tts/voice-clone`              | Clone dialog voices from a sample audio and generate dialogs from text prompts                                                                                        |
+| `fal-ai/minimax/speech-02-hd`             | Generate speech from text prompts and different voices                                                                                                                |
+| `fal-ai/minimax/speech-02-turbo`          | Generate fast speech from text prompts and different voices                                                                                                           |
+| `fal-ai/dia-tts`                          | Directly generates realistic dialogue from transcripts with audio conditioning for emotion control. Produces natural nonverbals like laughter and throat clearing     |
+| `resemble-ai/chatterboxhd/text-to-speech` | Generate expressive, natural speech with Resemble AI's Chatterbox. Features unique emotion control, instant voice cloning from short audio, and built-in watermarking |
+
+### Provider Options
+
+Pass provider-specific options via `providerOptions.fal` depending on the model:
+
+- **voice_setting** _object_
+
+  - `voice_id` (string): predefined voice ID
+  - `speed` (number): 0.5–2.0
+  - `vol` (number): 0–10
+  - `pitch` (number): -12–12
+  - `emotion` (enum): happy | sad | angry | fearful | disgusted | surprised | neutral
+  - `english_normalization` (boolean)
+
+- **audio_setting** _object_
+  Audio configuration settings specific to the model.
+
+- **language_boost** _enum_
+  Chinese | Chinese,Yue | English | Arabic | Russian | Spanish | French | Portuguese | German | Turkish | Dutch | Ukrainian | Vietnamese | Indonesian | Japanese | Italian | Korean | Thai | Polish | Romanian | Greek | Czech | Finnish | Hindi | auto
+
+- **pronunciation_dict** _object_
+  Custom pronunciation dictionary for specific words.
+
+Model-specific parameters (e.g., `audio_url`, `prompt`, `preview_text`, `ref_audio_url`, `ref_text`) can be passed directly under `providerOptions.fal` and will be forwarded to the Fal API.
+
 ---
 
 title: AssemblyAI
@@ -12553,7 +27172,7 @@ The [AssemblyAI](https://assemblyai.com/) provider contains language model suppo
 
 The AssemblyAI provider is available in the `@ai-sdk/assemblyai` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/assemblyai" dark />
 </Tab>
@@ -12563,6 +27182,10 @@ The AssemblyAI provider is available in the `@ai-sdk/assemblyai` module. You can
 <Tab>
 <Snippet text="yarn add @ai-sdk/assemblyai" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/assemblyai" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -12834,7 +27457,7 @@ The [DeepInfra](https://deepinfra.com) provider contains support for state-of-th
 
 The DeepInfra provider is available via the `@ai-sdk/deepinfra` module. You can install it with:
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/deepinfra" dark />
 </Tab>
@@ -12844,6 +27467,10 @@ The DeepInfra provider is available via the `@ai-sdk/deepinfra` module. You can 
 <Tab>
 <Snippet text="yarn add @ai-sdk/deepinfra" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/deepinfra" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -12869,7 +27496,10 @@ You can use the following optional settings to customize the DeepInfra provider 
 - **baseURL** _string_
 
   Use a different URL prefix for API calls, e.g. to use proxy servers.
-  The default prefix is `https://api.deepinfra.com/v1/openai`.
+  The default prefix is `https://api.deepinfra.com/v1`.
+
+  Note: Language models and embeddings use OpenAI-compatible endpoints at `{baseURL}/openai`,
+  while image models use `{baseURL}/inference`.
 
 - **apiKey** _string_
 
@@ -12919,7 +27549,7 @@ DeepInfra language models can also be used in the `streamText` function (see [AI
 | `meta-llama/Llama-3.2-11B-Vision-Instruct`          | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 | `meta-llama/Llama-3.2-90B-Vision-Instruct`          | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 | `mistralai/Mixtral-8x7B-Instruct-v0.1`              | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
-| `deepseek-ai/DeepSeek-V3`                           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `deepseek-ai/DeepSeek-V3`                           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `deepseek-ai/DeepSeek-R1`                           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 | `deepseek-ai/DeepSeek-R1-Distill-Llama-70B`         | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 | `deepseek-ai/DeepSeek-R1-Turbo`                     | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
@@ -13004,6 +27634,47 @@ For models supporting size parameters, dimensions must typically be:
 
 For more details and pricing information, see the [DeepInfra text-to-image models page](https://deepinfra.com/models/text-to-image).
 
+## Embedding Models
+
+You can create DeepInfra embedding models using the `.textEmbedding()` factory method.
+For more on embedding models with the AI SDK see [embed()](/docs/reference/ai-sdk-core/embed).
+
+```ts
+import { deepinfra } from '@ai-sdk/deepinfra';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: deepinfra.textEmbedding('BAAI/bge-large-en-v1.5'),
+  value: 'sunny day at the beach',
+});
+```
+
+### Model Capabilities
+
+| Model                                                 | Dimensions | Max Tokens |
+| ----------------------------------------------------- | ---------- | ---------- |
+| `BAAI/bge-base-en-v1.5`                               | 768        | 512        |
+| `BAAI/bge-large-en-v1.5`                              | 1024       | 512        |
+| `BAAI/bge-m3`                                         | 1024       | 8192       |
+| `intfloat/e5-base-v2`                                 | 768        | 512        |
+| `intfloat/e5-large-v2`                                | 1024       | 512        |
+| `intfloat/multilingual-e5-large`                      | 1024       | 512        |
+| `sentence-transformers/all-MiniLM-L12-v2`             | 384        | 256        |
+| `sentence-transformers/all-MiniLM-L6-v2`              | 384        | 256        |
+| `sentence-transformers/all-mpnet-base-v2`             | 768        | 384        |
+| `sentence-transformers/clip-ViT-B-32`                 | 512        | 77         |
+| `sentence-transformers/clip-ViT-B-32-multilingual-v1` | 512        | 77         |
+| `sentence-transformers/multi-qa-mpnet-base-dot-v1`    | 768        | 512        |
+| `sentence-transformers/paraphrase-MiniLM-L6-v2`       | 384        | 128        |
+| `shibing624/text2vec-base-chinese`                    | 768        | 512        |
+| `thenlper/gte-base`                                   | 768        | 512        |
+| `thenlper/gte-large`                                  | 1024       | 512        |
+
+<Note>
+  For a complete list of available embedding models, see the [DeepInfra
+  embeddings page](https://deepinfra.com/models/embeddings).
+</Note>
+
 ---
 
 title: Deepgram
@@ -13019,7 +27690,7 @@ The [Deepgram](https://deepgram.com/) provider contains language model support f
 
 The Deepgram provider is available in the `@ai-sdk/deepgram` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/deepgram" dark />
 </Tab>
@@ -13029,6 +27700,10 @@ The Deepgram provider is available in the `@ai-sdk/deepgram` module. You can ins
 <Tab>
 <Snippet text="yarn add @ai-sdk/deepgram" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/deepgram" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -13208,7 +27883,7 @@ The [Gladia](https://gladia.io/) provider contains language model support for th
 
 The Gladia provider is available in the `@ai-sdk/gladia` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/gladia" dark />
 </Tab>
@@ -13218,6 +27893,10 @@ The Gladia provider is available in the `@ai-sdk/gladia` module. You can install
 <Tab>
 <Snippet text="yarn add @ai-sdk/gladia" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/gladia" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -13244,7 +27923,7 @@ You can use the following optional settings to customize the Gladia provider ins
 - **apiKey** _string_
 
   API key that is being sent using the `Authorization` header.
-  It defaults to the `DEEPGRAM_API_KEY` environment variable.
+  It defaults to the `GLADIA_API_KEY` environment variable.
 
 - **headers** _Record&lt;string,string&gt;_
 
@@ -13501,7 +28180,7 @@ The [LMNT](https://lmnt.com/) provider contains language model support for the L
 
 The LMNT provider is available in the `@ai-sdk/lmnt` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/lmnt" dark />
 </Tab>
@@ -13511,6 +28190,10 @@ The LMNT provider is available in the `@ai-sdk/lmnt` module. You can install it 
 <Tab>
 <Snippet text="yarn add @ai-sdk/lmnt" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/lmnt" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -13570,7 +28253,7 @@ import { lmnt } from '@ai-sdk/lmnt';
 const result = await generateSpeech({
   model: lmnt.speech('aurora'),
   text: 'Hello, world!',
-  providerOptions: { lmnt: { language: 'en' } },
+  language: 'en', // Standardized language parameter
 });
 ```
 
@@ -13634,14 +28317,14 @@ description: Learn how to use Google Generative AI Provider.
 
 # Google Generative AI Provider
 
-The [Google Generative AI](https://ai.google/discover/generativeai/) provider contains language and embedding model support for
+The [Google Generative AI](https://ai.google.dev) provider contains language and embedding model support for
 the [Google Generative AI](https://ai.google.dev/api/rest) APIs.
 
 ## Setup
 
 The Google provider is available in the `@ai-sdk/google` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/google" dark />
 </Tab>
@@ -13651,6 +28334,10 @@ The Google provider is available in the `@ai-sdk/google` module. You can install
 <Tab>
 <Snippet text="yarn add @ai-sdk/google" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/google" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -13697,30 +28384,51 @@ You can use the following optional settings to customize the Google Generative A
 ## Language Models
 
 You can create models that call the [Google Generative AI API](https://ai.google.dev/api/rest) using the provider instance.
-The first argument is the model id, e.g. `gemini-1.5-pro-latest`.
+The first argument is the model id, e.g. `gemini-2.5-flash`.
 The models support tool calls and some have multi-modal capabilities.
 
 ```ts
-const model = google('gemini-1.5-pro-latest');
+const model = google('gemini-2.5-flash');
 ```
 
-<Note>
-  You can use fine-tuned models by prefixing the model id with `tunedModels/`,
-  e.g. `tunedModels/my-model`.
-</Note>
+You can use Google Generative AI language models to generate text with the `generateText` function:
+
+```ts
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: google('gemini-2.5-flash'),
+  prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+});
+```
+
+Google Generative AI language models can also be used in the `streamText`, `generateObject`, and `streamObject` functions
+(see [AI SDK Core](/docs/ai-sdk-core)).
 
 Google Generative AI also supports some model specific settings that are not part of the [standard call settings](/docs/ai-sdk-core/settings).
 You can pass them as an options argument:
 
 ```ts
-const model = google('gemini-1.5-pro-latest', {
-  safetySettings: [
-    { category: 'HARM_CATEGORY_UNSPECIFIED', threshold: 'BLOCK_LOW_AND_ABOVE' },
-  ],
+const model = google('gemini-2.5-flash');
+
+await generateText({
+  model,
+  providerOptions: {
+    google: {
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_UNSPECIFIED',
+          threshold: 'BLOCK_LOW_AND_ABOVE',
+        },
+      ],
+      responseModalities: ['TEXT', 'IMAGE'],
+    },
+  },
 });
 ```
 
-The following optional settings are available for Google Generative AI models:
+The following optional provider options are available for Google Generative AI models:
 
 - **cachedContent** _string_
 
@@ -13761,74 +28469,51 @@ The following optional settings are available for Google Generative AI models:
     - `BLOCK_ONLY_HIGH`
     - `BLOCK_NONE`
 
-Further configuration can be done using Google Generative AI provider options. You can validate the provider options using the `GoogleGenerativeAIProviderOptions` type.
-
-```ts
-import { google } from '@ai-sdk/google';
-import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import { generateText } from 'ai';
-
-const { text } = await generateText({
-  model: google('gemini-1.5-pro-latest'),
-  providerOptions: {
-    google: {
-      responseModalities: ['TEXT', 'IMAGE'],
-    } satisfies GoogleGenerativeAIProviderOptions,
-  },
-  // ...
-});
-```
-
-Another example showing the use of provider options to specify the thinking budget for a Google Generative AI thinking model:
-
-```ts
-import { google } from '@ai-sdk/google';
-import { GoogleGenerativeAIProviderOptions } from '@ai-sdk/google';
-import { generateText } from 'ai';
-
-const { text } = await generateText({
-  model: google('gemini-2.5-flash-preview-04-17'),
-  providerOptions: {
-    google: {
-      thinkingConfig: {
-        thinkingBudget: 2048,
-      },
-    } satisfies GoogleGenerativeAIProviderOptions,
-  },
-  // ...
-});
-```
-
-The following provider options are available:
-
 - **responseModalities** _string[]_
   The modalities to use for the response. The following modalities are supported: `TEXT`, `IMAGE`. When not defined or empty, the model defaults to returning only text.
 
-- **thinkingConfig** _\{ thinkingBudget: number; \}_
+- **thinkingConfig** _\{ thinkingBudget: number; includeThoughts: boolean \}_
 
   Optional. Configuration for the model's thinking process. Only supported by specific [Google Generative AI models](https://ai.google.dev/gemini-api/docs/thinking).
 
   - **thinkingBudget** _number_
 
-    Optional. Gives the model guidance on the number of thinking tokens it can use when
-    generating a response. Must be an integer in the range 0 to 24576. Setting it to 0
-    disables thinking. Budgets from 1 to 1024 tokens will be set to 1024.
-    For more information see [Google Generative AI documentation](https://ai.google.dev/gemini-api/docs/thinking).
+    Optional. Gives the model guidance on the number of thinking tokens it can use when generating a response. Setting it to 0 disables thinking, if the model supports it.
+    For more information about the possible value ranges for each model see [Google Generative AI thinking documentation](https://ai.google.dev/gemini-api/docs/thinking#set-budget).
 
-You can use Google Generative AI language models to generate text with the `generateText` function:
+  - **includeThoughts** _boolean_
+
+    Optional. If set to true, thought summaries are returned, which are synthisized versions of the model's raw thoughts and offer insights into the model's internal reasoning process.
+
+### Thinking
+
+The Gemini 2.5 series models use an internal "thinking process" that significantly improves their reasoning and multi-step planning abilities, making them highly effective for complex tasks such as coding, advanced mathematics, and data analysis. For more information see [Google Generative AI thinking documentation](https://ai.google.dev/gemini-api/docs/thinking).
+
+You can control thinking budgets and enable a thought summary by setting the `thinkingConfig` parameter.
 
 ```ts
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
-const { text } = await generateText({
-  model: google('gemini-1.5-pro-latest'),
-  prompt: 'Write a vegetarian lasagna recipe for 4 people.',
-});
-```
+const model = google('gemini-2.5-flash');
 
-Google Generative AI language models can also be used in the `streamText`, `generateObject`, and `streamObject` functions
-(see [AI SDK Core](/docs/ai-sdk-core)).
+const { text, reasoning } = await generateText({
+  model: model,
+  prompt: 'What is the sum of the first 10 prime numbers?',
+  providerOptions: {
+    google: {
+      thinkingConfig: {
+        thinkingBudget: 8192,
+        includeThoughts: true,
+      },
+    },
+  },
+});
+
+console.log(text);
+
+console.log(reasoning); // Reasoning summary
+```
 
 ### File Inputs
 
@@ -13839,7 +28524,7 @@ import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
 const result = await generateText({
-  model: google('gemini-1.5-flash'),
+  model: google('gemini-2.5-flash'),
   messages: [
     {
       role: 'user',
@@ -13851,7 +28536,34 @@ const result = await generateText({
         {
           type: 'file',
           data: fs.readFileSync('./data/ai.pdf'),
-          mimeType: 'application/pdf',
+          mediaType: 'application/pdf',
+        },
+      ],
+    },
+  ],
+});
+```
+
+You can also use YouTube URLs directly:
+
+```ts
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: google('gemini-2.5-flash'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: 'Summarize this video',
+        },
+        {
+          type: 'file',
+          data: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          mediaType: 'video/mp4',
         },
       ],
     },
@@ -13861,15 +28573,74 @@ const result = await generateText({
 
 <Note>
   The AI SDK will automatically download URLs if you pass them as data, except
-  for `https://generativelanguage.googleapis.com/v1beta/files/`. You can use the
-  Google Generative AI Files API to upload larger files to that location.
+  for `https://generativelanguage.googleapis.com/v1beta/files/` and YouTube
+  URLs. You can use the Google Generative AI Files API to upload larger files to
+  that location. YouTube URLs (public or unlisted videos) are supported directly
+  - you can specify one YouTube video URL per request.
 </Note>
 
 See [File Parts](/docs/foundations/prompts#file-parts) for details on how to use files in prompts.
 
 ### Cached Content
 
-You can use Google Generative AI language models to cache content:
+Google Generative AI supports both explicit and implicit caching to help reduce costs on repetitive content.
+
+#### Implicit Caching
+
+Gemini 2.5 models automatically provide cache cost savings without needing to create an explicit cache. When you send requests that share common prefixes with previous requests, you'll receive a 75% token discount on cached content.
+
+To maximize cache hits with implicit caching:
+
+- Keep content at the beginning of requests consistent
+- Add variable content (like user questions) at the end of prompts
+- Ensure requests meet minimum token requirements:
+  - Gemini 2.5 Flash: 1024 tokens minimum
+  - Gemini 2.5 Pro: 2048 tokens minimum
+
+```ts
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+// Structure prompts with consistent content at the beginning
+const baseContext =
+  'You are a cooking assistant with expertise in Italian cuisine. Here are 1000 lasagna recipes for reference...';
+
+const { text: veggieLasagna } = await generateText({
+  model: google('gemini-2.5-pro'),
+  prompt: `${baseContext}\n\nWrite a vegetarian lasagna recipe for 4 people.`,
+});
+
+// Second request with same prefix - eligible for cache hit
+const { text: meatLasagna, providerMetadata } = await generateText({
+  model: google('gemini-2.5-pro'),
+  prompt: `${baseContext}\n\nWrite a meat lasagna recipe for 12 people.`,
+});
+
+// Check cached token count in usage metadata
+console.log('Cached tokens:', providerMetadata.google?.usageMetadata);
+// e.g.
+// {
+//   groundingMetadata: null,
+//   safetyRatings: null,
+//   usageMetadata: {
+//     cachedContentTokenCount: 2027,
+//     thoughtsTokenCount: 702,
+//     promptTokenCount: 2152,
+//     candidatesTokenCount: 710,
+//     totalTokenCount: 3564
+//   }
+// }
+```
+
+<Note>
+  Usage metadata was added to `providerMetadata` in `@ai-sdk/google@1.2.23`. If
+  you are using an older version, usage metadata is available in the raw HTTP
+  `response` body returned as part of the return value from `generateText`.
+</Note>
+
+#### Explicit Caching
+
+For guaranteed cost savings, you can still use explicit caching with Gemini 2.5 and 2.0 models. See the [models page](https://ai.google.dev/gemini-api/docs/models) to check if caching is supported for the used model:
 
 ```ts
 import { google } from '@ai-sdk/google';
@@ -13880,50 +28651,76 @@ const cacheManager = new GoogleAICacheManager(
   process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 );
 
-// As of August 23rd, 2024, these are the only models that support caching
-type GoogleModelCacheableId =
-  | 'models/gemini-1.5-flash-001'
-  | 'models/gemini-1.5-pro-001';
-
-const model: GoogleModelCacheableId = 'models/gemini-1.5-pro-001';
+const model = 'gemini-2.5-pro';
 
 const { name: cachedContent } = await cacheManager.create({
   model,
   contents: [
     {
       role: 'user',
-      parts: [{ text: '1000 Lasanga Recipes...' }],
+      parts: [{ text: '1000 Lasagna Recipes...' }],
     },
   ],
   ttlSeconds: 60 * 5,
 });
 
 const { text: veggieLasangaRecipe } = await generateText({
-  model: google(model, { cachedContent }),
+  model: google(model),
   prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+  providerOptions: {
+    google: {
+      cachedContent,
+    },
+  },
 });
 
 const { text: meatLasangaRecipe } = await generateText({
-  model: google(model, { cachedContent }),
+  model: google(model),
   prompt: 'Write a meat lasagna recipe for 12 people.',
+  providerOptions: {
+    google: {
+      cachedContent,
+    },
+  },
 });
 ```
 
-### Search Grounding
+### Code Execution
 
-With [search grounding](https://ai.google.dev/gemini-api/docs/grounding),
+With [Code Execution](https://ai.google.dev/gemini-api/docs/code-execution), certain models can generate and execute Python code to perform calculations, solve problems, or provide more accurate information.
+
+You can enable code execution by adding the `code_execution` tool to your request.
+
+```ts
+import { google } from '@ai-sdk/google';
+import { googleTools } from '@ai-sdk/google/internal';
+import { generateText } from 'ai';
+
+const { text, toolCalls, toolResults } = await generateText({
+  model: google('gemini-2.5-pro'),
+  tools: { code_execution: google.tools.codeExecution({}) },
+  prompt: 'Use python to calculate the 20th fibonacci number.',
+});
+```
+
+The response will contain the tool calls and results from the code execution.
+
+### Google Search
+
+With [search grounding](https://ai.google.dev/gemini-api/docs/google-search),
 the model has access to the latest information using Google search.
-Search grounding can be used to provide answers around current events:
+Google search can be used to provide answers around current events:
 
-```ts highlight="7,14-20"
+```ts highlight="8,17-20"
 import { google } from '@ai-sdk/google';
 import { GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
-const { text, providerMetadata } = await generateText({
-  model: google('gemini-1.5-pro', {
-    useSearchGrounding: true,
-  }),
+const { text, sources, providerMetadata } = await generateText({
+  model: google('gemini-2.5-flash'),
+  tools: {
+    google_search: google.tools.googleSearch({}),
+  },
   prompt:
     'List the top 5 San Francisco news from the past week.' +
     'You must include the date of each article.',
@@ -13938,7 +28735,9 @@ const groundingMetadata = metadata?.groundingMetadata;
 const safetyRatings = metadata?.safetyRatings;
 ```
 
-The grounding metadata includes detailed information about how search results were used to ground the model's response. Here are the available fields:
+When Search Grounding is enabled, the model will include sources in the response.
+
+Additionally, the grounding metadata includes detailed information about how search results were used to ground the model's response. Here are the available fields:
 
 - **`webSearchQueries`** (`string[] | null`)
 
@@ -13984,58 +28783,117 @@ Example response:
 }
 ```
 
-#### Dynamic Retrieval
+### URL Context
 
-With [dynamic retrieval](https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/ground-with-google-search#dynamic-retrieval), you can configure how the model decides when to turn on Grounding with Google Search. This gives you more control over when and how the model grounds its responses.
+Google provides a provider-defined URL context tool.
 
-```ts highlight="7-10"
+The URL context tool allows the you to provide specific URLs that you want the model to analyze directly in from the prompt.
+
+```ts highlight="9,13-17"
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
-const { text, providerMetadata } = await generateText({
-  model: google('gemini-1.5-flash', {
-    useSearchGrounding: true,
-    dynamicRetrievalConfig: {
-      mode: 'MODE_DYNAMIC',
-      dynamicThreshold: 0.8,
-    },
-  }),
-  prompt: 'Who won the latest F1 grand prix?',
+const { text, sources, providerMetadata } = await generateText({
+  model: google('gemini-2.5-flash'),
+  prompt: `Based on the document: https://ai.google.dev/gemini-api/docs/url-context.
+          Answer this question: How many links we can consume in one request?`,
+  tools: {
+    url_context: google.tools.urlContext({}),
+  },
 });
+
+const metadata = providerMetadata?.google as
+  | GoogleGenerativeAIProviderMetadata
+  | undefined;
+const groundingMetadata = metadata?.groundingMetadata;
+const urlContextMetadata = metadata?.urlContextMetadata;
 ```
 
-The `dynamicRetrievalConfig` describes the options to customize dynamic retrieval:
+The URL context metadata includes detailed information about how the model used the URL context to generate the response. Here are the available fields:
 
-- `mode`: The mode of the predictor to be used in dynamic retrieval. The following modes are supported:
+- **`urlMetadata`** (`{ retrievedUrl: string; urlRetrievalStatus: string; }[] | null`)
 
-  - `MODE_DYNAMIC`: Run retrieval only when system decides it is necessary
-  - `MODE_UNSPECIFIED`: Always trigger retrieval
+  - Array of URL context metadata
+  - Each object includes:
+    - **`retrievedUrl`**: The URL of the context
+    - **`urlRetrievalStatus`**: The status of the URL retrieval
 
-- `dynamicThreshold`: The threshold to be used in dynamic retrieval (if not set, a system default value is used).
+Example response:
+
+```json
+{
+  "urlMetadata": [
+    {
+      "retrievedUrl": "https://ai-sdk.dev/providers/ai-sdk-providers/google-generative-ai",
+      "urlRetrievalStatus": "URL_RETRIEVAL_STATUS_SUCCESS"
+    }
+  ]
+}
+```
+
+With the URL context tool, you will also get the `groundingMetadata`.
+
+```json
+"groundingMetadata": {
+    "groundingChunks": [
+        {
+            "web": {
+                "uri": "https://ai-sdk.dev/providers/ai-sdk-providers/google-generative-ai",
+                "title": "Google Generative AI - AI SDK Providers"
+            }
+        }
+    ],
+    "groundingSupports": [
+        {
+            "segment": {
+                "startIndex": 67,
+                "endIndex": 157,
+                "text": "**Installation**: Install the `@ai-sdk/google` module using your preferred package manager"
+            },
+            "groundingChunkIndices": [
+                0
+            ]
+        },
+    ]
+}
+```
+
+<Note>You can add up to 20 URLs per request.</Note>
 
 <Note>
-  Dynamic retrieval is only available with Gemini 1.5 Flash models and is not
-  supported with 8B variants.
+  The URL context tool is only supported for Gemini 2.0 Flash models and above.
+  Check the [supported models for URL context
+  tool](https://ai.google.dev/gemini-api/docs/url-context#supported-models).
 </Note>
 
-### Sources
+#### Combine URL Context with Search Grounding
 
-When you use [Search Grounding](#search-grounding), the model will include sources in the response.
-You can access them using the `sources` property of the result:
+You can combine the URL context tool with search grounding to provide the model with the latest information from the web.
 
-```ts
+```ts highlight="9-10"
 import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
-const { sources } = await generateText({
-  model: google('gemini-2.0-flash-exp', { useSearchGrounding: true }),
-  prompt: 'List the top 5 San Francisco news from the past week.',
+const { text, sources, providerMetadata } = await generateText({
+  model: google('gemini-2.5-flash'),
+  prompt: `Based on this context: https://ai-sdk.dev/providers/ai-sdk-providers/google-generative-ai, tell me how to use Gemini with AI SDK.
+    Also, provide the latest news about AI SDK V5.`,
+  tools: {
+    google_search: google.tools.googleSearch({}),
+    url_context: google.tools.urlContext({}),
+  },
 });
+
+const metadata = providerMetadata?.google as
+  | GoogleGenerativeAIProviderMetadata
+  | undefined;
+const groundingMetadata = metadata?.groundingMetadata;
+const urlContextMetadata = metadata?.urlContextMetadata;
 ```
 
 ### Image Outputs
 
-The model `gemini-2.0-flash-exp` supports image generation. Images are exposed as files in the response.
+Gemini models with image generation capabilities (`gemini-2.5-flash-image-preview`) support image generation. Images are exposed as files in the response.
 You need to enable image output in the provider options using the `responseModalities` option.
 
 ```ts
@@ -14043,16 +28901,17 @@ import { google } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
 const result = await generateText({
-  model: google('gemini-2.0-flash-exp'),
+  model: google('gemini-2.5-flash-image-preview'),
   providerOptions: {
     google: { responseModalities: ['TEXT', 'IMAGE'] },
   },
-  prompt: 'Generate an image of a comic cat',
+  prompt:
+    'Create a picture of a nano banana dish in a fancy restaurant with a Gemini theme',
 });
 
 for (const file of result.files) {
-  if (file.mimeType.startsWith('image/')) {
-    // show the image
+  if (file.mediaType.startsWith('image/')) {
+    console.log('Generated image:', file);
   }
 }
 ```
@@ -14114,10 +28973,13 @@ By default, structured outputs are enabled (and for tool calling they are requir
 You can disable structured outputs for object generation as a workaround:
 
 ```ts highlight="3,8"
-const result = await generateObject({
-  model: google('gemini-1.5-pro-latest', {
-    structuredOutputs: false,
-  }),
+const { object } = await generateObject({
+  model: google('gemini-2.5-flash'),
+  providerOptions: {
+    google: {
+      structuredOutputs: false,
+    },
+  },
   schema: z.object({
     name: z.string(),
     age: z.number(),
@@ -14143,45 +29005,81 @@ The following Zod features are known to not work with Google Generative AI:
 
 ### Model Capabilities
 
-| Model                            | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
-| -------------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `gemini-2.5-pro-preview-05-06`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-2.5-flash-preview-04-17` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-2.5-pro-exp-03-25`       | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-2.0-flash`               | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-1.5-pro`                 | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-1.5-pro-latest`          | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-1.5-flash`               | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-1.5-flash-latest`        | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-1.5-flash-8b`            | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `gemini-1.5-flash-8b-latest`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| Model                                 | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      | Google Search       | URL Context         |
+| ------------------------------------- | ------------------- | ------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `gemini-2.5-pro`                      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `gemini-2.5-flash`                    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `gemini-2.5-flash-lite`               | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `gemini-2.5-flash-lite-preview-06-17` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `gemini-2.0-flash`                    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `gemini-1.5-pro`                      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `gemini-1.5-pro-latest`               | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `gemini-1.5-flash`                    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `gemini-1.5-flash-latest`             | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `gemini-1.5-flash-8b`                 | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `gemini-1.5-flash-8b-latest`          | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
 
 <Note>
   The table above lists popular models. Please see the [Google Generative AI
-  docs](https://ai.google.dev/gemini-api/docs/models/gemini) for a full list of
+  docs](https://ai.google.dev/gemini-api/docs/models/) for a full list of
   available models. The table above lists popular models. You can also pass any
   available provider model ID as a string if needed.
 </Note>
 
-## Embedding Models
+## Gemma Models
 
-You can create models that call the [Google Generative AI embeddings API](https://ai.google.dev/api/embeddings)
-using the `.textEmbeddingModel()` factory method.
+You can use [Gemma models](https://deepmind.google/models/gemma/) with the Google Generative AI API.
+
+Gemma models don't natively support the `systemInstruction` parameter, but the provider automatically handles system instructions by prepending them to the first user message. This allows you to use system instructions with Gemma models seamlessly:
 
 ```ts
-const model = google.textEmbeddingModel('text-embedding-004');
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
+
+const { text } = await generateText({
+  model: google('gemma-3-27b-it'),
+  system: 'You are a helpful assistant that responds concisely.',
+  prompt: 'What is machine learning?',
+});
 ```
+
+The system instruction is automatically formatted and included in the conversation, so Gemma models can follow the guidance without any additional configuration.
+
+## Embedding Models
+
+You can create models that call the [Google Generative AI embeddings API](https://ai.google.dev/gemini-api/docs/embeddings)
+using the `.textEmbedding()` factory method.
+
+```ts
+const model = google.textEmbedding('gemini-embedding-001');
+```
+
+The Google Generative AI provider sends API calls to the right endpoint based on the type of embedding:
+
+- **Single embeddings**: When embedding a single value with `embed()`, the provider uses the single `:embedContent` endpoint, which typically has higher rate limits compared to the batch endpoint.
+- **Batch embeddings**: When embedding multiple values with `embedMany()` or multiple values in `embed()`, the provider uses the `:batchEmbedContents` endpoint.
 
 Google Generative AI embedding models support aditional settings. You can pass them as an options argument:
 
 ```ts
-const model = google.textEmbeddingModel('text-embedding-004', {
-  outputDimensionality: 512, // optional, number of dimensions for the embedding
-  taskType: 'SEMANTIC_SIMILARITY', // optional, specifies the task type for generating embeddings
+import { google } from '@ai-sdk/google';
+import { embed } from 'ai';
+
+const model = google.textEmbedding('gemini-embedding-001');
+
+const { embedding } = await embed({
+  model,
+  value: 'sunny day at the beach',
+  providerOptions: {
+    google: {
+      outputDimensionality: 512, // optional, number of dimensions for the embedding
+      taskType: 'SEMANTIC_SIMILARITY', // optional, specifies the task type for generating embeddings
+    },
+  },
 });
 ```
 
-The following optional settings are available for Google Generative AI embedding models:
+The following optional provider options are available for Google Generative AI embedding models:
 
 - **outputDimensionality**: _number_
 
@@ -14202,9 +29100,60 @@ The following optional settings are available for Google Generative AI embedding
 
 ### Model Capabilities
 
-| Model                | Default Dimensions | Custom Dimensions   |
-| -------------------- | ------------------ | ------------------- |
-| `text-embedding-004` | 768                | <Check size={18} /> |
+| Model                  | Default Dimensions | Custom Dimensions   |
+| ---------------------- | ------------------ | ------------------- |
+| `gemini-embedding-001` | 3072               | <Check size={18} /> |
+| `text-embedding-004`   | 768                | <Check size={18} /> |
+
+## Image Models
+
+You can create [Imagen](https://ai.google.dev/gemini-api/imagen) models that call the Google Generative AI API using the `.image()` factory method.
+For more on image generation with the AI SDK see [generateImage()](/docs/reference/ai-sdk-core/generate-image).
+
+```ts
+import { google } from '@ai-sdk/google';
+import { experimental_generateImage as generateImage } from 'ai';
+
+const { image } = await generateImage({
+  model: google.image('imagen-3.0-generate-002'),
+  prompt: 'A futuristic cityscape at sunset',
+  aspectRatio: '16:9',
+});
+```
+
+Further configuration can be done using Google provider options. You can validate the provider options using the `GoogleGenerativeAIImageProviderOptions` type.
+
+```ts
+import { google } from '@ai-sdk/google';
+import { GoogleGenerativeAIImageProviderOptions } from '@ai-sdk/google';
+import { experimental_generateImage as generateImage } from 'ai';
+
+const { image } = await generateImage({
+  model: google.image('imagen-3.0-generate-002'),
+  providerOptions: {
+    google: {
+      personGeneration: 'dont_allow',
+    } satisfies GoogleGenerativeAIImageProviderOptions,
+  },
+  // ...
+});
+```
+
+The following provider options are available:
+
+- **personGeneration** `allow_adult` | `allow_all` | `dont_allow`
+  Whether to allow person generation. Defaults to `allow_adult`.
+
+<Note>
+  Imagen models do not support the `size` parameter. Use the `aspectRatio`
+  parameter instead.
+</Note>
+
+#### Model Capabilities
+
+| Model                     | Aspect Ratios             |
+| ------------------------- | ------------------------- |
+| `imagen-3.0-generate-002` | 1:1, 3:4, 4:3, 9:16, 16:9 |
 
 ---
 
@@ -14221,7 +29170,7 @@ The [Hume](https://hume.ai/) provider contains language model support for the Hu
 
 The Hume provider is available in the `@ai-sdk/hume` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/hume" dark />
 </Tab>
@@ -14231,6 +29180,10 @@ The Hume provider is available in the `@ai-sdk/hume` module. You can install it 
 <Tab>
 <Snippet text="yarn add @ai-sdk/hume" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/hume" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -14331,7 +29284,7 @@ The Google Vertex provider for the [AI SDK](/docs) contains language model suppo
 
 The Google Vertex and Google Vertex Anthropic providers are both available in the `@ai-sdk/google-vertex` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/google-vertex" dark />
 </Tab>
@@ -14344,6 +29297,10 @@ The Google Vertex and Google Vertex Anthropic providers are both available in th
       dark
     />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/google-vertex" dark />
+  </Tab>
 </Tabs>
 
 ## Google Vertex Provider Usage
@@ -14558,14 +29515,24 @@ of the [standard call settings](/docs/ai-sdk-core/settings). You can pass them a
 an options argument:
 
 ```ts
-const model = vertex('gemini-1.5-pro', {
-  safetySettings: [
-    { category: 'HARM_CATEGORY_UNSPECIFIED', threshold: 'BLOCK_LOW_AND_ABOVE' },
-  ],
+const model = vertex('gemini-1.5-pro');
+
+await generateText({
+  model,
+  providerOptions: {
+    google: {
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_UNSPECIFIED',
+          threshold: 'BLOCK_LOW_AND_ABOVE',
+        },
+      ],
+    },
+  },
 });
 ```
 
-The following optional settings are available for Google Vertex models:
+The following optional provider options are available for Google Vertex models:
 
 - **structuredOutputs** _boolean_
 
@@ -14603,16 +29570,18 @@ The following optional settings are available for Google Vertex models:
     - `BLOCK_ONLY_HIGH`
     - `BLOCK_NONE`
 
-- **useSearchGrounding** _boolean_
-
-  Optional. When enabled, the model will [use Google search to ground the response](https://cloud.google.com/vertex-ai/generative-ai/docs/grounding/overview).
-
 - **audioTimestamp** _boolean_
 
   Optional. Enables timestamp understanding for audio files. Defaults to false.
 
   This is useful for generating transcripts with accurate timestamps.
   Consult [Google's Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/audio-understanding) for usage details.
+
+- **labels** _object_
+
+  Optional. Defines labels used in billing reports.
+
+  Consult [Google's Documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/add-labels-to-api-calls) for usage details.
 
 You can use Google Vertex language models to generate text with the `generateText` function:
 
@@ -14629,6 +29598,56 @@ const { text } = await generateText({
 Google Vertex language models can also be used in the `streamText` function
 (see [AI SDK Core](/docs/ai-sdk-core)).
 
+#### Code Execution
+
+With [Code Execution](https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/code-execution), certain Gemini models on Vertex AI can generate and execute Python code. This allows the model to perform calculations, data manipulation, and other programmatic tasks to enhance its responses.
+
+You can enable code execution by adding the `code_execution` tool to your request.
+
+```ts
+import { vertex } from '@ai-sdk/google-vertex';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: vertex('gemini-2.5-pro'),
+  tools: { code_execution: vertex.tools.codeExecution({}) },
+  prompt:
+    'Use python to calculate 20th fibonacci number. Then find the nearest palindrome to it.',
+});
+```
+
+The response will contain `tool-call` and `tool-result` parts for the executed code.
+
+#### URL Context
+
+URL Context allows Gemini models to retrieve and analyze content from URLs. Supported models: Gemini 2.5 Flash-Lite, 2.5 Pro, 2.5 Flash, 2.0 Flash.
+
+```ts
+import { vertex } from '@ai-sdk/google-vertex';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: vertex('gemini-2.5-pro'),
+  tools: { url_context: vertex.tools.urlContext({}) },
+  prompt: 'What are the key points from https://example.com/article?',
+});
+```
+
+#### Google Search
+
+Google Search enables Gemini models to access real-time web information. Supported models: Gemini 2.5 Flash-Lite, 2.5 Flash, 2.0 Flash, 2.5 Pro.
+
+```ts
+import { vertex } from '@ai-sdk/google-vertex';
+import { generateText } from 'ai';
+
+const result = await generateText({
+  model: vertex('gemini-2.5-pro'),
+  tools: { google_search: vertex.tools.googleSearch({}) },
+  prompt: 'What are the latest developments in AI?',
+});
+```
+
 #### Reasoning (Thinking Tokens)
 
 Google Vertex AI, through its support for Gemini models, can also emit "thinking" tokens, representing the model's reasoning process. The AI SDK exposes these as reasoning information.
@@ -14642,7 +29661,7 @@ import { generateText, streamText } from 'ai';
 
 // For generateText:
 const { text, reasoning, reasoningDetails } = await generateText({
-  model: vertex('gemini-2.5-flash-preview-04-17'), // Or other supported model via Vertex
+  model: vertex('gemini-2.0-flash-001'), // Or other supported model via Vertex
   providerOptions: {
     google: {
       // Options are nested under 'google' for Vertex provider
@@ -14661,7 +29680,7 @@ console.log('Final Text:', text);
 
 // For streamText:
 const result = streamText({
-  model: vertex('gemini-2.5-flash-preview-04-17'), // Or other supported model via Vertex
+  model: vertex('gemini-2.0-flash-001'), // Or other supported model via Vertex
   providerOptions: {
     google: {
       // Options are nested under 'google' for Vertex provider
@@ -14715,7 +29734,7 @@ const { text } = await generateText({
         {
           type: 'file',
           data: fs.readFileSync('./data/ai.pdf'),
-          mimeType: 'application/pdf',
+          mediaType: 'application/pdf',
         },
       ],
     },
@@ -14730,101 +29749,6 @@ const { text } = await generateText({
 </Note>
 
 See [File Parts](/docs/foundations/prompts#file-parts) for details on how to use files in prompts.
-
-#### Search Grounding
-
-With [search grounding](https://cloud.google.com/vertex-ai/generative-ai/docs/grounding/overview),
-the model has access to the latest information using Google search.
-Search grounding can be used to provide answers around current events:
-
-```ts highlight="7,14-20"
-import { vertex } from '@ai-sdk/google-vertex';
-import { GoogleGenerativeAIProviderMetadata } from '@ai-sdk/google';
-import { generateText } from 'ai';
-
-const { text, providerMetadata } = await generateText({
-  model: vertex('gemini-1.5-pro', {
-    useSearchGrounding: true,
-  }),
-  prompt:
-    'List the top 5 San Francisco news from the past week.' +
-    'You must include the date of each article.',
-});
-
-// access the grounding metadata. Casting to the provider metadata type
-// is optional but provides autocomplete and type safety.
-const metadata = providerMetadata?.google as
-  | GoogleGenerativeAIProviderMetadata
-  | undefined;
-const groundingMetadata = metadata?.groundingMetadata;
-const safetyRatings = metadata?.safetyRatings;
-```
-
-The grounding metadata includes detailed information about how search results were used to ground the model's response. Here are the available fields:
-
-- **`webSearchQueries`** (`string[] | null`)
-
-  - Array of search queries used to retrieve information
-  - Example: `["What's the weather in Chicago this weekend?"]`
-
-- **`searchEntryPoint`** (`{ renderedContent: string } | null`)
-
-  - Contains the main search result content used as an entry point
-  - The `renderedContent` field contains the formatted content
-
-- **`groundingSupports`** (Array of support objects | null)
-  - Contains details about how specific response parts are supported by search results
-  - Each support object includes:
-    - **`segment`**: Information about the grounded text segment
-      - `text`: The actual text segment
-      - `startIndex`: Starting position in the response
-      - `endIndex`: Ending position in the response
-    - **`groundingChunkIndices`**: References to supporting search result chunks
-    - **`confidenceScores`**: Confidence scores (0-1) for each supporting chunk
-
-Example response excerpt:
-
-```json
-{
-  "groundingMetadata": {
-    "retrievalQueries": ["What's the weather in Chicago this weekend?"],
-    "searchEntryPoint": {
-      "renderedContent": "..."
-    },
-    "groundingSupports": [
-      {
-        "segment": {
-          "startIndex": 0,
-          "endIndex": 65,
-          "text": "Chicago weather changes rapidly, so layers let you adjust easily."
-        },
-        "groundingChunkIndices": [0],
-        "confidenceScores": [0.99]
-      }
-    ]
-  }
-}
-```
-
-<Note>
-  The Google Vertex provider does not yet support [dynamic retrieval mode and
-  threshold](https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/ground-gemini#dynamic-retrieval).
-</Note>
-
-### Sources
-
-When you use [Search Grounding](#search-grounding), the model will include sources in the response.
-You can access them using the `sources` property of the result:
-
-```ts
-import { vertex } from '@ai-sdk/google-vertex';
-import { generateText } from 'ai';
-
-const { sources } = await generateText({
-  model: vertex('gemini-1.5-pro', { useSearchGrounding: true }),
-  prompt: 'List the top 5 San Francisco news from the past week.',
-});
-```
 
 ### Safety Ratings
 
@@ -14886,9 +29810,12 @@ You can disable structured outputs for object generation as a workaround:
 
 ```ts highlight="3,8"
 const result = await generateObject({
-  model: vertex('gemini-1.5-pro', {
-    structuredOutputs: false,
-  }),
+  model: vertex('gemini-1.5-pro'),
+  providerOptions: {
+    google: {
+      structuredOutputs: false,
+    },
+  },
   schema: z.object({
     name: z.string(),
     age: z.number(),
@@ -14930,25 +29857,59 @@ The following Zod features are known to not work with Google Vertex:
 
 ### Embedding Models
 
-You can create models that call the Google Vertex AI embeddings API using the `.textEmbeddingModel()` factory method:
+You can create models that call the Google Vertex AI embeddings API using the `.textEmbedding()` factory method:
 
 ```ts
-const model = vertex.textEmbeddingModel('text-embedding-004');
+const model = vertex.textEmbedding('text-embedding-004');
 ```
 
 Google Vertex AI embedding models support additional settings. You can pass them as an options argument:
 
 ```ts
-const model = vertex.textEmbeddingModel('text-embedding-004', {
-  outputDimensionality: 512, // optional, number of dimensions for the embedding
+import { vertex } from '@ai-sdk/google-vertex';
+import { embed } from 'ai';
+
+const model = vertex.textEmbedding('text-embedding-004');
+
+const { embedding } = await embed({
+  model,
+  value: 'sunny day at the beach',
+  providerOptions: {
+    google: {
+      outputDimensionality: 512, // optional, number of dimensions for the embedding
+      taskType: 'SEMANTIC_SIMILARITY', // optional, specifies the task type for generating embeddings
+      autoTruncate: false, // optional
+    },
+  },
 });
 ```
 
-The following optional settings are available for Google Vertex AI embedding models:
+The following optional provider options are available for Google Vertex AI embedding models:
 
 - **outputDimensionality**: _number_
 
   Optional reduced dimension for the output embedding. If set, excessive values in the output embedding are truncated from the end.
+
+- **taskType**: _string_
+
+  Optional. Specifies the task type for generating embeddings. Supported task types include:
+
+  - `SEMANTIC_SIMILARITY`: Optimized for text similarity.
+  - `CLASSIFICATION`: Optimized for text classification.
+  - `CLUSTERING`: Optimized for clustering texts based on similarity.
+  - `RETRIEVAL_DOCUMENT`: Optimized for document retrieval.
+  - `RETRIEVAL_QUERY`: Optimized for query-based retrieval.
+  - `QUESTION_ANSWERING`: Optimized for answering questions.
+  - `FACT_VERIFICATION`: Optimized for verifying factual information.
+  - `CODE_RETRIEVAL_QUERY`: Optimized for retrieving code blocks based on natural language queries.
+
+- **title**: _string_
+
+  Optional. The title of the document being embedded. This helps the model produce better embeddings by providing additional context. Only valid when `taskType` is set to `'RETRIEVAL_DOCUMENT'`.
+
+- **autoTruncate**: _boolean_
+
+  Optional. When set to `true`, input text will be truncated if it exceeds the maximum length. When set to `false`, an error is returned if the input text is too long. Defaults to `true`.
 
 #### Model Capabilities
 
@@ -14982,7 +29943,7 @@ Further configuration can be done using Google Vertex provider options. You can 
 ```ts
 import { vertex } from '@ai-sdk/google-vertex';
 import { GoogleVertexImageProviderOptions } from '@ai-sdk/google-vertex';
-import { generateImage } from 'ai';
+import { experimental_generateImage as generateImage } from 'ai';
 
 const { image } = await generateImage({
   model: vertex.image('imagen-3.0-generate-002'),
@@ -15017,12 +29978,34 @@ The following provider options are available:
   parameter instead.
 </Note>
 
+Additional information about the images can be retrieved using Google Vertex meta data.
+
+```ts
+import { vertex } from '@ai-sdk/google-vertex';
+import { GoogleVertexImageProviderOptions } from '@ai-sdk/google-vertex';
+import { experimental_generateImage as generateImage } from 'ai';
+
+const { image, providerMetadata } = await generateImage({
+  model: vertex.image('imagen-3.0-generate-002'),
+  prompt: 'A futuristic cityscape at sunset',
+  aspectRatio: '16:9',
+});
+
+console.log(
+  `Revised prompt: ${providerMetadata.vertex.images[0].revisedPrompt}`,
+);
+```
+
 #### Model Capabilities
 
-| Model                          | Aspect Ratios             |
-| ------------------------------ | ------------------------- |
-| `imagen-3.0-generate-002`      | 1:1, 3:4, 4:3, 9:16, 16:9 |
-| `imagen-3.0-fast-generate-001` | 1:1, 3:4, 4:3, 9:16, 16:9 |
+| Model                                     | Aspect Ratios             |
+| ----------------------------------------- | ------------------------- |
+| `imagen-3.0-generate-001`                 | 1:1, 3:4, 4:3, 9:16, 16:9 |
+| `imagen-3.0-generate-002`                 | 1:1, 3:4, 4:3, 9:16, 16:9 |
+| `imagen-3.0-fast-generate-001`            | 1:1, 3:4, 4:3, 9:16, 16:9 |
+| `imagen-4.0-generate-preview-06-06`       | 1:1, 3:4, 4:3, 9:16, 16:9 |
+| `imagen-4.0-fast-generate-preview-06-06`  | 1:1, 3:4, 4:3, 9:16, 16:9 |
+| `imagen-4.0-ultra-generate-preview-06-06` | 1:1, 3:4, 4:3, 9:16, 16:9 |
 
 ## Google Vertex Anthropic Provider Usage
 
@@ -15230,7 +30213,7 @@ Anthropic language models can also be used in the `streamText`, `generateObject`
   instead of streaming it incrementally.
 </Note>
 
-The following optional settings are available for Anthropic models:
+The following optional provider options are available for Anthropic models:
 
 - `sendReasoning` _boolean_
 
@@ -15238,6 +30221,10 @@ The following optional settings are available for Anthropic models:
 
   If you are experiencing issues with the model handling requests involving
   reasoning content, you can set this to `false` to omit them from the request.
+
+- `thinking` _object_
+
+  Optional. See [Reasoning section](#reasoning) for more details.
 
 ### Reasoning
 
@@ -15439,10 +30426,10 @@ const computerTool = vertexAnthropic.tools.computer_20241022({
   },
 
   // map to tool result content for LLM consumption:
-  experimental_toToolResultContent(result) {
+  toModelOutput(result) {
     return typeof result === 'string'
       ? [{ type: 'text', text: result }]
-      : [{ type: 'image', data: result.data, mimeType: 'image/png' }];
+      : [{ type: 'image', data: result.data, mediaType: 'image/png' }];
   },
 });
 ```
@@ -15490,7 +30477,7 @@ The [Rev.ai](https://www.rev.ai/) provider contains language model support for t
 
 The Rev.ai provider is available in the `@ai-sdk/revai` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/revai" dark />
 </Tab>
@@ -15500,6 +30487,10 @@ The Rev.ai provider is available in the `@ai-sdk/revai` module. You can install 
 <Tab>
 <Snippet text="yarn add @ai-sdk/revai" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/revai" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -15576,6 +30567,7 @@ The following provider options are available:
 
   - **url** _string_ - Callback url to invoke when processing is complete.
   - **auth_headers** _object_ - Optional authorization headers, if needed to invoke the callback.
+    - **Authorization** _string_ - Authorization header value.
 
 - **delete_after_seconds** _integer_
 
@@ -15676,7 +30668,6 @@ The following provider options are available:
 | Model      | Transcription       | Duration            | Segments            | Language            |
 | ---------- | ------------------- | ------------------- | ------------------- | ------------------- |
 | `machine`  | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `human`    | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `low_cost` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `fusion`   | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 
@@ -15695,7 +30686,7 @@ The [Mistral AI](https://mistral.ai/) provider contains language model support f
 
 The Mistral provider is available in the `@ai-sdk/mistral` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/mistral" dark />
 </Tab>
@@ -15705,6 +30696,10 @@ The Mistral provider is available in the `@ai-sdk/mistral` module. You can insta
 <Tab>
 <Snippet text="yarn add @ai-sdk/mistral" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/mistral" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -15760,21 +30755,49 @@ const model = mistral('mistral-large-latest');
 ```
 
 Mistral chat models also support additional model settings that are not part of the [standard call settings](/docs/ai-sdk-core/settings).
-You can pass them as an options argument:
+You can pass them as an options argument and utilize `MistralLanguageModelOptions` for typing:
 
 ```ts
-const model = mistral('mistral-large-latest', {
-  safePrompt: true, // optional safety prompt injection
+import { mistral, type MistralLanguageModelOptions } from '@ai-sdk/mistral';
+const model = mistral('mistral-large-latest');
+
+await generateText({
+  model,
+  providerOptions: {
+    mistral: {
+      safePrompt: true, // optional safety prompt injection
+    } satisfies MistralLanguageModelOptions,
+  },
 });
 ```
 
-The following optional settings are available for Mistral models:
+The following optional provider options are available for Mistral models:
 
 - **safePrompt** _boolean_
 
   Whether to inject a safety prompt before all conversations.
 
   Defaults to `false`.
+
+- **documentImageLimit** _number_
+
+  Maximum number of images to process in a document.
+
+- **documentPageLimit** _number_
+
+  Maximum number of pages to process in a document.
+
+- **strictJsonSchema** _boolean_
+
+  Whether to use strict JSON schema validation for structured outputs. Only applies when a schema is provided and only sets the [`strict` flag](https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post) in addition to using [Custom Structured Outputs](https://docs.mistral.ai/capabilities/structured-output/custom_structured_output/), which is used by default if a schema is provided.
+
+  Defaults to `false`.
+
+- **structuredOutputs** _boolean_
+
+  Whether to use [structured outputs](#structured-outputs). When enabled, tool calls and object generation will be strict and follow the provided schema.
+
+  Defaults to `true`.
 
 ### Document OCR
 
@@ -15797,7 +30820,7 @@ const result = await generateText({
           data: new URL(
             'https://github.com/vercel/ai/blob/main/examples/ai-core/data/ai.pdf?raw=true',
           ),
-          mimeType: 'application/pdf',
+          mediaType: 'application/pdf',
         },
       ],
     },
@@ -15811,6 +30834,42 @@ const result = await generateText({
   },
 });
 ```
+
+### Reasoning Models
+
+Mistral offers reasoning models that provide step-by-step thinking capabilities:
+
+- **magistral-small-2506**: Smaller reasoning model for efficient step-by-step thinking
+- **magistral-medium-2506**: More powerful reasoning model balancing performance and cost
+
+These models return content that includes `<think>...</think>` tags containing the reasoning process. To properly extract and separate the reasoning from the final answer, use the [extract reasoning middleware](/docs/reference/ai-sdk-core/extract-reasoning-middleware):
+
+```ts
+import { mistral } from '@ai-sdk/mistral';
+import {
+  extractReasoningMiddleware,
+  generateText,
+  wrapLanguageModel,
+} from 'ai';
+
+const result = await generateText({
+  model: wrapLanguageModel({
+    model: mistral('magistral-small-2506'),
+    middleware: extractReasoningMiddleware({
+      tagName: 'think',
+    }),
+  }),
+  prompt: 'What is 15 * 24?',
+});
+
+console.log('REASONING:', result.reasoningText);
+// Output: "Let me calculate this step by step..."
+
+console.log('ANSWER:', result.text);
+// Output: "360"
+```
+
+The middleware automatically parses the `<think>` tags and provides separate `reasoningText` and `text` properties in the result.
 
 ### Example
 
@@ -15829,16 +30888,77 @@ const { text } = await generateText({
 Mistral language models can also be used in the `streamText`, `generateObject`, and `streamObject` functions
 (see [AI SDK Core](/docs/ai-sdk-core)).
 
+#### Structured Outputs
+
+Mistral chat models support structured outputs using JSON Schema. You can use `generateObject` or `streamObject`
+with Zod, Valibot, or raw JSON Schema. The SDK sends your schema via Mistral's `response_format: { type: 'json_schema' }`.
+
+```ts
+import { mistral } from '@ai-sdk/mistral';
+import { generateObject } from 'ai';
+import { z } from 'zod/v3';
+
+const result = await generateObject({
+  model: mistral('mistral-large-latest'),
+  schema: z.object({
+    recipe: z.object({
+      name: z.string(),
+      ingredients: z.array(z.string()),
+      instructions: z.array(z.string()),
+    }),
+  }),
+  prompt: 'Generate a simple pasta recipe.',
+});
+
+console.log(JSON.stringify(result.object, null, 2));
+```
+
+You can enable strict JSON Schema validation using a provider option:
+
+```ts highlight="7-11"
+import { mistral } from '@ai-sdk/mistral';
+import { generateObject } from 'ai';
+import { z } from 'zod/v3';
+
+const result = await generateObject({
+  model: mistral('mistral-large-latest'),
+  providerOptions: {
+    mistral: {
+      strictJsonSchema: true, // reject outputs that don't strictly match the schema
+    },
+  },
+  schema: z.object({
+    title: z.string(),
+    items: z.array(z.object({ id: z.string(), qty: z.number().int().min(1) })),
+  }),
+  prompt: 'Generate a small shopping list.',
+});
+```
+
+<Note>
+  When using structured outputs, the SDK no longer injects an extra "answer with
+  JSON" instruction. It relies on Mistral's native `json_schema`/`json_object`
+  response formats instead. You can customize the schema name/description via
+  the standard structured-output APIs.
+</Note>
+
 ### Model Capabilities
 
-| Model                  | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
-| ---------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `pixtral-large-latest` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `mistral-large-latest` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `mistral-small-latest` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `ministral-3b-latest`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `ministral-8b-latest`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `pixtral-12b-2409`     | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| Model                   | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
+| ----------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `pixtral-large-latest`  | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `mistral-large-latest`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `mistral-medium-latest` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `mistral-medium-2505`   | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `mistral-small-latest`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `magistral-small-2506`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `magistral-medium-2506` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `ministral-3b-latest`   | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `ministral-8b-latest`   | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `pixtral-12b-2409`      | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `open-mistral-7b`       | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `open-mixtral-8x7b`     | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `open-mixtral-8x22b`    | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 
 <Note>
   The table above lists popular models. Please see the [Mistral
@@ -15850,10 +30970,22 @@ Mistral language models can also be used in the `streamText`, `generateObject`, 
 ## Embedding Models
 
 You can create models that call the [Mistral embeddings API](https://docs.mistral.ai/api/#operation/createEmbedding)
-using the `.embedding()` factory method.
+using the `.textEmbedding()` factory method.
 
 ```ts
-const model = mistral.embedding('mistral-embed');
+const model = mistral.textEmbedding('mistral-embed');
+```
+
+You can use Mistral embedding models to generate embeddings with the `embed` function:
+
+```ts
+import { mistral } from '@ai-sdk/mistral';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: mistral.textEmbedding('mistral-embed'),
+  value: 'sunny day at the beach',
+});
 ```
 
 ### Model Capabilities
@@ -15878,7 +31010,7 @@ The [Together.ai](https://together.ai) provider contains support for 200+ open-s
 The Together.ai provider is available via the `@ai-sdk/togetherai` module. You can
 install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/togetherai" dark />
 </Tab>
@@ -15888,6 +31020,10 @@ install it with
 <Tab>
 <Snippet text="yarn add @ai-sdk/togetherai" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/togetherai" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -15974,7 +31110,7 @@ const { text } = await generateText({
 Together.ai language models can also be used in the `streamText` function
 (see [AI SDK Core](/docs/ai-sdk-core)).
 
-The Together.ai provider also supports [completion models](https://docs.together.ai/docs/serverless-models#language-models) via (following the above example code) `togetherai.completionModel()` and [embedding models](https://docs.together.ai/docs/serverless-models#embedding-models) via `togetherai.textEmbeddingModel()`.
+The Together.ai provider also supports [completion models](https://docs.together.ai/docs/serverless-models#language-models) via (following the above example code) `togetherai.completion()` and [embedding models](https://docs.together.ai/docs/serverless-models#embedding-models) via `togetherai.textEmbedding()`.
 
 ## Model Capabilities
 
@@ -16055,6 +31191,39 @@ Together.ai image models support various image dimensions that vary by model. Co
   list of available image models and their capabilities.
 </Note>
 
+## Embedding Models
+
+You can create Together.ai embedding models using the `.textEmbedding()` factory method.
+For more on embedding models with the AI SDK see [embed()](/docs/reference/ai-sdk-core/embed).
+
+```ts
+import { togetherai } from '@ai-sdk/togetherai';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: togetherai.textEmbedding('togethercomputer/m2-bert-80M-2k-retrieval'),
+  value: 'sunny day at the beach',
+});
+```
+
+### Model Capabilities
+
+| Model                                            | Dimensions | Max Tokens |
+| ------------------------------------------------ | ---------- | ---------- |
+| `togethercomputer/m2-bert-80M-2k-retrieval`      | 768        | 2048       |
+| `togethercomputer/m2-bert-80M-8k-retrieval`      | 768        | 8192       |
+| `togethercomputer/m2-bert-80M-32k-retrieval`     | 768        | 32768      |
+| `WhereIsAI/UAE-Large-V1`                         | 1024       | 512        |
+| `BAAI/bge-large-en-v1.5`                         | 1024       | 512        |
+| `BAAI/bge-base-en-v1.5`                          | 768        | 512        |
+| `sentence-transformers/msmarco-bert-base-dot-v5` | 768        | 512        |
+| `bert-base-uncased`                              | 768        | 512        |
+
+<Note>
+  For a complete list of available embedding models, see the [Together.ai models
+  page](https://docs.together.ai/docs/serverless-models#embedding-models).
+</Note>
+
 ---
 
 title: Cohere
@@ -16070,7 +31239,7 @@ The [Cohere](https://cohere.com/) provider contains language and embedding model
 
 The Cohere provider is available in the `@ai-sdk/cohere` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/cohere" dark />
 </Tab>
@@ -16080,6 +31249,10 @@ The Cohere provider is available in the `@ai-sdk/cohere` module. You can install
 <Tab>
 <Snippet text="yarn add @ai-sdk/cohere" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/cohere" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -16153,14 +31326,19 @@ Cohere language models can also be used in the `streamText`, `generateObject`, a
 
 ### Model Capabilities
 
-| Model               | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
-| ------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `command-a-03-2025` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `command-r-plus`    | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `command-r`         | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `command-a-03-2025` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `command`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `command-light`     | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| Model                    | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
+| ------------------------ | ------------------- | ------------------- | ------------------- | ------------------- |
+| `command-a-03-2025`      | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `command-r7b-12-2024`    | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `command-r-plus-04-2024` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `command-r-plus`         | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `command-r-08-2024`      | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `command-r-03-2024`      | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `command-r`              | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `command`                | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `command-nightly`        | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `command-light`          | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `command-light-nightly`  | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 
 <Note>
   The table above lists popular models. Please see the [Cohere
@@ -16172,21 +31350,48 @@ Cohere language models can also be used in the `streamText`, `generateObject`, a
 ## Embedding Models
 
 You can create models that call the [Cohere embed API](https://docs.cohere.com/v2/reference/embed)
-using the `.embedding()` factory method.
+using the `.textEmbedding()` factory method.
 
 ```ts
-const model = cohere.embedding('embed-english-v3.0');
+const model = cohere.textEmbedding('embed-english-v3.0');
 ```
 
-Cohere embedding models support additional settings. You can pass them as an options argument:
+You can use Cohere embedding models to generate embeddings with the `embed` function:
 
 ```ts
-const model = cohere.embedding('embed-english-v3.0', {
-  inputType: 'search_document',
+import { cohere } from '@ai-sdk/cohere';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: cohere.textEmbedding('embed-english-v3.0'),
+  value: 'sunny day at the beach',
+  providerOptions: {
+    cohere: {
+      inputType: 'search_document',
+    },
+  },
 });
 ```
 
-The following optional settings are available for Cohere embedding models:
+Cohere embedding models support additional provider options that can be passed via `providerOptions.cohere`:
+
+```ts
+import { cohere } from '@ai-sdk/cohere';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: cohere.textEmbedding('embed-english-v3.0'),
+  value: 'sunny day at the beach',
+  providerOptions: {
+    cohere: {
+      inputType: 'search_document',
+      truncate: 'END',
+    },
+  },
+});
+```
+
+The following provider options are available:
 
 - **inputType** _'search_document' | 'search_query' | 'classification' | 'clustering'_
 
@@ -16233,7 +31438,7 @@ description: Learn how to use Fireworks models with the AI SDK.
 
 The Fireworks provider is available via the `@ai-sdk/fireworks` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/fireworks" dark />
 </Tab>
@@ -16243,6 +31448,10 @@ The Fireworks provider is available via the `@ai-sdk/fireworks` module. You can 
 <Tab>
 <Snippet text="yarn add @ai-sdk/fireworks" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/fireworks" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -16339,17 +31548,24 @@ const model = fireworks.completion('accounts/fireworks/models/firefunction-v1');
 
 | Model                                                      | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
 | ---------------------------------------------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `accounts/fireworks/models/firefunction-v1`                | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `accounts/fireworks/models/deepseek-r1`                    | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/deepseek-v3`                    | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/llama-v3p1-405b-instruct`       | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 | `accounts/fireworks/models/llama-v3p1-8b-instruct`         | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/llama-v3p2-3b-instruct`         | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/llama-v3p3-70b-instruct`        | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `accounts/fireworks/models/mixtral-8x7b-instruct`          | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/mixtral-8x7b-instruct-hf`       | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/mixtral-8x22b-instruct`         | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/qwen2p5-coder-32b-instruct`     | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `accounts/fireworks/models/qwen2p5-72b-instruct`           | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `accounts/fireworks/models/qwen-qwq-32b-preview`           | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `accounts/fireworks/models/qwen2-vl-72b-instruct`          | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/llama-v3p2-11b-vision-instruct` | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `accounts/fireworks/models/qwq-32b`                        | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 | `accounts/fireworks/models/yi-large`                       | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
+| `accounts/fireworks/models/kimi-k2-instruct`               | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> |
 
 <Note>
   The table above lists popular models. Please see the [Fireworks models
@@ -16358,13 +31574,34 @@ const model = fireworks.completion('accounts/fireworks/models/firefunction-v1');
 
 ## Embedding Models
 
-You can create models that call the Fireworks embeddings API using the `.textEmbeddingModel()` factory method:
+You can create models that call the Fireworks embeddings API using the `.textEmbedding()` factory method:
 
 ```ts
-const model = fireworks.textEmbeddingModel(
-  'accounts/fireworks/models/nomic-embed-text-v1',
-);
+const model = fireworks.textEmbedding('nomic-ai/nomic-embed-text-v1.5');
 ```
+
+You can use Fireworks embedding models to generate embeddings with the `embed` function:
+
+```ts
+import { fireworks } from '@ai-sdk/fireworks';
+import { embed } from 'ai';
+
+const { embedding } = await embed({
+  model: fireworks.textEmbedding('nomic-ai/nomic-embed-text-v1.5'),
+  value: 'sunny day at the beach',
+});
+```
+
+### Model Capabilities
+
+| Model                            | Dimensions | Max Tokens |
+| -------------------------------- | ---------- | ---------- |
+| `nomic-ai/nomic-embed-text-v1.5` | 768        | 8192       |
+
+<Note>
+  For more embedding models, see the [Fireworks models
+  page](https://fireworks.ai/models) for a full list of available models.
+</Note>
 
 ## Image Models
 
@@ -16440,7 +31677,7 @@ API keys can be obtained from the [DeepSeek Platform](https://platform.deepseek.
 
 The DeepSeek provider is available via the `@ai-sdk/deepseek` module. You can install it with:
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/deepseek" dark />
 </Tab>
@@ -16450,6 +31687,10 @@ The DeepSeek provider is available via the `@ai-sdk/deepseek` module. You can in
 <Tab>
 <Snippet text="yarn add @ai-sdk/deepseek" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/deepseek" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -16504,24 +31745,39 @@ const { text } = await generateText({
 });
 ```
 
+You can also use the `.chat()` or `.languageModel()` factory methods:
+
+```ts
+const model = deepseek.chat('deepseek-chat');
+// or
+const model = deepseek.languageModel('deepseek-chat');
+```
+
 DeepSeek language models can be used in the `streamText` function
 (see [AI SDK Core](/docs/ai-sdk-core)).
 
 ### Reasoning
 
-DeepSeek has reasoning support for the `deepseek-reasoner` model:
+DeepSeek has reasoning support for the `deepseek-reasoner` model. The reasoning is exposed through streaming:
 
 ```ts
 import { deepseek } from '@ai-sdk/deepseek';
-import { generateText } from 'ai';
+import { streamText } from 'ai';
 
-const { text, reasoning } = await generateText({
+const result = streamText({
   model: deepseek('deepseek-reasoner'),
-  prompt: 'How many people will live in the world in 2040?',
+  prompt: 'How many "r"s are in the word "strawberry"?',
 });
 
-console.log(reasoning);
-console.log(text);
+for await (const part of result.fullStream) {
+  if (part.type === 'reasoning') {
+    // This is the reasoning text
+    console.log('Reasoning:', part.text);
+  } else if (part.type === 'text') {
+    // This is the final answer
+    console.log('Answer:', part.text);
+  }
+}
 ```
 
 See [AI SDK UI: Chatbot](/docs/ai-sdk-ui/chatbot#reasoning) for more details
@@ -16584,7 +31840,7 @@ API keys can be obtained from the [Cerebras Platform](https://cloud.cerebras.ai)
 
 The Cerebras provider is available via the `@ai-sdk/cerebras` module. You can install it with:
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/cerebras" dark />
 </Tab>
@@ -16594,6 +31850,10 @@ The Cerebras provider is available via the `@ai-sdk/cerebras` module. You can in
 <Tab>
 <Snippet text="yarn add @ai-sdk/cerebras" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/cerebras" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -16651,19 +31911,33 @@ const { text } = await generateText({
 Cerebras language models can be used in the `streamText` function
 (see [AI SDK Core](/docs/ai-sdk-core)).
 
+You can create Cerebras language models using a provider instance. The first argument is the model ID, e.g. `llama-3.3-70b`:
+
+```ts
+const model = cerebras('llama-3.3-70b');
+```
+
+You can also use the `.languageModel()` and `.chat()` methods:
+
+```ts
+const model = cerebras.languageModel('llama-3.3-70b');
+const model = cerebras.chat('llama-3.3-70b');
+```
+
 ## Model Capabilities
 
-| Model          | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
-| -------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `llama3.1-8b`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `llama3.1-70b` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
-| `llama3.3-70b` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| Model           | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
+| --------------- | ------------------- | ------------------- | ------------------- | ------------------- |
+| `llama3.1-8b`   | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `llama3.1-70b`  | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
+| `llama-3.3-70b` | <Cross size={18} /> | <Check size={18} /> | <Check size={18} /> | <Check size={18} /> |
 
 <Note>
   Please see the [Cerebras
   docs](https://inference-docs.cerebras.ai/introduction) for more details about
   the available models. Note that context windows are temporarily limited to
-  8192 tokens in the Free Tier.
+  8192 tokens in the Free Tier. You can also pass any available provider model
+  ID as a string if needed.
 </Note>
 
 ---
@@ -16682,16 +31956,20 @@ It is a popular choice for running image generation models.
 
 The Replicate provider is available via the `@ai-sdk/replicate` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
-<Snippet text="pnpm add ai @ai-sdk/replicate" dark />
+<Snippet text="pnpm add @ai-sdk/replicate" dark />
 </Tab>
 <Tab>
-<Snippet text="npm install ai @ai-sdk/replicate" dark />
+<Snippet text="npm install @ai-sdk/replicate" dark />
 </Tab>
 <Tab>
-<Snippet text="yarn add ai @ai-sdk/replicate" dark />
+<Snippet text="yarn add @ai-sdk/replicate" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/replicate" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -16754,19 +32032,36 @@ The following image models are currently supported by the Replicate provider:
 - [black-forest-labs/flux-dev](https://replicate.com/black-forest-labs/flux-dev)
 - [black-forest-labs/flux-pro](https://replicate.com/black-forest-labs/flux-pro)
 - [black-forest-labs/flux-schnell](https://replicate.com/black-forest-labs/flux-schnell)
+- [bytedance/sdxl-lightning-4step](https://replicate.com/bytedance/sdxl-lightning-4step)
+- [fofr/aura-flow](https://replicate.com/fofr/aura-flow)
+- [fofr/latent-consistency-model](https://replicate.com/fofr/latent-consistency-model)
+- [fofr/realvisxl-v3-multi-controlnet-lora](https://replicate.com/fofr/realvisxl-v3-multi-controlnet-lora)
+- [fofr/sdxl-emoji](https://replicate.com/fofr/sdxl-emoji)
+- [fofr/sdxl-multi-controlnet-lora](https://replicate.com/fofr/sdxl-multi-controlnet-lora)
 - [ideogram-ai/ideogram-v2-turbo](https://replicate.com/ideogram-ai/ideogram-v2-turbo)
 - [ideogram-ai/ideogram-v2](https://replicate.com/ideogram-ai/ideogram-v2)
+- [lucataco/dreamshaper-xl-turbo](https://replicate.com/lucataco/dreamshaper-xl-turbo)
+- [lucataco/open-dalle-v1.1](https://replicate.com/lucataco/open-dalle-v1.1)
+- [lucataco/realvisxl-v2.0](https://replicate.com/lucataco/realvisxl-v2.0)
+- [lucataco/realvisxl2-lcm](https://replicate.com/lucataco/realvisxl2-lcm)
 - [luma/photon-flash](https://replicate.com/luma/photon-flash)
 - [luma/photon](https://replicate.com/luma/photon)
+- [nvidia/sana](https://replicate.com/nvidia/sana)
+- [playgroundai/playground-v2.5-1024px-aesthetic](https://replicate.com/playgroundai/playground-v2.5-1024px-aesthetic)
 - [recraft-ai/recraft-v3-svg](https://replicate.com/recraft-ai/recraft-v3-svg)
 - [recraft-ai/recraft-v3](https://replicate.com/recraft-ai/recraft-v3)
 - [stability-ai/stable-diffusion-3.5-large-turbo](https://replicate.com/stability-ai/stable-diffusion-3.5-large-turbo)
 - [stability-ai/stable-diffusion-3.5-large](https://replicate.com/stability-ai/stable-diffusion-3.5-large)
 - [stability-ai/stable-diffusion-3.5-medium](https://replicate.com/stability-ai/stable-diffusion-3.5-medium)
+- [tstramer/material-diffusion](https://replicate.com/tstramer/material-diffusion)
 
 You can also use [versioned models](https://replicate.com/docs/topics/models/versions).
 The id for versioned models is the Replicate model id followed by a colon and the version ID (`$modelId:$versionId`), e.g.
 `bytedance/sdxl-lightning-4step:5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637`.
+
+<Note>
+  You can also pass any available Replicate model ID as a string if needed.
+</Note>
 
 ### Basic Usage
 
@@ -16837,7 +32132,7 @@ API keys can be obtained from the [Perplexity Platform](https://docs.perplexity.
 
 The Perplexity provider is available via the `@ai-sdk/perplexity` module. You can install it with:
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/perplexity" dark />
 </Tab>
@@ -16847,6 +32142,10 @@ The Perplexity provider is available via the `@ai-sdk/perplexity` module. You ca
 <Tab>
 <Snippet text="yarn add @ai-sdk/perplexity" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/perplexity" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -16962,9 +32261,11 @@ You can enable image responses by setting `return_images: true` in the provider 
 
 | Model                 | Image Input         | Object Generation   | Tool Usage          | Tool Streaming      |
 | --------------------- | ------------------- | ------------------- | ------------------- | ------------------- |
-| `sonar-pro`           | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `sonar`               | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
-| `sonar-deep-research` | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `sonar-deep-research` | <Cross size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `sonar-reasoning-pro` | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `sonar-reasoning`     | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `sonar-pro`           | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
+| `sonar`               | <Check size={18} /> | <Check size={18} /> | <Cross size={18} /> | <Cross size={18} /> |
 
 <Note>
   Please see the [Perplexity docs](https://docs.perplexity.ai) for detailed API
@@ -16986,7 +32287,7 @@ description: Learn how to use Luma AI models with the AI SDK.
 
 The Luma provider is available via the `@ai-sdk/luma` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/luma" dark />
 </Tab>
@@ -16996,6 +32297,10 @@ The Luma provider is available via the `@ai-sdk/luma` module. You can install it
 <Tab>
 <Snippet text="yarn add @ai-sdk/luma" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/luma" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -17067,13 +32372,20 @@ console.log(`Image saved to ${filename}`);
 
 ### Image Model Settings
 
-When creating an image model, you can customize the generation behavior with optional settings:
+You can customize the generation behavior with optional settings:
 
 ```ts
-const model = luma.image('photon-1', {
+const { image } = await generateImage({
+  model: luma.image('photon-1'),
+  prompt: 'A serene mountain landscape at sunset',
+  aspectRatio: '16:9',
   maxImagesPerCall: 1, // Maximum number of images to generate per API call
-  pollIntervalMillis: 5000, // How often to check for completed images (in ms)
-  maxPollAttempts: 10, // Maximum number of polling attempts before timeout
+  providerOptions: {
+    luma: {
+      pollIntervalMillis: 5000, // How often to check for completed images (in ms)
+      maxPollAttempts: 10, // Maximum number of polling attempts before timeout
+    },
+  },
 });
 ```
 
@@ -17226,13 +32538,13 @@ description: Learn how to use the ElevenLabs provider for the AI SDK.
 
 # ElevenLabs Provider
 
-The [ElevenLabs](https://elevenlabs.io/) provider contains language model support for the ElevenLabs transcription API.
+The [ElevenLabs](https://elevenlabs.io/) provider contains language model support for the ElevenLabs transcription and speech generation APIs.
 
 ## Setup
 
 The ElevenLabs provider is available in the `@ai-sdk/elevenlabs` module. You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/elevenlabs" dark />
 </Tab>
@@ -17242,6 +32554,10 @@ The ElevenLabs provider is available in the `@ai-sdk/elevenlabs` module. You can
 <Tab>
 <Snippet text="yarn add @ai-sdk/elevenlabs" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/elevenlabs" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -17280,6 +32596,94 @@ You can use the following optional settings to customize the ElevenLabs provider
   Defaults to the global `fetch` function.
   You can use it as a middleware to intercept requests,
   or to provide a custom fetch implementation for e.g. testing.
+
+## Speech Models
+
+You can create models that call the [ElevenLabs speech API](https://elevenlabs.io/text-to-speech)
+using the `.speech()` factory method.
+
+The first argument is the model id e.g. `eleven_multilingual_v2`.
+
+```ts
+const model = elevenlabs.speech('eleven_multilingual_v2');
+```
+
+You can also pass additional provider-specific options using the `providerOptions` argument. For example, supplying a voice to use for the generated audio.
+
+```ts highlight="6"
+import { experimental_generateSpeech as generateSpeech } from 'ai';
+import { elevenlabs } from '@ai-sdk/elevenlabs';
+
+const result = await generateSpeech({
+  model: elevenlabs.speech('eleven_multilingual_v2'),
+  text: 'Hello, world!',
+  providerOptions: { elevenlabs: {} },
+});
+```
+
+- **language_code** _string or null_  
+  Optional. Language code (ISO 639-1) used to enforce a language for the model. Currently, only Turbo v2.5 and Flash v2.5 support language enforcement. For other models, providing a language code will result in an error.
+
+- **voice_settings** _object or null_  
+  Optional. Voice settings that override stored settings for the given voice. These are applied only to the current request.
+
+  - **stability** _double or null_  
+    Optional. Determines how stable the voice is and the randomness between each generation. Lower values introduce broader emotional range; higher values result in a more monotonous voice.
+  - **use_speaker_boost** _boolean or null_  
+    Optional. Boosts similarity to the original speaker. Increases computational load and latency.
+  - **similarity_boost** _double or null_  
+    Optional. Controls how closely the AI should adhere to the original voice.
+  - **style** _double or null_  
+    Optional. Amplifies the style of the original speaker. May increase latency if set above 0.
+
+- **pronunciation_dictionary_locators** _array of objects or null_  
+  Optional. A list of pronunciation dictionary locators to apply to the text, in order. Up to 3 locators per request.  
+  Each locator object:
+
+  - **pronunciation_dictionary_id** _string_ (required)  
+    The ID of the pronunciation dictionary.
+  - **version_id** _string or null_ (optional)  
+    The version ID of the dictionary. If not provided, the latest version is used.
+
+- **seed** _integer or null_  
+  Optional. If specified, the system will attempt to sample deterministically. Must be between 0 and 4294967295. Determinism is not guaranteed.
+
+- **previous_text** _string or null_  
+  Optional. The text that came before the current request's text. Can improve continuity when concatenating generations or influence current generation continuity.
+
+- **next_text** _string or null_  
+  Optional. The text that comes after the current request's text. Can improve continuity when concatenating generations or influence current generation continuity.
+
+- **previous_request_ids** _array of strings or null_  
+  Optional. List of request IDs for samples generated before this one. Improves continuity when splitting large tasks. Max 3 IDs. If both `previous_text` and `previous_request_ids` are sent, `previous_text` is ignored.
+
+- **next_request_ids** _array of strings or null_  
+  Optional. List of request IDs for samples generated after this one. Useful for maintaining continuity when regenerating a sample. Max 3 IDs. If both `next_text` and `next_request_ids` are sent, `next_text` is ignored.
+
+- **apply_text_normalization** _enum_  
+  Optional. Controls text normalization.  
+  Allowed values: `'auto'` (default), `'on'`, `'off'`.
+
+  - `'auto'`: System decides whether to apply normalization (e.g., spelling out numbers).
+  - `'on'`: Always apply normalization.
+  - `'off'`: Never apply normalization.  
+    For `eleven_turbo_v2_5` and `eleven_flash_v2_5`, can only be enabled with Enterprise plans.
+
+- **apply_language_text_normalization** _boolean_  
+  Optional. Defaults to `false`. Controls language text normalization, which helps with proper pronunciation in some supported languages (currently only Japanese). May significantly increase latency.
+
+### Model Capabilities
+
+| Model                    | Instructions        |
+| ------------------------ | ------------------- |
+| `eleven_v3`              | <Check size={18} /> |
+| `eleven_multilingual_v2` | <Check size={18} /> |
+| `eleven_flash_v2_5`      | <Check size={18} /> |
+| `eleven_flash_v2`        | <Check size={18} /> |
+| `eleven_turbo_v2_5`      | <Check size={18} /> |
+| `eleven_turbo_v2`        | <Check size={18} /> |
+| `eleven_monolingual_v1`  | <Check size={18} /> |
+| `eleven_multilingual_v1` | <Check size={18} /> |
 
 ## Transcription Models
 
@@ -17370,7 +32774,7 @@ You can start the local server under the [Local Server tab](https://lmstudio.ai/
 The LM Studio provider is available via the `@ai-sdk/openai-compatible` module as it is compatible with the OpenAI API.
 You can install it with
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/openai-compatible" dark />
 </Tab>
@@ -17380,6 +32784,10 @@ You can install it with
 <Tab>
 <Snippet text="yarn add @ai-sdk/openai-compatible" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/openai-compatible" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -17436,10 +32844,12 @@ LM Studio language models can also be used with `streamText`.
 ## Embedding Models
 
 You can create models that call the [LM Studio embeddings API](https://lmstudio.ai/docs/basics/server#endpoints-overview)
-using the `.embedding()` factory method.
+using the `.textEmbeddingModel()` factory method.
 
 ```ts
-const model = lmstudio.embedding('text-embedding-nomic-embed-text-v1.5');
+const model = lmstudio.textEmbeddingModel(
+  'text-embedding-nomic-embed-text-v1.5',
+);
 ```
 
 ### Example - Embedding a Single Value
@@ -17470,7 +32880,7 @@ Similar to `embed`, you can use it with embeddings models,
 e.g. `lmstudio.textEmbeddingModel('text-embedding-nomic-embed-text-v1.5')` or `lmstudio.textEmbeddingModel('text-embedding-bge-small-en-v1.5')`.
 
 ```tsx
-import { createOpenAICompatible } from '@ai-sdk/openai';
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { embedMany } from 'ai';
 
 const lmstudio = createOpenAICompatible({
@@ -17506,7 +32916,7 @@ description: Use NVIDIA NIM OpenAI compatible API with the AI SDK.
 The NVIDIA NIM provider is available via the `@ai-sdk/openai-compatible` module as it is compatible with the OpenAI API.
 You can install it with:
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/openai-compatible" dark />
 </Tab>
@@ -17516,6 +32926,10 @@ You can install it with:
 <Tab>
 <Snippet text="yarn add @ai-sdk/openai-compatible" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/openai-compatible" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -17616,6 +33030,128 @@ NIM language models can also be used with other AI SDK functions like `generateO
 
 ---
 
+title: Heroku
+description: Use a Heroku OpenAI compatible API with the AI SDK.
+
+---
+
+# Heroku Provider
+
+[Heroku](https://heroku.com/) is a cloud platform that allows you to deploy and run applications, including AI models with OpenAI API compatibility.
+You can deploy models that are OpenAI API compatible and use them with the AI SDK.
+
+## Setup
+
+The Heroku provider is available via the `@ai-sdk/openai-compatible` module as it is compatible with the OpenAI API.
+You can install it with
+
+<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tab>
+<Snippet text="pnpm add @ai-sdk/openai-compatible" dark />
+</Tab>
+<Tab>
+<Snippet text="npm install @ai-sdk/openai-compatible" dark />
+</Tab>
+<Tab>
+<Snippet text="yarn add @ai-sdk/openai-compatible" dark />
+</Tab>
+</Tabs>
+
+### Heroku Setup
+
+1. Create a test app in Heroku:
+
+```bash
+heroku create
+```
+
+2. Inference using claude-3-5-haiku:
+
+```bash
+heroku ai:models:create -a $APP_NAME claude-3-5-haiku
+```
+
+3. Export Variables:
+
+```bash
+export INFERENCE_KEY=$(heroku config:get INFERENCE_KEY -a $APP_NAME)
+export INFERENCE_MODEL_ID=$(heroku config:get INFERENCE_MODEL_ID -a $APP_NAME)
+export INFERENCE_URL=$(heroku config:get INFERENCE_URL -a $APP_NAME)
+```
+
+## Provider Instance
+
+To use Heroku, you can create a custom provider instance with the `createOpenAICompatible` function from `@ai-sdk/openai-compatible`:
+
+```ts
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+
+const heroku = createOpenAICompatible({
+  name: 'heroku',
+  baseURL: process.env.INFERENCE_URL + '/v1',
+  apiKey: process.env.INFERENCE_KEY,
+});
+```
+
+Be sure to have your `INFERENCE_KEY`, `INFERENCE_MODEL_ID`, and `INFERENCE_URL` set in your environment variables.
+
+## Language Models
+
+You can create Heroku models using a provider instance.
+The first argument is the served model name, e.g. `claude-3-5-haiku`.
+
+```ts
+const model = heroku('claude-3-5-haiku');
+```
+
+### Example
+
+You can use Heroku language models to generate text with the `generateText` function:
+
+```ts
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { generateText } from 'ai';
+
+const heroku = createOpenAICompatible({
+  name: 'heroku',
+  baseURL: process.env.INFERENCE_URL + '/v1',
+  apiKey: process.env.INFERENCE_KEY,
+});
+
+const { text } = await generateText({
+  model: heroku('claude-3-5-haiku'),
+  prompt: 'Tell me about yourself in one sentence',
+});
+
+console.log(text);
+```
+
+Heroku language models are also able to generate text in a streaming fashion with the `streamText` function:
+
+```ts
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { streamText } from 'ai';
+
+const heroku = createOpenAICompatible({
+  name: 'heroku',
+  baseURL: process.env.INFERENCE_URL + '/v1',
+  apiKey: process.env.INFERENCE_KEY,
+});
+
+const result = streamText({
+  model: heroku('claude-3-5-haiku'),
+  prompt: 'Tell me about yourself in one sentence',
+});
+
+for await (const message of result.textStream) {
+  console.log(message);
+}
+```
+
+Heroku language models can also be used in the `generateObject`, and `streamObject` functions.
+
+---
+
 title: OpenAI Compatible Providers
 description: Use OpenAI compatible providers with the AI SDK.
 
@@ -17632,6 +33168,7 @@ We provide detailed documentation for the following OpenAI compatible providers:
 - [LM Studio](/providers/openai-compatible-providers/lmstudio)
 - [NIM](/providers/openai-compatible-providers/nim)
 - [Baseten](/providers/openai-compatible-providers/baseten)
+- [Heroku](/providers/openai-compatible-providers/heroku)
 
 The general setup and provider instance creation is the same for all of these providers.
 
@@ -17639,7 +33176,7 @@ The general setup and provider instance creation is the same for all of these pr
 
 The OpenAI Compatible provider is available via the `@ai-sdk/openai-compatible` module. You can install it with:
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
+<Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
 <Tab>
 <Snippet text="pnpm add @ai-sdk/openai-compatible" dark />
 </Tab>
@@ -17649,6 +33186,10 @@ The OpenAI Compatible provider is available via the `@ai-sdk/openai-compatible` 
 <Tab>
 <Snippet text="yarn add @ai-sdk/openai-compatible" dark />
 </Tab>
+
+  <Tab>
+    <Snippet text="bun add @ai-sdk/openai-compatible" dark />
+  </Tab>
 </Tabs>
 
 ## Provider Instance
@@ -17662,6 +33203,7 @@ const provider = createOpenAICompatible({
   name: 'provider-name',
   apiKey: process.env.PROVIDER_API_KEY,
   baseURL: 'https://api.provider.com/v1',
+  includeUsage: true, // Include usage information in streaming responses
 });
 ```
 
@@ -17692,6 +33234,10 @@ You can use the following optional settings to customize the provider instance:
   Defaults to the global `fetch` function.
   You can use it as a middleware to intercept requests,
   or to provide a custom fetch implementation for e.g. testing.
+
+- **includeUsage** _boolean_
+
+  Include usage information in streaming responses. When enabled, usage data will be included in the response metadata for streaming requests. Defaults to `undefined` (`false`).
 
 ## Language Models
 

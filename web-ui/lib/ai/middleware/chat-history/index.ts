@@ -10,6 +10,8 @@ import { enqueueStream, ProcessingQueue } from './processing-queue';
 import { JSONValue, simulateReadableStream, wrapLanguageModel } from 'ai';
 import { MiddlewareStateManager } from '../state-management';
 import { log } from '@/lib/logger';
+import { ToolMap } from '../../services/model-stats/tool-map';
+import { createToolOptimizingMiddleware } from '../tool-optimizing-middleware';
 export type { ChatHistoryContext } from './types';
 export {
   instrumentFlushOperation,
@@ -139,8 +141,28 @@ const createOriginalChatHistoryMiddleware = (
     },
 
     transformParams: async ({ params }) => {
-      // We can add any parameter transformations here if needed
-      return params;
+      // Pass tools to ToolMap for scanning/registration
+      const { tools = [] } = params;
+      try {
+        await ToolMap.getInstance().then((x) => x.scanForTools(tools));
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'ChatHistoryMiddleware',
+          message: 'Error in transforming parameters',
+          critical: true,
+          data: {
+            chatId: context.chatId,
+            turnId: context.turnId,
+            context,
+          },
+        });
+        throw error;
+      }
+      return {
+        ...params,
+        tools,
+      };
     },
   };
 };
@@ -236,6 +258,15 @@ export const wrapChatHistoryMiddleware = ({
   }
   return wrapLanguageModel({
     model,
-    middleware: createOriginalChatHistoryMiddleware(chatHistoryContext),
+    middleware: [
+      createToolOptimizingMiddleware({
+        userId: chatHistoryContext.userId,
+        chatHistoryId: chatHistoryContext.requestId,
+        enableMessageOptimization: true,
+        optimizationThreshold: 5,
+        enableToolScanning: true,
+      }),
+      createChatHistoryMiddleware(chatHistoryContext),
+    ],
   });
 };

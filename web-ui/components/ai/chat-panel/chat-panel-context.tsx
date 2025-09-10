@@ -13,14 +13,16 @@ export const ChatPanelContext = createContext<ChatPanelContextValue | null>(
 /**
  * Hook to use the chat panel context
  */
-export const useChatPanelContext = (): ChatPanelContextValue => {
+export const useChatPanelContext = ({
+  required = true,
+}: { required?: boolean } = {}): ChatPanelContextValue => {
   const context = useContext(ChatPanelContext);
-  if (!context) {
+  if (!context && required) {
     throw new Error(
       'useChatPanelContext must be used within a ChatPanelProvider',
     );
   }
-  return context;
+  return context as unknown as ChatPanelContextValue;
 };
 
 export { default as ChatPanelProvider } from './chat-panel-provider';

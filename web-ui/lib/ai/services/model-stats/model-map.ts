@@ -1,4 +1,4 @@
-import { ModelResourceNotFoundError } from '@/lib/ai/services/chat/errors/model-resource-not-found-error';
+import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
 /**
  * @module lib/ai/services/model-stats/model-map
  * @fileoverview
@@ -23,7 +23,7 @@ import {
 import { log } from '@/lib/logger';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
-import { isKeyOf } from '@/lib/typescript';
+import { isKeyOf, newUuid } from '@/lib/typescript';
 
 /**
  * Type representing a complete model record with provider information.
@@ -39,6 +39,11 @@ export type ModelRecord = {
   createdAt: string;
   updatedAt: string;
 };
+
+/**
+ * Type representing optional fields when creating or updating a model quota.
+ */
+type UpdateOptionalQuotaFields = 'id' | 'createdAt' | 'updatedAt' | 'isActive';
 
 /**
  * Type representing a model quota configuration.
@@ -103,6 +108,22 @@ export const EnvironmentAliasMap: Record<
     embedding: 'OPENAI_EMBEDDING',
   },
 } as const;
+
+/**
+ * Apparently I was just waiting for typescript to catch up?
+ * keeping around in case we wind up needing it
+type ModelRowExt = {
+  modelId: string;
+  providerId: string;
+  modelName: string;
+  displayName: string;
+  description: string;
+  isActive: string;
+  createdAt: string;
+  updatedAt: string;
+  providerName: string;
+};
+ */
 
 /**
  * ModelMap provides centralized management of AI model configurations and quotas.
@@ -480,7 +501,7 @@ export class ModelMap {
         },
         rethrow: () => {
           if (!providerId) {
-            throw new ModelResourceNotFoundError({
+            throw new ResourceNotFoundError({
               resourceType: 'provider',
               normalized: provider,
               inputRaw: providerOrModel,
@@ -488,7 +509,7 @@ export class ModelMap {
             });
           }
           if (!modelId) {
-            throw new ModelResourceNotFoundError({
+            throw new ResourceNotFoundError({
               resourceType: 'model',
               normalized: `${providerId}:${parsedModelName}`,
               inputRaw: { providerOrModel, modelName },
@@ -520,7 +541,7 @@ export class ModelMap {
     }
   }
 
-  /** Helper that throws ModelResourceNotFoundError when provider/model can’t be normalized */
+  /** Helper that throws ResourceNotFoundError when provider/model can’t be normalized */
   async normalizeProviderModelOrThrow(
     providerOrModel: string,
     modelName?: string,
@@ -555,7 +576,7 @@ export class ModelMap {
    * ```
    */
   async getModelByProviderAndName(
-    provider: string,
+    provider: LanguageModel,
     modelName: string,
   ): Promise<ModelRecord | null> {
     await this.#ensureFreshCache();
@@ -601,6 +622,40 @@ export class ModelMap {
   async getQuotaByModelId(modelId: string): Promise<ModelQuotaRecord | null> {
     await this.#ensureFreshCache();
     return this.#modelIdToQuota.get(modelId) || null;
+  }
+  /**
+   * Get a quota record by model ID.
+   *
+   * @param {string} modelId - Model ID.
+   * @returns {Promise<ModelQuotaRecord | null>} Quota record or null if not found.
+   */
+  async addQuotaToModel(
+    record: Omit<ModelQuotaRecord, UpdateOptionalQuotaFields> &
+      Partial<Pick<ModelQuotaRecord, UpdateOptionalQuotaFields>>,
+  ): Promise<ModelQuotaRecord> {
+    if (!record.modelId) {
+      throw new TypeError('modelId is required when adding a quota record.');
+    }
+    await this.#ensureFreshCache();
+    let current = this.#modelIdToQuota.get(record.modelId);
+    const now = new Date().toISOString();
+    if (current) {
+      current.maxTokensPerDay = record.maxTokensPerDay;
+      current.maxTokensPerMinute = record.maxTokensPerMinute;
+      current.maxTokensPerMessage = record.maxTokensPerMessage;
+      current.isActive = record.isActive ?? true;
+      current.updatedAt = now;
+    } else {
+      current = {
+        ...record,
+        id: record.id ?? newUuid(),
+        createdAt: now,
+        updatedAt: now,
+        isActive: record.isActive ?? true,
+      };
+    }
+    this.#modelIdToQuota.set(record.modelId, current);
+    return current;
   }
 
   /**

@@ -18,6 +18,7 @@ import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import AfterManager from '@/lib/site-util/after';
 import { config } from './common';
+
 enum KnownSeverityLevel {
   Verbose = 'Verbose',
   Information = 'Information',
@@ -34,8 +35,8 @@ async function cleanup() {
     });
     nodeSdk = undefined;
   }
-} 
-export default function instrumentServer() {
+}
+const instrumentServer = () => {
   if (registered) {
     console.warn('OTel SDK already registered, skipping.');
     return;
@@ -48,11 +49,15 @@ export default function instrumentServer() {
     return;
   }
 
-  const connStr =
-    process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
+  const connStr = process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
 
   // Skip instrumentation in development if no valid connection string
-  if (process.env.NODE_ENV === 'development' && (!connStr || connStr === 'test' || connStr.includes('InstrumentationKey=test'))) {
+  if (
+    process.env.NODE_ENV === 'development' &&
+    (!connStr ||
+      connStr === 'test' ||
+      connStr.includes('InstrumentationKey=test'))
+  ) {
     console.log('[otel] Skipping Azure Monitor in development mode');
     return;
   }
@@ -92,7 +97,18 @@ export default function instrumentServer() {
         logHook: (span, record) => {
           record.trace_id = span.spanContext().traceId;
           record.span_id = span.spanContext().spanId;
+          if (record.error) {
+            record.body =
+              record.error.stack ||
+              record.error.message ||
+              String(record.error);
+            delete record.error;
+            record.level = 'error';
+          }
           const lvl = String(record.level).toLowerCase();
+          if (lvl === 'silly' || lvl === '1') {
+            return;
+          }
           record.severity =
             lvl === 'error'
               ? KnownSeverityLevel.Error
@@ -102,7 +118,6 @@ export default function instrumentServer() {
                   ? KnownSeverityLevel.Information
                   : KnownSeverityLevel.Verbose;
           record.severityNumber ||= 100;
-          
         },
       }),
     ],
@@ -130,4 +145,6 @@ export default function instrumentServer() {
     console.error('❌ OTel SDK failed to start:', error);
     registered = false;
   }
-}
+  return Promise.resolve(void 0);
+};
+export default instrumentServer;

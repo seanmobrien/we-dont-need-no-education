@@ -20,7 +20,7 @@ import {
   schema,
 } from '@/lib/drizzle-db';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { ModelResourceNotFoundError } from '@/lib/ai/services/chat/errors/model-resource-not-found-error';
+import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
 import { isKeyOf } from '@/lib/typescript';
 import { log } from '@/lib/logger';
 
@@ -227,18 +227,18 @@ export class ProviderMap {
     return this.#idToRecord.get(id);
   }
   /**
-   * Lookup a provider record by id or name and throw `ModelResourceNotFoundError`
+   * Lookup a provider record by id or name and throw `ResourceNotFoundError`
    * when it cannot be found. Useful in code paths where a missing provider
    * should be treated as an exceptional condition.
    *
    * @param idOrName - Provider id (UUID) or a recognized provider name/alias.
-   * @throws {ModelResourceNotFoundError} When the provider cannot be found.
+   * @throws {ResourceNotFoundError} When the provider cannot be found.
    * @returns The provider entry when found.
    */
   recordOrThrow(idOrName: ProviderNameOrIdType): ProviderMapEntry {
     const rec = this.record(idOrName);
     if (rec) return rec;
-    throw new ModelResourceNotFoundError({
+    throw new ResourceNotFoundError({
       resourceType: 'provider',
       normalized: idOrName,
       inputRaw: idOrName,
@@ -261,12 +261,12 @@ export class ProviderMap {
   /**
    * Like `name()` but throws when the provider cannot be found.
    *
-   * @throws {ModelResourceNotFoundError} When the provider name is not found.
+   * @throws {ResourceNotFoundError} When the provider name is not found.
    */
   nameOrThrow(id: ProviderNameOrIdType): ProviderNameType {
     const name = this.name(id);
     if (name) return name;
-    throw new ModelResourceNotFoundError({
+    throw new ResourceNotFoundError({
       resourceType: 'provider',
       normalized: id,
       inputRaw: id,
@@ -289,12 +289,12 @@ export class ProviderMap {
   /**
    * Like `id()` but throws when the provider id cannot be resolved.
    *
-   * @throws {ModelResourceNotFoundError}
+   * @throws {ResourceNotFoundError}
    */
   idOrThrow(idOrName: ProviderNameOrIdType): ProviderIdType {
     const val = this.id(idOrName);
     if (val) return val;
-    throw new ModelResourceNotFoundError({
+    throw new ResourceNotFoundError({
       resourceType: 'provider',
       normalized: idOrName,
       inputRaw: idOrName,

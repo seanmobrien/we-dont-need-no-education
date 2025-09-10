@@ -11,7 +11,7 @@
  */
 
 // import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 import { drizDb, schema } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
@@ -177,6 +177,8 @@ export async function completeChatTurn(
         and(
           eq(schema.chatMessages.chatId, context.chatId),
           eq(schema.chatMessages.turnId, context.turnId!),
+          eq(schema.chatMessages.statusId, 2), // only complete messages
+          isNull(schema.chatMessages.optimizedContent),
         ),
       )
       .execute()
@@ -187,6 +189,7 @@ export async function completeChatTurn(
             chatId: m.chatId,
             turnId: m.turnId,
             messageId: m.messageId,
+            //write: false,
             write: true,
           }).catch((error) => {
             LoggedError.isTurtlesAllTheWayDownBaby(error, {

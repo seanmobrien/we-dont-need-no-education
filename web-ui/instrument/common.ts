@@ -21,5 +21,9 @@ export const config = {
   },
   attributesFromHeaders: {
     client: 'X-Client',
+    page: 'x-active-page',
+    chatHistoryId: 'x-chat-history-id',
+    pageCasefileId: 'x-page-casefile-id',
+    userId: 'x-user-id',
   },
 };

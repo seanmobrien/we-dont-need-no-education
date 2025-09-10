@@ -17,7 +17,7 @@ import {
   LanguageModelV2Middleware,
 } from '@ai-sdk/provider';
 import { ModelMap } from '../../services/model-stats/model-map';
-import { isModelResourceNotFoundError } from '../../services/chat/errors/model-resource-not-found-error';
+import { isResourceNotFoundError } from '../../services/chat/errors/resource-not-found-error';
 import { SerializableLanguageModelMiddleware } from '../state-management/types';
 
 type DoGenerateReturnType = ReturnType<LanguageModelV2['doGenerate']>;
@@ -148,21 +148,11 @@ const wrapGenerate = async ({
   params: TokenStatsTransformParamsType;
 }): Promise<DoGenerateReturnType> => {
   try {
-    let provider: string = '';
-    let modelName: string = '';
+    const { provider, modelName, rethrow } = await ModelMap.getInstance().then(
+      (x) => x.normalizeProviderModel(model),
+    );
     try {
-      // Extract provider and model info from the model instance
-      // Note: We'll need to pass this info through config since it's not available in params
-      const { provider: providerFromProps, modelName: modelNameFromProps } =
-        await (typeof model === 'string'
-          ? extractProviderAndModel(model)
-          : configProvider && configModelName
-            ? { provider: configProvider, modelName: configModelName }
-            : model.provider && model.modelId
-              ? { provider: model.provider, modelName: model.modelId }
-              : extractProviderAndModel(model.modelId));
-      provider = providerFromProps;
-      modelName = modelNameFromProps;
+      rethrow();
       if (enableLogging) {
         log((l) =>
           l.verbose('Token stats middleware processing request', {
@@ -181,7 +171,7 @@ const wrapGenerate = async ({
     } catch (error) {
       // If quota enforcement is not enabled then we still want to run
       // the request if the model is not found
-      if (isModelResourceNotFoundError(error)) {
+      if (isResourceNotFoundError(error)) {
         if (enableLogging) {
           LoggedError.isTurtlesAllTheWayDownBaby(error, {
             log: true,
@@ -229,7 +219,7 @@ const wrapGenerate = async ({
         }
         if (enableLogging) {
           log((l) =>
-            l.debug('Token usage recorded', {
+            l.silly('Token usage recorded', {
               provider,
               modelName,
               tokenUsage,
@@ -340,7 +330,7 @@ const wrapStream = async ({
         estimatedTokens,
       },
     });
-    if (isQuotaEnforcementError(error) || isModelResourceNotFoundError(error)) {
+    if (isQuotaEnforcementError(error) || isResourceNotFoundError(error)) {
       // If this is a quota enforcement error or a model lookup error and quota enforcement is enabled, re-throw it
       if (enableQuotaEnforcement) {
         throw enableLogging ? le : error;
@@ -441,7 +431,7 @@ const wrapStream = async ({
 
               if (enableLogging) {
                 log((l) =>
-                  l.debug('Stream token usage recorded', {
+                  l.silly('Stream token usage recorded', {
                     provider,
                     modelName,
                     tokenUsage,
@@ -520,13 +510,10 @@ export const transformParams = async ({
 const createOriginalTokenStatsMiddleware = (
   config: TokenStatsMiddlewareConfig = {},
 ): LanguageModelV2Middleware => {
+  const { provider: p, modelName: m } = config ?? {};
   const setupModelProviderOverrides = () => ({
-    overrideProvider: config.provider
-      ? ({}: { model: LanguageModelV2 }) => config.provider!
-      : undefined,
-    overrideModelId: config.modelName
-      ? ({}: { model: LanguageModelV2 }) => config.modelName!
-      : undefined,
+    overrideProvider: p ? () => p! as string : undefined,
+    overrideModelId: m ? () => m! as string : undefined,
   });
   let { overrideProvider, overrideModelId } = setupModelProviderOverrides();
   const thisInstance = {
@@ -558,8 +545,12 @@ const createOriginalTokenStatsMiddleware = (
         configFromState.toString(),
       ) as TokenStatsMiddlewareConfig;
       ({ overrideProvider, overrideModelId } = setupModelProviderOverrides());
-      thisInstance.overrideProvider = overrideProvider;
-      thisInstance.overrideModelId = overrideModelId;
+      if (overrideProvider) {
+        thisInstance.overrideProvider = overrideProvider;
+      }
+      if (overrideModelId) {
+        thisInstance.overrideModelId = overrideModelId;
+      }
       return Promise.resolve();
     },
     overrideProvider,

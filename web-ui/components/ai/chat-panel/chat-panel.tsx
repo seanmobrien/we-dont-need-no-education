@@ -23,9 +23,7 @@ import type { AiModelType } from '@/lib/ai/core/unions';
 import type { AnnotatedRetryMessage } from '@/lib/ai/core/types';
 import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
 import { log } from '@/lib/logger';
-import {
-  /*enhancedChatFetch, */ useChatFetchWrapper,
-} from '@/lib/components/ai/chat-fetch-wrapper';
+import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
 import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
@@ -158,6 +156,7 @@ const ChatPanel = ({ page }: { page: string }) => {
 
   // Use chat panel context for docking state
   const {
+    caseFileId,
     dockPanel,
     config,
     setPosition,
@@ -166,8 +165,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     debounced: { setSize: debouncedSetSize },
   } = useChatPanelContext();
 
-  // Ref for the TextField input to preserve focus in floating mode
-  const [input, setInput] = useState<string>('');
+  // Using ref for input element in order to minimize renders on text change
   const textFieldRef = useRef<HTMLInputElement>(null);
   const shouldRestoreFocus = useRef<boolean>(false);
   const { chatFetch } = useChatFetchWrapper();
@@ -215,7 +213,6 @@ const ChatPanel = ({ page }: { page: string }) => {
   const {
     id,
     messages,
-    //input,
     //handleInputChange,
     //handleSubmit,
     status,
@@ -252,6 +249,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     experimental_throttle: 100,
   });
 
+  /*
   // Enhanced input change handler that preserves focus in floating mode
   const handleInputChangeWithFocusPreservation = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -269,6 +267,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     },
     [setInput, config.position],
   );
+  */
 
   // Effect to restore focus in floating mode after re-renders
   useEffect(() => {
@@ -287,9 +286,15 @@ const ChatPanel = ({ page }: { page: string }) => {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [input, config.position]); // Trigger on input changes and position changes
+  }, [/*input, */ config.position]); // Trigger on input changes and position changes
   const onSendClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>, model?: AiModelType) => {
+      const inputElement = textFieldRef.current;
+      if (!inputElement) {
+        log((l) => l.warn('No input element available for sending message'));
+        return;
+      }
+      const chatText = inputElement.value.trim();
       let threadPartOfId = threadId;
       if (id) {
         // Get the thread part of the id
@@ -309,7 +314,7 @@ const ChatPanel = ({ page }: { page: string }) => {
       const withModel = model ?? activeModel;
       sendMessage(
         {
-          text: input,
+          text: chatText,
         },
         {
           metadata: {
@@ -320,19 +325,35 @@ const ChatPanel = ({ page }: { page: string }) => {
           headers: {
             'x-active-model': withModel,
             'x-active-page': page,
+            ...(caseFileId ? { 'x-casefile-id': caseFileId } : {}),
             // still available: x-write-enabled, x-memory-disabled, x-memory-disabled
           },
         },
       );
+      inputElement.value = '';
     },
-    [activeModel, sendMessage, id, messages, page, threadId, input],
+    [
+      activeModel,
+      sendMessage,
+      id,
+      messages,
+      page,
+      threadId,
+      textFieldRef,
+      caseFileId,
+    ],
   );
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const inputElement = textFieldRef.current;
+      if (!inputElement) {
+        log((l) => l.warn('No input element available for sending message'));
+        return;
+      }
       if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey) {
         e.preventDefault();
         onSendClick(e as unknown as React.MouseEvent<HTMLButtonElement>);
-      } else if (e.key === 'ArrowUp' && input === '') {
+      } else if (e.key === 'ArrowUp' && inputElement.value.trim() === '') {
         // If the input is empty, allow the user to navigate through previous messages
         e.preventDefault();
         if (messages && messages.length > 0) {
@@ -344,7 +365,7 @@ const ChatPanel = ({ page }: { page: string }) => {
                 .join(' ')
                 .trim();
               if (messageText) {
-                setInput(messageText);
+                inputElement.value = messageText;
                 break;
               }
             }
@@ -352,7 +373,7 @@ const ChatPanel = ({ page }: { page: string }) => {
         }
       }
     },
-    [input, messages, onSendClick],
+    [textFieldRef, messages, onSendClick],
   );
 
   const onFloat = useCallback(() => {
@@ -467,8 +488,7 @@ const ChatPanel = ({ page }: { page: string }) => {
           rows={5}
           variant="outlined"
           placeholder="Type your message here..."
-          value={input}
-          onChange={handleInputChangeWithFocusPreservation}
+          // onChange={handleInputChangeWithFocusPreservation}
           onKeyDown={handleInputKeyDown}
           sx={stableStyles.chatInput}
           slotProps={stableChatInputSlotProps}
@@ -484,8 +504,8 @@ const ChatPanel = ({ page }: { page: string }) => {
       </Stack>
     ),
     [
-      input,
-      handleInputChangeWithFocusPreservation,
+      textFieldRef,
+      // handleInputChangeWithFocusPreservation,
       handleInputKeyDown,
       addToolResult,
       stableChatInputSlotProps,
