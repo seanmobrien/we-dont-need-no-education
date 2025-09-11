@@ -733,6 +733,9 @@ export const summarizeMessageRecord = async ({
             ? (m: object) => (m as { content: string }).content
             : (m: object) =>
                 (m as { optimizedContent: string }).optimizedContent,
+        )
+        .filter((content): content is string => 
+          typeof content === 'string' && content.trim().length > 0
         ),
       );
     // Then retrieve the target message
@@ -753,6 +756,12 @@ export const summarizeMessageRecord = async ({
     if (!thisMessage) {
       throw new Error('Message not found');
     }
+    
+    // Validate that thisMessage.content is valid for prompt construction
+    if (!thisMessage.content || typeof thisMessage.content !== 'string') {
+      throw new Error('Message content is invalid or missing');
+    }
+    
     // Let the models work their magic...
     const prompt = `You are an expert at summarizing message output for AI conversation context.
 
@@ -763,7 +772,7 @@ export const summarizeMessageRecord = async ({
   ${JSON.stringify(thisMessage.content, null, 2)}
 
   CURRENT CHAT TITLE:
-  ${thisMessage.chat.title}
+  ${thisMessage.chat.title || 'Untitled Chat'}
 
   Create a short, concise summary that:
   1. Maintains context for ongoing conversation flow
@@ -775,6 +784,12 @@ export const summarizeMessageRecord = async ({
   5. Provide a short (4-5 word max) title that accurately describes the conversation as a whole - this will be used as the new Chat Title.
 
   Keep the summary as short as possible while preserving essential meaning.`;
+    
+    // Validate prompt is not empty and reasonable length
+    if (!prompt.trim() || prompt.length > 50000) {
+      throw new Error('Generated prompt is invalid (empty or too long)');
+    }
+    
     const model = aiModelFactory('lofi');
     const summarized = (
       await generateObject({
@@ -1133,6 +1148,11 @@ Create a concise summary that:
 
 Keep the summary under 300 characters while preserving essential meaning.
 Respond with just the summary text, no additional formatting.`;
+
+  // Validate prompt is not empty and reasonable length
+  if (!prompt.trim() || prompt.length > 50000) {
+    throw new Error('Generated prompt is invalid (empty or too long)');
+  }
 
   const startSummaryTime = Date.now();
 
