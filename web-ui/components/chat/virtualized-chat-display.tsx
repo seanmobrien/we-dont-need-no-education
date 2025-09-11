@@ -168,6 +168,24 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
         // Base message height for messages without content (tool calls, etc)
         totalHeight += 60; // Increased from 40 to account for message container
       }
+
+      // Add height for optimized content accordion if present and different from main content
+      if (message.optimizedContent && message.optimizedContent !== message.content) {
+        // Add height for accordion header (collapsed state)
+        totalHeight += 48; // Accordion header height with padding
+        
+        // Add potential expanded content height - we need to be generous here
+        // because the accordion can be expanded by the user
+        const optimizedContentHeight = estimateMarkdownHeight(
+          message.optimizedContent,
+          contentWidth,
+          textMeasurer
+        );
+        
+        // Add space for the optimized content when expanded
+        // We estimate for expanded state to avoid content being cut off
+        totalHeight += optimizedContentHeight + 24; // content + accordion details padding
+      }
       
       // Add spacing between messages
       totalHeight += 16;

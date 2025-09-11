@@ -122,7 +122,7 @@ const sampleTurns = [
         },
         toolInstanceId: 'tool_123',
         optimizedContent:
-          'Shorter version: Use overflow auto and proper word wrapping for code blocks.',
+          '**Optimized Summary for CSS Overflow Issues:**\n\n1. **Root Cause**: Content containers lack proper overflow handling\n2. **Quick Fix**: Add `overflow: auto` and `word-wrap: break-word`\n3. **Implementation**:\n```css\n.container {\n  overflow: auto;\n  word-wrap: break-word;\n  max-width: 100%;\n}\n```\n\n4. **Additional Considerations**:\n   - Use `white-space: pre-wrap` for preserved formatting\n   - Consider `overflow-wrap: break-word` for modern browsers\n   - Test with long URLs and code snippets\n\n5. **Testing**: Verify with content exceeding container width\n\nThis addresses the core issue while maintaining readability and responsive design.',
       },
     ] as unknown as Array<ChatMessage>,
   },
@@ -153,7 +153,7 @@ const sampleTurns = [
           timestamp: '2024-01-01T10:02:00Z',
         },
         toolInstanceId: null,
-        optimizedContent: null,
+        optimizedContent: 'Short user query about viewport bugs.',
       },
     ],
   },
