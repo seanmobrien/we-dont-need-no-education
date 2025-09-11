@@ -12,7 +12,9 @@ import {
   Collapse,
   Paper,
   Grid,
-  Divider
+  Divider,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import { 
   ExpandMore as ExpandMoreIcon,
@@ -26,11 +28,17 @@ import { ChatMessage } from '@/lib/ai/chat/types';
 interface ChatMessageDisplayProps {
   message: ChatMessage;
   showMetadata?: boolean;
+  enableSelection?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (messageId: number, checked: boolean) => void;
 }
 
 export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({ 
   message, 
-  showMetadata = false 
+  showMetadata = false,
+  enableSelection = false,
+  isSelected = false,
+  onSelectionChange
 }) => {
   const [metadataExpanded, setMetadataExpanded] = useState(false);
 
@@ -47,6 +55,19 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
     >
       {/* Message Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
+        {enableSelection && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={isSelected}
+                onChange={(e) => onSelectionChange?.(message.messageId, e.target.checked)}
+              />
+            }
+            label=""
+            sx={{ mr: 1, '& .MuiFormControlLabel-label': { display: 'none' } }}
+          />
+        )}
         <Chip 
           label={message.role} 
           size="small"

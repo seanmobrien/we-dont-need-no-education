@@ -61,6 +61,7 @@ import {
   estimateMarkdownHeight 
 } from '@/lib/components/ai/height-estimators';
 import { ChatTurn } from '@/lib/ai/chat/types';
+import type { SelectedChatItem } from '@/lib/chat/export';
 
 /**
  * Fallback container width for virtualized chat display
@@ -83,6 +84,12 @@ interface VirtualizedChatDisplayProps {
   turns: ChatTurn[];
   /** Explicit pixel height of the scroll container (defaults to 600) */
   height?: number;
+  /** Enable selection mode for export functionality */
+  enableSelection?: boolean;
+  /** Currently selected chat items */
+  selectedItems?: SelectedChatItem[];
+  /** Callback when selection changes */
+  onSelectionChange?: (selectedItems: SelectedChatItem[]) => void;
 }
 
 /**
@@ -108,7 +115,10 @@ interface VirtualizedChatDisplayProps {
  */
 export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({ 
   turns, 
-  height = 600 
+  height = 600,
+  enableSelection = false,
+  selectedItems = [],
+  onSelectionChange
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [showTurnProperties, setShowTurnProperties] = useState(false);
@@ -327,6 +337,9 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                   turn={turn}
                   showTurnProperties={showTurnProperties}
                   showMessageMetadata={showMessageMetadata}
+                  enableSelection={enableSelection}
+                  selectedItems={selectedItems}
+                  onSelectionChange={onSelectionChange}
                 />
               </Box>
             );
