@@ -9,6 +9,8 @@ import {
   ErrorReporterInterface,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
+import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
+import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
 
 export { ErrorSeverity };
 
@@ -105,6 +107,17 @@ export class ErrorReporter implements ErrorReporterInterface {
       error.severity !== undefined
     ) {
       baseReport = error as ErrorReport;
+      if (
+        !Object.keys(error).length ||
+        !('error' in error) ||
+        !error.error.message
+      ) {
+        baseReport.error = {
+          ...(baseReport?.error ?? {}),
+          message:
+            baseReport.error?.message ?? 'Unknown error - No details provided',
+        };
+      }
     } else {
       // Ensure we have a proper Error object
       const errorObj = this.normalizeError(error);
@@ -112,6 +125,13 @@ export class ErrorReporter implements ErrorReporterInterface {
         error: errorObj,
         severity,
       } as ErrorReport;
+      if (
+        !Object.keys(error as object).length ||
+        !(error as { message?: string }).message
+      ) {
+        (error as { message?: string }).message =
+          'Unknown error - No details provided';
+      }
     }
 
     // Enrich context with browser/environment data
@@ -270,6 +290,73 @@ export class ErrorReporter implements ErrorReporterInterface {
     if (typeof window !== 'undefined') {
       enriched.userAgent = navigator.userAgent;
       enriched.url = window.location.href;
+    }
+
+    // If the error (or wrapped cause/originalError) is a Postgres/Drizzle
+    // error, extract comprehensive failure information and attach it to
+    // the context. We purposely truncate potentially-large or
+    // sensitive fields (SQL text, parameter arrays) to avoid leaking data
+    // while still providing useful diagnostics.
+    try {
+      const candidates: unknown[] = [];
+      if (context && 'error' in context && context.error)
+        candidates.push(context.error);
+      // Some wrappers store the lower-level error on `cause` or `originalError`.
+      const maybeErr = (context as unknown as { error?: unknown }).error;
+      const maybeCause =
+        (maybeErr as unknown as { cause?: unknown; originalError?: unknown })
+          ?.cause ??
+        (maybeErr as unknown as { cause?: unknown; originalError?: unknown })
+          ?.originalError;
+      if (maybeCause) candidates.push(maybeCause);
+
+      for (const c of candidates) {
+        if (isDrizzleError(c)) {
+          const pg = c as PostgresError;
+          const dbFailure = {
+            sqlstate: pg.code,
+            codeDescription: errorFromCode(pg.code),
+            severity: pg.severity,
+            detail: pg.detail,
+            hint: pg.hint,
+            position: pg.position,
+            internalPosition: pg.internalPosition,
+            internalQuery: pg.internalQuery,
+            where: pg.where,
+            schema: pg.schema,
+            table: pg.table,
+            column: pg.column,
+            dataType: pg.dataType,
+            constraint: pg.constraint,
+            file: pg.file,
+            line: pg.line,
+            routine: pg.routine,
+            // Truncate long SQL or parameter payloads to keep reports safe and small
+            query:
+              typeof pg.query === 'string'
+                ? pg.query.slice(0, 2000)
+                : undefined,
+            parameters: Array.isArray(pg.parameters)
+              ? pg.parameters.slice(0, 20)
+              : undefined,
+            // Keep a minimal reference to nested errors where useful
+            causeName:
+              (pg.cause as unknown as { name?: string })?.name ?? undefined,
+            originalErrorName:
+              (pg.originalError as unknown as { name?: string })?.name ??
+              undefined,
+          } as const;
+
+          // Attach under a stable key so downstream consumers can read it.
+          (enriched as Record<string, unknown>).dbError = dbFailure;
+          break; // one DB error is enough
+        }
+      }
+    } catch (err) {
+      // extraction should never crash the reporter; if it does, log and continue
+      log((l) =>
+        l.warn('Failed to extract DB failure info for error reporter', err),
+      );
     }
 
     return enriched;

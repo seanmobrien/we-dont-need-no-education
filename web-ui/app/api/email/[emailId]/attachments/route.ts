@@ -4,6 +4,8 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { buildAttachmentDownloadUrl } from '@/lib/api/attachment';
 import { getAbsoluteUrl } from '@/lib/site-util/url-builder';
+import { isValidUuid } from '@/lib/ai/tools/utility';
+import { schema } from '@/lib/drizzle-db';
 
 // Helper function to extract filename from a file path or URL
 const extractFileNameFromPath = (hrefDocument?: string): string | undefined => {
@@ -33,30 +35,57 @@ export async function GET(
   }
 
   try {
-    return await (drizDbWithInit().then(
-      db => db.query.emailAttachments.findMany({
-        where: (emailAttachments, { eq }) =>
-          eq(emailAttachments.emailId, emailId),
-        with: {
-          email: {
-            with: {
-              doc: true,
+    let resolvedEmailId: string | null = null;
+    if (isValidUuid(emailId)) {
+      resolvedEmailId = emailId;
+    } else {
+      const emailNumericId = parseInt(emailId, 10);
+      if (isNaN(emailNumericId)) {
+        return NextResponse.json(
+          { error: 'Invalid email ID format' },
+          { status: 400 },
+        );
+      }
+      resolvedEmailId = await drizDbWithInit((db) =>
+        db.query.documentUnits
+          .findFirst({
+            where: (e, { eq }) => eq(e.unitId, emailNumericId),
+            columns: {
+              emailId: true,
+            },
+          })
+          .then((doc) => doc?.emailId ?? null),
+      );
+      if (!resolvedEmailId) {
+        return NextResponse.json({ error: 'Email not found' }, { status: 404 });
+      }
+    }
+    return await drizDbWithInit((db) =>
+      db.query.emailAttachments
+        .findMany({
+          where: (a, { eq }) => eq(a.emailId, resolvedEmailId),
+          with: {
+            email: {
+              with: {
+                doc: true,
+              },
             },
           },
-        },
-      })
-      .then((attachments) => {
-        // Transform the results to match the expected format
-        const result = attachments.map((attachment) => ({
-          unitId: attachment.email!.doc?.unitId,
-          attachmentId: attachment.attachmentId,
-          fileName: extractFileNameFromPath(attachment.filePath),
-          hrefDocument: buildAttachmentDownloadUrl(attachment),
-          hrefApi: getAbsoluteUrl(`/api/attachment/${attachment.attachmentId}`),
-        }));
-        return NextResponse.json(result, { status: 200 });
-      })
-    ));
+        })
+        .then((attachments) => {
+          // Transform the results to match the expected format
+          const result = attachments.map((attachment) => ({
+            unitId: attachment.email!.doc?.unitId,
+            attachmentId: attachment.attachmentId,
+            fileName: extractFileNameFromPath(attachment.filePath),
+            hrefDocument: buildAttachmentDownloadUrl(attachment),
+            hrefApi: getAbsoluteUrl(
+              `/api/attachment/${attachment.attachmentId}`,
+            ),
+          }));
+          return NextResponse.json(result, { status: 200 });
+        }),
+    );
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,

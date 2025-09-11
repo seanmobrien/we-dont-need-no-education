@@ -1,7 +1,22 @@
-import { DataUIPart } from 'ai';
 import { AiModelType } from './unions';
 
-export type * from './unions';
+export type { AiModelType, AiLanguageModelType } from './unions';
+
+type ValueOf<
+  ObjectType,
+  ValueType extends keyof ObjectType = keyof ObjectType,
+> = ObjectType[ValueType];
+type DataUIPart<
+  DATA_TYPES extends {
+    [x: string]: unknown;
+  },
+> = ValueOf<{
+  [NAME in keyof DATA_TYPES & string]: {
+    type: `data-${NAME}`;
+    id?: string;
+    data: DATA_TYPES[NAME];
+  };
+}>;
 
 type AnnotatedErrorMessageType = {
   'error-retry': { retryAfter: number; reason: string };

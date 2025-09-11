@@ -45,7 +45,7 @@ const validateLocalhost = (req: Request | undefined): void => {
 
   // Extract hostname from various possible sources
   let hostname = '';
-  
+
   if (req) {
     // Try to get hostname from the request
     const url = new URL(req.url);
@@ -59,12 +59,13 @@ const validateLocalhost = (req: Request | undefined): void => {
   }
 
   // Check if running on localhost
-  const isLocalhost = hostname === 'localhost' || 
-                     hostname === '127.0.0.1' || 
-                     hostname.startsWith('192.168.') ||
-                     hostname.startsWith('10.') ||
-                     hostname.startsWith('172.16.') ||
-                     hostname.endsWith('.local');
+  const isLocalhost =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('172.16.') ||
+    hostname.endsWith('.local');
 
   if (!isLocalhost) {
     throw new Error(`
@@ -98,13 +99,12 @@ const shouldUseLocalDevBypass = (req: Request | undefined): boolean => {
   if (!bypassUserId || bypassUserId.trim() === '') {
     return false;
   }
-  
+
   validateLocalhost(req);
   return true;
 };
 
 const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
-
 
 const providers: Provider[] = [
   Google<GoogleProfile>({
@@ -119,50 +119,56 @@ const providers: Provider[] = [
           'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/gmail.readonly', //
       },
     },
-  }),    
-  ...(bypassUserId ? [CredentialsProvider({
-    id: 'local-dev-bypass', // Unique for the provider
-    name: 'Local Dev Bypass',
-    credentials: {
-      secret: {
-        label: '',
-        type: 'hidden',
-      },
-      ...(bypassUserId ? {
-        bypass: {
-        label: 'Local Development Bypass',
-        type: 'hidden',
-        value: 'true',
-      },      
-      } : {}),      
-    },
-    authorize: async (
-      credentials: Record<string, unknown> | undefined,
-      req: Request,
-    ): Promise<NextAuthUser | null> => {
-      // Check to see if this is our chatbot doing secret chatbot stuff
-      if (hasSecretHeaderBypass(req)) {
-        return {
-          id: '3',
-          account_id: 3, // custom field
-          image: '',
-          name: 'secret header',
-          email: 'secret-header@notadomain.org',
-        } as NextAuthUser & { account_id: number }; // Type assertion for custom field
-      }
-      // Check to see if local development bypass is an option
-      if (shouldUseLocalDevBypass(req)) {
-        return {
-          id: bypassUserId,
-          account_id: parseInt(bypassUserId!) || 1, // Parse user ID or default to 1
-          image: '',
-          name: `Local Dev User ${bypassUserId}`,
-          email: `localdev-${bypassUserId}@localhost.dev`,
-        } as NextAuthUser & { account_id: number };
-      }
-      return null; // Authentication failed
-    },
-  })] : []) as Provider[] // Only add if bypassUserId is set,
+  }),
+  ...((bypassUserId
+    ? [
+        CredentialsProvider({
+          id: 'local-dev-bypass', // Unique for the provider
+          name: 'Local Dev Bypass',
+          credentials: {
+            secret: {
+              label: '',
+              type: 'hidden',
+            },
+            ...(bypassUserId
+              ? {
+                  bypass: {
+                    label: 'Local Development Bypass',
+                    type: 'hidden',
+                    value: 'true',
+                  },
+                }
+              : {}),
+          },
+          authorize: async (
+            credentials: Record<string, unknown> | undefined,
+            req: Request,
+          ): Promise<NextAuthUser | null> => {
+            // Check to see if this is our chatbot doing secret chatbot stuff
+            if (hasSecretHeaderBypass(req)) {
+              return {
+                id: '3',
+                account_id: 3, // custom field
+                image: '',
+                name: 'secret header',
+                email: 'secret-header@notadomain.org',
+              } as NextAuthUser & { account_id: number }; // Type assertion for custom field
+            }
+            // Check to see if local development bypass is an option
+            if (shouldUseLocalDevBypass(req)) {
+              return {
+                id: bypassUserId,
+                account_id: parseInt(bypassUserId!) || 1, // Parse user ID or default to 1
+                image: '',
+                name: `Local Dev User ${bypassUserId}`,
+                email: `localdev-${bypassUserId}@localhost.dev`,
+              } as NextAuthUser & { account_id: number };
+            }
+            return null; // Authentication failed
+          },
+        }),
+      ]
+    : []) as Provider[]), // Only add if bypassUserId is set,
 ];
 
 export const providerMap = providers.map((provider) => {
@@ -217,16 +223,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
           account.access_token &&
           account.providerAccountId
         ) {
-          await (drizDbWithInit()
-            .then(db => db
-            .update(schema.accounts)
-            .set({
-              accessToken: String(account.access_token),
-              refreshToken: String(account.refresh_token),
-            })
-            .where(
-              sql`provider='google' AND "provider_account_id" = ${account.providerAccountId}`,
-            )));
+          await drizDbWithInit().then((db) =>
+            db
+              .update(schema.accounts)
+              .set({
+                accessToken: String(account.access_token),
+                refreshToken: String(account.refresh_token),
+              })
+              .where(
+                sql`provider='google' AND "provider_account_id" = ${account.providerAccountId}`,
+              ),
+          );
         }
         logEvent('signIn');
         return true;
@@ -242,7 +249,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
     return {
       adapter,
       callbacks: {
-        authorized: async ({ auth }: { auth: Session | null; request?: Request }) => {          
+        authorized: async ({
+          auth,
+          request,
+        }: {
+          auth: Session | null;
+          request?: NextRequest;
+        }) => {
+          if (request) {
+            const { nextUrl } = request;
+            const publicFolders = ['/static/'];
+            if (
+              publicFolders.some((folder) =>
+                nextUrl.pathname.startsWith(folder),
+              )
+            ) {
+              return true;
+            }
+          }
           return !!auth;
         },
         signIn: signInImpl,
@@ -295,8 +319,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
       theme: {
         colorScheme: 'auto', // 'auto' for system preference, 'light' or 'dark'
         logo: '/static/logo/logo-dark.png',
-        brandColor: '#1898a8', // Custom brand color        
-      }
+        brandColor: '#1898a8', // Custom brand color
+      },
     };
   },
 );

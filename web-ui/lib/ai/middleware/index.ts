@@ -47,3 +47,8 @@ export {
   type StateManagementParams,
   type MiddlewareMetadata,
 } from './state-management';
+export {
+  createToolOptimizingMiddleware,
+  type ToolOptimizingMiddlewareConfig,
+  getToolOptimizingMiddlewareMetrics,
+} from './tool-optimizing-middleware';

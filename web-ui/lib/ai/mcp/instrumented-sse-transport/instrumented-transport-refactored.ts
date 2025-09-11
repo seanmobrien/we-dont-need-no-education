@@ -10,7 +10,7 @@ import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { isError } from '@/lib/react-util/utility-methods';
+import { isAbortError, isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 
@@ -62,6 +62,15 @@ export class InstrumentedSseTransport extends SseMCPTransport {
   #transportSpan?: Span;
   #connectionStartTime: number = 0;
   #isClosing = false;
+  #heartbeatTimer?: ReturnType<typeof setInterval>;
+  #inactivityTimer?: ReturnType<typeof setTimeout>;
+  #lastActivity: number = Date.now();
+  #closed = false;
+
+  // Heartbeat / inactivity constants (tunable)
+  static readonly HEARTBEAT_INTERVAL_MS = 15_000; // send watchdog ping / check every 15s
+  static readonly INACTIVITY_TIMEOUT_MS = 60_000; // if no inbound activity for 60s -> close
+  static readonly POST_ERROR_AUTOCLOSE_DELAY_MS = 2_000; // grace period before forced close after fatal error
 
   constructor(opts: InstrumentedSseTransportOptions) {
     let constructorSpan: Span | undefined;
@@ -265,6 +274,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         'success',
       );
 
+      // Initialize heartbeat & inactivity watchdog AFTER successful start
+      this.#initializeConnectionWatchdogs();
+
       span.setStatus({ code: SpanStatusCode.OK });
       this.#safetyUtils.completeOperation(operationId, 'success');
 
@@ -272,6 +284,16 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         log((l) => l.debug('MCP Client Transport started successfully'));
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        // Suppress abort errors; this is a disconnect not a construction failure.
+        const isClosing = this.#isClosing;
+        log((l) =>
+          l.verbose(
+            `InstrumentedTransport::MCP Client Transport start() aborted; isClosing=${isClosing}`,
+          ),
+        );
+        return;
+      }
       // Record failed connection
       MetricsRecorder.recordConnection(
         this.url?.toString() || 'unknown',
@@ -337,6 +359,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       // Close all active sessions
       this.#sessionManager.closeAllSessions();
 
+      // Stop timers early to avoid late firing while awaiting super.close()
+      this.#clearWatchdogs();
+
       await super.close();
 
       // End the transport span
@@ -359,6 +384,8 @@ export class InstrumentedSseTransport extends SseMCPTransport {
 
       span.setStatus({ code: SpanStatusCode.OK });
       this.#safetyUtils.completeOperation(operationId, 'success');
+
+      this.#closed = true;
 
       if (DEBUG_MODE) {
         log((l) => l.debug('MCP Client Transport closed successfully'));
@@ -549,6 +576,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       // Process the inbound message
       this.#messageProcessor.processInboundMessage(message);
 
+      // Update activity time for watchdog
+      this.#lastActivity = Date.now();
+
       this.#onmessage?.(message); // pass through to client
     } catch (e) {
       log((l) => l.error('Error handling MCP Client Transport message:', e));
@@ -568,6 +598,95 @@ export class InstrumentedSseTransport extends SseMCPTransport {
     } catch (e) {
       log((l) => l.error('Error handling MCP Client Transport error:', e));
     }
+
+    // If we are not already closing, schedule an automatic close to prevent
+    // lingering hung transports after an unrecoverable error. Abort errors
+    // are treated as graceful shutdowns upstream, so only close on non-abort.
+    if (!this.#isClosing && !isAbortError(error)) {
+      this.#schedulePostErrorAutoclose();
+    }
+  }
+
+  // === Heartbeat & Watchdog Management ===
+
+  /**
+   * Initialize heartbeat interval and inactivity timeout watchdog.
+   * These guard against silent hung connections where the underlying SSE
+   * stream remains open but no messages are received (e.g., network middlebox
+   * buffering or server-side stall).
+   */
+  #initializeConnectionWatchdogs(): void {
+    this.#lastActivity = Date.now();
+    this.#clearWatchdogs();
+
+    // Heartbeat interval: record metric + (optionally) emit trace event.
+    this.#heartbeatTimer = setInterval(() => {
+      // Only act if not closing/closed
+      if (this.#isClosing || this.#closed) return;
+      const now = Date.now();
+      MetricsRecorder.recordConnection(
+        this.url?.toString() || 'unknown',
+        'heartbeat',
+        'success',
+      );
+      // Inactivity check piggybacked here (alternative to separate timeout reset)
+      if (
+        now - this.#lastActivity >
+        InstrumentedSseTransport.INACTIVITY_TIMEOUT_MS
+      ) {
+        log((l) =>
+          l.warn(
+            'MCP Client Transport inactivity threshold exceeded; initiating graceful close',
+            {
+              url: this.url?.toString(),
+              idleMs: now - this.#lastActivity,
+              threshold: InstrumentedSseTransport.INACTIVITY_TIMEOUT_MS,
+            },
+          ),
+        );
+        this.close().catch((err) =>
+          log((l) =>
+            l.error('Error while closing after inactivity watchdog', {
+              error: isError(err) ? err.message : String(err),
+            }),
+          ),
+        );
+      }
+    }, InstrumentedSseTransport.HEARTBEAT_INTERVAL_MS);
+  }
+
+  /** Clear heartbeat and inactivity timers. */
+  #clearWatchdogs(): void {
+    if (this.#heartbeatTimer) {
+      clearInterval(this.#heartbeatTimer);
+      this.#heartbeatTimer = undefined;
+    }
+    if (this.#inactivityTimer) {
+      clearTimeout(this.#inactivityTimer);
+      this.#inactivityTimer = undefined;
+    }
+  }
+
+  /** Schedule forced close after fatal error to prevent resource leaks. */
+  #schedulePostErrorAutoclose(): void {
+    // Avoid multiple schedules
+    if (this.#inactivityTimer || this.#isClosing || this.#closed) return;
+    this.#inactivityTimer = setTimeout(() => {
+      if (this.#isClosing || this.#closed) return;
+      log((l) =>
+        l.warn('Auto-closing MCP Client Transport after error grace period', {
+          url: this.url?.toString(),
+          delayMs: InstrumentedSseTransport.POST_ERROR_AUTOCLOSE_DELAY_MS,
+        }),
+      );
+      this.close().catch((err) =>
+        log((l) =>
+          l.error('Error during post-error autoclose', {
+            error: isError(err) ? err.message : String(err),
+          }),
+        ),
+      );
+    }, InstrumentedSseTransport.POST_ERROR_AUTOCLOSE_DELAY_MS);
   }
 }
 

@@ -1,17 +1,13 @@
 import { ProviderMap } from '@/lib/ai/services/model-stats/provider-map';
 import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 import {
-  ModelResourceNotFoundError,
-  isModelResourceNotFoundError,
-} from '@/lib/ai/services/chat/errors/model-resource-not-found-error';
+  ResourceNotFoundError,
+  isResourceNotFoundError,
+} from '@/lib/ai/services/chat/errors/resource-not-found-error';
 
 // Minimal seeded data to drive lookups
 import {
-  providerRecords,
-  modelRecords,
-  quotaRecords,
   PROVIDER_ID_AZURE,
-  MODEL_GPT4o,
   setupMaps,
 } from '@/__tests__/jest.mock-provider-model-maps';
 
@@ -24,19 +20,16 @@ describe('ProviderMap OrThrow + ModelMap normalization throwing', () => {
 
   test('ProviderMap OrThrow methods throw domain error when missing', async () => {
     const pm = ProviderMap.Instance;
-    const providerRecord = providerRecords[0][0];
 
     expect(pm.name('azure-openai.chat')).toBe('azure');
     expect(pm.id('azure-openai.chat')).toBe(PROVIDER_ID_AZURE);
-    expect(() => pm.recordOrThrow('unknown')).toThrow(
-      ModelResourceNotFoundError,
-    );
+    expect(() => pm.recordOrThrow('unknown')).toThrow(ResourceNotFoundError);
     try {
       pm.idOrThrow('unknown');
       fail('expected to throw');
     } catch (e) {
-      expect(isModelResourceNotFoundError(e)).toBe(true);
-      if (isModelResourceNotFoundError(e)) {
+      expect(isResourceNotFoundError(e)).toBe(true);
+      if (isResourceNotFoundError(e)) {
         expect(e.resourceType).toBe('provider');
       }
     }
@@ -48,7 +41,7 @@ describe('ProviderMap OrThrow + ModelMap normalization throwing', () => {
     const norm = await mm.normalizeProviderModel('missing-provider', 'gpt-4');
     expect(norm.provider).toBeUndefined();
     expect(norm.providerId).toBeUndefined();
-    expect(() => norm.rethrow()).toThrow(ModelResourceNotFoundError);
+    expect(() => norm.rethrow()).toThrow(ResourceNotFoundError);
   });
 
   test('ModelMap.normalizeProviderModel rethrow throws model not found when provider exists', async () => {
@@ -61,8 +54,8 @@ describe('ProviderMap OrThrow + ModelMap normalization throwing', () => {
       norm.rethrow();
       fail('expected throw');
     } catch (e) {
-      expect(isModelResourceNotFoundError(e)).toBe(true);
-      if (isModelResourceNotFoundError(e)) {
+      expect(isResourceNotFoundError(e)).toBe(true);
+      if (isResourceNotFoundError(e)) {
         expect(e.resourceType).toBe('model');
         expect(String(e.normalized)).toContain(
           'b555b85f-5b2f-45d8-a317-575a3ab50ff2:nope',

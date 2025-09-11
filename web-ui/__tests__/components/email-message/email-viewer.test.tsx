@@ -1,11 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { render, screen, waitFor, act } from '@/__tests__/test-utils';
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  hideConsoleOutput,
+} from '@/__tests__/test-utils';
 import EmailViewer from '@/components/email-message/email-viewer';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
 // Mock Promise.withResolvers if not available
 if (!Promise.withResolvers) {
-  Promise.withResolvers = function<T>() {
+  Promise.withResolvers = function <T>() {
     let resolve: (value: T | PromiseLike<T>) => void;
     let reject: (reason?: any) => void;
     const promise = new Promise<T>((res, rej) => {
@@ -17,21 +23,20 @@ if (!Promise.withResolvers) {
 }
 
 describe('EmailViewer', () => {
-  let consoleErrorSpy: jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any> | undefined;
+  const consoleErrors = hideConsoleOutput();
   beforeEach(() => {
     // Clear fetch mock - it's already mocked globally in jest.setup.ts
     (fetch as jest.Mock).mockClear();
   });
   afterEach(() => {
-    consoleErrorSpy?.mockRestore();
-    consoleErrorSpy = undefined;
+    consoleErrors.dispose();
   });
 
   it('renders loading state initially', async () => {
     const request = Promise.withResolvers();
     const resolvePromise = request.resolve;
     const promise = request.promise;
-        
+
     // Mock fetch to return a delayed promise
     (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
@@ -48,12 +53,12 @@ describe('EmailViewer', () => {
       }
       return Promise.reject(new Error('Unexpected URL'));
     });
-    
+
     render(<EmailViewer emailId="test-email-id" />);
 
     // Check loading state
     expect(screen.getByText('Loading Email...')).toBeInTheDocument();
-    
+
     // Resolve the promise
     act(() => {
       resolvePromise({
@@ -77,7 +82,7 @@ describe('EmailViewer', () => {
         parentEmailId: null,
       });
     });
-    
+
     // Wait for the component to finish loading
     await waitFor(
       () => {
@@ -147,7 +152,7 @@ describe('EmailViewer', () => {
 
   it('handles error state gracefully', async () => {
     // Turn off console.error logging for this planned exception - keeps test output clean.
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrors.setup();
     // Mock fetch to throw an error
     (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
@@ -176,7 +181,7 @@ describe('EmailViewer', () => {
 
   it('handles empty email state', async () => {
     // Turn off console.error logging for this planned exception - keeps test output clean.
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleErrors.setup();
     // Mock fetch to return 404 for email
     (fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('/api/email/test-email-id/attachments')) {
@@ -276,4 +281,3 @@ describe('EmailViewer', () => {
     expect(screen.getByText('another-file.doc')).toBeInTheDocument();
   });
 });
-

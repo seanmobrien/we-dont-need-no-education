@@ -8,7 +8,7 @@
  * - getDbError: finds a Postgres-like error in error/cause chains
  * - errorLogFactory: builds a consistent error object with DB details when present
  */
-import { getStackTrace } from "../nextjs-util/get-stack-trace";
+import { getStackTrace } from '../nextjs-util/get-stack-trace';
 
 /**
  * Shape of a Postgres/DB error we want to extract and log.
@@ -43,9 +43,9 @@ interface MaybeWrappedError {
 type ErrorLike = { message: string; stack?: string };
 
 const isErrorLike = (val: unknown): val is ErrorLike => {
-  if (!val || typeof val !== "object") return false;
+  if (!val || typeof val !== 'object') return false;
   const obj = val as Record<string, unknown>;
-  return typeof obj["message"] === "string";
+  return typeof obj['message'] === 'string';
 };
 
 /**
@@ -53,9 +53,9 @@ const isErrorLike = (val: unknown): val is ErrorLike => {
  * Checks the value itself, then `.cause`, `.cause.error`, and `.error`.
  */
 const extractDbError = (val: unknown): DbError | undefined => {
-  if (!val || typeof val !== "object") return undefined;
+  if (!val || typeof val !== 'object') return undefined;
   const e = val as MaybeWrappedError & { name?: string };
-  if (e.name === "PostgresError") return val as DbError;
+  if (e.name === 'PostgresError') return val as DbError;
 
   // Walk standard wrapping locations
   const fromCause = extractDbError(e.cause);
@@ -81,7 +81,8 @@ const extractDbError = (val: unknown): DbError | undefined => {
  * @param error Unknown thrown value (Error, wrapped error, or other)
  * @returns The detected DbError if present, otherwise undefined
  */
-export const getDbError = (error: unknown): DbError | undefined => extractDbError(error);
+export const getDbError = (error: unknown): DbError | undefined =>
+  extractDbError(error);
 
 /**
  * Creates a normalized error log payload.
@@ -123,26 +124,43 @@ export const errorLogFactory: ({
     ...(include ?? {}),
     ...(params ?? {}),
   };
-  if (typeof error === 'string'){
-    return errorLogFactory({ error: { message: error }, source, include, ...params });
+  if (typeof error === 'string') {
+    return errorLogFactory({
+      error: { message: error },
+      source,
+      include,
+      ...params,
+    });
   }
+  const defaultError = 'An unexpected error occurred.';
   // if it has a message, it's error-like enough for us
   if (isErrorLike(error)) {
-    const hasStack = typeof (error as Record<string, unknown>)["stack"] === "string";
-    const stack = hasStack ? (error as { stack: string }).stack : getStackTrace({ skip: 3 });
+    const stack =
+      typeof error['stack'] === 'string'
+        ? (error['stack']?.toString() ?? getStackTrace({ skip: 2 }))
+        : '';
+    const message =
+      error['message']?.toString() ?? 'An unknown error occurred.';
     let loggedError: Record<string, unknown> = {
-      message: error.message,
+      message,
       stack,
+      ...(('cause' in error &&
+      typeof error['cause'] === 'object' &&
+      error['cause'] !== null
+        ? { cause: JSON.stringify(error['cause']) }
+        : {}) as Record<string, unknown>),
     };
+
     const dbError = getDbError(error);
     if (dbError) {
       loggedError = {
         ...loggedError,
-        name: dbError.name,
+        name: 'name' in dbError ? dbError.name : undefined,
         code: dbError.code,
         detail: dbError.detail,
         severity: dbError.severity,
-        internalQuery: dbError.query ?? dbError.internal_query ?? dbError.internalQuery,
+        internalQuery:
+          dbError.query ?? dbError.internal_query ?? dbError.internalQuery,
         where: dbError.where,
         schema: dbError.schema_name ?? dbError.schema,
         table: dbError.table_name ?? dbError.table,
@@ -153,11 +171,26 @@ export const errorLogFactory: ({
     ret.error = loggedError;
     ret.message = loggedError.message as string;
   } else {
-    ret.error = error;
-    ret.message ??= "Error occurred";
+    ret.error = JSON.stringify(error ?? 'null');
+    ret.message ??= defaultError;
   }
   if (!ret.severity) {
     ret.severity = 'error';
+  }
+  if (
+    ret.error &&
+    typeof ret.error === 'object' &&
+    Object.keys(ret.error).length === 0
+  ) {
+    ret.error = {
+      message:
+        typeof ret.context === 'object' &&
+        ret.context &&
+        'message' in ret.context &&
+        ret.context
+          ? (ret.context.message ?? defaultError)
+          : defaultError,
+    };
   }
   return ret;
 };

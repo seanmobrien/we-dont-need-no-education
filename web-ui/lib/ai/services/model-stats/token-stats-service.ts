@@ -11,13 +11,11 @@
  */
 
 import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
-import { eq, and, sql } from 'drizzle-orm';
+import { drizDbWithInit, schema, sql } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   ModelQuota,
-  ProviderModelResponse,
   QuotaCheckResult,
   TokenStats,
   TokenStatsServiceType,
@@ -34,12 +32,6 @@ import { ModelMap } from './model-map';
 class TokenStatsService implements TokenStatsServiceType {
   /** Singleton instance of TokenStatsService. */
   private static instance: TokenStatsService | undefined = undefined;
-
-  /** In-memory cache for model quotas, keyed by `${provider}:${modelName}`. */
-  private quotaCache = new Map<string, ModelQuota>();
-
-  /** Timestamp of last quota cache update (ms since epoch). */
-  private lastQuotaCacheUpdate = 0;
 
   /** Quota cache time-to-live in milliseconds (default: 5 minutes). */
   private readonly QUOTA_CACHE_TTL = 5 * 60 * 1000;
@@ -84,46 +76,6 @@ class TokenStatsService implements TokenStatsServiceType {
   }
 
   /**
-   * Get the Redis key for quota information for a given provider/model.
-   * @param {string} provider - Provider ID.
-   * @param {string} modelName - Model name.
-   * @returns {string} Redis key for quota.
-   * @private
-   */
-  private getRedisQuotaKey(provider: string, modelName: string): string {
-    return `token_quota:${provider}:${modelName}`;
-  }
-
-  /**
-   * Normalize provider and model name, then retrieve the provider ID from ProviderMap.
-   * @param {string} providerOrModel - Provider name or 'provider:model' string.
-   * @param {string} [modelName] - Optional model name.
-   * @returns {Promise<ProviderModelResponse>} Provider/model normalization result.
-   * @private
-   */
-  private async normalizeProviderId(
-    providerOrModel: string,
-    modelName?: string,
-  ): Promise<ProviderModelResponse> {
-    const {
-      rethrow,
-      providerId,
-      provider: normalizedProviderName,
-      modelName: normalizedModelName,
-    } = await ModelMap.Instance.normalizeProviderModel(
-      providerOrModel,
-      modelName,
-    );
-    rethrow();
-    return {
-      provider: normalizedProviderName,
-      modelName: normalizedModelName,
-      rethrow,
-      providerId: providerId!,
-    };
-  }
-
-  /**
    * Get quota configuration for a provider/model from cache, Redis, or database.
    * @param {string} provider - Provider name or ID.
    * @param {string} modelName - Model name.
@@ -136,48 +88,29 @@ class TokenStatsService implements TokenStatsServiceType {
     const {
       providerId: normalizedProvider,
       modelName: normalizedModel,
+      modelId: normalizedModelId,
       rethrow,
-    } = await this.normalizeProviderId(provider, modelName);
+    } = await ModelMap.getInstance().then((x) =>
+      x.normalizeProviderModel(provider, modelName),
+    );
     try {
       rethrow();
-      const cacheKey = `${normalizedProvider}:${normalizedModel}`;
-
-      // Check memory cache first
-      if (
-        this.quotaCache.has(cacheKey) &&
-        Date.now() - this.lastQuotaCacheUpdate < this.QUOTA_CACHE_TTL
-      ) {
-        return this.quotaCache.get(cacheKey) || null;
-      }
-
-      // Try Redis cache
-      const redis = await getRedisClient();
-      const redisKey = this.getRedisQuotaKey(
-        normalizedProvider!,
-        normalizedModel,
+      let quotaFromMap = await ModelMap.getInstance().then((x) =>
+        x.getQuotaByModelId(normalizedModelId!),
       );
-      const cached = await redis.get(redisKey);
-
-      if (cached) {
-        const quota = JSON.parse(cached) as ModelQuota;
-        this.quotaCache.set(cacheKey, quota);
-        return quota;
+      if (!quotaFromMap) {
+        quotaFromMap = await ModelMap.Instance.addQuotaToModel({
+          modelId: normalizedModelId!,
+          maxTokensPerMessage: undefined,
+          maxTokensPerMinute: undefined,
+          maxTokensPerDay: undefined,
+        });
       }
-
-      // Fallback to database
-      const quota = await this.loadQuotaFromDatabase(
-        normalizedProvider!,
-        normalizedModel,
-      );
-
-      if (quota) {
-        // Cache in Redis and memory
-        await redis.setEx(redisKey, 300, JSON.stringify(quota)); // 5 minutes
-        this.quotaCache.set(cacheKey, quota);
-        this.lastQuotaCacheUpdate = Date.now();
-      }
-
-      return quota;
+      return {
+        ...quotaFromMap,
+        provider: normalizedProvider!,
+        modelName: normalizedModel,
+      };
     } catch (error) {
       log((l) =>
         l.error('Error getting quota', {
@@ -186,68 +119,6 @@ class TokenStatsService implements TokenStatsServiceType {
           error,
         }),
       );
-      return null;
-    }
-  }
-
-  /**
-   * Load quota configuration from PostgreSQL database.
-   * @param {string} provider - Provider ID.
-   * @param {string} modelName - Model name.
-   * @returns {Promise<ModelQuota|null>} Quota configuration or null if not found.
-   * @private
-   */
-  private async loadQuotaFromDatabase(
-    provider: string,
-    modelName: string,
-  ): Promise<ModelQuota | null> {
-    try {
-      return await drizDbWithInit(async (db) => {
-        const row = await db
-          .select({
-            id: schema.modelQuotas.id,
-            providerId: schema.models.providerId,
-            modelName: schema.models.modelName,
-            maxTokensPerMessage: schema.modelQuotas.maxTokensPerMessage,
-            maxTokensPerMinute: schema.modelQuotas.maxTokensPerMinute,
-            maxTokensPerDay: schema.modelQuotas.maxTokensPerDay,
-            isActive: schema.modelQuotas.isActive,
-          })
-          .from(schema.modelQuotas)
-          .innerJoin(
-            schema.models,
-            eq(schema.modelQuotas.modelId, schema.models.id),
-          )
-          .where(
-            and(
-              eq(schema.models.providerId, provider),
-              eq(schema.models.modelName, modelName),
-            ),
-          )
-          .limit(1)
-          .execute()
-          .then((r) => r.at(0));
-
-        if (!row) {
-          return null;
-        }
-        return {
-          id: row.id,
-          provider: row.providerId,
-          modelName: row.modelName,
-          maxTokensPerMessage: row.maxTokensPerMessage || undefined,
-          maxTokensPerMinute: row.maxTokensPerMinute || undefined,
-          maxTokensPerDay: row.maxTokensPerDay || undefined,
-          isActive: row.isActive,
-        };
-      });
-    } catch (error) {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        log: true,
-        message: 'Error loading quota from database',
-        extra: { provider, modelName },
-        source: 'TokenStatsService.loadQuotaFromDatabase',
-      });
       return null;
     }
   }
@@ -266,7 +137,9 @@ class TokenStatsService implements TokenStatsServiceType {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
-    } = await this.normalizeProviderId(provider, modelName);
+    } = await ModelMap.getInstance().then((x) =>
+      x.normalizeProviderModel(provider, modelName),
+    );
     try {
       rethrow();
 
@@ -337,7 +210,9 @@ class TokenStatsService implements TokenStatsServiceType {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
-    } = await this.normalizeProviderId(provider, modelName);
+    } = await ModelMap.getInstance().then((x) =>
+      x.normalizeProviderModel(provider, modelName),
+    );
 
     try {
       rethrow();
@@ -432,7 +307,9 @@ class TokenStatsService implements TokenStatsServiceType {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
-    } = await this.normalizeProviderId(provider, modelName);
+    } = await ModelMap.getInstance().then((x) =>
+      x.normalizeProviderModel(provider, modelName),
+    );
 
     try {
       rethrow();
@@ -471,7 +348,9 @@ class TokenStatsService implements TokenStatsServiceType {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
-    } = await this.normalizeProviderId(provider, modelName);
+    } = await ModelMap.getInstance().then((x) =>
+      x.normalizeProviderModel(provider, modelName),
+    );
     try {
       rethrow();
       const redis = await getRedisClient();
@@ -495,6 +374,31 @@ class TokenStatsService implements TokenStatsServiceType {
           start: new Date(Math.floor(now.getTime() / 86400000) * 86400000),
         },
       ];
+      // Use a Lua EVAL script to atomically read-modify-write and set TTL
+      const lua = `
+        local raw = redis.call('GET', KEYS[1])
+        local obj = nil
+        if raw then
+          local ok, parsed = pcall(cjson.decode, raw)
+          if ok and parsed then
+            obj = parsed
+          else
+            obj = {promptTokens=0, completionTokens=0, totalTokens=0, requestCount=0, windowStart=ARGV[5]}
+          end
+        else
+          obj = {promptTokens=0, completionTokens=0, totalTokens=0, requestCount=0, windowStart=ARGV[5]}
+        end
+
+        obj['promptTokens'] = (obj['promptTokens'] or 0) + tonumber(ARGV[1])
+        obj['completionTokens'] = (obj['completionTokens'] or 0) + tonumber(ARGV[2])
+        obj['totalTokens'] = (obj['totalTokens'] or 0) + tonumber(ARGV[3])
+        obj['requestCount'] = (obj['requestCount'] or 0) + tonumber(ARGV[4])
+        obj['windowStart'] = ARGV[5]
+        obj['lastUpdated'] = ARGV[7]
+
+        redis.call('SETEX', KEYS[1], tonumber(ARGV[6]), cjson.encode(obj))
+        return cjson.encode(obj)
+      `;
 
       for (const window of windows) {
         const key = this.getRedisStatsKey(
@@ -503,34 +407,20 @@ class TokenStatsService implements TokenStatsServiceType {
           window.type,
         );
 
-        // Use Redis transaction to atomically update stats
-        const multi = redis.multi();
-
-        // Get current data
-        const currentData = await redis.get(key);
-        const current = currentData
-          ? JSON.parse(currentData)
-          : {
-              promptTokens: 0,
-              completionTokens: 0,
-              totalTokens: 0,
-              requestCount: 0,
-              windowStart: window.start.toISOString(),
-            };
-
-        // Update stats
-        const updated = {
-          promptTokens: current.promptTokens + usage.promptTokens,
-          completionTokens: current.completionTokens + usage.completionTokens,
-          totalTokens: current.totalTokens + usage.totalTokens,
-          requestCount: current.requestCount + 1,
-          windowStart: window.start.toISOString(),
-          lastUpdated: now.toISOString(),
-        };
-
-        // Set with appropriate TTL (window duration + buffer)
-        multi.setEx(key, window.duration + 300, JSON.stringify(updated));
-        await multi.exec();
+        // Execute Lua script to atomically update the JSON blob and set TTL.
+        // ARGV: promptDelta, completionDelta, totalDelta, requestDelta, windowStart, ttl, nowIso
+        await redis.eval(lua, {
+          keys: [key],
+          arguments: [
+            String(usage.promptTokens),
+            String(usage.completionTokens),
+            String(usage.totalTokens),
+            '1',
+            window.start.toISOString(),
+            String(window.duration + 300),
+            now.toISOString(),
+          ],
+        });
       }
     } catch (error) {
       throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -654,7 +544,9 @@ class TokenStatsService implements TokenStatsServiceType {
       providerId: normalizedProvider,
       modelName: normalizedModel,
       rethrow,
-    } = await this.normalizeProviderId(provider, modelName);
+    } = await ModelMap.getInstance().then((x) =>
+      x.normalizeProviderModel(provider, modelName),
+    );
     try {
       rethrow();
       const [quota, currentStats] = await Promise.all([

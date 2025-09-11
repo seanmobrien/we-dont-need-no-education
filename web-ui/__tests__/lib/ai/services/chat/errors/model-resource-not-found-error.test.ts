@@ -1,15 +1,18 @@
-import { ModelResourceNotFoundError, isModelResourceNotFoundError } from '@/lib/ai/services/chat/errors/model-resource-not-found-error';
+import {
+  ResourceNotFoundError,
+  isResourceNotFoundError,
+} from '@/lib/ai/services/chat/errors/resource-not-found-error';
 
-describe('ModelResourceNotFoundError', () => {
+describe('ResourceNotFoundError', () => {
   test('type guard identifies real instance', () => {
-    const err = new ModelResourceNotFoundError({
+    const err = new ResourceNotFoundError({
       resourceType: 'provider',
       normalized: 'azure-openai.chat',
       inputRaw: 'azure-openai.chat',
       message: 'Provider not found: azure-openai.chat',
     });
-    expect(err.name).toBe('ModelResourceNotFoundError');
-    expect(isModelResourceNotFoundError(err)).toBe(true);
+    expect(err.name).toBe('ResourceNotFoundError');
+    expect(isResourceNotFoundError(err)).toBe(true);
     expect(err.resourceType).toBe('provider');
     expect(err.shortMessage).toContain('Provider not found');
   });
@@ -24,12 +27,12 @@ describe('ModelResourceNotFoundError', () => {
       shortMessage: 'Model not found',
     } as unknown as Error;
 
-    expect(isModelResourceNotFoundError(duck)).toBe(true);
+    expect(isResourceNotFoundError(duck)).toBe(true);
   });
 
   test('type guard rejects non-errors', () => {
-    expect(isModelResourceNotFoundError(null)).toBe(false);
-    expect(isModelResourceNotFoundError(undefined)).toBe(false);
-    expect(isModelResourceNotFoundError({})).toBe(false);
+    expect(isResourceNotFoundError(null)).toBe(false);
+    expect(isResourceNotFoundError(undefined)).toBe(false);
+    expect(isResourceNotFoundError({})).toBe(false);
   });
 });

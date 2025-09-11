@@ -31,8 +31,6 @@ import { NotificationsProvider } from '@toolpad/core';
 import { KeyRefreshNotifyWrapper } from '@/components/auth/key-refresh-notify/wrapper';
 import ServerSafeErrorManager from '@/components/error-boundaries/ServerSafeErrorManager';
 
-
-
 /**
  * Slots for the dashboard layout, such as toolbar actions.
  * @type {{ toolbarActions: typeof EmailDashboardToolbarAction }}
@@ -73,55 +71,56 @@ export const EmailDashboardLayout = ({
   const dashboardNavigation = useMemo<NavigationItem[]>(() => {
     const isChatPage = pathname?.startsWith('/messages/chat');
     const viewEmailNavigation: NavigationItem[] = emailId
-    ? [
-        {
-          segment: `messages/email/${emailId}`,
-          title: 'View Email',
-          icon: <DraftsIcon key="view-email-icon" />,
-          children: [
-            {
-              segment: 'key-points',
-              icon: <KeyIcon key="key-points-icon" />,
-              title: 'Key Points',
-            },
-            {
-              segment: 'notes',
-              icon: <TextSnippetIcon key="notes-icon" />,
-              title: 'Notes',
-            },
-            {
-              segment: 'call-to-action',
-              icon: <CallToActionIcon key="call-to-action-icon" />,
-              title: 'Calls to Action',
-            },
-            {
-              segment: 'call-to-action-response',
-              icon: <ReplyIcon key="call-to-action-response-icon" />,
-              title: 'Follow-up Activity',
-            },
-            {
-              segment: 'email-header',
-              icon: <PrivacyTipIcon key="header-icon" />,
-              title: 'Headers',
-            },
-          ],
-        },
-      ]
-    : [];    
+      ? [
+          {
+            segment: `messages/email/${emailId}`,
+            title: 'View Email',
+            icon: <DraftsIcon key="view-email-icon" />,
+            children: [
+              {
+                segment: 'key-points',
+                icon: <KeyIcon key="key-points-icon" />,
+                title: 'Key Points',
+              },
+              {
+                segment: 'notes',
+                icon: <TextSnippetIcon key="notes-icon" />,
+                title: 'Notes',
+              },
+              {
+                segment: 'call-to-action',
+                icon: <CallToActionIcon key="call-to-action-icon" />,
+                title: 'Calls to Action',
+              },
+              {
+                segment: 'call-to-action-response',
+                icon: <ReplyIcon key="call-to-action-response-icon" />,
+                title: 'Follow-up Activity',
+              },
+              {
+                segment: 'email-header',
+                icon: <PrivacyTipIcon key="header-icon" />,
+                title: 'Headers',
+              },
+            ],
+          },
+        ]
+      : [];
     const chatNavigation: NavigationItem[] = [
       {
         title: 'Chat History',
-        icon: <ChatIcon key="chats-icon" />, 
-        segment: 'messages/chat', 
+        icon: <ChatIcon key="chats-icon" />,
+        segment: 'messages/chat',
         children: isChatPage
           ? [
-          {
-            segment: 'stats',
-            icon: <BarChartIcon key="statistics-icon" />,
-            title: 'View chat statistics',
-          },
-        ] : []     
-      },      
+              {
+                segment: 'stats',
+                icon: <BarChartIcon key="statistics-icon" />,
+                title: 'View chat statistics',
+              },
+            ]
+          : [],
+      },
     ];
 
     return [
@@ -151,7 +150,10 @@ export const EmailDashboardLayout = ({
    * @returns {JSX.Element | null}
    */
   const renderPageItem = useCallback(
-    (item: NavigationPageItem, { mini }: { mini: boolean }): React.JSX.Element | null => {
+    (
+      item: NavigationPageItem,
+      { mini }: { mini: boolean },
+    ): React.JSX.Element | null => {
       const emailChildren = [
         'key-points',
         'notes',
@@ -169,7 +171,13 @@ export const EmailDashboardLayout = ({
       }
       if (dynamicMenus.includes(item.title ?? '')) {
         return (
-          <CustomEmailPageItem item={item} mini={mini} emailId={emailId} data-id={`navmenu-email-${item.segment}`} pathname={pathname} />
+          <CustomEmailPageItem
+            item={item}
+            mini={mini}
+            emailId={emailId}
+            data-id={`navmenu-email-${item.segment}`}
+            pathname={pathname}
+          />
         );
       }
       return <DashboardSidebarPageItem item={item} />;
@@ -178,7 +186,7 @@ export const EmailDashboardLayout = ({
   );
   return (
     <EmailContextProvider>
-      <ServerSafeErrorManager />      
+      <ServerSafeErrorManager />
       <NextAppProvider
         theme={theme}
         navigation={dashboardNavigation}

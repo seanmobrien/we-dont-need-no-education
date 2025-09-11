@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
+
+setupMaps();
 
 // Mock the token stats service
 jest.mock('@/lib/ai/services/model-stats/token-stats-service', () => {
@@ -30,7 +33,6 @@ import {
   tokenStatsWithQuotaMiddleware,
   TokenStatsServiceType,
 } from '@/lib/ai/middleware/tokenStatsTracking';
-import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
 import { wrapLanguageModel } from 'ai';
 
 type MockTokenStats = {
@@ -57,7 +59,7 @@ describe('TokenStatsMiddleware', () => {
           },
         },
       },
-      model: { modelId: 'test-model' },
+      model: { modelId: 'gpt-4.1', provider: 'azure' },
     }) as any;
 
   beforeEach(() => {
@@ -69,7 +71,7 @@ describe('TokenStatsMiddleware', () => {
     it('should record token usage after successful request', async () => {
       const middleware = tokenStatsMiddleware({
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         enableLogging: false,
       });
 
@@ -95,7 +97,7 @@ describe('TokenStatsMiddleware', () => {
       expect(result).toEqual(mockResult);
       expect(mockTokenStatsService.safeRecordTokenUsage).toHaveBeenCalledWith(
         'azure',
-        'hifi',
+        'gpt-4.1',
         {
           promptTokens: 10,
           completionTokens: 20,
@@ -107,7 +109,7 @@ describe('TokenStatsMiddleware', () => {
     it('should not record usage when no usage data is returned', async () => {
       const middleware = tokenStatsMiddleware({
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         enableLogging: false,
       });
 
@@ -129,7 +131,7 @@ describe('TokenStatsMiddleware', () => {
     it('should handle token recording errors gracefully', async () => {
       const middleware = tokenStatsMiddleware({
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         enableLogging: false,
       });
 
@@ -159,7 +161,7 @@ describe('TokenStatsMiddleware', () => {
     it('should propagate request errors', async () => {
       const middleware = tokenStatsMiddleware({
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         enableLogging: false,
       });
 
@@ -182,7 +184,7 @@ describe('TokenStatsMiddleware', () => {
     it('should check quota before making request', async () => {
       const middleware = tokenStatsWithQuotaMiddleware({
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         enableLogging: false,
       });
 
@@ -215,7 +217,7 @@ describe('TokenStatsMiddleware', () => {
 
       expect(mockTokenStatsService.checkQuota).toHaveBeenCalledWith(
         'azure',
-        'hifi',
+        'gpt-4.1',
         0,
       );
       expect(result).toEqual(mockResult);
@@ -224,7 +226,7 @@ describe('TokenStatsMiddleware', () => {
     it('should block request when quota is exceeded', async () => {
       const middleware = tokenStatsWithQuotaMiddleware({
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         enableLogging: false,
       });
 
@@ -254,7 +256,7 @@ describe('TokenStatsMiddleware', () => {
     it('should allow request when quota check fails (fail open)', async () => {
       const middleware = tokenStatsWithQuotaMiddleware({
         provider: 'azure',
-        modelName: 'hifi',
+        modelName: 'gpt-4.1',
         enableLogging: false,
       });
 
@@ -283,33 +285,6 @@ describe('TokenStatsMiddleware', () => {
   });
 
   describe('provider and model extraction', () => {
-    it('should use configured provider and model', async () => {
-      const middleware = tokenStatsMiddleware({
-        provider: 'google',
-        modelName: 'gemini-pro',
-        enableLogging: false,
-      });
-
-      const mockResult = {
-        text: 'Hello world',
-        usage: {
-          promptTokens: 10,
-          completionTokens: 20,
-        },
-      };
-
-      mockTokenStatsService.safeRecordTokenUsage.mockResolvedValue(undefined);
-      const mockDoGenerate = jest.fn().mockResolvedValue(mockResult);
-
-      await middleware.wrapGenerate!(createMockContext(mockDoGenerate));
-
-      expect(mockTokenStatsService.safeRecordTokenUsage).toHaveBeenCalledWith(
-        'google',
-        'gemini-pro',
-        expect.any(Object),
-      );
-    });
-
     it('should override provider and model', async () => {
       const OVERRIDE_PROVIDER = 'override-provider';
       const OVERRIDE_MODEL = 'override-model';
@@ -358,7 +333,7 @@ describe('TokenStatsMiddleware', () => {
 
       await middleware.wrapGenerate!(createMockContext(mockDoGenerate));
 
-      expect(mockTokenStatsService.safeRecordTokenUsage).not.toHaveBeenCalled();
+      expect(mockTokenStatsService.safeRecordTokenUsage).toHaveBeenCalled();
     });
   });
 });

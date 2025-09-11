@@ -1,6 +1,6 @@
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
+import { schema } from '@/lib/drizzle-db/schema';
 import { type DbTransactionType, drizDbWithInit } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db';
 import { eq, desc } from 'drizzle-orm';
 
 export const getNextSequence = async ({
@@ -90,62 +90,129 @@ export const getNewMessages = async (
       role: schema.chatMessages.role,
       content: schema.chatMessages.content,
       messageOrder: schema.chatMessages.messageOrder,
+      providerId: schema.chatMessages.providerId,
+      toolName: schema.chatTool.toolName,
+      input: schema.chatToolCalls.input,
+      output: schema.chatToolCalls.output,
     })
     .from(schema.chatMessages)
+    .leftJoin(
+      schema.chatToolCalls,
+      eq(schema.chatMessages.chatMessageId, schema.chatToolCalls.chatMessageId),
+    )
+    .leftJoin(
+      schema.chatTool,
+      eq(schema.chatToolCalls.chatToolId, schema.chatTool.chatToolId),
+    )
     .where(eq(schema.chatMessages.chatId, chatId))
-    .orderBy(desc(schema.chatMessages.messageOrder));
-
+    .orderBy(desc(schema.chatMessages.messageOrder))
+    .then((results) =>
+      (results ?? []).filter(Boolean).map((record) => {
+        // if we do not have a record, or it does not have content, or the content is not a string,
+        // // there nothing for us to do
+        if (!record.content || typeof record.content !== 'string') {
+          return record;
+        }
+        // Parse content into it's native / non-string representation
+        try {
+          const parsed = JSON.parse(record.content);
+          record.content = parsed;
+        } catch {
+          // Nothing for us to do - leave it as a string.
+        }
+        return record;
+      }),
+    );
   // If no existing messages, all incoming messages are new
   if (existingMessages.length === 0) {
     return incomingMessages;
   }
 
   // Helper function to normalize content for comparison
-  const normalizeContentForComparison = (content: unknown): string => {
-    if (typeof content === 'string') {
-      // Check if the string is a JSON representation of content array
-      try {
-        const parsed = JSON.parse(content);
-        if (Array.isArray(parsed)) {
-          // Extract text from parsed content parts and join them
-          return parsed
-            .filter((part) => part.type === 'text')
-            .map((part) => part.text)
-            .join('');
+  const normalizeContentForComparison = (
+    input: unknown,
+    { skipTools = false }: { skipTools?: boolean } = {},
+  ): string => {
+    if (!input) {
+      return '';
+    }
+    if (typeof input === 'string') {
+      return input ?? '';
+    }
+    if (typeof input === 'object' && !!input) {
+      let content: string = '';
+      if (Array.isArray(input)) {
+        return input
+          .map((x) => normalizeContentForComparison(x, { skipTools }))
+          .filter(Boolean)
+          .join('\n');
+      }
+      if ('content' in input && !input.content) {
+        if (typeof input.content === 'object') {
+          if (Array.isArray(input.content)) {
+            content += input.content
+              .map((x) => normalizeContentForComparison(x, { skipTools }))
+              .filter(Boolean)
+              .join('\n');
+          } else {
+            content += normalizeContentForComparison(input.content, {
+              skipTools,
+            });
+          }
+        } else {
+          content += input?.content?.toString()?.trim() ?? '';
         }
-      } catch {
-        // Not valid JSON, treat as plain string
+      }
+      if ('text' in input) {
+        content += input?.text?.toString()?.trim() ?? '';
+      } else if ('type' in input) {
+        switch (input.type) {
+          case 'text':
+            content += (input as { text?: string }).text?.toString() ?? '';
+            break;
+          case 'tool-call':
+          case 'tool-result':
+            if (!skipTools) {
+              const fnInput =
+                'input' in input && input.input
+                  ? `(${JSON.stringify(input.input)})`
+                  : '';
+              const fnOutput =
+                'output' in input && input.output
+                  ? ` => ${JSON.stringify(input.output)}`
+                  : '';
+              const fnName =
+                'toolName' in input && input.toolName ? input.toolName : '';
+              const fnId =
+                'toolCallId' in input && input.toolCallId
+                  ? ` [${input.toolCallId}]`
+                  : '';
+              content += (fnName + fnId + fnInput + fnOutput).trim();
+            }
+            break;
+          default:
+            // content += JSON.stringify(input);
+            break;
+        }
       }
       return content;
     }
-
-    // Handle LanguageModelontent format: array of content parts
-    if (Array.isArray(content)) {
-      // Extract text from content parts and join them
-      return content
-        .filter((part) => part.type === 'text')
-        .map((part) => part.text)
-        .join('');
-    }
-
-    // Fallback to JSON string for other formats
-    return JSON.stringify(content);
+    return '';
   };
 
   // Create a normalized representation of existing messages for comparison
   const existingMessageSignatures = new Set(
     existingMessages.map((msg) => {
       const normalizedContent = normalizeContentForComparison(msg.content);
-      return `${msg.messageOrder}:${msg.role}:${normalizedContent}`;
+      return `${msg.role}:${normalizedContent}`;
     }),
   );
-
   // Filter incoming messages to only include those not already persisted
-  const newMessages = incomingMessages.filter((incomingMsg, index) => {
+  const newMessages = incomingMessages.filter((incomingMsg) => {
     const normalizedIncomingContent = normalizeContentForComparison(
       incomingMsg.content,
     );
-    const incomingSignature = `${index + 1}:${incomingMsg.role}:${normalizedIncomingContent}`;
+    const incomingSignature = `${incomingMsg.role}:${normalizedIncomingContent}`;
 
     return !existingMessageSignatures.has(incomingSignature);
   });

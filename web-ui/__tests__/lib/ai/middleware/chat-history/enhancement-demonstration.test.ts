@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Demonstration test showing the chat history enhancement in action
@@ -8,8 +9,10 @@
 
 import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
 import { LanguageModelV2Message } from '@ai-sdk/provider';
-
+//import { schema } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
 // Mock database schema
+/*
 jest.mock('@/lib/drizzle-db', () => ({
   schema: {
     chatMessages: {
@@ -20,18 +23,22 @@ jest.mock('@/lib/drizzle-db', () => ({
     },
   },
 }));
+*/
 
 describe('Chat History Enhancement Demonstration', () => {
   let mockTx: any;
 
   beforeEach(() => {
+    const whereOrderBy = {
+      leftJoin: jest.fn(),
+      where: jest.fn().mockReturnValue({
+        orderBy: jest.fn().mockReturnValue([]), // Will be set by individual tests
+      }),
+    };
+    whereOrderBy.leftJoin.mockReturnValue(whereOrderBy);
     mockTx = {
       select: jest.fn().mockReturnValue({
-        from: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            orderBy: jest.fn().mockReturnValue([]), // Will be set by individual tests
-          }),
-        }),
+        from: jest.fn().mockReturnValue(whereOrderBy),
       }),
     };
   });

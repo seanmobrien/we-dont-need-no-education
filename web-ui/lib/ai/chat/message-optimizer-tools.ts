@@ -14,7 +14,9 @@ import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { log } from '@/lib/logger';
 import { createHash } from 'crypto';
+// import { v4 as uuidv4 } from 'uuid';
 import { appMeters, hashUserId } from '@/lib/site-util/metrics';
+// import { ToolMap } from '../services/model-stats/tool-map';
 import { createAgentHistoryContext } from '../middleware/chat-history/create-chat-history-context';
 import { LoggedError } from '@/lib/react-util';
 import z from 'zod';
@@ -24,6 +26,79 @@ import { and, eq, not } from 'drizzle-orm';
 import { AttributeValue } from '@opentelemetry/api';
 import { isKeyOf } from '@/lib/typescript';
 import { countTokens } from '../core/count-tokens';
+import {
+  ChatToolCallsType,
+  ChatToolType,
+} from '@/lib/drizzle-db/drizzle-types';
+import { ToolMap } from '../services/model-stats/tool-map';
+// import { sql } from 'drizzle-orm';
+
+/**
+ * Create a chat_tool_calls record for a specific tool call
+ * @param tx Database transaction context
+ * @param chatToolId The chat tool ID from the tool map
+ * @param chatMessageId The UUID of the chat message this tool call belongs to
+ * @param providerId The provider-specific tool call ID
+ * @param toolRequest Array of tool request messages
+ * @param toolResult Array of tool result/response messages
+ * @returns The generated chatToolCallId UUID
+ */
+const createChatToolCallRecord = async (
+  tx: DbTransactionType,
+  chatToolId: string,
+  chatMessageId: string,
+  providerId: string,
+  toolRequest: Array<UIMessagePart<UIDataTypes, UITools>>,
+  toolResult: Array<UIMessagePart<UIDataTypes, UITools>>,
+): Promise<string> => {
+  // Serialize input and output for storage
+  const input =
+    toolRequest.length > 0
+      ? JSON.stringify(
+          toolRequest.map((req) => ({
+            type: req.type,
+            state: 'state' in req ? req.state : undefined,
+            toolName: 'toolName' in req ? req.toolName : undefined,
+            args: 'args' in req ? req.args : undefined,
+            input: 'input' in req ? req.input : undefined,
+          })),
+        )
+      : null;
+
+  const output =
+    toolResult.length > 0
+      ? JSON.stringify(
+          toolResult.map((res) => ({
+            type: res.type,
+            state: 'state' in res ? res.state : undefined,
+            toolName: 'toolName' in res ? res.toolName : undefined,
+            result: 'result' in res ? res.result : undefined,
+            output: 'output' in res ? res.output : undefined,
+            errorText: 'errorText' in res ? res.errorText : undefined,
+          })),
+        )
+      : null;
+
+  const result = await tx
+    .insert(schema.chatToolCalls)
+    .values({
+      chatToolId,
+      chatMessageId,
+      providerId,
+      input,
+      output,
+      timestamp: new Date().toISOString(), // Current timestamp
+      providerOptions: null, // Can be extended later if needed
+    })
+    .returning({ chatToolCallId: schema.chatToolCalls.chatToolCallId })
+    .execute();
+
+  if (!result || result.length === 0) {
+    throw new Error('Failed to create chat tool call record');
+  }
+
+  return result[0].chatToolCallId;
+};
 
 // OpenTelemetry Metrics for Message Optimization
 const optimizationCounter = appMeters.createCounter(
@@ -194,6 +269,78 @@ export const cacheManager = {
 };
 
 /**
+ * Create tool records for a tool call - handles chat_tool and chat_tool_calls creation
+ */
+const createToolRecordsForToolCall = async (
+  record: ToolCallRecord,
+  toolCallId: string,
+): Promise<void> => {
+  if (record.chatToolCallId) {
+    // Already processed
+    return;
+  }
+
+  // Extract tool name from the tool request or result
+  const toolData = record.toolResult[0] || record.toolRequest[0];
+  if (!toolData || !('type' in toolData)) {
+    throw new Error(
+      `Unable to determine tool type for tool call ${toolCallId}`,
+    );
+  }
+
+  const toolName = toolData.type.startsWith('tool-')
+    ? toolData.type.substring(5) // Remove 'tool-' prefix
+    : toolData.type;
+
+  await drizDbWithInit((db) =>
+    db.transaction(async (tx) => {
+      try {
+        // Create or get chat_tool record
+        const chatToolId = await ToolMap.getInstance().then((x) =>
+          x.idOrThrow(toolName),
+        );
+        record.chatToolId = chatToolId;
+
+        // Get the message ID - we need to find the actual chat_message_id from the database
+        // For now, we'll use the messageId as the provider_id and assume we have the chat message ID
+        const chatMessageId = record.messageId; // This should be the actual chat_message_id UUID
+
+        // Create chat_tool_calls record
+        const chatToolCallId = await createChatToolCallRecord(
+          tx,
+          chatToolId,
+          chatMessageId,
+          toolCallId, // Use tool call ID as provider ID
+          record.toolRequest,
+          record.toolResult,
+        );
+
+        record.chatToolCallId = chatToolCallId;
+
+        log((l) =>
+          l.info('Created tool records for tool call', {
+            toolCallId,
+            chatToolId,
+            chatToolCallId,
+            toolName,
+            messageId: record.messageId,
+          }),
+        );
+      } catch (error) {
+        log((l) =>
+          l.error('Failed to create tool records', {
+            error,
+            toolCallId,
+            messageId: record.messageId,
+          }),
+        );
+        throw error;
+      }
+    }),
+  );
+};
+
+/**
  * Generate a deterministic hash for a tool call sequence
  */
 const hashToolCallSequence = (
@@ -296,6 +443,22 @@ interface ToolCallRecord {
    * Summarized tool response message
    */
   summarizedResult: SummarizedToolResponse;
+  /**
+   * Optional cached summary key for reference
+   */
+  tools: Array<ChatToolType>;
+  /**
+   * Stores the original tool call for search / retrieval
+   */
+  toolCalls: Array<ChatToolCallsType>;
+  /**
+   * The chat tool call ID from the database record
+   */
+  chatToolCallId?: string;
+  /**
+   * The chat tool ID from the tool map
+   */
+  chatToolId?: string;
 }
 
 /**
@@ -543,53 +706,55 @@ export const summarizeMessageRecord = async ({
    */
   newTitle: boolean;
 }> => {
-  const qp: ThisDbQueryProvider = (await (tx
-    ? Promise.resolve(tx)
-    : drizDbWithInit())) as unknown as ThisDbQueryProvider;
+  try {
+    const qp: ThisDbQueryProvider = (await (tx
+      ? Promise.resolve(tx)
+      : drizDbWithInit())) as unknown as ThisDbQueryProvider;
 
-  const isThisMessage = and(
-    eq(schema.chatMessages.chatId, chatId),
-    eq(schema.chatMessages.turnId, turnId),
-    eq(schema.chatMessages.messageId, messageId),
-  )!;
-  // First assemble previous message state
-  const prevMessages = await qp.query.chatMessages
-    .findMany({
-      where: and(eq(schema.chatMessages.chatId, chatId), not(isThisMessage)),
-      columns: {
-        content: deep === true,
-        optimizedContent: deep !== true,
-      },
-      orderBy: [schema.chatMessages.turnId, schema.chatMessages.messageId],
-    })
-    .execute()
-    .then((q) =>
-      q.map(
-        deep
-          ? (m: object) => (m as { content: string }).content
-          : (m: object) => (m as { optimizedContent: string }).optimizedContent,
-      ),
-    );
-  // Then retrieve the target message
-  const thisMessage = await qp.query.chatMessages.findFirst({
-    where: isThisMessage,
-    columns: {
-      content: true,
-      optimizedContent: true,
-    },
-    with: {
-      chat: {
+    const isThisMessage = and(
+      eq(schema.chatMessages.chatId, chatId),
+      eq(schema.chatMessages.turnId, turnId),
+      eq(schema.chatMessages.messageId, messageId),
+    )!;
+    // First assemble previous message state
+    const prevMessages = await qp.query.chatMessages
+      .findMany({
+        where: and(eq(schema.chatMessages.chatId, chatId), not(isThisMessage)),
         columns: {
-          title: true,
+          content: deep === true,
+          optimizedContent: deep !== true,
+        },
+        orderBy: [schema.chatMessages.turnId, schema.chatMessages.messageId],
+      })
+      .execute()
+      .then((q) =>
+        q.map(
+          deep
+            ? (m: object) => (m as { content: string }).content
+            : (m: object) =>
+                (m as { optimizedContent: string }).optimizedContent,
+        ),
+      );
+    // Then retrieve the target message
+    const thisMessage = await qp.query.chatMessages.findFirst({
+      where: isThisMessage,
+      columns: {
+        content: true,
+        optimizedContent: true,
+      },
+      with: {
+        chat: {
+          columns: {
+            title: true,
+          },
         },
       },
-    },
-  });
-  if (!thisMessage) {
-    throw new Error('Message not found');
-  }
-  // Let the models work their magic...
-  const prompt = `You are an expert at summarizing message output for AI conversation context.
+    });
+    if (!thisMessage) {
+      throw new Error('Message not found');
+    }
+    // Let the models work their magic...
+    const prompt = `You are an expert at summarizing message output for AI conversation context.
 
   CONVERSATIONAL CONTEXT:
   ${prevMessages.join('\n----\n')}
@@ -610,75 +775,81 @@ export const summarizeMessageRecord = async ({
   5. Provide a short (4-5 word max) title that accurately describes the conversation as a whole - this will be used as the new Chat Title.
 
   Keep the summary as short as possible while preserving essential meaning.`;
-  const model = aiModelFactory('lofi');
-  const summarized = (
-    await generateObject({
-      model,
-      prompt,
-      schema: z.object({
-        messageSummary: z.string(),
-        chatTitle: z.string(),
-      }),
-      temperature: 0.3,
-      experimental_telemetry: {
-        isEnabled: true,
-        functionId: 'completion-message-summarization',
-      },
-    })
-  ).object;
-  const ret = {
-    optimizedContent: summarized.messageSummary,
-    chatTitle: summarized.chatTitle,
-    newTitle: summarized.chatTitle !== thisMessage.chat.title,
-  };
-  if (write) {
-    (await drizDbWithInit())
-      // Update the specific chat message identified by (chatId, turnId, messageId)
-      .update(schema.chatMessages)
-      .set({ optimizedContent: ret.optimizedContent })
-      .where(isThisMessage)
-      .execute();
+    const model = aiModelFactory('lofi');
+    const summarized = (
+      await generateObject({
+        model,
+        prompt,
+        schema: z.object({
+          messageSummary: z.string(),
+          chatTitle: z.string(),
+        }),
+        temperature: 0.3,
+        experimental_telemetry: {
+          isEnabled: true,
+          functionId: 'completion-message-summarization',
+        },
+      })
+    ).object;
+    const ret = {
+      optimizedContent: summarized.messageSummary,
+      chatTitle: summarized.chatTitle,
+      newTitle: summarized.chatTitle !== thisMessage.chat.title,
+    };
+    if (write) {
+      (await drizDbWithInit())
+        // Update the specific chat message identified by (chatId, turnId, messageId)
+        .update(schema.chatMessages)
+        .set({ optimizedContent: ret.optimizedContent })
+        .where(isThisMessage)
+        .execute();
 
-    // Update chat title by chat id
-    await qp
-      .update(schema.chats)
-      .set({ title: ret.chatTitle })
-      .where(eq(schema.chats.id, chatId))
-      .execute();
+      // Update chat title by chat id
+      await qp
+        .update(schema.chats)
+        .set({ title: ret.chatTitle })
+        .where(eq(schema.chats.id, chatId))
+        .execute();
 
-    /*
+      /*
     await qp
       .update(schema.chatMessages)
       .set({ optimizedContent: ret.optimizedContent })
       .where(isThisMessage)
       .execute();
     */
+    }
+    return ret;
+  } catch (error) {
+    throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      source: 'tools-optimizer -  summarizeMessageRecord',
+      log: true,
+    });
   }
-  return ret;
 };
 
-const requestSummaryFactory = ({
-  responseSummary,
-  toolRequest,
-}: {
-  responseSummary: SummarizedToolResponse;
-  toolRequest: ToolRequestMessage;
-}): SummarizedToolRequest => {
-  const requestSummary = {
-    state: toolRequest.state,
-    type: toolRequest.type,
-  } as Record<string, unknown>;
-  const ignoreKeys = ['state', 'type', 'output', 'errorText'];
-  for (const key of Object.keys(responseSummary).filter(
-    (k) => !ignoreKeys.includes(k),
-  )) {
-    const value = responseSummary[key as keyof SummarizedToolResponse];
-    if (value) {
-      requestSummary[key] = value;
-    }
-  }
-  return requestSummary as SummarizedToolRequest;
-};
+// const requestSummaryFactory = ({
+//   responseSummary,
+//   toolRequest,
+// }: {
+//   responseSummary: SummarizedToolResponse;
+//   toolRequest: ToolRequestMessage;
+// }): SummarizedToolRequest => {
+//   const requestSummary = {
+//     state: toolRequest.state,
+//     type: toolRequest.type,
+//   } as Record<string, unknown>;
+//   const ignoreKeys = ['state', 'type', 'output', 'errorText'];
+//   for (const key of Object.keys(responseSummary).filter(
+//     (k) => !ignoreKeys.includes(k),
+//   )) {
+//     const value = responseSummary[key as keyof SummarizedToolResponse];
+//     if (value) {
+//       requestSummary[key] = value;
+//     }
+//   }
+//   return requestSummary as SummarizedToolRequest;
+// };
 
 /**
  * Process older messages (before cutoff) for tool summarization
@@ -701,6 +872,8 @@ const processOlderMessagesForSummarization = async (
     const processedParts = [] as Array<UIMessagePart<UIDataTypes, UITools>>;
 
     let messageDirtyFlag = false;
+    // Ensure we only insert a single summary per toolCallId within this message
+    const summaryInsertedFor = new Set<string>();
 
     // Process invocations backwards to maintain consistency with message processing
     for (let j = (message.parts ?? []).length - 1; j >= 0; j--) {
@@ -720,17 +893,19 @@ const processOlderMessagesForSummarization = async (
         const record = toolCallDict.get(invocation.toolCallId)!;
         if (isInputToolState(invocation.state)) {
           if (invocation.state === 'input-available') {
-            record.summarizedRequest ??= requestSummaryFactory({
-              responseSummary: record.summarizedResult,
-              toolRequest: invocation,
-            });
-            processedParts.unshift(record.summarizedRequest!);
-            messageDirtyFlag = true;
+            // Keep only a single summary in place of the request and capture request for summarization context
+            record.toolRequest.push({ ...invocation } as ToolRequestMessage);
+            if (!summaryInsertedFor.has(invocation.toolCallId)) {
+              processedParts.unshift(record.toolSummary);
+              summaryInsertedFor.add(invocation.toolCallId);
+              messageDirtyFlag = true;
+            }
           } else {
             // NO-OP: skip streaming message input when response present
           }
         } else if (isOutputToolState(invocation.state)) {
-          // NO-OP: only keep the most recent tool response, which is what created the record
+          // Preserve the tool response (output-available/error) in the optimized message
+          processedParts.unshift(invocation);
         } else {
           log((l) =>
             l.warn(
@@ -758,10 +933,13 @@ const processOlderMessagesForSummarization = async (
               input: '[SUMMARIZED - (input) See summary message]',
               output: '[SUMMARIZED - (output) See summary message]',
             } as SummarizedToolResponse,
+            tools: [],
+            toolCalls: [],
           };
           toolCallDict.set(invocation.toolCallId, record); // Replace this invocation with the summary message
-          processedParts.unshift(record.summarizedResult);
-          messageDirtyFlag = true;
+          // Preserve the actual output in the optimized message; we'll insert the summary in place of the request
+          processedParts.unshift(invocation);
+          messageDirtyFlag = true; // message changed because we'll later replace the request with summary and drop streaming
         } else if (isInputToolState(invocation.state)) {
           // If the first thing we see is a tool request, we want to preserve it
           preservedToolIds.add(invocation.toolCallId);
@@ -812,12 +990,20 @@ const generateToolCallSummaries = async (
   const summaryPromises = Array.from(toolCallDict.entries()).map(
     async ([toolCallId, record]) => {
       try {
+        // First, ensure tool records and chat_tool_calls are created
+        await createToolRecordsForToolCall(record, toolCallId);
+
         const summary = await generateSingleToolCallSummary(
           record,
           chatHistoryContext,
           allMessages,
-        ); // Update the summary message by reference
-        record.toolSummary.text = summary;
+        );
+
+        // Update the summary message to include chat_tool_call_id
+        const summaryWithId = record.chatToolCallId
+          ? `${summary} [ID: ${record.chatToolCallId}]`
+          : summary;
+        record.toolSummary.text = summaryWithId;
 
         log((l) =>
           l.debug(`Generated summary for tool call ${toolCallId}`, {
@@ -835,7 +1021,10 @@ const generateToolCallSummaries = async (
           }),
         ); // Fallback to basic summary on error
         const fallbackText = `[TOOL CALL COMPLETED] ID: ${toolCallId} - Summary generation failed, see logs for details.`;
-        record.toolSummary.text = fallbackText;
+        const fallbackWithId = record.chatToolCallId
+          ? `${fallbackText} [ID: ${record.chatToolCallId}]`
+          : fallbackText;
+        record.toolSummary.text = fallbackWithId;
       }
     },
   );
@@ -959,7 +1148,7 @@ Respond with just the summary text, no additional formatting.`;
       temperature: 0.3,
       experimental_telemetry: {
         isEnabled: true,
-        functionId: 'completion-message-summarization',
+        functionId: 'completion-message-tool-summarization',
       },
     });
     const summaryDuration = Date.now() - startSummaryTime;

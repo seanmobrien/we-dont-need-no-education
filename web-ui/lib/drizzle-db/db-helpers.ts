@@ -68,7 +68,7 @@ export const getDocumentRelationReason = async ({
     const { relationReasonId } = rows[0];
     if (relationReasonId || !add) {
       return relationReasonId;
-    }     
+    }
   }
   const [{ relationReasonId: newRelationReasonId } = {}] = await db
     .insert(documentRelationshipReason)
@@ -137,7 +137,7 @@ export const addDocumentRelations = async ({
                     throw new Error('Failed to get relationship reason ID');
                   }
                   // Check if the relationship already exists
-                  
+
                   const exists = await db
                     .select()
                     .from(schema.documentRelationship)
@@ -235,25 +235,23 @@ export const addNotesToDocument = async <
     throw new Error(
       'Invalid database instance - must be a transaction or query builder',
     );
-  }    
+  }
   // If db is a query builder, we need to get the actual db instance
-    const record = await db.query.documentUnits.findFirst(
-      {
-        where: eq(schema.documentUnits.unitId, documentIdFromProps),
+  const record = await db.query.documentUnits.findFirst({
+    where: eq(schema.documentUnits.unitId, documentIdFromProps),
+    columns: {
+      emailId: true,
+      attachmentId: true,
+      documentType: true,
+    },
+    with: {
+      docProp: {
         columns: {
-          emailId: true,
-          attachmentId: true,
-          documentType: true,
-        },
-        with: {
-          docProp: {
-            columns: {
-              documentId: true, // Ensure we get the document ID
-            },
-          },
+          documentId: true, // Ensure we get the document ID
         },
       },
-  );
+    },
+  });
   if (!record) {
     throw new Error('Email ID not found for the document');
   }

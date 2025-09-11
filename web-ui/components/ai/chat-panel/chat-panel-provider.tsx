@@ -1,7 +1,14 @@
-import React, { useState, useEffect, useMemo, SetStateAction } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  SetStateAction,
+  PropsWithChildren,
+} from 'react';
 import { debounce } from '@/lib/react-util/debounce';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import { ChatPanelContext } from './chat-panel-context';
+import { isKeyOf } from '@/lib/typescript/_guards';
 
 const STORAGE_KEYS = {
   POSITION: 'chatPanelPosition',
@@ -65,12 +72,13 @@ export interface ChatPanelProviderProps {
   children: React.ReactNode;
 }
 
-export const ChatPanelProvider: React.FC<ChatPanelProviderProps> = ({
-  children,
-}) => {
+export const ChatPanelProvider: React.FC<
+  PropsWithChildren<ChatPanelProviderProps>
+> = ({ children }) => {
   const [config, setConfigState] = useState<ChatPanelConfig>(DEFAULT_CONFIG);
   const [isClient, setIsClient] = useState(false);
   const [dockPanel, setDockPanel] = useState<HTMLDivElement | null>(null);
+  const [caseFileId, setCaseFileId] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -103,13 +111,41 @@ export const ChatPanelProvider: React.FC<ChatPanelProviderProps> = ({
       if (!newConfig || !config || Object.is(newConfig, config)) {
         return;
       }
-      if (
-        (newConfig.position && config.position !== newConfig.position) ||
-        (newConfig.size &&
-          (config.size.width !== newConfig.size.width ||
-            config.size.height !== newConfig.size.height)) ||
-        (newConfig.dockSize && config.dockSize !== newConfig.dockSize)
-      ) {
+      const checkKeys = ['position', 'size.height', 'dockSize', 'caseFileId'];
+      const fieldsEqual = <T extends object>(x: T, y: T, key: string) => {
+        if (key.includes('.')) {
+          const [part, ...parts] = key.split('.');
+          if (!isKeyOf(part, x)) {
+            return true;
+          }
+          const left = x[part] as object;
+          if (!left && left !== null) {
+            return false;
+          }
+          const right = y[part];
+          if (!right && left) {
+            return false;
+          }
+          if (typeof left !== 'object') {
+            return false;
+          }
+          return fieldsEqual<typeof left>(
+            left,
+            right as typeof left,
+            parts.join('.'),
+          );
+        }
+        if (!isKeyOf(key, x)) {
+          return true;
+        }
+        return typeof x[key] === 'object'
+          ? Object.is(x[key], y[key])
+          : x[key] == y[key];
+      };
+      const areEqual = checkKeys.every((key) =>
+        fieldsEqual(newConfig, config, key),
+      );
+      if (!areEqual) {
         setConfigState({
           ...config,
           ...newConfig,
@@ -153,6 +189,7 @@ export const ChatPanelProvider: React.FC<ChatPanelProviderProps> = ({
           smartSetConfig({ position: isFloating ? 'floating' : 'inline' });
         }
       },
+      setCaseFileId,
       debounced: {
         setSize: debounce<void, (height: number, width: number) => void>(
           setSizeCallback,
@@ -171,12 +208,14 @@ export const ChatPanelProvider: React.FC<ChatPanelProviderProps> = ({
     setSize,
     setDockSize,
     setFloating,
+    setCaseFileId,
     isDocked,
     isFloating,
     isInline,
     debounced,
     dockPanel,
     setDockPanel,
+    caseFileId,
   };
 
   return (

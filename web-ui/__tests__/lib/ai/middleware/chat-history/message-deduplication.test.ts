@@ -11,6 +11,7 @@ import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
 import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
+/*
 // Mock database schema
 jest.mock('@/lib/drizzle-db', () => ({
   schema: {
@@ -22,6 +23,7 @@ jest.mock('@/lib/drizzle-db', () => ({
     },
   },
 }));
+*/
 
 describe('Message Deduplication', () => {
   let mockTx: jest.Mocked<DbTransactionType>;
@@ -31,8 +33,18 @@ describe('Message Deduplication', () => {
     // Mock transaction with chainable query methods
     mockOrderBy = jest.fn().mockResolvedValue([]);
     const mockWhere = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
-    const mockFrom = jest.fn().mockReturnValue({ where: mockWhere });
+    const theLeftJoin = {
+      where: mockWhere,
+      select: jest.fn(),
+      leftJoin: jest.fn(),
+    };
+    const mockLeftJoin = jest.fn().mockReturnValue(theLeftJoin);
+    const mockFrom = jest
+      .fn()
+      .mockReturnValue({ where: mockWhere, leftJoin: mockLeftJoin });
     const mockSelect = jest.fn().mockReturnValue({ from: mockFrom });
+    theLeftJoin.leftJoin.mockReturnValue(theLeftJoin);
+    theLeftJoin.select.mockReturnValue({ from: mockFrom });
 
     mockTx = {
       select: mockSelect,

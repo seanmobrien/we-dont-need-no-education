@@ -4,7 +4,6 @@ import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest } from 'next/server';
 
-
 /**
  * Sentinel used to explicitly enable a wrapped route/handler during the production build phase.
  *
@@ -54,9 +53,7 @@ const globalBuildFallback = {
   __status: 'Service disabled during build.',
 } as const;
 
-
 // Note: handler can be 0, 1, or 2 args; we'll infer via a generic below
-
 
 /**
  * Wraps a route handler function with error handling and optional logging for Next.js API/app routes.
@@ -90,17 +87,22 @@ const globalBuildFallback = {
 // Generic preserves the original handler signature (0, 1, or 2 args)
 export function wrapRouteRequest<A extends unknown[], R extends Response>(
   fn: (...args: A) => Promise<R>,
-  options: { log?: boolean; buildFallback?: object | typeof EnableOnBuild } = {},
+  options: {
+    log?: boolean;
+    buildFallback?: object | typeof EnableOnBuild;
+    errorCallback?: (error: unknown) => void | Promise<void>;
+  } = {},
 ): (...args: A) => Promise<Response> {
-  const { log: shouldLog = env('NODE_ENV') !== 'production', buildFallback } =
-    options ?? {};
-  return async (
-    ...args: A
-  ): Promise<Response> => {
-    const req = (args[0] as unknown as Request | NextRequest | undefined);
-    const context = (args[1] as
+  const {
+    log: shouldLog = env('NODE_ENV') !== 'production',
+    buildFallback,
+    errorCallback,
+  } = options ?? {};
+  return async (...args: A): Promise<Response> => {
+    const req = args[0] as unknown as Request | NextRequest | undefined;
+    const context = args[1] as
       | { params: Promise<Record<string, unknown>> }
-      | undefined);
+      | undefined;
     try {
       if (
         buildFallback !== EnableOnBuild &&
@@ -123,23 +125,40 @@ export function wrapRouteRequest<A extends unknown[], R extends Response>(
           }),
         );
       }
-  // Invoke the original handler with the same args shape
-  return await fn(...args);
+      // Invoke the original handler with the same args shape
+      return await fn(...args);
     } catch (error) {
       if (shouldLog) {
         const extractedParams = await (!!context?.params
           ? context.params
           : Promise.resolve({} as Record<string, unknown>));
-        LoggedError.isTurtlesAllTheWayDownBaby(error,{
+        // Wrap in a LoggedError to prevent callback from auto-logging
+        error = LoggedError.isTurtlesAllTheWayDownBaby(error, {
           log: true,
           source: 'wrapRouteRequest:catch',
           data: {
             params: extractedParams,
             req,
-          }
+          },
         });
       }
-      return new ErrorResponse('An unexpected error occurred', { cause: error });
+      // If a callback was provided, invoke it within a try/catch to avoid secondary errors
+      if (errorCallback) {
+        try {
+          const maybePromise = errorCallback(error);
+          if (maybePromise instanceof Promise) {
+            await maybePromise;
+          }
+        } catch (callbackError) {
+          LoggedError.isTurtlesAllTheWayDownBaby(callbackError, {
+            log: true,
+            source: 'wrapRouteRequest:errorCallback',
+          });
+        }
+      }
+      return new ErrorResponse('An unexpected error occurred', {
+        cause: error,
+      });
     }
   };
 }

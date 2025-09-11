@@ -84,6 +84,7 @@ describe('Chat History Middleware', () => {
           content: [{ type: 'text', text: 'Hello world' }],
         },
       ],
+      tools: [],
     } as LanguageModelV2CallOptions;
 
     // Mock ProcessingQueue instance
@@ -375,7 +376,7 @@ describe('Chat History Middleware', () => {
       });
 
       // Assert
-      expect(result).toEqual(emptyParams);
+      expect(result).toEqual({ tools: [] });
     });
 
     it('should handle complex params', async () => {

@@ -1,6 +1,4 @@
-import { config } from './common';
-
-//import { registerOTel } from '@vercel/otel';
+// import { config } from './common';
 
 const instrument = () => {
   /*
@@ -11,6 +9,7 @@ const instrument = () => {
     ...config,
   });
   */
+  console.warn('Instrumentation is currently disabled at edge.');
 };
 
 export default instrument;

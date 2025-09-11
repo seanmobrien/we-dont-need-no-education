@@ -9,7 +9,7 @@
  */
 
 import {
-  handleTextDelta,
+  //handleTextDelta,
   handleToolCall,
   handleFinish,
   processStreamChunk,
@@ -45,6 +45,7 @@ describe('Stream Handlers', () => {
       messageId: 42,
       currentMessageOrder: 1,
       generatedText: 'Initial text',
+      generatedJSON: [],
       toolCalls: new Map(),
     };
 
@@ -96,130 +97,7 @@ describe('Stream Handlers', () => {
     });
   });
 
-  describe('handleTextDelta', () => {
-    it('should accumulate text and update message successfully', async () => {
-      // Arrange
-      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
-        {
-          type: 'text-delta',
-          id: 'test-id',
-          delta: ' additional text',
-        };
-
-      // Act
-      const result = await handleTextDelta(chunk, mockContext);
-
-      // Assert
-      expect(result).toEqual({
-        currentMessageId: 42,
-        currentMessageOrder: 1,
-        generatedText: 'Initial text additional text',
-        toolCalls: expect.any(Map),
-        success: true,
-      });
-
-      expect(mockDb.update).toHaveBeenCalledWith(chatMessages);
-    });
-
-    it('should handle empty text delta', async () => {
-      // Arrange
-      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
-        {
-          type: 'text-delta',
-          id: 'test-id',
-          delta: '',
-        };
-
-      // Act
-      const result = await handleTextDelta(chunk, mockContext);
-
-      // Assert
-      expect(result).toEqual({
-        currentMessageId: 42,
-        currentMessageOrder: 1,
-        generatedText: 'Initial text',
-        toolCalls: expect.any(Map),
-        success: true,
-      });
-    });
-
-    it('should handle context without messageId', async () => {
-      // Arrange
-      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
-        {
-          type: 'text-delta',
-          id: 'test-id',
-          delta: ' new text',
-        };
-      const contextWithoutMessageId = { ...mockContext, messageId: undefined };
-
-      // Act
-      const result = await handleTextDelta(chunk, contextWithoutMessageId);
-
-      // Assert
-      expect(result).toEqual({
-        currentMessageId: expect.any(Number), // Will be assigned during transaction
-        currentMessageOrder: 2, // Incremented during transaction
-        generatedText: 'Initial text new text',
-        toolCalls: expect.any(Map),
-        success: true,
-      });
-
-      // Should call db transaction when no messageId to create new message
-      expect(mockDb.transaction).toHaveBeenCalled();
-    });
-
-    it('should handle database update errors gracefully', async () => {
-      // Arrange
-      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
-        {
-          type: 'text-delta',
-          id: 'test-id',
-          delta: ' error text',
-        };
-      const dbError = new Error('Database update failed');
-
-      mockDb.update.mockReturnValue({
-        set: jest.fn().mockReturnValue({
-          where: jest.fn().mockRejectedValue(dbError),
-        }),
-      } as unknown as ReturnType<typeof mockDb.update>);
-
-      // Act
-      const result = await handleTextDelta(chunk, mockContext);
-
-      // Assert
-      expect(result).toEqual({
-        currentMessageId: 42,
-        currentMessageOrder: 1,
-        generatedText: 'Initial text',
-        toolCalls: expect.any(Map),
-        success: false,
-      });
-
-      expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
-    });
-
-    it('should handle special characters correctly', async () => {
-      // Arrange
-      const chunk: Extract<LanguageModelV2StreamPart, { type: 'text-delta' }> =
-        {
-          type: 'text-delta',
-          id: 'test-id',
-          delta: ' 🚀 émojis and ñoñó special chars',
-        };
-
-      // Act
-      const result = await handleTextDelta(chunk, mockContext);
-
-      // Assert
-      expect(result.generatedText).toBe(
-        'Initial text 🚀 émojis and ñoñó special chars',
-      );
-      expect(result.success).toBe(true);
-    });
-  });
-
+  // handleTextDelta tests removed: text processing is verified via processStreamChunk
   describe('handleToolCall', () => {
     it('should create tool message successfully', async () => {
       // Arrange
@@ -511,23 +389,28 @@ describe('Stream Handlers', () => {
   describe('processStreamChunk', () => {
     it('should route text-delta chunks correctly', async () => {
       // Arrange
+      const start: LanguageModelV2StreamPart = {
+        type: 'text-start',
+        id: 'test-id',
+      };
       const chunk: LanguageModelV2StreamPart = {
         type: 'text-delta',
         id: 'test-id',
         delta: ' routed text',
       };
+      const end: LanguageModelV2StreamPart = {
+        type: 'text-end',
+        id: 'test-id',
+      };
 
       // Act
+      await processStreamChunk(start, mockContext);
       const result = await processStreamChunk(chunk, mockContext);
+      await processStreamChunk(end, mockContext);
 
       // Assert
-      expect(result).toEqual({
-        currentMessageId: 42,
-        currentMessageOrder: 1,
-        generatedText: 'Initial text routed text',
-        toolCalls: expect.any(Map),
-        success: true,
-      });
+      expect(result.generatedText).toBe('Initial text routed text');
+      expect(result.success).toBe(true);
     });
 
     it('should route tool-call chunks correctly', async () => {
@@ -579,26 +462,22 @@ describe('Stream Handlers', () => {
 
     it('should handle unrecognized chunk types gracefully', async () => {
       // Arrange
-      const chunk = {
+      const chunk: LanguageModelV2StreamPart = {
         type: 'unknown-chunk-type',
         data: 'some data',
-      } as unknown as LanguageModelV2StreamPart;
+      } as any;
 
       // Act
       const result = await processStreamChunk(chunk, mockContext);
 
       // Assert
-      expect(result).toEqual({
-        chatId: 'chat-123',
-        turnId: 1,
-        messageId: 42,
-        currentMessageOrder: 1,
-        generatedText:
-          'Initial text{"type":"unknown-chunk-type","data":"some data"}',
-        toolCalls: expect.any(Map),
-        currentMessageId: 42,
-        success: true,
-      });
+      expect(result.chatId).toBe('chat-123');
+      expect(result.turnId).toBe(1);
+      expect(result.messageId).toBe(42);
+      expect(result.generatedText).toBe(
+        'Initial text{"type":"unknown-chunk-type","data":"some data"}',
+      );
+      expect(result.success).toBe(true);
     });
 
     it('should handle error chunks', async () => {
@@ -612,16 +491,11 @@ describe('Stream Handlers', () => {
       const result = await processStreamChunk(chunk, mockContext);
 
       // Assert
-      expect(result).toEqual({
-        chatId: 'chat-123',
-        turnId: 1,
-        messageId: 42,
-        currentMessageOrder: 1,
-        generatedText: expect.stringContaining('Initial text'),
-        toolCalls: expect.any(Map),
-        currentMessageId: 42,
-        success: true,
-      });
+      expect(result.chatId).toBe('chat-123');
+      expect(result.turnId).toBe(1);
+      expect(result.messageId).toBe(42);
+      expect(result.generatedText).toContain('Initial text');
+      expect(result.success).toBe(true);
     });
   });
 
@@ -631,12 +505,15 @@ describe('Stream Handlers', () => {
       const context = { ...mockContext };
 
       // First chunk: text-delta
-      const textChunk: LanguageModelV2StreamPart = {
-        type: 'text-delta',
-        id: 'test-id',
-        delta: 'Hello',
-      };
-      let result = await processStreamChunk(textChunk, context);
+      let result = await processStreamChunk(
+        { type: 'text-start', id: 'test-id' },
+        context,
+      );
+      result = await processStreamChunk(
+        { type: 'text-delta', id: 'test-id', delta: 'Hello' },
+        context,
+      );
+      await processStreamChunk({ type: 'text-end', id: 'test-id' }, context);
       context.generatedText = result.generatedText;
 
       expect(result.generatedText).toBe('Initial textHello');
@@ -654,12 +531,12 @@ describe('Stream Handlers', () => {
       expect(result.currentMessageOrder).toBe(2);
 
       // Third chunk: more text
-      const moreTextChunk: LanguageModelV2StreamPart = {
-        type: 'text-delta',
-        id: 'test-id',
-        delta: ' world',
-      };
-      result = await processStreamChunk(moreTextChunk, context);
+      await processStreamChunk({ type: 'text-start', id: 'test-id' }, context);
+      result = await processStreamChunk(
+        { type: 'text-delta', id: 'test-id', delta: ' world' },
+        context,
+      );
+      await processStreamChunk({ type: 'text-end', id: 'test-id' }, context);
       context.generatedText = result.generatedText;
 
       expect(result.generatedText).toBe('Initial textHello world');
@@ -682,9 +559,15 @@ describe('Stream Handlers', () => {
     it('should maintain state consistency across multiple chunks', async () => {
       // Arrange
       const chunks: LanguageModelV2StreamPart[] = [
+        { type: 'text-start', id: 'test-id-1' },
         { type: 'text-delta', id: 'test-id-1', delta: 'First' },
+        { type: 'text-end', id: 'test-id-1' },
+        { type: 'text-start', id: 'test-id-2' },
         { type: 'text-delta', id: 'test-id-2', delta: ' Second' },
+        { type: 'text-end', id: 'test-id-2' },
+        { type: 'text-start', id: 'test-id-3' },
         { type: 'text-delta', id: 'test-id-3', delta: ' Third' },
+        { type: 'text-end', id: 'test-id-3' },
       ];
 
       const currentContext = { ...mockContext };
