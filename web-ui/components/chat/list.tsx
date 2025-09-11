@@ -124,10 +124,12 @@ export const ChatList = ({
   );
   const { push } = useRouter();
 
-  // Build URL with viewType parameter
+  // Build URL with viewType parameter (only add if not default 'user')
   const gridUrl = useMemo(() => {
     const url = new URL(siteMap.api.ai.chat.history().toString(), window.location.origin);
-    url.searchParams.set('viewType', viewType);
+    if (viewType !== 'user') {
+      url.searchParams.set('viewType', viewType);
+    }
     return url.toString();
   }, [viewType]);
 

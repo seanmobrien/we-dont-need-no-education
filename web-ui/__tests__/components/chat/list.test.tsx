@@ -131,4 +131,18 @@ describe('ChatList', () => {
 
     expect(screen.getByRole('grid')).toBeInTheDocument();
   });
+
+  it('should add viewType query parameter for system view', () => {
+    render(<ChatList viewType="system" />);
+
+    const dataGrid = screen.getByTestId('server-bound-data-grid');
+    expect(dataGrid).toHaveAttribute('data-url', 'http://localhost:3000/api/ai/chat/history?viewType=system');
+  });
+
+  it('should not add viewType query parameter for default user view', () => {
+    render(<ChatList viewType="user" />);
+
+    const dataGrid = screen.getByTestId('server-bound-data-grid');
+    expect(dataGrid).toHaveAttribute('data-url', 'http://localhost:3000/api/ai/chat/history');
+  });
 });
