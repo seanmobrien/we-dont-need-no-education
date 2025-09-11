@@ -20,12 +20,14 @@
 'use client';
 
 import * as React from 'react';
-import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Switch, Button } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
+import { ChatExportMenu } from '@/components/chat/chat-export-menu';
 import { useChatHistory } from './useChatHistory';
 import { Loading } from '@/components/general/loading';
 import type { ChatDetails } from '@/lib/ai/chat/types';
+import type { SelectedChatItem } from '@/lib/chat/export';
 
 
 /**
@@ -45,6 +47,8 @@ import type { ChatDetails } from '@/lib/ai/chat/types';
  */
 export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string; title?: string }) => {
   const { data, isLoading, isError, error, refetch } = useChatHistory(chatId);
+  const [enableSelection, setEnableSelection] = React.useState(false);
+  const [selectedItems, setSelectedItems] = React.useState<SelectedChatItem[]>([]);
 
   // Title resolution rules:
   // 1. If a non-empty title prop is provided, use it.
@@ -52,6 +56,28 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
   // 3. Otherwise use the generated default `Chat <suffix>`.
   const resolvedTitleFromProps = titleFromProps && titleFromProps.trim().length > 0 ? titleFromProps.trim() : null;
   const effectiveTitle = resolvedTitleFromProps ?? (data?.title && data.title.trim().length > 0 ? data.title : null);
+
+  // Clear selection when disabling selection mode
+  React.useEffect(() => {
+    if (!enableSelection) {
+      setSelectedItems([]);
+    }
+  }, [enableSelection]);
+
+  const handleSelectAll = () => {
+    if (!data) return;
+    
+    // Select all turns
+    const allTurns: SelectedChatItem[] = data.turns.map(turn => ({
+      type: 'turn' as const,
+      turnId: turn.turnId
+    }));
+    setSelectedItems(allTurns);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedItems([]);
+  };
 
   if (isError) {
     return (
@@ -188,11 +214,63 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
         </>
       )}
       
-      <Box sx={{ mt: 3 }}>
+      {/* Export Controls */}
+      {data && (
+        <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={enableSelection}
+                onChange={(e) => setEnableSelection(e.target.checked)}
+              />
+            }
+            label="Enable Export Selection"
+          />
+          {enableSelection && (
+            <>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={handleSelectAll}
+                disabled={selectedItems.length === data.turns.length}
+              >
+                Select All Turns
+              </Button>
+              <Button
+                size="small"
+                variant="outlined"
+                onClick={handleClearSelection}
+                disabled={selectedItems.length === 0}
+              >
+                Clear Selection
+              </Button>
+              <Typography variant="body2" color="text.secondary">
+                {selectedItems.length} item{selectedItems.length !== 1 ? 's' : ''} selected
+              </Typography>
+              <ChatExportMenu
+                turns={data.turns}
+                selectedItems={selectedItems}
+                chatTitle={effectiveTitle || undefined}
+                chatCreatedAt={data.createdAt}
+              />
+            </>
+          )}
+        </Box>
+      )}
+      
+      <Box sx={{ mt: 1 }}>
         <Loading loading={isLoading} />
         {!data 
           ? !isLoading && <Typography>No chat found.</Typography>
-          : <VirtualizedChatDisplay turns={data.turns} height={800} />}                
+          : (
+            <VirtualizedChatDisplay 
+              turns={data.turns} 
+              height={800}
+              enableSelection={enableSelection}
+              selectedItems={selectedItems}
+              onSelectionChange={setSelectedItems}
+            />
+          )}                
       </Box>
     </>
   );

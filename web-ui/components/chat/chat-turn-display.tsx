@@ -12,7 +12,9 @@ import {
   Paper,
   Grid,
   Divider,
-  Alert
+  Alert,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
 import { 
   Settings as SettingsIcon,
@@ -22,19 +24,90 @@ import {
 } from '@mui/icons-material';
 import { ChatMessageDisplay } from './chat-message-display';
 import { ChatTurn } from '@/lib/ai/chat/types';
+import type { SelectedChatItem } from '@/lib/chat/export';
 
 interface ChatTurnDisplayProps {
   turn: ChatTurn;
   showTurnProperties?: boolean;
   showMessageMetadata?: boolean;
+  enableSelection?: boolean;
+  selectedItems?: SelectedChatItem[];
+  onSelectionChange?: (selectedItems: SelectedChatItem[]) => void;
 }
 
 export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({ 
   turn, 
   showTurnProperties = false,
-  showMessageMetadata = false
+  showMessageMetadata = false,
+  enableSelection = false,
+  selectedItems = [],
+  onSelectionChange
 }) => {
   const [propertiesExpanded, setPropertiesExpanded] = useState(false);
+
+  // Check if this turn is selected
+  const isTurnSelected = selectedItems.some(
+    item => item.type === 'turn' && item.turnId === turn.turnId
+  );
+
+  // Check if individual messages are selected
+  const getSelectedMessages = () => {
+    return selectedItems.filter(
+      item => item.type === 'message' && item.turnId === turn.turnId
+    );
+  };
+
+  const selectedMessages = getSelectedMessages();
+  const isPartiallySelected = selectedMessages.length > 0 && selectedMessages.length < turn.messages.length;
+
+  const handleTurnSelectionChange = (checked: boolean) => {
+    if (!onSelectionChange) return;
+
+    let newSelection = [...selectedItems];
+    
+    if (checked) {
+      // Remove any individual message selections for this turn
+      newSelection = newSelection.filter(
+        item => !(item.type === 'message' && item.turnId === turn.turnId)
+      );
+      // Add turn selection
+      newSelection.push({ type: 'turn', turnId: turn.turnId });
+    } else {
+      // Remove turn selection
+      newSelection = newSelection.filter(
+        item => !(item.type === 'turn' && item.turnId === turn.turnId)
+      );
+    }
+    
+    onSelectionChange(newSelection);
+  };
+
+  const handleMessageSelectionChange = (messageId: number, checked: boolean) => {
+    if (!onSelectionChange) return;
+
+    let newSelection = [...selectedItems];
+    
+    // Remove turn selection if it exists (since we're selecting individual messages)
+    newSelection = newSelection.filter(
+      item => !(item.type === 'turn' && item.turnId === turn.turnId)
+    );
+    
+    if (checked) {
+      // Add message selection if not already present
+      if (!newSelection.some(item => 
+        item.type === 'message' && item.turnId === turn.turnId && item.messageId === messageId
+      )) {
+        newSelection.push({ type: 'message', turnId: turn.turnId, messageId });
+      }
+    } else {
+      // Remove message selection
+      newSelection = newSelection.filter(
+        item => !(item.type === 'message' && item.turnId === turn.turnId && item.messageId === messageId)
+      );
+    }
+    
+    onSelectionChange(newSelection);
+  };
 
   const formatDuration = (startTime: string, endTime: string | null) => {
     if (!endTime) return 'In progress...';
@@ -49,6 +122,20 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
       <CardContent>
         {/* Turn Header */}
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
+          {enableSelection && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={isTurnSelected}
+                  indeterminate={isPartiallySelected && !isTurnSelected}
+                  onChange={(e) => handleTurnSelectionChange(e.target.checked)}
+                />
+              }
+              label=""
+              sx={{ mr: 1, '& .MuiFormControlLabel-label': { display: 'none' } }}
+            />
+          )}
           <Chip 
             label={`Turn ${turn.turnId}`} 
             variant="outlined" 
@@ -238,13 +325,22 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
         )}
 
         {/* Messages */}
-        {turn.messages.map((message) => (
-          <ChatMessageDisplay 
-            key={`${message.turnId}-${message.messageId}`}
-            message={message}
-            showMetadata={showMessageMetadata}
-          />
-        ))}
+        {turn.messages.map((message) => {
+          const isMessageSelected = isTurnSelected || selectedItems.some(
+            item => item.type === 'message' && item.turnId === turn.turnId && item.messageId === message.messageId
+          );
+          
+          return (
+            <ChatMessageDisplay 
+              key={`${message.turnId}-${message.messageId}`}
+              message={message}
+              showMetadata={showMessageMetadata}
+              enableSelection={enableSelection}
+              isSelected={isMessageSelected}
+              onSelectionChange={handleMessageSelectionChange}
+            />
+          );
+        })}
       </CardContent>
     </Card>
   );
