@@ -29,6 +29,7 @@ interface ChatSummary {
  */
 interface ChatGridProps {
   maxHeight?: number | string;
+  viewType?: 'user' | 'system';
   onRowDoubleClick?: (
     params: GridRowParams<ChatSummary>,
     event: MuiEvent<React.MouseEvent<HTMLElement, MouseEvent>>,
@@ -111,6 +112,7 @@ const stableColumns: GridColDef<ChatSummary>[] = [
  */
 export const ChatList = ({
   maxHeight = undefined,
+  viewType = 'user',
   onRowDoubleClick: onRowDoubleClickProps,
   ...props
 }: ChatGridProps): JSX.Element => {
@@ -121,6 +123,15 @@ export const ChatList = ({
     [maxHeight],
   );
   const { push } = useRouter();
+
+  // Build URL with viewType parameter (only add if not default 'user')
+  const gridUrl = useMemo(() => {
+    const url = new URL(siteMap.api.ai.chat.history().toString(), window.location.origin);
+    if (viewType !== 'user') {
+      url.searchParams.set('viewType', viewType);
+    }
+    return url.toString();
+  }, [viewType]);
 
   const onRowDoubleClick = useCallback(
     (
@@ -154,7 +165,7 @@ export const ChatList = ({
         <ServerBoundDataGrid<ChatSummary>
           {...props}
           columns={stableColumns}
-          url={siteMap.api.ai.chat.history().toString()}
+          url={gridUrl}
           idColumn="id"
           onRowDoubleClick={onRowDoubleClick}
         />
