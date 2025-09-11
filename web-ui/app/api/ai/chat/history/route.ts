@@ -6,7 +6,7 @@ import { schema } from '@/lib/drizzle-db/schema';
 import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import type { PgColumn } from 'drizzle-orm/pg-core';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { SQL, eq, count, sum } from 'drizzle-orm/sql';
+import { SQL, eq, count, sum, lte, gt } from 'drizzle-orm/sql';
 
 /**
  * Chat summary interface for the data grid
@@ -78,14 +78,21 @@ const columnMap = {
 /**
  * Handles the GET request to fetch a list of chats with pagination.
  *
- * This function queries the database to retrieve chats for the current user using drizzle ORM.
- * The results are returned as a JSON response with pagination information.
+ * This function queries the database to retrieve chats using drizzle ORM.
+ * Supports filtering by user type via query parameter:
+ * - viewType=user: Shows chats for users with userId > 0 (default)
+ * - viewType=system: Shows system chats with userId <= 0
  *
  * @returns {Promise<NextResponse>} A promise that resolves to a JSON response containing the
  * list of chats with pagination information, or an error message if the request fails.
  */
 export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
   try {
+    // Get view type from query parameters
+    const url = new URL(req.url);
+    const viewType = url.searchParams.get('viewType') || 'user';
+    const isSystemView = viewType === 'system';
+    
     // Define the base query for chats
     const result = await drizDbWithInit((db) => {
       const qSumTokens = db
@@ -138,10 +145,15 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
         .leftJoin(qSumTokens, eq(qSumTokens.chatId, schema.chats.id))
         .leftJoin(qSumMessages, eq(qSumMessages.chatId, schema.chats.id))
         .leftJoin(qSumTurns, eq(qSumTurns.chatId, schema.chats.id));
+
+      // Apply the user/system filter
+      const filteredQuery = isSystemView 
+        ? query.where(lte(schema.chats.userId, 0))
+        : query.where(gt(schema.chats.userId, 0));
       
         return selectForGrid<ChatSummary>({
           req,
-          query,
+          query: filteredQuery,
           getColumn: (c) =>
             getColumnFromName(c, { columnTokens, columnMessages, columnTurns }),
           columnMap,
@@ -150,7 +162,11 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
         });      
     });
     log((l) =>
-      l.verbose({ msg: `[[AUDIT]] - Chat history list ${result.results} matches:`, resultset: result.results.map(x => x.id) }),
+      l.verbose({ 
+        msg: `[[AUDIT]] - Chat history list (${viewType} view) ${result.results.length} matches:`, 
+        resultset: result.results.map(x => x.id),
+        viewType 
+      }),
     );
     return NextResponse.json(result);
   } catch (error) {
