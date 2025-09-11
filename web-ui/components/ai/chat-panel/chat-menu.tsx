@@ -10,39 +10,74 @@ import {
   MenuListProps,
   MenuListSlotPropsOverrides,
   MenuOwnerState,
+  Chip,
+  Box,
+  Typography,
 } from '@mui/material';
-import { Dispatch, SetStateAction, useCallback, useState } from 'react';
+import { Dispatch, SetStateAction, useCallback, useState, useMemo } from 'react';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import OpenInFullIcon from '@mui/icons-material/OpenInFull';
 import DockIcon from '@mui/icons-material/Dock';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
-import { DockPosition } from './types';
+import CloudIcon from '@mui/icons-material/Cloud';
+import { DockPosition, AiProvider, ModelType, ModelSelection, ProviderConfig } from './types';
 
 export const ChatMenu = ({
   onResetSession,
-  activeModel,
-  setActiveModel,
+  activeModelSelection,
+  setActiveModelSelection,
   onFloat,
   onDock,
   currentPosition = 'inline',
 }: {
   onResetSession?: () => void;
-  activeModel: string;
-  setActiveModel: Dispatch<SetStateAction<string>>;
+  activeModelSelection: ModelSelection;
+  setActiveModelSelection: Dispatch<SetStateAction<ModelSelection>>;
   onFloat?: () => void;
   onDock?: (position: DockPosition) => void;
   currentPosition?: DockPosition;
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
-  const availableModels = [
-    { id: 'lofi', display: 'Paralegal' },
-    { id: 'hifi', display: 'Attorney' },
-    { id: 'reasoning-medium', display: 'Partner (Medium)' },
-    { id: 'reasoning-high', display: 'Partner (High)' },
-  ];
-  const activeModelDisplayName =
-    availableModels.find((x) => x.id === activeModel)?.display || 'Unknown';
+  
+  // Provider configurations with available models
+  const availableProviders: ProviderConfig[] = useMemo(() => [
+    {
+      id: 'azure',
+      displayName: 'Azure',
+      models: [
+        { id: 'lofi', displayName: 'Paralegal', available: true },
+        { id: 'hifi', displayName: 'Attorney', available: true },
+        { id: 'reasoning-medium', displayName: 'Partner (Medium)', available: true },
+        { id: 'reasoning-high', displayName: 'Partner (High)', available: true },
+      ],
+    },
+    {
+      id: 'google',
+      displayName: 'Google',
+      models: [
+        { id: 'lofi', displayName: 'Paralegal', available: true },
+        { id: 'hifi', displayName: 'Attorney', available: true },
+        { id: 'reasoning-medium', displayName: 'Partner (Medium)', available: false },
+        { id: 'reasoning-high', displayName: 'Partner (High)', available: false },
+      ],
+    },
+    {
+      id: 'openai',
+      displayName: 'OpenAI',
+      models: [
+        { id: 'lofi', displayName: 'Paralegal', available: true },
+        { id: 'hifi', displayName: 'Attorney', available: true },
+        { id: 'reasoning-medium', displayName: 'Partner (Medium)', available: false },
+        { id: 'reasoning-high', displayName: 'Partner (High)', available: false },
+      ],
+    },
+  ], []);
+
+  const currentProvider = availableProviders.find(p => p.id === activeModelSelection.provider);
+  const currentModel = currentProvider?.models.find(m => m.id === activeModelSelection.model);
+  const activeModelDisplayName = currentModel?.displayName || 'Unknown';
+  const activeProviderDisplayName = currentProvider?.displayName || 'Unknown';
   const onMenuClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       setAnchorEl(event.currentTarget);
@@ -68,6 +103,28 @@ export const ChatMenu = ({
     onDock?.(position);
   }, [handleClose, onDock]);
 
+  const onProviderSelect = useCallback((provider: AiProvider) => {
+    // When switching providers, keep the same model type if available, otherwise default to lofi
+    const newProvider = availableProviders.find(p => p.id === provider);
+    const currentModelType = activeModelSelection.model;
+    const availableModel = newProvider?.models.find(m => m.id === currentModelType && m.available);
+    const selectedModel = availableModel ? currentModelType : 'lofi';
+    
+    setActiveModelSelection({
+      provider,
+      model: selectedModel,
+    });
+    handleClose();
+  }, [availableProviders, activeModelSelection.model, setActiveModelSelection, handleClose]);
+
+  const onModelSelect = useCallback((model: ModelType) => {
+    setActiveModelSelection({
+      ...activeModelSelection,
+      model,
+    });
+    handleClose();
+  }, [activeModelSelection, setActiveModelSelection, handleClose]);
+
   // Docking options configuration
   const dockingOptions = [
     { position: 'left' as DockPosition, label: 'Dock Left', icon: <ViewSidebarIcon /> },
@@ -78,7 +135,7 @@ export const ChatMenu = ({
 
   return (
     <>
-      <IconButton edge="end" onClick={onMenuClick} id="chat-menu-button" data-id='button-chat-menu'>
+      <IconButton edge="end" onClick={onMenuClick} id="chat-menu-button" data-testid='button-chat-menu'>
         <MoreVertIcon />
       </IconButton>
       <Menu
@@ -88,14 +145,14 @@ export const ChatMenu = ({
         onClose={handleClose}        
         slotProps={{
           list: {
-            'data-id': 'chat-menu-list',
+            'data-testid': 'chat-menu-list',
             'aria-labelledby': 'chat-menu-button',
           } as SlotProps<React.ElementType<MenuListProps>, MenuListSlotPropsOverrides, MenuOwnerState>,
         }}
       >
-        <MenuItem onClick={onResetSessionClick} data-id='menu-item-reset'>Reset chat session</MenuItem>
+        <MenuItem onClick={onResetSessionClick} data-testid='menu-item-reset'>Reset chat session</MenuItem>
         <Divider />
-        <MenuItem onClick={onFloatClick} data-id='menu-item-float'>
+        <MenuItem onClick={onFloatClick} data-testid='menu-item-float'>
           <ListItemIcon>
             <OpenInFullIcon fontSize="small" />
           </ListItemIcon>
@@ -105,7 +162,7 @@ export const ChatMenu = ({
           <MenuItem 
             key={option.position}
             onClick={() => onDockClick(option.position)}
-            data-id={`menu-item-dock-${option.position}`}
+            data-testid={`menu-item-dock-${option.position}`}
             selected={currentPosition === option.position}
           >
             <ListItemIcon>
@@ -115,20 +172,57 @@ export const ChatMenu = ({
           </MenuItem>
         ))}
         <Divider />
-        <ListSubheader>{`Active Model: ${activeModelDisplayName}`}</ListSubheader>
-        {availableModels.map((model) => (
+        <ListSubheader>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography variant="inherit">Active Model:</Typography>
+            <Chip 
+              icon={<CloudIcon />} 
+              label={activeProviderDisplayName} 
+              size="small" 
+              variant="outlined"
+            />
+            <Typography variant="inherit">{activeModelDisplayName}</Typography>
+          </Box>
+        </ListSubheader>
+        
+        {/* Provider Selection */}
+        <ListSubheader>Provider</ListSubheader>
+        {availableProviders.map((provider) => (
           <MenuItem
-            data-id={`menu-item-model-${model.id}`}
-            key={model.id}
-            onClick={() => {
-              setActiveModel(model.id);
-              handleClose();
-            }}
-            selected={model.id === activeModel}
+            data-testid={`menu-item-provider-${provider.id}`}
+            key={provider.id}
+            onClick={() => onProviderSelect(provider.id)}
+            selected={provider.id === activeModelSelection.provider}
           >
-            {model.display}
+            <ListItemIcon>
+              <CloudIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>{provider.displayName}</ListItemText>
           </MenuItem>
         ))}
+        
+        <Divider />
+        
+        {/* Model Selection for Current Provider */}
+        <ListSubheader>Model ({activeProviderDisplayName})</ListSubheader>
+        {currentProvider?.models.map((model) => (
+          <MenuItem
+            data-testid={`menu-item-model-${model.id}`}
+            key={model.id}
+            onClick={() => onModelSelect(model.id)}
+            selected={model.id === activeModelSelection.model}
+            disabled={!model.available}
+          >
+            <ListItemText 
+              primary={model.displayName}
+              secondary={!model.available ? 'Not available' : undefined}
+            />
+          </MenuItem>
+        )) || (
+          <MenuItem disabled>
+            <ListItemText primary="No models available" />
+          </MenuItem>
+        )}
       </Menu>
     </>
   );

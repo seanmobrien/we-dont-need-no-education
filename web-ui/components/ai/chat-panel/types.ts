@@ -1,6 +1,37 @@
 import { Dispatch, SetStateAction } from 'react';
 
 /**
+ * Available AI providers
+ */
+export type AiProvider = 'azure' | 'google' | 'openai';
+
+/**
+ * Model types available across providers
+ */
+export type ModelType = 'lofi' | 'hifi' | 'reasoning-medium' | 'reasoning-high';
+
+/**
+ * Provider configuration with display name and available models
+ */
+export interface ProviderConfig {
+  id: AiProvider;
+  displayName: string;
+  models: Array<{
+    id: ModelType;
+    displayName: string;
+    available: boolean;
+  }>;
+}
+
+/**
+ * Combined model selection state
+ */
+export interface ModelSelection {
+  provider: AiProvider;
+  model: ModelType;
+}
+
+/**
  * Chat panel docking positions
  */
 export type DockPosition =
