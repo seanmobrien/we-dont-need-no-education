@@ -1,10 +1,10 @@
 /**
  * @fileoverview Strongly-typed interface for message structure preservation
- * 
+ *
  * This module defines a type-safe alternative to the '__preserveStructure' magic property,
  * providing compile-time type checking and better developer experience for message
  * structure preservation logic.
- * 
+ *
  * @module lib/ai/types/message-structure-preservation
  */
 
@@ -13,12 +13,12 @@ import type { UIMessage, UIMessagePart, UIDataTypes, UITools } from 'ai';
 /**
  * Preservation strategy types for different use cases
  */
-export type PreservationStrategy = 
-  | 'full'           // Preserve complete message structure including metadata
-  | 'content-only'   // Preserve only text content, strip metadata  
-  | 'semantic'       // Preserve semantic meaning while allowing format changes
-  | 'minimal'        // Preserve only essential fields for functionality
-  | 'custom';        // Use custom preservation rules
+export type PreservationStrategy =
+  | 'full' // Preserve complete message structure including metadata
+  | 'content-only' // Preserve only text content, strip metadata
+  | 'semantic' // Preserve semantic meaning while allowing format changes
+  | 'minimal' // Preserve only essential fields for functionality
+  | 'custom'; // Use custom preservation rules
 
 /**
  * Configuration for preserving message parts based on type
@@ -79,7 +79,10 @@ export interface ToolPreservationRules {
   /** Tools to never preserve */
   neverPreserve?: string[];
   /** Custom preservation logic for specific tools */
-  customRules?: Record<string, (part: UIMessagePart<UIDataTypes, UITools>) => boolean>;
+  customRules?: Record<
+    string,
+    (part: UIMessagePart<UIDataTypes, UITools>) => boolean
+  >;
 }
 
 /**
@@ -93,7 +96,11 @@ export interface ContextualPreservationOptions {
   /** Preserve messages matching these patterns */
   preservePatterns?: RegExp[];
   /** Custom context evaluation function */
-  contextEvaluator?: (message: UIMessage, index: number, messages: UIMessage[]) => boolean;
+  contextEvaluator?: (
+    message: UIMessage,
+    index: number,
+    messages: UIMessage[],
+  ) => boolean;
 }
 
 /**
@@ -112,10 +119,10 @@ export interface PerformanceOptions {
 
 /**
  * Main interface for message structure preservation configuration
- * 
+ *
  * This interface replaces the '__preserveStructure' magic property with
  * a strongly-typed, comprehensive configuration system.
- * 
+ *
  * @example
  * ```typescript
  * const preservationConfig: MessageStructureOptions = {
@@ -139,31 +146,31 @@ export interface PerformanceOptions {
 export interface MessageStructureOptions {
   /** Whether preservation is enabled */
   enabled?: boolean;
-  
+
   /** Overall preservation strategy */
   strategy?: PreservationStrategy;
-  
+
   /** Rules for preserving different message part types */
   partRules?: MessagePartPreservationRules;
-  
+
   /** Metadata preservation configuration */
   metadata?: MetadataPreservationOptions;
-  
+
   /** Content transformation options */
   contentTransformation?: ContentTransformationOptions;
-  
+
   /** Tool-specific preservation rules */
   toolRules?: ToolPreservationRules;
-  
+
   /** Context-aware preservation options */
   contextual?: ContextualPreservationOptions;
-  
+
   /** Performance optimization settings */
   performance?: PerformanceOptions;
-  
+
   /** Custom validation function for preserved messages */
   validator?: (preservedMessage: UIMessage) => boolean;
-  
+
   /** Debug mode for logging preservation decisions */
   debug?: boolean;
 }
@@ -174,10 +181,10 @@ export interface MessageStructureOptions {
 export interface MessagePreservationResult {
   /** Successfully preserved messages */
   preserved: UIMessage[];
-  
+
   /** Messages that were filtered out */
   filtered: UIMessage[];
-  
+
   /** Preservation statistics */
   stats: {
     originalCount: number;
@@ -187,10 +194,10 @@ export interface MessagePreservationResult {
     cacheHits?: number;
     cacheMisses?: number;
   };
-  
+
   /** Any warnings or issues during preservation */
   warnings?: string[];
-  
+
   /** Debug information (if debug mode enabled) */
   debugInfo?: {
     decisions: Array<{
@@ -206,20 +213,22 @@ export interface MessagePreservationResult {
  * Type guard to check if an object has message structure options
  */
 export function hasMessageStructureOptions(
-  obj: unknown
+  obj: unknown,
 ): obj is { messageStructure: MessageStructureOptions } {
   return (
     typeof obj === 'object' &&
     obj !== null &&
     'messageStructure' in obj &&
-    typeof (obj as any).messageStructure === 'object'
+    typeof obj.messageStructure === 'object'
   );
 }
 
 /**
  * Type guard to check if preservation is enabled in options
  */
-export function isPreservationEnabled(options: MessageStructureOptions): boolean {
+export function isPreservationEnabled(
+  options: MessageStructureOptions,
+): boolean {
   return options.enabled !== false; // Default to true if not explicitly disabled
 }
 
@@ -271,7 +280,7 @@ export type PartialMessageStructureOptions = Partial<MessageStructureOptions>;
  * Factory function to create preservation options with defaults
  */
 export function createMessageStructureOptions(
-  options: PartialMessageStructureOptions = {}
+  options: PartialMessageStructureOptions = {},
 ): MessageStructureOptions {
   return {
     ...DEFAULT_MESSAGE_STRUCTURE_OPTIONS,

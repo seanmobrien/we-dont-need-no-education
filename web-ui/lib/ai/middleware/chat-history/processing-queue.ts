@@ -208,6 +208,7 @@ type StreamContext = {
   toolCalls: Map<string, ChatMessagesType>;
   streamedText: string;
   errors: Error[];
+  generatedJSON: Array<Record<string, unknown>>;
 };
 
 export const enqueueStream = async ({
@@ -246,6 +247,7 @@ export const enqueueStream = async ({
     streamedText: '',
     toolCalls: new Map<string, ChatMessagesType>(),
     errors: [],
+    generatedJSON: [],
   };
 
   const transformStream = new TransformStream<
@@ -264,6 +266,28 @@ export const enqueueStream = async ({
         messageId: streamContext.messageId,
         currentMessageOrder: streamContext.currentMessageOrder,
         generatedText: streamContext.streamedText,
+        generatedJSON: streamContext.generatedJSON,
+        createResult: (arg?: boolean | Partial<StreamHandlerResult>) => {
+          const input =
+            typeof arg == 'undefined' || typeof arg == 'boolean'
+              ? {
+                  success: arg !== false,
+                }
+              : arg;
+          return {
+            success: input.success ?? true,
+            currentMessageId: handlerContext.messageId,
+            currentMessageOrder: handlerContext.currentMessageOrder,
+            generatedText: handlerContext.generatedText,
+            generatedJSON: handlerContext.generatedJSON,
+            // Ensure all expected fields are present
+            toolCalls: handlerContext.toolCalls,
+            chatId: streamContext.chatId!,
+            turnId: parseInt(streamContext.turnId!, 10),
+            messageId: handlerContext.messageId,
+            ...input,
+          };
+        },
       };
 
       // Queue processing maintains order and updates local state
