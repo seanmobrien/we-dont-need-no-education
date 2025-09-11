@@ -3,10 +3,9 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
 import '@testing-library/jest-dom';
 import ChatPanel from '@/components/ai/chat-panel/chat-panel';
-import { ChatPanelProvider } from '@/components/ai/chat-panel/chat-panel-provider';
 
 // Mock the useChat hook from @ai-sdk/react
 const mockSendMessage = jest.fn();
@@ -69,9 +68,7 @@ describe('ChatPanel Model String Formatting', () => {
 
   const renderChatPanel = () => {
     return render(
-      <ChatPanelProvider>
-        <ChatPanel page="test-page" />
-      </ChatPanelProvider>
+      <ChatPanel page="test-page" />
     );
   };
 

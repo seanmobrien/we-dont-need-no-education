@@ -418,7 +418,7 @@ const ChatPanel = ({ page }: { page: string }) => {
               <IconButton
                 edge="end"
                 onClick={onSendClick}
-                data-id="ChatMessageSend"
+                data-testid="ChatMessageSend"
               >
                 <PublishIcon />
               </IconButton>

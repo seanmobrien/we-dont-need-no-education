@@ -135,7 +135,7 @@ export const ChatMenu = ({
 
   return (
     <>
-      <IconButton edge="end" onClick={onMenuClick} id="chat-menu-button" data-id='button-chat-menu'>
+      <IconButton edge="end" onClick={onMenuClick} id="chat-menu-button" data-testid='button-chat-menu'>
         <MoreVertIcon />
       </IconButton>
       <Menu
@@ -145,14 +145,14 @@ export const ChatMenu = ({
         onClose={handleClose}        
         slotProps={{
           list: {
-            'data-id': 'chat-menu-list',
+            'data-testid': 'chat-menu-list',
             'aria-labelledby': 'chat-menu-button',
           } as SlotProps<React.ElementType<MenuListProps>, MenuListSlotPropsOverrides, MenuOwnerState>,
         }}
       >
-        <MenuItem onClick={onResetSessionClick} data-id='menu-item-reset'>Reset chat session</MenuItem>
+        <MenuItem onClick={onResetSessionClick} data-testid='menu-item-reset'>Reset chat session</MenuItem>
         <Divider />
-        <MenuItem onClick={onFloatClick} data-id='menu-item-float'>
+        <MenuItem onClick={onFloatClick} data-testid='menu-item-float'>
           <ListItemIcon>
             <OpenInFullIcon fontSize="small" />
           </ListItemIcon>
@@ -162,7 +162,7 @@ export const ChatMenu = ({
           <MenuItem 
             key={option.position}
             onClick={() => onDockClick(option.position)}
-            data-id={`menu-item-dock-${option.position}`}
+            data-testid={`menu-item-dock-${option.position}`}
             selected={currentPosition === option.position}
           >
             <ListItemIcon>
@@ -189,7 +189,7 @@ export const ChatMenu = ({
         <ListSubheader>Provider</ListSubheader>
         {availableProviders.map((provider) => (
           <MenuItem
-            data-id={`menu-item-provider-${provider.id}`}
+            data-testid={`menu-item-provider-${provider.id}`}
             key={provider.id}
             onClick={() => onProviderSelect(provider.id)}
             selected={provider.id === activeModelSelection.provider}
@@ -207,7 +207,7 @@ export const ChatMenu = ({
         <ListSubheader>Model ({activeProviderDisplayName})</ListSubheader>
         {currentProvider?.models.map((model) => (
           <MenuItem
-            data-id={`menu-item-model-${model.id}`}
+            data-testid={`menu-item-model-${model.id}`}
             key={model.id}
             onClick={() => onModelSelect(model.id)}
             selected={model.id === activeModelSelection.model}
