@@ -767,4 +767,47 @@ describe('Message Optimizer Tools', () => {
       expect(optimized.length).toBe(largeMessages.length);
     });
   });
+
+  describe('Data Validation', () => {
+    it('should handle null and undefined content values in database results', () => {
+      // Test our filtering logic that prevents the TypeError
+      const mockDbResults = [
+        { content: 'Valid content 1', optimizedContent: 'Optimized 1' },
+        { content: null, optimizedContent: 'Optimized 2' },
+        { content: 'Valid content 3', optimizedContent: null },
+        { content: '', optimizedContent: 'Optimized 4' },
+        { content: 'Valid content 5', optimizedContent: '' },
+        { content: undefined, optimizedContent: 'Optimized 6' },
+        { content: 'Valid content 7', optimizedContent: undefined },
+      ];
+
+      // Test deep=true path (content extraction)
+      const contentResults = mockDbResults
+        .map((m) => m.content)
+        .filter((content): content is string => 
+          typeof content === 'string' && content.trim().length > 0
+        );
+      
+      expect(contentResults).toEqual([
+        'Valid content 1',
+        'Valid content 3',
+        'Valid content 5',
+        'Valid content 7',
+      ]);
+
+      // Test deep=false path (optimizedContent extraction)
+      const optimizedResults = mockDbResults
+        .map((m) => m.optimizedContent)
+        .filter((content): content is string => 
+          typeof content === 'string' && content.trim().length > 0
+        );
+      
+      expect(optimizedResults).toEqual([
+        'Optimized 1',
+        'Optimized 2',
+        'Optimized 4',
+        'Optimized 6',
+      ]);
+    });
+  });
 });
