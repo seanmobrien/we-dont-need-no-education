@@ -1,6 +1,8 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
+import { Box, Typography, Paper, Badge, Chip, ToggleButton, ToggleButtonGroup, FormControlLabel, Switch, Button } from '@mui/material';
+import { FilterList } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from './virtualized-chat-display';
 import { ChatMessage, ChatTurn } from '@/lib/ai';
 
@@ -25,6 +27,22 @@ const sampleTurns = [
       model_version: '2024-01-01',
     },
     messages: [
+      {
+        turnId: 1,
+        messageId: 0,
+        role: 'system',
+        content: 'You are a helpful assistant specializing in React development and virtualization techniques.',
+        messageOrder: 0,
+        toolName: null,
+        functionCall: null,
+        statusId: 1,
+        providerId: 'system',
+        metadata: {
+          timestamp: '2024-01-01T09:59:58Z',
+        },
+        toolInstanceId: null,
+        optimizedContent: null,
+      },
       {
         turnId: 1,
         messageId: 1,
@@ -102,7 +120,7 @@ const sampleTurns = [
         messageId: 4,
         role: 'assistant',
         content:
-          "Absolutely! Here's how to handle long code blocks:\n\n```typescript\n// This is a very long code block that should wrap properly\n// and not cause horizontal overflow in the chat interface\nconst handleLongCodeBlocks = () => {\n  const containerStyles = {\n    maxWidth: '100%',\n    overflowX: 'auto',\n    wordBreak: 'break-word' as const,\n    whiteSpace: 'pre-wrap' as const,\n    fontFamily: 'monospace',\n    backgroundColor: '#f5f5f5',\n    padding: '12px',\n    borderRadius: '4px',\n    border: '1px solid #e0e0e0'\n  };\n  \n  // For virtualization, we need to estimate the height of code blocks\n  const estimateCodeBlockHeight = (codeContent: string, containerWidth: number) => {\n    const lines = codeContent.split('\\n').length;\n    const avgCharsPerLine = containerWidth / 8; // Rough monospace estimation\n    const wrappedLines = lines + Math.floor(codeContent.length / avgCharsPerLine);\n    return wrappedLines * 16; // 16px line height for code\n  };\n  \n  return containerStyles;\n};\n```\n\nKey points for handling code blocks:\n\n1. **Use `overflow: auto`** for horizontal scrolling when needed\n2. **Set `word-break: break-word`** for long identifiers\n3. **Use `white-space: pre-wrap`** to preserve formatting while allowing wrapping\n4. **Account for monospace font metrics** in height calculations\n5. **Add proper padding and borders** to height estimates",
+          "Absolutely! Here's how to handle long code blocks:\n\n```typescript\n// This is a very long code block that should wrap properly\n// and not cause horizontal overflow in the chat interface\nconst handleLongCodeBlocks = () => {\n  const containerStyles = {\n    maxWidth: '100%',\n    overflowX: 'auto',\n    wordBreak: 'break-word' as const,\n    whiteSpace: 'pre-wrap' as const,\n    fontFamily: 'monospace',\n    backgroundColor: '#f5f5f5',\n    padding: '12px',\n    borderRadius: '4px',\n    border: '1px solid #e0e0e0'\n  };\n  \n  // For virtualization, we need to estimate the height of code blocks\n  const estimateCodeBlockHeight = (codeContent: string, containerWidth: number) => {\n    const lines = codeContent.split('\\n').length;\n    const avgCharsPerLine = containerWidth / 8; // Rough monospace estimation\n    const wrappedLines = lines + Math.floor(codeContent.length / avgCharsPerLine);\n    return wrappedLines * 16; // 16px line height for code\n  };\n  \n  return containerStyles;\n};\n```\n\nLet me use a tool to estimate the code block height for you.",
         messageOrder: 2,
         toolName: null,
         functionCall: {
@@ -123,6 +141,28 @@ const sampleTurns = [
         toolInstanceId: 'tool_123',
         optimizedContent:
           '**Optimized Summary for CSS Overflow Issues:**\n\n1. **Root Cause**: Content containers lack proper overflow handling\n2. **Quick Fix**: Add `overflow: auto` and `word-wrap: break-word`\n3. **Implementation**:\n```css\n.container {\n  overflow: auto;\n  word-wrap: break-word;\n  max-width: 100%;\n}\n```\n\n4. **Additional Considerations**:\n   - Use `white-space: pre-wrap` for preserved formatting\n   - Consider `overflow-wrap: break-word` for modern browsers\n   - Test with long URLs and code snippets\n\n5. **Testing**: Verify with content exceeding container width\n\nThis addresses the core issue while maintaining readability and responsive design.',
+      },
+      {
+        turnId: 2,
+        messageId: 5,
+        role: 'tool',
+        content: 'Code block height estimated at 240px based on content length and container width.',
+        messageOrder: 3,
+        toolName: 'estimate_code_height',
+        functionCall: null,
+        statusId: 1,
+        providerId: 'tool',
+        metadata: {
+          timestamp: '2024-01-01T10:01:03Z',
+          tool_execution_time: 45,
+          result: {
+            estimated_height: 240,
+            line_count: 15,
+            wrapped_lines: 18
+          }
+        },
+        toolInstanceId: 'tool_123',
+        optimizedContent: null,
       },
     ] as unknown as Array<ChatMessage>,
   },
@@ -159,12 +199,181 @@ const sampleTurns = [
   },
 ] as unknown as Array<ChatTurn>;
 
+// Available message types for filtering
+const MESSAGE_TYPES = ['user', 'assistant', 'system', 'tool'] as const;
+type MessageType = typeof MESSAGE_TYPES[number];
+
+// Filter mode: 'single-turn' filters within turns, 'entire-chat' filters entire turns
+type FilterMode = 'single-turn' | 'entire-chat';
+
 export const TestVirtualizedChat: React.FC = () => {
+  // Filter state
+  const [enableFilters, setEnableFilters] = useState(false);
+  const [activeFilters, setActiveFilters] = useState<Set<MessageType>>(new Set());
+  const [filterMode, setFilterMode] = useState<FilterMode>('single-turn');
+
+  // Filter handling functions
+  const toggleFilter = (messageType: MessageType) => {
+    const newFilters = new Set(activeFilters);
+    if (newFilters.has(messageType)) {
+      newFilters.delete(messageType);
+    } else {
+      newFilters.add(messageType);
+    }
+    setActiveFilters(newFilters);
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters(new Set());
+  };
+
+  // Apply filters to the chat data
+  const filteredTurns = useMemo(() => {
+    if (!enableFilters || activeFilters.size === 0) {
+      return sampleTurns;
+    }
+
+    if (filterMode === 'entire-chat') {
+      // Filter entire turns: hide turns that don't contain any matching messages
+      return sampleTurns.filter(turn => 
+        turn.messages.some(message => activeFilters.has(message.role as MessageType))
+      );
+    } else {
+      // Filter within turns: hide individual messages but keep turns
+      return sampleTurns.map(turn => ({
+        ...turn,
+        messages: turn.messages.filter(message => activeFilters.has(message.role as MessageType))
+      })).filter(turn => turn.messages.length > 0); // Remove turns with no messages after filtering
+    }
+  }, [enableFilters, activeFilters, filterMode]);
+
+  // Get available message types from the current chat
+  const availableTypes = useMemo(() => {
+    const typesInChat = new Set<MessageType>();
+    sampleTurns.forEach(turn => {
+      turn.messages.forEach(message => {
+        if (MESSAGE_TYPES.includes(message.role as MessageType)) {
+          typesInChat.add(message.role as MessageType);
+        }
+      });
+    });
+    return Array.from(typesInChat).sort();
+  }, []);
+
   return (
     <div style={{ padding: '20px', height: '100vh' }}>
-      <h1>Virtualized Chat Display Test</h1>
-      <p>This component tests the improved virtualized chat display with various content types and sizes.</p>
-      <VirtualizedChatDisplay turns={sampleTurns} height={600} />
+      <Typography variant="h4" gutterBottom>
+        Virtualized Chat Display with Message Filtering
+      </Typography>
+      <Typography variant="body1" gutterBottom>
+        This component demonstrates the message filtering functionality with MUI badges.
+      </Typography>
+      
+      {/* Message Filtering Controls */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+          <FilterList color="action" />
+          <Typography variant="h6">Message Filters</Typography>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={enableFilters}
+                onChange={(e) => {
+                  setEnableFilters(e.target.checked);
+                  if (!e.target.checked) {
+                    clearAllFilters();
+                  }
+                }}
+              />
+            }
+            label="Enable Filtering"
+          />
+        </Box>
+        
+        {enableFilters && (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Filter Mode:
+              </Typography>
+              <ToggleButtonGroup
+                value={filterMode}
+                exclusive
+                onChange={(_, newMode) => newMode && setFilterMode(newMode)}
+                size="small"
+              >
+                <ToggleButton value="single-turn">
+                  Single Turn
+                </ToggleButton>
+                <ToggleButton value="entire-chat">
+                  Entire Chat
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+            
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                Show messages of type:
+              </Typography>
+              {availableTypes.map((messageType) => {
+                const isActive = activeFilters.has(messageType);
+                const messageCount = sampleTurns.reduce((count, turn) => 
+                  count + turn.messages.filter(msg => msg.role === messageType).length, 0
+                );
+                
+                return (
+                  <Badge
+                    key={messageType}
+                    badgeContent={messageCount}
+                    color={isActive ? 'primary' : 'default'}
+                    sx={{ cursor: 'pointer' }}
+                    onClick={() => toggleFilter(messageType)}
+                  >
+                    <Chip
+                      label={messageType}
+                      variant={isActive ? 'filled' : 'outlined'}
+                      color={isActive ? 'primary' : 'default'}
+                      onClick={() => toggleFilter(messageType)}
+                      sx={{ 
+                        textTransform: 'capitalize',
+                        '&:hover': { 
+                          backgroundColor: isActive ? 'primary.dark' : 'action.hover' 
+                        }
+                      }}
+                    />
+                  </Badge>
+                );
+              })}
+              
+              {activeFilters.size > 0 && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={clearAllFilters}
+                  sx={{ ml: 1 }}
+                >
+                  Clear All
+                </Button>
+              )}
+            </Box>
+            
+            {activeFilters.size > 0 && (
+              <Box sx={{ mt: 1 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Showing {activeFilters.size} of {availableTypes.length} message types
+                  {filterMode === 'entire-chat' ? ' (hiding entire turns without matching messages)' : ' (hiding individual messages)'}
+                </Typography>
+              </Box>
+            )}
+          </>
+        )}
+      </Paper>
+
+      {filteredTurns.length === 0 ? (
+        <Typography color="text.secondary">No messages match the current filters.</Typography>
+      ) : (
+        <VirtualizedChatDisplay turns={filteredTurns} height={600} />
+      )}
     </div>
   );
 };

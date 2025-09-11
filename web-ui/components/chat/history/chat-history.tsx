@@ -20,13 +20,13 @@
 'use client';
 
 import * as React from 'react';
-import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Switch, Button } from '@mui/material';
-import { ExpandMore } from '@mui/icons-material';
+import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Switch, Button, Badge, ToggleButton, ToggleButtonGroup, Paper } from '@mui/material';
+import { ExpandMore, FilterList } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
 import { ChatExportMenu } from '@/components/chat/chat-export-menu';
 import { useChatHistory } from './useChatHistory';
 import { Loading } from '@/components/general/loading';
-import type { ChatDetails } from '@/lib/ai/chat/types';
+import type { ChatDetails, ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '@/lib/chat/export';
 
 
@@ -45,10 +45,70 @@ import type { SelectedChatItem } from '@/lib/chat/export';
  * <ChatHistory chatId="abc123" />
  * <ChatHistory chatId="abc123" title="My Custom Title" />
  */
+// Available message types for filtering
+const MESSAGE_TYPES = ['user', 'assistant', 'system', 'tool'] as const;
+type MessageType = typeof MESSAGE_TYPES[number];
+
+// Filter mode: 'single-turn' filters within turns, 'entire-chat' filters entire turns
+type FilterMode = 'single-turn' | 'entire-chat';
+
 export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string; title?: string }) => {
   const { data, isLoading, isError, error, refetch } = useChatHistory(chatId);
   const [enableSelection, setEnableSelection] = React.useState(false);
   const [selectedItems, setSelectedItems] = React.useState<SelectedChatItem[]>([]);
+  
+  // Filter state
+  const [enableFilters, setEnableFilters] = React.useState(false);
+  const [activeFilters, setActiveFilters] = React.useState<Set<MessageType>>(new Set());
+  const [filterMode, setFilterMode] = React.useState<FilterMode>('single-turn');
+
+  // Filter handling functions
+  const toggleFilter = (messageType: MessageType) => {
+    const newFilters = new Set(activeFilters);
+    if (newFilters.has(messageType)) {
+      newFilters.delete(messageType);
+    } else {
+      newFilters.add(messageType);
+    }
+    setActiveFilters(newFilters);
+  };
+
+  const clearAllFilters = () => {
+    setActiveFilters(new Set());
+  };
+
+  // Apply filters to the chat data
+  const getFilteredTurns = (chatDetails: ChatDetails): ChatTurn[] => {
+    if (!enableFilters || activeFilters.size === 0) {
+      return chatDetails.turns;
+    }
+
+    if (filterMode === 'entire-chat') {
+      // Filter entire turns: hide turns that don't contain any matching messages
+      return chatDetails.turns.filter(turn => 
+        turn.messages.some(message => activeFilters.has(message.role as MessageType))
+      );
+    } else {
+      // Filter within turns: hide individual messages but keep turns
+      return chatDetails.turns.map(turn => ({
+        ...turn,
+        messages: turn.messages.filter(message => activeFilters.has(message.role as MessageType))
+      })).filter(turn => turn.messages.length > 0); // Remove turns with no messages after filtering
+    }
+  };
+
+  // Get available message types from the current chat
+  const getAvailableMessageTypes = (chatDetails: ChatDetails): MessageType[] => {
+    const typesInChat = new Set<MessageType>();
+    chatDetails.turns.forEach(turn => {
+      turn.messages.forEach(message => {
+        if (MESSAGE_TYPES.includes(message.role as MessageType)) {
+          typesInChat.add(message.role as MessageType);
+        }
+      });
+    });
+    return Array.from(typesInChat).sort();
+  };
 
   // Title resolution rules:
   // 1. If a non-empty title prop is provided, use it.
@@ -56,6 +116,10 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
   // 3. Otherwise use the generated default `Chat <suffix>`.
   const resolvedTitleFromProps = titleFromProps && titleFromProps.trim().length > 0 ? titleFromProps.trim() : null;
   const effectiveTitle = resolvedTitleFromProps ?? (data?.title && data.title.trim().length > 0 ? data.title : null);
+
+  // Get filtered data
+  const filteredData = data ? { ...data, turns: getFilteredTurns(data) } : null;
+  const availableTypes = data ? getAvailableMessageTypes(data) : [];
 
   // Clear selection when disabling selection mode
   React.useEffect(() => {
@@ -65,10 +129,10 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
   }, [enableSelection]);
 
   const handleSelectAll = () => {
-    if (!data) return;
+    if (!filteredData) return;
     
-    // Select all turns
-    const allTurns: SelectedChatItem[] = data.turns.map(turn => ({
+    // Select all turns from filtered data
+    const allTurns: SelectedChatItem[] = filteredData.turns.map(turn => ({
       type: 'turn' as const,
       turnId: turn.turnId
     }));
@@ -123,7 +187,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
     };
   };
 
-  const stats = data ? calculateStats(data) : null;
+  const stats = filteredData ? calculateStats(filteredData) : null;
 
   return (
     <>
@@ -135,6 +199,106 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Created: {new Date(data.createdAt).toLocaleString()}
           </Typography>
+          
+          {/* Message Filtering Controls */}
+          <Paper sx={{ p: 2, mb: 3 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <FilterList color="action" />
+              <Typography variant="h6">Message Filters</Typography>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={enableFilters}
+                    onChange={(e) => {
+                      setEnableFilters(e.target.checked);
+                      if (!e.target.checked) {
+                        clearAllFilters();
+                      }
+                    }}
+                  />
+                }
+                label="Enable Filtering"
+              />
+            </Box>
+            
+            {enableFilters && (
+              <>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Filter Mode:
+                  </Typography>
+                  <ToggleButtonGroup
+                    value={filterMode}
+                    exclusive
+                    onChange={(_, newMode) => newMode && setFilterMode(newMode)}
+                    size="small"
+                  >
+                    <ToggleButton value="single-turn">
+                      Single Turn
+                    </ToggleButton>
+                    <ToggleButton value="entire-chat">
+                      Entire Chat
+                    </ToggleButton>
+                  </ToggleButtonGroup>
+                </Box>
+                
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
+                    Show messages of type:
+                  </Typography>
+                  {availableTypes.map((messageType) => {
+                    const isActive = activeFilters.has(messageType);
+                    const messageCount = data.turns.reduce((count, turn) => 
+                      count + turn.messages.filter(msg => msg.role === messageType).length, 0
+                    );
+                    
+                    return (
+                      <Badge
+                        key={messageType}
+                        badgeContent={messageCount}
+                        color={isActive ? 'primary' : 'default'}
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => toggleFilter(messageType)}
+                      >
+                        <Chip
+                          label={messageType}
+                          variant={isActive ? 'filled' : 'outlined'}
+                          color={isActive ? 'primary' : 'default'}
+                          onClick={() => toggleFilter(messageType)}
+                          sx={{ 
+                            textTransform: 'capitalize',
+                            '&:hover': { 
+                              backgroundColor: isActive ? 'primary.dark' : 'action.hover' 
+                            }
+                          }}
+                        />
+                      </Badge>
+                    );
+                  })}
+                  
+                  {activeFilters.size > 0 && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={clearAllFilters}
+                      sx={{ ml: 1 }}
+                    >
+                      Clear All
+                    </Button>
+                  )}
+                </Box>
+                
+                {activeFilters.size > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Showing {activeFilters.size} of {availableTypes.length} message types
+                      {filterMode === 'entire-chat' ? ' (hiding entire turns without matching messages)' : ' (hiding individual messages)'}
+                    </Typography>
+                  </Box>
+                )}
+              </>
+            )}
+          </Paper>
           
           {/* Chat Statistics */}
           <Accordion sx={{ mb: 3 }}>
@@ -215,7 +379,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
       )}
       
       {/* Export Controls */}
-      {data && (
+      {filteredData && (
         <Box sx={{ mt: 3, mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
           <FormControlLabel
             control={
@@ -232,7 +396,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
                 size="small"
                 variant="outlined"
                 onClick={handleSelectAll}
-                disabled={selectedItems.length === data.turns.length}
+                disabled={selectedItems.length === filteredData.turns.length}
               >
                 Select All Turns
               </Button>
@@ -248,7 +412,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
                 {selectedItems.length} item{selectedItems.length !== 1 ? 's' : ''} selected
               </Typography>
               <ChatExportMenu
-                turns={data.turns}
+                turns={filteredData.turns}
                 selectedItems={selectedItems}
                 chatTitle={effectiveTitle || undefined}
                 chatCreatedAt={data.createdAt}
@@ -260,11 +424,13 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
       
       <Box sx={{ mt: 1 }}>
         <Loading loading={isLoading} />
-        {!data 
+        {!filteredData 
           ? !isLoading && <Typography>No chat found.</Typography>
+          : filteredData.turns.length === 0
+          ? <Typography color="text.secondary">No messages match the current filters.</Typography>
           : (
             <VirtualizedChatDisplay 
-              turns={data.turns} 
+              turns={filteredData.turns} 
               height={800}
               enableSelection={enableSelection}
               selectedItems={selectedItems}
