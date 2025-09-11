@@ -52,6 +52,51 @@ describe('CustomEmailPageItem', () => {
     expect(link).toHaveAttribute('aria-current', 'page');
   });
 
+  it('should link to chat history page when item is Chat History, not to email', () => {
+    const chatItem: NavigationPageItem = {
+      kind: 'page',
+      title: 'Chat History',
+      segment: 'messages/chat',
+      children: [],
+    };
+    
+    render(
+      <CustomEmailPageItem
+        item={chatItem}
+        mini={false}
+        emailId="test-email-123"
+        pathname="/messages/chat"
+      />,
+    );
+    
+    const link = screen.getByRole('link', { name: 'Chat History' });
+    // Bug: Currently this incorrectly points to /messages/email/test-email-123
+    // Should point to /messages/chat instead
+    expect(link).toHaveAttribute('href', '/messages/chat');
+  });
+
+  it('should link to email page when item is View Email', () => {
+    const emailItem: NavigationPageItem = {
+      kind: 'page',
+      title: 'View Email',
+      segment: 'messages/email/123',
+      children: [],
+    };
+    
+    render(
+      <CustomEmailPageItem
+        item={emailItem}
+        mini={false}
+        emailId="test-email-123"
+        pathname="/messages/email/test-email-123"
+      />,
+    );
+    
+    const link = screen.getByRole('link', { name: 'View Email' });
+    // This should correctly point to the email page when emailId is present
+    expect(link).toHaveAttribute('href', '/messages/email/test-email-123');
+  });
+
   it('applies active style to child when last segment matches', () => {
     render(
       <CustomEmailPageItem

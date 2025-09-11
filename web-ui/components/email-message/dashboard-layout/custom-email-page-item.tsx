@@ -116,7 +116,7 @@ export const CustomEmailPageItem = memo(
   }: CustomEmailPageItemProps): React.JSX.Element => {
     const itemId = `navmenu-email-${item.title?.toLocaleLowerCase()?.replaceAll(' ', '-')}`;
     const parentHref = String(
-      emailId ? siteBuilder.messages.email(emailId) : `/${item.segment ?? ''}`,
+      emailId && (item.title === 'View Email' || item.title === 'Email') ? siteBuilder.messages.email(emailId) : `/${item.segment ?? ''}`,
     );
     const lastSegment = useMemo(() => getLastPathSegment(pathname), [pathname]);
     return (
