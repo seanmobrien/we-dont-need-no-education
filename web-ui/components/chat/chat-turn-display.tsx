@@ -14,22 +14,124 @@ import {
   Divider,
   Alert,
   Checkbox,
-  FormControlLabel,
-  Badge,
-  Button,
-  Switch
+  FormControlLabel
 } from '@mui/material';
 import { 
   Settings as SettingsIcon,
   Schedule as ScheduleIcon,
   Warning as WarningIcon,
-  Error as ErrorIcon,
-  FilterList as FilterListIcon
+  Error as ErrorIcon
 } from '@mui/icons-material';
 import { ChatMessageDisplay } from './chat-message-display';
 import { ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '@/lib/chat/export';
 import { ChatMessageFilters, MESSAGE_TYPES, type MessageType, searchMessageContent } from './chat-message-filters';
+
+/**
+ * Get available message types in a turn after global filtering
+ * Pure function for better performance
+ */
+const getAvailableMessageTypesInTurn = (
+  turn: ChatTurn,
+  globalFilters: { typeFilters: Set<MessageType>; contentFilter: string }
+): MessageType[] => {
+  // First, get messages that pass global filters (or all if no global filters)
+  const globallyFilteredMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
+    ? turn.messages.filter(message => {
+        // Type filter
+        const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+          globalFilters.typeFilters.has(message.role as MessageType);
+        // Content filter  
+        const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
+        
+        return passesTypeFilter && passesContentFilter;
+      })
+    : turn.messages;
+  
+  // Then find unique types in those messages
+  const typesInTurn = new Set<MessageType>();
+  globallyFilteredMessages.forEach(message => {
+    if (MESSAGE_TYPES.includes(message.role as MessageType)) {
+      typesInTurn.add(message.role as MessageType);
+    }
+  });
+  return Array.from(typesInTurn).sort();
+};
+
+/**
+ * Apply both global and per-turn filters to messages
+ * Pure function for better performance
+ */
+const getFilteredMessages = (
+  turn: ChatTurn,
+  globalFilters: { typeFilters: Set<MessageType>; contentFilter: string },
+  enableTurnFilters: boolean,
+  activeTurnFilters: Set<MessageType>,
+  turnContentFilter: string
+) => {
+  let filteredMessages = turn.messages;
+
+  // First apply global filters if active
+  if (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim()) {
+    filteredMessages = filteredMessages.filter(message => {
+      // Type filter
+      const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+        globalFilters.typeFilters.has(message.role as MessageType);
+      // Content filter  
+      const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
+      
+      return passesTypeFilter && passesContentFilter;
+    });
+  }
+
+  // Then apply per-turn filters if active
+  if (enableTurnFilters && (activeTurnFilters.size > 0 || turnContentFilter.trim())) {
+    filteredMessages = filteredMessages.filter(message => {
+      // Type filter
+      const passesTypeFilter = activeTurnFilters.size === 0 || 
+        activeTurnFilters.has(message.role as MessageType);
+      // Content filter  
+      const passesContentFilter = searchMessageContent(message, turnContentFilter);
+      
+      return passesTypeFilter && passesContentFilter;
+    });
+  }
+
+  return filteredMessages;
+};
+
+/**
+ * Get messages available after global filtering for the per-turn filter component
+ * Pure function for better performance
+ */
+const getGloballyFilteredMessages = (
+  turn: ChatTurn,
+  globalFilters: { typeFilters: Set<MessageType>; contentFilter: string }
+) => {
+  return (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
+    ? turn.messages.filter(message => {
+        // Type filter
+        const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+          globalFilters.typeFilters.has(message.role as MessageType);
+        // Content filter  
+        const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
+        
+        return passesTypeFilter && passesContentFilter;
+      })
+    : turn.messages;
+};
+
+/**
+ * Format duration between start and end times
+ * Pure function for better performance
+ */
+const formatDuration = (startTime: string, endTime: string | null) => {
+  if (!endTime) return 'In progress...';
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  const durationMs = end.getTime() - start.getTime();
+  return `${durationMs}ms`;
+};
 
 interface ChatTurnDisplayProps {
   turn: ChatTurn;
@@ -60,98 +162,40 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
   const [activeTurnFilters, setActiveTurnFilters] = useState<Set<MessageType>>(new Set());
   const [turnContentFilter, setTurnContentFilter] = useState('');
 
-
-
-  // Get available message types in this specific turn after global filtering
-  const getAvailableMessageTypesInTurn = (): MessageType[] => {
-    // First, get messages that pass global filters (or all if no global filters)
-    const globallyFilteredMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
-      ? turn.messages.filter(message => {
-          // Type filter
-          const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
-            globalFilters.typeFilters.has(message.role as MessageType);
-          // Content filter  
-          const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
-          
-          return passesTypeFilter && passesContentFilter;
-        })
-      : turn.messages;
-    
-    // Then find unique types in those messages
-    const typesInTurn = new Set<MessageType>();
-    globallyFilteredMessages.forEach(message => {
-      if (MESSAGE_TYPES.includes(message.role as MessageType)) {
-        typesInTurn.add(message.role as MessageType);
-      }
-    });
-    return Array.from(typesInTurn).sort();
-  };
-
-  // Apply both global and per-turn filters to messages
-  const getFilteredMessages = () => {
-    let filteredMessages = turn.messages;
-
-    // First apply global filters if active
-    if (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim()) {
-      filteredMessages = filteredMessages.filter(message => {
-        // Type filter
-        const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
-          globalFilters.typeFilters.has(message.role as MessageType);
-        // Content filter  
-        const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
-        
-        return passesTypeFilter && passesContentFilter;
-      });
-    }
-
-    // Then apply per-turn filters if active
-    if (enableTurnFilters && (activeTurnFilters.size > 0 || turnContentFilter.trim())) {
-      filteredMessages = filteredMessages.filter(message => {
-        // Type filter
-        const passesTypeFilter = activeTurnFilters.size === 0 || 
-          activeTurnFilters.has(message.role as MessageType);
-        // Content filter  
-        const passesContentFilter = searchMessageContent(message, turnContentFilter);
-        
-        return passesTypeFilter && passesContentFilter;
-      });
-    }
-
-    return filteredMessages;
-  };
-
-  const availableTypesInTurn = getAvailableMessageTypesInTurn();
-  const filteredMessages = getFilteredMessages();
-  
-  // Get messages available after global filtering for the per-turn filter component
-  const globallyFilteredMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
-    ? turn.messages.filter(message => {
-        // Type filter
-        const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
-          globalFilters.typeFilters.has(message.role as MessageType);
-        // Content filter  
-        const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
-        
-        return passesTypeFilter && passesContentFilter;
-      })
-    : turn.messages;
-
-  // Check if this turn is selected
-  const isTurnSelected = selectedItems.some(
-    item => item.type === 'turn' && item.turnId === turn.turnId
+  // Memoize expensive computations
+  const availableTypesInTurn = React.useMemo(() => 
+    getAvailableMessageTypesInTurn(turn, globalFilters), 
+    [turn, globalFilters]
   );
 
-  // Check if individual messages are selected
-  const getSelectedMessages = () => {
-    return selectedItems.filter(
-      item => item.type === 'message' && item.turnId === turn.turnId
-    );
-  };
+  const filteredMessages = React.useMemo(() => 
+    getFilteredMessages(turn, globalFilters, enableTurnFilters, activeTurnFilters, turnContentFilter),
+    [turn, globalFilters, enableTurnFilters, activeTurnFilters, turnContentFilter]
+  );
+  
+  const globallyFilteredMessages = React.useMemo(() =>
+    getGloballyFilteredMessages(turn, globalFilters),
+    [turn, globalFilters]
+  );
 
-  const selectedMessages = getSelectedMessages();
-  const isPartiallySelected = selectedMessages.length > 0 && selectedMessages.length < turn.messages.length;
+  // Memoize selection state
+  const isTurnSelected = React.useMemo(() => 
+    selectedItems.some(item => item.type === 'turn' && item.turnId === turn.turnId),
+    [selectedItems, turn.turnId]
+  );
 
-  const handleTurnSelectionChange = (checked: boolean) => {
+  const selectedMessages = React.useMemo(() => 
+    selectedItems.filter(item => item.type === 'message' && item.turnId === turn.turnId),
+    [selectedItems, turn.turnId]
+  );
+
+  const isPartiallySelected = React.useMemo(() => 
+    selectedMessages.length > 0 && selectedMessages.length < turn.messages.length,
+    [selectedMessages.length, turn.messages.length]
+  );
+
+  // Stable event handlers
+  const handleTurnSelectionChange = React.useCallback((checked: boolean) => {
     if (!onSelectionChange) return;
 
     let newSelection = [...selectedItems];
@@ -171,9 +215,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
     }
     
     onSelectionChange(newSelection);
-  };
+  }, [onSelectionChange, selectedItems, turn.turnId]);
 
-  const handleMessageSelectionChange = (messageId: number, checked: boolean) => {
+  const handleMessageSelectionChange = React.useCallback((messageId: number, checked: boolean) => {
     if (!onSelectionChange) return;
 
     let newSelection = [...selectedItems];
@@ -198,15 +242,11 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
     }
     
     onSelectionChange(newSelection);
-  };
+  }, [onSelectionChange, selectedItems, turn.turnId]);
 
-  const formatDuration = (startTime: string, endTime: string | null) => {
-    if (!endTime) return 'In progress...';
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const durationMs = end.getTime() - start.getTime();
-    return `${durationMs}ms`;
-  };
+  const handlePropertiesToggle = React.useCallback(() => {
+    setPropertiesExpanded(!propertiesExpanded);
+  }, [propertiesExpanded]);
 
   return (
     <Card sx={{ mb: 2 }}>
@@ -269,7 +309,7 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
           {showTurnProperties && (
             <IconButton
               size="small"
-              onClick={() => setPropertiesExpanded(!propertiesExpanded)}
+              onClick={handlePropertiesToggle}
               sx={{ ml: 'auto' }}
             >
               <SettingsIcon fontSize="small" />

@@ -83,6 +83,20 @@ export const searchMessageContent = (message: ChatMessage, searchTerm: string): 
   return false;
 };
 
+/**
+ * Get available message types from the provided messages
+ * Pure function for better performance
+ */
+const getAvailableMessageTypes = (messages: ChatMessage[]): MessageType[] => {
+  const typesInMessages = new Set<MessageType>();
+  messages.forEach(message => {
+    if (MESSAGE_TYPES.includes(message.role as MessageType)) {
+      typesInMessages.add(message.role as MessageType);
+    }
+  });
+  return Array.from(typesInMessages).sort();
+};
+
 export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
   messages,
   enableFilters,
@@ -95,21 +109,14 @@ export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
   size = 'medium',
   showStatusMessage = true,
 }) => {
-  // Get available message types from the provided messages
-  const getAvailableMessageTypes = (): MessageType[] => {
-    const typesInMessages = new Set<MessageType>();
-    messages.forEach(message => {
-      if (MESSAGE_TYPES.includes(message.role as MessageType)) {
-        typesInMessages.add(message.role as MessageType);
-      }
-    });
-    return Array.from(typesInMessages).sort();
-  };
+  // Memoize available message types computation
+  const availableTypes = React.useMemo(() => 
+    getAvailableMessageTypes(messages), 
+    [messages]
+  );
 
-  const availableTypes = getAvailableMessageTypes();
-
-  // Filter handling functions
-  const toggleFilter = (messageType: MessageType) => {
+  // Stable filter handling functions
+  const toggleFilter = React.useCallback((messageType: MessageType) => {
     const newFilters = new Set(activeTypeFilters);
     if (newFilters.has(messageType)) {
       newFilters.delete(messageType);
@@ -117,17 +124,75 @@ export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
       newFilters.add(messageType);
     }
     onTypeFiltersChange(newFilters);
-  };
+  }, [activeTypeFilters, onTypeFiltersChange]);
 
-  const clearAllFilters = () => {
+  const clearAllFilters = React.useCallback(() => {
     onTypeFiltersChange(new Set());
     onContentFilterChange('');
-  };
+  }, [onTypeFiltersChange, onContentFilterChange]);
 
+  // Stable switch handler
+  const handleEnableFiltersChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onEnableFiltersChange(e.target.checked);
+    if (!e.target.checked) {
+      clearAllFilters();
+    }
+  }, [onEnableFiltersChange, clearAllFilters]);
+
+  // Stable content filter handler
+  const handleContentFilterChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onContentFilterChange(e.target.value);
+  }, [onContentFilterChange]);
+
+  // Pre-calculate size-dependent values
   const isSmall = size === 'small';
+  
+  // Memoize style objects to prevent re-creation
+  const containerSx = React.useMemo(() => ({ 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: 2, 
+    mb: isSmall ? 1 : 2 
+  }), [isSmall]);
+
+  const textFieldSx = React.useMemo(() => ({ 
+    minWidth: 200 
+  }), []);
+
+  const typesSectionSx = React.useMemo(() => ({ 
+    display: 'flex', 
+    flexWrap: 'wrap', 
+    gap: 1, 
+    alignItems: 'center' 
+  }), []);
+
+  const clearButtonSx = React.useMemo(() => ({ 
+    ml: 1,
+    fontSize: isSmall ? '0.75rem' : '0.875rem',
+    py: isSmall ? 0.5 : undefined
+  }), [isSmall]);
+
+  const statusMessageSx = React.useMemo(() => ({ 
+    mt: isSmall ? 0.5 : 1 
+  }), [isSmall]);
+
+  // Memoize status message text
+  const statusMessage = React.useMemo(() => {
+    if (!showStatusMessage || (activeTypeFilters.size === 0 && !contentFilter.trim())) {
+      return null;
+    }
+    
+    if (contentFilter.trim() && activeTypeFilters.size > 0) {
+      return `Filtering by content "${contentFilter}" and ${activeTypeFilters.size} of ${availableTypes.length} message types`;
+    } else if (contentFilter.trim()) {
+      return `Filtering by content "${contentFilter}"`;
+    } else {
+      return `Showing ${activeTypeFilters.size} of ${availableTypes.length} message types`;
+    }
+  }, [showStatusMessage, activeTypeFilters.size, contentFilter, availableTypes.length]);
 
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: isSmall ? 1 : 2 }}>
+    <Box sx={containerSx}>
       <FilterList color="action" fontSize={isSmall ? 'small' : 'medium'} />
       <Typography variant={isSmall ? 'body2' : 'h6'} sx={{ fontWeight: isSmall ? 'medium' : 'normal' }}>
         {title}
@@ -137,12 +202,7 @@ export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
           <Switch
             size={isSmall ? 'small' : 'medium'}
             checked={enableFilters}
-            onChange={(e) => {
-              onEnableFiltersChange(e.target.checked);
-              if (!e.target.checked) {
-                clearAllFilters();
-              }
-            }}
+            onChange={handleEnableFiltersChange}
           />
         }
         label="Enable Filtering"
@@ -155,7 +215,7 @@ export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
             size={isSmall ? 'small' : 'medium'}
             placeholder="Search message content..."
             value={contentFilter}
-            onChange={(e) => onContentFilterChange(e.target.value)}
+            onChange={handleContentFilterChange}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -163,11 +223,11 @@ export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
                 </InputAdornment>
               ),
             }}
-            sx={{ minWidth: 200 }}
+            sx={textFieldSx}
           />
 
           {/* Type Filter Badges */}
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+          <Box sx={typesSectionSx}>
             <Typography 
               variant="body2" 
               color="text.secondary" 
@@ -180,27 +240,14 @@ export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
               const messageCount = messages.filter(msg => msg.role === messageType).length;
               
               return (
-                <Badge
+                <MessageTypeBadge
                   key={messageType}
-                  badgeContent={messageCount}
-                  color={isActive ? 'primary' : 'default'}
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => toggleFilter(messageType)}
-                >
-                  <Chip
-                    label={messageType}
-                    variant={isActive ? 'filled' : 'outlined'}
-                    color={isActive ? 'primary' : 'default'}
-                    size={isSmall ? 'small' : 'medium'}
-                    onClick={() => toggleFilter(messageType)}
-                    sx={{ 
-                      textTransform: 'capitalize',
-                      '&:hover': { 
-                        backgroundColor: isActive ? 'primary.dark' : 'action.hover' 
-                      }
-                    }}
-                  />
-                </Badge>
+                  messageType={messageType}
+                  messageCount={messageCount}
+                  isActive={isActive}
+                  isSmall={isSmall}
+                  onToggle={toggleFilter}
+                />
               );
             })}
             
@@ -209,30 +256,21 @@ export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
                 size="small"
                 variant="outlined"
                 onClick={clearAllFilters}
-                sx={{ 
-                  ml: 1,
-                  fontSize: isSmall ? '0.75rem' : '0.875rem',
-                  py: isSmall ? 0.5 : undefined
-                }}
+                sx={clearButtonSx}
               >
                 Clear All
               </Button>
             )}
           </Box>
           
-          {showStatusMessage && (activeTypeFilters.size > 0 || contentFilter.trim()) && (
-            <Box sx={{ mt: isSmall ? 0.5 : 1 }}>
+          {statusMessage && (
+            <Box sx={statusMessageSx}>
               <Typography 
                 variant="body2" 
                 color="text.secondary" 
                 sx={{ fontSize: isSmall ? '0.75rem' : '0.875rem' }}
               >
-                {contentFilter.trim() && activeTypeFilters.size > 0 
-                  ? `Filtering by content "${contentFilter}" and ${activeTypeFilters.size} of ${availableTypes.length} message types`
-                  : contentFilter.trim()
-                  ? `Filtering by content "${contentFilter}"`
-                  : `Showing ${activeTypeFilters.size} of ${availableTypes.length} message types`
-                }
+                {statusMessage}
               </Typography>
             </Box>
           )}
@@ -241,3 +279,43 @@ export const ChatMessageFilters: React.FC<ChatMessageFiltersProps> = ({
     </Box>
   );
 };
+
+// Separate memoized component for message type badges to prevent unnecessary re-renders
+const MessageTypeBadge = React.memo<{
+  messageType: MessageType;
+  messageCount: number;
+  isActive: boolean;
+  isSmall: boolean;
+  onToggle: (messageType: MessageType) => void;
+}>(function MessageTypeBadge({ messageType, messageCount, isActive, isSmall, onToggle }) {
+  const handleClick = React.useCallback(() => {
+    onToggle(messageType);
+  }, [messageType, onToggle]);
+
+  const badgeSx = React.useMemo(() => ({ cursor: 'pointer' }), []);
+  
+  const chipSx = React.useMemo(() => ({ 
+    textTransform: 'capitalize' as const,
+    '&:hover': { 
+      backgroundColor: isActive ? 'primary.dark' : 'action.hover' 
+    }
+  }), [isActive]);
+
+  return (
+    <Badge
+      badgeContent={messageCount}
+      color={isActive ? 'primary' : 'default'}
+      sx={badgeSx}
+      onClick={handleClick}
+    >
+      <Chip
+        label={messageType}
+        variant={isActive ? 'filled' : 'outlined'}
+        color={isActive ? 'primary' : 'default'}
+        size={isSmall ? 'small' : 'medium'}
+        onClick={handleClick}
+        sx={chipSx}
+      />
+    </Badge>
+  );
+});

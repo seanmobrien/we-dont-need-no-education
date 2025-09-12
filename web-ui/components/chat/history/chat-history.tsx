@@ -30,6 +30,76 @@ import { Loading } from '@/components/general/loading';
 import type { ChatDetails, ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '@/lib/chat/export';
 
+/**
+ * Get all messages from the chat for filter component
+ * Pure function for better performance
+ */
+const getAllMessages = (chatDetails: ChatDetails) => {
+  return chatDetails.turns.flatMap(turn => turn.messages);
+};
+
+/**
+ * Apply global chat-level filters to the chat data
+ * Pure function for better performance
+ */
+const getFilteredTurns = (
+  chatDetails: ChatDetails, 
+  enableFilters: boolean,
+  activeFilters: Set<MessageType>,
+  contentFilter: string
+): ChatTurn[] => {
+  if (!enableFilters) {
+    return chatDetails.turns;
+  }
+
+  // Global filtering: only hide entire turns if ALL messages in the turn are filtered out
+  return chatDetails.turns.filter(turn => {
+    // Apply global filters to the turn's messages
+    const filteredMessages = turn.messages.filter(message => {
+      // Type filter
+      const passesTypeFilter = activeFilters.size === 0 || activeFilters.has(message.role as MessageType);
+      // Content filter  
+      const passesContentFilter = searchMessageContent(message, contentFilter);
+      
+      return passesTypeFilter && passesContentFilter;
+    });
+    // Only hide the turn if no messages match the filters (all messages filtered out)
+    return filteredMessages.length > 0;
+  });
+};
+
+/**
+ * Calculate chat statistics
+ * Pure function for better performance
+ */
+const calculateStats = (chatDetails: ChatDetails) => {
+  const turns = chatDetails.turns;
+  const totalMessages = turns.reduce((sum, turn) => sum + turn.messages.length, 0);
+  const totalTokens = turns.reduce((sum, turn) => {
+    if (turn.metadata?.totalTokens) {
+      return sum + (turn.metadata.totalTokens as number);
+    }
+    return sum;
+  }, 0);
+  
+  const toolUsage = turns.reduce((acc, turn) => {
+    turn.messages.forEach(msg => {
+      if (msg.toolName) {
+        acc[msg.toolName] = (acc[msg.toolName] || 0) + 1;
+      }
+    });
+    return acc;
+  }, {} as Record<string, number>);
+
+  return {
+    totalTurns: turns.length,
+    totalMessages,
+    totalTokens,
+    toolUsage,
+    avgLatency: turns.filter(t => t.latencyMs).reduce((sum, t) => sum + (t.latencyMs || 0), 0) / Math.max(turns.filter(t => t.latencyMs).length, 1),
+  };
+};
+
 
 /**
  * ChatHistory component: displays the full message history for a given chat, including title, creation time, and all turns/messages.
@@ -57,52 +127,33 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
   const [activeFilters, setActiveFilters] = React.useState<Set<MessageType>>(new Set());
   const [contentFilter, setContentFilter] = React.useState('');
 
-  // Apply global chat-level filters to the chat data
-  const getFilteredTurns = (chatDetails: ChatDetails): ChatTurn[] => {
-    if (!enableFilters) {
-      return chatDetails.turns;
-    }
+  // Memoize filtered data computation
+  const filteredData = React.useMemo(() => {
+    if (!data) return null;
+    return { 
+      ...data, 
+      turns: getFilteredTurns(data, enableFilters, activeFilters, contentFilter) 
+    };
+  }, [data, enableFilters, activeFilters, contentFilter]);
 
-    // Global filtering: only hide entire turns if ALL messages in the turn are filtered out
-    return chatDetails.turns.filter(turn => {
-      // Apply global filters to the turn's messages
-      const filteredMessages = turn.messages.filter(message => {
-        // Type filter
-        const passesTypeFilter = activeFilters.size === 0 || activeFilters.has(message.role as MessageType);
-        // Content filter  
-        const passesContentFilter = searchMessageContent(message, contentFilter);
-        
-        return passesTypeFilter && passesContentFilter;
-      });
-      // Only hide the turn if no messages match the filters (all messages filtered out)
-      return filteredMessages.length > 0;
-    });
-  };
+  // Memoize all messages computation
+  const allMessages = React.useMemo(() => {
+    return data ? getAllMessages(data) : [];
+  }, [data]);
 
-  // Get all messages from the chat for filter component
-  const getAllMessages = (chatDetails: ChatDetails) => {
-    return chatDetails.turns.flatMap(turn => turn.messages);
-  };
+  // Memoize stats computation
+  const stats = React.useMemo(() => {
+    return filteredData ? calculateStats(filteredData) : null;
+  }, [filteredData]);
 
-  // Title resolution rules:
-  // 1. If a non-empty title prop is provided, use it.
-  // 2. Otherwise fall back to the fetched chat title (if any).
-  // 3. Otherwise use the generated default `Chat <suffix>`.
-  const resolvedTitleFromProps = titleFromProps && titleFromProps.trim().length > 0 ? titleFromProps.trim() : null;
-  const effectiveTitle = resolvedTitleFromProps ?? (data?.title && data.title.trim().length > 0 ? data.title : null);
+  // Title resolution rules - memoized to prevent re-computation
+  const effectiveTitle = React.useMemo(() => {
+    const resolvedTitleFromProps = titleFromProps && titleFromProps.trim().length > 0 ? titleFromProps.trim() : null;
+    return resolvedTitleFromProps ?? (data?.title && data.title.trim().length > 0 ? data.title : null);
+  }, [titleFromProps, data?.title]);
 
-  // Get filtered data
-  const filteredData = data ? { ...data, turns: getFilteredTurns(data) } : null;
-  const allMessages = data ? getAllMessages(data) : [];
-
-  // Clear selection when disabling selection mode
-  React.useEffect(() => {
-    if (!enableSelection) {
-      setSelectedItems([]);
-    }
-  }, [enableSelection]);
-
-  const handleSelectAll = () => {
+  // Stable event handlers
+  const handleSelectAll = React.useCallback(() => {
     if (!filteredData) return;
     
     // Select all turns from filtered data
@@ -111,11 +162,34 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
       turnId: turn.turnId
     }));
     setSelectedItems(allTurns);
-  };
+  }, [filteredData]);
 
-  const handleClearSelection = () => {
+  const handleClearSelection = React.useCallback(() => {
     setSelectedItems([]);
-  };
+  }, []);
+
+  const handleEnableSelectionChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setEnableSelection(e.target.checked);
+  }, []);
+
+  // Clear selection when disabling selection mode
+  React.useEffect(() => {
+    if (!enableSelection) {
+      setSelectedItems([]);
+    }
+  }, [enableSelection]);
+
+
+
+
+  // Clear selection when disabling selection mode
+  React.useEffect(() => {
+    if (!enableSelection) {
+      setSelectedItems([]);
+    }
+  }, [enableSelection]);
+
+
 
   if (isError) {
     return (
@@ -132,36 +206,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
       </Box>
     );
   }
-  // Calculate chat statistics
-  const calculateStats = (chatDetails: ChatDetails) => {
-    const turns = chatDetails.turns;
-    const totalMessages = turns.reduce((sum, turn) => sum + turn.messages.length, 0);
-    const totalTokens = turns.reduce((sum, turn) => {
-      if (turn.metadata?.totalTokens) {
-        return sum + (turn.metadata.totalTokens as number);
-      }
-      return sum;
-    }, 0);
-    
-    const toolUsage = turns.reduce((acc, turn) => {
-      turn.messages.forEach(msg => {
-        if (msg.toolName) {
-          acc[msg.toolName] = (acc[msg.toolName] || 0) + 1;
-        }
-      });
-      return acc;
-    }, {} as Record<string, number>);
 
-    return {
-      totalTurns: turns.length,
-      totalMessages,
-      totalTokens,
-      toolUsage,
-      avgLatency: turns.filter(t => t.latencyMs).reduce((sum, t) => sum + (t.latencyMs || 0), 0) / Math.max(turns.filter(t => t.latencyMs).length, 1),
-    };
-  };
-
-  const stats = filteredData ? calculateStats(filteredData) : null;
 
   return (
     <>
@@ -275,7 +320,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
             control={
               <Switch
                 checked={enableSelection}
-                onChange={(e) => setEnableSelection(e.target.checked)}
+                onChange={handleEnableSelectionChange}
               />
             }
             label="Enable Export Selection"
