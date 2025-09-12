@@ -20,7 +20,7 @@
 'use client';
 
 import * as React from 'react';
-import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Switch, Button, Badge, ToggleButton, ToggleButtonGroup, Paper } from '@mui/material';
+import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Switch, Button, Badge, Paper } from '@mui/material';
 import { ExpandMore, FilterList } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
 import { ChatExportMenu } from '@/components/chat/chat-export-menu';
@@ -49,18 +49,14 @@ import type { SelectedChatItem } from '@/lib/chat/export';
 const MESSAGE_TYPES = ['user', 'assistant', 'system', 'tool'] as const;
 type MessageType = typeof MESSAGE_TYPES[number];
 
-// Filter mode: 'single-turn' filters within turns, 'entire-chat' filters entire turns
-type FilterMode = 'single-turn' | 'entire-chat';
-
 export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string; title?: string }) => {
   const { data, isLoading, isError, error, refetch } = useChatHistory(chatId);
   const [enableSelection, setEnableSelection] = React.useState(false);
   const [selectedItems, setSelectedItems] = React.useState<SelectedChatItem[]>([]);
   
-  // Filter state
+  // Filter state - Global chat-level filtering
   const [enableFilters, setEnableFilters] = React.useState(false);
   const [activeFilters, setActiveFilters] = React.useState<Set<MessageType>>(new Set());
-  const [filterMode, setFilterMode] = React.useState<FilterMode>('single-turn');
 
   // Filter handling functions
   const toggleFilter = (messageType: MessageType) => {
@@ -77,24 +73,16 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
     setActiveFilters(new Set());
   };
 
-  // Apply filters to the chat data
+  // Apply global chat-level filters to the chat data
   const getFilteredTurns = (chatDetails: ChatDetails): ChatTurn[] => {
     if (!enableFilters || activeFilters.size === 0) {
       return chatDetails.turns;
     }
 
-    if (filterMode === 'entire-chat') {
-      // Filter entire turns: hide turns that don't contain any matching messages
-      return chatDetails.turns.filter(turn => 
-        turn.messages.some(message => activeFilters.has(message.role as MessageType))
-      );
-    } else {
-      // Filter within turns: hide individual messages but keep turns
-      return chatDetails.turns.map(turn => ({
-        ...turn,
-        messages: turn.messages.filter(message => activeFilters.has(message.role as MessageType))
-      })).filter(turn => turn.messages.length > 0); // Remove turns with no messages after filtering
-    }
+    // Global filtering: hide entire turns that don't contain any matching messages
+    return chatDetails.turns.filter(turn => 
+      turn.messages.some(message => activeFilters.has(message.role as MessageType))
+    );
   };
 
   // Get available message types from the current chat
@@ -200,11 +188,11 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
             Created: {new Date(data.createdAt).toLocaleString()}
           </Typography>
           
-          {/* Message Filtering Controls */}
+          {/* Global Chat-Level Message Filtering Controls */}
           <Paper sx={{ p: 2, mb: 3 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
               <FilterList color="action" />
-              <Typography variant="h6">Message Filters</Typography>
+              <Typography variant="h6">Global Message Filters</Typography>
               <FormControlLabel
                 control={
                   <Switch
@@ -223,28 +211,9 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
             
             {enableFilters && (
               <>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    Filter Mode:
-                  </Typography>
-                  <ToggleButtonGroup
-                    value={filterMode}
-                    exclusive
-                    onChange={(_, newMode) => newMode && setFilterMode(newMode)}
-                    size="small"
-                  >
-                    <ToggleButton value="single-turn">
-                      Single Turn
-                    </ToggleButton>
-                    <ToggleButton value="entire-chat">
-                      Entire Chat
-                    </ToggleButton>
-                  </ToggleButtonGroup>
-                </Box>
-                
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                    Show messages of type:
+                    Show turns containing messages of type:
                   </Typography>
                   {availableTypes.map((messageType) => {
                     const isActive = activeFilters.has(messageType);
@@ -291,8 +260,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
                 {activeFilters.size > 0 && (
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Showing {activeFilters.size} of {availableTypes.length} message types
-                      {filterMode === 'entire-chat' ? ' (hiding entire turns without matching messages)' : ' (hiding individual messages)'}
+                      Showing {activeFilters.size} of {availableTypes.length} message types (hiding entire turns without matching messages)
                     </Typography>
                   </Box>
                 )}

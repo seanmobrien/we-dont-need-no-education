@@ -14,17 +14,25 @@ import {
   Divider,
   Alert,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
+  Badge,
+  Button,
+  Switch
 } from '@mui/material';
 import { 
   Settings as SettingsIcon,
   Schedule as ScheduleIcon,
   Warning as WarningIcon,
-  Error as ErrorIcon
+  Error as ErrorIcon,
+  FilterList as FilterListIcon
 } from '@mui/icons-material';
 import { ChatMessageDisplay } from './chat-message-display';
 import { ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '@/lib/chat/export';
+
+// Available message types for per-turn filtering
+const MESSAGE_TYPES = ['user', 'assistant', 'system', 'tool'] as const;
+type MessageType = typeof MESSAGE_TYPES[number];
 
 interface ChatTurnDisplayProps {
   turn: ChatTurn;
@@ -44,6 +52,47 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
   onSelectionChange
 }) => {
   const [propertiesExpanded, setPropertiesExpanded] = useState(false);
+  
+  // Per-turn filtering state
+  const [enableTurnFilters, setEnableTurnFilters] = useState(false);
+  const [activeTurnFilters, setActiveTurnFilters] = useState<Set<MessageType>>(new Set());
+
+  // Per-turn filter handling functions
+  const toggleTurnFilter = (messageType: MessageType) => {
+    const newFilters = new Set(activeTurnFilters);
+    if (newFilters.has(messageType)) {
+      newFilters.delete(messageType);
+    } else {
+      newFilters.add(messageType);
+    }
+    setActiveTurnFilters(newFilters);
+  };
+
+  const clearAllTurnFilters = () => {
+    setActiveTurnFilters(new Set());
+  };
+
+  // Get available message types in this specific turn
+  const getAvailableMessageTypesInTurn = (): MessageType[] => {
+    const typesInTurn = new Set<MessageType>();
+    turn.messages.forEach(message => {
+      if (MESSAGE_TYPES.includes(message.role as MessageType)) {
+        typesInTurn.add(message.role as MessageType);
+      }
+    });
+    return Array.from(typesInTurn).sort();
+  };
+
+  // Apply per-turn filters to messages
+  const getFilteredMessages = () => {
+    if (!enableTurnFilters || activeTurnFilters.size === 0) {
+      return turn.messages;
+    }
+    return turn.messages.filter(message => activeTurnFilters.has(message.role as MessageType));
+  };
+
+  const availableTypesInTurn = getAvailableMessageTypesInTurn();
+  const filteredMessages = getFilteredMessages();
 
   // Check if this turn is selected
   const isTurnSelected = selectedItems.some(
@@ -324,23 +373,106 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
           </Collapse>
         )}
 
+        {/* Per-Turn Message Filtering Controls */}
+        {availableTypesInTurn.length > 1 && (
+          <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'action.hover' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: enableTurnFilters ? 2 : 0 }}>
+              <FilterListIcon color="action" fontSize="small" />
+              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>Turn Filters</Typography>
+              <Switch
+                size="small"
+                checked={enableTurnFilters}
+                onChange={(e) => {
+                  setEnableTurnFilters(e.target.checked);
+                  if (!e.target.checked) {
+                    clearAllTurnFilters();
+                  }
+                }}
+              />
+            </Box>
+            
+            {enableTurnFilters && (
+              <>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mr: 1, fontSize: '0.875rem' }}>
+                    Show:
+                  </Typography>
+                  {availableTypesInTurn.map((messageType) => {
+                    const isActive = activeTurnFilters.has(messageType);
+                    const messageCount = turn.messages.filter(msg => msg.role === messageType).length;
+                    
+                    return (
+                      <Badge
+                        key={messageType}
+                        badgeContent={messageCount}
+                        color={isActive ? 'primary' : 'default'}
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => toggleTurnFilter(messageType)}
+                      >
+                        <Chip
+                          label={messageType}
+                          variant={isActive ? 'filled' : 'outlined'}
+                          color={isActive ? 'primary' : 'default'}
+                          size="small"
+                          onClick={() => toggleTurnFilter(messageType)}
+                          sx={{ 
+                            textTransform: 'capitalize',
+                            '&:hover': { 
+                              backgroundColor: isActive ? 'primary.dark' : 'action.hover' 
+                            }
+                          }}
+                        />
+                      </Badge>
+                    );
+                  })}
+                  
+                  {activeTurnFilters.size > 0 && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={clearAllTurnFilters}
+                      sx={{ ml: 1, fontSize: '0.75rem', py: 0.5 }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </Box>
+                
+                {activeTurnFilters.size > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                      Showing {activeTurnFilters.size} of {availableTypesInTurn.length} message types in this turn
+                    </Typography>
+                  </Box>
+                )}
+              </>
+            )}
+          </Paper>
+        )}
+
         {/* Messages */}
-        {turn.messages.map((message) => {
-          const isMessageSelected = isTurnSelected || selectedItems.some(
-            item => item.type === 'message' && item.turnId === turn.turnId && item.messageId === message.messageId
-          );
-          
-          return (
-            <ChatMessageDisplay 
-              key={`${message.turnId}-${message.messageId}`}
-              message={message}
-              showMetadata={showMessageMetadata}
-              enableSelection={enableSelection}
-              isSelected={isMessageSelected}
-              onSelectionChange={handleMessageSelectionChange}
-            />
-          );
-        })}
+        {filteredMessages.length === 0 && enableTurnFilters && activeTurnFilters.size > 0 ? (
+          <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2, fontStyle: 'italic' }}>
+            No messages match the current turn filters.
+          </Typography>
+        ) : (
+          filteredMessages.map((message) => {
+            const isMessageSelected = isTurnSelected || selectedItems.some(
+              item => item.type === 'message' && item.turnId === turn.turnId && item.messageId === message.messageId
+            );
+            
+            return (
+              <ChatMessageDisplay 
+                key={`${message.turnId}-${message.messageId}`}
+                message={message}
+                showMetadata={showMessageMetadata}
+                enableSelection={enableSelection}
+                isSelected={isMessageSelected}
+                onSelectionChange={handleMessageSelectionChange}
+              />
+            );
+          })
+        )}
       </CardContent>
     </Card>
   );
