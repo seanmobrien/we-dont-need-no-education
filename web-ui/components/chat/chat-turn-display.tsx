@@ -29,10 +29,7 @@ import {
 import { ChatMessageDisplay } from './chat-message-display';
 import { ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '@/lib/chat/export';
-
-// Available message types for per-turn filtering
-const MESSAGE_TYPES = ['user', 'assistant', 'system', 'tool'] as const;
-type MessageType = typeof MESSAGE_TYPES[number];
+import { ChatMessageFilters, MESSAGE_TYPES, type MessageType, searchMessageContent } from './chat-message-filters';
 
 interface ChatTurnDisplayProps {
   turn: ChatTurn;
@@ -41,7 +38,10 @@ interface ChatTurnDisplayProps {
   enableSelection?: boolean;
   selectedItems?: SelectedChatItem[];
   onSelectionChange?: (selectedItems: SelectedChatItem[]) => void;
-  globalFilters?: Set<string>;
+  globalFilters?: {
+    typeFilters: Set<MessageType>;
+    contentFilter: string;
+  };
 }
 
 export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({ 
@@ -51,34 +51,30 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
   enableSelection = false,
   selectedItems = [],
   onSelectionChange,
-  globalFilters = new Set()
+  globalFilters = { typeFilters: new Set(), contentFilter: '' }
 }) => {
   const [propertiesExpanded, setPropertiesExpanded] = useState(false);
   
   // Per-turn filtering state
   const [enableTurnFilters, setEnableTurnFilters] = useState(false);
   const [activeTurnFilters, setActiveTurnFilters] = useState<Set<MessageType>>(new Set());
+  const [turnContentFilter, setTurnContentFilter] = useState('');
 
-  // Per-turn filter handling functions
-  const toggleTurnFilter = (messageType: MessageType) => {
-    const newFilters = new Set(activeTurnFilters);
-    if (newFilters.has(messageType)) {
-      newFilters.delete(messageType);
-    } else {
-      newFilters.add(messageType);
-    }
-    setActiveTurnFilters(newFilters);
-  };
 
-  const clearAllTurnFilters = () => {
-    setActiveTurnFilters(new Set());
-  };
 
   // Get available message types in this specific turn after global filtering
   const getAvailableMessageTypesInTurn = (): MessageType[] => {
     // First, get messages that pass global filters (or all if no global filters)
-    const globallyFilteredMessages = globalFilters.size > 0 
-      ? turn.messages.filter(message => globalFilters.has(message.role))
+    const globallyFilteredMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
+      ? turn.messages.filter(message => {
+          // Type filter
+          const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+            globalFilters.typeFilters.has(message.role as MessageType);
+          // Content filter  
+          const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
+          
+          return passesTypeFilter && passesContentFilter;
+        })
       : turn.messages;
     
     // Then find unique types in those messages
@@ -96,17 +92,29 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
     let filteredMessages = turn.messages;
 
     // First apply global filters if active
-    if (globalFilters.size > 0) {
-      filteredMessages = filteredMessages.filter(message => 
-        globalFilters.has(message.role as MessageType)
-      );
+    if (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim()) {
+      filteredMessages = filteredMessages.filter(message => {
+        // Type filter
+        const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+          globalFilters.typeFilters.has(message.role as MessageType);
+        // Content filter  
+        const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
+        
+        return passesTypeFilter && passesContentFilter;
+      });
     }
 
     // Then apply per-turn filters if active
-    if (enableTurnFilters && activeTurnFilters.size > 0) {
-      filteredMessages = filteredMessages.filter(message => 
-        activeTurnFilters.has(message.role as MessageType)
-      );
+    if (enableTurnFilters && (activeTurnFilters.size > 0 || turnContentFilter.trim())) {
+      filteredMessages = filteredMessages.filter(message => {
+        // Type filter
+        const passesTypeFilter = activeTurnFilters.size === 0 || 
+          activeTurnFilters.has(message.role as MessageType);
+        // Content filter  
+        const passesContentFilter = searchMessageContent(message, turnContentFilter);
+        
+        return passesTypeFilter && passesContentFilter;
+      });
     }
 
     return filteredMessages;
@@ -114,6 +122,19 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
 
   const availableTypesInTurn = getAvailableMessageTypesInTurn();
   const filteredMessages = getFilteredMessages();
+  
+  // Get messages available after global filtering for the per-turn filter component
+  const globallyFilteredMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
+    ? turn.messages.filter(message => {
+        // Type filter
+        const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+          globalFilters.typeFilters.has(message.role as MessageType);
+        // Content filter  
+        const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
+        
+        return passesTypeFilter && passesContentFilter;
+      })
+    : turn.messages;
 
   // Check if this turn is selected
   const isTurnSelected = selectedItems.some(
@@ -397,92 +418,30 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
         {/* Per-Turn Message Filtering Controls */}
         {availableTypesInTurn.length > 1 && (
           <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'action.hover' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: enableTurnFilters ? 2 : 0 }}>
-              <FilterListIcon color="action" fontSize="small" />
-              <Typography variant="body2" sx={{ fontWeight: 'medium' }}>Turn Filters</Typography>
-              <Switch
-                size="small"
-                checked={enableTurnFilters}
-                onChange={(e) => {
-                  setEnableTurnFilters(e.target.checked);
-                  if (!e.target.checked) {
-                    clearAllTurnFilters();
-                  }
-                }}
-              />
-            </Box>
-            
-            {enableTurnFilters && (
-              <>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mr: 1, fontSize: '0.875rem' }}>
-                    Show:
-                  </Typography>
-                  {availableTypesInTurn.map((messageType) => {
-                    const isActive = activeTurnFilters.has(messageType);
-                    // Count messages of this type that are available after global filtering
-                    const globallyFilteredMessages = globalFilters.size > 0 
-                      ? turn.messages.filter(message => globalFilters.has(message.role))
-                      : turn.messages;
-                    const messageCount = globallyFilteredMessages.filter(msg => msg.role === messageType).length;
-                    
-                    return (
-                      <Badge
-                        key={messageType}
-                        badgeContent={messageCount}
-                        color={isActive ? 'primary' : 'default'}
-                        sx={{ cursor: 'pointer' }}
-                        onClick={() => toggleTurnFilter(messageType)}
-                      >
-                        <Chip
-                          label={messageType}
-                          variant={isActive ? 'filled' : 'outlined'}
-                          color={isActive ? 'primary' : 'default'}
-                          size="small"
-                          onClick={() => toggleTurnFilter(messageType)}
-                          sx={{ 
-                            textTransform: 'capitalize',
-                            '&:hover': { 
-                              backgroundColor: isActive ? 'primary.dark' : 'action.hover' 
-                            }
-                          }}
-                        />
-                      </Badge>
-                    );
-                  })}
-                  
-                  {activeTurnFilters.size > 0 && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={clearAllTurnFilters}
-                      sx={{ ml: 1, fontSize: '0.75rem', py: 0.5 }}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </Box>
-                
-                {activeTurnFilters.size > 0 && (
-                  <Box sx={{ mt: 1 }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
-                      Showing {activeTurnFilters.size} of {availableTypesInTurn.length} message types in this turn
-                    </Typography>
-                  </Box>
-                )}
-              </>
-            )}
+            <ChatMessageFilters
+              messages={globallyFilteredMessages}
+              enableFilters={enableTurnFilters}
+              onEnableFiltersChange={setEnableTurnFilters}
+              activeTypeFilters={activeTurnFilters}
+              onTypeFiltersChange={setActiveTurnFilters}
+              contentFilter={turnContentFilter}
+              onContentFilterChange={setTurnContentFilter}
+              title="Turn Filters"
+              size="small"
+              showStatusMessage={true}
+            />
           </Paper>
         )}
 
         {/* Messages */}
         {filteredMessages.length === 0 ? (
           <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2, fontStyle: 'italic' }}>
-            {globalFilters.size > 0 && (enableTurnFilters && activeTurnFilters.size > 0) 
+            {(globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim()) && 
+             (enableTurnFilters && (activeTurnFilters.size > 0 || turnContentFilter.trim()))
               ? 'No messages match the current global and turn filters.'
-              : globalFilters.size > 0
+              : (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
               ? 'No messages match the current global filters.'
-              : enableTurnFilters && activeTurnFilters.size > 0
+              : enableTurnFilters && (activeTurnFilters.size > 0 || turnContentFilter.trim())
               ? 'No messages match the current turn filters.'
               : 'No messages in this turn.'
             }

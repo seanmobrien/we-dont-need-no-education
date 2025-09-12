@@ -20,10 +20,11 @@
 'use client';
 
 import * as React from 'react';
-import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Switch, Button, Badge, Paper } from '@mui/material';
-import { ExpandMore, FilterList } from '@mui/icons-material';
+import { Box, Typography, Grid, Card, CardContent, Chip, Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Switch, Button, Paper } from '@mui/material';
+import { ExpandMore } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
 import { ChatExportMenu } from '@/components/chat/chat-export-menu';
+import { ChatMessageFilters, type MessageType, searchMessageContent } from '@/components/chat/chat-message-filters';
 import { useChatHistory } from './useChatHistory';
 import { Loading } from '@/components/general/loading';
 import type { ChatDetails, ChatTurn } from '@/lib/ai/chat/types';
@@ -45,9 +46,6 @@ import type { SelectedChatItem } from '@/lib/chat/export';
  * <ChatHistory chatId="abc123" />
  * <ChatHistory chatId="abc123" title="My Custom Title" />
  */
-// Available message types for filtering
-const MESSAGE_TYPES = ['user', 'assistant', 'system', 'tool'] as const;
-type MessageType = typeof MESSAGE_TYPES[number];
 
 export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string; title?: string }) => {
   const { data, isLoading, isError, error, refetch } = useChatHistory(chatId);
@@ -57,50 +55,33 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
   // Filter state - Global chat-level filtering
   const [enableFilters, setEnableFilters] = React.useState(false);
   const [activeFilters, setActiveFilters] = React.useState<Set<MessageType>>(new Set());
-
-  // Filter handling functions
-  const toggleFilter = (messageType: MessageType) => {
-    const newFilters = new Set(activeFilters);
-    if (newFilters.has(messageType)) {
-      newFilters.delete(messageType);
-    } else {
-      newFilters.add(messageType);
-    }
-    setActiveFilters(newFilters);
-  };
-
-  const clearAllFilters = () => {
-    setActiveFilters(new Set());
-  };
+  const [contentFilter, setContentFilter] = React.useState('');
 
   // Apply global chat-level filters to the chat data
   const getFilteredTurns = (chatDetails: ChatDetails): ChatTurn[] => {
-    if (!enableFilters || activeFilters.size === 0) {
+    if (!enableFilters) {
       return chatDetails.turns;
     }
 
     // Global filtering: only hide entire turns if ALL messages in the turn are filtered out
     return chatDetails.turns.filter(turn => {
       // Apply global filters to the turn's messages
-      const filteredMessages = turn.messages.filter(message => 
-        activeFilters.has(message.role as MessageType)
-      );
+      const filteredMessages = turn.messages.filter(message => {
+        // Type filter
+        const passesTypeFilter = activeFilters.size === 0 || activeFilters.has(message.role as MessageType);
+        // Content filter  
+        const passesContentFilter = searchMessageContent(message, contentFilter);
+        
+        return passesTypeFilter && passesContentFilter;
+      });
       // Only hide the turn if no messages match the filters (all messages filtered out)
       return filteredMessages.length > 0;
     });
   };
 
-  // Get available message types from the current chat
-  const getAvailableMessageTypes = (chatDetails: ChatDetails): MessageType[] => {
-    const typesInChat = new Set<MessageType>();
-    chatDetails.turns.forEach(turn => {
-      turn.messages.forEach(message => {
-        if (MESSAGE_TYPES.includes(message.role as MessageType)) {
-          typesInChat.add(message.role as MessageType);
-        }
-      });
-    });
-    return Array.from(typesInChat).sort();
+  // Get all messages from the chat for filter component
+  const getAllMessages = (chatDetails: ChatDetails) => {
+    return chatDetails.turns.flatMap(turn => turn.messages);
   };
 
   // Title resolution rules:
@@ -112,7 +93,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
 
   // Get filtered data
   const filteredData = data ? { ...data, turns: getFilteredTurns(data) } : null;
-  const availableTypes = data ? getAvailableMessageTypes(data) : [];
+  const allMessages = data ? getAllMessages(data) : [];
 
   // Clear selection when disabling selection mode
   React.useEffect(() => {
@@ -195,82 +176,18 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
           
           {/* Global Chat-Level Message Filtering Controls */}
           <Paper sx={{ p: 2, mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-              <FilterList color="action" />
-              <Typography variant="h6">Global Message Filters</Typography>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={enableFilters}
-                    onChange={(e) => {
-                      setEnableFilters(e.target.checked);
-                      if (!e.target.checked) {
-                        clearAllFilters();
-                      }
-                    }}
-                  />
-                }
-                label="Enable Filtering"
-              />
-            </Box>
-            
-            {enableFilters && (
-              <>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                    Show messages of type:
-                  </Typography>
-                  {availableTypes.map((messageType) => {
-                    const isActive = activeFilters.has(messageType);
-                    const messageCount = data.turns.reduce((count, turn) => 
-                      count + turn.messages.filter(msg => msg.role === messageType).length, 0
-                    );
-                    
-                    return (
-                      <Badge
-                        key={messageType}
-                        badgeContent={messageCount}
-                        color={isActive ? 'primary' : 'default'}
-                        sx={{ cursor: 'pointer' }}
-                        onClick={() => toggleFilter(messageType)}
-                      >
-                        <Chip
-                          label={messageType}
-                          variant={isActive ? 'filled' : 'outlined'}
-                          color={isActive ? 'primary' : 'default'}
-                          onClick={() => toggleFilter(messageType)}
-                          sx={{ 
-                            textTransform: 'capitalize',
-                            '&:hover': { 
-                              backgroundColor: isActive ? 'primary.dark' : 'action.hover' 
-                            }
-                          }}
-                        />
-                      </Badge>
-                    );
-                  })}
-                  
-                  {activeFilters.size > 0 && (
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={clearAllFilters}
-                      sx={{ ml: 1 }}
-                    >
-                      Clear All
-                    </Button>
-                  )}
-                </Box>
-                
-                {activeFilters.size > 0 && (
-                  <Box sx={{ mt: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Showing {activeFilters.size} of {availableTypes.length} message types (filtering individual messages in all turns)
-                    </Typography>
-                  </Box>
-                )}
-              </>
-            )}
+            <ChatMessageFilters
+              messages={allMessages}
+              enableFilters={enableFilters}
+              onEnableFiltersChange={setEnableFilters}
+              activeTypeFilters={activeFilters}
+              onTypeFiltersChange={setActiveFilters}
+              contentFilter={contentFilter}
+              onContentFilterChange={setContentFilter}
+              title="Global Message Filters"
+              size="medium"
+              showStatusMessage={true}
+            />
           </Paper>
           
           {/* Chat Statistics */}
@@ -388,7 +305,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
                 turns={filteredData.turns}
                 selectedItems={selectedItems}
                 chatTitle={effectiveTitle || undefined}
-                chatCreatedAt={data.createdAt}
+                chatCreatedAt={data?.createdAt}
               />
             </>
           )}
@@ -408,7 +325,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
               enableSelection={enableSelection}
               selectedItems={selectedItems}
               onSelectionChange={setSelectedItems}
-              globalFilters={enableFilters ? activeFilters : new Set()}
+              globalFilters={enableFilters ? { typeFilters: activeFilters, contentFilter } : { typeFilters: new Set(), contentFilter: '' }}
             />
           )}                
       </Box>

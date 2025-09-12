@@ -62,6 +62,7 @@ import {
 } from '@/lib/components/ai/height-estimators';
 import { ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '@/lib/chat/export';
+import { type MessageType, searchMessageContent } from './chat-message-filters';
 
 /**
  * Fallback container width for virtualized chat display
@@ -90,8 +91,11 @@ interface VirtualizedChatDisplayProps {
   selectedItems?: SelectedChatItem[];
   /** Callback when selection changes */
   onSelectionChange?: (selectedItems: SelectedChatItem[]) => void;
-  /** Global message type filters to apply to all turns */
-  globalFilters?: Set<string>;
+  /** Global message filters to apply to all turns */
+  globalFilters?: {
+    typeFilters: Set<MessageType>;
+    contentFilter: string;
+  };
 }
 
 /**
@@ -121,7 +125,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
   enableSelection = false,
   selectedItems = [],
   onSelectionChange,
-  globalFilters = new Set()
+  globalFilters = { typeFilters: new Set(), contentFilter: '' }
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [showTurnProperties, setShowTurnProperties] = useState(false);
@@ -167,8 +171,16 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
     const contentWidth = Math.max(width * 0.85 - 48, 300); // 85% width minus Card padding, min 300px
 
     // Filter messages based on global filters if active
-    const visibleMessages = globalFilters.size > 0 
-      ? turn.messages.filter(message => globalFilters.has(message.role))
+    const visibleMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
+      ? turn.messages.filter(message => {
+          // Type filter
+          const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+            globalFilters.typeFilters.has(message.role as MessageType);
+          // Content filter  
+          const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
+          
+          return passesTypeFilter && passesContentFilter;
+        })
       : turn.messages;
 
     // If no messages are visible after filtering, return a minimal height
