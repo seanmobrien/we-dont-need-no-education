@@ -49,7 +49,7 @@
 import { schema } from '@/lib/drizzle-db';
 import { DbTransactionType } from '@/lib/drizzle-db';
 import { ChatHistoryContext } from './types';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { log } from '@/lib/logger';
 import { getNextSequence, getNewMessages } from './utility';
 import { generateChatId } from '@/lib/ai/core';
@@ -468,6 +468,110 @@ const parseMaybeJson = (value: unknown): unknown => {
   }
 };
 
+/**
+ * Upserts a tool message by providerId, implementing non-destructive merge.
+ * 
+ * @remarks
+ * This function implements the core logic for tool message deduplication by:
+ * 1. Looking for existing tool messages with the same providerId
+ * 2. Only updating if the current turnId is greater than the stored modifiedTurnId
+ * 3. Preserving existing functionCall data when adding toolResult
+ * 4. Resetting optimization fields when updating
+ * 5. Adding modifiedTurnId to metadata for tracking
+ * 
+ * @param tx - Active database transaction
+ * @param chatId - The chat ID
+ * @param turnId - Current turn ID
+ * @param toolRow - The tool message row to upsert
+ * @returns Promise resolving to the messageId of the upserted record
+ */
+export const upsertToolMessage = async (
+  tx: DbTransactionType,
+  chatId: string,
+  turnId: number,
+  toolRow: ChatMessageRowDraft,
+): Promise<number | null> => {
+  if (!toolRow.providerId) {
+    // No providerId means we can't deduplicate, just insert normally
+    return null;
+  }
+
+  // Look for existing tool message with this providerId
+  const existingMessages = await tx
+    .select({
+      chatMessageId: schema.chatMessages.chatMessageId,
+      messageId: schema.chatMessages.messageId,
+      turnId: schema.chatMessages.turnId,
+      functionCall: schema.chatMessages.functionCall,
+      toolResult: schema.chatMessages.toolResult,
+      metadata: schema.chatMessages.metadata,
+      optimizedContent: schema.chatMessages.optimizedContent,
+    })
+    .from(schema.chatMessages)
+    .where(
+      and(
+        eq(schema.chatMessages.chatId, chatId),
+        eq(schema.chatMessages.providerId, toolRow.providerId),
+        eq(schema.chatMessages.role, 'tool')
+      )
+    )
+    .limit(1);
+
+  if (existingMessages.length === 0) {
+    // No existing message, return null to signal normal insert
+    return null;
+  }
+
+  const existing = existingMessages[0];
+  const existingMetadata = (existing.metadata as { modifiedTurnId?: number }) || {};
+  const lastModifiedTurnId = existingMetadata.modifiedTurnId || 0;
+
+  // Only update if current turn is greater than last modified turn
+  if (turnId <= lastModifiedTurnId) {
+    log((l) =>
+      l.debug(
+        `Skipping tool message update for providerId ${toolRow.providerId} - turn ${turnId} <= last modified ${lastModifiedTurnId}`
+      )
+    );
+    return existing.messageId;
+  }
+
+  // Prepare update data with non-destructive merge
+  const updateData: Partial<typeof schema.chatMessages.$inferInsert> = {
+    turnId: turnId,
+    toolName: toolRow.toolName || undefined,
+    metadata: {
+      ...existingMetadata,
+      modifiedTurnId: turnId,
+    },
+    // Reset optimization fields when updating
+    optimizedContent: null,
+  };
+
+  // Non-destructive merge logic
+  if (toolRow.functionCall && !existing.functionCall) {
+    updateData.functionCall = toolRow.functionCall;
+  }
+  
+  if (toolRow.toolResult) {
+    updateData.toolResult = toolRow.toolResult;
+  }
+
+  // Update the existing record
+  await tx
+    .update(schema.chatMessages)
+    .set(updateData)
+    .where(eq(schema.chatMessages.chatMessageId, existing.chatMessageId));
+
+  log((l) =>
+    l.debug(
+      `Updated tool message for providerId ${toolRow.providerId} from turn ${existing.turnId} to ${turnId}`
+    )
+  );
+
+  return existing.messageId;
+};
+
 // ============================================================================
 // Main Export Function
 // ============================================================================
@@ -880,29 +984,60 @@ const insertPromptMessages = async (
   startOrder: number,
 ) => {
   let messageOrder = startOrder;
+  const rowsToInsert: Array<typeof schema.chatMessages.$inferInsert> = [];
+  let messageIdIndex = 0;
 
-  await tx
-    .insert(schema.chatMessages)
-    .values(
-      rows.map((row, i) => ({
-        chatId,
-        turnId,
-        messageId: i < messageIds.length ? messageIds[i] : 0,
-        role: row.role,
-        content:
-          typeof row.content === 'string'
-            ? row.content
-            : row.content != null
-              ? JSON.stringify(row.content)
-              : null,
-        toolName: row.toolName ?? null,
-        functionCall: row.functionCall ?? null,
-        toolResult: row.toolResult ?? null,
-        providerId: row.providerId ?? null,
-        metadata: row.metadata ?? null,
-        messageOrder: messageOrder++,
-        statusId: 2,
-      })),
-    )
-    .execute();
+  // Process each row, checking for tool message upserts
+  for (const row of rows) {
+    if (row.role === 'tool' && row.providerId) {
+      // Try to upsert the tool message
+      const upsertedMessageId = await upsertToolMessage(tx, chatId, turnId, row);
+      
+      if (upsertedMessageId !== null) {
+        // Message was updated, skip inserting a new row
+        log((l) =>
+          l.debug(
+            `Tool message upserted for providerId ${row.providerId}, messageId: ${upsertedMessageId}`
+          )
+        );
+        continue;
+      }
+    }
+
+    // For non-tool messages or tool messages that couldn't be upserted, add to insert batch
+    const messageId = messageIdIndex < messageIds.length ? messageIds[messageIdIndex] : 0;
+    messageIdIndex++;
+
+    const rowData = {
+      chatId,
+      turnId,
+      messageId,
+      role: row.role,
+      content:
+        typeof row.content === 'string'
+          ? row.content
+          : row.content != null
+            ? JSON.stringify(row.content)
+            : null,
+      toolName: row.toolName ?? null,
+      functionCall: row.functionCall ?? null,
+      toolResult: row.toolResult ?? null,
+      providerId: row.providerId ?? null,
+      metadata: row.role === 'tool' && row.providerId 
+        ? { modifiedTurnId: turnId, ...(row.metadata as object || {}) }
+        : (row.metadata ?? null),
+      messageOrder: messageOrder++,
+      statusId: 2,
+    };
+
+    rowsToInsert.push(rowData);
+  }
+
+  // Insert any remaining non-upserted messages
+  if (rowsToInsert.length > 0) {
+    await tx
+      .insert(schema.chatMessages)
+      .values(rowsToInsert)
+      .execute();
+  }
 };

@@ -207,8 +207,54 @@ export const getNewMessages = async (
       return `${msg.role}:${normalizedContent}`;
     }),
   );
+
+  // Create a set of existing tool provider IDs for tool message deduplication
+  const existingToolProviderIds = new Set(
+    existingMessages
+      .filter((msg) => msg.role === 'tool' && msg.providerId)
+      .map((msg) => msg.providerId)
+  );
+
   // Filter incoming messages to only include those not already persisted
   const newMessages = incomingMessages.filter((incomingMsg) => {
+    // Special handling for tool messages - deduplicate by provider ID
+    if (incomingMsg.role === 'tool') {
+      // For explicit tool role messages, check if any part has a toolCallId that exists
+      let toolCallId: string | undefined;
+      
+      if (Array.isArray(incomingMsg.content)) {
+        for (const part of incomingMsg.content) {
+          if (part && typeof part === 'object' && 'toolCallId' in part && part.toolCallId) {
+            toolCallId = part.toolCallId as string;
+            break;
+          }
+        }
+      }
+      
+      // If we found a tool call ID and it exists, this is a duplicate
+      if (toolCallId && existingToolProviderIds.has(toolCallId)) {
+        return false;
+      }
+    }
+    
+    // For assistant messages that contain tool calls, check individual tool calls
+    if (incomingMsg.role === 'assistant' && Array.isArray(incomingMsg.content)) {
+      const toolCalls = incomingMsg.content.filter((part: any) => 
+        part?.type === 'tool-call' && part?.toolCallId
+      );
+      
+      // If this message contains only tool calls and all of them exist, filter it out
+      if (toolCalls.length > 0 && toolCalls.length === incomingMsg.content.length) {
+        const allExist = toolCalls.every((call: any) => 
+          existingToolProviderIds.has(call.toolCallId)
+        );
+        if (allExist) {
+          return false;
+        }
+      }
+    }
+
+    // Standard content-based deduplication for other messages
     const normalizedIncomingContent = normalizeContentForComparison(
       incomingMsg.content,
     );
