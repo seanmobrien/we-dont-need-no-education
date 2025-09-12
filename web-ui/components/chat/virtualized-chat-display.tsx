@@ -90,6 +90,8 @@ interface VirtualizedChatDisplayProps {
   selectedItems?: SelectedChatItem[];
   /** Callback when selection changes */
   onSelectionChange?: (selectedItems: SelectedChatItem[]) => void;
+  /** Global message type filters to apply to all turns */
+  globalFilters?: Set<string>;
 }
 
 /**
@@ -118,7 +120,8 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
   height = 600,
   enableSelection = false,
   selectedItems = [],
-  onSelectionChange
+  onSelectionChange,
+  globalFilters = new Set()
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [showTurnProperties, setShowTurnProperties] = useState(false);
@@ -131,6 +134,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
    * Goals:
    *  - Be fast (no DOM writes, minimal JSON work) to keep scroll perf smooth.
    *  - Slightly overestimate to reduce post‑measurement visual shifts.
+   *  - Account for filtering that may hide messages within the turn.
    *
    * Fallback Paths:
    *  - If a turn or container width is unavailable (initial prerender), uses
@@ -162,8 +166,18 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
     // Calculate content width accounting for Card padding and margins
     const contentWidth = Math.max(width * 0.85 - 48, 300); // 85% width minus Card padding, min 300px
 
-    // Measure each message content using sophisticated height estimation
-    turn.messages.forEach(message => {
+    // Filter messages based on global filters if active
+    const visibleMessages = globalFilters.size > 0 
+      ? turn.messages.filter(message => globalFilters.has(message.role))
+      : turn.messages;
+
+    // If no messages are visible after filtering, return a minimal height
+    if (visibleMessages.length === 0) {
+      return Math.max(totalHeight + 60, 150); // Just turn header + empty message indicator
+    }
+
+    // Measure each visible message content using sophisticated height estimation
+    visibleMessages.forEach(message => {
       if (message.content && message.content.trim()) {
         // Use sophisticated markdown height estimation
         const estimatedHeight = estimateMarkdownHeight(
@@ -235,9 +249,9 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
       }
     }
 
-    // Add space for message metadata display if enabled
+    // Add space for message metadata display if enabled (only for visible messages)
     if (showMessageMetadata) {
-      turn.messages.forEach(message => {
+      visibleMessages.forEach(message => {
         totalHeight += 80; // Base metadata panel height
         
         // Add space for function call and metadata JSON
@@ -259,7 +273,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
     // Remove artificial cap - let content be as tall as it needs to be
     // Only set a reasonable minimum height
     return Math.max(totalHeight, 150);
-  }, [turns, showTurnProperties, showMessageMetadata]);
+  }, [turns, showTurnProperties, showMessageMetadata, globalFilters]);
 
   /**
    * Virtualization controller from TanStack Virtual handling item measurement,
@@ -340,6 +354,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                   enableSelection={enableSelection}
                   selectedItems={selectedItems}
                   onSelectionChange={onSelectionChange}
+                  globalFilters={globalFilters}
                 />
               </Box>
             );

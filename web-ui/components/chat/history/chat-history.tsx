@@ -79,10 +79,15 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
       return chatDetails.turns;
     }
 
-    // Global filtering: hide entire turns that don't contain any matching messages
-    return chatDetails.turns.filter(turn => 
-      turn.messages.some(message => activeFilters.has(message.role as MessageType))
-    );
+    // Global filtering: only hide entire turns if ALL messages in the turn are filtered out
+    return chatDetails.turns.filter(turn => {
+      // Apply global filters to the turn's messages
+      const filteredMessages = turn.messages.filter(message => 
+        activeFilters.has(message.role as MessageType)
+      );
+      // Only hide the turn if no messages match the filters (all messages filtered out)
+      return filteredMessages.length > 0;
+    });
   };
 
   // Get available message types from the current chat
@@ -213,7 +218,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
               <>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
-                    Show turns containing messages of type:
+                    Show messages of type:
                   </Typography>
                   {availableTypes.map((messageType) => {
                     const isActive = activeFilters.has(messageType);
@@ -260,7 +265,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
                 {activeFilters.size > 0 && (
                   <Box sx={{ mt: 1 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Showing {activeFilters.size} of {availableTypes.length} message types (hiding entire turns without matching messages)
+                      Showing {activeFilters.size} of {availableTypes.length} message types (filtering individual messages in all turns)
                     </Typography>
                   </Box>
                 )}
@@ -403,6 +408,7 @@ export const ChatHistory = ({ chatId, title: titleFromProps }: { chatId: string;
               enableSelection={enableSelection}
               selectedItems={selectedItems}
               onSelectionChange={setSelectedItems}
+              globalFilters={enableFilters ? activeFilters : new Set()}
             />
           )}                
       </Box>

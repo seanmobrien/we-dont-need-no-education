@@ -41,6 +41,7 @@ interface ChatTurnDisplayProps {
   enableSelection?: boolean;
   selectedItems?: SelectedChatItem[];
   onSelectionChange?: (selectedItems: SelectedChatItem[]) => void;
+  globalFilters?: Set<string>;
 }
 
 export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({ 
@@ -49,7 +50,8 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
   showMessageMetadata = false,
   enableSelection = false,
   selectedItems = [],
-  onSelectionChange
+  onSelectionChange,
+  globalFilters = new Set()
 }) => {
   const [propertiesExpanded, setPropertiesExpanded] = useState(false);
   
@@ -72,10 +74,16 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
     setActiveTurnFilters(new Set());
   };
 
-  // Get available message types in this specific turn
+  // Get available message types in this specific turn after global filtering
   const getAvailableMessageTypesInTurn = (): MessageType[] => {
+    // First, get messages that pass global filters (or all if no global filters)
+    const globallyFilteredMessages = globalFilters.size > 0 
+      ? turn.messages.filter(message => globalFilters.has(message.role))
+      : turn.messages;
+    
+    // Then find unique types in those messages
     const typesInTurn = new Set<MessageType>();
-    turn.messages.forEach(message => {
+    globallyFilteredMessages.forEach(message => {
       if (MESSAGE_TYPES.includes(message.role as MessageType)) {
         typesInTurn.add(message.role as MessageType);
       }
@@ -83,12 +91,25 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
     return Array.from(typesInTurn).sort();
   };
 
-  // Apply per-turn filters to messages
+  // Apply both global and per-turn filters to messages
   const getFilteredMessages = () => {
-    if (!enableTurnFilters || activeTurnFilters.size === 0) {
-      return turn.messages;
+    let filteredMessages = turn.messages;
+
+    // First apply global filters if active
+    if (globalFilters.size > 0) {
+      filteredMessages = filteredMessages.filter(message => 
+        globalFilters.has(message.role as MessageType)
+      );
     }
-    return turn.messages.filter(message => activeTurnFilters.has(message.role as MessageType));
+
+    // Then apply per-turn filters if active
+    if (enableTurnFilters && activeTurnFilters.size > 0) {
+      filteredMessages = filteredMessages.filter(message => 
+        activeTurnFilters.has(message.role as MessageType)
+      );
+    }
+
+    return filteredMessages;
   };
 
   const availableTypesInTurn = getAvailableMessageTypesInTurn();
@@ -399,7 +420,11 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                   </Typography>
                   {availableTypesInTurn.map((messageType) => {
                     const isActive = activeTurnFilters.has(messageType);
-                    const messageCount = turn.messages.filter(msg => msg.role === messageType).length;
+                    // Count messages of this type that are available after global filtering
+                    const globallyFilteredMessages = globalFilters.size > 0 
+                      ? turn.messages.filter(message => globalFilters.has(message.role))
+                      : turn.messages;
+                    const messageCount = globallyFilteredMessages.filter(msg => msg.role === messageType).length;
                     
                     return (
                       <Badge
@@ -451,9 +476,16 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
         )}
 
         {/* Messages */}
-        {filteredMessages.length === 0 && enableTurnFilters && activeTurnFilters.size > 0 ? (
+        {filteredMessages.length === 0 ? (
           <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2, fontStyle: 'italic' }}>
-            No messages match the current turn filters.
+            {globalFilters.size > 0 && (enableTurnFilters && activeTurnFilters.size > 0) 
+              ? 'No messages match the current global and turn filters.'
+              : globalFilters.size > 0
+              ? 'No messages match the current global filters.'
+              : enableTurnFilters && activeTurnFilters.size > 0
+              ? 'No messages match the current turn filters.'
+              : 'No messages in this turn.'
+            }
           </Typography>
         ) : (
           filteredMessages.map((message) => {
