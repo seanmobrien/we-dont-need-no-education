@@ -758,20 +758,20 @@ export const importIncomingMessage = async ({
   // Ensure chat session exists with proper metadata
   await upsertChat(tx, chatId, context);
 
-  // Filter out messages that have already been saved in previous turns
-  const newMessages = await getNewMessages(tx, chatId, prompt);
-
-  log((l) =>
-    l.debug(
-      `Filtered messages for chat ${chatId}: ${prompt.length} total, ${newMessages?.length || 0} new`,
-    ),
-  );
-
   // Reserve unique turn ID for this conversation cycle
   const thisTurnId = await reserveTurnId(tx, chatId);
   log((l) =>
     l.debug(
-      `Reserved chat turn id: ${thisTurnId} for chat: ${chatId} with ${newMessages?.length || 0} new messages`,
+      `Reserved chat turn id: ${thisTurnId} for chat: ${chatId}`,
+    ),
+  );
+
+  // Filter out messages that have already been saved in previous turns
+  const newMessages = await getNewMessages(tx, chatId, prompt, thisTurnId);
+
+  log((l) =>
+    l.debug(
+      `Filtered messages for chat ${chatId}: ${prompt.length} total, ${newMessages?.length || 0} new`,
     ),
   );
 

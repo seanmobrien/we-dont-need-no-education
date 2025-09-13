@@ -847,4 +847,201 @@ describe('Tool Message Deduplication', () => {
       });
     });
   });
+
+  describe('getNewMessages with turn-based update logic - acceptance criteria tests', () => {
+    it('should include tool messages for update when currentTurnId > modifiedTurnId', async () => {
+      // Arrange - Tool message that exists but can be updated
+      const chatId = 'chat-123';
+      const currentTurnId = 3;
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
+        {
+          role: 'tool',
+          content: [{
+            type: 'tool-result',
+            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+            result: { output: 'new result' }
+          }],
+        },
+      ];
+
+      // Mock existing messages - tool message was last modified in turn 1
+      const existingMessages = [
+        {
+          role: 'tool',
+          content: null,
+          messageOrder: 1,
+          providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+          metadata: { modifiedTurnId: 1 }, // Last modified in turn 1
+        },
+      ];
+
+      const mockOrderBy = jest.fn().mockResolvedValue(existingMessages);
+      const mockWhereClause = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
+      const mockLeftJoin = jest.fn().mockReturnThis();
+      const mockFromClause = jest.fn().mockReturnValue({ 
+        leftJoin: mockLeftJoin,
+        where: mockWhereClause 
+      });
+
+      mockSelect.mockReturnValue({ from: mockFromClause });
+      
+      // Mock the leftJoin chain
+      const chainedMock = {
+        leftJoin: mockLeftJoin,
+        where: mockWhereClause,
+      };
+      mockLeftJoin.mockReturnValue(chainedMock);
+
+      // Act
+      const result = await getNewMessages(mockTx, chatId, incomingMessages, currentTurnId);
+
+      // Assert - Should include the message since currentTurnId (3) > modifiedTurnId (1)
+      expect(result).toHaveLength(1);
+      expect(result[0]).toMatchObject({
+        role: 'tool',
+        content: [{
+          type: 'tool-result',
+          toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+          result: { output: 'new result' }
+        }],
+      });
+    });
+
+    it('should exclude tool messages when currentTurnId <= modifiedTurnId', async () => {
+      // Arrange - Tool message that exists and is already up-to-date
+      const chatId = 'chat-123';
+      const currentTurnId = 2;
+      const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
+        {
+          role: 'tool',
+          content: [{
+            type: 'tool-result',
+            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+            result: { output: 'old result' }
+          }],
+        },
+      ];
+
+      // Mock existing messages - tool message was last modified in turn 3 (newer than current)
+      const existingMessages = [
+        {
+          role: 'tool',
+          content: null,
+          messageOrder: 1,
+          providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+          metadata: { modifiedTurnId: 3 }, // Already modified in turn 3
+        },
+      ];
+
+      const mockOrderBy = jest.fn().mockResolvedValue(existingMessages);
+      const mockWhereClause = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
+      const mockLeftJoin = jest.fn().mockReturnThis();
+      const mockFromClause = jest.fn().mockReturnValue({ 
+        leftJoin: mockLeftJoin,
+        where: mockWhereClause 
+      });
+
+      mockSelect.mockReturnValue({ from: mockFromClause });
+      
+      // Mock the leftJoin chain
+      const chainedMock = {
+        leftJoin: mockLeftJoin,
+        where: mockWhereClause,
+      };
+      mockLeftJoin.mockReturnValue(chainedMock);
+
+      // Act
+      const result = await getNewMessages(mockTx, chatId, incomingMessages, currentTurnId);
+
+      // Assert - Should exclude the message since currentTurnId (2) <= modifiedTurnId (3)
+      expect(result).toHaveLength(0);
+    });
+
+    it('should demonstrate the desired end goal: single record evolution', async () => {
+      // This test demonstrates the complete workflow that @seanmobrien described
+      // Before: Two separate records for tool-call and tool-result
+      // After: One record with both functionCall and toolResult
+
+      const chatId = 'chat-123';
+      
+      // Simulate Turn 1: tool-call message comes in (should be new)
+      const turn1Messages: LanguageModelV2CallOptions['prompt'] = [
+        {
+          role: 'assistant',
+          content: [{
+            type: 'tool-call',
+            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+            toolName: 'some_function',
+            args: { arg1: 'value' }
+          }],
+        },
+      ];
+
+      // Mock no existing messages (first time)
+      mockSelect.mockReturnValueOnce({ 
+        from: jest.fn().mockReturnValue({
+          leftJoin: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnValue({
+            orderBy: jest.fn().mockResolvedValue([])
+          })
+        })
+      });
+
+      const turn1Result = await getNewMessages(mockTx, chatId, turn1Messages, 1);
+      expect(turn1Result).toHaveLength(1); // New message included
+
+      // Reset mocks for turn 2
+      jest.clearAllMocks();
+
+      // Simulate Turn 2: tool-result message comes in for same providerId
+      const turn2Messages: LanguageModelV2CallOptions['prompt'] = [
+        {
+          role: 'tool',
+          content: [{
+            type: 'tool-result',
+            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+            result: { result: 'value' }
+          }],
+        },
+      ];
+
+      // Mock existing tool message from turn 1
+      const existingMessages = [
+        {
+          role: 'tool',
+          content: null,
+          messageOrder: 1,
+          providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+          metadata: { modifiedTurnId: 1 }, // Created in turn 1
+        },
+      ];
+
+      const mockOrderBy = jest.fn().mockResolvedValue(existingMessages);
+      const mockWhereClause = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
+      const mockLeftJoin = jest.fn().mockReturnThis();
+      const mockFromClause = jest.fn().mockReturnValue({ 
+        leftJoin: mockLeftJoin,
+        where: mockWhereClause 
+      });
+
+      mockSelect.mockReturnValue({ from: mockFromClause });
+      mockLeftJoin.mockReturnValue({ leftJoin: mockLeftJoin, where: mockWhereClause });
+
+      const turn2Result = await getNewMessages(mockTx, chatId, turn2Messages, 2);
+      
+      // Assert - Should include the message for updating since turn 2 > modifiedTurnId 1
+      expect(turn2Result).toHaveLength(1);
+      expect(turn2Result[0]).toMatchObject({
+        role: 'tool',
+        content: [{
+          type: 'tool-result',
+          toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+          result: { result: 'value' }
+        }],
+      });
+
+      // This message will be processed by upsertToolMessage to update the existing record
+      // instead of creating a duplicate, achieving the desired single record evolution
+    });
+  });
 });
