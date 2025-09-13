@@ -533,7 +533,7 @@ export const handleToolResult = async (
           functionCall: null,
           providerId: chunk.toolCallId,
           metadata: null,
-          toolResult: !!chunk.output ? JSON.stringify(chunk.output) : null,
+          toolResult: chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
         };
 
         const upsertedMessageId = await upsertToolMessage(tx, chatId, Number(turnId), toolRow);
@@ -594,7 +594,7 @@ export const handleToolResult = async (
           .update(chatMessages)
           .set({
             statusId,
-            toolResult: !!chunk.output ? JSON.stringify(chunk.output) : null,
+            toolResult: chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
             metadata: metadata,
             content: `${pendingCall.content ?? ''}\n${generatedText}`,
           })

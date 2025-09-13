@@ -560,7 +560,7 @@ export const upsertToolMessage = async (
     updateData.functionCall = toolRow.functionCall;
   }
   
-  if (toolRow.toolResult) {
+  if (toolRow.toolResult !== undefined && toolRow.toolResult !== null) {
     updateData.toolResult = toolRow.toolResult;
   }
 
