@@ -201,7 +201,7 @@ describe('Tool Message Deduplication', () => {
       expect(result).toBe(42);
       expect(mockUpdate).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalledWith({
-        turnId: 4,
+        // turnId should NOT be updated - preserves original insertion turn
         toolName: 'testTool',
         metadata: {
           modifiedTurnId: 4,
@@ -329,7 +329,7 @@ describe('Tool Message Deduplication', () => {
       expect(result).toBe(123);
       expect(mockUpdate).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalledWith({
-        turnId: 3,
+        // turnId should NOT be updated - preserves original insertion turn
         toolName: 'some_function',
         metadata: {
           modifiedTurnId: 3,
@@ -410,7 +410,7 @@ describe('Tool Message Deduplication', () => {
       // Assert - Should preserve functionCall and add toolResult
       expect(result).toBe(123);
       expect(mockSet).toHaveBeenCalledWith({
-        turnId: 2,
+        // turnId should NOT be updated - preserves original insertion turn
         toolName: 'some_function',
         metadata: {
           modifiedTurnId: 2,
@@ -458,7 +458,7 @@ describe('Tool Message Deduplication', () => {
       // Assert - Should add functionCall and preserve toolResult
       expect(result).toBe(123);
       expect(mockSet).toHaveBeenCalledWith({
-        turnId: 2,
+        // turnId should NOT be updated - preserves original insertion turn
         toolName: 'some_function',
         metadata: {
           modifiedTurnId: 2,
@@ -537,7 +537,7 @@ describe('Tool Message Deduplication', () => {
       expect(result2).toBe(123);
       expect(mockUpdate).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalledWith({
-        turnId: 2,
+        // turnId should NOT be updated - preserves original insertion turn
         toolName: 'some_function',
         metadata: {
           modifiedTurnId: 2,
@@ -836,7 +836,7 @@ describe('Tool Message Deduplication', () => {
       expect(result).toBe(123);
       expect(mockUpdate).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalledWith({
-        turnId: 3,
+        // turnId should NOT be updated - preserves original insertion turn
         toolName: 'some_function',
         metadata: {
           modifiedTurnId: 3,

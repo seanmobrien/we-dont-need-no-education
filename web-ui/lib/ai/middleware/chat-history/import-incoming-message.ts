@@ -545,7 +545,7 @@ export const upsertToolMessage = async (
 
   // Prepare update data with non-destructive merge
   const updateData: Partial<typeof schema.chatMessages.$inferInsert> = {
-    turnId: turnId,
+    // Do NOT update turnId - preserve original insertion turn
     toolName: toolRow.toolName || undefined,
     metadata: {
       ...existingMetadata,
@@ -555,14 +555,16 @@ export const upsertToolMessage = async (
     optimizedContent: null,
   };
 
-  // Non-destructive merge logic
-  if (toolRow.functionCall && !existing?.functionCall) {
+  // Non-destructive merge logic - preserve existing data when incoming is null/undefined
+  if (toolRow.functionCall !== undefined && toolRow.functionCall !== null) {
     updateData.functionCall = toolRow.functionCall;
   }
+  // Don't overwrite existing functionCall if incoming is null
   
   if (toolRow.toolResult !== undefined && toolRow.toolResult !== null) {
     updateData.toolResult = toolRow.toolResult;
   }
+  // Don't overwrite existing toolResult if incoming is null
 
   // Update the existing record
   await tx
