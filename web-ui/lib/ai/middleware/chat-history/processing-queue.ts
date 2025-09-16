@@ -15,6 +15,7 @@ import type {
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
 import { log } from '@/lib/logger';
+import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';
 import type {
   ChatHistoryContext,
@@ -208,6 +209,7 @@ type StreamContext = {
   toolCalls: Map<string, ChatMessagesType>;
   streamedText: string;
   errors: Error[];
+  generatedJSON: Array<Record<string, unknown>>;
 };
 
 export const enqueueStream = async ({
@@ -246,6 +248,7 @@ export const enqueueStream = async ({
     streamedText: '',
     toolCalls: new Map<string, ChatMessagesType>(),
     errors: [],
+    generatedJSON: [],
   };
 
   const transformStream = new TransformStream<
@@ -257,14 +260,15 @@ export const enqueueStream = async ({
       // If this fails, let the error propagate - don't try again
       controller.enqueue(chunk);
       // Process chunk through queue to maintain FIFO order
-      const handlerContext: StreamHandlerContext = {
+      const handlerContext: StreamHandlerContext = ensureCreateResult({
         chatId: streamContext.chatId!,
         turnId: parseInt(streamContext.turnId!, 10),
         toolCalls: streamContext.toolCalls,
         messageId: streamContext.messageId,
         currentMessageOrder: streamContext.currentMessageOrder,
         generatedText: streamContext.streamedText,
-      };
+        generatedJSON: streamContext.generatedJSON,
+      });
 
       // Queue processing maintains order and updates local state
       processingQueue

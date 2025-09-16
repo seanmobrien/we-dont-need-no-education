@@ -76,6 +76,8 @@ export class MockQueryBuilder implements IMockQueryBuilder {
   readonly groupBy: jest.Mock;
   readonly insert: jest.Mock;
 
+  __queryMock: Map<string, { findMany: jest.Mock; findFirst: jest.Mock }> =
+    new Map();
   #records: unknown[] = [];
   #matchers: Map<MockDbQueryCallback, MockDbQueryRecord> = new Map();
 
@@ -287,6 +289,32 @@ const mockDbFactory = (): DatabaseMockType => {
         qb[key].mockImplementation(() => db);
       }
     });
+    Array.from(
+      Object.keys(actualSchema.schema) as (keyof typeof actualSchema.schema)[],
+    ).forEach((sc) => {
+      if (!actualSchema.schema[sc]?.modelName) {
+        return;
+      }
+      const tableKey = sc as keyof typeof db.query;
+      let tbl = db.query[tableKey];
+      if (!tbl) {
+        tbl = {
+          findMany: jest.fn(() => Promise.resolve([])),
+          findFirst: jest.fn(() => Promise.resolve(null)),
+        } as unknown as (typeof db.query)[typeof tableKey];
+        db.query[tableKey] = tbl;
+      }
+      if (!jest.isMockFunction(tbl.findMany)) {
+        tbl.findMany = jest.fn();
+      }
+      if (!jest.isMockFunction(tbl.findFirst)) {
+        tbl.findFirst = jest.fn();
+      }
+      (tbl.findMany as jest.Mock).mockImplementation(() => Promise.resolve([]));
+      (tbl.findFirst as jest.Mock).mockImplementation(() =>
+        Promise.resolve(null),
+      );
+    });
   };
   initMocks();
   qb.__setRecords = <T extends Record<string, unknown>>(
@@ -342,6 +370,7 @@ export const makeMockDb = (): DatabaseType => {
   // Ensure the query structure is properly mocked with the expected methods
   if (mockDb.query && mockDb.query.documentUnits) {
     // Set default behaviors - tests can override these
+    /*
     if (
       !(
         mockDb.query.documentUnits.findMany as jest.Mock
@@ -358,6 +387,7 @@ export const makeMockDb = (): DatabaseType => {
         null,
       );
     }
+    */
     if (!(mockDb.$count as jest.Mock).getMockImplementation()) {
       (mockDb.$count as jest.Mock).mockResolvedValue(1);
     }
@@ -537,7 +567,7 @@ import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-a
 import instrument, { getAppInsights } from '@/instrument/browser';
 import { log } from '@/lib/logger';
 import { isKeyOf } from '@/lib/typescript';
-import { result } from 'lodash';
+import { result, xorBy } from 'lodash';
 import {
   IMockInsertBuilder,
   IMockQueryBuilder,

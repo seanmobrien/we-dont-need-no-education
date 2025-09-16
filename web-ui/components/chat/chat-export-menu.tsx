@@ -1,6 +1,6 @@
 /**
  * Chat Export Menu Component
- * 
+ *
  * Provides export functionality for selected chat messages
  * Similar to the existing email-property-toolbar export pattern
  */
@@ -8,16 +8,16 @@
 'use client';
 
 import React, { useRef, useState, useMemo } from 'react';
-import {
-  Tooltip,
-  Menu,
-  MenuItem,
-} from '@mui/material';
-import {
-  ToolbarButton,
-} from '@mui/x-data-grid-pro';
+import Tooltip from '@mui/material/Tooltip';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import IconButton from '@mui/material/IconButton';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { exportToCsv, exportToMarkdown, type SelectedChatItem } from '@/lib/chat/export';
+import {
+  exportToCsv,
+  exportToMarkdown,
+  type SelectedChatItem,
+} from '@/lib/chat/export';
 import type { ChatTurn } from '@/lib/ai/chat/types';
 
 interface ChatExportMenuProps {
@@ -78,7 +78,9 @@ export const ChatExportMenu: React.FC<ChatExportMenuProps> = ({
     } catch (error) {
       console.error('Failed to export Markdown:', error);
       // In a real app, you'd want to show a proper error message to the user
-      alert(error instanceof Error ? error.message : 'Failed to export Markdown');
+      alert(
+        error instanceof Error ? error.message : 'Failed to export Markdown',
+      );
     }
   };
 
@@ -86,9 +88,15 @@ export const ChatExportMenu: React.FC<ChatExportMenuProps> = ({
 
   return (
     <>
-      <Tooltip title={hasSelection ? "Export selected messages" : "Select messages to export"}>
+      <Tooltip
+        title={
+          hasSelection
+            ? 'Export selected messages'
+            : 'Select messages to export'
+        }
+      >
         <span>
-          <ToolbarButton
+          <IconButton
             ref={exportMenuTriggerRef}
             id="chat-export-menu-trigger"
             aria-controls="chat-export-menu"
@@ -98,7 +106,7 @@ export const ChatExportMenu: React.FC<ChatExportMenuProps> = ({
             disabled={disabled || !hasSelection}
           >
             <FileDownloadIcon fontSize="small" />
-          </ToolbarButton>
+          </IconButton>
         </span>
       </Tooltip>
       <Menu
@@ -114,12 +122,8 @@ export const ChatExportMenu: React.FC<ChatExportMenuProps> = ({
           },
         }}
       >
-        <MenuItem onClick={handleExportCsv}>
-          Export as CSV
-        </MenuItem>
-        <MenuItem onClick={handleExportMarkdown}>
-          Export as Markdown
-        </MenuItem>
+        <MenuItem onClick={handleExportCsv}>Export as CSV</MenuItem>
+        <MenuItem onClick={handleExportMarkdown}>Export as Markdown</MenuItem>
       </Menu>
     </>
   );

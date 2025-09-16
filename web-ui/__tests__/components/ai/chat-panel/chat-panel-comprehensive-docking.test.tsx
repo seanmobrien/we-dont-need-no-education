@@ -45,19 +45,23 @@ jest.mock('react-dom', () => ({
 
 // Mock ResizableDraggableDialog
 jest.mock('@/components/mui/resizeable-draggable-dialog', () => {
-  return function MockResizableDraggableDialog({ 
-    children, 
-    title, 
-    isOpenState, 
-    onClose, 
-    onResize 
-  }: any) {    
+  return function MockResizableDraggableDialog({
+    children,
+    title,
+    isOpenState,
+    onClose,
+    onResize,
+  }: any) {
     return isOpenState ? (
       <div data-testid="floating-dialog" role="dialog" aria-label={title}>
         <div data-testid="dialog-title">{title}</div>
         <div data-testid="dialog-content">{children}</div>
-        <button data-testid="dialog-close" onClick={onClose}>Close</button>
-        <button data-testid="dialog-resize" onClick={() => onResize(800, 600)}>Resize</button>
+        <button data-testid="dialog-close" onClick={onClose}>
+          Close
+        </button>
+        <button data-testid="dialog-resize" onClick={() => onResize(800, 600)}>
+          Resize
+        </button>
       </div>
     ) : null;
   };
@@ -66,23 +70,26 @@ jest.mock('@/components/mui/resizeable-draggable-dialog', () => {
 // Mock react-resizable
 jest.mock('react-resizable', () => ({
   Resizable: ({ children, onResize }: any) => (
-    <div data-testid="resizable-container" onMouseDown={() => onResize({}, { size: { width: 400, height: 300 } })}>
+    <div
+      data-testid="resizable-container"
+      onMouseDown={() => onResize({}, { size: { width: 400, height: 300 } })}
+    >
       {children}
     </div>
   ),
 }));
 
 // Helper component that wraps ChatPanel with provider and layout
-const ChatPanelTestWrapper: React.FC<{ 
+const ChatPanelTestWrapper: React.FC<{
   isDashboardLayout?: boolean;
   children?: React.ReactNode;
-}> = ({  children }) => (
+}> = ({ children }) => (
   <ChatPanelProvider>
     <ChatPanelLayout>
       <div data-testid="main-content">Main Content</div>
       {children}
     </ChatPanelLayout>
-    <ChatPanel page="test"  />
+    <ChatPanel page="test" />
   </ChatPanelProvider>
 );
 
@@ -90,7 +97,7 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
   beforeEach(() => {
     // Clear localStorage before each test
     localStorage.clear();
-    
+
     // Mock window dimensions
     Object.defineProperty(window, 'innerWidth', {
       writable: true,
@@ -107,23 +114,27 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
   describe('Float Mode', () => {
     it('should render inline by default', () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Should show inline chat panel
-      expect(screen.getByPlaceholderText(/Type your message here/)).toBeInTheDocument();
-      expect(screen.queryByText(/Chat panel is floating/)).not.toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(/Type your message here/),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText(/Chat panel is floating/),
+      ).not.toBeInTheDocument();
       expect(screen.queryByTestId('floating-dialog')).not.toBeInTheDocument();
     });
 
     it('should switch to float mode when Float is selected', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Open menu and click Float
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
-      
+
       const floatOption = screen.getByText('Float');
       fireEvent.click(floatOption);
-      
+
       // Should show floating dialog
       await waitFor(() => {
         expect(screen.getByText(/Chat panel is floating/)).toBeInTheDocument();
@@ -133,12 +144,12 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
 
     it('should handle resize in float mode', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Switch to float mode
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Float'));
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('floating-dialog')).toBeInTheDocument();
       });
@@ -146,19 +157,19 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
       // Trigger resize
       const resizeButton = screen.getByTestId('dialog-resize');
       fireEvent.click(resizeButton);
-      
+
       // Should maintain floating state
       expect(screen.getByTestId('floating-dialog')).toBeInTheDocument();
     });
 
     it('should close float mode and return to inline', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Switch to float mode
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Float'));
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('floating-dialog')).toBeInTheDocument();
       });
@@ -166,10 +177,12 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
       // Close floating dialog
       const closeButton = screen.getByTestId('dialog-close');
       fireEvent.click(closeButton);
-      
+
       await waitFor(() => {
         expect(screen.queryByTestId('floating-dialog')).not.toBeInTheDocument();
-        expect(screen.getByPlaceholderText(/Type your message here/)).toBeInTheDocument();
+        expect(
+          screen.getByPlaceholderText(/Type your message here/),
+        ).toBeInTheDocument();
       });
     });
   });
@@ -177,45 +190,49 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
   describe('Dock Left', () => {
     it('should dock to left and show placeholder', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Open menu and dock left
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
-      
+
       const dockLeftOption = screen.getByText('Dock Left');
       fireEvent.click(dockLeftOption);
-      
+
       // Should show docked placeholder in main area
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to left/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to left/),
+        ).toBeInTheDocument();
       });
-      
+
       // The input field should be moved to portal content, not in main area
       const portalInputs = screen.queryAllByTestId('portal-content');
-      
+
       // Should have portal content for docked panel
       expect(portalInputs.length).toBeGreaterThan(0);
     });
 
     it('should adjust layout when docked left', async () => {
       render(<ChatPanelTestWrapper isDashboardLayout={true} />);
-      
+
       // Dock to left
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Left'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to left/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to left/),
+        ).toBeInTheDocument();
       });
 
       // Main content should have left margin/padding to accommodate docked panel
       const mainContent = screen.getByTestId('main-content');
       const layoutContainer = mainContent.parentElement;
-      
+
       // Should have margin applied for dashboard layout - check if the element has layout adjustments
       expect(layoutContainer).toBeDefined();
-      
+
       // The layout container should exist and be a styled component
       const computedStyle = window.getComputedStyle(layoutContainer!);
       expect(computedStyle.transition).toContain('ease-in-out');
@@ -223,14 +240,16 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
 
     it('should show docked panel with chat content', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to left
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Left'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to left/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to left/),
+        ).toBeInTheDocument();
       });
 
       // Should have docked panel with resizable container
@@ -241,25 +260,27 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
   describe('Dock Right', () => {
     it('should dock to right and position correctly', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to right
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Right'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to right/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to right/),
+        ).toBeInTheDocument();
       });
     });
 
     it('should handle resizing when docked right', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to right
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Right'));
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('resizable-container')).toBeInTheDocument();
       });
@@ -267,65 +288,75 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
       // Trigger resize
       const resizableContainer = screen.getByTestId('resizable-container');
       fireEvent.mouseDown(resizableContainer);
-      
+
       // Should maintain docked state
-      expect(screen.getByText(/Chat panel is docked to right/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Chat panel is docked to right/),
+      ).toBeInTheDocument();
     });
   });
 
   describe('Dock Top', () => {
     it('should dock to top edge correctly', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to top
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Top'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to top/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to top/),
+        ).toBeInTheDocument();
       });
     });
 
     it('should not cause viewport overflow when docked top', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to top
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Top'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to top/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to top/),
+        ).toBeInTheDocument();
       });
 
       // Should not cause document scroll
-      expect(document.body.scrollHeight).toBeLessThanOrEqual(window.innerHeight + 100); // Allow some tolerance
+      expect(document.body.scrollHeight).toBeLessThanOrEqual(
+        window.innerHeight + 100,
+      ); // Allow some tolerance
     });
   });
 
   describe('Dock Bottom', () => {
     it('should dock to bottom edge correctly', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to bottom
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Bottom'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to bottom/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to bottom/),
+        ).toBeInTheDocument();
       });
     });
 
     it('should maintain proper height constraints when docked bottom', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to bottom
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Bottom'));
-      
+
       await waitFor(() => {
         expect(screen.getByTestId('resizable-container')).toBeInTheDocument();
       });
@@ -339,14 +370,16 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
   describe('Undocking', () => {
     it('should undock from any docked position back to inline', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // First dock to left
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Left'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to left/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to left/),
+        ).toBeInTheDocument();
       });
 
       // Note: In a real implementation, the docked panel would have an undock button
@@ -358,14 +391,16 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
   describe('Dashboard Layout Integration', () => {
     it('should handle dashboard layout with proper spacing', async () => {
       render(<ChatPanelTestWrapper isDashboardLayout={true} />);
-      
+
       // Dock to left in dashboard layout
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Left'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to left/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to left/),
+        ).toBeInTheDocument();
       });
 
       // Should apply dashboard-specific layout adjustments
@@ -376,21 +411,27 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
 
     it('should handle all docking positions in dashboard layout', async () => {
       const positions = ['Dock Left', 'Dock Right', 'Dock Top', 'Dock Bottom'];
-      
+
       for (const position of positions) {
-        const { unmount } = render(<ChatPanelTestWrapper isDashboardLayout={true} />);
-        
+        const { unmount } = render(
+          <ChatPanelTestWrapper isDashboardLayout={true} />,
+        );
+
         // Use getAllByTestId to handle multiple elements and get the first one
         const menuButtons = screen.getAllByTestId('MoreVertIcon');
         const menuButton = menuButtons[0].closest('button');
         fireEvent.click(menuButton!);
         fireEvent.click(screen.getByText(position));
-        
+
         const positionName = position.toLowerCase().replace('dock ', '');
         await waitFor(() => {
-          expect(screen.getByText(new RegExp(`Chat panel is docked to ${positionName}`))).toBeInTheDocument();
+          expect(
+            screen.getByText(
+              new RegExp(`Chat panel is docked to ${positionName}`),
+            ),
+          ).toBeInTheDocument();
         });
-        
+
         // Clean up before next iteration
         unmount();
       }
@@ -400,14 +441,16 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
   describe('State Persistence', () => {
     it('should persist docking state in localStorage', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to right
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Right'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to right/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to right/),
+        ).toBeInTheDocument();
       });
 
       // Check localStorage
@@ -418,50 +461,58 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
       // Set initial state in localStorage
       localStorage.setItem('chatPanelPosition', 'left');
       localStorage.setItem('chatPanelDockSize', '350');
-      
+
       render(<ChatPanelTestWrapper />);
-      
+
       // Should restore to docked left state
-      expect(screen.getByText(/Chat panel is docked to left/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Chat panel is docked to left/),
+      ).toBeInTheDocument();
     });
   });
 
   describe('Responsive Behavior', () => {
     it('should handle window resize events', async () => {
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to top
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Top'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to top/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to top/),
+        ).toBeInTheDocument();
       });
 
       // Simulate window resize
       Object.defineProperty(window, 'innerWidth', { value: 800 });
       Object.defineProperty(window, 'innerHeight', { value: 600 });
       fireEvent(window, new Event('resize'));
-      
+
       // Should maintain docked state
-      expect(screen.getByText(/Chat panel is docked to top/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Chat panel is docked to top/),
+      ).toBeInTheDocument();
     });
 
     it('should maintain proper constraints on small screens', async () => {
       // Set small screen size
       Object.defineProperty(window, 'innerWidth', { value: 480 });
       Object.defineProperty(window, 'innerHeight', { value: 640 });
-      
+
       render(<ChatPanelTestWrapper />);
-      
+
       // Dock to left on small screen
       const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
       fireEvent.click(menuButton!);
       fireEvent.click(screen.getByText('Dock Left'));
-      
+
       await waitFor(() => {
-        expect(screen.getByText(/Chat panel is docked to left/)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Chat panel is docked to left/),
+        ).toBeInTheDocument();
       });
 
       // Should handle small screen constraints

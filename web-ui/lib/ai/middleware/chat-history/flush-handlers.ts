@@ -201,7 +201,7 @@ export async function completeChatTurn(
                 messageId: context.messageId,
               },
             });
-            return Promise.resolve();
+            return Promise.resolve(m);
           }),
         ),
       );
@@ -329,7 +329,6 @@ export async function markTurnAsError(
     );
     return;
   }
-
   try {
     await drizDb()
       .update(schema.chatTurns)

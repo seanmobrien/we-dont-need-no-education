@@ -12,6 +12,7 @@ import { SessionProvider } from '@/components/auth/session-provider';
 import { KeyRefreshNotify } from '@/components/auth/key-refresh-notify';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import { Suspense } from 'react';
+import { cookies } from 'next/headers';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -37,18 +38,21 @@ const stableAppRouterOptions = {
   enableCssLayer: true,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeName = await cookies().then((x) =>
+    x.get('theme')?.value === 'light' ? 'light' : 'dark',
+  );
   return (
     <html lang="en" suppressHydrationWarning>
       <head></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <InitColorSchemeScript defaultMode="dark" />
+        <InitColorSchemeScript defaultMode={themeName} />
         <QueryProvider>
           <SessionProvider>
             <ChatPanelProvider>
@@ -58,7 +62,9 @@ export default function RootLayout({
               <KeyRefreshNotify />
               <MuiXLicense />
               <AppRouterCacheProvider options={stableAppRouterOptions}>
-                <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
+                <ThemeProvider defaultTheme={themeName}>
+                  {children}
+                </ThemeProvider>
               </AppRouterCacheProvider>
             </ChatPanelProvider>
           </SessionProvider>

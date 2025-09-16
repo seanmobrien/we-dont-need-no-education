@@ -22,10 +22,17 @@ jest.mock('@/lib/error-monitoring/error-reporter', () => ({
 
 import { useErrorReporter } from '@/lib/error-monitoring/use-error-reporter';
 import { ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+
+const mockConsole = hideConsoleOutput();
 
 describe('useErrorReporter', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
+    mockConsole.setup();
+  });
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   describe('reportError', () => {
@@ -42,7 +49,7 @@ describe('useErrorReporter', () => {
         ErrorSeverity.MEDIUM,
         expect.objectContaining({
           breadcrumbs: ['component-error'],
-        })
+        }),
       );
     });
 
@@ -59,7 +66,7 @@ describe('useErrorReporter', () => {
         ErrorSeverity.CRITICAL,
         expect.objectContaining({
           breadcrumbs: ['component-error'],
-        })
+        }),
       );
     });
 
@@ -73,7 +80,11 @@ describe('useErrorReporter', () => {
       };
 
       await act(async () => {
-        result.current.reportError(testError, ErrorSeverity.HIGH, additionalContext);
+        result.current.reportError(
+          testError,
+          ErrorSeverity.HIGH,
+          additionalContext,
+        );
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -83,7 +94,7 @@ describe('useErrorReporter', () => {
           componentName: 'TestComponent',
           userId: 'user123',
           breadcrumbs: ['component-error', 'user-action'],
-        })
+        }),
       );
     });
 
@@ -100,7 +111,7 @@ describe('useErrorReporter', () => {
         ErrorSeverity.MEDIUM,
         expect.objectContaining({
           breadcrumbs: ['component-error'],
-        })
+        }),
       );
     });
 
@@ -119,8 +130,12 @@ describe('useErrorReporter', () => {
         testError,
         ErrorSeverity.LOW,
         expect.objectContaining({
-          breadcrumbs: ['component-error', 'existing-breadcrumb', 'another-breadcrumb'],
-        })
+          breadcrumbs: [
+            'component-error',
+            'existing-breadcrumb',
+            'another-breadcrumb',
+          ],
+        }),
       );
     });
   });
@@ -139,7 +154,7 @@ describe('useErrorReporter', () => {
         ErrorSeverity.MEDIUM,
         expect.objectContaining({
           breadcrumbs: ['async-component-error'],
-        })
+        }),
       );
     });
 
@@ -152,7 +167,11 @@ describe('useErrorReporter', () => {
       };
 
       await act(async () => {
-        await result.current.reportAsyncError(testError, ErrorSeverity.HIGH, context);
+        await result.current.reportAsyncError(
+          testError,
+          ErrorSeverity.HIGH,
+          context,
+        );
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -161,7 +180,7 @@ describe('useErrorReporter', () => {
         expect.objectContaining({
           operation: 'data-fetch',
           breadcrumbs: ['async-component-error', 'fetch-start'],
-        })
+        }),
       );
     });
 
@@ -196,7 +215,7 @@ describe('useErrorReporter', () => {
         expect.objectContaining({
           breadcrumbs: ['user-action', action],
           additionalData: { userAction: action },
-        })
+        }),
       );
     });
 
@@ -206,7 +225,11 @@ describe('useErrorReporter', () => {
       const action = 'delete-account';
 
       await act(async () => {
-        result.current.reportUserAction(testError, action, ErrorSeverity.CRITICAL);
+        result.current.reportUserAction(
+          testError,
+          action,
+          ErrorSeverity.CRITICAL,
+        );
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -215,7 +238,7 @@ describe('useErrorReporter', () => {
         expect.objectContaining({
           breadcrumbs: ['user-action', action],
           additionalData: { userAction: action },
-        })
+        }),
       );
     });
 
@@ -234,7 +257,7 @@ describe('useErrorReporter', () => {
         expect.objectContaining({
           breadcrumbs: ['user-action', action],
           additionalData: { userAction: action },
-        })
+        }),
       );
     });
   });
@@ -259,7 +282,7 @@ describe('useErrorReporter', () => {
             method: 'GET',
             errorType: 'api',
           },
-        })
+        }),
       );
     });
 
@@ -270,7 +293,12 @@ describe('useErrorReporter', () => {
       const method = 'POST';
 
       await act(async () => {
-        result.current.reportApiError(testError, endpoint, method, ErrorSeverity.HIGH);
+        result.current.reportApiError(
+          testError,
+          endpoint,
+          method,
+          ErrorSeverity.HIGH,
+        );
       });
 
       expect(mockReportError).toHaveBeenCalledWith(
@@ -283,7 +311,7 @@ describe('useErrorReporter', () => {
             method: 'POST',
             errorType: 'api',
           },
-        })
+        }),
       );
     });
 
@@ -307,7 +335,7 @@ describe('useErrorReporter', () => {
             method: 'PATCH',
             errorType: 'api',
           },
-        })
+        }),
       );
     });
 
@@ -330,7 +358,7 @@ describe('useErrorReporter', () => {
             method: 'GET',
             errorType: 'api',
           },
-        })
+        }),
       );
     });
   });
@@ -338,13 +366,13 @@ describe('useErrorReporter', () => {
   describe('Hook Stability', () => {
     it('should return stable function references', () => {
       const { result, rerender } = renderHook(() => useErrorReporter());
-      
+
       const firstRender = result.current;
-      
+
       rerender();
-      
+
       const secondRender = result.current;
-      
+
       // All functions should be stable across renders
       expect(firstRender.reportError).toBe(secondRender.reportError);
       expect(firstRender.reportAsyncError).toBe(secondRender.reportAsyncError);
@@ -354,28 +382,28 @@ describe('useErrorReporter', () => {
 
     it('should not cause infinite re-renders when used in useEffect', () => {
       let renderCount = 0;
-      
+
       const TestComponent = () => {
         renderCount++;
         const { reportError } = useErrorReporter();
-        
+
         React.useEffect(() => {
           // This should not cause infinite re-renders
           if (renderCount === 1) {
             reportError(new Error('Effect test'));
           }
         }, [reportError]);
-        
+
         return null;
       };
 
       const { rerender } = render(<TestComponent />);
-      
+
       // Should only render once initially
       expect(renderCount).toBe(1);
-      
+
       rerender(<TestComponent />);
-      
+
       // Should not re-render due to stable function references
       expect(renderCount).toBe(2); // Only the explicit rerender
     });
@@ -384,15 +412,19 @@ describe('useErrorReporter', () => {
   describe('Error Handling in Hook Functions', () => {
     it('should handle errors in error reporting gracefully', async () => {
       mockReportError.mockRejectedValue(new Error('Reporting failed'));
-      
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
+      const consoleSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
       const { result } = renderHook(() => useErrorReporter());
       const testError = new Error('Original error');
 
       await act(async () => {
         // Should not throw even if underlying reporting fails
-        await expect(result.current.reportAsyncError(testError)).resolves.not.toThrow();
+        await expect(
+          result.current.reportAsyncError(testError),
+        ).resolves.not.toThrow();
       });
 
       consoleSpy.mockRestore();
@@ -402,9 +434,11 @@ describe('useErrorReporter', () => {
       mockReportError.mockImplementation(() => {
         throw new Error('Synchronous reporting failure');
       });
-      
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
+      const consoleSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+
       const { result } = renderHook(() => useErrorReporter());
       const testError = new Error('Test error');
 
@@ -439,7 +473,7 @@ describe('useErrorReporter', () => {
           sessionId: 'test-session',
           customData: { key: 'value' },
           breadcrumbs: ['component-error'],
-        })
+        }),
       );
     });
 
@@ -462,7 +496,7 @@ describe('useErrorReporter', () => {
         expect(mockReportError).toHaveBeenCalledWith(
           testError,
           severity,
-          expect.any(Object)
+          expect.any(Object),
         );
       }
 
@@ -482,7 +516,7 @@ describe('useErrorReporter', () => {
       expect(mockReportError).toHaveBeenCalledWith(
         error,
         ErrorSeverity.MEDIUM,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -497,7 +531,7 @@ describe('useErrorReporter', () => {
       expect(mockReportError).toHaveBeenCalledWith(
         unknownError,
         ErrorSeverity.MEDIUM,
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });

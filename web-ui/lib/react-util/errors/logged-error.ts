@@ -412,8 +412,7 @@ export class LoggedError implements Error {
         return '[circular error reference]';
       }
       visited.add(options);
-      // @ts-expect-error: options.error may be any type
-      return this.buildMessage((options as any).error, visited);
+      return this.buildMessage(options.error as unknown, visited);
     }
     return options.toString();
   }

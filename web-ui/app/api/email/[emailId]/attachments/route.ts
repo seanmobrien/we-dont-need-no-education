@@ -5,7 +5,6 @@ import { drizDbWithInit } from '@/lib/drizzle-db';
 import { buildAttachmentDownloadUrl } from '@/lib/api/attachment';
 import { getAbsoluteUrl } from '@/lib/site-util/url-builder';
 import { isValidUuid } from '@/lib/ai/tools/utility';
-import { schema } from '@/lib/drizzle-db';
 
 // Helper function to extract filename from a file path or URL
 const extractFileNameFromPath = (hrefDocument?: string): string | undefined => {

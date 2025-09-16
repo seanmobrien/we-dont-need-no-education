@@ -25,9 +25,6 @@
  *        ↓                    ↓                 ↓           ↓
  *   Session Setup      Stream Processing   Task Queue   Completion
  * ```
- *
- * **Integration Points:**
- * - **AI SDK Integration**: Compatible with Vercel AI SDK streaming interfaces
  * - **Database Operations**: Structured for efficient ORM and query operations
  * - **Middleware Pipeline**: Designed for seamless integration with processing chains
  * - **Real-time Systems**: Optimized for streaming and asynchronous processing
@@ -348,8 +345,26 @@ export interface StreamHandlerContext {
  */
 export interface StreamHandlerResult {
   /**
-   * Unique identifier for the current message being processed.
-   * Used to track and update specific messages in the database.
+   *the conversation identifier for the
+   * processed chunk.
+   *
+   */
+  chatId: string;
+
+  /**
+   * This is the numeric turn identifier associated with
+   * the processed chunk.
+   *
+   */
+  turnId: number;
+
+  /**
+   * messageId of the current chunk being processed.
+   *
+   */
+  messageId: number;
+  /**
+   * Message identifier to assign to the next messsage record created.
    */
   currentMessageId: number | undefined;
   /**
@@ -842,23 +857,93 @@ export interface FlushConfig {
   verboseLogging?: boolean;
 }
 /**
- * Result from initializing message persistence.
+ * Result information returned when initializing message persistence.
+ *
+ * @remarks
+ * This interface captures identifiers provisioned at the start of a persistence
+ * operation for a chat turn (e.g., reserving message IDs). These identifiers are
+ * passed forward to subsequent steps that complete the persistence process.
+ *
+ * @interface MessagePersistenceInit
+ * @category Completion
+ * @example
+ * ```typescript
+ * const init: MessagePersistenceInit = {
+ *   chatId: 'chat_123',
+ *   turnId: '5',
+ *   messageId: 42
+ * };
+ * ```
  */
-
 export interface MessagePersistenceInit {
+  /**
+   * Unique identifier of the chat/conversation being persisted.
+   */
   chatId: string;
+
+  /**
+   * String representation of the current turn id (may be coerced from number
+   * by upstream utilities). Used for sequencing and DB targeting.
+   */
   turnId: string;
+
+  /**
+   * Optional reserved message identifier for the assistant response.
+   * When present, downstream steps should use this id for updates.
+   */
   messageId?: number;
 }
-/**
- * Context for completing message persistence.
- */
 
+/**
+ * Context information required to complete message persistence for a chat turn.
+ *
+ * @remarks
+ * This interface is provided to the finalization step that writes the completed
+ * content, updates message/turn status, and records performance metrics.
+ *
+ * @interface MessageCompletionContext
+ * @category Completion
+ * @example
+ * ```typescript
+ * const completion: MessageCompletionContext = {
+ *   chatId: 'chat_123',
+ *   turnId: 5,
+ *   messageId: 42,
+ *   generatedText: 'Final response',
+ *   startTime: Date.now() - 1200
+ * };
+ * ```
+ */
 export interface MessageCompletionContext {
+  /**
+   * Optional Drizzle transaction instance for atomic DB operations.
+   * When provided, all completion writes should be performed with this txn.
+   */
   tx?: DbTransactionType;
+
+  /**
+   * Identifier of the chat/conversation being completed.
+   */
   chatId: string;
+
+  /**
+   * Optional numeric turn id (preferred form for DB operations).
+   */
   turnId?: number;
+
+  /**
+   * Optional message id of the message to finalize.
+   */
   messageId?: number;
+
+  /**
+   * The final accumulated text content to persist for the assistant message.
+   */
   generatedText: string;
+
+  /**
+   * Epoch milliseconds timestamp indicating when generation started.
+   * Used to compute processing duration/latency.
+   */
   startTime: number;
 }

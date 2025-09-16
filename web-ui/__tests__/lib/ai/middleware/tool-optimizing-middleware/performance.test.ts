@@ -16,10 +16,7 @@ import {
 } from '@/lib/ai/middleware/tool-optimizing-middleware';
 import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
-import type {
-  LanguageModelV2CallOptions,
-  LanguageModelV2FunctionTool,
-} from '@ai-sdk/provider';
+import type { LanguageModelV2FunctionTool } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
 
 // Mock dependencies
@@ -30,7 +27,9 @@ jest.mock('@/lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({ add: jest.fn() }),
     createHistogram: jest.fn().mockReturnValue({ record: jest.fn() }),
-    createUpDownCounter: jest.fn().mockReturnValue({ add: jest.fn(), record: jest.fn() }),
+    createUpDownCounter: jest
+      .fn()
+      .mockReturnValue({ add: jest.fn(), record: jest.fn() }),
     createGauge: jest.fn().mockReturnValue({ record: jest.fn() }),
   },
   hashUserId: jest.fn((userId: string) => `hashed_${userId}`),
@@ -46,9 +45,10 @@ jest.mock('@/lib/react-util', () => {
 });
 
 const mockToolMap = ToolMap as jest.MockedClass<typeof ToolMap>;
-const mockOptimizeMessages = optimizeMessagesWithToolSummarization as jest.MockedFunction<
-  typeof optimizeMessagesWithToolSummarization
->;
+const mockOptimizeMessages =
+  optimizeMessagesWithToolSummarization as jest.MockedFunction<
+    typeof optimizeMessagesWithToolSummarization
+  >;
 
 describe('Tool Optimizing Middleware Performance Tests', () => {
   let mockToolMapInstance: jest.Mocked<ToolMap>;
@@ -59,16 +59,19 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
     mockToolMapInstance = {
       scanForTools: jest.fn().mockImplementation(async (tools) => {
         // Simulate realistic processing time
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return Array.isArray(tools) ? tools.length : 1;
       }),
     } as any;
-    mockToolMap.getInstance.mockResolvedValue(mockToolMapInstance);
+
+    (mockToolMap.getInstance as jest.Mock).mockResolvedValue(
+      mockToolMapInstance,
+    );
 
     mockOptimizeMessages.mockImplementation(async (messages) => {
       // Simulate realistic optimization time based on message count
       const processingTime = Math.min(messages.length * 2, 100);
-      await new Promise(resolve => setTimeout(resolve, processingTime));
+      await new Promise((resolve) => setTimeout(resolve, processingTime));
       return messages.slice(0, Math.ceil(messages.length * 0.7));
     });
   });
@@ -78,10 +81,12 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
       return Array.from({ length: count }, (_, i) => ({
         id: `msg-${i}`,
         role: i % 2 === 0 ? 'user' : 'assistant',
-        parts: [{ 
-          type: 'text', 
-          text: `Message ${i} with content that is longer than usual to simulate realistic message sizes and test performance with larger payloads` 
-        }],
+        parts: [
+          {
+            type: 'text',
+            text: `Message ${i} with content that is longer than usual to simulate realistic message sizes and test performance with larger payloads`,
+          },
+        ],
       })) as UIMessage[];
     };
 
@@ -126,7 +131,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
 
       expect(processingTime).toBeLessThan(5000); // Should complete within 5 seconds
       expect(result.messages).toBeDefined();
-      expect(result.messages.length).toBeLessThan(messages.length);
+      expect(result.messages?.length).toBeLessThan(messages.length);
     }, 15000);
 
     it('should skip optimization for extremely large histories when disabled', async () => {
@@ -152,7 +157,9 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
   });
 
   describe('Large Tool Set Performance', () => {
-    const createLargeToolSet = (count: number): LanguageModelV2FunctionTool[] => {
+    const createLargeToolSet = (
+      count: number,
+    ): LanguageModelV2FunctionTool[] => {
       return Array.from({ length: count }, (_, i) => ({
         type: 'function',
         name: `tool_${i}`,
@@ -162,7 +169,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
           properties: {
             param1: { type: 'string', description: 'First parameter' },
             param2: { type: 'number', description: 'Second parameter' },
-            param3: { 
+            param3: {
               type: 'object',
               properties: {
                 nested1: { type: 'string' },
@@ -257,7 +264,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
           chatHistoryId: `chat-${i}`,
           enableMessageOptimization: true,
           optimizationThreshold: 25,
-        })
+        }),
       );
 
       const startTime = Date.now();
@@ -268,7 +275,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
             model: `model-${i}`,
             messages,
           } as any,
-        })
+        }),
       );
 
       const results = await Promise.all(promises);
@@ -276,7 +283,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
 
       expect(processingTime).toBeLessThan(3000); // Should handle concurrency well
       expect(results).toHaveLength(concurrency);
-      results.forEach((result, i) => {
+      results.forEach((result) => {
         expect(result.messages).toBeDefined();
         expect(Array.isArray(result.messages)).toBe(true);
       });
@@ -306,10 +313,10 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
       const result = await middleware.transformParams!({
         type: 'generate',
         params: {
-          model: 'concurrent-model',
           messages,
           tools,
         } as any,
+        model: 'concurrent-model',
       });
       const processingTime = Date.now() - startTime;
 
@@ -319,7 +326,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
         messages,
         'concurrent-model',
         undefined,
-        undefined
+        undefined,
       );
       expect(result.messages).toBeDefined();
       expect(result.tools).toBe(tools);
@@ -363,7 +370,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
 
       const finalMemory = process.memoryUsage().heapUsed;
       const memoryGrowth = finalMemory - initialMemory;
-      
+
       // Allow for reasonable memory growth (less than 10MB)
       expect(memoryGrowth).toBeLessThan(10 * 1024 * 1024);
     }, 30000);
@@ -385,10 +392,12 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
       const largeMessages = Array.from({ length: 200 }, (_, i) => ({
         id: `large-msg-${i}`,
         role: i % 2 === 0 ? 'user' : 'assistant',
-        parts: [{ 
-          type: 'text', 
-          text: `Large message ${i} with substantial content for memory testing: ${'x'.repeat(100)}` 
-        }],
+        parts: [
+          {
+            type: 'text',
+            text: `Large message ${i} with substantial content for memory testing: ${'x'.repeat(100)}`,
+          },
+        ],
       })) as UIMessage[];
 
       await middleware.transformParams!({
@@ -406,7 +415,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
 
       const finalMemory = process.memoryUsage().heapUsed;
       const memoryGrowth = finalMemory - initialMemory;
-      
+
       // Memory growth should be reasonable even with large data
       expect(memoryGrowth).toBeLessThan(50 * 1024 * 1024); // Less than 50MB
     }, 15000);
@@ -414,7 +423,9 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
 
   describe('Error Performance', () => {
     it('should handle errors efficiently without significant performance impact', async () => {
-      mockToolMapInstance.scanForTools.mockRejectedValue(new Error('Scanning error'));
+      mockToolMapInstance.scanForTools.mockRejectedValue(
+        new Error('Scanning error'),
+      );
       mockOptimizeMessages.mockRejectedValue(new Error('Optimization error'));
 
       const middleware = createToolOptimizingMiddleware({
@@ -451,13 +462,15 @@ describe('Tool Optimizing Middleware Load Testing', () => {
   const createRealisticData = () => ({
     messages: Array.from({ length: 100 }, (_, i) => ({
       id: `load-msg-${i}`,
-      role: i % 3 === 0 ? 'system' : (i % 2 === 0 ? 'user' : 'assistant'),
-      parts: [{
-        type: 'text',
-        text: `Load test message ${i} with realistic content length and complexity. This message simulates actual user interactions with varying lengths and content types.`
-      }],
+      role: i % 3 === 0 ? 'system' : i % 2 === 0 ? 'user' : 'assistant',
+      parts: [
+        {
+          type: 'text',
+          text: `Load test message ${i} with realistic content length and complexity. This message simulates actual user interactions with varying lengths and content types.`,
+        },
+      ],
     })) as UIMessage[],
-    
+
     tools: Array.from({ length: 20 }, (_, i) => ({
       type: 'function',
       name: `load_test_tool_${i}`,
@@ -483,7 +496,10 @@ describe('Tool Optimizing Middleware Load Testing', () => {
             type: 'object',
             properties: {
               limit: { type: 'number', minimum: 1, maximum: 100 },
-              sortBy: { type: 'string', enum: ['date', 'relevance', 'popularity'] },
+              sortBy: {
+                type: 'string',
+                enum: ['date', 'relevance', 'popularity'],
+              },
               includeMetadata: { type: 'boolean' },
             },
           },
@@ -498,18 +514,21 @@ describe('Tool Optimizing Middleware Load Testing', () => {
 
     const mockToolMapInstance = {
       scanForTools: jest.fn().mockImplementation(async (tools) => {
-        await new Promise(resolve => setTimeout(resolve, 5));
+        await new Promise((resolve) => setTimeout(resolve, 5));
         return Array.isArray(tools) ? Math.floor(tools.length * 0.3) : 1;
       }),
     } as any;
-    
-    (ToolMap as jest.MockedClass<typeof ToolMap>).getInstance.mockResolvedValue(mockToolMapInstance);
 
-    (optimizeMessagesWithToolSummarization as jest.MockedFunction<typeof optimizeMessagesWithToolSummarization>)
-      .mockImplementation(async (messages) => {
-        await new Promise(resolve => setTimeout(resolve, messages.length));
-        return messages.slice(0, Math.floor(messages.length * 0.6));
-      });
+    (ToolMap.getInstance as jest.Mock).mockResolvedValue(mockToolMapInstance);
+
+    (
+      optimizeMessagesWithToolSummarization as jest.MockedFunction<
+        typeof optimizeMessagesWithToolSummarization
+      >
+    ).mockImplementation(async (messages) => {
+      await new Promise((resolve) => setTimeout(resolve, messages.length));
+      return messages.slice(0, Math.floor(messages.length * 0.6));
+    });
   });
 
   it('should handle realistic production load', async () => {
@@ -539,6 +558,6 @@ describe('Tool Optimizing Middleware Load Testing', () => {
     expect(result.messages).toBeDefined();
     expect(result.tools).toBeDefined();
     expect(Array.isArray(result.messages)).toBe(true);
-    expect(result.messages.length).toBeLessThan(messages.length); // Should be optimized
+    expect(result.messages?.length).toBeLessThan(messages.length); // Should be optimized
   }, 10000);
 });

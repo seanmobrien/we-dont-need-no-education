@@ -58,6 +58,7 @@ export const ThemeSelector = () => {
       const themeType = currentTarget?.dataset?.theme as ThemeType;
       if (!!themeType && currentTheme !== themeType) {
         setTheme(themeType);
+        document.cookie = `theme=${encodeURIComponent(themeType)}; path=/; max-age=31536000`;
       }
       handleMenuClick();
     };
