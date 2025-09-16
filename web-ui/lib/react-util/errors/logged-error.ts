@@ -412,7 +412,7 @@ export class LoggedError implements Error {
         return '[circular error reference]';
       }
       visited.add(options);
-      return this.buildMessage(options.error, visited);
+      return this.buildMessage(options.error as unknown, visited);
     }
     return options.toString();
   }
