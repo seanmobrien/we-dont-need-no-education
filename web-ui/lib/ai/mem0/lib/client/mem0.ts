@@ -28,7 +28,8 @@ class APIError extends Error {
 }
 
 interface ClientOptions {
-  apiKey: string;
+  apiKey?: string;
+  bearerToken?: string;
   host?: string;
   organizationName?: string;
   projectName?: string;
@@ -37,7 +38,8 @@ interface ClientOptions {
 }
 
 export default class MemoryClient {
-  apiKey: string;
+  apiKey?: string;
+  bearerToken?: string;
   host: string;
   organizationName: string | null;
   projectName: string | null;
@@ -47,15 +49,21 @@ export default class MemoryClient {
   client: any;
   telemetryId: string;
 
-  _validateApiKey(): any {
-    if (!this.apiKey) {
-      throw new Error('Mem0 API key is required');
+  _validateAuth(): any {
+    if (!this.apiKey && !this.bearerToken) {
+      throw new Error('Either Mem0 API key or bearer token is required');
     }
-    if (typeof this.apiKey !== 'string') {
+    if (this.apiKey && typeof this.apiKey !== 'string') {
       throw new Error('Mem0 API key must be a string');
     }
-    if (this.apiKey.trim() === '') {
+    if (this.apiKey && this.apiKey.trim() === '') {
       throw new Error('Mem0 API key cannot be empty');
+    }
+    if (this.bearerToken && typeof this.bearerToken !== 'string') {
+      throw new Error('Bearer token must be a string');
+    }
+    if (this.bearerToken && this.bearerToken.trim() === '') {
+      throw new Error('Bearer token cannot be empty');
     }
   }
 
@@ -83,24 +91,32 @@ export default class MemoryClient {
 
   constructor(options: ClientOptions) {
     this.apiKey = options.apiKey;
+    this.bearerToken = options.bearerToken;
     this.host = options.host || getMem0ApiUrl('/');
     this.organizationName = options.organizationName || null;
     this.projectName = options.projectName || null;
     this.organizationId = options.organizationId || null;
     this.projectId = options.projectId || null;
 
+    // Set up authorization header - prefer bearer token over API key
+    const authHeader = this.bearerToken 
+      ? `Bearer ${this.bearerToken}`
+      : this.apiKey 
+        ? `Token ${this.apiKey}` 
+        : '';
+
     this.headers = {
-      Authorization: `Token ${this.apiKey}`,
+      Authorization: authHeader,
       'Content-Type': 'application/json',
     };
 
     this.client = axios.create({
       baseURL: this.host,
-      headers: { Authorization: `Token ${this.apiKey}` },
+      headers: { Authorization: authHeader },
       timeout: 60000,
     });
 
-    this._validateApiKey();
+    this._validateAuth();
 
     // Initialize with a temporary ID that will be updated
     this.telemetryId = '';
@@ -115,7 +131,7 @@ export default class MemoryClient {
       await this.ping();
 
       if (!this.telemetryId) {
-        this.telemetryId = generateHash(this.apiKey);
+        this.telemetryId = generateHash(this.apiKey || this.bearerToken || 'anonymous');
       }
 
       this._validateOrgProject();
