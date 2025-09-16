@@ -201,10 +201,7 @@ export function createToolOptimizingMiddleware(
     enableToolScanning = true,
   } = config;
   // Track whether enableToolScanning was explicitly provided (vs relying on default)
-  const enableToolScanningExplicit = Object.prototype.hasOwnProperty.call(
-    config,
-    'enableToolScanning',
-  );
+  const enableToolScanningExplicit = Object.hasOwn(config, 'enableToolScanning');
 
   // Step 1 helper: tool scanning
   /**
