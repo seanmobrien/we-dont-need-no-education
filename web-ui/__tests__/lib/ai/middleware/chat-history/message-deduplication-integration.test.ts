@@ -105,6 +105,10 @@ describe('Message Deduplication Integration', () => {
         debug: jest.fn(),
       }),
     );
+    
+    // Reset mocks between tests
+    mockGetNextSequence.mockReset();
+    mockGetNewMessages.mockReset();
   });
 
   describe('First conversation turn (all messages new)', () => {
@@ -156,6 +160,7 @@ describe('Message Deduplication Integration', () => {
         mockTx,
         'existing-chat-456',
         firstTurnMessages,
+        1, // currentTurnId
       );
       expect(mockGetNextSequence).toHaveBeenNthCalledWith(2, {
         tableName: 'chat_messages',
@@ -231,6 +236,7 @@ describe('Message Deduplication Integration', () => {
         mockTx,
         'existing-chat-456',
         secondTurnMessages,
+        2, // currentTurnId
       );
       expect(mockGetNextSequence).toHaveBeenNthCalledWith(2, {
         tableName: 'chat_messages',
@@ -297,6 +303,7 @@ describe('Message Deduplication Integration', () => {
         mockTx,
         'existing-chat-456',
         thirdTurnMessages,
+        3, // currentTurnId
       );
       expect(mockGetNextSequence).toHaveBeenNthCalledWith(1, {
         tableName: 'chat_turns',
@@ -341,6 +348,7 @@ describe('Message Deduplication Integration', () => {
         mockTx,
         'existing-chat-456',
         [],
+        4, // currentTurnId
       );
       expect(result.chatId).toBe('existing-chat-456');
     });

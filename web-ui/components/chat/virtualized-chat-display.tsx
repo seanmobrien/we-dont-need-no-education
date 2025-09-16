@@ -62,6 +62,7 @@ import {
 } from '@/lib/components/ai/height-estimators';
 import { ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '@/lib/chat/export';
+import { type MessageType, searchMessageContent } from './chat-message-filters';
 
 /**
  * Fallback container width for virtualized chat display
@@ -90,6 +91,11 @@ interface VirtualizedChatDisplayProps {
   selectedItems?: SelectedChatItem[];
   /** Callback when selection changes */
   onSelectionChange?: (selectedItems: SelectedChatItem[]) => void;
+  /** Global message filters to apply to all turns */
+  globalFilters?: {
+    typeFilters: Set<MessageType>;
+    contentFilter: string;
+  };
 }
 
 /**
@@ -118,7 +124,8 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
   height = 600,
   enableSelection = false,
   selectedItems = [],
-  onSelectionChange
+  onSelectionChange,
+  globalFilters = { typeFilters: new Set(), contentFilter: '' }
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [showTurnProperties, setShowTurnProperties] = useState(false);
@@ -131,6 +138,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
    * Goals:
    *  - Be fast (no DOM writes, minimal JSON work) to keep scroll perf smooth.
    *  - Slightly overestimate to reduce post‑measurement visual shifts.
+   *  - Account for filtering that may hide messages within the turn.
    *
    * Fallback Paths:
    *  - If a turn or container width is unavailable (initial prerender), uses
@@ -162,8 +170,26 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
     // Calculate content width accounting for Card padding and margins
     const contentWidth = Math.max(width * 0.85 - 48, 300); // 85% width minus Card padding, min 300px
 
-    // Measure each message content using sophisticated height estimation
-    turn.messages.forEach(message => {
+    // Filter messages based on global filters if active
+    const visibleMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
+      ? turn.messages.filter(message => {
+          // Type filter
+          const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+            globalFilters.typeFilters.has(message.role as MessageType);
+          // Content filter  
+          const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
+          
+          return passesTypeFilter && passesContentFilter;
+        })
+      : turn.messages;
+
+    // If no messages are visible after filtering, return a minimal height
+    if (visibleMessages.length === 0) {
+      return Math.max(totalHeight + 60, 150); // Just turn header + empty message indicator
+    }
+
+    // Measure each visible message content using sophisticated height estimation
+    visibleMessages.forEach(message => {
       if (message.content && message.content.trim()) {
         // Use sophisticated markdown height estimation
         const estimatedHeight = estimateMarkdownHeight(
@@ -235,9 +261,9 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
       }
     }
 
-    // Add space for message metadata display if enabled
+    // Add space for message metadata display if enabled (only for visible messages)
     if (showMessageMetadata) {
-      turn.messages.forEach(message => {
+      visibleMessages.forEach(message => {
         totalHeight += 80; // Base metadata panel height
         
         // Add space for function call and metadata JSON
@@ -259,7 +285,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
     // Remove artificial cap - let content be as tall as it needs to be
     // Only set a reasonable minimum height
     return Math.max(totalHeight, 150);
-  }, [turns, showTurnProperties, showMessageMetadata]);
+  }, [turns, showTurnProperties, showMessageMetadata, globalFilters]);
 
   /**
    * Virtualization controller from TanStack Virtual handling item measurement,
@@ -340,6 +366,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                   enableSelection={enableSelection}
                   selectedItems={selectedItems}
                   onSelectionChange={onSelectionChange}
+                  globalFilters={globalFilters}
                 />
               </Box>
             );

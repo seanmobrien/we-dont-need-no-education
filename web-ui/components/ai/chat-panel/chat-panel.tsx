@@ -28,7 +28,7 @@ import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
-import type { DockPosition } from './types';
+import type { DockPosition, ModelSelection } from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
@@ -149,7 +149,10 @@ const ChatPanel = ({ page }: { page: string }) => {
   const [initialMessages, setInitialMessages] = useState<
     UIMessage[] | undefined
   >(undefined);
-  const [activeModel, setActiveModel] = useState<string>('hifi');
+  const [activeModelSelection, setActiveModelSelection] = useState<ModelSelection>({
+    provider: 'azure',
+    model: 'hifi',
+  });
   const [rateLimitTimeout, setRateLimitTimeout] = useState<
     Map<AiModelType, Date>
   >(new Map<AiModelType, Date>());
@@ -287,6 +290,11 @@ const ChatPanel = ({ page }: { page: string }) => {
       return () => clearTimeout(timeoutId);
     }
   }, [/*input, */ config.position]); // Trigger on input changes and position changes
+  // Convert ModelSelection to provider-prefixed model string
+  const getModelString = useCallback((selection: ModelSelection): string => {
+    return `${selection.provider}:${selection.model}`;
+  }, []);
+
   const onSendClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>, model?: AiModelType) => {
       const inputElement = textFieldRef.current;
@@ -311,7 +319,7 @@ const ChatPanel = ({ page }: { page: string }) => {
         }
       }
       setErrorMessage(null);
-      const withModel = model ?? activeModel;
+      const withModel = model ?? getModelString(activeModelSelection);
       sendMessage(
         {
           text: chatText,
@@ -333,7 +341,8 @@ const ChatPanel = ({ page }: { page: string }) => {
       inputElement.value = '';
     },
     [
-      activeModel,
+      activeModelSelection,
+      getModelString,
       sendMessage,
       id,
       messages,
@@ -409,14 +418,14 @@ const ChatPanel = ({ page }: { page: string }) => {
               <IconButton
                 edge="end"
                 onClick={onSendClick}
-                data-id="ChatMessageSend"
+                data-testid="ChatMessageSend"
               >
                 <PublishIcon />
               </IconButton>
               <ChatMenu
                 data-id="ChatMessageMenu"
-                activeModel={activeModel}
-                setActiveModel={setActiveModel}
+                activeModelSelection={activeModelSelection}
+                setActiveModelSelection={setActiveModelSelection}
                 onFloat={onFloat}
                 onDock={setPosition}
                 currentPosition={config.position}
@@ -429,7 +438,7 @@ const ChatPanel = ({ page }: { page: string }) => {
     };
   }, [
     onSendClick,
-    activeModel,
+    activeModelSelection,
     onFloat,
     setPosition,
     config.position,
