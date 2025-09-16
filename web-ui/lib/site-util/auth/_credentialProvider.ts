@@ -2,7 +2,6 @@ import { OAuth2Client } from 'google-auth-library';
 import { ICredential, CredentialOptions } from './_types';
 import { env } from '../env';
 import { UrlBuilder } from '../url-builder/_impl';
-import { query } from '@/lib/neondb';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 import { auth } from '@/auth';
@@ -23,6 +22,23 @@ const isRequestWithTokens = (
 ): req is RequestWithTokens =>
   tokenSymbol && tokenSymbol in req && !!req[tokenSymbol];
 
+/**
+ * Get Google tokens from Keycloak for the specified user.
+ * This function should be implemented to call Keycloak's token exchange API
+ * to retrieve Google refresh/access tokens for the authenticated user.
+ */
+const getGoogleTokensFromKeycloak = async (
+  userId: number,
+): Promise<{ refresh_token: string; access_token: string }> => {
+  // TODO: Implement Keycloak token exchange to get Google tokens
+  // This should call Keycloak's token exchange endpoint to get Google tokens
+  // Example: POST to /auth/realms/{realm}/protocol/openid-connect/token
+  // with grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+  // and requested_subject for the Google provider
+  
+  throw new Error('Keycloak Google token retrieval not yet implemented. Please configure Keycloak with Google identity broker and implement this method.');
+};
+
 const getTokensFromUser = async (
   req: NextRequest | NextApiRequest,
   userId: number,
@@ -35,6 +51,7 @@ const getTokensFromUser = async (
       userId: userId,
     };
   }
+  
   const session = await auth();
   if (!session) {
     throw new Error('Access denied');
@@ -43,29 +60,23 @@ const getTokensFromUser = async (
     // TODO: check if user is admin
     throw new Error('Access denied');
   }
-  const records = await query(
-    (sql) =>
-      sql`select refresh_token, access_token from accounts where "user_id"=${userId} and provider='google'`,
-  );
-  if (!records.length) {
-    throw new Error('Account not found');
-  }
+  
+  // Get Google tokens from Keycloak instead of direct database query
+  const tokens = await getGoogleTokensFromKeycloak(userId);
+  
   const work = req as RequestWithTokens;
   if (!work[tokenSymbol]) {
     work[tokenSymbol] = {};
   }
-  const { refresh_token, access_token } = {
-    refresh_token: String(records[0].refresh_token),
-    access_token: String(records[0].access_token),
-  };
+  
   work[tokenSymbol][userId] = {
-    refresh_token,
-    access_token,
+    refresh_token: tokens.refresh_token,
+    access_token: tokens.access_token,
   };
 
   return {
-    refresh_token,
-    access_token,
+    refresh_token: tokens.refresh_token,
+    access_token: tokens.access_token,
     userId: userId,
   };
 };
