@@ -49,6 +49,9 @@ const buildRawInstance = () => ({
   GOOGLE_GENERATIVE_HIFI: process.env.GOOGLE_GENERATIVE_HIFI,
   GOOGLE_GENERATIVE_LOFI: process.env.GOOGLE_GENERATIVE_LOFI,
   GOOGLE_GENERATIVE_EMBEDDING: process.env.GOOGLE_GENERATIVE_EMBEDDING,
+  AUTH_KEYCLOAK_CLIENT_ID: process.env.AUTH_KEYCLOAK_CLIENT_ID,
+  AUTH_KEYCLOAK_CLIENT_SECRET: process.env.AUTH_KEYCLOAK_CLIENT_SECRET,
+  AUTH_KEYCLOAK_ISSUER: process.env.AUTH_KEYCLOAK_ISSUER,
   REDIS_URL: process.env.REDIS_URL,
   REDIS_PASSWORD: process.env.REDIS_PASSWORD,
   LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,
@@ -142,6 +145,13 @@ const serverEnvSchema = z.object({
   GOOGLE_GENERATIVE_HIFI: z.string().default('gemini-2.5-pro'),
   GOOGLE_GENERATIVE_LOFI: z.string().default('gemini-2.5-flash'),
   GOOGLE_GENERATIVE_EMBEDDING: z.string().default('google-embedding'),
+  AUTH_KEYCLOAK_CLIENT_ID: z.string().min(1).optional(),
+  AUTH_KEYCLOAK_CLIENT_SECRET: z.string().min(1).optional(),
+  AUTH_KEYCLOAK_ISSUER: z
+    .string()
+    .min(1)
+    .default('https://login.jollybush-836e15bc.westus3.azurecontainerapps.io/')
+    .optional(),
   REDIS_URL: z.string().min(1),
   REDIS_PASSWORD: z.string().min(1),
   LOCAL_DEV_AUTH_BYPASS_USER_ID: z.string().optional(),

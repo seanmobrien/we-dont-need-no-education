@@ -1,12 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Tests for UserKeyManager enhancements
- * 
+ *
  * Tests the new validation methods added to UserKeyManager
  * including server key validation and local key checks.
- * 
+ *
  * @module __tests__/lib/site-util/auth/user-keys.test.ts
  */
 
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 import {
   validateUserKeysAgainstServer,
   hasValidLocalKeys,
@@ -41,7 +43,6 @@ const createMockRequest = (result: any = null, error: any = null) => ({
 
 // Mock IndexedDB
 let mockRequests: ReturnType<typeof createMockRequest>[] = [];
-let requestIndex = 0;
 
 const mockIDBObjectStore = {
   put: jest.fn(),
@@ -74,26 +75,31 @@ Object.defineProperty(window, 'indexedDB', {
   },
 });
 
+// Define it as a let so that someone -could- reassign it, even though
+// we don't...
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let requestIndex = 0;
+const mockConsole = hideConsoleOutput();
 describe('UserKeyManager Enhancements', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
     mockRequests = [];
     requestIndex = 0;
-    
+
     // Mock the get method to return new request objects
     mockIDBObjectStore.get.mockImplementation(() => {
       const request = createMockRequest();
       mockRequests.push(request);
       return request;
     });
-    
+
     // Mock the put method to return new request objects
     mockIDBObjectStore.put.mockImplementation(() => {
       const request = createMockRequest();
       mockRequests.push(request);
       return request;
     });
-    
+
     // Mock IndexedDB open to handle multiple database openings
     (window.indexedDB.open as jest.Mock).mockImplementation(() => {
       const request = {
@@ -103,16 +109,19 @@ describe('UserKeyManager Enhancements', () => {
         onerror: null as any,
         onupgradeneeded: null as any,
       };
-      
+
       // Immediately trigger success for database opening
       setTimeout(() => {
         if (request.onsuccess) {
           request.onsuccess({} as any);
         }
       }, 0);
-      
+
       return request;
     });
+  });
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   describe('hasValidLocalKeys', () => {
@@ -121,7 +130,7 @@ describe('UserKeyManager Enhancements', () => {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
-      
+
       // Mock the get requests to return immediately
       mockIDBObjectStore.get.mockImplementation(() => {
         const request = createMockRequest(keyData);
@@ -133,7 +142,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await hasValidLocalKeys();
       expect(result).toBe(true);
     });
@@ -150,7 +159,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await hasValidLocalKeys();
       expect(result).toBe(false);
     });
@@ -160,7 +169,7 @@ describe('UserKeyManager Enhancements', () => {
         publicKey: {} as CryptoKey,
         privateKey: null,
       };
-      
+
       // Mock the get requests to return data with null private key
       mockIDBObjectStore.get.mockImplementation(() => {
         const request = createMockRequest(publicKeyData);
@@ -172,7 +181,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await hasValidLocalKeys();
       expect(result).toBe(false);
     });
@@ -189,7 +198,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await hasValidLocalKeys();
       expect(result).toBe(false);
     });
@@ -204,11 +213,11 @@ describe('UserKeyManager Enhancements', () => {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
-      
+
       // Mock crypto export and btoa
       mockCryptoSubtle.exportKey.mockResolvedValue(new Uint8Array([1, 2, 3]));
       (global.btoa as jest.Mock).mockReturnValue(testLocalKey);
-      
+
       // Mock the get request to return key data immediately
       mockIDBObjectStore.get.mockImplementation(() => {
         const request = createMockRequest(keyData);
@@ -219,7 +228,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await validateUserKeysAgainstServer(testServerKeys);
       expect(result).toBe(true);
     });
@@ -230,11 +239,11 @@ describe('UserKeyManager Enhancements', () => {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
-      
+
       // Mock crypto export and btoa
       mockCryptoSubtle.exportKey.mockResolvedValue(new Uint8Array([1, 2, 3]));
       (global.btoa as jest.Mock).mockReturnValue(testLocalKey);
-      
+
       // Mock the get request to return key data immediately
       mockIDBObjectStore.get.mockImplementation(() => {
         const request = createMockRequest(keyData);
@@ -245,7 +254,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await validateUserKeysAgainstServer(testServerKeys);
       expect(result).toBe(false);
     });
@@ -261,19 +270,20 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await validateUserKeysAgainstServer(testServerKeys);
       expect(result).toBe(false);
     });
 
     it('should handle crypto export errors gracefully', async () => {
+      mockConsole.setup();
       const keyData = {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
-      
+
       mockCryptoSubtle.exportKey.mockRejectedValue(new Error('Export failed'));
-      
+
       // Mock the get request to return key data immediately
       mockIDBObjectStore.get.mockImplementation(() => {
         const request = createMockRequest(keyData);
@@ -284,7 +294,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await validateUserKeysAgainstServer(testServerKeys);
       expect(result).toBe(false);
     });
@@ -293,7 +303,10 @@ describe('UserKeyManager Enhancements', () => {
       // Even with empty server keys, the function still tries to get the local key
       // So we need to mock the database request
       mockIDBObjectStore.get.mockImplementation(() => {
-        const request = createMockRequest({ publicKey: {} as CryptoKey, privateKey: {} as CryptoKey });
+        const request = createMockRequest({
+          publicKey: {} as CryptoKey,
+          privateKey: {} as CryptoKey,
+        });
         setTimeout(() => {
           if (request.onsuccess) {
             request.onsuccess({ target: request } as any);
@@ -301,11 +314,11 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       // Mock crypto export
       mockCryptoSubtle.exportKey.mockResolvedValue(new Uint8Array([1, 2, 3]));
       (global.btoa as jest.Mock).mockReturnValue('some-key');
-      
+
       const result = await validateUserKeysAgainstServer([]);
       expect(result).toBe(false);
     });
@@ -317,10 +330,10 @@ describe('UserKeyManager Enhancements', () => {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
-      
+
       // Mock crypto key generation
       mockCryptoSubtle.generateKey.mockResolvedValue(mockKeyPair);
-      
+
       // Mock successful storage
       mockIDBObjectStore.put.mockImplementation(() => {
         const request = createMockRequest();
@@ -331,7 +344,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await generateUserKeyPair();
       expect(result).toEqual(mockKeyPair);
       expect(mockCryptoSubtle.generateKey).toHaveBeenCalledWith(
@@ -340,13 +353,15 @@ describe('UserKeyManager Enhancements', () => {
           namedCurve: 'P-256',
         },
         false,
-        ['sign', 'verify']
+        ['sign', 'verify'],
       );
     });
 
     it('should handle crypto generation errors', async () => {
-      mockCryptoSubtle.generateKey.mockRejectedValue(new Error('Generation failed'));
-      
+      mockCryptoSubtle.generateKey.mockRejectedValue(
+        new Error('Generation failed'),
+      );
+
       await expect(generateUserKeyPair()).rejects.toThrow('Generation failed');
     });
 
@@ -355,9 +370,9 @@ describe('UserKeyManager Enhancements', () => {
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       };
-      
+
       mockCryptoSubtle.generateKey.mockResolvedValue(mockKeyPair);
-      
+
       // Mock storage error
       mockIDBObjectStore.put.mockImplementation(() => {
         const request = createMockRequest(null, new Error('Storage failed'));
@@ -368,7 +383,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       await expect(generateUserKeyPair()).rejects.toThrow();
     });
   });
@@ -391,7 +406,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await getUserPublicKey();
       expect(result).toBe(mockPublicKey);
     });
@@ -407,7 +422,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await getUserPublicKey();
       expect(result).toBeNull();
     });
@@ -423,7 +438,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await getUserPublicKey();
       expect(result).toBeNull();
     });
@@ -436,7 +451,7 @@ describe('UserKeyManager Enhancements', () => {
         publicKey: {} as CryptoKey,
         privateKey: mockPrivateKey,
       };
-      
+
       // Mock the get request to return key data immediately
       mockIDBObjectStore.get.mockImplementation(() => {
         const request = createMockRequest(keyData);
@@ -447,7 +462,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await getUserPrivateKey();
       expect(result).toBe(mockPrivateKey);
     });
@@ -463,7 +478,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await getUserPrivateKey();
       expect(result).toBeNull();
     });
@@ -479,7 +494,7 @@ describe('UserKeyManager Enhancements', () => {
         }, 0);
         return request;
       });
-      
+
       const result = await getUserPrivateKey();
       expect(result).toBeNull();
     });

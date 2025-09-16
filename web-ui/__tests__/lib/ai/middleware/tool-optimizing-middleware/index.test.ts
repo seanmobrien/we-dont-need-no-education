@@ -124,9 +124,9 @@ describe('Tool Optimizing Middleware', () => {
           role: 'user',
           content: [{ type: 'text', text: 'Hello world' }],
         },
+        ...sampleMessages,
       ],
       model: { modelId: 'gpt-4.1', provider: 'azure' },
-      messages: sampleMessages,
       tools: sampleTools,
     } as any;
   });
@@ -208,7 +208,7 @@ describe('Tool Optimizing Middleware', () => {
 
     it('should scan single tool correctly', async () => {
       const singleTool = sampleTools[0];
-      const paramsWithSingleTool = { ...mockParams, tools: singleTool };
+      const paramsWithSingleTool = { ...mockParams, tools: [singleTool] };
 
       const middleware = createToolOptimizingMiddleware({
         enableToolScanning: true,
@@ -220,13 +220,15 @@ describe('Tool Optimizing Middleware', () => {
         model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
       });
 
-      expect(mockToolMapInstance.scanForTools).toHaveBeenCalledWith(singleTool);
+      expect(mockToolMapInstance.scanForTools).toHaveBeenCalledWith([
+        singleTool,
+      ]);
     });
 
     it('should handle provider-defined tools', async () => {
       const providerTool: LanguageModelV2ProviderDefinedTool = {
         type: 'provider-defined',
-        id: 'provider-tool-1',
+        id: 'azure.provider-tool-1',
         name: 'provider_tool',
         args: { type: 'object' },
       };
@@ -264,7 +266,7 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       expect(mockOptimizeMessages).toHaveBeenCalledWith(
-        sampleMessages,
+        mockParams.prompt,
         'gpt-4.1',
         'user-123',
         'chat-456',
@@ -286,6 +288,7 @@ describe('Tool Optimizing Middleware', () => {
 
       const result = await middleware.transformParams!({
         type: 'generate',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
         params: paramsWithShortMessages,
       });
 
@@ -305,7 +308,7 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       expect(mockOptimizeMessages).not.toHaveBeenCalled();
-      expect(result.prompt).toBe(sampleMessages);
+      expect(result.prompt.length).toBe(16);
     });
 
     it('should handle message optimization errors gracefully', async () => {
@@ -323,7 +326,7 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalled();
-      expect(result.messages).toBe(sampleMessages); // Falls back to original
+      expect(result.prompt.length).toBe(sampleMessages.length + 1); // Falls back to original
     });
 
     it('should extract model ID from string model parameter', async () => {
@@ -461,7 +464,8 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
         params: mockParams,
       });
 
@@ -473,24 +477,33 @@ describe('Tool Optimizing Middleware', () => {
         }),
       );
       expect(mockOptimizeMessages).toHaveBeenCalled();
-      expect(result.messages).toHaveLength(8); // Still optimized
+      expect(result.prompt).toHaveLength(8); // Still optimized
     });
   });
 
   describe('Error Handling', () => {
     it('should handle complete middleware failure gracefully', async () => {
       // Mock ToolMap.getInstance to fail
-      mockToolMap.getInstance.mockRejectedValue(new Error('Critical failure'));
+      (mockToolMap.getInstance as jest.Mock).mockRejectedValue(
+        new Error('Critical failure'),
+      );
 
       const middleware = createToolOptimizingMiddleware({
         enableToolScanning: true,
         enableMessageOptimization: true,
       });
 
-      const result = await middleware.transformParams!({
-        type: 'generateText',
+      const p = {
+        type: 'generate',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
         params: mockParams,
+      };
+      Object.defineProperty(p, 'tools', {
+        get() {
+          throw new Error('Cannot access tools');
+        },
       });
+      const result = await middleware.transformParams!(p);
 
       expect(LoggedError.isTurtlesAllTheWayDownBaby).toHaveBeenCalledWith(
         expect.any(Error),
@@ -499,7 +512,7 @@ describe('Tool Optimizing Middleware', () => {
         }),
       );
       // Should return original parameters on complete failure
-      expect(result).toBe(mockParams);
+      expect(Object.is(result, p.params)).toBe(true);
     });
 
     it('should preserve parameter structure on errors', async () => {
@@ -511,14 +524,12 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
+        type: 'generate',
         params: mockParams,
       });
 
-      expect(result).toEqual({
-        type: 'generateText',
-        params: mockParams,
-      });
+      expect(result).toEqual(mockParams);
     });
   });
 
@@ -542,7 +553,8 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
+        type: 'generate',
         params: mockParams,
       });
 
@@ -555,7 +567,7 @@ describe('Tool Optimizing Middleware', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty messages array', async () => {
-      const paramsWithEmptyMessages = { ...mockParams, messages: [] };
+      const paramsWithEmptyMessages = { ...mockParams, prompt: [] };
 
       const middleware = createToolOptimizingMiddleware({
         enableMessageOptimization: true,
@@ -563,28 +575,30 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
         params: paramsWithEmptyMessages,
       });
 
       expect(mockOptimizeMessages).not.toHaveBeenCalled();
-      expect(result.messages).toEqual([]);
+      expect(result.prompt).toEqual([]);
     });
 
     it('should handle undefined messages', async () => {
-      const paramsWithoutMessages = { ...mockParams, messages: undefined };
+      const paramsWithoutMessages = { ...mockParams, prompt: undefined };
 
       const middleware = createToolOptimizingMiddleware({
         enableMessageOptimization: true,
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
         params: paramsWithoutMessages,
       });
 
       expect(mockOptimizeMessages).not.toHaveBeenCalled();
-      expect(result.messages).toBeUndefined();
+      expect(result.prompt).toBeUndefined();
     });
 
     it('should handle undefined tools', async () => {
@@ -595,7 +609,8 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
+        type: 'generate',
         params: paramsWithoutTools,
       });
 
@@ -611,7 +626,8 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
+        type: 'generate',
         params: paramsWithEmptyTools,
       });
 
@@ -622,7 +638,7 @@ describe('Tool Optimizing Middleware', () => {
     it('should handle non-array messages', async () => {
       const paramsWithNonArrayMessages = {
         ...mockParams,
-        messages: 'not-an-array' as any,
+        prompt: 'not-an-array' as any,
       };
 
       const middleware = createToolOptimizingMiddleware({
@@ -631,12 +647,13 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
+        model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
         params: paramsWithNonArrayMessages,
       });
 
       expect(mockOptimizeMessages).not.toHaveBeenCalled();
-      expect(result.messages).toBe('not-an-array');
+      expect(result.prompt).toBe('not-an-array');
     });
   });
 
@@ -705,27 +722,26 @@ describe('Tool Optimizing Middleware Integration', () => {
 
   it('should integrate with middleware pipeline correctly', async () => {
     const result = await middleware.transformParams!({
-      type: 'generateText',
+      type: 'generate',
+      model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
+
       params: mockParams,
     });
 
     expect(result).toBeDefined();
-    expect(result.type).toBe('generateText');
     expect(result).toBeDefined();
-    expect(result.messages).toBeDefined();
+    expect(result.prompt).toBeDefined();
     expect(result.tools).toBeDefined();
   });
 
   it('should maintain parameter types through transformation', async () => {
     const result = await middleware.transformParams!({
-      type: 'generateText',
+      model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
+      type: 'generate',
       params: mockParams,
     });
 
-    expect(typeof result.model).toBe('string');
-    expect(Array.isArray(result.messages)).toBe(true);
+    expect(Array.isArray(result.prompt)).toBe(true);
     expect(Array.isArray(result.tools)).toBe(true);
-    expect(result.inputFormat).toBe('prompt');
-    expect(result.mode).toEqual({ type: 'regular' });
   });
 });

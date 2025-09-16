@@ -16,6 +16,7 @@ import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-hand
 import { log } from '@/lib/logger';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
+import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/stream-handlers', () => ({
@@ -53,14 +54,15 @@ describe('ProcessingQueue', () => {
     queue = new ProcessingQueue();
 
     // Setup mock context
-    mockContext = {
+    mockContext = ensureCreateResult({
       chatId: 'test-chat-123',
       turnId: 1,
       messageId: 42,
       currentMessageOrder: 1,
       generatedText: '',
+      generatedJSON: [],
       toolCalls: new Map(),
-    };
+    });
 
     // Setup mock chunk
     mockChunk = {

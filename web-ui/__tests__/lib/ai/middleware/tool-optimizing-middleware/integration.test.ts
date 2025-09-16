@@ -321,10 +321,10 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       const result = await middleware.transformParams!({
         type: 'generateText',
         params: {
-          model: 'chat-model',
           messages: chatScenario.conversationHistory,
           tools: chatScenario.availableTools,
         } as any,
+        model: 'chat-model',
       });
 
       expect(result.messages).toBeDefined();
@@ -387,10 +387,10 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       const result = await middleware.transformParams!({
         type: 'generateText',
         params: {
-          model: 'enterprise-model',
           messages: enterpriseScenario.history,
           tools: enterpriseScenario.tools,
         } as any,
+        model: 'enterprise-model',
       });
 
       expect(mockToolMapInstance.scanForTools).toHaveBeenCalledWith(enterpriseScenario.tools);

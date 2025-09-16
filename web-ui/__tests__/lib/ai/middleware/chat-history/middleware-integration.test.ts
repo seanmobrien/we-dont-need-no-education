@@ -70,6 +70,8 @@ jest.mock('@/lib/ai/core', () => ({
   generateChatId: jest.fn(() => ({ id: 'generated-chat-id' })),
 }));
 
+const mockConsole = hideConsoleOutput();
+
 describe('Chat History Middleware Integration', () => {
   const mockContext: ChatHistoryContext = createUserChatHistoryContext({
     userId: 'test-user',
@@ -80,6 +82,10 @@ describe('Chat History Middleware Integration', () => {
 
   beforeEach(() => {
     // jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   describe('Middleware Structure', () => {
@@ -98,7 +104,6 @@ describe('Chat History Middleware Integration', () => {
     });
 
     it('should handle wrapGenerate method call', async () => {
-      const mockConsole = hideConsoleOutput();
       mockConsole.setup();
 
       try {
@@ -128,12 +133,10 @@ describe('Chat History Middleware Integration', () => {
         expect((result.content[0] as any).delta).toBe('Test response');
         expect(mockDoGenerate).toHaveBeenCalled();
       } finally {
-        mockConsole.dispose();
       }
     });
 
     it('should handle wrapStream method call', async () => {
-      const mockConsole = hideConsoleOutput();
       mockConsole.setup();
 
       try {
@@ -180,18 +183,9 @@ describe('Chat History Middleware Integration', () => {
   });
 
   describe('Error Handling', () => {
-    const mockConsole = hideConsoleOutput();
-
-    beforeEach(() => {
-      mockConsole.setup();
-    });
-
-    afterEach(() => {
-      mockConsole.dispose();
-    });
-
     it('should gracefully handle database errors in wrapGenerate', async () => {
       // Arrange - Mock transaction to fail
+      mockConsole.setup();
       const mockDb = await import('@/lib/drizzle-db');
       (mockDb.drizDb as jest.Mock).mockImplementationOnce(() => ({
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),
@@ -223,6 +217,7 @@ describe('Chat History Middleware Integration', () => {
 
     it('should gracefully handle database errors in wrapStream', async () => {
       // Arrange - Mock transaction to fail
+      mockConsole.setup();
       const mockDb = require('@/lib/drizzle-db');
       mockDb.drizDb.mockImplementationOnce(() => ({
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),

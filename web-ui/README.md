@@ -1,118 +1,158 @@
-# Web UI - Title IX Victim Advocacy Platform
+# NoEducation Web UI
 
-A modern, responsive web application empowering victims, families, and advocates to fight back against educational institutions that mishandle Title IX cases through email processing, evidence analysis, and AI-powered case building. Built with Next.js 15 and Material UI, this frontend provides an intuitive interface for those facing schools that abuse their position of power.
+A modern, AI-powered evidence management and analysis platform built with Next.js 15, Material UI 7, and multiple AI providers. This application provides intelligent email processing, document analysis, and chat-based evidence exploration with advanced multi-provider AI integration.
 
 ## Overview
 
-The web UI serves as the primary interface for the Title IX Victim Advocacy Platform, offering:
-- **Evidence Management**: Import, organize, and analyze email communications and documents
-- **Case Building**: Upload and manage evidence to build strong advocacy cases
-- **AI-Powered Analysis**: Real-time insights to identify institutional failures and violations
-- **Advocacy Dashboard**: Comprehensive overview of case strength and evidence quality
-- **Bulk Operations**: Efficient handling of multiple evidence files and communications
-- **Secure Access**: Protected access for victims, families, and their advocates
+This web application provides a comprehensive platform for email evidence management and analysis:
+
+- **Email Management**: Import, organize, and analyze email communications with Gmail integration
+- **AI-Powered Analysis**: Multi-provider AI system (Azure OpenAI + Google Gemini) for intelligent content processing
+- **Chat Interface**: Interactive chat system for evidence exploration and analysis
+- **Document Processing**: Advanced document parsing, embeddings, and search capabilities  
+- **Data Grid System**: Enterprise-grade data grids with server-side operations for large datasets
+- **Authentication**: Secure multi-provider authentication with Azure AD and Google
 
 ## Key Features
 
-### Evidence Management System
-- **Gmail Integration**: Direct import from Gmail accounts using Google APIs to gather institutional communications
-- **Email Viewer**: Rich email display with attachment support for comprehensive evidence review
-- **Thread Management**: Organized email thread visualization to track institutional response patterns
-- **Search and Filter**: Advanced search capabilities across evidence content to find specific violations
-- **Bulk Actions**: Mass evidence processing and categorization for large cases
+### Email Management System
 
-### Evidence Analysis Interface
-- **Real-time Processing**: Live updates from AI analysis pipeline to identify institutional failures
-- **Multi-Provider AI**: Support for both Azure OpenAI and Google Gemini models for comprehensive analysis
-- **Analysis Results**: Structured display of AI-generated insights highlighting policy violations
-- **Action Item Tracking**: Monitor institutional failures to respond appropriately to reports
-- **Key Evidence Extraction**: Visual presentation of critical evidence elements for case building
-- **Violation Assessment**: Title IX compliance failure scoring and advocacy recommendations
+- **Gmail Integration**: Direct import from Gmail accounts using Google APIs
+- **Email Viewer**: Rich email display with attachment support and thread management
+- **Search and Filter**: Advanced search capabilities across email content
+- **Bulk Operations**: Mass email processing and management
+- **Email Properties**: Structured analysis of email headers, content, and metadata
 
-### Advanced Data Grid
-- **Material UI Pro Grid**: Professional-grade data grid with advanced features for evidence organization
-- **Server-Side Operations**: Efficient handling of large evidence datasets
-- **Custom Filtering**: Domain-specific filters for advocacy case data
-- **Export Capabilities**: Evidence export in multiple formats for legal teams
-- **Bulk Editing**: In-line editing for multiple evidence records
+### AI-Powered Analysis
+
+- **Multi-Provider AI**: Dual provider system with Azure OpenAI and Google Gemini models
+- **Model Availability Management**: Automatic failover and rate limit handling between providers
+- **Real-time Processing**: Live AI analysis with progress tracking
+- **Chat Interface**: Interactive chat system for email exploration and analysis
+- **Content Analysis**: Key points extraction, sentiment analysis, and compliance scoring
+- **Embeddings & Search**: Vector-based document similarity and hybrid search
+
+### Advanced Data Management
+
+- **Material UI Pro Data Grid**: Enterprise-grade data grids with server-side operations
+- **Drizzle ORM**: Type-safe database operations with PostgreSQL
+- **Repository Pattern**: Structured data access with base repository classes
+- **Caching**: Redis-based caching for improved performance
+- **Real-time Updates**: WebSocket and server-sent events for live data updates
 
 ## Technology Stack
 
 ### Frontend Framework
+
 - **Next.js 15.x**: React framework with App Router and server components
-- **TypeScript**: Full type safety throughout the application
+- **TypeScript 5.x**: Full type safety throughout the application
 - **React 19**: Latest React features and concurrent rendering
-- **Material UI 7.x**: Comprehensive component library with theming
+- **Material UI 7.x**: Comprehensive component library with custom theming
+
+### AI & Model Integration
+
+- **Vercel AI SDK 5.x**: Unified AI model interface with provider registry
+- **Azure OpenAI**: GPT-4, GPT-3.5, and embedding models
+- **Google Gemini**: Gemini 2.5 Pro, Gemini 2.5 Flash, and text embedding models
+- **Model Context Protocol (MCP)**: Advanced tool system for AI interactions
+- **Custom Model Factory**: Multi-provider failover and availability management
+
+### Data & Persistence
+
+- **PostgreSQL**: Primary database with advanced queries
+- **Drizzle ORM**: Type-safe database operations with schema validation
+- **Redis**: Caching layer for AI responses and session data
+- **Repository Pattern**: Structured data access with base repository classes
 
 ### UI Components & Styling
-- **Material UI Pro**: Advanced data grid and enterprise components
-- **TailwindCSS 4.x**: Utility-first CSS framework with custom design system
-- **Custom CSS Types**: Type-safe CSS class generation
+
+- **Material UI Pro**: Advanced data grid and enterprise components  
+- **Emotion**: CSS-in-JS styling system
+- **Custom Theming**: Comprehensive theme system with dark/light mode
 - **Responsive Design**: Mobile-first responsive layout system
 
-### State Management & Data
-- **Next.js Server Components**: Server-side rendering and data fetching
-- **Drizzle ORM**: Type-safe database operations with PostgreSQL
-- **React Query**: Client-side state management and caching
-- **Form Validation**: Zod-based form validation and type safety
-
 ### Authentication & Security
+
 - **NextAuth.js 5.x**: Authentication with multiple providers
-- **Azure AD Integration**: Enterprise authentication support
-- **Role-Based Access Control**: Granular permission management
+- **Azure AD**: Enterprise authentication support
+- **Google OAuth**: Social authentication integration
 - **Session Management**: Secure session handling and persistence
 
 ## Project Structure
 
 ```
 web-ui/
-├── app/                    # Next.js App Router pages
-│   ├── api/               # API routes and server functions
-│   ├── auth/              # Authentication pages
-│   ├── evidence/          # Evidence management interface
-│   ├── case-building/     # Case building and analysis interface
-│   └── advocacy/          # Advocacy tools and bulk operations
-├── components/            # Reusable UI components
-│   ├── evidence-message/  # Evidence-specific components
-│   ├── evidence-import/   # Evidence import functionality
-│   ├── ai/                # AI integration components for violation detection
-│   ├── mui/               # Material UI customizations
-│   └── general/           # Common UI components
-├── lib/                   # Utility libraries and configurations
-│   ├── api/               # API client and repository patterns
-│   ├── neondb/            # Database connection and queries
-│   ├── react-util/        # React utilities and hooks
-│   └── site-util/         # Site-wide utilities and constants
-├── data-models/           # TypeScript data model definitions
-├── types/                 # TypeScript type definitions
-└── public/                # Static assets
+├── app/                           # Next.js App Router pages
+│   ├── api/                      # API routes and server functions
+│   │   ├── ai/                   # AI model endpoints
+│   │   ├── email/                # Email management APIs
+│   │   └── auth/                 # Authentication APIs
+│   ├── auth/                     # Authentication pages
+│   ├── messages/                 # Email message management
+│   │   ├── email/[emailId]/     # Email detail pages
+│   │   ├── chat/                # Chat interface
+│   │   └── import/              # Email import functionality
+│   ├── bulk-edit/               # Bulk operations interface
+│   └── test-*/                  # Testing pages
+├── components/                   # Reusable UI components
+│   ├── email-message/           # Email-specific components
+│   ├── chat/                    # Chat interface components
+│   ├── ai/                      # AI integration components
+│   ├── mui/                     # Material UI customizations
+│   │   └── data-grid/           # Advanced data grid components
+│   └── general/                 # Common UI components
+├── lib/                         # Core libraries and utilities
+│   ├── ai/                      # AI model factory and middleware
+│   │   ├── aiModelFactory.ts    # Multi-provider AI model factory
+│   │   ├── middleware/          # AI middleware (caching, retry)
+│   │   ├── mcp/                 # Model Context Protocol integration
+│   │   └── tools/               # AI tools and capabilities
+│   ├── api/                     # Repository pattern implementations
+│   │   ├── email/               # Email data repositories
+│   │   └── _baseDrizzleRepository.ts # Base repository class
+│   ├── drizzle-db/              # Database schema and connections
+│   │   ├── schema.ts            # Unified database schema
+│   │   └── index.ts             # Database connection
+│   ├── components/              # Component utilities
+│   │   └── mui/data-grid/       # Data grid query helpers
+│   ├── react-util/              # React utilities and hooks
+│   └── site-util/               # Site-wide utilities
+├── data-models/                 # TypeScript data model definitions
+├── __tests__/                   # Test files (Jest + React Testing Library)
+├── drizzle/                     # Database schema definitions
+│   ├── schema.ts                # Table definitions
+│   └── custom-relations.ts      # Database relations
+└── public/                      # Static assets
 ```
 
 ## Getting Started
 
 ### Prerequisites
-- Node.js 22.x or higher
+
+- Node.js 22.x (enforced by package.json engines)
+- Yarn 1.22+ (enforced by preinstall script)
 - PostgreSQL 14+ database
 - Google Cloud Console project (for Gmail integration)
 - Azure AD application (for enterprise auth)
+- Azure OpenAI and/or Google AI API access
 
 ### Installation
-```bash
-# Install dependencies
-npm install
 
-# Generate TailwindCSS types
-npm run generate-css-types
+```bash
+# Install dependencies (yarn required)
+yarn install
 
 # Set up environment variables
 cp .env.example .env.local
 ```
 
 ### Environment Configuration
+
 Create `.env.local` with required configuration:
+
 ```bash
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/victim_advocacy_db"
+DATABASE_URL="postgresql://username:password@localhost:5432/database_name"
 
 # Authentication
 NEXTAUTH_URL="http://localhost:3000"
@@ -123,7 +163,7 @@ AZURE_AD_CLIENT_ID="your-azure-client-id"
 AZURE_AD_CLIENT_SECRET="your-azure-client-secret"
 AZURE_AD_TENANT_ID="your-azure-tenant-id"
 
-# Azure OpenAI (for AI analysis)
+# Azure OpenAI
 AZURE_OPENAI_ENDPOINT="https://your-resource.openai.azure.com/"
 AZURE_API_KEY="your-azure-openai-api-key"
 AZURE_OPENAI_DEPLOYMENT_COMPLETIONS="your-completions-deployment"
@@ -131,88 +171,101 @@ AZURE_OPENAI_DEPLOYMENT_LOFI="your-lofi-deployment"
 AZURE_OPENAI_DEPLOYMENT_HIFI="your-hifi-deployment"
 AZURE_OPENAI_DEPLOYMENT_EMBEDDING="your-embedding-deployment"
 
-# Google AI (for alternative AI models)
+# Azure OpenAI Embedding (can be separate instance)
+AZURE_OPENAI_ENDPOINT_EMBEDDING="https://your-embedding-resource.openai.azure.com/"
+AZURE_OPENAI_KEY_EMBEDDING="your-embedding-api-key"
+
+# Google AI
 GOOGLE_GENERATIVE_AI_API_KEY="your-google-ai-api-key"
 
-# Google APIs (for evidence gathering from Gmail)
+# Google APIs (for Gmail integration)
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
-
-# Backend API
-CHAT_API_URL="http://localhost:8080"
 ```
 
 ### Database Setup
+
 ```bash
+# Generate database schema
+yarn drizzle-generate
+
 # Run database migrations
 npx drizzle-kit migrate
 
-# Generate database types
-npx drizzle-kit generate:pg
+# Open Drizzle Studio (database viewer)
+npx drizzle-kit studio
 ```
 
 ### Development Server
+
 ```bash
 # Start development server
-npm run dev
+yarn dev
 
-# Start with custom port
-npm run dev -- --port 3001
+# Start in debug mode
+yarn debug
 
 # Build for production
-npm run build
-npm start
+yarn build
+
+# Start production server
+yarn start
 ```
 
 ## Key Components
 
-### Evidence Management
+### Email Management
+
 ```typescript
-// Evidence list with advanced filtering for case building
-<EvidenceList 
+// Email list with advanced filtering
+<EmailList
   filters={{
-    sender: "compliance@school.edu",
+    sender: "sender@domain.com",
     dateRange: { start: "2024-01-01", end: "2024-12-31" },
     hasAttachments: true,
-    titleIXViolations: true
+    hasViolations: true
   }}
-  onEvidenceSelect={handleEvidenceSelection}
+  onEmailSelect={handleEmailSelection}
   bulkActions={true}
 />
 
-// Evidence viewer with violation analysis results
-<EvidenceViewer 
-  evidenceId={selectedEvidenceId}
-  showViolationAnalysis={true}
+// Email viewer with rich content display
+<EmailViewer
+  emailId={selectedEmailId}
+  showAnalysis={true}
   enableAnnotations={true}
 />
 ```
 
-### Evidence Processing
-```typescript
-// Evidence upload with AI processing for violation detection
-<EvidenceUpload
-  onUpload={handleEvidenceUpload}
-  acceptedTypes={['.pdf', '.docx', '.txt']}
-  autoProcessForViolations={true}
-  showProgress={true}
-/>
+### AI Model Integration
 
-// Violation analysis results display
-<ViolationAnalysisResults
-  evidenceId={evidenceId}
-  showKeyViolations={true}
-  showInstitutionalFailures={true}
-  enableExport={true}
-/>
+```typescript
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+
+// Use Azure models (with automatic failover to Google)
+const hifiModel = aiModelFactory('hifi');
+const lofiModel = aiModelFactory('lofi');
+const embedding = aiModelFactory('embedding');
+
+// Use Google models directly
+const geminiPro = aiModelFactory('gemini-pro');
+const geminiFlash = aiModelFactory('gemini-flash');
+const googleEmbedding = aiModelFactory('google-embedding');
+
+// Generate text with automatic provider selection
+const result = await generateText({
+  model: hifiModel,
+  messages: [{ role: 'user', content: 'Analyze this email...' }],
+});
 ```
 
 ### Data Grid Integration
+
 ```typescript
-// Server-bound data grid for large evidence datasets
+// Server-bound data grid for large datasets
 <ServerBoundDataGrid
-  endpoint="/api/evidence"
-  columns={evidenceColumns}
+  endpoint="/api/emails"
+  columns={emailColumns}
   filters={currentFilters}
   sorting={currentSort}
   pagination={true}
@@ -226,484 +279,266 @@ npm start
 />
 ```
 
-## API Integration
+## Database Operations
 
-### Backend Communication
+### Repository Pattern
+
 ```typescript
-// Type-safe API client
-const apiClient = new TypedApiClient({
-  baseUrl: process.env.CHAT_API_URL,
-  timeout: 30000,
-  retries: 3
-});
+// Email repository with Drizzle ORM
+class EmailRepository extends BaseDrizzleRepository<EmailMessage, 'id'> {
+  async findByTitleIXViolations(hasViolations: boolean): Promise<EmailMessage[]> {
+    return this.db.select().from(emails).where(eq(emails.hasViolations, hasViolations));
+  }
 
-// Evidence operations for advocacy case building
-const evidence = await apiClient.get('/api/evidence', {
-  filters: { titleIXViolations: true },
-  pagination: { page: 1, limit: 50 }
-});
-
-// Evidence analysis for violation detection
-const violationAnalysis = await apiClient.post('/api/evidence/analyze', {
-  evidenceId: 123,
-  analysisType: 'violation_detection',
-  priority: 'high'
-});
+  async getEmailsWithAttachments(): Promise<EmailWithAttachments[]> {
+    return this.db.query.emails.findMany({
+      with: { attachments: true }
+    });
+  }
+}
 ```
 
-### Real-time Updates
+### Real-time Data
+
 ```typescript
-// WebSocket integration for live updates on evidence processing
-const { data, status } = useRealtimeData('/api/processing-status', {
-  evidenceId,
-  refreshInterval: 1000
+// React Query for server state management
+const { data: emails, isLoading, error } = useQuery({
+  queryKey: ['emails', filters],
+  queryFn: () => fetchEmails(filters),
+  staleTime: 5 * 60 * 1000, // 5 minutes
 });
 
-// Server-sent events for violation analysis progress tracking
-const { progress } = useSSE(`/api/analysis/${evidenceId}/progress`);
+// Real-time chat updates
+const { messages, sendMessage } = useChat({
+  api: '/api/ai/chat',
+  id: chatId,
+  initialMessages,
+});
 ```
 
 ## AI Model Support
 
-The platform supports multiple AI providers through a unified model factory that simplifies provider management and enhances analysis capabilities.
+The platform features a sophisticated multi-provider AI system with automatic failover, rate limit handling, and unified model access through the `aiModelFactory`.
 
 ### Available Models
 
 #### Azure OpenAI Models
-- **HiFi (`hifi`)**: High-fidelity analysis for detailed evidence processing
-- **LoFi (`lofi`)**: Fast analysis for bulk evidence processing  
+
+- **HiFi (`hifi`)**: High-quality analysis using GPT-4 (Azure deployment)
+- **LoFi (`lofi`)**: Fast analysis using GPT-3.5 (Azure deployment)  
 - **Completions (`completions`)**: Text completion and generation
-- **Embedding (`embedding`)**: Document similarity and search
+- **Embedding (`embedding`)**: Document similarity and search using text-embedding-ada-002
 
 #### Google Gemini Models  
-- **Gemini Pro (`gemini-pro`)**: Advanced reasoning and analysis using Gemini 1.5 Pro
-- **Gemini Flash (`gemini-flash`)**: Fast analysis using Gemini 1.5 Flash
+
+- **Gemini Pro (`gemini-pro`)**: Advanced reasoning using Gemini 2.5 Pro
+- **Gemini Flash (`gemini-flash`)**: Fast analysis using Gemini 2.5 Flash
+- **Gemini 2.0 Flash (`gemini-2.0-flash`)**: Latest fast model variant
 - **Google Embedding (`google-embedding`)**: Document embeddings using text-embedding-004
 
-### Usage Examples
+### Model Factory Usage
 
 ```typescript
-import { aiModelFactory, createGoogleEmbeddingModel } from '@/lib/ai/aiModelFactory';
+import { aiModelFactory, isModelAvailable } from '@/lib/ai/aiModelFactory';
 
-// Use Azure models (existing functionality)
+// Basic model access (Azure primary, Google fallback)
 const hifiModel = aiModelFactory('hifi');
-const azureEmbedding = aiModelFactory('embedding');
+const lofiModel = aiModelFactory('lofi');
+const embedding = aiModelFactory('embedding');
 
-// Use new Google models
+// Google-specific models
 const geminiPro = aiModelFactory('gemini-pro');
-const geminiFlash = aiModelFactory('gemini-flash'); 
-const googleEmbedding = createGoogleEmbeddingModel();
+const geminiFlash = aiModelFactory('gemini-flash');
+const googleEmbedding = aiModelFactory('google-embedding');
 
-// Provider registry automatically handles initialization
+// Provider-specific model access
+const azureHifi = aiModelFactory('azure:hifi');
+const googleHifi = aiModelFactory('google:hifi');
+
+// Generate text with automatic provider selection
 const result = await generateText({
-  model: geminiPro,
-  messages: [{ role: 'user', content: 'Analyze this Title IX case...' }]
+  model: hifiModel,
+  messages: [{ role: 'user', content: 'Analyze this email...' }],
 });
 ```
 
-### Provider Registry
+### Advanced Features
 
-The implementation uses Vercel AI SDK's built-in provider registry pattern that:
-- **Custom Providers**: Uses `customProvider` to create Azure and Google providers with model aliases
-- **Fallback Strategy**: Azure as primary provider with Google as fallback for high availability
-- **Model Aliases**: Consistent model naming (`hifi`, `lofi`, `embedding`) across providers
-- **Middleware Support**: All models work with existing caching and retry middleware
+#### Automatic Failover & Rate Limit Handling
 
 ```typescript
-// Custom providers with model aliases
-const azureProvider = customProvider({
-  languageModels: {
-    hifi: azureModel('gpt-4'),      // High-quality model
-    lofi: azureModel('gpt-3.5'),    // Fast model
-    completions: azureModel('text-davinci-003')
-  },
-  embeddingModels: {
-    embedding: azureEmbedding('text-embedding-ada-002')
-  }
-});
+import { 
+  handleAzureRateLimit, 
+  handleGoogleRateLimit,
+  temporarilyDisableModel 
+} from '@/lib/ai/aiModelFactory';
 
-// Provider registry with Azure primary and Google fallback
-const providerRegistry = createProviderRegistry({
-  azure: azureProvider,
-  google: googleProvider
-});
+// The factory automatically handles rate limits
+try {
+  const result = await aiModelFactory('hifi');
+  // Uses Azure first, automatically falls back to Google on rate limit
+} catch (error) {
+  if (error.status === 429) {
+    // Rate limit automatically handled internally
+    handleAzureRateLimit(300000); // Disable Azure for 5 minutes
+  }
+}
+
+// Manual model control
+temporarilyDisableModel('azure:hifi', 300000); // Disable for 5 minutes
 ```
 
-### Programmatic Model Control
-
-The platform includes advanced model availability management for handling rate limits, provider outages, and strategic model selection:
-
-#### Core Features
-- **Per-Model Control**: Enable/disable specific models (e.g., `azure:hifi`, `google:embedding`)
-- **Provider-Level Control**: Enable/disable entire providers (Azure or Google)
-- **Temporary Disabling**: Auto-recovery after specified time periods
-- **Rate Limit Handling**: Automatic failover when providers hit rate limits
-- **Real-time Availability**: Check model availability before use
-
-#### Usage Examples
+#### Model Availability Management
 
 ```typescript
 import { 
   disableModel, 
   enableModel, 
   disableProvider,
-  temporarilyDisableModel,
-  isModelAvailable,
-  handleAzureRateLimit,
-  handleGoogleRateLimit,
-  resetModelAvailability
+  isProviderAvailable 
 } from '@/lib/ai/aiModelFactory';
-
-// Disable specific models
-disableModel('azure:hifi');                    // Disable Azure hifi model
-enableModel('azure:hifi');                     // Re-enable Azure hifi model
-
-// Provider-level control
-disableProvider('azure');                      // Disable all Azure models
-enableProvider('azure');                       // Re-enable all Azure models
-
-// Temporary disabling (auto-recovery)
-temporarilyDisableModel('azure:hifi', 300000); // Disable for 5 minutes
 
 // Check availability before use
 if (isModelAvailable('azure:hifi')) {
-  const result = await aiModelFactory('hifi');
+  const model = aiModelFactory('hifi');
 }
 
-// Handle rate limits automatically
-handleAzureRateLimit(300000);                  // Disable Azure for 5 min
-handleGoogleRateLimit(180000);                 // Disable Google for 3 min
+// Provider-level control
+disableProvider('azure'); // Disable all Azure models
+enableProvider('google');  // Enable all Google models
 
-// Reset all models to available state
-resetModelAvailability();
-```
-
-#### Rate Limit Management
-
-```typescript
-// Automatic rate limit detection and failover
-export const aiModelFactory = (modelType) => {
-  switch (modelType) {
-    case 'hifi':
-      // Try Azure first if available
-      if (isModelAvailable('azure:hifi')) {
-        try {
-          return providerRegistry.languageModel('azure:hifi');
-        } catch (error) {
-          // Auto-disable Azure on rate limit, try Google
-          temporarilyDisableModel('azure:hifi', 60000);
-          console.warn('Azure hifi rate limited, switching to Google');
-        }
-      }
-      
-      // Fallback to Google if available
-      if (isModelAvailable('google:hifi')) {
-        return providerRegistry.languageModel('google:hifi');
-      }
-      
-      throw new Error('No available providers for hifi model');
-  }
-};
-```
-
-#### Integration with Error Handling
-
-```typescript
-// Application-level rate limit handling
-export const handleProviderError = (error: any, modelKey: string) => {
-  if (error.status === 429) { // Rate limit error
-    const [provider] = modelKey.split(':');
-    
-    if (provider === 'azure') {
-      handleAzureRateLimit(300000); // 5 minutes
-    } else if (provider === 'google') {
-      handleGoogleRateLimit(180000); // 3 minutes
-    }
-    
-    // Retry with different provider
-    return aiModelFactory(modelKey.split(':')[1]);
-  }
-  
-  throw error;
-};
-```
-
-#### Available Control Functions
-
-| Function | Description | Example |
-|----------|-------------|---------|
-| `disableModel(key)` | Disable specific model | `disableModel('azure:hifi')` |
-| `enableModel(key)` | Enable specific model | `enableModel('azure:hifi')` |
-| `disableProvider(name)` | Disable all provider models | `disableProvider('azure')` |
-| `enableProvider(name)` | Enable all provider models | `enableProvider('azure')` |
-| `temporarilyDisableModel(key, ms)` | Auto-recovery disabling | `temporarilyDisableModel('azure:hifi', 300000)` |
-| `isModelAvailable(key)` | Check model availability | `isModelAvailable('azure:hifi')` |
-| `isProviderAvailable(name)` | Check provider availability | `isProviderAvailable('azure')` |
-| `handleAzureRateLimit(ms)` | Azure rate limit response | `handleAzureRateLimit(300000)` |
-| `handleGoogleRateLimit(ms)` | Google rate limit response | `handleGoogleRateLimit(300000)` |
-| `resetModelAvailability()` | Reset to defaults | `resetModelAvailability()` |
-| `getModelAvailabilityStatus()` | Debug availability state | `getModelAvailabilityStatus()` |
-
-This system ensures high availability and optimal resource usage across multiple AI providers while providing fine-grained control over model selection and failover behavior.
-    lofi: azureModel('gpt-3.5'),    // Fast, cost-effective model
-  },
-  embeddingModels: {
-    embedding: azureEmbeddingModel('text-embedding-ada-002'),
-  },
-  fallbackProvider: azureRawProvider,
-});
-
-const googleProvider = customProvider({
-  languageModels: {
-    hifi: googleModel('gemini-1.5-pro'),    // Equivalent to Azure hifi
-    lofi: googleModel('gemini-1.5-flash'),  // Equivalent to Azure lofi
-  },
-  embeddingModels: {
-    embedding: googleEmbeddingModel('text-embedding-004'),
-  },
-  fallbackProvider: googleRawProvider,
-});
-
-// Provider registry with fallback strategy
-export const providerRegistry = createProviderRegistry({
-  azure: azureProvider,  // Primary provider
-  google: googleProvider, // Fallback provider
-});
-```
-
-## Authentication & Authorization
-
-### User Authentication
-```typescript
-// NextAuth configuration
-export const authOptions: NextAuthOptions = {
-  providers: [
-    AzureADProvider({
-      clientId: process.env.AZURE_AD_CLIENT_ID!,
-      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
-      tenantId: process.env.AZURE_AD_TENANT_ID!,
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  callbacks: {
-    async session({ session, token }) {
-      // Add user roles and permissions
-      session.user.role = token.role;
-      session.user.permissions = token.permissions;
-      return session;
-    },
-  },
-};
-```
-
-### Role-Based Access
-```typescript
-// Protected route component for victim advocates
-<ProtectedRoute requiredRole="victim_advocate">
-  <BulkEvidenceProcessor />
-</ProtectedRoute>
-
-// Permission-based UI elements for case building
-<ConditionalRender 
-  condition={hasPermission('edit_evidence')}
-  fallback={<ReadOnlyView />}
->
-  <EvidenceEditor />
-</ConditionalRender>
-```
-
-## Data Management
-
-### Database Operations
-```typescript
-// Repository pattern implementation for evidence management
-class EvidenceRepository extends BaseObjectRepository<EvidenceMessage, 'id'> {
-  async findByTitleIXViolations(hasViolations: boolean): Promise<EvidenceMessage[]> {
-    return this.query(
-      sql`SELECT * FROM evidence WHERE title_ix_violations = ${hasViolations}`
-    );
-  }
-
-  async getBulkViolationAnalysisStatus(evidenceIds: number[]): Promise<AnalysisStatus[]> {
-    return this.query(
-      sql`SELECT evidence_id, status FROM violation_analysis_status 
-          WHERE evidence_id = ANY(${evidenceIds})`
-    );
-  }
-}
-```
-
-### State Management
-```typescript
-// React Query for server state management in advocacy cases
-const { data: evidence, isLoading, error } = useQuery({
-  queryKey: ['evidence', filters],
-  queryFn: () => fetchEvidence(filters),
-  staleTime: 5 * 60 * 1000, // 5 minutes
-});
-
-// Optimistic updates for better UX in case building
-const updateEvidenceMutation = useMutation({
-  mutationFn: updateEvidence,
-  onMutate: async (newEvidence) => {
-    // Cancel outgoing refetches
-    await queryClient.cancelQueries(['evidence']);
-    
-    // Snapshot previous value
-    const previousEvidence = queryClient.getQueryData(['evidence']);
-    
-    // Optimistically update
-    queryClient.setQueryData(['evidence'], (old) => 
-      old?.map(evidence => evidence.id === newEvidence.id ? newEvidence : evidence)
-    );
-    
-    return { previousEvidence };
-  },
-});
-```
-
-## Performance Optimization
-
-### Server-Side Rendering
-```typescript
-// Server component for initial evidence data loading
-async function AdvocacyDashboard() {
-  const initialEvidence = await fetchEvidence({ limit: 20 });
-  const caseStats = await fetchCaseStats();
-  
-  return (
-    <div>
-      <CaseStats stats={caseStats} />
-      <EvidenceGrid initialData={initialEvidence} />
-    </div>
-  );
-}
-```
-
-### Client-Side Optimization
-```typescript
-// Virtual scrolling for large evidence lists
-<VirtualizedList
-  items={evidence}
-  itemHeight={80}
-  renderItem={({ item, index }) => (
-    <EvidenceListItem evidence={item} index={index} />
-  )}
-  windowSize={20}
-/>
-
-// Lazy loading with Suspense for evidence details
-<Suspense fallback={<EvidenceSkeleton />}>
-  <EvidenceDetails evidenceId={evidenceId} />
-</Suspense>
-```
-
-### Bundle Optimization
-```javascript
-// Next.js configuration
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['pg', 'drizzle-orm'],
-  },
-  webpack: (config) => {
-    // Optimize bundle size
-    config.optimization.splitChunks = {
-      chunks: 'all',
-      cacheGroups: {
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          chunks: 'all',
-        },
-        mui: {
-          test: /[\\/]node_modules[\\/]@mui[\\/]/,
-          chunks: 'all',
-        },
-      },
-    };
-    return config;
-  },
-};
+// Specific model control
+disableModel('azure:hifi');
+enableModel('google:gemini-pro');
 ```
 
 ## Testing
 
-### Unit Testing
+The project uses Jest with React Testing Library for comprehensive testing coverage.
+
+### Testing Configuration
+
+- **Environment**: jsdom for React component testing
+- **Framework**: Jest 30.x with React Testing Library 16.x
+- **Concurrency**: Limited workers (2 in CI, 50% locally) to prevent resource contention
+- **Timeout**: 10 seconds for slower tests
+- **Mocking**: Global mocks for auth, database, navigation, and external services
+
+### Available Test Commands
+
+```bash
+# Run all tests
+yarn test
+
+# Run tests in serial mode (single-threaded)
+yarn test:serial
+
+# Run specific test file
+yarn test path/to/test.test.ts
+
+# Run tests matching pattern
+yarn test --testNamePattern="ChatDetailPage"
+
+# Run tests with high concurrency (stress testing)
+yarn test:concurrency-stress
+```
+
+### Testing Guidelines
+
+Before writing or fixing tests, always:
+
+1. **Read test environment setup**: Review `__tests__/jest.setup.ts` and `jest.config.ts`
+2. **Understand global mocks**: Reuse existing mocks instead of creating duplicates
+3. **Set mock implementations**: Configure mocks before importing the system under test
+4. **Avoid anti-patterns**: Don't re-mock globally mocked modules
+
+### Example Test Structure
+
 ```typescript
-// Component testing with React Testing Library
+// __tests__/components/email-message/email-list.test.tsx
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { EmailList } from '../components/email-message/list';
+import { EmailList } from '@/components/email-message/email-list';
 
 describe('EmailList', () => {
-  test('filters emails by Title IX relevance', async () => {
+  test('filters emails by compliance violations', async () => {
     const user = userEvent.setup();
     render(<EmailList />);
-    
-    const filterToggle = screen.getByRole('checkbox', { 
-      name: /title ix relevant/i 
+
+    const filterToggle = screen.getByRole('checkbox', {
+      name: /compliance violations/i
     });
-    
+
     await user.click(filterToggle);
-    
+
     await waitFor(() => {
-      expect(screen.queryByText('Non-relevant email')).not.toBeInTheDocument();
+      expect(screen.queryByText('Non-compliant email')).not.toBeInTheDocument();
     });
   });
 });
+````
+
+## Development Scripts
+
+### Available Commands
+
+```bash
+# Development
+yarn dev                    # Start development server on port 3000  
+yarn debug                  # Start with Node.js debugging enabled
+yarn build                  # Build production bundle
+yarn start                  # Start production server
+
+# Testing
+yarn test                   # Run Jest tests
+yarn test:serial           # Run tests in single-threaded mode
+yarn test:concurrency-stress # Run tests with high concurrency
+
+# Code Quality
+yarn lint                   # Run ESLint checks
+
+# Database
+yarn drizzle-generate       # Generate Drizzle schema
+npx drizzle-kit migrate     # Run database migrations
+npx drizzle-kit studio      # Open Drizzle Studio
+
+# Build Analysis
+ANALYZE=true yarn build     # Build with bundle analyzer
 ```
 
-### Integration Testing
+## Performance Features
+
+### Next.js Optimizations
+
+- **Lightning CSS**: Faster CSS processing with `useLightningcss: true`
+- **Package Import Optimization**: Optimized imports for major libraries (MUI, OpenTelemetry, AI SDK)
+- **Server External Packages**: External packages for server-side operations
+- **Web Vitals Attribution**: Performance monitoring for Core Web Vitals
+
+### Caching Strategy
+
+- **Redis Caching**: AI responses cached with TTL
+- **React Query**: Client-side state caching with stale-while-revalidate
+- **Database Query Optimization**: Drizzle ORM with efficient query patterns
+
+### Bundle Optimization
+
 ```typescript
-// API route testing
-import { createMocks } from 'node-mocks-http';
-import handler from '../pages/api/emails/[id]';
-
-describe('/api/emails/[id]', () => {
-  test('returns email data for valid ID', async () => {
-    const { req, res } = createMocks({
-      method: 'GET',
-      query: { id: '123' },
-    });
-
-    await handler(req, res);
-
-    expect(res._getStatusCode()).toBe(200);
-    const data = JSON.parse(res._getData());
-    expect(data.email.id).toBe('123');
-  });
-});
-```
-
-### E2E Testing
-```typescript
-// Playwright end-to-end tests
-import { test, expect } from '@playwright/test';
-
-test('complete email analysis workflow', async ({ page }) => {
-  await page.goto('/');
-  
-  // Import emails
-  await page.click('[data-testid="import-emails"]');
-  await page.fill('#gmail-query', 'subject:compliance');
-  await page.click('[data-testid="start-import"]');
-  
-  // Wait for analysis completion
-  await expect(page.locator('[data-testid="analysis-complete"]'))
-    .toBeVisible({ timeout: 30000 });
-  
-  // Verify results
-  await expect(page.locator('[data-testid="key-points"]'))
-    .toContainText('Title IX');
-});
+// next.config.ts optimizations
+experimental: {
+  optimizePackageImports: [
+    '@ai-sdk', '@mui/material', '@mui/icons-material',
+    '@toolpad/core', '@opentelemetry/api', 'ai'
+  ],
+  useLightningcss: true,
+  webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID']
+}
 ```
 
 ## Deployment
 
 ### Production Build
+
 ```bash
 # Build optimized production bundle
 npm run build
@@ -716,6 +551,7 @@ npm start
 ```
 
 ### Vercel Deployment
+
 ```bash
 # Deploy to Vercel
 npm install -g vercel
@@ -726,6 +562,7 @@ vercel
 ```
 
 ### Docker Deployment
+
 ```dockerfile
 FROM node:22-alpine AS base
 WORKDIR /app
@@ -750,21 +587,23 @@ CMD ["npm", "start"]
 ## Security Considerations
 
 ### Data Protection
+
 - **CSRF Protection**: Built-in CSRF protection with NextAuth.js
 - **XSS Prevention**: Automatic escaping and Content Security Policy
 - **SQL Injection**: Parameterized queries with Drizzle ORM
 - **Secure Headers**: Security headers configuration
 
 ### Access Control
+
 ```typescript
 // Middleware for route protection
 export function middleware(request: NextRequest) {
   const token = request.nextauth.token;
-  
+
   if (!token) {
     return NextResponse.redirect(new URL('/auth/signin', request.url));
   }
-  
+
   // Role-based route access
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!hasRole(token, 'admin')) {
@@ -774,89 +613,130 @@ export function middleware(request: NextRequest) {
 }
 ```
 
-## Monitoring & Analytics
+## Deployment
 
-### Performance Monitoring
-```typescript
-// Web Vitals tracking
-import { getCLS, getFID, getFCP, getLCP, getTTFB } from 'web-vitals';
+### Production Build
 
-export function reportWebVitals(metric: any) {
-  // Send to analytics service
-  analytics.track('Web Vitals', {
-    name: metric.name,
-    value: metric.value,
-    id: metric.id,
-  });
-}
+```bash
+# Build optimized production bundle
+yarn build
+
+# Analyze bundle size  
+ANALYZE=true yarn build
+
+# Test production build locally
+yarn start
 ```
 
-### Error Tracking
-```typescript
-// Error boundary with reporting
-class ErrorBoundary extends Component {
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log to error tracking service
-    errorReporting.captureException(error, {
-      context: errorInfo,
-      user: getCurrentUser(),
-      tags: { component: 'email-processor' },
-    });
-  }
-}
+### Vercel Deployment
+
+```bash
+# Deploy to Vercel
+npm install -g vercel
+vercel
+
+# Configure environment variables in Vercel dashboard
+# Supports standalone output with FOR_STANDALONE=1
 ```
 
-## Contributing
+### Docker Deployment
 
-### Development Guidelines
-1. **TypeScript First**: All new code must be written in TypeScript
-2. **Component Standards**: Follow Material UI design system principles
-3. **Performance**: Optimize for Core Web Vitals and accessibility
-4. **Testing**: Maintain test coverage above 80%
-5. **Documentation**: Update component documentation and storybook
+```dockerfile
+FROM node:22-alpine AS base
+WORKDIR /app
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile --production
 
-### Code Style
-```typescript
-// Use consistent naming conventions
-interface EmailMessageProps {
-  emailId: string;
-  showAnalysis?: boolean;
-  onAnalysisComplete?: (result: AnalysisResult) => void;
-}
+FROM base AS builder
+COPY . .
+RUN yarn build
 
-// Prefer composition over inheritance
-const EmailViewer = memo(({ emailId, showAnalysis }: EmailMessageProps) => {
-  const { data: email, isLoading } = useEmail(emailId);
-  
-  if (isLoading) return <EmailSkeleton />;
-  if (!email) return <EmailNotFound />;
-  
-  return (
-    <Card>
-      <EmailHeader email={email} />
-      <EmailContent email={email} />
-      {showAnalysis && <AnalysisPanel emailId={emailId} />}
-    </Card>
-  );
-});
+FROM node:22-alpine AS runner
+WORKDIR /app
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/package.json ./
+
+EXPOSE 3000
+CMD ["yarn", "start"]
 ```
+
+## Architecture Highlights
+
+### Multi-Provider AI System
+
+- **Unified Interface**: Single `aiModelFactory` for all AI models
+- **Automatic Failover**: Azure primary with Google fallback  
+- **Rate Limit Handling**: Temporary model disabling with auto-recovery
+- **Model Availability Management**: Programmatic control over model access
+
+### Enterprise Data Grid System
+
+- **Material UI Pro**: Advanced data grid with enterprise features
+- **Server-Side Operations**: Pagination, filtering, sorting on the server
+- **Drizzle Query Helpers**: Type-safe query building for data grids
+- **Bulk Operations**: Mass data operations with optimistic updates
+
+### Database Architecture
+
+- **Drizzle ORM**: Type-safe database operations with PostgreSQL
+- **Repository Pattern**: Structured data access with base repository classes  
+- **Schema Management**: Unified schema with custom relations
+- **Migration System**: Version-controlled database schema changes
 
 ## Troubleshooting
 
 ### Common Issues
-- **Build Failures**: Check Node.js version and clear npm cache
-- **Authentication Issues**: Verify environment variables and provider settings
-- **Database Connections**: Ensure PostgreSQL is running and accessible
-- **Performance Issues**: Use React DevTools Profiler to identify bottlenecks
 
-### Debug Mode
+- **Build Failures**: Ensure Node.js 22.x and clear yarn cache
+- **Yarn Required**: Project enforces Yarn usage via preinstall script
+- **Authentication Issues**: Verify Azure AD and Google OAuth configuration
+- **Database Connections**: Ensure PostgreSQL is accessible and migrations run
+- **AI Model Issues**: Check Azure OpenAI and Google AI API access
+
+### Debug Commands
+
 ```bash
-# Enable debug logging
-DEBUG=* npm run dev
+# Debug mode with inspection
+yarn debug
 
-# Database query logging
-DATABASE_LOGGING=true npm run dev
+# Analyze bundle composition
+ANALYZE=true yarn build
 
-# Webpack bundle analyzer
-ANALYZE=true npm run build
+# Database debugging
+npx drizzle-kit studio
+
+# Test environment debugging
+yarn test --verbose
+```
+
+## Contributing
+
+### Development Workflow
+
+1. **TypeScript**: All code must be TypeScript with strict type checking
+2. **Testing**: Write tests for new features using Jest + React Testing Library
+3. **Code Style**: Follow ESLint configuration with Prettier formatting
+4. **Performance**: Optimize for Core Web Vitals and accessibility
+5. **AI Integration**: Use the unified `aiModelFactory` for all AI operations
+
+### Code Standards
+
+```typescript
+// Repository pattern example
+class EmailRepository extends BaseDrizzleRepository<EmailMessage, 'id'> {
+  async findByViolations(hasViolations: boolean): Promise<EmailMessage[]> {
+    return this.db.select()
+      .from(this.table)
+      .where(eq(this.table.hasViolations, hasViolations));
+  }
+}
+
+// AI model usage example
+const model = aiModelFactory('hifi'); // Auto-selects best provider
+const result = await generateText({
+  model,
+  messages: [{ role: 'user', content: 'Analyze this content...' }],
+});
 ```

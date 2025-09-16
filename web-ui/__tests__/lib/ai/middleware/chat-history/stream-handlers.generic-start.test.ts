@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
 import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-handlers';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
 
@@ -11,10 +12,8 @@ interface SyntheticStartChunk {
 }
 
 // Minimal helper to build a baseline context
-function makeContext(
-  overrides: Partial<StreamHandlerContext> = {},
-): StreamHandlerContext {
-  return {
+const makeContext = (overrides: Partial<StreamHandlerContext> = {}) =>
+  ensureCreateResult({
     chatId: 'chat-1',
     turnId: 1,
     messageId: undefined,
@@ -23,8 +22,7 @@ function makeContext(
     generatedJSON: [],
     toolCalls: new Map(),
     ...overrides,
-  } as StreamHandlerContext;
-}
+  });
 
 describe('processStreamChunk generic *-start handling', () => {
   test('unknown "*-start" chunk is appended to generatedText (fallback), not pushed to generatedJSON', async () => {

@@ -1,15 +1,8 @@
+import { generateObject, UIMessage } from 'ai';
 import {
-  DynamicToolUIPart,
-  generateObject,
-  isToolUIPart,
-  TextUIPart,
-  ToolUIPart,
-  UIDataTypes,
-  UIMessage,
-  UIMessagePart,
-  UITools,
-} from 'ai';
-import { LanguageModelV2Prompt } from '@ai-sdk/provider';
+  LanguageModelV2Prompt,
+  LanguageModelV2Message,
+} from '@ai-sdk/provider';
 import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import { log } from '@/lib/logger';
@@ -43,13 +36,51 @@ import { ToolMap } from '../services/model-stats/tool-map';
  * @param toolResult Array of tool result/response messages
  * @returns The generated chatToolCallId UUID
  */
+// Generic minimal part representation used internally (supports legacy UIMessage parts and V2 parts)
+type GenericPart = {
+  type: string;
+  state?: string;
+  toolCallId?: string;
+  toolName?: string;
+  [k: string]: unknown;
+};
+// Legacy UIMessage shape compatibility minimal subset
+interface LegacyMessageShape {
+  id?: string;
+  role: string;
+  parts?: GenericPart[];
+  content?: unknown;
+  toolInvocations?: unknown;
+  [k: string]: unknown;
+}
+// Include UIMessage explicitly so test helpers passing UIMessage instances type-check
+type OptimizerMessage = LegacyMessageShape | LanguageModelV2Message | UIMessage;
+
+// Lightweight helpers (avoid pervasive any usage by local casting only)
+const hasLegacyParts = (
+  m: OptimizerMessage,
+): m is LegacyMessageShape & { parts: GenericPart[] } =>
+  'parts' in m && Array.isArray((m as LegacyMessageShape).parts);
+const readParts = (m: OptimizerMessage): GenericPart[] => {
+  if (hasLegacyParts(m)) return m.parts as GenericPart[];
+  const content = (m as unknown as { content?: unknown }).content;
+  return Array.isArray(content) ? (content as GenericPart[]) : [];
+};
+const writeParts = <T extends OptimizerMessage>(
+  m: T,
+  parts: GenericPart[],
+): T => {
+  if (hasLegacyParts(m)) return { ...(m as object), parts } as T;
+  return { ...(m as object), content: parts } as T;
+};
+
 const createChatToolCallRecord = async (
   tx: DbTransactionType,
   chatToolId: string,
   chatMessageId: string,
   providerId: string,
-  toolRequest: Array<UIMessagePart<UIDataTypes, UITools>>,
-  toolResult: Array<UIMessagePart<UIDataTypes, UITools>>,
+  toolRequest: Array<GenericPart>,
+  toolResult: Array<GenericPart>,
 ): Promise<string> => {
   // Serialize input and output for storage
   const input =
@@ -343,36 +374,44 @@ const createToolRecordsForToolCall = async (
 /**
  * Generate a deterministic hash for a tool call sequence
  */
-const hashToolCallSequence = (
-  toolMessages: UIMessagePart<UIDataTypes, UITools>[],
-): string => {
+const hashToolCallSequence = (toolMessages: GenericPart[]): string => {
   // Create a stable representation of the tool call sequence
-  const contentToHash = toolMessages
-    .map((part) => {
-      if (part.type === 'text') {
-        return {
-          type: part.type,
-          state: part.state ?? 'state',
-          text: part.text,
-        };
-      }
-      if (!isToolUIPart(part)) {
-        return { type: part.type };
-      }
+  interface HashFriendly {
+    type: string;
+    state: string;
+    toolName?: string;
+    text?: string;
+    input?: unknown;
+    output?: unknown;
+    errorText?: string;
+  }
+  const toHashFriendly = (p: GenericPart): HashFriendly => {
+    const toolName =
+      p.toolName || (p.type.startsWith('tool-') ? p.type.substring(5) : p.type);
+    if (p.type === 'text') {
       return {
-        type: part.type,
-        toolName: 'toolName' in part ? part.toolName : 'unknown',
-        input: 'input' in part ? part.input : 'none',
-        state: 'state' in part ? part.state : 'unknown',
-        errorText: 'errorText' in part ? part.errorText : 'No error',
-        output: 'output' in part ? part.output : 'No output',
+        type: p.type,
+        state: p.state ?? 'state',
+        text: (p as { text?: string }).text,
       };
-    })
-    .sort((a, b) => {
-      // Sort by type first, then text or input
-      if (a.type !== b.type) return a.type.localeCompare(b.type);
-      return String(a.text ?? a.input).localeCompare(String(b.text ?? b.input));
-    });
+    }
+    return {
+      type: p.type,
+      state: p.state ?? 'unknown',
+      toolName,
+      input: (p as { input?: unknown }).input,
+      output:
+        (p as { output?: unknown; result?: unknown }).output ??
+        (p as { result?: unknown }).result,
+      errorText: (p as { errorText?: string }).errorText,
+    };
+  };
+  const contentToHash = toolMessages.map(toHashFriendly).sort((a, b) => {
+    if (a.type !== b.type) return (a.type || '').localeCompare(b.type || '');
+    return String(a.text ?? a.input ?? '').localeCompare(
+      String(b.text ?? b.input ?? ''),
+    );
+  });
 
   const hashInput = JSON.stringify(contentToHash);
   return createHash('sha256').update(hashInput).digest('hex');
@@ -393,18 +432,18 @@ const isInputToolState = (state: unknown): state is InputToolState =>
 const isOutputToolState = (state: unknown): state is OutputToolState =>
   !!state &&
   OutputToolStateValues.includes(state.toString() as OutputToolState);
-const isTool = (
-  check: unknown,
-): check is ToolUIPart<UITools> | DynamicToolUIPart =>
-  !!check &&
-  typeof check === 'object' &&
-  'state' in check &&
-  isKeyOf(check.state, ToolStateValues);
+const isTool = (check: unknown): check is GenericPart => {
+  if (!check || typeof check !== 'object') return false;
+  const part = check as GenericPart;
+  if (!('type' in part)) return false;
+  if (!('state' in part)) return false;
+  return isKeyOf(part.state, ToolStateValues);
+};
 
-type ToolResponseMesage = UIMessagePart<UIDataTypes, UITools> & {
+type ToolResponseMesage = GenericPart & {
   state: 'output-available' | 'output-error';
 };
-type ToolRequestMessage = UIMessagePart<UIDataTypes, UITools> & {
+type ToolRequestMessage = GenericPart & {
   state: 'input-available' | 'input-streaming';
 };
 
@@ -434,7 +473,7 @@ interface ToolCallRecord {
   /**
    * Summary message text
    * */
-  toolSummary: TextUIPart;
+  toolSummary: { type: 'text'; text: string };
   /**
    * Summarized tool request message
    */
@@ -471,16 +510,30 @@ interface ToolCallRecord {
  * 3. Replace completed tool sequences with AI-generated summaries
  * 4. Maintain conversation flow and prevent recall loops
  */
+// Overloads preserve legacy inference when caller passes UIMessage[]
 export async function optimizeMessagesWithToolSummarization(
   messages: UIMessage[],
   model: string,
   userId?: string,
   chatHistoryId?: string,
-): Promise<UIMessage[]> {
+): Promise<UIMessage[]>;
+export async function optimizeMessagesWithToolSummarization(
+  messages: LanguageModelV2Message[],
+  model: string,
+  userId?: string,
+  chatHistoryId?: string,
+): Promise<LanguageModelV2Message[]>;
+export async function optimizeMessagesWithToolSummarization(
+  messages: UIMessage[] | LanguageModelV2Message[],
+  model: string,
+  userId?: string,
+  chatHistoryId?: string,
+): Promise<UIMessage[] | LanguageModelV2Message[]> {
+  const msgs = messages as OptimizerMessage[];
   const startTime = Date.now();
 
   // Calculate original context size for meaningful metrics
-  const originalCharacterCount = calculateMessageCharacterCount(messages);
+  const originalCharacterCount = calculateMessageCharacterCount(msgs);
 
   // Record original message count for OpenTelemetry
   originalMessageCountHistogram.record(messages.length, {
@@ -498,7 +551,7 @@ export async function optimizeMessagesWithToolSummarization(
   );
 
   // Step 1: Find cutoff point - preserve last two user interactions
-  const { cutoffIndex, preservedToolIds } = findUserInteractionCutoff(messages);
+  const { cutoffIndex, preservedToolIds } = findUserInteractionCutoff(msgs);
   if (cutoffIndex === 0) {
     // No optimization needed - all messages are recent
     log((l) => l.verbose('No optimization needed - all messages are recent'));
@@ -534,13 +587,13 @@ export async function optimizeMessagesWithToolSummarization(
     // Step 2: Process older messages for tool summarization
     const { optimizedMessages, toolCallDict } =
       await processOlderMessagesForSummarization(
-        messages,
+        msgs,
         cutoffIndex,
         preservedToolIds,
       );
 
     // Step 3: Generate AI summaries for all collected tool calls
-    await generateToolCallSummaries(toolCallDict, chatHistoryContext, messages);
+    await generateToolCallSummaries(toolCallDict, chatHistoryContext, msgs);
     const processingTime = Date.now() - startTime;
 
     // Calculate optimized context size for meaningful metrics
@@ -570,7 +623,7 @@ export async function optimizeMessagesWithToolSummarization(
     optimizedMessageCountHistogram.record(optimizedMessages.length, attributes);
 
     messageReductionHistogram.record(
-      (messages.length - optimizedMessages.length) / messages.length,
+      (msgs.length - optimizedMessages.length) / msgs.length,
       attributes,
     );
 
@@ -584,7 +637,7 @@ export async function optimizeMessagesWithToolSummarization(
 
     log((l) =>
       l.info('Enterprise tool optimization completed', {
-        originalMessages: messages.length,
+        originalMessages: msgs.length,
         optimizedMessages: optimizedMessages.length,
         originalCharacterCount,
         optimizedCharacterCount,
@@ -596,7 +649,9 @@ export async function optimizeMessagesWithToolSummarization(
         userId,
       }),
     );
-    return optimizedMessages;
+    return optimizedMessages as unknown as
+      | UIMessage[]
+      | LanguageModelV2Message[];
   } catch (error) {
     chatHistoryContext.error = error;
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -613,7 +668,7 @@ export async function optimizeMessagesWithToolSummarization(
  * Returns the index where optimization should begin and IDs of tools to preserve
  */
 const findUserInteractionCutoff = (
-  messages: UIMessage[],
+  messages: OptimizerMessage[],
 ): {
   cutoffIndex: number;
   preservedToolIds: Set<string>;
@@ -728,15 +783,17 @@ export const summarizeMessageRecord = async ({
       })
       .execute()
       .then((q) =>
-        q.map(
-          deep
-            ? (m: object) => (m as { content: string }).content
-            : (m: object) =>
-                (m as { optimizedContent: string }).optimizedContent,
-        )
-        .filter((content): content is string => 
-          typeof content === 'string' && content.trim().length > 0
-        ),
+        q
+          .map(
+            deep
+              ? (m: object) => (m as { content: string }).content
+              : (m: object) =>
+                  (m as { optimizedContent: string }).optimizedContent,
+          )
+          .filter(
+            (content): content is string =>
+              typeof content === 'string' && content.trim().length > 0,
+          ),
       );
     // Then retrieve the target message
     const thisMessage = await qp.query.chatMessages.findFirst({
@@ -756,12 +813,12 @@ export const summarizeMessageRecord = async ({
     if (!thisMessage) {
       throw new Error('Message not found');
     }
-    
+
     // Validate that thisMessage.content is valid for prompt construction
     if (!thisMessage.content || typeof thisMessage.content !== 'string') {
       throw new Error('Message content is invalid or missing');
     }
-    
+
     // Let the models work their magic...
     const prompt = `You are an expert at summarizing message output for AI conversation context.
 
@@ -784,12 +841,12 @@ export const summarizeMessageRecord = async ({
   5. Provide a short (4-5 word max) title that accurately describes the conversation as a whole - this will be used as the new Chat Title.
 
   Keep the summary as short as possible while preserving essential meaning.`;
-    
+
     // Validate prompt is not empty and reasonable length
     if (!prompt.trim() || prompt.length > 50000) {
       throw new Error('Generated prompt is invalid (empty or too long)');
     }
-    
+
     const model = aiModelFactory('lofi');
     const summarized = (
       await generateObject({
@@ -871,28 +928,34 @@ export const summarizeMessageRecord = async ({
  * Groups tool calls by ID and replaces them with summary placeholders
  */
 const processOlderMessagesForSummarization = async (
-  messages: UIMessage[],
+  messages: OptimizerMessage[],
   cutoffIndex: number,
   preservedToolIds: Set<string>,
 ): Promise<{
-  optimizedMessages: UIMessage[];
+  optimizedMessages: OptimizerMessage[];
   toolCallDict: Map<string, ToolCallRecord>;
 }> => {
   const toolCallDict = new Map<string, ToolCallRecord>();
   //const pendingToolIds = new Set<string>();
-  const optimizedMessages: UIMessage[] = [...messages.slice(cutoffIndex)];
+  const optimizedMessages: OptimizerMessage[] = [
+    ...messages.slice(cutoffIndex),
+  ];
   // Iterate through messages to build optimized output
   for (let i = cutoffIndex - 1; i >= 0; i--) {
     const message = messages[i];
-    const processedParts = [] as Array<UIMessagePart<UIDataTypes, UITools>>;
+    const processedParts: GenericPart[] = [];
+
+    const getParts = readParts;
+    const setParts = writeParts;
 
     let messageDirtyFlag = false;
     // Ensure we only insert a single summary per toolCallId within this message
     const summaryInsertedFor = new Set<string>();
 
     // Process invocations backwards to maintain consistency with message processing
-    for (let j = (message.parts ?? []).length - 1; j >= 0; j--) {
-      const invocation = message.parts[j];
+    const messageParts = getParts(message);
+    for (let j = messageParts.length - 1; j >= 0; j--) {
+      const invocation = messageParts[j];
       // If we are not a tool, or do not have an id, or have an id thats been bucketed as preserved
       // then no additional processing is needed
       if (
@@ -935,7 +998,7 @@ const processOlderMessagesForSummarization = async (
         if (isOutputToolState(invocation.state)) {
           // If the first thing we see is a result then we want to create a new record
           const record: ToolCallRecord = {
-            messageId: message.id,
+            messageId: (message as LegacyMessageShape).id ?? `msg-${i}`,
             toolResult: [{ ...invocation } as ToolResponseMesage],
             toolRequest: [],
             toolSummary: {
@@ -971,10 +1034,7 @@ const processOlderMessagesForSummarization = async (
       }
     }
     if (messageDirtyFlag) {
-      optimizedMessages.unshift({
-        ...message,
-        parts: processedParts,
-      });
+      optimizedMessages.unshift(setParts(message, processedParts));
     } else {
       optimizedMessages.unshift(message);
     }
@@ -989,7 +1049,7 @@ const processOlderMessagesForSummarization = async (
 const generateToolCallSummaries = async (
   toolCallDict: Map<string, ToolCallRecord>,
   chatHistoryContext: ChatHistoryContext,
-  allMessages?: UIMessage[],
+  allMessages?: OptimizerMessage[],
 ): Promise<void> => {
   if (toolCallDict.size === 0) {
     return;
@@ -1058,7 +1118,7 @@ const generateToolCallSummaries = async (
 const generateSingleToolCallSummary = async (
   record: ToolCallRecord,
   chatHistoryContext: ChatHistoryContext,
-  allMessages?: UIMessage[],
+  allMessages?: OptimizerMessage[],
 ): Promise<string> => {
   // Generate cache key from the tool call sequence
   const allToolMessages = [...record.toolRequest, ...record.toolResult];
@@ -1219,7 +1279,7 @@ Respond with just the summary text, no additional formatting.`;
  */
 const extractConversationalContext = (
   record: ToolCallRecord,
-  allMessages?: UIMessage[],
+  allMessages?: OptimizerMessage[],
 ): string => {
   if (!allMessages || allMessages.length === 0) {
     return 'No conversational context available.';
@@ -1246,9 +1306,10 @@ const extractConversationalContext = (
   // Look for the user message that likely prompted this tool sequence
   // We'll search backwards from tool request messages to find recent user input
   if (record.toolRequest.length > 0) {
-    const toolRequestIndex = allMessages.findIndex(
-      (msg) => msg.id === record.messageId,
-    );
+    const toolRequestIndex = allMessages.findIndex((msg) => {
+      const legacy = msg as LegacyMessageShape;
+      return legacy.id === record.messageId;
+    });
 
     if (toolRequestIndex > 0) {
       // Look for the most recent user message before this tool request
@@ -1259,9 +1320,17 @@ const extractConversationalContext = (
       ) {
         const prevMessage = allMessages[i];
         if (prevMessage.role === 'user') {
-          const userContent = prevMessage.parts
-            .filter((part) => part.type === 'text')
-            .map((part) => ('text' in part ? part.text : ''))
+          const prevContent = (
+            prevMessage as Partial<LegacyMessageShape> & { content?: unknown }
+          ).content;
+          const prevParts = hasLegacyParts(prevMessage)
+            ? prevMessage.parts
+            : Array.isArray(prevContent)
+              ? (prevContent as GenericPart[])
+              : [];
+          const userContent = prevParts
+            .filter((part: GenericPart) => part.type === 'text')
+            .map((part: GenericPart) => (part as { text?: string }).text ?? '')
             .join(' ');
           if (userContent.trim()) {
             // Truncate user content to avoid bloating the prompt
@@ -1284,20 +1353,22 @@ const extractConversationalContext = (
 /**
  * Utility function to extract tool call IDs from a message
  */
-export function extractToolCallIds(message: UIMessage): string[] {
-  if (
-    message.role !== 'assistant' ||
-    !('parts' in message) ||
-    !Array.isArray(message.parts)
-  ) {
-    return [];
-  }
-
+// Overloads for clearer typing in tests
+export function extractToolCallIds(message: UIMessage): string[];
+export function extractToolCallIds(message: OptimizerMessage): string[];
+export function extractToolCallIds(message: unknown): string[] {
+  if (!message || typeof message !== 'object') return [];
+  const m = message as { role?: string; parts?: unknown };
+  if (m.role !== 'assistant' || !Array.isArray(m.parts)) return [];
   return Array.from(
     new Set<string>(
-      message.parts
-        .map((inv) => ('toolCallId' in inv ? (inv.toolCallId as string) : null))
-        .filter((id): id is string => id !== null),
+      m.parts
+        .map((inv: unknown) =>
+          inv && typeof inv === 'object' && 'toolCallId' in inv
+            ? (inv as { toolCallId?: unknown }).toolCallId
+            : null,
+        )
+        .filter((id): id is string => typeof id === 'string' && id.length > 0),
     ),
   );
 }
@@ -1305,12 +1376,20 @@ export function extractToolCallIds(message: UIMessage): string[] {
 /**
  * Utility function to check if a message contains tool calls
  */
-export function hasToolCalls(message: UIMessage): boolean {
-  return (
-    message.role === 'assistant' &&
-    'parts' in message &&
-    Array.isArray(message.parts) &&
-    message.parts.some((part) => 'toolCallId' in part && part.toolCallId)
+export function hasToolCalls(message: UIMessage): boolean;
+export function hasToolCalls(message: OptimizerMessage): boolean;
+export function hasToolCalls(message: unknown): boolean {
+  if (!message || typeof message !== 'object') return false;
+  const m = message as { role?: string; parts?: unknown };
+  if (m.role !== 'assistant' || !Array.isArray(m.parts)) return false;
+  return m.parts.some(
+    (p: unknown) =>
+      !!(
+        p &&
+        typeof p === 'object' &&
+        'toolCallId' in p &&
+        (p as { toolCallId?: unknown }).toolCallId
+      ),
   );
 }
 
@@ -1318,14 +1397,28 @@ export function hasToolCalls(message: UIMessage): boolean {
  * Calculate total character count for a message array
  * This gives a much better indication of actual context consumption than message count
  */
-const calculateMessageCharacterCount = (messages: UIMessage[]): number => {
-  return countTokens({
-    prompt: messages.map((msg) => ({
-      ...msg,
-      content: msg.parts,
-      parts: undefined,
-    })) as LanguageModelV2Prompt,
+const calculateMessageCharacterCount = (
+  messages: OptimizerMessage[],
+): number => {
+  const promptMessages: LanguageModelV2Prompt = messages.map((msg) => {
+    if (msg.role === 'system') {
+      const systemContent = (
+        msg as Partial<LegacyMessageShape> & { content?: unknown }
+      ).content;
+      return {
+        role: 'system',
+        content: typeof systemContent === 'string' ? systemContent : '',
+      };
+    }
+    const parts = readParts(msg);
+    // Best-effort casting for token counting; SDK will only use structural fields for length calc
+    // Cast through unknown to satisfy prompt shape for token counting only.
+    return {
+      role: msg.role,
+      content: parts,
+    } as unknown as LanguageModelV2Message;
   });
+  return countTokens({ prompt: promptMessages });
 };
 
 /**

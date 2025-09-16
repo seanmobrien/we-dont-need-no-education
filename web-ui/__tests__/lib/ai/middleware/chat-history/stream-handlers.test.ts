@@ -20,6 +20,8 @@ import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { log } from '@/lib/logger';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
 
 // Mock dependencies
 jest.mock('@/lib/drizzle-db');
@@ -31,6 +33,7 @@ const mockGetNextSequence = getNextSequence as jest.MockedFunction<
   typeof getNextSequence
 >;
 const mockLog = log as jest.MockedFunction<typeof log>;
+const mockConsole = hideConsoleOutput();
 
 describe('Stream Handlers', () => {
   let mockContext: StreamHandlerContext;
@@ -38,8 +41,8 @@ describe('Stream Handlers', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-
-    mockContext = {
+    mockConsole.setup();
+    mockContext = ensureCreateResult({
       chatId: 'chat-123',
       turnId: 1,
       messageId: 42,
@@ -47,7 +50,7 @@ describe('Stream Handlers', () => {
       generatedText: 'Initial text',
       generatedJSON: [],
       toolCalls: new Map(),
-    };
+    });
 
     // Setup default mocks
     mockDb.update.mockReturnValue({
@@ -114,6 +117,10 @@ describe('Stream Handlers', () => {
       // Assert
       expect(result).toEqual({
         currentMessageId: undefined,
+        chatId: 'chat-123',
+        generatedJSON: [],
+        messageId: 42,
+        turnId: 1,
         currentMessageOrder: 2,
         generatedText: '',
         toolCalls: expect.any(Map),
@@ -145,6 +152,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        chatId: 'chat-123',
+        generatedJSON: [],
+        messageId: 42,
+        turnId: 1,
         currentMessageId: undefined,
         currentMessageOrder: 2,
         generatedText: '',
@@ -169,8 +180,11 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
-        currentMessageId: 42,
+        chatId: 'chat-123',
+        generatedJSON: [],
+        messageId: 42,
         currentMessageOrder: 1,
+        turnId: 1,
         generatedText: 'Initial text',
         toolCalls: expect.any(Map),
         success: false,
@@ -196,8 +210,11 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
-        currentMessageId: 42,
+        messageId: 42,
         currentMessageOrder: 1,
+        turnId: 1,
+        chatId: 'chat-123',
+        generatedJSON: [],
         generatedText: 'Initial text',
         toolCalls: expect.any(Map),
         success: false,
@@ -257,6 +274,10 @@ describe('Stream Handlers', () => {
       expect(result).toEqual({
         currentMessageId: undefined,
         currentMessageOrder: 1,
+        chatId: 'chat-123',
+        messageId: 42,
+        turnId: 1,
+        generatedJSON: [],
         generatedText: 'Initial text',
         toolCalls: expect.any(Map),
         success: true,
@@ -287,6 +308,10 @@ describe('Stream Handlers', () => {
         currentMessageId: undefined,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
+        chatId: 'chat-123',
+        messageId: 42,
+        turnId: 1,
+        generatedJSON: [],
         toolCalls: expect.any(Map),
         success: true,
       });
@@ -320,6 +345,10 @@ describe('Stream Handlers', () => {
         currentMessageOrder: 1,
         generatedText: 'Initial text',
         toolCalls: expect.any(Map),
+        chatId: 'chat-123',
+        messageId: 42,
+        turnId: 1,
+        generatedJSON: [],
         success: true,
       });
 
@@ -328,6 +357,7 @@ describe('Stream Handlers', () => {
     });
 
     it('should handle database insert errors for token usage', async () => {
+      mockConsole.setup();
       // Arrange
       const chunk: Extract<LanguageModelV2StreamPart, { type: 'finish' }> = {
         type: 'finish',
@@ -347,10 +377,13 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
-        currentMessageId: 42,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
         toolCalls: expect.any(Map),
+        chatId: 'chat-123',
+        messageId: 42,
+        turnId: 1,
+        generatedJSON: [],
         success: false,
       });
 
@@ -427,6 +460,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        generatedJSON: [],
+        chatId: 'chat-123',
+        messageId: 42,
+        turnId: 1,
         currentMessageId: undefined,
         currentMessageOrder: 2,
         generatedText: '',
@@ -452,6 +489,10 @@ describe('Stream Handlers', () => {
 
       // Assert
       expect(result).toEqual({
+        chatId: 'chat-123',
+        messageId: 42,
+        turnId: 1,
+        generatedJSON: [],
         currentMessageId: undefined,
         currentMessageOrder: 1,
         generatedText: 'Initial text',
@@ -570,13 +611,15 @@ describe('Stream Handlers', () => {
         { type: 'text-end', id: 'test-id-3' },
       ];
 
-      const currentContext = { ...mockContext };
+      let currentContext = { ...mockContext };
 
       // Act
       for (const chunk of chunks) {
-        const result = await processStreamChunk(chunk, currentContext);
-        currentContext.generatedText = result.generatedText;
-        currentContext.currentMessageOrder = result.currentMessageOrder;
+        const result = (await processStreamChunk(
+          chunk,
+          currentContext,
+        )) as unknown as StreamHandlerContext;
+        currentContext = ensureCreateResult(result);
       }
 
       // Assert

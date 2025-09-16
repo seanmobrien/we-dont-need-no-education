@@ -15,6 +15,7 @@ import type {
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
 import { log } from '@/lib/logger';
+import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';
 import type {
   ChatHistoryContext,
@@ -259,7 +260,7 @@ export const enqueueStream = async ({
       // If this fails, let the error propagate - don't try again
       controller.enqueue(chunk);
       // Process chunk through queue to maintain FIFO order
-      const handlerContext: StreamHandlerContext = {
+      const handlerContext: StreamHandlerContext = ensureCreateResult({
         chatId: streamContext.chatId!,
         turnId: parseInt(streamContext.turnId!, 10),
         toolCalls: streamContext.toolCalls,
@@ -267,28 +268,7 @@ export const enqueueStream = async ({
         currentMessageOrder: streamContext.currentMessageOrder,
         generatedText: streamContext.streamedText,
         generatedJSON: streamContext.generatedJSON,
-        createResult: (arg?: boolean | Partial<StreamHandlerResult>) => {
-          const input =
-            typeof arg == 'undefined' || typeof arg == 'boolean'
-              ? {
-                  success: arg !== false,
-                }
-              : arg;
-          return {
-            success: input.success ?? true,
-            currentMessageId: handlerContext.messageId,
-            currentMessageOrder: handlerContext.currentMessageOrder,
-            generatedText: handlerContext.generatedText,
-            generatedJSON: handlerContext.generatedJSON,
-            // Ensure all expected fields are present
-            toolCalls: handlerContext.toolCalls,
-            chatId: streamContext.chatId!,
-            turnId: parseInt(streamContext.turnId!, 10),
-            messageId: handlerContext.messageId,
-            ...input,
-          };
-        },
-      };
+      });
 
       // Queue processing maintains order and updates local state
       processingQueue
