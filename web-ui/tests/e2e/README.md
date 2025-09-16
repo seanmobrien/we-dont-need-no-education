@@ -70,13 +70,39 @@ npx drizzle-kit migrate
 # (The tests are designed to work with or without existing data)
 ```
 
+## 🛡️ Data Safety Features
+
+**IMPORTANT**: This test suite is designed to prevent accidental data corruption in production environments.
+
+### Safe by Default
+
+- **Default tests are read-only**: Running `yarn test:e2e` only executes tests that read data without making modifications
+- **Data mutation tests are opt-in**: Tests that could modify data (sign-in attempts, message sending, bulk operations) are tagged with `@data-mutation` and require explicit enabling
+- **Environment variable protection**: Data-mutating tests only run when `ENABLE_DATA_MUTATION_TESTS=true` is set
+
+### Test Categories
+
+1. **Safe Tests** (default): UI validation, navigation, display testing - no data changes
+2. **Data Mutation Tests** (opt-in): Authentication flows, message sending, bulk operations that could modify data
+3. **All Tests** (explicit flag): Everything including potentially destructive operations
+
+### Production Safety
+
+**Never run mutation tests against production data!** Always use:
+- Local development environments
+- Dedicated test databases  
+- Staging environments with test data
+
 ## Running Tests
 
 ### Basic Commands
 
 ```bash
-# Run all E2E tests
+# Run safe tests only (default - no data mutations)
 yarn test:e2e
+
+# Run all safe tests across browsers
+yarn test:e2e:safe
 
 # Run tests with browser UI (visual debugging)
 yarn test:e2e:ui
@@ -84,7 +110,7 @@ yarn test:e2e:ui
 # Run tests in headed mode (see browser)
 yarn test:e2e:headed
 
-# Run specific browser
+# Run specific browser (safe tests only)
 yarn test:e2e:chromium
 yarn test:e2e:firefox  
 yarn test:e2e:webkit
@@ -96,20 +122,58 @@ yarn test:e2e:debug
 yarn test:e2e:report
 ```
 
+### ⚠️ Data Safety Commands
+
+**IMPORTANT**: The following commands may modify data in your connected database. Only use in test environments!
+
+```bash
+# Run data-mutation tests only (requires explicit flag)
+yarn test:e2e:mutation
+
+# Run ALL tests including data mutations (requires explicit flag)
+yarn test:e2e:all
+
+# Enable data mutation tests via environment variable
+ENABLE_DATA_MUTATION_TESTS=true npx playwright test --project=chromium-mutation
+
+# Run all tests including mutations via environment variable
+RUN_ALL_TESTS=true npx playwright test
+```
+
 ### Running Specific Tests
 
 ```bash
-# Run specific test file
-npx playwright test tests/e2e/auth/authentication.test.ts
+# Run specific test file (safe tests only by default)
+npx playwright test tests/e2e/auth/authentication.test.ts --project=chromium-safe
 
 # Run specific test by name
 npx playwright test --grep "should load homepage"
 
 # Run tests for specific feature
-npx playwright test tests/e2e/email/
+npx playwright test tests/e2e/email/ --project=chromium-safe
 
-# Run tests with specific tag
-npx playwright test --grep "@smoke"
+# Run only data mutation tests
+npx playwright test --grep "@data-mutation" --project=chromium-mutation
+
+# List tests that will run (verify safety)
+npx playwright test --list --project=chromium-safe
+npx playwright test --list --project=chromium-mutation  # (when enabled)
+```
+
+### Verifying Test Safety
+
+Before running tests, verify which tests will execute:
+
+```bash
+# See safe tests only (default)
+npx playwright test --list | grep -v "@data-mutation"
+
+# See data mutation tests (when enabled)  
+ENABLE_DATA_MUTATION_TESTS=true npx playwright test --list | grep "@data-mutation"
+
+# Count safe vs mutation tests
+echo "Safe tests:" && npx playwright test --list --project=chromium-safe | wc -l
+echo "Mutation tests:" && ENABLE_DATA_MUTATION_TESTS=true npx playwright test --list --project=chromium-mutation | wc -l
 ```
 
 ### Development Server

@@ -128,7 +128,7 @@ test.describe('Bulk Operations', () => {
     }
   });
 
-  test('should handle bulk operation workflow', async ({ page }) => {
+  test('should handle bulk operation workflow @data-mutation', async ({ page }) => {
     // Complete workflow test: select items, choose action, execute
     
     // Step 1: Look for selectable items
@@ -222,7 +222,7 @@ test.describe('Bulk Operations', () => {
     }
   });
 
-  test('should display operation confirmation dialogs', async ({ page }) => {
+  test('should display operation confirmation dialogs @data-mutation', async ({ page }) => {
     // Select some items first
     const checkboxes = page.locator('input[type="checkbox"]');
     const firstCheckbox = checkboxes.first();
@@ -265,7 +265,7 @@ test.describe('Bulk Operations', () => {
     }
   });
 
-  test('should handle bulk operation progress/loading states', async ({ page }) => {
+  test('should handle bulk operation progress/loading states @data-mutation', async ({ page }) => {
     // Select items and start an operation to test loading states
     const checkboxes = page.locator('input[type="checkbox"]');
     const firstCheckbox = checkboxes.first();

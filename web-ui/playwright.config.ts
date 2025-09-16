@@ -32,40 +32,67 @@ export default defineConfig({
 
   /* Configure projects for major browsers */
   projects: [
+    // Safe tests only (default) - excludes data mutation tests
     {
-      name: 'chromium',
+      name: 'chromium-safe',
       use: { ...devices['Desktop Chrome'] },
+      grep: /^(?!.*@data-mutation)/,
+      testIgnore: ['**/navigation/error-handling.test.ts'], // Contains route mocking
     },
-
     {
-      name: 'firefox',
+      name: 'firefox-safe',
       use: { ...devices['Desktop Firefox'] },
+      grep: /^(?!.*@data-mutation)/,
+      testIgnore: ['**/navigation/error-handling.test.ts'],
     },
-
     {
-      name: 'webkit',
+      name: 'webkit-safe',
       use: { ...devices['Desktop Safari'] },
+      grep: /^(?!.*@data-mutation)/,
+      testIgnore: ['**/navigation/error-handling.test.ts'],
     },
-
-    /* Test against mobile viewports. */
     {
-      name: 'Mobile Chrome',
+      name: 'mobile-chrome-safe',
       use: { ...devices['Pixel 5'] },
+      grep: /^(?!.*@data-mutation)/,
+      testIgnore: ['**/navigation/error-handling.test.ts'],
     },
     {
-      name: 'Mobile Safari',
+      name: 'mobile-safari-safe',
       use: { ...devices['iPhone 12'] },
+      grep: /^(?!.*@data-mutation)/,
+      testIgnore: ['**/navigation/error-handling.test.ts'],
     },
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    // Data mutation tests (opt-in only) - require explicit environment variable
+    ...(process.env.ENABLE_DATA_MUTATION_TESTS === 'true' ? [
+      {
+        name: 'chromium-mutation',
+        use: { ...devices['Desktop Chrome'] },
+        grep: /@data-mutation/,
+      },
+      {
+        name: 'firefox-mutation',
+        use: { ...devices['Desktop Firefox'] },
+        grep: /@data-mutation/,
+      },
+    ] : []),
+
+    // All tests (including mutations) - require explicit flag
+    ...(process.env.RUN_ALL_TESTS === 'true' ? [
+      {
+        name: 'chromium-all',
+        use: { ...devices['Desktop Chrome'] },
+      },
+      {
+        name: 'firefox-all',
+        use: { ...devices['Desktop Firefox'] },
+      },
+      {
+        name: 'webkit-all',
+        use: { ...devices['Desktop Safari'] },
+      },
+    ] : []),
   ],
 
   /* Run your local dev server before starting the tests */

@@ -116,7 +116,7 @@ test.describe('Chat Interface', () => {
     }
   });
 
-  test('should handle sending messages', async ({ page }) => {
+  test('should handle sending messages @data-mutation', async ({ page }) => {
     // Find chat input and send button
     const input = page.locator('[data-testid*="chat-input"], textarea[placeholder*="message"], input[placeholder*="message"]').first();
     const sendButton = page.locator('[data-testid*="send"], button:has-text("Send"), button[type="submit"]').first();
@@ -304,7 +304,7 @@ test.describe('Chat Interface', () => {
     }
   });
 
-  test('should handle long messages appropriately', async ({ page }) => {
+  test('should handle long messages appropriately @data-mutation', async ({ page }) => {
     const input = page.locator('[data-testid*="chat-input"], textarea[placeholder*="message"]').first();
     
     if (await input.isVisible({ timeout: 5000 })) {

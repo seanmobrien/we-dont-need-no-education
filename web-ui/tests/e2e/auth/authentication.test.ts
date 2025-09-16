@@ -40,7 +40,7 @@ test.describe('Authentication', () => {
     expect(providersFound).toBeGreaterThan(0);
   });
 
-  test('should handle credentials sign-in flow', async ({ page }) => {
+  test('should handle credentials sign-in flow @data-mutation', async ({ page }) => {
     await page.goto('/auth/signin');
     
     // Look for credentials form or button
@@ -122,7 +122,7 @@ test.describe('Authentication', () => {
     }
   });
 
-  test('should handle sign-out flow', async ({ page }) => {
+  test('should handle sign-out flow @data-mutation', async ({ page }) => {
     // First check if already signed in
     if (await isSignedIn(page)) {
       await signOut(page);
@@ -169,7 +169,7 @@ test.describe('Authentication', () => {
     expect(afterRefreshSignedIn).toBe(initialSignedIn);
   });
 
-  test('should handle authentication errors gracefully', async ({ page }) => {
+  test('should handle authentication errors gracefully @data-mutation', async ({ page }) => {
     await page.goto('/auth/signin');
     
     // Look for error handling in the sign-in form
