@@ -130,9 +130,9 @@ const serverEnvSchema = z.object({
    * Override via env TOKEN_BATCH_THRESHOLD; defaults to 50,000 tokens.
    */
   TOKEN_BATCH_THRESHOLD: z.number().default(50000),
-  AUTH_GOOGLE_ID: z.string(),
-  AUTH_GOOGLE_SECRET: z.string(),
-  AUTH_GOOGLE_APIKEY: z.string(),
+  AUTH_GOOGLE_ID: z.string().optional(),
+  AUTH_GOOGLE_SECRET: z.string().optional(),
+  AUTH_GOOGLE_APIKEY: z.string().optional(),
   AUTH_HEADER_BYPASS_KEY: z.string().optional(),
   AUTH_HEADER_BYPASS_VALUE: z.string().optional(),
   AZURE_STORAGE_CONNECTION_STRING: z.string().min(1),
