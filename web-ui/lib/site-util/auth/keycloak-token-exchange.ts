@@ -164,6 +164,11 @@ export class KeycloakTokenExchange {
 
       return this.extractGoogleTokens(response.data);
     } catch (error) {
+      // Re-throw TokenExchangeError instances as-is
+      if (error instanceof TokenExchangeError) {
+        throw error;
+      }
+
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const errorData = error.response?.data;

@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-import { KeycloakTokenExchange, TokenExchangeError } from '../keycloak-token-exchange';
+import { KeycloakTokenExchange, TokenExchangeError } from '../../../../lib/site-util/auth/keycloak-token-exchange';
 import axios from 'axios';
 import { getToken } from 'next-auth/jwt';
 
