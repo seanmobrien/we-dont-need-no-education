@@ -7,7 +7,7 @@ export const session = async ({
 }: {
   session: SessionWithAccountId;
   token: JWT;
-}) => {
+}): Promise<SessionWithAccountId> => {
   if (session.user) {
     if (token.id) {
       session.user.id = String(token.id);

@@ -54,7 +54,7 @@ describe('Tool Optimizing Middleware Performance Tests', () => {
   let mockToolMapInstance: jest.Mocked<ToolMap>;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     mockToolMapInstance = {
       scanForTools: jest.fn().mockImplementation(async (tools) => {
@@ -510,7 +510,7 @@ describe('Tool Optimizing Middleware Load Testing', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     const mockToolMapInstance = {
       scanForTools: jest.fn().mockImplementation(async (tools) => {

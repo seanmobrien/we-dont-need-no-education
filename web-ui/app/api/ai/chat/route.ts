@@ -47,16 +47,24 @@ const toolProviderFactory = async ({
       const impersonatedToken = await impersonation.getImpersonatedToken();
       mcpHeaders = {
         ...mcpHeaders,
-        'Authorization': `Bearer ${impersonatedToken}`,
+        Authorization: `Bearer ${impersonatedToken}`,
         'X-Impersonated-User': impersonation.getUserContext().userId,
       };
-      log((l) => l.debug('Using impersonated token for MCP tools', {
-        userId: impersonation.getUserContext().userId,
-      }));
+      log((l) =>
+        l.debug('Using impersonated token for MCP tools', {
+          userId: impersonation.getUserContext().userId,
+        }),
+      );
     } catch (error) {
-      log((l) => l.warn('Failed to get impersonated token for MCP, falling back to session cookies', error));
+      log((l) =>
+        l.warn(
+          'Failed to get impersonated token for MCP, falling back to session cookies',
+          error,
+        ),
+      );
       // Fallback to session cookies
-      const sessionCookie = req.cookies?.get('authjs.session-token')?.value ?? '';
+      const sessionCookie =
+        req.cookies?.get('authjs.session-token')?.value ?? '';
       if (sessionCookie.length > 0) {
         mcpHeaders.Cookie = `authjs.session-token=${sessionCookie}`;
       }
@@ -150,16 +158,20 @@ export const POST = (req: NextRequest) => {
       const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
 
       // Create impersonation instance for authenticated API calls
-      const impersonation = await Impersonation.fromRequest(req);
+      const impersonation = await Impersonation.fromRequest({ request: req });
       if (impersonation) {
-        log((l) => l.debug('Created impersonation instance for chat request', {
-          userId: impersonation.getUserContext().userId,
-          chatHistoryId,
-        }));
+        log((l) =>
+          l.debug('Created impersonation instance for chat request', {
+            userId: impersonation.getUserContext().userId,
+            chatHistoryId,
+          }),
+        );
       } else {
-        log((l) => l.debug('No impersonation available, using fallback auth methods', {
-          chatHistoryId,
-        }));
+        log((l) =>
+          l.debug('No impersonation available, using fallback auth methods', {
+            chatHistoryId,
+          }),
+        );
       }
 
       // Apply advanced tool message optimization with AI-powered summarization

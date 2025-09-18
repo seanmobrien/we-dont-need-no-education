@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Tests for Keycloak impersonation functionality
  * @jest-environment jsdom
@@ -5,7 +6,7 @@
 
 import { jest } from '@jest/globals';
 import { Impersonation } from '@/lib/auth/impersonation';
-
+import { auth } from '@/auth';
 // Mock NextRequest since it's not available in test environment
 const mockNextRequest = {
   url: 'https://test.com',
@@ -14,17 +15,11 @@ const mockNextRequest = {
 } as any;
 
 // Mock dependencies
+/*
 jest.mock('@/auth', () => ({
   auth: jest.fn(),
 }));
-
-jest.mock('@/lib/site-util/env', () => ({
-  env: jest.fn(),
-}));
-
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-}));
+*/
 
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
@@ -40,80 +35,81 @@ jest.mock('@/lib/nextjs-util/fetch', () => ({
 global.fetch = global.fetch || jest.fn();
 
 describe('Impersonation', () => {
-  const mockEnv = require('@/lib/site-util/env').env as jest.MockedFunction<typeof import('@/lib/site-util/env').env>;
-  const mockAuth = require('@/auth').auth as jest.MockedFunction<typeof import('@/auth').auth>;
+  const mockAuth = auth as jest.Mock<any>;
   const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
 
+  const mockAudience = 'test-audience';
+
   beforeEach(() => {
-    jest.clearAllMocks();
-    
-    // Default env mock
-    mockEnv.mockImplementation((key: string) => {
-      const envVars: Record<string, string> = {
-        'AUTH_KEYCLOAK_ISSUER': 'https://keycloak.example.com/realms/test',
-        'AUTH_KEYCLOAK_CLIENT_ID': 'test-client-id',
-        'AUTH_KEYCLOAK_CLIENT_SECRET': 'test-client-secret',
-        'KEYCLOAK_IMPERSONATION_AUDIENCE': 'test-audience',
-      };
-      return envVars[key] || '';
-    });
+    //jest.clearAllMocks();
   });
 
   describe('fromRequest', () => {
     it('should return null when no session is available', async () => {
       mockAuth.mockResolvedValue(null);
-      
-      const result = await Impersonation.fromRequest(mockNextRequest);
-      
-      expect(result).toBeNull();
+
+      const result = await Impersonation.fromRequest({
+        audience: mockAudience,
+        request: mockNextRequest,
+      });
+
+      expect(result).toBeUndefined();
     });
 
     it('should return null when session has no user', async () => {
       mockAuth.mockResolvedValue({ user: null } as any);
-      
-      const result = await Impersonation.fromRequest(mockNextRequest);
-      
-      expect(result).toBeNull();
+
+      const result = await Impersonation.fromRequest({
+        audience: mockAudience,
+        request: mockNextRequest,
+      });
+
+      expect(result).toBeUndefined();
     });
 
     it('should return null when user has no ID', async () => {
       mockAuth.mockResolvedValue({
-        user: { email: 'test@example.com' }
+        user: { email: 'test@example.com' },
       } as any);
-      
-      const result = await Impersonation.fromRequest(mockNextRequest);
-      
-      expect(result).toBeNull();
+
+      const result = await Impersonation.fromRequest({
+        audience: mockAudience,
+        request: mockNextRequest,
+      });
+
+      expect(result).toBeUndefined();
     });
 
     it('should return null when Keycloak configuration is incomplete', async () => {
       mockAuth.mockResolvedValue({
-        user: { id: 'user-123', email: 'test@example.com' }
+        user: { id: 'user-123', email: 'test@example.com' },
       } as any);
-      
-      // Mock incomplete config
-      mockEnv.mockImplementation((key: string) => {
-        if (key === 'AUTH_KEYCLOAK_ISSUER') return 'https://keycloak.example.com';
-        return ''; // Missing client ID and secret
+      process.env.AUTH_KEYCLOAK_ISSUER = undefined;
+      process.env.AUTH_KEYCLOAK_CLIENT_SECRET = undefined;
+
+      const result = await Impersonation.fromRequest({
+        audience: mockAudience,
+        request: mockNextRequest,
       });
-      
-      const result = await Impersonation.fromRequest(mockNextRequest);
-      
-      expect(result).toBeNull();
+
+      expect(result).toBeUndefined();
     });
 
     it('should create Impersonation instance with valid session and config', async () => {
       mockAuth.mockResolvedValue({
-        user: { 
-          id: 'user-123', 
-          email: 'test@example.com', 
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
           name: 'Test User',
-          account_id: 'account-456'
-        }
+          account_id: 'account-456',
+        },
       } as any);
-      
-      const result = await Impersonation.fromRequest(mockNextRequest);
-      
+
+      const result = await Impersonation.fromRequest({
+        audience: mockAudience,
+        request: mockNextRequest,
+      });
+
       expect(result).toBeInstanceOf(Impersonation);
       expect(result?.getUserContext()).toEqual({
         userId: 'user-123',
@@ -165,10 +161,12 @@ describe('Impersonation', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
-          body: expect.stringContaining('grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange'),
-        })
+          body: expect.stringContaining(
+            'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange',
+          ),
+        }),
       );
     });
 
@@ -186,7 +184,7 @@ describe('Impersonation', () => {
 
       // First call should fetch token
       const token1 = await impersonation.getImpersonatedToken();
-      
+
       // Second call should return cached token
       const token2 = await impersonation.getImpersonatedToken();
 
@@ -235,7 +233,7 @@ describe('Impersonation', () => {
       } as any);
 
       await expect(impersonation.getImpersonatedToken()).rejects.toThrow(
-        'Token exchange failed: 400 Bad Request - Invalid request'
+        'Token exchange failed: 400 Bad Request - Invalid request',
       );
     });
 
@@ -246,7 +244,7 @@ describe('Impersonation', () => {
       } as any);
 
       await expect(impersonation.getImpersonatedToken()).rejects.toThrow(
-        'Token exchange response missing access_token'
+        'Token exchange response missing access_token',
       );
     });
   });
