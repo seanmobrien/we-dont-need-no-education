@@ -100,7 +100,6 @@ export class Impersonation {
   static async fromRequest({
     audience,
   }: {
-    request: NextRequest;
     audience?: string;
   }): Promise<Impersonation | undefined> {
     try {
