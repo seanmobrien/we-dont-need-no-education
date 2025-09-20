@@ -637,6 +637,9 @@ const DefaultEnvVariables = {
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
   NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
+  AUTH_KEYCLOAK_ISSUER: 'https://keycloak.example.com/realms/test',
+  AUTH_KEYCLOAK_CLIENT_ID: 'test-client-id',
+  AUTH_KEYCLOAK_CLIENT_SECRET: 'test-client-secret',
   NEXT_PUBLIC_HOSTNAME: `http://test-run.localhost`,
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: `silly`,
   LOG_LEVEL_SERVER: `silly`,

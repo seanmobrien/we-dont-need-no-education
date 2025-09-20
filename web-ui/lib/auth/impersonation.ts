@@ -1,7 +1,7 @@
 /**
  * @fileoverview Impersonation service for Keycloak token exchange
  * Provides user impersonation via Keycloak token exchange for authenticated API calls
- * 
+ *
  * @module impersonation
  * @version 1.0.0
  * @author NoEducation Team
@@ -54,18 +54,18 @@ interface UserContext {
 
 /**
  * Impersonation class for handling Keycloak token exchange
- * 
+ *
  * This class provides functionality to impersonate users by exchanging
  * authentication tokens via Keycloak's token exchange mechanism.
- * 
+ *
  * @example
  * ```typescript
  * // Create impersonation instance from request
  * const impersonation = await Impersonation.fromRequest(request);
- * 
+ *
  * // Get impersonated token for API calls
  * const token = await impersonation.getImpersonatedToken();
- * 
+ *
  * // Use token in API headers
  * const headers = {
  *   'Authorization': `Bearer ${token}`,
@@ -81,7 +81,7 @@ export class Impersonation {
 
   /**
    * Creates a new Impersonation instance
-   * 
+   *
    * @param userContext - User context from the session
    * @param config - Keycloak token exchange configuration
    */
@@ -92,19 +92,23 @@ export class Impersonation {
 
   /**
    * Creates an Impersonation instance from a NextRequest
-   * 
+   *
    * @param request - The NextRequest to extract authentication from
    * @returns Promise resolving to Impersonation instance or null if not authenticated
    * @throws Never throws - returns null for unauthenticated requests
    */
-  static async fromRequest(request: NextRequest): Promise<Impersonation | null> {
+  static async fromRequest({
+    audience,
+  }: {
+    audience?: string;
+  }): Promise<Impersonation | undefined> {
     try {
       // Get the current session
       const session = await auth();
-      
+
       if (!session?.user) {
         log((l) => l.debug('No authenticated session found for impersonation'));
-        return null;
+        return undefined;
       }
 
       // Extract user context from session
@@ -112,13 +116,16 @@ export class Impersonation {
         userId: session.user.id || '',
         email: session.user.email || undefined,
         name: session.user.name || undefined,
-        accountId: 'account_id' in session.user ? session.user.account_id : undefined,
+        accountId:
+          'account_id' in session.user ? session.user.account_id : undefined,
       };
 
       // Validate required user context
       if (!userContext.userId) {
-        log((l) => l.warn('User ID not available in session for impersonation'));
-        return null;
+        log((l) =>
+          l.warn('User ID not available in session for impersonation'),
+        );
+        return undefined;
       }
 
       // Build Keycloak configuration from environment
@@ -126,17 +133,19 @@ export class Impersonation {
         issuer: env('AUTH_KEYCLOAK_ISSUER') || '',
         clientId: env('AUTH_KEYCLOAK_CLIENT_ID') || '',
         clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET') || '',
-        audience: env('KEYCLOAK_IMPERSONATION_AUDIENCE') || undefined,
+        audience,
       };
 
       // Validate configuration
       if (!config.issuer || !config.clientId || !config.clientSecret) {
-        log((l) => l.warn('Incomplete Keycloak configuration for impersonation', {
-          hasIssuer: !!config.issuer,
-          hasClientId: !!config.clientId,
-          hasClientSecret: !!config.clientSecret,
-        }));
-        return null;
+        log((l) =>
+          l.warn('Incomplete Keycloak configuration for impersonation', {
+            hasIssuer: !!config.issuer,
+            hasClientId: !!config.clientId,
+            hasClientSecret: !!config.clientSecret,
+          }),
+        );
+        return undefined;
       }
 
       return new Impersonation(userContext, config);
@@ -147,46 +156,57 @@ export class Impersonation {
         severity: 'error',
         message: 'Failed to create impersonation instance from request',
       });
-      return null;
+      return undefined;
     }
   }
 
   /**
    * Gets an impersonated token for the authenticated user
-   * 
+   *
    * This method performs Keycloak token exchange to obtain an impersonated
    * token that can be used for API calls on behalf of the user.
-   * 
+   *
    * @param forceRefresh - Whether to force token refresh even if cached token is valid
    * @returns Promise resolving to the impersonated token
    * @throws Will throw an error if token exchange fails
    */
   async getImpersonatedToken(forceRefresh: boolean = false): Promise<string> {
     // Return cached token if still valid and not forcing refresh
-    if (!forceRefresh && this.cachedToken && this.tokenExpiry && this.tokenExpiry > new Date()) {
+    if (
+      !forceRefresh &&
+      this.cachedToken &&
+      this.tokenExpiry &&
+      this.tokenExpiry > new Date()
+    ) {
       log((l) => l.debug('Using cached impersonated token'));
       return this.cachedToken;
     }
 
     try {
-      log((l) => l.debug('Performing Keycloak token exchange', {
-        userId: this.userContext.userId,
-        hasEmail: !!this.userContext.email,
-        hasAccountId: !!this.userContext.accountId,
-      }));
+      log((l) =>
+        l.debug('Performing Keycloak token exchange', {
+          userId: this.userContext.userId,
+          hasEmail: !!this.userContext.email,
+          hasAccountId: !!this.userContext.accountId,
+        }),
+      );
 
       // Perform token exchange using Keycloak standard token exchange
       const tokenResponse = await this.performTokenExchange();
-      
+
       // Cache the token with expiry
       this.cachedToken = tokenResponse.access_token;
-      this.tokenExpiry = new Date(Date.now() + (tokenResponse.expires_in * 1000) - 60000); // 1 minute buffer
-      
-      log((l) => l.debug('Successfully obtained impersonated token', {
-        userId: this.userContext.userId,
-        expiresIn: tokenResponse.expires_in,
-        tokenType: tokenResponse.token_type,
-      }));
+      this.tokenExpiry = new Date(
+        Date.now() + tokenResponse.expires_in * 1000 - 60000,
+      ); // 1 minute buffer
+
+      log((l) =>
+        l.debug('Successfully obtained impersonated token', {
+          userId: this.userContext.userId,
+          expiresIn: tokenResponse.expires_in,
+          tokenType: tokenResponse.token_type,
+        }),
+      );
 
       return this.cachedToken;
     } catch (error) {
@@ -206,13 +226,13 @@ export class Impersonation {
 
   /**
    * Performs the actual Keycloak token exchange
-   * 
+   *
    * @private
    * @returns Promise resolving to token exchange response
    */
   private async performTokenExchange(): Promise<TokenExchangeResponse> {
     const tokenEndpoint = `${this.config.issuer}/protocol/openid-connect/token`;
-    
+
     // Build token exchange parameters according to Keycloak standard
     const params = new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
@@ -237,18 +257,20 @@ export class Impersonation {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
       body: params.toString(),
     });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
-      throw new Error(`Token exchange failed: ${response.status} ${response.statusText} - ${errorText}`);
+      throw new Error(
+        `Token exchange failed: ${response.status} ${response.statusText} - ${errorText}`,
+      );
     }
 
     const tokenData: TokenExchangeResponse = await response.json();
-    
+
     if (!tokenData.access_token) {
       throw new Error('Token exchange response missing access_token');
     }
@@ -258,7 +280,7 @@ export class Impersonation {
 
   /**
    * Gets the user context for this impersonation instance
-   * 
+   *
    * @returns The user context
    */
   getUserContext(): Readonly<UserContext> {
@@ -275,10 +297,14 @@ export class Impersonation {
 
   /**
    * Checks if the impersonation instance has a valid cached token
-   * 
+   *
    * @returns True if a valid cached token exists
    */
   hasCachedToken(): boolean {
-    return !!(this.cachedToken && this.tokenExpiry && this.tokenExpiry > new Date());
+    return !!(
+      this.cachedToken &&
+      this.tokenExpiry &&
+      this.tokenExpiry > new Date()
+    );
   }
 }

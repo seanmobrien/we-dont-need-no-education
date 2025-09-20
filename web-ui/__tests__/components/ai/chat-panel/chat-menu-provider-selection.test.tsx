@@ -16,7 +16,7 @@ describe('ChatMenu Provider Selection', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('displays current provider and model in the active model display', async () => {
@@ -24,21 +24,24 @@ describe('ChatMenu Provider Selection', () => {
       <ChatMenu
         activeModelSelection={defaultModelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
-      />
+      />,
     );
 
     // Click the menu button to open the menu
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
 
-    await waitFor(() => {
-      // Look for the elements using getAllBy since there are multiples
-      const azureElements = screen.getAllByText('Azure');
-      const attorneyElements = screen.getAllByText('Attorney');
-      
-      expect(azureElements.length).toBeGreaterThan(0);
-      expect(attorneyElements.length).toBeGreaterThan(0);
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        // Look for the elements using getAllBy since there are multiples
+        const azureElements = screen.getAllByText('Azure');
+        const attorneyElements = screen.getAllByText('Attorney');
+
+        expect(azureElements.length).toBeGreaterThan(0);
+        expect(attorneyElements.length).toBeGreaterThan(0);
+      },
+      { timeout: 5000 },
+    );
   }, 10000);
 
   it('shows all available providers', async () => {
@@ -46,18 +49,27 @@ describe('ChatMenu Provider Selection', () => {
       <ChatMenu
         activeModelSelection={defaultModelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
-      />
+      />,
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
 
-    await waitFor(() => {
-      // Check that all provider options are present via test IDs
-      expect(screen.getByTestId('menu-item-provider-azure')).toBeInTheDocument();
-      expect(screen.getByTestId('menu-item-provider-google')).toBeInTheDocument();
-      expect(screen.getByTestId('menu-item-provider-openai')).toBeInTheDocument();
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        // Check that all provider options are present via test IDs
+        expect(
+          screen.getByTestId('menu-item-provider-azure'),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByTestId('menu-item-provider-google'),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByTestId('menu-item-provider-openai'),
+        ).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
   }, 10000);
 
   it('switches provider when provider is selected', async () => {
@@ -65,16 +77,19 @@ describe('ChatMenu Provider Selection', () => {
       <ChatMenu
         activeModelSelection={defaultModelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
-      />
+      />,
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
 
-    await waitFor(() => {
-      const googleOption = screen.getByTestId('menu-item-provider-google');
-      fireEvent.click(googleOption);
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        const googleOption = screen.getByTestId('menu-item-provider-google');
+        fireEvent.click(googleOption);
+      },
+      { timeout: 5000 },
+    );
 
     expect(mockSetActiveModelSelection).toHaveBeenCalledWith({
       provider: 'google',
@@ -92,16 +107,19 @@ describe('ChatMenu Provider Selection', () => {
       <ChatMenu
         activeModelSelection={modelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
-      />
+      />,
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
 
-    await waitFor(() => {
-      const googleOption = screen.getByTestId('menu-item-provider-google');
-      fireEvent.click(googleOption);
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        const googleOption = screen.getByTestId('menu-item-provider-google');
+        fireEvent.click(googleOption);
+      },
+      { timeout: 5000 },
+    );
 
     expect(mockSetActiveModelSelection).toHaveBeenCalledWith({
       provider: 'google',
@@ -119,20 +137,27 @@ describe('ChatMenu Provider Selection', () => {
       <ChatMenu
         activeModelSelection={googleSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
-      />
+      />,
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
 
-    await waitFor(() => {
-      // Partner models should be disabled for Google
-      const partnerMediumOption = screen.getByTestId('menu-item-model-reasoning-medium');
-      const partnerHighOption = screen.getByTestId('menu-item-model-reasoning-high');
-      
-      expect(partnerMediumOption).toHaveAttribute('aria-disabled', 'true');
-      expect(partnerHighOption).toHaveAttribute('aria-disabled', 'true');
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        // Partner models should be disabled for Google
+        const partnerMediumOption = screen.getByTestId(
+          'menu-item-model-reasoning-medium',
+        );
+        const partnerHighOption = screen.getByTestId(
+          'menu-item-model-reasoning-high',
+        );
+
+        expect(partnerMediumOption).toHaveAttribute('aria-disabled', 'true');
+        expect(partnerHighOption).toHaveAttribute('aria-disabled', 'true');
+      },
+      { timeout: 5000 },
+    );
   }, 10000);
 
   it('updates model selection when model is changed', async () => {
@@ -140,16 +165,19 @@ describe('ChatMenu Provider Selection', () => {
       <ChatMenu
         activeModelSelection={defaultModelSelection}
         setActiveModelSelection={mockSetActiveModelSelection}
-      />
+      />,
     );
 
     const menuButton = screen.getByTestId('button-chat-menu');
     fireEvent.click(menuButton);
 
-    await waitFor(() => {
-      const lofiOption = screen.getByTestId('menu-item-model-lofi');
-      fireEvent.click(lofiOption);
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        const lofiOption = screen.getByTestId('menu-item-model-lofi');
+        fireEvent.click(lofiOption);
+      },
+      { timeout: 5000 },
+    );
 
     expect(mockSetActiveModelSelection).toHaveBeenCalledWith({
       provider: 'azure',

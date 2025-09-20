@@ -33,7 +33,9 @@ jest.mock('@/lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({ add: jest.fn() }),
     createHistogram: jest.fn().mockReturnValue({ record: jest.fn() }),
-    createUpDownCounter: jest.fn().mockReturnValue({ add: jest.fn(), record: jest.fn() }),
+    createUpDownCounter: jest
+      .fn()
+      .mockReturnValue({ add: jest.fn(), record: jest.fn() }),
     createGauge: jest.fn().mockReturnValue({ record: jest.fn() }),
   },
   hashUserId: jest.fn((userId: string) => `hashed_${userId}`),
@@ -49,9 +51,10 @@ jest.mock('@/lib/react-util', () => {
 });
 
 const mockToolMap = ToolMap as jest.MockedClass<typeof ToolMap>;
-const mockOptimizeMessages = optimizeMessagesWithToolSummarization as jest.MockedFunction<
-  typeof optimizeMessagesWithToolSummarization
->;
+const mockOptimizeMessages =
+  optimizeMessagesWithToolSummarization as jest.MockedFunction<
+    typeof optimizeMessagesWithToolSummarization
+  >;
 const mockDrizDb = drizDbWithInit as jest.MockedFunction<typeof drizDbWithInit>;
 
 describe('Tool Optimizing Middleware Integration Tests', () => {
@@ -59,7 +62,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
   let mockDb: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Mock database
     mockDb = {
@@ -84,11 +87,13 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
     mockToolMap.getInstance.mockResolvedValue(mockToolMapInstance);
 
     // Mock message optimization with realistic behavior
-    mockOptimizeMessages.mockImplementation(async (messages, model, userId, chatId) => {
-      // Simulate optimization reducing message count
-      const optimized = messages.slice(0, Math.ceil(messages.length * 0.7));
-      return optimized;
-    });
+    mockOptimizeMessages.mockImplementation(
+      async (messages, model, userId, chatId) => {
+        // Simulate optimization reducing message count
+        const optimized = messages.slice(0, Math.ceil(messages.length * 0.7));
+        return optimized;
+      },
+    );
   });
 
   describe('Database Integration', () => {
@@ -215,12 +220,12 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         type: 'generateText',
         params,
       });
-      
+
       result = await toolOptimizer.transformParams!({
         type: 'generateText',
         params: result,
       });
-      
+
       result = await postMiddleware.transformParams!({
         type: 'generateText',
         params: result,
@@ -235,7 +240,9 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
 
     it('should preserve middleware execution order with errors', async () => {
       const errorMiddleware: LanguageModelV2Middleware = {
-        transformParams: jest.fn().mockRejectedValue(new Error('Middleware error')),
+        transformParams: jest
+          .fn()
+          .mockRejectedValue(new Error('Middleware error')),
       };
 
       const toolOptimizer = createToolOptimizingMiddleware({
@@ -272,13 +279,16 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         chatId: 'chat-session-456',
         conversationHistory: Array.from({ length: 25 }, (_, i) => ({
           id: `chat-msg-${i}`,
-          role: i === 0 ? 'system' : (i % 2 === 1 ? 'user' : 'assistant'),
-          parts: [{
-            type: 'text',
-            text: i === 0 
-              ? 'You are a helpful assistant.'
-              : `Chat message ${i} in ongoing conversation`
-          }],
+          role: i === 0 ? 'system' : i % 2 === 1 ? 'user' : 'assistant',
+          parts: [
+            {
+              type: 'text',
+              text:
+                i === 0
+                  ? 'You are a helpful assistant.'
+                  : `Chat message ${i} in ongoing conversation`,
+            },
+          ],
         })) as UIMessage[],
         availableTools: [
           {
@@ -329,17 +339,21 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
 
       expect(result.messages).toBeDefined();
       expect(result.tools).toBe(chatScenario.availableTools);
-      expect(mockToolMapInstance.scanForTools).toHaveBeenCalledWith(chatScenario.availableTools);
+      expect(mockToolMapInstance.scanForTools).toHaveBeenCalledWith(
+        chatScenario.availableTools,
+      );
       expect(mockOptimizeMessages).toHaveBeenCalledWith(
         chatScenario.conversationHistory,
         'chat-model',
         chatScenario.userId,
-        chatScenario.chatId
+        chatScenario.chatId,
       );
-      
+
       // Should optimize the conversation history
       expect(Array.isArray(result.messages)).toBe(true);
-      expect(result.messages.length).toBeLessThan(chatScenario.conversationHistory.length);
+      expect(result.messages.length).toBeLessThan(
+        chatScenario.conversationHistory.length,
+      );
     });
 
     it('should handle enterprise workflow scenario', async () => {
@@ -353,13 +367,19 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
             type: 'object',
             properties: {
               documentId: { type: 'string' },
-              analysisType: { type: 'string', enum: ['content', 'structure', 'metadata'] },
+              analysisType: {
+                type: 'string',
+                enum: ['content', 'structure', 'metadata'],
+              },
               options: {
                 type: 'object',
                 properties: {
                   includeImages: { type: 'boolean' },
                   language: { type: 'string' },
-                  outputFormat: { type: 'string', enum: ['json', 'xml', 'text'] },
+                  outputFormat: {
+                    type: 'string',
+                    enum: ['json', 'xml', 'text'],
+                  },
                 },
               },
             },
@@ -368,11 +388,13 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         })) as LanguageModelV2FunctionTool[],
         history: Array.from({ length: 100 }, (_, i) => ({
           id: `enterprise-msg-${i}`,
-          role: i % 4 === 0 ? 'system' : (i % 3 === 0 ? 'user' : 'assistant'),
-          parts: [{
-            type: 'text',
-            text: `Enterprise workflow message ${i} with document analysis context`
-          }],
+          role: i % 4 === 0 ? 'system' : i % 3 === 0 ? 'user' : 'assistant',
+          parts: [
+            {
+              type: 'text',
+              text: `Enterprise workflow message ${i} with document analysis context`,
+            },
+          ],
         })) as UIMessage[],
       };
 
@@ -393,18 +415,22 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         model: 'enterprise-model',
       });
 
-      expect(mockToolMapInstance.scanForTools).toHaveBeenCalledWith(enterpriseScenario.tools);
+      expect(mockToolMapInstance.scanForTools).toHaveBeenCalledWith(
+        enterpriseScenario.tools,
+      );
       expect(mockOptimizeMessages).toHaveBeenCalledWith(
         enterpriseScenario.history,
         'enterprise-model',
         'enterprise-user',
-        'enterprise-workflow'
+        'enterprise-workflow',
       );
 
       expect(result.messages).toBeDefined();
       expect(result.tools).toBe(enterpriseScenario.tools);
       expect(Array.isArray(result.messages)).toBe(true);
-      expect(result.messages.length).toBeLessThan(enterpriseScenario.history.length);
+      expect(result.messages.length).toBeLessThan(
+        enterpriseScenario.history.length,
+      );
     });
 
     it('should handle streaming scenario', async () => {
@@ -416,7 +442,11 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       const streamingParams = {
         model: 'streaming-model',
         messages: [
-          { id: 'stream-1', role: 'user', parts: [{ type: 'text', text: 'Start streaming' }] },
+          {
+            id: 'stream-1',
+            role: 'user',
+            parts: [{ type: 'text', text: 'Start streaming' }],
+          },
         ],
         tools: [
           {
@@ -447,7 +477,11 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       const chatHistoryParams = {
         model: 'integration-model',
         messages: [
-          { id: 'history-1', role: 'user', parts: [{ type: 'text', text: 'Previous context' }] },
+          {
+            id: 'history-1',
+            role: 'user',
+            parts: [{ type: 'text', text: 'Previous context' }],
+          },
         ],
         tools: [
           {
@@ -471,7 +505,10 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         params: chatHistoryParams,
       });
 
-      expect(result.chatHistory).toEqual({ enabled: true, userId: 'history-user' });
+      expect(result.chatHistory).toEqual({
+        enabled: true,
+        userId: 'history-user',
+      });
       expect(mockToolMapInstance.scanForTools).toHaveBeenCalled();
     });
 

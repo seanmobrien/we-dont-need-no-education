@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Unit tests for tool message deduplication functionality
  *
@@ -61,13 +62,13 @@ describe('Tool Message Deduplication', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
 
     // Mock transaction methods
     mockWhere = jest.fn().mockResolvedValue(undefined);
     mockSet = jest.fn().mockReturnValue({ where: mockWhere });
     mockUpdate = jest.fn().mockReturnValue({ set: mockSet });
-    
+
     const mockFrom = jest.fn().mockReturnValue({
       where: jest.fn().mockReturnValue({
         limit: jest.fn().mockResolvedValue([]),
@@ -76,7 +77,7 @@ describe('Tool Message Deduplication', () => {
       leftJoin: jest.fn().mockReturnThis(),
     });
 
-    mockSelect = jest.fn().mockReturnValue({ 
+    mockSelect = jest.fn().mockReturnValue({
       from: mockFrom,
     });
 
@@ -120,7 +121,9 @@ describe('Tool Message Deduplication', () => {
       // Mock empty result (no existing message)
       const mockLimit = jest.fn().mockResolvedValue([]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -156,7 +159,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -191,7 +196,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -235,7 +242,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -247,9 +256,9 @@ describe('Tool Message Deduplication', () => {
         expect.objectContaining({
           toolResult: { result: 'success' },
           // functionCall should NOT be included since it already exists
-        })
+        }),
       );
-      
+
       const setCallArgs = mockSet.mock.calls[0][0];
       expect(setCallArgs).not.toHaveProperty('functionCall');
     });
@@ -278,7 +287,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -289,14 +300,14 @@ describe('Tool Message Deduplication', () => {
       expect(mockSet).toHaveBeenCalledWith(
         expect.objectContaining({
           functionCall: { args: { test: 'new' } },
-        })
+        }),
       );
     });
   });
 
   describe('turnId validation - acceptance criteria tests', () => {
     it('should update existing record when current turnId > modifiedTurnId', async () => {
-      // Arrange - Simulate turn 1: tool-call, turn 3: tool-result  
+      // Arrange - Simulate turn 1: tool-call, turn 3: tool-result
       const chatId = 'chat-123';
       const turnId = 3;
       const toolRow = {
@@ -319,7 +330,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -363,7 +376,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -401,7 +416,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -419,7 +436,7 @@ describe('Tool Message Deduplication', () => {
         toolResult: { result: 'value' },
         // functionCall should NOT be overwritten since it exists and incoming is null
       });
-      
+
       const setCallArgs = mockSet.mock.calls[0][0];
       expect(setCallArgs).not.toHaveProperty('functionCall');
     });
@@ -449,7 +466,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -467,7 +486,7 @@ describe('Tool Message Deduplication', () => {
         functionCall: { arg1: 'value' },
         // toolResult should NOT be overwritten since incoming is null and existing exists
       });
-      
+
       const setCallArgs = mockSet.mock.calls[0][0];
       expect(setCallArgs).not.toHaveProperty('toolResult');
     });
@@ -477,7 +496,7 @@ describe('Tool Message Deduplication', () => {
       // Turn 1: tool-call creates record with functionCall
       // Turn 2: tool-result updates record with toolResult
       const chatId = 'chat-123';
-      
+
       // First, tool-call creates record
       const turnId1 = 1;
       const toolCallRow = {
@@ -491,11 +510,18 @@ describe('Tool Message Deduplication', () => {
       // Mock no existing message (first insert)
       const mockLimit1 = jest.fn().mockResolvedValue([]);
       const mockWhereClause1 = jest.fn().mockReturnValue({ limit: mockLimit1 });
-      const mockFromClause1 = jest.fn().mockReturnValue({ where: mockWhereClause1 });
+      const mockFromClause1 = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause1 });
       mockSelect.mockReturnValue({ from: mockFromClause1 });
 
       // Act - Tool call
-      const result1 = await upsertToolMessage(mockTx, chatId, turnId1, toolCallRow);
+      const result1 = await upsertToolMessage(
+        mockTx,
+        chatId,
+        turnId1,
+        toolCallRow,
+      );
 
       // Assert - Should return null (no existing message to update)
       expect(result1).toBeNull();
@@ -504,7 +530,7 @@ describe('Tool Message Deduplication', () => {
       // Reset mocks for second call
       jest.clearAllMocks();
 
-      // Now tool-result updates existing record  
+      // Now tool-result updates existing record
       const turnId2 = 2;
       const toolResultRow = {
         role: 'tool' as const,
@@ -527,11 +553,18 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit2 = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause2 = jest.fn().mockReturnValue({ limit: mockLimit2 });
-      const mockFromClause2 = jest.fn().mockReturnValue({ where: mockWhereClause2 });
+      const mockFromClause2 = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause2 });
       mockSelect.mockReturnValue({ from: mockFromClause2 });
 
       // Act - Tool result
-      const result2 = await upsertToolMessage(mockTx, chatId, turnId2, toolResultRow);
+      const result2 = await upsertToolMessage(
+        mockTx,
+        chatId,
+        turnId2,
+        toolResultRow,
+      );
 
       // Assert - Final state should have both functionCall and toolResult
       expect(result2).toBe(123);
@@ -584,7 +617,9 @@ describe('Tool Message Deduplication', () => {
         // Mock existing message found
         const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
         const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-        const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+        const mockFromClause = jest
+          .fn()
+          .mockReturnValue({ where: mockWhereClause });
         mockSelect.mockReturnValue({ from: mockFromClause });
 
         // Act
@@ -595,10 +630,8 @@ describe('Tool Message Deduplication', () => {
         expect(mockSet).toHaveBeenCalledWith(
           expect.objectContaining({
             toolResult: testCase.value,
-          })
+          }),
         );
-        
-        console.log(`✓ Falsy ${testCase.description} (${JSON.stringify(testCase.value)}) handled correctly`);
       }
     });
 
@@ -635,7 +668,9 @@ describe('Tool Message Deduplication', () => {
         // Mock existing message found
         const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
         const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-        const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+        const mockFromClause = jest
+          .fn()
+          .mockReturnValue({ where: mockWhereClause });
         mockSelect.mockReturnValue({ from: mockFromClause });
 
         // Act
@@ -645,8 +680,6 @@ describe('Tool Message Deduplication', () => {
         expect(result).toBe(42);
         const setCallArgs = mockSet.mock.calls[0][0];
         expect(setCallArgs).not.toHaveProperty('toolResult');
-        
-        console.log(`✓ ${testCase.description} value correctly excluded from update`);
       }
     });
   });
@@ -662,29 +695,36 @@ describe('Tool Message Deduplication', () => {
         },
         {
           role: 'assistant',
-          content: [{
-            type: 'tool-call',
-            toolCallId: 'call_existing123',
-            toolName: 'testTool',
-            args: { param: 'value' }
-          }],
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call_existing123',
+              toolName: 'testTool',
+              input: { type: 'text', value: 'result' },
+            },
+          ],
         },
         {
           role: 'tool',
-          content: [{
-            type: 'tool-result',
-            toolCallId: 'call_existing123',
-            result: { output: 'result' }
-          }],
+          content: [
+            {
+              type: 'tool-result',
+              toolName: 'testTool',
+              toolCallId: 'call_existing123',
+              output: { type: 'text', value: 'result' },
+            },
+          ],
         },
         {
           role: 'assistant',
-          content: [{
-            type: 'tool-call',
-            toolCallId: 'call_new456',
-            toolName: 'newTool',
-            args: { param: 'new' }
-          }],
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call_new456',
+              toolName: 'newTool',
+              input: { type: 'text', value: 'result' },
+            },
+          ],
         },
       ];
 
@@ -697,7 +737,7 @@ describe('Tool Message Deduplication', () => {
           providerId: null,
         },
         {
-          role: 'tool', 
+          role: 'tool',
           content: null,
           messageOrder: 2,
           providerId: 'call_existing123',
@@ -705,15 +745,17 @@ describe('Tool Message Deduplication', () => {
       ];
 
       const mockOrderBy = jest.fn().mockResolvedValue(existingMessages);
-      const mockWhereClause = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
+      const mockWhereClause = jest
+        .fn()
+        .mockReturnValue({ orderBy: mockOrderBy });
       const mockLeftJoin = jest.fn().mockReturnThis();
-      const mockFromClause = jest.fn().mockReturnValue({ 
+      const mockFromClause = jest.fn().mockReturnValue({
         leftJoin: mockLeftJoin,
-        where: mockWhereClause 
+        where: mockWhereClause,
       });
 
       mockSelect.mockReturnValue({ from: mockFromClause });
-      
+
       // Mock the leftJoin chain
       const chainedMock = {
         leftJoin: mockLeftJoin,
@@ -726,18 +768,26 @@ describe('Tool Message Deduplication', () => {
 
       // Assert
       expect(result).toHaveLength(1); // Should exclude existing messages and only include new tool call
-      
+
       // Should include the new tool call
-      expect(result.some((msg: any) => 
-        Array.isArray(msg.content) && 
-        msg.content.some((part: any) => part.toolCallId === 'call_new456')
-      )).toBe(true);
-      
+      expect(
+        result.some(
+          (msg: any) =>
+            Array.isArray(msg.content) &&
+            msg.content.some((part: any) => part.toolCallId === 'call_new456'),
+        ),
+      ).toBe(true);
+
       // Should exclude the existing tool call
-      expect(result.some((msg: any) => 
-        Array.isArray(msg.content) && 
-        msg.content.some((part: any) => part.toolCallId === 'call_existing123')
-      )).toBe(false);
+      expect(
+        result.some(
+          (msg: any) =>
+            Array.isArray(msg.content) &&
+            msg.content.some(
+              (part: any) => part.toolCallId === 'call_existing123',
+            ),
+        ),
+      ).toBe(false);
     });
   });
 
@@ -746,17 +796,6 @@ describe('Tool Message Deduplication', () => {
       // Arrange
       const chatId = 'chat-123';
       const turnId = 2;
-      
-      // Mock existing tool message from previous turn
-      const existingMessage = {
-        chatMessageId: 'msg-uuid-123',
-        messageId: 123,
-        turnId: 1,
-        functionCall: null,
-        toolResult: { result: 'previous' },
-        metadata: { modifiedTurnId: 1 },
-        optimizedContent: null,
-      };
 
       // Mock tool call chunk
       const toolCallChunk = {
@@ -769,7 +808,9 @@ describe('Tool Message Deduplication', () => {
       // Mock no existing message for new tool call (should create new)
       const mockLimit = jest.fn().mockResolvedValue([]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -793,7 +834,7 @@ describe('Tool Message Deduplication', () => {
       // Arrange
       const chatId = 'chat-123';
       const turnId = 3;
-      
+
       // Mock existing tool message with functionCall
       const existingMessage = {
         chatMessageId: 'msg-uuid-123',
@@ -816,7 +857,9 @@ describe('Tool Message Deduplication', () => {
       // Mock existing message found
       const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
       const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
-      const mockFromClause = jest.fn().mockReturnValue({ where: mockWhereClause });
+      const mockFromClause = jest
+        .fn()
+        .mockReturnValue({ where: mockWhereClause });
       mockSelect.mockReturnValue({ from: mockFromClause });
 
       // Act
@@ -856,11 +899,14 @@ describe('Tool Message Deduplication', () => {
       const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'tool',
-          content: [{
-            type: 'tool-result',
-            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
-            result: { output: 'new result' }
-          }],
+          content: [
+            {
+              type: 'tool-result',
+              toolName: 'testTool',
+              toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+              output: { type: 'text', value: 'new result' },
+            },
+          ],
         },
       ];
 
@@ -876,15 +922,17 @@ describe('Tool Message Deduplication', () => {
       ];
 
       const mockOrderBy = jest.fn().mockResolvedValue(existingMessages);
-      const mockWhereClause = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
+      const mockWhereClause = jest
+        .fn()
+        .mockReturnValue({ orderBy: mockOrderBy });
       const mockLeftJoin = jest.fn().mockReturnThis();
-      const mockFromClause = jest.fn().mockReturnValue({ 
+      const mockFromClause = jest.fn().mockReturnValue({
         leftJoin: mockLeftJoin,
-        where: mockWhereClause 
+        where: mockWhereClause,
       });
 
       mockSelect.mockReturnValue({ from: mockFromClause });
-      
+
       // Mock the leftJoin chain
       const chainedMock = {
         leftJoin: mockLeftJoin,
@@ -893,17 +941,24 @@ describe('Tool Message Deduplication', () => {
       mockLeftJoin.mockReturnValue(chainedMock);
 
       // Act
-      const result = await getNewMessages(mockTx, chatId, incomingMessages, currentTurnId);
+      const result = await getNewMessages(
+        mockTx,
+        chatId,
+        incomingMessages,
+        currentTurnId,
+      );
 
       // Assert - Should include the message since currentTurnId (3) > modifiedTurnId (1)
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         role: 'tool',
-        content: [{
-          type: 'tool-result',
-          toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
-          result: { output: 'new result' }
-        }],
+        content: [
+          {
+            type: 'tool-result',
+            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+            result: { output: 'new result' },
+          },
+        ],
       });
     });
 
@@ -914,11 +969,14 @@ describe('Tool Message Deduplication', () => {
       const incomingMessages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'tool',
-          content: [{
-            type: 'tool-result',
-            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
-            result: { output: 'old result' }
-          }],
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+              toolName: 'testTool',
+              output: { type: 'text', value: 'old result' },
+            },
+          ],
         },
       ];
 
@@ -934,15 +992,17 @@ describe('Tool Message Deduplication', () => {
       ];
 
       const mockOrderBy = jest.fn().mockResolvedValue(existingMessages);
-      const mockWhereClause = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
+      const mockWhereClause = jest
+        .fn()
+        .mockReturnValue({ orderBy: mockOrderBy });
       const mockLeftJoin = jest.fn().mockReturnThis();
-      const mockFromClause = jest.fn().mockReturnValue({ 
+      const mockFromClause = jest.fn().mockReturnValue({
         leftJoin: mockLeftJoin,
-        where: mockWhereClause 
+        where: mockWhereClause,
       });
 
       mockSelect.mockReturnValue({ from: mockFromClause });
-      
+
       // Mock the leftJoin chain
       const chainedMock = {
         leftJoin: mockLeftJoin,
@@ -951,7 +1011,12 @@ describe('Tool Message Deduplication', () => {
       mockLeftJoin.mockReturnValue(chainedMock);
 
       // Act
-      const result = await getNewMessages(mockTx, chatId, incomingMessages, currentTurnId);
+      const result = await getNewMessages(
+        mockTx,
+        chatId,
+        incomingMessages,
+        currentTurnId,
+      );
 
       // Assert - Should exclude the message since currentTurnId (2) <= modifiedTurnId (3)
       expect(result).toHaveLength(0);
@@ -963,31 +1028,38 @@ describe('Tool Message Deduplication', () => {
       // After: One record with both functionCall and toolResult
 
       const chatId = 'chat-123';
-      
+
       // Simulate Turn 1: tool-call message comes in (should be new)
       const turn1Messages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'assistant',
-          content: [{
-            type: 'tool-call',
-            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
-            toolName: 'some_function',
-            args: { arg1: 'value' }
-          }],
+          content: [
+            {
+              type: 'tool-call',
+              toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+              toolName: 'some_function',
+              input: { type: 'text', value: 'test' },
+            },
+          ],
         },
       ];
 
       // Mock no existing messages (first time)
-      mockSelect.mockReturnValueOnce({ 
+      mockSelect.mockReturnValueOnce({
         from: jest.fn().mockReturnValue({
           leftJoin: jest.fn().mockReturnThis(),
           where: jest.fn().mockReturnValue({
-            orderBy: jest.fn().mockResolvedValue([])
-          })
-        })
+            orderBy: jest.fn().mockResolvedValue([]),
+          }),
+        }),
       });
 
-      const turn1Result = await getNewMessages(mockTx, chatId, turn1Messages, 1);
+      const turn1Result = await getNewMessages(
+        mockTx,
+        chatId,
+        turn1Messages,
+        1,
+      );
       expect(turn1Result).toHaveLength(1); // New message included
 
       // Reset mocks for turn 2
@@ -997,11 +1069,14 @@ describe('Tool Message Deduplication', () => {
       const turn2Messages: LanguageModelV2CallOptions['prompt'] = [
         {
           role: 'tool',
-          content: [{
-            type: 'tool-result',
-            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
-            result: { result: 'value' }
-          }],
+          content: [
+            {
+              type: 'tool-result',
+              toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+              toolName: 'some_function',
+              output: { type: 'text', value: 'value' },
+            },
+          ],
         },
       ];
 
@@ -1017,27 +1092,43 @@ describe('Tool Message Deduplication', () => {
       ];
 
       const mockOrderBy = jest.fn().mockResolvedValue(existingMessages);
-      const mockWhereClause = jest.fn().mockReturnValue({ orderBy: mockOrderBy });
+      const mockWhereClause = jest
+        .fn()
+        .mockReturnValue({ orderBy: mockOrderBy });
       const mockLeftJoin = jest.fn().mockReturnThis();
-      const mockFromClause = jest.fn().mockReturnValue({ 
+      const mockFromClause = jest.fn().mockReturnValue({
         leftJoin: mockLeftJoin,
-        where: mockWhereClause 
+        where: mockWhereClause,
       });
 
       mockSelect.mockReturnValue({ from: mockFromClause });
-      mockLeftJoin.mockReturnValue({ leftJoin: mockLeftJoin, where: mockWhereClause });
+      mockLeftJoin.mockReturnValue({
+        leftJoin: mockLeftJoin,
+        where: mockWhereClause,
+      });
 
-      const turn2Result = await getNewMessages(mockTx, chatId, turn2Messages, 2);
-      
+      const turn2Result = await getNewMessages(
+        mockTx,
+        chatId,
+        turn2Messages,
+        2,
+      );
+
       // Assert - Should include the message for updating since turn 2 > modifiedTurnId 1
       expect(turn2Result).toHaveLength(1);
       expect(turn2Result[0]).toMatchObject({
         role: 'tool',
-        content: [{
-          type: 'tool-result',
-          toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
-          result: { result: 'value' }
-        }],
+        content: [
+          {
+            type: 'tool-result',
+            toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
+            toolName: 'some_function',
+            output: {
+              type: 'text',
+              value: 'value',
+            },
+          },
+        ],
       });
 
       // This message will be processed by upsertToolMessage to update the existing record

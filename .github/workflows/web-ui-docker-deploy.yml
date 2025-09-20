@@ -107,6 +107,7 @@ jobs:
         uses: azure/container-apps-deploy-action@v1
         with:
           #appSourcePath: ${{ github.workspace }}/src
+          # Use env.DEPLOY_TAG set in previous step, not vars.*
           imageToDeploy: ${{ env.DEPLOY_TAG }}
           acrName: schoollawregistry
           containerAppName: full-ui
