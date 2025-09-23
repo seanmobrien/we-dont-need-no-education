@@ -15,10 +15,6 @@ jest.mock('@/lib/hooks/use-memory-health', () => ({
 describe('MemoryStatusIndicator', () => {
   const mockUseMemoryHealth = require('@/lib/hooks/use-memory-health').useMemoryHealth;
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('renders with default props when healthy', () => {
     mockUseMemoryHealth.mockReturnValue({
       healthStatus: 'healthy',

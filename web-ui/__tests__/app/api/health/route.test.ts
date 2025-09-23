@@ -6,7 +6,6 @@
  * @description Unit tests for the health check API route at app/api/health/route.ts
  */
 import { GET } from '@/app/api/health/route';
-import { logger, ILogger } from '@/lib/logger';
 
 // Mock the memory client factory
 jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({
@@ -16,11 +15,7 @@ jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({
 }));
 
 describe('app/api/health/route GET', () => {
-  let logInstance: ILogger & { info: jest.Mock; error: jest.Mock };
-
-  beforeEach(async () => {
-    logInstance = (await logger()) as unknown as ILogger & { info: jest.Mock; error: jest.Mock };
-    // jest.clearAllMocks();
+  beforeEach(() => {
     delete process.env.IS_BUILDING;
     delete process.env.NEXT_PHASE;
   });
@@ -110,6 +105,8 @@ describe('app/api/health/route GET', () => {
 
   it('logs route processing (info) via wrapRouteRequest by default', async () => {
     const { memoryClientFactory } = require('@/lib/ai/mem0/memoryclient-factory');
+    const { logger } = require('@/lib/logger');
+    
     memoryClientFactory.mockReturnValue({
       healthCheck: jest.fn().mockResolvedValue({
         details: {
@@ -126,10 +123,12 @@ describe('app/api/health/route GET', () => {
       }),
     });
 
+    const logInstance = await logger();
     await GET();
-    expect(logInstance.info).toHaveBeenCalledTimes(1);
-    const firstCallArgs = (logInstance.info as jest.Mock).mock.calls[0];
-    expect(firstCallArgs[0]).toContain('Processing route request');
+    expect(logInstance.info).toHaveBeenCalledWith(
+      expect.stringContaining('Processing route request'),
+      expect.any(Object)
+    );
   });
 
   it('returns build fallback when build phase env vars are set (IS_BUILDING)', async () => {
