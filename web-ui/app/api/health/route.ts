@@ -98,7 +98,16 @@ type HealthCheckResponse =  {
  * Maps health status to health check status code
  */
 function mapHealthStatusToCode(status: HealthStatus): HealthCheckStatusCode {
-  return status as HealthCheckStatusCode; // They align perfectly
+  switch (status) {
+    case 'healthy':
+      return 'ok';
+    case 'warning':
+      return 'warning';
+    case 'error':
+      return 'error';
+    default:
+      return 'error';
+  }
 }
 
 /**

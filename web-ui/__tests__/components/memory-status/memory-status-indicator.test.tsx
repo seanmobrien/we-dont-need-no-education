@@ -30,8 +30,8 @@ describe('MemoryStatusIndicator', () => {
 
     render(<MemoryStatusIndicator />);
     
-    // Should render the icon without label
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    // Should render the icon (CheckCircle icon for healthy status)
+    expect(screen.getByTestId('CheckCircleIcon')).toBeInTheDocument();
   });
 
   it('renders with label when showLabel is true', () => {
@@ -104,8 +104,8 @@ describe('MemoryStatusIndicator', () => {
 
     render(<MemoryStatusIndicator />);
     
-    // Component should still render (error handling is done by tooltip)
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    // Component should still render with error icon
+    expect(screen.getByTestId('ErrorIcon')).toBeInTheDocument();
   });
 
   it('applies small size variant correctly', () => {
@@ -132,10 +132,11 @@ describe('MemoryStatusIndicator', () => {
       refreshInterval: 180000,
     });
 
-    render(<MemoryStatusIndicator />);
+    const { container } = render(<MemoryStatusIndicator />);
     
-    // Tooltip should be accessible
-    const button = screen.getByRole('button');
-    expect(button).toHaveAttribute('aria-describedby');
+    // Tooltip should be present via aria-describedby or similar
+    const tooltipElement = container.querySelector('[aria-label]');
+    expect(tooltipElement).toBeInTheDocument();
+    expect(tooltipElement).toHaveAttribute('aria-label', expect.stringContaining('Memory service is healthy'));
   });
 });

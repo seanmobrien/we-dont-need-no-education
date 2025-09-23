@@ -28,7 +28,6 @@ import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';
 import { instrumentStreamChunk } from './instrumentation';
 import { ensureCreateResult } from './stream-handler-result';
-import { reserveMessageIds } from './import-incoming-message';
 import {
   reserveMessageIds,
   upsertToolMessage,
