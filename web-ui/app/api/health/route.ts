@@ -1,5 +1,7 @@
 import { wrapRouteRequest } from "@/lib/nextjs-util/server";
 import { NextResponse } from "next/server";
+import { memoryClientFactory } from "@/lib/ai/mem0/memoryclient-factory";
+import { determineHealthStatus, type HealthStatus } from "@/lib/ai/mem0/types/health-check";
 
 /**
  * Health Check Route (GET /api/health)
@@ -54,12 +56,12 @@ import { NextResponse } from "next/server";
  * Narrow set of status codes surfaced by the health layer.
  * Keep deliberately small to simplify external automation.
  */
-type HealthCheckStatusCode = 'ok' | 'error';
+type HealthCheckStatusCode = 'ok' | 'warning' | 'error';
 
 /**
  * Enumerates discrete systems (or system groups) represented in the response.
  */
-type HealthCheckSystem = 'database' | 'cache' | 'queue' | 'chat';
+type HealthCheckSystem = 'database' | 'cache' | 'queue' | 'chat' | 'memory';
 
 /**
  * Base shape for any status entry.
@@ -81,6 +83,7 @@ type HealthSystemResponseTypeMap = {
   chat: HealthCheckStatusEntry<'cache' | 'queue'>;
   cache: HealthCheckStatusEntry<never>;
   queue: HealthCheckStatusEntry<never>;
+  memory: HealthCheckStatusEntry<never>;
 }
 
 /**
@@ -90,16 +93,54 @@ type HealthSystemResponseTypeMap = {
 type HealthCheckResponse =  {
   [key in HealthCheckSystem]?: HealthSystemResponseTypeMap[key];
 };
+
+/**
+ * Maps health status to health check status code
+ */
+function mapHealthStatusToCode(status: HealthStatus): HealthCheckStatusCode {
+  return status as HealthCheckStatusCode; // They align perfectly
+}
+
+/**
+ * Checks memory system health by calling the Mem0 health check endpoint
+ */
+async function checkMemoryHealth(): Promise<HealthCheckStatusEntry<never>> {
+  try {
+    const memoryClient = memoryClientFactory({});
+    const healthResponse = await memoryClient.healthCheck({ strict: false, verbose: 1 });
+    
+    const healthStatus = determineHealthStatus(healthResponse.details);
+    const statusCode = mapHealthStatusToCode(healthStatus);
+    
+    return { status: statusCode };
+  } catch (error) {
+    // If we can't reach the memory service, consider it an error
+    console.error('Memory health check failed:', error);
+    return { status: 'error' };
+  }
+}
+
 /**
  * GET /api/health
  * Returns a structured snapshot of subsystem statuses.
  * Wrapped for unified logging / error semantics.
  */
-export const GET = wrapRouteRequest(() => {
-  // Placeholder synchronous health synthesis; replace with bounded async probes as needed.
+export const GET = wrapRouteRequest(async () => {
+  // Get memory health asynchronously with timeout
+  const memoryHealthPromise = Promise.race([
+    checkMemoryHealth(),
+    new Promise<HealthCheckStatusEntry<never>>((resolve) => 
+      setTimeout(() => resolve({ status: 'error' }), 5000) // 5 second timeout
+    )
+  ]);
+
+  const [memoryHealth] = await Promise.all([memoryHealthPromise]);
+
   const healthCheckResponse: HealthCheckResponse = {
     database: { status: "ok" },
     chat: { status: "ok", cache: { status: "ok" }, queue: { status: "ok" } },
+    memory: memoryHealth,
   };
-  return Promise.resolve(NextResponse.json(healthCheckResponse, { status: 200 }));
+  
+  return NextResponse.json(healthCheckResponse, { status: 200 });
 });
