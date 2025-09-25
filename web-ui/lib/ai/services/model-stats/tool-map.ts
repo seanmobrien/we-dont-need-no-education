@@ -18,8 +18,25 @@ type ToolNameOrIdType = ToolIdType | ToolNameType;
  * It mirrors ProviderMap's lifecycle and lookup utilities.
  */
 export class ToolMap {
-  /** Singleton instance of ToolMap. */
-  static #instance: ToolMap | undefined;
+  /** Global symbol key to access the init resolvers across module copies */
+  static readonly #INIT_KEY = Symbol.for(
+    '@noeducation/model-stats:ToolMap:init',
+  );
+  /** Symbol-based global registry key for singleton ToolMap. */
+  static readonly #REGISTRY_KEY = Symbol.for(
+    '@noeducation/model-stats:ToolMap',
+  );
+  /** Local cached reference to the global singleton via global symbol registry. */
+  static get #instance(): ToolMap | undefined {
+    type GlobalReg = { [k: symbol]: ToolMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    return g[this.#REGISTRY_KEY];
+  }
+  static set #instance(value: ToolMap | undefined) {
+    type GlobalReg = { [k: symbol]: ToolMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = value;
+  }
 
   /** In-memory cache for tool records, keyed by record ID. */
   readonly #idToRecord: Map<ToolIdType, ToolMapEntry>;
@@ -39,6 +56,10 @@ export class ToolMap {
     this.#idToRecord = new Map();
     this.#nameToId = new Map();
     this.#whenInitialized = Promise.withResolvers<boolean>();
+    // Expose init resolvers via a global symbol so static methods don't touch private slots
+    (this as unknown as Record<symbol, PromiseWithResolvers<boolean>>)[
+      ToolMap.#INIT_KEY
+    ] = this.#whenInitialized;
     this.#initialized = false;
 
     if (Array.isArray(entriesOrDb)) {
@@ -55,7 +76,12 @@ export class ToolMap {
    * Synchronous singleton getter. Prefer getInstance() in async flows.
    */
   static get Instance(): ToolMap {
-    this.#instance ??= new ToolMap();
+    type GlobalReg = { [k: symbol]: ToolMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    if (!g[this.#REGISTRY_KEY]) {
+      g[this.#REGISTRY_KEY] = new ToolMap();
+    }
+    this.#instance = g[this.#REGISTRY_KEY]!;
     return this.#instance;
   }
 
@@ -63,25 +89,42 @@ export class ToolMap {
    * Return the singleton ToolMap instance, initializing from DB if needed.
    */
   static getInstance(db?: DbDatabaseType): Promise<ToolMap> {
-    if (this.#instance) {
-      return this.#instance.#whenInitialized.promise.then(
-        () => this.#instance!,
-      );
+    type GlobalReg = { [k: symbol]: ToolMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    if (!g[this.#REGISTRY_KEY]) {
+      g[this.#REGISTRY_KEY] = new ToolMap(db);
     }
-    this.#instance = new ToolMap(db);
-    return this.#instance.#whenInitialized.promise.then(() => this.#instance!);
+    this.#instance = g[this.#REGISTRY_KEY]!;
+    const init = (
+      this.#instance as unknown as Record<
+        symbol,
+        PromiseWithResolvers<boolean> | undefined
+      >
+    )[ToolMap.#INIT_KEY];
+    const promise =
+      init?.promise ??
+      (this.#instance.initialized
+        ? Promise.resolve(true)
+        : Promise.resolve(true));
+    return promise.then(() => this.#instance!);
   }
 
   /** Setup a mock instance for tests using in-memory entries. */
   static setupMockInstance(
     records: (readonly [ToolIdType, ToolMapEntry])[],
   ): ToolMap {
-    this.#instance = new ToolMap(records);
+    type GlobalReg = { [k: symbol]: ToolMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = new ToolMap(records);
+    this.#instance = g[this.#REGISTRY_KEY]!;
     return this.#instance;
   }
 
   /** Reset the singleton (tests/reinit). */
   static reset(): void {
+    type GlobalReg = { [k: symbol]: ToolMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = undefined;
     ToolMap.#instance = undefined;
   }
 
@@ -263,6 +306,10 @@ export class ToolMap {
     this.#nameToId.clear();
     this.#initialized = false;
     this.#whenInitialized = Promise.withResolvers<boolean>();
+    // Re-expose fresh resolvers under the global INIT symbol
+    (this as unknown as Record<symbol, PromiseWithResolvers<boolean>>)[
+      ToolMap.#INIT_KEY
+    ] = this.#whenInitialized;
 
     const initDb = (!!db ? Promise.resolve(db) : drizDbWithInit())
       .then((database) => database.select().from(schema.chatTool))

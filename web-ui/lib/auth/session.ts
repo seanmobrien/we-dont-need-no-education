@@ -7,7 +7,7 @@ export const session = async ({
 }: {
   session: SessionWithAccountId;
   token: JWT;
-}) => {
+}): Promise<SessionWithAccountId> => {
   if (session.user) {
     if (token.id) {
       session.user.id = String(token.id);
@@ -17,6 +17,9 @@ export const session = async ({
     }
     if (token.email && !session.user.email) {
       session.user.email = String(token.email);
+    }
+    if (token.subject && !session.user.subject) {
+      session.user.subject = String(token.subject);
     }
     if (token.account_id !== undefined) {
       // Store account_id for use in the sesion callback

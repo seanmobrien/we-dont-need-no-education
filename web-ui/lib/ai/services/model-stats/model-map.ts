@@ -144,8 +144,25 @@ type ModelRowExt = {
  * ```
  */
 export class ModelMap {
-  /** Singleton instance of ModelMap. */
-  static #instance: ModelMap | undefined;
+  /** Global symbol key to access init resolvers across module copies/HMR. */
+  static readonly #INIT_KEY = Symbol.for(
+    '@noeducation/model-stats:ModelMap:init',
+  );
+  /** Symbol-based global registry key for ModelMap singleton. */
+  static readonly #REGISTRY_KEY = Symbol.for(
+    '@noeducation/model-stats:ModelMap',
+  );
+  /** Local cached reference to the global singleton via global symbol registry. */
+  static get #instance(): ModelMap | undefined {
+    type GlobalReg = { [k: symbol]: ModelMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    return g[this.#REGISTRY_KEY];
+  }
+  static set #instance(value: ModelMap | undefined) {
+    type GlobalReg = { [k: symbol]: ModelMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = value;
+  }
 
   /** In-memory cache for model records, keyed by `${providerId}:${modelName}`. */
   readonly #providerModelToRecord: Map<string, ModelRecord>;
@@ -180,6 +197,9 @@ export class ModelMap {
     this.#modelIdToQuota = new Map();
     this.#initialized = false;
     this.#whenInitialized = Promise.withResolvers<boolean>();
+    (this as unknown as Record<symbol, PromiseWithResolvers<boolean>>)[
+      ModelMap.#INIT_KEY
+    ] = this.#whenInitialized;
     if (Array.isArray(modelsOrDb)) {
       for (const [key, record] of modelsOrDb) {
         this.#providerModelToRecord.set(key, record);
@@ -196,14 +216,14 @@ export class ModelMap {
    * @returns {ModelMap} The singleton instance.
    */
   static get Instance(): ModelMap {
-    if (this.#instance) {
-      return this.#instance;
+    type GlobalReg = { [k: symbol]: ModelMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    if (!g[this.#REGISTRY_KEY]) {
+      // Create without DB here; callers who need DB-backed init should call getInstance(db)
+      g[this.#REGISTRY_KEY] = new ModelMap();
     }
-    ModelMap.getInstance();
-    if (this.#instance) {
-      return this.#instance;
-    }
-    throw new Error('ModelMap not initialized');
+    this.#instance = g[this.#REGISTRY_KEY]!;
+    return this.#instance;
   }
 
   /**
@@ -212,27 +232,46 @@ export class ModelMap {
    * @returns {Promise<ModelMap>} Promise that resolves to the initialized instance.
    */
   static async getInstance(db?: DbDatabaseType): Promise<ModelMap> {
-    if (this.#instance) {
-      await this.#instance.#whenInitialized.promise;
-      return this.#instance;
-    }
-    this.#instance = new ModelMap(db);
-    const p = this.#instance.#whenInitialized.promise
-      .then((x) => {
-        log((l) => l.silly('ModelMap initialized successfully'));
-        return x;
-      })
-      .catch((e) => {
-        this.#instance = undefined;
-        LoggedError.isTurtlesAllTheWayDownBaby(e, {
-          log: true,
-          message: 'Uncaught error during ModelMap initialization',
-          source: 'ModelMap.Instance',
+    type GlobalReg = { [k: symbol]: ModelMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    let inst = g[this.#REGISTRY_KEY];
+    if (!inst) {
+      inst = new ModelMap(db);
+      g[this.#REGISTRY_KEY] = inst;
+      this.#instance = inst;
+      const init = (
+        inst as unknown as Record<
+          symbol,
+          PromiseWithResolvers<boolean> | undefined
+        >
+      )[ModelMap.#INIT_KEY];
+      const p = (init?.promise ?? Promise.resolve(true))
+        .then((x) => {
+          log((l) => l.silly('ModelMap initialized successfully'));
+          return x;
+        })
+        .catch((e) => {
+          this.#instance = undefined;
+          g[this.#REGISTRY_KEY] = undefined;
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+            log: true,
+            message: 'Uncaught error during ModelMap initialization',
+            source: 'ModelMap.Instance',
+          });
         });
-      });
-    this.#instance.refresh(db);
-    await p;
-    return this.#instance;
+      inst.refresh(db);
+      await p;
+      return inst;
+    }
+    this.#instance = inst;
+    const init2 = (
+      inst as unknown as Record<
+        symbol,
+        PromiseWithResolvers<boolean> | undefined
+      >
+    )[ModelMap.#INIT_KEY];
+    await (init2?.promise ?? Promise.resolve(true)).catch(() => {});
+    return inst;
   }
 
   /**
@@ -244,7 +283,10 @@ export class ModelMap {
     records: (readonly [string, ModelRecord])[],
     quotas: (readonly [string, ModelQuotaRecord])[],
   ): ModelMap {
-    this.#instance = new ModelMap(records);
+    type GlobalReg = { [k: symbol]: ModelMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = new ModelMap(records);
+    this.#instance = g[this.#REGISTRY_KEY]!;
     for (const [key, record] of quotas) {
       this.#instance.#modelIdToQuota.set(key, record);
     }
@@ -255,6 +297,9 @@ export class ModelMap {
    * Reset the singleton instance (for testing or reinitialization).
    */
   static reset(): void {
+    type GlobalReg = { [k: symbol]: ModelMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = undefined;
     ModelMap.#instance = undefined;
   }
 

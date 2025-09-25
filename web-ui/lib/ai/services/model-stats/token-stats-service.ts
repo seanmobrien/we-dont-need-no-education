@@ -30,8 +30,22 @@ import { ModelMap } from './model-map';
  * @implements {TokenStatsServiceType}
  */
 class TokenStatsService implements TokenStatsServiceType {
-  /** Singleton instance of TokenStatsService. */
-  private static instance: TokenStatsService | undefined = undefined;
+  /** Symbol-based global registry key for TokenStatsService singleton. */
+  static readonly #REGISTRY_KEY = Symbol.for(
+    '@noeducation/model-stats:TokenStatsService',
+  );
+
+  /** Global singleton instance via symbol registry. */
+  private static get instance(): TokenStatsService | undefined {
+    type GlobalReg = { [k: symbol]: TokenStatsService | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    return g[this.#REGISTRY_KEY];
+  }
+  private static set instance(value: TokenStatsService | undefined) {
+    type GlobalReg = { [k: symbol]: TokenStatsService | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = value;
+  }
 
   /** Quota cache time-to-live in milliseconds (default: 5 minutes). */
   private readonly QUOTA_CACHE_TTL = 5 * 60 * 1000;

@@ -3,19 +3,25 @@ import { metrics } from '@opentelemetry/api';
 const meter = metrics.getMeter('key-rate-limiter', '1.0.0');
 
 // Counters
-const messagesProcessedCounter = meter.createCounter('rate_limit_messages_processed_total', {
-  description: 'Total number of rate-limited messages processed',
-});
+const messagesProcessedCounter = meter.createCounter(
+  'rate_limit_messages_processed_total',
+  {
+    description: 'Total number of rate-limited messages processed',
+  },
+);
 
 const errorsCounter = meter.createCounter('rate_limit_errors_total', {
   description: 'Total number of errors during rate limit processing',
 });
 
 // Histograms
-const processingDurationHistogram = meter.createHistogram('rate_limit_processing_duration_ms', {
-  description: 'Time taken to process rate-limited messages',
-  unit: 'ms',
-});
+const processingDurationHistogram = meter.createHistogram(
+  'rate_limit_processing_duration_ms',
+  {
+    description: 'Time taken to process rate-limited messages',
+    unit: 'ms',
+  },
+);
 
 // Up-down counters (gauges)
 const queueSizeGauge = meter.createUpDownCounter('rate_limit_queue_size', {
@@ -23,13 +29,19 @@ const queueSizeGauge = meter.createUpDownCounter('rate_limit_queue_size', {
 });
 
 export class RateLimitMetricsCollector {
-  private static instance: RateLimitMetricsCollector;
-  
+  private static readonly REGISTRY_KEY = Symbol.for(
+    '@noeducation/key-rate-limiter:RateLimitMetricsCollector',
+  );
+  private static instance: RateLimitMetricsCollector | undefined;
+
   static getInstance(): RateLimitMetricsCollector {
-    if (!RateLimitMetricsCollector.instance) {
-      RateLimitMetricsCollector.instance = new RateLimitMetricsCollector();
+    type GlobalReg = { [k: symbol]: RateLimitMetricsCollector | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    if (!g[this.REGISTRY_KEY]) {
+      g[this.REGISTRY_KEY] = new RateLimitMetricsCollector();
     }
-    return RateLimitMetricsCollector.instance;
+    this.instance = g[this.REGISTRY_KEY]!;
+    return this.instance;
   }
 
   recordMessageProcessed(modelClassification: string, generation: 1 | 2): void {
@@ -46,13 +58,20 @@ export class RateLimitMetricsCollector {
     });
   }
 
-  recordProcessingDuration(durationMs: number, modelClassification: string): void {
+  recordProcessingDuration(
+    durationMs: number,
+    modelClassification: string,
+  ): void {
     processingDurationHistogram.record(durationMs, {
       model_classification: modelClassification,
     });
   }
 
-  updateQueueSize(size: number, modelClassification: string, generation: 1 | 2): void {
+  updateQueueSize(
+    size: number,
+    modelClassification: string,
+    generation: 1 | 2,
+  ): void {
     queueSizeGauge.add(size, {
       model_classification: modelClassification,
       generation: generation.toString(),
