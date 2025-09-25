@@ -175,7 +175,6 @@ export class ErrorReporter implements ErrorReporterInterface {
         log((l) =>
           l.error({
             source: report.context.source ?? 'ErrorReporter',
-            //error: report.error,
             body: JSON.stringify(report.error),
             severity: report.severity,
             fingerprint: report.fingerprint,
