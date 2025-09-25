@@ -362,7 +362,20 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       // Stop timers early to avoid late firing while awaiting super.close()
       this.#clearWatchdogs();
 
-      await super.close();
+      try {
+        await super.close();
+      } catch (e) {
+        // Swallow AbortError that can arise from closing streams mid-flight
+        if (isAbortError(e)) {
+          log((l) =>
+            l.verbose(
+              'InstrumentedSseTransport.close: Ignoring AbortError during close()',
+            ),
+          );
+        } else {
+          throw e;
+        }
+      }
 
       // End the transport span
       if (this.#transportSpan) {

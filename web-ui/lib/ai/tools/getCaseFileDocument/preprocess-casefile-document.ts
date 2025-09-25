@@ -11,7 +11,6 @@ import {
   caseFileDocumentPreprocessingDurationHistogram,
   caseFileDocumentSizeHistogram,
 } from './metrics';
-import { countTokens } from '@/lib/ai/core/count-tokens';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
 import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
@@ -127,6 +126,12 @@ export const preprocessCaseFileDocument = async ({
     goals_count: goals.length,
   };
 
+  log((l) =>
+    l.info(
+      `getCaseFileDocument::preprocessCaseFileDocument: Starting preprocessing for documents with ID ${document_ids.join(', ')} - original length: ${originalLength}`,
+    ),
+  );
+
   /**
    * Specialized AI prompt for document information extraction and compliance analysis.
    *
@@ -216,11 +221,14 @@ Output Record Format: [
     const payload = {
       // model,
       // prompt: PROMPT,
-      messages: [
-        { role: 'system' as const, content: PROMPT },
+      prompt: [
         {
           role: 'user' as const,
           content: [
+            {
+              type: 'text' as const,
+              text: PROMPT,
+            },
             {
               type: 'text' as const,
               text: `The document record to analyze is as follows:
@@ -243,7 +251,6 @@ ___END CASE FILE___`,
       },
     };
 
-    const tokens = countTokens({ prompt: payload.messages });
     let response: GenerateTextResult<ToolSet, unknown>;
     const chatHistoryContext = createAgentHistoryContext({
       operation: 'summarize.case-file',
@@ -257,8 +264,7 @@ ___END CASE FILE___`,
     });
     try {
       const model = wrapChatHistoryMiddleware({
-        model:
-          tokens > 100000 ? aiModelFactory('lofi') : aiModelFactory('hifi'),
+        model: aiModelFactory('lofi'),
         chatHistoryContext,
       });
       response = await generateTextWithRetry({

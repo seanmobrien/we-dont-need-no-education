@@ -152,27 +152,48 @@ const mockDbFactory = (): DatabaseMockType => {
     'insert',
   ] as const;
 
+  const CurrentTable = Symbol('CurrentTable');
+
+  const rowMap = new Map<unknown, unknown[]>();
+
   const insertBuilder = {
     values: jest.fn(),
     onConflictDoUpdate: jest.fn(),
+    __setCurrentTable: (table: unknown) => {
+      (qb as unknown as { [CurrentTable]: unknown })[CurrentTable] = table;
+      return insertBuilder;
+    },
+    __getCurrentTable: () =>
+      (qb as unknown as { [CurrentTable]: unknown })[CurrentTable],
     __setRecords: <T extends Record<string, unknown> = Record<string, unknown>>(
       v: T[] | MockDbQueryCallback,
       rows?: T[] | null,
       state?: unknown,
     ) => {
+      rowMap.set((qb as unknown as { [CurrentTable]: unknown })[CurrentTable], [
+        ...(rowMap.get(
+          (qb as unknown as { [CurrentTable]: unknown })[CurrentTable],
+        ) ?? []),
+        ...(rows ?? []),
+      ]);
       qb.__setRecords<T>(v, rows, state);
       return insertBuilder;
     },
-    __getRecords: <T>() => {
-      qb.__getRecords<T>();
-      return insertBuilder;
+    __getRecords: <T>(arg?: unknown) => {
+      if (arg) {
+        return (rowMap.get(arg) ?? []) as T[];
+      }
+      return qb.__getRecords<T>();
     },
     __resetMocks: () => {
       qb.__resetMocks();
       return insertBuilder;
     },
   };
-  insertBuilder.values.mockReturnValue(insertBuilder);
+  insertBuilder.values.mockImplementation((v) => {
+    qb.__getRecords().push(v);
+    return insertBuilder;
+  });
   insertBuilder.onConflictDoUpdate.mockReturnValue(insertBuilder);
 
   const initMocks = () => {

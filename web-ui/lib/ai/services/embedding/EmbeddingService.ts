@@ -4,16 +4,26 @@ import { embed } from 'ai';
 import { IEmbeddingService } from './types';
 
 export class EmbeddingService implements IEmbeddingService {
-  static #globalEmbeddingModel: EmbeddingModelV2<string>;
-
+  /**
+   * Global embedding model stored in a Symbol-backed registry to avoid
+   * duplication across HMR/SSR/multi-bundle environments.
+   */
   private static get globalEmbeddingModel(): EmbeddingModelV2<string> {
-    if (!EmbeddingService.#globalEmbeddingModel) {
-      EmbeddingService.#globalEmbeddingModel = createEmbeddingModel();
+    const GLOBAL_KEY = Symbol.for('@noeducation/embedding:Model');
+    const registry = globalThis as unknown as {
+      [key: symbol]: EmbeddingModelV2<string> | undefined;
+    };
+    if (!registry[GLOBAL_KEY]) {
+      registry[GLOBAL_KEY] = createEmbeddingModel();
     }
-    return EmbeddingService.#globalEmbeddingModel;
+    return registry[GLOBAL_KEY]!;
   }
   private static set globalEmbeddingModel(model: EmbeddingModelV2<string>) {
-    EmbeddingService.#globalEmbeddingModel = model;
+    const GLOBAL_KEY = Symbol.for('@noeducation/embedding:Model');
+    const registry = globalThis as unknown as {
+      [key: symbol]: EmbeddingModelV2<string> | undefined;
+    };
+    registry[GLOBAL_KEY] = model;
   }
 
   private openAiClient: EmbeddingModelV2<string>;
