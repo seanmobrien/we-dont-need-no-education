@@ -37,7 +37,7 @@ export async function resolveEmailIdWithRedirect(
     const doc = await (
       await drizDbWithInit()
     ).query.documentUnits.findFirst({
-      where: (d, { eq, isNull, isNotNull, and }) =>
+      where: (d, { eq, isNotNull, and }) =>
         and(eq(d.unitId, documentId), isNotNull(d.emailId)),
       columns: {
         unitId: true,

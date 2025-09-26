@@ -14,6 +14,8 @@ import {
   AzureMonitorMetricExporter,
   AzureMonitorLogExporter,
 } from '@azure/monitor-opentelemetry-exporter';
+import { ChunkingTraceExporter } from './chunking/ChunkingTraceExporter';
+import { ChunkingLogExporter } from './chunking/ChunkingLogExporter';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import AfterManager from '@/lib/site-util/after';
@@ -62,21 +64,28 @@ const instrumentServer = () => {
     return;
   }
 
-  const traceExporter = new AzureMonitorTraceExporter({
-    connectionString: connStr,
-  });
+  const traceExporter = new ChunkingTraceExporter(
+    new AzureMonitorTraceExporter({ connectionString: connStr }),
+    { maxChunkChars: 8000, keepOriginalKey: false },
+  );
   const metricExporter = new AzureMonitorMetricExporter({
     connectionString: connStr,
   });
-  const logExporter = new AzureMonitorLogExporter({
-    connectionString: connStr,
-  });
+  const logExporter = new ChunkingLogExporter(
+    new AzureMonitorLogExporter({ connectionString: connStr }),
+    { maxChunkChars: 8000, keepOriginalKey: false },
+  );
 
   const sdk = new NodeSDK({
     serviceName: config.serviceName,
     resource: new Resource({
       ...config.attributes,
     }),
+    spanLimits: {
+      attributeValueLengthLimit: 8000,
+      attributeCountLimit: 64,
+      eventCountLimit: 256,
+    },
     spanProcessors: [new BatchSpanProcessor(traceExporter)],
     metricReader: new PeriodicExportingMetricReader({
       exporter: metricExporter,

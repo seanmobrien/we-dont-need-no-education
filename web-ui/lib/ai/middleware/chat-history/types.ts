@@ -191,6 +191,12 @@ export interface ChatHistoryContext {
   dispose: () => Promise<void>;
 }
 
+/**
+ * Represents the execution status of a tool within a chat message.
+ * @internal
+ */
+export type ToolStatus = 'pending' | 'result' | 'error' | 'content';
+
 // ============================================================================
 // Stream Processing Types
 // ============================================================================

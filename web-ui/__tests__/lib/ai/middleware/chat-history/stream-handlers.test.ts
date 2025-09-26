@@ -39,7 +39,7 @@ describe('Stream Handlers', () => {
   let mockContext: StreamHandlerContext;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
     mockConsole.setup();
     mockContext = ensureCreateResult({
