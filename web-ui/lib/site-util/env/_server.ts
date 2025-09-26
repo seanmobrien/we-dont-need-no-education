@@ -263,6 +263,7 @@ const serverEnvSchema = z.object({
       'Azure OpenAI endpoint URL for completion services (fallback to main endpoint). Example: https://mycompletions.openai.azure.com/',
     ),
   AZURE_OPENAI_KEY_COMPLETIONS: z
+    .string()
     .default(process.env.AZURE_OPENAI_KEY ?? '')
     .describe(
       'Azure OpenAI API key for completion services (fallback to main key). Example: comp789key012...',
