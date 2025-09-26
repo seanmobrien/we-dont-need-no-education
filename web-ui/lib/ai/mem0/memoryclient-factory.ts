@@ -203,6 +203,6 @@ export const memoryClientFactory = (options: ClientOptions): MemoryClient => {
     ...options,
     impersonation: fromRequest()
   };
-  const ret = new SchoolLawyerMemoryClient(options);
+  const ret = new SchoolLawyerMemoryClient(clientOps);
   return ret;
 };
