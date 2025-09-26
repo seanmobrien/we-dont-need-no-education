@@ -1,6 +1,8 @@
 import { MemoryClient } from './lib/client/mem0';
 import type { MemoryOptions, Message } from './lib/client/types';
 import type { ImpersonationService } from '@/lib/auth/impersonation';
+import type { MemoryHealthCheckResponse, HealthCheckParams } from './types/health-check';
+import { fromRequest } from '@/lib/auth/impersonation';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 
@@ -20,19 +22,19 @@ type ClientOptions = {
 };
 
 /**
- * A specialized MemoryClient for SchoolLawywer use cases.
+ * A specialized MemoryClient for SchoolLawyer use cases.
  *
- * @class SchoolLawywerMemoryClient
+ * @class SchoolLawyerMemoryClient
  * @extends MemoryClient
  * @private #defaultOptions - Default memory options for the client.
  * @private #impersonation - Optional impersonation instance for authenticated calls.
  */
-class SchoolLawywerMemoryClient extends MemoryClient {
+class SchoolLawyerMemoryClient extends MemoryClient {
   readonly #defaultOptions: MemoryOptions;
   readonly #impersonation?: ImpersonationService;
 
   /**
-   * Constructs a new SchoolLawywerMemoryClient instance.
+   * Constructs a new SchoolLawyerMemoryClient instance.
    *
    * @param defaults - Default memory options.
    * @param projectId - The ID of the project.
@@ -116,12 +118,7 @@ class SchoolLawywerMemoryClient extends MemoryClient {
   /**
    * Override HTTP methods to ensure impersonated token is current
    */
-  override async _fetchWithErrorHandling(
-    url: string,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    options: any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): Promise<any> {
+  override async _fetchWithErrorHandling(url: string, options: RequestInit): Promise<unknown> {
     await this.updateAuthorizationIfNeeded();
     return super._fetchWithErrorHandling(url, options);
   }
@@ -154,6 +151,35 @@ class SchoolLawywerMemoryClient extends MemoryClient {
       ...options,
     });
   }
+
+  /**
+   * Performs a health check on the memory service.
+   *
+   * @param params - Optional parameters for the health check.
+   * @returns Promise resolving to the health check response.
+   */
+  async healthCheck(params: HealthCheckParams = {}): Promise<MemoryHealthCheckResponse> {
+    const { strict = false, verbose = 1 } = params;
+    const searchParams = new URLSearchParams({
+      strict: strict.toString(),
+      verbose: verbose.toString(),
+    });
+
+    const url = `${this.host}/api/v1/stats/health-check?${searchParams.toString()}`;
+    
+    try {
+      await this.updateAuthorizationIfNeeded();
+      const response = await this._fetchWithErrorHandling(url, {
+        method: 'GET',
+        headers: this.headers,
+      });
+      
+      return response as MemoryHealthCheckResponse;
+    } catch (error) {
+      log((l) => l.error('Memory health check failed', { error, url }));
+      throw error;
+    }
+  }
 }
 
 /**
@@ -172,7 +198,11 @@ class SchoolLawywerMemoryClient extends MemoryClient {
  * const client = memoryClientFactory({});
  * ```
  */
-export const memoryClientFactory = (options: ClientOptions): MemoryClient => {
-  const ret = new SchoolLawywerMemoryClient(options);
+export const memoryClientFactory = (options: ClientOptions): MemoryClient => {  
+  const clientOps = options.impersonation ? options : {
+    ...options,
+    impersonation: fromRequest()
+  };
+  const ret = new SchoolLawyerMemoryClient(clientOps);
   return ret;
 };
