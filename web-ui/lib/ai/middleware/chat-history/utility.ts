@@ -9,6 +9,7 @@ import type {
 import { schema } from '@/lib/drizzle-db/schema';
 import { type DbTransactionType, drizDbWithInit } from '@/lib/drizzle-db';
 import { eq, desc } from 'drizzle-orm';
+import { ToolStatus } from './types';
 
 export const getNextSequence = async ({
   chatId,
@@ -45,6 +46,74 @@ export const getNextSequence = async ({
     (x) => x.allocate_scoped_ids as number,
   );
   return ret;
+};
+
+export const normalizeOutput = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return JSON.stringify(value ?? 'null');
+};
+// Extract tool-result input/output/error as strings for storage
+export const getItemOutput = (
+  item:
+    | (LanguageModelV2ToolResultPart & { type: 'tool-result' | 'dynamic-tool' })
+    | null
+    | undefined,
+): { status: ToolStatus; output?: string; media?: string } => {
+  if (!item || !item.output) {
+    return { status: 'pending' };
+  }
+  switch (item.output.type) {
+    case 'text':
+    case 'json': {
+      // Check if the value contains an isError flag
+      const parsedValue =
+        typeof item.output.value === 'string'
+          ? (() => {
+              try {
+                return JSON.parse(item.output.value);
+              } catch {
+                return item.output.value;
+              }
+            })()
+          : item.output.value;
+
+      const isError =
+        parsedValue &&
+        typeof parsedValue === 'object' &&
+        'isError' in parsedValue &&
+        parsedValue.isError === true;
+
+      return {
+        status: isError ? 'error' : 'result',
+        output: normalizeOutput(item.output.value),
+      };
+    }
+    case 'content':
+      return item.output.value.reduce(
+        (acc, curr) => {
+          if ('data' in curr) {
+            acc.media = (acc.media ?? '') + normalizeOutput(curr.data);
+          }
+          if ('value' in curr) {
+            acc.output = (acc.output ?? '') + normalizeOutput(curr.value);
+          }
+          return acc;
+        },
+        { status: 'result' } as {
+          status: ToolStatus;
+          media?: string;
+          output?: string;
+        },
+      );
+    case 'error-json':
+    case 'error-text':
+      return { status: 'error', output: normalizeOutput(item.output) };
+    default:
+      break;
+  }
+  return { status: 'result', output: normalizeOutput(item.output) };
 };
 
 /**

@@ -1,6 +1,11 @@
 import { MemoryClient } from './lib/client/mem0';
 import type { MemoryOptions, Message } from './lib/client/types';
-import type { Impersonation } from '@/lib/auth/impersonation';
+import type { ImpersonationService } from '@/lib/auth/impersonation';
+import type {
+  MemoryHealthCheckResponse,
+  HealthCheckParams,
+} from './types/health-check';
+import { fromRequest } from '@/lib/auth/impersonation';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 
@@ -16,23 +21,23 @@ type ClientOptions = {
   projectId?: string;
   orgId?: string;
   defaults?: MemoryOptions;
-  impersonation?: Impersonation;
+  impersonation?: ImpersonationService;
 };
 
 /**
- * A specialized MemoryClient for SchoolLawywer use cases.
+ * A specialized MemoryClient for SchoolLawyer use cases.
  *
- * @class SchoolLawywerMemoryClient
+ * @class SchoolLawyerMemoryClient
  * @extends MemoryClient
  * @private #defaultOptions - Default memory options for the client.
  * @private #impersonation - Optional impersonation instance for authenticated calls.
  */
-class SchoolLawywerMemoryClient extends MemoryClient {
+class SchoolLawyerMemoryClient extends MemoryClient {
   readonly #defaultOptions: MemoryOptions;
-  readonly #impersonation?: Impersonation;
+  readonly #impersonation?: ImpersonationService;
 
   /**
-   * Constructs a new SchoolLawywerMemoryClient instance.
+   * Constructs a new SchoolLawyerMemoryClient instance.
    *
    * @param defaults - Default memory options.
    * @param projectId - The ID of the project.
@@ -93,7 +98,7 @@ class SchoolLawywerMemoryClient extends MemoryClient {
 
         log((l) =>
           l.debug('Updated mem0 client with impersonated token', {
-            userId: this.#impersonation!.getUserContext().userId,
+            userId: this.#impersonation?.getUserContext().userId,
           }),
         );
       } catch (error) {
@@ -118,8 +123,8 @@ class SchoolLawywerMemoryClient extends MemoryClient {
    */
   override async _fetchWithErrorHandling(
     url: string,
-    options: any,
-  ): Promise<any> {
+    options: RequestInit,
+  ): Promise<unknown> {
     await this.updateAuthorizationIfNeeded();
     return super._fetchWithErrorHandling(url, options);
   }
@@ -152,6 +157,37 @@ class SchoolLawywerMemoryClient extends MemoryClient {
       ...options,
     });
   }
+
+  /**
+   * Performs a health check on the memory service.
+   *
+   * @param params - Optional parameters for the health check.
+   * @returns Promise resolving to the health check response.
+   */
+  async healthCheck(
+    params: HealthCheckParams = {},
+  ): Promise<MemoryHealthCheckResponse> {
+    const { strict = false, verbose = 1 } = params;
+    const searchParams = new URLSearchParams({
+      strict: strict.toString(),
+      verbose: verbose.toString(),
+    });
+
+    const url = `${this.host}/api/v1/stats/health-check?${searchParams.toString()}`;
+
+    try {
+      await this.updateAuthorizationIfNeeded();
+      const response = await this._fetchWithErrorHandling(url, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      return response as MemoryHealthCheckResponse;
+    } catch (error) {
+      log((l) => l.error('Memory health check failed', { error, url }));
+      throw error;
+    }
+  }
 }
 
 /**
@@ -171,6 +207,12 @@ class SchoolLawywerMemoryClient extends MemoryClient {
  * ```
  */
 export const memoryClientFactory = (options: ClientOptions): MemoryClient => {
-  const ret = new SchoolLawywerMemoryClient(options);
+  const clientOps = options.impersonation
+    ? options
+    : {
+        ...options,
+        impersonation: fromRequest(),
+      };
+  const ret = new SchoolLawyerMemoryClient(clientOps);
   return ret;
 };

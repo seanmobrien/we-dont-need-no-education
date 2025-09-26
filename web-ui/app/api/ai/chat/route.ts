@@ -12,7 +12,6 @@ import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
 import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
 import { toolProviderSetFactory } from '@/lib/ai/mcp/toolProviderFactory';
 import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
-import { Impersonation } from '@/lib/auth/impersonation';
 import { env } from '@/lib/site-util/env';
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
@@ -21,6 +20,8 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import { ToolProviderSet } from '@/lib/ai/mcp/types';
+import { ImpersonationService } from '@/lib/auth/impersonation';
+import { fromRequest } from '@/lib/auth/impersonation/index';
 // import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 1440;
@@ -35,7 +36,7 @@ const toolProviderFactory = async ({
   chatHistoryId: string;
   writeEnabled?: boolean;
   memoryDisabled?: boolean;
-  impersonation?: Impersonation;
+  impersonation?: ImpersonationService;
 }) => {
   // Prepare headers for MCP client - prefer impersonation over session cookies
   let mcpHeaders: Record<string, string> = {
@@ -158,7 +159,7 @@ export const POST = (req: NextRequest) => {
       const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
 
       // Create impersonation instance for authenticated API calls
-      const impersonation = (await Impersonation.fromRequest(req)) ?? undefined;
+      const impersonation = await fromRequest({});
       if (impersonation) {
         log((l) =>
           l.debug('Created impersonation instance for chat request', {

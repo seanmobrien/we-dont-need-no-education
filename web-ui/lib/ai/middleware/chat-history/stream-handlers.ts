@@ -289,6 +289,7 @@ export const handleToolCall = async (
       // Create tool message row draft for upsert logic
       const toolRow = {
         role: 'tool' as const,
+        statusId: 1,
         content: generatedText,
         toolName: chunk.toolName,
         functionCall: parsedInput ?? null,
@@ -599,6 +600,7 @@ export const handleToolResult = async (
         // Create tool message row draft for upsert logic
         const toolRow = {
           role: 'tool' as const,
+          statusId: 2,
           content: generatedText,
           toolName: chunk.toolName,
           functionCall: null,

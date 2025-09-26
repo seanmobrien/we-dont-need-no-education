@@ -61,15 +61,13 @@ Object.defineProperty(window, 'localStorage', {
 
 describe('ChatPanel Model String Formatting', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockSessionStorage.getItem.mockReturnValue('test-thread-id');
     mockLocalStorage.getItem.mockReturnValue(null);
   });
 
   const renderChatPanel = () => {
-    return render(
-      <ChatPanel page="test-page" />
-    );
+    return render(<ChatPanel page="test-page" />);
   };
 
   it('formats Azure model string correctly when sending message', async () => {
@@ -90,7 +88,7 @@ describe('ChatPanel Model String Formatting', () => {
           headers: expect.objectContaining({
             'x-active-model': 'azure:hifi', // Default should be azure:hifi
           }),
-        })
+        }),
       );
     });
   });
@@ -111,7 +109,7 @@ describe('ChatPanel Model String Formatting', () => {
     // Type a message and send it
     const input = screen.getByPlaceholderText('Type your message here...');
     const sendButton = screen.getByTestId('ChatMessageSend');
-    
+
     fireEvent.change(input, { target: { value: 'Test message with Google' } });
     fireEvent.click(sendButton);
 
@@ -122,7 +120,7 @@ describe('ChatPanel Model String Formatting', () => {
           headers: expect.objectContaining({
             'x-active-model': 'google:hifi', // Should now be google:hifi
           }),
-        })
+        }),
       );
     });
   });
@@ -143,7 +141,7 @@ describe('ChatPanel Model String Formatting', () => {
     // Type a message and send it
     const input = screen.getByPlaceholderText('Type your message here...');
     const sendButton = screen.getByTestId('ChatMessageSend');
-    
+
     fireEvent.change(input, { target: { value: 'Test message with lofi' } });
     fireEvent.click(sendButton);
 
@@ -154,7 +152,7 @@ describe('ChatPanel Model String Formatting', () => {
           headers: expect.objectContaining({
             'x-active-model': 'azure:lofi', // Should now be azure:lofi
           }),
-        })
+        }),
       );
     });
   });
@@ -175,7 +173,7 @@ describe('ChatPanel Model String Formatting', () => {
     // Type a message and send it
     const input = screen.getByPlaceholderText('Type your message here...');
     const sendButton = screen.getByTestId('ChatMessageSend');
-    
+
     fireEvent.change(input, { target: { value: 'Test message with OpenAI' } });
     fireEvent.click(sendButton);
 
@@ -186,7 +184,7 @@ describe('ChatPanel Model String Formatting', () => {
           headers: expect.objectContaining({
             'x-active-model': 'openai:hifi', // Should now be openai:hifi
           }),
-        })
+        }),
       );
     });
   });

@@ -25,7 +25,7 @@ import { embed } from 'ai';
 
 describe('EmbeddingService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
   });
 
   it('creates a global embedding model lazily', async () => {
@@ -63,8 +63,14 @@ describe('EmbeddingService', () => {
 
   it('supports injecting a custom model instance (bypasses global creation)', async () => {
     // Provide minimal structural match expected by embed() usage in service
-    interface MinimalEmbeddingModel { provider: string; modelId: string }
-    const customModel: MinimalEmbeddingModel = { provider: 'alt', modelId: 'alt-model' };
+    interface MinimalEmbeddingModel {
+      provider: string;
+      modelId: string;
+    }
+    const customModel: MinimalEmbeddingModel = {
+      provider: 'alt',
+      modelId: 'alt-model',
+    };
     // @ts-expect-error - supplying structurally minimal model for test purposes
     const service = new EmbeddingService(customModel);
     await service.embed('x');

@@ -12,7 +12,7 @@ export const setupKeyCloakProvider = (): Provider[] => {
         access_type: 'offline',
         prompt: 'consent',
         response_type: 'code',
-        scope: 'openid profile email',
+        scope: 'openid profile email roles',
       },
     },
   };
