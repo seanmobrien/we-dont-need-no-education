@@ -82,9 +82,8 @@ const updateAccountTokens = async ({
  *
  * This callback is intended to be used as the `callbacks.signIn` handler for
  * NextAuth. It performs two responsibilities:
- *  1. Persist new OAuth tokens for supported providers (currently `google`
- *     and `keycloak`) into the local `accounts` table via
- *     `updateAccountTokens`.
+ *  1. Persist new OAuth tokens for supported providers (currently `keycloak`)
+ *     into the local `accounts` table via `updateAccountTokens`.
  *  2. Emit a lightweight telemetry event locally (`logEvent('signIn')`) and
  *     to Application Insights when available. The AppInsights event uses only
  *     minimal, non-sensitive properties (provider and a truncated
@@ -148,9 +147,8 @@ export const signIn: (params: {
 ): Promise<boolean | string> => {
   if (account && account.providerAccountId) {
     switch (account.provider) {
-      case 'google':
       case 'keycloak':
-        // Persist tokens for supported providers. We intentionally do not
+        // Persist tokens for Keycloak. We intentionally do not
         // await here to avoid delaying the sign-in flow; failures will
         // propagate if required but we don't want telemetry to block UX.
         updateAccountTokens({ user, account });

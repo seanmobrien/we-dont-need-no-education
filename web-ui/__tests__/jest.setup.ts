@@ -488,6 +488,9 @@ jest.mock('postgres', () => {
 jest.mock('next-auth', () => {
   return jest.fn();
 });
+jest.mock('next-auth/jwt', () => ({
+  getToken: jest.fn(),
+}));
 jest.mock('@/auth', () => {
   return {
     auth: jest.fn(() => ({
