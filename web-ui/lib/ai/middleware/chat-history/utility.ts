@@ -1,5 +1,9 @@
 import type {
   LanguageModelV2CallOptions,
+  LanguageModelV2FilePart,
+  LanguageModelV2ReasoningPart,
+  LanguageModelV2TextPart,
+  LanguageModelV2ToolCallPart,
   LanguageModelV2ToolResultPart,
 } from '@ai-sdk/provider';
 import { schema } from '@/lib/drizzle-db/schema';
@@ -343,8 +347,14 @@ export const getNewMessages = async (
       Array.isArray(incomingMsg.content)
     ) {
       const toolCalls = incomingMsg.content.filter(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (part: any) => part?.type === 'tool-call' && part?.toolCallId,
+        (
+          part:
+            | LanguageModelV2TextPart
+            | LanguageModelV2FilePart
+            | LanguageModelV2ReasoningPart
+            | LanguageModelV2ToolCallPart
+            | LanguageModelV2ToolResultPart,
+        ) => part?.type === 'tool-call' && part?.toolCallId,
       );
 
       // If this message contains only tool calls, check update eligibility
@@ -353,15 +363,25 @@ export const getNewMessages = async (
         toolCalls.length === incomingMsg.content.length
       ) {
         // Check if any tool call needs updating
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const hasUpdatableCall = toolCalls.some((call: any) => {
-          if (!existingToolProviderIds.has(call.toolCallId)) {
-            return true; // New tool call
-          }
-
-          const existingMeta = existingToolProviderIds.get(call.toolCallId)!;
-          return currentTurnId && currentTurnId > existingMeta.modifiedTurnId;
-        });
+        const hasUpdatableCall = toolCalls.some(
+          (
+            call:
+              | LanguageModelV2TextPart
+              | LanguageModelV2FilePart
+              | LanguageModelV2ReasoningPart
+              | LanguageModelV2ToolCallPart
+              | LanguageModelV2ToolResultPart,
+          ) => {
+            if (!('toolCallId' in call)) {
+              return false; // Skip if no toolCallId present
+            }
+            if (!existingToolProviderIds.has(call.toolCallId)) {
+              return true; // New tool call
+            }
+            const existingMeta = existingToolProviderIds.get(call.toolCallId)!;
+            return currentTurnId && currentTurnId > existingMeta.modifiedTurnId;
+          },
+        );
 
         return hasUpdatableCall;
       }
