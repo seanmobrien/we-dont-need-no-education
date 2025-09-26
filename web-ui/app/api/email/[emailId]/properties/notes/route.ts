@@ -16,8 +16,6 @@ import {
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
-export const dynamic = 'force-dynamic';
-
 export const GET = wrapRouteRequest(
   async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
     const { emailId } = await extractParams<{ emailId: string }>(args);

@@ -88,28 +88,35 @@ export const toolProviderFactory = async ({
   try {
     // Prepare headers with impersonation if available
     let finalHeaders = { ...options.headers };
-    
+
     if (impersonation) {
       try {
         const impersonatedToken = await impersonation.getImpersonatedToken();
-        log((l) => l.debug('Using impersonated token for MCP client', {
-          userId: impersonation.getUserContext().userId,
-          hasToken: !!impersonatedToken,
-        }));
-        
+        log((l) =>
+          l.debug('Using impersonated token for MCP client', {
+            userId: impersonation.getUserContext().userId,
+            hasToken: !!impersonatedToken,
+          }),
+        );
+
         // Use Bearer token instead of session cookies for authenticated calls
         finalHeaders = {
           ...finalHeaders,
-          'Authorization': `Bearer ${impersonatedToken}`,
+          Authorization: `Bearer ${impersonatedToken}`,
           'X-Impersonated-User': impersonation.getUserContext().userId,
         };
-        
+
         // Remove cookie-based auth when using impersonation
         if ('Cookie' in finalHeaders) {
           delete finalHeaders.Cookie;
         }
       } catch (error) {
-        log((l) => l.warn('Failed to get impersonated token, falling back to session cookies', error));
+        log((l) =>
+          l.warn(
+            'Failed to get impersonated token, falling back to session cookies',
+            error,
+          ),
+        );
       }
     }
 
@@ -261,15 +268,22 @@ export const toolProviderFactory = async ({
         try {
           await mcpClient.close();
         } catch (e) {
-          LoggedError.isTurtlesAllTheWayDownBaby(e, {
-            log: true,
-            source: 'toolProviderFactory dispose',
-            severity: 'error',
-            data: {
-              message: 'Error disposing MCP client',
-              options,
-            },
-          });
+          // Downgrade AbortError noise on shutdown
+          if ((e as Error)?.name === 'AbortError') {
+            log((l) =>
+              l.verbose('toolProviderFactory.dispose: Ignoring AbortError'),
+            );
+          } else {
+            LoggedError.isTurtlesAllTheWayDownBaby(e, {
+              log: true,
+              source: 'toolProviderFactory dispose',
+              severity: 'error',
+              data: {
+                message: 'Error disposing MCP client',
+                options,
+              },
+            });
+          }
         }
       },
 

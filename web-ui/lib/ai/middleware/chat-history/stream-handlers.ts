@@ -289,6 +289,7 @@ export const handleToolCall = async (
       // Create tool message row draft for upsert logic
       const toolRow = {
         role: 'tool' as const,
+        statusId: 1,
         content: generatedText,
         toolName: chunk.toolName,
         functionCall: parsedInput ?? null,
@@ -316,6 +317,7 @@ export const handleToolCall = async (
         upsertedMessageId = null;
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let toolCall: any = null;
       let actualMessageId: number;
 
@@ -598,6 +600,7 @@ export const handleToolResult = async (
         // Create tool message row draft for upsert logic
         const toolRow = {
           role: 'tool' as const,
+          statusId: 2,
           content: generatedText,
           toolName: chunk.toolName,
           functionCall: null,

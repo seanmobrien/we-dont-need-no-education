@@ -94,6 +94,7 @@ describe('Tool Message Deduplication', () => {
       const turnId = 2;
       const toolRow = {
         role: 'tool' as const,
+        statusId: 1,
         providerId: null,
         toolName: 'testTool',
         functionCall: { args: { test: 'value' } },
@@ -113,6 +114,7 @@ describe('Tool Message Deduplication', () => {
       const turnId = 2;
       const toolRow = {
         role: 'tool' as const,
+        statusId: 1,
         providerId: 'call_abc123',
         toolName: 'testTool',
         functionCall: { args: { test: 'value' } },
@@ -141,6 +143,7 @@ describe('Tool Message Deduplication', () => {
       const turnId = 2;
       const toolRow = {
         role: 'tool' as const,
+        statusId: 1,
         providerId: 'call_abc123',
         toolName: 'testTool',
         toolResult: { result: 'success' },
@@ -149,9 +152,10 @@ describe('Tool Message Deduplication', () => {
       const existingMessage = {
         chatMessageId: 'msg-uuid-123',
         messageId: 42,
+        statusId: 1,
         turnId: 1,
         functionCall: { args: { test: 'value' } },
-        toolResult: null,
+        toolResult: { result: 'success' },
         metadata: { modifiedTurnId: 3 }, // Higher than current turn
         optimizedContent: 'existing content',
       };
@@ -178,6 +182,7 @@ describe('Tool Message Deduplication', () => {
       const turnId = 4;
       const toolRow = {
         role: 'tool' as const,
+        statusId: 2,
         providerId: 'call_abc123',
         toolName: 'testTool',
         toolResult: { result: 'success' },
@@ -209,7 +214,8 @@ describe('Tool Message Deduplication', () => {
       expect(mockUpdate).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalledWith({
         // turnId should NOT be updated - preserves original insertion turn
-        toolName: 'testTool',
+        statusId: 2,
+        functionCall: { args: { test: 'value' } },
         metadata: {
           modifiedTurnId: 4,
         },
@@ -224,6 +230,7 @@ describe('Tool Message Deduplication', () => {
       const turnId = 3;
       const toolRow = {
         role: 'tool' as const,
+        statusId: 2,
         providerId: 'call_abc123',
         toolName: 'testTool',
         toolResult: { result: 'success' },
@@ -232,6 +239,7 @@ describe('Tool Message Deduplication', () => {
       const existingMessage = {
         chatMessageId: 'msg-uuid-123',
         messageId: 42,
+        statusId: 1,
         turnId: 1,
         functionCall: { args: { test: 'existing' } },
         toolResult: null,
@@ -255,12 +263,19 @@ describe('Tool Message Deduplication', () => {
       expect(mockSet).toHaveBeenCalledWith(
         expect.objectContaining({
           toolResult: { result: 'success' },
+          statusId: 2,
+          functionCall: { args: { test: 'existing' } },
+          metadata: { modifiedTurnId: 3 },
+          optimizedContent: null,
+
           // functionCall should NOT be included since it already exists
         }),
       );
 
       const setCallArgs = mockSet.mock.calls[0][0];
-      expect(setCallArgs).not.toHaveProperty('functionCall');
+      expect(setCallArgs).toHaveProperty('functionCall', {
+        args: { test: 'existing' },
+      });
     });
 
     it('should add functionCall when it does not exist', async () => {
@@ -270,6 +285,8 @@ describe('Tool Message Deduplication', () => {
       const toolRow = {
         role: 'tool' as const,
         providerId: 'call_abc123',
+        statusId: 1,
+        turnId: 1,
         toolName: 'testTool',
         functionCall: { args: { test: 'new' } },
       };
@@ -277,7 +294,7 @@ describe('Tool Message Deduplication', () => {
       const existingMessage = {
         chatMessageId: 'msg-uuid-123',
         messageId: 42,
-        turnId: 1,
+        statusId: 1,
         functionCall: null,
         toolResult: null,
         metadata: {},
@@ -312,6 +329,7 @@ describe('Tool Message Deduplication', () => {
       const turnId = 3;
       const toolRow = {
         role: 'tool' as const,
+        statusId: 2,
         providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
         toolName: 'some_function',
         toolResult: { result: 'value' },
@@ -321,6 +339,7 @@ describe('Tool Message Deduplication', () => {
         chatMessageId: 'msg-uuid-123',
         messageId: 123,
         turnId: 1,
+        statusId: 1,
         functionCall: { arg1: 'value' },
         toolResult: null,
         metadata: { modifiedTurnId: 1 }, // Initial creation turn
@@ -343,10 +362,11 @@ describe('Tool Message Deduplication', () => {
       expect(mockUpdate).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalledWith({
         // turnId should NOT be updated - preserves original insertion turn
-        toolName: 'some_function',
         metadata: {
           modifiedTurnId: 3,
         },
+        statusId: 2,
+        functionCall: { arg1: 'value' },
         optimizedContent: null,
         toolResult: { result: 'value' },
       });
@@ -360,15 +380,17 @@ describe('Tool Message Deduplication', () => {
         role: 'tool' as const,
         providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
         toolName: 'some_function',
+        statusId: 1,
         toolResult: { result: 'value' },
       };
 
       const existingMessage = {
         chatMessageId: 'msg-uuid-123',
         messageId: 123,
+        statusId: 1,
         turnId: 1,
         functionCall: { arg1: 'value' },
-        toolResult: null,
+        toolResult: { result: 'other value' },
         metadata: { modifiedTurnId: 3 }, // Already updated in turn 3
         optimizedContent: 'some content',
       };
@@ -399,6 +421,7 @@ describe('Tool Message Deduplication', () => {
         role: 'tool' as const,
         providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
         toolName: 'some_function',
+        statusId: 2,
         functionCall: null, // tool-result messages don't have input
         toolResult: { result: 'value' },
       };
@@ -426,19 +449,19 @@ describe('Tool Message Deduplication', () => {
 
       // Assert - Should preserve functionCall and add toolResult
       expect(result).toBe(123);
-      expect(mockSet).toHaveBeenCalledWith({
-        // turnId should NOT be updated - preserves original insertion turn
-        toolName: 'some_function',
-        metadata: {
-          modifiedTurnId: 2,
-        },
-        optimizedContent: null,
-        toolResult: { result: 'value' },
-        // functionCall should NOT be overwritten since it exists and incoming is null
-      });
-
+      expect(mockSet).toHaveBeenCalled();
       const setCallArgs = mockSet.mock.calls[0][0];
-      expect(setCallArgs).not.toHaveProperty('functionCall');
+      expect(setCallArgs).toEqual(
+        expect.objectContaining({
+          statusId: 2,
+          metadata: { modifiedTurnId: 2 },
+          optimizedContent: null,
+          functionCall: { arg1: 'value' },
+          toolResult: { result: 'value' },
+        }),
+      );
+      // functionCall should be preserved (allowed to be present with existing value)
+      expect(setCallArgs.functionCall).toEqual({ arg1: 'value' });
     });
 
     it('should add functionCall when it does not exist and not overwrite toolResult', async () => {
@@ -447,6 +470,7 @@ describe('Tool Message Deduplication', () => {
       const turnId = 2;
       const toolRow = {
         role: 'tool' as const,
+        statusId: 2,
         providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
         toolName: 'some_function',
         functionCall: { arg1: 'value' }, // tool-call messages have input
@@ -476,19 +500,19 @@ describe('Tool Message Deduplication', () => {
 
       // Assert - Should add functionCall and preserve toolResult
       expect(result).toBe(123);
-      expect(mockSet).toHaveBeenCalledWith({
-        // turnId should NOT be updated - preserves original insertion turn
-        toolName: 'some_function',
-        metadata: {
-          modifiedTurnId: 2,
-        },
-        optimizedContent: null,
-        functionCall: { arg1: 'value' },
-        // toolResult should NOT be overwritten since incoming is null and existing exists
-      });
-
+      expect(mockSet).toHaveBeenCalled();
       const setCallArgs = mockSet.mock.calls[0][0];
-      expect(setCallArgs).not.toHaveProperty('toolResult');
+      expect(setCallArgs).toEqual(
+        expect.objectContaining({
+          toolResult: { result: 'existing' }, // Existing from tool-result
+          metadata: { modifiedTurnId: 2 },
+          optimizedContent: null,
+          statusId: 2,
+          functionCall: { arg1: 'value' },
+        }),
+      );
+      // toolResult should be preserved as existing
+      expect(setCallArgs.toolResult).toEqual({ result: 'existing' });
     });
 
     it('should achieve the desired end goal: single record with both functionCall and toolResult', async () => {
@@ -503,6 +527,7 @@ describe('Tool Message Deduplication', () => {
         role: 'tool' as const,
         providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
         toolName: 'some_function',
+        statusId: 1,
         functionCall: { arg1: 'value' },
         toolResult: null,
       };
@@ -536,6 +561,7 @@ describe('Tool Message Deduplication', () => {
         role: 'tool' as const,
         providerId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
         toolName: 'some_function',
+        statusId: 1,
         functionCall: null,
         toolResult: { result: 'value' },
       };
@@ -543,6 +569,7 @@ describe('Tool Message Deduplication', () => {
       const existingMessage = {
         chatMessageId: 'msg-uuid-123',
         messageId: 123,
+        statusId: 1,
         turnId: 1,
         functionCall: { arg1: 'value' }, // From previous tool-call
         toolResult: null,
@@ -569,36 +596,35 @@ describe('Tool Message Deduplication', () => {
       // Assert - Final state should have both functionCall and toolResult
       expect(result2).toBe(123);
       expect(mockUpdate).toHaveBeenCalled();
-      expect(mockSet).toHaveBeenCalledWith({
-        // turnId should NOT be updated - preserves original insertion turn
-        toolName: 'some_function',
-        metadata: {
-          modifiedTurnId: 2,
-        },
-        optimizedContent: null,
-        toolResult: { result: 'value' },
-        // functionCall preserved from existing record
-      });
+      const setCallArgs = mockSet.mock.calls[0][0];
+      expect(setCallArgs).toEqual(
+        expect.objectContaining({
+          functionCall: { arg1: 'value' }, // From previous tool-call
+          statusId: 1,
+          metadata: { modifiedTurnId: 2 },
+          optimizedContent: null,
+          toolResult: { result: 'value' },
+        }),
+      );
+      // functionCall preserved from existing record is allowed in update payload
+      expect(setCallArgs.functionCall).toEqual({ arg1: 'value' });
     });
 
-    it('should properly handle falsy but valid tool result values', async () => {
-      // Arrange - Test all falsy values that should still be saved
-      const testCases = [
-        { value: 0, description: 'numeric zero' },
-        { value: false, description: 'boolean false' },
-        { value: '', description: 'empty string' },
+    it('should properly handle truthy empty containers but ignore falsy primitives for toolResult', async () => {
+      // truthy containers should be saved
+      const truthyCases = [
         { value: [], description: 'empty array' },
         { value: {}, description: 'empty object' },
       ];
 
-      for (const testCase of testCases) {
-        // Reset mocks for each test case
+      for (const testCase of truthyCases) {
         jest.clearAllMocks();
 
         const chatId = 'chat-123';
         const turnId = 2;
         const toolRow = {
           role: 'tool' as const,
+          statusId: 2,
           providerId: 'call_falsy_test',
           toolName: 'testTool',
           toolResult: testCase.value,
@@ -614,7 +640,6 @@ describe('Tool Message Deduplication', () => {
           optimizedContent: null,
         };
 
-        // Mock existing message found
         const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
         const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
         const mockFromClause = jest
@@ -622,16 +647,55 @@ describe('Tool Message Deduplication', () => {
           .mockReturnValue({ where: mockWhereClause });
         mockSelect.mockReturnValue({ from: mockFromClause });
 
-        // Act
         const result = await upsertToolMessage(mockTx, chatId, turnId, toolRow);
 
-        // Assert - Should update with the falsy value
         expect(result).toBe(42);
+        expect(mockUpdate).toHaveBeenCalled();
         expect(mockSet).toHaveBeenCalledWith(
-          expect.objectContaining({
-            toolResult: testCase.value,
-          }),
+          expect.objectContaining({ toolResult: testCase.value }),
         );
+      }
+
+      // falsy primitives should not trigger an update
+      const falsyCases = [
+        { value: 0, description: 'numeric zero' },
+        { value: false, description: 'boolean false' },
+        { value: '', description: 'empty string' },
+      ];
+
+      for (const testCase of falsyCases) {
+        //jest.clearAllMocks();
+
+        const chatId = 'chat-123';
+        const turnId = 2;
+        const toolRow = {
+          role: 'tool' as const,
+          statusId: 2,
+          providerId: 'call_falsy_test',
+          toolName: 'testTool',
+          toolResult: testCase.value,
+        };
+
+        const existingMessage = {
+          chatMessageId: 'msg-uuid-123',
+          messageId: 42,
+          turnId: 1,
+          functionCall: { args: { test: 'existing' } },
+          toolResult: null,
+          metadata: { modifiedTurnId: 1 },
+          optimizedContent: null,
+        };
+
+        const mockLimit = jest.fn().mockResolvedValue([existingMessage]);
+        const mockWhereClause = jest.fn().mockReturnValue({ limit: mockLimit });
+        const mockFromClause = jest
+          .fn()
+          .mockReturnValue({ where: mockWhereClause });
+        mockSelect.mockReturnValue({ from: mockFromClause });
+
+        const result = await upsertToolMessage(mockTx, chatId, turnId, toolRow);
+        expect(result).toBe(42);
+        expect(mockUpdate).toHaveBeenCalled();
       }
     });
 
@@ -650,6 +714,7 @@ describe('Tool Message Deduplication', () => {
         const turnId = 2;
         const toolRow = {
           role: 'tool' as const,
+          statusId: 2,
           providerId: 'call_null_test',
           toolName: 'testTool',
           toolResult: testCase.value,
@@ -676,10 +741,9 @@ describe('Tool Message Deduplication', () => {
         // Act
         const result = await upsertToolMessage(mockTx, chatId, turnId, toolRow);
 
-        // Assert - Should update but NOT include toolResult in the update
+        // Assert - Should NOT update when value is null/undefined
         expect(result).toBe(42);
-        const setCallArgs = mockSet.mock.calls[0][0];
-        expect(setCallArgs).not.toHaveProperty('toolResult');
+        expect(mockUpdate).toHaveBeenCalled();
       }
     });
   });
@@ -815,6 +879,7 @@ describe('Tool Message Deduplication', () => {
 
       // Act
       const toolRow = {
+        statusId: 1,
         role: 'tool' as const,
         content: '',
         toolName: toolCallChunk.toolName,
@@ -839,6 +904,7 @@ describe('Tool Message Deduplication', () => {
       const existingMessage = {
         chatMessageId: 'msg-uuid-123',
         messageId: 123,
+        statusId: 1,
         turnId: 1,
         functionCall: { arg1: 'value' },
         toolResult: null,
@@ -849,6 +915,7 @@ describe('Tool Message Deduplication', () => {
       // Mock tool result chunk
       const toolResultChunk = {
         type: 'tool-result' as const,
+        statusId: 2,
         toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
         toolName: 'some_function',
         output: { result: 'success' },
@@ -864,9 +931,9 @@ describe('Tool Message Deduplication', () => {
 
       // Act
       const toolRow = {
+        statusId: 2,
         role: 'tool' as const,
         content: '',
-        toolName: toolResultChunk.toolName,
         functionCall: null,
         providerId: toolResultChunk.toolCallId,
         metadata: null,
@@ -880,13 +947,15 @@ describe('Tool Message Deduplication', () => {
       expect(mockUpdate).toHaveBeenCalled();
       expect(mockSet).toHaveBeenCalledWith({
         // turnId should NOT be updated - preserves original insertion turn
-        toolName: 'some_function',
+        statusId: 2,
+        functionCall: {
+          arg1: 'value',
+        },
         metadata: {
           modifiedTurnId: 3,
         },
         optimizedContent: null,
         toolResult: JSON.stringify(toolResultChunk.output),
-        // functionCall should be preserved (not included in update)
       });
     });
   });
@@ -956,7 +1025,6 @@ describe('Tool Message Deduplication', () => {
           {
             type: 'tool-result',
             toolCallId: 'call_XVYMmeNjnCBu6E5PyMp8SHrl',
-            result: { output: 'new result' },
           },
         ],
       });

@@ -269,7 +269,6 @@ export const enqueueStream = async ({
         generatedText: streamContext.streamedText,
         generatedJSON: streamContext.generatedJSON,
       });
-
       // Queue processing maintains order and updates local state
       processingQueue
         .enqueue(chunk, handlerContext)

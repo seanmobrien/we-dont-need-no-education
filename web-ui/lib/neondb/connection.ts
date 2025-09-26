@@ -6,23 +6,29 @@ import AfterManager from '../site-util/after';
 type TPgDbRecordType = Record<string, unknown>;
 
 class PgDbDriver<TQueryRecord> {
-  static #instance: PgDbDriver<TPgDbRecordType> | undefined;
   static Instance<TRecord>(): PgDbDriver<TRecord> {
-    if (this.#instance) {
-      return this.#instance as unknown as PgDbDriver<TRecord>;
+    const GLOBAL_KEY = Symbol.for('@noeducation/neondb:PgDbDriver');
+    const registry = globalThis as unknown as {
+      [key: symbol]: PgDbDriver<TPgDbRecordType> | undefined;
+    };
+    if (!registry[GLOBAL_KEY]) {
+      registry[GLOBAL_KEY] = new PgDbDriver();
     }
-    this.#instance = new PgDbDriver();
-    return this.#instance as unknown as PgDbDriver<TRecord>;
+    return registry[GLOBAL_KEY] as unknown as PgDbDriver<TRecord>;
   }
   static async teardown(): Promise<void> {
-    const myInstance = PgDbDriver.#instance;
+    const GLOBAL_KEY = Symbol.for('@noeducation/neondb:PgDbDriver');
+    const registry = globalThis as unknown as {
+      [key: symbol]: PgDbDriver<TPgDbRecordType> | undefined;
+    };
+    const myInstance = registry[GLOBAL_KEY];
     if (myInstance) {
       await Promise.race([
         myInstance.#sql ? myInstance.#sql.end() : Promise.resolve(),
         new Promise((resolve) => setTimeout(resolve, 6000)),
       ]);
-      if (myInstance == PgDbDriver.#instance) {
-        PgDbDriver.#instance = undefined;
+      if (myInstance === registry[GLOBAL_KEY]) {
+        registry[GLOBAL_KEY] = undefined;
       }
     }
     AfterManager.getInstance().remove('teardown', PgDbDriver.teardown);
@@ -65,7 +71,11 @@ class PgDbDriver<TQueryRecord> {
               critical: true,
             }),
           );
-          PgDbDriver.#instance = undefined;
+          const GLOBAL_KEY = Symbol.for('@noeducation/neondb:PgDbDriver');
+          const registry = globalThis as unknown as {
+            [key: symbol]: PgDbDriver<TPgDbRecordType> | undefined;
+          };
+          registry[GLOBAL_KEY] = undefined;
         }
       },
     );
@@ -85,12 +95,9 @@ class PgDbDriver<TQueryRecord> {
   }
 }
 
-
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const pgDbWithInit = async <TRecord = any>() =>
-  PgDbDriver.Instance<TRecord>().getDb();;
+  PgDbDriver.Instance<TRecord>().getDb();
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const pgDb = <TRecord  = any>() =>
-  PgDbDriver.Instance<TRecord>().db();
-
+export const pgDb = <TRecord = any>() => PgDbDriver.Instance<TRecord>().db();

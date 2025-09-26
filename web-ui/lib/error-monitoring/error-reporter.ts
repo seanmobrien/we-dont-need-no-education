@@ -42,6 +42,22 @@ const asEnvironment = (input: string): KnownEnvironmentType => {
     : 'development';
 };
 
+/**
+ * Type guard to check if a value is an ErrorReport
+ * @param check unknown value to check
+ * @returns boolean indicating if the value is an ErrorReport
+ */
+const isErrorReport = (check: unknown): check is ErrorReport =>
+  typeof check === 'object' &&
+  check !== null &&
+  'error' in check &&
+  isError(check.error) &&
+  'context' in check &&
+  check.context !== null &&
+  'severity' in check &&
+  check.severity !== null &&
+  check.severity !== undefined;
+
 const defaultConfig: ErrorReporterConfig = {
   enableStandardLogging: true,
   enableConsoleLogging: process.env.NODE_ENV === 'development',
@@ -57,7 +73,6 @@ const defaultConfig: ErrorReporterConfig = {
  */
 export class ErrorReporter implements ErrorReporterInterface {
   private config: ErrorReporterConfig;
-  private static instance: ErrorReporterInterface;
 
   private constructor(config: ErrorReporterConfig) {
     this.config = config;
@@ -82,10 +97,16 @@ export class ErrorReporter implements ErrorReporterInterface {
   public static getInstance(
     config?: ErrorReporterConfig,
   ): ErrorReporterInterface {
-    if (!ErrorReporter.instance) {
-      ErrorReporter.instance = ErrorReporter.createInstance(config ?? {});
+    const GLOBAL_KEY = Symbol.for(
+      '@noeducation/error-monitoring:ErrorReporter',
+    );
+    const registry = globalThis as unknown as {
+      [key: symbol]: ErrorReporterInterface | undefined;
+    };
+    if (!registry[GLOBAL_KEY]) {
+      registry[GLOBAL_KEY] = ErrorReporter.createInstance(config ?? {});
     }
-    return ErrorReporter.instance;
+    return registry[GLOBAL_KEY]!;
   }
 
   #createErrorReport(
@@ -95,28 +116,14 @@ export class ErrorReporter implements ErrorReporterInterface {
   ): ErrorReport {
     let baseReport: ErrorReport;
     // Check to see if this is an error report already
-    if (
-      typeof error === 'object' &&
-      !!error &&
-      'error' in error &&
-      isError(error.error) &&
-      'context' in error &&
-      !!error.context &&
-      'severity' in error &&
-      error.severity !== null &&
-      error.severity !== undefined
-    ) {
-      baseReport = error as ErrorReport;
-      if (
-        !Object.keys(error).length ||
-        !('error' in error) ||
-        !error.error.message
-      ) {
-        baseReport.error = {
-          ...(baseReport?.error ?? {}),
+    if (isErrorReport(error)) {
+      baseReport = error;
+      if (!Object.keys(error).length || !error.error.message) {
+        baseReport.error = this.normalizeError({
+          ...baseReport.error,
           message:
-            baseReport.error?.message ?? 'Unknown error - No details provided',
-        };
+            baseReport?.error.message ?? 'Unknown error - No details provided',
+        });
       }
     } else {
       // Ensure we have a proper Error object
@@ -168,7 +175,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         log((l) =>
           l.error({
             source: report.context.source ?? 'ErrorReporter',
-            error: report.error,
+            body: JSON.stringify(report.error),
             severity: report.severity,
             fingerprint: report.fingerprint,
             tags: report.tags,
@@ -367,7 +374,7 @@ export class ErrorReporter implements ErrorReporterInterface {
    */
   private generateFingerprint(error: Error, context: ErrorContext): string {
     const key = `${error.name}:${error.message}:${context.url || 'unknown'}`;
-    return btoa(decodeURIComponent(encodeURIComponent(key)))
+    return btoa(encodeURIComponent(key))
       .replace(/[^a-zA-Z0-9]/g, '')
       .substring(0, 16);
   }

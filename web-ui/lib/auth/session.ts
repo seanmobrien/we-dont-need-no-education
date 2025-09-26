@@ -18,6 +18,9 @@ export const session = async ({
     if (token.email && !session.user.email) {
       session.user.email = String(token.email);
     }
+    if (token.subject && !session.user.subject) {
+      session.user.subject = String(token.subject);
+    }
     if (token.account_id !== undefined) {
       // Store account_id for use in the sesion callback
       session.user.account_id = token.account_id;

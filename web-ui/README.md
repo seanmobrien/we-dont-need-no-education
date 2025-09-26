@@ -11,7 +11,7 @@ This web application provides a comprehensive platform for email evidence manage
 - **Chat Interface**: Interactive chat system for evidence exploration and analysis
 - **Document Processing**: Advanced document parsing, embeddings, and search capabilities  
 - **Data Grid System**: Enterprise-grade data grids with server-side operations for large datasets
-- **Authentication**: Secure multi-provider authentication with Azure AD and Google
+- **Authentication**: Secure authentication via Keycloak SSO
 
 ## Key Features
 
@@ -73,9 +73,9 @@ This web application provides a comprehensive platform for email evidence manage
 
 ### Authentication & Security
 
-- **NextAuth.js 5.x**: Authentication with multiple providers
-- **Azure AD**: Enterprise authentication support
-- **Google OAuth**: Social authentication integration
+- **NextAuth.js 5.x**: Authentication with Keycloak SSO
+- **Keycloak Integration**: Enterprise-grade identity and access management
+- **Google API Access**: Gmail and other Google services via Keycloak token exchange
 - **Session Management**: Secure session handling and persistence
 
 ## Project Structure
@@ -691,7 +691,7 @@ CMD ["yarn", "start"]
 
 - **Build Failures**: Ensure Node.js 22.x and clear yarn cache
 - **Yarn Required**: Project enforces Yarn usage via preinstall script
-- **Authentication Issues**: Verify Azure AD and Google OAuth configuration
+- **Authentication Issues**: Verify Keycloak configuration and Google API access via Keycloak
 - **Database Connections**: Ensure PostgreSQL is accessible and migrations run
 - **AI Model Issues**: Check Azure OpenAI and Google AI API access
 

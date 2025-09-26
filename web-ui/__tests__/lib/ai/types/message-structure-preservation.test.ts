@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Tests for message structure preservation interface and utilities
  */
@@ -8,7 +9,6 @@ import {
   createMessageStructureOptions,
   isPreservationEnabled,
   hasMessageStructureOptions,
-  DEFAULT_MESSAGE_STRUCTURE_OPTIONS,
 } from '@/lib/ai/types/message-structure-preservation';
 import {
   preserveMessageStructure,
@@ -22,7 +22,7 @@ describe('Message Structure Preservation Interface', () => {
   describe('MessageStructureOptions Interface', () => {
     it('should create default options', () => {
       const options = createMessageStructureOptions();
-      
+
       expect(options.enabled).toBe(true);
       expect(options.strategy).toBe('semantic');
       expect(options.partRules?.text).toBe(true);
@@ -73,7 +73,7 @@ describe('Message Structure Preservation Interface', () => {
         messageStructure: createMessageStructureOptions(),
         otherProp: 'value',
       };
-      
+
       const objWithoutOptions = {
         otherProp: 'value',
       };
@@ -120,7 +120,7 @@ describe('Message Structure Preservation Interface', () => {
       const result = validateMessageStructureOptions(options);
       expect(result.valid).toBe(false);
       expect(result.errors).toContain(
-        'Invalid strategy: invalid-strategy. Must be one of: full, content-only, semantic, minimal, custom'
+        'Invalid strategy: invalid-strategy. Must be one of: full, content-only, semantic, minimal, custom',
       );
     });
 
@@ -159,14 +159,16 @@ describe('Message Structure Preservation Interface', () => {
 
       const result = validateMessageStructureOptions(options);
       expect(result.valid).toBe(false);
-      expect(result.errors).toContain('recentInteractionCount must be positive');
+      expect(result.errors).toContain(
+        'recentInteractionCount must be positive',
+      );
     });
   });
 
   describe('Preset Configurations', () => {
     it('should create minimal preset', () => {
       const preset = createPresetConfiguration('minimal');
-      
+
       expect(preset.strategy).toBe('minimal');
       expect(preset.partRules?.text).toBe(true);
       expect(preset.partRules?.toolCall).toBe(false);
@@ -175,7 +177,7 @@ describe('Message Structure Preservation Interface', () => {
 
     it('should create balanced preset', () => {
       const preset = createPresetConfiguration('balanced');
-      
+
       expect(preset.strategy).toBe('semantic');
       expect(preset.contextual?.recentInteractionCount).toBe(3);
       expect(preset.contentTransformation?.maxContentLength).toBe(1000);
@@ -183,7 +185,7 @@ describe('Message Structure Preservation Interface', () => {
 
     it('should create comprehensive preset', () => {
       const preset = createPresetConfiguration('comprehensive');
-      
+
       expect(preset.strategy).toBe('full');
       expect(preset.debug).toBe(true);
       expect(preset.performance?.enableCaching).toBe(true);
@@ -192,7 +194,7 @@ describe('Message Structure Preservation Interface', () => {
 
     it('should create performance preset', () => {
       const preset = createPresetConfiguration('performance');
-      
+
       expect(preset.strategy).toBe('content-only');
       expect(preset.performance?.enableCaching).toBe(true);
       expect(preset.performance?.cacheTtlMs).toBe(600000);
@@ -207,14 +209,11 @@ describe('Message Structure Preservation Utilities', () => {
     id: string,
     role: 'user' | 'assistant' | 'system',
     text: string,
-    additionalParts: any[] = []
+    additionalParts: any[] = [],
   ): UIMessage => ({
     id,
     role,
-    parts: [
-      { type: 'text', text },
-      ...additionalParts,
-    ],
+    parts: [{ type: 'text', text }, ...additionalParts],
   });
 
   beforeEach(() => {
@@ -234,7 +233,9 @@ describe('Message Structure Preservation Utilities', () => {
       expect(result.filtered).toHaveLength(0);
       expect(result.stats.originalCount).toBe(2);
       expect(result.stats.preservedCount).toBe(2);
-      expect(result.warnings).toContain('Preservation is disabled - returning all messages');
+      expect(result.warnings).toContain(
+        'Preservation is disabled - returning all messages',
+      );
     });
 
     it('should preserve all messages with full strategy', () => {
@@ -258,14 +259,16 @@ describe('Message Structure Preservation Utilities', () => {
         {
           id: '3',
           role: 'system' as const,
-          parts: [{ type: 'file', data: { name: 'test.txt', size: 1024 } }],
+          parts: [{ type: 'data-image', data: { alt: 'An image' } }],
         } as UIMessage,
       ];
 
-      const result = preserveMessageStructure(messages, { strategy: 'minimal' });
+      const result = preserveMessageStructure(messages, {
+        strategy: 'minimal',
+      });
 
       expect(result.preserved).toHaveLength(2); // Only text messages preserved
-      expect(result.filtered).toHaveLength(1); // File-only message filtered
+      expect(result.filtered).toHaveLength(1); // Image-only message filtered
     });
 
     it('should preserve only text content with content-only strategy', () => {
@@ -274,12 +277,21 @@ describe('Message Structure Preservation Utilities', () => {
         {
           id: '2',
           role: 'assistant' as const,
-          parts: [{ type: 'tool-call', toolName: 'test', toolCallId: 'call_123' }],
+          parts: [
+            {
+              type: 'tool-test',
+              toolCallId: 'call_123',
+              state: 'input-streaming',
+              input: {},
+            },
+          ],
         } as UIMessage,
         createTestMessage('3', 'user', 'World'),
       ];
 
-      const result = preserveMessageStructure(messages, { strategy: 'content-only' });
+      const result = preserveMessageStructure(messages, {
+        strategy: 'content-only',
+      });
 
       expect(result.preserved).toHaveLength(2); // Only messages with text
       expect(result.filtered).toHaveLength(1); // Tool-call only message filtered
@@ -289,7 +301,11 @@ describe('Message Structure Preservation Utilities', () => {
   describe('Contextual Preservation', () => {
     it('should preserve recent interactions', () => {
       const messages = Array.from({ length: 10 }, (_, i) =>
-        createTestMessage(`${i + 1}`, i % 2 === 0 ? 'user' : 'assistant', `Message ${i + 1}`)
+        createTestMessage(
+          `${i + 1}`,
+          i % 2 === 0 ? 'user' : 'assistant',
+          `Message ${i + 1}`,
+        ),
       );
 
       const result = preserveMessageStructure(messages, {
@@ -320,8 +336,8 @@ describe('Message Structure Preservation Utilities', () => {
       });
 
       expect(result.preserved).toHaveLength(2); // Last message + keyword message
-      expect(result.preserved.some(msg => msg.id === '3')).toBe(true); // Keyword message
-      expect(result.preserved.some(msg => msg.id === '4')).toBe(true); // Recent message
+      expect(result.preserved.some((msg) => msg.id === '3')).toBe(true); // Keyword message
+      expect(result.preserved.some((msg) => msg.id === '4')).toBe(true); // Recent message
     });
 
     it('should preserve messages matching patterns', () => {
@@ -340,8 +356,8 @@ describe('Message Structure Preservation Utilities', () => {
       });
 
       expect(result.preserved).toHaveLength(2); // Pattern match + recent
-      expect(result.preserved.some(msg => msg.id === '2')).toBe(true); // Pattern match
-      expect(result.preserved.some(msg => msg.id === '3')).toBe(true); // Recent
+      expect(result.preserved.some((msg) => msg.id === '2')).toBe(true); // Pattern match
+      expect(result.preserved.some((msg) => msg.id === '3')).toBe(true); // Recent
     });
 
     it('should use custom context evaluator', () => {
@@ -359,7 +375,7 @@ describe('Message Structure Preservation Utilities', () => {
       });
 
       expect(result.preserved).toHaveLength(2); // Only user messages
-      expect(result.preserved.every(msg => msg.role === 'user')).toBe(true);
+      expect(result.preserved.every((msg) => msg.role === 'user')).toBe(true);
     });
   });
 
@@ -376,7 +392,8 @@ describe('Message Structure Preservation Utilities', () => {
         },
       });
 
-      const preservedText = (result.preserved[0].parts[0] as { text: string }).text;
+      const preservedText = (result.preserved[0].parts[0] as { text: string })
+        .text;
       expect(preservedText.length).toBe(103); // 100 + '...'
       expect(preservedText.endsWith('...')).toBe(true);
     });
@@ -390,7 +407,8 @@ describe('Message Structure Preservation Utilities', () => {
         },
       });
 
-      const preservedText = (result.preserved[0].parts[0] as { text: string }).text;
+      const preservedText = (result.preserved[0].parts[0] as { text: string })
+        .text;
       expect(preservedText).toBe('HELLO WORLD');
     });
   });
@@ -403,8 +421,13 @@ describe('Message Structure Preservation Utilities', () => {
           role: 'assistant' as const,
           parts: [
             { type: 'text', text: 'Hello' },
-            { type: 'tool-call', toolName: 'test', toolCallId: 'call_123' },
-            { type: 'file', data: { name: 'test.txt', size: 1024 } },
+            {
+              type: 'tool-call',
+              toolCallId: 'call_123',
+              state: 'input-streaming',
+              input: {},
+            },
+            { type: 'data-image', data: { alt: 'An image' } },
           ],
         },
       ];
@@ -436,7 +459,7 @@ describe('Message Structure Preservation Utilities', () => {
       });
 
       expect(result.preserved).toHaveLength(2);
-      expect(result.preserved.every(msg => msg.role !== 'system')).toBe(true);
+      expect(result.preserved.every((msg) => msg.role !== 'system')).toBe(true);
     });
   });
 
@@ -520,7 +543,11 @@ describe('Message Structure Preservation Utilities', () => {
   describe('Statistics and Metrics', () => {
     it('should provide accurate statistics', () => {
       const messages = Array.from({ length: 10 }, (_, i) =>
-        createTestMessage(`${i + 1}`, i % 2 === 0 ? 'user' : 'assistant', `Message ${i + 1}`)
+        createTestMessage(
+          `${i + 1}`,
+          i % 2 === 0 ? 'user' : 'assistant',
+          `Message ${i + 1}`,
+        ),
       );
 
       const result = preserveMessageStructure(messages, {

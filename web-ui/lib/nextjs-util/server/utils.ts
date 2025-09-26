@@ -3,6 +3,16 @@ import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest } from 'next/server';
+import {
+  SpanKind,
+  SpanStatusCode,
+  trace,
+  context as otelContext,
+  propagation,
+  type Attributes,
+  type Context as OtelContext,
+  type TextMapGetter,
+} from '@opentelemetry/api';
 
 /**
  * Sentinel used to explicitly enable a wrapped route/handler during the production build phase.
@@ -103,62 +113,232 @@ export function wrapRouteRequest<A extends unknown[], R extends Response>(
     const context = args[1] as
       | { params: Promise<Record<string, unknown>> }
       | undefined;
-    try {
-      if (
-        buildFallback !== EnableOnBuild &&
-        (process.env.IS_BUILDING == '1' ||
-          process.env.NEXT_PHASE === 'phase-production-build')
-      ) {
-        return Response.json(buildFallback ?? globalBuildFallback, {
-          status: 200,
-          statusText: 'OK-BUILD-FALLBACK',
-        });
-      }
-      if (shouldLog) {
-        const extractedParams = await (!!context?.params
-          ? context.params
-          : Promise.resolve({} as Record<string, unknown>));
-        const url = (req as unknown as Request)?.url ?? '<no-req>';
-        log((l) =>
-          l.info(`Processing route request [${url}]`, {
-            args: JSON.stringify(extractedParams),
-          }),
-        );
-      }
-      // Invoke the original handler with the same args shape
-      return await fn(...args);
-    } catch (error) {
-      if (shouldLog) {
-        const extractedParams = await (!!context?.params
-          ? context.params
-          : Promise.resolve({} as Record<string, unknown>));
-        // Wrap in a LoggedError to prevent callback from auto-logging
-        error = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-          log: true,
-          source: 'wrapRouteRequest:catch',
-          data: {
-            params: extractedParams,
-            req,
-          },
-        });
-      }
-      // If a callback was provided, invoke it within a try/catch to avoid secondary errors
-      if (errorCallback) {
+    // Build attributes and parent context for tracing from the request
+    const { attributes, parentCtx } = await getRequestSpanInit(req, context);
+
+    const tracer = trace.getTracer('noeducation/server-utils');
+    return await tracer.startActiveSpan(
+      'route.request',
+      {
+        kind: SpanKind.SERVER,
+        attributes,
+      },
+      parentCtx,
+      async (span) => {
         try {
-          const maybePromise = errorCallback(error);
-          if (maybePromise instanceof Promise) {
-            await maybePromise;
+          if (
+            buildFallback !== EnableOnBuild &&
+            (process.env.IS_BUILDING == '1' ||
+              process.env.NEXT_PHASE === 'phase-production-build')
+          ) {
+            const res = Response.json(buildFallback ?? globalBuildFallback, {
+              status: 200,
+              statusText: 'OK-BUILD-FALLBACK',
+            });
+            span.setAttribute('http.status_code', res.status);
+            span.setStatus({ code: SpanStatusCode.OK });
+            return res;
           }
-        } catch (callbackError) {
-          LoggedError.isTurtlesAllTheWayDownBaby(callbackError, {
-            log: true,
-            source: 'wrapRouteRequest:errorCallback',
-          });
+          if (shouldLog) {
+            const extractedParams = await (!!context?.params
+              ? context.params
+              : Promise.resolve({} as Record<string, unknown>));
+            const url = (req as unknown as Request)?.url ?? '<no-req>';
+            log((l) =>
+              l.info(`Processing route request [${url}]`, {
+                args: JSON.stringify(extractedParams),
+              }),
+            );
+          }
+          // Invoke the original handler with the same args shape
+          const result = await fn(...args);
+          try {
+            if (result && typeof result === 'object' && 'status' in result) {
+              span.setAttribute(
+                'http.status_code',
+                (result as Response).status,
+              );
+            }
+          } catch {
+            // ignore status capture issues
+          }
+          span.setStatus({ code: SpanStatusCode.OK });
+          return result;
+        } catch (error) {
+          // Record exception and propagate through existing error handling
+          try {
+            span.recordException(error as Error);
+            span.setStatus({ code: SpanStatusCode.ERROR });
+          } catch {
+            // ignore span record errors
+          }
+
+          if (shouldLog) {
+            const extractedParams = await (!!context?.params
+              ? context.params
+              : Promise.resolve({} as Record<string, unknown>));
+            // Wrap in a LoggedError to prevent callback from auto-logging
+            error = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+              log: true,
+              source: 'wrapRouteRequest:catch',
+              data: {
+                params: extractedParams,
+                req,
+              },
+            });
+          }
+          // If a callback was provided, invoke it within a try/catch to avoid secondary errors
+          if (errorCallback) {
+            try {
+              const maybePromise = errorCallback(error);
+              if (maybePromise instanceof Promise) {
+                await maybePromise;
+              }
+            } catch (callbackError) {
+              LoggedError.isTurtlesAllTheWayDownBaby(callbackError, {
+                log: true,
+                source: 'wrapRouteRequest:errorCallback',
+              });
+            }
+          }
+          const errResponse = new ErrorResponse(
+            'An unexpected error occurred',
+            {
+              cause: error,
+            },
+          );
+          try {
+            span.setAttribute('http.status_code', errResponse.status);
+            span.setAttribute(
+              'error.response',
+              JSON.stringify({
+                status: errResponse.status,
+                statusText: errResponse.statusText,
+              }),
+            );
+          } catch {
+            // ignore attribute errors
+          }
+          return errResponse;
+        } finally {
+          span.end();
         }
-      }
-      return new ErrorResponse('An unexpected error occurred', {
-        cause: error,
-      });
-    }
+      },
+    );
   };
+}
+
+/**
+ * Builds span attributes and an OpenTelemetry parent context for a request.
+ * - Extracts W3C trace context from incoming headers when present
+ * - Falls back to the active context when not present
+ * - Derives request path, query, method, route params, and sanitized headers
+ */
+async function getRequestSpanInit(
+  req: Request | NextRequest | undefined,
+  ctx?: { params: Promise<Record<string, unknown>> },
+): Promise<{ attributes: Attributes; parentCtx: OtelContext }> {
+  const { path, query, method } = getPathQueryAndMethod(req);
+  const routeParams = await (!!ctx?.params
+    ? ctx.params
+    : Promise.resolve({} as Record<string, unknown>));
+  const headersObj = getHeadersObject(req);
+  const sanitizedHeaders = sanitizeHeaders(headersObj);
+
+  // Build parent context: prefer extracted header context; fall back to active
+  const headerGetter: TextMapGetter<Record<string, string>> = {
+    keys: (carrier) => Object.keys(carrier ?? {}),
+    get: (carrier, key) => {
+      if (!carrier) return undefined as unknown as string | undefined;
+      const lower = key.toLowerCase();
+      return carrier[lower];
+    },
+  };
+  const extracted = propagation.extract(
+    otelContext.active(),
+    headersObj,
+    headerGetter,
+  );
+
+  const attributes: Attributes = {
+    'request.path': path,
+    'request.query': query,
+    'http.method': method,
+    'route.params': safeStringify(routeParams),
+    'request.headers': safeStringify(sanitizedHeaders),
+  };
+  return { attributes, parentCtx: extracted };
+}
+
+function getPathQueryAndMethod(req: Request | NextRequest | undefined): {
+  path: string;
+  query: string;
+  method: string;
+} {
+  let path = '<no-req>';
+  let query = '';
+  let method = 'UNKNOWN';
+  try {
+    if (req) {
+      const maybeNext = req as NextRequest & { nextUrl?: URL };
+      // method is on both Request and NextRequest
+      method = (req as Request).method ?? method;
+      if ('nextUrl' in maybeNext && maybeNext.nextUrl instanceof URL) {
+        path = maybeNext.nextUrl.pathname;
+        query = maybeNext.nextUrl.searchParams.toString();
+      } else if ((req as Request).url) {
+        const u = new URL((req as Request).url);
+        path = u.pathname;
+        query = u.searchParams.toString();
+      }
+    }
+  } catch {
+    // no-op: defaults will be used
+  }
+  return { path, query, method };
+}
+
+function getHeadersObject(
+  req: Request | NextRequest | undefined,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  try {
+    if (!req) return out;
+    const headers = (req as Request).headers;
+    if (!headers) return out;
+    // Headers is iterable: [key, value]
+    for (const [key, value] of headers as unknown as Iterable<
+      [string, string]
+    >) {
+      out[String(key).toLowerCase()] = String(value);
+    }
+  } catch {
+    // ignore header extraction issues
+  }
+  return out;
+}
+
+function sanitizeHeaders(
+  headers: Record<string, string>,
+): Record<string, string> {
+  const redacted = new Set([
+    'authorization',
+    'proxy-authorization',
+    'cookie',
+    'set-cookie',
+    'x-api-key',
+  ]);
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(headers)) {
+    out[k] = redacted.has(k) ? '***' : v;
+  }
+  return out;
+}
+
+function safeStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '<unserializable>';
+  }
 }

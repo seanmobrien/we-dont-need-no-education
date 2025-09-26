@@ -14,6 +14,7 @@ import {
   createToolOptimizingMiddleware,
   type ToolOptimizingMiddlewareConfig,
   getToolOptimizingMiddlewareMetrics,
+  ExtendedCallOptions,
 } from '@/lib/ai/middleware/tool-optimizing-middleware';
 import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
 import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
@@ -48,6 +49,8 @@ jest.mock('@/lib/site-util/metrics', () => ({
   },
   hashUserId: jest.fn((userId: string) => `hashed_${userId}`),
 }));
+
+type MiddlewareType = 'generateText' | 'generate' | 'stream' | 'streamText';
 
 jest.mock('@/lib/react-util', () => {
   const original = jest.requireActual('@/lib/react-util');
@@ -494,7 +497,7 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const p = {
-        type: 'generate',
+        type: 'generate' as MiddlewareType,
         model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
         params: mockParams,
       };
@@ -594,7 +597,7 @@ describe('Tool Optimizing Middleware', () => {
       const result = await middleware.transformParams!({
         type: 'generate',
         model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
-        params: paramsWithoutMessages,
+        params: paramsWithoutMessages as unknown as ExtendedCallOptions,
       });
 
       expect(mockOptimizeMessages).not.toHaveBeenCalled();

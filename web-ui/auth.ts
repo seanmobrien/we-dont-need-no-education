@@ -4,7 +4,6 @@ import type { CredentialInput, Provider } from '@auth/core/providers';
 import { isRunningOnEdge } from '@/lib/site-util/env';
 import { logEvent } from '@/lib/logger';
 
-import { setupGoogleProvider } from './lib/auth/google-provider';
 import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
 import { authorized } from './lib/auth/authorized';
 import { JWT } from '@auth/core/jwt';
@@ -123,7 +122,6 @@ const dynamicImports: DynamicImports = {
 } as DynamicImports;
 
 const providers: Provider[] = [
-  ...setupGoogleProvider(),
   ...setupKeyCloakProvider(),
 ];
 
@@ -165,7 +163,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
         drizzleAdapter: { setupDrizzleAdapter },
       } = dynamicImports;
       adapter = await setupDrizzleAdapter();
-      // Custom signIn implementation to update tokens on each sign-in for Google provider
+      // Custom signIn implementation to handle authentication callbacks
       signInImpl = signIn;
     } else {
       adapter = undefined; // No adapter for edge runtime, client, or build

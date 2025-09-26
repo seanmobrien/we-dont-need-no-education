@@ -117,13 +117,35 @@ type ProviderNameOrIdType = ProviderIdType | ProviderNameType;
  * ```
  */
 export class ProviderMap {
-  static #instance: ProviderMap | undefined;
+  // Global symbol key to expose init resolvers across module copies/HMR boundaries
+  static readonly #INIT_KEY = Symbol.for(
+    '@noeducation/model-stats:ProviderMap:init',
+  );
+  // Symbol-based global registry key to ensure singleton across module reloads/bundles
+  static readonly #REGISTRY_KEY = Symbol.for(
+    '@noeducation/model-stats:ProviderMap',
+  );
+  static get #instance(): ProviderMap | undefined {
+    type GlobalReg = { [k: symbol]: ProviderMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    return g[this.#REGISTRY_KEY];
+  }
+  static set #instance(value: ProviderMap | undefined) {
+    type GlobalReg = { [k: symbol]: ProviderMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = value;
+  }
   static readonly #ProviderNameKey: ProviderMapEntryNameKey = 'name' as const;
   static readonly #ProviderAliasesKey: ProviderMapEntryAliasesKey =
     'aliases' as const;
 
   static get Instance(): ProviderMap {
-    this.#instance ??= new ProviderMap();
+    type GlobalReg = { [k: symbol]: ProviderMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    if (!g[this.#REGISTRY_KEY]) {
+      g[this.#REGISTRY_KEY] = new ProviderMap();
+    }
+    this.#instance = g[this.#REGISTRY_KEY]!;
     return this.#instance;
   }
   /**
@@ -134,13 +156,22 @@ export class ProviderMap {
    * @returns Promise that resolves to the initialized ProviderMap.
    */
   static getInstance(db?: DbDatabaseType): Promise<ProviderMap> {
-    if (this.#instance) {
-      return this.#instance.#whenInitialized.promise.then(
-        () => this.#instance!,
-      );
+    type GlobalReg = { [k: symbol]: ProviderMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    if (!g[this.#REGISTRY_KEY]) {
+      g[this.#REGISTRY_KEY] = new ProviderMap(db);
     }
-    this.#instance = new ProviderMap(db);
-    return this.#instance.#whenInitialized.promise.then(() => this.#instance!);
+    this.#instance = g[this.#REGISTRY_KEY]!;
+    const inst = this.#instance;
+    const init = (
+      inst as unknown as Record<
+        symbol,
+        PromiseWithResolvers<boolean> | undefined
+      >
+    )[ProviderMap.#INIT_KEY];
+    const p: Promise<boolean> =
+      init?.promise ?? inst.whenInitialized ?? Promise.resolve(true);
+    return p.then(() => this.#instance!);
   }
   /**
    * Create a mock ProviderMap instance seeded with in-memory records. Useful
@@ -153,7 +184,10 @@ export class ProviderMap {
   static setupMockInstance(
     records: (readonly [ProviderIdType, ProviderMapEntry])[],
   ): ProviderMap {
-    this.#instance = new ProviderMap(records);
+    type GlobalReg = { [k: symbol]: ProviderMap | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = new ProviderMap(records);
+    this.#instance = g[this.#REGISTRY_KEY]!;
     return this.#instance;
   }
 
@@ -170,6 +204,10 @@ export class ProviderMap {
     this.#nameToId = new Map();
     this.#initialized = false;
     this.#whenInitialized = Promise.withResolvers<boolean>();
+    // Expose init resolvers via a symbol to avoid private brand checks across module copies
+    (this as unknown as Record<symbol, PromiseWithResolvers<boolean>>)[
+      ProviderMap.#INIT_KEY
+    ] = this.#whenInitialized;
     if (Array.isArray(entriesOrDb)) {
       this.#idToRecord = new Map(entriesOrDb);
       this.#initializeNameToIdMap();
@@ -321,6 +359,9 @@ export class ProviderMap {
     this.#idToRecord.clear();
     this.#initialized = false;
     this.#whenInitialized = Promise.withResolvers<boolean>();
+    (this as unknown as Record<symbol, PromiseWithResolvers<boolean>>)[
+      ProviderMap.#INIT_KEY
+    ] = this.#whenInitialized;
 
     const initDb = (!!db ? Promise.resolve(db) : drizDbWithInit())
       .then((db) => {
