@@ -1,18 +1,26 @@
 /**
  * @jest-environment jsdom
  */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { ChatMessageFilters, searchMessageContent, type MessageType } from '@/components/chat/chat-message-filters';
+import {
+  ChatMessageFilters,
+  searchMessageContent,
+  type MessageType,
+} from '@/components/chat/chat-message-filters';
 import type { ChatMessage } from '@/lib/ai/chat/types';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock MUI components
 jest.mock('@mui/material', () => ({
   ...jest.requireActual('@mui/material'),
   Box: ({ children, ...props }: any) => <div {...props}>{children}</div>,
-  Typography: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+  Typography: ({ children, ...props }: any) => (
+    <span {...props}>{children}</span>
+  ),
   FormControlLabel: ({ control, label, ...props }: any) => (
     <label {...props}>
       {control}
@@ -20,12 +28,7 @@ jest.mock('@mui/material', () => ({
     </label>
   ),
   Switch: ({ checked, onChange, ...props }: any) => (
-    <input
-      type="checkbox"
-      checked={checked}
-      onChange={onChange}
-      {...props}
-    />
+    <input type="checkbox" checked={checked} onChange={onChange} {...props} />
   ),
   Button: ({ children, onClick, ...props }: any) => (
     <button onClick={onClick} {...props}>
@@ -51,7 +54,9 @@ jest.mock('@mui/material', () => ({
       {...props}
     />
   ),
-  InputAdornment: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  InputAdornment: ({ children, ...props }: any) => (
+    <div {...props}>{children}</div>
+  ),
 }));
 
 jest.mock('@mui/icons-material', () => ({
@@ -122,23 +127,33 @@ describe('ChatMessageFilters', () => {
     size: 'medium' as const,
     showStatusMessage: true,
   };
-
+  const mockConsole = hideConsoleOutput();
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
+  });
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   it('renders filter controls with title and switch', () => {
     render(<ChatMessageFilters {...mockProps} />);
-    
+
     expect(screen.getByText('Test Filters')).toBeInTheDocument();
     expect(screen.getByText('Enable Filtering')).toBeInTheDocument();
     expect(screen.getByRole('checkbox')).not.toBeChecked();
   });
 
   it('shows filter options when filtering is enabled', () => {
-    render(<ChatMessageFilters {...mockProps} enableFilters={true} />);
-    
-    expect(screen.getByPlaceholderText('Search message content...')).toBeInTheDocument();
+    mockConsole.setup();
+    const thisProps = {
+      ...mockProps,
+      enableFilters: true,
+    };
+    render(<ChatMessageFilters {...thisProps} />);
+
+    expect(
+      screen.getByPlaceholderText('Search message content...'),
+    ).toBeInTheDocument();
     expect(screen.getByText('Types:')).toBeInTheDocument();
     expect(screen.getByText('user')).toBeInTheDocument();
     expect(screen.getByText('assistant')).toBeInTheDocument();
@@ -148,43 +163,78 @@ describe('ChatMessageFilters', () => {
 
   it('displays correct message counts in badges', () => {
     render(<ChatMessageFilters {...mockProps} enableFilters={true} />);
-    
+
     // Each badge should show the count of messages of that type
-    expect(screen.getByText('user').closest('[data-badge]')).toHaveAttribute('data-badge', '1');
-    expect(screen.getByText('assistant').closest('[data-badge]')).toHaveAttribute('data-badge', '1');
-    expect(screen.getByText('system').closest('[data-badge]')).toHaveAttribute('data-badge', '1');
-    expect(screen.getByText('tool').closest('[data-badge]')).toHaveAttribute('data-badge', '1');
+    expect(screen.getByText('user').closest('[data-badge]')).toHaveAttribute(
+      'data-badge',
+      '1',
+    );
+    expect(
+      screen.getByText('assistant').closest('[data-badge]'),
+    ).toHaveAttribute('data-badge', '1');
+    expect(screen.getByText('system').closest('[data-badge]')).toHaveAttribute(
+      'data-badge',
+      '1',
+    );
+    expect(screen.getByText('tool').closest('[data-badge]')).toHaveAttribute(
+      'data-badge',
+      '1',
+    );
   });
 
   it('calls onTypeFiltersChange when badge is clicked', () => {
     const onTypeFiltersChange = jest.fn();
-    render(<ChatMessageFilters {...mockProps} enableFilters={true} onTypeFiltersChange={onTypeFiltersChange} />);
-    
+    render(
+      <ChatMessageFilters
+        {...mockProps}
+        enableFilters={true}
+        onTypeFiltersChange={onTypeFiltersChange}
+      />,
+    );
+
     fireEvent.click(screen.getByText('user'));
-    
+
     expect(onTypeFiltersChange).toHaveBeenCalledWith(new Set(['user']));
   });
 
   it('calls onContentFilterChange when text is entered', () => {
     const onContentFilterChange = jest.fn();
-    render(<ChatMessageFilters {...mockProps} enableFilters={true} onContentFilterChange={onContentFilterChange} />);
-    
+    render(
+      <ChatMessageFilters
+        {...mockProps}
+        enableFilters={true}
+        onContentFilterChange={onContentFilterChange}
+      />,
+    );
+
     const input = screen.getByPlaceholderText('Search message content...');
     fireEvent.change(input, { target: { value: 'hello' } });
-    
+
     expect(onContentFilterChange).toHaveBeenCalledWith('hello');
   });
 
   it('shows Clear All button when filters are active', () => {
     const activeFilters = new Set<MessageType>(['user', 'assistant']);
-    render(<ChatMessageFilters {...mockProps} enableFilters={true} activeTypeFilters={activeFilters} />);
-    
+    render(
+      <ChatMessageFilters
+        {...mockProps}
+        enableFilters={true}
+        activeTypeFilters={activeFilters}
+      />,
+    );
+
     expect(screen.getByText('Clear All')).toBeInTheDocument();
   });
 
   it('shows Clear All button when content filter is active', () => {
-    render(<ChatMessageFilters {...mockProps} enableFilters={true} contentFilter="test" />);
-    
+    render(
+      <ChatMessageFilters
+        {...mockProps}
+        enableFilters={true}
+        contentFilter="test"
+      />,
+    );
+
     expect(screen.getByText('Clear All')).toBeInTheDocument();
   });
 
@@ -192,75 +242,95 @@ describe('ChatMessageFilters', () => {
     const onTypeFiltersChange = jest.fn();
     const onContentFilterChange = jest.fn();
     const activeFilters = new Set<MessageType>(['user']);
-    
+
     render(
-      <ChatMessageFilters 
-        {...mockProps} 
-        enableFilters={true} 
+      <ChatMessageFilters
+        {...mockProps}
+        enableFilters={true}
         activeTypeFilters={activeFilters}
         contentFilter="test"
         onTypeFiltersChange={onTypeFiltersChange}
         onContentFilterChange={onContentFilterChange}
-      />
+      />,
     );
-    
+
     fireEvent.click(screen.getByText('Clear All'));
-    
+
     expect(onTypeFiltersChange).toHaveBeenCalledWith(new Set());
     expect(onContentFilterChange).toHaveBeenCalledWith('');
   });
 
   it('shows status message when filters are active', () => {
     const activeFilters = new Set<MessageType>(['user', 'assistant']);
-    render(<ChatMessageFilters {...mockProps} enableFilters={true} activeTypeFilters={activeFilters} />);
-    
-    expect(screen.getByText('Showing 2 of 4 message types')).toBeInTheDocument();
+    render(
+      <ChatMessageFilters
+        {...mockProps}
+        enableFilters={true}
+        activeTypeFilters={activeFilters}
+      />,
+    );
+
+    expect(
+      screen.getByText('Showing 2 of 4 message types'),
+    ).toBeInTheDocument();
   });
 
   it('shows combined status message for type and content filters', () => {
     const activeFilters = new Set<MessageType>(['user']);
     render(
-      <ChatMessageFilters 
-        {...mockProps} 
-        enableFilters={true} 
+      <ChatMessageFilters
+        {...mockProps}
+        enableFilters={true}
         activeTypeFilters={activeFilters}
         contentFilter="hello"
-      />
+      />,
     );
-    
-    expect(screen.getByText('Filtering by content "hello" and 1 of 4 message types')).toBeInTheDocument();
+
+    expect(
+      screen.getByText('Filtering by content "hello" and 1 of 4 message types'),
+    ).toBeInTheDocument();
   });
 
   it('shows content-only status message', () => {
-    render(<ChatMessageFilters {...mockProps} enableFilters={true} contentFilter="hello" />);
-    
-    expect(screen.getByText('Filtering by content "hello"')).toBeInTheDocument();
+    render(
+      <ChatMessageFilters
+        {...mockProps}
+        enableFilters={true}
+        contentFilter="hello"
+      />,
+    );
+
+    expect(
+      screen.getByText('Filtering by content "hello"'),
+    ).toBeInTheDocument();
   });
 
   it('calls onEnableFiltersChange and clears filters when toggled off', () => {
     const onEnableFiltersChange = jest.fn();
     const onTypeFiltersChange = jest.fn();
     const onContentFilterChange = jest.fn();
-    
+
     render(
-      <ChatMessageFilters 
-        {...mockProps} 
+      <ChatMessageFilters
+        {...mockProps}
         enableFilters={true}
         onEnableFiltersChange={onEnableFiltersChange}
         onTypeFiltersChange={onTypeFiltersChange}
         onContentFilterChange={onContentFilterChange}
-      />
+      />,
     );
-    
+
     const checkbox = screen.getByRole('checkbox');
     fireEvent.click(checkbox); // Use click instead of change for better simulation
-    
+
     expect(onEnableFiltersChange).toHaveBeenCalledWith(false);
   });
 
   it('uses small size styling when size="small"', () => {
-    render(<ChatMessageFilters {...mockProps} size="small" enableFilters={true} />);
-    
+    render(
+      <ChatMessageFilters {...mockProps} size="small" enableFilters={true} />,
+    );
+
     // The component should render with smaller styling
     expect(screen.getByText('Test Filters')).toBeInTheDocument();
   });
@@ -361,6 +431,8 @@ describe('searchMessageContent', () => {
 
     // Should not throw and should still search other fields
     expect(searchMessageContent(messageWithCircularRef, 'test')).toBe(true);
-    expect(searchMessageContent(messageWithCircularRef, 'notfound')).toBe(false);
+    expect(searchMessageContent(messageWithCircularRef, 'notfound')).toBe(
+      false,
+    );
   });
 });

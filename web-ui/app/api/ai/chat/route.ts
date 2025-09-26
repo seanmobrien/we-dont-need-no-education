@@ -20,43 +20,71 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import { ToolProviderSet } from '@/lib/ai/mcp/types';
+import { ImpersonationService } from '@/lib/auth/impersonation';
+import { fromRequest } from '@/lib/auth/impersonation/index';
 // import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 1440;
-
-const getMcpClientHeaders = ({
-  req,
-  chatHistoryId,
-}: {
-  req: NextRequest;
-  chatHistoryId: string;
-}): Record<string, string> => {
-  const ret: { [key: string]: string } = {
-    'x-chat-history-id': chatHistoryId,
-  };
-  const sessionCookie = req.cookies?.get('authjs.session-token')?.value ?? '';
-  if (sessionCookie.length > 0) {
-    ret.Cookie = `authjs.session-token=${sessionCookie}`;
-  }
-  return ret;
-};
-const toolProviderFactory = ({
+const toolProviderFactory = async ({
   req,
   chatHistoryId,
   memoryDisabled = false,
   writeEnabled = false,
+  impersonation,
 }: {
   req: NextRequest;
   chatHistoryId: string;
   writeEnabled?: boolean;
   memoryDisabled?: boolean;
-}) =>
-  toolProviderSetFactory([
+  impersonation?: ImpersonationService;
+}) => {
+  // Prepare headers for MCP client - prefer impersonation over session cookies
+  let mcpHeaders: Record<string, string> = {
+    'x-chat-history-id': chatHistoryId,
+  };
+
+  if (impersonation) {
+    try {
+      const impersonatedToken = await impersonation.getImpersonatedToken();
+      mcpHeaders = {
+        ...mcpHeaders,
+        Authorization: `Bearer ${impersonatedToken}`,
+        'X-Impersonated-User': impersonation.getUserContext().userId,
+      };
+      log((l) =>
+        l.debug('Using impersonated token for MCP tools', {
+          userId: impersonation.getUserContext().userId,
+        }),
+      );
+    } catch (error) {
+      log((l) =>
+        l.warn(
+          'Failed to get impersonated token for MCP, falling back to session cookies',
+          error,
+        ),
+      );
+      // Fallback to session cookies
+      const sessionCookie =
+        req.cookies?.get('authjs.session-token')?.value ?? '';
+      if (sessionCookie.length > 0) {
+        mcpHeaders.Cookie = `authjs.session-token=${sessionCookie}`;
+      }
+    }
+  } else {
+    // Use session cookies as fallback
+    const sessionCookie = req.cookies?.get('authjs.session-token')?.value ?? '';
+    if (sessionCookie.length > 0) {
+      mcpHeaders.Cookie = `authjs.session-token=${sessionCookie}`;
+    }
+  }
+
+  return toolProviderSetFactory([
     {
       allowWrite: writeEnabled,
       url: new URL('/api/ai/tools/sse', env('NEXT_PUBLIC_HOSTNAME')).toString(),
-      headers: getMcpClientHeaders({ req, chatHistoryId }),
+      headers: mcpHeaders,
       traceable: req.headers.get('x-traceable') !== 'false',
+      impersonation,
     },
     ...(memoryDisabled !== true && env('MEM0_DISABLED')
       ? []
@@ -68,9 +96,11 @@ const toolProviderFactory = ({
               'content-encoding': 'none',
             },
             url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
+            impersonation,
           },
         ]),
   ]);
+};
 
 const extractRequestParams = async (req: NextRequest) => {
   // Pull messages and ID from body
@@ -127,6 +157,24 @@ export const POST = (req: NextRequest) => {
         return new Response('Invalid messages format', { status: 400 });
       }
       const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
+
+      // Create impersonation instance for authenticated API calls
+      const impersonation = await fromRequest({});
+      if (impersonation) {
+        log((l) =>
+          l.debug('Created impersonation instance for chat request', {
+            userId: impersonation.getUserContext().userId,
+            chatHistoryId,
+          }),
+        );
+      } else {
+        log((l) =>
+          l.debug('No impersonation available, using fallback auth methods', {
+            chatHistoryId,
+          }),
+        );
+      }
+
       // Apply advanced tool message optimization with AI-powered summarization
       /*
       const optimizedMessages = await optimizeMessagesWithToolSummarization(
@@ -155,6 +203,7 @@ export const POST = (req: NextRequest) => {
           chatHistoryId,
           memoryDisabled,
           writeEnabled,
+          impersonation,
         });
         // Create chat history context
         const chatHistoryContext = createUserChatHistoryContext({
@@ -178,6 +227,7 @@ export const POST = (req: NextRequest) => {
           chatHistoryId,
           memoryDisabled,
           writeEnabled,
+          impersonation,
         });
         // In v5: create a UI message stream response and merge the generated stream.
         // We'll create a merged ReadableStream that forwards the SDK stream and allows
@@ -285,6 +335,7 @@ export const POST = (req: NextRequest) => {
             chatHistoryId,
             memoryDisabled,
             writeEnabled,
+            impersonation,
           })).get_tools(),
         });
 

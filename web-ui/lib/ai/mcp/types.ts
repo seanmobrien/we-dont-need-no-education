@@ -3,6 +3,7 @@ import type {
   experimental_createMCPClient as createMCPClient,
   ToolSet,
 } from 'ai';
+import type { Impersonation } from '@/lib/auth/impersonation';
 
 export type MCPClient = UnwrapPromise<ReturnType<typeof createMCPClient>>;
 
@@ -12,12 +13,14 @@ export type MCPClient = UnwrapPromise<ReturnType<typeof createMCPClient>>;
  * @property url - The base URL for the tool provider.
  * @property headers - Optional HTTP headers to include with requests.
  * @property allowWrite - Optional flag indicating if the provider should filter write-enabled tools from it's response.
+ * @property impersonation - Optional impersonation instance for authenticated calls.
  */
 export type ToolProviderFactoryOptions = {
   url: string;
   headers?: Record<string, string>;
   allowWrite?: boolean;
   traceable?: boolean;
+  impersonation?: Impersonation;
 };
 
 /**

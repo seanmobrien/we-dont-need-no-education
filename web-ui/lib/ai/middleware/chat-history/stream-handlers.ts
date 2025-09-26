@@ -28,7 +28,6 @@ import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';
 import { instrumentStreamChunk } from './instrumentation';
 import { ensureCreateResult } from './stream-handler-result';
-import { reserveMessageIds } from './import-incoming-message';
 import {
   reserveMessageIds,
   upsertToolMessage,
@@ -290,6 +289,7 @@ export const handleToolCall = async (
       // Create tool message row draft for upsert logic
       const toolRow = {
         role: 'tool' as const,
+        statusId: 1,
         content: generatedText,
         toolName: chunk.toolName,
         functionCall: parsedInput ?? null,
@@ -301,17 +301,23 @@ export const handleToolCall = async (
       // Try to upsert the tool message first
       let upsertedMessageId: number | null = null;
       try {
-        upsertedMessageId = await upsertToolMessage(tx, chatId, Number(turnId), toolRow);
+        upsertedMessageId = await upsertToolMessage(
+          tx,
+          chatId,
+          Number(turnId),
+          toolRow,
+        );
       } catch (error) {
         // In test environments, upsert might fail - fall back to normal creation
         log((l) =>
           l.debug(
-            `Tool message upsert failed, falling back to creation: ${error}`
-          )
+            `Tool message upsert failed, falling back to creation: ${error}`,
+          ),
         );
         upsertedMessageId = null;
       }
-      
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let toolCall: any = null;
       let actualMessageId: number;
 
@@ -335,8 +341,8 @@ export const handleToolCall = async (
           // In test environments, selects might fail - create a mock tool call
           log((l) =>
             l.debug(
-              `Failed to fetch updated tool message, creating mock: ${error}`
-            )
+              `Failed to fetch updated tool message, creating mock: ${error}`,
+            ),
           );
           toolCall = {
             chatMessageId: 1,
@@ -389,11 +395,11 @@ export const handleToolCall = async (
           );
         }
         toolCalls.set(toolCall.providerId ?? '[missing]', toolCall);
-        
+
         log((l) =>
           l.debug(
-            `Tool message handled for providerId ${chunk.toolCallId}: ${upsertedMessageId !== null ? 'updated' : 'created'} messageId ${actualMessageId}`
-          )
+            `Tool message handled for providerId ${chunk.toolCallId}: ${upsertedMessageId !== null ? 'updated' : 'created'} messageId ${actualMessageId}`,
+          ),
         );
       } else {
         log((l) =>
@@ -588,22 +594,29 @@ export const handleToolResult = async (
         chunk,
         tx,
       });
-      
+
       // If no pending call found, try upsert logic
       if (!pendingCall && chunk.toolCallId) {
         // Create tool message row draft for upsert logic
         const toolRow = {
           role: 'tool' as const,
+          statusId: 2,
           content: generatedText,
           toolName: chunk.toolName,
           functionCall: null,
           providerId: chunk.toolCallId,
           metadata: null,
-          toolResult: chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
+          toolResult:
+            chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
         };
 
-        const upsertedMessageId = await upsertToolMessage(tx, chatId, Number(turnId), toolRow);
-        
+        const upsertedMessageId = await upsertToolMessage(
+          tx,
+          chatId,
+          Number(turnId),
+          toolRow,
+        );
+
         if (upsertedMessageId !== null) {
           // Message was updated via upsert, fetch the record
           try {
@@ -619,23 +632,21 @@ export const handleToolResult = async (
               .limit(1)
               .execute();
             pendingCall = existingMessages[0] || null;
-            
+
             log((l) =>
               l.debug(
-                `Tool result upserted for providerId ${chunk.toolCallId}, messageId: ${upsertedMessageId}`
-              )
+                `Tool result upserted for providerId ${chunk.toolCallId}, messageId: ${upsertedMessageId}`,
+              ),
             );
           } catch (error) {
             // In test environments, selects might fail
             log((l) =>
-              l.debug(
-                `Failed to fetch upserted tool message: ${error}`
-              )
+              l.debug(`Failed to fetch upserted tool message: ${error}`),
             );
           }
         }
       }
-      
+
       if (pendingCall) {
         const metadata: Record<PropertyKey, unknown> = pendingCall.metadata
           ? { ...pendingCall.metadata }
@@ -652,15 +663,16 @@ export const handleToolResult = async (
         if (chunk.providerOptions) {
           metadata.toolResultProviderMeta = chunk.providerOptions;
         }
-        
+
         // Update metadata with turn tracking
         metadata.modifiedTurnId = Number(turnId);
-        
+
         await tx
           .update(chatMessages)
           .set({
             statusId,
-            toolResult: chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
+            toolResult:
+              chunk.output !== undefined ? JSON.stringify(chunk.output) : null,
             metadata: metadata,
             content: `${pendingCall.content ?? ''}\n${generatedText}`,
           })

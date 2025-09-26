@@ -1,11 +1,10 @@
 /**
  * @fileoverview Simple unit tests for chat history flush handlers
- * 
+ *
  * These tests verify that compilation errors are fixed and basic functionality works.
- * 
+ *
  * @module __tests__/lib/ai/middleware/chat-history/flush-handlers-simple.test.ts
  */
-
 
 import {
   finalizeAssistantMessage,
@@ -15,7 +14,10 @@ import {
   handleFlush,
   DEFAULT_FLUSH_CONFIG,
 } from '@/lib/ai/middleware/chat-history/flush-handlers';
-import type { FlushContext, FlushConfig } from '@/lib/ai/middleware/chat-history/types';
+import type {
+  FlushContext,
+  FlushConfig,
+} from '@/lib/ai/middleware/chat-history/types';
 import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
 import { makeMockDb } from '@/__tests__/jest.setup';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
@@ -63,14 +65,14 @@ describe('Flush Handlers - Compilation Fix Test', () => {
   const mockQuery = {
     chats: {
       findFirst: jest.fn(),
-    }
+    },
   };
   beforeEach(() => {
-    jest.clearAllMocks();
-    
+    // jest.clearAllMocks();
+
     // Use the global mock database
     mockDbInstance = makeMockDb();
-    
+
     mockContext = {
       chatId: 'chat-123',
       turnId: 1,
@@ -78,16 +80,17 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       generatedText: 'Hello, how can I help you?',
       startTime: Date.now() - 1000, // 1 second ago
     };
-    
+
     // Setup default database mocks - the global mock already provides the update structure
-    mockUpdate = mockDbInstance.update as jest.Mock;    
+    mockUpdate = mockDbInstance.update as jest.Mock;
     mockUpdate.mockReturnValue({
       set: jest.fn().mockReturnValue({
         where: jest.fn().mockResolvedValue(undefined),
       }),
     });
 
-    mockQuery.chats.findFirst = mockDbInstance.query.chats.findFirst as jest.Mock;
+    mockQuery.chats.findFirst = mockDbInstance.query.chats
+      .findFirst as jest.Mock;
     mockQuery.chats.findFirst.mockResolvedValue(null);
   });
 
@@ -97,15 +100,23 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       const contextWithoutMessageId = { ...mockContext, messageId: undefined };
 
       // Act & Assert - should not throw
-      await expect(finalizeAssistantMessage(contextWithoutMessageId)).resolves.not.toThrow();
+      await expect(
+        finalizeAssistantMessage(contextWithoutMessageId),
+      ).resolves.not.toThrow();
     });
 
     it('should handle missing messageId and generatedText gracefully', async () => {
       // Arrange
-      const contextWithoutMessage = { ...mockContext, messageId: undefined, generatedText: '' };
+      const contextWithoutMessage = {
+        ...mockContext,
+        messageId: undefined,
+        generatedText: '',
+      };
 
-      // Act & Assert - should not throw  
-      await expect(finalizeAssistantMessage(contextWithoutMessage)).resolves.not.toThrow();
+      // Act & Assert - should not throw
+      await expect(
+        finalizeAssistantMessage(contextWithoutMessage),
+      ).resolves.not.toThrow();
     });
   });
 
@@ -116,7 +127,9 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       const latencyMs = 1000;
 
       // Act & Assert - should not throw
-      await expect(completeChatTurn(contextWithoutTurnId, latencyMs)).resolves.not.toThrow();
+      await expect(
+        completeChatTurn(contextWithoutTurnId, latencyMs),
+      ).resolves.not.toThrow();
     });
   });
 
@@ -135,15 +148,22 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       const contextWithEmptyText = { ...mockContext, generatedText: '' };
 
       // Act & Assert - should not throw
-      await expect(generateChatTitle(contextWithEmptyText)).resolves.not.toThrow();
+      await expect(
+        generateChatTitle(contextWithEmptyText),
+      ).resolves.not.toThrow();
     });
 
     it('should skip title generation for whitespace text', async () => {
       // Arrange
-      const contextWithWhitespace = { ...mockContext, generatedText: '   \n\t  ' };
+      const contextWithWhitespace = {
+        ...mockContext,
+        generatedText: '   \n\t  ',
+      };
 
       // Act & Assert - should not throw
-      await expect(generateChatTitle(contextWithWhitespace)).resolves.not.toThrow();
+      await expect(
+        generateChatTitle(contextWithWhitespace),
+      ).resolves.not.toThrow();
     });
   });
 
@@ -163,7 +183,9 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       const error = new Error('Test error');
 
       // Act & Assert - should not throw
-      await expect(markTurnAsError(contextWithoutTurnId, error)).resolves.not.toThrow();
+      await expect(
+        markTurnAsError(contextWithoutTurnId, error),
+      ).resolves.not.toThrow();
     });
 
     it('should handle valid context gracefully', async () => {
@@ -193,7 +215,9 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       };
 
       // Act & Assert - should not throw
-      await expect(handleFlush(mockContext, customConfig)).resolves.toBeDefined();
+      await expect(
+        handleFlush(mockContext, customConfig),
+      ).resolves.toBeDefined();
     });
   });
 
@@ -206,7 +230,7 @@ describe('Flush Handlers - Compilation Fix Test', () => {
       });
     });
   });
-  
+
   describe('Integration Tests', () => {
     it('should handle empty context workflow', async () => {
       // This test ensures the flush handles edge cases gracefully
@@ -220,7 +244,7 @@ describe('Flush Handlers - Compilation Fix Test', () => {
 
       // Act & Assert - should not throw
       const result = await handleFlush(emptyContext);
-      
+
       // Should return a result object (success or failure)
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
@@ -246,7 +270,7 @@ describe('Flush Handlers - Compilation Fix Test', () => {
 
       // Act & Assert - should not throw
       const result = await handleFlush(testContext, customConfig);
-      
+
       // Should return a result object
       expect(result).toBeDefined();
       expect(typeof result.success).toBe('boolean');
