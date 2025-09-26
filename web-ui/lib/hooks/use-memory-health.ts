@@ -85,28 +85,17 @@ export function useMemoryHealth() {
     queryFn: fetchMemoryHealth,
     staleTime: 1000, // Consider data stale after 1 second
     refetchOnWindowFocus: false,
+    refetchInterval: (data) => getRefreshInterval(data || 'warning'),
     retry: 3,
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Determine refresh interval based on current health status
-  const currentStatus = query.data || 'warning'; // Default to warning if no data
-  const refreshInterval = getRefreshInterval(currentStatus);
-
-  // Update the query with dynamic refresh interval
-  const queryWithDynamicRefresh = useQuery<HealthStatus, Error>({
-    queryKey: ['memoryHealth'],
-    queryFn: fetchMemoryHealth,
-    staleTime: 1000,
-    refetchOnWindowFocus: false,
-    refetchInterval: refreshInterval,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
+  const healthStatus = query.data || 'warning';
+  const refreshInterval = getRefreshInterval(healthStatus);
 
   return {
-    ...queryWithDynamicRefresh,
-    healthStatus: queryWithDynamicRefresh.data || 'warning',
+    ...query,
+    healthStatus,
     refreshInterval,
   };
 }
