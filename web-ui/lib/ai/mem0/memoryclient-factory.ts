@@ -40,9 +40,15 @@ class SchoolLawywerMemoryClient extends MemoryClient {
    * @param impersonation - Optional impersonation instance.
    * @param ops - Additional client options.
    */
-  constructor({ defaults, projectId, orgId, impersonation, ...ops }: ClientOptions) {
+  constructor({
+    defaults,
+    projectId,
+    orgId,
+    impersonation,
+    ...ops
+  }: ClientOptions) {
     // Determine authentication method - prefer impersonation over API key
-    const authOptions = impersonation 
+    const authOptions = impersonation
       ? { bearerToken: undefined } // Will be set dynamically
       : { apiKey: env('MEM0_API_KEY') };
 
@@ -53,7 +59,7 @@ class SchoolLawywerMemoryClient extends MemoryClient {
       organizationId: (orgId ? orgId : env('MEM0_ORG_ID')) ?? undefined,
       host: env('MEM0_API_HOST'),
     });
-    
+
     this.#defaultOptions = {
       ...(defaults ?? {}),
     };
@@ -61,10 +67,12 @@ class SchoolLawywerMemoryClient extends MemoryClient {
 
     // Log authentication method being used
     if (impersonation) {
-      log((l) => l.debug('MemoryClient configured with impersonation', {
-        userId: impersonation.getUserContext().userId,
-        hasApiKey: !!env('MEM0_API_KEY'),
-      }));
+      log((l) =>
+        l.debug('MemoryClient configured with impersonation', {
+          userId: impersonation.getUserContext().userId,
+          hasApiKey: !!env('MEM0_API_KEY'),
+        }),
+      );
     }
   }
 
@@ -75,18 +83,26 @@ class SchoolLawywerMemoryClient extends MemoryClient {
   private async updateAuthorizationIfNeeded(): Promise<void> {
     if (this.#impersonation) {
       try {
-        const impersonatedToken = await this.#impersonation.getImpersonatedToken();
+        const impersonatedToken =
+          await this.#impersonation.getImpersonatedToken();
         const authHeader = `Bearer ${impersonatedToken}`;
-        
+
         // Update both the headers property and the axios client
         this.headers.Authorization = authHeader;
         this.client.defaults.headers.Authorization = authHeader;
-        
-        log((l) => l.debug('Updated mem0 client with impersonated token', {
-          userId: this.#impersonation.getUserContext().userId,
-        }));
+
+        log((l) =>
+          l.debug('Updated mem0 client with impersonated token', {
+            userId: this.#impersonation!.getUserContext().userId,
+          }),
+        );
       } catch (error) {
-        log((l) => l.warn('Failed to update mem0 client with impersonated token, using fallback', error));
+        log((l) =>
+          l.warn(
+            'Failed to update mem0 client with impersonated token, using fallback',
+            error,
+          ),
+        );
         // Fallback to API key if available
         if (env('MEM0_API_KEY')) {
           const fallbackAuth = `Token ${env('MEM0_API_KEY')}`;
@@ -100,7 +116,10 @@ class SchoolLawywerMemoryClient extends MemoryClient {
   /**
    * Override HTTP methods to ensure impersonated token is current
    */
-  override async _fetchWithErrorHandling(url: string, options: any): Promise<any> {
+  override async _fetchWithErrorHandling(
+    url: string,
+    options: any,
+  ): Promise<any> {
     await this.updateAuthorizationIfNeeded();
     return super._fetchWithErrorHandling(url, options);
   }
@@ -140,13 +159,13 @@ class SchoolLawywerMemoryClient extends MemoryClient {
  *
  * @param options - Configuration options for the MemoryClient.
  * @returns A new MemoryClient instance.
- * 
+ *
  * @example
  * ```typescript
  * // Create with impersonation
  * const impersonation = await Impersonation.fromRequest(request);
  * const client = memoryClientFactory({ impersonation });
- * 
+ *
  * // Create with API key (fallback)
  * const client = memoryClientFactory({});
  * ```
