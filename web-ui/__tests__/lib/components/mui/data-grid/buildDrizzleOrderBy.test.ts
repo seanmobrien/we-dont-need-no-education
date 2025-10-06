@@ -4,7 +4,7 @@
 
 /**
  * @fileoverview Unit tests for buildDrizzleOrderBy function
- * 
+ *
  * Tests cover all aspects of the buildDrizzleOrderBy function including:
  * - Different source types (URL, string, GridSortModel, NextRequest)
  * - Column mapping functionality
@@ -12,7 +12,7 @@
  * - Error handling for unknown columns
  * - Helper functions (createColumnGetter, createTableColumnGetter)
  * - Edge cases and boundary conditions
- * 
+ *
  * @module __tests__/lib/components/mui/data-grid/buildDrizzleOrderBy.test
  */
 
@@ -23,13 +23,12 @@ import {
   buildDrizzleOrderBy,
   createColumnGetter,
   createTableColumnGetter,
-} from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
-import type { DrizzleSelectQuery } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/types';
+} from '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
+import type { DrizzleSelectQuery } from '/lib/components/mui/data-grid/queryHelpers/drizzle/types';
 import { NextRequest } from 'next/server';
 // Mock console.warn to track warning messages
 const originalConsoleWarn = console.warn;
 const mockConsoleWarn = jest.fn();
-
 
 // Mock Drizzle imports
 jest.mock('drizzle-orm', () => ({
@@ -39,18 +38,20 @@ jest.mock('drizzle-orm', () => ({
 }));
 
 // Create mock column objects that resemble Drizzle PgColumn
-const createMockColumn = (name: string): PgColumn => ({
-  name,
-  type: 'column',
-  tableName: 'test_table',
-  dataType: 'text',
-}) as unknown as PgColumn;
+const createMockColumn = (name: string): PgColumn =>
+  ({
+    name,
+    type: 'column',
+    tableName: 'test_table',
+    dataType: 'text',
+  }) as unknown as PgColumn;
 
 // Create mock SQL expression
-const createMockSQL = (expression: string): SQL => ({
-  type: 'sql',
-  expression,
-}) as unknown as SQL;
+const createMockSQL = (expression: string): SQL =>
+  ({
+    type: 'sql',
+    expression,
+  }) as unknown as SQL;
 
 // Mock query builder that tracks orderBy calls
 type MockQuery = {
@@ -124,8 +125,9 @@ describe('buildDrizzleOrderBy', () => {
 
   describe('Basic functionality', () => {
     it('should return original query when no source provided', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
-      
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: undefined,
@@ -137,8 +139,9 @@ describe('buildDrizzleOrderBy', () => {
     });
 
     it('should apply default sort when no source provided but defaultSort specified', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
-      
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: undefined,
@@ -147,12 +150,16 @@ describe('buildDrizzleOrderBy', () => {
       });
 
       expect(result).toBe(mockQuery);
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.name });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.name,
+      });
     });
 
     it('should handle empty GridSortModel source', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
-      
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: [] as GridSortModel,
@@ -166,9 +173,10 @@ describe('buildDrizzleOrderBy', () => {
 
   describe('GridSortModel source', () => {
     it('should handle single column ascending sort', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const sortModel: GridSortModel = [{ field: 'name', sort: 'asc' }];
-      
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
@@ -177,13 +185,17 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(result).toBe(mockQuery);
       expect(asc).toHaveBeenCalledWith(mockColumns.name);
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.name });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.name,
+      });
     });
 
     it('should handle single column descending sort', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const sortModel: GridSortModel = [{ field: 'email', sort: 'desc' }];
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
@@ -191,17 +203,21 @@ describe('buildDrizzleOrderBy', () => {
       });
 
       expect(desc).toHaveBeenCalledWith(mockColumns.email);
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'desc', column: mockColumns.email });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'desc',
+        column: mockColumns.email,
+      });
     });
 
     it('should handle multiple column sorts', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const sortModel: GridSortModel = [
         { field: 'name', sort: 'asc' },
         { field: 'email', sort: 'desc' },
         { field: 'createdAt', sort: 'asc' },
       ];
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
@@ -211,32 +227,35 @@ describe('buildDrizzleOrderBy', () => {
       expect(mockQuery.orderBy).toHaveBeenCalledWith(
         { type: 'asc', column: mockColumns.name },
         { type: 'desc', column: mockColumns.email },
-        { type: 'asc', column: mockColumns.createdAt }
+        { type: 'asc', column: mockColumns.createdAt },
       );
     });
 
     it('should skip unknown columns and log warnings', () => {
-      const getColumn = (name: string) => 
+      const getColumn = (name: string) =>
         name === 'name' ? mockColumns.name : undefined;
-      
+
       const sortModel: GridSortModel = [
         { field: 'name', sort: 'asc' },
         { field: 'unknown_column', sort: 'desc' },
         { field: 'another_unknown', sort: 'asc' },
       ];
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.name });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.name,
+      });
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')"
+        "buildDrizzleOrderBy: Unknown column 'unknown_column' (mapped from 'unknown_column')",
       );
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown column 'another_unknown' (mapped from 'another_unknown')"
+        "buildDrizzleOrderBy: Unknown column 'another_unknown' (mapped from 'another_unknown')",
       );
     });
 
@@ -246,7 +265,7 @@ describe('buildDrizzleOrderBy', () => {
         { field: 'unknown1', sort: 'asc' },
         { field: 'unknown2', sort: 'desc' },
       ];
-      
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
@@ -261,9 +280,10 @@ describe('buildDrizzleOrderBy', () => {
 
   describe('URL and string sources', () => {
     it('should parse sort from URL string', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const urlString = 'https://example.com/api/data?sort=name:asc,email:desc';
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: urlString,
@@ -272,27 +292,32 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(mockQuery.orderBy).toHaveBeenCalledWith(
         { type: 'asc', column: mockColumns.name },
-        { type: 'desc', column: mockColumns.email }
+        { type: 'desc', column: mockColumns.email },
       );
     });
 
     it('should parse sort from URL object', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const url = new URL('https://example.com/api/data?sort=createdAt:desc');
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: url,
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'desc', column: mockColumns.createdAt });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'desc',
+        column: mockColumns.createdAt,
+      });
     });
 
     it('should handle URL with no sort parameter', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const url = new URL('https://example.com/api/data');
-      
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: url,
@@ -301,13 +326,17 @@ describe('buildDrizzleOrderBy', () => {
       });
 
       expect(result).toBe(mockQuery);
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.id });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.id,
+      });
     });
 
     it('should handle URL with empty sort parameter', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const url = new URL('https://example.com/api/data?sort=');
-      
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: url,
@@ -316,28 +345,38 @@ describe('buildDrizzleOrderBy', () => {
       });
 
       expect(result).toBe(mockQuery);
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.name });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.name,
+      });
     });
   });
 
   describe('NextRequest source', () => {
     it('should parse sort from NextRequest', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
-      const request = new NextRequest('https://example.com/api/data?sort=email:desc');
-      
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
+      const request = new NextRequest(
+        'https://example.com/api/data?sort=email:desc',
+      );
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: request,
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'desc', column: mockColumns.email });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'desc',
+        column: mockColumns.email,
+      });
     });
 
     it('should handle NextRequest with no url', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const request = { url: undefined } as unknown as NextRequest; // Mock NextRequest without url
-      
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: request,
@@ -346,23 +385,27 @@ describe('buildDrizzleOrderBy', () => {
       });
 
       expect(result).toBe(mockQuery);
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.id });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.id,
+      });
     });
   });
 
   describe('Column mapping', () => {
     it('should apply column mapping with object map', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const columnMap = {
-        'display_name': 'name',
-        'user_email': 'email',
+        display_name: 'name',
+        user_email: 'email',
       };
-      
+
       const sortModel: GridSortModel = [
         { field: 'display_name', sort: 'asc' },
         { field: 'user_email', sort: 'desc' },
       ];
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
@@ -372,22 +415,25 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(mockQuery.orderBy).toHaveBeenCalledWith(
         { type: 'asc', column: mockColumns.name },
-        { type: 'desc', column: mockColumns.email }
+        { type: 'desc', column: mockColumns.email },
       );
     });
 
     it('should apply column mapping with function map', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const columnMap = (field: string) => {
         const mapping: Record<string, string> = {
-          'frontend_name': 'name',
-          'frontend_email': 'email',
+          frontend_name: 'name',
+          frontend_email: 'email',
         };
         return mapping[field] || field;
       };
-      
-      const sortModel: GridSortModel = [{ field: 'frontend_name', sort: 'desc' }];
-      
+
+      const sortModel: GridSortModel = [
+        { field: 'frontend_name', sort: 'desc' },
+      ];
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
@@ -395,15 +441,20 @@ describe('buildDrizzleOrderBy', () => {
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'desc', column: mockColumns.name });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'desc',
+        column: mockColumns.name,
+      });
     });
 
     it('should log warning with mapped column names', () => {
       const getColumn = () => undefined; // All columns unknown
-      const columnMap = { 'frontend_field': 'backend_field' };
-      
-      const sortModel: GridSortModel = [{ field: 'frontend_field', sort: 'asc' }];
-      
+      const columnMap = { frontend_field: 'backend_field' };
+
+      const sortModel: GridSortModel = [
+        { field: 'frontend_field', sort: 'asc' },
+      ];
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
@@ -412,15 +463,16 @@ describe('buildDrizzleOrderBy', () => {
       });
 
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')"
+        "buildDrizzleOrderBy: Unknown column 'backend_field' (mapped from 'frontend_field')",
       );
     });
   });
 
   describe('Default sort handling', () => {
     it('should handle string default sort', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
-      
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: undefined,
@@ -428,16 +480,20 @@ describe('buildDrizzleOrderBy', () => {
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.email });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.email,
+      });
     });
 
     it('should handle GridSortModel default sort', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const defaultSort: GridSortModel = [
         { field: 'name', sort: 'desc' },
         { field: 'email', sort: 'asc' },
       ];
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: undefined,
@@ -447,14 +503,14 @@ describe('buildDrizzleOrderBy', () => {
 
       expect(mockQuery.orderBy).toHaveBeenCalledWith(
         { type: 'desc', column: mockColumns.name },
-        { type: 'asc', column: mockColumns.email }
+        { type: 'asc', column: mockColumns.email },
       );
     });
 
     it('should handle SQL expression default sort', () => {
       const getColumn = () => undefined; // Not used for SQL expressions
       const sqlExpression = mockSQLExpressions.fullName;
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: undefined,
@@ -462,13 +518,16 @@ describe('buildDrizzleOrderBy', () => {
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: sqlExpression });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: sqlExpression,
+      });
     });
 
     it('should handle PgColumn default sort', () => {
       const getColumn = () => undefined; // Not used for direct columns
       const column = mockColumns.createdAt;
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: undefined,
@@ -476,13 +535,17 @@ describe('buildDrizzleOrderBy', () => {
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: column });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: column,
+      });
     });
 
     it('should apply column mapping to string default sort', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
-      const columnMap = { 'display_field': 'name' };
-      
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
+      const columnMap = { display_field: 'name' };
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: undefined,
@@ -491,12 +554,15 @@ describe('buildDrizzleOrderBy', () => {
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.name });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.name,
+      });
     });
 
     it('should log warning for unknown default sort column', () => {
       const getColumn = () => undefined;
-      
+
       const result = buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: undefined,
@@ -507,16 +573,17 @@ describe('buildDrizzleOrderBy', () => {
       expect(result).toBe(mockQuery);
       expect(mockQuery.orderBy).not.toHaveBeenCalled();
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')"
+        "buildDrizzleOrderBy: Unknown default sort column 'unknown_column' (mapped from 'unknown_column')",
       );
     });
   });
 
   describe('Edge cases and error handling', () => {
     it('should handle malformed sort URL gracefully', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       // This will create an invalid URL, which should be handled gracefully
-      
+
       expect(() => {
         buildDrizzleOrderBy({
           query: mockQuery as unknown as DrizzleSelectQuery,
@@ -528,9 +595,10 @@ describe('buildDrizzleOrderBy', () => {
     });
 
     it('should prioritize source sort over default sort', () => {
-      const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
+      const getColumn = (name: string) =>
+        mockColumns[name as keyof typeof mockColumns];
       const sortModel: GridSortModel = [{ field: 'email', sort: 'desc' }];
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
@@ -538,15 +606,21 @@ describe('buildDrizzleOrderBy', () => {
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'desc', column: mockColumns.email });
-      expect(mockQuery.orderBy).not.toHaveBeenCalledWith({ type: 'asc', column: mockColumns.name });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'desc',
+        column: mockColumns.email,
+      });
+      expect(mockQuery.orderBy).not.toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.name,
+      });
     });
 
     it('should handle getColumn function that throws errors', () => {
       const getColumn = () => {
         throw new Error('Column getter error');
       };
-      
+
       expect(() => {
         buildDrizzleOrderBy({
           query: mockQuery as unknown as DrizzleSelectQuery,
@@ -557,23 +631,26 @@ describe('buildDrizzleOrderBy', () => {
     });
 
     it('should handle null/undefined column results', () => {
-      const getColumn = (name: string) => 
-        name === 'valid' ? mockColumns.name : null as unknown as PgColumn;
-      
+      const getColumn = (name: string) =>
+        name === 'valid' ? mockColumns.name : (null as unknown as PgColumn);
+
       const sortModel: GridSortModel = [
         { field: 'valid', sort: 'asc' },
         { field: 'invalid', sort: 'desc' },
       ];
-      
+
       buildDrizzleOrderBy({
         query: mockQuery as unknown as DrizzleSelectQuery,
         source: sortModel,
         getColumn,
       });
 
-      expect(mockQuery.orderBy).toHaveBeenCalledWith({ type: 'asc', column: mockColumns.name });
+      expect(mockQuery.orderBy).toHaveBeenCalledWith({
+        type: 'asc',
+        column: mockColumns.name,
+      });
       expect(mockConsoleWarn).toHaveBeenCalledWith(
-        "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')"
+        "buildDrizzleOrderBy: Unknown column 'invalid' (mapped from 'invalid')",
       );
     });
   });
@@ -586,9 +663,9 @@ describe('createColumnGetter', () => {
       name: mockColumns.name,
       email: mockColumns.email,
     };
-    
+
     const getColumn = createColumnGetter(columns);
-    
+
     expect(getColumn('id')).toBe(mockColumns.id);
     expect(getColumn('name')).toBe(mockColumns.name);
     expect(getColumn('email')).toBe(mockColumns.email);
@@ -600,9 +677,9 @@ describe('createColumnGetter', () => {
       name: mockColumns.name,
       full_name: mockSQLExpressions.fullName,
     };
-    
+
     const getColumn = createColumnGetter(columns);
-    
+
     expect(getColumn('name')).toBe(mockColumns.name);
     expect(getColumn('full_name')).toBe(mockSQLExpressions.fullName);
   });
@@ -611,9 +688,9 @@ describe('createColumnGetter', () => {
     const columns = {
       name: mockColumns.name,
     };
-    
+
     const getColumn = createColumnGetter(columns);
-    
+
     expect(getColumn('missing')).toBeUndefined();
     expect(getColumn('')).toBeUndefined();
   });
@@ -633,7 +710,7 @@ describe('createTableColumnGetter', () => {
 
   it('should get columns by exact property name', () => {
     const getColumn = createTableColumnGetter(mockTable);
-    
+
     expect(getColumn('id')).toBe(mockColumns.id);
     expect(getColumn('name')).toBe(mockColumns.name);
     expect(getColumn('email')).toBe(mockColumns.email);
@@ -641,14 +718,14 @@ describe('createTableColumnGetter', () => {
 
   it('should handle camelCase to snake_case conversion', () => {
     const getColumn = createTableColumnGetter(mockTable);
-    
+
     expect(getColumn('created_at')).toBe(mockColumns.createdAt);
     expect(getColumn('createdAt')).toBe(mockColumns.createdAt);
   });
 
   it('should handle snake_case to camelCase conversion', () => {
     const getColumn = createTableColumnGetter(mockTable);
-    
+
     expect(getColumn('updated_at')).toBe(mockColumns.updatedAt);
     expect(getColumn('updatedAt')).toBe(mockColumns.updatedAt);
   });
@@ -658,9 +735,9 @@ describe('createTableColumnGetter', () => {
     const customMappings = {
       name: customColumn,
     };
-    
+
     const getColumn = createTableColumnGetter(mockTable, customMappings);
-    
+
     expect(getColumn('name')).toBe(customColumn);
     expect(getColumn('email')).toBe(mockColumns.email); // Should still work for non-custom
   });
@@ -669,23 +746,23 @@ describe('createTableColumnGetter', () => {
     const customMappings = {
       full_name: mockSQLExpressions.fullName,
     };
-    
+
     const getColumn = createTableColumnGetter(mockTable, customMappings);
-    
+
     expect(getColumn('full_name')).toBe(mockSQLExpressions.fullName);
     expect(getColumn('name')).toBe(mockColumns.name);
   });
 
   it('should return undefined for non-object properties', () => {
     const getColumn = createTableColumnGetter(mockTable);
-    
+
     expect(getColumn('nonColumnProperty')).toBeUndefined();
     expect(getColumn('anotherNonColumn')).toBeUndefined();
   });
 
   it('should return undefined for missing properties', () => {
     const getColumn = createTableColumnGetter(mockTable);
-    
+
     expect(getColumn('missing')).toBeUndefined();
     expect(getColumn('')).toBeUndefined();
     expect(getColumn('unknown_field')).toBeUndefined();
@@ -693,7 +770,7 @@ describe('createTableColumnGetter', () => {
 
   it('should handle empty custom mappings', () => {
     const getColumn = createTableColumnGetter(mockTable, {});
-    
+
     expect(getColumn('name')).toBe(mockColumns.name);
     expect(getColumn('email')).toBe(mockColumns.email);
   });
@@ -704,9 +781,9 @@ describe('createTableColumnGetter', () => {
       first_name: createMockColumn('first_name'),
       'user-email': createMockColumn('user_email'), // This won't be found automatically
     };
-    
+
     const getColumn = createTableColumnGetter(complexTable);
-    
+
     expect(getColumn('firstName')).toBe(complexTable.firstName);
     expect(getColumn('first_name')).toBe(complexTable.first_name);
     expect(getColumn('user-email')).toBeUndefined(); // Dashes not handled
@@ -716,7 +793,7 @@ describe('createTableColumnGetter', () => {
 describe('Integration tests', () => {
   it('should work end-to-end with realistic data', () => {
     const mockQuery = createMockQuery();
-    
+
     // Simulate a realistic table schema
     const userTable = {
       id: createMockColumn('id'),
@@ -726,85 +803,92 @@ describe('Integration tests', () => {
       createdAt: createMockColumn('created_at'),
       updatedAt: createMockColumn('updated_at'),
     };
-    
+
     // Create column getter with custom mappings
     const getColumn = createTableColumnGetter(userTable, {
       full_name: createMockSQL("CONCAT(first_name, ' ', last_name)"),
       display_name: userTable.firstName,
     });
-    
+
     // Column mapping for frontend to backend
     const columnMap = {
-      'name': 'firstName',
-      'created': 'createdAt',
-      'modified': 'updatedAt',
+      name: 'firstName',
+      created: 'createdAt',
+      modified: 'updatedAt',
     };
-    
+
     // Test with URL source
-    const url = 'https://api.example.com/users?sort=name:asc,email:desc,created:asc';
-    
+    const url =
+      'https://api.example.com/users?sort=name:asc,email:desc,created:asc';
+
     buildDrizzleOrderBy({
       query: mockQuery as unknown as DrizzleSelectQuery,
       source: url,
       columnMap,
       getColumn,
     });
-    
+
     expect(mockQuery.orderBy).toHaveBeenCalledWith(
       { type: 'asc', column: userTable.firstName },
       { type: 'desc', column: userTable.email },
-      { type: 'asc', column: userTable.createdAt }
+      { type: 'asc', column: userTable.createdAt },
     );
   });
 
   it('should handle mixed column types (regular columns and SQL expressions)', () => {
     const mockQuery = createMockQuery();
-    
+
     const getColumn = (name: string) => {
       switch (name) {
-        case 'name': return mockColumns.name;
-        case 'email': return mockColumns.email;
-        case 'full_name': return mockSQLExpressions.fullName;
-        case 'created_at': return mockColumns.createdAt;
-        default: return undefined;
+        case 'name':
+          return mockColumns.name;
+        case 'email':
+          return mockColumns.email;
+        case 'full_name':
+          return mockSQLExpressions.fullName;
+        case 'created_at':
+          return mockColumns.createdAt;
+        default:
+          return undefined;
       }
     };
-    
+
     const sortModel: GridSortModel = [
       { field: 'full_name', sort: 'asc' },
       { field: 'email', sort: 'desc' },
       { field: 'created_at', sort: 'asc' },
     ];
-    
+
     buildDrizzleOrderBy({
       query: mockQuery as unknown as DrizzleSelectQuery,
       source: sortModel,
       getColumn,
     });
-    
+
     expect(mockQuery.orderBy).toHaveBeenCalledWith(
       { type: 'asc', column: mockSQLExpressions.fullName },
       { type: 'desc', column: mockColumns.email },
-      { type: 'asc', column: mockColumns.createdAt }
+      { type: 'asc', column: mockColumns.createdAt },
     );
   });
 
   it('should maintain query chain fluency', () => {
     const mockQuery = createMockQuery();
-    const getColumn = (name: string) => mockColumns[name as keyof typeof mockColumns];
-    
+    const getColumn = (name: string) =>
+      mockColumns[name as keyof typeof mockColumns];
+
     const result = buildDrizzleOrderBy({
       query: mockQuery as unknown as DrizzleSelectQuery,
       source: [{ field: 'name', sort: 'asc' }],
       getColumn,
     });
-    
+
     // Should return the same query instance for chaining
     expect(result).toBe(mockQuery);
-    
+
     // Should be able to chain additional operations
     (result as any).limit(10).offset(20);
-    
+
     expect(mockQuery.limit).toHaveBeenCalledWith(10);
     expect(mockQuery.offset).toHaveBeenCalledWith(20);
   });

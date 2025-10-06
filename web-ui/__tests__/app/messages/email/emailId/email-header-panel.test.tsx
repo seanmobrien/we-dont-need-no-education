@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom';
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { EmailHeaderPanel } from '@/app/messages/email/[emailId]/email-header/panel';
-import { EmailProperty } from '@/data-models/api';
+import { EmailHeaderPanel } from '/app/messages/email/[emailId]/email-header/panel';
+import { EmailProperty } from '/data-models/api';
 
 const mockEmailHeaderProperty: EmailProperty = {
   propertyId: 'header-test-id',

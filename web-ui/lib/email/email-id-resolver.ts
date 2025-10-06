@@ -1,5 +1,5 @@
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@/lib/ai/tools/utility';
+import { drizDbWithInit } from '/lib/drizzle-db';
+import { isValidUuid } from '/lib/ai/tools/utility';
 import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '../react-util';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';

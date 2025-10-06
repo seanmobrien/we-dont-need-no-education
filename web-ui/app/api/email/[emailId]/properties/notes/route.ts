@@ -2,18 +2,18 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
-import { extractParams } from '@/lib/nextjs-util/utils';
-import { EmailProperty } from '@/data-models/api/email-properties/property-type';
+} from '/lib/nextjs-util/server/utils';
+import { extractParams } from '/lib/nextjs-util/utils';
+import { EmailProperty } from '/data-models/api/email-properties/property-type';
 import { eq, and, ne } from 'drizzle-orm';
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema';
+import { drizDbWithInit } from '/lib/drizzle-db';
+import { schema } from '/lib/drizzle-db/schema';
 import {
   DrizzleSelectQuery,
   getEmailColumn,
   selectForGrid,
-} from '@/lib/components/mui/data-grid/queryHelpers';
-import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
+} from '/lib/components/mui/data-grid/queryHelpers';
+import { buildDrizzleAttachmentOrEmailFilter } from '/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
 export const GET = wrapRouteRequest(

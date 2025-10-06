@@ -1,7 +1,7 @@
 import React from 'react';
-import { render } from '@/__tests__/test-utils';
-import { ChatPanelLayout } from '@/components/ai/chat-panel/chat-panel-layout';
-import { ChatPanelProvider } from '@/components/ai/chat-panel/chat-panel-context';
+import { render } from '/__tests__/test-utils';
+import { ChatPanelLayout } from '/components/ai/chat-panel/chat-panel-layout';
+import { ChatPanelProvider } from '/components/ai/chat-panel/chat-panel-context';
 
 describe('ChatPanelLayout', () => {
   it('renders with default props snapshot', () => {
@@ -10,7 +10,7 @@ describe('ChatPanelLayout', () => {
         <ChatPanelLayout>
           <div>Test child content</div>
         </ChatPanelLayout>
-      </ChatPanelProvider>
+      </ChatPanelProvider>,
     );
     expect(container).toMatchSnapshot();
   });
@@ -21,9 +21,9 @@ describe('ChatPanelLayout', () => {
         <ChatPanelLayout>
           <div>Test child content</div>
         </ChatPanelLayout>
-      </ChatPanelProvider>
+      </ChatPanelProvider>,
     );
-    
+
     expect(getByText('Test child content')).toBeInTheDocument();
   });
 });

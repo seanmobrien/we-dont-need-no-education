@@ -50,7 +50,7 @@ export class TokenExchangeError extends Error {
     message: string,
     public readonly code: string,
     public readonly status?: number,
-    public readonly originalError?: unknown
+    public readonly originalError?: unknown,
   ) {
     super(message);
     this.name = 'TokenExchangeError';
@@ -59,8 +59,8 @@ export class TokenExchangeError extends Error {
 
 /**
  * Keycloak Token Exchange Service
- * 
- * Provides a clean, maintainable abstraction for exchanging Keycloak tokens 
+ *
+ * Provides a clean, maintainable abstraction for exchanging Keycloak tokens
  * for Google API tokens using the OAuth2 token exchange specification (RFC 8693).
  */
 export class KeycloakTokenExchange {
@@ -72,7 +72,8 @@ export class KeycloakTokenExchange {
     this.config = {
       issuer: config?.issuer ?? env('AUTH_KEYCLOAK_ISSUER') ?? '',
       clientId: config?.clientId ?? env('AUTH_KEYCLOAK_CLIENT_ID') ?? '',
-      clientSecret: config?.clientSecret ?? env('AUTH_KEYCLOAK_CLIENT_SECRET') ?? '',
+      clientSecret:
+        config?.clientSecret ?? env('AUTH_KEYCLOAK_CLIENT_SECRET') ?? '',
     };
 
     this.validateConfig();
@@ -91,7 +92,7 @@ export class KeycloakTokenExchange {
     if (missing.length > 0) {
       throw new TokenExchangeError(
         `Missing required Keycloak configuration: ${missing.join(', ')}`,
-        'INVALID_CONFIG'
+        'INVALID_CONFIG',
       );
     }
   }
@@ -99,17 +100,19 @@ export class KeycloakTokenExchange {
   /**
    * Extract Keycloak access token from NextAuth JWT in the request
    */
-  async extractKeycloakToken(req: NextRequest | NextApiRequest): Promise<string> {
+  async extractKeycloakToken(
+    req: NextRequest | NextApiRequest,
+  ): Promise<string> {
     try {
       const token = await getToken({
-        req: req as any,
+        req: req as NextRequest,
         secret: process.env.NEXTAUTH_SECRET,
       });
 
       if (!token) {
         throw new TokenExchangeError(
           'No JWT token found in request',
-          'NO_JWT_TOKEN'
+          'NO_JWT_TOKEN',
         );
       }
 
@@ -117,7 +120,7 @@ export class KeycloakTokenExchange {
       if (!keycloakToken || typeof keycloakToken !== 'string') {
         throw new TokenExchangeError(
           'No Keycloak access token found in JWT',
-          'NO_KEYCLOAK_TOKEN'
+          'NO_KEYCLOAK_TOKEN',
         );
       }
 
@@ -130,7 +133,7 @@ export class KeycloakTokenExchange {
         'Failed to extract Keycloak token from request',
         'TOKEN_EXTRACTION_FAILED',
         undefined,
-        error
+        error,
       );
     }
   }
@@ -138,14 +141,18 @@ export class KeycloakTokenExchange {
   /**
    * Exchange Keycloak token for Google tokens
    */
-  async exchangeForGoogleTokens(params: TokenExchangeParams): Promise<GoogleTokens> {
+  async exchangeForGoogleTokens(
+    params: TokenExchangeParams,
+  ): Promise<GoogleTokens> {
     const requestParams = new URLSearchParams({
       grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange',
       client_id: this.config.clientId,
       client_secret: this.config.clientSecret,
       subject_token: params.subjectToken,
       subject_token_type: 'urn:ietf:params:oauth:token-type:access_token',
-      requested_token_type: params.requestedTokenType ?? 'urn:ietf:params:oauth:token-type:refresh_token',
+      requested_token_type:
+        params.requestedTokenType ??
+        'urn:ietf:params:oauth:token-type:refresh_token',
       audience: params.audience ?? 'google',
       ...(params.scope && { scope: params.scope }),
     });
@@ -159,7 +166,7 @@ export class KeycloakTokenExchange {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
           timeout: 10000, // 10 second timeout
-        }
+        },
       );
 
       return this.extractGoogleTokens(response.data);
@@ -172,13 +179,14 @@ export class KeycloakTokenExchange {
       if (axios.isAxiosError(error)) {
         const status = error.response?.status;
         const errorData = error.response?.data;
-        const errorMessage = errorData?.error_description || errorData?.error || error.message;
-        
+        const errorMessage =
+          errorData?.error_description || errorData?.error || error.message;
+
         throw new TokenExchangeError(
           `Keycloak token exchange failed: ${errorMessage}`,
           'EXCHANGE_FAILED',
           status,
-          error
+          error,
         );
       }
 
@@ -186,7 +194,7 @@ export class KeycloakTokenExchange {
         'Unexpected error during token exchange',
         'UNKNOWN_ERROR',
         undefined,
-        error
+        error,
       );
     }
   }
@@ -200,7 +208,7 @@ export class KeycloakTokenExchange {
     if (!access_token || !refresh_token) {
       throw new TokenExchangeError(
         'Invalid token response from Keycloak - missing Google tokens',
-        'INVALID_TOKEN_RESPONSE'
+        'INVALID_TOKEN_RESPONSE',
       );
     }
 
@@ -213,7 +221,10 @@ export class KeycloakTokenExchange {
   /**
    * Convenience method that combines token extraction and exchange
    */
-  async getGoogleTokensFromRequest(req: NextRequest | NextApiRequest, audience?: string): Promise<GoogleTokens> {
+  async getGoogleTokensFromRequest(
+    req: NextRequest | NextApiRequest,
+    audience?: string,
+  ): Promise<GoogleTokens> {
     const keycloakToken = await this.extractKeycloakToken(req);
     return this.exchangeForGoogleTokens({
       subjectToken: keycloakToken,
@@ -222,10 +233,23 @@ export class KeycloakTokenExchange {
   }
 }
 
+const KEYCLOAK_TOKEN_EXCHANGE = Symbol.for(
+  '@no-education/KeycloakTokenExchangeInstance',
+);
+type GlobalThisWithKeycloak = typeof globalThis & {
+  [KEYCLOAK_TOKEN_EXCHANGE]?: KeycloakTokenExchange;
+};
+
 /**
  * Default instance for use throughout the application
  */
-export const keycloakTokenExchange = new KeycloakTokenExchange();
+export const keycloakTokenExchange = () => {
+  const withKeycloak = globalThis as GlobalThisWithKeycloak;
+  if (!withKeycloak[KEYCLOAK_TOKEN_EXCHANGE]) {
+    withKeycloak[KEYCLOAK_TOKEN_EXCHANGE] = new KeycloakTokenExchange();
+  }
+  return withKeycloak[KEYCLOAK_TOKEN_EXCHANGE]!;
+};
 
 /**
  * Legacy function for backward compatibility
@@ -233,7 +257,6 @@ export const keycloakTokenExchange = new KeycloakTokenExchange();
  */
 export const getGoogleTokensFromKeycloak = async (
   req: NextRequest | NextApiRequest,
-  userId: number,
 ): Promise<GoogleTokens> => {
-  return keycloakTokenExchange.getGoogleTokensFromRequest(req);
+  return keycloakTokenExchange().getGoogleTokensFromRequest(req);
 };

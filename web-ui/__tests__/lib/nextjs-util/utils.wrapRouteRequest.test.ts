@@ -5,8 +5,8 @@
  * @file utils.wrapRouteRequest.test.ts
  * @description Unit tests for wrapRouteRequest utility
  */
-import { wrapRouteRequest, ErrorResponse } from '@/lib/nextjs-util/server';
-import { ILogger, logger } from '@/lib/logger';
+import { wrapRouteRequest } from '/lib/nextjs-util/server';
+import { ILogger, logger } from '/lib/logger';
 
 describe('wrapRouteRequest', () => {
   it('should call the wrapped function and return its result', async () => {
@@ -30,7 +30,7 @@ describe('wrapRouteRequest', () => {
     await new Promise((r) => setTimeout(r, 10)); // Wait for any async logs
     expect(logSpy.error as jest.Mock).toHaveBeenCalled();
     expect(logSpy.info as jest.Mock).toHaveBeenCalled();
-    expect(result).toBeInstanceOf(ErrorResponse);
+    expect(result).toBeInstanceOf(Response);
     const body = await result.json();
     expect(body.error).toContain('An unexpected error occurred');
   });
@@ -46,7 +46,7 @@ describe('wrapRouteRequest', () => {
     expect(result).toBe('ok');
   });
 
-  it('should return ErrorResponse on thrown error', async () => {
+  it('should return errorResponseFactory on thrown error', async () => {
     const fn = jest.fn().mockImplementation(() => {
       throw new Error('bad');
     });
@@ -54,7 +54,7 @@ describe('wrapRouteRequest', () => {
     const result = await wrapped('x', {
       params: Promise.resolve({ emailId: 'y' }),
     });
-    expect(result).toBeInstanceOf(ErrorResponse);
+    expect(result).toBeInstanceOf(Response);
     const body = await result.json();
     expect(body.error).toContain('An unexpected error occurred');
   });
@@ -65,7 +65,7 @@ describe('wrapRouteRequest', () => {
     const result = await wrapped('x', {
       params: Promise.resolve({ emailId: 'y' }),
     });
-    expect(result).toBeInstanceOf(ErrorResponse);
+    expect(result).toBeInstanceOf(Response);
     const body = await result.json();
     expect(body.error).toContain('An unexpected error occurred');
   });

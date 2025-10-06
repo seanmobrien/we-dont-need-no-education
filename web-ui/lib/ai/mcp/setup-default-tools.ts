@@ -30,9 +30,10 @@
  * caller can hand to higher-level AI tooling.
  */
 import { toolProviderSetFactory } from './toolProviderFactory';
-import { env } from '@/lib/site-util/env';
-import { ToolProviderFactoryOptions } from './types';
+import { env } from '/lib/site-util/env';
+import { ToolProviderFactoryOptions, ToolProviderSet } from './types';
 import { NextRequest } from 'next/server';
+import { fromRequest } from '/lib/auth/impersonation';
 
 /**
  * Builds a minimal header map for MCP client connections.
@@ -101,23 +102,37 @@ export const setupDefaultTools = async ({
   req?: NextRequest;
   chatHistoryId?: string;
   memoryEnabled?: boolean;
-}) => {
+}): Promise<ToolProviderSet> => {
   const options: Array<ToolProviderFactoryOptions> = [];
+  const defaultHeaders = {
+    ...(chatHistoryId ? { 'x-chat-history-id': chatHistoryId } : {}),
+  };
   if (req) {
+    const sessionToken = req.cookies?.get('authjs.session-token')?.value ?? '';
     options.push({
       allowWrite: writeEnabled,
       url: new URL('/api/ai/tools/sse', env('NEXT_PUBLIC_HOSTNAME')).toString(),
-      headers: getMcpClientHeaders({ req, chatHistoryId }),
+      headers: async () => ({
+        ...defaultHeaders,
+        ...(sessionToken
+          ? { Cookie: `authjs.session-token=${sessionToken}` }
+          : {}),
+      }),
     });
   }
-  if (memoryEnabled) {
+  if (memoryEnabled && !env('MEM0_DISABLED')) {
+    const impersonation = await fromRequest({ req });
     options.push({
       allowWrite: true,
-      headers: {
+      headers: async () => ({
+        ...defaultHeaders,
         'cache-control': 'no-cache, no-transform',
         'content-encoding': 'none',
-      },
-      url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
+        Authorization: impersonation
+          ? `Bearer ${impersonation ? await impersonation.getImpersonatedToken() : ''}`
+          : `APIKey ${env('MEM0_API_KEY')}`,
+      }),
+      url: `${env('MEM0_API_HOST')}/mcp/${env('MEM0_PROJECT_ID')}/sse`,
     });
   }
   return await toolProviderSetFactory(options);

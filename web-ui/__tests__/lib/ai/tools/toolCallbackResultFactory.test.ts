@@ -1,4 +1,4 @@
-import { toolCallbackResultFactory } from '@/lib/ai/tools/utility';
+import { toolCallbackResultFactory } from '/lib/ai/tools/utility';
 
 describe('toolCallbackResultFactory', () => {
   it('should return a structuredContent with result for a successful case', () => {

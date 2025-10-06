@@ -1,7 +1,11 @@
-import type { LikeNextRequest } from '@/lib/nextjs-util/types';
-import type { GridFilterModel, GridFilterItem, GridSortModel } from '@mui/x-data-grid-pro';
+import type { LikeNextRequest } from '/lib/nextjs-util/types';
+import type {
+  GridFilterModel,
+  GridFilterItem,
+  GridSortModel,
+} from '@mui/x-data-grid-pro';
 import type { NextRequest } from 'next/server';
-import type { ColumnBaseConfig, SQL} from 'drizzle-orm';
+import type { ColumnBaseConfig, SQL } from 'drizzle-orm';
 import type { AnyPgSelect, PgColumn } from 'drizzle-orm/pg-core';
 
 // Type for Drizzle select query builder - simplified to match actual usage
@@ -10,14 +14,11 @@ export type DrizzleSelectQueryBase = Pick<
   'where' | 'orderBy' | 'offset' | 'limit' | 'prepare' | 'execute' | '_' | 'as'
 >;
 
-export type DrizzleSelectQuery = DrizzleSelectQueryBase | 
-  Array<Record<string, unknown>>;
+export type DrizzleSelectQuery =
+  | DrizzleSelectQueryBase
+  | Array<Record<string, unknown>>;
 
-
-export type DrizzleSortedQuery = Omit<
-  DrizzleSelectQuery,
-  'where' | 'orderBy'
->;
+export type DrizzleSortedQuery = Omit<DrizzleSelectQuery, 'where' | 'orderBy'>;
 
 /**
  * Props for configuring the selectForGrid function.
@@ -71,12 +72,7 @@ export type BuildDrizzleOrderByProps = {
   /**
    * The request object, typically similar to Next.js's request, URL, or direct sort model.
    */
-  source: 
-    | LikeNextRequest
-    | URL 
-    | string 
-    | GridSortModel 
-    | undefined;
+  source: LikeNextRequest | URL | string | GridSortModel | undefined;
 
   /**
    * The default sort model or column name to use if none is provided.
@@ -91,7 +87,7 @@ export type BuildDrizzleOrderByProps = {
   /**
    * A function to get the actual column object from a column name.
    * This is required because Drizzle needs actual column references for orderBy.
-   * 
+   *
    * @param columnName - The database column name (after mapping)
    * @returns The Drizzle column object or SQL expression
    */
@@ -134,9 +130,7 @@ export type BuildDrizzleAttachmentOrEmailFilterProps = {
    * 
    * 
    */
-  email_id_column:
-    | EmailColumnType
-    | SQL.Aliased<EmailColumnType>;
+  email_id_column: EmailColumnType | SQL.Aliased<EmailColumnType>;
 
   /**
    * The Drizzle column object for the document ID field.
@@ -175,14 +169,13 @@ export type BuildDrizzleItemFilterProps = {
     TConfig extends object = object,
   >(columnName: string) => PgColumn<T, TRuntimeConfig, TConfig> | SQL | undefined;
 */
-  getColumn:(columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
+  getColumn: (columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
 
   /**
    * A mapping or function to translate source column names to database column names.
    */
   columnMap?: ((sourceColumnName: string) => string) | Record<string, string>;
 };
-
 
 /**
  * Props for configuring Drizzle query filter functionality.
@@ -205,9 +198,7 @@ export type BuildDrizzleQueryFilterProps = {
    * @param columnName - The database column name (after mapping)
    * @returns The Drizzle column object or SQL expression
    */
-  getColumn: (
-    columnName: string,
-  ) => PgColumn | SQL | SQL.Aliased | undefined;
+  getColumn: (columnName: string) => PgColumn | SQL | SQL.Aliased | undefined;
 
   /**
    * (Optional) A default filter to apply if no specific filter is provided.

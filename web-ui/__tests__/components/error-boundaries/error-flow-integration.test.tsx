@@ -8,13 +8,13 @@ import { render, waitFor, act } from '@testing-library/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-import { ClientErrorManager } from '@/components/error-boundaries/ClientErrorManager';
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
+import { ClientErrorManager } from '/components/error-boundaries/ClientErrorManager';
+import { RenderErrorBoundaryFallback } from '/components/error-boundaries/renderFallback';
+import { errorReporter, ErrorSeverity } from '/lib/error-monitoring';
 import { any } from 'zod';
 
 // Mock the error reporter and recovery strategies
-jest.mock('@/lib/error-monitoring', () => ({
+jest.mock('/lib/error-monitoring', () => ({
   errorReporter: {
     reportError: jest.fn(),
     reportBoundaryError: jest.fn(),
@@ -29,7 +29,7 @@ jest.mock('@/lib/error-monitoring', () => ({
 
 const mockReload = jest.fn();
 
-jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
+jest.mock('/lib/error-monitoring/recovery-strategies', () => ({
   getRecoveryActions: jest.fn(),
   getDefaultRecoveryAction: jest.fn(),
   classifyError: jest.fn(),
@@ -37,11 +37,11 @@ jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
 
 const mockErrorReporter = errorReporter as jest.Mocked<typeof errorReporter>;
 const mockGetRecoveryActions =
-  require('@/lib/error-monitoring/recovery-strategies').getRecoveryActions;
+  require('/lib/error-monitoring/recovery-strategies').getRecoveryActions;
 const mockGetDefaultRecoveryAction =
-  require('@/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
+  require('/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
 const mockClassifyError =
-  require('@/lib/error-monitoring/recovery-strategies').classifyError;
+  require('/lib/error-monitoring/recovery-strategies').classifyError;
 
 // Mock window methods
 const mockAlert = jest.fn();

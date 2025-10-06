@@ -42,10 +42,10 @@
  *
  * USAGE EXAMPLE
  * ```ts
- * import { clientToolProviderFactory } from '@/lib/ai/mcp/client-tool-provider';
+ * import { clientToolProviderFactory } from '/lib/ai/mcp/client-tool-provider';
  *
  * const provider = clientToolProviderFactory();
- * const tools = provider.get_tools();
+ * const tools = provider.tools();
  * // tools.askConfirmation.parameters.parse({ question: 'Proceed?' });
  * ```
  *
@@ -72,7 +72,7 @@ import z from 'zod';
  * Factory that creates a pre‑connected {@link ConnectableToolProvider} exposing
  * client‑side interactive tools defined via Zod schemas.
  *
- * @returns A connectable tool provider whose `get_tools` method returns the
+ * @returns A connectable tool provider whose `tools` method returns the
  *          available tool definitions.
  */
 export const clientToolProviderFactory = (): ConnectableToolProvider => {
@@ -125,7 +125,9 @@ export const clientToolProviderFactory = (): ConnectableToolProvider => {
       return {} as MCPClient;
     },
     get_isConnected: () => true,
-    get_tools: () => clientSideTools,
+    get tools() {
+      return clientSideTools;
+    },
     dispose: () => Promise.resolve(),
     connect: ({}) => Promise.resolve(thisProvider),
   };

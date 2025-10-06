@@ -1,6 +1,8 @@
-import { ImpersonationService } from './impersonation.types';
+import type { ImpersonationService } from './impersonation.types';
 import { ImpersonationThirdParty } from './impersonation.thirdparty';
-import { env } from '../../site-util/env';
+import { ImpersonationServiceCache } from './impersonation-service-cache';
+import { auth } from '/auth';
+import { log } from '/lib/logger';
 
 /**
  * Strategy selection:
@@ -14,10 +16,36 @@ import { env } from '../../site-util/env';
 export const fromRequest = async ({
   audience,
 }: {
+  req?: Request;
   audience?: string;
-}): Promise<ImpersonationService | undefined> => {
+} = {}): Promise<ImpersonationService | undefined> => {
+  const session = await auth();
+  if (!session?.user) {
+    log((l) =>
+      l.warn('Impersonation requested without an active user session'),
+    );
+    return undefined;
+  }
+
+  // Use cache if audience is provided
+  if (audience && session.user.id) {
+    const cache = ImpersonationServiceCache.getInstance();
+
+    return cache.getOrCreate(session.user.id, audience, async () => {
+      const service = await ImpersonationThirdParty.fromRequest({
+        audience,
+        session,
+      });
+      if (!service) {
+        throw new Error('Failed to create impersonation service');
+      }
+      return service;
+    });
+  }
+
+  // Fallback to direct creation without caching
   return ImpersonationThirdParty.fromRequest({
     audience,
-    redirectUri: `${env('NEXT_PUBLIC_HOSTNAME')}/api/auth/callback/keycloak`,
+    session,
   });
 };

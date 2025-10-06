@@ -1,5 +1,5 @@
 import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { schema, drizDbWithInit } from '@/lib/drizzle-db';
+import { schema, drizDbWithInit } from '/lib/drizzle-db';
 
 export const setupDrizzleAdapter = () =>
   drizDbWithInit((db) =>

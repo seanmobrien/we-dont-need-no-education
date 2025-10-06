@@ -8,13 +8,13 @@
  * @module __tests__/lib/ai/middleware/chat-history/tool-message-deduplication.test.ts
  */
 
-import { upsertToolMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
-import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
-import type { DbTransactionType } from '@/lib/drizzle-db';
+import { upsertToolMessage } from '/lib/ai/middleware/chat-history/import-incoming-message';
+import { getNewMessages } from '/lib/ai/middleware/chat-history/utility';
+import type { DbTransactionType } from '/lib/drizzle-db';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 // Mock database schema
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('/lib/drizzle-db', () => ({
   schema: {
     chatMessages: {
       chatMessageId: 'mocked-chat-message-id',
@@ -44,7 +44,7 @@ jest.mock('@/lib/drizzle-db', () => ({
 }));
 
 // Mock logger
-jest.mock('@/lib/logger', () => ({
+jest.mock('/lib/logger', () => ({
   log: jest.fn(() => ({
     debug: jest.fn(),
     info: jest.fn(),
@@ -553,7 +553,11 @@ describe('Tool Message Deduplication', () => {
       expect(mockUpdate).not.toHaveBeenCalled();
 
       // Reset mocks for second call
-      jest.clearAllMocks();
+      // jest.clearAllMocks();
+      mockUpdate.mockClear();
+      mockSet.mockClear();
+      mockWhere.mockClear();
+      mockSelect.mockClear();
 
       // Now tool-result updates existing record
       const turnId2 = 2;
@@ -618,8 +622,6 @@ describe('Tool Message Deduplication', () => {
       ];
 
       for (const testCase of truthyCases) {
-        jest.clearAllMocks();
-
         const chatId = 'chat-123';
         const turnId = 2;
         const toolRow = {
@@ -654,6 +656,13 @@ describe('Tool Message Deduplication', () => {
         expect(mockSet).toHaveBeenCalledWith(
           expect.objectContaining({ toolResult: testCase.value }),
         );
+
+        mockLimit.mockClear();
+        mockWhereClause.mockClear();
+        mockFromClause.mockClear();
+        mockSelect.mockClear();
+        mockUpdate.mockClear();
+        mockSet.mockClear();
       }
 
       // falsy primitives should not trigger an update
@@ -707,9 +716,6 @@ describe('Tool Message Deduplication', () => {
       ];
 
       for (const testCase of testCases) {
-        // Reset mocks for each test case
-        jest.clearAllMocks();
-
         const chatId = 'chat-123';
         const turnId = 2;
         const toolRow = {
@@ -744,6 +750,13 @@ describe('Tool Message Deduplication', () => {
         // Assert - Should NOT update when value is null/undefined
         expect(result).toBe(42);
         expect(mockUpdate).toHaveBeenCalled();
+
+        mockLimit.mockClear();
+        mockWhereClause.mockClear();
+        mockFromClause.mockClear();
+        mockSelect.mockClear();
+        mockUpdate.mockClear();
+        mockSet.mockClear();
       }
     });
   });
@@ -1131,7 +1144,8 @@ describe('Tool Message Deduplication', () => {
       expect(turn1Result).toHaveLength(1); // New message included
 
       // Reset mocks for turn 2
-      jest.clearAllMocks();
+      // jest.clearAllMocks();
+      mockSelect.mockClear();
 
       // Simulate Turn 2: tool-result message comes in for same providerId
       const turn2Messages: LanguageModelV2CallOptions['prompt'] = [

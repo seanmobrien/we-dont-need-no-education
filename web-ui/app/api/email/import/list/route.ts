@@ -1,11 +1,14 @@
 import { NextResponse, NextRequest } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { log } from '@/lib/logger';
-import { query } from '@/lib/neondb';
-import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
+import { log } from '/lib/logger';
+import { query } from '/lib/neondb';
+import { parsePaginationStats } from '/lib/components/mui/data-grid/queryHelpers/utility';
 
-import type { ImportStage, StagedMessageSummary } from '@/data-models/api/import/email-message';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import type {
+  ImportStage,
+  StagedMessageSummary,
+} from '/data-models/api/import/email-message';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 
 /**
  * Handles GET requests to fetch a paginated list of emails with sender and recipient information.
@@ -23,14 +26,15 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
  *
  * If an error occurs during the process, it logs the error and returns a 500 Internal Server Error response.
  */
-export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextResponse> => {
-  try {
-    const { num, offset, page } = parsePaginationStats(new URL(req.url));
+export const GET = wrapRouteRequest(
+  async (req: NextRequest): Promise<NextResponse> => {
+    try {
+      const { num, offset, page } = parsePaginationStats(new URL(req.url));
 
-    // Fetch list of emails with sender info
-    const result = await query(
-      (sql) =>
-        sql`SELECT 
+      // Fetch list of emails with sender info
+      const result = await query(
+        (sql) =>
+          sql`SELECT 
       s.stage, s.id, m.email_id AS targetId, s."user_id",
       (SELECT h.value 
         FROM staging_message, 
@@ -45,68 +49,69 @@ export const GET = wrapRouteRequest(async (req: NextRequest): Promise<NextRespon
       FROM emails m 
       RIGHT JOIN staging_message s ON s.external_id = m.imported_from_id
       LIMIT ${num} OFFSET ${offset};`,
-      {
-        transform: (result) => {
-          let recipients: Array<string> | string | null;
-          if (result.recipients === null || result.recipients === undefined) {
-            recipients = null;
-          } else if (typeof result.recipients === 'string') {
-            recipients = result.recipients
-              .split(',')
-              .map((r: string) => r.trim());
-            if (recipients.length === 1) {
-              recipients = recipients[0];
+        {
+          transform: (result) => {
+            let recipients: Array<string> | string | null;
+            if (result.recipients === null || result.recipients === undefined) {
+              recipients = null;
+            } else if (typeof result.recipients === 'string') {
+              recipients = result.recipients
+                .split(',')
+                .map((r: string) => r.trim());
+              if (recipients.length === 1) {
+                recipients = recipients[0];
+              }
+            } else {
+              log((l) =>
+                l.warn({
+                  msg: '[[WARNING]] - Unexpected recipient type detected:',
+                  recipients,
+                }),
+              );
+              recipients = null;
             }
-          } else {
-            log((l) =>
-              l.warn({
-                msg: '[[WARNING]] - Unexpected recipient type detected:',
-                recipients,
-              }),
-            );
-            recipients = null;
-          }
-          const ret: StagedMessageSummary = {
-            stage: result.stage as ImportStage,
-            id: result.id as string,
-            targetId: result.targetid as string,
-            timestamp: result.timestamp as Date,
-            sender: result.sender as string,
-            userId: result.userId as number,
-            recipients,
-          };
-          return ret;
+            const ret: StagedMessageSummary = {
+              stage: result.stage as ImportStage,
+              id: result.id as string,
+              targetId: result.targetid as string,
+              timestamp: result.timestamp as Date,
+              sender: result.sender as string,
+              userId: result.userId as number,
+              recipients,
+            };
+            return ret;
+          },
         },
-      },
-    );
+      );
 
-    const total = await query(
-      (q) => q`SELECT COUNT(*) AS records FROM staging_message;`,
-    );
-    log((l) =>
-      l.verbose({
-        msg: '[[AUDIT]] -  Import list:',
-        resultset: result,
-        num,
-        offset,
-        cbTotal: total,
-      }),
-    );
+      const total = await query(
+        (q) => q`SELECT COUNT(*) AS records FROM staging_message;`,
+      );
+      log((l) =>
+        l.verbose({
+          msg: '[[AUDIT]] -  Import list:',
+          resultset: result,
+          num,
+          offset,
+          cbTotal: total,
+        }),
+      );
 
-    return NextResponse.json(
-      { pageStats: { page, num, total: total[0].records }, results: result },
-      { status: 200 },
-    );
-  } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'GET email/import/list',
-    });
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
-});
+      return NextResponse.json(
+        { pageStats: { page, num, total: total[0].records }, results: result },
+        { status: 200 },
+      );
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'GET email/import/list',
+      });
+      return NextResponse.json(
+        { error: 'Internal Server Error' },
+        { status: 500 },
+      );
+    }
+  },
+);
 
 export const dynamic = 'force-dynamic';

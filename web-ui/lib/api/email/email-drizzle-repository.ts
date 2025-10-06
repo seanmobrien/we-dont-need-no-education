@@ -1,9 +1,8 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
-import { emails } from '@/drizzle/schema';
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { emails } from '/drizzle/schema';
+import { drizDbWithInit } from '/lib/drizzle-db';
+import { ValidationError } from '/lib/react-util/errors/validation-error';
 import { eq } from 'drizzle-orm';
-
 
 /**
  * Base repository interface supports object repository implementation
@@ -35,14 +34,15 @@ export type EmailDomain = {
   globalMessageId?: string | null;
 };
 
-
 /**
  * Maps a database record to an EmailDomain object
- * 
+ *
  * @param record - Database record from Drizzle query
  * @returns Mapped EmailDomain object
  */
-const mapRecordToEmailDomain = (record: Record<string, unknown>): EmailDomain => ({
+const mapRecordToEmailDomain = (
+  record: Record<string, unknown>,
+): EmailDomain => ({
   emailId: record.emailId as string,
   senderId: record.senderId as number,
   subject: record.subject as string,
@@ -56,11 +56,13 @@ const mapRecordToEmailDomain = (record: Record<string, unknown>): EmailDomain =>
 
 /**
  * Maps a database record to an EmailDomainSummary object (for list operations)
- * 
- * @param record - Database record from Drizzle query  
+ *
+ * @param record - Database record from Drizzle query
  * @returns Mapped EmailDomainSummary object
  */
-const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial<EmailDomain> => ({
+const mapRecordToEmailDomainSummary = (
+  record: Record<string, unknown>,
+): Partial<EmailDomain> => ({
   emailId: record.emailId as string,
   senderId: record.senderId as number,
   subject: record.subject as string,
@@ -76,14 +78,14 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
  * EmailDrizzleRepository provides Drizzle ORM-based data access
  * for email records. This repository handles the core email entity
  * operations using the drizzle data access layer.
- * 
+ *
  * The repository operates on a flattened domain model that can be
  * easily converted to the API response format by higher-level services.
- * 
+ *
  * @example
  * ```typescript
  * const repository = new EmailDrizzleRepository();
- * 
+ *
  * // Create a new email
  * const newEmail = await repository.create({
  *   senderId: 123,
@@ -91,18 +93,18 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
  *   emailContents: "Hello World",
  *   sentTimestamp: new Date()
  * });
- * 
+ *
  * // Get paginated list
  * const emails = await repository.list({ page: 1, num: 10 });
- * 
+ *
  * // Get single email
  * const email = await repository.get('email-uuid');
  * ```
- */  
-  export class EmailDrizzleRepository extends BaseDrizzleRepository<
-    EmailDomain,
-    'emailId'
-  > implements BaseEmailDrizzleRepository {
+ */
+export class EmailDrizzleRepository
+  extends BaseDrizzleRepository<EmailDomain, 'emailId'>
+  implements BaseEmailDrizzleRepository
+{
   constructor() {
     super({
       table: emails,
@@ -115,7 +117,7 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
 
   /**
    * Validates email data for repository operations
-   * 
+   *
    * @param method - The repository method being called
    * @param obj - The data object to validate
    * @throws {ValidationError} When validation fails
@@ -125,9 +127,9 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
     obj: Record<string, unknown>,
   ): void {
     super.validate(method, obj);
-    
+
     const email = obj as Partial<EmailDomain>;
-    
+
     switch (method) {
       case 'create':
         if (!email.senderId || !email.subject || !email.emailContents) {
@@ -145,9 +147,21 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
           });
         }
         // At least one field besides emailId must be provided for update
-        const updateFields = ['senderId', 'subject', 'emailContents', 'sentTimestamp', 
-                             'threadId', 'parentId', 'importedFromId', 'globalMessageId'];
-        if (!updateFields.some(field => email[field as keyof EmailDomain] !== undefined)) {
+        const updateFields = [
+          'senderId',
+          'subject',
+          'emailContents',
+          'sentTimestamp',
+          'threadId',
+          'parentId',
+          'importedFromId',
+          'globalMessageId',
+        ];
+        if (
+          !updateFields.some(
+            (field) => email[field as keyof EmailDomain] !== undefined,
+          )
+        ) {
           throw new ValidationError({
             field: 'At least one field is required for update',
             source: 'EmailDrizzleRepository::update',
@@ -162,11 +176,13 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
   /**
    * Prepares data for database insert operations
    * Maps domain object fields to database column names
-   * 
+   *
    * @param model - Email domain object without ID
    * @returns Database insert data
    */
-  protected prepareInsertData(model: Omit<EmailDomain, 'emailId'>): Record<string, unknown> {
+  protected prepareInsertData(
+    model: Omit<EmailDomain, 'emailId'>,
+  ): Record<string, unknown> {
     return {
       sender_id: model.senderId,
       subject: model.subject,
@@ -180,46 +196,53 @@ const mapRecordToEmailDomainSummary = (record: Record<string, unknown>): Partial
   }
 
   /**
-   * Prepares data for database update operations  
+   * Prepares data for database update operations
    * Maps domain object fields to database column names
-   * 
+   *
    * @param model - Partial email domain object with ID
    * @returns Database update data
    */
-  protected prepareUpdateData(model: Partial<EmailDomain>): Record<string, unknown> {
+  protected prepareUpdateData(
+    model: Partial<EmailDomain>,
+  ): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
-    
+
     if (model.senderId !== undefined) updateData.sender_id = model.senderId;
     if (model.subject !== undefined) updateData.subject = model.subject;
-    if (model.emailContents !== undefined) updateData.email_contents = model.emailContents;
-    if (model.sentTimestamp !== undefined) updateData.sent_timestamp = model.sentTimestamp;
+    if (model.emailContents !== undefined)
+      updateData.email_contents = model.emailContents;
+    if (model.sentTimestamp !== undefined)
+      updateData.sent_timestamp = model.sentTimestamp;
     if (model.threadId !== undefined) updateData.thread_id = model.threadId;
     if (model.parentId !== undefined) updateData.parent_id = model.parentId;
-    if (model.importedFromId !== undefined) updateData.imported_from_id = model.importedFromId;
-    if (model.globalMessageId !== undefined) updateData.global_message_id = model.globalMessageId;
-    
+    if (model.importedFromId !== undefined)
+      updateData.imported_from_id = model.importedFromId;
+    if (model.globalMessageId !== undefined)
+      updateData.global_message_id = model.globalMessageId;
+
     return updateData;
   }
 
   /**
    * Finds an email by its global message ID
-   * 
+   *
    * @param globalMessageId - The global message identifier to search for
    * @returns Promise resolving to email domain object or null if not found
    */
-  async findByGlobalMessageId(globalMessageId: string): Promise<EmailDomain | null> {
+  async findByGlobalMessageId(
+    globalMessageId: string,
+  ): Promise<EmailDomain | null> {
     try {
-      const record = await drizDbWithInit(db => db
-        .select()
-        .from(this.config.table)
-        .where(eq(emails.globalMessageId, globalMessageId))
-        .limit(1)
-        .execute()
-        .then(x => x.at(0)));
-      return record
-        ? this.config.recordMapper(record)
-        : null;
-
+      const record = await drizDbWithInit((db) =>
+        db
+          .select()
+          .from(this.config.table)
+          .where(eq(emails.globalMessageId, globalMessageId))
+          .limit(1)
+          .execute()
+          .then((x) => x.at(0)),
+      );
+      return record ? this.config.recordMapper(record) : null;
     } catch (error) {
       this.logDatabaseError('findByGlobalMessageId', error);
       throw error;

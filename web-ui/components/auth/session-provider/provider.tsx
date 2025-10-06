@@ -1,25 +1,43 @@
 'use client';
 
-import React, { createContext, PropsWithChildren, useCallback, useEffect, useState, useRef } from 'react';
+import React, {
+  createContext,
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useState,
+  useRef,
+} from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import type { SessionContextType, SessionResponse, KeyValidationStatus } from './types';
-import { 
-  isKeyValidationDue, 
+import type {
+  SessionContextType,
+  SessionResponse,
+  KeyValidationStatus,
+} from './types';
+import {
+  isKeyValidationDue,
   performKeyValidationWorkflow,
-  updateKeyValidationTimestamp 
-} from '@/lib/site-util/auth/key-validation';
-import { 
+  updateKeyValidationTimestamp,
+} from '/lib/site-util/auth/key-validation';
+import {
   getUserPublicKey,
   generateUserKeyPair,
-  getUserPublicKeyForServer
-} from '@/lib/site-util/auth/user-keys';
-import { fetch } from '@/lib/nextjs-util/fetch';
+  getUserPublicKeyForServer,
+} from '/lib/site-util/auth/user-keys';
+import { fetch } from '/lib/nextjs-util/fetch';
 
-export const SessionContext = createContext<SessionContextType<object> | null>(null);
+export const SessionContext = createContext<SessionContextType<object> | null>(
+  null,
+);
 
 const SESSION_QUERY_KEY = ['auth-session'] as const;
-const SESSION_WITH_KEYS_QUERY_KEY = [...SESSION_QUERY_KEY, 'with-keys'] as const;
-type SessionQueryKey = typeof SESSION_QUERY_KEY | typeof SESSION_WITH_KEYS_QUERY_KEY;
+const SESSION_WITH_KEYS_QUERY_KEY = [
+  ...SESSION_QUERY_KEY,
+  'with-keys',
+] as const;
+type SessionQueryKey =
+  | typeof SESSION_QUERY_KEY
+  | typeof SESSION_WITH_KEYS_QUERY_KEY;
 
 const mutationFn = async ({ publicKey }: { publicKey: string }) => {
   const res = await fetch('/api/auth/keys', {
@@ -27,12 +45,10 @@ const mutationFn = async ({ publicKey }: { publicKey: string }) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ publicKey }),
   });
-      
+
   if (!res.ok) {
     const errorText = await res.text();
-    throw new Error(
-      `Key upload failed: ${res.status} ${errorText}`,
-    );    
+    throw new Error(`Key upload failed: ${res.status} ${errorText}`);
   }
   const result = await res.json();
 
@@ -61,19 +77,24 @@ const queryFn = async ({ queryKey }: { queryKey: SessionQueryKey }) => {
   return res.json();
 };
 
-export const SessionProvider: React.FC<PropsWithChildren<object>> = ({ children }) => {
+export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
+  children,
+}) => {
   // Key validation state
-  const [keyValidationStatus, setKeyValidationStatus] = useState<KeyValidationStatus>('unknown');
+  const [keyValidationStatus, setKeyValidationStatus] =
+    useState<KeyValidationStatus>('unknown');
   const [lastValidated, setLastValidated] = useState<Date>();
   const [validationError, setValidationError] = useState<string>();
 
   // Prevent unnecessary re-renders by tracking previous values
-  const previousSessionStatus = useRef<'loading' | 'authenticated' | 'unauthenticated'>('loading');
+  const previousSessionStatus = useRef<
+    'loading' | 'authenticated' | 'unauthenticated'
+  >('loading');
   const previousKeyValidationStatus = useRef<KeyValidationStatus>('unknown');
 
   // Session query - fetch with keys when validation is due
   const shouldGetKeys = isKeyValidationDue();
-  
+
   const query = useQuery<
     SessionResponse<object>,
     Error,
@@ -94,53 +115,58 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({ children 
       id: 'upload-public-key',
     },
     mutationFn: mutationFn,
-    onError: (error) => {        
+    onError: (error) => {
       setKeyValidationStatus('failed');
-      setValidationError(error instanceof Error ? error.message : 'Failed to upload public key');
+      setValidationError(
+        error instanceof Error ? error.message : 'Failed to upload public key',
+      );
     },
-    onSuccess: () => {                
+    onSuccess: () => {
       setKeyValidationStatus('synchronized');
       setLastValidated(new Date());
       updateKeyValidationTimestamp();
-    }
+    },
   });
 
   const { data, isLoading, isFetching, refetch } = query;
-  
+
   // Key validation logic
-  const performKeyValidation = useCallback(async (publicKeys: string[]) => {    
-    setKeyValidationStatus('validating');
-    setValidationError(undefined);
+  const performKeyValidation = useCallback(
+    async (publicKeys: string[]) => {
+      setKeyValidationStatus('validating');
+      setValidationError(undefined);
 
-    try {
-      const result = await performKeyValidationWorkflow(publicKeys ?? [], {
-        getPublicKey: getUserPublicKey,
-        generateKeyPair: generateUserKeyPair,
-        exportPublicKeyForServer: getUserPublicKeyForServer,
-        uploadPublicKeyToServer: async ({ publicKey }) => {
-          await mutateAsync({ publicKey });
-        },
-      });
+      try {
+        const result = await performKeyValidationWorkflow(publicKeys ?? [], {
+          getPublicKey: getUserPublicKey,
+          generateKeyPair: generateUserKeyPair,
+          exportPublicKeyForServer: getUserPublicKeyForServer,
+          uploadPublicKeyToServer: async ({ publicKey }) => {
+            await mutateAsync({ publicKey });
+          },
+        });
 
-      if (result.validated) {
-        if (result.synchronized) {
-          setKeyValidationStatus('synchronized');
+        if (result.validated) {
+          if (result.synchronized) {
+            setKeyValidationStatus('synchronized');
+          } else {
+            setKeyValidationStatus('valid');
+          }
+          setLastValidated(new Date());
+          updateKeyValidationTimestamp();
         } else {
-          setKeyValidationStatus('valid');
+          setKeyValidationStatus('failed');
+          setValidationError(result.error);
         }
-        setLastValidated(new Date());
-        updateKeyValidationTimestamp();
-      } else {
+      } catch (error) {
         setKeyValidationStatus('failed');
-        setValidationError(result.error);
+        setValidationError(
+          error instanceof Error ? error.message : 'Key validation failed',
+        );
       }
-    } catch (error) {
-      setKeyValidationStatus('failed');
-      setValidationError(
-        error instanceof Error ? error.message : 'Key validation failed',
-      );
-    }
-  }, [mutateAsync]);
+    },
+    [mutateAsync],
+  );
 
   // Trigger key validation when public keys are available and validation is due
   const dataStatus = data?.status ?? 'unauthenticated';
@@ -155,7 +181,13 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({ children 
     ) {
       performKeyValidation(data.publicKeys);
     }
-  }, [dataStatus, dataKeys, performKeyValidation, keyValidationStatus, data?.publicKeys]);
+  }, [
+    dataStatus,
+    dataKeys,
+    performKeyValidation,
+    keyValidationStatus,
+    data?.publicKeys,
+  ]);
 
   // Reset key validation status when user logs out
   useEffect(() => {
@@ -167,7 +199,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({ children 
   }, [dataStatus]);
 
   // Determine current session status
-  const currentStatus: 'loading' | 'authenticated' | 'unauthenticated' = 
+  const currentStatus: 'loading' | 'authenticated' | 'unauthenticated' =
     isLoading ? 'loading' : (dataStatus ?? 'unauthenticated');
 
   // Create context value, only updating if values actually changed

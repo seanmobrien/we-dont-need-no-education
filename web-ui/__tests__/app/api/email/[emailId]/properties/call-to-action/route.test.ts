@@ -9,17 +9,17 @@
  */
 
 import { NextRequest } from 'next/server';
-import { GET } from '@/app/api/email/[emailId]/properties/call-to-action/route';
-import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
-import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { GET } from '/app/api/email/[emailId]/properties/call-to-action/route';
+import { CallToActionDetailsRepository } from '/lib/api/email/properties/call-to-action/cta-details-repository';
+import { RepositoryCrudController } from '/lib/api/repository-crud-controller';
 
 // Mock external dependencies
-jest.mock('@/lib/neondb');
-jest.mock('@/lib/components/mui/data-grid/queryHelpers/postgres');
+jest.mock('/lib/neondb');
+jest.mock('/lib/components/mui/data-grid/queryHelpers/postgres');
 
 // Mock the API modules
 jest.mock(
-  '@/lib/api/email/properties/call-to-action/cta-details-repository',
+  '/lib/api/email/properties/call-to-action/cta-details-repository',
   () => ({
     CallToActionDetailsRepository: jest.fn().mockImplementation(() => ({
       mapRecordToObject: jest.fn(),
@@ -27,7 +27,7 @@ jest.mock(
     })),
   }),
 );
-jest.mock('@/lib/api/repository-crud-controller', () => ({
+jest.mock('/lib/api/repository-crud-controller', () => ({
   RepositoryCrudController: jest.fn().mockImplementation(() => ({
     listFromRepository: jest.fn(),
     create: jest.fn(),

@@ -16,10 +16,10 @@
  */
 
 import { Account, Awaitable, Profile, User } from '@auth/core/types';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '/lib/drizzle-db';
 import { and, eq } from 'drizzle-orm';
-import { log, logEvent } from '@/lib/logger';
-import { getAppInsights } from '@/instrument/browser';
+import { log, logEvent } from '/lib/logger';
+import { getAppInsights } from '/instrument/browser';
 import { CredentialInput } from '@auth/core/providers';
 import { AdapterUser } from '@auth/core/adapters';
 

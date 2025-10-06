@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+// jest.mock('got');
+
 const shouldWriteToConsole = jest
-  .requireActual('@/lib/react-util')
+  .requireActual('/lib/react-util')
   .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
 
-jest.mock('@/components/general/telemetry/track-with-app-insight', () => ({
+jest.mock('/components/general/telemetry/track-with-app-insight', () => ({
   TrackWithAppInsight: jest.fn((props: any) => {
     const { children, ...rest } = props;
     return createElement('div', rest, children);
@@ -17,18 +20,18 @@ jest.mock('@mui/material/ButtonBase/TouchRipple', () => {
     return null;
   };
 });
-jest.mock('@/lib/nextjs-util/fetch', () => ({
+jest.mock('/lib/nextjs-util/fetch', () => ({
   fetch: jest.fn(() =>
     Promise.resolve({ json: jest.fn(() => Promise.resolve({})) }),
   ),
 }));
 
-jest.mock('@/lib/nextjs-util/client-navigate', () => ({
+jest.mock('/lib/nextjs-util/client-navigate', () => ({
   clientReload: jest.fn().mockImplementation(() => {}),
   clientNavigate: jest.fn().mockImplementation(() => {}),
   clientNavigateSignIn: jest.fn().mockImplementation(() => {}),
 }));
-jest.mock('@/instrument/browser', () => ({
+jest.mock('/instrument/browser', () => ({
   getReactPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
     trackPageView: jest.fn(),
@@ -49,7 +52,7 @@ import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
-const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
 const ErrorBoundary = jest.requireActual('./jest.mock-error-boundary').default;
 
 jest.mock('react-error-boundary', () => {
@@ -426,7 +429,7 @@ jest.mock('drizzle-orm/postgres-js', () => {
     sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
   };
 });
-jest.mock('@/lib/neondb/connection', () => {
+jest.mock('/lib/neondb/connection', () => {
   const pgDb = jest.fn(() => makeRecursiveMock());
   return {
     pgDbWithInit: jest.fn(() => Promise.resolve(makeRecursiveMock())),
@@ -434,7 +437,7 @@ jest.mock('@/lib/neondb/connection', () => {
     sql: jest.fn(() => pgDb()),
   };
 });
-jest.mock('@/lib/drizzle-db/connection', () => {
+jest.mock('/lib/drizzle-db/connection', () => {
   return {
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
@@ -454,7 +457,7 @@ jest.mock('@/lib/drizzle-db/connection', () => {
     schema: actualSchema,
   };
 });
-jest.mock('@/lib/drizzle-db', () => {
+jest.mock('/lib/drizzle-db', () => {
   return {
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
@@ -491,14 +494,14 @@ jest.mock('next-auth', () => {
 jest.mock('next-auth/jwt', () => ({
   getToken: jest.fn(),
 }));
-jest.mock('@/auth', () => {
+jest.mock('/auth', () => {
   return {
     auth: jest.fn(() => ({
       id: 'fdsdfs',
     })),
   };
 });
-jest.mock('@/lib/site-util/env', () => {
+jest.mock('/lib/site-util/env', () => {
   return {
     env: jest.fn((key: string) => {
       return process.env[key] || '';
@@ -554,7 +557,7 @@ const loggerInstance = (() => ({
   log: jest.fn(makeMockImplementation('log')),
 }))();
 
-jest.mock('@/lib/logger', () => {
+jest.mock('/lib/logger', () => {
   return {
     logger: jest.fn(() => loggerInstance),
     log: jest.fn((cb: (l: typeof loggerInstance) => void) =>
@@ -566,15 +569,15 @@ jest.mock('@/lib/logger', () => {
 });
 
 import NextAuth from 'next-auth';
-import { auth } from '@/auth';
+import { auth } from '/auth';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { sendApiRequest } from '@/lib/send-api-request';
+import { sendApiRequest } from '/lib/send-api-request';
 import postgres from 'postgres';
-import { resetGlobalCache } from '@/data-models/api/contact-cache';
-import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
+import { resetGlobalCache } from '/data-models/api/contact-cache';
+import type { DbDatabaseType } from '/lib/drizzle-db/schema';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { drizDb } from '@/lib/drizzle-db';
+import { drizDb } from '/lib/drizzle-db';
 
 // jest.setup.ts
 // If using React Testing Library
@@ -584,13 +587,14 @@ import '@testing-library/jest-dom';
 // Polyfill TextEncoder and TextDecoder for Node.js environment
 import { TextEncoder, TextDecoder } from 'util';
 import { mock } from 'jest-mock-extended';
+import { zerialize } from 'zodex';
 import { sql } from 'drizzle-orm';
 import { FormatAlignCenterSharp } from '@mui/icons-material';
 import { createElement } from 'react';
-import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
-import instrument, { getAppInsights } from '@/instrument/browser';
-import { log } from '@/lib/logger';
-import { isKeyOf } from '@/lib/typescript';
+import { TrackWithAppInsight } from '/components/general/telemetry/track-with-app-insight';
+import instrument, { getAppInsights } from '/instrument/browser';
+import { log } from '/lib/logger';
+import { isKeyOf } from '/lib/typescript';
 import { result, xorBy } from 'lodash';
 import {
   IMockInsertBuilder,
@@ -601,8 +605,10 @@ import {
   QueryBuilderMethodValues,
 } from './jest.mock-drizzle';
 import { count } from 'console';
+import { ITraits } from 'flagsmith/react';
 globalThis.TextEncoder = TextEncoder as any;
 
+/*
 // Ensure WHATWG Response/Request/Headers exist in all environments (jsdom/node)
 // Node 18+ typically provides these via undici, but jsdom can lack them during tests.
 try {
@@ -624,6 +630,7 @@ try {
 } catch {
   // ignore if undici is unavailable; tests that require Response will provide their own env
 }
+*/
 
 // Ensure WHATWG Streams exist in Jest (jsdom)
 (() => {
@@ -657,13 +664,21 @@ try {
   return jest.fn(() => Promise.resolve({ id: 'test-id' }));
 });
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const Zodex = require('zodex').Zodex;
+
 const DefaultEnvVariables = {
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
   NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
+  NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID: 'test-environment-id',
+  NEXT_PUBLIC_FLAGSMITH_API_URL: 'https://api.flagsmith.com/api/v1/',
   AUTH_KEYCLOAK_ISSUER: 'https://keycloak.example.com/realms/test',
   AUTH_KEYCLOAK_CLIENT_ID: 'test-client-id',
   AUTH_KEYCLOAK_CLIENT_SECRET: 'test-client-secret',
+  AUTH_KEYCLOAK_IMPERSONATOR_USERNAME: 'admin-user',
+  AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD: 'admin-pass',
+  AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN: '',
   NEXT_PUBLIC_HOSTNAME: `http://test-run.localhost`,
   NEXT_PUBLIC_LOG_LEVEL_CLIENT: `silly`,
   LOG_LEVEL_SERVER: `silly`,
@@ -735,6 +750,209 @@ export const resetEnvVariables = () => {
   };
 };
 
+export const mockFlagsmithInstanceFactory = ({
+  initialized = false,
+  identifier = null,
+  traits = null,
+  flags = {},
+  cacheOptions = { ttl: 1000, skipAPI: false, loadStale: false },
+  apiUrl = DefaultEnvVariables.NEXT_PUBLIC_FLAGSMITH_API_URL,
+  environmentId = DefaultEnvVariables.NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID,
+  loadingState = 'loading',
+}: {
+  initialized?: boolean;
+  identifier?: string | null;
+  traits?: Record<string, string> | null;
+  flags?: Record<string, string | number | boolean>;
+  cacheOptions?: { ttl: number; skipAPI: boolean; loadStale: boolean };
+  apiUrl?: string;
+  environmentId?: string;
+  loadingState?: string;
+} = {}) => {
+  // Local state management with configurable defaults
+  let thisInitialized = initialized;
+  let thisIdentifier: string | null = identifier;
+  let thisTraits: null | Record<string, string> = traits;
+  let thisFlags: Record<string, string | number | boolean> = flags;
+  let thisCacheOptions = cacheOptions;
+  let thisApiUrl = apiUrl;
+  let thisEnvironmentId = environmentId;
+  let thisLoadingState = loadingState;
+
+  // Create jest.fn property getters for all IFlagsmith fields
+  const mockThis = {
+    // Core initialization and state
+    get init() {
+      return jest.fn((options?: { environmentID?: string; api?: string }) => {
+        thisInitialized = true;
+        thisEnvironmentId = options?.environmentID || thisEnvironmentId;
+        thisApiUrl = options?.api || thisApiUrl;
+        thisLoadingState = 'loaded';
+        return Promise.resolve();
+      });
+    },
+
+    get initialised() {
+      return jest.fn(() => thisInitialized);
+    },
+    get loadingState() {
+      return jest.fn(() => thisLoadingState);
+    },
+
+    // Flag operations
+    get getFlags() {
+      return jest.fn(() => Object.keys(thisFlags));
+    },
+    get getAllFlags() {
+      return jest.fn(() => thisFlags);
+    },
+    get hasFeature() {
+      return jest.fn((key: string) => Boolean(thisFlags[key]));
+    },
+    get getValue() {
+      return jest.fn((key: string) => thisFlags[key]);
+    },
+
+    // Identity and traits
+    get identify() {
+      return jest.fn((userId: string, traits?: Record<string, string>) => {
+        thisIdentifier = userId;
+        thisTraits = traits ?? null;
+        return Promise.resolve();
+      });
+    },
+
+    get identity() {
+      return jest.fn(() => thisIdentifier);
+    },
+
+    get getTrait() {
+      return jest.fn((key: string) => thisTraits?.[key]);
+    },
+    get getAllTraits() {
+      return jest.fn(() => thisTraits);
+    },
+    get setTrait() {
+      return jest.fn((key: string, value: string) => {
+        thisTraits = { ...(thisTraits ?? {}), [key]: value };
+        return Promise.resolve();
+      });
+    },
+    get setTraits() {
+      return jest.fn((traits: ITraits) => {
+        thisTraits = {
+          ...(thisTraits ?? {}),
+          ...(traits as Record<string, string>),
+        };
+        return Promise.resolve();
+      });
+    },
+
+    // Context management
+    get setContext() {
+      return jest.fn(
+        (context: { identity?: string; traits?: Record<string, string> }) => {
+          if (context?.identity) thisIdentifier = context.identity;
+          if (context?.traits) thisTraits = context.traits;
+          return Promise.resolve();
+        },
+      );
+    },
+    get updateContext() {
+      return jest.fn((context: { traits?: Record<string, string> }) => {
+        if (context?.traits) {
+          thisTraits = { ...(thisTraits ?? {}), ...context.traits };
+        }
+        return Promise.resolve();
+      });
+    },
+    get getContext() {
+      return jest.fn(() => ({
+        identity: thisIdentifier,
+        traits: thisTraits,
+      }));
+    },
+
+    // State management
+    get getState() {
+      return jest.fn(() => ({
+        flags: thisFlags,
+        identity: thisIdentifier,
+        traits: thisTraits,
+        initialized: thisInitialized,
+        loadingState: thisLoadingState,
+      }));
+    },
+    get setState() {
+      return jest.fn(
+        (state: {
+          flags?: Record<string, string | number | boolean>;
+          identity?: string;
+          traits?: Record<string, string>;
+          initialized?: boolean;
+          loadingState?: string;
+        }) => {
+          if (state?.flags) thisFlags = state.flags;
+          if (state?.identity) thisIdentifier = state.identity;
+          if (state?.traits) thisTraits = state.traits;
+          if (state?.initialized !== undefined)
+            thisInitialized = state.initialized;
+          if (state?.loadingState) thisLoadingState = state.loadingState;
+        },
+      );
+    },
+
+    // Session management
+    get logout() {
+      return jest.fn(() => {
+        thisIdentifier = null;
+        thisTraits = null;
+        thisFlags = {};
+        return Promise.resolve();
+      });
+    },
+
+    // Event listening
+    get startListening() {
+      return jest.fn((ttl?: number) => {
+        thisCacheOptions = {
+          ...thisCacheOptions,
+          ttl: ttl ?? thisCacheOptions.ttl,
+        };
+      });
+    },
+    get stopListening() {
+      return jest.fn(() => {
+        // No-op for mock
+      });
+    },
+
+    // Internal methods
+    get _trigger() {
+      return jest.fn();
+    },
+    get _triggerLoadingState() {
+      return jest.fn((state: string) => {
+        thisLoadingState = state;
+      });
+    },
+
+    // Configuration
+    get cacheOptions() {
+      return {
+        get: jest.fn(() => thisCacheOptions),
+      };
+    },
+    get api() {
+      return {
+        get: jest.fn(() => thisApiUrl),
+      };
+    },
+  };
+
+  return mockThis;
+};
+
 beforeAll(() => {
   try {
     const origConfig = dotenv.parse(
@@ -750,6 +968,33 @@ beforeAll(() => {
   }
 });
 
+jest.mock('flagsmith/react', () => {
+  return {
+    FlagsmithProvider: ({ children }: { children: React.ReactNode }) =>
+      children,
+    useFlagsmith: jest.fn(() => mockFlagsmithInstanceFactory()),
+  };
+});
+jest.mock('flagsmith/isomorphic', () => ({
+  createFlagsmithInstance: jest.fn(() => mockFlagsmithInstanceFactory()),
+}));
+/* OMG yikes!
+// Polyfill Response.json if not available (Node.js environment doesn't have it)
+if (!globalThis.Response?.json) {
+  if (globalThis.Response) {
+    (globalThis.Response as any).json = (data: any, init?: ResponseInit) => {
+      return new Response(JSON.stringify(data), {
+        ...init,
+        headers: {
+          'content-type': 'application/json',
+          ...(init?.headers || {}),
+        },
+      });
+    };
+  }
+}
+*/
+
 beforeEach(async () => {
   resetEnvVariables();
   resetGlobalCache();
@@ -759,7 +1004,12 @@ beforeEach(async () => {
 });
 
 afterEach(() => {
+  // Magic token to reset zerialize cache
+  Zodex.zerialize('__$$__reset__$$__');
+  jest.clearAllTimers();
   jest.clearAllMocks();
+  jest.useRealTimers();
+
   mockDb = mockDbFactory();
   resetGlobalCache();
   Object.entries(originalProcessEnv).forEach(([key, value]) => {

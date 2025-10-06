@@ -10,8 +10,8 @@ import {
   Stack,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { EmailProperty } from '@/data-models/api';
-import { EmailMasterPanel } from '@/components/mui/data-grid';
+import { EmailProperty } from '/data-models/api';
+import { EmailMasterPanel } from '/components/mui/data-grid';
 
 const EmailHeaderPanelContent = ({ row }: { row: EmailProperty }) => {
   return (

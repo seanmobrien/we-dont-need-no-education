@@ -17,7 +17,7 @@
  * - Alert on performance degradation or system issues
  */
 
-import { appMeters } from '@/lib/site-util/metrics';
+import { appMeters } from '/lib/site-util/metrics';
 
 // OpenTelemetry Metrics for GetCaseFileDocument Tool
 export const getCaseFileDocumentCounter = appMeters.createCounter(

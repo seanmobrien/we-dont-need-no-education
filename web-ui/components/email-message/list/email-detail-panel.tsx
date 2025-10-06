@@ -23,23 +23,26 @@ import {
   Email as EmailIcon,
   ExpandMore as ExpandMoreIcon,
 } from '@mui/icons-material';
-import { EmailMessage, EmailMessageSummary } from '@/data-models/api/email-message';
+import {
+  EmailMessage,
+  EmailMessageSummary,
+} from '/data-models/api/email-message';
 import {
   KeyPointsDetails,
   CallToActionDetails,
   CallToActionResponseDetails,
   EmailProperty,
-} from '@/data-models/api';
-import { getEmail } from '@/lib/api/client';
-import { 
-  getKeyPoints, 
-  getCallToAction, 
+} from '/data-models/api';
+import { getEmail } from '/lib/api/client';
+import {
+  getKeyPoints,
+  getCallToAction,
   getCallToActionResponse,
-  getNotes
-} from '@/lib/api/email/properties/client';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+  getNotes,
+} from '/lib/api/email/properties/client';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 import { useQuery } from '@tanstack/react-query';
-import { dataGridQueryClient } from '@/lib/components/mui/data-grid/query-client';
+import { dataGridQueryClient } from '/lib/components/mui/data-grid/query-client';
 
 interface EmailDetailPanelProps {
   row: EmailMessageSummary;
@@ -54,8 +57,10 @@ interface EmailProperties {
 
 // Query key generators
 const createEmailQueryKey = (emailId: string) => ['email', emailId] as const;
-const createEmailPropertiesQueryKey = (emailId: string, propertyType: keyof EmailProperties) => 
-  ['email', emailId, 'properties', propertyType] as const;
+const createEmailPropertiesQueryKey = (
+  emailId: string,
+  propertyType: keyof EmailProperties,
+) => ['email', emailId, 'properties', propertyType] as const;
 
 // Custom hooks for each data type
 const useEmail = (emailId: string) => {
@@ -84,9 +89,9 @@ const useEmail = (emailId: string) => {
 };
 
 const useEmailProperties = (
-  emailId: string, 
-  propertyType: keyof EmailProperties, 
-  enabled: boolean = false
+  emailId: string,
+  propertyType: keyof EmailProperties,
+  enabled: boolean = false,
 ) => {
   return useQuery(
     {
@@ -101,7 +106,11 @@ const useEmailProperties = (
             result = await getCallToAction({ emailId, page: 1, num: 100 });
             break;
           case 'callToActionResponses':
-            result = await getCallToActionResponse({ emailId, page: 1, num: 100 });
+            result = await getCallToActionResponse({
+              emailId,
+              page: 1,
+              num: 100,
+            });
             break;
           case 'notes':
             result = await getNotes({ emailId, page: 1, num: 100 });
@@ -136,39 +145,50 @@ const useEmailProperties = (
 };
 
 const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
-  const [expandedSections, setExpandedSections] = useState<Set<keyof EmailProperties>>(new Set());
+  const [expandedSections, setExpandedSections] = useState<
+    Set<keyof EmailProperties>
+  >(new Set());
 
   // Main email query
-  const { 
-    data: email, 
-    isLoading: emailLoading, 
-    error: emailError 
+  const {
+    data: email,
+    isLoading: emailLoading,
+    error: emailError,
   } = useEmail(row.emailId);
 
   // Property queries - only enabled when section is expanded
-  const { 
-    data: keyPoints = [], 
-    isLoading: keyPointsLoading 
-  } = useEmailProperties(row.emailId, 'keyPoints', expandedSections.has('keyPoints'));
+  const { data: keyPoints = [], isLoading: keyPointsLoading } =
+    useEmailProperties(
+      row.emailId,
+      'keyPoints',
+      expandedSections.has('keyPoints'),
+    );
 
-  const { 
-    data: callToActions = [], 
-    isLoading: callToActionsLoading 
-  } = useEmailProperties(row.emailId, 'callToActions', expandedSections.has('callToActions'));
+  const { data: callToActions = [], isLoading: callToActionsLoading } =
+    useEmailProperties(
+      row.emailId,
+      'callToActions',
+      expandedSections.has('callToActions'),
+    );
 
-  const { 
-    data: callToActionResponses = [], 
-    isLoading: callToActionResponsesLoading 
-  } = useEmailProperties(row.emailId, 'callToActionResponses', expandedSections.has('callToActionResponses'));
+  const {
+    data: callToActionResponses = [],
+    isLoading: callToActionResponsesLoading,
+  } = useEmailProperties(
+    row.emailId,
+    'callToActionResponses',
+    expandedSections.has('callToActionResponses'),
+  );
 
-  const { 
-    data: notes = [], 
-    isLoading: notesLoading 
-  } = useEmailProperties(row.emailId, 'notes', expandedSections.has('notes'));
+  const { data: notes = [], isLoading: notesLoading } = useEmailProperties(
+    row.emailId,
+    'notes',
+    expandedSections.has('notes'),
+  );
 
   // Handle accordion expansion
   const handleAccordionChange = (propertyType: keyof EmailProperties) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(propertyType)) {
         newSet.delete(propertyType);
@@ -195,7 +215,7 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
       log: true,
       source: 'email-detail-panel: load email',
     }).message;
-    
+
     return (
       <Box sx={{ p: 2 }}>
         <Alert severity="error">{errorMessage}</Alert>
@@ -210,45 +230,59 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
         <Typography variant="h6" gutterBottom>
           Email Summary
         </Typography>
-        
+
         <Stack spacing={2}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <PersonIcon color="action" />
             <Typography variant="body2">
-              <strong>From:</strong> {row.sender?.name || 'Unknown'} ({row.sender?.email || 'N/A'})
+              <strong>From:</strong> {row.sender?.name || 'Unknown'} (
+              {row.sender?.email || 'N/A'})
             </Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <SubjectIcon color="action" />
             <Typography variant="body2">
               <strong>Subject:</strong> {row.subject || 'No subject'}
             </Typography>
           </Box>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <ScheduleIcon color="action" />
             <Typography variant="body2">
-              <strong>Sent:</strong> {row.sentOn ? new Date(row.sentOn).toLocaleString() : 'Unknown'}
+              <strong>Sent:</strong>{' '}
+              {row.sentOn ? new Date(row.sentOn).toLocaleString() : 'Unknown'}
             </Typography>
           </Box>
 
           {/* Stats */}
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {(row.count_attachments ?? 0) > 0 && (
-              <Chip label={`${row.count_attachments} Attachments`} size="small" variant="outlined" />
+              <Chip
+                label={`${row.count_attachments} Attachments`}
+                size="small"
+                variant="outlined"
+              />
             )}
             {(row.count_kpi ?? 0) > 0 && (
-              <Chip label={`${row.count_kpi} Key Points`} size="small" variant="outlined" />
+              <Chip
+                label={`${row.count_kpi} Key Points`}
+                size="small"
+                variant="outlined"
+              />
             )}
             {(row.count_notes ?? 0) > 0 && (
-              <Chip label={`${row.count_notes} Notes`} size="small" variant="outlined" />
+              <Chip
+                label={`${row.count_notes} Notes`}
+                size="small"
+                variant="outlined"
+              />
             )}
-            {((row.count_cta ?? 0) + (row.count_responsive_actions ?? 0)) > 0 && (
-              <Chip 
-                label={`${(row.count_cta ?? 0) + (row.count_responsive_actions ?? 0)} CTAs`} 
-                size="small" 
-                variant="outlined" 
+            {(row.count_cta ?? 0) + (row.count_responsive_actions ?? 0) > 0 && (
+              <Chip
+                label={`${(row.count_cta ?? 0) + (row.count_responsive_actions ?? 0)} CTAs`}
+                size="small"
+                variant="outlined"
               />
             )}
           </Box>
@@ -258,7 +292,7 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
         <Box sx={{ mt: 3 }}>
           {/* Key Points Section */}
           {(row.count_kpi ?? 0) > 0 && (
-            <Accordion 
+            <Accordion
               expanded={expandedSections.has('keyPoints')}
               onChange={() => handleAccordionChange('keyPoints')}
             >
@@ -269,13 +303,22 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
               </AccordionSummary>
               <AccordionDetails>
                 {keyPointsLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
+                  >
                     <CircularProgress size={24} />
                   </Box>
                 ) : keyPoints.length > 0 ? (
                   <Stack spacing={1}>
                     {(keyPoints as KeyPointsDetails[]).map((kp, index) => (
-                      <Box key={kp.propertyId || index} sx={{ p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                      <Box
+                        key={kp.propertyId || index}
+                        sx={{
+                          p: 1,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 1,
+                        }}
+                      >
                         <Typography variant="body2">{kp.value}</Typography>
                       </Box>
                     ))}
@@ -291,7 +334,7 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
 
           {/* Call to Actions Section */}
           {(row.count_cta ?? 0) > 0 && (
-            <Accordion 
+            <Accordion
               expanded={expandedSections.has('callToActions')}
               onChange={() => handleAccordionChange('callToActions')}
             >
@@ -302,28 +345,39 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
               </AccordionSummary>
               <AccordionDetails>
                 {callToActionsLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
+                  >
                     <CircularProgress size={24} />
                   </Box>
                 ) : callToActions.length > 0 ? (
                   <Stack spacing={1}>
-                    {(callToActions as CallToActionDetails[]).map((cta, index) => (
-                      <Box key={cta.propertyId || index} sx={{ p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                        <Typography variant="body2">{cta.value}</Typography>
-                        {cta.completion_percentage !== undefined && (
-                          <Box sx={{ mt: 1 }}>
-                            <Typography variant="caption">
-                              {cta.completion_percentage}% Complete
-                            </Typography>
-                            <LinearProgress 
-                              variant="determinate" 
-                              value={cta.completion_percentage} 
-                              sx={{ height: 4, borderRadius: 1 }} 
-                            />
-                          </Box>
-                        )}
-                      </Box>
-                    ))}
+                    {(callToActions as CallToActionDetails[]).map(
+                      (cta, index) => (
+                        <Box
+                          key={cta.propertyId || index}
+                          sx={{
+                            p: 1,
+                            border: '1px solid #e0e0e0',
+                            borderRadius: 1,
+                          }}
+                        >
+                          <Typography variant="body2">{cta.value}</Typography>
+                          {cta.completion_percentage !== undefined && (
+                            <Box sx={{ mt: 1 }}>
+                              <Typography variant="caption">
+                                {cta.completion_percentage}% Complete
+                              </Typography>
+                              <LinearProgress
+                                variant="determinate"
+                                value={cta.completion_percentage}
+                                sx={{ height: 4, borderRadius: 1 }}
+                              />
+                            </Box>
+                          )}
+                        </Box>
+                      ),
+                    )}
                   </Stack>
                 ) : (
                   <Typography variant="body2" color="textSecondary">
@@ -336,7 +390,7 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
 
           {/* CTA Responses Section */}
           {(row.count_responsive_actions || 0) > 0 && (
-            <Accordion 
+            <Accordion
               expanded={expandedSections.has('callToActionResponses')}
               onChange={() => handleAccordionChange('callToActionResponses')}
             >
@@ -347,14 +401,27 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
               </AccordionSummary>
               <AccordionDetails>
                 {callToActionResponsesLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
+                  >
                     <CircularProgress size={24} />
                   </Box>
                 ) : callToActionResponses.length > 0 ? (
                   <Stack spacing={1}>
-                    {(callToActionResponses as CallToActionResponseDetails[]).map((response, index) => (
-                      <Box key={response.propertyId || index} sx={{ p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                        <Typography variant="body2">{response.value}</Typography>
+                    {(
+                      callToActionResponses as CallToActionResponseDetails[]
+                    ).map((response, index) => (
+                      <Box
+                        key={response.propertyId || index}
+                        sx={{
+                          p: 1,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Typography variant="body2">
+                          {response.value}
+                        </Typography>
                       </Box>
                     ))}
                   </Stack>
@@ -369,24 +436,31 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
 
           {/* Notes Section */}
           {(row.count_notes ?? 0) > 0 && (
-            <Accordion 
+            <Accordion
               expanded={expandedSections.has('notes')}
               onChange={() => handleAccordionChange('notes')}
             >
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="h6">
-                  Notes ({row.count_notes})
-                </Typography>
+                <Typography variant="h6">Notes ({row.count_notes})</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 {notesLoading ? (
-                  <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'center', py: 2 }}
+                  >
                     <CircularProgress size={24} />
                   </Box>
                 ) : notes.length > 0 ? (
                   <Stack spacing={1}>
                     {(notes as EmailProperty[]).map((note, index) => (
-                      <Box key={note.propertyId || index} sx={{ p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                      <Box
+                        key={note.propertyId || index}
+                        sx={{
+                          p: 1,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 1,
+                        }}
+                      >
                         <Typography variant="body2">{note.value}</Typography>
                       </Box>
                     ))}
@@ -419,7 +493,14 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            flexWrap: 'wrap',
+          }}
+        >
           <EmailIcon color="action" />
           <Typography variant="body1" sx={{ mr: 1 }}>
             <strong>To:</strong>
@@ -459,13 +540,13 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
               </Typography>
               <Card variant="outlined">
                 <CardContent>
-                  <Typography 
-                    variant="body2" 
-                    component="pre" 
-                    sx={{ 
+                  <Typography
+                    variant="body2"
+                    component="pre"
+                    sx={{
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
-                      fontFamily: 'inherit'
+                      fontFamily: 'inherit',
                     }}
                   >
                     {email.body}
@@ -481,14 +562,12 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
       <Box sx={{ mt: 3 }}>
         {/* Key Points Section */}
         {(row.count_kpi ?? 0) > 0 && (
-          <Accordion 
+          <Accordion
             expanded={expandedSections.has('keyPoints')}
             onChange={() => handleAccordionChange('keyPoints')}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">
-                Key Points ({row.count_kpi})
-              </Typography>
+              <Typography variant="h6">Key Points ({row.count_kpi})</Typography>
             </AccordionSummary>
             <AccordionDetails>
               {keyPointsLoading ? (
@@ -498,7 +577,14 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
               ) : keyPoints.length > 0 ? (
                 <Stack spacing={1}>
                   {(keyPoints as KeyPointsDetails[]).map((kp, index) => (
-                    <Box key={kp.propertyId || index} sx={{ p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                    <Box
+                      key={kp.propertyId || index}
+                      sx={{
+                        p: 1,
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 1,
+                      }}
+                    >
                       <Typography variant="body2">{kp.value}</Typography>
                     </Box>
                   ))}
@@ -514,7 +600,7 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
 
         {/* Call to Actions Section */}
         {(row.count_cta ?? 0) > 0 && (
-          <Accordion 
+          <Accordion
             expanded={expandedSections.has('callToActions')}
             onChange={() => handleAccordionChange('callToActions')}
           >
@@ -530,23 +616,32 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
                 </Box>
               ) : callToActions.length > 0 ? (
                 <Stack spacing={1}>
-                  {(callToActions as CallToActionDetails[]).map((cta, index) => (
-                    <Box key={cta.propertyId || index} sx={{ p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                      <Typography variant="body2">{cta.value}</Typography>
-                      {cta.completion_percentage !== undefined && (
-                        <Box sx={{ mt: 1 }}>
-                          <Typography variant="caption">
-                            {cta.completion_percentage}% Complete
-                          </Typography>
-                          <LinearProgress 
-                            variant="determinate" 
-                            value={cta.completion_percentage} 
-                            sx={{ height: 4, borderRadius: 1 }} 
-                          />
-                        </Box>
-                      )}
-                    </Box>
-                  ))}
+                  {(callToActions as CallToActionDetails[]).map(
+                    (cta, index) => (
+                      <Box
+                        key={cta.propertyId || index}
+                        sx={{
+                          p: 1,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Typography variant="body2">{cta.value}</Typography>
+                        {cta.completion_percentage !== undefined && (
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="caption">
+                              {cta.completion_percentage}% Complete
+                            </Typography>
+                            <LinearProgress
+                              variant="determinate"
+                              value={cta.completion_percentage}
+                              sx={{ height: 4, borderRadius: 1 }}
+                            />
+                          </Box>
+                        )}
+                      </Box>
+                    ),
+                  )}
                 </Stack>
               ) : (
                 <Typography variant="body2" color="textSecondary">
@@ -559,7 +654,7 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
 
         {/* CTA Responses Section */}
         {(row.count_responsive_actions || 0) > 0 && (
-          <Accordion 
+          <Accordion
             expanded={expandedSections.has('callToActionResponses')}
             onChange={() => handleAccordionChange('callToActionResponses')}
           >
@@ -575,11 +670,22 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
                 </Box>
               ) : callToActionResponses.length > 0 ? (
                 <Stack spacing={1}>
-                  {(callToActionResponses as CallToActionResponseDetails[]).map((response, index) => (
-                    <Box key={response.propertyId || index} sx={{ p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
-                      <Typography variant="body2">{response.value}</Typography>
-                    </Box>
-                  ))}
+                  {(callToActionResponses as CallToActionResponseDetails[]).map(
+                    (response, index) => (
+                      <Box
+                        key={response.propertyId || index}
+                        sx={{
+                          p: 1,
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 1,
+                        }}
+                      >
+                        <Typography variant="body2">
+                          {response.value}
+                        </Typography>
+                      </Box>
+                    ),
+                  )}
                 </Stack>
               ) : (
                 <Typography variant="body2" color="textSecondary">
@@ -592,14 +698,12 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
 
         {/* Notes Section */}
         {(row.count_notes ?? 0) > 0 && (
-          <Accordion 
+          <Accordion
             expanded={expandedSections.has('notes')}
             onChange={() => handleAccordionChange('notes')}
           >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-              <Typography variant="h6">
-                Notes ({row.count_notes})
-              </Typography>
+              <Typography variant="h6">Notes ({row.count_notes})</Typography>
             </AccordionSummary>
             <AccordionDetails>
               {notesLoading ? (
@@ -609,7 +713,14 @@ const EmailDetailPanel: React.FC<EmailDetailPanelProps> = ({ row }) => {
               ) : notes.length > 0 ? (
                 <Stack spacing={1}>
                   {(notes as EmailProperty[]).map((note, index) => (
-                    <Box key={note.propertyId || index} sx={{ p: 1, border: '1px solid #e0e0e0', borderRadius: 1 }}>
+                    <Box
+                      key={note.propertyId || index}
+                      sx={{
+                        p: 1,
+                        border: '1px solid #e0e0e0',
+                        borderRadius: 1,
+                      }}
+                    >
                       <Typography variant="body2">{note.value}</Typography>
                     </Box>
                   ))}

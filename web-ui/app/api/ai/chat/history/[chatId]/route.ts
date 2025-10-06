@@ -1,25 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema';
+import { auth } from '/auth';
+import { drizDbWithInit } from '/lib/drizzle-db';
+import { schema } from '/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import type { ChatDetails, ChatTurn } from '@/lib/ai/chat';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import type { ChatDetails, ChatTurn } from '/lib/ai/chat';
+import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 
 /**
  * Handles GET request to fetch chat details by ID
- * 
+ *
  * @param req - The Next.js request object
  * @param params - Route parameters containing chatId
  * @returns JSON response with chat details or error
  */
-export const GET = wrapRouteRequest(async (
-  req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
-): Promise<NextResponse> => {
+export const GET = wrapRouteRequest(
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ chatId: string }> },
+  ): Promise<NextResponse> => {
     const { chatId } = await params;
     try {
       // Validate session authentication
@@ -149,4 +150,6 @@ export const GET = wrapRouteRequest(async (
         { status: 500 },
       );
     }
-}, { buildFallback: { id: 'not-enabled', title: 'Wait for build to complete' } });
+  },
+  { buildFallback: { id: 'not-enabled', title: 'Wait for build to complete' } },
+);

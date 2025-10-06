@@ -1,5 +1,5 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { signData } from '@/lib/site-util/auth/user-keys';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { signData } from '/lib/site-util/auth/user-keys';
 
 /**
  * Represents a user's response to a confirmation prompt.
@@ -11,7 +11,7 @@ import { signData } from '@/lib/site-util/auth/user-keys';
 export type UserResponse = {
   /**
    * Unique identifier for the call or confirmation session the option was selected in.
-   * This is used to track which confirmation prompt the response belongs to, and to 
+   * This is used to track which confirmation prompt the response belongs to, and to
    * ensure that the response is correctly associated with the right context.
    * @type {string}
    */
@@ -30,29 +30,32 @@ export type UserResponse = {
   hash: string;
 };
 
-
-
-
 /**
  * Generates a valid digital signature for a response made by the currently logged-in user.
  *
  * @param source - The source object containing the callId and selected choice to sign.
  * @returns A UserResponse object with a digital signature generated from the callId and selectedOption.
  */
-export const signResponse = async (source: Omit<UserResponse, 'hash'>): Promise<UserResponse> => {
+export const signResponse = async (
+  source: Omit<UserResponse, 'hash'>,
+): Promise<UserResponse> => {
   try {
     // Create a message to sign that includes both callId and choice
     const message = `${source.callId}:${source.choice}`;
-    
+
     // Sign the message using ECDSA
     const hash = await signData(message);
-    
+
     return { ...source, hash };
   } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'signResponse' });
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'signResponse',
+    });
     // Fallback to a basic hash if crypto fails (should not happen in secure contexts)
-    const fallbackHash = btoa(`${source.callId}:${source.choice}:${Date.now()}`);
+    const fallbackHash = btoa(
+      `${source.callId}:${source.choice}:${Date.now()}`,
+    );
     return { ...source, hash: fallbackHash };
   }
 };
-

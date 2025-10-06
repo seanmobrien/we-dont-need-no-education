@@ -1,9 +1,9 @@
-import { render } from '@/__tests__/test-utils';
-import { ThemeProvider } from '@/lib/themes/provider';
-import HomePage from '@/app/page';
+import { render } from '/__tests__/test-utils';
+import { ThemeProvider } from '/lib/themes/provider';
+import HomePage from '/app/page';
 
 // Mock the EmailList component since it requires server connections
-jest.mock('@/components/email-message/list', () => {
+jest.mock('/components/email-message/list', () => {
   const MockEmailList = () => (
     <div data-testid="mock-email-list">Email List</div>
   );
@@ -27,9 +27,7 @@ describe('Home Page Theme Support', () => {
     const { container } = render(<ColorfulHomePage />);
 
     // Verify the theme attribute is set
-    expect(document.documentElement.getAttribute('data-theme')).toBe(
-      'light',
-    );
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
 
     // Verify the page renders without crashing
     expect(

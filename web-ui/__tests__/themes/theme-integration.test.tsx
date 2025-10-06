@@ -1,6 +1,6 @@
-import { render, screen } from '@/__tests__/test-utils';
-import { ThemeProvider } from '@/lib/themes/provider';
-import { ThemeSelector } from '@/components/theme/theme-selector';
+import { render, screen } from '/__tests__/test-utils';
+import { ThemeProvider } from '/lib/themes/provider';
+import { ThemeSelector } from '/components/theme/theme-selector';
 
 // Mock Next.js navigation
 jest.mock('next/navigation', () => ({
@@ -42,9 +42,7 @@ describe('Theme Integration', () => {
     */
     // The theme provider should set the data-theme attribute
     // This test ensures our changes don't break the basic theme functionality
-    expect(document.documentElement.getAttribute('data-theme')).toBe(
-      'light',
-    );
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
   it('switches to dark theme correctly', () => {

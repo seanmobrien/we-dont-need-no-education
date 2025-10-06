@@ -1,44 +1,44 @@
 /**
  * @fileoverview Height Estimation Utilities for AI Chat Components
- * 
+ *
  * This module provides sophisticated text and markdown height estimation utilities
  * for AI chat interfaces. It includes canvas-based text measurement, markdown-aware
  * height calculations, DOM-based measurement tools, and adaptive learning systems
  * for improving estimation accuracy over time.
- * 
+ *
  * Key Features:
  * - Canvas-based text measurement for accurate width/height calculations
  * - Markdown-aware height estimation with support for headers, lists, code blocks
  * - DOM-based measurement for complex layouts
  * - Adaptive caching and learning systems
  * - Performance optimizations with TTL-based caching
- * 
+ *
  * @module lib/components/ai/height-estimators
  * @version 1.0.0
  * @since 2025-07-18
  */
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { useDynamicWidth } from '@/lib/react-util/hooks/use-dynamic-width';
+import { useDynamicWidth } from '/lib/react-util/hooks/use-dynamic-width';
 
 /**
  * Creates a canvas-based text measurement utility for accurate text dimensions.
- * 
+ *
  * This function provides a high-performance text measurement system using HTML5 Canvas
  * for precise width and height calculations. It maintains a singleton canvas instance
  * for efficiency and provides methods for both single-line and wrapped text measurement.
- * 
+ *
  * @returns {Object} Text measurement utility object
  * @returns {Function} measureText - Measures single-line text dimensions
  * @returns {Function} calculateWrappedHeight - Calculates height for wrapped text
- * 
+ *
  * @example
  * ```typescript
  * const textMeasurer = createTextMeasurer();
- * 
+ *
  * // Measure single line
  * const { width, height } = textMeasurer.measureText('Hello World', 16, 'Arial');
- * 
+ *
  * // Calculate wrapped text height
  * const wrappedHeight = textMeasurer.calculateWrappedHeight(
  *   'Long text that will wrap',
@@ -47,7 +47,7 @@ import { useDynamicWidth } from '@/lib/react-util/hooks/use-dynamic-width';
  *   'Roboto'
  * );
  * ```
- * 
+ *
  * @performance Uses singleton canvas instance for optimal performance
  * @accuracy Provides pixel-perfect measurements using native canvas text metrics
  */
@@ -123,11 +123,11 @@ export const createTextMeasurer = () => {
 
 /**
  * Estimates the rendered height of markdown content with support for various markdown elements.
- * 
+ *
  * This function parses markdown text and calculates the approximate rendered height by
  * analyzing different markdown elements including headers, lists, code blocks, blockquotes,
  * and regular paragraphs. It uses the provided text measurer for accurate text dimensions.
- * 
+ *
  * Supported Markdown Elements:
  * - Headers (H1-H4): # ## ### ####
  * - Unordered lists: - * +
@@ -136,12 +136,12 @@ export const createTextMeasurer = () => {
  * - Blockquotes: >
  * - Inline code: `code`
  * - Regular paragraphs
- * 
+ *
  * @param {string} text - The markdown text to measure
  * @param {number} maxWidth - Maximum width for text wrapping
  * @param {ReturnType<typeof createTextMeasurer>} textMeasurer - Text measurement utility
  * @returns {number} Estimated height in pixels
- * 
+ *
  * @example
  * ```typescript
  * const textMeasurer = createTextMeasurer();
@@ -151,7 +151,7 @@ export const createTextMeasurer = () => {
  *   textMeasurer
  * );
  * ```
- * 
+ *
  * @algorithm
  * 1. Splits text into lines
  * 2. Analyzes each line for markdown syntax
@@ -284,29 +284,29 @@ export const estimateMarkdownHeight = (
 
 /**
  * Creates a DOM-based element measurement utility for complex layout calculations.
- * 
+ *
  * This function provides a DOM-based measurement system that creates temporary
  * elements in the document to measure actual rendered dimensions. It's particularly
  * useful for complex markdown content where canvas-based measurement may not be
  * sufficient due to CSS styling and HTML structure.
- * 
+ *
  * @returns {Object} Element measurement utility object
  * @returns {Function} measureMarkdown - Measures markdown content using DOM
  * @returns {Function} cleanup - Cleans up measurement container
- * 
+ *
  * @example
  * ```typescript
  * const elementMeasurer = createElementMeasurer();
- * 
+ *
  * const height = elementMeasurer.measureMarkdown({
  *   text: '# Title\n\nParagraph with **bold** text',
  *   width: 400
  * });
- * 
+ *
  * // Clean up when done
  * elementMeasurer.cleanup();
  * ```
- * 
+ *
  * @performance Uses hidden DOM elements positioned off-screen
  * @accuracy Provides actual CSS-rendered dimensions
  * @memory Includes cleanup method to prevent memory leaks
@@ -381,36 +381,36 @@ export const createElementMeasurer = () => {
 
 /**
  * Creates an adaptive size estimator that learns from actual measurements over time.
- * 
+ *
  * This function implements a learning system that improves estimation accuracy by
  * comparing initial estimates with actual measured dimensions. It maintains a cache
  * of measurements and calculates adjustment factors to improve future estimates.
- * 
+ *
  * @returns {Object} Adaptive size estimator object
  * @returns {Function} estimateSize - Provides size estimate with caching
  * @returns {Function} recordActualSize - Records actual measurement for learning
  * @returns {Function} getAdjustmentFactor - Gets current adjustment factor
- * 
+ *
  * @example
  * ```typescript
  * const adaptiveEstimator = createAdaptiveSizeEstimator();
- * 
+ *
  * // Initial estimate
  * const estimated = adaptiveEstimator.estimateSize('msg-1', content, 150);
- * 
+ *
  * // Later, record actual measurement
  * adaptiveEstimator.recordActualSize('msg-1', 180);
- * 
+ *
  * // Get learning adjustment factor
  * const factor = adaptiveEstimator.getAdjustmentFactor();
  * ```
- * 
+ *
  * @algorithm
  * 1. Caches initial estimates by message ID
  * 2. Records actual vs estimated measurements
  * 3. Calculates adjustment ratios
  * 4. Applies learning to improve future estimates
- * 
+ *
  * @performance Uses Map-based caching for O(1) lookups
  * @learning Continuously improves accuracy through usage
  */
@@ -465,49 +465,49 @@ export const createAdaptiveSizeEstimator = () => {
 
 /**
  * Creates an enhanced smart size estimator with advanced caching and learning capabilities.
- * 
+ *
  * This is the most sophisticated estimator that combines multiple optimization techniques:
  * TTL-based caching, adaptive learning, automatic cache cleanup, and statistical
  * adjustment factors. It's designed for production use in high-performance applications.
- * 
+ *
  * Features:
  * - TTL-based caching (5 minute default)
  * - Adaptive learning from recent measurements
  * - Automatic cache cleanup and size management
  * - Statistical adjustment factor calculation
  * - Clamped adjustment factors to prevent extreme values
- * 
+ *
  * @returns {Object} Smart size estimator object
  * @returns {Function} estimateSize - Estimates size with caching and learning
  * @returns {Function} recordActualSize - Records measurements for learning
  * @returns {Function} getAdjustmentFactor - Gets current adjustment factor
  * @returns {Function} clearCache - Clears all cached data
- * 
+ *
  * @example
  * ```typescript
  * const smartEstimator = createSmartSizeEstimator();
  * const textMeasurer = createTextMeasurer();
- * 
+ *
  * // Estimate with automatic caching and learning
  * const height = smartEstimator.estimateSize(
  *   'Long markdown content...',
  *   400,
  *   textMeasurer
  * );
- * 
+ *
  * // Record actual measurement for learning
  * smartEstimator.recordActualSize('Long markdown content...', 400, 250);
- * 
+ *
  * // Get current learning adjustment
  * const factor = smartEstimator.getAdjustmentFactor();
  * ```
- * 
+ *
  * @performance
  * - O(1) cache lookups with Map data structure
  * - Automatic cache cleanup prevents memory leaks
  * - TTL-based expiration for fresh estimates
  * - Efficient statistical calculations
- * 
+ *
  * @algorithm
  * 1. Generates cache key from content and dimensions
  * 2. Checks TTL-based cache for existing estimates
@@ -515,7 +515,7 @@ export const createAdaptiveSizeEstimator = () => {
  * 4. Applies statistical adjustment factor from learning
  * 5. Caches result with timestamp
  * 6. Automatically cleans expired entries
- * 
+ *
  * @constants
  * - CACHE_TTL: 5 minutes (300,000ms)
  * - MAX_CACHE_SIZE: 100 entries before cleanup

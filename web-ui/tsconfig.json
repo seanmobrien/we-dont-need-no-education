@@ -12,7 +12,7 @@
       "dom",
       "dom.iterable",
       "es6",
-      "esnext"
+      "esnext",
     ],
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -29,9 +29,9 @@
       }
     ],
     "paths": {
-      "@/*": [
+      "/*": [
         "./*"
-      ],
+      ]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,

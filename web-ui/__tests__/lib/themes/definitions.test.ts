@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { themes, darkTheme, colorfulTheme } from '@/lib/themes/definitions';
+import { themes, darkTheme, colorfulTheme } from '/lib/themes/definitions';
 
 describe('Theme Definitions', () => {
   it('should have dark and light themes available', () => {
@@ -24,7 +24,9 @@ describe('Theme Definitions', () => {
   });
 
   it('should have consistent theme structure', () => {
-    expect(darkTheme.typography.fontFamily).toBe(colorfulTheme.typography.fontFamily);
+    expect(darkTheme.typography.fontFamily).toBe(
+      colorfulTheme.typography.fontFamily,
+    );
     expect(darkTheme.spacing(1)).toBe(colorfulTheme.spacing(1));
   });
 });

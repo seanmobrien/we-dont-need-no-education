@@ -7,7 +7,7 @@
  *   type guard for working with these errors in React/Next.js applications.
  *
  * @example
- *   import { isConsoleError } from '@/lib/react-util/errors/next-console-error';
+ *   import { isConsoleError } from '/lib/react-util/errors/next-console-error';
  *
  *   try {
  *     // ...some code that may throw...
@@ -16,7 +16,7 @@
  *       // Handle Next.js console error specifically
  *       console.warn('Next.js Console Error:', err[nextDigestSymbol], err[nextConsoleErrorType]);
  *     }
- *   } 
+ *   }
  *
  * @exports
  *   - NextConsoleErrorType: Type union for Next.js console error levels
@@ -27,10 +27,9 @@
 const nextDigestSymbol = Symbol.for('next.console.error.digest');
 const nextConsoleErrorType = Symbol.for('next.console.error.type');
 
-
 /**
  * Represents the possible types of console messages in a Next.js application.
- * 
+ *
  * - `'error'`: Indicates an error message.
  * - `'warning'`: Indicates a warning message.
  * - `'info'`: Indicates an informational message.
@@ -40,7 +39,7 @@ export type NextConsoleErrorType = 'error' | 'warning' | 'info' | 'log';
 
 /**
  * Represents an enhanced Error object used in Next.js for console error handling.
- * 
+ *
  * @remarks
  * This type extends the standard `Error` object with additional properties specific to Next.js error reporting.
  *
@@ -48,9 +47,9 @@ export type NextConsoleErrorType = 'error' | 'warning' | 'info' | 'log';
  * @property {string} environmentName - The name of the environment in which the error occurred (e.g., "production", "development").
  * @property {NextConsoleErrorType} [nextConsoleErrorType] - The type of the console error, providing additional context about the error's origin or category.
  */
-export type NextConsoleError = Error & { 
-  [nextDigestSymbol]: string; 
-  [nextConsoleErrorType]?: NextConsoleErrorType; 
+export type NextConsoleError = Error & {
+  [nextDigestSymbol]: string;
+  [nextConsoleErrorType]?: NextConsoleErrorType;
   environmentName?: string;
 };
 

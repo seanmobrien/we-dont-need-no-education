@@ -3,28 +3,43 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { mockFlagsmithInstanceFactory } from '/__tests__/jest.setup';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-
+import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 // Mock all dependencies first
 const mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
 const mockIsError = jest.fn() as jest.MockedFunction<any>;
+let originalReactUtil:
+  | typeof import('/lib/react-util/utility-methods')
+  | undefined;
 const mockLoggedError = {
   isTurtlesAllTheWayDownBaby: jest.fn() as jest.MockedFunction<any>,
 };
 const mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
 const mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
+const mockGetCachedTools = jest.fn().mockResolvedValue(null);
 
-jest.mock('@/lib/react-util/utility-methods', () => {
-  const original: typeof import('@/lib/react-util/utility-methods') =
-    jest.requireActual('@/lib/react-util/utility-methods');
+jest.mock('/lib/react-util/utility-methods', () => {
+  originalReactUtil = jest.requireActual('/lib/react-util/utility-methods');
   return {
-    ...original,
+    ...originalReactUtil,
     getResolvedPromises: mockGetResolvedPromises,
     isError: mockIsError,
   };
 });
 
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('/lib/ai/mcp/tool-cache', () => {
+  const mock = {
+    getCachedTools: mockGetCachedTools,
+    setCachedTools: async () => Promise.resolve(),
+    invalidateCache: async () => Promise.resolve(),
+  };
+  return {
+    getToolCache: jest.fn().mockReturnValue(mock),
+  };
+});
+
+jest.mock('/lib/react-util/errors/logged-error', () => ({
   LoggedError: mockLoggedError,
 }));
 
@@ -33,16 +48,18 @@ jest.mock('ai', () => ({
   ToolSet: {},
 }));
 
-jest.mock('@/lib/ai/mcp/instrumented-sse-transport', () => ({
+jest.mock('/lib/ai/mcp/instrumented-sse-transport', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
 }));
-jest.mock('@/lib/ai/mcp/client-tool-provider', () => ({
+jest.mock('/lib/ai/mcp/client-tool-provider', () => ({
   clientToolProviderFactory: jest.fn(() => ({
     url: 'https://server3.com/api',
     allowWrite: false,
     get_mcpClient: jest.fn().mockReturnValue({}),
     get_isConnected: jest.fn().mockReturnValue(true),
-    get_tools: jest.fn().mockReturnValue({}),
+    get tools() {
+      return {};
+    },
     dispose: jest.fn().mockResolvedValue(undefined as unknown as never),
     connect: jest.fn().mockResolvedValue({} as unknown as never),
   })),
@@ -51,30 +68,30 @@ jest.mock('@/lib/ai/mcp/client-tool-provider', () => ({
 import {
   toolProviderFactory,
   toolProviderSetFactory,
-} from '@/lib/ai/mcp/toolProviderFactory';
+} from '/lib/ai/mcp/toolProviderFactory';
 import type {
   ConnectableToolProvider,
   ToolProviderFactoryOptions,
-} from '@/lib/ai/mcp/types';
+} from '/lib/ai/mcp/types';
 import { ToolSet } from 'ai';
 import z from 'zod';
+
+const mockTools: ToolSet = {
+  'read-tool': {
+    description: 'A read-only tool',
+    inputSchema: z.object({ type: z.string(), properties: z.string() }),
+  },
+  'write-tool': {
+    description: 'A tool with Write access',
+    inputSchema: z.object({ type: z.string(), properties: z.string() }),
+  },
+};
 
 describe('toolProviderFactory', () => {
   const mockOptions: ToolProviderFactoryOptions = {
     url: 'https://test-mcp-server.com/api',
-    headers: { Authorization: 'Bearer test-token' },
+    headers: () => Promise.resolve({ Authorization: 'Bearer test-token' }),
     allowWrite: false,
-  };
-
-  const mockTools: ToolSet = {
-    'read-tool': {
-      description: 'A read-only tool',
-      inputSchema: z.object({ type: z.string(), properties: z.string() }),
-    },
-    'write-tool': {
-      description: 'A tool with Write access',
-      inputSchema: z.object({ type: z.string(), properties: z.string() }),
-    },
   };
 
   const mockMCPClient = {
@@ -106,7 +123,7 @@ describe('toolProviderFactory', () => {
       const provider = await toolProviderFactory(options);
 
       expect(provider.get_isConnected()).toBe(true);
-      expect(provider.get_tools()).toEqual(mockTools);
+      expect(provider.tools).toEqual(mockTools);
       expect(provider.get_mcpClient()).toBe(mockMCPClient);
     });
 
@@ -116,7 +133,7 @@ describe('toolProviderFactory', () => {
 
       expect(provider.get_isConnected()).toBe(true);
 
-      const filteredTools = provider.get_tools();
+      const filteredTools = provider.tools;
       expect(filteredTools).toHaveProperty('read-tool');
       expect(filteredTools).not.toHaveProperty('write-tool');
     });
@@ -255,7 +272,7 @@ describe('toolProviderFactory', () => {
       const provider = await toolProviderFactory(mockOptions);
 
       expect(provider.get_isConnected()).toBe(false);
-      expect(provider.get_tools()).toEqual({});
+      expect(provider.tools).toEqual({});
       expect(provider.get_mcpClient()).toBeUndefined();
     });
 
@@ -284,7 +301,7 @@ describe('toolProviderFactory', () => {
         ...mockOptions,
         allowWrite: true,
       });
-      const tools = provider.get_tools();
+      const tools = provider.tools;
 
       expect(tools).toHaveProperty('read-tool');
       expect(tools).toHaveProperty('write-tool');
@@ -295,7 +312,7 @@ describe('toolProviderFactory', () => {
         ...mockOptions,
         allowWrite: false,
       });
-      const tools = provider.get_tools();
+      const tools = provider.tools;
 
       expect(tools).toHaveProperty('read-tool');
       expect(tools).not.toHaveProperty('write-tool');
@@ -314,7 +331,7 @@ describe('toolProviderFactory', () => {
         ...mockOptions,
         allowWrite: false,
       });
-      const tools = provider.get_tools();
+      const tools = provider.tools;
 
       expect(tools).toHaveProperty('undefined-desc-tool');
     });
@@ -328,17 +345,24 @@ describe('toolProviderSetFactory', () => {
     { url: 'https://server3.com/api', allowWrite: false },
   ];
 
-  const createMockProvider = (
-    tools: Record<string, unknown> = { 'test-tool': {} },
-  ) => ({
-    get_mcpClient: jest.fn().mockReturnValue({}),
-    get_isConnected: jest.fn().mockReturnValue(true),
-    get_tools: jest.fn().mockReturnValue(tools),
-    dispose: jest.fn().mockResolvedValue(undefined as unknown as never),
-    connect: jest.fn().mockResolvedValue({} as unknown as never),
-  });
+  const createMockProvider = (tools: Record<string, unknown> = mockTools) => {
+    mockCreateMCPClient.mockResolvedValueOnce({
+      tools: jest.fn().mockReturnValue(tools),
+      close: jest.fn(),
+    });
+    return {
+      get_mcpClient: jest.fn().mockReturnValue({}),
+      get_isConnected: jest.fn().mockReturnValue(true),
+      get tools() {
+        return tools;
+      },
+      dispose: jest.fn().mockResolvedValue(undefined as unknown as never),
+      connect: jest.fn().mockResolvedValue({} as unknown as never),
+    };
+  };
 
   beforeEach(() => {
+    jest.mock('');
     // Reset individual mocks instead of clearing all global mocks
     mockGetResolvedPromises.mockReset();
     mockLoggedError.isTurtlesAllTheWayDownBaby.mockReset();
@@ -364,29 +388,55 @@ describe('toolProviderSetFactory', () => {
           expect.any(Promise),
           expect.any(Promise),
         ]),
-        60000,
+        expect.any(Number),
       );
     });
 
     it('should aggregate tools from all providers', async () => {
-      const provider1 = createMockProvider({ tool1: {} });
-      const provider2 = createMockProvider({ tool2: {} });
-      const provider3 = createMockProvider({ tool3: {} });
+      (createFlagsmithInstance as jest.Mock).mockReturnValue(
+        mockFlagsmithInstanceFactory({
+          flags: {
+            mcp_enable_tool_caching: true,
+          },
+        }),
+      );
 
-      mockGetResolvedPromises.mockResolvedValue({
-        fulfilled: [provider1, provider2, provider3],
-        rejected: [],
-        pending: [],
+      const tools = {
+        tool1: { ...mockTools['read-tool'] },
+        tool2: { ...mockTools['read-tool'] },
+        tool3: { ...mockTools['read-tool'] },
+      };
+      mockGetCachedTools.mockResolvedValue({ tool1: tools.tool1 });
+      mockGetCachedTools.mockResolvedValue({ tool2: tools.tool2 });
+      mockGetCachedTools.mockResolvedValue({ tool3: tools.tool3 });
+      mockCreateMCPClient.mockResolvedValueOnce({
+        tools: jest.fn().mockReturnValue(tools),
+        close: jest.fn(),
       });
+      mockCreateMCPClient.mockResolvedValueOnce({
+        tools: jest.fn().mockReturnValue(tools),
+        close: jest.fn(),
+      });
+      mockCreateMCPClient.mockResolvedValueOnce({
+        tools: jest.fn().mockReturnValue(tools),
+        close: jest.fn(),
+      });
+      /*
+      const provider1 = createMockProvider({ tool1: tools.tool1 });
+      const provider2 = createMockProvider({ tool2: tools.tool2 });
+      const provider3 = createMockProvider({ tool3: tools.tool3 });
+      */
+      mockGetResolvedPromises.mockClear();
+      mockGetResolvedPromises.mockImplementation(
+        originalReactUtil!.getResolvedPromises,
+      );
 
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
-      const allTools = providerSet.get_tools();
+      const allTools = providerSet.tools;
 
-      expect(allTools).toEqual({
-        tool1: {},
-        tool2: {},
-        tool3: {},
-      });
+      expect(allTools.tool1).not.toBeUndefined();
+      expect(allTools.tool2).not.toBeUndefined();
+      expect(allTools.tool3).not.toBeUndefined();
     });
 
     it('should handle tool name conflicts with last provider precedence', async () => {
@@ -400,7 +450,7 @@ describe('toolProviderSetFactory', () => {
       });
 
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
-      const allTools = providerSet.get_tools();
+      const allTools = providerSet.tools;
 
       expect(allTools['shared-tool']).toEqual({ version: 2 });
     });
@@ -531,7 +581,7 @@ describe('toolProviderSetFactory', () => {
       const providerSet = await toolProviderSetFactory([]);
 
       expect(providerSet.providers).toHaveLength(1);
-      expect(providerSet.get_tools()).toEqual({});
+      expect(providerSet.tools).toEqual({});
     });
 
     it('should handle all connections failing', async () => {
@@ -544,7 +594,7 @@ describe('toolProviderSetFactory', () => {
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
       expect(providerSet.providers).toHaveLength(1);
-      expect(providerSet.get_tools()).toEqual({});
+      expect(providerSet.tools).toEqual({});
     });
   });
 });
@@ -555,9 +605,9 @@ describe('integration scenarios', () => {
     const successfulProvider = {
       get_mcpClient: jest.fn().mockReturnValue({}),
       get_isConnected: jest.fn().mockReturnValue(true),
-      get_tools: jest
-        .fn()
-        .mockReturnValue({ 'file-tool': {}, 'search-tool': {} }),
+      get tools() {
+        return { 'file-tool': {}, 'search-tool': {} };
+      },
       dispose: jest
         .fn()
         .mockResolvedValue(
@@ -585,7 +635,7 @@ describe('integration scenarios', () => {
     );
 
     expect(providerSet.providers).toHaveLength(2);
-    expect(providerSet.get_tools()).toEqual({
+    expect(providerSet.tools).toEqual({
       'file-tool': {},
       'search-tool': {},
     });

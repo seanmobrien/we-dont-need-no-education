@@ -1,7 +1,19 @@
 /**
  * @jest-environment node
  */
-import { KeycloakTokenExchange, TokenExchangeError } from '../../../../lib/site-util/auth/keycloak-token-exchange';
+
+// Set up environment variables BEFORE importing the module under test
+// This is required because the module exports a default instance that validates config at load time
+process.env.AUTH_KEYCLOAK_ISSUER =
+  'https://keycloak.example.com/auth/realms/test';
+process.env.AUTH_KEYCLOAK_CLIENT_ID = 'test-client';
+process.env.AUTH_KEYCLOAK_CLIENT_SECRET = 'test-secret';
+process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
+
+import {
+  KeycloakTokenExchange,
+  TokenExchangeError,
+} from '../../../../lib/site-util/auth/keycloak-token-exchange';
 import axios from 'axios';
 import { getToken } from 'next-auth/jwt';
 
@@ -16,30 +28,35 @@ describe('KeycloakTokenExchange', () => {
   let tokenExchange: KeycloakTokenExchange;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    
+    // jest.clearAllMocks();
+
     // Mock environment variables
+    /*
     process.env.AUTH_KEYCLOAK_ISSUER = 'https://keycloak.example.com/auth/realms/test';
     process.env.AUTH_KEYCLOAK_CLIENT_ID = 'test-client';
     process.env.AUTH_KEYCLOAK_CLIENT_SECRET = 'test-secret';
     process.env.NEXTAUTH_SECRET = 'test-nextauth-secret';
-
+    */
     tokenExchange = new KeycloakTokenExchange();
   });
 
   afterEach(() => {
+    /*
     delete process.env.AUTH_KEYCLOAK_ISSUER;
     delete process.env.AUTH_KEYCLOAK_CLIENT_ID;
     delete process.env.AUTH_KEYCLOAK_CLIENT_SECRET;
     delete process.env.NEXTAUTH_SECRET;
+    */
   });
 
   describe('constructor', () => {
     it('should throw error when configuration is missing', () => {
       delete process.env.AUTH_KEYCLOAK_ISSUER;
-      
+
       expect(() => new KeycloakTokenExchange()).toThrow(TokenExchangeError);
-      expect(() => new KeycloakTokenExchange()).toThrow('Missing required Keycloak configuration');
+      expect(() => new KeycloakTokenExchange()).toThrow(
+        'Missing required Keycloak configuration',
+      );
     });
 
     it('should accept configuration overrides', () => {
@@ -73,15 +90,17 @@ describe('KeycloakTokenExchange', () => {
     it('should throw error when no JWT token found', async () => {
       mockedGetToken.mockResolvedValue(null);
 
-      await expect(tokenExchange.extractKeycloakToken(mockRequest))
-        .rejects.toThrow(TokenExchangeError);
+      await expect(
+        tokenExchange.extractKeycloakToken(mockRequest),
+      ).rejects.toThrow(TokenExchangeError);
     });
 
     it('should throw error when no access_token in JWT', async () => {
       mockedGetToken.mockResolvedValue({} as any);
 
-      await expect(tokenExchange.extractKeycloakToken(mockRequest))
-        .rejects.toThrow('No Keycloak access token found in JWT');
+      await expect(
+        tokenExchange.extractKeycloakToken(mockRequest),
+      ).rejects.toThrow('No Keycloak access token found in JWT');
     });
   });
 
@@ -107,12 +126,14 @@ describe('KeycloakTokenExchange', () => {
       });
 
       expect(mockedAxios.post).toHaveBeenCalledWith(
-        'https://keycloak.example.com/auth/realms/test/protocol/openid-connect/token',
-        expect.stringContaining('grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange'),
+        'https://keycloak.example.com/realms/test/protocol/openid-connect/token',
+        expect.stringContaining(
+          'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange',
+        ),
         expect.objectContaining({
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           timeout: 10000,
-        })
+        }),
       );
     });
 
@@ -121,13 +142,18 @@ describe('KeycloakTokenExchange', () => {
         isAxiosError: true,
         response: {
           status: 400,
-          data: { error: 'invalid_grant', error_description: 'Token exchange failed' },
+          data: {
+            error: 'invalid_grant',
+            error_description: 'Token exchange failed',
+          },
         },
       });
 
-      await expect(tokenExchange.exchangeForGoogleTokens({
-        subjectToken: 'invalid-token',
-      })).rejects.toThrow(TokenExchangeError);
+      await expect(
+        tokenExchange.exchangeForGoogleTokens({
+          subjectToken: 'invalid-token',
+        }),
+      ).rejects.toThrow(TokenExchangeError);
     });
 
     it('should throw error when response is missing tokens', async () => {
@@ -135,9 +161,11 @@ describe('KeycloakTokenExchange', () => {
         data: { token_type: 'Bearer' }, // Missing access_token and refresh_token
       });
 
-      await expect(tokenExchange.exchangeForGoogleTokens({
-        subjectToken: 'keycloak-token',
-      })).rejects.toThrow('Invalid token response from Keycloak');
+      await expect(
+        tokenExchange.exchangeForGoogleTokens({
+          subjectToken: 'keycloak-token',
+        }),
+      ).rejects.toThrow('Invalid token response from Keycloak');
     });
   });
 
@@ -157,7 +185,8 @@ describe('KeycloakTokenExchange', () => {
         },
       });
 
-      const result = await tokenExchange.getGoogleTokensFromRequest(mockRequest);
+      const result =
+        await tokenExchange.getGoogleTokensFromRequest(mockRequest);
 
       expect(result).toEqual({
         access_token: 'google-access-token',

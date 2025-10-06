@@ -4,8 +4,11 @@ import { env } from '../env';
 import { UrlBuilder } from '../url-builder/_impl';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
-import { auth } from '@/auth';
-import { keycloakTokenExchange, TokenExchangeError } from './keycloak-token-exchange';
+import { auth } from '/auth';
+import {
+  keycloakTokenExchange,
+  TokenExchangeError,
+} from './keycloak-token-exchange';
 
 const tokenSymbol: unique symbol = Symbol('tokens');
 
@@ -35,7 +38,7 @@ const getTokensFromUser = async (
       userId: userId,
     };
   }
-  
+
   const session = await auth();
   if (!session) {
     throw new Error('Access denied');
@@ -44,16 +47,17 @@ const getTokensFromUser = async (
     // TODO: check if user is admin
     throw new Error('Access denied');
   }
-  
+
   try {
     // Use the new Keycloak token exchange service
-    const tokens = await keycloakTokenExchange.getGoogleTokensFromRequest(req);
-    
+    const tokens =
+      await keycloakTokenExchange().getGoogleTokensFromRequest(req);
+
     const work = req as RequestWithTokens;
     if (!work[tokenSymbol]) {
       work[tokenSymbol] = {};
     }
-    
+
     work[tokenSymbol][userId] = {
       refresh_token: tokens.refresh_token,
       access_token: tokens.access_token,
@@ -66,7 +70,9 @@ const getTokensFromUser = async (
     };
   } catch (error) {
     if (error instanceof TokenExchangeError) {
-      throw new Error(`Failed to get Google tokens from Keycloak: ${error.message}`);
+      throw new Error(
+        `Failed to get Google tokens from Keycloak: ${error.message}`,
+      );
     }
     throw error;
   }

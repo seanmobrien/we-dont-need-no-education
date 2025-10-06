@@ -1,9 +1,9 @@
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
-import { getRetryErrorInfo } from '@/lib/ai/chat';
+import { getRetryErrorInfo } from '/lib/ai/chat';
 import {
   isModelAvailable,
   getModelAvailabilityStatus,
-} from '@/lib/ai/aiModelFactory';
+} from '/lib/ai/aiModelFactory';
 import { rateLimitMetrics } from './metrics';
 import type {
   ModelClassification,
@@ -12,7 +12,7 @@ import type {
   RateLimitRetryContext,
   RateLimitFactoryOptions,
 } from './types';
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 import { checkModelAvailabilityAndFallback } from './model-availability';
 import {
   handleRateLimitError,

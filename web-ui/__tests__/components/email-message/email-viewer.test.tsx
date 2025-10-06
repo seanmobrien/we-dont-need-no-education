@@ -5,9 +5,9 @@ import {
   waitFor,
   act,
   hideConsoleOutput,
-} from '@/__tests__/test-utils';
-import EmailViewer from '@/components/email-message/email-viewer';
-import { fetch } from '@/lib/nextjs-util/fetch';
+} from '/__tests__/test-utils';
+import EmailViewer from '/components/email-message/email-viewer';
+import { fetch } from '/lib/nextjs-util/fetch';
 
 // Mock Promise.withResolvers if not available
 if (!Promise.withResolvers) {

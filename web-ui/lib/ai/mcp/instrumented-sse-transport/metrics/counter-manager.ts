@@ -1,12 +1,12 @@
 /**
  * @fileoverview Counter Management for MCP Transport
- * 
+ *
  * This module handles tracking of active sessions and tool calls with
  * safe increment/decrement operations and debugging capabilities.
  */
 
 import { activeSessionsGauge, activeToolCallsGauge } from './otel-metrics';
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 import { DEBUG_MODE } from './otel-metrics';
 
 export interface ActiveCounters {

@@ -1,14 +1,20 @@
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 import {
   AiSearchResultEnvelope,
   hybridPolicySearchFactory,
 } from '../services/search';
 import { AiSearchToolResult, PolicySearchOptions } from './types';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { toolCallbackResultFactory, toolCallbackResultSchemaFactory } from './utility';
-import { appMeters } from '@/lib/site-util/metrics';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import {
+  toolCallbackResultFactory,
+  toolCallbackResultSchemaFactory,
+} from './utility';
+import { appMeters } from '/lib/site-util/metrics';
 import z from 'zod';
-import { AiSearchResultEnvelopeSchema, PolicySearchOptionsSchema } from './schemas/searchObjects';
+import {
+  AiSearchResultEnvelopeSchema,
+  PolicySearchOptionsSchema,
+} from './schemas/searchObjects';
 
 // OpenTelemetry Metrics for SearchPolicyStore Tool
 const searchPolicyStoreCounter = appMeters.createCounter(
@@ -117,16 +123,12 @@ export const searchPolicyStore = async ({
 export const searchPolicyStoreConfig = {
   description: 'Uses hybrid search to find policies based on a query.',
   inputSchema: {
-    query: z
-      .string()
-      .describe('The search query term used to find policies.'),
+    query: z.string().describe('The search query term used to find policies.'),
     options: PolicySearchOptionsSchema.optional().describe(
       'Options used to influence the search results, such as scope and pagination.',
     ),
   },
-  outputSchema: toolCallbackResultSchemaFactory(
-    AiSearchResultEnvelopeSchema,
-  ),
+  outputSchema: toolCallbackResultSchemaFactory(AiSearchResultEnvelopeSchema),
   annotations: {
     title: 'Search Policy Store',
     readOnlyHint: true,

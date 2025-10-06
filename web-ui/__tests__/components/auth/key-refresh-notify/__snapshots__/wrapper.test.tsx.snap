@@ -24,7 +24,7 @@ exports[`KeyRefreshWrapper renders with default state snapshot 1`] = `
         >
           <svg
             aria-hidden="true"
-            class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit css-iilnq5-MuiSvgIcon-root"
+            class="MuiSvgIcon-root MuiSvgIcon-fontSizeInherit css-14a4tsu-MuiSvgIcon-root"
             data-testid="InfoOutlinedIcon"
             focusable="false"
             viewBox="0 0 24 24"
@@ -51,7 +51,7 @@ exports[`KeyRefreshWrapper renders with default state snapshot 1`] = `
           >
             <svg
               aria-hidden="true"
-              class="MuiSvgIcon-root MuiSvgIcon-fontSizeSmall css-e0e2zh-MuiSvgIcon-root"
+              class="MuiSvgIcon-root MuiSvgIcon-fontSizeSmall css-1l1x5ld-MuiSvgIcon-root"
               data-testid="CloseIcon"
               focusable="false"
               viewBox="0 0 24 24"

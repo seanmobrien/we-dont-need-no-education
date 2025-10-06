@@ -5,8 +5,8 @@
 import type { CacheableResponse } from './types';
 import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
-import { log } from '@/lib/logger';
-import { generateChatId } from '@/lib/ai/core';
+import { log } from '/lib/logger';
+import { generateChatId } from '/lib/ai/core';
 
 const config = getCacheConfig();
 
@@ -22,7 +22,11 @@ export const handleCacheHit = (
   parsed: CacheableResponse,
   context: string = '',
 ): void => {
-  const responseSize = parsed.content?.reduce((acc, part) => acc + (part.type === 'text' ? part.text.length : 0), 0) || 0;
+  const responseSize =
+    parsed.content?.reduce(
+      (acc, part) => acc + (part.type === 'text' ? part.text.length : 0),
+      0,
+    ) || 0;
 
   // Fix-up timestamps
   if (
@@ -66,7 +70,11 @@ export const handleCacheHit = (
   }
 
   if (config.enableLogging) {
-    log((l) => l.verbose(`🎯 ${context}Cache HIT for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`));
+    log((l) =>
+      l.verbose(
+        `🎯 ${context}Cache HIT for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
+      ),
+    );
   }
 };
 
@@ -86,8 +94,10 @@ export const handleCacheMiss = (
   }
 
   if (config.enableLogging) {
-    log(l => l.verbose(
-      `🔍 ${context}Cache MISS for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-    ));
+    log((l) =>
+      l.verbose(
+        `🔍 ${context}Cache MISS for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
+      ),
+    );
   }
 };

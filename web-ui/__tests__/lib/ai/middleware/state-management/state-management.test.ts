@@ -8,7 +8,7 @@
 import {
   STATE_PROTOCOL,
   MiddlewareStateManager,
-} from '@/lib/ai/middleware/state-management';
+} from '/lib/ai/middleware/state-management';
 
 describe('State Management Protocol', () => {
   describe('MiddlewareStateManager', () => {

@@ -46,8 +46,12 @@
  * @since 1.0.0
  */
 
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { resolveCaseFileIdBatch, toolCallbackArrayResultSchemaFactory, toolCallbackResultFactory } from '../utility';
+import { drizDbWithInit } from '/lib/drizzle-db';
+import {
+  resolveCaseFileIdBatch,
+  toolCallbackArrayResultSchemaFactory,
+  toolCallbackResultFactory,
+} from '../utility';
 import {
   CaseFileRequestProps,
   CaseFileResponse,
@@ -55,8 +59,8 @@ import {
   ToolCallbackResult,
   ValidCaseFileRequestProps,
 } from '../types';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@/lib/logger';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { log } from '/lib/logger';
 import { caseFileDocumentShape } from '../caseFileDocumentQuery';
 import {
   caseFileDocumentErrorCounter,
@@ -67,9 +71,12 @@ import {
 import { preprocessCaseFileDocument } from './preprocess-casefile-document';
 import { countTokens } from '../../core/count-tokens';
 import { generateChatId } from '../../core';
-import { caseFileRequestPropsShape, CaseFileResponseShape } from '../schemas/case-file-request-props-shape';
+import {
+  caseFileRequestPropsShape,
+  CaseFileResponseShape,
+} from '../schemas/case-file-request-props-shape';
 import z from 'zod';
-import { env } from '@/lib/site-util/env';
+import { env } from '/lib/site-util/env';
 import { compactCaseFileDocument } from './compact-casefile-document';
 
 /**
@@ -195,7 +202,7 @@ export const getMultipleCaseFileDocuments = async ({
       verbatim_fidelity: x.verbatimFidelity ?? verbatim_fidelity ?? 75,
       goals: [...new Set<string>([...(x.goals ?? []), ...globalGoals])],
     }),
-  );  
+  );
   const attributes = {
     // has_goals: Boolean(goals.length),
     // has_reasoning: Boolean(reasoning),
@@ -222,10 +229,12 @@ export const getMultipleCaseFileDocuments = async ({
         `No valid Case File IDs could be resolved from the provided identifiers: ${requests.map((r) => r.caseFileId).join(', ')}`,
       );
     }
-    const documents = await drizDbWithInit(db => db.query.documentUnits.findMany({
-      where: (du, { inArray }) => inArray(du.unitId, validIds),
-      ...caseFileDocumentShape,
-    }));
+    const documents = await drizDbWithInit((db) =>
+      db.query.documentUnits.findMany({
+        where: (du, { inArray }) => inArray(du.unitId, validIds),
+        ...caseFileDocumentShape,
+      }),
+    );
 
     // Calculate total document size for metrics
     const totalDocumentSize = documents.reduce(
@@ -307,100 +316,108 @@ export const getMultipleCaseFileDocuments = async ({
      * - Documents without specific analysis needs aren't subjected to unnecessary AI processing
      * - AI resources are used efficiently by processing similar documents together
      * - System performance scales well with varying document loads and complexity
-     */    
+     */
     let processedGroups: Array<CaseFileResponse | Array<CaseFileResponse>>;
-    try{
+    try {
       processedGroups = await Promise.all(
-        Object.entries(groupedByGoals).map(async ([goalsKey, groupDocuments]) => {
-          // Handle documents without goals - no AI processing needed
-          if (goalsKey.trim() === '' || goalsKey === '[]') {
-            return groupDocuments.map(
-              (d) =>
-                ({
-                  document: d.document as DocumentResource,
-                }) as CaseFileResponse,
-            );
-          }
-
-          // Process documents with goals through AI analysis pipeline
-          const groupGoals = JSON.parse(goalsKey) as string[];
-          // New batching strategy: accumulate documents until token threshold exceeded, then process batch.
-          // Threshold is configurable via env TOKEN_BATCH_THRESHOLD (defaults to 50,000 tokens).          
-          // Fallback in unlikely case env factory returns undefined (e.g., client context)
-          const effectiveBatchThreshold = env('TOKEN_BATCH_THRESHOLD') || 50000;
-          const aggregatedResults: Array<CaseFileResponse> = [];
-
-          let currentBatch: typeof groupDocuments = [];
-          let currentBatchTokens = 0;
-
-          const processCurrentBatch = async () => {
-            if (currentBatch.length === 0) return;
-            try {
-              const batchResults = await preprocessCaseFileDocument({
-                documents: currentBatch,
-                goals: groupGoals,
-                requestContext: { requestId: requestId.id },
-              });
-              aggregatedResults.push(...batchResults);
-            } catch (error) {
-              const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-                log: true,
-                source: 'getCaseFileDocument::preprocessCaseFileDocument:batch',
-              });
-              aggregatedResults.push(
-                ...currentBatch.map((d) => ({
-                  document: { unitId: d?.document?.unitId ?? '<<unknown>>' },
-                  text: `An unexpected error occurred processing case file id ${d?.document?.unitId ?? '<<unknown>>'}. Please try your request again later.  Error details: ${le.toString()}`,
-                })) as Array<CaseFileResponse>,
+        Object.entries(groupedByGoals).map(
+          async ([goalsKey, groupDocuments]) => {
+            // Handle documents without goals - no AI processing needed
+            if (goalsKey.trim() === '' || goalsKey === '[]') {
+              return groupDocuments.map(
+                (d) =>
+                  ({
+                    document: d.document as DocumentResource,
+                  }) as CaseFileResponse,
               );
-            } finally {
-              currentBatch = [];
-              currentBatchTokens = 0;
-            }
-          };
-
-          for (const doc of groupDocuments) {
-            let docTokens = 0;
-            try {
-              // Estimate tokens for this single document by serializing its content
-              docTokens = countTokens({
-                // We approximate token usage by providing a single message with JSON of the document
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                prompt: [{ role: 'user', content: JSON.stringify(doc.document) }] as any,
-                enableLogging: false,
-              });
-            } catch {
-              // Fallback conservative estimate if token counting fails
-              docTokens = 2000;
             }
 
-            // If adding this doc would exceed threshold, process existing batch first
-            if (currentBatch.length > 0 && currentBatchTokens + docTokens > effectiveBatchThreshold) {
-              await processCurrentBatch();
+            // Process documents with goals through AI analysis pipeline
+            const groupGoals = JSON.parse(goalsKey) as string[];
+            // New batching strategy: accumulate documents until token threshold exceeded, then process batch.
+            // Threshold is configurable via env TOKEN_BATCH_THRESHOLD (defaults to 50,000 tokens).
+            // Fallback in unlikely case env factory returns undefined (e.g., client context)
+            const effectiveBatchThreshold =
+              env('TOKEN_BATCH_THRESHOLD') || 50000;
+            const aggregatedResults: Array<CaseFileResponse> = [];
+
+            let currentBatch: typeof groupDocuments = [];
+            let currentBatchTokens = 0;
+
+            const processCurrentBatch = async () => {
+              if (currentBatch.length === 0) return;
+              try {
+                const batchResults = await preprocessCaseFileDocument({
+                  documents: currentBatch,
+                  goals: groupGoals,
+                  requestContext: { requestId: requestId.id },
+                });
+                aggregatedResults.push(...batchResults);
+              } catch (error) {
+                const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+                  log: true,
+                  source:
+                    'getCaseFileDocument::preprocessCaseFileDocument:batch',
+                });
+                aggregatedResults.push(
+                  ...(currentBatch.map((d) => ({
+                    document: { unitId: d?.document?.unitId ?? '<<unknown>>' },
+                    text: `An unexpected error occurred processing case file id ${d?.document?.unitId ?? '<<unknown>>'}. Please try your request again later.  Error details: ${le.toString()}`,
+                  })) as Array<CaseFileResponse>),
+                );
+              } finally {
+                currentBatch = [];
+                currentBatchTokens = 0;
+              }
+            };
+
+            for (const doc of groupDocuments) {
+              let docTokens = 0;
+              try {
+                // Estimate tokens for this single document by serializing its content
+                docTokens = countTokens({
+                  // We approximate token usage by providing a single message with JSON of the document
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  prompt: [
+                    { role: 'user', content: JSON.stringify(doc.document) },
+                  ] as any,
+                  enableLogging: false,
+                });
+              } catch {
+                // Fallback conservative estimate if token counting fails
+                docTokens = 2000;
+              }
+
+              // If adding this doc would exceed threshold, process existing batch first
+              if (
+                currentBatch.length > 0 &&
+                currentBatchTokens + docTokens > effectiveBatchThreshold
+              ) {
+                await processCurrentBatch();
+              }
+
+              currentBatch.push(doc);
+              currentBatchTokens += docTokens;
+
+              // If a single (or accumulated) batch crosses threshold, process immediately
+              if (currentBatchTokens > effectiveBatchThreshold) {
+                await processCurrentBatch();
+              }
             }
 
-            currentBatch.push(doc);
-            currentBatchTokens += docTokens;
+            // Process any remaining documents in the final batch
+            await processCurrentBatch();
 
-            // If a single (or accumulated) batch crosses threshold, process immediately
-            if (currentBatchTokens > effectiveBatchThreshold) {
-              await processCurrentBatch();
-            }
-          }
-
-          // Process any remaining documents in the final batch
-          await processCurrentBatch();
-
-          return aggregatedResults;
-        }),
-      );      
+            return aggregatedResults;
+          },
+        ),
+      );
     } finally {
       // Clean up any resources or contexts
     }
-    
 
     // Flatten the processed groups into a unified result array
-    const result: CaseFileResponse[] = processedGroups.flat().map(x => {
+    const result: CaseFileResponse[] = processedGroups.flat().map((x) => {
       if (x && 'document' in x) {
         const { document: case_file, ...rest } = x;
         return {
@@ -487,8 +504,7 @@ export const getMultipleCaseFileDocumentsConfig = {
   },
 } as const;
 
-
-  /*
+/*
   Single document tool - obsolete (not worth the toolspace, just load a multiple of 1)
 server.registerTool(
   'getCaseFileDocument',
@@ -514,4 +530,3 @@ server.registerTool(
   getCaseFileDocument,
 );
 */
-  

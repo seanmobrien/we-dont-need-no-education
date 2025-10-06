@@ -1,6 +1,6 @@
 // AzureBaseSearchClient.ts
 
-import { env } from '@/lib/site-util/env';
+import { env } from '/lib/site-util/env';
 import { type IEmbeddingService, EmbeddingService } from '../embedding';
 import type {
   HybridSearchOptions,
@@ -9,9 +9,9 @@ import type {
   HybridSearchPayload,
   AiSearchResultEnvelope,
 } from './types';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { fetch } from '@/lib/nextjs-util/fetch';
-import { log } from '@/lib/logger';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { fetch } from '/lib/nextjs-util/fetch';
+import { log } from '/lib/logger';
 
 /**
  * Raw metadata structure returned by Azure AI Search (or compatible hybrid search endpoint)
@@ -62,7 +62,11 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
     metadata: SearchMeta,
   ): Record<string, unknown> => {
     const result: Record<string, unknown> = {};
-    const processExisting = (key: string, attr: { value: unknown }, arrayByDefault = false) => {
+    const processExisting = (
+      key: string,
+      attr: { value: unknown },
+      arrayByDefault = false,
+    ) => {
       const existing = result[key];
       if (Array.isArray(existing)) {
         existing.push(attr.value);
@@ -77,7 +81,7 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
       const key = attr.key;
       const m = key.match(/^(.+?)(\d+)$/);
       if (m && m.at(1)) {
-        processExisting(m[1], attr, true);        
+        processExisting(m[1], attr, true);
       } else {
         processExisting(key, attr);
       }
@@ -122,19 +126,25 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
     }
 
     if (!Array.isArray(json.value)) {
-      log(l => l.warn({message:        `No 'value' array in response. query=${query} options=${JSON.stringify(options)}`,
-      data: {
-        options,
-        query
-      }}));
+      log((l) =>
+        l.warn({
+          message: `No 'value' array in response. query=${query} options=${JSON.stringify(options)}`,
+          data: {
+            options,
+            query,
+          },
+        }),
+      );
       return { results: [] };
     }
 
     if (json.value.length === 0) {
-      log(l => l.warn({
-        message: `No results for query=${query} options=${JSON.stringify(options)}`,
-        data: { options, query }
-      }));
+      log((l) =>
+        l.warn({
+          message: `No results for query=${query} options=${JSON.stringify(options)}`,
+          data: { options, query },
+        }),
+      );
       return { results: [] };
     }
 

@@ -19,20 +19,20 @@ import { NextRequest } from 'next/server';
 // Mock BEFORE importing the route so the route captures our mocks.
 const mockGetUsageReport = jest.fn();
 
-jest.mock('@/lib/ai/services/model-stats/token-stats-service', () => ({
+jest.mock('/lib/ai/services/model-stats/token-stats-service', () => ({
   getInstance: () => ({
     getUsageReport: mockGetUsageReport,
   }),
 }));
 
-jest.mock('@/lib/ai/aiModelFactory', () => ({
+jest.mock('/lib/ai/aiModelFactory', () => ({
   isModelAvailable: () => true,
 }));
 
 // Import AFTER mocks
-import { GET } from '@/app/api/ai/chat/stats/models/route';
+import { GET } from '/app/api/ai/chat/stats/models/route';
 // Import as namespace so we can spy on drizDbWithInit (it's not a jest.fn in global setup)
-import * as drizzleDb from '@/lib/drizzle-db';
+import * as drizzleDb from '/lib/drizzle-db';
 
 type BaseModelRecord = {
   id: string;
@@ -85,7 +85,7 @@ describe('/api/ai/chat/stats/models?source=redis', () => {
         maxTokensPerMinute: 5000,
         maxTokensPerDay: 100000,
       },
-        currentStats: {
+      currentStats: {
         currentMinuteTokens: 25,
         lastHourTokens: 250,
         last24HoursTokens: 2500,
@@ -105,7 +105,9 @@ describe('/api/ai/chat/stats/models?source=redis', () => {
       quotaCheckResult: { allowed: true },
     }));
 
-    const req = new NextRequest('http://localhost:3000/api/ai/chat/stats/models?source=redis');
+    const req = new NextRequest(
+      'http://localhost:3000/api/ai/chat/stats/models?source=redis',
+    );
     const res = await GET(req);
     const json = await res.json();
 
@@ -125,7 +127,12 @@ describe('/api/ai/chat/stats/models?source=redis', () => {
       maxTokensPerMinute: 5000,
       maxTokensPerDay: 100000,
       stats: {
-        minute: { totalTokens: 25, promptTokens: 0, completionTokens: 0, requestCount: 7 },
+        minute: {
+          totalTokens: 25,
+          promptTokens: 0,
+          completionTokens: 0,
+          requestCount: 7,
+        },
         hour: { totalTokens: 250 },
         day: { totalTokens: 2500 },
       },
@@ -169,7 +176,9 @@ describe('/api/ai/chat/stats/models?source=redis', () => {
     mockDb.__setRecords(baseModels);
     mockGetUsageReport.mockRejectedValueOnce(new Error('boom'));
 
-    const req = new NextRequest('http://localhost:3000/api/ai/chat/stats/models?source=redis');
+    const req = new NextRequest(
+      'http://localhost:3000/api/ai/chat/stats/models?source=redis',
+    );
     const res = await GET(req);
     const json = await res.json();
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { extractJsonFromCodeBlock } from '@/lib/ai/middleware/set-normalized-defaults';
+import { extractJsonFromCodeBlock } from '/lib/ai/middleware/set-normalized-defaults';
 import { throws } from 'assert';
 
 // Test the utility functions that are the core of the middleware
@@ -324,7 +324,7 @@ describe('set-normalized-defaults utility functions', () => {
     it('should validate middleware structure', async () => {
       // Import the middleware to ensure it's properly exported
       const { setNormalizedDefaultsMiddleware } = await import(
-        '@/lib/ai/middleware/set-normalized-defaults'
+        '/lib/ai/middleware/set-normalized-defaults'
       );
 
       // Verify the middleware has the expected structure

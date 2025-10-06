@@ -1,21 +1,15 @@
-import { query, queryExt } from '@/lib/neondb';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
-import { PartialExceptFor } from '@/lib/typescript';
-import { log } from '@/lib/logger';
-import type {
-  PaginatedResultset,
-  PaginationStats,
-} from '@/data-models/_types';
-import type {
-  Thread,
-  ThreadSummary,
-} from '@/data-models/api/thread';
-import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+import { query, queryExt } from '/lib/neondb';
+import { ValidationError } from '/lib/react-util/errors/validation-error';
+import { DataIntegrityError } from '/lib/react-util/errors/data-integrity-error';
+import { PartialExceptFor } from '/lib/typescript';
+import { log } from '/lib/logger';
+import type { PaginatedResultset, PaginationStats } from '/data-models/_types';
+import type { Thread, ThreadSummary } from '/data-models/api/thread';
+import { parsePaginationStats } from '/lib/components/mui/data-grid/queryHelpers/utility';
 
 import type { ObjectRepository } from '../_types';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { drizDbWithInit, schema } from '/lib/drizzle-db';
 
 const mapRecordToSummary = (record: Record<string, unknown>) => ({
   threadId: Number(record.thread_id),
@@ -117,14 +111,18 @@ export class ThreadRepository
         });
       }
       const createdDate = createdOn || new Date();
-      const result = await drizDbWithInit(async (db) =>
-        await db.insert(schema.threads).values({
-          subject,
-          createdAt: createdDate.toISOString(),
-          externalId: externalId,
-        }).returning()
-        .execute()
-        .then(x => x.at(0))
+      const result = await drizDbWithInit(
+        async (db) =>
+          await db
+            .insert(schema.threads)
+            .values({
+              subject,
+              createdAt: createdDate.toISOString(),
+              externalId: externalId,
+            })
+            .returning()
+            .execute()
+            .then((x) => x.at(0)),
       );
       /*
       const result = await query(
@@ -139,7 +137,7 @@ export class ThreadRepository
           table: 'Threads',
         });
       }
-      log((l) => l.verbose('[ [AUDIT]] -  Thread created:', result.threadId));      
+      log((l) => l.verbose('[ [AUDIT]] -  Thread created:', result.threadId));
       return {
         threadId: result.threadId,
         subject: result.subject,

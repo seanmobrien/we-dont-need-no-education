@@ -5,6 +5,7 @@ This module provides a function for applying dynamic ordering logic to Drizzle O
 ## Overview
 
 The `buildDrizzleOrderBy` function allows you to:
+
 - Parse sort parameters from URL search params, GridSortModel, or NextJS requests
 - Apply column mapping for translating frontend field names to database column names
 - Handle complex sorting with multiple columns and custom SQL expressions
@@ -13,9 +14,12 @@ The `buildDrizzleOrderBy` function allows you to:
 ## Basic Usage
 
 ```typescript
-import { buildDrizzleOrderBy, createColumnGetter } from '@/lib/components/mui/data-grid/buildDrizzleOrderBy';
-import { db } from '@/lib/drizzle-db';
-import { users } from '@/drizzle/schema';
+import {
+  buildDrizzleOrderBy,
+  createColumnGetter,
+} from '/lib/components/mui/data-grid/buildDrizzleOrderBy';
+import { db } from '/lib/drizzle-db';
+import { users } from '/drizzle/schema';
 
 // Define available columns for sorting
 const sortableColumns = {
@@ -34,8 +38,8 @@ const sortedQuery = buildDrizzleOrderBy({
   source: request.url, // URL, GridSortModel, or NextRequest
   defaultSort: 'name',
   columnMap: {
-    'display_name': 'name',
-    'user_email': 'email',
+    display_name: 'name',
+    user_email: 'email',
   },
   getColumn,
 });
@@ -82,8 +86,8 @@ Helper function that automatically maps column names using reflection.
 ```typescript
 const getColumn = createTableColumnGetter(users, {
   // Custom mappings for complex cases
-  'display_name': users.name,
-  'user_email': users.email,
+  display_name: users.name,
+  user_email: users.email,
 });
 ```
 
@@ -108,7 +112,7 @@ const getColumn = (columnName: string) => {
     case 'subject': return emails.subject;
     case 'sender_name': return users.name;
     case 'sent_date': return emails.sentTimestamp;
-    case 'full_sender_info': 
+    case 'full_sender_info':
       return sql\`\${users.name} || ' <' || \${users.email} || '>'\`;
     default: return undefined;
   }
@@ -131,7 +135,7 @@ const sortedQuery = buildDrizzleOrderBy({
 class EmailRepository {
   async getEmails(request: Request) {
     const baseQuery = db.select().from(emails);
-    
+
     const getColumn = createTableColumnGetter({
       email_id: emails.emailId,
       subject: emails.subject,
@@ -143,8 +147,8 @@ class EmailRepository {
       source: request.url,
       defaultSort: 'sent_timestamp',
       columnMap: {
-        'title': 'subject',
-        'date': 'sent_timestamp',
+        title: 'subject',
+        date: 'sent_timestamp',
       },
       getColumn,
     });
@@ -163,9 +167,9 @@ buildDrizzleOrderBy({
   query,
   source: gridSortModel,
   columnMap: {
-    'displayName': 'name',           // Frontend -> Database
-    'userEmail': 'email',
-    'createdDate': 'created_at',
+    displayName: 'name', // Frontend -> Database
+    userEmail: 'email',
+    createdDate: 'created_at',
   },
   getColumn,
 });
@@ -196,17 +200,18 @@ const getColumn = (columnName: string) => {
 
 This function provides the same functionality as the original `buildOrderBy` function but is specifically designed for Drizzle ORM:
 
-| Feature | postgres.js `buildOrderBy` | `buildDrizzleOrderBy` |
-|---------|---------------------------|----------------------|
-| SQL Generation | Template literals | Drizzle query builder |
-| Type Safety | Runtime column validation | Compile-time column types |
-| Column References | String column names | Actual column objects |
-| SQL Expressions | Raw SQL strings | Drizzle SQL helper |
-| Query Builder | postgres.js fragments | Drizzle PgSelectBuilder |
+| Feature           | postgres.js `buildOrderBy` | `buildDrizzleOrderBy`     |
+| ----------------- | -------------------------- | ------------------------- |
+| SQL Generation    | Template literals          | Drizzle query builder     |
+| Type Safety       | Runtime column validation  | Compile-time column types |
+| Column References | String column names        | Actual column objects     |
+| SQL Expressions   | Raw SQL strings            | Drizzle SQL helper        |
+| Query Builder     | postgres.js fragments      | Drizzle PgSelectBuilder   |
 
 ## Error Handling
 
 The function includes built-in error handling:
+
 - Unknown columns are logged as warnings and ignored
 - Invalid sort models are handled gracefully
 - Default sorting is applied when no valid sort is provided

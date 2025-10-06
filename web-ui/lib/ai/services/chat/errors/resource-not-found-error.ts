@@ -1,7 +1,7 @@
 /**
  * Domain-specific error for missing model resources (provider or model).
  */
-import { isError } from '@/lib/react-util/utility-methods';
+import { isError } from '/lib/react-util/utility-methods';
 
 // Extendable union of resource categories that can be "not found" in AI services
 export type ModelResourceType = 'provider' | 'model' | 'tool' | 'model-quota';

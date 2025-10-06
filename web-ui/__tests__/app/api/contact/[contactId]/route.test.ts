@@ -1,13 +1,13 @@
 /**
  * @jest-environment node
  */
-jest.mock('@/lib/neondb');
-jest.mock('@/lib/logger');
-jest.mock('@/data-models/api');
+jest.mock('/lib/neondb');
+jest.mock('/lib/logger');
+jest.mock('/data-models/api');
 
 import { NextRequest } from 'next/server';
-import { PUT, GET, DELETE } from '@/app/api/contact/[contactId]/route';
-import { query, queryExt } from '@/lib/neondb';
+import { PUT, GET, DELETE } from '/app/api/contact/[contactId]/route';
+import { query, queryExt } from '/lib/neondb';
 
 describe('Contact API Routes', () => {
   afterEach(() => {});

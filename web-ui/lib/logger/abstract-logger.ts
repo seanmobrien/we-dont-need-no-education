@@ -1,4 +1,4 @@
-import { isError, isRecord, LoggedError } from '@/lib/react-util/core';
+import { isError, isRecord, LoggedError } from '/lib/react-util/core';
 import {
   ApplicationInsightsBaseType,
   ApplicationInsightsCustomEventName,
@@ -54,7 +54,6 @@ export class AbstractLogger implements ILogger {
       record = { message };
       if (args.length > 0) {
         if (typeof args[0] === 'object' && args[0] !== null) {
-          
           const recordBody = {
             ...(record.body ?? {}),
             ...('body' in args[0] ? (args[0].body ?? {}) : {}),

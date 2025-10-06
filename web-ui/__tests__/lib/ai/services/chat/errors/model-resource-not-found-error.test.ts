@@ -1,7 +1,7 @@
 import {
   ResourceNotFoundError,
   isResourceNotFoundError,
-} from '@/lib/ai/services/chat/errors/resource-not-found-error';
+} from '/lib/ai/services/chat/errors/resource-not-found-error';
 
 describe('ResourceNotFoundError', () => {
   test('type guard identifies real instance', () => {

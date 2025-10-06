@@ -15,9 +15,9 @@ import {
   type ToolOptimizingMiddlewareConfig,
   getToolOptimizingMiddlewareMetrics,
   ExtendedCallOptions,
-} from '@/lib/ai/middleware/tool-optimizing-middleware';
-import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+} from '/lib/ai/middleware/tool-optimizing-middleware';
+import { ToolMap } from '/lib/ai/services/model-stats/tool-map';
+import { optimizeMessagesWithToolSummarization } from '/lib/ai/chat/message-optimizer-tools';
 import type {
   LanguageModelV2CallOptions,
   LanguageModelV2Middleware,
@@ -25,13 +25,13 @@ import type {
   LanguageModelV2ProviderDefinedTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '/lib/react-util';
 
 // Mock dependencies
-jest.mock('@/lib/ai/services/model-stats/tool-map');
-jest.mock('@/lib/ai/chat/message-optimizer-tools');
-jest.mock('@/lib/logger');
-jest.mock('@/lib/site-util/metrics', () => ({
+jest.mock('/lib/ai/services/model-stats/tool-map');
+jest.mock('/lib/ai/chat/message-optimizer-tools');
+jest.mock('/lib/logger');
+jest.mock('/lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({
       add: jest.fn(),
@@ -52,8 +52,8 @@ jest.mock('@/lib/site-util/metrics', () => ({
 
 type MiddlewareType = 'generateText' | 'generate' | 'stream' | 'streamText';
 
-jest.mock('@/lib/react-util', () => {
-  const original = jest.requireActual('@/lib/react-util');
+jest.mock('/lib/react-util', () => {
+  const original = jest.requireActual('/lib/react-util');
   const mockLoggedErrorImpl: any = jest
     .fn()
     .mockImplementation((message, options) => {
@@ -393,7 +393,8 @@ describe('Tool Optimizing Middleware', () => {
       });
       expect(mockOptimizeMessages).toHaveBeenCalled();
 
-      jest.clearAllMocks();
+      // jest.clearAllMocks();
+      mockOptimizeMessages.mockClear();
 
       // Test with stream - should not optimize
       await middleware.transformParams!({

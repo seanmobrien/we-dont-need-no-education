@@ -20,16 +20,21 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import BugReportIcon from '@mui/icons-material/BugReport';
-import { getRecoveryActions, getDefaultRecoveryAction, classifyError } from '@/lib/error-monitoring/recovery-strategies';
-import type { RecoveryAction } from '@/lib/error-monitoring/recovery-strategies';
-import { dumpError, LoggedError } from '@/lib/react-util/errors/logged-error';
+import {
+  getRecoveryActions,
+  getDefaultRecoveryAction,
+  classifyError,
+} from '/lib/error-monitoring/recovery-strategies';
+import type { RecoveryAction } from '/lib/error-monitoring/recovery-strategies';
+import { dumpError, LoggedError } from '/lib/react-util/errors/logged-error';
 
-export const RenderErrorBoundaryFallback = (
-  {error, resetErrorBoundary}: {
-    error: unknown;
-    resetErrorBoundary: (...args: unknown[]) => void;
-  }
-): React.ReactNode => {
+export const RenderErrorBoundaryFallback = ({
+  error,
+  resetErrorBoundary,
+}: {
+  error: unknown;
+  resetErrorBoundary: (...args: unknown[]) => void;
+}): React.ReactNode => {
   const [open, setOpen] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
   const theme = useTheme();
@@ -38,7 +43,7 @@ export const RenderErrorBoundaryFallback = (
   const errorMessage = dumpError(error); // error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : undefined;
   const errorObj = error instanceof Error ? error : new Error(String(error));
-  
+
   // Get recovery actions for this error
   const recoveryActions = getRecoveryActions(errorObj);
   const defaultAction = getDefaultRecoveryAction(errorObj);
@@ -71,11 +76,18 @@ export const RenderErrorBoundaryFallback = (
     try {
       action.action();
       // Close dialog after successful action
-      if (action.id !== 'contact-admin' && action.id !== 'report-bug' && action.id !== 'contact-support') {
+      if (
+        action.id !== 'contact-admin' &&
+        action.id !== 'report-bug' &&
+        action.id !== 'contact-support'
+      ) {
         setOpen(false);
       }
     } catch (actionError) {
-      LoggedError.isTurtlesAllTheWayDownBaby(actionError, { log: true, source: 'error-boundary' });      
+      LoggedError.isTurtlesAllTheWayDownBaby(actionError, {
+        log: true,
+        source: 'error-boundary',
+      });
     }
   };
 
@@ -101,11 +113,11 @@ export const RenderErrorBoundaryFallback = (
         },
       }}
     >
-      <DialogTitle 
+      <DialogTitle
         id="error-dialog-title"
-        sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
           gap: 1,
           pb: 1,
           color: theme.palette.error.main,
@@ -116,15 +128,16 @@ export const RenderErrorBoundaryFallback = (
           Something went wrong
         </Typography>
       </DialogTitle>
-      
+
       <DialogContent>
         <DialogContentText id="error-dialog-description" sx={{ mb: 2 }}>
-          We encountered a {errorType.replace('_', ' ')} error. Here are some ways to resolve it:
+          We encountered a {errorType.replace('_', ' ')} error. Here are some
+          ways to resolve it:
         </DialogContentText>
-        
-        <Alert 
-          severity="error" 
-          sx={{ 
+
+        <Alert
+          severity="error"
+          sx={{
             mb: 2,
             '& .MuiAlert-message': {
               width: '100%',
@@ -135,18 +148,20 @@ export const RenderErrorBoundaryFallback = (
           <Typography variant="body2" sx={{ wordBreak: 'break-word' }}>
             {errorMessage}
           </Typography>
-          
+
           {errorStack && (
             <Box sx={{ mt: 1 }}>
               <Button
                 size="small"
                 onClick={handleToggleDetails}
-                startIcon={showDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                startIcon={
+                  showDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                }
                 sx={{ p: 0, minHeight: 'auto', textTransform: 'none' }}
               >
                 {showDetails ? 'Hide' : 'Show'} technical details
               </Button>
-              
+
               {showDetails && (
                 <Box
                   component="pre"
@@ -173,14 +188,20 @@ export const RenderErrorBoundaryFallback = (
         {/* Recovery Actions */}
         {recoveryActions.length > 0 && (
           <Box sx={{ mt: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem', fontWeight: 600 }}>
+            <Typography
+              variant="h6"
+              gutterBottom
+              sx={{ fontSize: '1rem', fontWeight: 600 }}
+            >
               Recovery Options
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
               {recoveryActions.slice(0, 3).map((action) => (
                 <Button
                   key={action.id}
-                  variant={action.id === defaultAction?.id ? "contained" : "outlined"}
+                  variant={
+                    action.id === defaultAction?.id ? 'contained' : 'outlined'
+                  }
                   onClick={() => handleRecoveryAction(action)}
                   sx={{
                     justifyContent: 'flex-start',
@@ -203,7 +224,7 @@ export const RenderErrorBoundaryFallback = (
           </Box>
         )}
       </DialogContent>
-      
+
       <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
         <Button
           onClick={handleClose}

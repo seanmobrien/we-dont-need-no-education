@@ -13,23 +13,23 @@
 import {
   createToolOptimizingMiddleware,
   type ToolOptimizingMiddlewareConfig,
-} from '@/lib/ai/middleware/tool-optimizing-middleware';
-import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+} from '/lib/ai/middleware/tool-optimizing-middleware';
+import { ToolMap } from '/lib/ai/services/model-stats/tool-map';
+import { optimizeMessagesWithToolSummarization } from '/lib/ai/chat/message-optimizer-tools';
 import type {
   LanguageModelV2CallOptions,
   LanguageModelV2Middleware,
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '/lib/drizzle-db';
 
 // Mock dependencies
-jest.mock('@/lib/ai/services/model-stats/tool-map');
-jest.mock('@/lib/ai/chat/message-optimizer-tools');
-jest.mock('@/lib/drizzle-db');
-jest.mock('@/lib/logger');
-jest.mock('@/lib/site-util/metrics', () => ({
+jest.mock('/lib/ai/services/model-stats/tool-map');
+jest.mock('/lib/ai/chat/message-optimizer-tools');
+jest.mock('/lib/drizzle-db');
+jest.mock('/lib/logger');
+jest.mock('/lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({ add: jest.fn() }),
     createHistogram: jest.fn().mockReturnValue({ record: jest.fn() }),
@@ -40,8 +40,8 @@ jest.mock('@/lib/site-util/metrics', () => ({
   },
   hashUserId: jest.fn((userId: string) => `hashed_${userId}`),
 }));
-jest.mock('@/lib/react-util', () => {
-  const original = jest.requireActual('@/lib/react-util');
+jest.mock('/lib/react-util', () => {
+  const original = jest.requireActual('/lib/react-util');
   return {
     ...original,
     LoggedError: {
@@ -84,7 +84,11 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       refresh: jest.fn().mockResolvedValue(true),
       getInstance: jest.fn(),
     } as any;
-    (mockToolMap.getInstance as jest.MockedFunction<typeof mockToolMap.getInstance>).mockResolvedValue(mockToolMapInstance);
+    (
+      mockToolMap.getInstance as jest.MockedFunction<
+        typeof mockToolMap.getInstance
+      >
+    ).mockResolvedValue(mockToolMapInstance);
 
     // Mock message optimization with realistic behavior
     mockOptimizeMessages.mockImplementation(
@@ -188,7 +192,10 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         const updatedParams = {
           ...params,
           // Track middleware execution for testing
-          __testMiddlewareStack: [...((params as any).__testMiddlewareStack || []), name],
+          __testMiddlewareStack: [
+            ...((params as any).__testMiddlewareStack || []),
+            name,
+          ],
         };
         return updatedParams;
       }),

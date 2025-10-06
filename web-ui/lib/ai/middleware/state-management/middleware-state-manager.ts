@@ -10,7 +10,7 @@ import type {
   LanguageModelV2,
   LanguageModelV2TextPart,
 } from '@ai-sdk/provider';
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 import {
   SerializableLanguageModelMiddleware,
   SerializableMiddleware,

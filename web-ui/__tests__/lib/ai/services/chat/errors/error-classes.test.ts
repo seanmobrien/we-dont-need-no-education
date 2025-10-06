@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Unit tests for chat error classes and their associated type guards
- * 
+ *
  * This test suite provides comprehensive coverage for:
  * - AbortChatMessageRequestError class construction and properties
  * - MessageTooLargeForQueueError class construction and properties
@@ -10,12 +10,12 @@
  * - Error inheritance and serialization behavior
  */
 
-import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
-import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
-import { 
-  isAbortChatMessageRequestError, 
-  isMessageTooLargeForQueueError 
-} from '@/lib/react-util/core';
+import { AbortChatMessageRequestError } from '/lib/ai/services/chat/errors/abort-chat-message-request-error';
+import { MessageTooLargeForQueueError } from '/lib/ai/services/chat/errors/message-too-large-for-queue-error';
+import {
+  isAbortChatMessageRequestError,
+  isMessageTooLargeForQueueError,
+} from '/lib/react-util/core';
 
 describe('AbortChatMessageRequestError', () => {
   describe('Constructor and Properties', () => {
@@ -27,7 +27,9 @@ describe('AbortChatMessageRequestError', () => {
       expect(error).toBeInstanceOf(AbortChatMessageRequestError);
       expect(error.name).toBe('AbortChatMessageRequestError');
       expect(error.requestId).toBe(requestId);
-      expect(error.message).toBe(`Chat message request ${requestId} was aborted`);
+      expect(error.message).toBe(
+        `Chat message request ${requestId} was aborted`,
+      );
     });
 
     it('should create error with undefined requestId', () => {
@@ -52,7 +54,7 @@ describe('AbortChatMessageRequestError', () => {
       // TypeScript readonly is compile-time only - verify properties exist and are correct type
       expect(typeof error.requestId).toBe('string');
       expect(error.requestId).toBe('test-id');
-      
+
       // Properties can be modified at runtime (TypeScript readonly is compile-time constraint)
       // This is expected behavior, so we just verify the properties are accessible
       expect(error).toHaveProperty('requestId');
@@ -76,9 +78,11 @@ describe('AbortChatMessageRequestError', () => {
       // Error objects have special serialization behavior - message may not serialize by default
       // But our custom properties should be preserved
       expect(parsed.requestId).toBe('serialization-test');
-      
+
       // Verify the error has expected properties even if they don't serialize
-      expect(error.message).toBe('Chat message request serialization-test was aborted');
+      expect(error.message).toBe(
+        'Chat message request serialization-test was aborted',
+      );
       expect(error.name).toBe('AbortChatMessageRequestError');
     });
   });
@@ -90,7 +94,11 @@ describe('MessageTooLargeForQueueError', () => {
       const tokenCount = 10000;
       const maxTokens = 8192;
       const modelType = 'gpt-4';
-      const error = new MessageTooLargeForQueueError(tokenCount, maxTokens, modelType);
+      const error = new MessageTooLargeForQueueError(
+        tokenCount,
+        maxTokens,
+        modelType,
+      );
 
       expect(error).toBeInstanceOf(Error);
       expect(error).toBeInstanceOf(MessageTooLargeForQueueError);
@@ -98,7 +106,9 @@ describe('MessageTooLargeForQueueError', () => {
       expect(error.tokenCount).toBe(tokenCount);
       expect(error.maxTokens).toBe(maxTokens);
       expect(error.modelType).toBe(modelType);
-      expect(error.message).toBe(`Message with ${tokenCount} tokens exceeds maximum allowed ${maxTokens} tokens for model ${modelType}`);
+      expect(error.message).toBe(
+        `Message with ${tokenCount} tokens exceeds maximum allowed ${maxTokens} tokens for model ${modelType}`,
+      );
     });
 
     it('should handle edge case with zero tokens', () => {
@@ -133,7 +143,7 @@ describe('MessageTooLargeForQueueError', () => {
       expect(error.tokenCount).toBe(1000);
       expect(error.maxTokens).toBe(500);
       expect(error.modelType).toBe('test-model');
-      
+
       // Properties can be modified at runtime (TypeScript readonly is compile-time constraint)
       // This is expected behavior, so we just verify the properties are accessible
       expect(error).toHaveProperty('tokenCount');
@@ -184,7 +194,7 @@ describe('Type Guards', () => {
         name: 'AbortChatMessageRequestError',
         requestId: 'duck-typed-id',
         message: 'Duck typed error',
-        stack: 'fake stack'
+        stack: 'fake stack',
       };
 
       expect(isAbortChatMessageRequestError(duckTypedError)).toBe(true);
@@ -194,13 +204,13 @@ describe('Type Guards', () => {
       const incorrectShape1 = {
         name: 'AbortChatMessageRequestError',
         // missing requestId
-        message: 'Missing requestId'
+        message: 'Missing requestId',
       };
 
       const incorrectShape2 = {
         name: 'WrongErrorName',
         requestId: 'has-request-id',
-        message: 'Wrong name'
+        message: 'Wrong name',
       };
 
       expect(isAbortChatMessageRequestError(incorrectShape1)).toBe(false);
@@ -212,7 +222,7 @@ describe('Type Guards', () => {
         name: 'AbortChatMessageRequestError',
         requestId: undefined,
         message: 'Undefined requestId',
-        stack: 'fake stack trace'
+        stack: 'fake stack trace',
       };
 
       expect(isAbortChatMessageRequestError(undefinedRequestId)).toBe(true);
@@ -251,7 +261,7 @@ describe('Type Guards', () => {
         maxTokens: 1000,
         modelType: 'duck-model',
         message: 'Duck typed message error',
-        stack: 'fake stack'
+        stack: 'fake stack',
       };
 
       expect(isMessageTooLargeForQueueError(duckTypedError)).toBe(true);
@@ -262,7 +272,7 @@ describe('Type Guards', () => {
         name: 'MessageTooLargeForQueueError',
         tokenCount: 1000,
         // missing maxTokens and modelType
-        message: 'Incomplete shape'
+        message: 'Incomplete shape',
       };
 
       const incorrectShape2 = {
@@ -270,7 +280,7 @@ describe('Type Guards', () => {
         tokenCount: 1000,
         maxTokens: 500,
         modelType: 'model',
-        message: 'Wrong name'
+        message: 'Wrong name',
       };
 
       const incorrectShape3 = {
@@ -278,7 +288,7 @@ describe('Type Guards', () => {
         tokenCount: 'not-a-number', // wrong type
         maxTokens: 500,
         modelType: 'model',
-        message: 'Wrong tokenCount type'
+        message: 'Wrong tokenCount type',
       };
 
       expect(isMessageTooLargeForQueueError(incorrectShape1)).toBe(false);
@@ -293,7 +303,7 @@ describe('Type Guards', () => {
         maxTokens: 100,
         modelType: 'test-model',
         message: 'Zero tokens',
-        stack: 'fake stack trace'
+        stack: 'fake stack trace',
       };
 
       const negativeTokens = {
@@ -302,7 +312,7 @@ describe('Type Guards', () => {
         maxTokens: 100,
         modelType: 'test-model',
         message: 'Negative tokens',
-        stack: 'fake stack trace'
+        stack: 'fake stack trace',
       };
 
       expect(isMessageTooLargeForQueueError(zeroTokens)).toBe(true);
@@ -313,7 +323,11 @@ describe('Type Guards', () => {
   describe('Type Guard Cross-Validation', () => {
     it('should not have false positives between different error types', () => {
       const abortError = new AbortChatMessageRequestError('cross-test');
-      const messageError = new MessageTooLargeForQueueError(1000, 500, 'cross-model');
+      const messageError = new MessageTooLargeForQueueError(
+        1000,
+        500,
+        'cross-model',
+      );
 
       // Each type guard should only match its own type
       expect(isAbortChatMessageRequestError(abortError)).toBe(true);
@@ -328,15 +342,15 @@ describe('Type Guards', () => {
         name: 'AbortChatMessageRequestError',
         requestId: 'test-id',
         tokenCount: 1000, // this property exists but shouldn't affect AbortChatMessageRequestError check
-        maxTokens: 500,   // this property exists but shouldn't affect AbortChatMessageRequestError check
+        maxTokens: 500, // this property exists but shouldn't affect AbortChatMessageRequestError check
         modelType: 'model',
         message: 'Confusing object',
-        stack: 'fake stack trace'
+        stack: 'fake stack trace',
       };
 
       // Should match AbortChatMessageRequestError because name and requestId are correct
       expect(isAbortChatMessageRequestError(confusingObject)).toBe(true);
-      
+
       // Should not match MessageTooLargeForQueueError because name is wrong
       expect(isMessageTooLargeForQueueError(confusingObject)).toBe(false);
     });
