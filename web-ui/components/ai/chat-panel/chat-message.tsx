@@ -10,7 +10,7 @@ import {
 import { VirtualItem } from '@tanstack/react-virtual';
 import MuiMarkdown from 'mui-markdown';
 import ToolInovocation from './tool-invocation';
-import { notCryptoSafeKeyHash } from '@/lib/ai/core';
+import { notCryptoSafeKeyHash } from '/lib/ai/core';
 
 interface ChatMessageV2Props {
   message: {

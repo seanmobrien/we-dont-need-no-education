@@ -1,6 +1,4 @@
-import type { Config } from '@jest/types';
-
-const config: Config.InitialOptions = {
+const config = {
   preset: 'ts-jest', // Use ts-jest preset for TypeScript support
   testEnvironment: 'jsdom', // Set the test environment to jsdom
   testEnvironmentOptions: {
@@ -35,6 +33,7 @@ const config: Config.InitialOptions = {
     */
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
     '~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
+    '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
   },
   transform: {
@@ -43,16 +42,18 @@ const config: Config.InitialOptions = {
       {
         tsconfig: {
           jsx: 'react-jsx', // Enable JSX transformation for React
+          // useESM: false,
         },
       },
     ], // Transform TypeScript files using ts-jest
     // '^.+\\.(js|jsx)$': 'babel-jest', // Transform JavaScript files using babel-jest
   },
   transformIgnorePatterns: [
-    '<rootDir>/node_modules/(?!(react-error-boundary)/)',
+    // Allow transpiling certain ESM packages (zodex, zod) which ship ESM-only
+    '<rootDir>/node_modules/(?!(zodex|zod|got|react-error-boundary)/)',
     '<rootDir>/.next',
     '<rootDir>/.upstream',
-	'<rootDir>/(rsc)',
+    '<rootDir>/(rsc)',
   ],
   collectCoverage: true, // Enable coverage collection
   //collectCoverage: false, // Enable coverage collection

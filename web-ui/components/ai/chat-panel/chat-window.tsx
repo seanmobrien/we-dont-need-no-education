@@ -2,11 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box } from '@mui/material';
 import { UIMessage } from 'ai';
-import { Loading } from '@/components/general/loading';
+import { Loading } from '/components/general/loading';
 import { ChatMessageV2 } from './chat-message';
-import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
-import { log } from '@/lib/logger';
-import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
+import { createElementMeasurer } from '/lib/components/ai/height-estimators';
+import { log } from '/lib/logger';
+import { useChatPanelContext } from '/components/ai/chat-panel/chat-panel-context';
 
 const elementMeasurer = createElementMeasurer();
 
@@ -49,7 +49,7 @@ export const ChatWindow = ({
       let width = 0;
       // Attach message to a ChatMessageV2 component and use createElementMeasurer to estimate height
       // Import createElementMeasurer from your height-estimators utility
-      // (Assume it's imported at the top: import { createElementMeasurer } from '@/lib/components/ai/height-esimators';)
+      // (Assume it's imported at the top: import { createElementMeasurer } from '/lib/components/ai/height-esimators';)
       if (parentRef.current === null) {
         // Handle case where parentRef is not yet available
         log((l) =>

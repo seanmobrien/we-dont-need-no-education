@@ -2,12 +2,12 @@
 /**
  * @jest-environment node
  */
-jest.mock('@/lib/neondb');
+jest.mock('/lib/neondb');
 
-import { KeyPointsDetailsRepository } from '@/lib/api/email/properties/key-points/key-points-details-repository';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
-import { query, queryExt } from '@/lib/neondb';
-import { KeyPointsDetails } from '@/data-models/api';
+import { KeyPointsDetailsRepository } from '/lib/api/email/properties/key-points/key-points-details-repository';
+import { ValidationError } from '/lib/react-util/errors/validation-error';
+import { query, queryExt } from '/lib/neondb';
+import { KeyPointsDetails } from '/data-models/api';
 
 describe('KeyPointsDetailsRepository', () => {
   let repository: KeyPointsDetailsRepository;

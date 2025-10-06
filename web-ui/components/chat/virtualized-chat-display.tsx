@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 /**
  * Module: Virtualized Chat Display
@@ -56,12 +56,12 @@ import React, { useRef, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box, Switch, FormControlLabel, FormGroup, Paper } from '@mui/material';
 import { ChatTurnDisplay } from './chat-turn-display';
-import { 
-  createTextMeasurer, 
-  estimateMarkdownHeight 
-} from '@/lib/components/ai/height-estimators';
-import { ChatTurn } from '@/lib/ai/chat/types';
-import type { SelectedChatItem } from '@/lib/chat/export';
+import {
+  createTextMeasurer,
+  estimateMarkdownHeight,
+} from '/lib/components/ai/height-estimators';
+import { ChatTurn } from '/lib/ai/chat/types';
+import type { SelectedChatItem } from '/lib/chat/export';
 import { type MessageType, searchMessageContent } from './chat-message-filters';
 
 /**
@@ -73,9 +73,6 @@ export const FALLBACK_CONTAINER_WIDTH = 1200;
  * Text measurement utility for estimating heights of chat messages
  */
 const textMeasurer = createTextMeasurer();
-
-
-
 
 /**
  * Props for `VirtualizedChatDisplay`.
@@ -119,13 +116,13 @@ interface VirtualizedChatDisplayProps {
  *  - For additional data (e.g., token usage charts) remember to adjust both the
  *    estimator and the actual DOM height contributions.
  */
-export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({ 
-  turns, 
+export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
+  turns,
   height = 600,
   enableSelection = false,
   selectedItems = [],
   onSelectionChange,
-  globalFilters = { typeFilters: new Set(), contentFilter: '' }
+  globalFilters = { typeFilters: new Set(), contentFilter: '' },
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
   const [showTurnProperties, setShowTurnProperties] = useState(false);
@@ -147,145 +144,166 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
    * @param index Index of the virtualized row (turn)
    * @returns Estimated height in pixels (never less than the minimum of 150)
    */
-  const estimateSize = useCallback((index: number) => {
-    const turn = turns[index];
-    if (!turn) return 200; // default fallback
-    
-    let width = 0;
-    // Get container width for accurate measurement
-    if (parentRef.current === null) {
-      // Handle case where parentRef is not yet available
-      if (typeof window !== 'undefined') {
-        width = window.innerWidth * 0.9; // Fallback to 90% of viewport width
-      } else {
-        width = FALLBACK_CONTAINER_WIDTH; // Fallback to a default width
-      }
-    } else {
-      width = parentRef.current.getBoundingClientRect().width;
-    }
+  const estimateSize = useCallback(
+    (index: number) => {
+      const turn = turns[index];
+      if (!turn) return 200; // default fallback
 
-    // Base size for turn header and card structure
-    let totalHeight = 120; // Increased base turn header height to account for chips and spacing
-
-    // Calculate content width accounting for Card padding and margins
-    const contentWidth = Math.max(width * 0.85 - 48, 300); // 85% width minus Card padding, min 300px
-
-    // Filter messages based on global filters if active
-    const visibleMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
-      ? turn.messages.filter(message => {
-          // Type filter
-          const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
-            globalFilters.typeFilters.has(message.role as MessageType);
-          // Content filter  
-          const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
-          
-          return passesTypeFilter && passesContentFilter;
-        })
-      : turn.messages;
-
-    // If no messages are visible after filtering, return a minimal height
-    if (visibleMessages.length === 0) {
-      return Math.max(totalHeight + 60, 150); // Just turn header + empty message indicator
-    }
-
-    // Measure each visible message content using sophisticated height estimation
-    visibleMessages.forEach(message => {
-      if (message.content && message.content.trim()) {
-        // Use sophisticated markdown height estimation
-        const estimatedHeight = estimateMarkdownHeight(
-          message.content,
-          contentWidth,
-          textMeasurer
-        );
-        
-        // Add message container padding and margins
-        totalHeight += estimatedHeight + 32; // content height + message container padding
-      } else {
-        // Base message height for messages without content (tool calls, etc)
-        totalHeight += 60; // Increased from 40 to account for message container
-      }
-
-      // Add height for optimized content accordion if present and different from main content
-      if (message.optimizedContent && message.optimizedContent !== message.content) {
-        // Add height for accordion header (collapsed state)
-        totalHeight += 48; // Accordion header height with padding
-        
-        // Add potential expanded content height - we need to be generous here
-        // because the accordion can be expanded by the user
-        const optimizedContentHeight = estimateMarkdownHeight(
-          message.optimizedContent,
-          contentWidth,
-          textMeasurer
-        );
-        
-        // Add space for the optimized content when expanded
-        // We estimate for expanded state to avoid content being cut off
-        totalHeight += optimizedContentHeight + 24; // content + accordion details padding
-      }
-      
-      // Add spacing between messages
-      totalHeight += 16;
-    });
-
-    // Add size if properties are shown
-    if (showTurnProperties) {
-      totalHeight += 150; // Increased space for model, temperature, latency etc
-      
-      // Add space for warnings and errors using proper estimation
-      if (turn.warnings?.length) {
-        turn.warnings.forEach(warning => {
-          const warningHeight = estimateMarkdownHeight(
-            warning,
-            contentWidth * 0.9, // Slightly narrower for alerts
-            textMeasurer
-          );
-          totalHeight += warningHeight + 24; // Alert padding
-        });
-      }
-      
-      if (turn.errors?.length) {
-        turn.errors.forEach(error => {
-          const errorHeight = estimateMarkdownHeight(
-            error,
-            contentWidth * 0.9, // Slightly narrower for alerts  
-            textMeasurer
-          );
-          totalHeight += errorHeight + 24; // Alert padding
-        });
-      }
-      
-      // Add space for metadata if present
-      if (turn.metadata) {
-        const metadataLines = JSON.stringify(turn.metadata, null, 2).split('\n').length;
-        totalHeight += Math.min(metadataLines * 16, 200); // Cap metadata display at 200px
-      }
-    }
-
-    // Add space for message metadata display if enabled (only for visible messages)
-    if (showMessageMetadata) {
-      visibleMessages.forEach(message => {
-        totalHeight += 80; // Base metadata panel height
-        
-        // Add space for function call and metadata JSON
-        if (message.functionCall) {
-          const funcCallLines = JSON.stringify(message.functionCall, null, 2).split('\n').length;
-          totalHeight += Math.min(funcCallLines * 16, 200); // Cap at 200px
+      let width = 0;
+      // Get container width for accurate measurement
+      if (parentRef.current === null) {
+        // Handle case where parentRef is not yet available
+        if (typeof window !== 'undefined') {
+          width = window.innerWidth * 0.9; // Fallback to 90% of viewport width
+        } else {
+          width = FALLBACK_CONTAINER_WIDTH; // Fallback to a default width
         }
-        
-        if (message.metadata) {
-          const msgMetadataLines = JSON.stringify(message.metadata, null, 2).split('\n').length;
-          totalHeight += Math.min(msgMetadataLines * 16, 200); // Cap at 200px  
+      } else {
+        width = parentRef.current.getBoundingClientRect().width;
+      }
+
+      // Base size for turn header and card structure
+      let totalHeight = 120; // Increased base turn header height to account for chips and spacing
+
+      // Calculate content width accounting for Card padding and margins
+      const contentWidth = Math.max(width * 0.85 - 48, 300); // 85% width minus Card padding, min 300px
+
+      // Filter messages based on global filters if active
+      const visibleMessages =
+        globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim()
+          ? turn.messages.filter((message) => {
+              // Type filter
+              const passesTypeFilter =
+                globalFilters.typeFilters.size === 0 ||
+                globalFilters.typeFilters.has(message.role as MessageType);
+              // Content filter
+              const passesContentFilter = searchMessageContent(
+                message,
+                globalFilters.contentFilter,
+              );
+
+              return passesTypeFilter && passesContentFilter;
+            })
+          : turn.messages;
+
+      // If no messages are visible after filtering, return a minimal height
+      if (visibleMessages.length === 0) {
+        return Math.max(totalHeight + 60, 150); // Just turn header + empty message indicator
+      }
+
+      // Measure each visible message content using sophisticated height estimation
+      visibleMessages.forEach((message) => {
+        if (message.content && message.content.trim()) {
+          // Use sophisticated markdown height estimation
+          const estimatedHeight = estimateMarkdownHeight(
+            message.content,
+            contentWidth,
+            textMeasurer,
+          );
+
+          // Add message container padding and margins
+          totalHeight += estimatedHeight + 32; // content height + message container padding
+        } else {
+          // Base message height for messages without content (tool calls, etc)
+          totalHeight += 60; // Increased from 40 to account for message container
         }
+
+        // Add height for optimized content accordion if present and different from main content
+        if (
+          message.optimizedContent &&
+          message.optimizedContent !== message.content
+        ) {
+          // Add height for accordion header (collapsed state)
+          totalHeight += 48; // Accordion header height with padding
+
+          // Add potential expanded content height - we need to be generous here
+          // because the accordion can be expanded by the user
+          const optimizedContentHeight = estimateMarkdownHeight(
+            message.optimizedContent,
+            contentWidth,
+            textMeasurer,
+          );
+
+          // Add space for the optimized content when expanded
+          // We estimate for expanded state to avoid content being cut off
+          totalHeight += optimizedContentHeight + 24; // content + accordion details padding
+        }
+
+        // Add spacing between messages
+        totalHeight += 16;
       });
-    }
 
-    // Add padding for Paper component and margins
-    totalHeight += 48; // Card padding and margins
-    
-    // Remove artificial cap - let content be as tall as it needs to be
-    // Only set a reasonable minimum height
-    return Math.max(totalHeight, 150);
-  }, [turns, showTurnProperties, showMessageMetadata, globalFilters]);
+      // Add size if properties are shown
+      if (showTurnProperties) {
+        totalHeight += 150; // Increased space for model, temperature, latency etc
+
+        // Add space for warnings and errors using proper estimation
+        if (turn.warnings?.length) {
+          turn.warnings.forEach((warning) => {
+            const warningHeight = estimateMarkdownHeight(
+              warning,
+              contentWidth * 0.9, // Slightly narrower for alerts
+              textMeasurer,
+            );
+            totalHeight += warningHeight + 24; // Alert padding
+          });
+        }
+
+        if (turn.errors?.length) {
+          turn.errors.forEach((error) => {
+            const errorHeight = estimateMarkdownHeight(
+              error,
+              contentWidth * 0.9, // Slightly narrower for alerts
+              textMeasurer,
+            );
+            totalHeight += errorHeight + 24; // Alert padding
+          });
+        }
+
+        // Add space for metadata if present
+        if (turn.metadata) {
+          const metadataLines = JSON.stringify(turn.metadata, null, 2).split(
+            '\n',
+          ).length;
+          totalHeight += Math.min(metadataLines * 16, 200); // Cap metadata display at 200px
+        }
+      }
+
+      // Add space for message metadata display if enabled (only for visible messages)
+      if (showMessageMetadata) {
+        visibleMessages.forEach((message) => {
+          totalHeight += 80; // Base metadata panel height
+
+          // Add space for function call and metadata JSON
+          if (message.functionCall) {
+            const funcCallLines = JSON.stringify(
+              message.functionCall,
+              null,
+              2,
+            ).split('\n').length;
+            totalHeight += Math.min(funcCallLines * 16, 200); // Cap at 200px
+          }
+
+          if (message.metadata) {
+            const msgMetadataLines = JSON.stringify(
+              message.metadata,
+              null,
+              2,
+            ).split('\n').length;
+            totalHeight += Math.min(msgMetadataLines * 16, 200); // Cap at 200px
+          }
+        });
+      }
+
+      // Add padding for Paper component and margins
+      totalHeight += 48; // Card padding and margins
+
+      // Remove artificial cap - let content be as tall as it needs to be
+      // Only set a reasonable minimum height
+      return Math.max(totalHeight, 150);
+    },
+    [turns, showTurnProperties, showMessageMetadata, globalFilters],
+  );
 
   /**
    * Virtualization controller from TanStack Virtual handling item measurement,
@@ -296,7 +314,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
     getScrollElement: () => parentRef.current,
     estimateSize,
     overscan: 3, // Render more items outside visible area for smoother scrolling
-    measureElement: 
+    measureElement:
       typeof window !== 'undefined' && window.ResizeObserver
         ? (element) => element?.getBoundingClientRect().height
         : undefined, // Enable dynamic measurement when ResizeObserver is available
@@ -346,7 +364,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
         >
           {rowVirtualizer.getVirtualItems().map((virtualItem) => {
             const turn = turns[virtualItem.index];
-            
+
             return (
               <Box
                 key={virtualItem.key}

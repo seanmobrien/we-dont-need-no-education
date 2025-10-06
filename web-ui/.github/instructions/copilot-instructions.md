@@ -94,6 +94,7 @@ export class EvidenceRepository extends AbstractObjectRepository<EvidenceMessage
 - **Error Boundaries**: Implement proper error handling at component boundaries
 - **Performance**: Use React.memo, useMemo, and useCallback appropriately
 - **Documentation**: Use JSDoc for exported functions, components, and types
+- **Functions**: Keep functions pure and side-effect free where possible. Prefer arrow functions over traditional function expressions.
 
 ### AI Integration Best Practices
 

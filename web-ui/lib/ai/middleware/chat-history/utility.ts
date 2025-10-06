@@ -6,8 +6,8 @@ import type {
   LanguageModelV2ToolCallPart,
   LanguageModelV2ToolResultPart,
 } from '@ai-sdk/provider';
-import { schema } from '@/lib/drizzle-db/schema';
-import { type DbTransactionType, drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '/lib/drizzle-db/schema';
+import { type DbTransactionType, drizDbWithInit } from '/lib/drizzle-db';
 import { eq, desc } from 'drizzle-orm';
 import { ToolStatus } from './types';
 

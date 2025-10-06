@@ -1,5 +1,5 @@
 'use client';
-import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
+import { EmailPropertyDataGrid } from '/components/mui/data-grid/email-properties/email-property-grid';
 import stableColumns from './grid-columns';
 
 export const EmailHeaderGrid = () => {

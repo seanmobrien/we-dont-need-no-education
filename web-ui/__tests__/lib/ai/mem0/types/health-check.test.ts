@@ -9,7 +9,7 @@ import {
   type HealthDetails,
   type AuthServiceHealth,
   type HealthStatus,
-} from '@/lib/ai/mem0/types/health-check';
+} from '/lib/ai/mem0/types/health-check';
 
 describe('Memory Health Check Types', () => {
   describe('determineHealthStatus', () => {
@@ -24,7 +24,9 @@ describe('Memory Health Check Types', () => {
       jkws_url: 'https://example.com/certs',
     });
 
-    const createMockHealthDetails = (overrides: Partial<HealthDetails> = {}): HealthDetails => ({
+    const createMockHealthDetails = (
+      overrides: Partial<HealthDetails> = {},
+    ): HealthDetails => ({
       client_active: true,
       system_db_available: true,
       vector_enabled: true,
@@ -50,25 +52,33 @@ describe('Memory Health Check Types', () => {
     });
 
     it('should return "warning" when system_db_available is false', () => {
-      const healthDetails = createMockHealthDetails({ system_db_available: false });
+      const healthDetails = createMockHealthDetails({
+        system_db_available: false,
+      });
       const result = determineHealthStatus(healthDetails);
       expect(result).toBe('warning');
     });
 
     it('should return "warning" when vector_store_available is false', () => {
-      const healthDetails = createMockHealthDetails({ vector_store_available: false });
+      const healthDetails = createMockHealthDetails({
+        vector_store_available: false,
+      });
       const result = determineHealthStatus(healthDetails);
       expect(result).toBe('warning');
     });
 
     it('should return "warning" when graph_store_available is false', () => {
-      const healthDetails = createMockHealthDetails({ graph_store_available: false });
+      const healthDetails = createMockHealthDetails({
+        graph_store_available: false,
+      });
       const result = determineHealthStatus(healthDetails);
       expect(result).toBe('warning');
     });
 
     it('should return "warning" when history_store_available is false', () => {
-      const healthDetails = createMockHealthDetails({ history_store_available: false });
+      const healthDetails = createMockHealthDetails({
+        history_store_available: false,
+      });
       const result = determineHealthStatus(healthDetails);
       expect(result).toBe('warning');
     });

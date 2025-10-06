@@ -49,7 +49,7 @@
  * @since 1.0.0
  */
 
-import type { DbTransactionType, ChatMessagesType } from '@/lib/drizzle-db';
+import type { DbTransactionType, ChatMessagesType } from '/lib/drizzle-db';
 import { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import { Span } from '@opentelemetry/api';
 

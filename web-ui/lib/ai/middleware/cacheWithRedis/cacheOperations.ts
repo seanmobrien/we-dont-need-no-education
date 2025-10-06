@@ -7,8 +7,8 @@ import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
 import { createJailKey } from './cacheKeys';
 import type { getRedisClient } from './redis-client';
-import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log } from '/lib/logger';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 import { LanguageModelV2Content } from '@ai-sdk/provider';
 
 const config = getCacheConfig();
@@ -110,7 +110,11 @@ export const handleCacheJail = async (
     jailEntry.lastResponse = {
       finishReason: response.finishReason || 'unknown',
       hasWarnings: !!(response.warnings && response.warnings.length > 0),
-      textLength: response.content?.reduce((acc, part) => acc + (part.type === 'text' ? part.text.length : 0), 0) || 0,
+      textLength:
+        response.content?.reduce(
+          (acc, part) => acc + (part.type === 'text' ? part.text.length : 0),
+          0,
+        ) || 0,
     };
 
     // Store updated jail entry
@@ -153,7 +157,11 @@ export const handleCacheJail = async (
 
       // Record promotion metrics
       if (config.enableMetrics) {
-        const responseSize = response.content?.reduce((acc, part) => acc + (part.type === 'text' ? part.text.length : 0), 0) || 0;
+        const responseSize =
+          response.content?.reduce(
+            (acc, part) => acc + (part.type === 'text' ? part.text.length : 0),
+            0,
+          ) || 0;
         metricsCollector.recordJailPromotion(cacheKey, responseSize);
       }
     }

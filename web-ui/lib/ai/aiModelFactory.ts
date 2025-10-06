@@ -1,14 +1,14 @@
 import { createAzure } from '@ai-sdk/azure';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import { env } from '@/lib/site-util/env';
+import { env } from '/lib/site-util/env';
 import { EmbeddingModelV2, LanguageModelV2 } from '@ai-sdk/provider';
-import { AiModelType, isAiLanguageModelType } from '@/lib/ai/core';
+import { AiModelType, isAiLanguageModelType } from '/lib/ai/core';
 import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
-} from '@/lib/ai/core/unions';
-import { log } from '@/lib/logger';
+} from '/lib/ai/core/unions';
+import { log } from '/lib/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
 import {

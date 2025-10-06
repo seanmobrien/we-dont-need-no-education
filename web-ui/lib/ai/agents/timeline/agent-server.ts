@@ -1,5 +1,5 @@
-import { aiModelFactory } from '@/lib/ai/aiModelFactory';
-import { getCaseFileDocument } from '@/lib/ai/tools';
+import { aiModelFactory } from '/lib/ai/aiModelFactory';
+import { getCaseFileDocument } from '/lib/ai/tools';
 import { ClientTimelineAgent } from './agent';
 import {
   TimelineAgentProps,
@@ -10,20 +10,20 @@ import {
   GlobalMetadata,
   SerializedTimelineAgent,
 } from './types';
-import { type AiLanguageModelType, generateChatId } from '@/lib/ai/core';
-import { drizDb } from '@/lib/drizzle-db';
+import { type AiLanguageModelType, generateChatId } from '/lib/ai/core';
+import { drizDb } from '/lib/drizzle-db';
 import { setupDefaultTools } from '../../mcp/setup-default-tools';
 import { NextRequest } from 'next/server';
 import {
   type ChatHistoryContext,
   createAgentHistoryContext,
   wrapChatHistoryMiddleware,
-} from '@/lib/ai/middleware/chat-history';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+} from '/lib/ai/middleware/chat-history';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 import { ToolProviderSet } from '../..';
-import { log } from '@/lib/logger';
-import { auth } from '@/auth';
-import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
+import { log } from '/lib/logger';
+import { auth } from '/auth';
+import { generateTextWithRetry } from '/lib/ai/core/generate-text-with-retry';
 
 type InitializeProps = { req: NextRequest };
 
@@ -547,7 +547,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       const ret = await generateTextWithRetry({
         model: hal,
         prompt: input,
-        tools: tools.get_tools(),
+        tools: tools.tools,
         // maxSteps: 20,
         experimental_telemetry: {
           isEnabled: true,

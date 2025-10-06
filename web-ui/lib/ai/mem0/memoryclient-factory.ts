@@ -1,13 +1,12 @@
 import { MemoryClient } from './lib/client/mem0';
 import type { MemoryOptions, Message } from './lib/client/types';
-import type { ImpersonationService } from '@/lib/auth/impersonation';
 import type {
   MemoryHealthCheckResponse,
   HealthCheckParams,
 } from './types/health-check';
-import { fromRequest } from '@/lib/auth/impersonation';
-import { env } from '@/lib/site-util/env';
-import { log } from '@/lib/logger';
+import { fromRequest, ImpersonationService } from '/lib/auth/impersonation';
+import { env } from '/lib/site-util/env';
+import { log } from '/lib/logger';
 
 /**
  * Options for configuring the MemoryClient instance.
@@ -24,17 +23,25 @@ type ClientOptions = {
   impersonation?: ImpersonationService;
 };
 
+export type ExtendedMemoryClient = MemoryClient & {
+  healthCheck: (
+    params?: HealthCheckParams,
+  ) => Promise<MemoryHealthCheckResponse>;
+};
+
 /**
  * A specialized MemoryClient for SchoolLawyer use cases.
  *
  * @class SchoolLawyerMemoryClient
  * @extends MemoryClient
- * @private #defaultOptions - Default memory options for the client.
+ * @private defaultOptions - Default memory options for the client.
  * @private #impersonation - Optional impersonation instance for authenticated calls.
  */
-class SchoolLawyerMemoryClient extends MemoryClient {
-  readonly #defaultOptions: MemoryOptions;
-  readonly #impersonation?: ImpersonationService;
+class SchoolLawyerMemoryClient
+  extends MemoryClient
+  implements ExtendedMemoryClient
+{
+  readonly defaultOptions: MemoryOptions;
 
   /**
    * Constructs a new SchoolLawyerMemoryClient instance.
@@ -45,89 +52,19 @@ class SchoolLawyerMemoryClient extends MemoryClient {
    * @param impersonation - Optional impersonation instance.
    * @param ops - Additional client options.
    */
-  constructor({
-    defaults,
-    projectId,
-    orgId,
-    impersonation,
-    ...ops
-  }: ClientOptions) {
-    // Determine authentication method - prefer impersonation over API key
-    const authOptions = impersonation
-      ? { bearerToken: undefined } // Will be set dynamically
-      : { apiKey: env('MEM0_API_KEY') };
-
+  constructor({ defaults, projectId, orgId, ...ops }: ClientOptions) {
     super({
       ...ops,
-      ...authOptions,
       projectId: (projectId ? projectId : env('MEM0_PROJECT_ID')) ?? undefined,
       organizationId: (orgId ? orgId : env('MEM0_ORG_ID')) ?? undefined,
       host: env('MEM0_API_HOST'),
     });
 
-    this.#defaultOptions = {
+    this.defaultOptions = {
       ...(defaults ?? {}),
     };
-    this.#impersonation = impersonation;
-
-    // Log authentication method being used
-    if (impersonation) {
-      log((l) =>
-        l.debug('MemoryClient configured with impersonation', {
-          userId: impersonation.getUserContext().userId,
-          hasApiKey: !!env('MEM0_API_KEY'),
-        }),
-      );
-    }
   }
 
-  /**
-   * Updates the authorization header with an impersonated token if available.
-   * @private
-   */
-  private async updateAuthorizationIfNeeded(): Promise<void> {
-    if (this.#impersonation) {
-      try {
-        const impersonatedToken =
-          await this.#impersonation.getImpersonatedToken();
-        const authHeader = `Bearer ${impersonatedToken}`;
-
-        // Update both the headers property and the axios client
-        this.headers.Authorization = authHeader;
-        this.client.defaults.headers.Authorization = authHeader;
-
-        log((l) =>
-          l.debug('Updated mem0 client with impersonated token', {
-            userId: this.#impersonation?.getUserContext().userId,
-          }),
-        );
-      } catch (error) {
-        log((l) =>
-          l.warn(
-            'Failed to update mem0 client with impersonated token, using fallback',
-            error,
-          ),
-        );
-        // Fallback to API key if available
-        if (env('MEM0_API_KEY')) {
-          const fallbackAuth = `Token ${env('MEM0_API_KEY')}`;
-          this.headers.Authorization = fallbackAuth;
-          this.client.defaults.headers.Authorization = fallbackAuth;
-        }
-      }
-    }
-  }
-
-  /**
-   * Override HTTP methods to ensure impersonated token is current
-   */
-  override async _fetchWithErrorHandling(
-    url: string,
-    options: RequestInit,
-  ): Promise<unknown> {
-    await this.updateAuthorizationIfNeeded();
-    return super._fetchWithErrorHandling(url, options);
-  }
   /**
    * Prepares the payload for memory operations.
    *
@@ -140,7 +77,7 @@ class SchoolLawyerMemoryClient extends MemoryClient {
     options: MemoryOptions,
   ): object {
     return super._preparePayload(messages, {
-      ...this.#defaultOptions,
+      ...this.defaultOptions,
       ...options,
     });
   }
@@ -151,9 +88,9 @@ class SchoolLawyerMemoryClient extends MemoryClient {
    * @param options - Memory options to include in the parameters.
    * @returns The prepared parameters object.
    */
-  override _prepareParams(options: MemoryOptions): object {
+  override _prepareParams(options: MemoryOptions): Record<string, string> {
     return super._prepareParams({
-      ...this.#defaultOptions,
+      ...this.defaultOptions,
       ...options,
     });
   }
@@ -173,10 +110,9 @@ class SchoolLawyerMemoryClient extends MemoryClient {
       verbose: verbose.toString(),
     });
 
-    const url = `${this.host}/api/v1/stats/health-check?${searchParams.toString()}`;
+    const url = `api/v1/stats/health-check?${searchParams.toString()}`;
 
     try {
-      await this.updateAuthorizationIfNeeded();
       const response = await this._fetchWithErrorHandling(url, {
         method: 'GET',
         headers: this.headers,
@@ -200,19 +136,26 @@ class SchoolLawyerMemoryClient extends MemoryClient {
  * ```typescript
  * // Create with impersonation
  * const impersonation = await Impersonation.fromRequest(request);
- * const client = memoryClientFactory({ impersonation });
+ * const client = await memoryClientFactory({ impersonation });
  *
  * // Create with API key (fallback)
- * const client = memoryClientFactory({});
+ * const client = await memoryClientFactory({});
  * ```
  */
-export const memoryClientFactory = (options: ClientOptions): MemoryClient => {
-  const clientOps = options.impersonation
-    ? options
-    : {
-        ...options,
-        impersonation: fromRequest(),
-      };
-  const ret = new SchoolLawyerMemoryClient(clientOps);
+export const memoryClientFactory = async <
+  TClient extends MemoryClient = MemoryClient,
+>(
+  options: ClientOptions,
+): Promise<TClient> => {
+  const clientOps = {
+    ...options,
+  };
+  if (!options.impersonation) {
+    const impersonateService = await fromRequest({});
+    if (impersonateService) {
+      clientOps.impersonation = impersonateService;
+    }
+  }
+  const ret = new SchoolLawyerMemoryClient(clientOps) as unknown as TClient;
   return ret;
 };

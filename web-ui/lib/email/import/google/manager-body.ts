@@ -8,19 +8,19 @@ import {
 import {
   ImportSourceMessage,
   ImportStage,
-} from '@/data-models/api/import/email-message';
-import { log } from '@/lib/logger';
+} from '/data-models/api/import/email-message';
+import { log } from '/lib/logger';
 import { gmail_v1 } from 'googleapis';
 import { mapContacts } from './utilities';
-import { ContactRepository } from '@/lib/api/contacts/database';
-import { EmailRepository } from '@/lib/api/email/database';
+import { ContactRepository } from '/lib/api/contacts/database';
+import { EmailRepository } from '/lib/api/email/database';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
-import { ThreadRepository } from '@/lib/api/thread/database';
-import { DataIntegrityError } from '@/lib/react-util/errors/data-integrity-error';
+import { ThreadRepository } from '/lib/api/thread/database';
+import { DataIntegrityError } from '/lib/react-util/errors/data-integrity-error';
 import { ParsedHeaderMap } from '../../parsedHeaderMap';
-import { query } from '@/lib/neondb';
-import { ContactSummary } from '@/data-models/api/contact';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { query } from '/lib/neondb';
+import { ContactSummary } from '/data-models/api/contact';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 
 type ParsedEmailProps = {
   savedSender: ContactSummary;
@@ -249,31 +249,33 @@ class EmailStageManager extends TransactionalStateManagerBase {
     }
     let foundReplyHeader = false; // Flag to stop processing when we hit a reply header
     // Decode
-    return (Buffer.from(part!.body!.data!, 'base64')
-      .toString('utf-8')
-      // Strip out quoted text from previous emails
-      .split('\n')
-      .filter((line) => {
-        // Stop processing once a reply header is found
-        if (foundReplyHeader) {
-          return false;
-        }
-        if (
-          /^On\s(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s*(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2},?\s\d{4}\s(?:at\s\d{1,2}:\d{2}(?:\s?[APap][Mm])?)?\s.+?\s<[^>]+>\swrote:\s*$/i.test(
-            line,
-          )
-        ) {
-          foundReplyHeader = true;
-          return false; // Stop filtering; truncate everything below
-        }
-        return !line.startsWith('>'); // Remove quoted replies
-      })
-      .join('\n')
-      // Normalize line breaks
-      .trim()
-      .replace(/([\r\n]{1,2}\s*)(?![\r\n])/g, ' ')
-      .replace(/[\r\n]{2,}/g, '\n')
-      .trim());
+    return (
+      Buffer.from(part!.body!.data!, 'base64')
+        .toString('utf-8')
+        // Strip out quoted text from previous emails
+        .split('\n')
+        .filter((line) => {
+          // Stop processing once a reply header is found
+          if (foundReplyHeader) {
+            return false;
+          }
+          if (
+            /^On\s(?:Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday|Mon|Tue|Wed|Thu|Fri|Sat|Sun),?\s*(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,2},?\s\d{4}\s(?:at\s\d{1,2}:\d{2}(?:\s?[APap][Mm])?)?\s.+?\s<[^>]+>\swrote:\s*$/i.test(
+              line,
+            )
+          ) {
+            foundReplyHeader = true;
+            return false; // Stop filtering; truncate everything below
+          }
+          return !line.startsWith('>'); // Remove quoted replies
+        })
+        .join('\n')
+        // Normalize line breaks
+        .trim()
+        .replace(/([\r\n]{1,2}\s*)(?![\r\n])/g, ' ')
+        .replace(/[\r\n]{2,}/g, '\n')
+        .trim()
+    );
   }
   async #addRecipientsToEmail({
     emailId,

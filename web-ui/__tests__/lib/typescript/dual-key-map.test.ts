@@ -2,7 +2,7 @@
  * @file dual-key-map.test.ts
  * @description Unit tests for DualKeyMap
  */
-import { DualKeyMap } from '@/lib/typescript/dual-key-map';
+import { DualKeyMap } from '/lib/typescript/dual-key-map';
 
 type TestRecord = {
   id: number;
@@ -19,7 +19,11 @@ describe('DualKeyMap', () => {
   ];
 
   beforeEach(() => {
-    map = new DualKeyMap<TestRecord, number, string>('id', 'name', entries.values());
+    map = new DualKeyMap<TestRecord, number, string>(
+      'id',
+      'name',
+      entries.values(),
+    );
   });
 
   it('should initialize with entries', () => {

@@ -9,14 +9,14 @@ import {
   cacheManager,
   extractToolCallIds,
   hasToolCalls,
-} from '@/lib/ai/chat/message-optimizer-tools';
-import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+} from '/lib/ai/chat/message-optimizer-tools';
+import { aiModelFactory } from '/lib/ai/aiModelFactory';
 import { generateText, generateObject } from 'ai';
 
 // Mock dependencies
-jest.mock('@/lib/ai/aiModelFactory');
+jest.mock('/lib/ai/aiModelFactory');
 jest.mock('ai');
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn(() => ({
     transaction: jest.fn((callback) =>
       callback({
@@ -32,7 +32,7 @@ jest.mock('@/lib/drizzle-db', () => ({
     chatToolCalls: { chatToolCallId: 'chatToolCallId' },
   },
 }));
-jest.mock('@/lib/ai/services/model-stats/tool-map', () => ({
+jest.mock('/lib/ai/services/model-stats/tool-map', () => ({
   ToolMap: {
     getInstance: jest.fn(() =>
       Promise.resolve({
@@ -45,7 +45,7 @@ jest.mock('@/lib/ai/services/model-stats/tool-map', () => ({
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'mock-uuid'),
 }));
-jest.mock('@/lib/logger', () => ({
+jest.mock('/lib/logger', () => ({
   log: jest.fn((callback) => {
     const mockLogger = {
       debug: jest.fn(),
@@ -784,10 +784,11 @@ describe('Message Optimizer Tools', () => {
       // Test deep=true path (content extraction)
       const contentResults = mockDbResults
         .map((m) => m.content)
-        .filter((content): content is string => 
-          typeof content === 'string' && content.trim().length > 0
+        .filter(
+          (content): content is string =>
+            typeof content === 'string' && content.trim().length > 0,
         );
-      
+
       expect(contentResults).toEqual([
         'Valid content 1',
         'Valid content 3',
@@ -798,10 +799,11 @@ describe('Message Optimizer Tools', () => {
       // Test deep=false path (optimizedContent extraction)
       const optimizedResults = mockDbResults
         .map((m) => m.optimizedContent)
-        .filter((content): content is string => 
-          typeof content === 'string' && content.trim().length > 0
+        .filter(
+          (content): content is string =>
+            typeof content === 'string' && content.trim().length > 0,
         );
-      
+
       expect(optimizedResults).toEqual([
         'Optimized 1',
         'Optimized 2',

@@ -3,10 +3,10 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, waitFor } from '/__tests__/test-utils';
 import '@testing-library/jest-dom';
-import { ChatMenu } from '@/components/ai/chat-panel/chat-menu';
-import { ModelSelection } from '@/components/ai/chat-panel/types';
+import { ChatMenu } from '/components/ai/chat-panel/chat-menu';
+import { ModelSelection } from '/components/ai/chat-panel/types';
 
 describe('ChatMenu Provider Selection', () => {
   const mockSetActiveModelSelection = jest.fn();

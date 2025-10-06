@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { render, screen } from '@/__tests__/test-utils';
-import { CustomEmailPageItem } from '@/components/email-message/dashboard-layout/custom-email-page-item';
+import { render, screen } from '/__tests__/test-utils';
+import { CustomEmailPageItem } from '/components/email-message/dashboard-layout/custom-email-page-item';
 import type { NavigationPageItem } from '@toolpad/core/AppProvider';
 
 const makeItem = (
@@ -18,7 +18,7 @@ const makeItem = (
 });
 
 // Mock the siteBuilder utility to produce consistent hrefs
-jest.mock('@/lib/site-util/url-builder', () => ({
+jest.mock('/lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     messages: {
@@ -59,7 +59,7 @@ describe('CustomEmailPageItem', () => {
       segment: 'messages/chat',
       children: [],
     };
-    
+
     render(
       <CustomEmailPageItem
         item={chatItem}
@@ -68,7 +68,7 @@ describe('CustomEmailPageItem', () => {
         pathname="/messages/chat"
       />,
     );
-    
+
     const link = screen.getByRole('link', { name: 'Chat History' });
     // Bug: Currently this incorrectly points to /messages/email/test-email-123
     // Should point to /messages/chat instead
@@ -82,7 +82,7 @@ describe('CustomEmailPageItem', () => {
       segment: 'messages/email/123',
       children: [],
     };
-    
+
     render(
       <CustomEmailPageItem
         item={emailItem}
@@ -91,7 +91,7 @@ describe('CustomEmailPageItem', () => {
         pathname="/messages/email/test-email-123"
       />,
     );
-    
+
     const link = screen.getByRole('link', { name: 'View Email' });
     // This should correctly point to the email page when emailId is present
     expect(link).toHaveAttribute('href', '/messages/email/test-email-123');

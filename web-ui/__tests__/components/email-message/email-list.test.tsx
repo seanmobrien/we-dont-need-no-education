@@ -5,10 +5,10 @@ import {
   waitFor,
   jsonResponse,
   asyncRender,
-} from '@/__tests__/test-utils';
-import EmailList from '@/components/email-message/list';
+} from '/__tests__/test-utils';
+import EmailList from '/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '/lib/nextjs-util/fetch';
 
 // Mock the router
 jest.mock('next/navigation', () => ({

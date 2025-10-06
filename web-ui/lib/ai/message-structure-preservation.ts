@@ -1,17 +1,17 @@
 /**
  * @fileoverview Message Structure Preservation - Main exports
- * 
+ *
  * This module provides a strongly-typed interface for message structure preservation,
  * replacing magic properties with type-safe, configurable options.
- * 
+ *
  * @example
  * ```typescript
- * import { 
+ * import {
  *   preserveMessageStructure,
  *   createPresetConfiguration,
- *   type MessageStructureOptions 
- * } from '@/lib/ai/message-structure-preservation';
- * 
+ *   type MessageStructureOptions
+ * } from '/lib/ai/message-structure-preservation';
+ *
  * const options = createPresetConfiguration('balanced');
  * const result = preserveMessageStructure(messages, options);
  * ```

@@ -1,9 +1,9 @@
 import { jest } from '@jest/globals';
-import { resolveEmailId } from '@/lib/email/email-id-resolver';
+import { resolveEmailId } from '/lib/email/email-id-resolver';
 
 /*
 // Mock the dependencies
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn().mockResolvedValue({
     query: {
       documentUnits: {
@@ -14,7 +14,7 @@ jest.mock('@/lib/drizzle-db', () => ({
 }));
 */
 
-jest.mock('@/lib/ai/tools/utility', () => ({
+jest.mock('/lib/ai/tools/utility', () => ({
   isValidUuid: jest.fn(),
 }));
 
@@ -23,8 +23,8 @@ jest.mock('next/navigation', () => ({
   notFound: jest.fn(),
 }));
 
-import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@/lib/ai/tools/utility';
+import { drizDb, drizDbWithInit } from '/lib/drizzle-db';
+import { isValidUuid } from '/lib/ai/tools/utility';
 
 const mockDrizDb = drizDbWithInit as jest.MockedFunction<typeof drizDbWithInit>;
 const mockIsValidUuid = isValidUuid as jest.MockedFunction<typeof isValidUuid>;

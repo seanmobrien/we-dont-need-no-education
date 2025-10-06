@@ -1,33 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 // (normalizeNullableNumeric no longer needed directly; handled in validation module)
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { ValidationError } from '/lib/react-util/errors/validation-error';
 
-import { EmailService } from '@/lib/api/email/email-service';
+import { EmailService } from '/lib/api/email/email-service';
 import {
   validateCreateEmail,
   validateUpdateEmail,
-} from '@/lib/api/email/email-validation';
+} from '/lib/api/email/email-validation';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
-import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+} from '/lib/nextjs-util/server/utils';
+import { drizDbWithInit, schema } from '/lib/drizzle-db';
 import {
   count_kpi,
   count_attachments,
   count_notes,
   count_responsive_actions,
   count_cta,
-} from '@/lib/api/email/drizzle/query-parts';
+} from '/lib/api/email/drizzle/query-parts';
 import { eq } from 'drizzle-orm';
 // count_kpi import removed; not used in this route currently
 import {
   DrizzleSelectQuery,
   getEmailColumn,
   selectForGrid,
-} from '@/lib/components/mui/data-grid/queryHelpers';
-import { ContactSummary, EmailMessageSummary } from '@/data-models';
+} from '/lib/components/mui/data-grid/queryHelpers';
+import { ContactSummary, EmailMessageSummary } from '/data-models';
 
 export const dynamic = 'force-dynamic';
 

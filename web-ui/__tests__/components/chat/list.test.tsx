@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '@/__tests__/test-utils';
-import ChatList from '@/components/chat/list';
+import { render, screen, waitFor } from '/__tests__/test-utils';
+import ChatList from '/components/chat/list';
 import { mockChatSummaries, mockChatHistoryResponse } from '../chat.mock-data';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '/lib/nextjs-util/fetch';
 
 // Mock the router
 const mockPush = jest.fn();
@@ -17,7 +17,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock the ServerBoundDataGrid component to avoid validation issues
-jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
+jest.mock('/components/mui/data-grid/server-bound-data-grid', () => ({
   ServerBoundDataGrid: ({ url, columns, onRowDoubleClick, ...props }: any) => (
     <div data-testid="server-bound-data-grid" data-url={url} role="grid">
       <div>Mock Data Grid</div>
@@ -31,7 +31,7 @@ jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
 }));
 
 // Mock the siteMap
-jest.mock('@/lib/site-util/url-builder', () => ({
+jest.mock('/lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     api: {
@@ -55,7 +55,7 @@ describe('ChatList', () => {
 
   it('should render initially without errors', () => {
     render(<ChatList />);
-    
+
     expect(screen.getByRole('grid')).toBeInTheDocument();
     expect(screen.getByText('Mock Data Grid')).toBeInTheDocument();
   });
@@ -82,12 +82,15 @@ describe('ChatList', () => {
     render(<ChatList />);
 
     const dataGrid = screen.getByTestId('server-bound-data-grid');
-    expect(dataGrid).toHaveAttribute('data-url', 'http://localhost:3000/api/ai/chat/history');
+    expect(dataGrid).toHaveAttribute(
+      'data-url',
+      'http://localhost:3000/api/ai/chat/history',
+    );
   });
 
   it('should render with custom maxHeight', () => {
     render(<ChatList maxHeight={500} />);
-    
+
     // The component should render without errors
     expect(screen.getByRole('grid')).toBeInTheDocument();
   });
@@ -101,7 +104,7 @@ describe('ChatList', () => {
 
   it('should render with proper box structure', () => {
     const { container } = render(<ChatList />);
-    
+
     // Check that the Box component structure is present
     const boxElement = container.firstChild;
     expect(boxElement).toHaveStyle('display: flex');
@@ -136,13 +139,19 @@ describe('ChatList', () => {
     render(<ChatList viewType="system" />);
 
     const dataGrid = screen.getByTestId('server-bound-data-grid');
-    expect(dataGrid).toHaveAttribute('data-url', 'http://localhost:3000/api/ai/chat/history?viewType=system');
+    expect(dataGrid).toHaveAttribute(
+      'data-url',
+      'http://localhost:3000/api/ai/chat/history?viewType=system',
+    );
   });
 
   it('should not add viewType query parameter for default user view', () => {
     render(<ChatList viewType="user" />);
 
     const dataGrid = screen.getByTestId('server-bound-data-grid');
-    expect(dataGrid).toHaveAttribute('data-url', 'http://localhost:3000/api/ai/chat/history');
+    expect(dataGrid).toHaveAttribute(
+      'data-url',
+      'http://localhost:3000/api/ai/chat/history',
+    );
   });
 });

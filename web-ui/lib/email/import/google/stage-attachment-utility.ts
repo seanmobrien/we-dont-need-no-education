@@ -1,7 +1,7 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 import { AttachmentStagedResult, StageAttachmentProps } from './types';
 import { queueAttachment } from './attachment-download';
-import { StagedAttachmentRepository } from '@/lib/api/email/import/staged-attachment';
+import { StagedAttachmentRepository } from '/lib/api/email/import/staged-attachment';
 import { gmail_v1 } from '@googleapis/gmail';
 
 /**

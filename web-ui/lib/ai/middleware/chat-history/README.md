@@ -4,7 +4,10 @@ A comprehensive middleware system for managing AI chat conversation persistence,
 Provides comprehensive observability for the chat history middleware system:
 
 ```typescript
-import { instrumentFlushOperation, recordQueueOperation } from '@/lib/ai/middleware/chat-history';
+import {
+  instrumentFlushOperation,
+  recordQueueOperation,
+} from '/lib/ai/middleware/chat-history';
 
 // Instrument flush operations
 const result = await instrumentFlushOperation(flushContext, async () => {
@@ -16,6 +19,7 @@ recordQueueOperation('enqueue', true, queueSize);
 ```
 
 **Capabilities:**
+
 - Distributed tracing with OpenTelemetry spans
 - Performance metrics collection (histograms, counters)
 - Error tracking and attribution
@@ -47,15 +51,15 @@ graph TD
     A[AI Model Request] --> B[Chat History Middleware]
     B --> C[Initialize Persistence]
     C --> D{Stream or Generate?}
-    
+
     D -->|Stream| E[Processing Queue]
     E --> F[Stream Handlers]
     F --> G[Chunk Processing]
     G --> H[Database Updates]
-    
+
     D -->|Generate| I[Direct Persistence]
     I --> J[Text Processing]
-    
+
     H --> K[Flush Handlers]
     J --> K
     K --> L[Finalize Turn]
@@ -66,10 +70,11 @@ graph TD
 ## Core Components
 
 ### 1. Main Middleware (`index.ts`)
+
 The primary entry point that orchestrates the entire chat history pipeline with built-in instrumentation:
 
 ```typescript
-import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { createChatHistoryMiddleware } from '/lib/ai/middleware/chat-history';
 
 const chatHistoryMiddleware = createChatHistoryMiddleware({
   // Configuration context
@@ -80,6 +85,7 @@ const model = wrapModel(aiModelFactory('hifi'), [chatHistoryMiddleware]);
 ```
 
 **Key Responsibilities:**
+
 - Initialize message persistence for each conversation turn
 - Coordinate streaming vs. generation modes
 - Maintain local state (message order, accumulated text)
@@ -87,6 +93,7 @@ const model = wrapModel(aiModelFactory('hifi'), [chatHistoryMiddleware]);
 - Automatic OpenTelemetry instrumentation
 
 ### 2. Processing Queue (`processing-queue.ts`)
+
 Ensures FIFO ordering of stream chunks during real-time processing:
 
 ```typescript
@@ -99,16 +106,18 @@ await queue.enqueue(chunk3, context3);
 ```
 
 **Features:**
+
 - Maintains strict FIFO ordering
 - Handles async database operations
 - Provides error isolation per chunk
 - Supports concurrent processing with ordered results
 
 ### 3. Stream Handlers (`stream-handlers.ts`)
+
 Specialized processors for different types of streaming content:
 
 - **Text Delta Handler**: Accumulates incremental text updates
-- **Tool Call Handler**: Processes AI tool invocations  
+- **Tool Call Handler**: Processes AI tool invocations
 - **Tool Result Handler**: Handles tool execution results
 - **Finish Handler**: Manages stream completion
 - **Error Handler**: Processes error conditions
@@ -119,6 +128,7 @@ const result = await processStreamChunk(chunk, context);
 ```
 
 ### 4. Message Persistence (`message-persistence.ts`)
+
 Shared utilities for database operations across all modes:
 
 ```typescript
@@ -129,17 +139,19 @@ const init = await safeInitializeMessagePersistence(context, params);
 await safeCompleteMessagePersistence({
   chatId: 'chat-123',
   generatedText: 'AI response...',
-  startTime: Date.now()
+  startTime: Date.now(),
 });
 ```
 
 **Capabilities:**
+
 - Safe initialization with error handling
 - Transactional database operations
 - Automatic chat/turn/message creation
 - Graceful failure recovery
 
 ### 5. Flush Handlers (`flush-handlers.ts`)
+
 Manages conversation turn completion and finalization:
 
 ```typescript
@@ -147,6 +159,7 @@ const result = await handleFlush(flushContext, config);
 ```
 
 **Operations:**
+
 - Finalize assistant messages
 - Update turn completion status
 - Generate intelligent chat titles
@@ -154,6 +167,7 @@ const result = await handleFlush(flushContext, config);
 - Handle cleanup operations
 
 ### 6. Import Utilities (`import-incoming-message.ts`)
+
 Handles the import and persistence of user messages:
 
 ```typescript
@@ -162,11 +176,12 @@ const messageId = await importIncomingMessage(
   chatId,
   turnId,
   messageOrder,
-  userMessage
+  userMessage,
 );
 ```
 
 ### 7. Type Definitions (`types.ts`)
+
 Comprehensive TypeScript interfaces for the entire system:
 
 - `ChatHistoryContext`: Main configuration interface
@@ -182,8 +197,8 @@ Comprehensive TypeScript interfaces for the entire system:
 ### 1. Basic Setup
 
 ```typescript
-import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
-import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import { createChatHistoryMiddleware } from '/lib/ai/middleware/chat-history';
+import { aiModelFactory } from '/lib/ai/aiModelFactory';
 
 // Create middleware with configuration
 const chatHistoryMiddleware = createChatHistoryMiddleware({
@@ -200,9 +215,7 @@ const model = wrapModel(aiModelFactory('hifi'), [chatHistoryMiddleware]);
 // Streaming will be automatically persisted
 const { textStream } = await streamText({
   model,
-  messages: [
-    { role: 'user', content: 'Hello!' }
-  ]
+  messages: [{ role: 'user', content: 'Hello!' }],
 });
 
 // Stream is transparently persisted as it flows
@@ -217,9 +230,7 @@ for await (const textPart of textStream) {
 // Direct generation is batched and persisted
 const { text } = await generateText({
   model,
-  messages: [
-    { role: 'user', content: 'What is TypeScript?' }
-  ]
+  messages: [{ role: 'user', content: 'What is TypeScript?' }],
 });
 
 console.log(text); // Automatically persisted
@@ -235,19 +246,19 @@ const config: FlushConfig = {
   autoGenerateTitle: true,
   maxTitleLength: 100,
   titleWordCount: 6,
-  
+
   // Performance settings
   flushIntervalMs: 1000,
   timeoutMs: 5000,
   batchSize: 50,
-  
+
   // Reliability
   retryAttempts: 3,
   compressionEnabled: true,
-  
+
   // Monitoring
   enableMetrics: true,
-  verboseLogging: false
+  verboseLogging: false,
 };
 ```
 
@@ -263,7 +274,7 @@ const prodConfig: FlushConfig = {
   timeoutMs: 5000,
   enableMetrics: true,
   retryAttempts: 3,
-  compressionEnabled: true
+  compressionEnabled: true,
 };
 
 // Development configuration
@@ -275,7 +286,7 @@ const devConfig: FlushConfig = {
   timeoutMs: 10000,
   enableMetrics: true,
   verboseLogging: true,
-  retryAttempts: 1
+  retryAttempts: 1,
 };
 ```
 
@@ -284,12 +295,14 @@ const devConfig: FlushConfig = {
 The middleware integrates with the following database tables:
 
 ### Core Tables
+
 - **`chats`**: Conversation containers with titles and metadata
-- **`chatTurns`**: Individual conversation exchanges  
+- **`chatTurns`**: Individual conversation exchanges
 - **`chatMessages`**: Specific messages (user/assistant)
 - **`tokenUsage`**: AI model usage tracking and metrics
 
 ### Key Relationships
+
 ```sql
 chats (1) -> (many) chatTurns
 chatTurns (1) -> (many) chatMessages
@@ -301,6 +314,7 @@ chatMessages (1) -> (1) tokenUsage
 The middleware implements comprehensive error handling:
 
 ### 1. Graceful Degradation
+
 ```typescript
 // If persistence fails, chat continues normally
 const persistenceInit = await safeInitializeMessagePersistence(context, params);
@@ -311,16 +325,17 @@ if (!persistenceInit) {
 ```
 
 ### 2. Error Isolation
+
 ```typescript
 // Individual chunk errors don't stop the stream
-processingQueue.enqueue(chunk, context)
-  .catch((error) => {
-    log((l) => l.error('Chunk processing failed', { error }));
-    // Stream continues normally
-  });
+processingQueue.enqueue(chunk, context).catch((error) => {
+  log((l) => l.error('Chunk processing failed', { error }));
+  // Stream continues normally
+});
 ```
 
 ### 3. Transaction Safety
+
 ```typescript
 // Database operations are wrapped in transactions
 await drizDb.transaction(async (tx) => {
@@ -333,21 +348,25 @@ await drizDb.transaction(async (tx) => {
 ## Performance Optimizations
 
 ### 1. Asynchronous Processing
+
 - Non-blocking stream processing
 - Concurrent database operations
 - Background persistence operations
 
 ### 2. Batch Operations
+
 - Efficient database batching
 - Reduced I/O overhead
 - Optimized transaction management
 
 ### 3. Memory Management
+
 - Streaming chunk processing
 - Minimal memory footprint
 - Automatic cleanup
 
 ### 4. Caching Strategies
+
 - Message order caching
 - Context state preservation
 - Reduced database queries
@@ -355,6 +374,7 @@ await drizDb.transaction(async (tx) => {
 ## Monitoring and Analytics
 
 ### Built-in OpenTelemetry Metrics
+
 The middleware automatically collects comprehensive metrics:
 
 - **Flush Operation Histogram**: `chat_history_flush_duration` - Duration of flush operations in milliseconds
@@ -366,20 +386,22 @@ The middleware automatically collects comprehensive metrics:
 - **Queue Size Gauge**: `chat_history_queue_size` - Current processing queue size
 
 ### Built-in Spans and Traces
+
 - **`chat_history.flush`**: Complete flush operation tracing
 - **`chat_history.stream_chunk`**: Individual chunk processing
 - **`chat_history.middleware_init`**: Initialization tracing
 
 ### Custom Analytics
+
 ```typescript
 // Access flush result metrics
 const result = await handleFlush(context, config);
 console.log(result.processingTimeMs); // Processing duration
-console.log(result.textLength);       // Response length
-console.log(result.metadata);         // Custom metrics
+console.log(result.textLength); // Response length
+console.log(result.metadata); // Custom metrics
 
 // Manual instrumentation
-import { instrumentFlushOperation } from '@/lib/ai/middleware/chat-history';
+import { instrumentFlushOperation } from '/lib/ai/middleware/chat-history';
 
 const result = await instrumentFlushOperation(context, async () => {
   // Your custom flush logic
@@ -388,47 +410,53 @@ const result = await instrumentFlushOperation(context, async () => {
 ```
 
 ### Error Attribution
+
 Enhanced error tracking with chat context:
 
 ```typescript
-import { createChatHistoryError } from '@/lib/ai/middleware/chat-history';
+import { createChatHistoryError } from '/lib/ai/middleware/chat-history';
 
 // Errors include structured chat context
 throw createChatHistoryError(
   'Operation failed',
   { chatId: 'chat-123', turnId: 1, messageId: 42 },
-  originalError
+  originalError,
 );
 ```
 
 ## Testing
 
 ### Unit Tests
+
 Located in `__tests__/lib/ai/middleware/chat-history/`:
+
 - Individual component testing
 - Mock database operations
 - Error scenario validation
 - Performance benchmarking
 
 ### Integration Tests
+
 - Full middleware pipeline testing
 - Database interaction validation
 - Streaming workflow verification
 - Error recovery testing
 
 ### Test Utilities
+
 ```typescript
 // Test helpers available
 import { createTestChatContext } from '__tests__/test-utils/chat-helpers';
 
 const testContext = createTestChatContext({
-  chatId: 'test-chat-123'
+  chatId: 'test-chat-123',
 });
 ```
 
 ## Common Patterns
 
 ### 1. Custom Stream Processing
+
 ```typescript
 // Add custom chunk processing
 const customHandler = async (chunk, context) => {
@@ -440,6 +468,7 @@ const customHandler = async (chunk, context) => {
 ```
 
 ### 2. Error Recovery
+
 ```typescript
 // Implement custom error recovery
 const middleware = createChatHistoryMiddleware({
@@ -447,11 +476,12 @@ const middleware = createChatHistoryMiddleware({
     // Custom error handling
     console.error('Chat history error:', error);
     // Return recovery action
-  }
+  },
 });
 ```
 
 ### 3. Performance Monitoring
+
 ```typescript
 // Monitor performance metrics
 const startTime = Date.now();
@@ -466,14 +496,17 @@ console.log(`Flush completed in ${duration}ms`);
 ### Common Issues
 
 1. **Stream Chunks Out of Order**
+
    - Solution: Verify ProcessingQueue is being used
    - Check: FIFO ordering in queue implementation
 
 2. **Database Connection Errors**
+
    - Solution: Implement retry logic in flush configuration
    - Check: Database connection pool settings
 
 3. **Memory Leaks in Streaming**
+
    - Solution: Ensure proper cleanup in transform streams
    - Check: Processing queue cleanup procedures
 
@@ -482,36 +515,42 @@ console.log(`Flush completed in ${duration}ms`);
    - Check: AI model availability for title generation
 
 ### Debug Logging
+
 ```typescript
 // Enable verbose logging
 const config: FlushConfig = {
   verboseLogging: true,
-  enableMetrics: true
+  enableMetrics: true,
 };
 
 // Monitor specific operations
-log((l) => l.debug('Chat history operation', { 
-  operation: 'flush',
-  chatId,
-  duration: processingTimeMs 
-}));
+log((l) =>
+  l.debug('Chat history operation', {
+    operation: 'flush',
+    chatId,
+    duration: processingTimeMs,
+  }),
+);
 ```
 
 ## Contributing
 
 ### Development Setup
+
 1. Install dependencies: `yarn install`
 2. Run tests: `yarn test lib/ai/middleware/chat-history`
 3. Type checking: `yarn tsc --noEmit`
 4. Linting: `yarn lint`
 
 ### Code Style
+
 - Follow existing TypeScript patterns
 - Comprehensive JSDoc documentation
 - Error handling for all async operations
 - Performance considerations for streaming
 
 ### Testing Requirements
+
 - Unit tests for all new functions
 - Integration tests for middleware changes
 - Error scenario coverage

@@ -11,9 +11,10 @@ import {
 import Queries from '@testing-library/dom/types/queries';
 import React, { act, PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '@/lib/themes/provider';
-import { ChatPanelProvider } from '@/components/ai/chat-panel';
-import { SessionProvider } from '@/components/auth/session-provider';
+import { ThemeProvider } from '/lib/themes/provider';
+import { ChatPanelProvider } from '/components/ai/chat-panel';
+import { SessionProvider } from '/components/auth/session-provider';
+import { FlagProvider } from '/components/general/flags/flag-provider';
 
 // Create a test QueryClient with disabled retries and logs
 const createTestQueryClient = () =>
@@ -35,7 +36,9 @@ const AllTheProviders = ({ children }: PropsWithChildren) => {
     <QueryClientProvider client={queryClient}>
       <ChatPanelProvider>
         <SessionProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <FlagProvider>
+            <ThemeProvider>{children}</ThemeProvider>
+          </FlagProvider>
         </SessionProvider>
       </ChatPanelProvider>
     </QueryClientProvider>
@@ -144,7 +147,9 @@ export const hideConsoleOutput = () => {
       ret.error ??= jest.spyOn(console, 'error').mockImplementation(() => {});
       ret.log ??= jest.spyOn(console, 'log').mockImplementation(() => {});
       ret.group ??= jest.spyOn(console, 'group').mockImplementation(() => {});
-      ret.groupEnd ??= jest.spyOn(console, 'groupEnd').mockImplementation(() => {});
+      ret.groupEnd ??= jest
+        .spyOn(console, 'groupEnd')
+        .mockImplementation(() => {});
       ret.table ??= jest.spyOn(console, 'table').mockImplementation(() => {});
       ret.info ??= jest.spyOn(console, 'info').mockImplementation(() => {});
       ret.warn ??= jest.spyOn(console, 'warn').mockImplementation(() => {});

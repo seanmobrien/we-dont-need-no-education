@@ -1,4 +1,4 @@
-import { getLastPathSegment, normalizePath } from '@/lib/react-util/url';
+import { getLastPathSegment, normalizePath } from '/lib/react-util/url';
 
 describe('react-util/url', () => {
   describe('normalizePath', () => {

@@ -1,4 +1,4 @@
-import type { ErrorLike } from '@/lib/react-util/errors/error-like';
+import type { ErrorLike } from '/lib/react-util/errors/error-like';
 import type { ErrorSuppressionRule, SuppressionResult } from './types';
 
 /**

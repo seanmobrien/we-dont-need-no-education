@@ -13,20 +13,20 @@ import {
   handleToolCall,
   handleFinish,
   processStreamChunk,
-} from '@/lib/ai/middleware/chat-history/stream-handlers';
-import { DbDatabaseType, drizDb } from '@/lib/drizzle-db';
-import { chatMessages, tokenUsage } from '@/drizzle/schema';
-import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
-import { log } from '@/lib/logger';
-import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
+} from '/lib/ai/middleware/chat-history/stream-handlers';
+import { DbDatabaseType, drizDb } from '/lib/drizzle-db';
+import { chatMessages, tokenUsage } from '/drizzle/schema';
+import { getNextSequence } from '/lib/ai/middleware/chat-history/utility';
+import { log } from '/lib/logger';
+import type { StreamHandlerContext } from '/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
-import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
+import { hideConsoleOutput } from '/__tests__/test-utils';
+import { ensureCreateResult } from '/lib/ai/middleware/chat-history/stream-handler-result';
 
 // Mock dependencies
-jest.mock('@/lib/drizzle-db');
-jest.mock('@/lib/ai/middleware/chat-history/utility');
-jest.mock('@/lib/logger');
+jest.mock('/lib/drizzle-db');
+jest.mock('/lib/ai/middleware/chat-history/utility');
+jest.mock('/lib/logger');
 
 let mockDb: jest.Mocked<DbDatabaseType>;
 const mockGetNextSequence = getNextSequence as jest.MockedFunction<

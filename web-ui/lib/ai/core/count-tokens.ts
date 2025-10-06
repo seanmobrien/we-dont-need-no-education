@@ -1,4 +1,4 @@
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 import { UIDataTypes, UIMessagePart, UITools } from 'ai';
 import { promptTokensEstimate } from 'openai-chat-tokens';
 import { LanguageModelV2Prompt } from '@ai-sdk/provider';

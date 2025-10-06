@@ -7,9 +7,9 @@
 import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { tracer, MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
-import type { JSONRPCMessage } from '@/lib/ai/mcp/ai.sdk';
-import { log } from '@/lib/logger';
-import { isError } from '@/lib/react-util/utility-methods';
+import type { JSONRPCMessage } from '/lib/ai/mcp/ai.sdk';
+import { log } from '/lib/logger';
+import { isError } from '/lib/react-util/utility-methods';
 
 export interface SpanState {
   span: Span;

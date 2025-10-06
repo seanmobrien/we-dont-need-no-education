@@ -1,6 +1,6 @@
 import React from 'react';
-import { render } from '@/__tests__/test-utils';
-import EnhancedTableHead from '@/components/general/enhanced-table-head';
+import { render } from '/__tests__/test-utils';
+import EnhancedTableHead from '/components/general/enhanced-table-head';
 
 const mockHeadCells = [
   { id: 'name', label: 'Name', numeric: false, disablePadding: false },
@@ -19,7 +19,7 @@ describe('EnhancedTableHead', () => {
     const { container } = render(
       <table>
         <EnhancedTableHead {...defaultProps} />
-      </table>
+      </table>,
     );
     expect(container).toMatchSnapshot();
   });
@@ -27,11 +27,8 @@ describe('EnhancedTableHead', () => {
   it('renders with some selected items snapshot', () => {
     const { container } = render(
       <table>
-        <EnhancedTableHead 
-          {...defaultProps} 
-          numSelected={2}
-        />
-      </table>
+        <EnhancedTableHead {...defaultProps} numSelected={2} />
+      </table>,
     );
     expect(container).toMatchSnapshot();
   });
@@ -39,11 +36,8 @@ describe('EnhancedTableHead', () => {
   it('renders with all items selected snapshot', () => {
     const { container } = render(
       <table>
-        <EnhancedTableHead 
-          {...defaultProps} 
-          numSelected={10}
-        />
-      </table>
+        <EnhancedTableHead {...defaultProps} numSelected={10} />
+      </table>,
     );
     expect(container).toMatchSnapshot();
   });
@@ -51,11 +45,8 @@ describe('EnhancedTableHead', () => {
   it('renders with select all callback snapshot', () => {
     const { container } = render(
       <table>
-        <EnhancedTableHead 
-          {...defaultProps} 
-          onSelectAllClick={jest.fn()}
-        />
-      </table>
+        <EnhancedTableHead {...defaultProps} onSelectAllClick={jest.fn()} />
+      </table>,
     );
     expect(container).toMatchSnapshot();
   });

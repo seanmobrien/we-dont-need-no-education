@@ -4,7 +4,7 @@
 
 // Load module under test only after ensuring Response/Request/Headers exist
 let parseResponseOptions: any;
-let ErrorResponse: any;
+let errorResponseFactory: any;
 
 beforeAll(async () => {
   try {
@@ -25,9 +25,9 @@ beforeAll(async () => {
   } catch {
     // ignore if undici cannot be loaded; tests may provide their own env
   }
-  const mod = await import('@/lib/nextjs-util/server/error-response');
+  const mod = await import('/lib/nextjs-util/server/error-response');
   parseResponseOptions = mod.parseResponseOptions;
-  ErrorResponse = mod.ErrorResponse as any;
+  errorResponseFactory = mod.errorResponseFactory as any;
 });
 
 describe('parseResponseOptions', () => {
@@ -69,7 +69,10 @@ describe('parseResponseOptions', () => {
   });
 
   test('string + options => options override status/source, message from string', () => {
-    const res = parseResponseOptions('auth failed', { status: 401, source: 'auth' });
+    const res = parseResponseOptions('auth failed', {
+      status: 401,
+      source: 'auth',
+    });
     expect(res.status).toBe(401);
     expect(res.message).toBe('auth failed');
     expect(res.source).toBe('auth');
@@ -85,9 +88,9 @@ describe('parseResponseOptions', () => {
   });
 });
 
-describe('ErrorResponse', () => {
+describe('errorResponseFactory', () => {
   test('serializes message and status correctly', async () => {
-    const r = new ErrorResponse(404, 'Not found');
+    const r = errorResponseFactory(404, 'Not found');
     expect(r.status).toBe(404);
     expect(r.headers.get('Content-Type')).toBe('application/json');
     const body = await r.json();
@@ -95,9 +98,9 @@ describe('ErrorResponse', () => {
   });
 
   test('derives from Error input', async () => {
-    const r = new ErrorResponse(new Error('boom'));
+    const r = errorResponseFactory(new Error('boom'));
     expect(r.status).toBe(500);
     const body = await r.json();
-  expect(body).toEqual({ error: 'boom', status: 500, cause: 'Error' });
+    expect(body).toEqual({ error: 'boom', status: 500, cause: 'Error' });
   });
 });

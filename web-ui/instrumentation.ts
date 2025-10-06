@@ -23,14 +23,14 @@ export const register = async () => {
   if (typeof window === 'undefined') {
     // This is a server-side environment (Node.js or edge runtime)
     if (process.env.NEXT_RUNTIME === 'nodejs') {
-      const { default: instrumentServer } = await import('@/instrument/node');
+      const { default: instrumentServer } = await import('/instrument/node');
       instrumentServer();
     } else {
-      const { default: instrumentEdge } = await import('@/instrument/edge');
-      instrumentEdge();
+      //const { default: instrumentEdge } = await import('/instrument/edge');
+      // instrumentEdge();
     }
   } else {
-    const { default: instrumentBrowser } = await import('@/instrument/browser');
+    const { default: instrumentBrowser } = await import('/instrument/browser');
     instrumentBrowser();
   }
 };

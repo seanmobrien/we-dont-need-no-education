@@ -1,4 +1,4 @@
-import { errorLogFactory, getDbError } from '@/lib/logger/utilities';
+import { errorLogFactory, getDbError } from '/lib/logger/utilities';
 
 interface TestDbError extends Error {
   name: 'PostgresError';

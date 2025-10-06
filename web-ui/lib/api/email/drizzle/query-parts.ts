@@ -1,9 +1,9 @@
-import { documentProperty } from '@/drizzle/schema';
-import { schema, sql, DatabaseType } from '@/lib/drizzle-db/';
+import { documentProperty } from '/drizzle/schema';
+import { schema, sql, DatabaseType } from '/lib/drizzle-db/';
 import { count, inArray } from 'drizzle-orm';
 
 export const column_recipient = () =>
-    sql`((SELECT COALESCE(json_agg(json_build_object(
+  sql`((SELECT COALESCE(json_agg(json_build_object(
               'recipient_id', recipient.contact_id,
               'recipient_name', recipient.name,
               'recipient_email', recipient.email
@@ -32,7 +32,6 @@ export const count_attachments = ({
     .groupBy(schema.emailAttachments.emailId)
     .as(tableAlias);
 
-
 const columnNameForPropertyIdMap = new Map<number, string>();
 columnNameForPropertyIdMap.set(4, 'count_cta');
 columnNameForPropertyIdMap.set(5, 'count_responsive_actions');
@@ -60,7 +59,7 @@ export const count_document_properties = ({
     throw new Error(
       'document_property_type_id must be a number or an array of numbers',
     );
-  }  
+  }
   if (!columnAlias) {
     columnAlias = columnNameForPropertyIdMap.get(typeIds[0]);
     if (!columnAlias) {
@@ -71,24 +70,27 @@ export const count_document_properties = ({
   }
   tableAlias ??= `tbl_${columnAlias}`;
   const targetIdAlias = `id_${columnAlias}`;
-  const targetId =
-    (emailOrDocument === 'email'
+  const targetId = (
+    emailOrDocument === 'email'
       ? sql`document_unit_email(${documentProperty.documentId})`
-      : sql`${documentProperty.documentId}`).as(targetIdAlias);
-  const select = db.select({
+      : sql`${documentProperty.documentId}`
+  ).as(targetIdAlias);
+  const select = db
+    .select({
       targetCount: count().as(columnAlias),
       targetId: targetId,
-    }).from(schema.documentProperty)
+    })
+    .from(schema.documentProperty)
     .where(inArray(documentProperty.documentPropertyTypeId, typeIds))
-    .groupBy(targetId) 
+    .groupBy(targetId)
     .as(tableAlias);
 
   return select;
 };
 
-export const count_kpi =({
+export const count_kpi = ({
   emailOrDocument = 'email',
-  db 
+  db,
 }: {
   db: DatabaseType;
   emailOrDocument?: 'email' | 'document';
@@ -101,7 +103,7 @@ export const count_kpi =({
 
 export const count_notes = ({
   emailOrDocument = 'email',
-  db
+  db,
 }: {
   emailOrDocument?: 'email' | 'document';
   db: DatabaseType;

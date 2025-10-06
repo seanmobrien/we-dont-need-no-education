@@ -13,8 +13,8 @@ import {
   Stack,
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { KeyPointsDetails } from '@/data-models/api';
-import { EmailMasterPanel } from '@/components/mui/data-grid';
+import { KeyPointsDetails } from '/data-models/api';
+import { EmailMasterPanel } from '/components/mui/data-grid';
 
 const formatScore = (value: number | null): string => {
   if (value === null || value === undefined) return 'N/A';

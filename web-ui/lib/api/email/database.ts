@@ -1,15 +1,15 @@
-import { ValidationError } from '@/lib/react-util/errors';
-import { FirstParameter, newUuid } from '@/lib/typescript';
+import { ValidationError } from '/lib/react-util/errors';
+import { FirstParameter, newUuid } from '/lib/typescript';
 import { ObjectRepository } from '../_types';
 import {
   EmailMessageAttachment,
   EmailMessageAttachmentSummary,
   EmailMessageSummary,
-} from '@/data-models/api/email-message';
+} from '/data-models/api/email-message';
 import { BaseObjectRepository } from '../_baseObjectRepository';
-import { query } from '@/lib/neondb';
+import { query } from '/lib/neondb';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
-import { db } from '@/lib/neondb';
+import { db } from '/lib/neondb';
 
 type RepositoryEmailSummary = Omit<
   EmailMessageSummary,
@@ -160,7 +160,11 @@ export class EmailRepository extends BaseObjectRepository<
         obj.emailContents,
         obj.globalMessageId ?? null,
         obj.importedFromId ?? null,
-        !obj.sentOn ? null : typeof obj.sentOn === 'string' ? obj.sentOn : obj.sentOn.toISOString(),
+        !obj.sentOn
+          ? null
+          : typeof obj.sentOn === 'string'
+            ? obj.sentOn
+            : obj.sentOn.toISOString(),
       ],
     ];
   }

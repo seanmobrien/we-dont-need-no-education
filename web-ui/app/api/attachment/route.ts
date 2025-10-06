@@ -1,15 +1,12 @@
 export const dynamic = 'force-dynamic'; // Never statically optimize
 
 import { NextRequest } from 'next/server';
-import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
-  DrizzleCrudRepositoryController,
-} from '@/lib/api/drizzle-crud-controller';
-import {
-  EmailAttachmentDrizzleRepository,
-} from '@/lib/api/attachment';
-
-
+  buildFallbackGrid,
+  wrapRouteRequest,
+} from '/lib/nextjs-util/server/utils';
+import { DrizzleCrudRepositoryController } from '/lib/api/drizzle-crud-controller';
+import { EmailAttachmentDrizzleRepository } from '/lib/api/attachment';
 
 export const GET = wrapRouteRequest(
   async (req: NextRequest) => {

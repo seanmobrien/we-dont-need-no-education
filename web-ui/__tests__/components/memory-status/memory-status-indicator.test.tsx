@@ -4,16 +4,17 @@
  */
 
 import React from 'react';
-import { render, screen } from '@/__tests__/test-utils';
-import { MemoryStatusIndicator } from '@/components/memory-status/memory-status-indicator';
+import { render, screen } from '/__tests__/test-utils';
+import { MemoryStatusIndicator } from '/components/memory-status/memory-status-indicator';
 
 // Mock the useMemoryHealth hook
-jest.mock('@/lib/hooks/use-memory-health', () => ({
+jest.mock('/lib/hooks/use-memory-health', () => ({
   useMemoryHealth: jest.fn(),
 }));
 
 describe('MemoryStatusIndicator', () => {
-  const mockUseMemoryHealth = require('@/lib/hooks/use-memory-health').useMemoryHealth;
+  const mockUseMemoryHealth =
+    require('/lib/hooks/use-memory-health').useMemoryHealth;
 
   it('renders with default props when healthy', () => {
     mockUseMemoryHealth.mockReturnValue({
@@ -25,7 +26,7 @@ describe('MemoryStatusIndicator', () => {
     });
 
     render(<MemoryStatusIndicator />);
-    
+
     // Should render the icon (CheckCircle icon for healthy status)
     expect(screen.getByTestId('CheckCircleIcon')).toBeInTheDocument();
   });
@@ -40,7 +41,7 @@ describe('MemoryStatusIndicator', () => {
     });
 
     render(<MemoryStatusIndicator showLabel />);
-    
+
     // Should render chip with label
     expect(screen.getByText('Memory: Healthy')).toBeInTheDocument();
   });
@@ -55,7 +56,7 @@ describe('MemoryStatusIndicator', () => {
     });
 
     render(<MemoryStatusIndicator />);
-    
+
     // Should show loading spinner
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
@@ -70,7 +71,7 @@ describe('MemoryStatusIndicator', () => {
     });
 
     render(<MemoryStatusIndicator showLabel />);
-    
+
     expect(screen.getByText('Memory: Warning')).toBeInTheDocument();
   });
 
@@ -84,7 +85,7 @@ describe('MemoryStatusIndicator', () => {
     });
 
     render(<MemoryStatusIndicator showLabel />);
-    
+
     expect(screen.getByText('Memory: Error')).toBeInTheDocument();
   });
 
@@ -99,7 +100,7 @@ describe('MemoryStatusIndicator', () => {
     });
 
     render(<MemoryStatusIndicator />);
-    
+
     // Component should still render with error icon
     expect(screen.getByTestId('ErrorIcon')).toBeInTheDocument();
   });
@@ -114,7 +115,7 @@ describe('MemoryStatusIndicator', () => {
     });
 
     render(<MemoryStatusIndicator size="small" showLabel />);
-    
+
     // Should render with small size
     expect(screen.getByText('Memory: Healthy')).toBeInTheDocument();
   });
@@ -129,10 +130,13 @@ describe('MemoryStatusIndicator', () => {
     });
 
     const { container } = render(<MemoryStatusIndicator />);
-    
+
     // Tooltip should be present via aria-describedby or similar
     const tooltipElement = container.querySelector('[aria-label]');
     expect(tooltipElement).toBeInTheDocument();
-    expect(tooltipElement).toHaveAttribute('aria-label', expect.stringContaining('Memory service is healthy'));
+    expect(tooltipElement).toHaveAttribute(
+      'aria-label',
+      expect.stringContaining('Memory service is healthy'),
+    );
   });
 });

@@ -53,7 +53,7 @@ Creates a single MCP client connection.
 interface ConnectableToolProvider {
   get_mcpClient(): MCPClient;
   get_isConnected(): boolean;
-  get_tools(): ToolSet;
+  get tools(): ToolSet;
   dispose(): Promise<void>;
   connect(options: { allowWrite?: boolean }): Promise<ConnectableToolProvider>;
 }
@@ -69,7 +69,7 @@ const provider = await toolProviderFactory({
 });
 
 // Use the provider
-const tools = provider.get_tools();
+const tools = provider.tools;
 const isConnected = provider.get_isConnected();
 
 // Clean up when done
@@ -100,7 +100,7 @@ Creates and manages multiple MCP client connections concurrently.
 ```typescript
 interface ToolProviderSet {
   providers: ConnectableToolProvider[];
-  get_tools(): ToolSet;
+  get tools(): ToolSet;
   dispose(): Promise<void>;
 }
 ```
@@ -118,7 +118,7 @@ const providerSet = await toolProviderSetFactory(
 ); // 30 second timeout
 
 // Get all available tools from all connected providers
-const allTools = providerSet.get_tools();
+const allTools = providerSet.tools();
 
 // Clean up all providers
 await providerSet.dispose();
@@ -291,14 +291,14 @@ interface ToolProviderFactoryOptions {
 interface ConnectableToolProvider {
   get_mcpClient(): MCPClient;
   get_isConnected(): boolean;
-  get_tools(): ToolSet;
+  get tools(): ToolSet;
   dispose(): Promise<void>;
   connect(options: { allowWrite?: boolean }): Promise<ConnectableToolProvider>;
 }
 
 interface ToolProviderSet {
   providers: ConnectableToolProvider[];
-  get_tools(): ToolSet;
+  get tools(): ToolSet;
   dispose(): Promise<void>;
 }
 ```

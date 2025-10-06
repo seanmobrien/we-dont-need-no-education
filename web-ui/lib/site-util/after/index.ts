@@ -1,6 +1,6 @@
-import { log } from '@/lib/logger';
-import { getStackTrace } from '@/lib/nextjs-util';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log } from '/lib/logger';
+import { getStackTrace } from '/lib/nextjs-util';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 
 /**
  * Handler invoked by AfterManager queued operations.

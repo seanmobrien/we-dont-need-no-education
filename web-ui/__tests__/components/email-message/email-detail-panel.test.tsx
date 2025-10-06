@@ -24,7 +24,7 @@ import {
   getNotes,
 } from '../../../lib/api/email/properties/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { KeyPointsDetails } from '@/data-models/api';
+import { KeyPointsDetails } from '/data-models/api';
 
 // Mock the API functions
 jest.mock('../../../lib/api/client');
@@ -150,7 +150,7 @@ describe('EmailDetailPanel', () => {
           }),
         };
       }),
-    });    
+    });
     promise.catch = jest.fn().mockImplementation((onError) => {
       setTimeout(() => onError(error), 10);
       return {
@@ -170,11 +170,26 @@ describe('EmailDetailPanel', () => {
 
     // Default successful email loading mock
     mockGetEmail.mockReturnValue(createSuccessfulPromise(mockFullEmail) as any);
-    mockGetKeyPoints.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
-    mockGetCallToAction.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
-    mockGetCallToActionResponse.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
-    mockGetSentimentAnalysis.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
-    mockGetNotes.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: [] });
+    mockGetKeyPoints.mockResolvedValue({
+      pageStats: { total: 0, page: 1, num: 10 },
+      results: [],
+    });
+    mockGetCallToAction.mockResolvedValue({
+      pageStats: { total: 0, page: 1, num: 10 },
+      results: [],
+    });
+    mockGetCallToActionResponse.mockResolvedValue({
+      pageStats: { total: 0, page: 1, num: 10 },
+      results: [],
+    });
+    mockGetSentimentAnalysis.mockResolvedValue({
+      pageStats: { total: 0, page: 1, num: 10 },
+      results: [],
+    });
+    mockGetNotes.mockResolvedValue({
+      pageStats: { total: 0, page: 1, num: 10 },
+      results: [],
+    });
   });
 
   it('renders without crashing and shows loading state initially', () => {
@@ -262,7 +277,10 @@ describe('EmailDetailPanel', () => {
     mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
 
     // Mock successful notes loading
-    mockGetNotes.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: mockNotes });
+    mockGetNotes.mockResolvedValue({
+      pageStats: { total: 0, page: 1, num: 10 },
+      results: mockNotes,
+    });
 
     // First render in summary mode (no full email loaded)
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
@@ -312,7 +330,10 @@ describe('EmailDetailPanel', () => {
     mockGetEmail.mockReturnValue(mockNoEmailPromise as any);
 
     // Mock successful key points loading
-    mockGetKeyPoints.mockResolvedValue({ pageStats: { total: 0, page: 1, num: 10 }, results: mockKeyPoints });
+    mockGetKeyPoints.mockResolvedValue({
+      pageStats: { total: 0, page: 1, num: 10 },
+      results: mockKeyPoints,
+    });
 
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
 
@@ -368,11 +389,14 @@ describe('EmailDetailPanel', () => {
 
     render(<EmailDetailPanel row={summaryOnly} />, { wrapper: TestWrapper });
 
-    await waitFor(() => {
-      expect(
-        screen.queryByText('Loading Email Details...'),
-      ).not.toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(
+          screen.queryByText('Loading Email Details...'),
+        ).not.toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
 
     // Click notes accordion to trigger loading
     const notesAccordion = screen.getByRole('button', { name: /Notes \(1\)/ });
@@ -385,7 +409,7 @@ describe('EmailDetailPanel', () => {
     // React Query may resolve too quickly in tests
     try {
       screen.getByRole('progressbar');
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       // Loading state might have resolved too quickly
     }
@@ -396,12 +420,15 @@ describe('EmailDetailPanel', () => {
     });
 
     // Content should appear regardless of whether we saw loading state
-    await waitFor(() => {
-      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-      expect(
-        screen.getByText('This is an important note about the email'),
-      ).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+        expect(
+          screen.getByText('This is an important note about the email'),
+        ).toBeInTheDocument();
+      },
+      { timeout: 3000 },
+    );
   }, 5000);
 
   // Note: Error state test disabled due to Jest error handling complexity

@@ -1,7 +1,7 @@
-import { auth } from '@/auth';
-import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
-import { TimelineAgentInterface } from '@/components/ai/timeline-agent';
-import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
+import { auth } from '/auth';
+import { EmailDashboardLayout } from '/components/email-message/dashboard-layout';
+import { TimelineAgentInterface } from '/components/ai/timeline-agent';
+import { resolveEmailIdWithRedirect } from '/lib/email/email-id-resolver';
 import { Box } from '@mui/system';
 
 interface PageProps {
@@ -18,7 +18,7 @@ const Page = async ({ params }: PageProps) => {
   // Resolve email ID and handle redirects for document IDs
   const emailId = await resolveEmailIdWithRedirect(
     emailIdParam,
-    `/messages/email/[emailId]/call-to-action/${propertyId}/timeline`
+    `/messages/email/[emailId]/call-to-action/${propertyId}/timeline`,
   );
 
   return (

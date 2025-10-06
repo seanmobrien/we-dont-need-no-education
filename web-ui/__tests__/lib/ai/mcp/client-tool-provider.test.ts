@@ -1,4 +1,5 @@
-import { clientToolProviderFactory } from '@/lib/ai/mcp/client-tool-provider';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { clientToolProviderFactory } from '/lib/ai/mcp/client-tool-provider';
 
 describe('clientToolProviderFactory', () => {
   let provider: ReturnType<typeof clientToolProviderFactory>;
@@ -8,7 +9,7 @@ describe('clientToolProviderFactory', () => {
   });
 
   it('should return a provider with the correct tools', () => {
-    const tools = provider.get_tools();
+    const tools = provider.tools;
 
     expect(tools).toHaveProperty('askConfirmation');
     expect(tools).toHaveProperty('openCaseFile');
@@ -16,7 +17,7 @@ describe('clientToolProviderFactory', () => {
 
   describe('askConfirmation tool', () => {
     it('should have the correct description and parameters schema', () => {
-      const tool = provider.get_tools().askConfirmation;
+      const tool = provider.tools.askConfirmation;
 
       expect(tool.description).toBe(
         'Ask the user for confirmation before proceeding.  Returns an empty string if the user rejects the request, otherwise a confirmation hash.',
@@ -28,7 +29,10 @@ describe('clientToolProviderFactory', () => {
       }).not.toThrow();
 
       expect(() => {
-        (schema as any).parse({ question: 'Are you sure?', options: ['Yes', 'No'] });
+        (schema as any).parse({
+          question: 'Are you sure?',
+          options: ['Yes', 'No'],
+        });
       }).not.toThrow();
 
       expect(() => {
@@ -39,7 +43,7 @@ describe('clientToolProviderFactory', () => {
 
   describe('openCaseFile tool', () => {
     it('should have the correct description and parameters schema', () => {
-      const tool = provider.get_tools().openCaseFile;
+      const tool = provider.tools.openCaseFile;
 
       expect(tool.description).toBe(
         "Opens a case file on the user's desktop.  This tool is useful when a ",

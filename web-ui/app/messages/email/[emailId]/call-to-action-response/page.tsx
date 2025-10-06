@@ -1,10 +1,10 @@
 import { Box } from '@mui/material';
 import CtaResponseGrid from './grid';
-import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
-import { auth } from '@/auth';
-import { ChatPanel, ChatPanelLayout } from '@/components/ai/chat-panel';
-import { extractParams } from '@/lib/nextjs-util/utils';
-import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
+import { EmailDashboardLayout } from '/components/email-message/dashboard-layout';
+import { auth } from '/auth';
+import { ChatPanel, ChatPanelLayout } from '/components/ai/chat-panel';
+import { extractParams } from '/lib/nextjs-util/utils';
+import { resolveEmailIdWithRedirect } from '/lib/email/email-id-resolver';
 import { Metadata } from 'next';
 
 export const generateMetadata = async (): Promise<Metadata> => {
@@ -15,13 +15,13 @@ export const generateMetadata = async (): Promise<Metadata> => {
 
 const Home = async (args: { params: Promise<{ emailId: string }> }) => {
   const { emailId: emailIdParam } = await extractParams(args);
-  
+
   // Resolve email ID and handle redirects for document IDs
   await resolveEmailIdWithRedirect(
     emailIdParam,
-    '/messages/email/[emailId]/call-to-action-response'
+    '/messages/email/[emailId]/call-to-action-response',
   );
-  
+
   const session = await auth();
 
   return (
@@ -36,7 +36,7 @@ const Home = async (args: { params: Promise<{ emailId: string }> }) => {
           }}
         >
           <CtaResponseGrid />
-          <ChatPanel page="email-responsive-action"  />
+          <ChatPanel page="email-responsive-action" />
         </Box>
       </ChatPanelLayout>
     </EmailDashboardLayout>

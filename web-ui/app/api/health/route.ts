@@ -1,7 +1,13 @@
-import { wrapRouteRequest } from "@/lib/nextjs-util/server";
-import { NextResponse } from "next/server";
-import { memoryClientFactory } from "@/lib/ai/mem0/memoryclient-factory";
-import { determineHealthStatus, type HealthStatus } from "@/lib/ai/mem0/types/health-check";
+import { wrapRouteRequest } from '/lib/nextjs-util/server';
+import { NextResponse } from 'next/server';
+import {
+  ExtendedMemoryClient,
+  memoryClientFactory,
+} from '/lib/ai/mem0/memoryclient-factory';
+import {
+  determineHealthStatus,
+  type HealthStatus,
+} from '/lib/ai/mem0/types/health-check';
 
 /**
  * Health Check Route (GET /api/health)
@@ -35,7 +41,7 @@ import { determineHealthStatus, type HealthStatus } from "@/lib/ai/mem0/types/he
  * Build / Deployment Considerations:
  *  - Wrapped with wrapRouteRequest, which provides:
  *      * Consistent logging (when enabled)
- *      * Structured error handling returning a JSON ErrorResponse on failures
+ *      * Structured error handling returning a JSON errorResponseFactory on failures
  *      * Build‑phase fallback short‑circuit (returns a neutral JSON object when
  *        NEXT_PHASE === 'phase-production-build' or IS_BUILDING=1 unless explicitly overridden)
  *
@@ -70,27 +76,31 @@ type HealthCheckStatusEntryBase = {
   /** Current coarse status value */
   status: HealthCheckStatusCode;
 };
-type HealthCheckStatusEntry<K extends HealthCheckSystem = never> = HealthCheckStatusEntryBase & {
-  [key in K]?: HealthCheckStatusEntryBase;
-};
+type HealthCheckStatusEntry<K extends string = never> =
+  HealthCheckStatusEntryBase & {
+    [key in K]?: HealthCheckStatusEntryBase;
+  };
 
 /**
  * Maps each system to its expected nested structure.
  * chat includes embedded sub‑systems (cache, queue) to express grouped health.
+ * memory includes embedded sub‑systems (db, vectorStore, graphStore, historyStore, authService) to express grouped health.
  */
 type HealthSystemResponseTypeMap = {
   database: HealthCheckStatusEntry<never>;
   chat: HealthCheckStatusEntry<'cache' | 'queue'>;
   cache: HealthCheckStatusEntry<never>;
   queue: HealthCheckStatusEntry<never>;
-  memory: HealthCheckStatusEntry<never>;
-}
+  memory: HealthCheckStatusEntry<
+    'db' | 'vectorStore' | 'graphStore' | 'historyStore' | 'authService'
+  >;
+};
 
 /**
  * Final JSON response contract. Each top-level key is optional to allow
  * progressive enhancement without breaking consumers (absent key = not reported).
  */
-type HealthCheckResponse =  {
+type HealthCheckResponse = {
   [key in HealthCheckSystem]?: HealthSystemResponseTypeMap[key];
 };
 
@@ -112,20 +122,70 @@ function mapHealthStatusToCode(status: HealthStatus): HealthCheckStatusCode {
 
 /**
  * Checks memory system health by calling the Mem0 health check endpoint
+ * Returns granular subsystem health information
  */
-async function checkMemoryHealth(): Promise<HealthCheckStatusEntry<never>> {
+async function checkMemoryHealth(): Promise<
+  HealthCheckStatusEntry<
+    'db' | 'vectorStore' | 'graphStore' | 'historyStore' | 'authService'
+  >
+> {
   try {
-    const memoryClient = memoryClientFactory({});
-    const healthResponse = await memoryClient.healthCheck({ strict: false, verbose: 1 });
-    
-    const healthStatus = determineHealthStatus(healthResponse.details);
-    const statusCode = mapHealthStatusToCode(healthStatus);
-    
-    return { status: statusCode };
+    const memoryClient = await memoryClientFactory<ExtendedMemoryClient>({});
+    const healthResponse = await memoryClient.healthCheck({
+      strict: false,
+      verbose: 1,
+    });
+
+    const { details } = healthResponse;
+
+    // Create granular subsystem status entries
+    const subsystems = {
+      db: {
+        status: details.system_db_available
+          ? ('ok' as const)
+          : ('error' as const),
+      },
+      vectorStore: {
+        status: details.vector_store_available
+          ? ('ok' as const)
+          : ('error' as const),
+      },
+      graphStore: {
+        status: details.graph_store_available
+          ? ('ok' as const)
+          : ('error' as const),
+      },
+      historyStore: {
+        status: details.history_store_available
+          ? ('ok' as const)
+          : ('error' as const),
+      },
+      authService: {
+        status: details.auth_service.healthy
+          ? ('ok' as const)
+          : ('error' as const),
+      },
+    };
+
+    // Determine overall memory system status
+    const overallHealthStatus = determineHealthStatus(details);
+    const overallStatusCode = mapHealthStatusToCode(overallHealthStatus);
+
+    return {
+      status: overallStatusCode,
+      ...subsystems,
+    };
   } catch (error) {
-    // If we can't reach the memory service, consider it an error
+    // If we can't reach the memory service, consider everything an error
     console.error('Memory health check failed:', error);
-    return { status: 'error' };
+    return {
+      status: 'error',
+      db: { status: 'error' },
+      vectorStore: { status: 'error' },
+      graphStore: { status: 'error' },
+      historyStore: { status: 'error' },
+      authService: { status: 'error' },
+    };
   }
 }
 
@@ -138,18 +198,34 @@ export const GET = wrapRouteRequest(async () => {
   // Get memory health asynchronously with timeout
   const memoryHealthPromise = Promise.race([
     checkMemoryHealth(),
-    new Promise<HealthCheckStatusEntry<never>>((resolve) => 
-      setTimeout(() => resolve({ status: 'error' }), 5000) // 5 second timeout
-    )
+    new Promise<
+      HealthCheckStatusEntry<
+        'db' | 'vectorStore' | 'graphStore' | 'historyStore' | 'authService'
+      >
+    >(
+      (resolve) =>
+        setTimeout(
+          () =>
+            resolve({
+              status: 'error',
+              db: { status: 'error' },
+              vectorStore: { status: 'error' },
+              graphStore: { status: 'error' },
+              historyStore: { status: 'error' },
+              authService: { status: 'error' },
+            }),
+          15000,
+        ), // 15 second timeout
+    ),
   ]);
 
   const [memoryHealth] = await Promise.all([memoryHealthPromise]);
 
   const healthCheckResponse: HealthCheckResponse = {
-    database: { status: "ok" },
-    chat: { status: "ok", cache: { status: "ok" }, queue: { status: "ok" } },
+    database: { status: 'ok' },
+    chat: { status: 'ok', cache: { status: 'ok' }, queue: { status: 'ok' } },
     memory: memoryHealth,
   };
-  
+
   return NextResponse.json(healthCheckResponse, { status: 200 });
 });

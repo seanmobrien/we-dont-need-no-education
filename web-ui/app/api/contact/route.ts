@@ -1,11 +1,11 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/neondb';
-import { log } from '@/lib/logger';
-import { globalContactCache } from '@/data-models/api';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { query } from '/lib/neondb';
+import { log } from '/lib/logger';
+import { globalContactCache } from '/data-models/api';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
 
 const mapRecordToSummary = (
   record: Record<string, unknown>,

@@ -1,14 +1,14 @@
 'use client';
 
-import { getAppInsights } from '@/instrument/browser';
-import { useSession } from '@/components/auth/session-provider';
+import { getAppInsights } from '/instrument/browser';
+import { useSession } from '/components/auth/session-provider';
 import { Session } from 'next-auth';
 import {
   usePathname,
   useSearchParams,
 } from 'next/dist/client/components/navigation';
 import { useEffect, useMemo } from 'react';
-import { makeAbsoluteUrl } from '@/lib/react-util/url';
+import { makeAbsoluteUrl } from '/lib/react-util/url';
 
 export const TrackWithAppInsight = () => {
   const { status, data: session } = useSession<Session>();

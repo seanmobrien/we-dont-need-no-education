@@ -6,100 +6,99 @@ import {
   stepCountIs,
   hasToolCall,
 } from 'ai';
-import { aiModelFactory } from '@/lib/ai/aiModelFactory';
-import { isAiLanguageModelType } from '@/lib/ai/core/guards';
-import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
-import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
-import { toolProviderSetFactory } from '@/lib/ai/mcp/toolProviderFactory';
-import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
-import { env } from '@/lib/site-util/env';
-import { auth } from '@/auth';
+import { aiModelFactory } from '/lib/ai/aiModelFactory';
+import { isAiLanguageModelType } from '/lib/ai/core/guards';
+import { splitIds, generateChatId } from '/lib/ai/core/chat-ids';
+import { getRetryErrorInfo } from '/lib/ai/chat/error-helpers';
+import { UserToolProviderCache } from '/lib/ai/mcp/user-tool-provider-cache';
+import { wrapChatHistoryMiddleware } from '/lib/ai/middleware/chat-history';
+import { env } from '/lib/site-util/env';
+import { auth } from '/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server';
-import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
-import { ToolProviderSet } from '@/lib/ai/mcp/types';
-import { ImpersonationService } from '@/lib/auth/impersonation';
-import { fromRequest } from '@/lib/auth/impersonation/index';
-// import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
+import { log } from '/lib/logger';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { isAbortError, isTruthy } from '/lib/react-util/utility-methods';
+import { wrapRouteRequest } from '/lib/nextjs-util/server';
+import { createUserChatHistoryContext } from '/lib/ai/middleware/chat-history/create-chat-history-context';
+import { ToolProviderSet } from '/lib/ai/mcp/types';
+import { setupDefaultTools } from '/lib/ai/mcp/setup-default-tools';
+import { getAllFeatureFlags } from '/lib/site-util/feature-flags/server';
+// import { RateRetryError } from '/lib/react-util/errors/rate-retry-error';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 1440;
+
+/**
+ * Safely disposes of tool providers, suppressing expected AbortErrors during cleanup.
+ * @param toolProviders - The tool provider set to dispose
+ */
+const safeDisposeToolProviders = async (
+  toolProviders: ToolProviderSet | undefined,
+): Promise<void> => {
+  if (!toolProviders) return;
+
+  try {
+    await toolProviders.dispose();
+  } catch (disposalError) {
+    // Suppress AbortErrors during disposal as they're expected during cleanup
+    if (!isAbortError(disposalError)) {
+      log((l) =>
+        l.warn('Error during tool provider disposal', {
+          error: disposalError,
+        }),
+      );
+    }
+  }
+};
+
+// Get the tool provider cache instance
+const toolProviderCache = UserToolProviderCache.getInstance({
+  maxEntriesPerUser: 5, // Allow up to 5 different tool configurations per user
+  maxTotalEntries: 200, // Increase total limit for multiple users
+  ttl: 45 * 60 * 1000, // 45 minutes (longer than typical chat sessions)
+  cleanupInterval: 10 * 60 * 1000, // Cleanup every 10 minutes
+});
+
 const toolProviderFactory = async ({
   req,
   chatHistoryId,
   memoryDisabled = false,
   writeEnabled = false,
-  impersonation,
+  userId,
+  sessionId,
 }: {
   req: NextRequest;
   chatHistoryId: string;
   writeEnabled?: boolean;
   memoryDisabled?: boolean;
-  impersonation?: ImpersonationService;
+  // impersonation?: ImpersonationService;
+  userId: string;
+  sessionId: string;
 }) => {
-  // Prepare headers for MCP client - prefer impersonation over session cookies
-  let mcpHeaders: Record<string, string> = {
-    'x-chat-history-id': chatHistoryId,
-  };
-
-  if (impersonation) {
-    try {
-      const impersonatedToken = await impersonation.getImpersonatedToken();
-      mcpHeaders = {
-        ...mcpHeaders,
-        Authorization: `Bearer ${impersonatedToken}`,
-        'X-Impersonated-User': impersonation.getUserContext().userId,
-      };
-      log((l) =>
-        l.debug('Using impersonated token for MCP tools', {
-          userId: impersonation.getUserContext().userId,
+  const flags = await getAllFeatureFlags();
+  if (isTruthy(flags['mcp_cache_tools'])) {
+    // Use the cache to get or create tool providers
+    return toolProviderCache.getOrCreate(
+      userId,
+      sessionId,
+      {
+        writeEnabled,
+        memoryDisabled,
+      },
+      () =>
+        setupDefaultTools({
+          writeEnabled,
+          req,
+          chatHistoryId,
+          memoryEnabled: !memoryDisabled,
         }),
-      );
-    } catch (error) {
-      log((l) =>
-        l.warn(
-          'Failed to get impersonated token for MCP, falling back to session cookies',
-          error,
-        ),
-      );
-      // Fallback to session cookies
-      const sessionCookie =
-        req.cookies?.get('authjs.session-token')?.value ?? '';
-      if (sessionCookie.length > 0) {
-        mcpHeaders.Cookie = `authjs.session-token=${sessionCookie}`;
-      }
-    }
-  } else {
-    // Use session cookies as fallback
-    const sessionCookie = req.cookies?.get('authjs.session-token')?.value ?? '';
-    if (sessionCookie.length > 0) {
-      mcpHeaders.Cookie = `authjs.session-token=${sessionCookie}`;
-    }
+    );
   }
-
-  return toolProviderSetFactory([
-    {
-      allowWrite: writeEnabled,
-      url: new URL('/api/ai/tools/sse', env('NEXT_PUBLIC_HOSTNAME')).toString(),
-      headers: mcpHeaders,
-      traceable: req.headers.get('x-traceable') !== 'false',
-      impersonation,
-    },
-    ...(memoryDisabled !== true && env('MEM0_DISABLED')
-      ? []
-      : [
-          {
-            allowWrite: true,
-            headers: {
-              'cache-control': 'no-cache, no-transform',
-              'content-encoding': 'none',
-            },
-            url: `${env('MEM0_API_HOST')}/mcp/openmemory/sse/${env('MEM0_USERNAME')}/`,
-            impersonation,
-          },
-        ]),
-  ]);
+  return setupDefaultTools({
+    writeEnabled,
+    req,
+    chatHistoryId,
+    memoryEnabled: !memoryDisabled,
+  });
 };
 
 const extractRequestParams = async (req: NextRequest) => {
@@ -158,44 +157,6 @@ export const POST = (req: NextRequest) => {
       }
       const chatHistoryId = id ?? `${threadId}:${generateChatId().id}`;
 
-      // Create impersonation instance for authenticated API calls
-      const impersonation = await fromRequest({});
-      if (impersonation) {
-        log((l) =>
-          l.debug('Created impersonation instance for chat request', {
-            userId: impersonation.getUserContext().userId,
-            chatHistoryId,
-          }),
-        );
-      } else {
-        log((l) =>
-          l.debug('No impersonation available, using fallback auth methods', {
-            chatHistoryId,
-          }),
-        );
-      }
-
-      // Apply advanced tool message optimization with AI-powered summarization
-      /*
-      const optimizedMessages = await optimizeMessagesWithToolSummarization(
-        messages,
-        model,
-        session?.user?.id,
-        chatHistoryId,
-      );
-      // Log optimization results for monitoring
-      if (optimizedMessages.length !== messages.length) {
-        log((l) =>
-          l.info('Enterprise tool optimization applied', {
-            originalMessages: messages.length,
-            optimizedMessages: optimizedMessages.length,
-            reduction: `${Math.round(((messages.length - optimizedMessages.length) / messages.length) * 100)}%`,
-            model,
-            userId: session?.user?.id,
-          }),
-        );
-      }
-      */
       // Get tools
       try {
         toolProviders ??= await toolProviderFactory({
@@ -203,7 +164,8 @@ export const POST = (req: NextRequest) => {
           chatHistoryId,
           memoryDisabled,
           writeEnabled,
-          impersonation,
+          userId: session?.user?.id || 'anonymous',
+          sessionId: chatHistoryId,
         });
         // Create chat history context
         const chatHistoryContext = createUserChatHistoryContext({
@@ -227,7 +189,8 @@ export const POST = (req: NextRequest) => {
           chatHistoryId,
           memoryDisabled,
           writeEnabled,
-          impersonation,
+          userId: session?.user?.id || 'anonymous',
+          sessionId: chatHistoryId,
         });
         // In v5: create a UI message stream response and merge the generated stream.
         // We'll create a merged ReadableStream that forwards the SDK stream and allows
@@ -255,8 +218,18 @@ export const POST = (req: NextRequest) => {
           },
           stopWhen: [stepCountIs(20), hasToolCall('askConfirmation')],
           onError: async (error) => {
-            toolProviders?.dispose();
-            log((l) => l.error('on error streamText callback'));
+            // await safeDisposeToolProviders(toolProviders);
+            LoggedError.isTurtlesAllTheWayDownBaby(error, {
+              log: true,
+              source: 'route:ai:chat onError',
+              message: 'Error during chat processing',
+              critical: true,
+              data: {
+                userId: session?.user?.id,
+                model,
+                chatHistoryId,
+              },
+            });
             chatHistoryContext.error = error;
             try {
               const rateLimitErrorInfo = getRetryErrorInfo(error);
@@ -281,23 +254,13 @@ export const POST = (req: NextRequest) => {
                 );
                 return;
               }
-
-              log((l) =>
-                l.error({
-                  source: 'route:ai:chat onError',
-                  message: 'Error during chat processing',
-                  error,
-                  userId: session?.user?.id,
-                  model,
-                }),
-              );
             } finally {
               chatHistoryContext.dispose();
             }
           },
           onFinish: async (evt) => {
             try {
-              toolProviders?.dispose();
+              // await safeDisposeToolProviders(toolProviders);
               log((l) =>
                 l.verbose({
                   source: 'route:ai:chat onFinish',
@@ -335,8 +298,9 @@ export const POST = (req: NextRequest) => {
             chatHistoryId,
             memoryDisabled,
             writeEnabled,
-            impersonation,
-          })).get_tools(),
+            userId: session?.user?.id || 'anonymous',
+            sessionId: chatHistoryId,
+          })).tools,
         });
 
         // Create a merged UI message chunk stream so we can inject a structured
@@ -402,7 +366,7 @@ export const POST = (req: NextRequest) => {
           source: 'route:ai:chat',
           severity: 'error',
         });
-        toolProviders?.dispose();
+        await safeDisposeToolProviders(toolProviders);
         return NextResponse.error();
       }
     },
@@ -411,7 +375,7 @@ export const POST = (req: NextRequest) => {
         role: 'assistant',
         content: "I'm currently disabled for solution rebuild.",
       },
-      errorCallback: () => toolProviders?.dispose(),
+      errorCallback: () => safeDisposeToolProviders(toolProviders),
     },
   )(req);
 };

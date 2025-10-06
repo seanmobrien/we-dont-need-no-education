@@ -1,10 +1,10 @@
 'use client';
-import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
-import { useGetRowId } from '@/lib/components/mui/data-grid/useGetRowId';
+import { useDataSource } from '/lib/components/mui/data-grid/useDataSource';
+import { useGetRowId } from '/lib/components/mui/data-grid/useGetRowId';
 import {
   StableDefaultPageSizeOptions,
   StableDefaultInitialState,
-} from '@/lib/components/mui/data-grid/default-values';
+} from '/lib/components/mui/data-grid/default-values';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import TableContainer from '@mui/material/TableContainer';

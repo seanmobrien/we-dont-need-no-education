@@ -9,7 +9,7 @@ This web application provides a comprehensive platform for email evidence manage
 - **Email Management**: Import, organize, and analyze email communications with Gmail integration
 - **AI-Powered Analysis**: Multi-provider AI system (Azure OpenAI + Google Gemini) for intelligent content processing
 - **Chat Interface**: Interactive chat system for evidence exploration and analysis
-- **Document Processing**: Advanced document parsing, embeddings, and search capabilities  
+- **Document Processing**: Advanced document parsing, embeddings, and search capabilities
 - **Data Grid System**: Enterprise-grade data grids with server-side operations for large datasets
 - **Authentication**: Secure authentication via Keycloak SSO
 
@@ -66,7 +66,7 @@ This web application provides a comprehensive platform for email evidence manage
 
 ### UI Components & Styling
 
-- **Material UI Pro**: Advanced data grid and enterprise components  
+- **Material UI Pro**: Advanced data grid and enterprise components
 - **Emotion**: CSS-in-JS styling system
 - **Custom Theming**: Comprehensive theme system with dark/light mode
 - **Responsive Design**: Mobile-first responsive layout system
@@ -240,7 +240,7 @@ yarn start
 ### AI Model Integration
 
 ```typescript
-import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import { aiModelFactory } from '/lib/ai/aiModelFactory';
 
 // Use Azure models (with automatic failover to Google)
 const hifiModel = aiModelFactory('hifi');
@@ -286,13 +286,18 @@ const result = await generateText({
 ```typescript
 // Email repository with Drizzle ORM
 class EmailRepository extends BaseDrizzleRepository<EmailMessage, 'id'> {
-  async findByTitleIXViolations(hasViolations: boolean): Promise<EmailMessage[]> {
-    return this.db.select().from(emails).where(eq(emails.hasViolations, hasViolations));
+  async findByTitleIXViolations(
+    hasViolations: boolean,
+  ): Promise<EmailMessage[]> {
+    return this.db
+      .select()
+      .from(emails)
+      .where(eq(emails.hasViolations, hasViolations));
   }
 
   async getEmailsWithAttachments(): Promise<EmailWithAttachments[]> {
     return this.db.query.emails.findMany({
-      with: { attachments: true }
+      with: { attachments: true },
     });
   }
 }
@@ -302,7 +307,11 @@ class EmailRepository extends BaseDrizzleRepository<EmailMessage, 'id'> {
 
 ```typescript
 // React Query for server state management
-const { data: emails, isLoading, error } = useQuery({
+const {
+  data: emails,
+  isLoading,
+  error,
+} = useQuery({
   queryKey: ['emails', filters],
   queryFn: () => fetchEmails(filters),
   staleTime: 5 * 60 * 1000, // 5 minutes
@@ -325,11 +334,11 @@ The platform features a sophisticated multi-provider AI system with automatic fa
 #### Azure OpenAI Models
 
 - **HiFi (`hifi`)**: High-quality analysis using GPT-4 (Azure deployment)
-- **LoFi (`lofi`)**: Fast analysis using GPT-3.5 (Azure deployment)  
+- **LoFi (`lofi`)**: Fast analysis using GPT-3.5 (Azure deployment)
 - **Completions (`completions`)**: Text completion and generation
 - **Embedding (`embedding`)**: Document similarity and search using text-embedding-ada-002
 
-#### Google Gemini Models  
+#### Google Gemini Models
 
 - **Gemini Pro (`gemini-pro`)**: Advanced reasoning using Gemini 2.5 Pro
 - **Gemini Flash (`gemini-flash`)**: Fast analysis using Gemini 2.5 Flash
@@ -339,7 +348,7 @@ The platform features a sophisticated multi-provider AI system with automatic fa
 ### Model Factory Usage
 
 ```typescript
-import { aiModelFactory, isModelAvailable } from '@/lib/ai/aiModelFactory';
+import { aiModelFactory, isModelAvailable } from '/lib/ai/aiModelFactory';
 
 // Basic model access (Azure primary, Google fallback)
 const hifiModel = aiModelFactory('hifi');
@@ -367,11 +376,11 @@ const result = await generateText({
 #### Automatic Failover & Rate Limit Handling
 
 ```typescript
-import { 
-  handleAzureRateLimit, 
+import {
+  handleAzureRateLimit,
   handleGoogleRateLimit,
-  temporarilyDisableModel 
-} from '@/lib/ai/aiModelFactory';
+  temporarilyDisableModel,
+} from '/lib/ai/aiModelFactory';
 
 // The factory automatically handles rate limits
 try {
@@ -391,12 +400,12 @@ temporarilyDisableModel('azure:hifi', 300000); // Disable for 5 minutes
 #### Model Availability Management
 
 ```typescript
-import { 
-  disableModel, 
-  enableModel, 
+import {
+  disableModel,
+  enableModel,
   disableProvider,
-  isProviderAvailable 
-} from '@/lib/ai/aiModelFactory';
+  isProviderAvailable,
+} from '/lib/ai/aiModelFactory';
 
 // Check availability before use
 if (isModelAvailable('azure:hifi')) {
@@ -405,7 +414,7 @@ if (isModelAvailable('azure:hifi')) {
 
 // Provider-level control
 disableProvider('azure'); // Disable all Azure models
-enableProvider('google');  // Enable all Google models
+enableProvider('google'); // Enable all Google models
 
 // Specific model control
 disableModel('azure:hifi');
@@ -458,7 +467,7 @@ Before writing or fixing tests, always:
 // __tests__/components/email-message/email-list.test.tsx
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { EmailList } from '@/components/email-message/email-list';
+import { EmailList } from '/components/email-message/email-list';
 
 describe('EmailList', () => {
   test('filters emails by compliance violations', async () => {
@@ -476,7 +485,7 @@ describe('EmailList', () => {
     });
   });
 });
-````
+```
 
 ## Development Scripts
 
@@ -484,7 +493,7 @@ describe('EmailList', () => {
 
 ```bash
 # Development
-yarn dev                    # Start development server on port 3000  
+yarn dev                    # Start development server on port 3000
 yarn debug                  # Start with Node.js debugging enabled
 yarn build                  # Build production bundle
 yarn start                  # Start production server
@@ -621,7 +630,7 @@ export function middleware(request: NextRequest) {
 # Build optimized production bundle
 yarn build
 
-# Analyze bundle size  
+# Analyze bundle size
 ANALYZE=true yarn build
 
 # Test production build locally
@@ -667,7 +676,7 @@ CMD ["yarn", "start"]
 ### Multi-Provider AI System
 
 - **Unified Interface**: Single `aiModelFactory` for all AI models
-- **Automatic Failover**: Azure primary with Google fallback  
+- **Automatic Failover**: Azure primary with Google fallback
 - **Rate Limit Handling**: Temporary model disabling with auto-recovery
 - **Model Availability Management**: Programmatic control over model access
 
@@ -681,7 +690,7 @@ CMD ["yarn", "start"]
 ### Database Architecture
 
 - **Drizzle ORM**: Type-safe database operations with PostgreSQL
-- **Repository Pattern**: Structured data access with base repository classes  
+- **Repository Pattern**: Structured data access with base repository classes
 - **Schema Management**: Unified schema with custom relations
 - **Migration System**: Version-controlled database schema changes
 
@@ -727,7 +736,8 @@ yarn test --verbose
 // Repository pattern example
 class EmailRepository extends BaseDrizzleRepository<EmailMessage, 'id'> {
   async findByViolations(hasViolations: boolean): Promise<EmailMessage[]> {
-    return this.db.select()
+    return this.db
+      .select()
       .from(this.table)
       .where(eq(this.table.hasViolations, hasViolations));
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '/lib/nextjs-util/fetch';
 import {
   Box,
   Card,
@@ -38,14 +38,14 @@ import {
   Upload,
 } from '@mui/icons-material';
 import { useMutation } from '@tanstack/react-query';
-import { TimelineAgent } from '@/lib/ai/agents/timeline';
+import { TimelineAgent } from '/lib/ai/agents/timeline';
 import {
   TimelineSummary,
   ProcessingResult,
   ComplianceRating,
-} from '@/lib/ai/agents/timeline/types';
-import { log } from '@/lib/logger';
-import { ClientTimelineAgent } from '@/lib/ai/agents/timeline/agent';
+} from '/lib/ai/agents/timeline/types';
+import { log } from '/lib/logger';
+import { ClientTimelineAgent } from '/lib/ai/agents/timeline/agent';
 import { useNotifications } from '@toolpad/core/useNotifications';
 
 interface TimelineAgentInterfaceProps {
@@ -213,7 +213,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
   });
 
   // Initialize the agent using server-side API
-  const initializeAgent = useCallback(async () => {    
+  const initializeAgent = useCallback(async () => {
     mutate('test-1');
   }, [mutate]);
 
@@ -362,12 +362,24 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         notifications.show(otherMutationProps.error.message, {
           severity: 'error',
           autoHideDuration: 60000,
-        });        
+        });
       } else {
         //no-op?
       }
     }
-  }, [initializeAgent, state, mutate, isPending, data, isSuccess, otherMutationProps, isError, notifications, initialDocumentId, caseId]);
+  }, [
+    initializeAgent,
+    state,
+    mutate,
+    isPending,
+    data,
+    isSuccess,
+    otherMutationProps,
+    isError,
+    notifications,
+    initialDocumentId,
+    caseId,
+  ]);
 
   const documentCounts = state.agent?.getDocumentCounts() || {
     pending: 0,

@@ -5,23 +5,34 @@
  * @file route.test.ts
  * @description Unit tests for the health check API route at app/api/health/route.ts
  */
-import { GET } from '@/app/api/health/route';
+/* eslint-disable @typescript-eslint/no-require-imports */
+import { hideConsoleOutput } from '/__tests__/test-utils';
+import { GET } from '/app/api/health/route';
 
 // Mock the memory client factory
-jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({
-  memoryClientFactory: jest.fn(() => ({
-    healthCheck: jest.fn(),
-  })),
+jest.mock('/lib/ai/mem0/memoryclient-factory', () => ({
+  memoryClientFactory: jest.fn(() =>
+    Promise.resolve({
+      healthCheck: jest.fn(),
+    }),
+  ),
 }));
+
+const mockConsole = hideConsoleOutput();
 
 describe('app/api/health/route GET', () => {
   beforeEach(() => {
     delete process.env.IS_BUILDING;
     delete process.env.NEXT_PHASE;
   });
+  afterEach(() => {
+    mockConsole.dispose();
+  });
 
   it('returns 200 with expected system statuses including memory', async () => {
-    const { memoryClientFactory } = require('@/lib/ai/mem0/memoryclient-factory');
+    const {
+      memoryClientFactory,
+    } = require('/lib/ai/mem0/memoryclient-factory');
     const mockHealthCheck = jest.fn().mockResolvedValue({
       details: {
         client_active: true,
@@ -35,48 +46,56 @@ describe('app/api/health/route GET', () => {
         errors: [],
       },
     });
-    
-    memoryClientFactory.mockReturnValue({
+
+    memoryClientFactory.mockResolvedValue({
       healthCheck: mockHealthCheck,
     });
 
     const res = await GET();
+
     expect(res.status).toBe(200);
     const json = await res.json();
-    
+
     // Top-level keys
     expect(json).toHaveProperty('database');
     expect(json).toHaveProperty('chat');
     expect(json).toHaveProperty('memory');
-    
+
     // Individual system statuses
     expect(json.database.status).toBe('ok');
     expect(json.chat.status).toBe('ok');
     expect(json.memory.status).toBe('ok');
-    
+
     // Nested systems under chat
     expect(json.chat.cache.status).toBe('ok');
     expect(json.chat.queue.status).toBe('ok');
   });
 
   it('returns memory error status when memory client fails', async () => {
-    const { memoryClientFactory } = require('@/lib/ai/mem0/memoryclient-factory');
-    const mockHealthCheck = jest.fn().mockRejectedValue(new Error('Memory service unavailable'));
-    
-    memoryClientFactory.mockReturnValue({
+    const {
+      memoryClientFactory,
+    } = require('/lib/ai/mem0/memoryclient-factory');
+    mockConsole.setup();
+    const mockHealthCheck = jest
+      .fn()
+      .mockRejectedValue(new Error('Memory service unavailable'));
+
+    memoryClientFactory.mockResolvedValue({
       healthCheck: mockHealthCheck,
     });
 
     const res = await GET();
     expect(res.status).toBe(200);
     const json = await res.json();
-    
+
     expect(json).toHaveProperty('memory');
     expect(json.memory.status).toBe('error');
   });
 
   it('returns memory warning status when some services are unavailable', async () => {
-    const { memoryClientFactory } = require('@/lib/ai/mem0/memoryclient-factory');
+    const {
+      memoryClientFactory,
+    } = require('/lib/ai/mem0/memoryclient-factory');
     const mockHealthCheck = jest.fn().mockResolvedValue({
       details: {
         client_active: true,
@@ -90,24 +109,26 @@ describe('app/api/health/route GET', () => {
         errors: [],
       },
     });
-    
-    memoryClientFactory.mockReturnValue({
+
+    memoryClientFactory.mockResolvedValue({
       healthCheck: mockHealthCheck,
     });
 
     const res = await GET();
     expect(res.status).toBe(200);
     const json = await res.json();
-    
+
     expect(json).toHaveProperty('memory');
     expect(json.memory.status).toBe('warning');
   });
 
   it('logs route processing (info) via wrapRouteRequest by default', async () => {
-    const { memoryClientFactory } = require('@/lib/ai/mem0/memoryclient-factory');
-    const { logger } = require('@/lib/logger');
-    
-    memoryClientFactory.mockReturnValue({
+    const {
+      memoryClientFactory,
+    } = require('/lib/ai/mem0/memoryclient-factory');
+    const { logger } = require('/lib/logger');
+
+    memoryClientFactory.mockResolvedValue({
       healthCheck: jest.fn().mockResolvedValue({
         details: {
           client_active: true,
@@ -127,7 +148,7 @@ describe('app/api/health/route GET', () => {
     await GET();
     expect(logInstance.info).toHaveBeenCalledWith(
       expect.stringContaining('Processing route request'),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 

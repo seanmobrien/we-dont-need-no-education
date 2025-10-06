@@ -2,7 +2,7 @@
 import { JSX, useCallback, useMemo, useState } from 'react';
 import { ServerBoundDataGrid } from '../server-bound-data-grid';
 import { EmailPropertyGridProps } from '../types';
-import siteBuilder from '@/lib/site-util/url-builder';
+import siteBuilder from '/lib/site-util/url-builder';
 import { useParams } from 'next/navigation';
 import { Box } from '@mui/material';
 import EmailPropertyToolbar from './email-property-toolbar';

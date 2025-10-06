@@ -3,7 +3,7 @@
  * These are extracted from auth.ts for testability
  */
 
-import { env } from '@/lib/site-util/env';
+import { env } from '/lib/site-util/env';
 
 /**
  * Validates that the application is running on localhost for local development auth bypass.
@@ -17,7 +17,7 @@ export const validateLocalhost = (req: Request | undefined): void => {
 
   // Extract hostname from various possible sources
   let hostname = '';
-  
+
   if (req) {
     // Try to get hostname from the request
     const url = new URL(req.url);
@@ -31,12 +31,13 @@ export const validateLocalhost = (req: Request | undefined): void => {
   }
 
   // Check if running on localhost
-  const isLocalhost = hostname === 'localhost' || 
-                     hostname === '127.0.0.1' || 
-                     hostname.startsWith('192.168.') ||
-                     hostname.startsWith('10.') ||
-                     hostname.startsWith('172.16.') ||
-                     hostname.endsWith('.local');
+  const isLocalhost =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('172.16.') ||
+    hostname.endsWith('.local');
 
   if (!isLocalhost) {
     throw new Error(`
@@ -70,7 +71,7 @@ export const shouldUseLocalDevBypass = (req: Request | undefined): boolean => {
   if (!bypassUserId || bypassUserId.trim() === '') {
     return false;
   }
-  
+
   validateLocalhost(req);
   return true;
 };
@@ -82,7 +83,7 @@ export const createLocalDevBypassUser = (req: Request | undefined) => {
   if (!shouldUseLocalDevBypass(req)) {
     return null;
   }
-  
+
   const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
   return {
     id: bypassUserId!,

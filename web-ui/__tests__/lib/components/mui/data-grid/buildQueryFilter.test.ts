@@ -2,9 +2,9 @@
 import {
   buildAttachmentOrEmailFilter,
   buildQueryFilter,
-} from '@/lib/components/mui/data-grid/queryHelpers/postgres';
+} from '/lib/components/mui/data-grid/queryHelpers/postgres';
 import { GridFilterModel } from '@mui/x-data-grid-pro';
-import { sqlNeonAdapter } from '@/lib/neondb/index-postgres';
+import { sqlNeonAdapter } from '/lib/neondb/index-postgres';
 
 // Minimal mock for Sql<any> to satisfy sqlNeonAdapter
 function sqlMock(...args: unknown[]) {

@@ -1,5 +1,5 @@
-import type { ErrorReporterInterface } from '@/lib/error-monitoring/types';
-import { log } from '@/lib/logger';
+import type { ErrorReporterInterface } from '/lib/error-monitoring/types';
+import { log } from '/lib/logger';
 
 /**
  * Provides access to the shared ErrorReporter instance used by LoggedError.

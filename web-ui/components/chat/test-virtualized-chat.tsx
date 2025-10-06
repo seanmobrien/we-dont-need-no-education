@@ -1,10 +1,21 @@
-"use client";
+'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Box, Typography, Paper, Badge, Chip, ToggleButton, ToggleButtonGroup, FormControlLabel, Switch, Button } from '@mui/material';
+import {
+  Box,
+  Typography,
+  Paper,
+  Badge,
+  Chip,
+  ToggleButton,
+  ToggleButtonGroup,
+  FormControlLabel,
+  Switch,
+  Button,
+} from '@mui/material';
 import { FilterList } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from './virtualized-chat-display';
-import { ChatMessage, ChatTurn } from '@/lib/ai';
+import { ChatMessage, ChatTurn } from '/lib/ai';
 
 // Sample data for testing the virtualized chat display
 const sampleTurns = [
@@ -31,7 +42,8 @@ const sampleTurns = [
         turnId: 1,
         messageId: 0,
         role: 'system',
-        content: 'You are a helpful assistant specializing in React development and virtualization techniques.',
+        content:
+          'You are a helpful assistant specializing in React development and virtualization techniques.',
         messageOrder: 0,
         toolName: null,
         functionCall: null,
@@ -146,7 +158,8 @@ const sampleTurns = [
         turnId: 2,
         messageId: 5,
         role: 'tool',
-        content: 'Code block height estimated at 240px based on content length and container width.',
+        content:
+          'Code block height estimated at 240px based on content length and container width.',
         messageOrder: 3,
         toolName: 'estimate_code_height',
         functionCall: null,
@@ -158,8 +171,8 @@ const sampleTurns = [
           result: {
             estimated_height: 240,
             line_count: 15,
-            wrapped_lines: 18
-          }
+            wrapped_lines: 18,
+          },
         },
         toolInstanceId: 'tool_123',
         optimizedContent: null,
@@ -201,7 +214,7 @@ const sampleTurns = [
 
 // Available message types for filtering
 const MESSAGE_TYPES = ['user', 'assistant', 'system', 'tool'] as const;
-type MessageType = typeof MESSAGE_TYPES[number];
+type MessageType = (typeof MESSAGE_TYPES)[number];
 
 // Filter mode: 'single-turn' filters within turns, 'entire-chat' filters entire turns
 type FilterMode = 'single-turn' | 'entire-chat';
@@ -209,7 +222,9 @@ type FilterMode = 'single-turn' | 'entire-chat';
 export const TestVirtualizedChat: React.FC = () => {
   // Filter state
   const [enableFilters, setEnableFilters] = useState(false);
-  const [activeFilters, setActiveFilters] = useState<Set<MessageType>>(new Set());
+  const [activeFilters, setActiveFilters] = useState<Set<MessageType>>(
+    new Set(),
+  );
   const [filterMode, setFilterMode] = useState<FilterMode>('single-turn');
 
   // Filter handling functions
@@ -235,23 +250,29 @@ export const TestVirtualizedChat: React.FC = () => {
 
     if (filterMode === 'entire-chat') {
       // Filter entire turns: hide turns that don't contain any matching messages
-      return sampleTurns.filter(turn => 
-        turn.messages.some(message => activeFilters.has(message.role as MessageType))
+      return sampleTurns.filter((turn) =>
+        turn.messages.some((message) =>
+          activeFilters.has(message.role as MessageType),
+        ),
       );
     } else {
       // Filter within turns: hide individual messages but keep turns
-      return sampleTurns.map(turn => ({
-        ...turn,
-        messages: turn.messages.filter(message => activeFilters.has(message.role as MessageType))
-      })).filter(turn => turn.messages.length > 0); // Remove turns with no messages after filtering
+      return sampleTurns
+        .map((turn) => ({
+          ...turn,
+          messages: turn.messages.filter((message) =>
+            activeFilters.has(message.role as MessageType),
+          ),
+        }))
+        .filter((turn) => turn.messages.length > 0); // Remove turns with no messages after filtering
     }
   }, [enableFilters, activeFilters, filterMode]);
 
   // Get available message types from the current chat
   const availableTypes = useMemo(() => {
     const typesInChat = new Set<MessageType>();
-    sampleTurns.forEach(turn => {
-      turn.messages.forEach(message => {
+    sampleTurns.forEach((turn) => {
+      turn.messages.forEach((message) => {
         if (MESSAGE_TYPES.includes(message.role as MessageType)) {
           typesInChat.add(message.role as MessageType);
         }
@@ -266,9 +287,10 @@ export const TestVirtualizedChat: React.FC = () => {
         Virtualized Chat Display with Message Filtering
       </Typography>
       <Typography variant="body1" gutterBottom>
-        This component demonstrates the message filtering functionality with MUI badges.
+        This component demonstrates the message filtering functionality with MUI
+        badges.
       </Typography>
-      
+
       {/* Message Filtering Controls */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -289,7 +311,7 @@ export const TestVirtualizedChat: React.FC = () => {
             label="Enable Filtering"
           />
         </Box>
-        
+
         {enableFilters && (
           <>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -302,25 +324,32 @@ export const TestVirtualizedChat: React.FC = () => {
                 onChange={(_, newMode) => newMode && setFilterMode(newMode)}
                 size="small"
               >
-                <ToggleButton value="single-turn">
-                  Single Turn
-                </ToggleButton>
-                <ToggleButton value="entire-chat">
-                  Entire Chat
-                </ToggleButton>
+                <ToggleButton value="single-turn">Single Turn</ToggleButton>
+                <ToggleButton value="entire-chat">Entire Chat</ToggleButton>
               </ToggleButtonGroup>
             </Box>
-            
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 1,
+                alignItems: 'center',
+              }}
+            >
               <Typography variant="body2" color="text.secondary" sx={{ mr: 1 }}>
                 Show messages of type:
               </Typography>
               {availableTypes.map((messageType) => {
                 const isActive = activeFilters.has(messageType);
-                const messageCount = sampleTurns.reduce((count, turn) => 
-                  count + turn.messages.filter(msg => msg.role === messageType).length, 0
+                const messageCount = sampleTurns.reduce(
+                  (count, turn) =>
+                    count +
+                    turn.messages.filter((msg) => msg.role === messageType)
+                      .length,
+                  0,
                 );
-                
+
                 return (
                   <Badge
                     key={messageType}
@@ -334,17 +363,19 @@ export const TestVirtualizedChat: React.FC = () => {
                       variant={isActive ? 'filled' : 'outlined'}
                       color={isActive ? 'primary' : 'default'}
                       onClick={() => toggleFilter(messageType)}
-                      sx={{ 
+                      sx={{
                         textTransform: 'capitalize',
-                        '&:hover': { 
-                          backgroundColor: isActive ? 'primary.dark' : 'action.hover' 
-                        }
+                        '&:hover': {
+                          backgroundColor: isActive
+                            ? 'primary.dark'
+                            : 'action.hover',
+                        },
                       }}
                     />
                   </Badge>
                 );
               })}
-              
+
               {activeFilters.size > 0 && (
                 <Button
                   size="small"
@@ -356,12 +387,15 @@ export const TestVirtualizedChat: React.FC = () => {
                 </Button>
               )}
             </Box>
-            
+
             {activeFilters.size > 0 && (
               <Box sx={{ mt: 1 }}>
                 <Typography variant="body2" color="text.secondary">
-                  Showing {activeFilters.size} of {availableTypes.length} message types
-                  {filterMode === 'entire-chat' ? ' (hiding entire turns without matching messages)' : ' (hiding individual messages)'}
+                  Showing {activeFilters.size} of {availableTypes.length}{' '}
+                  message types
+                  {filterMode === 'entire-chat'
+                    ? ' (hiding entire turns without matching messages)'
+                    : ' (hiding individual messages)'}
                 </Typography>
               </Box>
             )}
@@ -370,7 +404,9 @@ export const TestVirtualizedChat: React.FC = () => {
       </Paper>
 
       {filteredTurns.length === 0 ? (
-        <Typography color="text.secondary">No messages match the current filters.</Typography>
+        <Typography color="text.secondary">
+          No messages match the current filters.
+        </Typography>
       ) : (
         <VirtualizedChatDisplay turns={filteredTurns} height={600} />
       )}

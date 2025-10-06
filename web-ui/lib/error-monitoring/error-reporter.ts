@@ -1,5 +1,5 @@
-import { isError } from '@/lib/react-util/utility-methods';
-import { log } from '@/lib/logger';
+import { isError } from '/lib/react-util/utility-methods';
+import { log } from '/lib/logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,
@@ -9,8 +9,8 @@ import {
   ErrorReporterInterface,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
-import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
-import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
+import { isDrizzleError, errorFromCode } from '/lib/drizzle-db/drizzle-error';
+import type { PostgresError } from '/lib/drizzle-db/drizzle-error';
 
 export { ErrorSeverity };
 
@@ -172,14 +172,16 @@ export class ErrorReporter implements ErrorReporterInterface {
       const report = this.#createErrorReport(error, severity, context);
 
       if (this.config.enableStandardLogging) {
+        const source = report.context.source ?? 'ErrorReporter';
         log((l) =>
           l.error({
-            source: report.context.source ?? 'ErrorReporter',
+            source,
             body: JSON.stringify(report.error),
             severity: report.severity,
             fingerprint: report.fingerprint,
             tags: report.tags,
             context: report.context,
+            [Symbol.toStringTag]: `${source}: (${report.fingerprint ?? 'no fingerprint'}) ${report.error.message}`,
           }),
         );
       }
@@ -511,7 +513,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   private async client_reportToApplicationInsights(
     report: ErrorReport,
   ): Promise<void> {
-    await import('@/instrument/browser').then((m) => {
+    await import('/instrument/browser').then((m) => {
       const appInsights = m.getAppInsights();
       if (appInsights) {
         appInsights.trackException({

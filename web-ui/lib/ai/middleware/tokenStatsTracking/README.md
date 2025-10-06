@@ -5,6 +5,7 @@ This document describes the new token consumption statistics tracking and quota 
 ## Overview
 
 The token statistics tracking system provides:
+
 - Real-time token usage tracking per model/provider combination
 - Sliding window statistics (minute, hour, day)
 - Configurable quota enforcement (per-message, per-minute, per-day limits)
@@ -58,7 +59,7 @@ CREATE TABLE token_consumption_stats (
 ### Basic Token Tracking (Logging Only)
 
 ```typescript
-import { tokenStatsMiddleware } from '@/lib/ai/middleware/tokenStatsTracking';
+import { tokenStatsMiddleware } from '/lib/ai/middleware/tokenStatsTracking';
 import { wrapLanguageModel } from 'ai';
 
 const model = wrapLanguageModel({
@@ -67,30 +68,30 @@ const model = wrapLanguageModel({
     provider: 'azure',
     modelName: 'hifi',
     enableLogging: true,
-    enableQuotaEnforcement: false
-  })
+    enableQuotaEnforcement: false,
+  }),
 });
 ```
 
 ### Token Tracking with Quota Enforcement
 
 ```typescript
-import { tokenStatsWithQuotaMiddleware } from '@/lib/ai/middleware/tokenStatsTracking';
+import { tokenStatsWithQuotaMiddleware } from '/lib/ai/middleware/tokenStatsTracking';
 
 const model = wrapLanguageModel({
   model: baseModel,
   middleware: tokenStatsWithQuotaMiddleware({
     provider: 'azure',
     modelName: 'hifi',
-    enableLogging: true
-  })
+    enableLogging: true,
+  }),
 });
 ```
 
 ### Direct Service Usage
 
 ```typescript
-import { tokenStatsService } from '@/lib/ai/middleware/tokenStatsTracking';
+import { tokenStatsService } from '/lib/ai/middleware/tokenStatsTracking';
 
 // Check quota before making a request
 const quotaCheck = await tokenStatsService.checkQuota('azure', 'hifi', 1000);
@@ -102,7 +103,7 @@ if (!quotaCheck.allowed) {
 await tokenStatsService.safeRecordTokenUsage('azure', 'hifi', {
   promptTokens: 100,
   completionTokens: 200,
-  totalTokens: 300
+  totalTokens: 300,
 });
 
 // Get current statistics
@@ -127,7 +128,7 @@ Insert quota configurations into the `model_quotas` table:
 INSERT INTO model_quotas (provider, model_name, max_tokens_per_message, max_tokens_per_minute, max_tokens_per_day)
 VALUES ('azure', 'hifi', 4000, 10000, 100000);
 
--- Google Gemini limits  
+-- Google Gemini limits
 INSERT INTO model_quotas (provider, model_name, max_tokens_per_message, max_tokens_per_minute, max_tokens_per_day)
 VALUES ('google', 'gemini-pro', 2000, 5000, 50000);
 ```
@@ -140,6 +141,7 @@ The system uses the following Redis key patterns:
 - **Statistics**: `token_stats:{provider}:{model_name}:{window_type}`
 
 Where:
+
 - `{provider}`: Provider name (e.g., 'azure', 'google')
 - `{model_name}`: Model name (e.g., 'hifi', 'gemini-pro')
 - `{window_type}`: Time window ('minute', 'hour', 'day')
@@ -152,7 +154,7 @@ Quota violations throw errors with detailed information:
 
 ```typescript
 try {
-  await model.generateText({ prompt: "Hello" });
+  await model.generateText({ prompt: 'Hello' });
 } catch (error) {
   if (error.message.startsWith('Quota exceeded:')) {
     console.log('Quota info:', error.quotaInfo);

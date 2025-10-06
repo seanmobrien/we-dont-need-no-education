@@ -1,21 +1,21 @@
 import { NextResponse } from 'next/server';
-import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
-import { rateLimitMetrics } from '@/lib/ai/middleware/key-rate-limiter/metrics';
-import { isModelAvailable } from '@/lib/ai/aiModelFactory';
-import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
+import { rateLimitQueueManager } from '/lib/ai/middleware/key-rate-limiter/queue-manager';
+import { rateLimitMetrics } from '/lib/ai/middleware/key-rate-limiter/metrics';
+import { isModelAvailable } from '/lib/ai/aiModelFactory';
+import { aiModelFactory } from '/lib/ai/aiModelFactory';
 import { convertToModelMessages, generateText, UIMessage } from 'ai';
 import type { LanguageModelV2 } from '@ai-sdk/provider';
 import type {
   RateLimitedRequest,
   ProcessedResponse,
   ModelClassification,
-} from '@/lib/ai/middleware/key-rate-limiter/types';
-import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
-import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
-import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
+} from '/lib/ai/middleware/key-rate-limiter/types';
+import { log } from '/lib/logger';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { createAgentHistoryContext } from '/lib/ai/middleware/chat-history/create-chat-history-context';
+import { wrapChatHistoryMiddleware } from '/lib/ai/middleware/chat-history';
+import { isRateRetryError } from '/lib/react-util/errors/rate-retry-error';
 
 export const dynamic = 'force-dynamic';
 
@@ -163,7 +163,7 @@ export const GET = wrapRouteRequest(async () => {
             rateLimitMetrics.recordError('moved_to_gen2', classification);
           } else {
             // Store error response
-            const errorResponse: ProcessedResponse = {
+            const errorResponseFactory: ProcessedResponse = {
               id: request.id,
               error: {
                 type:
@@ -176,7 +176,7 @@ export const GET = wrapRouteRequest(async () => {
               processedAt: new Date().toISOString(),
             };
 
-            await rateLimitQueueManager.storeResponse(errorResponse);
+            await rateLimitQueueManager.storeResponse(errorResponseFactory);
             rateLimitMetrics.recordError('processing_error', classification);
           }
         }
@@ -279,7 +279,7 @@ export const GET = wrapRouteRequest(async () => {
           log((l) => l.error(`Gen-2 request ${request.id} failed:`, error));
 
           // Gen-2 failures are critical - mark as will not retry
-          const errorResponse: ProcessedResponse = {
+          const errorResponseFactory: ProcessedResponse = {
             id: request.id,
             error: {
               type: 'will_not_retry',
@@ -288,7 +288,7 @@ export const GET = wrapRouteRequest(async () => {
             processedAt: new Date().toISOString(),
           };
 
-          await rateLimitQueueManager.storeResponse(errorResponse);
+          await rateLimitQueueManager.storeResponse(errorResponseFactory);
           rateLimitMetrics.recordError('gen2_critical_failure', classification);
         }
       }

@@ -10,9 +10,9 @@ import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { isAbortError, isError } from '@/lib/react-util/utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@/lib/logger';
+import { isAbortError, isError } from '/lib/react-util/utility-methods';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { log } from '/lib/logger';
 
 // Import refactored modules
 import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';
@@ -25,10 +25,12 @@ import {
   SEND_TIMEOUT_MS,
 } from './utils/safety-utils';
 import { MessageProcessor } from './message/message-processor';
+import { ImpersonationService } from '/lib/auth/impersonation';
 
 type InstrumentedSseTransportOptions = {
   url: string;
-  headers?: Record<string, string>;
+  headers?: () => Promise<Record<string, string>>;
+  // impersonation?: ImpersonationService;
   onclose?: () => void;
   onmessage?: (message: JSONRPCMessage) => void;
   onerror: ((error: unknown) => void) | ((error: Error) => void);
@@ -54,7 +56,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
   #sessionManager: SessionManager;
   #safetyUtils: SafetyUtils;
   #messageProcessor: MessageProcessor;
-
+  #impersonation?: ImpersonationService;
   // Core transport state
   #onmessage?: (message: JSONRPCMessage) => void;
   #onerror: (error: unknown) => void;
@@ -66,22 +68,26 @@ export class InstrumentedSseTransport extends SseMCPTransport {
   #inactivityTimer?: ReturnType<typeof setTimeout>;
   #lastActivity: number = Date.now();
   #closed = false;
+  #getHeaders: () => Promise<Record<string, string>>;
 
   // Heartbeat / inactivity constants (tunable)
   static readonly HEARTBEAT_INTERVAL_MS = 15_000; // send watchdog ping / check every 15s
-  static readonly INACTIVITY_TIMEOUT_MS = 60_000; // if no inbound activity for 60s -> close
+  static readonly INACTIVITY_TIMEOUT_MS = 60_000 * 60 * 2; // if no inbound activity for 2 hours -> close
   static readonly POST_ERROR_AUTOCLOSE_DELAY_MS = 2_000; // grace period before forced close after fatal error
 
-  constructor(opts: InstrumentedSseTransportOptions) {
+  constructor({
+    // impersonation,
+    headers: getHeaders,
+    ...opts
+  }: InstrumentedSseTransportOptions) {
     let constructorSpan: Span | undefined;
-
     try {
       // Start constructor instrumentation as child of current active span
       constructorSpan = tracer.startSpan('mcp.transport.constructor', {
         attributes: {
           'mcp.transport.url': opts.url,
           'mcp.transport.mode': DEBUG_MODE ? 'DEBUG' : 'WARNING',
-          'mcp.transport.has_headers': !!opts.headers,
+          'mcp.transport.has_headers': !!getHeaders,
         },
       });
 
@@ -91,18 +97,17 @@ export class InstrumentedSseTransport extends SseMCPTransport {
             data: {
               url: opts.url,
               mode: DEBUG_MODE ? 'DEBUG' : 'WARNING',
-              headers: opts.headers ? Object.keys(opts.headers) : [],
             },
           }),
         );
       }
 
       // Inject trace context into headers for distributed tracing before calling super
-      const enhancedHeaders = TraceContextManager.injectTraceContext(
-        opts.headers || {},
-      );
-      super({ ...opts, headers: enhancedHeaders }); // Call the base constructor with enhanced headers
-
+      const headers = TraceContextManager.injectTraceContext({});
+      super({ ...opts, headers }); // Call the base constructor with enhanced headers
+      // Capture impersonation service if provided
+      // this.#impersonation = impersonation;
+      this.#getHeaders = getHeaders || (() => Promise.resolve({}));
       if (!opts.onerror) {
         const error = new Error('onerror handler is required');
         constructorSpan?.recordException(error);
@@ -326,6 +331,22 @@ export class InstrumentedSseTransport extends SseMCPTransport {
     } finally {
       // Don't end the transport span here - it should stay active for the connection duration
     }
+  }
+
+  protected override async resolveHeaders(): Promise<Headers> {
+    const ret = await super.resolveHeaders();
+    const dynamicHeaders = await this.#getHeaders();
+    Object.entries(dynamicHeaders).forEach(([key, value]) => {
+      ret.set(key, value);
+    });
+    // If impersonation service is provided, add impersonation headers
+    if (this.#impersonation) {
+      const token = await this.#impersonation.getImpersonatedToken();
+      if (token) {
+        ret.set('Authorization', `Bearer ${token}`);
+      }
+    }
+    return ret;
   }
 
   override async close(): Promise<void> {
