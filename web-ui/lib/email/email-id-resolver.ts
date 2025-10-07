@@ -1,5 +1,5 @@
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { isValidUuid } from '@/lib/ai/tools/utility';
+import { drizDbWithInit } from '/lib/drizzle-db';
+import { isValidUuid } from '/lib/ai/tools/utility';
 import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '../react-util';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
@@ -37,7 +37,7 @@ export async function resolveEmailIdWithRedirect(
     const doc = await (
       await drizDbWithInit()
     ).query.documentUnits.findFirst({
-      where: (d, { eq, isNull, isNotNull, and }) =>
+      where: (d, { eq, isNotNull, and }) =>
         and(eq(d.unitId, documentId), isNotNull(d.emailId)),
       columns: {
         unitId: true,

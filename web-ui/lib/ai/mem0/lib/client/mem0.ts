@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '/lib/nextjs-util/fetch';
 import {
   AllUsers,
   ProjectOptions,
@@ -18,7 +18,16 @@ import {
 } from './mem0.types';
 import { captureClientEvent, generateHash } from './telemetry';
 import { getMem0ApiUrl } from '../pollyfills';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import type { ImpersonationService } from '/lib/auth/impersonation';
+import { env } from '/lib/site-util/env';
+import { log } from '/lib/logger';
+import { apikeys } from 'googleapis/build/src/apis/apikeys';
+import {
+  createInstrumentedSpan,
+  reportEvent,
+} from '/lib/nextjs-util/server/utils';
+import type { Span } from '@opentelemetry/api';
 
 class APIError extends Error {
   constructor(message: string) {
@@ -35,7 +44,20 @@ interface ClientOptions {
   projectName?: string;
   organizationId?: string;
   projectId?: string;
+  impersonation?: ImpersonationService;
 }
+
+type PingResponse = {
+  email: string;
+  projectId?: string | null;
+  orgId?: string;
+  orgName?: string;
+  projectName?: string | null;
+  projects?: any[];
+  user_id: string;
+  status?: 'ok' | 'error';
+  message?: string;
+};
 
 export default class MemoryClient {
   apiKey?: string;
@@ -46,10 +68,15 @@ export default class MemoryClient {
   organizationId: string | number | null;
   projectId: string | number | null;
   headers: Record<string, string>;
-  client: any;
   telemetryId: string;
+  impersonation?: ImpersonationService;
+  #defaultOptions: Partial<RequestInit>;
+  #clientInitialized = false;
 
   _validateAuth(): any {
+    if (this.impersonation) {
+      return;
+    }
     if (!this.apiKey && !this.bearerToken) {
       throw new Error('Either Mem0 API key or bearer token is required');
     }
@@ -70,21 +97,11 @@ export default class MemoryClient {
   _validateOrgProject(): void {
     // Check for organizationName/projectName pair
     if (
-      (this.organizationName === null && this.projectName !== null) ||
-      (this.organizationName !== null && this.projectName === null)
+      (!this.organizationName && !!this.projectName) ||
+      (!!this.organizationName && !this.projectName)
     ) {
       console.warn(
         'Warning: Both organizationName and projectName must be provided together when using either. This will be removed from version 1.0.40. Note that organizationName/projectName are being deprecated in favor of organizationId/projectId.',
-      );
-    }
-
-    // Check for organizationId/projectId pair
-    if (
-      (this.organizationId === null && this.projectId !== null) ||
-      (this.organizationId !== null && this.projectId === null)
-    ) {
-      console.warn(
-        'Warning: Both organizationId and projectId must be provided together when using either. This will be removed from version 1.0.40.',
       );
     }
   }
@@ -97,32 +114,20 @@ export default class MemoryClient {
     this.projectName = options.projectName || null;
     this.organizationId = options.organizationId || null;
     this.projectId = options.projectId || null;
-
-    // Set up authorization header - prefer bearer token over API key
-    const authHeader = this.bearerToken 
-      ? `Bearer ${this.bearerToken}`
-      : this.apiKey 
-        ? `Token ${this.apiKey}` 
-        : '';
+    this.impersonation = options.impersonation;
 
     this.headers = {
-      Authorization: authHeader,
       'Content-Type': 'application/json',
     };
 
-    this.client = axios.create({
-      baseURL: this.host,
-      headers: { Authorization: authHeader },
-      timeout: 60000,
-    });
+    this.#defaultOptions = {
+      headers: this.headers,
+    };
 
     this._validateAuth();
 
     // Initialize with a temporary ID that will be updated
     this.telemetryId = '';
-
-    // Initialize the client
-    this._initializeClient();
   }
 
   private async _initializeClient() {
@@ -131,44 +136,114 @@ export default class MemoryClient {
       await this.ping();
 
       if (!this.telemetryId) {
-        this.telemetryId = generateHash(this.apiKey || this.bearerToken || 'anonymous');
+        this.telemetryId = generateHash(
+          this.apiKey || this.bearerToken || 'anonymous',
+        );
       }
 
       this._validateOrgProject();
 
       // Capture initialization event
-      captureClientEvent('init', this, {
-        api_version: 'v1',
-        client_type: 'MemoryClient',
+      reportEvent({
+        eventName: 'init',
+        additionalData: {
+          api_version: 'v1',
+          client_type: 'MemoryClient',
+        },
       }).catch((error: any) => {
-        LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'captureClientEvent' });
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'captureClientEvent',
+        });
       });
+      this.#clientInitialized = true;
     } catch (error: any) {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'initializeClient' });
-      await captureClientEvent('init_error', this, {
-        error: error?.message || 'Unknown error',
-        stack: error?.stack || 'No stack trace',
+      this.#clientInitialized = false;
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'initializeClient',
+      });
+      await reportEvent({
+        eventName: 'init_error',
+        additionalData: {
+          error: error?.message || 'Unknown error',
+          stack: error?.stack || 'No stack trace',
+        },
       });
     }
   }
 
   private _captureEvent(methodName: string, args: any[]) {
-    captureClientEvent(methodName, this, {
-      success: true,
-      args_count: args.length,
-      keys: args.length > 0 ? args[0] : [],
+    reportEvent({
+      eventName: methodName,
+      additionalData: {
+        success: true,
+        args_count: args.length,
+        keys: args.length ? args[0] : [],
+      },
     }).catch((error: any) => {
       console.error('Failed to capture event:', error);
     });
   }
+  /**
+   * Updates the authorization header with an impersonated token if available.
+   * @private
+   */
+  async #updateAuthorizationIfNeeded(): Promise<void> {
+    const thisImpersonate = this.impersonation;
+    if (thisImpersonate) {
+      try {
+        const impersonatedToken = await thisImpersonate.getImpersonatedToken();
+        if (impersonatedToken) {
+          this.bearerToken = impersonatedToken;
+          log((l) =>
+            l.verbose(
+              `mem0 client is impersonating ${thisImpersonate.getUserContext().userId}.`,
+            ),
+          );
+        } else {
+          log((l) =>
+            l.warn(
+              `mem0 client unable to impersonate user, request will be made anonymously or via API key`,
+            ),
+          );
+        }
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'mem0Client::updateAuthorizationIfNeeded',
+        });
+      }
+      if (this.bearerToken) {
+        this.headers.Authorization = `Bearer ${this.bearerToken}`;
+        return;
+      }
+      // Fallback to API key if available
+      const apiKey = env('MEM0_API_KEY');
+      if (apiKey) {
+        this.headers.Authorization = `Token ${apiKey}`;
+      }
+    }
+  }
 
-  async _fetchWithErrorHandling(url: string, options: any): Promise<any> {
-    const response = await fetch(url, {
+  async _fetchWithErrorHandling<TResult = any>(
+    url: string,
+    options: any,
+  ): Promise<TResult> {
+    // Initialize client if not already done
+    if (!this.#clientInitialized && !url.includes('ping')) {
+      await this._initializeClient();
+    }
+    // Authenticate
+    await this.#updateAuthorizationIfNeeded();
+    // TODO: This is where we would add retry logic, caching, etc
+    const requestUrl = new URL(url, this.host).toString();
+    const response = await fetch(requestUrl, {
       ...options,
       headers: {
+        ...this.headers,
         ...options.headers,
-        Authorization: `Token ${this.apiKey}`,
-        'Mem0-User-ID': this.telemetryId,
+        'X-Mem0-User-ID': this.telemetryId,
       },
     });
     if (!response.ok) {
@@ -185,282 +260,339 @@ export default class MemoryClient {
     return { ...payload, ...options };
   }
 
-  _prepareParams(options: MemoryOptions): object {
+  _prepareParams(options: MemoryOptions): Record<string, string> {
     return Object.fromEntries(
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      Object.entries(options).filter(([_, v]) => v != null),
+      Object.entries(options ?? {})
+        .filter(([_, v]) => !!v)
+        .map(([k, v]) => [
+          k,
+          typeof v === 'object' ? JSON.stringify(v) : String(v),
+        ]),
     );
   }
 
-  async ping(): Promise<void> {
+  async _instrument<TResult>(
+    name: string,
+    fn: (span: Span) => Promise<TResult>,
+  ): Promise<TResult> {
+    const spanName = `mem0Client::${name}`;
+    const attributes = {
+      'mem0.component': 'mem0',
+      'mem0.method': name,
+      'mem0.host': this.host,
+      'mem0.telemetryId': this.telemetryId || '',
+      'mem0.org.id':
+        this.organizationId !== null && this.organizationId !== undefined
+          ? String(this.organizationId)
+          : '',
+      'mem0.project.id':
+        this.projectId !== null && this.projectId !== undefined
+          ? String(this.projectId)
+          : '',
+      'mem0.org.name': this.organizationName || '',
+      'mem0.project.name': this.projectName || '',
+      'mem0.impersonating': Boolean(this.impersonation),
+      'mem0.auth.hasApiKey': Boolean(this.apiKey),
+      'mem0.auth.hasBearer': Boolean(this.bearerToken),
+      'mem0.version': 'v1',
+    };
     try {
-      const response = await this._fetchWithErrorHandling(
-        `${this.host}/v1/ping/`,
-        {
-          method: 'GET',
-          headers: {
-            Authorization: `Token ${this.apiKey}`,
-          },
-        },
-      );
-
-      if (!response || typeof response !== 'object') {
-        throw new APIError('Invalid response format from ping endpoint');
-      }
-
-      if (response.status !== 'ok') {
-        throw new APIError(response.message || 'API Key is invalid');
-      }
-
-      const { org_id, project_id, user_email } = response;
-
-      // Only update if values are actually present
-      if (org_id && !this.organizationId) this.organizationId = org_id;
-      if (project_id && !this.projectId) this.projectId = project_id;
-      if (user_email) this.telemetryId = user_email;
-    } catch (error: any) {
-      // Convert generic errors to APIError with meaningful messages
-      if (error instanceof APIError) {
-        throw error;
-      } else {
-        throw new APIError(
-          `Failed to ping server: ${error.message || 'Unknown error'}`,
-        );
-      }
+      const instrumentedSpan = await createInstrumentedSpan({
+        spanName,
+        attributes,
+      });
+      return await instrumentedSpan.executeWithContext(fn);
+    } catch (error: unknown) {
+      throw error;
     }
+  }
+
+  async ping(): Promise<void> {
+    return this._instrument('ping', async () => {
+      try {
+        const response = await this._fetchWithErrorHandling<PingResponse>(
+          '/api/v1/ping/',
+          {
+            method: 'GET',
+          },
+        );
+
+        if (!response || typeof response !== 'object') {
+          throw new APIError('Invalid response format from ping endpoint');
+        }
+
+        if (response.status && response.status !== 'ok') {
+          throw new APIError(response.message || 'API Key is invalid');
+        }
+
+        const { orgId, orgName, projectId, projectName, email } = response;
+
+        // Only update if values are actually present
+        if (orgId && !this.organizationId) {
+          this.organizationId = orgId;
+        }
+        if (orgName && !this.organizationName) {
+          this.organizationName = orgName;
+        }
+        if (projectId && !this.projectId) {
+          this.projectId = projectId;
+        }
+        if (projectName && !this.projectName) {
+          this.projectName = projectName;
+        }
+        if (email) {
+          this.telemetryId = generateHash(email);
+        }
+      } catch (error: any) {
+        // Convert generic errors to APIError with meaningful messages
+        if (error instanceof APIError) {
+          throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'mem0Client::ping',
+          });
+        } else {
+          const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'mem0Client::ping',
+          });
+          throw new APIError(
+            `Failed to ping server: ${error.message || 'Unknown error'}`,
+          );
+        }
+      }
+    });
   }
 
   async add(
     messages: Array<Message>,
     options: MemoryOptions = {},
   ): Promise<Array<Memory>> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
-    if (this.organizationName != null && this.projectName != null) {
-      options.org_name = this.organizationName;
-      options.project_name = this.projectName;
-    }
+    return this._instrument('add', async (span) => {
+      this._validateOrgProject();
+      if (this.organizationName != null && this.projectName != null) {
+        options.org_name = this.organizationName;
+        options.project_name = this.projectName;
+      }
 
-    if (this.organizationId != null && this.projectId != null) {
-      options.org_id = this.organizationId;
-      options.project_id = this.projectId;
+      if (this.organizationId != null && this.projectId != null) {
+        options.org_id = this.organizationId;
+        options.project_id = this.projectId;
 
-      if (options.org_name) delete options.org_name;
-      if (options.project_name) delete options.project_name;
-    }
+        if (options.org_name) delete options.org_name;
+        if (options.project_name) delete options.project_name;
+      }
 
-    if (options.api_version) {
-      options.version = options.api_version.toString();
-    }
+      if (options.api_version) {
+        options.version = options.api_version.toString();
+      }
 
-    const payload = this._preparePayload(messages, options);
+      const payload = this._preparePayload(messages, options);
 
-    // get payload keys whose value is not null or undefined
-    const payloadKeys = Object.keys(payload);
-    this._captureEvent('add', [payloadKeys]);
+      // get payload keys whose value is not null or undefined
+      const payloadKeys = Object.keys(payload);
+      this._captureEvent('add', [payloadKeys]);
 
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/memories/`,
-      {
+      const response = await this._fetchWithErrorHandling(`api/v1/memories/`, {
         method: 'POST',
         headers: this.headers,
         body: JSON.stringify(payload),
-      },
-    );
-    return response;
+      });
+      return response;
+    });
   }
 
   async update(memoryId: string, message: string): Promise<Array<Memory>> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
-    const payload = {
-      text: message,
-    };
+    return this._instrument('update', async (span) => {
+      this._validateOrgProject();
+      const payload = {
+        text: message,
+      };
 
-    const payloadKeys = Object.keys(payload);
-    this._captureEvent('update', [payloadKeys]);
+      const payloadKeys = Object.keys(payload);
+      this._captureEvent('update', [payloadKeys]);
 
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/memories/${memoryId}/`,
-      {
-        method: 'PUT',
-        headers: this.headers,
-        body: JSON.stringify(payload),
-      },
-    );
-    return response;
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/memories/${memoryId}/`,
+        {
+          method: 'PUT',
+          headers: this.headers,
+          body: JSON.stringify(payload),
+        },
+      );
+      return response;
+    });
   }
 
   async get(memoryId: string): Promise<Memory> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('get', []);
-    return this._fetchWithErrorHandling(
-      `${this.host}/v1/memories/${memoryId}/`,
-      {
+    return this._instrument('get', async (span) => {
+      this._captureEvent('get', []);
+      return this._fetchWithErrorHandling(`api/v1/memories/${memoryId}/`, {
         headers: this.headers,
-      },
-    );
+      });
+    });
   }
 
   async getAll(options?: SearchOptions): Promise<Array<Memory>> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
-    const payloadKeys = Object.keys(options || {});
-    this._captureEvent('get_all', [payloadKeys]);
-    const { api_version, page, page_size, ...otherOptions } = options!;
-    if (this.organizationName != null && this.projectName != null) {
-      otherOptions.org_name = this.organizationName;
-      otherOptions.project_name = this.projectName;
-    }
+    return this._instrument('getAll', async (span) => {
+      this._validateOrgProject();
+      const payloadKeys = Object.keys(options || {});
+      this._captureEvent('get_all', [payloadKeys]);
+      const { api_version, page, page_size, ...otherOptions } = options!;
+      if (this.organizationName != null && this.projectName != null) {
+        otherOptions.org_name = this.organizationName;
+        otherOptions.project_name = this.projectName;
+      }
 
-    let appendedParams = '';
-    let paginated_response = false;
+      let appendedParams = '';
+      let paginated_response = false;
 
-    if (page && page_size) {
-      appendedParams += `page=${page}&page_size=${page_size}`;
-      paginated_response = true;
-    }
+      if (page && page_size) {
+        appendedParams += `page=${page}&page_size=${page_size}`;
+        paginated_response = true;
+      }
 
-    if (this.organizationId != null && this.projectId != null) {
-      otherOptions.org_id = this.organizationId;
-      otherOptions.project_id = this.projectId;
+      if (this.organizationId != null && this.projectId != null) {
+        otherOptions.org_id = this.organizationId;
+        otherOptions.project_id = this.projectId;
 
-      if (otherOptions.org_name) delete otherOptions.org_name;
-      if (otherOptions.project_name) delete otherOptions.project_name;
-    }
+        if (otherOptions.org_name) delete otherOptions.org_name;
+        if (otherOptions.project_name) delete otherOptions.project_name;
+      }
 
-    if (api_version === 'v2') {
-      const url = paginated_response
-        ? `${this.host}/v2/memories/?${appendedParams}`
-        : `${this.host}/v2/memories/`;
-      return this._fetchWithErrorHandling(url, {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify(otherOptions),
-      });
-    } else {
-      // @ts-expect-error 3rd party code
-      const params = new URLSearchParams(this._prepareParams(otherOptions));
-      const url = paginated_response
-        ? `${this.host}/v1/memories/?${params}&${appendedParams}`
-        : `${this.host}/v1/memories/?${params}`;
-      return this._fetchWithErrorHandling(url, {
-        headers: this.headers,
-      });
-    }
+      if (api_version === 'v2') {
+        const url = paginated_response
+          ? `${this.host}/v2/memories/?${appendedParams}`
+          : `${this.host}/v2/memories/`;
+        return this._fetchWithErrorHandling(url, {
+          method: 'POST',
+          headers: this.headers,
+          body: JSON.stringify(otherOptions),
+        });
+      } else {
+        const params = new URLSearchParams(this._prepareParams(otherOptions));
+        const url = paginated_response
+          ? `api/v1/memories/?${params}&${appendedParams}`
+          : `api/v1/memories/?${params}`;
+        return this._fetchWithErrorHandling(url, {
+          headers: this.headers,
+        });
+      }
+    });
   }
 
   async search(query: string, options?: SearchOptions): Promise<Array<Memory>> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
-    const payloadKeys = Object.keys(options || {});
-    this._captureEvent('search', [payloadKeys]);
-    const { api_version, ...otherOptions } = options!;
-    const payload = { query, ...otherOptions };
-    if (this.organizationName != null && this.projectName != null) {
-      payload.org_name = this.organizationName;
-      payload.project_name = this.projectName;
-    }
+    return this._instrument('search', async (span) => {
+      this._validateOrgProject();
+      const payloadKeys = Object.keys(options || {});
+      this._captureEvent('search', [payloadKeys]);
+      const { api_version, ...otherOptions } = options!;
+      const payload = { query, ...otherOptions };
+      if (this.organizationName != null && this.projectName != null) {
+        payload.org_name = this.organizationName;
+        payload.project_name = this.projectName;
+      }
 
-    if (this.organizationId != null && this.projectId != null) {
-      payload.org_id = this.organizationId;
-      payload.project_id = this.projectId;
+      if (this.organizationId != null && this.projectId != null) {
+        payload.org_id = this.organizationId;
+        payload.project_id = this.projectId;
 
-      if (payload.org_name) delete payload.org_name;
-      if (payload.project_name) delete payload.project_name;
-    }
-    const endpoint =
-      api_version === 'v2' ? '/v2/memories/search/' : '/v1/memories/search/';
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}${endpoint}`,
-      {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify(payload),
-      },
-    );
-    return response;
+        if (payload.org_name) delete payload.org_name;
+        if (payload.project_name) delete payload.project_name;
+      }
+      const endpoint =
+        api_version === 'v2' ? '/v2/memories/search/' : '/v1/memories/search/';
+      const response = await this._fetchWithErrorHandling(
+        `${this.host}${endpoint}`,
+        {
+          method: 'POST',
+          headers: this.headers,
+          body: JSON.stringify(payload),
+        },
+      );
+      return response;
+    });
   }
 
   async delete(memoryId: string): Promise<{ message: string }> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('delete', []);
-    return this._fetchWithErrorHandling(
-      `${this.host}/v1/memories/${memoryId}/`,
-      {
+    return this._instrument('delete', async (span) => {
+      this._captureEvent('delete', [memoryId]);
+      return this._fetchWithErrorHandling(`api/v1/memories/${memoryId}/`, {
         method: 'DELETE',
         headers: this.headers,
-      },
-    );
+      });
+    });
   }
 
   async deleteAll(options: MemoryOptions = {}): Promise<{ message: string }> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
-    const payloadKeys = Object.keys(options || {});
-    this._captureEvent('delete_all', [payloadKeys]);
-    if (this.organizationName != null && this.projectName != null) {
-      options.org_name = this.organizationName;
-      options.project_name = this.projectName;
-    }
+    return this._instrument('deleteAll', async (span) => {
+      this._validateOrgProject();
+      const payloadKeys = Object.keys(options || {});
+      this._captureEvent('delete_all', [payloadKeys]);
+      if (this.organizationName != null && this.projectName != null) {
+        options.org_name = this.organizationName;
+        options.project_name = this.projectName;
+      }
 
-    if (this.organizationId != null && this.projectId != null) {
-      options.org_id = this.organizationId;
-      options.project_id = this.projectId;
+      if (this.organizationId != null && this.projectId != null) {
+        options.org_id = this.organizationId;
+        options.project_id = this.projectId;
 
-      if (options.org_name) delete options.org_name;
-      if (options.project_name) delete options.project_name;
-    }
-    // @ts-expect-error 3rd party code
-    const params = new URLSearchParams(this._prepareParams(options));
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/memories/?${params}`,
-      {
-        method: 'DELETE',
-        headers: this.headers,
-      },
-    );
-    return response;
+        if (options.org_name) delete options.org_name;
+        if (options.project_name) delete options.project_name;
+      }
+      const params = new URLSearchParams(this._prepareParams(options));
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/memories/?${params}`,
+        {
+          method: 'DELETE',
+          headers: this.headers,
+        },
+      );
+      return response;
+    });
   }
 
   async history(memoryId: string): Promise<Array<MemoryHistory>> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('history', []);
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/memories/${memoryId}/history/`,
-      {
-        headers: this.headers,
-      },
-    );
-    return response;
+    return this._instrument('history', async (span) => {
+      this._captureEvent('history', []);
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/memories/${memoryId}/history/`,
+        {
+          headers: this.headers,
+        },
+      );
+      return response;
+    });
   }
 
   async users(): Promise<AllUsers> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
-    this._captureEvent('users', []);
-    const options: MemoryOptions = {};
-    if (this.organizationName != null && this.projectName != null) {
-      options.org_name = this.organizationName;
-      options.project_name = this.projectName;
-    }
+    return this._instrument('users', async (span) => {
+      this._validateOrgProject();
+      this._captureEvent('users', []);
+      const options: MemoryOptions = {};
+      if (this.organizationName != null && this.projectName != null) {
+        options.org_name = this.organizationName;
+        options.project_name = this.projectName;
+      }
 
-    if (this.organizationId != null && this.projectId != null) {
-      options.org_id = this.organizationId;
-      options.project_id = this.projectId;
+      if (this.organizationId != null && this.projectId != null) {
+        options.org_id = this.organizationId;
+        options.project_id = this.projectId;
 
-      if (options.org_name) delete options.org_name;
-      if (options.project_name) delete options.project_name;
-    }
-    // @ts-expect-error 3rd party code
-    const params = new URLSearchParams(options);
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/entities/?${params}`,
-      {
-        headers: this.headers,
-      },
-    );
-    return response;
+        if (options.org_name) delete options.org_name;
+        if (options.project_name) delete options.project_name;
+      }
+      // @ts-expect-error 3rd party code
+      const params = new URLSearchParams(options);
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/entities/?${params}`,
+        {
+          headers: this.headers,
+        },
+      );
+      return response;
+    });
   }
 
   /**
@@ -470,13 +602,12 @@ export default class MemoryClient {
     entity_id: number;
     entity_type: string;
   }): Promise<{ message: string }> {
-    if (this.telemetryId === '') await this.ping();
     this._captureEvent('delete_user', []);
     if (!data.entity_type) {
       data.entity_type = 'user';
     }
     const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/entities/${data.entity_type}/${data.entity_id}/`,
+      `api/v1/entities/${data.entity_type}/${data.entity_id}/`,
       {
         method: 'DELETE',
         headers: this.headers,
@@ -493,238 +624,235 @@ export default class MemoryClient {
       run_id?: string;
     } = {},
   ): Promise<{ message: string }> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
+    return this._instrument('deleteUsers', async (span) => {
+      this._validateOrgProject();
 
-    let to_delete: Array<{ type: string; name: string }> = [];
-    const { user_id, agent_id, app_id, run_id } = params;
+      let to_delete: Array<{ type: string; name: string }> = [];
+      const { user_id, agent_id, app_id, run_id } = params;
 
-    if (user_id) {
-      to_delete = [{ type: 'user', name: user_id }];
-    } else if (agent_id) {
-      to_delete = [{ type: 'agent', name: agent_id }];
-    } else if (app_id) {
-      to_delete = [{ type: 'app', name: app_id }];
-    } else if (run_id) {
-      to_delete = [{ type: 'run', name: run_id }];
-    } else {
-      const entities = await this.users();
-      to_delete = entities.results.map((entity) => ({
-        type: entity.type,
-        name: entity.name,
-      }));
-    }
-
-    if (to_delete.length === 0) {
-      throw new Error('No entities to delete');
-    }
-
-    const requestOptions: MemoryOptions = {};
-    if (this.organizationName != null && this.projectName != null) {
-      requestOptions.org_name = this.organizationName;
-      requestOptions.project_name = this.projectName;
-    }
-
-    if (this.organizationId != null && this.projectId != null) {
-      requestOptions.org_id = this.organizationId;
-      requestOptions.project_id = this.projectId;
-
-      if (requestOptions.org_name) delete requestOptions.org_name;
-      if (requestOptions.project_name) delete requestOptions.project_name;
-    }
-
-    // Delete each entity and handle errors
-    for (const entity of to_delete) {
-      try {
-        await this.client.delete(
-          `/v2/entities/${entity.type}/${entity.name}/`,
-          {
-            params: requestOptions,
-          },
-        );
-      } catch (error: any) {
-        throw new APIError(
-          `Failed to delete ${entity.type} ${entity.name}: ${error.message}`,
-        );
+      if (user_id) {
+        to_delete = [{ type: 'user', name: user_id }];
+      } else if (agent_id) {
+        to_delete = [{ type: 'agent', name: agent_id }];
+      } else if (app_id) {
+        to_delete = [{ type: 'app', name: app_id }];
+      } else if (run_id) {
+        to_delete = [{ type: 'run', name: run_id }];
+      } else {
+        const entities = await this.users();
+        to_delete = entities.results.map((entity) => ({
+          type: entity.type,
+          name: entity.name,
+        }));
       }
-    }
 
-    this._captureEvent('delete_users', [
-      {
-        user_id: user_id,
-        agent_id: agent_id,
-        app_id: app_id,
-        run_id: run_id,
-        sync_type: 'sync',
-      },
-    ]);
+      if (to_delete.length === 0) {
+        throw new Error('No entities to delete');
+      }
 
-    return {
-      message:
-        user_id || agent_id || app_id || run_id
-          ? 'Entity deleted successfully.'
-          : 'All users, agents, apps and runs deleted.',
-    };
+      const requestOptions: Record<string, string> = {};
+      if (this.organizationId && this.projectId) {
+        requestOptions.org_id = String(this.organizationId);
+        requestOptions.project_id = String(this.projectId);
+      } else if (this.organizationName && this.projectName) {
+        requestOptions.org_name = encodeURIComponent(this.organizationName);
+        requestOptions.project_name = encodeURIComponent(this.projectName);
+      }
+      const qp = new URLSearchParams(requestOptions);
+
+      // Delete each entity and handle errors
+      for (const entity of to_delete) {
+        try {
+          await this._fetchWithErrorHandling(
+            `/v2/entities/${entity.type}/${entity.name}/${qp.size > 0 ? `?${qp.toString()}` : ''}`,
+            {
+              method: 'DELETE',
+            },
+          );
+        } catch (error: any) {
+          throw new APIError(
+            `Failed to delete ${entity.type} ${entity.name}: ${error.message}`,
+          );
+        }
+      }
+
+      this._captureEvent('delete_users', [
+        {
+          user_id: user_id,
+          agent_id: agent_id,
+          app_id: app_id,
+          run_id: run_id,
+          sync_type: 'sync',
+        },
+      ]);
+
+      return {
+        message:
+          user_id || agent_id || app_id || run_id
+            ? 'Entity deleted successfully.'
+            : 'All users, agents, apps and runs deleted.',
+      };
+    });
   }
 
   async batchUpdate(memories: Array<MemoryUpdateBody>): Promise<string> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('batch_update', []);
-    const memoriesBody = memories.map((memory) => ({
-      memory_id: memory.memoryId,
-      text: memory.text,
-    }));
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/batch/`,
-      {
+    return this._instrument('batchUpdate', async (span) => {
+      this._captureEvent('batch_update', []);
+      const memoriesBody = memories.map((memory) => ({
+        memory_id: memory.memoryId,
+        text: memory.text,
+      }));
+      const response = await this._fetchWithErrorHandling(`api/v1/batch/`, {
         method: 'PUT',
         headers: this.headers,
         body: JSON.stringify({ memories: memoriesBody }),
-      },
-    );
-    return response;
+      });
+      return response;
+    });
   }
 
   async batchDelete(memories: Array<string>): Promise<string> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('batch_delete', []);
-    const memoriesBody = memories.map((memory) => ({
-      memory_id: memory,
-    }));
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/batch/`,
-      {
+    return this._instrument('batchDelete', async (span) => {
+      this._captureEvent('batch_delete', []);
+      const memoriesBody = memories.map((memory) => ({
+        memory_id: memory,
+      }));
+      const response = await this._fetchWithErrorHandling(`api/v1/batch/`, {
         method: 'DELETE',
         headers: this.headers,
         body: JSON.stringify({ memories: memoriesBody }),
-      },
-    );
-    return response;
+      });
+      return response;
+    });
   }
 
   async getProject(options: ProjectOptions): Promise<ProjectResponse> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
-    const payloadKeys = Object.keys(options || {});
-    this._captureEvent('get_project', [payloadKeys]);
-    const { fields } = options;
+    return this._instrument('getProject', async (span) => {
+      this._validateOrgProject();
+      const payloadKeys = Object.keys(options || {});
+      this._captureEvent('get_project', [payloadKeys]);
+      const { fields } = options;
 
-    if (!(this.organizationId && this.projectId)) {
-      throw new Error(
-        'organizationId and projectId must be set to access instructions or categories',
+      if (!(this.organizationId && this.projectId)) {
+        throw new Error(
+          'organizationId and projectId must be set to access instructions or categories',
+        );
+      }
+
+      const params = new URLSearchParams();
+      fields?.forEach((field) => params.append('fields', field));
+
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/orgs/organizations/${this.organizationId}/projects/${this.projectId}/?${params.toString()}`,
+        {
+          headers: this.headers,
+        },
       );
-    }
-
-    const params = new URLSearchParams();
-    fields?.forEach((field) => params.append('fields', field));
-
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/api/v1/orgs/organizations/${this.organizationId}/projects/${this.projectId}/?${params.toString()}`,
-      {
-        headers: this.headers,
-      },
-    );
-    return response;
+      return response;
+    });
   }
 
   async updateProject(
     prompts: PromptUpdatePayload,
   ): Promise<Record<string, any>> {
-    if (this.telemetryId === '') await this.ping();
-    this._validateOrgProject();
-    this._captureEvent('update_project', []);
-    if (!(this.organizationId && this.projectId)) {
-      throw new Error(
-        'organizationId and projectId must be set to update instructions or categories',
-      );
-    }
+    return this._instrument('updateProject', async (span) => {
+      this._validateOrgProject();
+      this._captureEvent('update_project', []);
+      if (!(this.organizationId && this.projectId)) {
+        throw new Error(
+          'organizationId and projectId must be set to update instructions or categories',
+        );
+      }
 
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/api/v1/orgs/organizations/${this.organizationId}/projects/${this.projectId}/`,
-      {
-        method: 'PATCH',
-        headers: this.headers,
-        body: JSON.stringify(prompts),
-      },
-    );
-    return response;
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/orgs/organizations/${this.organizationId}/projects/${this.projectId}/`,
+        {
+          method: 'PATCH',
+          headers: this.headers,
+          body: JSON.stringify(prompts),
+        },
+      );
+      return response;
+    });
   }
 
   // WebHooks
   async getWebhooks(data?: { projectId?: string }): Promise<Array<Webhook>> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('get_webhooks', []);
-    const project_id = data?.projectId || this.projectId;
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/api/v1/webhooks/projects/${project_id}/`,
-      {
-        headers: this.headers,
-      },
-    );
-    return response;
+    return this._instrument('getWebhooks', async (span) => {
+      this._captureEvent('get_webhooks', []);
+      const project_id = data?.projectId || this.projectId;
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/webhooks/projects/${project_id}/`,
+        {
+          headers: this.headers,
+        },
+      );
+      return response;
+    });
   }
 
   async createWebhook(webhook: WebhookPayload): Promise<Webhook> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('create_webhook', []);
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/api/v1/webhooks/projects/${this.projectId}/`,
-      {
-        method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify(webhook),
-      },
-    );
-    return response;
+    return this._instrument('createWebhook', async (span) => {
+      this._captureEvent('create_webhook', []);
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/webhooks/projects/${this.projectId}/`,
+        {
+          method: 'POST',
+          headers: this.headers,
+          body: JSON.stringify(webhook),
+        },
+      );
+      return response;
+    });
   }
 
   async updateWebhook(webhook: WebhookPayload): Promise<{ message: string }> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('update_webhook', []);
-    const project_id = webhook.projectId || this.projectId;
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/api/v1/webhooks/${webhook.webhookId}/`,
-      {
-        method: 'PUT',
-        headers: this.headers,
-        body: JSON.stringify({
-          ...webhook,
-          projectId: project_id,
-        }),
-      },
-    );
-    return response;
+    return this._instrument('updateWebhook', async (span) => {
+      this._captureEvent('update_webhook', []);
+      const project_id = webhook.projectId || this.projectId;
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/webhooks/${webhook.webhookId}/`,
+        {
+          method: 'PUT',
+          headers: this.headers,
+          body: JSON.stringify({
+            ...webhook,
+            projectId: project_id,
+          }),
+        },
+      );
+      return response;
+    });
   }
 
   async deleteWebhook(data: {
     webhookId: string;
   }): Promise<{ message: string }> {
-    if (this.telemetryId === '') await this.ping();
-    this._captureEvent('delete_webhook', []);
-    const webhook_id = data.webhookId || data;
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/api/v1/webhooks/${webhook_id}/`,
-      {
-        method: 'DELETE',
-        headers: this.headers,
-      },
-    );
-    return response;
+    return this._instrument('deleteWebhook', async (span) => {
+      this._captureEvent('delete_webhook', []);
+      const webhook_id = data.webhookId || data;
+      const response = await this._fetchWithErrorHandling(
+        `api/v1/webhooks/${webhook_id}/`,
+        {
+          method: 'DELETE',
+          headers: this.headers,
+        },
+      );
+      return response;
+    });
   }
 
   async feedback(data: FeedbackPayload): Promise<{ message: string }> {
-    if (this.telemetryId === '') await this.ping();
-    const payloadKeys = Object.keys(data || {});
-    this._captureEvent('feedback', [payloadKeys]);
-    const response = await this._fetchWithErrorHandling(
-      `${this.host}/v1/feedback/`,
-      {
+    return this._instrument('feedback', async (span) => {
+      const payloadKeys = Object.keys(data || {});
+      this._captureEvent('feedback', [payloadKeys]);
+      const response = await this._fetchWithErrorHandling(`api/v1/feedback/`, {
         method: 'POST',
         headers: this.headers,
         body: JSON.stringify(data),
-      },
-    );
-    return response;
+      });
+      return response;
+    });
   }
 }
 

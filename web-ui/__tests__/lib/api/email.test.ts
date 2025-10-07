@@ -1,5 +1,5 @@
-jest.mock('@/lib/send-api-request');
-jest.mock('@/lib/site-util/url-builder');
+jest.mock('/lib/send-api-request');
+jest.mock('/lib/site-util/url-builder');
 
 import {
   getEmailList,
@@ -9,10 +9,10 @@ import {
   deleteEmailRecord,
   getEmailStats,
   getEmailSearchResults,
-} from '@/lib/api/client';
-import { apiRequestHelperFactory } from '@/lib/send-api-request';
-import siteMap from '@/lib/site-util/url-builder';
-import { ContactSummary } from '@/data-models/api/contact';
+} from '/lib/api/client';
+import { apiRequestHelperFactory } from '/lib/send-api-request';
+import siteMap from '/lib/site-util/url-builder';
+import { ContactSummary } from '/data-models/api/contact';
 
 const apiHelper = {
   get: jest.fn(),

@@ -11,7 +11,7 @@ The State Management Protocol enables middleware in the language model processin
 The `MiddlewareStateManager` must be placed **first** in the middleware chain. It intercepts special protocol prompts and orchestrates state collection and restoration across all downstream middleware.
 
 ```typescript
-import { createStateManagementMiddleware } from '@/lib/ai/middleware/state-management';
+import { createStateManagementMiddleware } from '/lib/ai/middleware/state-management';
 
 const stateManager = MiddlewareStateManager.Instance;
 ```
@@ -45,7 +45,7 @@ interface StatefulMiddleware {
 #### Option 1: Use createStatefulMiddleware for custom state handling
 
 ```typescript
-import { createStatefulMiddleware } from '@/lib/ai/middleware/state-management';
+import { createStatefulMiddleware } from '/lib/ai/middleware/state-management';
 
 // Middleware with state
 let middlewareState = { requestCount: 0, lastPrompt: '' };
@@ -71,7 +71,7 @@ const statefulMiddleware = createStatefulMiddleware({
 #### Option 2: Use createSimpleStatefulMiddleware for middleware without state
 
 ```typescript
-import { createSimpleStatefulMiddleware } from '@/lib/ai/middleware/state-management';
+import { createSimpleStatefulMiddleware } from '/lib/ai/middleware/state-management';
 
 const simpleStatefulMiddleware = createSimpleStatefulMiddleware(
   'my-middleware-id',
@@ -86,7 +86,7 @@ import {
   createStateManagementMiddleware,
   setNormalizedDefaultsMiddleware,
   tokenStatsMiddleware,
-} from '@/lib/ai/middleware';
+} from '/lib/ai/middleware';
 
 const stateManager = MiddlewareStateManager.Instance;
 
@@ -104,7 +104,7 @@ const wrappedModel = wrapLanguageModel({
 ### Collecting Middleware State
 
 ```typescript
-import { STATE_PROTOCOL } from '@/lib/ai/middleware/state-management';
+import { STATE_PROTOCOL } from '/lib/ai/middleware/state-management';
 
 async function collectChainState(model: LanguageModelV1) {
   const result = await generateText({

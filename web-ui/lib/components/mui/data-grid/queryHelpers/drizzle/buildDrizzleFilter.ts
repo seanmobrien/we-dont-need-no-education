@@ -9,7 +9,7 @@
  * @since 2025-07-27
  */
 
-import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
+import { isLikeNextRequest } from '/lib/nextjs-util/guards';
 import type { GridFilterModel } from '@mui/x-data-grid-pro';
 import {
   and,
@@ -33,8 +33,8 @@ import {
 import type { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { isGridFilterModel } from '../../guards';
 import { columnMapFactory, parseFilterOptions } from '../utility';
-import { isTruthy } from '@/lib/react-util/utility-methods';
-import { schema } from '@/lib/drizzle-db';
+import { isTruthy } from '/lib/react-util/utility-methods';
+import { schema } from '/lib/drizzle-db';
 import type {
   BuildDrizzleAttachmentOrEmailFilterProps,
   BuildDrizzleItemFilterProps,
@@ -95,7 +95,7 @@ export const appendFilter = ({
  *
  * @example
  * ```typescript
- * import { emails } from '@/drizzle/schema';
+ * import { emails } from '/drizzle/schema';
  *
  * const condition = buildDrizzleAttachmentOrEmailFilter({
  *   attachments: true,
@@ -193,7 +193,7 @@ export const buildDrizzleAttachmentOrEmailFilter = ({
  *
  * @example
  * ```typescript
- * import { users } from '@/drizzle/schema';
+ * import { users } from '/drizzle/schema';
  *
  * const getColumn = (name: string) => {
  *   switch (name) {

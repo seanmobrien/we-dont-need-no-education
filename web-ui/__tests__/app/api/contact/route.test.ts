@@ -2,14 +2,14 @@
  * @jest-environment node
  */
 
-jest.mock('@/lib/neondb');
-jest.mock('@/lib/logger');
-jest.mock('@/data-models/api');
+jest.mock('/lib/neondb');
+jest.mock('/lib/logger');
+jest.mock('/data-models/api');
 
 import { NextRequest } from 'next/server';
-import { POST, GET } from '@/app/api/contact/route';
-import { query, queryExt } from '@/lib/neondb';
-import { globalContactCache } from '@/data-models/api';
+import { POST, GET } from '/app/api/contact/route';
+import { query, queryExt } from '/lib/neondb';
+import { globalContactCache } from '/data-models/api';
 
 describe('Contact API Routes', () => {
   afterEach(() => {

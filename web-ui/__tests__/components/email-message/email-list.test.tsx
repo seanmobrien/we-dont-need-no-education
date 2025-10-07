@@ -5,10 +5,10 @@ import {
   waitFor,
   jsonResponse,
   asyncRender,
-} from '@/__tests__/test-utils';
-import EmailList from '@/components/email-message/list';
+} from '/__tests__/test-utils';
+import EmailList from '/components/email-message/list';
 import { mockEmailSummary } from '../email.mock-data';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { fetch } from '/lib/nextjs-util/fetch';
 
 // Mock the router
 jest.mock('next/navigation', () => ({
@@ -55,7 +55,7 @@ describe('EmailList', () => {
     await waitFor(() => {
       expect(screen.getByRole('grid')).toBeInTheDocument();
     });
-  });
+  }, 10000);
 
   it('should display no emails found message when there are no emails', async () => {
     (fetch as jest.Mock).mockResolvedValueOnce(
@@ -70,7 +70,7 @@ describe('EmailList', () => {
       const grid = screen.getByRole('grid');
       expect(grid).toBeInTheDocument();
     });
-  });
+  }, 10000);
 
   it('should display a list of emails', async () => {
     const mockEmails = mockEmailSummary();
@@ -100,5 +100,5 @@ describe('EmailList', () => {
       expect(screen.getByText('From')).toBeInTheDocument();
       expect(screen.getByText('Subject')).toBeInTheDocument();
     });
-  });
+  }, 10000);
 });

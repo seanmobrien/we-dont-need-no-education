@@ -19,7 +19,7 @@ const mockRedisClient = {
 };
 
 // Mock the Redis client module
-jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
+jest.mock('/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
   getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
   closeRedisClient: jest.fn().mockResolvedValue(undefined),
 }));
@@ -28,7 +28,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateText, LanguageModelMiddleware, wrapLanguageModel } from 'ai';
 import { LanguageModelV2, LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { hideConsoleOutput } from '/__tests__/test-utils';
 import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 import { content } from 'googleapis/build/src/apis/content';
 
@@ -100,19 +100,19 @@ describe('Cache Success-Only Functionality', () => {
     try {
       const baseModel = openai('gpt-4o-mini');
 
-    const errorModel = wrapMockMiddleware(baseModel, {
-      content: [{ type: 'text', text: '' }],
-      finishReason: 'error',
-      usage: { totalTokens: 10 },
-      warnings: ['API Error occurred'],
-    });
+      const errorModel = wrapMockMiddleware(baseModel, {
+        content: [{ type: 'text', text: '' }],
+        finishReason: 'error',
+        usage: { totalTokens: 10 },
+        warnings: ['API Error occurred'],
+      });
 
-    const result = await generateText({
-      model: errorModel,
-      messages: [{ role: 'user', content: 'Test error response' }],
-    });
+      const result = await generateText({
+        model: errorModel,
+        messages: [{ role: 'user', content: 'Test error response' }],
+      });
 
-    expect(result.text).toBe('');
+      expect(result.text).toBe('');
 
       // Check metrics - should not show successful cache
       const metrics = metricsCollector.getMetrics();
@@ -152,19 +152,19 @@ describe('Cache Success-Only Functionality', () => {
     try {
       const baseModel = openai('gpt-4o-mini');
 
-    const warningModel = wrapMockMiddleware(baseModel, {
-      content: [{ type: 'text', text: 'Response with warnings' }],
-      finishReason: 'stop',
-      usage: { totalTokens: 15 },
-      warnings: ['Rate limit warning'],
-    });
+      const warningModel = wrapMockMiddleware(baseModel, {
+        content: [{ type: 'text', text: 'Response with warnings' }],
+        finishReason: 'stop',
+        usage: { totalTokens: 15 },
+        warnings: ['Rate limit warning'],
+      });
 
-    const result = await generateText({
-      model: warningModel,
-      messages: [{ role: 'user', content: 'Test warning response' }],
-    });
+      const result = await generateText({
+        model: warningModel,
+        messages: [{ role: 'user', content: 'Test warning response' }],
+      });
 
-    expect(result.text).toBe('Response with warnings');
+      expect(result.text).toBe('Response with warnings');
 
       // Check metrics
       const metrics = metricsCollector.getMetrics();

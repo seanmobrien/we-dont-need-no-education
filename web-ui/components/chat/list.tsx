@@ -1,14 +1,18 @@
 'use client';
 import { JSX, useMemo, useCallback } from 'react';
-import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
-import siteMap from '@/lib/site-util/url-builder';
+import { ServerBoundDataGrid } from '/components/mui/data-grid/server-bound-data-grid';
+import siteMap from '/lib/site-util/url-builder';
 import Box from '@mui/material/Box';
 
 import type { MuiEvent } from '@mui/x-internals/types';
-import type { GridCallbackDetails, GridColDef, GridRowParams } from '@mui/x-data-grid/models';
+import type {
+  GridCallbackDetails,
+  GridColDef,
+  GridRowParams,
+} from '@mui/x-data-grid/models';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import siteBuilder from '@/lib/site-util/url-builder';
+import siteBuilder from '/lib/site-util/url-builder';
 
 /**
  * Chat summary interface matching the API response
@@ -126,7 +130,10 @@ export const ChatList = ({
 
   // Build URL with viewType parameter (only add if not default 'user')
   const gridUrl = useMemo(() => {
-    const url = new URL(siteMap.api.ai.chat.history().toString(), window.location.origin);
+    const url = new URL(
+      siteMap.api.ai.chat.history().toString(),
+      window.location.origin,
+    );
     if (viewType !== 'user') {
       url.searchParams.set('viewType', viewType);
     }
@@ -145,7 +152,9 @@ export const ChatList = ({
       if (!event.isPropagationStopped()) {
         const chatId = params.row.id;
         if (chatId) {
-          push(String(siteBuilder.messages.chat.page(encodeURIComponent(chatId))));
+          push(
+            String(siteBuilder.messages.chat.page(encodeURIComponent(chatId))),
+          );
         }
       }
     },

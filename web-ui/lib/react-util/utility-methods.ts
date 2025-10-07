@@ -1,78 +1,46 @@
-/**
- * @module _utility-methods
- *
- * A collection of utility methods for use in React applications.
- */
+// General utility methods used across React components
+// and other parts of the application.
 
-
-
-/**
- * Generates a unique identifier string.
- *
- * @returns {string} A unique identifier consisting of 7 alpha-numeric characters.
- */
-export function generateUniqueId(): string {
+// Pseudo-random ID generator for lightweight unique IDs.
+// Not cryptographically secure; suitable for client-side use.
+export const generateUniqueId = (): string => {
   return Math.random().toString(36).slice(2, 9);
-}
+};
 
-/**
- * Checks if the given value is an instance of the Error object.
- *
- * @param value - The value to check.
- * @returns True if the value is an Error object, otherwise false.
- */
-export function isError(value: unknown): value is Error {
+// Type guard to check if a value is an instance of Error
+// or at least has the basic shape of an Error object.
+export const isError = (value: unknown): value is Error => {
   return (
     !!value &&
     typeof value === 'object' &&
-    (value instanceof Error ||
-      ('message' in value && 'name' in value))
+    (value instanceof Error || ('message' in value && 'name' in value))
   );
-}
+};
 
-/**
- * Checks if the given value is a DOMException with the name 'AbortError'.
- *
- * @param value - The value to check.
- * @returns True if the value is a DOMException with the name 'AbortError', otherwise false.
- */
-export function isAbortError(value: unknown): value is Error {
-  return value instanceof DOMException && value.name === 'AbortError';
-}
-
-/**
- * Type guard to check if a value is a TemplateStringsArray.
- *
- * @param value - The value to check.
- * @returns True if the value is a TemplateStringsArray, false otherwise.
- */
-export function isTemplateStringsArray(
+// Type guard to check if a value is a ProgressEvent from an XMLHttpRequest
+export const isProgressEvent = (
   value: unknown,
-): value is TemplateStringsArray {
-  return Array.isArray(value) && 'raw' in value;
-}
+): value is ProgressEvent<XMLHttpRequest> =>
+  value instanceof ProgressEvent && value.target instanceof XMLHttpRequest;
 
-/**
- * Determines if a given value is truthy.
- *
- * This function evaluates the provided value and returns a boolean indicating
- * whether the value is considered "truthy". If the value is `undefined` or `null`,
- * the function returns the specified default value.
- *
- * For string values, the function considers the following strings as truthy:
- * - "true"
- * - "1"
- * - "yes"
- * (case insensitive and trimmed)
- *
- * @param value - The value to evaluate.
- * @param defaultValue - The default boolean value to return if the value is `undefined` or `null`. Defaults to `false`.
- * @returns `true` if the value is considered truthy, otherwise `false`.
- */
-export function isTruthy(
+// Type guard to check if a value is an Abort error
+// (i.e., not null, not an array, and of type 'object').
+export const isAbortError = (value: unknown): value is Error => {
+  return value instanceof DOMException && value.name === 'AbortError';
+};
+
+// Type guard to check if a value is a TemplateStringsArray
+export const isTemplateStringsArray = (
+  value: unknown,
+): value is TemplateStringsArray => {
+  return Array.isArray(value) && 'raw' in value;
+};
+
+// Converts various input types to a boolean "truthy" value.
+export const isTruthy = (
   value: unknown,
   defaultValue: boolean = false,
-): boolean {
+): boolean => {
   if (value === undefined || value === null) {
     return defaultValue;
   }
@@ -91,30 +59,17 @@ export function isTruthy(
     return false;
   }
   return Boolean(value);
-}
+};
 
-/**
- * Checks if the given value is an indexable record (aka object)
- *
- * @param check - The value to check.
- * @returns True if the value is an object, otherwise false.
- */
-export function isRecord(check: unknown): check is Record<string, unknown> {
+// Type guard to check if a value is a non-null object (not an array).
+export const isRecord = (check: unknown): check is Record<string, unknown> => {
   return check !== null && typeof check === 'object';
-}
+};
 
-/**
- * A unique symbol used for type branding.
- */
+// Unique symbol used for branding types
 export const TypeBrandSymbol: unique symbol = Symbol('TypeBrandSymbol');
 
-/**
- * Checks if the given value is type branded with the specified brand.
- *
- * @param check - The value to check.
- * @param brand - The brand symbol to check against.
- * @returns True if the value is type branded with the specified brand, otherwise false.
- */
+// Type guard to check if an object has a specific type brand
 export const isTypeBranded = <TResult>(
   check: unknown,
   brand: symbol,
@@ -124,19 +79,15 @@ export const isTypeBranded = <TResult>(
   TypeBrandSymbol in check &&
   check[TypeBrandSymbol] === brand;
 
+// Type for categorized promise results
 type CategorizedPromiseResult<T> = {
   fulfilled: Array<T>;
   rejected: Array<unknown>;
   pending: Array<Promise<T>>;
 };
 
-/**
- * Waits for all promises to settle and categorizes their results.
- *
- * @param promises - An array of promises to wait for.
- * @param timeoutMs - The timeout duration in milliseconds.
- * @returns An object categorizing the promises into fulfilled, rejected, and pending.
- */
+// Function to categorize promises into fulfilled, rejected, and pending (timed out)
+// based on a specified timeout duration.
 export const getResolvedPromises = async <T>(
   promises: Promise<T>[],
   timeoutMs: number = 60 * 1000,
@@ -177,5 +128,3 @@ export const getResolvedPromises = async <T>(
     { fulfilled: [], rejected: [], pending: [] } as CategorizedPromiseResult<T>,
   );
 };
-
-

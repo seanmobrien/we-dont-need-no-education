@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import documentPropertyShape from './documentPropertyShape';
-import { ArrayElement } from '@/lib/typescript/_types';
+import { ArrayElement } from '/lib/typescript/_types';
 
 const referencedEmailShape = z.object({
   subject: z.string(),
@@ -202,7 +202,8 @@ export const DocumentSchema = z.object({
       z.union([
         z.object({
           sourceDocumentId: z.number().describe('Source document ID.'),
-          description: z.union([z.string(), z.array(z.string())])
+          description: z
+            .union([z.string(), z.array(z.string())])
             .describe(
               'Description of the relationship.  Some examples include "supports", "responds to", "contradicts", etc.',
             ),
@@ -228,10 +229,7 @@ export const DocumentSchema = z.object({
               .describe('Type of the source document.')
               .optional()
               .nullable(),
-            content: z
-              .string()
-              .optional()
-              .nullable(),
+            content: z.string().optional().nullable(),
           }),
         }),
       ]),
@@ -245,9 +243,7 @@ export const DocumentSchema = z.object({
     .array(
       z.union([
         z.object({
-          targetDocumentId: z
-            .number()
-            .describe('Target document ID.'),
+          targetDocumentId: z.number().describe('Target document ID.'),
           description: z
             .union([z.string(), z.array(z.string())])
             .describe(
@@ -269,7 +265,7 @@ export const DocumentSchema = z.object({
             .optional()
             .nullable(),
         }),
-        z.object({          
+        z.object({
           description: z
             .string()
             .or(z.array(z.string()))
@@ -311,4 +307,6 @@ export type TargetDocumentSchemaType = ArrayElement<
 export type SourceDocumentSchemaType = ArrayElement<
   DocumentSchemaType['docRel_sourceDoc']
 >;
-export type RelatedDocumentSchemaType = SourceDocumentSchemaType | TargetDocumentSchemaType;
+export type RelatedDocumentSchemaType =
+  | SourceDocumentSchemaType
+  | TargetDocumentSchemaType;

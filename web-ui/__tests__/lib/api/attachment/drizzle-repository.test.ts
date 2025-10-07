@@ -5,12 +5,12 @@
 // @ts-check
 
 // Mock the dependencies
-jest.mock('@/lib/drizzle-db', () => {
+jest.mock('/lib/drizzle-db', () => {
   const { mockDeep } = require('jest-mock-extended');
-  
+
   // Create a mock database instance that supports all drizzle operations
   const makeMockDb = () => mockDeep();
-  
+
   return {
     drizDb: jest.fn((fn) => {
       const mockDbInstance = makeMockDb();
@@ -25,7 +25,7 @@ jest.mock('@/lib/drizzle-db', () => {
   };
 });
 
-jest.mock('@/drizzle/schema', () => {
+jest.mock('/drizzle/schema', () => {
   const { Table } = require('drizzle-orm');
   const { PgTable } = require('drizzle-orm/pg-core');
 
@@ -53,11 +53,11 @@ jest.mock('@/drizzle/schema', () => {
   };
 });
 
-jest.mock('@/lib/logger', () => ({
+jest.mock('/lib/logger', () => ({
   log: jest.fn(),
 }));
 
-jest.mock('@/lib/react-util', () => ({
+jest.mock('/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -69,8 +69,8 @@ jest.mock('@/lib/react-util', () => ({
   },
 }));
 
-import { EmailAttachmentDrizzleRepository } from '@/lib/api/attachment/drizzle-repository';
-import { EmailAttachment } from '@/data-models/api/attachment';
+import { EmailAttachmentDrizzleRepository } from '/lib/api/attachment/drizzle-repository';
+import { EmailAttachment } from '/data-models/api/attachment';
 
 describe('EmailAttachmentDrizzleRepository', () => {
   let repository: EmailAttachmentDrizzleRepository;

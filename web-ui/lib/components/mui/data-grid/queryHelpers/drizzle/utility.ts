@@ -1,29 +1,29 @@
-import { schema } from '@/lib/drizzle-db';
-import { isKeyOf } from '@/lib/typescript';
+import { schema } from '/lib/drizzle-db';
+import { isKeyOf } from '/lib/typescript';
 import { toCamelCase } from 'drizzle-orm/casing';
-import { PgColumn, PgTable, TableConfig } from "drizzle-orm/pg-core";
+import { PgColumn, PgTable, TableConfig } from 'drizzle-orm/pg-core';
 
 export const DefaultDrizzleEmailColumnMap = {
   propertyValue: 'property_value',
   propertyName: 'property_name',
 };
 
-
-
 export type DrizzleColumnCallback<
-TSchema extends PgTable<TTableConfig>,
-TTableConfig extends TableConfig = TableConfig,
-TOptions extends { columnName: (keyof TSchema) | Omit<string, keyof TSchema> } = { columnName: (keyof TSchema) | Omit<string, keyof TSchema> }> =
-  (options: TOptions) => (PgColumn | undefined);
+  TSchema extends PgTable<TTableConfig>,
+  TTableConfig extends TableConfig = TableConfig,
+  TOptions extends {
+    columnName: keyof TSchema | Omit<string, keyof TSchema>;
+  } = { columnName: keyof TSchema | Omit<string, keyof TSchema> },
+> = (options: TOptions) => PgColumn | undefined;
 
 export const getEmailColumn = <
-TSchema extends PgTable<TTableConfig>,
-TTableConfig extends TableConfig = TableConfig
+  TSchema extends PgTable<TTableConfig>,
+  TTableConfig extends TableConfig = TableConfig,
 >({
   columnName,
   table,
 }: {
-  columnName: (keyof TSchema) | Omit<string, keyof TSchema>;
+  columnName: keyof TSchema | Omit<string, keyof TSchema>;
   table: TSchema;
 }): PgColumn | undefined => {
   switch (columnName) {
@@ -82,4 +82,3 @@ TTableConfig extends TableConfig = TableConfig
       return undefined;
   }
 };
-

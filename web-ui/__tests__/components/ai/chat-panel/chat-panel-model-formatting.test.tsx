@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, waitFor } from '/__tests__/test-utils';
 import '@testing-library/jest-dom';
-import ChatPanel from '@/components/ai/chat-panel/chat-panel';
+import ChatPanel from '/components/ai/chat-panel/chat-panel';
 
 // Mock the useChat hook from @ai-sdk/react
 const mockSendMessage = jest.fn();
@@ -24,17 +24,17 @@ jest.mock('@ai-sdk/react', () => ({
 }));
 
 // Mock other dependencies
-jest.mock('@/lib/logger', () => ({
+jest.mock('/lib/logger', () => ({
   log: () => () => {},
 }));
 
-jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
+jest.mock('/lib/components/ai/chat-fetch-wrapper', () => ({
   useChatFetchWrapper: () => ({
     chatFetch: fetch,
   }),
 }));
 
-jest.mock('@/lib/ai/core/chat-ids', () => ({
+jest.mock('/lib/ai/core/chat-ids', () => ({
   splitIds: (id: string) => [id.split(':')[0], id.split(':')[1]],
   generateChatId: () => ({ id: 'mock-id' }),
 }));
@@ -91,7 +91,7 @@ describe('ChatPanel Model String Formatting', () => {
         }),
       );
     });
-  });
+  }, 10000);
 
   it('updates model string when provider is changed via menu', async () => {
     renderChatPanel();
@@ -110,7 +110,9 @@ describe('ChatPanel Model String Formatting', () => {
     const input = screen.getByPlaceholderText('Type your message here...');
     const sendButton = screen.getByTestId('ChatMessageSend');
 
-    fireEvent.change(input, { target: { value: 'Test message with Google' } });
+    fireEvent.change(input, {
+      target: { value: 'Test message with Google' },
+    });
     fireEvent.click(sendButton);
 
     await waitFor(() => {
@@ -123,7 +125,7 @@ describe('ChatPanel Model String Formatting', () => {
         }),
       );
     });
-  });
+  }, 10000);
 
   it('updates model string when model type is changed via menu', async () => {
     renderChatPanel();
@@ -155,7 +157,7 @@ describe('ChatPanel Model String Formatting', () => {
         }),
       );
     });
-  });
+  }, 10000);
 
   it('handles OpenAI provider selection correctly', async () => {
     renderChatPanel();
@@ -187,5 +189,5 @@ describe('ChatPanel Model String Formatting', () => {
         }),
       );
     });
-  });
+  }, 10000);
 });

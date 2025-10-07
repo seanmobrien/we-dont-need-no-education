@@ -1,11 +1,13 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
-import { EmailAttachment } from '@/data-models/api/attachment';
-import { emailAttachments } from '@/drizzle/schema';
+import { EmailAttachment } from '/data-models/api/attachment';
+import { emailAttachments } from '/drizzle/schema';
 
 /**
  * Maps a database record to an EmailAttachment domain object
  */
-const mapRecordToEmailAttachment = (record: Record<string, unknown>): EmailAttachment => ({
+const mapRecordToEmailAttachment = (
+  record: Record<string, unknown>,
+): EmailAttachment => ({
   attachmentId: record.attachmentId as number,
   fileName: record.fileName as string,
   filePath: record.filePath as string,
@@ -21,7 +23,9 @@ const mapRecordToEmailAttachment = (record: Record<string, unknown>): EmailAttac
 /**
  * Maps a database record to a partial EmailAttachment (summary view)
  */
-const mapRecordToEmailAttachmentSummary = (record: Record<string, unknown>): Partial<EmailAttachment> => ({
+const mapRecordToEmailAttachmentSummary = (
+  record: Record<string, unknown>,
+): Partial<EmailAttachment> => ({
   attachmentId: record.attachmentId as number,
   fileName: record.fileName as string,
   filePath: record.filePath as string,
@@ -50,7 +54,9 @@ export class EmailAttachmentAutoDrizzleRepository extends BaseDrizzleRepository<
     });
   }
 
-  protected prepareInsertData(model: Omit<EmailAttachment, 'attachmentId'>): Record<string, unknown> {
+  protected prepareInsertData(
+    model: Omit<EmailAttachment, 'attachmentId'>,
+  ): Record<string, unknown> {
     return {
       fileName: model.fileName,
       filePath: model.filePath,
@@ -63,12 +69,15 @@ export class EmailAttachmentAutoDrizzleRepository extends BaseDrizzleRepository<
     };
   }
 
-  protected prepareUpdateData(model: Partial<EmailAttachment>): Record<string, unknown> {
+  protected prepareUpdateData(
+    model: Partial<EmailAttachment>,
+  ): Record<string, unknown> {
     const updateData: Record<string, unknown> = {};
 
     if (model.fileName !== undefined) updateData.fileName = model.fileName;
     if (model.filePath !== undefined) updateData.filePath = model.filePath;
-    if (model.extractedText !== undefined) updateData.extractedText = model.extractedText;
+    if (model.extractedText !== undefined)
+      updateData.extractedText = model.extractedText;
     if (model.policyId !== undefined) updateData.policyId = model.policyId;
     if (model.summary !== undefined) updateData.summary = model.summary;
     if (model.mimeType !== undefined) updateData.mimeType = model.mimeType;

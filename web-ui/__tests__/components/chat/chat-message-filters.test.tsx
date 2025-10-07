@@ -10,9 +10,9 @@ import {
   ChatMessageFilters,
   searchMessageContent,
   type MessageType,
-} from '@/components/chat/chat-message-filters';
-import type { ChatMessage } from '@/lib/ai/chat/types';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+} from '/components/chat/chat-message-filters';
+import type { ChatMessage } from '/lib/ai/chat/types';
+import { hideConsoleOutput } from '/__tests__/test-utils';
 
 // Mock MUI components
 jest.mock('@mui/material', () => ({

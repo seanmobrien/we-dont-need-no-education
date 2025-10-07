@@ -1,7 +1,7 @@
-import { PaginationStats } from '@/data-models/_types';
-import type { LikeNextRequest } from '@/lib/nextjs-util/types';
+import { PaginationStats } from '/data-models/_types';
+import type { LikeNextRequest } from '/lib/nextjs-util/types';
 export type { LikeNextRequest };
-import type { FirstParameter } from '@/lib/typescript';
+import type { FirstParameter } from '/lib/typescript';
 import type {
   GridDataSource,
   GridSortModel,
@@ -182,7 +182,6 @@ export type GetGridRecordDataCallback =
  */
 export type GetGridRecordDataProps = FirstParameter<GetGridRecordDataCallback>;
 
-
 /**
  * Represents a request for a paginated grid list, extending {@link PaginationStats}
  * with optional sorting and filtering capabilities.
@@ -235,7 +234,6 @@ export type PaginatedGridListRequest = PaginationStats<number> & {
  * It can be a GridFilterModel object, a LikeNextRequest object, or undefined if no filter is applied.
  */
 export type FilterBySourceType = GridFilterModel | LikeNextRequest | undefined;
-
 
 /**
  * Represents the response returned when a fetch operation for grid rows is cancelled.

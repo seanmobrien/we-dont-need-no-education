@@ -84,13 +84,10 @@ import {
 } from '@ai-sdk/provider-utils';
 import { MCPTransport, MCPClientError } from 'ai';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
-import { fetch } from '@/lib/nextjs-util/fetch';
-import { log } from '@/lib/logger';
-import {
-  isAbortError,
-  LoggedError,
-} from '@/lib/react-util/errors/logged-error';
-
+import { fetch } from '/lib/nextjs-util/fetch';
+import { log } from '/lib/logger';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { isAbortError } from '/lib/react-util/utility-methods';
 /**
  * SSE-based transport implementation for Model Context Protocol (MCP).
  *
@@ -236,10 +233,8 @@ export class SseMCPTransport implements MCPTransport {
       const establishConnection = async () => {
         let reader: ReadableStream<EventSourceMessage> | undefined;
         try {
-          const headers = new Headers(this.headers);
-          headers.set('Accept', 'text/event-stream');
           const response = await fetch(this.url.href, {
-            headers,
+            headers: await this.resolveHeaders(),
             signal: this.abortController?.signal,
           });
 
@@ -439,6 +434,16 @@ export class SseMCPTransport implements MCPTransport {
   }
 
   /**
+   * Resolves and returns the headers used for requests.
+   * @returns Promise that resolves to the headers for requests
+   */
+  protected async resolveHeaders(): Promise<Headers> {
+    const headers = new Headers(this.headers);
+    headers.set('Accept', 'text/event-stream');
+    return headers;
+  }
+
+  /**
    * Closes the transport connection and cleans up resources.
    *
    * This method:
@@ -504,7 +509,7 @@ export class SseMCPTransport implements MCPTransport {
     }
 
     try {
-      const headers = new Headers(this.headers);
+      const headers = await this.resolveHeaders();
       headers.set('Content-Type', 'application/json');
       const init = {
         method: 'POST',

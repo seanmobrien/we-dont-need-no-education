@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-jest.mock('@/lib/ai/services/search');
-jest.mock('@/lib/react-util/errors/logged-error', () => ({
+jest.mock('/lib/ai/services/search');
+jest.mock('/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error, options) => {
       return new Error(options.message);
@@ -10,12 +10,12 @@ jest.mock('@/lib/react-util/errors/logged-error', () => ({
   isError: jest.fn((error: any) => error instanceof Error),
 }));
 
-import { searchPolicyStore } from '@/lib/ai/tools/searchPolicyStore';
-import { HybridPolicySearch } from '@/lib/ai/services/search';
-import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { hybridPolicySearchFactory } from '@/lib/ai/services/search';
-import { toolCallbackResultFactory } from '@/lib/ai/tools/utility';
+import { searchPolicyStore } from '/lib/ai/tools/searchPolicyStore';
+import { HybridPolicySearch } from '/lib/ai/services/search';
+import { log } from '/lib/logger';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { hybridPolicySearchFactory } from '/lib/ai/services/search';
+import { toolCallbackResultFactory } from '/lib/ai/tools/utility';
 
 describe('searchPolicyStore', () => {
   const mockHybridSearch = jest.fn();
@@ -29,7 +29,9 @@ describe('searchPolicyStore', () => {
     (hybridPolicySearchFactory as jest.Mock).mockReturnValue({
       hybridSearch: mockHybridSearch,
     });
-    (log as jest.Mock).mockImplementation((cb) => cb({ trace: mockLog, error: mockError }));
+    (log as jest.Mock).mockImplementation((cb) =>
+      cb({ trace: mockLog, error: mockError }),
+    );
   });
 
   it('should call HybridPolicySearch.hybridSearch with the correct arguments and log the call', async () => {

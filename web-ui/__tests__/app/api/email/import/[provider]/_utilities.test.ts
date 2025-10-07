@@ -2,8 +2,8 @@
  * @jest-environment node
  */
 
-import { parsePaginationOptions } from '@/lib/components/mui/data-grid/queryHelpers/utility';
-import { MailQueryBuilder } from '@/app/api/email/import/[provider]/_mailQueryBuilder';
+import { parsePaginationOptions } from '/lib/components/mui/data-grid/queryHelpers/utility';
+import { MailQueryBuilder } from '/app/api/email/import/[provider]/_mailQueryBuilder';
 
 describe('MailQueryBuilder', () => {
   let builder: MailQueryBuilder;
@@ -35,7 +35,7 @@ describe('MailQueryBuilder', () => {
         'example2@example.com',
       ]);
       expect(builder.build()).toBe(
-        'from:example1@example.com from:example2@example.com'
+        'from:example1@example.com from:example2@example.com',
       );
     });
 
@@ -46,7 +46,7 @@ describe('MailQueryBuilder', () => {
         'example2@example.com',
       ]);
       expect(builder.build()).toBe(
-        'from:example1@example.com from:example2@example.com'
+        'from:example1@example.com from:example2@example.com',
       );
     });
 
@@ -86,7 +86,6 @@ describe('parsePaginationStats', () => {
       num: 25,
     });
   });
-
 
   it('should default num to 100 if invalid', () => {
     const url = new URL('https://example.com?page=1&num=invalid');

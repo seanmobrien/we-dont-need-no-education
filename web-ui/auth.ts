@@ -1,10 +1,9 @@
 import NextAuth, { Account, NextAuthConfig, Profile, User } from 'next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { CredentialInput, Provider } from '@auth/core/providers';
-import { isRunningOnEdge } from '@/lib/site-util/env';
-import { logEvent } from '@/lib/logger';
+import { isRunningOnEdge } from '/lib/site-util/env';
+import { logEvent } from '/lib/logger';
 
-import { setupGoogleProvider } from './lib/auth/google-provider';
 import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
 import { authorized } from './lib/auth/authorized';
 import { JWT } from '@auth/core/jwt';
@@ -122,10 +121,7 @@ const dynamicImports: DynamicImports = {
   auth: {},
 } as DynamicImports;
 
-const providers: Provider[] = [
-  ...setupGoogleProvider(),
-  ...setupKeyCloakProvider(),
-];
+const providers: Provider[] = [...setupKeyCloakProvider()];
 
 export const providerMap = providers.map((provider) => {
   if (typeof provider === 'function') {
@@ -152,11 +148,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
     ) {
       if (!dynamicImports.drizzleAdapter) {
         dynamicImports.drizzleAdapter = await import(
-          '@/lib/auth/drizzle-adapter'
+          '/lib/auth/drizzle-adapter'
         );
       }
       if (!dynamicImports.auth.signIn) {
-        dynamicImports.auth.signIn = await import('@/lib/auth/sign-in');
+        dynamicImports.auth.signIn = await import('/lib/auth/sign-in');
       }
       const {
         auth: {
@@ -165,7 +161,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
         drizzleAdapter: { setupDrizzleAdapter },
       } = dynamicImports;
       adapter = await setupDrizzleAdapter();
-      // Custom signIn implementation to update tokens on each sign-in for Google provider
+      // Custom signIn implementation to handle authentication callbacks
       signInImpl = signIn;
     } else {
       adapter = undefined; // No adapter for edge runtime, client, or build
@@ -175,10 +171,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
       };
     }
     if (!dynamicImports.auth.session) {
-      dynamicImports.auth.session = await import('@/lib/auth/session');
+      dynamicImports.auth.session = await import('/lib/auth/session');
     }
     if (!dynamicImports.auth.jwt) {
-      dynamicImports.auth.jwt = await import('@/lib/auth/jwt');
+      dynamicImports.auth.jwt = await import('/lib/auth/jwt');
     }
     const {
       auth: { jwt: { jwt } = {}, session: { session } = {} },

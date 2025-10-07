@@ -13,23 +13,23 @@
 import {
   createToolOptimizingMiddleware,
   type ToolOptimizingMiddlewareConfig,
-} from '@/lib/ai/middleware/tool-optimizing-middleware';
-import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+} from '/lib/ai/middleware/tool-optimizing-middleware';
+import { ToolMap } from '/lib/ai/services/model-stats/tool-map';
+import { optimizeMessagesWithToolSummarization } from '/lib/ai/chat/message-optimizer-tools';
 import type {
   LanguageModelV2CallOptions,
   LanguageModelV2Middleware,
   LanguageModelV2FunctionTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDbWithInit } from '/lib/drizzle-db';
 
 // Mock dependencies
-jest.mock('@/lib/ai/services/model-stats/tool-map');
-jest.mock('@/lib/ai/chat/message-optimizer-tools');
-jest.mock('@/lib/drizzle-db');
-jest.mock('@/lib/logger');
-jest.mock('@/lib/site-util/metrics', () => ({
+jest.mock('/lib/ai/services/model-stats/tool-map');
+jest.mock('/lib/ai/chat/message-optimizer-tools');
+jest.mock('/lib/drizzle-db');
+jest.mock('/lib/logger');
+jest.mock('/lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({ add: jest.fn() }),
     createHistogram: jest.fn().mockReturnValue({ record: jest.fn() }),
@@ -40,8 +40,8 @@ jest.mock('@/lib/site-util/metrics', () => ({
   },
   hashUserId: jest.fn((userId: string) => `hashed_${userId}`),
 }));
-jest.mock('@/lib/react-util', () => {
-  const original = jest.requireActual('@/lib/react-util');
+jest.mock('/lib/react-util', () => {
+  const original = jest.requireActual('/lib/react-util');
   return {
     ...original,
     LoggedError: {
@@ -84,7 +84,11 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       refresh: jest.fn().mockResolvedValue(true),
       getInstance: jest.fn(),
     } as any;
-    mockToolMap.getInstance.mockResolvedValue(mockToolMapInstance);
+    (
+      mockToolMap.getInstance as jest.MockedFunction<
+        typeof mockToolMap.getInstance
+      >
+    ).mockResolvedValue(mockToolMapInstance);
 
     // Mock message optimization with realistic behavior
     mockOptimizeMessages.mockImplementation(
@@ -114,7 +118,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       ];
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: {
           model: 'db-model',
           tools,
@@ -135,7 +139,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: {
           model: 'error-model',
           tools: [{ type: 'function', name: 'test_tool', inputSchema: {} }],
@@ -169,7 +173,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       })) as UIMessage[];
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: {
           model: 'tx-model',
           messages,
@@ -187,7 +191,11 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         // Add a marker to track middleware execution order
         const updatedParams = {
           ...params,
-          middlewareStack: [...(params.middlewareStack || []), name],
+          // Track middleware execution for testing
+          __testMiddlewareStack: [
+            ...((params as any).__testMiddlewareStack || []),
+            name,
+          ],
         };
         return updatedParams;
       }),
@@ -212,30 +220,35 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         model: 'stack-model',
         messages,
         tools: [{ type: 'function', name: 'stack_tool', inputSchema: {} }],
-        middlewareStack: [],
+        __testMiddlewareStack: [],
       } as any;
 
       // Simulate middleware stack execution
       let result = await preMiddleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params,
+        model: 'stack-model' as any,
       });
 
       result = await toolOptimizer.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: result,
+        model: 'stack-model' as any,
       });
 
       result = await postMiddleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: result,
+        model: 'stack-model' as any,
       });
 
-      expect(result.middlewareStack).toEqual(['pre', 'post']);
+      expect((result as any).__testMiddlewareStack).toEqual(['pre', 'post']);
       expect(mockToolMapInstance.scanForTools).toHaveBeenCalled();
       expect(mockOptimizeMessages).toHaveBeenCalled();
-      expect(Array.isArray(result.messages)).toBe(true);
-      expect(result.messages.length).toBeLessThan(messages.length);
+      expect(Array.isArray((result as any).messages)).toBe(true);
+      if ((result as any).messages) {
+        expect((result as any).messages.length).toBeLessThan(messages.length);
+      }
     });
 
     it('should preserve middleware execution order with errors', async () => {
@@ -251,7 +264,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
 
       const recoverMiddleware: LanguageModelV2Middleware = {
         transformParams: jest.fn(async ({ type, params }) => {
-          return { type, params: { ...params, recovered: true } };
+          return { ...params, recovered: true };
         }),
       };
 
@@ -263,7 +276,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
 
       // Tool optimizer should work even if other middleware fails
       const result = await toolOptimizer.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params,
       });
 
@@ -329,7 +342,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: {
           messages: chatScenario.conversationHistory,
           tools: chatScenario.availableTools,
@@ -351,9 +364,11 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
 
       // Should optimize the conversation history
       expect(Array.isArray(result.messages)).toBe(true);
-      expect(result.messages.length).toBeLessThan(
-        chatScenario.conversationHistory.length,
-      );
+      if (result.messages) {
+        expect(result.messages.length).toBeLessThan(
+          chatScenario.conversationHistory.length,
+        );
+      }
     });
 
     it('should handle enterprise workflow scenario', async () => {
@@ -407,7 +422,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: {
           messages: enterpriseScenario.history,
           tools: enterpriseScenario.tools,
@@ -428,9 +443,11 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       expect(result.messages).toBeDefined();
       expect(result.tools).toBe(enterpriseScenario.tools);
       expect(Array.isArray(result.messages)).toBe(true);
-      expect(result.messages.length).toBeLessThan(
-        enterpriseScenario.history.length,
-      );
+      if (result.messages) {
+        expect(result.messages.length).toBeLessThan(
+          enterpriseScenario.history.length,
+        );
+      }
     });
 
     it('should handle streaming scenario', async () => {
@@ -460,7 +477,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       } as any;
 
       const result = await middleware.transformParams!({
-        type: 'streamText',
+        type: 'stream',
         params: streamingParams,
       });
 
@@ -501,7 +518,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: chatHistoryParams,
       });
 
@@ -525,7 +542,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: rateLimitedParams,
       });
 
@@ -554,7 +571,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
       });
 
       const result = await middleware.transformParams!({
-        type: 'generateText',
+        type: 'generate',
         params: telemetryParams,
       });
 

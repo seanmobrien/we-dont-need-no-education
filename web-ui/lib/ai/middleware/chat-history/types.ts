@@ -49,7 +49,7 @@
  * @since 1.0.0
  */
 
-import type { DbTransactionType, ChatMessagesType } from '@/lib/drizzle-db';
+import type { DbTransactionType, ChatMessagesType } from '/lib/drizzle-db';
 import { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import { Span } from '@opentelemetry/api';
 
@@ -190,6 +190,12 @@ export interface ChatHistoryContext {
    */
   dispose: () => Promise<void>;
 }
+
+/**
+ * Represents the execution status of a tool within a chat message.
+ * @internal
+ */
+export type ToolStatus = 'pending' | 'result' | 'error' | 'content';
 
 // ============================================================================
 // Stream Processing Types

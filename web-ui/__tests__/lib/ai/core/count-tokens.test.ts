@@ -3,7 +3,7 @@ jest.mock('openai-chat-tokens', () => ({
 }));
 
 import { promptTokensEstimate } from 'openai-chat-tokens';
-import { countTokens } from '@/lib/ai/core/count-tokens';
+import { countTokens } from '/lib/ai/core/count-tokens';
 import { LanguageModelV2Prompt } from '@ai-sdk/provider';
 
 describe('countTokens helper - function extraction', () => {
@@ -40,9 +40,10 @@ describe('countTokens helper - function extraction', () => {
     expect(
       (calledWith as { functions?: Array<{ name?: string }> }).functions,
     ).toBeDefined();
-    
+
     // The current implementation passes an empty functions array
-    const functions = (calledWith as { functions?: Array<{ name?: string }> }).functions || [];
+    const functions =
+      (calledWith as { functions?: Array<{ name?: string }> }).functions || [];
     expect(functions).toEqual([]);
   });
 
@@ -69,9 +70,10 @@ describe('countTokens helper - function extraction', () => {
     expect(
       (calledWith2 as { functions?: Array<{ name?: string }> }).functions,
     ).toBeDefined();
-    
+
     // The current implementation passes an empty functions array
-    const functions2 = (calledWith2 as { functions?: Array<{ name?: string }> }).functions || [];
+    const functions2 =
+      (calledWith2 as { functions?: Array<{ name?: string }> }).functions || [];
     expect(functions2).toEqual([]);
   });
 });

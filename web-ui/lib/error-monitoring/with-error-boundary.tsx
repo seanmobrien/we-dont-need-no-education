@@ -1,13 +1,16 @@
 import React, { ComponentType } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { RenderErrorBoundaryFallback } from '/components/error-boundaries/renderFallback';
 import { errorReporter, ErrorSeverity } from './error-reporter';
 
 /**
  * Configuration for the error boundary HOC
  */
 interface WithErrorBoundaryConfig {
-  fallbackComponent?: ComponentType<{ error: Error; resetErrorBoundary: () => void }>;
+  fallbackComponent?: ComponentType<{
+    error: Error;
+    resetErrorBoundary: () => void;
+  }>;
   onReset?: () => void;
   severity?: ErrorSeverity;
   isolate?: boolean; // If true, errors won't bubble up to parent boundaries
@@ -19,7 +22,7 @@ interface WithErrorBoundaryConfig {
  */
 export function withErrorBoundary<P extends object>(
   WrappedComponent: ComponentType<P>,
-  config: WithErrorBoundaryConfig = {}
+  config: WithErrorBoundaryConfig = {},
 ) {
   const {
     fallbackComponent: FallbackComponent = RenderErrorBoundaryFallback,
@@ -28,13 +31,17 @@ export function withErrorBoundary<P extends object>(
     isolate = false,
   } = config;
 
-  const componentName = WrappedComponent.displayName || WrappedComponent.name || 'Component';
+  const componentName =
+    WrappedComponent.displayName || WrappedComponent.name || 'Component';
 
   const WithErrorBoundaryComponent = (props: P) => {
     return (
       <ErrorBoundary
         fallbackRender={({ error, resetErrorBoundary }) => (
-          <FallbackComponent error={error} resetErrorBoundary={resetErrorBoundary} />
+          <FallbackComponent
+            error={error}
+            resetErrorBoundary={resetErrorBoundary}
+          />
         )}
         onError={(error, errorInfo) => {
           // Report the error with component context
@@ -44,7 +51,7 @@ export function withErrorBoundary<P extends object>(
               componentStack: errorInfo.componentStack || undefined,
               errorBoundary: `${componentName}ErrorBoundary`,
             },
-            severity
+            severity,
           );
 
           // Prevent error from bubbling if isolation is enabled
@@ -57,7 +64,7 @@ export function withErrorBoundary<P extends object>(
           if (onReset) {
             onReset();
           }
-          
+
           // Default reset behavior
           console.log(`Resetting error boundary for ${componentName}`);
         }}
@@ -76,7 +83,9 @@ export function withErrorBoundary<P extends object>(
  * Decorator version for use with class components or TypeScript decorators
  */
 export function ErrorBoundaryDecorator(config?: WithErrorBoundaryConfig) {
-  return function <T extends ComponentType<Record<string, unknown>>>(target: T): T {
+  return function <T extends ComponentType<Record<string, unknown>>>(
+    target: T,
+  ): T {
     return withErrorBoundary(target, config) as T;
   };
 }
@@ -102,7 +111,10 @@ export function ErrorBoundaryWrapper({
   return (
     <ErrorBoundary
       fallbackRender={({ error, resetErrorBoundary }) => (
-        <FallbackComponent error={error} resetErrorBoundary={resetErrorBoundary} />
+        <FallbackComponent
+          error={error}
+          resetErrorBoundary={resetErrorBoundary}
+        />
       )}
       onError={(error, errorInfo) => {
         // Report the error
@@ -112,12 +124,14 @@ export function ErrorBoundaryWrapper({
             componentStack: errorInfo.componentStack || undefined,
             errorBoundary: name,
           },
-          ErrorSeverity.MEDIUM
+          ErrorSeverity.MEDIUM,
         );
 
         // Custom error handler
         if (onError) {
-          onError(error, { componentStack: errorInfo.componentStack || undefined });
+          onError(error, {
+            componentStack: errorInfo.componentStack || undefined,
+          });
         }
       }}
       onReset={onReset}

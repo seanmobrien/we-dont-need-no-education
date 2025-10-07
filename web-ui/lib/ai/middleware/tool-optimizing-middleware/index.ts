@@ -52,11 +52,11 @@ import type {
   LanguageModelV2ProviderDefinedTool,
 } from '@ai-sdk/provider';
 // UIMessage import removed historically; prompt format is canonical now.
-import { LoggedError } from '@/lib/react-util';
-import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
-import { log } from '@/lib/logger';
-import { appMeters, hashUserId } from '@/lib/site-util/metrics';
+import { LoggedError } from '/lib/react-util';
+import { ToolMap } from '/lib/ai/services/model-stats/tool-map';
+import { optimizeMessagesWithToolSummarization } from '/lib/ai/chat/message-optimizer-tools';
+import { log } from '/lib/logger';
+import { appMeters, hashUserId } from '/lib/site-util/metrics';
 
 /**
  * Counter: Total invocations of the middleware's `transformParams` (successful or error paths).
@@ -177,7 +177,7 @@ interface OptimizationResult {
  *
  * @example
  * ```typescript
- * import { createToolOptimizingMiddleware } from '@/lib/ai/middleware/tool-optimizing-middleware';
+ * import { createToolOptimizingMiddleware } from '/lib/ai/middleware/tool-optimizing-middleware';
  *
  * const toolOptimizingMiddleware = createToolOptimizingMiddleware({
  *   userId: 'user-123',
@@ -201,7 +201,10 @@ export function createToolOptimizingMiddleware(
     enableToolScanning = true,
   } = config;
   // Track whether enableToolScanning was explicitly provided (vs relying on default)
-  const enableToolScanningExplicit = Object.hasOwn(config, 'enableToolScanning');
+  const enableToolScanningExplicit = Object.hasOwn(
+    config,
+    'enableToolScanning',
+  );
 
   // Step 1 helper: tool scanning
   /**
@@ -591,5 +594,5 @@ export const getToolOptimizingMiddlewareMetrics = () => {
 /**
  * Re-export types and utilities for convenience
  */
-export { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
-export { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+export { ToolMap } from '/lib/ai/services/model-stats/tool-map';
+export { optimizeMessagesWithToolSummarization } from '/lib/ai/chat/message-optimizer-tools';

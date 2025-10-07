@@ -2,10 +2,13 @@ import { OAuth2Client } from 'google-auth-library';
 import { ICredential, CredentialOptions } from './_types';
 import { env } from '../env';
 import { UrlBuilder } from '../url-builder/_impl';
-import { query } from '@/lib/neondb';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
-import { auth } from '@/auth';
+import { auth } from '/auth';
+import {
+  keycloakTokenExchange,
+  TokenExchangeError,
+} from './keycloak-token-exchange';
 
 const tokenSymbol: unique symbol = Symbol('tokens');
 
@@ -35,6 +38,7 @@ const getTokensFromUser = async (
       userId: userId,
     };
   }
+
   const session = await auth();
   if (!session) {
     throw new Error('Access denied');
@@ -43,31 +47,35 @@ const getTokensFromUser = async (
     // TODO: check if user is admin
     throw new Error('Access denied');
   }
-  const records = await query(
-    (sql) =>
-      sql`select refresh_token, access_token from accounts where "user_id"=${userId} and provider='google'`,
-  );
-  if (!records.length) {
-    throw new Error('Account not found');
-  }
-  const work = req as RequestWithTokens;
-  if (!work[tokenSymbol]) {
-    work[tokenSymbol] = {};
-  }
-  const { refresh_token, access_token } = {
-    refresh_token: String(records[0].refresh_token),
-    access_token: String(records[0].access_token),
-  };
-  work[tokenSymbol][userId] = {
-    refresh_token,
-    access_token,
-  };
 
-  return {
-    refresh_token,
-    access_token,
-    userId: userId,
-  };
+  try {
+    // Use the new Keycloak token exchange service
+    const tokens =
+      await keycloakTokenExchange().getGoogleTokensFromRequest(req);
+
+    const work = req as RequestWithTokens;
+    if (!work[tokenSymbol]) {
+      work[tokenSymbol] = {};
+    }
+
+    work[tokenSymbol][userId] = {
+      refresh_token: tokens.refresh_token,
+      access_token: tokens.access_token,
+    };
+
+    return {
+      refresh_token: tokens.refresh_token,
+      access_token: tokens.access_token,
+      userId: userId,
+    };
+  } catch (error) {
+    if (error instanceof TokenExchangeError) {
+      throw new Error(
+        `Failed to get Google tokens from Keycloak: ${error.message}`,
+      );
+    }
+    throw error;
+  }
 };
 
 const getTokensFromSession = async (

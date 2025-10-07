@@ -8,7 +8,7 @@ import { renderHook, act, render } from '@testing-library/react';
 const mockReportError = jest.fn();
 
 // Mock the error reporter module directly
-jest.mock('@/lib/error-monitoring/error-reporter', () => ({
+jest.mock('/lib/error-monitoring/error-reporter', () => ({
   errorReporter: {
     reportError: mockReportError,
   },
@@ -20,9 +20,9 @@ jest.mock('@/lib/error-monitoring/error-reporter', () => ({
   },
 }));
 
-import { useErrorReporter } from '@/lib/error-monitoring/use-error-reporter';
-import { ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
-import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { useErrorReporter } from '/lib/error-monitoring/use-error-reporter';
+import { ErrorSeverity } from '/lib/error-monitoring/error-reporter';
+import { hideConsoleOutput } from '/__tests__/test-utils';
 
 const mockConsole = hideConsoleOutput();
 

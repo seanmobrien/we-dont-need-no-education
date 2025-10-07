@@ -17,8 +17,8 @@ The `MessageStructureOptions` interface provides:
 ### Simple Configuration
 
 ```typescript
-import { preserveMessageStructure, createMessageStructureOptions } from '@/lib/ai/utils/message-structure-preservation';
-import type { MessageStructureOptions } from '@/lib/ai/types/message-structure-preservation';
+import { preserveMessageStructure, createMessageStructureOptions } from '/lib/ai/utils/message-structure-preservation';
+import type { MessageStructureOptions } from '/lib/ai/types/message-structure-preservation';
 
 // Basic preservation with defaults
 const messages: UIMessage[] = [...];
@@ -59,8 +59,8 @@ const result = preserveMessageStructure(messages, options);
 Preserves all messages with complete structure and metadata.
 
 ```typescript
-const result = preserveMessageStructure(messages, { 
-  strategy: 'full' 
+const result = preserveMessageStructure(messages, {
+  strategy: 'full',
 });
 // All messages preserved as-is
 ```
@@ -70,8 +70,8 @@ const result = preserveMessageStructure(messages, {
 Preserves only messages with text content, filters out tool calls and other parts.
 
 ```typescript
-const result = preserveMessageStructure(messages, { 
-  strategy: 'content-only' 
+const result = preserveMessageStructure(messages, {
+  strategy: 'content-only',
 });
 // Only messages with text parts are preserved
 ```
@@ -81,8 +81,8 @@ const result = preserveMessageStructure(messages, {
 Preserves only essential messages (text and tool calls).
 
 ```typescript
-const result = preserveMessageStructure(messages, { 
-  strategy: 'minimal' 
+const result = preserveMessageStructure(messages, {
+  strategy: 'minimal',
 });
 // Only messages with text or tool-call parts
 ```
@@ -111,11 +111,12 @@ const result = preserveMessageStructure(messages, {
   strategy: 'custom',
   validator: (message) => {
     // Custom logic to determine if message should be preserved
-    return message.role === 'user' || 
-           message.parts.some(part => 
-             part.type === 'text' && 
-             part.text.includes('important')
-           );
+    return (
+      message.role === 'user' ||
+      message.parts.some(
+        (part) => part.type === 'text' && part.text.includes('important'),
+      )
+    );
   },
 });
 ```
@@ -156,11 +157,7 @@ Preserve messages matching regular expressions:
 const options = {
   strategy: 'semantic',
   contextual: {
-    preservePatterns: [
-      /ERROR:/i,
-      /WARNING:/i,
-      /\[IMPORTANT\]/i,
-    ],
+    preservePatterns: [/ERROR:/i, /WARNING:/i, /\[IMPORTANT\]/i],
   },
 };
 ```
@@ -176,13 +173,13 @@ const options = {
     contextEvaluator: (message, index, messages) => {
       // Preserve system messages
       if (message.role === 'system') return true;
-      
+
       // Preserve messages that reference previous errors
-      const hasErrorReference = message.parts.some(part =>
-        part.type === 'text' && 
-        /refer|mentioned|error|issue/.test(part.text)
+      const hasErrorReference = message.parts.some(
+        (part) =>
+          part.type === 'text' && /refer|mentioned|error|issue/.test(part.text),
       );
-      
+
       return hasErrorReference;
     },
   },
@@ -229,12 +226,12 @@ Control which message parts are preserved:
 ```typescript
 const options = {
   partRules: {
-    text: true,           // Preserve text content
-    toolCall: true,       // Preserve tool calls
-    toolResult: false,    // Filter out tool results
-    file: false,          // Filter out file attachments
-    image: false,         // Filter out images
-    dynamic: false,       // Filter out dynamic/unknown parts
+    text: true, // Preserve text content
+    toolCall: true, // Preserve tool calls
+    toolResult: false, // Filter out tool results
+    file: false, // Filter out file attachments
+    image: false, // Filter out images
+    dynamic: false, // Filter out dynamic/unknown parts
   },
 };
 ```
@@ -249,8 +246,8 @@ Enable caching to improve performance for repeated operations:
 const options = {
   performance: {
     enableCaching: true,
-    cacheTtlMs: 600000,    // 10 minutes
-    maxCacheSize: 1000,    // Maximum cache entries
+    cacheTtlMs: 600000, // 10 minutes
+    maxCacheSize: 1000, // Maximum cache entries
   },
 };
 ```
@@ -272,7 +269,7 @@ const options = {
 Use predefined configurations for common scenarios:
 
 ```typescript
-import { createPresetConfiguration } from '@/lib/ai/utils/message-structure-preservation';
+import { createPresetConfiguration } from '/lib/ai/utils/message-structure-preservation';
 
 // Minimal configuration for basic text preservation
 const minimalConfig = createPresetConfiguration('minimal');
@@ -292,13 +289,15 @@ const performanceConfig = createPresetConfiguration('performance');
 Enable debug mode to get detailed information about preservation decisions:
 
 ```typescript
-const result = preserveMessageStructure(messages, { 
-  debug: true 
+const result = preserveMessageStructure(messages, {
+  debug: true,
 });
 
 if (result.debugInfo) {
-  result.debugInfo.decisions.forEach(decision => {
-    console.log(`Message ${decision.messageId}: ${decision.preserved ? 'KEPT' : 'FILTERED'} - ${decision.reason}`);
+  result.debugInfo.decisions.forEach((decision) => {
+    console.log(
+      `Message ${decision.messageId}: ${decision.preserved ? 'KEPT' : 'FILTERED'} - ${decision.reason}`,
+    );
   });
 }
 ```
@@ -316,7 +315,7 @@ if (result.warnings?.length) {
 }
 
 // Check for processing errors
-if (result.debugInfo?.decisions.some(d => d.reason.includes('Error'))) {
+if (result.debugInfo?.decisions.some((d) => d.reason.includes('Error'))) {
   console.warn('Some messages had processing errors');
 }
 ```
@@ -326,7 +325,7 @@ if (result.debugInfo?.decisions.some(d => d.reason.includes('Error'))) {
 Validate your configuration before use:
 
 ```typescript
-import { validateMessageStructureOptions } from '@/lib/ai/utils/message-structure-preservation';
+import { validateMessageStructureOptions } from '/lib/ai/utils/message-structure-preservation';
 
 const options = {
   strategy: 'invalid-strategy', // This will cause validation to fail
@@ -347,10 +346,10 @@ if (!validation.valid) {
 Monitor and manage the preservation cache:
 
 ```typescript
-import { 
+import {
   getPreservationCacheStats,
-  clearPreservationCache 
-} from '@/lib/ai/utils/message-structure-preservation';
+  clearPreservationCache,
+} from '/lib/ai/utils/message-structure-preservation';
 
 // Get cache statistics
 const stats = getPreservationCacheStats();
@@ -368,7 +367,7 @@ clearPreservationCache();
 // Old approach with magic property
 const messageWithMagic = {
   ...message,
-  __preserveStructure: true,  // Magic property
+  __preserveStructure: true, // Magic property
 };
 
 // No type safety, no configuration options
@@ -410,7 +409,7 @@ const result = preserveMessageStructure(messages, preservationOptions);
 ### With Message Optimizer
 
 ```typescript
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+import { optimizeMessagesWithToolSummarization } from '/lib/ai/chat/message-optimizer-tools';
 
 // First apply structure preservation, then optimization
 const preserved = preserveMessageStructure(messages, {
@@ -422,7 +421,7 @@ const optimized = await optimizeMessagesWithToolSummarization(
   preserved.preserved,
   modelName,
   userId,
-  chatId
+  chatId,
 );
 ```
 

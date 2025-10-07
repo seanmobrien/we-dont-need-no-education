@@ -14,10 +14,12 @@ import {
   AzureMonitorMetricExporter,
   AzureMonitorLogExporter,
 } from '@azure/monitor-opentelemetry-exporter';
+import { ChunkingTraceExporter } from './chunking/ChunkingTraceExporter';
+import { ChunkingLogExporter } from './chunking/ChunkingLogExporter';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
-import AfterManager from '@/lib/site-util/after';
 import { config } from './common';
+import AfterManager from '/lib/site-util/after';
 
 enum KnownSeverityLevel {
   Verbose = 'Verbose',
@@ -26,23 +28,53 @@ enum KnownSeverityLevel {
   Error = 'Error',
   Critical = 'Critical',
 }
-let nodeSdk: NodeSDK | undefined;
-let registered = false;
-async function cleanup() {
-  if (nodeSdk) {
-    await nodeSdk.shutdown().catch((error) => {
+
+// Global symbol keys for singleton registry
+const NODE_SDK_KEY = Symbol.for('@noeducation/instrumentation:nodeSdk');
+const REGISTERED_KEY = Symbol.for('@noeducation/instrumentation:registered');
+
+// Global registry accessors for NodeSDK singleton
+const getNodeSdk = (): NodeSDK | undefined => {
+  type GlobalReg = { [k: symbol]: NodeSDK | undefined };
+  const g = globalThis as unknown as GlobalReg;
+  return g[NODE_SDK_KEY];
+};
+
+const setNodeSdk = (value: NodeSDK | undefined): void => {
+  type GlobalReg = { [k: symbol]: NodeSDK | undefined };
+  const g = globalThis as unknown as GlobalReg;
+  g[NODE_SDK_KEY] = value;
+};
+
+// Global registry accessors for registered flag singleton
+const getRegistered = (): boolean => {
+  type GlobalReg = { [k: symbol]: boolean };
+  const g = globalThis as unknown as GlobalReg;
+  return g[REGISTERED_KEY] ?? false;
+};
+
+const setRegistered = (value: boolean): void => {
+  type GlobalReg = { [k: symbol]: boolean };
+  const g = globalThis as unknown as GlobalReg;
+  g[REGISTERED_KEY] = value;
+};
+
+const cleanup = async (): Promise<void> => {
+  const sdk = getNodeSdk();
+  if (sdk) {
+    await sdk.shutdown().catch((error) => {
       console.error('Error during OTel SDK shutdown:', error);
     });
-    nodeSdk = undefined;
+    setNodeSdk(undefined);
   }
-}
+};
 const instrumentServer = () => {
-  if (registered) {
+  if (getRegistered()) {
     console.warn('OTel SDK already registered, skipping.');
     return;
   }
-  registered = true;
-  if (nodeSdk) {
+  setRegistered(true);
+  if (getNodeSdk()) {
     console.warn(
       'OTel SDK already initialized, skipping...NOTE: This really should not happen...',
     );
@@ -62,27 +94,33 @@ const instrumentServer = () => {
     return;
   }
 
-  const traceExporter = new AzureMonitorTraceExporter({
-    connectionString: connStr,
-  });
+  const traceExporter = new ChunkingTraceExporter(
+    new AzureMonitorTraceExporter({ connectionString: connStr }),
+    { maxChunkChars: 8000, keepOriginalKey: false },
+  );
   const metricExporter = new AzureMonitorMetricExporter({
     connectionString: connStr,
   });
-  const logExporter = new AzureMonitorLogExporter({
-    connectionString: connStr,
-  });
+  const logExporter = new ChunkingLogExporter(
+    new AzureMonitorLogExporter({ connectionString: connStr }),
+    { maxChunkChars: 8000, keepOriginalKey: false },
+  );
 
   const sdk = new NodeSDK({
     serviceName: config.serviceName,
     resource: new Resource({
       ...config.attributes,
     }),
+    spanLimits: {
+      attributeValueLengthLimit: 8000,
+      attributeCountLimit: 64,
+      eventCountLimit: 256,
+    },
     spanProcessors: [new BatchSpanProcessor(traceExporter)],
     metricReader: new PeriodicExportingMetricReader({
       exporter: metricExporter,
     }),
     instrumentations: [
-      //new FetchInstrumentation(config.instrumentationConfig.fetch),
       new UndiciInstrumentation({
         ignoreRequestHook: (request) => {
           // Ignore requests to auth session endpoint, too spammy
@@ -117,7 +155,24 @@ const instrumentServer = () => {
                 : lvl === 'info'
                   ? KnownSeverityLevel.Information
                   : KnownSeverityLevel.Verbose;
-          record.severityNumber ||= 100;
+          switch (record.severity) {
+            case KnownSeverityLevel.Error:
+            case KnownSeverityLevel.Critical:
+              record.severityNumber = 17; // ERROR
+              break;
+            case KnownSeverityLevel.Warning:
+              record.severityNumber = 13; // WARNING
+              break;
+            case KnownSeverityLevel.Information:
+              record.severityNumber = 9; // INFO
+              break;
+            case KnownSeverityLevel.Verbose:
+              record.severityNumber = 5; // DEBUG/VERBOSE
+              break;
+            default:
+              record.severityNumber ||= 2;
+              break;
+          }
         },
       }),
     ],
@@ -139,12 +194,13 @@ const instrumentServer = () => {
   try {
     sdk.start();
     console.log('✅ OTel SDK started on NodeJS Server');
-    nodeSdk = sdk;
+    setNodeSdk(sdk);
     AfterManager.processExit(cleanup);
   } catch (error) {
     console.error('❌ OTel SDK failed to start:', error);
-    registered = false;
+    setRegistered(false);
   }
   return Promise.resolve(void 0);
 };
+
 export default instrumentServer;

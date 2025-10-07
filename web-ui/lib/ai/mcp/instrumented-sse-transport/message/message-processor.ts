@@ -9,8 +9,8 @@ import type { JSONRPCMessage } from '../../ai.sdk';
 import { SessionManager } from '../session/session-manager';
 import { MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
 import { CounterManager } from '../metrics/counter-manager';
-import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util';
+import { log } from '/lib/logger';
+import { LoggedError } from '/lib/react-util';
 
 /**
  * Handles message processing and tool call lifecycle management

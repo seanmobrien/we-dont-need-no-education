@@ -1,4 +1,4 @@
-import { env } from '@/lib/site-util/env';
+import { env } from '/lib/site-util/env';
 import { CaseFileSearchOptions } from '../../tools/types';
 import { CaseFileSearchScopeType } from '../../tools/unions';
 import { HybridSearchClient } from './HybridSearchBase';

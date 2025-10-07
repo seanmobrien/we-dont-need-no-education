@@ -5,7 +5,7 @@
  * Provides comprehensive OpenTelemetry metrics for AI tool usage, performance, and observability.
  */
 
-import { log } from "@/lib/logger";
+import { log } from '/lib/logger';
 
 /**
  * Type definitions for MCP tool metrics
@@ -103,7 +103,7 @@ export const mcpToolsMetricsRegistry = {
     // Return cleanup function
     return () => {
       clearInterval(updateInterval);
-      log(l => l.info('Stopped periodic metrics updates for MCP tools'));
+      log((l) => l.info('Stopped periodic metrics updates for MCP tools'));
     };
   },
 

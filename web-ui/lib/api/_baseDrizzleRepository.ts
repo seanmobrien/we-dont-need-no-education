@@ -1,10 +1,14 @@
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { ObjectRepository, DrizzleRepositoryConfig, IObjectRepositoryExt } from './_types';
-import { PaginatedResultset, PaginationStats } from '@/data-models/_types';
-import { PartialExceptFor } from '@/lib/typescript';
+import { drizDbWithInit } from '/lib/drizzle-db';
+import {
+  ObjectRepository,
+  DrizzleRepositoryConfig,
+  IObjectRepositoryExt,
+} from './_types';
+import { PaginatedResultset, PaginationStats } from '/data-models/_types';
+import { PartialExceptFor } from '/lib/typescript';
 import { eq, count, SQL } from 'drizzle-orm';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { log } from '@/lib/logger';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { log } from '/lib/logger';
 import { getTableConfig } from 'drizzle-orm/pg-core';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
@@ -12,39 +16,44 @@ import { PgColumn } from 'drizzle-orm/pg-core';
  * Helper function to detect primary key column and field name from a Drizzle table schema
  */
 function detectPrimaryKey<T extends object, KId extends keyof T>(
-  config: DrizzleRepositoryConfig<T, KId>
+  config: DrizzleRepositoryConfig<T, KId>,
 ): { idColumn: PgColumn; idField: KId } {
   try {
     const tableConfig = getTableConfig(config.table);
     const tableName = config.tableName || tableConfig.name;
-    
+
     // Find the primary key column
-    const primaryKeyColumns = tableConfig.columns.filter(col => col.primary);
-    
+    const primaryKeyColumns = tableConfig.columns.filter((col) => col.primary);
+
     if (primaryKeyColumns.length === 0) {
       throw new Error(`No primary key found in table ${tableName}`);
     }
-    
+
     if (primaryKeyColumns.length > 1) {
-      throw new Error(`Multiple primary keys found in table ${tableName}. Please specify idColumn and idField manually.`);
+      throw new Error(
+        `Multiple primary keys found in table ${tableName}. Please specify idColumn and idField manually.`,
+      );
     }
-    
+
     const primaryKeyColumn = primaryKeyColumns[0];
-    
+
     // Convert snake_case database column name to camelCase field name
     const databaseColumnName = primaryKeyColumn.name;
-    const camelCaseFieldName = databaseColumnName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-    
+    const camelCaseFieldName = databaseColumnName.replace(
+      /_([a-z])/g,
+      (_, letter) => letter.toUpperCase(),
+    );
+
     return {
       idColumn: primaryKeyColumn,
-      idField: camelCaseFieldName as KId
+      idField: camelCaseFieldName as KId,
     };
   } catch (error) {
     const tableName = config.tableName || getTableConfig(config.table).name;
     throw new Error(
       `Unable to auto-detect primary key for table ${tableName}. ` +
-      `Please provide idColumn and idField explicitly in the config. ` +
-      `Error: ${error instanceof Error ? error.message : String(error)}`
+        `Please provide idColumn and idField explicitly in the config. ` +
+        `Error: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 }
@@ -59,8 +68,10 @@ function detectPrimaryKey<T extends object, KId extends keyof T>(
  *
  * @implements {ObjectRepository<T, KId>}
  */
-export abstract class BaseDrizzleRepository<T extends object, KId extends keyof T>
-  implements ObjectRepository<T, KId>
+export abstract class BaseDrizzleRepository<
+  T extends object,
+  KId extends keyof T,
+> implements ObjectRepository<T, KId>
 {
   protected readonly config: DrizzleRepositoryConfig<T, KId>;
   protected readonly idColumn: PgColumn;
@@ -131,9 +142,13 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
         : dataQueryBase;
 
       // Execute both queries
-      const [ countRecords, results ] = await Promise.all([
+      const [countRecords, results] = await Promise.all([
         countQuery.execute(),
-        dataQuery.offset(offset).limit(num).execute().then(x => x.map(this.config.summaryMapper)),
+        dataQuery
+          .offset(offset)
+          .limit(num)
+          .execute()
+          .then((x) => x.map(this.config.summaryMapper)),
       ]);
       const [{ count: totalCount }] = countRecords;
 
@@ -145,8 +160,8 @@ export abstract class BaseDrizzleRepository<T extends object, KId extends keyof 
             totalCount,
             page,
             num,
-          }
-        })
+          },
+        }),
       );
 
       return {

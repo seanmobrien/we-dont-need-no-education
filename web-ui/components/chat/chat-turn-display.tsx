@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Chip, 
-  Card, 
-  CardContent, 
+import {
+  Box,
+  Typography,
+  Chip,
+  Card,
+  CardContent,
   IconButton,
   Collapse,
   Paper,
@@ -14,18 +14,23 @@ import {
   Divider,
   Alert,
   Checkbox,
-  FormControlLabel
+  FormControlLabel,
 } from '@mui/material';
-import { 
+import {
   Settings as SettingsIcon,
   Schedule as ScheduleIcon,
   Warning as WarningIcon,
-  Error as ErrorIcon
+  Error as ErrorIcon,
 } from '@mui/icons-material';
 import { ChatMessageDisplay } from './chat-message-display';
-import { ChatTurn } from '@/lib/ai/chat/types';
-import type { SelectedChatItem } from '@/lib/chat/export';
-import { ChatMessageFilters, MESSAGE_TYPES, type MessageType, searchMessageContent } from './chat-message-filters';
+import { ChatTurn } from '/lib/ai/chat/types';
+import type { SelectedChatItem } from '../../lib/ai/chat/export';
+import {
+  ChatMessageFilters,
+  MESSAGE_TYPES,
+  type MessageType,
+  searchMessageContent,
+} from './chat-message-filters';
 
 /**
  * Get available message types in a turn after global filtering
@@ -33,24 +38,29 @@ import { ChatMessageFilters, MESSAGE_TYPES, type MessageType, searchMessageConte
  */
 const getAvailableMessageTypesInTurn = (
   turn: ChatTurn,
-  globalFilters: { typeFilters: Set<MessageType>; contentFilter: string }
+  globalFilters: { typeFilters: Set<MessageType>; contentFilter: string },
 ): MessageType[] => {
   // First, get messages that pass global filters (or all if no global filters)
-  const globallyFilteredMessages = (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
-    ? turn.messages.filter(message => {
-        // Type filter
-        const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
-          globalFilters.typeFilters.has(message.role as MessageType);
-        // Content filter  
-        const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
-        
-        return passesTypeFilter && passesContentFilter;
-      })
-    : turn.messages;
-  
+  const globallyFilteredMessages =
+    globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim()
+      ? turn.messages.filter((message) => {
+          // Type filter
+          const passesTypeFilter =
+            globalFilters.typeFilters.size === 0 ||
+            globalFilters.typeFilters.has(message.role as MessageType);
+          // Content filter
+          const passesContentFilter = searchMessageContent(
+            message,
+            globalFilters.contentFilter,
+          );
+
+          return passesTypeFilter && passesContentFilter;
+        })
+      : turn.messages;
+
   // Then find unique types in those messages
   const typesInTurn = new Set<MessageType>();
-  globallyFilteredMessages.forEach(message => {
+  globallyFilteredMessages.forEach((message) => {
     if (MESSAGE_TYPES.includes(message.role as MessageType)) {
       typesInTurn.add(message.role as MessageType);
     }
@@ -67,32 +77,46 @@ const getFilteredMessages = (
   globalFilters: { typeFilters: Set<MessageType>; contentFilter: string },
   enableTurnFilters: boolean,
   activeTurnFilters: Set<MessageType>,
-  turnContentFilter: string
+  turnContentFilter: string,
 ) => {
   let filteredMessages = turn.messages;
 
   // First apply global filters if active
-  if (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim()) {
-    filteredMessages = filteredMessages.filter(message => {
+  if (
+    globalFilters.typeFilters.size > 0 ||
+    globalFilters.contentFilter.trim()
+  ) {
+    filteredMessages = filteredMessages.filter((message) => {
       // Type filter
-      const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+      const passesTypeFilter =
+        globalFilters.typeFilters.size === 0 ||
         globalFilters.typeFilters.has(message.role as MessageType);
-      // Content filter  
-      const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
-      
+      // Content filter
+      const passesContentFilter = searchMessageContent(
+        message,
+        globalFilters.contentFilter,
+      );
+
       return passesTypeFilter && passesContentFilter;
     });
   }
 
   // Then apply per-turn filters if active
-  if (enableTurnFilters && (activeTurnFilters.size > 0 || turnContentFilter.trim())) {
-    filteredMessages = filteredMessages.filter(message => {
+  if (
+    enableTurnFilters &&
+    (activeTurnFilters.size > 0 || turnContentFilter.trim())
+  ) {
+    filteredMessages = filteredMessages.filter((message) => {
       // Type filter
-      const passesTypeFilter = activeTurnFilters.size === 0 || 
+      const passesTypeFilter =
+        activeTurnFilters.size === 0 ||
         activeTurnFilters.has(message.role as MessageType);
-      // Content filter  
-      const passesContentFilter = searchMessageContent(message, turnContentFilter);
-      
+      // Content filter
+      const passesContentFilter = searchMessageContent(
+        message,
+        turnContentFilter,
+      );
+
       return passesTypeFilter && passesContentFilter;
     });
   }
@@ -106,16 +130,21 @@ const getFilteredMessages = (
  */
 const getGloballyFilteredMessages = (
   turn: ChatTurn,
-  globalFilters: { typeFilters: Set<MessageType>; contentFilter: string }
+  globalFilters: { typeFilters: Set<MessageType>; contentFilter: string },
 ) => {
-  return (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
-    ? turn.messages.filter(message => {
+  return globalFilters.typeFilters.size > 0 ||
+    globalFilters.contentFilter.trim()
+    ? turn.messages.filter((message) => {
         // Type filter
-        const passesTypeFilter = globalFilters.typeFilters.size === 0 || 
+        const passesTypeFilter =
+          globalFilters.typeFilters.size === 0 ||
           globalFilters.typeFilters.has(message.role as MessageType);
-        // Content filter  
-        const passesContentFilter = searchMessageContent(message, globalFilters.contentFilter);
-        
+        // Content filter
+        const passesContentFilter = searchMessageContent(
+          message,
+          globalFilters.contentFilter,
+        );
+
         return passesTypeFilter && passesContentFilter;
       })
     : turn.messages;
@@ -146,103 +175,146 @@ interface ChatTurnDisplayProps {
   };
 }
 
-export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({ 
-  turn, 
+export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
+  turn,
   showTurnProperties = false,
   showMessageMetadata = false,
   enableSelection = false,
   selectedItems = [],
   onSelectionChange,
-  globalFilters = { typeFilters: new Set(), contentFilter: '' }
+  globalFilters = { typeFilters: new Set(), contentFilter: '' },
 }) => {
   const [propertiesExpanded, setPropertiesExpanded] = useState(false);
-  
+
   // Per-turn filtering state
   const [enableTurnFilters, setEnableTurnFilters] = useState(false);
-  const [activeTurnFilters, setActiveTurnFilters] = useState<Set<MessageType>>(new Set());
+  const [activeTurnFilters, setActiveTurnFilters] = useState<Set<MessageType>>(
+    new Set(),
+  );
   const [turnContentFilter, setTurnContentFilter] = useState('');
 
   // Memoize expensive computations
-  const availableTypesInTurn = React.useMemo(() => 
-    getAvailableMessageTypesInTurn(turn, globalFilters), 
-    [turn, globalFilters]
+  const availableTypesInTurn = React.useMemo(
+    () => getAvailableMessageTypesInTurn(turn, globalFilters),
+    [turn, globalFilters],
   );
 
-  const filteredMessages = React.useMemo(() => 
-    getFilteredMessages(turn, globalFilters, enableTurnFilters, activeTurnFilters, turnContentFilter),
-    [turn, globalFilters, enableTurnFilters, activeTurnFilters, turnContentFilter]
+  const filteredMessages = React.useMemo(
+    () =>
+      getFilteredMessages(
+        turn,
+        globalFilters,
+        enableTurnFilters,
+        activeTurnFilters,
+        turnContentFilter,
+      ),
+    [
+      turn,
+      globalFilters,
+      enableTurnFilters,
+      activeTurnFilters,
+      turnContentFilter,
+    ],
   );
-  
-  const globallyFilteredMessages = React.useMemo(() =>
-    getGloballyFilteredMessages(turn, globalFilters),
-    [turn, globalFilters]
+
+  const globallyFilteredMessages = React.useMemo(
+    () => getGloballyFilteredMessages(turn, globalFilters),
+    [turn, globalFilters],
   );
 
   // Memoize selection state
-  const isTurnSelected = React.useMemo(() => 
-    selectedItems.some(item => item.type === 'turn' && item.turnId === turn.turnId),
-    [selectedItems, turn.turnId]
+  const isTurnSelected = React.useMemo(
+    () =>
+      selectedItems.some(
+        (item) => item.type === 'turn' && item.turnId === turn.turnId,
+      ),
+    [selectedItems, turn.turnId],
   );
 
-  const selectedMessages = React.useMemo(() => 
-    selectedItems.filter(item => item.type === 'message' && item.turnId === turn.turnId),
-    [selectedItems, turn.turnId]
+  const selectedMessages = React.useMemo(
+    () =>
+      selectedItems.filter(
+        (item) => item.type === 'message' && item.turnId === turn.turnId,
+      ),
+    [selectedItems, turn.turnId],
   );
 
-  const isPartiallySelected = React.useMemo(() => 
-    selectedMessages.length > 0 && selectedMessages.length < turn.messages.length,
-    [selectedMessages.length, turn.messages.length]
+  const isPartiallySelected = React.useMemo(
+    () =>
+      selectedMessages.length > 0 &&
+      selectedMessages.length < turn.messages.length,
+    [selectedMessages.length, turn.messages.length],
   );
 
   // Stable event handlers
-  const handleTurnSelectionChange = React.useCallback((checked: boolean) => {
-    if (!onSelectionChange) return;
+  const handleTurnSelectionChange = React.useCallback(
+    (checked: boolean) => {
+      if (!onSelectionChange) return;
 
-    let newSelection = [...selectedItems];
-    
-    if (checked) {
-      // Remove any individual message selections for this turn
-      newSelection = newSelection.filter(
-        item => !(item.type === 'message' && item.turnId === turn.turnId)
-      );
-      // Add turn selection
-      newSelection.push({ type: 'turn', turnId: turn.turnId });
-    } else {
-      // Remove turn selection
-      newSelection = newSelection.filter(
-        item => !(item.type === 'turn' && item.turnId === turn.turnId)
-      );
-    }
-    
-    onSelectionChange(newSelection);
-  }, [onSelectionChange, selectedItems, turn.turnId]);
+      let newSelection = [...selectedItems];
 
-  const handleMessageSelectionChange = React.useCallback((messageId: number, checked: boolean) => {
-    if (!onSelectionChange) return;
-
-    let newSelection = [...selectedItems];
-    
-    // Remove turn selection if it exists (since we're selecting individual messages)
-    newSelection = newSelection.filter(
-      item => !(item.type === 'turn' && item.turnId === turn.turnId)
-    );
-    
-    if (checked) {
-      // Add message selection if not already present
-      if (!newSelection.some(item => 
-        item.type === 'message' && item.turnId === turn.turnId && item.messageId === messageId
-      )) {
-        newSelection.push({ type: 'message', turnId: turn.turnId, messageId });
+      if (checked) {
+        // Remove any individual message selections for this turn
+        newSelection = newSelection.filter(
+          (item) => !(item.type === 'message' && item.turnId === turn.turnId),
+        );
+        // Add turn selection
+        newSelection.push({ type: 'turn', turnId: turn.turnId });
+      } else {
+        // Remove turn selection
+        newSelection = newSelection.filter(
+          (item) => !(item.type === 'turn' && item.turnId === turn.turnId),
+        );
       }
-    } else {
-      // Remove message selection
+
+      onSelectionChange(newSelection);
+    },
+    [onSelectionChange, selectedItems, turn.turnId],
+  );
+
+  const handleMessageSelectionChange = React.useCallback(
+    (messageId: number, checked: boolean) => {
+      if (!onSelectionChange) return;
+
+      let newSelection = [...selectedItems];
+
+      // Remove turn selection if it exists (since we're selecting individual messages)
       newSelection = newSelection.filter(
-        item => !(item.type === 'message' && item.turnId === turn.turnId && item.messageId === messageId)
+        (item) => !(item.type === 'turn' && item.turnId === turn.turnId),
       );
-    }
-    
-    onSelectionChange(newSelection);
-  }, [onSelectionChange, selectedItems, turn.turnId]);
+
+      if (checked) {
+        // Add message selection if not already present
+        if (
+          !newSelection.some(
+            (item) =>
+              item.type === 'message' &&
+              item.turnId === turn.turnId &&
+              item.messageId === messageId,
+          )
+        ) {
+          newSelection.push({
+            type: 'message',
+            turnId: turn.turnId,
+            messageId,
+          });
+        }
+      } else {
+        // Remove message selection
+        newSelection = newSelection.filter(
+          (item) =>
+            !(
+              item.type === 'message' &&
+              item.turnId === turn.turnId &&
+              item.messageId === messageId
+            ),
+        );
+      }
+
+      onSelectionChange(newSelection);
+    },
+    [onSelectionChange, selectedItems, turn.turnId],
+  );
 
   const handlePropertiesToggle = React.useCallback(() => {
     setPropertiesExpanded(!propertiesExpanded);
@@ -264,43 +336,42 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                 />
               }
               label=""
-              sx={{ mr: 1, '& .MuiFormControlLabel-label': { display: 'none' } }}
+              sx={{
+                mr: 1,
+                '& .MuiFormControlLabel-label': { display: 'none' },
+              }}
             />
           )}
-          <Chip 
-            label={`Turn ${turn.turnId}`} 
-            variant="outlined" 
-            size="small"
-          />
+          <Chip label={`Turn ${turn.turnId}`} variant="outlined" size="small" />
           {turn.modelName && (
-            <Chip 
-              label={turn.modelName} 
-              variant="outlined" 
+            <Chip
+              label={turn.modelName}
+              variant="outlined"
               size="small"
               color="primary"
             />
           )}
           {turn.latencyMs && (
-            <Chip 
+            <Chip
               label={`${turn.latencyMs}ms`}
-              variant="outlined" 
+              variant="outlined"
               size="small"
               icon={<ScheduleIcon fontSize="small" />}
             />
           )}
           {turn.warnings && turn.warnings.length > 0 && (
-            <Chip 
+            <Chip
               label={`${turn.warnings.length} warning${turn.warnings.length > 1 ? 's' : ''}`}
-              variant="outlined" 
+              variant="outlined"
               size="small"
               icon={<WarningIcon fontSize="small" />}
               color="warning"
             />
           )}
           {turn.errors && turn.errors.length > 0 && (
-            <Chip 
+            <Chip
               label={`${turn.errors.length} error${turn.errors.length > 1 ? 's' : ''}`}
-              variant="outlined" 
+              variant="outlined"
               size="small"
               icon={<ErrorIcon fontSize="small" />}
               color="error"
@@ -328,8 +399,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                 <Grid
                   size={{
                     xs: 6,
-                    md: 3
-                  }}>
+                    md: 3,
+                  }}
+                >
                   <Typography variant="caption" display="block">
                     Status ID: {turn.statusId}
                   </Typography>
@@ -337,8 +409,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                 <Grid
                   size={{
                     xs: 6,
-                    md: 3
-                  }}>
+                    md: 3,
+                  }}
+                >
                   <Typography variant="caption" display="block">
                     Created: {new Date(turn.createdAt).toLocaleString()}
                   </Typography>
@@ -347,8 +420,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                   <Grid
                     size={{
                       xs: 6,
-                      md: 3
-                    }}>
+                      md: 3,
+                    }}
+                  >
                     <Typography variant="caption" display="block">
                       Completed: {new Date(turn.completedAt).toLocaleString()}
                     </Typography>
@@ -357,8 +431,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                 <Grid
                   size={{
                     xs: 6,
-                    md: 3
-                  }}>
+                    md: 3,
+                  }}
+                >
                   <Typography variant="caption" display="block">
                     Duration: {formatDuration(turn.createdAt, turn.completedAt)}
                   </Typography>
@@ -367,8 +442,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                   <Grid
                     size={{
                       xs: 6,
-                      md: 3
-                    }}>
+                      md: 3,
+                    }}
+                  >
                     <Typography variant="caption" display="block">
                       Temperature: {turn.temperature}
                     </Typography>
@@ -378,8 +454,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                   <Grid
                     size={{
                       xs: 6,
-                      md: 3
-                    }}>
+                      md: 3,
+                    }}
+                  >
                     <Typography variant="caption" display="block">
                       Top P: {turn.topP}
                     </Typography>
@@ -389,8 +466,9 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                   <Grid
                     size={{
                       xs: 6,
-                      md: 3
-                    }}>
+                      md: 3,
+                    }}
+                  >
                     <Typography variant="caption" display="block">
                       Latency: {turn.latencyMs}ms
                     </Typography>
@@ -443,7 +521,7 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                       maxHeight: 200,
                       wordBreak: 'break-all',
                       whiteSpace: 'pre-wrap',
-                      maxWidth: '100%'
+                      maxWidth: '100%',
                     }}
                   >
                     {JSON.stringify(turn.metadata, null, 2)}
@@ -457,7 +535,10 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
 
         {/* Per-Turn Message Filtering Controls */}
         {availableTypesInTurn.length > 1 && (
-          <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'action.hover' }}>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, mb: 2, bgcolor: 'action.hover' }}
+          >
             <ChatMessageFilters
               messages={globallyFilteredMessages}
               enableFilters={enableTurnFilters}
@@ -475,25 +556,36 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
 
         {/* Messages */}
         {filteredMessages.length === 0 ? (
-          <Typography color="text.secondary" sx={{ textAlign: 'center', py: 2, fontStyle: 'italic' }}>
-            {(globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim()) && 
-             (enableTurnFilters && (activeTurnFilters.size > 0 || turnContentFilter.trim()))
+          <Typography
+            color="text.secondary"
+            sx={{ textAlign: 'center', py: 2, fontStyle: 'italic' }}
+          >
+            {(globalFilters.typeFilters.size > 0 ||
+              globalFilters.contentFilter.trim()) &&
+            enableTurnFilters &&
+            (activeTurnFilters.size > 0 || turnContentFilter.trim())
               ? 'No messages match the current global and turn filters.'
-              : (globalFilters.typeFilters.size > 0 || globalFilters.contentFilter.trim())
-              ? 'No messages match the current global filters.'
-              : enableTurnFilters && (activeTurnFilters.size > 0 || turnContentFilter.trim())
-              ? 'No messages match the current turn filters.'
-              : 'No messages in this turn.'
-            }
+              : globalFilters.typeFilters.size > 0 ||
+                  globalFilters.contentFilter.trim()
+                ? 'No messages match the current global filters.'
+                : enableTurnFilters &&
+                    (activeTurnFilters.size > 0 || turnContentFilter.trim())
+                  ? 'No messages match the current turn filters.'
+                  : 'No messages in this turn.'}
           </Typography>
         ) : (
           filteredMessages.map((message) => {
-            const isMessageSelected = isTurnSelected || selectedItems.some(
-              item => item.type === 'message' && item.turnId === turn.turnId && item.messageId === message.messageId
-            );
-            
+            const isMessageSelected =
+              isTurnSelected ||
+              selectedItems.some(
+                (item) =>
+                  item.type === 'message' &&
+                  item.turnId === turn.turnId &&
+                  item.messageId === message.messageId,
+              );
+
             return (
-              <ChatMessageDisplay 
+              <ChatMessageDisplay
                 key={`${message.turnId}-${message.messageId}`}
                 message={message}
                 showMetadata={showMessageMetadata}

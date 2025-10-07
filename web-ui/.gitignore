@@ -2,6 +2,9 @@
 (rsc)
 (ssr)
 (rsc)/**
+playwright-report
 
-# Local helper clones for subtree operations
-/.upstream/
+# profile / performance files
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot

@@ -8,24 +8,24 @@
  * @module __tests__/lib/ai/middleware/chat-history/import-incoming-message.test.ts
  */
 
-import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
-import { schema } from '@/lib/drizzle-db';
+import { importIncomingMessage } from '/lib/ai/middleware/chat-history/import-incoming-message';
+import { schema } from '/lib/drizzle-db';
 import {
   getNextSequence,
   getNewMessages,
-} from '@/lib/ai/middleware/chat-history/utility';
-import { generateChatId } from '@/lib/ai/core';
-import { log } from '@/lib/logger';
-import type { DbTransactionType } from '@/lib/drizzle-db';
-import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
-import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
+} from '/lib/ai/middleware/chat-history/utility';
+import { generateChatId } from '/lib/ai/core';
+import { log } from '/lib/logger';
+import type { DbTransactionType } from '/lib/drizzle-db';
+import type { ChatHistoryContext } from '/lib/ai/middleware/chat-history/types';
+import { createUserChatHistoryContext } from '/lib/ai/middleware/chat-history/create-chat-history-context';
 import { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 // Mock dependencies
-jest.mock('@/lib/ai/middleware/chat-history/utility');
-jest.mock('@/lib/ai/core');
-jest.mock('@/lib/logger');
-jest.mock('@/lib/drizzle-db', () => ({
+jest.mock('/lib/ai/middleware/chat-history/utility');
+jest.mock('/lib/ai/core');
+jest.mock('/lib/logger');
+jest.mock('/lib/drizzle-db', () => ({
   schema: {
     chats: {
       id: 'mocked-chats-id-column',

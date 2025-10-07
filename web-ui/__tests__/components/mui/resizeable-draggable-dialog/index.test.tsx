@@ -19,7 +19,7 @@ import ResizableDraggableDialog, {
   type ResizeableDraggablePaperProps,
   type ResizeableDraggableDialogProps,
   isValidSize,
-} from '@/components/mui/resizeable-draggable-dialog';
+} from '/components/mui/resizeable-draggable-dialog';
 
 describe('ResizableDraggableDialog Index Module', () => {
   describe('Default Export', () => {
@@ -175,7 +175,7 @@ describe('ResizableDraggableDialog Index Module', () => {
         modal: false,
       };
 
-      expect(testProps.isOpenState).toBe(true);      
+      expect(testProps.isOpenState).toBe(true);
       expect(testProps.title).toBe('Test Dialog');
       expect(testProps.modal).toBe(false);
     });

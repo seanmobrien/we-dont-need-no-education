@@ -1,7 +1,15 @@
-import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
-import { schema } from '@/lib/drizzle-db/schema';
-import { type DbTransactionType, drizDbWithInit } from '@/lib/drizzle-db';
+import type {
+  LanguageModelV2CallOptions,
+  LanguageModelV2FilePart,
+  LanguageModelV2ReasoningPart,
+  LanguageModelV2TextPart,
+  LanguageModelV2ToolCallPart,
+  LanguageModelV2ToolResultPart,
+} from '@ai-sdk/provider';
+import { schema } from '/lib/drizzle-db/schema';
+import { type DbTransactionType, drizDbWithInit } from '/lib/drizzle-db';
 import { eq, desc } from 'drizzle-orm';
+import { ToolStatus } from './types';
 
 export const getNextSequence = async ({
   chatId,
@@ -40,6 +48,74 @@ export const getNextSequence = async ({
   return ret;
 };
 
+export const normalizeOutput = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  return JSON.stringify(value ?? 'null');
+};
+// Extract tool-result input/output/error as strings for storage
+export const getItemOutput = (
+  item:
+    | (LanguageModelV2ToolResultPart & { type: 'tool-result' | 'dynamic-tool' })
+    | null
+    | undefined,
+): { status: ToolStatus; output?: string; media?: string } => {
+  if (!item || !item.output) {
+    return { status: 'pending' };
+  }
+  switch (item.output.type) {
+    case 'text':
+    case 'json': {
+      // Check if the value contains an isError flag
+      const parsedValue =
+        typeof item.output.value === 'string'
+          ? (() => {
+              try {
+                return JSON.parse(item.output.value);
+              } catch {
+                return item.output.value;
+              }
+            })()
+          : item.output.value;
+
+      const isError =
+        parsedValue &&
+        typeof parsedValue === 'object' &&
+        'isError' in parsedValue &&
+        parsedValue.isError === true;
+
+      return {
+        status: isError ? 'error' : 'result',
+        output: normalizeOutput(item.output.value),
+      };
+    }
+    case 'content':
+      return item.output.value.reduce(
+        (acc, curr) => {
+          if ('data' in curr) {
+            acc.media = (acc.media ?? '') + normalizeOutput(curr.data);
+          }
+          if ('value' in curr) {
+            acc.output = (acc.output ?? '') + normalizeOutput(curr.value);
+          }
+          return acc;
+        },
+        { status: 'result' } as {
+          status: ToolStatus;
+          media?: string;
+          output?: string;
+        },
+      );
+    case 'error-json':
+    case 'error-text':
+      return { status: 'error', output: normalizeOutput(item.output) };
+    default:
+      break;
+  }
+  return { status: 'result', output: normalizeOutput(item.output) };
+};
+
 /**
  * Identifies new messages by comparing incoming prompt with existing chat messages.
  *
@@ -75,7 +151,7 @@ export const getNextSequence = async ({
  * ```typescript
  * const messages = await getNewMessages(transaction, 'chat_123', [
  *   { role: 'user', content: 'Hello' },        // Already exists - filtered out
- *   { role: 'assistant', content: 'Hi there' }, // Already exists - filtered out  
+ *   { role: 'assistant', content: 'Hi there' }, // Already exists - filtered out
  *   { role: 'user', content: 'How are you?' }   // New message - included
  * ], 3);
  * // Returns: [{ role: 'user', content: 'How are you?' }]
@@ -224,9 +300,11 @@ export const getNewMessages = async (
       .map((msg) => [
         msg.providerId!,
         {
-          modifiedTurnId: (msg.metadata as { modifiedTurnId?: number } | null)?.modifiedTurnId || 0,
-        }
-      ])
+          modifiedTurnId:
+            (msg.metadata as { modifiedTurnId?: number } | null)
+              ?.modifiedTurnId || 0,
+        },
+      ]),
   );
 
   // Filter incoming messages to only include those not already persisted
@@ -235,47 +313,76 @@ export const getNewMessages = async (
     if (incomingMsg.role === 'tool') {
       // For explicit tool role messages, check if any part has a toolCallId that exists
       let toolCallId: string | undefined;
-      
+
       if (Array.isArray(incomingMsg.content)) {
         for (const part of incomingMsg.content) {
-          if (part && typeof part === 'object' && 'toolCallId' in part && part.toolCallId) {
+          if (
+            part &&
+            typeof part === 'object' &&
+            'toolCallId' in part &&
+            part.toolCallId
+          ) {
             toolCallId = part.toolCallId as string;
             break;
           }
         }
       }
-      
+
       // If we found a tool call ID and it exists, check if update is needed
       if (toolCallId && existingToolProviderIds.has(toolCallId)) {
         const existingMeta = existingToolProviderIds.get(toolCallId)!;
-        
+
         // Include message if current turn is greater than last modified turn
         if (currentTurnId && currentTurnId > existingMeta.modifiedTurnId) {
           return true; // Include for update processing
         }
-        
+
         return false; // Skip - either no current turn or turn not newer
       }
     }
-    
+
     // For assistant messages that contain tool calls, check individual tool calls
-    if (incomingMsg.role === 'assistant' && Array.isArray(incomingMsg.content)) {
-      const toolCalls = incomingMsg.content.filter((part: any) => 
-        part?.type === 'tool-call' && part?.toolCallId
+    if (
+      incomingMsg.role === 'assistant' &&
+      Array.isArray(incomingMsg.content)
+    ) {
+      const toolCalls = incomingMsg.content.filter(
+        (
+          part:
+            | LanguageModelV2TextPart
+            | LanguageModelV2FilePart
+            | LanguageModelV2ReasoningPart
+            | LanguageModelV2ToolCallPart
+            | LanguageModelV2ToolResultPart,
+        ) => part?.type === 'tool-call' && part?.toolCallId,
       );
-      
+
       // If this message contains only tool calls, check update eligibility
-      if (toolCalls.length > 0 && toolCalls.length === incomingMsg.content.length) {
+      if (
+        toolCalls.length > 0 &&
+        toolCalls.length === incomingMsg.content.length
+      ) {
         // Check if any tool call needs updating
-        const hasUpdatableCall = toolCalls.some((call: any) => {
-          if (!existingToolProviderIds.has(call.toolCallId)) {
-            return true; // New tool call
-          }
-          
-          const existingMeta = existingToolProviderIds.get(call.toolCallId)!;
-          return currentTurnId && currentTurnId > existingMeta.modifiedTurnId;
-        });
-        
+        const hasUpdatableCall = toolCalls.some(
+          (
+            call:
+              | LanguageModelV2TextPart
+              | LanguageModelV2FilePart
+              | LanguageModelV2ReasoningPart
+              | LanguageModelV2ToolCallPart
+              | LanguageModelV2ToolResultPart,
+          ) => {
+            if (!('toolCallId' in call)) {
+              return false; // Skip if no toolCallId present
+            }
+            if (!existingToolProviderIds.has(call.toolCallId)) {
+              return true; // New tool call
+            }
+            const existingMeta = existingToolProviderIds.get(call.toolCallId)!;
+            return currentTurnId && currentTurnId > existingMeta.modifiedTurnId;
+          },
+        );
+
         return hasUpdatableCall;
       }
     }

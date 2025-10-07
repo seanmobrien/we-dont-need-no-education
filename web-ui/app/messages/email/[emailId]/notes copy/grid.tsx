@@ -1,7 +1,7 @@
 'use client';
 import type { GridColDef } from '@mui/x-data-grid/models/colDef';
-import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
-import { SharedCellDefinitions } from '@/components/mui/data-grid';
+import { EmailPropertyDataGrid } from '/components/mui/data-grid/email-properties/email-property-grid';
+import { SharedCellDefinitions } from '/components/mui/data-grid';
 
 const stableColumns: GridColDef[] = [
   { field: 'typeName', headerName: 'Type', editable: false, width: 150 },

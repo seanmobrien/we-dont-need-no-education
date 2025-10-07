@@ -12,7 +12,7 @@
       "dom",
       "dom.iterable",
       "es6",
-      "esnext"
+      "esnext",
     ],
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -29,12 +29,20 @@
       }
     ],
     "paths": {
-      "@/*": [
+      "/*": [
         "./*"
-      ],
+      ]
     },
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    // Explicit types prevent accidental inclusion of @types packages (for
+    // example mocha) that collide with jest globals in the monorepo.
+    // We include node + jest here so tests and runtime node types are
+    // available while preventing other ambient test typings from leaking in.
+    "types": [
+      "node",
+      "jest"
+    ],
     "strict": true,
     "strictNullChecks": true,
     "target": "ESNext",

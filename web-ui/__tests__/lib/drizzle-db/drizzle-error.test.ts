@@ -1,5 +1,5 @@
-import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { isDrizzleError, errorFromCode } from '/lib/drizzle-db/drizzle-error';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 
 describe('isDrizzleError and errorFromCode', () => {
   test('isDrizzleError returns true for plain object with name DrizzleError', () => {

@@ -3,13 +3,13 @@ import {
   defaultGmailErrorFilter,
   getImportMessageSource,
 } from '../../_utilitites';
-import { query, queryExt } from '@/lib/neondb';
-import { newUuid } from '@/lib/typescript';
+import { query, queryExt } from '/lib/neondb';
+import { newUuid } from '/lib/typescript';
 import {
   DefaultImportManager,
   queueStagedAttachments,
-} from '@/lib/email/import/google';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+} from '/lib/email/import/google';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 
 export const dynamic = 'force-dynamic';
 

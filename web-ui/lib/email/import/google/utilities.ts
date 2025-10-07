@@ -1,6 +1,6 @@
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 import { gmail_v1 } from 'googleapis';
-import { ArrayElement } from '@/lib/typescript';
+import { ArrayElement } from '/lib/typescript';
 import { isParsedHeaderMap, ParsedHeaderMap } from '../../parsedHeaderMap';
 import { ParsedContact, RecipientType } from '../types';
 
@@ -14,17 +14,14 @@ export const mapContacts = (
     const workingHeaders = headers;
     return headersToMatch
       .flatMap((headerName) =>
-        workingHeaders
-          .getAllValues(headerName)
-          .flatMap((v) =>
-            mapContact(
-              {
-                value:
-                  typeof v === 'string' ? v : `${v.name ?? ''} <${v.email}>`,
-              },
-              headerName.toLocaleLowerCase() as RecipientType,
-            ),
+        workingHeaders.getAllValues(headerName).flatMap((v) =>
+          mapContact(
+            {
+              value: typeof v === 'string' ? v : `${v.name ?? ''} <${v.email}>`,
+            },
+            headerName.toLocaleLowerCase() as RecipientType,
           ),
+        ),
       )
       .filter((x) => !!x);
   }

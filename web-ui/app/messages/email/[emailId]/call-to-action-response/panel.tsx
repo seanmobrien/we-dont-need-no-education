@@ -21,10 +21,10 @@ import { useQuery } from '@tanstack/react-query';
 import {
   CallToActionResponseDetails,
   CallToActionDetails,
-} from '@/data-models/api';
+} from '/data-models/api';
 import { useParams } from 'next/navigation';
-import { EmailMasterPanel } from '@/components/mui/data-grid';
-import { fetch } from '@/lib/nextjs-util/fetch';
+import { EmailMasterPanel } from '/components/mui/data-grid';
+import { fetch } from '/lib/nextjs-util/fetch';
 
 const formatDate = (date: Date | null): string => {
   if (typeof date === 'string') {
@@ -241,11 +241,11 @@ const ResponsiveActionPanelContent = ({
               </Box>
             ) : error ? (
               <>
-              <Alert severity="error">
-                {typeof error === 'object' && !!error && 'message' in error
-                  ? error.message
-                  : 'Failed to load related call-to-action'}
-              </Alert>
+                <Alert severity="error">
+                  {typeof error === 'object' && !!error && 'message' in error
+                    ? error.message
+                    : 'Failed to load related call-to-action'}
+                </Alert>
               </>
             ) : !relatedCTA ? (
               <Typography variant="body2" color="textSecondary">

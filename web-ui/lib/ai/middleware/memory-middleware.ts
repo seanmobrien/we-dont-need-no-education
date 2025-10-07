@@ -5,7 +5,7 @@ import type {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { memoryClientFactory } from '../mem0';
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 import { MiddlewareStateManager } from './state-management';
 
 /**
@@ -38,7 +38,7 @@ const originalMemoryMiddleware: LanguageModelV2Middleware = {
   transformParams: async ({ params }) => {
     /*    
     // Create a memory client instance with the necessary configuration
-    const memoryClient = memoryClientFactory({
+    const memoryClient = await memoryClientFactory({
       // TODO: infer userid and projectid from params
     });
     const memories = memoryClient.search(params.query, {

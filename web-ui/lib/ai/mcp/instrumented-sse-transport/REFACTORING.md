@@ -5,10 +5,11 @@ This document describes the refactoring of the `InstrumentedSseTransport` class 
 ## Overview
 
 The original `InstrumentedSseTransport` class handled multiple concerns in a single large file:
+
 - OpenTelemetry metrics setup and recording
 - Session lifecycle management
 - Active counter tracking
-- Message processing and tool call detection  
+- Message processing and tool call detection
 - Trace context injection
 - Error handling and safety wrappers
 - Transport operations
@@ -20,6 +21,7 @@ The refactored architecture splits these concerns into dedicated modules:
 ### 📊 Metrics Module (`metrics/`)
 
 #### `otel-metrics.ts`
+
 - **Purpose**: Centralizes OpenTelemetry setup and metric definitions
 - **Exports**: All OTEL instruments, tracer, meter, and `MetricsRecorder` utility class
 - **Key Features**:
@@ -28,6 +30,7 @@ The refactored architecture splits these concerns into dedicated modules:
   - Environment configuration (DEBUG_MODE, OTEL_MODE)
 
 #### `counter-manager.ts`
+
 - **Purpose**: Manages active session and tool call counters
 - **Key Features**:
   - Safe increment/decrement operations (never goes negative)
@@ -37,6 +40,7 @@ The refactored architecture splits these concerns into dedicated modules:
 ### 🔄 Session Module (`session/`)
 
 #### `session-manager.ts`
+
 - **Purpose**: Handles session lifecycle, timeouts, and state tracking
 - **Key Features**:
   - Session creation and tracking
@@ -48,6 +52,7 @@ The refactored architecture splits these concerns into dedicated modules:
 ### 🔍 Tracing Module (`tracing/`)
 
 #### `trace-context.ts`
+
 - **Purpose**: Distributed tracing support with trace context injection
 - **Key Features**:
   - Static methods for header injection
@@ -57,6 +62,7 @@ The refactored architecture splits these concerns into dedicated modules:
 ### 🛡️ Utils Module (`utils/`)
 
 #### `safety-utils.ts`
+
 - **Purpose**: Error handling, timeout utilities, and safe operations
 - **Key Features**:
   - Safe async wrappers that never crash
@@ -67,6 +73,7 @@ The refactored architecture splits these concerns into dedicated modules:
 ### 📨 Message Module (`message/`)
 
 #### `message-processor.ts`
+
 - **Purpose**: Message parsing and tool call detection
 - **Key Features**:
   - Outbound message processing
@@ -77,6 +84,7 @@ The refactored architecture splits these concerns into dedicated modules:
 ### 🚀 Core Transport (`instrumented-transport-refactored.ts`)
 
 The main transport class now:
+
 - Delegates to specialized modules
 - Maintains the same public API
 - Preserves all original functionality
@@ -85,26 +93,31 @@ The main transport class now:
 ## Key Benefits
 
 ### 1. **Maintainability**
+
 - Each module has a single responsibility
 - Easier to understand and modify individual concerns
 - Clear separation of business logic
 
 ### 2. **Testability**
+
 - Each module can be unit tested independently
 - Easier to mock dependencies
 - More focused test scenarios
 
 ### 3. **Reusability**
+
 - Modules can be used independently
 - Other transport implementations can reuse components
 - Clear interfaces between modules
 
 ### 4. **Readability**
+
 - Smaller, focused files
 - Clear module boundaries
 - Self-documenting structure
 
 ### 5. **No Functionality Loss**
+
 - 100% API compatibility maintained
 - All original features preserved
 - Same performance characteristics
@@ -132,8 +145,9 @@ lib/ai/mcp/
 ## Usage
 
 ### Direct Usage (Same API)
+
 ```typescript
-import { InstrumentedSseTransport } from '@/lib/ai/mcp';
+import { InstrumentedSseTransport } from '/lib/ai/mcp';
 
 // Same constructor and methods as before
 const transport = new InstrumentedSseTransport({
@@ -151,13 +165,14 @@ transport.resetActiveCounters();
 ```
 
 ### Using Individual Modules
+
 ```typescript
-import { 
-  MetricsRecorder, 
-  CounterManager, 
+import {
+  MetricsRecorder,
+  CounterManager,
   SessionManager,
-  TraceContextManager 
-} from '@/lib/ai/mcp';
+  TraceContextManager,
+} from '/lib/ai/mcp';
 
 // Use modules independently
 const counterManager = new CounterManager();
@@ -168,16 +183,19 @@ const headers = TraceContextManager.injectTraceContext(baseHeaders);
 ## Migration Strategy
 
 ### Phase 1: No Changes Required ✅
+
 - The refactored version maintains 100% API compatibility
 - Existing code continues to work without modifications
 - Both implementations export the same interface
 
 ### Phase 2: Optional Migration
+
 - Import from the refactored modules if desired
 - Use individual modules for new implementations
 - Original remains available as `OriginalInstrumentedSseTransport`
 
 ### Phase 3: Future Enhancements
+
 - Individual modules can be enhanced independently
 - New features can be added to specific concerns
 - Testing and maintenance become much easier
@@ -185,21 +203,25 @@ const headers = TraceContextManager.injectTraceContext(baseHeaders);
 ## Implementation Notes
 
 ### Constructor Behavior
+
 - Enhanced headers with trace context injection (preserved)
 - All safety validations maintained
 - Same error handling patterns
 
 ### Event Handling
+
 - `handleMessage`, `handleError`, `handleClose` preserved
 - Same async safety wrappers
 - Identical error recovery behavior
 
 ### Metrics and Tracing
+
 - All original metrics preserved
 - Same span relationships and attributes
 - Identical debugging capabilities
 
 ### Performance
+
 - No performance degradation
 - Same memory usage patterns
 - Equivalent operation counts

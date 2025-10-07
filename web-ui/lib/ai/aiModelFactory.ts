@@ -1,14 +1,14 @@
 import { createAzure } from '@ai-sdk/azure';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
-import { env } from '@/lib/site-util/env';
+import { env } from '/lib/site-util/env';
 import { EmbeddingModelV2, LanguageModelV2 } from '@ai-sdk/provider';
-import { AiModelType, isAiLanguageModelType } from '@/lib/ai/core';
+import { AiModelType, isAiLanguageModelType } from '/lib/ai/core';
 import {
   AiModelTypeValue_Embedding,
   AiModelTypeValue_GoogleEmbedding,
-} from '@/lib/ai/core/unions';
-import { log } from '@/lib/logger';
+} from '/lib/ai/core/unions';
+import { log } from '/lib/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
 import {
@@ -23,7 +23,6 @@ import {
  */
 class ModelAvailabilityManager {
   private availabilityMap = new Map<string, boolean>();
-  private static instance: ModelAvailabilityManager;
 
   private constructor() {
     // Initialize all models as available by default
@@ -31,10 +30,13 @@ class ModelAvailabilityManager {
   }
 
   static getInstance(): ModelAvailabilityManager {
-    if (!ModelAvailabilityManager.instance) {
-      ModelAvailabilityManager.instance = new ModelAvailabilityManager();
+    const KEY = Symbol.for('@noeducation/aiModelFactory:availability');
+    type GlobalReg = { [k: symbol]: ModelAvailabilityManager | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    if (!g[KEY]) {
+      g[KEY] = new ModelAvailabilityManager();
     }
-    return ModelAvailabilityManager.instance;
+    return g[KEY]!;
   }
 
   /**
@@ -177,10 +179,14 @@ const setupMiddleware = (
  * Azure custom provider with model aliases for our existing model names
  * Maps hifi, lofi, embedding to Azure-hosted models
  */
-let _azureProvider: ReturnType<typeof customProvider> | undefined;
 const getAzureProvider = () => {
-  if (_azureProvider) return _azureProvider;
-  _azureProvider = customProvider({
+  const KEY = Symbol.for('@noeducation/aiModelFactory:azureProvider');
+  type GlobalReg = {
+    [k: symbol]: ReturnType<typeof customProvider> | undefined;
+  };
+  const g = globalThis as unknown as GlobalReg;
+  if (g[KEY]) return g[KEY]!;
+  g[KEY] = customProvider({
     languageModels: {
       // Custom aliases for Azure models
       hifi: setupMiddleware(
@@ -227,17 +233,21 @@ const getAzureProvider = () => {
       useDeploymentBasedUrls: true,
     }),
   });
-  return _azureProvider;
+  return g[KEY]!;
 };
 
 /**
  * Google custom provider with model aliases matching Azure as much as possible
  * Maps hifi, lofi, embedding to Google-hosted models
  */
-let _googleProvider: ReturnType<typeof customProvider> | undefined;
 const getGoogleProvider = () => {
-  if (_googleProvider) return _googleProvider;
-  _googleProvider = customProvider({
+  const KEY = Symbol.for('@noeducation/aiModelFactory:googleProvider');
+  type GlobalReg = {
+    [k: symbol]: ReturnType<typeof customProvider> | undefined;
+  };
+  const g = globalThis as unknown as GlobalReg;
+  if (g[KEY]) return g[KEY]!;
+  g[KEY] = customProvider({
     languageModels: {
       // Match Azure aliases with equivalent Google models
       hifi: setupMiddleware(
@@ -276,17 +286,21 @@ const getGoogleProvider = () => {
       apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
     }),
   });
-  return _googleProvider;
+  return g[KEY]!;
 };
 
 /**
  * OpenAI custom provider with model aliases matching Azure and Google
  * Maps hifi, lofi, embedding to OpenAI-hosted models
  */
-let _openaiProvider: ReturnType<typeof customProvider> | undefined;
 const getOpenAIProvider = () => {
-  if (_openaiProvider) return _openaiProvider;
-  _openaiProvider = customProvider({
+  const KEY = Symbol.for('@noeducation/aiModelFactory:openaiProvider');
+  type GlobalReg = {
+    [k: symbol]: ReturnType<typeof customProvider> | undefined;
+  };
+  const g = globalThis as unknown as GlobalReg;
+  if (g[KEY]) return g[KEY]!;
+  g[KEY] = customProvider({
     languageModels: {
       // Match Azure aliases with equivalent OpenAI models
       hifi: setupMiddleware(
@@ -318,17 +332,21 @@ const getOpenAIProvider = () => {
       apiKey: env('OPENAI_API_KEY'),
     }),
   });
-  return _openaiProvider;
+  return g[KEY]!;
 };
 
 /**
  * Provider registry with Azure as default, Google and OpenAI as fallbacks
  * Supports creating models by alias with Azure as primary, falling back to Google and OpenAI
  */
-let _providerRegistry: ReturnType<typeof createProviderRegistry> | undefined;
 export const getProviderRegistry = () => {
-  if (_providerRegistry) return _providerRegistry;
-  _providerRegistry = createProviderRegistry(
+  const KEY = Symbol.for('@noeducation/aiModelFactory:providerRegistry');
+  type GlobalReg = {
+    [k: symbol]: ReturnType<typeof createProviderRegistry> | undefined;
+  };
+  const g = globalThis as unknown as GlobalReg;
+  if (g[KEY]) return g[KEY]!;
+  g[KEY] = createProviderRegistry(
     {
       azure: getAzureProvider(),
       google: getGoogleProvider(),
@@ -339,7 +357,7 @@ export const getProviderRegistry = () => {
         MiddlewareStateManager.Instance.getMiddlewareInstance(),
     },
   );
-  return _providerRegistry;
+  return g[KEY]!;
 };
 
 /**
@@ -575,8 +593,9 @@ export const enableModel = (modelKey: string): void =>
  * Disable all models for a provider
  * @param provider - Either 'azure', 'google', or 'openai'
  */
-export const disableProvider = (provider: 'azure' | 'google' | 'openai'): void =>
-  getAvailability().disableProvider(provider);
+export const disableProvider = (
+  provider: 'azure' | 'google' | 'openai',
+): void => getAvailability().disableProvider(provider);
 /**
  * Enable all models for a provider
  * @param provider - Either 'azure', 'google', or 'openai'
@@ -606,8 +625,9 @@ export const isModelAvailable = (modelKey: string): boolean =>
  * @param provider - Either 'azure', 'google', or 'openai'
  * @returns True if the provider has any available models, false otherwise
  */
-export const isProviderAvailable = (provider: 'azure' | 'google' | 'openai'): boolean =>
-  getAvailability().isProviderAvailable(provider);
+export const isProviderAvailable = (
+  provider: 'azure' | 'google' | 'openai',
+): boolean => getAvailability().isProviderAvailable(provider);
 /**
  * Get the current availability status of all models (for debugging)
  * @returns Object mapping model keys to their availability status

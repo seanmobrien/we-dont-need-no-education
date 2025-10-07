@@ -5,10 +5,16 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
-import { ChatPanelProvider } from '@/components/ai/chat-panel/chat-panel-context';
-import ChatPanel from '@/components/ai/chat-panel/chat-panel';
-import { ChatPanelLayout } from '@/components/ai/chat-panel/chat-panel-layout';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from '/__tests__/test-utils';
+import { ChatPanelProvider } from '/components/ai/chat-panel/chat-panel-context';
+import ChatPanel from '/components/ai/chat-panel/chat-panel';
+import { ChatPanelLayout } from '/components/ai/chat-panel/chat-panel-layout';
 
 // Mock the dependencies
 jest.mock('@ai-sdk/react', () => ({
@@ -26,12 +32,12 @@ jest.mock('@ai-sdk/react', () => ({
   }),
 }));
 
-jest.mock('@/lib/ai/core', () => ({
+jest.mock('/lib/ai/core', () => ({
   generateChatId: () => ({ id: 'test-id' }),
   isAnnotatedRetryMessage: () => false,
 }));
 
-jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
+jest.mock('/lib/components/ai/chat-fetch-wrapper', () => ({
   useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
 }));
 
@@ -44,7 +50,7 @@ jest.mock('react-dom', () => ({
 }));
 
 // Mock ResizableDraggableDialog
-jest.mock('@/components/mui/resizeable-draggable-dialog', () => {
+jest.mock('/components/mui/resizeable-draggable-dialog', () => {
   return function MockResizableDraggableDialog({
     children,
     title,
@@ -413,12 +419,12 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
       const positions = ['Dock Left', 'Dock Right', 'Dock Top', 'Dock Bottom'];
 
       for (const position of positions) {
-        const { unmount } = render(
+        const { unmount, container } = render(
           <ChatPanelTestWrapper isDashboardLayout={true} />,
         );
 
-        // Use getAllByTestId to handle multiple elements and get the first one
-        const menuButtons = screen.getAllByTestId('MoreVertIcon');
+        // Scope queries to the most-recent render container to avoid stale elements
+        const menuButtons = within(container).getAllByTestId('MoreVertIcon');
         const menuButton = menuButtons[0].closest('button');
         fireEvent.click(menuButton!);
         fireEvent.click(screen.getByText(position));
@@ -435,7 +441,7 @@ describe('ChatPanel Comprehensive Docking Tests', () => {
         // Clean up before next iteration
         unmount();
       }
-    });
+    }, 15000);
   });
 
   describe('State Persistence', () => {

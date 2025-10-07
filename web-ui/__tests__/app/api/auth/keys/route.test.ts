@@ -3,29 +3,29 @@
 /**
  *
  * @fileoverview Tests for the auth keys API endpoint
- * 
+ *
  * Tests the POST and GET endpoints for managing user public keys,
  * including validation, authentication, and database operations.
- * 
+ *
  * @module __tests__/app/api/auth/keys/route.test.ts
  */
 
 import { NextRequest } from 'next/server';
-import { POST, GET } from '@/app/api/auth/keys/route';
-import { auth } from '@/auth';
-import { drizDb } from '@/lib/drizzle-db';
+import { POST, GET } from '/app/api/auth/keys/route';
+import { auth } from '/auth';
+import { drizDb } from '/lib/drizzle-db';
 
 // Mock dependencies
-jest.mock('@/auth');
-jest.mock('@/lib/drizzle-db', () => {
-  const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+jest.mock('/auth');
+jest.mock('/lib/drizzle-db', () => {
+  const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
   return {
     drizDb: jest.fn(),
     schema: actualSchema.schema,
   };
 });
-jest.mock('@/lib/logger');
-jest.mock('@/lib/react-util', () => ({
+jest.mock('/lib/logger');
+jest.mock('/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error) => error),
   },
@@ -54,7 +54,8 @@ describe('/api/auth/keys', () => {
 
   describe('POST - Upload public key', () => {
     // A proper RSA public key in SPKI format (base64 encoded) - valid 512-bit test key
-    const validPublicKey = 'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALWGOW2ovUQ2hlsk+LbLFV/q3tNF4vAnCvaBVqqLsVlaZ8ZcWlpr59aj2J0zFGpqLBWtjZl/FgXWWlZHMa+o73sCAwEAAQ==';
+    const validPublicKey =
+      'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBALWGOW2ovUQ2hlsk+LbLFV/q3tNF4vAnCvaBVqqLsVlaZ8ZcWlpr59aj2J0zFGpqLBWtjZl/FgXWWlZHMa+o73sCAwEAAQ==';
 
     const createMockRequest = (body: any) => {
       return {
@@ -72,16 +73,18 @@ describe('/api/auth/keys', () => {
       mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue(null);
 
       // Mock successful insertion - proper Drizzle chain: insert(table).values(data).returning(cols)
-      const returningMock = jest.fn().mockResolvedValue([{
-        id: 1,
-        effectiveDate: '2024-01-01T00:00:00Z',
-        expirationDate: '2025-01-01T00:00:00Z',
-      }]);
-      
+      const returningMock = jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          effectiveDate: '2024-01-01T00:00:00Z',
+          expirationDate: '2025-01-01T00:00:00Z',
+        },
+      ]);
+
       const valuesMock = jest.fn().mockReturnValue({
         returning: returningMock,
       });
-      
+
       // Mock insert as a function that accepts a table parameter and returns the values chain
       mockDbInstance.insert.mockImplementation(() => ({
         values: valuesMock,
@@ -89,9 +92,9 @@ describe('/api/auth/keys', () => {
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
-      
+
       expect(response.status).toBe(200);
-      
+
       const responseData = await response.json();
       expect(responseData).toMatchObject({
         success: true,
@@ -105,9 +108,9 @@ describe('/api/auth/keys', () => {
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
-      
+
       expect(response.status).toBe(401);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: false,
@@ -122,9 +125,9 @@ describe('/api/auth/keys', () => {
 
       const request = createMockRequest({}); // Missing publicKey
       const response = await POST(request);
-      
+
       expect(response.status).toBe(400);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: false,
@@ -139,9 +142,9 @@ describe('/api/auth/keys', () => {
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
-      
+
       expect(response.status).toBe(400);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: false,
@@ -156,9 +159,9 @@ describe('/api/auth/keys', () => {
 
       const request = createMockRequest({ publicKey: 'invalid-key' });
       const response = await POST(request);
-      
+
       expect(response.status).toBe(400);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: false,
@@ -180,9 +183,9 @@ describe('/api/auth/keys', () => {
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
-      
+
       expect(response.status).toBe(200);
-      
+
       const responseData = await response.json();
       expect(responseData).toMatchObject({
         success: true,
@@ -198,14 +201,14 @@ describe('/api/auth/keys', () => {
 
       // Mock database error
       mockDbInstance.query.userPublicKeys.findFirst.mockRejectedValue(
-        new Error('Database connection failed')
+        new Error('Database connection failed'),
       );
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
-      
+
       expect(response.status).toBe(500);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: false,
@@ -220,30 +223,32 @@ describe('/api/auth/keys', () => {
 
       mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue(null);
 
-      const returningMock = jest.fn().mockResolvedValue([{
-        id: 1,
-        effectiveDate: '2024-01-01T00:00:00Z',
-        expirationDate: '2024-06-01T00:00:00Z',
-      }]);
-      
+      const returningMock = jest.fn().mockResolvedValue([
+        {
+          id: 1,
+          effectiveDate: '2024-01-01T00:00:00Z',
+          expirationDate: '2024-06-01T00:00:00Z',
+        },
+      ]);
+
       const valuesMock = jest.fn().mockReturnValue({
         returning: returningMock,
       });
-      
+
       mockDbInstance.insert.mockImplementation(() => ({
         values: valuesMock,
       }));
 
       const customExpirationDate = '2024-06-01T00:00:00Z';
-      const request = createMockRequest({ 
+      const request = createMockRequest({
         publicKey: validPublicKey,
         expirationDate: customExpirationDate,
       });
-      
+
       const response = await POST(request);
-      
+
       expect(response.status).toBe(200);
-      
+
       const responseData = await response.json();
       expect(responseData.expirationDate).toBe('2024-06-01T00:00:00Z');
     });
@@ -274,11 +279,10 @@ describe('/api/auth/keys', () => {
 
       mockDbInstance.query.userPublicKeys.findMany.mockResolvedValue(mockKeys);
 
-      
       const response = await GET();
-      
+
       expect(response.status).toBe(200);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: true,
@@ -290,11 +294,10 @@ describe('/api/auth/keys', () => {
     it('should return 401 when not authenticated', async () => {
       mockAuth.mockResolvedValue(null as never);
 
-      
       const response = await GET();
-      
+
       expect(response.status).toBe(401);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: false,
@@ -307,11 +310,10 @@ describe('/api/auth/keys', () => {
         user: { id: 'invalid-id' },
       } as never);
 
-      
       const response = await GET();
-      
+
       expect(response.status).toBe(400);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: false,
@@ -326,11 +328,10 @@ describe('/api/auth/keys', () => {
 
       mockDbInstance.query.userPublicKeys.findMany.mockResolvedValue([]);
 
-      
       const response = await GET();
-      
+
       expect(response.status).toBe(200);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: true,
@@ -345,14 +346,13 @@ describe('/api/auth/keys', () => {
       } as never);
 
       mockDbInstance.query.userPublicKeys.findMany.mockRejectedValue(
-        new Error('Database connection failed')
+        new Error('Database connection failed'),
       );
 
-      
       const response = await GET();
-      
+
       expect(response.status).toBe(500);
-      
+
       const responseData = await response.json();
       expect(responseData).toEqual({
         success: false,

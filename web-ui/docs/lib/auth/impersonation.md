@@ -4,13 +4,34 @@ This document describes the Keycloak impersonation service that enables authenti
 
 ## Overview
 
-The `Impersonation` class implements Keycloak's standard token exchange mechanism to obtain impersonated tokens for authenticated users. This allows downstream services (mem0, MCP tools) to receive proper user context instead of relying on session cookies or global API keys.
+The project supports multiple impersonation strategies selectable via environment flags. The default `Impersonation` class implements Keycloak's standard token exchange mechanism to obtain impersonated tokens for authenticated users. This allows downstream services (mem0, MCP tools) to receive proper user context instead of relying on session cookies or global API keys.
 
 ## Architecture
 
 ```
 NextRequest → Session → Impersonation → Keycloak Token Exchange → Bearer Token → MCP/mem0 APIs
 ```
+
+## Strategy Selection
+
+Selection is controlled by environment flags (highest priority first):
+
+1. `AUTH_KEYCLOAK_IMPERSONATE_THIRDPARTY=true`
+
+- Uses third-party libraries: Keycloak Admin Client + openid-client + got/tough-cookie
+- Flow: Admin login (offline token or password) → Admin impersonation → OIDC Authorization Code (prompt=none) → Token exchange
+
+2. `AUTH_KEYCLOAK_IMPERSONATE_RESTAPI=true`
+
+- Uses native fetch + Keycloak Admin REST API + Authorization Code flow
+
+3. `AUTH_KEYCLOAK_IMPERSONATE_IMPLICIT=true`
+
+- Uses Admin impersonation + Implicit flow (SoftwareMill approach)
+
+4. Default: Token Exchange (audience-based)
+
+All strategies implement the same `ImpersonationService` interface and are created via `fromRequest()` in `lib/auth/impersonation-factory.ts`.
 
 ## Configuration
 
@@ -26,6 +47,25 @@ AUTH_KEYCLOAK_CLIENT_SECRET=your-client-secret
 
 # Optional - specifies audience for impersonated tokens
 KEYCLOAK_IMPERSONATION_AUDIENCE=your-target-audience
+
+# Common redirect URI used by implicit/REST/third-party strategies
+NEXT_PUBLIC_HOSTNAME=https://your-app.example.com
+# The factory will derive: ${NEXT_PUBLIC_HOSTNAME}/api/auth/callback/keycloak
+
+# Enable one of the alternative strategies
+# Third-party strategy (highest priority)
+AUTH_KEYCLOAK_IMPERSONATE_THIRDPARTY=true
+# OR Admin REST API strategy
+# AUTH_KEYCLOAK_IMPERSONATE_RESTAPI=true
+# OR Admin Implicit strategy
+# AUTH_KEYCLOAK_IMPERSONATE_IMPLICIT=true
+
+# Third-party strategy (impersonator credentials – one of the two)
+# Prefer an offline token for the impersonator (admin service account/user)
+AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN=eyJhbGci...
+# Or use username/password (less preferred)
+AUTH_KEYCLOAK_IMPERSONATOR_USERNAME=admin
+AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD=super-secret
 ```
 
 ### Keycloak Configuration
@@ -36,13 +76,14 @@ Ensure your Keycloak client has the following settings:
 2. **Service Account Enabled**: Required for client credentials
 3. **Impersonation Permissions**: Client must have permissions to impersonate users
 4. **Audience Settings**: Configure appropriate audience restrictions if using `KEYCLOAK_IMPERSONATION_AUDIENCE`
+5. **Admin Impersonation Permissions**: For REST/Implicit/Third-party flows, the impersonator must have permission to impersonate other users in the realm
 
 ## Usage
 
 ### Basic Usage
 
 ```typescript
-import { Impersonation } from '@/lib/auth/impersonation';
+import { Impersonation } from '/lib/auth/impersonation';
 import { NextRequest } from 'next/server';
 
 // Create impersonation instance from request
@@ -51,13 +92,13 @@ const impersonation = await Impersonation.fromRequest(request);
 if (impersonation) {
   // Get impersonated token
   const token = await impersonation.getImpersonatedToken();
-  
+
   // Use in API calls
   const response = await fetch('https://api.example.com/data', {
     headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
   });
 }
 ```
@@ -65,27 +106,32 @@ if (impersonation) {
 ### With MCP Tools
 
 ```typescript
-import { toolProviderSetFactory } from '@/lib/ai/mcp/toolProviderFactory';
+import { toolProviderSetFactory } from '/lib/ai/mcp/toolProviderFactory';
 
-const impersonation = await Impersonation.fromRequest(request);
+// Use the factory to select the active strategy based on flags
+import { fromRequest as impersonationFactory } from '/lib/auth/impersonation-factory';
+
+const impersonation = await impersonationFactory({});
 
 const toolProviders = await toolProviderSetFactory([
   {
     url: 'https://mcp-server.example.com/api',
     allowWrite: true,
     impersonation, // Pass impersonation instance
-  }
+  },
 ]);
 ```
 
 ### With mem0 Client
 
 ```typescript
-import { memoryClientFactory } from '@/lib/ai/mem0';
+import { memoryClientFactory } from '/lib/ai/mem0';
 
-const impersonation = await Impersonation.fromRequest(request);
+import { fromRequest as impersonationFactory } from '/lib/auth/impersonation-factory';
 
-const memoryClient = memoryClientFactory({
+const impersonation = await impersonationFactory({});
+
+const memoryClient = await memoryClientFactory({
   impersonation, // Pass impersonation instance
   projectId: 'my-project',
 });
@@ -101,7 +147,7 @@ const memoryClient = memoryClientFactory({
 
 Creates an Impersonation instance from a NextRequest.
 
-- **Parameters**: 
+- **Parameters**:
   - `request`: The NextRequest containing session information
 - **Returns**: Promise resolving to Impersonation instance or null if not authenticated
 - **Example**:
@@ -248,15 +294,17 @@ log((l) => l.debug('Created impersonation instance', { userId }));
 log((l) => l.debug('Using cached impersonated token'));
 log((l) => l.debug('Performing Keycloak token exchange', { userId }));
 
-// Warning level logs  
+// Warning level logs
 log((l) => l.warn('Failed to get impersonated token, falling back', error));
-log((l) => l.warn('Incomplete Keycloak configuration', { hasIssuer, hasClientId }));
+log((l) =>
+  l.warn('Incomplete Keycloak configuration', { hasIssuer, hasClientId }),
+);
 
 // Error level logs (via LoggedError)
 LoggedError.isTurtlesAllTheWayDownBaby(error, {
   source: 'Impersonation.getImpersonatedToken',
   severity: 'error',
-  data: { userId, hasEmail }
+  data: { userId, hasEmail },
 });
 ```
 
@@ -265,7 +313,7 @@ LoggedError.isTurtlesAllTheWayDownBaby(error, {
 Track the following metrics for monitoring:
 
 - Token exchange success/failure rates
-- Cache hit/miss ratios  
+- Cache hit/miss ratios
 - Token refresh frequency
 - Fallback authentication usage
 
@@ -274,11 +322,13 @@ Track the following metrics for monitoring:
 Common issues and solutions:
 
 1. **Impersonation always returns null**
+
    - Check Keycloak environment variables
    - Verify user is authenticated
    - Check session contains user ID
 
 2. **Token exchange fails**
+
    - Verify Keycloak client configuration
    - Check network connectivity to Keycloak
    - Validate client permissions for token exchange
@@ -303,18 +353,18 @@ export const POST = (req: NextRequest) => {
 
     // Create impersonation instance
     const impersonation = await Impersonation.fromRequest(req);
-    
+
     // Use with tool providers
     const toolProviders = await toolProviderSetFactory([
       {
         url: '/api/ai/tools/sse',
         allowWrite: true,
         impersonation, // User-specific authentication
-      }
+      },
     ]);
 
     // Use with memory client
-    const memoryClient = memoryClientFactory({
+    const memoryClient = await memoryClientFactory({
       impersonation, // User-specific authentication
     });
 
@@ -378,22 +428,24 @@ If you have existing code using session cookies or global API keys:
 ### Example Migration
 
 **Before:**
+
 ```typescript
 const toolProviders = await toolProviderSetFactory([
   {
     url: '/api/tools',
-    headers: { 'Cookie': sessionCookie },
-  }
+    headers: { Cookie: sessionCookie },
+  },
 ]);
 ```
 
 **After:**
+
 ```typescript
 const impersonation = await Impersonation.fromRequest(req);
 const toolProviders = await toolProviderSetFactory([
   {
     url: '/api/tools',
     impersonation, // Replaces session cookie approach
-  }
+  },
 ]);
 ```

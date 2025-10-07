@@ -116,7 +116,7 @@ Responses go to cache jail if they have:
 ```typescript
 import { wrapLanguageModel } from 'ai';
 import { openai } from '@ai-sdk/openai';
-import { cacheWithRedis } from '@/lib/ai/middleware';
+import { cacheWithRedis } from '/lib/ai/middleware';
 
 // Create a cached model
 const model = wrapLanguageModel({

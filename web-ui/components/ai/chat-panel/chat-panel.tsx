@@ -18,21 +18,21 @@ import PublishIcon from '@mui/icons-material/Publish';
 import { useChat } from '@ai-sdk/react';
 import { UIMessage, DefaultChatTransport } from 'ai';
 import { ChatMenu } from './chat-menu';
-import { isAnnotatedRetryMessage } from '@/lib/ai/core/guards';
-import type { AiModelType } from '@/lib/ai/core/unions';
-import type { AnnotatedRetryMessage } from '@/lib/ai/core/types';
-import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
-import { log } from '@/lib/logger';
-import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
-import { getReactPlugin } from '@/instrument/browser';
+import { isAnnotatedRetryMessage } from '/lib/ai/core/guards';
+import type { AiModelType } from '/lib/ai/core/unions';
+import type { AnnotatedRetryMessage } from '/lib/ai/core/types';
+import { splitIds, generateChatId } from '/lib/ai/core/chat-ids';
+import { log } from '/lib/logger';
+import { useChatFetchWrapper } from '/lib/components/ai/chat-fetch-wrapper';
+import { getReactPlugin } from '/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
-import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
+import ResizableDraggableDialog from '/components/mui/resizeable-draggable-dialog';
 import type { DockPosition, ModelSelection } from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
-import { onClientToolRequest } from '@/lib/ai/client';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { onClientToolRequest } from '/lib/ai/client';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -149,10 +149,11 @@ const ChatPanel = ({ page }: { page: string }) => {
   const [initialMessages, setInitialMessages] = useState<
     UIMessage[] | undefined
   >(undefined);
-  const [activeModelSelection, setActiveModelSelection] = useState<ModelSelection>({
-    provider: 'azure',
-    model: 'hifi',
-  });
+  const [activeModelSelection, setActiveModelSelection] =
+    useState<ModelSelection>({
+      provider: 'azure',
+      model: 'hifi',
+    });
   const [rateLimitTimeout, setRateLimitTimeout] = useState<
     Map<AiModelType, Date>
   >(new Map<AiModelType, Date>());

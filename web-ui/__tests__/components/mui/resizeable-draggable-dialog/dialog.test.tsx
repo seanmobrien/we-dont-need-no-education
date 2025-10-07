@@ -5,13 +5,16 @@
  */
 
 import React from 'react';
-import { render, screen } from '@/__tests__/test-utils';
-import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
-import type { ResizeableDraggableDialogProps, ResizeableDraggablePaperProps } from '@/components/mui/resizeable-draggable-dialog/types';
+import { render, screen } from '/__tests__/test-utils';
+import ResizableDraggableDialog from '/components/mui/resizeable-draggable-dialog/dialog';
+import type {
+  ResizeableDraggableDialogProps,
+  ResizeableDraggablePaperProps,
+} from '/components/mui/resizeable-draggable-dialog/types';
 
 // Mock the ResizeableDraggablePaper component to render children properly
 jest.mock(
-  '@/components/mui/resizeable-draggable-dialog/resizeable-draggable-paper',
+  '/components/mui/resizeable-draggable-dialog/resizeable-draggable-paper',
   () => {
     const MockResizeableDraggablePaper = React.forwardRef<
       HTMLDivElement,
@@ -33,7 +36,13 @@ jest.mock(
 
       // Filter out non-DOM props
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { dragHandleId, dialogId, maxConstraints, minConstraints, ...domProps } = otherProps;
+      const {
+        dragHandleId,
+        dialogId,
+        maxConstraints,
+        minConstraints,
+        ...domProps
+      } = otherProps;
 
       return (
         <div
@@ -110,7 +119,6 @@ describe('ResizableDraggableDialog', () => {
   });
 
   describe('Props Integration', () => {
-
     it('renders dialog actions when provided', () => {
       const mockDialogActions = () => (
         <div data-testid="dialog-actions">Actions</div>

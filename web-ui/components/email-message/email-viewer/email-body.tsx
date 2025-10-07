@@ -16,16 +16,16 @@ import {
   Email as EmailIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
-import siteBuilder from '@/lib/site-util/url-builder';
+import siteBuilder from '/lib/site-util/url-builder';
 import { EmailViewerProps } from './types';
 import { useEmailMessageQuery } from './hooks';
 import { LoadingEmail } from './loading';
 import { Attachments } from './attachments';
 
 export const EmailBody: React.FC<EmailViewerProps> = ({ emailId }) => {
- const { email, isFetching } = useEmailMessageQuery({
-   emailId: emailId,   
- });
+  const { email, isFetching } = useEmailMessageQuery({
+    emailId: emailId,
+  });
   return isFetching ? (
     <LoadingEmail />
   ) : (

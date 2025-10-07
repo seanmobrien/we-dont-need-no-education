@@ -10,7 +10,7 @@ import type {
   LanguageModelV2,
   LanguageModelV2TextPart,
 } from '@ai-sdk/provider';
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 import {
   SerializableLanguageModelMiddleware,
   SerializableMiddleware,
@@ -33,8 +33,13 @@ import { generateText, wrapLanguageModel } from 'ai';
  * - Must be the first middleware in the chain to capture all downstream states
  */
 export class MiddlewareStateManager {
+  /** Symbol-based global registry key for MiddlewareStateManager singleton. */
+  static readonly #REGISTRY_KEY = Symbol.for(
+    '@noeducation/middleware:MiddlewareStateManager',
+  );
+
   /**
-   * Singleton holder for the global MiddlewareStateManager instance.
+   * Global singleton instance via symbol registry.
    * Use `MiddlewareStateManager.Instance` or the factory `createStateManagementMiddleware`
    * to obtain a reference.
    * @private
@@ -42,7 +47,16 @@ export class MiddlewareStateManager {
    */
   // implements
   //  SerializableMiddleware<BasicMiddlewareState>
-  static #globalInstance?: MiddlewareStateManager;
+  static get #globalInstance(): MiddlewareStateManager | undefined {
+    type GlobalReg = { [k: symbol]: MiddlewareStateManager | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    return g[this.#REGISTRY_KEY];
+  }
+  static set #globalInstance(value: MiddlewareStateManager | undefined) {
+    type GlobalReg = { [k: symbol]: MiddlewareStateManager | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    g[this.#REGISTRY_KEY] = value;
+  }
   /**
    * Reset the global singleton instance. Intended for tests and reinitialization.
    * Calling this will drop the existing global instance and allow a new one to be created.

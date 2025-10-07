@@ -34,6 +34,7 @@ export interface ErrorContext {
   errorBoundary?: string;
   breadcrumbs?: string[];
   additionalData?: Record<string, unknown>;
+  error?: Error;
 }
 
 /**
@@ -89,3 +90,7 @@ export interface ErrorReporterInterface {
 
   clearStoredErrors(): void;
 }
+
+export type IContextEnricher = {
+  enrichContext: (context: ErrorContext) => Promise<ErrorContext>;
+};

@@ -1,5 +1,5 @@
-import { isError } from '@/lib/react-util/utility-methods';
-import { log } from '@/lib/logger';
+import { isError } from '/lib/react-util/utility-methods';
+import { log } from '/lib/logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,
@@ -7,10 +7,11 @@ import {
   ErrorReport,
   ErrorReporterConfig,
   ErrorReporterInterface,
+  IContextEnricher,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
-import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
-import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
+import { isDrizzleError, errorFromCode } from '/lib/drizzle-db/drizzle-error';
+import type { PostgresError } from '/lib/drizzle-db/drizzle-error';
 
 export { ErrorSeverity };
 
@@ -42,6 +43,22 @@ const asEnvironment = (input: string): KnownEnvironmentType => {
     : 'development';
 };
 
+/**
+ * Type guard to check if a value is an ErrorReport
+ * @param check unknown value to check
+ * @returns boolean indicating if the value is an ErrorReport
+ */
+const isErrorReport = (check: unknown): check is ErrorReport =>
+  typeof check === 'object' &&
+  check !== null &&
+  'error' in check &&
+  isError(check.error) &&
+  'context' in check &&
+  check.context !== null &&
+  'severity' in check &&
+  check.severity !== null &&
+  check.severity !== undefined;
+
 const defaultConfig: ErrorReporterConfig = {
   enableStandardLogging: true,
   enableConsoleLogging: process.env.NODE_ENV === 'development',
@@ -51,13 +68,18 @@ const defaultConfig: ErrorReporterConfig = {
   environment: asEnvironment(process.env.NODE_ENV),
 };
 
+const isContextEnricher = (check: unknown): check is IContextEnricher =>
+  typeof check === 'object' &&
+  check !== null &&
+  'enrichContext' in check &&
+  typeof (check as IContextEnricher).enrichContext === 'function';
+
 /**
  * Centralized error reporting system
  * Handles logging, external service reporting, and error analytics
  */
 export class ErrorReporter implements ErrorReporterInterface {
   private config: ErrorReporterConfig;
-  private static instance: ErrorReporterInterface;
 
   private constructor(config: ErrorReporterConfig) {
     this.config = config;
@@ -82,41 +104,33 @@ export class ErrorReporter implements ErrorReporterInterface {
   public static getInstance(
     config?: ErrorReporterConfig,
   ): ErrorReporterInterface {
-    if (!ErrorReporter.instance) {
-      ErrorReporter.instance = ErrorReporter.createInstance(config ?? {});
+    const GLOBAL_KEY = Symbol.for(
+      '@noeducation/error-monitoring:ErrorReporter',
+    );
+    const registry = globalThis as unknown as {
+      [key: symbol]: ErrorReporterInterface | undefined;
+    };
+    if (!registry[GLOBAL_KEY]) {
+      registry[GLOBAL_KEY] = ErrorReporter.createInstance(config ?? {});
     }
-    return ErrorReporter.instance;
+    return registry[GLOBAL_KEY]!;
   }
 
-  #createErrorReport(
+  async #createErrorReport(
     error: Error | unknown,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     context: Partial<ErrorContext> = {},
-  ): ErrorReport {
+  ): Promise<ErrorReport> {
     let baseReport: ErrorReport;
     // Check to see if this is an error report already
-    if (
-      typeof error === 'object' &&
-      !!error &&
-      'error' in error &&
-      isError(error.error) &&
-      'context' in error &&
-      !!error.context &&
-      'severity' in error &&
-      error.severity !== null &&
-      error.severity !== undefined
-    ) {
-      baseReport = error as ErrorReport;
-      if (
-        !Object.keys(error).length ||
-        !('error' in error) ||
-        !error.error.message
-      ) {
-        baseReport.error = {
-          ...(baseReport?.error ?? {}),
+    if (isErrorReport(error)) {
+      baseReport = error;
+      if (!Object.keys(error).length || !error.error.message) {
+        baseReport.error = this.normalizeError({
+          ...baseReport.error,
           message:
-            baseReport.error?.message ?? 'Unknown error - No details provided',
-        };
+            baseReport?.error.message ?? 'Unknown error - No details provided',
+        });
       }
     } else {
       // Ensure we have a proper Error object
@@ -135,7 +149,7 @@ export class ErrorReporter implements ErrorReporterInterface {
     }
 
     // Enrich context with browser/environment data
-    const enrichedContext = this.enrichContext({
+    const enrichedContext = await this.enrichContext({
       ...(baseReport.context ?? {}),
       ...context,
     });
@@ -162,17 +176,19 @@ export class ErrorReporter implements ErrorReporterInterface {
   ): Promise<void> {
     try {
       // Ensure we have a proper Error object
-      const report = this.#createErrorReport(error, severity, context);
+      const report = await this.#createErrorReport(error, severity, context);
 
       if (this.config.enableStandardLogging) {
+        const source = report.context.source ?? 'ErrorReporter';
         log((l) =>
           l.error({
-            source: report.context.source ?? 'ErrorReporter',
-            error: report.error,
+            source,
+            body: JSON.stringify(report.error),
             severity: report.severity,
             fingerprint: report.fingerprint,
             tags: report.tags,
             context: report.context,
+            [Symbol.toStringTag]: `${source}: (${report.fingerprint ?? 'no fingerprint'}) ${report.error.message}`,
           }),
         );
       }
@@ -281,7 +297,9 @@ export class ErrorReporter implements ErrorReporterInterface {
   /**
    * Enrich error context with browser and application data
    */
-  private enrichContext(context: Partial<ErrorContext>): ErrorContext {
+  private async enrichContext(
+    context: Partial<ErrorContext>,
+  ): Promise<ErrorContext> {
     const enriched: ErrorContext = {
       timestamp: new Date(),
       ...context,
@@ -359,6 +377,19 @@ export class ErrorReporter implements ErrorReporterInterface {
       );
     }
 
+    // Give our error a chance to enrich the context further
+    if (isContextEnricher(enriched.error)) {
+      try {
+        const further = await enriched.error.enrichContext(enriched);
+        if (further) {
+          Object.assign(enriched, further);
+        }
+      } catch (err) {
+        log((l) =>
+          l.warn('Error in custom context enricher for error reporting', err),
+        );
+      }
+    }
     return enriched;
   }
 
@@ -367,7 +398,7 @@ export class ErrorReporter implements ErrorReporterInterface {
    */
   private generateFingerprint(error: Error, context: ErrorContext): string {
     const key = `${error.name}:${error.message}:${context.url || 'unknown'}`;
-    return btoa(decodeURIComponent(encodeURIComponent(key)))
+    return btoa(encodeURIComponent(key))
       .replace(/[^a-zA-Z0-9]/g, '')
       .substring(0, 16);
   }
@@ -504,7 +535,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   private async client_reportToApplicationInsights(
     report: ErrorReport,
   ): Promise<void> {
-    await import('@/instrument/browser').then((m) => {
+    await import('/instrument/browser').then((m) => {
       const appInsights = m.getAppInsights();
       if (appInsights) {
         appInsights.trackException({

@@ -1,18 +1,24 @@
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 import {
   AiSearchResultEnvelope,
   hybridDocumentSearchFactory,
 } from '../services/search';
 import { AiSearchToolResult, CaseFileSearchOptions } from './types';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { toolCallbackResultFactory, toolCallbackResultSchemaFactory } from './utility';
-import { appMeters } from '@/lib/site-util/metrics';
+import { LoggedError } from '/lib/react-util/errors/logged-error';
+import {
+  toolCallbackResultFactory,
+  toolCallbackResultSchemaFactory,
+} from './utility';
+import { appMeters } from '/lib/site-util/metrics';
 import type {
   ServerNotification,
   ServerRequest,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
-import { AiSearchResultEnvelopeSchema, CaseFileSearchOptionsSchema } from './schemas/searchObjects';
+import {
+  AiSearchResultEnvelopeSchema,
+  CaseFileSearchOptionsSchema,
+} from './schemas/searchObjects';
 import z from 'zod';
 
 // OpenTelemetry Metrics for SearchCaseFile Tool
@@ -135,9 +141,8 @@ export const searchCaseFile = async (
   }
 };
 
-export const searchCaseFileConfig ={
-  description:
-    'Uses hybrid search to find case files based on a query.',
+export const searchCaseFileConfig = {
+  description: 'Uses hybrid search to find case files based on a query.',
   inputSchema: {
     query: z
       .string()
@@ -146,9 +151,7 @@ export const searchCaseFileConfig ={
       'Options used to influence the search results, such as scope and pagination.',
     ),
   },
-  outputSchema: toolCallbackResultSchemaFactory(
-    AiSearchResultEnvelopeSchema,
-  ),
+  outputSchema: toolCallbackResultSchemaFactory(AiSearchResultEnvelopeSchema),
   annotations: {
     title: 'Search Case Files',
     readOnlyHint: true,

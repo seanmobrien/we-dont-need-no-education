@@ -9,7 +9,7 @@ import Image from 'next/image';
 import { providerMap, signIn } from '../../../auth';
 import { NextAppProvider } from '@toolpad/core/nextjs';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
-import { dumpError, LoggedError } from '@/lib/react-util';
+import { dumpError, LoggedError } from '/lib/react-util';
 import { cookies } from 'next/headers';
 
 const sharedImageProps = {
@@ -38,7 +38,7 @@ const SignInSlots = {
   form: { noValidate: true },
 };
 
-export const SignIn = async () => {
+const SignIn = async () => {
   const signInImpl = async (
     provider: AuthProvider,
     _formData: FormData,

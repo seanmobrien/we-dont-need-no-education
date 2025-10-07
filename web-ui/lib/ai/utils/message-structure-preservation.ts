@@ -1,21 +1,26 @@
 /**
  * @fileoverview Utility functions for message structure preservation
- * 
- * This module provides utility functions for working with the MessageStructureOptions
+ const shouldPreservePart = (
+  part: UIMessagePart<UIDataTypes, UITools>,
+  rules: MessagePartPreservationRules
+): boolean => { This module provides utility functions for working with the MessageStructureOptions
  * interface, including message filtering, preservation logic, and performance optimizations.
- * 
+ *
  * @module lib/ai/utils/message-structure-preservation
  */
 
 import type { UIMessage, UIMessagePart, UIDataTypes, UITools } from 'ai';
-import type { 
+import type {
   MessageStructureOptions,
   MessagePreservationResult,
   PreservationStrategy,
   MessagePartPreservationRules,
-} from '@/lib/ai/types/message-structure-preservation';
-import { createMessageStructureOptions, isPreservationEnabled } from '@/lib/ai/types/message-structure-preservation';
-import { log } from '@/lib/logger';
+} from '/lib/ai/types/message-structure-preservation';
+import {
+  createMessageStructureOptions,
+  isPreservationEnabled,
+} from '/lib/ai/types/message-structure-preservation';
+import { log } from '/lib/logger';
 
 /**
  * Cache for preservation decisions to improve performance
@@ -30,10 +35,10 @@ const cacheStats = {
 /**
  * Generate a cache key for a message preservation decision
  */
-function generateCacheKey(
+const generateCacheKey = (
   message: UIMessage,
-  options: MessageStructureOptions
-): string {
+  options: MessageStructureOptions,
+): string => {
   const messageHash = JSON.stringify({
     id: message.id,
     role: message.role,
@@ -41,7 +46,7 @@ function generateCacheKey(
     strategy: options.strategy,
   });
   return `preserve_${Buffer.from(messageHash).toString('base64').slice(0, 16)}`;
-}
+};
 
 /**
  * Clear the preservation cache
@@ -72,7 +77,7 @@ export function getPreservationCacheStats() {
  */
 function shouldPreservePart(
   part: UIMessagePart<UIDataTypes, UITools>,
-  rules: MessagePartPreservationRules
+  rules: MessagePartPreservationRules,
 ): boolean {
   switch (part.type) {
     case 'text':
@@ -94,10 +99,10 @@ function shouldPreservePart(
  */
 function transformMessageContent(
   part: UIMessagePart<UIDataTypes, UITools>,
-  options: MessageStructureOptions
+  options: MessageStructureOptions,
 ): UIMessagePart<UIDataTypes, UITools> {
   const transformation = options.contentTransformation;
-  
+
   if (!transformation || part.type !== 'text') {
     return part;
   }
@@ -111,14 +116,19 @@ function transformMessageContent(
   }
 
   // Apply length limits
-  if (transformation.maxContentLength && content.length > transformation.maxContentLength) {
+  if (
+    transformation.maxContentLength &&
+    content.length > transformation.maxContentLength
+  ) {
     if (transformation.summarizeContent) {
       // In a real implementation, you might call a summarization service here
-      content = content.substring(0, transformation.maxContentLength / 2) + 
-                (transformation.truncationSuffix || '...');
+      content =
+        content.substring(0, transformation.maxContentLength / 2) +
+        (transformation.truncationSuffix || '...');
     } else if (transformation.truncateContent) {
-      content = content.substring(0, transformation.maxContentLength) + 
-                (transformation.truncationSuffix || '...');
+      content =
+        content.substring(0, transformation.maxContentLength) +
+        (transformation.truncationSuffix || '...');
     }
   }
 
@@ -135,41 +145,49 @@ function evaluateContextualPreservation(
   message: UIMessage,
   index: number,
   messages: UIMessage[],
-  options: MessageStructureOptions
+  options: MessageStructureOptions,
 ): { preserve: boolean; reason: string } {
   const contextual = options.contextual;
-  
+
   if (!contextual) {
     return { preserve: true, reason: 'No contextual rules' };
   }
 
   // Apply custom context evaluator first (highest priority)
   if (contextual.contextEvaluator) {
-    const shouldPreserve = contextual.contextEvaluator(message, index, messages);
-    return { 
-      preserve: shouldPreserve, 
-      reason: shouldPreserve ? 'Custom evaluator: preserve' : 'Custom evaluator: filter' 
+    const shouldPreserve = contextual.contextEvaluator(
+      message,
+      index,
+      messages,
+    );
+    return {
+      preserve: shouldPreserve,
+      reason: shouldPreserve
+        ? 'Custom evaluator: preserve'
+        : 'Custom evaluator: filter',
     };
   }
 
   // Check recent interaction count
-  if (contextual.recentInteractionCount && 
-      index >= messages.length - contextual.recentInteractionCount) {
+  if (
+    contextual.recentInteractionCount &&
+    index >= messages.length - contextual.recentInteractionCount
+  ) {
     return { preserve: true, reason: 'Within recent interaction count' };
   }
 
   // Check for preserve keywords
   if (contextual.preserveKeywords?.length) {
-    const hasKeyword = message.parts.some(part => {
+    const hasKeyword = message.parts.some((part) => {
       if (part.type === 'text') {
         const textPart = part as { type: 'text'; text: string };
-        return contextual.preserveKeywords!.some(keyword =>
-          textPart.text.toLowerCase().includes(keyword.toLowerCase())
+        return contextual.preserveKeywords!.some((keyword) =>
+          textPart.text.toLowerCase().includes(keyword.toLowerCase()),
         );
       }
       return false;
     });
-    
+
     if (hasKeyword) {
       return { preserve: true, reason: 'Contains preserve keyword' };
     }
@@ -177,22 +195,25 @@ function evaluateContextualPreservation(
 
   // Check for preserve patterns
   if (contextual.preservePatterns?.length) {
-    const matchesPattern = message.parts.some(part => {
+    const matchesPattern = message.parts.some((part) => {
       if (part.type === 'text') {
         const textPart = part as { type: 'text'; text: string };
-        return contextual.preservePatterns!.some(pattern =>
-          pattern.test(textPart.text)
+        return contextual.preservePatterns!.some((pattern) =>
+          pattern.test(textPart.text),
         );
       }
       return false;
     });
-    
+
     if (matchesPattern) {
       return { preserve: true, reason: 'Matches preserve pattern' };
     }
   }
 
-  return { preserve: false, reason: 'No contextual preservation rules matched' };
+  return {
+    preserve: false,
+    reason: 'No contextual preservation rules matched',
+  };
 }
 
 /**
@@ -202,7 +223,7 @@ function evaluateMessagePreservation(
   message: UIMessage,
   index: number,
   messages: UIMessage[],
-  options: MessageStructureOptions
+  options: MessageStructureOptions,
 ): { preserve: boolean; reason: string; strategy: PreservationStrategy } {
   const strategy = options.strategy || 'semantic';
 
@@ -212,10 +233,10 @@ function evaluateMessagePreservation(
     const cached = preservationCache.get(cacheKey);
     if (cached !== undefined) {
       cacheStats.hits++;
-      return { 
-        preserve: cached, 
-        reason: 'Cached decision', 
-        strategy 
+      return {
+        preserve: cached,
+        reason: 'Cached decision',
+        strategy,
       };
     }
     cacheStats.misses++;
@@ -230,33 +251,40 @@ function evaluateMessagePreservation(
       preserve = true;
       reason = 'Full preservation strategy';
       break;
-      
+
     case 'minimal':
       // Only preserve if it has essential content
-      preserve = message.parts.some(part => 
-        part.type === 'text' || part.type === 'tool-call'
+      preserve = message.parts.some(
+        (part) => part.type === 'text' || part.type === 'tool-call',
       );
       reason = preserve ? 'Has essential content' : 'No essential content';
       break;
-      
+
     case 'content-only':
       // Preserve if it has text content
-      preserve = message.parts.some(part => part.type === 'text');
+      preserve = message.parts.some((part) => part.type === 'text');
       reason = preserve ? 'Has text content' : 'No text content';
       break;
-      
+
     case 'semantic':
       // Contextual evaluation for semantic preservation
-      const contextResult = evaluateContextualPreservation(message, index, messages, options);
+      const contextResult = evaluateContextualPreservation(
+        message,
+        index,
+        messages,
+        options,
+      );
       preserve = contextResult.preserve;
       reason = contextResult.reason;
       break;
-      
+
     case 'custom':
       // Apply custom validator if provided
       if (options.validator) {
         preserve = options.validator(message);
-        reason = preserve ? 'Custom validator: preserve' : 'Custom validator: filter';
+        reason = preserve
+          ? 'Custom validator: preserve'
+          : 'Custom validator: filter';
       }
       break;
   }
@@ -264,11 +292,11 @@ function evaluateMessagePreservation(
   // Cache the decision
   if (options.performance?.enableCaching) {
     preservationCache.set(cacheKey, preserve);
-    
+
     // Cleanup cache if it gets too large
     if (preservationCache.size > (options.performance.maxCacheSize || 1000)) {
       const keysToDelete = Array.from(preservationCache.keys()).slice(0, 100);
-      keysToDelete.forEach(key => preservationCache.delete(key));
+      keysToDelete.forEach((key) => preservationCache.delete(key));
     }
   }
 
@@ -280,7 +308,7 @@ function evaluateMessagePreservation(
  */
 export function preserveMessageStructure(
   messages: UIMessage[],
-  options: MessageStructureOptions = {}
+  options: MessageStructureOptions = {},
 ): MessagePreservationResult {
   const startTime = Date.now();
   const fullOptions = createMessageStructureOptions(options);
@@ -313,10 +341,15 @@ export function preserveMessageStructure(
   // Process each message
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i];
-    
+
     try {
-      const evaluation = evaluateMessagePreservation(message, i, messages, fullOptions);
-      
+      const evaluation = evaluateMessagePreservation(
+        message,
+        i,
+        messages,
+        fullOptions,
+      );
+
       if (fullOptions.debug) {
         debugDecisions.push({
           messageId: message.id,
@@ -329,8 +362,10 @@ export function preserveMessageStructure(
       if (evaluation.preserve) {
         // Transform message content if needed
         const transformedParts = message.parts
-          .filter(part => shouldPreservePart(part, fullOptions.partRules || {}))
-          .map(part => transformMessageContent(part, fullOptions));
+          .filter((part) =>
+            shouldPreservePart(part, fullOptions.partRules || {}),
+          )
+          .map((part) => transformMessageContent(part, fullOptions));
 
         if (transformedParts.length > 0) {
           preserved.push({
@@ -339,7 +374,9 @@ export function preserveMessageStructure(
           });
         } else {
           filtered.push(message);
-          warnings.push(`Message ${message.id} preserved but has no valid parts after filtering`);
+          warnings.push(
+            `Message ${message.id} preserved but has no valid parts after filtering`,
+          );
         }
       } else {
         filtered.push(message);
@@ -347,12 +384,14 @@ export function preserveMessageStructure(
     } catch (error) {
       filtered.push(message);
       warnings.push(`Error processing message ${message.id}: ${error}`);
-      
+
       if (fullOptions.debug) {
-        log(l => l.warn('Message preservation error', {
-          messageId: message.id,
-          error: error instanceof Error ? error.message : String(error),
-        }));
+        log((l) =>
+          l.warn('Message preservation error', {
+            messageId: message.id,
+            error: error instanceof Error ? error.message : String(error),
+          }),
+        );
       }
     }
   }
@@ -378,13 +417,15 @@ export function preserveMessageStructure(
 
   // Log performance information if debug is enabled
   if (fullOptions.debug) {
-    log(l => l.debug('Message structure preservation completed', {
-      originalCount: messages.length,
-      preservedCount: preserved.length,
-      filteredCount: filtered.length,
-      processingTimeMs: result.stats.processingTimeMs,
-      strategy: fullOptions.strategy,
-    }));
+    log((l) =>
+      l.debug('Message structure preservation completed', {
+        originalCount: messages.length,
+        preservedCount: preserved.length,
+        filteredCount: filtered.length,
+        processingTimeMs: result.stats.processingTimeMs,
+        strategy: fullOptions.strategy,
+      }),
+    );
   }
 
   return result;
@@ -394,14 +435,22 @@ export function preserveMessageStructure(
  * Validate message structure options
  */
 export function validateMessageStructureOptions(
-  options: MessageStructureOptions
+  options: MessageStructureOptions,
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
   // Validate strategy
-  const validStrategies: PreservationStrategy[] = ['full', 'content-only', 'semantic', 'minimal', 'custom'];
+  const validStrategies: PreservationStrategy[] = [
+    'full',
+    'content-only',
+    'semantic',
+    'minimal',
+    'custom',
+  ];
   if (options.strategy && !validStrategies.includes(options.strategy)) {
-    errors.push(`Invalid strategy: ${options.strategy}. Must be one of: ${validStrategies.join(', ')}`);
+    errors.push(
+      `Invalid strategy: ${options.strategy}. Must be one of: ${validStrategies.join(', ')}`,
+    );
   }
 
   // Validate performance options
@@ -418,7 +467,10 @@ export function validateMessageStructureOptions(
   // Validate content transformation
   if (options.contentTransformation) {
     const content = options.contentTransformation;
-    if (content.maxContentLength !== undefined && content.maxContentLength <= 0) {
+    if (
+      content.maxContentLength !== undefined &&
+      content.maxContentLength <= 0
+    ) {
       errors.push('maxContentLength must be positive');
     }
   }
@@ -426,7 +478,10 @@ export function validateMessageStructureOptions(
   // Validate contextual options
   if (options.contextual) {
     const contextual = options.contextual;
-    if (contextual.recentInteractionCount !== undefined && contextual.recentInteractionCount <= 0) {
+    if (
+      contextual.recentInteractionCount !== undefined &&
+      contextual.recentInteractionCount <= 0
+    ) {
       errors.push('recentInteractionCount must be positive');
     }
   }
@@ -441,7 +496,7 @@ export function validateMessageStructureOptions(
  * Create a preset configuration for common use cases
  */
 export function createPresetConfiguration(
-  preset: 'minimal' | 'balanced' | 'comprehensive' | 'performance'
+  preset: 'minimal' | 'balanced' | 'comprehensive' | 'performance',
 ): MessageStructureOptions {
   switch (preset) {
     case 'minimal':

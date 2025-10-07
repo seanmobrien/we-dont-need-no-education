@@ -1,24 +1,24 @@
 // @ts-nocheck
-import type { TelemetryClient, TelemetryOptions } from "./telemetry.types";
-import { fetch } from '@/lib/nextjs-util/fetch';
+import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
+import { fetch } from '/lib/nextjs-util/fetch';
 
-let version = "2.1.26";
+let version = '2.1.26';
 
 // Safely check for process.env in different environments
 let MEM0_TELEMETRY = true;
 try {
-  MEM0_TELEMETRY = process?.env?.MEM0_TELEMETRY === "false" ? false : true;
+  MEM0_TELEMETRY = process?.env?.MEM0_TELEMETRY === 'false' ? false : true;
 } catch (error) {}
-const POSTHOG_API_KEY = "phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX";
-const POSTHOG_HOST = "https://us.i.posthog.com/i/v0/e/";
+const POSTHOG_API_KEY = 'phc_hgJkUVJFYtmaJqrvf6CYN67TIQ8yhXAkWzUn9AMU4yX';
+const POSTHOG_HOST = 'https://us.i.posthog.com/i/v0/e/';
 
 // Simple hash function using random strings
-function generateHash(input: string): string {
+const generateHash = (input: string): string => {
   const randomStr =
     Math.random().toString(36).substring(2, 15) +
     Math.random().toString(36).substring(2, 15);
   return randomStr;
-}
+};
 
 class UnifiedTelemetry implements TelemetryClient {
   private apiKey: string;
@@ -37,7 +37,7 @@ class UnifiedTelemetry implements TelemetryClient {
       timestamp: new Date().toISOString(),
       ...properties,
       $process_person_profile: false,
-      $lib: "posthog-node",
+      $lib: 'posthog-node',
     };
 
     const payload = {
@@ -49,18 +49,18 @@ class UnifiedTelemetry implements TelemetryClient {
 
     try {
       const response = await fetch(this.host, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        console.error("Telemetry event capture failed:", await response.text());
+        console.error('Telemetry event capture failed:', await response.text());
       }
     } catch (error) {
-      console.error("Telemetry event capture failed:", error);
+      console.error('Telemetry event capture failed:', error);
     }
   }
 
@@ -77,7 +77,7 @@ async function captureClientEvent(
   additionalData = {},
 ) {
   if (!instance.telemetryId) {
-    console.warn("No telemetry ID found for instance");
+    console.warn('No telemetry ID found for instance');
     return;
   }
 

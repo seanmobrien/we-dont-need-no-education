@@ -8,13 +8,13 @@ import {
   SetStateAction,
   Dispatch,
 } from 'react';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
+import { errorReporter, ErrorSeverity } from '/lib/error-monitoring';
 import {
   asErrorLike,
   ErrorLike,
   isErrorLike,
   StringOrErrorLike,
-} from '@/lib/react-util/errors/error-like';
+} from '/lib/react-util/errors/error-like';
 
 /**
  * Configuration for error suppression patterns

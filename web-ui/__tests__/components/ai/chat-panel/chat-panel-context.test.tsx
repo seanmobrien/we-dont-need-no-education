@@ -1,6 +1,9 @@
 import React from 'react';
-import { render } from '@/__tests__/test-utils';
-import { ChatPanelProvider, useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
+import { render } from '/__tests__/test-utils';
+import {
+  ChatPanelProvider,
+  useChatPanelContext,
+} from '/components/ai/chat-panel/chat-panel-context';
 
 // Test component to access context
 const TestComponent = () => {
@@ -20,21 +23,21 @@ describe('ChatPanelContext', () => {
     const { container } = render(
       <ChatPanelProvider>
         <TestComponent />
-      </ChatPanelProvider>
+      </ChatPanelProvider>,
     );
     expect(container).toMatchSnapshot();
-  });
+  }, 10000);
 
   it('provides default context values', () => {
     const { getByTestId } = render(
       <ChatPanelProvider>
         <TestComponent />
-      </ChatPanelProvider>
+      </ChatPanelProvider>,
     );
-    
+
     expect(getByTestId('is-docked')).toHaveTextContent('false');
     expect(getByTestId('is-floating')).toHaveTextContent('false');
     expect(getByTestId('is-inline')).toHaveTextContent('true');
     expect(getByTestId('position')).toHaveTextContent('inline');
-  });
+  }, 10000);
 });

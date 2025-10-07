@@ -1,5 +1,5 @@
 /* @jest-environment node */
-/** 
+/**
  *
  * Email API Route Tests
  *
@@ -29,9 +29,9 @@ const mockEmailService = {
   findEmailIdByGlobalMessageId: jest.fn(),
 };
 
-jest.mock('@/lib/api/email/drizzle/query-parts');
+jest.mock('/lib/api/email/drizzle/query-parts');
 
-jest.mock('@/lib/api/email/email-service', () => ({
+jest.mock('/lib/api/email/email-service', () => ({
   EmailService: jest.fn().mockImplementation(() => mockEmailService),
 }));
 
@@ -49,18 +49,18 @@ const mockDbDelete = jest.fn();
 const mockSchema = {
   emails: {
     emailId: 'emailId',
-    senderId: 'senderId'
+    senderId: 'senderId',
   },
   contacts: {
     name: 'name',
-    email: 'email'
-  }
+    email: 'email',
+  },
 };
 
 const mockExtractParams = jest.fn();
 
 // Mock modules
-jest.mock('@/lib/nextjs-util', () => {
+jest.mock('/lib/nextjs-util', () => {
   return {
     extractParams: mockExtractParams,
     isLikeNextRequest: jest.fn((req) => {
@@ -69,10 +69,9 @@ jest.mock('@/lib/nextjs-util', () => {
   };
 });
 
-
-const mockDrizDbFactory = jest.fn(() => { 
+const mockDrizDbFactory = jest.fn(() => {
   const mockDb = makeMockDb();
-  
+
   return {
     ...mockDb,
     query: mockDbQuery,
@@ -80,7 +79,7 @@ const mockDrizDbFactory = jest.fn(() => {
   };
 });
 
-jest.mock('@/lib/drizzle-db', () => { 
+jest.mock('/lib/drizzle-db', () => {
   return {
     drizDbWithInit: (cb?: (db: unknown) => unknown): Promise<unknown> => {
       const db = mockDrizDbFactory();
@@ -89,23 +88,23 @@ jest.mock('@/lib/drizzle-db', () => {
     },
     drizDb: mockDrizDbFactory,
     schema: mockSchema,
-  }; 
+  };
 });
 
-jest.mock('@/lib/components/mui/data-grid/queryHelpers');
+jest.mock('/lib/components/mui/data-grid/queryHelpers');
 
 import { NextRequest } from 'next/server';
-import { POST, PUT, GET } from '@/app/api/email/route';
-import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
-import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
-import { makeMockDb } from '@/__tests__/jest.setup';
+import { POST, PUT, GET } from '/app/api/email/route';
+import { GET as GetWithId, DELETE } from '/app/api/email/[emailId]/route';
+import { selectForGrid } from '/lib/components/mui/data-grid/queryHelpers';
+import { makeMockDb } from '/__tests__/jest.setup';
 import {
   count_kpi,
   count_attachments,
   count_notes,
   count_responsive_actions,
   count_cta,
-} from '@/lib/api/email/drizzle/query-parts';
+} from '/lib/api/email/drizzle/query-parts';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('Email API', () => {
@@ -116,10 +115,12 @@ describe('Email API', () => {
     });
     (count_notes as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
     (count_cta as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
-    (count_responsive_actions as jest.Mock).mockReturnValue({ targetCount: 'count-kpi' });
+    (count_responsive_actions as jest.Mock).mockReturnValue({
+      targetCount: 'count-kpi',
+    });
 
     // Reset EmailService mocks
-    Object.values(mockEmailService).forEach(mock => mock.mockReset());
+    Object.values(mockEmailService).forEach((mock) => mock.mockReset());
 
     // Reset drizzle mocks (for [emailId]/route.ts)
     mockDbQuery.emails.findFirst.mockReset();
@@ -144,7 +145,13 @@ describe('Email API', () => {
           sentOn: '2023-01-01T00:00:00.000Z',
           threadId: 1,
           userId: 1,
-          recipients: [{ recipientId: 1, recipientEmail: 'test@test.com', recipientName: 'Test Name' }],
+          recipients: [
+            {
+              recipientId: 1,
+              recipientEmail: 'test@test.com',
+              recipientName: 'Test Name',
+            },
+          ],
         }),
       } as unknown as NextRequest;
 
@@ -153,14 +160,16 @@ describe('Email API', () => {
         sender: { contactId: 1, name: 'Test Sender', email: 'sender@test.com' },
         subject: 'Test Subject',
         body: 'Test Body',
-        "sentOn": '2023-01-01T00:00:00.000Z',
+        sentOn: '2023-01-01T00:00:00.000Z',
         threadId: 1,
         parentEmailId: null,
         importedFromId: null,
         globalMessageId: null,
-        recipients: [{ contactId: 1, email: 'test@test.com', name: 'Test Name' }],
+        recipients: [
+          { contactId: 1, email: 'test@test.com', name: 'Test Name' },
+        ],
       };
-      
+
       mockEmailService.createEmail.mockResolvedValue(mockResult);
 
       const res = await POST(req);
@@ -177,7 +186,13 @@ describe('Email API', () => {
         sentOn: new Date('2023-01-01T00:00:00.000Z'),
         threadId: 1,
         parentEmailId: null,
-        recipients: [{ recipientId: 1, recipientEmail: 'test@test.com', recipientName: 'Test Name' }],
+        recipients: [
+          {
+            recipientId: 1,
+            recipientEmail: 'test@test.com',
+            recipientName: 'Test Name',
+          },
+        ],
         sender: undefined,
       });
     });
@@ -196,15 +211,13 @@ describe('Email API', () => {
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
-        "details":  {
-          "fieldErrors": {
-            "recipients":  [
-              "Required",
-            ],
+        details: {
+          fieldErrors: {
+            recipients: ['Required'],
           },
-          "formErrors":  [],
+          formErrors: [],
         },
-        "error": "Validation failed",
+        error: 'Validation failed',
       });
       expect(mockEmailService.createEmail).not.toHaveBeenCalled();
     });
@@ -253,9 +266,11 @@ describe('Email API', () => {
         parentEmailId: null,
         importedFromId: null,
         globalMessageId: null,
-        recipients: [{ contactId: 1, email: 'test@test.com', name: 'Test Name' }],
+        recipients: [
+          { contactId: 1, email: 'test@test.com', name: 'Test Name' },
+        ],
       };
-      
+
       mockEmailService.updateEmail.mockResolvedValue(mockResult);
 
       const res = await PUT(req);
@@ -309,16 +324,13 @@ describe('Email API', () => {
 
       expect(res.status).toBe(400);
       expect(await res.json()).toEqual({
-        "details": {
-          "fieldErrors": 
-            {
-            "emailId": [
-              "Required",
-            ],
+        details: {
+          fieldErrors: {
+            emailId: ['Required'],
           },
-          "formErrors":  [],
+          formErrors: [],
         },
-        "error": "Validation failed",
+        error: 'Validation failed',
       });
     });
   });
@@ -447,7 +459,11 @@ describe('Email API', () => {
         results: [
           {
             emailId: ValidEmailId,
-            sender: { contactId: 1, name: 'Sender Name', email: 'sender@example.com' },
+            sender: {
+              contactId: 1,
+              name: 'Sender Name',
+              email: 'sender@example.com',
+            },
             subject: 'Test Subject',
             sentOn: '2023-01-01T00:00:00.000Z',
             threadId: null,
@@ -476,7 +492,7 @@ describe('Email API', () => {
 
       expect(res.status).toBe(200);
       const responseData = await res.json();
-      expect(responseData).toEqual(mockResult);      
+      expect(responseData).toEqual(mockResult);
     });
 
     it('should return 400 status if emailId is invalid', async () => {
@@ -493,7 +509,6 @@ describe('Email API', () => {
         error: 'Email ID is required',
       });
     });
-
   });
 
   describe('DELETE /api/email', () => {

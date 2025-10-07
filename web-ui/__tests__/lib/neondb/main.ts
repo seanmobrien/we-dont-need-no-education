@@ -10,7 +10,7 @@ import {
   queryRaw,
   db,
   Resultset,
-} from '@/lib/neondb/index-postgres';
+} from '/lib/neondb/index-postgres';
 
 /*
 const mockSql = jest.fn();
@@ -133,7 +133,8 @@ describe('db', () => {
         length: 1,
       }),
     );
-    const transform = (r: any) => Object.assign([{ id: r.id * 2 }], { id: r.id * 2 }) as any;
+    const transform = (r: any) =>
+      Object.assign([{ id: r.id * 2 }], { id: r.id * 2 }) as any;
     const result = await db(cb, { transform });
     expect(result).toBeInstanceOf(Resultset);
     expect(result[0]).toEqual({ id: 2 });

@@ -1,8 +1,12 @@
 import { MemoryClient } from './lib/client/mem0';
 import type { MemoryOptions, Message } from './lib/client/types';
-import type { Impersonation } from '@/lib/auth/impersonation';
-import { env } from '@/lib/site-util/env';
-import { log } from '@/lib/logger';
+import type {
+  MemoryHealthCheckResponse,
+  HealthCheckParams,
+} from './types/health-check';
+import { fromRequest, ImpersonationService } from '/lib/auth/impersonation';
+import { env } from '/lib/site-util/env';
+import { log } from '/lib/logger';
 
 /**
  * Options for configuring the MemoryClient instance.
@@ -16,23 +20,31 @@ type ClientOptions = {
   projectId?: string;
   orgId?: string;
   defaults?: MemoryOptions;
-  impersonation?: Impersonation;
+  impersonation?: ImpersonationService;
+};
+
+export type ExtendedMemoryClient = MemoryClient & {
+  healthCheck: (
+    params?: HealthCheckParams,
+  ) => Promise<MemoryHealthCheckResponse>;
 };
 
 /**
- * A specialized MemoryClient for SchoolLawywer use cases.
+ * A specialized MemoryClient for SchoolLawyer use cases.
  *
- * @class SchoolLawywerMemoryClient
+ * @class SchoolLawyerMemoryClient
  * @extends MemoryClient
- * @private #defaultOptions - Default memory options for the client.
+ * @private defaultOptions - Default memory options for the client.
  * @private #impersonation - Optional impersonation instance for authenticated calls.
  */
-class SchoolLawywerMemoryClient extends MemoryClient {
-  readonly #defaultOptions: MemoryOptions;
-  readonly #impersonation?: Impersonation;
+class SchoolLawyerMemoryClient
+  extends MemoryClient
+  implements ExtendedMemoryClient
+{
+  readonly defaultOptions: MemoryOptions;
 
   /**
-   * Constructs a new SchoolLawywerMemoryClient instance.
+   * Constructs a new SchoolLawyerMemoryClient instance.
    *
    * @param defaults - Default memory options.
    * @param projectId - The ID of the project.
@@ -40,70 +52,19 @@ class SchoolLawywerMemoryClient extends MemoryClient {
    * @param impersonation - Optional impersonation instance.
    * @param ops - Additional client options.
    */
-  constructor({ defaults, projectId, orgId, impersonation, ...ops }: ClientOptions) {
-    // Determine authentication method - prefer impersonation over API key
-    const authOptions = impersonation 
-      ? { bearerToken: undefined } // Will be set dynamically
-      : { apiKey: env('MEM0_API_KEY') };
-
+  constructor({ defaults, projectId, orgId, ...ops }: ClientOptions) {
     super({
       ...ops,
-      ...authOptions,
       projectId: (projectId ? projectId : env('MEM0_PROJECT_ID')) ?? undefined,
       organizationId: (orgId ? orgId : env('MEM0_ORG_ID')) ?? undefined,
       host: env('MEM0_API_HOST'),
     });
-    
-    this.#defaultOptions = {
+
+    this.defaultOptions = {
       ...(defaults ?? {}),
     };
-    this.#impersonation = impersonation;
-
-    // Log authentication method being used
-    if (impersonation) {
-      log((l) => l.debug('MemoryClient configured with impersonation', {
-        userId: impersonation.getUserContext().userId,
-        hasApiKey: !!env('MEM0_API_KEY'),
-      }));
-    }
   }
 
-  /**
-   * Updates the authorization header with an impersonated token if available.
-   * @private
-   */
-  private async updateAuthorizationIfNeeded(): Promise<void> {
-    if (this.#impersonation) {
-      try {
-        const impersonatedToken = await this.#impersonation.getImpersonatedToken();
-        const authHeader = `Bearer ${impersonatedToken}`;
-        
-        // Update both the headers property and the axios client
-        this.headers.Authorization = authHeader;
-        this.client.defaults.headers.Authorization = authHeader;
-        
-        log((l) => l.debug('Updated mem0 client with impersonated token', {
-          userId: this.#impersonation.getUserContext().userId,
-        }));
-      } catch (error) {
-        log((l) => l.warn('Failed to update mem0 client with impersonated token, using fallback', error));
-        // Fallback to API key if available
-        if (env('MEM0_API_KEY')) {
-          const fallbackAuth = `Token ${env('MEM0_API_KEY')}`;
-          this.headers.Authorization = fallbackAuth;
-          this.client.defaults.headers.Authorization = fallbackAuth;
-        }
-      }
-    }
-  }
-
-  /**
-   * Override HTTP methods to ensure impersonated token is current
-   */
-  override async _fetchWithErrorHandling(url: string, options: any): Promise<any> {
-    await this.updateAuthorizationIfNeeded();
-    return super._fetchWithErrorHandling(url, options);
-  }
   /**
    * Prepares the payload for memory operations.
    *
@@ -116,7 +77,7 @@ class SchoolLawywerMemoryClient extends MemoryClient {
     options: MemoryOptions,
   ): object {
     return super._preparePayload(messages, {
-      ...this.#defaultOptions,
+      ...this.defaultOptions,
       ...options,
     });
   }
@@ -127,11 +88,41 @@ class SchoolLawywerMemoryClient extends MemoryClient {
    * @param options - Memory options to include in the parameters.
    * @returns The prepared parameters object.
    */
-  override _prepareParams(options: MemoryOptions): object {
+  override _prepareParams(options: MemoryOptions): Record<string, string> {
     return super._prepareParams({
-      ...this.#defaultOptions,
+      ...this.defaultOptions,
       ...options,
     });
+  }
+
+  /**
+   * Performs a health check on the memory service.
+   *
+   * @param params - Optional parameters for the health check.
+   * @returns Promise resolving to the health check response.
+   */
+  async healthCheck(
+    params: HealthCheckParams = {},
+  ): Promise<MemoryHealthCheckResponse> {
+    const { strict = false, verbose = 1 } = params;
+    const searchParams = new URLSearchParams({
+      strict: strict.toString(),
+      verbose: verbose.toString(),
+    });
+
+    const url = `api/v1/stats/health-check?${searchParams.toString()}`;
+
+    try {
+      const response = await this._fetchWithErrorHandling(url, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      return response as MemoryHealthCheckResponse;
+    } catch (error) {
+      log((l) => l.error('Memory health check failed', { error, url }));
+      throw error;
+    }
   }
 }
 
@@ -140,18 +131,31 @@ class SchoolLawywerMemoryClient extends MemoryClient {
  *
  * @param options - Configuration options for the MemoryClient.
  * @returns A new MemoryClient instance.
- * 
+ *
  * @example
  * ```typescript
  * // Create with impersonation
  * const impersonation = await Impersonation.fromRequest(request);
- * const client = memoryClientFactory({ impersonation });
- * 
+ * const client = await memoryClientFactory({ impersonation });
+ *
  * // Create with API key (fallback)
- * const client = memoryClientFactory({});
+ * const client = await memoryClientFactory({});
  * ```
  */
-export const memoryClientFactory = (options: ClientOptions): MemoryClient => {
-  const ret = new SchoolLawywerMemoryClient(options);
+export const memoryClientFactory = async <
+  TClient extends MemoryClient = MemoryClient,
+>(
+  options: ClientOptions,
+): Promise<TClient> => {
+  const clientOps = {
+    ...options,
+  };
+  if (!options.impersonation) {
+    const impersonateService = await fromRequest({});
+    if (impersonateService) {
+      clientOps.impersonation = impersonateService;
+    }
+  }
+  const ret = new SchoolLawyerMemoryClient(clientOps) as unknown as TClient;
   return ret;
 };

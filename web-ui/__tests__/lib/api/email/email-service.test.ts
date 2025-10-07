@@ -1,9 +1,11 @@
-
-
-import { EmailService, CreateEmailRequest, UpdateEmailRequest } from '@/lib/api/email/email-service';
-import { EmailDomain } from '@/lib/api/email/email-drizzle-repository';
-import { EmailMessage } from '@/data-models/api/email-message';
-import { query } from '@/lib/neondb';
+import {
+  EmailService,
+  CreateEmailRequest,
+  UpdateEmailRequest,
+} from '/lib/api/email/email-service';
+import { EmailDomain } from '/lib/api/email/email-drizzle-repository';
+import { EmailMessage } from '/data-models/api/email-message';
+import { query } from '/lib/neondb';
 
 // Mock the EmailDrizzleRepository
 const mockRepository = {
@@ -15,17 +17,17 @@ const mockRepository = {
   findByGlobalMessageId: jest.fn(),
 };
 
-jest.mock('@/lib/api/email/email-drizzle-repository', () => ({
+jest.mock('/lib/api/email/email-drizzle-repository', () => ({
   EmailDrizzleRepository: jest.fn().mockImplementation(() => mockRepository),
 }));
 
 // Mock neondb for query operations
-jest.mock('@/lib/neondb', () => ({
+jest.mock('/lib/neondb', () => ({
   query: jest.fn(),
 }));
 
 // Mock logger
-jest.mock('@/lib/logger', () => ({
+jest.mock('/lib/logger', () => ({
   log: jest.fn(),
 }));
 
@@ -35,9 +37,9 @@ describe('EmailService', () => {
 
   beforeEach(() => {
     // Reset all mocks
-    Object.values(mockRepository).forEach(mock => mock.mockReset());
+    Object.values(mockRepository).forEach((mock) => mock.mockReset());
     mockQuery.mockReset();
-    
+
     // Create service instance
     service = new EmailService();
   });
@@ -60,10 +62,20 @@ describe('EmailService', () => {
 
       // Mock contact and recipients queries
       mockQuery
-        .mockResolvedValueOnce([{ contact_id: 1, name: 'Test Sender', email: 'sender@test.com' }])
         .mockResolvedValueOnce([
-          { recipient_id: 2, recipient_name: 'Recipient One', recipient_email: 'rec1@test.com' },
-          { recipient_id: 3, recipient_name: 'Recipient Two', recipient_email: 'rec2@test.com' },
+          { contact_id: 1, name: 'Test Sender', email: 'sender@test.com' },
+        ])
+        .mockResolvedValueOnce([
+          {
+            recipient_id: 2,
+            recipient_name: 'Recipient One',
+            recipient_email: 'rec1@test.com',
+          },
+          {
+            recipient_id: 3,
+            recipient_name: 'Recipient Two',
+            recipient_email: 'rec2@test.com',
+          },
         ]);
 
       const result = await service.getEmailById('email-1');
@@ -105,7 +117,11 @@ describe('EmailService', () => {
         body: 'Email body',
         sentOn: '2023-01-01T00:00:00Z',
         recipients: [
-          { recipientId: 2, recipientName: 'Recipient One', recipientEmail: 'rec1@test.com' },
+          {
+            recipientId: 2,
+            recipientName: 'Recipient One',
+            recipientEmail: 'rec1@test.com',
+          },
         ],
       };
 
@@ -127,8 +143,16 @@ describe('EmailService', () => {
       mockQuery
         .mockResolvedValueOnce([]) // Insert recipients
         .mockResolvedValueOnce([]) // Create document unit
-        .mockResolvedValueOnce([{ contact_id: 1, name: 'Test Sender', email: 'sender@test.com' }]) // Get sender for full email
-        .mockResolvedValueOnce([{ recipient_id: 2, recipient_name: 'Recipient One', recipient_email: 'rec1@test.com' }]); // Get recipients for full email
+        .mockResolvedValueOnce([
+          { contact_id: 1, name: 'Test Sender', email: 'sender@test.com' },
+        ]) // Get sender for full email
+        .mockResolvedValueOnce([
+          {
+            recipient_id: 2,
+            recipient_name: 'Recipient One',
+            recipient_email: 'rec1@test.com',
+          },
+        ]); // Get recipients for full email
 
       // Mock getEmailById to return the full email
       const expectedFullEmail: EmailMessage = {
@@ -141,7 +165,9 @@ describe('EmailService', () => {
         parentEmailId: null,
         importedFromId: null,
         globalMessageId: null,
-        recipients: [{ contactId: 2, name: 'Recipient One', email: 'rec1@test.com' }],
+        recipients: [
+          { contactId: 2, name: 'Recipient One', email: 'rec1@test.com' },
+        ],
       };
       jest.spyOn(service, 'getEmailById').mockResolvedValue(expectedFullEmail);
 
@@ -184,7 +210,7 @@ describe('EmailService', () => {
       await service.createEmail(createRequest);
 
       expect(mockRepository.create).toHaveBeenCalledWith(
-        expect.objectContaining({ senderId: 99 })
+        expect.objectContaining({ senderId: 99 }),
       );
     });
 
@@ -195,7 +221,9 @@ describe('EmailService', () => {
         recipients: [{ recipientId: 2 }],
       } as CreateEmailRequest;
 
-      await expect(service.createEmail(createRequest)).rejects.toThrow('Sender ID is required');
+      await expect(service.createEmail(createRequest)).rejects.toThrow(
+        'Sender ID is required',
+      );
     });
   });
 
@@ -228,7 +256,7 @@ describe('EmailService', () => {
 
       expect(result.subject).toBe('Updated Subject');
       expect(result.body).toBe('Updated Body');
-      
+
       expect(mockRepository.update).toHaveBeenCalledWith({
         emailId: 'email-1',
         subject: 'Updated Subject',
@@ -240,7 +268,13 @@ describe('EmailService', () => {
       const updateRequest: UpdateEmailRequest = {
         emailId: 'email-1',
         subject: 'Updated Subject',
-        recipients: [{ recipientId: 5, recipientName: 'New Recipient', recipientEmail: 'new@test.com' }],
+        recipients: [
+          {
+            recipientId: 5,
+            recipientName: 'New Recipient',
+            recipientEmail: 'new@test.com',
+          },
+        ],
       };
 
       mockRepository.update.mockResolvedValue({} as EmailDomain);
@@ -291,7 +325,9 @@ describe('EmailService', () => {
       const result = await service.findEmailIdByGlobalMessageId('global-123');
 
       expect(result).toBe('found-email-id');
-      expect(mockRepository.findByGlobalMessageId).toHaveBeenCalledWith('global-123');
+      expect(mockRepository.findByGlobalMessageId).toHaveBeenCalledWith(
+        'global-123',
+      );
     });
 
     it('should return null when global message ID is not found', async () => {
@@ -304,13 +340,14 @@ describe('EmailService', () => {
   });
 
   describe('error handling', () => {
-
     it('should handle query errors in getEmailById', async () => {
       mockRepository.get.mockResolvedValue({} as EmailDomain);
       const error = new Error('Query error');
       mockQuery.mockRejectedValue(error);
 
-      await expect(service.getEmailById('email-1')).rejects.toThrow('Query error');
+      await expect(service.getEmailById('email-1')).rejects.toThrow(
+        'Query error',
+      );
     });
 
     it('should handle errors in createEmail', async () => {
@@ -324,7 +361,9 @@ describe('EmailService', () => {
         recipients: [],
       };
 
-      await expect(service.createEmail(createRequest)).rejects.toThrow('Create error');
+      await expect(service.createEmail(createRequest)).rejects.toThrow(
+        'Create error',
+      );
     });
   });
 });

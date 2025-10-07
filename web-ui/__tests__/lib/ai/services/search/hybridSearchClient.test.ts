@@ -7,43 +7,79 @@
 
 // Mock fetch module BEFORE importing SUTs so the implementation is captured.
 const fetchMock = jest.fn();
-jest.mock('@/lib/nextjs-util/fetch', () => ({ fetch: (...args: unknown[]) => fetchMock(...args) }));
+jest.mock('/lib/nextjs-util/fetch', () => ({
+  fetch: (...args: unknown[]) => fetchMock(...args),
+}));
 
-import { hybridDocumentSearchFactory } from '@/lib/ai/services/search/HybridDocumentSearch';
-import { hybridPolicySearchFactory } from '@/lib/ai/services/search/HybridPolicySearch';
-import { HybridSearchClient } from '@/lib/ai/services/search/HybridSearchBase';
+import { hybridDocumentSearchFactory } from '/lib/ai/services/search/HybridDocumentSearch';
+import { hybridPolicySearchFactory } from '/lib/ai/services/search/HybridPolicySearch';
+import { HybridSearchClient } from '/lib/ai/services/search/HybridSearchBase';
 
 // Minimal option types (avoid deep imports of tool unions if not needed for shapes)
-import type { HybridSearchPayload, AiSearchResultEnvelope } from '@/lib/ai/services/search/types';
-import type { CaseFileSearchOptions, PolicySearchOptions } from '@/lib/ai/tools/types';
-import { LoggedError } from '@/lib/react-util';
+import type {
+  HybridSearchPayload,
+  AiSearchResultEnvelope,
+} from '/lib/ai/services/search/types';
+import type {
+  CaseFileSearchOptions,
+  PolicySearchOptions,
+} from '/lib/ai/tools/types';
+import { LoggedError } from '/lib/react-util';
 
 // Build a concrete test subclass to expose protected static parsing helpers.
-interface TestOptions { count?: boolean }
+interface TestOptions {
+  count?: boolean;
+}
 class TestClient extends HybridSearchClient<TestOptions> {
-  protected getSearchIndexName(): string { return 'test-index'; }
+  protected getSearchIndexName(): string {
+    return 'test-index';
+  }
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected appendScopeFilter(_payload: HybridSearchPayload): void { /* intentionally not used in test subclass */ }
+  protected appendScopeFilter(_payload: HybridSearchPayload): void {
+    /* intentionally not used in test subclass */
+  }
 
   // Expose static protected helpers for direct unit testing
-  static exposeParseId(meta: { attributes: Array<{ key: string; value: unknown }> }) { return (this as unknown as typeof HybridSearchClient).parseId(meta); }
-  static exposeParseMetadata(meta: { attributes: Array<{ key: string; value: unknown }> }) { return (this as unknown as typeof HybridSearchClient).parseMetadata(meta); }
-  static exposeParseResponse(json: unknown, query: string, options: TestOptions) { return (this as unknown as typeof HybridSearchClient).parseResponse(json as Record<string, unknown>, query, options); }
+  static exposeParseId(meta: {
+    attributes: Array<{ key: string; value: unknown }>;
+  }) {
+    return (this as unknown as typeof HybridSearchClient).parseId(meta);
+  }
+  static exposeParseMetadata(meta: {
+    attributes: Array<{ key: string; value: unknown }>;
+  }) {
+    return (this as unknown as typeof HybridSearchClient).parseMetadata(meta);
+  }
+  static exposeParseResponse(
+    json: unknown,
+    query: string,
+    options: TestOptions,
+  ) {
+    return (this as unknown as typeof HybridSearchClient).parseResponse(
+      json as Record<string, unknown>,
+      query,
+      options,
+    );
+  }
 }
 
 // Shared embedding service mock
 const makeEmbeddingService = () => ({
-  embed: jest.fn().mockResolvedValue([0.11, 0.22, 0.33])
+  embed: jest.fn().mockResolvedValue([0.11, 0.22, 0.33]),
 });
 
 describe('HybridSearchClient static helpers', () => {
   test('parseId extracts id when present', () => {
-    const id = TestClient.exposeParseId({ attributes: [{ key: 'id', value: 123 }] });
+    const id = TestClient.exposeParseId({
+      attributes: [{ key: 'id', value: 123 }],
+    });
     expect(id).toBe('123');
   });
 
   test('parseId returns undefined when absent', () => {
-    const id = TestClient.exposeParseId({ attributes: [{ key: 'other', value: 'x' }] });
+    const id = TestClient.exposeParseId({
+      attributes: [{ key: 'other', value: 'x' }],
+    });
     expect(id).toBeUndefined();
   });
 
@@ -55,9 +91,9 @@ describe('HybridSearchClient static helpers', () => {
         { key: 'single', value: 'x' },
         { key: 'single', value: 'y' }, // promotes to array
         { key: 'other', value: 'z' },
-      ]
+      ],
     });
-    expect(meta).toEqual({ tag: ['a','b'], single: ['x','y'], other: 'z' });
+    expect(meta).toEqual({ tag: ['a', 'b'], single: ['x', 'y'], other: 'z' });
   });
 
   test('parseResponse returns empty results on missing value array', () => {
@@ -66,18 +102,32 @@ describe('HybridSearchClient static helpers', () => {
   });
 
   test('parseResponse throws on error block', () => {
-    expect(() => TestClient.exposeParseResponse({ error: { code: 'Bad', message: 'boom'} }, 'q', {}))
-      .toThrow(/boom/);
+    expect(() =>
+      TestClient.exposeParseResponse(
+        { error: { code: 'Bad', message: 'boom' } },
+        'q',
+        {},
+      ),
+    ).toThrow(/boom/);
   });
 
   test('parseResponse maps hits, total & continuationToken', () => {
-    const env: AiSearchResultEnvelope = TestClient.exposeParseResponse({
-      value: [
-        { id: 'fallback-id', content: 'Hello', metadata: { attributes: [{ key: 'id', value: 'meta-id' }] }, '@search.score': 5.5 },
-      ],
-      '@odata.count': 42,
-      '@odata.nextLink': 'token123'
-    }, 'hello', {});
+    const env: AiSearchResultEnvelope = TestClient.exposeParseResponse(
+      {
+        value: [
+          {
+            id: 'fallback-id',
+            content: 'Hello',
+            metadata: { attributes: [{ key: 'id', value: 'meta-id' }] },
+            '@search.score': 5.5,
+          },
+        ],
+        '@odata.count': 42,
+        '@odata.nextLink': 'token123',
+      },
+      'hello',
+      {},
+    );
     expect(env.results).toHaveLength(1);
     expect(env.results[0].id).toBe('meta-id');
     expect(env.total).toBe(42);
@@ -123,8 +173,11 @@ describe('HybridDocumentSearch.hybridSearch', () => {
     const embeddingService = makeEmbeddingService();
     fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
     const client = hybridDocumentSearchFactory({ embeddingService });
-  const docOpts: CaseFileSearchOptions = { scope: ['email','attachment'], emailId: 'E123' } as unknown as CaseFileSearchOptions;
-  await client.hybridSearch('query', docOpts);
+    const docOpts: CaseFileSearchOptions = {
+      scope: ['email', 'attachment'],
+      emailId: 'E123',
+    } as unknown as CaseFileSearchOptions;
+    await client.hybridSearch('query', docOpts);
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.filter).toMatch(/document_type/);
     expect(body.filter).toMatch(/email_id/);
@@ -144,8 +197,10 @@ describe('HybridPolicySearch.hybridSearch', () => {
     const embeddingService = makeEmbeddingService();
     fetchMock.mockResolvedValue({ json: async () => ({ value: [] }) });
     const client = hybridPolicySearchFactory({ embeddingService });
-  const polOpts: PolicySearchOptions = { scope: ['state'] } as PolicySearchOptions;
-  await client.hybridSearch('policy query', polOpts);
+    const polOpts: PolicySearchOptions = {
+      scope: ['state'],
+    } as PolicySearchOptions;
+    await client.hybridSearch('policy query', polOpts);
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.filter).toMatch(/document_type/);
     // state maps to '2'
@@ -156,12 +211,16 @@ describe('HybridPolicySearch.hybridSearch', () => {
 describe('HybridSearchClient.hybridSearch error handling', () => {
   test('wraps and rethrows fetch/network errors', async () => {
     const embeddingService = makeEmbeddingService();
-    fetchMock.mockImplementation(() => { throw new Error('network fail'); });
+    fetchMock.mockImplementation(() => {
+      throw new Error('network fail');
+    });
     const client = hybridDocumentSearchFactory({ embeddingService });
     let error: unknown | undefined = undefined;
-    await (client.hybridSearch('fail query').catch((err) => error = err));
+    await client.hybridSearch('fail query').catch((err) => (error = err));
     expect(error).toBeDefined();
     expect(error).toBeInstanceOf(LoggedError);
-    expect((error as { message:string; stack:string; }).message).toContain('network fail');
+    expect((error as { message: string; stack: string }).message).toContain(
+      'network fail',
+    );
   });
 });

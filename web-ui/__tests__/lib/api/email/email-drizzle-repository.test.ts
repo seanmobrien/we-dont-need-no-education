@@ -1,13 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-import { EmailDrizzleRepository, EmailDomain } from '@/lib/api/email/email-drizzle-repository';
-import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import {
+  EmailDrizzleRepository,
+  EmailDomain,
+} from '/lib/api/email/email-drizzle-repository';
+import { ValidationError } from '/lib/react-util/errors/validation-error';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
+import { drizDb, drizDbWithInit } from '/lib/drizzle-db';
 /*
 // Mock drizzle-db
-jest.mock('@/lib/drizzle-db', () => {
+jest.mock('/lib/drizzle-db', () => {
   const { mockDeep } = require('jest-mock-extended');
   
   const makeMockDb = () => mockDeep();
@@ -21,7 +24,7 @@ jest.mock('@/lib/drizzle-db', () => {
 */
 
 // Mock drizzle schema
-jest.mock('@/drizzle/schema', () => {
+jest.mock('/drizzle/schema', () => {
   const { Table } = require('drizzle-orm');
   const { PgTable } = require('drizzle-orm/pg-core');
 
@@ -57,12 +60,12 @@ describe('EmailDrizzleRepository', () => {
   beforeEach(() => {
     // Clear all mocks
     // jest.clearAllMocks();
-    
+
     // Create repository instance
     repository = new EmailDrizzleRepository();
-    
+
     // Get the mock database instance
-    //const { drizDb } = require('@/lib/drizzle-db');
+    //const { drizDb } = require('/lib/drizzle-db');
     mockDb = drizDb();
   });
 
@@ -102,7 +105,7 @@ describe('EmailDrizzleRepository', () => {
       expect(() => {
         (repository as any).validate('create', invalidEmail);
       }).toThrow(ValidationError);
-      
+
       expect(() => {
         (repository as any).validate('create', invalidEmail);
       }).toThrow('senderId||subject||emailContents');
@@ -128,7 +131,7 @@ describe('EmailDrizzleRepository', () => {
       expect(() => {
         (repository as any).validate('update', invalidUpdate);
       }).toThrow(ValidationError);
-      
+
       expect(() => {
         (repository as any).validate('update', invalidUpdate);
       }).toThrow('emailId');
@@ -143,7 +146,7 @@ describe('EmailDrizzleRepository', () => {
       expect(() => {
         (repository as any).validate('update', invalidUpdate);
       }).toThrow(ValidationError);
-      
+
       expect(() => {
         (repository as any).validate('update', invalidUpdate);
       }).toThrow('At least one field is required for update');
@@ -230,7 +233,7 @@ describe('EmailDrizzleRepository', () => {
         thread_id: 789,
         global_message_id: 'updated-global-123',
       });
-      
+
       // emailId should not be included in update data
       expect(result.email_id).toBeUndefined();
     });
@@ -267,14 +270,16 @@ describe('EmailDrizzleRepository', () => {
 
   describe('findByGlobalMessageId', () => {
     it('should find email by global message ID', async () => {
-      mockDb.__setRecords([{
-        emailId: 'test-uuid',
-        senderId: 123,
-        subject: 'Test Subject',
-        emailContents: 'Test content',
-        sentTimestamp: '2023-01-01T00:00:00Z',
-        globalMessageId: 'global-123',
-      }]);
+      mockDb.__setRecords([
+        {
+          emailId: 'test-uuid',
+          senderId: 123,
+          subject: 'Test Subject',
+          emailContents: 'Test content',
+          sentTimestamp: '2023-01-01T00:00:00Z',
+          globalMessageId: 'global-123',
+        },
+      ]);
 
       const result = await repository.findByGlobalMessageId('global-123');
 
@@ -303,12 +308,16 @@ describe('EmailDrizzleRepository', () => {
     it('should handle database errors in findByGlobalMessageId', async () => {
       const mockError = new Error('Database connection failed');
       mockDb.execute.mockRejectedValue(mockError);
-      
-      // Spy on logDatabaseError
-      const logSpy = jest.spyOn(repository as any, 'logDatabaseError').mockImplementation();
 
-      await expect(repository.findByGlobalMessageId('global-123')).rejects.toThrow('Database connection failed');
-      
+      // Spy on logDatabaseError
+      const logSpy = jest
+        .spyOn(repository as any, 'logDatabaseError')
+        .mockImplementation();
+
+      await expect(
+        repository.findByGlobalMessageId('global-123'),
+      ).rejects.toThrow('Database connection failed');
+
       expect(logSpy).toHaveBeenCalledWith('findByGlobalMessageId', mockError);
     });
   });
@@ -371,8 +380,8 @@ describe('EmailDrizzleRepository', () => {
         importedFromId: 'import-123',
         globalMessageId: 'global-123',
       });
-      
-      // emailContents should be excluded from summary  
+
+      // emailContents should be excluded from summary
       expect(result.emailContents).toBeUndefined();
     });
   });

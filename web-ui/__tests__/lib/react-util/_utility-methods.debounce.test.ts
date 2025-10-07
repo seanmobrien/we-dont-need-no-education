@@ -1,13 +1,13 @@
-import { hideConsoleOutput } from '@/__tests__/test-utils';
-import { debounce } from '@/lib/react-util/debounce';
+import { hideConsoleOutput } from '/__tests__/test-utils';
+import { debounce } from '/lib/react-util/debounce';
 
-jest.useFakeTimers();
 const mockConsole = hideConsoleOutput();
 
 describe('debounce', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
   afterEach(() => {
-    // jest.clearAllTimers();
-    // jest.clearAllMocks();
     mockConsole.dispose();
   });
 

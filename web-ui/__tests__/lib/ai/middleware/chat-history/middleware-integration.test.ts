@@ -2,9 +2,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mock external dependencies
-jest.mock('@/lib/drizzle-db', () => {
-  const schema = jest.requireActual('@/lib/drizzle-db/schema');
-  const exports = jest.requireActual('@/lib/drizzle-db');
+jest.mock('/lib/drizzle-db', () => {
+  const schema = jest.requireActual('/lib/drizzle-db/schema');
+  const exports = jest.requireActual('/lib/drizzle-db');
 
   return {
     ...exports,
@@ -49,24 +49,24 @@ jest.mock('@/lib/drizzle-db', () => {
 /**
  * Integration tests for chat history middleware supporting both streaming and text completions
  */
-import { hideConsoleOutput } from '@/__tests__/test-utils';
-import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
-import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
-import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
+import { hideConsoleOutput } from '/__tests__/test-utils';
+import { createChatHistoryMiddlewareEx } from '/lib/ai/middleware/chat-history';
+import { createUserChatHistoryContext } from '/lib/ai/middleware/chat-history/create-chat-history-context';
+import type { ChatHistoryContext } from '/lib/ai/middleware/chat-history/types';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { schema, drizDb } from '@/lib/drizzle-db';
+import { schema, drizDb } from '/lib/drizzle-db';
 
-jest.mock('@/lib/logger', () => ({
+jest.mock('/lib/logger', () => ({
   log: jest.fn(),
 }));
 
-jest.mock('@/lib/react-util', () => ({
+jest.mock('/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
 }));
 
-jest.mock('@/lib/ai/core', () => ({
+jest.mock('/lib/ai/core', () => ({
   generateChatId: jest.fn(() => ({ id: 'generated-chat-id' })),
 }));
 
@@ -186,7 +186,7 @@ describe('Chat History Middleware Integration', () => {
     it('should gracefully handle database errors in wrapGenerate', async () => {
       // Arrange - Mock transaction to fail
       mockConsole.setup();
-      const mockDb = await import('@/lib/drizzle-db');
+      const mockDb = await import('/lib/drizzle-db');
       (mockDb.drizDb as jest.Mock).mockImplementationOnce(() => ({
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),
       }));
@@ -218,7 +218,7 @@ describe('Chat History Middleware Integration', () => {
     it('should gracefully handle database errors in wrapStream', async () => {
       // Arrange - Mock transaction to fail
       mockConsole.setup();
-      const mockDb = require('@/lib/drizzle-db');
+      const mockDb = require('/lib/drizzle-db');
       mockDb.drizDb.mockImplementationOnce(() => ({
         transaction: jest.fn(() => Promise.reject(new Error('DB Error'))),
       }));

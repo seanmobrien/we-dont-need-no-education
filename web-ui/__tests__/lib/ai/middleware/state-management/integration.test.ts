@@ -7,13 +7,13 @@
  * protocol including state collection and restoration across multiple middleware.
  */
 
-import { aiModelFactory } from '@/lib/ai';
+import { aiModelFactory } from '/lib/ai';
 import {
   MiddlewareStateManager,
   setNormalizedDefaultsMiddleware,
-} from '@/lib/ai/middleware';
+} from '/lib/ai/middleware';
 import { generateText, wrapLanguageModel } from 'ai';
-import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
+import { setupMaps } from '/__tests__/jest.mock-provider-model-maps';
 
 const makeMiddleware = () => ({
   wrapGenerate: async (options: any) => {

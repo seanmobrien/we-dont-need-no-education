@@ -1,8 +1,8 @@
 'use client'; // Error boundaries must be Client Components
 
 import { useEffect } from 'react';
-import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
-import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
+import { RenderErrorBoundaryFallback } from '/components/error-boundaries/renderFallback';
+import { errorReporter, ErrorSeverity } from '/lib/error-monitoring';
 
 type ErrorProps = {
   error: Error & { digest?: string };
@@ -21,7 +21,7 @@ export default function Error({ error, reset }: ErrorProps) {
       {
         errorBoundary: 'RootError',
       },
-      ErrorSeverity.HIGH
+      ErrorSeverity.HIGH,
     );
   }, [error]);
 

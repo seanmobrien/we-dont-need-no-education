@@ -14,9 +14,10 @@ import {
   createToolOptimizingMiddleware,
   type ToolOptimizingMiddlewareConfig,
   getToolOptimizingMiddlewareMetrics,
-} from '@/lib/ai/middleware/tool-optimizing-middleware';
-import { ToolMap } from '@/lib/ai/services/model-stats/tool-map';
-import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
+  ExtendedCallOptions,
+} from '/lib/ai/middleware/tool-optimizing-middleware';
+import { ToolMap } from '/lib/ai/services/model-stats/tool-map';
+import { optimizeMessagesWithToolSummarization } from '/lib/ai/chat/message-optimizer-tools';
 import type {
   LanguageModelV2CallOptions,
   LanguageModelV2Middleware,
@@ -24,13 +25,13 @@ import type {
   LanguageModelV2ProviderDefinedTool,
 } from '@ai-sdk/provider';
 import type { UIMessage } from 'ai';
-import { LoggedError } from '@/lib/react-util';
+import { LoggedError } from '/lib/react-util';
 
 // Mock dependencies
-jest.mock('@/lib/ai/services/model-stats/tool-map');
-jest.mock('@/lib/ai/chat/message-optimizer-tools');
-jest.mock('@/lib/logger');
-jest.mock('@/lib/site-util/metrics', () => ({
+jest.mock('/lib/ai/services/model-stats/tool-map');
+jest.mock('/lib/ai/chat/message-optimizer-tools');
+jest.mock('/lib/logger');
+jest.mock('/lib/site-util/metrics', () => ({
   appMeters: {
     createCounter: jest.fn().mockReturnValue({
       add: jest.fn(),
@@ -49,8 +50,10 @@ jest.mock('@/lib/site-util/metrics', () => ({
   hashUserId: jest.fn((userId: string) => `hashed_${userId}`),
 }));
 
-jest.mock('@/lib/react-util', () => {
-  const original = jest.requireActual('@/lib/react-util');
+type MiddlewareType = 'generateText' | 'generate' | 'stream' | 'streamText';
+
+jest.mock('/lib/react-util', () => {
+  const original = jest.requireActual('/lib/react-util');
   const mockLoggedErrorImpl: any = jest
     .fn()
     .mockImplementation((message, options) => {
@@ -390,7 +393,8 @@ describe('Tool Optimizing Middleware', () => {
       });
       expect(mockOptimizeMessages).toHaveBeenCalled();
 
-      jest.clearAllMocks();
+      // jest.clearAllMocks();
+      mockOptimizeMessages.mockClear();
 
       // Test with stream - should not optimize
       await middleware.transformParams!({
@@ -494,7 +498,7 @@ describe('Tool Optimizing Middleware', () => {
       });
 
       const p = {
-        type: 'generate',
+        type: 'generate' as MiddlewareType,
         model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
         params: mockParams,
       };
@@ -594,7 +598,7 @@ describe('Tool Optimizing Middleware', () => {
       const result = await middleware.transformParams!({
         type: 'generate',
         model: { modelId: 'gpt-4.1', provider: 'azure' } as any,
-        params: paramsWithoutMessages,
+        params: paramsWithoutMessages as unknown as ExtendedCallOptions,
       });
 
       expect(mockOptimizeMessages).not.toHaveBeenCalled();

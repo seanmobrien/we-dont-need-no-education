@@ -1,14 +1,14 @@
 /**
  * @fileoverview Key validation utilities for user authentication
- * 
+ *
  * This module provides utilities for validating user cryptographic keys
  * against server-stored public keys, ensuring users maintain valid
  * credentials for secure operations.
- * 
+ *
  * @module lib/site-util/auth/key-validation
  */
 
-import { log } from '@/lib/logger';
+import { log } from '/lib/logger';
 
 /**
  * Storage key for tracking last key validation timestamp
@@ -53,20 +53,22 @@ export interface KeySyncResult {
  */
 export function isKeyValidationDue(): boolean {
   try {
-    const lastValidation = globalThis.localStorage && globalThis.localStorage.getItem(KEY_VALIDATION_STORAGE_KEY);
+    const lastValidation =
+      globalThis.localStorage &&
+      globalThis.localStorage.getItem(KEY_VALIDATION_STORAGE_KEY);
     if (!lastValidation) {
       return true; // Never validated before
     }
     const lastValidationTime = parseInt(lastValidation, 10);
-    
+
     // If parsing failed, default to validation needed
     if (isNaN(lastValidationTime)) {
       return true;
     }
-    
+
     const now = Date.now();
     const timeSinceLastValidation = now - lastValidationTime;
-    
+
     return timeSinceLastValidation >= KEY_VALIDATION_INTERVAL;
   } catch (error) {
     log((l) => l.warn('Failed to check key validation timing', { error }));
@@ -126,12 +128,12 @@ async function derivePublicKeyFromPrivate(privateKey: CryptoKey): Promise<Crypto
  */
 export async function validateUserKeys(
   serverPublicKeys: string[],
-  getUserPublicKey: () => Promise<CryptoKey | null>
+  getUserPublicKey: () => Promise<CryptoKey | null>,
 ): Promise<KeyValidationResult> {
   try {
     // Check if user has a local public key
     const localPublicKey = await getUserPublicKey();
-    
+
     if (!localPublicKey) {
       return {
         isValid: false,
@@ -140,15 +142,15 @@ export async function validateUserKeys(
         action: 'generate_key',
       };
     }
-    
+
     // Convert local public key to base64 for comparison
     const localPublicKeyBase64 = await exportPublicKeyToBase64(localPublicKey);
-    
+
     // Check if local key matches any server key
     const matchesServerKey = serverPublicKeys.some(
-      (serverKey) => serverKey === localPublicKeyBase64
+      (serverKey) => serverKey === localPublicKeyBase64,
     );
-    
+
     if (matchesServerKey) {
       return {
         isValid: true,
@@ -157,7 +159,7 @@ export async function validateUserKeys(
         action: 'none',
       };
     }
-    
+
     // Local key exists but doesn't match server keys
     return {
       isValid: false,
@@ -165,14 +167,19 @@ export async function validateUserKeys(
       matchesServerKey: false,
       action: 'upload_key', // Try uploading current key first
     };
-    
   } catch (error) {
-    log((l) => l.error('Key validation failed', { error, serverPublicKeys: serverPublicKeys.length }));
+    log((l) =>
+      l.error('Key validation failed', {
+        error,
+        serverPublicKeys: serverPublicKeys.length,
+      }),
+    );
     return {
       isValid: false,
       hasLocalKey: false,
       matchesServerKey: false,
-      error: error instanceof Error ? error.message : 'Unknown validation error',
+      error:
+        error instanceof Error ? error.message : 'Unknown validation error',
       action: 'retry',
     };
   }
@@ -191,7 +198,7 @@ export async function synchronizeKeys(
     publicKey,
   }: {
     publicKey: string;
-  }) => Promise<void>
+  }) => Promise<void>,
 ): Promise<KeySyncResult> {
   try {
     log((l) => l.info('Starting key synchronization'));
@@ -254,7 +261,7 @@ export async function synchronizeKeys(
 
 /**
  * Performs the complete key validation and synchronization workflow
- * 
+ *
  * This is the main function that should be called to validate and sync keys
  */
 export async function performKeyValidationWorkflow(
@@ -285,9 +292,7 @@ export async function performKeyValidationWorkflow(
       return { validated: true, synchronized: false };
     }
     // If validation failed, try to synchronize
-    if (
-      validationResult.action === 'upload_key'
-    ) {
+    if (validationResult.action === 'upload_key') {
       const publicKey = await keyManagerMethods.exportPublicKeyForServer();
       if (!publicKey) {
         return {
@@ -295,15 +300,13 @@ export async function performKeyValidationWorkflow(
           synchronized: false,
           error: 'Failed to export public key for upload',
         };
-      } 
+      }
       await keyManagerMethods.uploadPublicKeyToServer({
-        publicKey
+        publicKey,
       });
     }
 
-    if (
-      validationResult.action === 'generate_key'
-    ) {
+    if (validationResult.action === 'generate_key') {
       const syncResult = await synchronizeKeys(
         keyManagerMethods.generateKeyPair,
         keyManagerMethods.exportPublicKeyForServer,

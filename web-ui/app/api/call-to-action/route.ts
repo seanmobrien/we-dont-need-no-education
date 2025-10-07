@@ -1,17 +1,17 @@
 import { NextRequest } from 'next/server';
-import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
+import { CallToActionDetails } from '/data-models/api/email-properties/extended-properties';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '@/lib/nextjs-util/server/utils';
+} from '/lib/nextjs-util/server/utils';
 import { eq, and, sql, SQL } from 'drizzle-orm';
-import { drizDbWithInit } from '@/lib/drizzle-db';
-import { schema } from '@/lib/drizzle-db/schema';
+import { drizDbWithInit } from '/lib/drizzle-db';
+import { schema } from '/lib/drizzle-db/schema';
 import {
   DrizzleSelectQuery,
   getEmailColumn,
   selectForGrid,
-} from '@/lib/components/mui/data-grid/queryHelpers';
+} from '/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
 export const dynamic = 'force-dynamic';

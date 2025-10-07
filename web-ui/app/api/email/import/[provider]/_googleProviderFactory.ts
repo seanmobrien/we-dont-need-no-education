@@ -1,4 +1,4 @@
-import { credentialFactory } from '@/lib/site-util/auth';
+import { credentialFactory } from '/lib/site-util/auth';
 import { google } from 'googleapis';
 import { NextApiRequest } from 'next';
 import { NextRequest, NextResponse } from 'next/server';
