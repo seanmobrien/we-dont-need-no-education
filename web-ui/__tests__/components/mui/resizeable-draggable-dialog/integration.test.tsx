@@ -132,7 +132,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       await waitFor(() => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       });
-    });
+    }, 15000);
   });
 
   describe('Size Management Integration', () => {

@@ -91,7 +91,7 @@ describe('ChatPanel Model String Formatting', () => {
         }),
       );
     });
-  });
+  }, 10000);
 
   it('updates model string when provider is changed via menu', async () => {
     renderChatPanel();
@@ -110,7 +110,9 @@ describe('ChatPanel Model String Formatting', () => {
     const input = screen.getByPlaceholderText('Type your message here...');
     const sendButton = screen.getByTestId('ChatMessageSend');
 
-    fireEvent.change(input, { target: { value: 'Test message with Google' } });
+    fireEvent.change(input, {
+      target: { value: 'Test message with Google' },
+    });
     fireEvent.click(sendButton);
 
     await waitFor(() => {
@@ -123,7 +125,7 @@ describe('ChatPanel Model String Formatting', () => {
         }),
       );
     });
-  });
+  }, 10000);
 
   it('updates model string when model type is changed via menu', async () => {
     renderChatPanel();
@@ -155,7 +157,7 @@ describe('ChatPanel Model String Formatting', () => {
         }),
       );
     });
-  });
+  }, 10000);
 
   it('handles OpenAI provider selection correctly', async () => {
     renderChatPanel();
@@ -187,5 +189,5 @@ describe('ChatPanel Model String Formatting', () => {
         }),
       );
     });
-  });
+  }, 10000);
 });

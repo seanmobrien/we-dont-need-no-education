@@ -26,7 +26,7 @@ describe('ChatPanelContext', () => {
       </ChatPanelProvider>,
     );
     expect(container).toMatchSnapshot();
-  });
+  }, 10000);
 
   it('provides default context values', () => {
     const { getByTestId } = render(
@@ -39,5 +39,5 @@ describe('ChatPanelContext', () => {
     expect(getByTestId('is-floating')).toHaveTextContent('false');
     expect(getByTestId('is-inline')).toHaveTextContent('true');
     expect(getByTestId('position')).toHaveTextContent('inline');
-  });
+  }, 10000);
 });

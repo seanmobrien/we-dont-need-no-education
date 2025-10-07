@@ -673,6 +673,7 @@ const DefaultEnvVariables = {
     'azure-applicationinsights-connection-string',
   NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID: 'test-environment-id',
   NEXT_PUBLIC_FLAGSMITH_API_URL: 'https://api.flagsmith.com/api/v1/',
+  FLAGSMITH_SDK_KEY: 'test-server-id',
   AUTH_KEYCLOAK_ISSUER: 'https://keycloak.example.com/realms/test',
   AUTH_KEYCLOAK_CLIENT_ID: 'test-client-id',
   AUTH_KEYCLOAK_CLIENT_SECRET: 'test-client-secret',
@@ -973,11 +974,51 @@ jest.mock('flagsmith/react', () => {
     FlagsmithProvider: ({ children }: { children: React.ReactNode }) =>
       children,
     useFlagsmith: jest.fn(() => mockFlagsmithInstanceFactory()),
+    useFlagsmithLoading: jest.fn(() => ({
+      isLoading: false,
+      error: null,
+      isFetching: false,
+    })),
   };
 });
 jest.mock('flagsmith/isomorphic', () => ({
   createFlagsmithInstance: jest.fn(() => mockFlagsmithInstanceFactory()),
 }));
+
+// Prevent dynamic import side-effects from the logged-error-reporter during tests
+jest.mock('/lib/react-util/errors/logged-error-reporter', () => {
+  return {
+    reporter: jest.fn(() =>
+      Promise.resolve({
+        reportError: jest.fn().mockImplementation(async (_report: any) => {
+          // emulate console logging behavior of the real reporter so tests
+          // that spy on console.group / console.error can observe it
+          try {
+            if (typeof console.group === 'function') {
+              console.group(`🐛 Mock Error Report`);
+            }
+            if (typeof console.error === 'function') {
+              console.error('Error:', _report?.error ?? _report);
+            }
+            if (typeof console.table === 'function') {
+              console.table(_report?.context ?? {});
+            }
+          } finally {
+            if (typeof console.groupEnd === 'function') {
+              console.groupEnd();
+            }
+          }
+          return Promise.resolve(undefined);
+        }),
+        reportBoundaryError: jest.fn().mockResolvedValue(undefined),
+        reportUnhandledRejection: jest.fn().mockResolvedValue(undefined),
+        setupGlobalHandlers: jest.fn(),
+        getStoredErrors: jest.fn(() => []),
+        clearStoredErrors: jest.fn(),
+      }),
+    ),
+  };
+});
 /* OMG yikes!
 // Polyfill Response.json if not available (Node.js environment doesn't have it)
 if (!globalThis.Response?.json) {

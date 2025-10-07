@@ -98,6 +98,8 @@ const buildRawInstance = () => {
     AZURE_STORAGE_ACCOUNT_KEY: process.env.AZURE_STORAGE_ACCOUNT_KEY,
     /** Azure Storage account name. Example: 'mystorageaccount' */
     AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
+    /*** Flagsmith server-side SDK key, supporting update and privledged server-side reads */
+    FLAGSMITH_SDK_KEY: process.env.FLAGSMITH_SDK_KEY,
     /** Google Generative AI API key for Gemini models. Example: 'AIzaSyA1234567890abcdef...' */
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     /** Google Generative AI service base URL. Example: 'https://generativelanguage.googleapis.com/v1beta' */
@@ -356,6 +358,12 @@ const serverEnvSchema = z
       .min(1)
       .describe(
         'Azure Storage account name for blob and file operations. Example: mystorageaccount',
+      ),
+    FLAGSMITH_SDK_KEY: z
+      .string()
+      .min(1)
+      .describe(
+        'Flagsmith server-side SDK key for feature flag management and privileged reads.',
       ),
     GOOGLE_GENERATIVE_AI_API_KEY: z
       .string()

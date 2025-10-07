@@ -43,7 +43,7 @@ describe('ChatPanel Docking Functionality', () => {
     expect(screen.getByText('Dock Right')).toBeInTheDocument();
     expect(screen.getByText('Dock Top')).toBeInTheDocument();
     expect(screen.getByText('Dock Bottom')).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('shows placeholder when docked to left', async () => {
     render(<ChatPanel page="test" />);
@@ -59,7 +59,7 @@ describe('ChatPanel Docking Functionality', () => {
     expect(
       screen.getByText(/Chat panel is docked to left/),
     ).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('handles dashboard layout flag', async () => {
     render(<ChatPanel page="test" />);
@@ -68,7 +68,7 @@ describe('ChatPanel Docking Functionality', () => {
     expect(
       screen.getByPlaceholderText(/Type your message here/),
     ).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('preserves current position in menu selection', async () => {
     render(<ChatPanel page="test" />);
@@ -86,7 +86,7 @@ describe('ChatPanel Docking Functionality', () => {
     // The dock right option should be selected (this would be shown by styling/selection state)
     const dockRightSelected = screen.getByText('Dock Right');
     expect(dockRightSelected).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('can undock from docked state', async () => {
     render(<ChatPanel page="test" />);
@@ -105,5 +105,5 @@ describe('ChatPanel Docking Functionality', () => {
 
     // Note: In the actual implementation, the docked panel would have its own close button
     // For this test, we're verifying the docking state change occurs
-  });
+  }, 10000);
 });

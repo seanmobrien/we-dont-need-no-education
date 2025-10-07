@@ -28,6 +28,18 @@ declare module 'lib/react-util/utility-methods' {
   export function isAbortError(value: unknown): value is Error;
 
   /**
+   * Type guard to check if a value is a ProgressEvent from an XMLHttpRequest.
+   * This is useful for distinguishing progress events in AJAX requests, which are thrown
+   * as errors in some contexts (e.g., Fetch API polyfills).
+   * @param value - The value to check.
+   * @returns True if the value is a ProgressEvent from an XMLHttpRequest, otherwise false.
+   *
+   */
+  export function isProgressEvent(
+    value: unknown,
+  ): value is ProgressEvent<XMLHttpRequest>;
+
+  /**
    * Type guard to check if a value is a TemplateStringsArray.
    *
    * @param value - The value to check.
@@ -54,10 +66,7 @@ declare module 'lib/react-util/utility-methods' {
    * @param defaultValue - The default boolean value to return if the value is `undefined` or `null`. Defaults to `false`.
    * @returns `true` if the value is considered truthy, otherwise `false`.
    */
-  export function isTruthy(
-    value: unknown,
-    defaultValue?: boolean,
-  ): boolean;
+  export function isTruthy(value: unknown, defaultValue?: boolean): boolean;
 
   /**
    * Checks if the given value is an indexable record (aka object)

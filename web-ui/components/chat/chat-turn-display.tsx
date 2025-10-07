@@ -24,7 +24,7 @@ import {
 } from '@mui/icons-material';
 import { ChatMessageDisplay } from './chat-message-display';
 import { ChatTurn } from '/lib/ai/chat/types';
-import type { SelectedChatItem } from '/lib/chat/export';
+import type { SelectedChatItem } from '../../lib/ai/chat/export';
 import {
   ChatMessageFilters,
   MESSAGE_TYPES,

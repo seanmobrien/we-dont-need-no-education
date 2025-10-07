@@ -1,0 +1,3 @@
+[submodule "web-ui/.upstream/agent-todos"]
+	path = web-ui/.upstream/agent-todos
+	url = git@github.com:seanmobrien/agent-todos.git

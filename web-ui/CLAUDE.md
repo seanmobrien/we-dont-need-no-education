@@ -117,6 +117,18 @@ Advanced tool system for AI interactions:
 - Concurrency: Limited workers (2 in CI, 50% locally) to prevent resource contention
 - Timeout: 10 seconds for slower tests
 
+#### Directory Structure Highlights
+
+#### `__tests__` - Jest Unit Tests
+
+- This is where Jest-based unit tests live, and is the project's primary test folder.
+- Tests underneath this folder are ran with every build and deploy.
+
+#### `tests` - Playwright UI Automation Tests
+
+- This folder contains UI Automation tests that are not ran with every build
+- Ran via the `tests:e2e` labled scripts; eg `yarn run tests:e2e`, `yarn run tests:e2e:safe`, etc.
+
 ### Key Testing Patterns
 
 - IMPORTANT: **Always** load `__tests__/jest.config` and `__tests__/jest.setup.ts` and analyze them to gain a comprehensive undestanding of the test environment **before** writing or fixing tests.

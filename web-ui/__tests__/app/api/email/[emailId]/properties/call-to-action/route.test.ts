@@ -12,6 +12,7 @@ import { NextRequest } from 'next/server';
 import { GET } from '/app/api/email/[emailId]/properties/call-to-action/route';
 import { CallToActionDetailsRepository } from '/lib/api/email/properties/call-to-action/cta-details-repository';
 import { RepositoryCrudController } from '/lib/api/repository-crud-controller';
+import { hideConsoleOutput } from '/__tests__/test-utils';
 
 // Mock external dependencies
 jest.mock('/lib/neondb');
@@ -68,7 +69,7 @@ const mockCallToActionData = [
     ],
   },
 ];
-
+const mockConsole = hideConsoleOutput();
 describe('Call-to-Action API Route', () => {
   let mockRequest: NextRequest;
   let mockParams: { params: Promise<{ emailId: string; propertyId: string }> };
@@ -88,6 +89,10 @@ describe('Call-to-Action API Route', () => {
     };
   });
 
+  afterEach(() => {
+    mockConsole.dispose();
+  });
+
   describe('GET /api/email/[emailId]/properties/call-to-action', () => {
     it('should have a GET function that can be imported', () => {
       expect(GET).toBeDefined();
@@ -103,6 +108,7 @@ describe('Call-to-Action API Route', () => {
     });
 
     it('should handle various request scenarios without throwing', () => {
+      mockConsole.setup();
       // Test that the route handlers exist and are callable (basic smoke test)
       expect(() => {
         GET(mockRequest, mockParams).catch(() => {

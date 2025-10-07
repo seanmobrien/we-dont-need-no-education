@@ -17,7 +17,7 @@ import {
   exportToCsv,
   exportToMarkdown,
   type SelectedChatItem,
-} from '/lib/chat/export';
+} from '../../lib/ai/chat/export';
 import type { ChatTurn } from '/lib/ai/chat/types';
 
 interface ChatExportMenuProps {

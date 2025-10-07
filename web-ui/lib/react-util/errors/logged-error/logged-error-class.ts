@@ -2,11 +2,16 @@
 // The runtime implementation remains here. Keep implementation edits minimal.
 
 import { errorLogFactory, log } from '/lib/logger';
-import { isAbortError, isError } from './../../utility-methods';
+import {
+  isAbortError,
+  isError,
+  isProgressEvent,
+} from './../../utility-methods';
 import { getStackTrace } from '/lib/nextjs-util/get-stack-trace';
 import { asKnownSeverityLevel } from '/lib/logger/constants';
 import { reporter } from './../logged-error-reporter';
 import { TurtleRecursionParams, LoggedErrorOptions } from './types';
+import { ProgressEventError } from '../progress-event-error';
 
 /**
  * A unique symbol used to brand `LoggedError` class instances for runtime type checking.
@@ -84,9 +89,26 @@ export class LoggedError implements Error {
     const isLoggedError = LoggedError.isLoggedError(e);
     if (shouldLog && (!isLoggedError || relog !== true)) {
       if (!isError(e)) {
-        log((l) =>
-          l.warn({ message: 'Some bonehead threw a not-error', error: e }),
-        );
+        // Some dependencies will throw a ProgressEvent instead of an errror
+        if (isProgressEvent(e)) {
+          return LoggedError.isTurtlesAllTheWayDownBaby(
+            new ProgressEventError(e),
+            {
+              log: shouldLog,
+              relog,
+              logCanceledOperation,
+              source,
+              message,
+              critical,
+              ...itsRecusionMan,
+            },
+          );
+        } else {
+          log((l) =>
+            l.warn({ message: 'Some bonehead threw a not-error', error: e }),
+          );
+          debugger;
+        }
       }
       if (logCanceledOperation || !isAbortError(e)) {
         const logObject = errorLogFactory({

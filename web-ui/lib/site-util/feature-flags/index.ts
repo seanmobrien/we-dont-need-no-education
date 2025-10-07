@@ -21,10 +21,10 @@ export { KnownFeature, AllFeatureFlagsDefault };
 export type { KnownFeatureType, FeatureFlagStatus, AllFeatureFlagStatus };
 export { type FeatureFlagsApi, defaultFlags } from './context';
 
-export function useFeatureFlag(
+export const useFeatureFlag = (
   flagKey: KnownFeatureType,
   defaultValue: boolean | string | number = false,
-) {
+) => {
   const ctx = useFeatureFlagsContext();
   const wrapDefault = (v: boolean | string | number) =>
     typeof v === 'boolean'
@@ -42,7 +42,7 @@ export function useFeatureFlag(
 
   const raw = ctx.getFlag(flagKey, wrapDefault(defaultValue));
   return unwrap(raw, defaultValue) as boolean | string | number;
-}
+};
 
 export function useFeatureFlags() {
   const ctx = useFeatureFlagsContext();

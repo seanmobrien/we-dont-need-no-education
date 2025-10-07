@@ -7,6 +7,7 @@ import {
   ErrorReport,
   ErrorReporterConfig,
   ErrorReporterInterface,
+  IContextEnricher,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
 import { isDrizzleError, errorFromCode } from '/lib/drizzle-db/drizzle-error';
@@ -67,6 +68,12 @@ const defaultConfig: ErrorReporterConfig = {
   environment: asEnvironment(process.env.NODE_ENV),
 };
 
+const isContextEnricher = (check: unknown): check is IContextEnricher =>
+  typeof check === 'object' &&
+  check !== null &&
+  'enrichContext' in check &&
+  typeof (check as IContextEnricher).enrichContext === 'function';
+
 /**
  * Centralized error reporting system
  * Handles logging, external service reporting, and error analytics
@@ -109,11 +116,11 @@ export class ErrorReporter implements ErrorReporterInterface {
     return registry[GLOBAL_KEY]!;
   }
 
-  #createErrorReport(
+  async #createErrorReport(
     error: Error | unknown,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     context: Partial<ErrorContext> = {},
-  ): ErrorReport {
+  ): Promise<ErrorReport> {
     let baseReport: ErrorReport;
     // Check to see if this is an error report already
     if (isErrorReport(error)) {
@@ -142,7 +149,7 @@ export class ErrorReporter implements ErrorReporterInterface {
     }
 
     // Enrich context with browser/environment data
-    const enrichedContext = this.enrichContext({
+    const enrichedContext = await this.enrichContext({
       ...(baseReport.context ?? {}),
       ...context,
     });
@@ -169,7 +176,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   ): Promise<void> {
     try {
       // Ensure we have a proper Error object
-      const report = this.#createErrorReport(error, severity, context);
+      const report = await this.#createErrorReport(error, severity, context);
 
       if (this.config.enableStandardLogging) {
         const source = report.context.source ?? 'ErrorReporter';
@@ -290,7 +297,9 @@ export class ErrorReporter implements ErrorReporterInterface {
   /**
    * Enrich error context with browser and application data
    */
-  private enrichContext(context: Partial<ErrorContext>): ErrorContext {
+  private async enrichContext(
+    context: Partial<ErrorContext>,
+  ): Promise<ErrorContext> {
     const enriched: ErrorContext = {
       timestamp: new Date(),
       ...context,
@@ -368,6 +377,19 @@ export class ErrorReporter implements ErrorReporterInterface {
       );
     }
 
+    // Give our error a chance to enrich the context further
+    if (isContextEnricher(enriched.error)) {
+      try {
+        const further = await enriched.error.enrichContext(enriched);
+        if (further) {
+          Object.assign(enriched, further);
+        }
+      } catch (err) {
+        log((l) =>
+          l.warn('Error in custom context enricher for error reporting', err),
+        );
+      }
+    }
     return enriched;
   }
 
