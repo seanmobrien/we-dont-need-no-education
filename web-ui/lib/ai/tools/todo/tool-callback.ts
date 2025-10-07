@@ -2,6 +2,7 @@ import { log } from '/lib/logger';
 import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,
+  toolCallbackArrayResultSchemaFactory,
 } from '../utility';
 import { getTodoManager, Todo } from './todo-manager';
 import z from 'zod';
@@ -109,7 +110,7 @@ export const getTodosConfig = {
         'Optional filter - true for completed todos, false for incomplete todos, omit for all todos',
       ),
   },
-  outputSchema: toolCallbackResultSchemaFactory(z.array(TodoSchema)),
+  outputSchema: toolCallbackArrayResultSchemaFactory(TodoSchema),
   annotations: {
     title: 'Get Todos',
     readOnlyHint: true,
