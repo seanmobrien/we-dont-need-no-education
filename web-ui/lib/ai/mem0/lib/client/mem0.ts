@@ -47,6 +47,18 @@ interface ClientOptions {
   impersonation?: ImpersonationService;
 }
 
+type PingResponse = {
+  email: string;
+  projectId?: string | null;
+  orgId?: string;
+  orgName?: string;
+  projectName?: string | null;
+  projects?: any[];
+  user_id: string;
+  status?: 'ok' | 'error';
+  message?: string;
+};
+
 export default class MemoryClient {
   apiKey?: string;
   bearerToken?: string;
@@ -59,6 +71,7 @@ export default class MemoryClient {
   telemetryId: string;
   impersonation?: ImpersonationService;
   #defaultOptions: Partial<RequestInit>;
+  #clientInitialized = false;
 
   _validateAuth(): any {
     if (this.impersonation) {
@@ -84,21 +97,11 @@ export default class MemoryClient {
   _validateOrgProject(): void {
     // Check for organizationName/projectName pair
     if (
-      (this.organizationName === null && this.projectName !== null) ||
-      (this.organizationName !== null && this.projectName === null)
+      (!this.organizationName && !!this.projectName) ||
+      (!!this.organizationName && !this.projectName)
     ) {
       console.warn(
         'Warning: Both organizationName and projectName must be provided together when using either. This will be removed from version 1.0.40. Note that organizationName/projectName are being deprecated in favor of organizationId/projectId.',
-      );
-    }
-
-    // Check for organizationId/projectId pair
-    if (
-      (this.organizationId === null && this.projectId !== null) ||
-      (this.organizationId !== null && this.projectId === null)
-    ) {
-      console.warn(
-        'Warning: Both organizationId and projectId must be provided together when using either. This will be removed from version 1.0.40.',
       );
     }
   }
@@ -125,9 +128,6 @@ export default class MemoryClient {
 
     // Initialize with a temporary ID that will be updated
     this.telemetryId = '';
-
-    // Initialize the client
-    this._initializeClient();
   }
 
   private async _initializeClient() {
@@ -156,7 +156,9 @@ export default class MemoryClient {
           source: 'captureClientEvent',
         });
       });
+      this.#clientInitialized = true;
     } catch (error: any) {
+      this.#clientInitialized = false;
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'initializeClient',
@@ -224,7 +226,14 @@ export default class MemoryClient {
     }
   }
 
-  async _fetchWithErrorHandling(url: string, options: any): Promise<any> {
+  async _fetchWithErrorHandling<TResult = any>(
+    url: string,
+    options: any,
+  ): Promise<TResult> {
+    // Initialize client if not already done
+    if (!this.#clientInitialized && !url.includes('ping')) {
+      await this._initializeClient();
+    }
     // Authenticate
     await this.#updateAuthorizationIfNeeded();
     // TODO: This is where we would add retry logic, caching, etc
@@ -302,24 +311,39 @@ export default class MemoryClient {
   async ping(): Promise<void> {
     return this._instrument('ping', async () => {
       try {
-        const response = await this._fetchWithErrorHandling('/api/v1/ping/', {
-          method: 'GET',
-        });
+        const response = await this._fetchWithErrorHandling<PingResponse>(
+          '/api/v1/ping/',
+          {
+            method: 'GET',
+          },
+        );
 
         if (!response || typeof response !== 'object') {
           throw new APIError('Invalid response format from ping endpoint');
         }
 
-        if (response.status !== 'ok') {
+        if (response.status && response.status !== 'ok') {
           throw new APIError(response.message || 'API Key is invalid');
         }
 
-        const { org_id, project_id, user_email } = response;
+        const { orgId, orgName, projectId, projectName, email } = response;
 
         // Only update if values are actually present
-        if (org_id && !this.organizationId) this.organizationId = org_id;
-        if (project_id && !this.projectId) this.projectId = project_id;
-        if (user_email) this.telemetryId = user_email;
+        if (orgId && !this.organizationId) {
+          this.organizationId = orgId;
+        }
+        if (orgName && !this.organizationName) {
+          this.organizationName = orgName;
+        }
+        if (projectId && !this.projectId) {
+          this.projectId = projectId;
+        }
+        if (projectName && !this.projectName) {
+          this.projectName = projectName;
+        }
+        if (email) {
+          this.telemetryId = generateHash(email);
+        }
       } catch (error: any) {
         // Convert generic errors to APIError with meaningful messages
         if (error instanceof APIError) {
@@ -345,9 +369,6 @@ export default class MemoryClient {
     options: MemoryOptions = {},
   ): Promise<Array<Memory>> {
     return this._instrument('add', async (span) => {
-      if (this.telemetryId === '') {
-        await this.ping();
-      }
       this._validateOrgProject();
       if (this.organizationName != null && this.projectName != null) {
         options.org_name = this.organizationName;
@@ -383,7 +404,6 @@ export default class MemoryClient {
 
   async update(memoryId: string, message: string): Promise<Array<Memory>> {
     return this._instrument('update', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._validateOrgProject();
       const payload = {
         text: message,
@@ -406,7 +426,6 @@ export default class MemoryClient {
 
   async get(memoryId: string): Promise<Memory> {
     return this._instrument('get', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('get', []);
       return this._fetchWithErrorHandling(`api/v1/memories/${memoryId}/`, {
         headers: this.headers,
@@ -416,7 +435,6 @@ export default class MemoryClient {
 
   async getAll(options?: SearchOptions): Promise<Array<Memory>> {
     return this._instrument('getAll', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._validateOrgProject();
       const payloadKeys = Object.keys(options || {});
       this._captureEvent('get_all', [payloadKeys]);
@@ -465,7 +483,6 @@ export default class MemoryClient {
 
   async search(query: string, options?: SearchOptions): Promise<Array<Memory>> {
     return this._instrument('search', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._validateOrgProject();
       const payloadKeys = Object.keys(options || {});
       this._captureEvent('search', [payloadKeys]);
@@ -499,7 +516,6 @@ export default class MemoryClient {
 
   async delete(memoryId: string): Promise<{ message: string }> {
     return this._instrument('delete', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('delete', [memoryId]);
       return this._fetchWithErrorHandling(`api/v1/memories/${memoryId}/`, {
         method: 'DELETE',
@@ -510,7 +526,6 @@ export default class MemoryClient {
 
   async deleteAll(options: MemoryOptions = {}): Promise<{ message: string }> {
     return this._instrument('deleteAll', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._validateOrgProject();
       const payloadKeys = Object.keys(options || {});
       this._captureEvent('delete_all', [payloadKeys]);
@@ -540,7 +555,6 @@ export default class MemoryClient {
 
   async history(memoryId: string): Promise<Array<MemoryHistory>> {
     return this._instrument('history', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('history', []);
       const response = await this._fetchWithErrorHandling(
         `api/v1/memories/${memoryId}/history/`,
@@ -554,7 +568,6 @@ export default class MemoryClient {
 
   async users(): Promise<AllUsers> {
     return this._instrument('users', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._validateOrgProject();
       this._captureEvent('users', []);
       const options: MemoryOptions = {};
@@ -589,7 +602,6 @@ export default class MemoryClient {
     entity_id: number;
     entity_type: string;
   }): Promise<{ message: string }> {
-    if (this.telemetryId === '') await this.ping();
     this._captureEvent('delete_user', []);
     if (!data.entity_type) {
       data.entity_type = 'user';
@@ -613,7 +625,6 @@ export default class MemoryClient {
     } = {},
   ): Promise<{ message: string }> {
     return this._instrument('deleteUsers', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._validateOrgProject();
 
       let to_delete: Array<{ type: string; name: string }> = [];
@@ -686,7 +697,6 @@ export default class MemoryClient {
 
   async batchUpdate(memories: Array<MemoryUpdateBody>): Promise<string> {
     return this._instrument('batchUpdate', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('batch_update', []);
       const memoriesBody = memories.map((memory) => ({
         memory_id: memory.memoryId,
@@ -703,7 +713,6 @@ export default class MemoryClient {
 
   async batchDelete(memories: Array<string>): Promise<string> {
     return this._instrument('batchDelete', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('batch_delete', []);
       const memoriesBody = memories.map((memory) => ({
         memory_id: memory,
@@ -719,7 +728,6 @@ export default class MemoryClient {
 
   async getProject(options: ProjectOptions): Promise<ProjectResponse> {
     return this._instrument('getProject', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._validateOrgProject();
       const payloadKeys = Object.keys(options || {});
       this._captureEvent('get_project', [payloadKeys]);
@@ -748,7 +756,6 @@ export default class MemoryClient {
     prompts: PromptUpdatePayload,
   ): Promise<Record<string, any>> {
     return this._instrument('updateProject', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._validateOrgProject();
       this._captureEvent('update_project', []);
       if (!(this.organizationId && this.projectId)) {
@@ -772,7 +779,6 @@ export default class MemoryClient {
   // WebHooks
   async getWebhooks(data?: { projectId?: string }): Promise<Array<Webhook>> {
     return this._instrument('getWebhooks', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('get_webhooks', []);
       const project_id = data?.projectId || this.projectId;
       const response = await this._fetchWithErrorHandling(
@@ -787,7 +793,6 @@ export default class MemoryClient {
 
   async createWebhook(webhook: WebhookPayload): Promise<Webhook> {
     return this._instrument('createWebhook', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('create_webhook', []);
       const response = await this._fetchWithErrorHandling(
         `api/v1/webhooks/projects/${this.projectId}/`,
@@ -803,7 +808,6 @@ export default class MemoryClient {
 
   async updateWebhook(webhook: WebhookPayload): Promise<{ message: string }> {
     return this._instrument('updateWebhook', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('update_webhook', []);
       const project_id = webhook.projectId || this.projectId;
       const response = await this._fetchWithErrorHandling(
@@ -825,7 +829,6 @@ export default class MemoryClient {
     webhookId: string;
   }): Promise<{ message: string }> {
     return this._instrument('deleteWebhook', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       this._captureEvent('delete_webhook', []);
       const webhook_id = data.webhookId || data;
       const response = await this._fetchWithErrorHandling(
@@ -841,7 +844,6 @@ export default class MemoryClient {
 
   async feedback(data: FeedbackPayload): Promise<{ message: string }> {
     return this._instrument('feedback', async (span) => {
-      if (this.telemetryId === '') await this.ping();
       const payloadKeys = Object.keys(data || {});
       this._captureEvent('feedback', [payloadKeys]);
       const response = await this._fetchWithErrorHandling(`api/v1/feedback/`, {
