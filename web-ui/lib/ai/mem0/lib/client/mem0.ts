@@ -55,6 +55,8 @@ type PingResponse = {
   projectName?: string | null;
   projects?: any[];
   user_id: string;
+  status?: 'ok' | 'error';
+  message?: string;
 };
 
 export default class MemoryClient {
@@ -131,7 +133,6 @@ export default class MemoryClient {
   private async _initializeClient() {
     try {
       // Generate telemetry ID
-      this.#clientInitialized = true;
       await this.ping();
 
       if (!this.telemetryId) {
@@ -155,6 +156,7 @@ export default class MemoryClient {
           source: 'captureClientEvent',
         });
       });
+      this.#clientInitialized = true;
     } catch (error: any) {
       this.#clientInitialized = false;
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
@@ -229,7 +231,7 @@ export default class MemoryClient {
     options: any,
   ): Promise<TResult> {
     // Initialize client if not already done
-    if (!this.#clientInitialized) {
+    if (!this.#clientInitialized && !url.includes('ping')) {
       await this._initializeClient();
     }
     // Authenticate
@@ -320,16 +322,13 @@ export default class MemoryClient {
           throw new APIError('Invalid response format from ping endpoint');
         }
 
-        if ('status' in response && response.status !== 'ok') {
-          throw new APIError((response as any).message || 'API Key is invalid');
+        if (response.status && response.status !== 'ok') {
+          throw new APIError(response.message || 'API Key is invalid');
         }
 
         const { orgId, orgName, projectId, projectName, email } = response;
 
         // Only update if values are actually present
-        if (orgId && !this.organizationId) {
-          this.organizationId = orgId;
-        }
         if (orgId && !this.organizationId) {
           this.organizationId = orgId;
         }
