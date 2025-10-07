@@ -148,8 +148,11 @@ const stableStyles = {
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 1,
-    marginTop: 1,
+    width: '100%',
+    marginTop: -1,
+    marginBottom: 1,
   } as const,
 } as const;
 
@@ -442,11 +445,6 @@ const ChatPanel = ({ page }: { page: string }) => {
                 currentPosition={config.position}
                 onResetSession={onResetSession}
               />
-              <Box sx={stableStyles.statusIconsBox}>
-                <MemoryStatusIndicator size="small" />
-                <DatabaseStatusIndicator size="small" />
-                <ChatStatusIndicator size="small" />
-              </Box>
             </Box>
           </InputAdornment>
         ),
@@ -518,6 +516,11 @@ const ChatPanel = ({ page }: { page: string }) => {
           sx={stableStyles.chatInput}
           slotProps={stableChatInputSlotProps}
         />
+        <Box sx={stableStyles.statusIconsBox}>
+          <MemoryStatusIndicator size="small" />
+          <DatabaseStatusIndicator size="small" />
+          <ChatStatusIndicator size="small" />
+        </Box>
         <Box sx={stableStyles.chatBox}>
           <ChatWindow
             messages={messages}
