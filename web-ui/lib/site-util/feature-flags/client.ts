@@ -1,6 +1,5 @@
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import type { IFlagsmith } from 'flagsmith';
-import { auth } from '/auth';
 import {
   KnownFeature,
   AllFeatureFlagsDefault,
@@ -11,46 +10,31 @@ import { isKeyOf } from '/lib/typescript';
 import { env } from '../env';
 import { LoggedError } from '/lib/react-util';
 
-const FLAGSMITH_SERVER = Symbol.for('@noeducation/flagsmith-server');
-
-// Server-bound Flagsmith instance used for server-side flag evaluation.
-export const flagsmithServer = async () => {
+// Client-bound Flagsmith instance used for client-side flag evaluation.
+export const flagsmithClient = async () => {
   const REFRESH_INTERVAL = 1000 * 60 * 5; // Refresh every 5 minutes
-  const globalRegistry: typeof globalThis & {
-    [FLAGSMITH_SERVER]?: IFlagsmith<string, string>;
-  } = globalThis;
-  if (!globalRegistry[FLAGSMITH_SERVER]) {
-    const flagsmithServer = createFlagsmithInstance();
-    await flagsmithServer.init({
-      environmentID: env('FLAGSMITH_SDK_KEY'),
-      api: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
-    });
-    flagsmithServer.startListening(REFRESH_INTERVAL);
-    globalRegistry[FLAGSMITH_SERVER] = flagsmithServer;
-    return flagsmithServer;
-  }
-  return globalRegistry[FLAGSMITH_SERVER];
+  const flagsmithClient = createFlagsmithInstance();
+  await flagsmithClient.init({
+    environmentID: env('NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID'),
+    api: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
+  });
+  flagsmithClient.startListening(REFRESH_INTERVAL);
+  return flagsmithClient;
 };
 
 const identify = async ({
   userId,
 }: {
-  userId?: string;
+  userId: string | undefined;
 }): Promise<IFlagsmith<string, string> | null> => {
-  if (!userId) {
-    const session = await auth();
-    userId = session?.user?.id;
-    if (!userId) {
-      userId = 'server';
-    }
-  }
+  const normalUserId = userId ?? 'anonymous';
+
   try {
-    const server = await flagsmithServer();
-    if (server.identity === userId) {
+    const server = await flagsmithClient();
+    if (server.identity === normalUserId) {
       return server;
     }
-    // TODO: Send over some traits
-    await server.identify(userId);
+    await server.identify(normalUserId);
     return server;
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {

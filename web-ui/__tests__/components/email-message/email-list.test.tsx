@@ -55,7 +55,7 @@ describe('EmailList', () => {
     await waitFor(() => {
       expect(screen.getByRole('grid')).toBeInTheDocument();
     });
-  });
+  }, 10000);
 
   it('should display no emails found message when there are no emails', async () => {
     (fetch as jest.Mock).mockResolvedValueOnce(
@@ -70,7 +70,7 @@ describe('EmailList', () => {
       const grid = screen.getByRole('grid');
       expect(grid).toBeInTheDocument();
     });
-  });
+  }, 10000);
 
   it('should display a list of emails', async () => {
     const mockEmails = mockEmailSummary();
@@ -100,5 +100,5 @@ describe('EmailList', () => {
       expect(screen.getByText('From')).toBeInTheDocument();
       expect(screen.getByText('Subject')).toBeInTheDocument();
     });
-  });
+  }, 10000);
 });

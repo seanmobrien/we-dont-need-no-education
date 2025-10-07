@@ -1,30 +1,46 @@
-export function generateUniqueId(): string {
-  return Math.random().toString(36).slice(2, 9);
-}
+// General utility methods used across React components
+// and other parts of the application.
 
-export function isError(value: unknown): value is Error {
+// Pseudo-random ID generator for lightweight unique IDs.
+// Not cryptographically secure; suitable for client-side use.
+export const generateUniqueId = (): string => {
+  return Math.random().toString(36).slice(2, 9);
+};
+
+// Type guard to check if a value is an instance of Error
+// or at least has the basic shape of an Error object.
+export const isError = (value: unknown): value is Error => {
   return (
     !!value &&
     typeof value === 'object' &&
-    (value instanceof Error ||
-      ('message' in value && 'name' in value))
+    (value instanceof Error || ('message' in value && 'name' in value))
   );
-}
+};
 
-export function isAbortError(value: unknown): value is Error {
-  return value instanceof DOMException && value.name === 'AbortError';
-}
-
-export function isTemplateStringsArray(
+// Type guard to check if a value is a ProgressEvent from an XMLHttpRequest
+export const isProgressEvent = (
   value: unknown,
-): value is TemplateStringsArray {
-  return Array.isArray(value) && 'raw' in value;
-}
+): value is ProgressEvent<XMLHttpRequest> =>
+  value instanceof ProgressEvent && value.target instanceof XMLHttpRequest;
 
-export function isTruthy(
+// Type guard to check if a value is an Abort error
+// (i.e., not null, not an array, and of type 'object').
+export const isAbortError = (value: unknown): value is Error => {
+  return value instanceof DOMException && value.name === 'AbortError';
+};
+
+// Type guard to check if a value is a TemplateStringsArray
+export const isTemplateStringsArray = (
+  value: unknown,
+): value is TemplateStringsArray => {
+  return Array.isArray(value) && 'raw' in value;
+};
+
+// Converts various input types to a boolean "truthy" value.
+export const isTruthy = (
   value: unknown,
   defaultValue: boolean = false,
-): boolean {
+): boolean => {
   if (value === undefined || value === null) {
     return defaultValue;
   }
@@ -43,14 +59,17 @@ export function isTruthy(
     return false;
   }
   return Boolean(value);
-}
+};
 
-export function isRecord(check: unknown): check is Record<string, unknown> {
+// Type guard to check if a value is a non-null object (not an array).
+export const isRecord = (check: unknown): check is Record<string, unknown> => {
   return check !== null && typeof check === 'object';
-}
+};
 
+// Unique symbol used for branding types
 export const TypeBrandSymbol: unique symbol = Symbol('TypeBrandSymbol');
 
+// Type guard to check if an object has a specific type brand
 export const isTypeBranded = <TResult>(
   check: unknown,
   brand: symbol,
@@ -60,12 +79,15 @@ export const isTypeBranded = <TResult>(
   TypeBrandSymbol in check &&
   check[TypeBrandSymbol] === brand;
 
+// Type for categorized promise results
 type CategorizedPromiseResult<T> = {
   fulfilled: Array<T>;
   rejected: Array<unknown>;
   pending: Array<Promise<T>>;
 };
 
+// Function to categorize promises into fulfilled, rejected, and pending (timed out)
+// based on a specified timeout duration.
 export const getResolvedPromises = async <T>(
   promises: Promise<T>[],
   timeoutMs: number = 60 * 1000,
@@ -106,5 +128,3 @@ export const getResolvedPromises = async <T>(
     { fulfilled: [], rejected: [], pending: [] } as CategorizedPromiseResult<T>,
   );
 };
-
-

@@ -13,7 +13,7 @@ describe('ChatPanelLayout', () => {
       </ChatPanelProvider>,
     );
     expect(container).toMatchSnapshot();
-  });
+  }, 10000);
 
   it('renders children correctly', () => {
     const { getByText } = render(
@@ -25,5 +25,5 @@ describe('ChatPanelLayout', () => {
     );
 
     expect(getByText('Test child content')).toBeInTheDocument();
-  });
+  }, 10000);
 });

@@ -7,7 +7,10 @@ import {
   FeatureFlagStatus,
   KnownFeatureType,
 } from '/lib/site-util/feature-flags';
+import { getAllFeatureFlags } from '/lib/site-util/feature-flags/client';
 import FeatureFlagsContext from '/lib/site-util/feature-flags/context';
+import { LoggedError } from '/lib/react-util';
+import { useFlagsmithLoading } from 'flagsmith/react';
 
 const defaultFlags = AllFeatureFlagsDefault as unknown as Record<
   KnownFeatureType,
@@ -15,49 +18,38 @@ const defaultFlags = AllFeatureFlagsDefault as unknown as Record<
 >;
 
 export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
-  // Client-only provider that hydrates from a server-injected
-  // `window.__FEATURE_FLAGS__` payload when available.
   const [flags, setFlags] = useState<
     Record<KnownFeatureType, FeatureFlagStatus>
-  >(() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const win = typeof window !== 'undefined' ? (window as any) : undefined;
-      if (
-        win &&
-        win.__FEATURE_FLAGS__ &&
-        typeof win.__FEATURE_FLAGS__ === 'object'
-      ) {
-        return win.__FEATURE_FLAGS__ as Record<
-          KnownFeatureType,
-          FeatureFlagStatus
-        >;
-      }
-    } catch {
-      // ignore
-    }
-    return defaultFlags;
-  });
+  >(AllFeatureFlagsDefault);
 
-  // Optional: if another script updates `window.__FEATURE_FLAGS__` after
-  // hydration, pick it up. This is defensive and cheap.
+  const { isLoading, error, isFetching } = useFlagsmithLoading() ?? {
+    isLoading: false,
+    error: null,
+  };
+
   useEffect(() => {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const win = typeof window !== 'undefined' ? (window as any) : undefined;
-      if (
-        win &&
-        win.__FEATURE_FLAGS__ &&
-        typeof win.__FEATURE_FLAGS__ === 'object'
-      ) {
-        setFlags(
-          win.__FEATURE_FLAGS__ as Record<KnownFeatureType, FeatureFlagStatus>,
-        );
+    let isSubscribed = true;
+
+    const loadFlags = async () => {
+      try {
+        const allFlags = await getAllFeatureFlags();
+        if (isSubscribed) {
+          setFlags(allFlags);
+        }
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          source: 'Flagsmith',
+          log: true,
+        });
       }
-    } catch {
-      // ignore
-    }
-  }, []);
+    };
+
+    void loadFlags();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [isLoading]);
 
   const api = useMemo<FeatureFlagsApi>(
     () => ({
@@ -79,10 +71,15 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading: false,
         error: null,
       }),
+      get error() {
+        return error ?? undefined;
+      },
+      isLoading: isLoading,
+      isFetching: true,
     }),
-    [flags],
+    [flags, error, isLoading],
   );
-
+  (api as unknown as { isFetching: boolean }).isFetching = isFetching === true;
   return (
     <FeatureFlagsContext.Provider value={api}>
       {children}

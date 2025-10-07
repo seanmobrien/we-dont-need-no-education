@@ -95,6 +95,6 @@ export const buildDrizzlePagination = ({
   query,
   req,
 }: BuildDrizzlePaginationProps): DrizzleSelectQuery => {
-  const { num, offset } = parsePaginationStats(req);
+  const { num, offset } = parsePaginationStatsImpl(req);
   return (query.offset(offset) as AnyPgSelect).limit(num) as DrizzleSelectQuery;
 };

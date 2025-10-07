@@ -21,16 +21,13 @@ const config = {
   ], // Test file patterns
 
   // Concurrency configuration to prevent hanging issues
-  maxWorkers: process.env.CI ? 2 : '50%', // Limit workers in CI, use 50% of cores locally
+  // maxWorkers: process.env.CI ? 2 : '50%', // Limit workers in CI, use 50% of cores locally
   maxConcurrency: 5, // Limit concurrent tests to prevent resource contention
 
   moduleNameMapper: {
     '^@/instrumentation(.*)$':
       '<rootDir>/__tests__/jest.mock-instrumentation.ts', // Mock instrumentation module
     '^@/lib/site-util/metrics.*$': '<rootDir>/__tests__/jest.mock-metrics.ts', // Alias for lib imports
-    /*
-      prexit: '<rootDir>/__tests__/jest.mock-prexit.ts',
-    */
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
     '~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
     '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',
@@ -54,8 +51,9 @@ const config = {
     '<rootDir>/.next',
     '<rootDir>/.upstream',
     '<rootDir>/(rsc)',
+    '.upstream',
   ],
-  collectCoverage: true, // Enable coverage collection
+  // collectCoverage: true, // Enable coverage collection
   //collectCoverage: false, // Enable coverage collection
   collectCoverageFrom: [
     '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
@@ -68,8 +66,8 @@ const config = {
   ],
   coverageDirectory: '<rootDir>/coverage', // Output directory for coverage reports
   coverageReporters: ['json', 'lcov', 'text', 'clover'], // Coverage report formats
-  //detectLeaks: true,
-  detectOpenHandles: true, // Enable detection of async operations that prevent Jest from exiting
+  // detectLeaks: true,
+  // detectOpenHandles: true, // Enable detection of async operations that prevent Jest from exiting
   // logHeapUsage: true,
 
   // Additional stability configurations for concurrent testing

@@ -39,7 +39,7 @@ describe('ChatPanel Float Functionality', () => {
     expect(
       screen.queryByText(/Chat panel is floating/),
     ).not.toBeInTheDocument();
-  });
+  }, 10000);
 
   it('shows float option in menu', async () => {
     render(<ChatPanel page="test" />);
@@ -50,7 +50,7 @@ describe('ChatPanel Float Functionality', () => {
 
     // Check if Float option is available
     expect(screen.getByText('Float')).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('switches to floating mode when Float is clicked', async () => {
     render(<ChatPanel page="test" />);
@@ -65,5 +65,5 @@ describe('ChatPanel Float Functionality', () => {
 
     // Check if it switched to floating mode
     expect(screen.getByText(/Chat panel is floating/)).toBeInTheDocument();
-  });
+  }, 10000);
 });

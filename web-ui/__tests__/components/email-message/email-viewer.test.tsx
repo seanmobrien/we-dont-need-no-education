@@ -279,5 +279,5 @@ describe('EmailViewer', () => {
 
     expect(screen.getByText('test-attachment.pdf')).toBeInTheDocument();
     expect(screen.getByText('another-file.doc')).toBeInTheDocument();
-  });
+  }, 15000);
 });

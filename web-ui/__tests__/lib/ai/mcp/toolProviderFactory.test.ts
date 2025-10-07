@@ -17,7 +17,11 @@ const mockLoggedError = {
 };
 const mockCreateMCPClient = jest.fn() as jest.MockedFunction<any>;
 const mockInstrumentedSseTransport = jest.fn() as jest.MockedFunction<any>;
-const mockGetCachedTools = jest.fn().mockResolvedValue(null);
+// Returns either a map of cached tools or null when none cached
+const mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
+  () => Promise<Record<string, unknown> | null>
+>;
+mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
 
 jest.mock('/lib/react-util/utility-methods', () => {
   originalReactUtil = jest.requireActual('/lib/react-util/utility-methods');
