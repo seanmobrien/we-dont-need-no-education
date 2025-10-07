@@ -10,7 +10,7 @@ import { isKeyOf } from '/lib/typescript';
 import { env } from '../env';
 import { LoggedError } from '/lib/react-util';
 
-// Server-bound Flagsmith instance used for server-side flag evaluation.
+// Client-bound Flagsmith instance used for client-side flag evaluation.
 export const flagsmithClient = async () => {
   const REFRESH_INTERVAL = 1000 * 60 * 5; // Refresh every 5 minutes
   const flagsmithClient = createFlagsmithInstance();
