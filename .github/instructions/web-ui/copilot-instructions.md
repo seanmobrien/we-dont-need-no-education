@@ -445,6 +445,10 @@ When working on advocacy-related features:
 
 ## Debugging and Troubleshooting
 
+- **Log in**: To log into the application use the credentials stored in envioronment variables
+  - Username: `${COPILOT_LOGIN_USER}`
+  - Password: `${COPILOT_LOGIN_PASSWORD}`
+
 ### Common Issues and Solutions
 
 #### AI Assistant Not Responding

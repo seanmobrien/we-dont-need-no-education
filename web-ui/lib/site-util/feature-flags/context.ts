@@ -26,6 +26,9 @@ export type FeatureFlagsApi = {
     isLoading: boolean;
     error: null;
   };
+  readonly isLoading: boolean;
+  readonly error?: Error;
+  readonly isFetching: boolean;
 };
 
 export const defaultFlags = AllFeatureFlagsDefault as unknown as Record<
@@ -52,7 +55,10 @@ export function useFeatureFlagsContext(): FeatureFlagsApi {
         isLoading: false,
         error: null,
       }),
-    };
+      isLoading: false,
+      isFetching: true,
+      isDefault: true,
+    } as FeatureFlagsApi & { isDefault: true };
   }
   return ctx;
 }
