@@ -50,7 +50,17 @@ const customRender = (ui: React.ReactElement, options: RenderOptions = {}) => {
   act(() => {
     ret = render(ui, { wrapper: AllTheProviders, ...options });
   });
-  return ret;
+  const rerender = ret.rerender;
+  return {
+    ...ret,
+    rerender: (rerenderUi: React.ReactElement) => {
+      let rerenderResult: any = undefined;
+      act(() => {
+        rerenderResult = rerender(rerenderUi, { wrapper: AllTheProviders });
+      });
+      return rerenderResult;
+    },
+  };
 };
 
 const customAsyncRender = async (

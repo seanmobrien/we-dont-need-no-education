@@ -39,6 +39,23 @@ export type SafeProgressEvent<T extends EventTarget = EventTarget> = Event & {
   readonly total: number;
 };
 
+// Type guard to check if a value is an XMLHttpRequest
+export const isXmlHttpRequest = (value: unknown): value is XMLHttpRequest => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'readyState' in value &&
+    'status' in value &&
+    'timeout' in value &&
+    'upload' in value &&
+    'response' in value &&
+    'open' in value &&
+    typeof value.open === 'function' &&
+    'send' in value &&
+    typeof value.send === 'function'
+  );
+};
+
 // Type guard to check if a value is a ProgressEvent from an XMLHttpRequest
 export const isProgressEvent = (
   value: unknown,
@@ -46,6 +63,7 @@ export const isProgressEvent = (
   typeof value === 'object' &&
   !!value &&
   'target' in value &&
+  isXmlHttpRequest(value.target) &&
   'loaded' in value &&
   'total' in value &&
   'lengthComputable' in value;
