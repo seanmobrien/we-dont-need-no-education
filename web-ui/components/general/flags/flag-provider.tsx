@@ -74,7 +74,7 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
       get error() {
         return error ?? undefined;
       },
-      isLoading: isLoading,
+      isLoaded: isLoading,
       isFetching: true,
     }),
     [flags, error, isLoading],
