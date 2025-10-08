@@ -68,7 +68,13 @@ export class CustomAppInsightsEvent implements ICustomAppInsightsEvent {
    * @param value - The amount to increment by. Defaults to 1.
    */
   increment(name: string, value: number = 1): void {
-    this.measurements[name] = Number(this.measurements[name] ?? 0) + value;
+    const current = Number(this.measurements[name] ?? 0);
+    if (!Number.isFinite(current)) {
+      throw new Error(
+        `Cannot increment measurement "${name}": value "${this.measurements[name]}" is not a finite number.`
+      );
+    }
+    this.measurements[name] = current + value;
   }
   /**
    * Starts a timer for a specified measurement.
