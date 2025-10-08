@@ -419,6 +419,8 @@ export const makeMockDb = (): DatabaseType => {
   return mockDb;
 };
 
+type TransactionFn<TRet = any> = (tx: DatabaseType) => Promise<TRet> | TRet;
+
 const makeRecursiveMock = jest
   .fn()
   .mockImplementation(() => jest.fn(() => jest.fn(makeRecursiveMock)));
@@ -427,6 +429,11 @@ jest.mock('drizzle-orm/postgres-js', () => {
     ...actualDrizzle,
     drizzle: jest.fn(() => mockDb),
     sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
+    transaction: jest.fn(async (callback: TransactionFn) => {
+      const txRawRet = callback(mockDb);
+      const txRet = isPromise(txRawRet) ? await txRawRet : txRawRet;
+      return txRet;
+    }),
   };
 });
 jest.mock('/lib/neondb/connection', () => {
@@ -454,7 +461,7 @@ jest.mock('/lib/drizzle-db/connection', () => {
         return Promise.resolve(normalCallback(db));
       },
     ),
-    schema: actualSchema,
+    schema: actualSchema.schema ? actualSchema.schema : actualSchema,
   };
 });
 jest.mock('/lib/drizzle-db', () => {
@@ -474,7 +481,7 @@ jest.mock('/lib/drizzle-db', () => {
         return Promise.resolve(normalCallback(db));
       },
     ),
-    schema: actualSchema,
+    schema: actualSchema.schema ? actualSchema.schema : actualSchema,
     sql: jest.fn(() => makeRecursiveMock()),
   };
 });
@@ -559,6 +566,7 @@ const loggerInstance = (() => ({
 
 jest.mock('/lib/logger', () => {
   return {
+    logEvent: jest.fn(() => Promise.resolve()),
     logger: jest.fn(() => loggerInstance),
     log: jest.fn((cb: (l: typeof loggerInstance) => void) =>
       cb(loggerInstance),
@@ -594,7 +602,7 @@ import { createElement } from 'react';
 import { TrackWithAppInsight } from '/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '/instrument/browser';
 import { log } from '/lib/logger';
-import { isKeyOf } from '/lib/typescript';
+import { FirstParameter, isKeyOf, isPromise } from '/lib/typescript';
 import { result, xorBy } from 'lodash';
 import {
   IMockInsertBuilder,

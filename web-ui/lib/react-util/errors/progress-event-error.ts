@@ -1,3 +1,4 @@
+import { SafeProgressEvent, isProgressEvent } from '../utility-methods';
 import { ErrorContext, IContextEnricher } from '/lib/error-monitoring/types';
 
 export class ProgressEventError<
@@ -11,11 +12,11 @@ export class ProgressEventError<
   loaded: number;
   total: number;
   cause: { source: EventTarget | null };
-  #source: ProgressEvent<TEventTarget>;
+  #source: SafeProgressEvent<TEventTarget>;
   #headers: Record<string, string> | undefined;
 
-  constructor(event: ProgressEvent<TEventTarget>) {
-    if (!event || !(event instanceof ProgressEvent)) {
+  constructor(event: SafeProgressEvent<TEventTarget>) {
+    if (!event || !isProgressEvent(event)) {
       throw new TypeError(
         'ProgressEventError requires a ProgressEvent as its source.',
       );
@@ -29,7 +30,7 @@ export class ProgressEventError<
     this.cause = { source: event.target };
   }
 
-  get source(): ProgressEvent<TEventTarget> {
+  get source(): SafeProgressEvent<TEventTarget> {
     return this.#source;
   }
   get headers(): Record<string, string> | undefined {

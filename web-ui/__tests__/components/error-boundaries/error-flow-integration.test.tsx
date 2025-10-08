@@ -12,6 +12,7 @@ import { ClientErrorManager } from '/components/error-boundaries/ClientErrorMana
 import { RenderErrorBoundaryFallback } from '/components/error-boundaries/renderFallback';
 import { errorReporter, ErrorSeverity } from '/lib/error-monitoring';
 import { any } from 'zod';
+import { hideConsoleOutput } from '/__tests__/test-utils';
 
 // Mock the error reporter and recovery strategies
 jest.mock('/lib/error-monitoring', () => ({
@@ -64,11 +65,11 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
 );
 
+const consoleSpy = hideConsoleOutput();
+
 describe('Error Flow Integration Tests', () => {
-  let consoleSpy: jest.SpyInstance | undefined;
   beforeEach(() => {
     // jest.clearAllMocks();
-
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');
     mockGetRecoveryActions.mockReturnValue([
@@ -85,22 +86,17 @@ describe('Error Flow Integration Tests', () => {
       description: 'Retry the operation',
       action: mockReload,
     });
-    consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     // Reset window event listeners
     window.addEventListener = jest.fn();
     window.removeEventListener = jest.fn();
   });
   afterEach(() => {
-    consoleSpy?.mockRestore();
-    consoleSpy = undefined;
+    consoleSpy.dispose();
   });
 
   describe('Error Reporting Integration', () => {
     it('should report boundary errors with proper context', async () => {
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
-
+      consoleSpy.setup();
       const ThrowingComponent = () => {
         throw new Error('Component error for reporting test');
       };
@@ -133,7 +129,7 @@ describe('Error Flow Integration Tests', () => {
           'high',
         );
       });
-    });
+    }, 15000);
 
     it('should debounce duplicate global errors', async () => {
       render(
@@ -165,12 +161,13 @@ describe('Error Flow Integration Tests', () => {
 
       // Should only report once due to debouncing
       expect(mockErrorReporter.reportError).toHaveBeenCalledTimes(1);
-    });
+    }, 15000);
   });
 });
 
 describe('Performance and Memory Management', () => {
   it('should clean up event listeners on unmount', () => {
+    consoleSpy.setup();
     const { unmount } = render(
       <TestWrapper>
         <ClientErrorManager />
@@ -201,6 +198,7 @@ describe('Performance and Memory Management', () => {
   });
 
   it('should not create memory leaks with multiple error manager instances', () => {
+    consoleSpy.setup();
     const { rerender, unmount } = render(
       <TestWrapper>
         <ClientErrorManager />

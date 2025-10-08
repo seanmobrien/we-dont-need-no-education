@@ -154,7 +154,10 @@ export interface LogEventOverloads {
    * @param {Record<string, number>} measurements - A record of measurements associated with the event.
    * @returns {Promise<void>} A promise that resolves when the event is logged.
    */
-  (eventName: string, measurements: Record<string, number>): Promise<void>;
+  (
+    eventName: string,
+    measurements: Record<string, number | string>,
+  ): Promise<void>;
   /**
    * Logs an event with the specified severity and name.
    * @param {EventSeverity} severity - The severity level of the event.
@@ -172,6 +175,6 @@ export interface LogEventOverloads {
   (
     severity: EventSeverity,
     eventName: string,
-    measurements: Record<string, number>,
+    measurements: Record<string, number | string>,
   ): Promise<void>;
 }

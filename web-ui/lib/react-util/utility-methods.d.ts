@@ -28,6 +28,15 @@ declare module 'lib/react-util/utility-methods' {
   export function isAbortError(value: unknown): value is Error;
 
   /**
+   * Type guard to check if a value is an XMLHttpRequest.
+   * It checks for key properties and methods typical of XMLHttpRequest instances,
+   * and infers the type accordingly.
+   * @param value - The value to check.
+   * @returns True if the value is an XMLHttpRequest, false otherwise.
+   */
+  export function isXmlHttpRequest(value: unknown): value is XMLHttpRequest;
+
+  /**
    * Type guard to check if a value is a ProgressEvent from an XMLHttpRequest.
    * This is useful for distinguishing progress events in AJAX requests, which are thrown
    * as errors in some contexts (e.g., Fetch API polyfills).

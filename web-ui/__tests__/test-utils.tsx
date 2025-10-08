@@ -16,6 +16,10 @@ import { ChatPanelProvider } from '/components/ai/chat-panel';
 import { SessionProvider } from '/components/auth/session-provider';
 import { FlagProvider } from '/components/general/flags/flag-provider';
 
+type CustomRenderOptions = RenderOptions & {
+  withFlags?: boolean;
+};
+
 // Create a test QueryClient with disabled retries and logs
 const createTestQueryClient = () =>
   new QueryClient({
@@ -36,30 +40,53 @@ const AllTheProviders = ({ children }: PropsWithChildren) => {
     <QueryClientProvider client={queryClient}>
       <ChatPanelProvider>
         <SessionProvider>
-          <FlagProvider>
-            <ThemeProvider>{children}</ThemeProvider>
-          </FlagProvider>
+          <ThemeProvider>{children}</ThemeProvider>
         </SessionProvider>
       </ChatPanelProvider>
     </QueryClientProvider>
   );
 };
 
-const customRender = (ui: React.ReactElement, options: RenderOptions = {}) => {
+const AllTheProvidersWithFlags = ({ children }: PropsWithChildren) => {
+  return (
+    <AllTheProviders>
+      <FlagProvider>{children}</FlagProvider>
+    </AllTheProviders>
+  );
+};
+
+const customRender = (
+  ui: React.ReactElement,
+  options: CustomRenderOptions = {},
+) => {
   let ret: any = undefined;
   act(() => {
-    ret = render(ui, { wrapper: AllTheProviders, ...options });
+    ret = render(ui, {
+      wrapper: options.withFlags ? AllTheProvidersWithFlags : AllTheProviders,
+      ...options,
+    });
   });
-  return ret;
+  const rerender = ret.rerender;
+  return {
+    ...ret,
+    rerender: (rerenderUi: React.ReactElement) => {
+      act(() => {
+        rerender(rerenderUi);
+      });
+    },
+  };
 };
 
 const customAsyncRender = async (
   ui: React.ReactElement,
-  options: RenderOptions = {},
+  options: CustomRenderOptions = {},
 ) => {
   let ret: any = undefined;
   await act(async () => {
-    ret = render(ui, { wrapper: AllTheProviders, ...options });
+    ret = render(ui, {
+      wrapper: options.withFlags ? AllTheProvidersWithFlags : AllTheProviders,
+      ...options,
+    });
   });
   return ret;
 };
@@ -72,7 +99,9 @@ const customRenderHook = <
   BaseElement extends Container = Container,
 >(
   hook: (initialProps?: Props) => Result,
-  options?: RenderHookOptions<Props, Q, Container, BaseElement>,
+  options?: RenderHookOptions<Props, Q, Container, BaseElement> & {
+    withFlags?: boolean;
+  },
 ): RenderHookResult<Result, Props> => {
   let ret: RenderHookResult<Result, Props> | undefined = undefined;
   act(() => {
@@ -80,7 +109,9 @@ const customRenderHook = <
     const fromHook = renderHook<Result, Props, Q, Container, BaseElement>(
       hook,
       {
-        wrapper: normalOptions.wrapper ?? AllTheProviders,
+        wrapper:
+          normalOptions.wrapper ??
+          (options?.withFlags ? AllTheProvidersWithFlags : AllTheProviders),
         ...normalOptions,
       },
     );
