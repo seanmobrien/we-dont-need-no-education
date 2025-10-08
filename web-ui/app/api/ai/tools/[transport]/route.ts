@@ -35,6 +35,19 @@ import {
   pingPongToolConfig,
 } from '/lib/ai/tools/ping-pong';
 import { isAbortError } from '/lib/react-util';
+// Todo tool imports
+import {
+  createTodoCallback,
+  createTodoConfig,
+  getTodosCallback,
+  getTodosConfig,
+  updateTodoCallback,
+  updateTodoConfig,
+  // deleteTodoCallback,
+  // deleteTodoConfig,
+  toggleTodoCallback,
+  toggleTodoConfig,
+} from '/lib/ai/tools/todo';
 
 // Lightweight safe serializers to avoid attempting to stringify circular or
 // large runtime objects (transports, servers, sockets). Keep summaries
@@ -132,6 +145,12 @@ const handler = wrapRouteRequest(
         sequentialThinkingCallbackConfig,
         sequentialThinkingCallback,
       );
+      server.registerTool('createTodo', createTodoConfig, createTodoCallback);
+      server.registerTool('getTodos', getTodosConfig, getTodosCallback);
+      server.registerTool('updateTodo', updateTodoConfig, updateTodoCallback);
+      // server.registerTool('deleteTodo', deleteTodoConfig, deleteTodoCallback);
+      server.registerTool('toggleTodo', toggleTodoConfig, toggleTodoCallback);
+
       const makeErrorHandler = (
         oldHandler: ((error: Error) => void) | undefined,
         dscr: string,
