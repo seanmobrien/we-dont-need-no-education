@@ -46,8 +46,8 @@
  * @since 1.0.0
  */
 
-import { ChatMessagesType, schema } from '/lib/drizzle-db';
-import { DbTransactionType } from '/lib/drizzle-db';
+import { schema } from '/lib/drizzle-db/schema';
+import type { ChatMessagesType, DbTransactionType } from '/lib/drizzle-db';
 import { ChatHistoryContext, ToolStatus } from './types';
 import { eq, desc, and } from 'drizzle-orm';
 import { log } from '/lib/logger';
