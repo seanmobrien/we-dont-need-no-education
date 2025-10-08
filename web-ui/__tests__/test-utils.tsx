@@ -54,11 +54,9 @@ const customRender = (ui: React.ReactElement, options: RenderOptions = {}) => {
   return {
     ...ret,
     rerender: (rerenderUi: React.ReactElement) => {
-      let rerenderResult: any = undefined;
       act(() => {
-        rerenderResult = rerender(rerenderUi, { wrapper: AllTheProviders });
+        rerender(rerenderUi);
       });
-      return rerenderResult;
     },
   };
 };
