@@ -39,7 +39,7 @@ describe('BaseDrizzleRepository', () => {
   ) => Partial<TestModel>;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockDb = (await drizDbWithInit()) as DatabaseMockType;
     mockDb.__setRecords([]);
 
