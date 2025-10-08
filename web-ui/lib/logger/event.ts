@@ -13,7 +13,7 @@ export type ICustomAppInsightsEvent = {
   /**
    * Optional measurements associated with the event.
    */
-  measurements?: Record<string, number>;
+  measurements?: Record<string, string | number>;
   /**
    * @returns void
    * @description Disposes of the event and clears any associated resources.
@@ -51,14 +51,14 @@ export class CustomAppInsightsEvent implements ICustomAppInsightsEvent {
   /**
    * A record to store measurement values.
    */
-  readonly measurements: Record<string, number>;
+  readonly measurements: Record<string, number | string>;
 
   /**
    * Creates an instance of CustomAppInsightsEvent.
    * @param event - The name of the event.
    * @param measurements - Optional initial measurements.
    */
-  constructor(event: string, measurements?: Record<string, number>) {
+  constructor(event: string, measurements?: Record<string, number | string>) {
     this.event = event;
     this.measurements = measurements ?? {};
   }
@@ -68,7 +68,13 @@ export class CustomAppInsightsEvent implements ICustomAppInsightsEvent {
    * @param value - The amount to increment by. Defaults to 1.
    */
   increment(name: string, value: number = 1): void {
-    this.measurements[name] = (this.measurements[name] ?? 0) + value;
+    const current = Number(this.measurements[name] ?? 0);
+    if (!Number.isFinite(current)) {
+      throw new Error(
+        `Cannot increment measurement "${name}": value "${this.measurements[name]}" is not a finite number.`
+      );
+    }
+    this.measurements[name] = current + value;
   }
   /**
    * Starts a timer for a specified measurement.
