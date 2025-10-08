@@ -258,7 +258,7 @@ export const POST = (req: NextRequest) => {
               chatHistoryContext.dispose();
             }
           },
-          onFinish: async (evt) => {
+          onFinish: async (/*evt*/) => {
             try {
               // await safeDisposeToolProviders(toolProviders);
               log((l) =>
@@ -271,7 +271,7 @@ export const POST = (req: NextRequest) => {
                     model,
                     isRateLimitError,
                     retryAfter,
-                    event: evt,
+                    // event: evt,
                   },
                 }),
               );
