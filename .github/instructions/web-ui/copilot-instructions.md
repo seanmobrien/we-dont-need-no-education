@@ -445,7 +445,7 @@ When working on advocacy-related features:
 
 ## Debugging and Troubleshooting
 
-- **Log in**: To log into the application use the credentials stored in envioronment variables
+- **Log in**: To log into the application use the credentials stored in environment variables
   - Username: `${COPILOT_LOGIN_USER}`
   - Password: `${COPILOT_LOGIN_PASSWORD}`
 
