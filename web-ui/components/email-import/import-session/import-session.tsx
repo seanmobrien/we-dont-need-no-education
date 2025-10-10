@@ -14,14 +14,14 @@ import TableBody from '@mui/material/TableBody';
 import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import Mail from '@mui/icons-material/Mail';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { searchEmails } from '/lib/api/email/import/google';
-import { log } from '/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { searchEmails } from '@/lib/api/email/import/google';
+import { log } from '@/lib/logger';
 import EnhancedTableHead, {
   HeadCell,
-} from '/components/general/enhanced-table-head';
+} from '@/components/general/enhanced-table-head';
 import { ImportRecordNotifyProps } from './types';
-import { MessageImportStatus } from '/data-models/api/import/email-message';
+import { MessageImportStatus } from '@/data-models/api/import/email-message';
 type ActionButonTaskType = 'load' | 'import' | 'cancel';
 
 const headCells: HeadCell[] = [

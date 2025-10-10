@@ -4,7 +4,7 @@
 import {
   ErrorReporter,
   ErrorSeverity,
-} from '/lib/error-monitoring/error-reporter';
+} from '@/lib/error-monitoring/error-reporter';
 
 // Mock external dependencies
 const mockGtag = jest.fn();

@@ -1,15 +1,15 @@
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import {
   AiSearchResultEnvelope,
   hybridDocumentSearchFactory,
 } from '../services/search';
 import { AiSearchToolResult, CaseFileSearchOptions } from './types';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,
 } from './utility';
-import { appMeters } from '/lib/site-util/metrics';
+import { appMeters } from '@/lib/site-util/metrics';
 import type {
   ServerNotification,
   ServerRequest,

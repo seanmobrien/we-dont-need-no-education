@@ -11,9 +11,9 @@ import {
   waitFor,
   act,
   cleanup,
-} from '/__tests__/test-utils';
-import ResizableDraggableDialog from '/components/mui/resizeable-draggable-dialog/dialog';
-import type { ResizeableDraggableDialogProps } from '/components/mui/resizeable-draggable-dialog/types';
+} from '@/__tests__/test-utils';
+import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
+import type { ResizeableDraggableDialogProps } from '@/components/mui/resizeable-draggable-dialog/types';
 
 // Test wrapper component to manage state
 const TestDialogWrapper = ({

@@ -5,7 +5,7 @@
  * Provides comprehensive OpenTelemetry metrics for AI tool usage, performance, and observability.
  */
 
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 
 /**
  * Type definitions for MCP tool metrics

@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import EmailForm from '/components/email-message/email-form';
+import EmailForm from '@/components/email-message/email-form';
 import { mockEmail } from '../email.mock-data';
-import { logger } from '/lib/logger';
-import { generateUniqueId } from '/lib/react-util';
+import { logger } from '@/lib/logger';
+import { generateUniqueId } from '@/lib/react-util';
 
-jest.mock('/lib/logger');
-jest.mock('/lib/react-util');
+jest.mock('@/lib/logger');
+jest.mock('@/lib/react-util');
 
 describe('EmailForm', () => {
   const mockFetch = jest.fn();

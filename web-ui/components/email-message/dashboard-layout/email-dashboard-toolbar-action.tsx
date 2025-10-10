@@ -12,9 +12,9 @@
 
 import * as React from 'react';
 import { Stack } from '@mui/material';
-import { ThemeSelector } from '/components/theme/theme-selector';
+import { ThemeSelector } from '@/components/theme/theme-selector';
 import { Account } from '@toolpad/core/Account';
-import { MemoryStatusIndicator } from '/components/memory-status';
+import { MemoryStatusIndicator } from '@/components/memory-status';
 
 /**
  * EmailDashboardToolbarAction renders the toolbar actions for the email dashboard.

@@ -42,7 +42,7 @@
  *
  * USAGE EXAMPLE
  * ```ts
- * import { clientToolProviderFactory } from '/lib/ai/mcp/client-tool-provider';
+ * import { clientToolProviderFactory } from '@/lib/ai/mcp/client-tool-provider';
  *
  * const provider = clientToolProviderFactory();
  * const tools = provider.tools();
@@ -65,7 +65,7 @@
  */
 
 import { ToolSet } from 'ai';
-import { ConnectableToolProvider, MCPClient } from './types';
+import { ConnectableToolProvider, MCPClient } from '../types';
 import z from 'zod';
 
 /**

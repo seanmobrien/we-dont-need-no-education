@@ -3,14 +3,18 @@
  */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { mockFlagsmithInstanceFactory } from '/__tests__/jest.setup';
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+
+setupImpersonationMock();
+
+import { mockFlagsmithInstanceFactory } from '@/__tests__/jest.setup';
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 // Mock all dependencies first
 const mockGetResolvedPromises = jest.fn() as jest.MockedFunction<any>;
 const mockIsError = jest.fn() as jest.MockedFunction<any>;
 let originalReactUtil:
-  | typeof import('/lib/react-util/utility-methods')
+  | typeof import('@/lib/react-util/utility-methods')
   | undefined;
 const mockLoggedError = {
   isTurtlesAllTheWayDownBaby: jest.fn() as jest.MockedFunction<any>,
@@ -23,7 +27,7 @@ const mockGetCachedTools = jest.fn() as unknown as jest.MockedFunction<
 >;
 mockGetCachedTools.mockResolvedValue(null as Record<string, unknown> | null);
 
-jest.mock('/lib/react-util/utility-methods', () => {
+jest.mock('@/lib/react-util/utility-methods', () => {
   originalReactUtil = jest.requireActual('/lib/react-util/utility-methods');
   return {
     ...originalReactUtil,
@@ -32,7 +36,7 @@ jest.mock('/lib/react-util/utility-methods', () => {
   };
 });
 
-jest.mock('/lib/ai/mcp/tool-cache', () => {
+jest.mock('@/lib/ai/mcp/cache', () => {
   const mock = {
     getCachedTools: mockGetCachedTools,
     setCachedTools: async () => Promise.resolve(),
@@ -43,7 +47,7 @@ jest.mock('/lib/ai/mcp/tool-cache', () => {
   };
 });
 
-jest.mock('/lib/react-util/errors/logged-error', () => ({
+jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: mockLoggedError,
 }));
 
@@ -52,10 +56,10 @@ jest.mock('ai', () => ({
   ToolSet: {},
 }));
 
-jest.mock('/lib/ai/mcp/instrumented-sse-transport', () => ({
+jest.mock('@/lib/ai/mcp/instrumented-sse-transport', () => ({
   InstrumentedSseTransport: mockInstrumentedSseTransport,
 }));
-jest.mock('/lib/ai/mcp/client-tool-provider', () => ({
+jest.mock('@/lib/ai/mcp/providers/client-tool-provider', () => ({
   clientToolProviderFactory: jest.fn(() => ({
     url: 'https://server3.com/api',
     allowWrite: false,
@@ -72,11 +76,11 @@ jest.mock('/lib/ai/mcp/client-tool-provider', () => ({
 import {
   toolProviderFactory,
   toolProviderSetFactory,
-} from '/lib/ai/mcp/toolProviderFactory';
+} from '@/lib/ai/mcp/providers';
 import type {
   ConnectableToolProvider,
   ToolProviderFactoryOptions,
-} from '/lib/ai/mcp/types';
+} from '../../../../lib/ai/mcp/types';
 import { ToolSet } from 'ai';
 import z from 'zod';
 

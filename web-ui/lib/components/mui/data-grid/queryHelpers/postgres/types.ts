@@ -1,11 +1,11 @@
-import type { LikeNextRequest } from '/lib/nextjs-util/types';
+import type { LikeNextRequest } from '@/lib/nextjs-util/types';
 import type {
   GridFilterModel,
   GridFilterItem,
   GridSortModel,
 } from '@mui/x-data-grid-pro';
 import type { Sql } from 'postgres';
-import type { ISqlNeonAdapter, SqlDb } from '/lib/neondb';
+import type { ISqlNeonAdapter, SqlDb } from '@/lib/neondb';
 
 /**
  * Props for configuring the buildOrderBy function for PostgreSQL.

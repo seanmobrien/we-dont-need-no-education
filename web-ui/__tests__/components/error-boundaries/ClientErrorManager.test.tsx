@@ -6,11 +6,11 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import {
   ClientErrorManager,
   createSuppressionRule,
-} from '/components/error-boundaries/ClientErrorManager';
-import { errorReporter } from '/lib/error-monitoring';
+} from '@/components/error-boundaries/ClientErrorManager';
+import { errorReporter } from '@/lib/error-monitoring';
 
 // Mock the error reporter
-jest.mock('/lib/error-monitoring', () => ({
+jest.mock('@/lib/error-monitoring', () => ({
   errorReporter: {
     reportError: jest.fn(),
   },

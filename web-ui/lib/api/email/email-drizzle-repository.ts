@@ -1,7 +1,7 @@
 import { BaseDrizzleRepository } from '../_baseDrizzleRepository';
-import { emails } from '/drizzle/schema';
-import { drizDbWithInit } from '/lib/drizzle-db';
-import { ValidationError } from '/lib/react-util/errors/validation-error';
+import { emails } from '@/drizzle/schema';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { eq } from 'drizzle-orm';
 
 /**

@@ -1,15 +1,15 @@
-import { ValidationError } from '/lib/react-util/errors';
-import { FirstParameter, newUuid } from '/lib/typescript';
+import { ValidationError } from '@/lib/react-util/errors';
+import { FirstParameter, newUuid } from '@/lib/typescript';
 import { ObjectRepository } from '../_types';
 import {
   EmailMessageAttachment,
   EmailMessageAttachmentSummary,
   EmailMessageSummary,
-} from '/data-models/api/email-message';
+} from '@/data-models/api/email-message';
 import { BaseObjectRepository } from '../_baseObjectRepository';
-import { query } from '/lib/neondb';
+import { query } from '@/lib/neondb';
 import { AbstractObjectRepository } from '../abstractObjectRepository';
-import { db } from '/lib/neondb';
+import { db } from '@/lib/neondb';
 
 type RepositoryEmailSummary = Omit<
   EmailMessageSummary,

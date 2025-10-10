@@ -15,15 +15,15 @@ import type {
   LanguageModelV2StreamPart,
   LanguageModelV2ToolCall,
 } from '@ai-sdk/provider';
-import { chatMessages, chatTurns, tokenUsage } from '/drizzle/schema';
+import { chatMessages, chatTurns, tokenUsage } from '@/drizzle/schema';
 import { eq, and } from 'drizzle-orm';
 import {
   ChatMessagesType,
   DbTransactionType,
   drizDb,
   schema,
-} from '/lib/drizzle-db';
-import { log } from '/lib/logger';
+} from '@/lib/drizzle-db';
+import { log } from '@/lib/logger';
 import { getNextSequence } from './utility';
 import type { StreamHandlerContext, StreamHandlerResult } from './types';
 import { instrumentStreamChunk } from './instrumentation';
@@ -32,7 +32,7 @@ import {
   reserveMessageIds,
   upsertToolMessage,
 } from './import-incoming-message';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // ---------------------------------------------------------------------------
 // Lightweight per-id buffers for explicit streaming types

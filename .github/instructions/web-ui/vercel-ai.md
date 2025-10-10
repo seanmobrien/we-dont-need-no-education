@@ -216,7 +216,7 @@ Currently, your application has one table (`resources`) which has a column (`con
 Create a new file (`lib/db/schema/embeddings.ts`) and add the following code:
 
 ```tsx filename="lib/db/schema/embeddings.ts"
-import { nanoid } from '/lib/utils';
+import { nanoid } from '@/lib/utils';
 import { index, pgTable, text, varchar, vector } from 'drizzle-orm/pg-core';
 import { resources } from './resources';
 
@@ -338,7 +338,7 @@ import {
   NewResourceParams,
   insertResourceSchema,
   resources,
-} from '/lib/db/schema/resources';
+} from '@/lib/db/schema/resources';
 import { db } from '../db';
 
 export const createResource = async (input: NewResourceParams) => {
@@ -369,7 +369,7 @@ import {
   NewResourceParams,
   insertResourceSchema,
   resources,
-} from '/lib/db/schema/resources';
+} from '@/lib/db/schema/resources';
 import { db } from '../db';
 import { generateEmbeddings } from '../ai/embedding';
 import { embeddings as embeddingsTable } from '../db/schema/embeddings';
@@ -540,7 +540,7 @@ Let’s see how you can create a tool to give the model the ability to create, e
 Update your route handler with the following code:
 
 ```tsx filename="app/api/chat/route.ts" highlight="18-29"
-import { createResource } from '/lib/actions/resources';
+import { createResource } from '@/lib/actions/resources';
 import { openai } from '@ai-sdk/openai';
 import { convertToModelMessages, streamText, tool, UIMessage } from 'ai';
 import { z } from 'zod';
@@ -664,7 +664,7 @@ The AI SDK has a feature called [`stopWhen`](/docs/ai-sdk-core/tools-and-tool-ca
 Open your root page (`api/chat/route.ts`) and add the following key to the `streamText` configuration object:
 
 ```tsx filename="api/chat/route.ts" highlight="8,24"
-import { createResource } from '/lib/actions/resources';
+import { createResource } from '@/lib/actions/resources';
 import { openai } from '@ai-sdk/openai';
 import {
   convertToModelMessages,
@@ -776,7 +776,7 @@ With that done, it’s onto the final step: creating the tool.
 Go back to your route handler (`api/chat/route.ts`) and add a new tool called `getInformation`:
 
 ```ts filename="api/chat/route.ts" highlight="11,37-43"
-import { createResource } from '/lib/actions/resources';
+import { createResource } from '@/lib/actions/resources';
 import { openai } from '@ai-sdk/openai';
 import {
   convertToModelMessages,
@@ -786,7 +786,7 @@ import {
   stepCountIs,
 } from 'ai';
 import { z } from 'zod';
-import { findRelevantContent } from '/lib/ai/embedding';
+import { findRelevantContent } from '@/lib/ai/embedding';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
@@ -2172,7 +2172,7 @@ This schema defines the structure of the explanation that the model will generat
 
 ```ts filename="app/actions.ts" highlight="2,19,20"
 // other imports
-import { explanationSchema } from '/lib/types';
+import { explanationSchema } from '@/lib/types';
 
 /* ...rest of the file... */
 
@@ -2211,7 +2211,7 @@ Next, update the `query-viewer.tsx` component to display these explanations. The
 
 ```ts filename="components/query-viewer.tsx" highlight="2,10,11"
 /* ...other imports... */
-import { explainQuery } from '/app/actions';
+import { explainQuery } from '@/app/actions';
 
 /* ...rest of the component... */
 
@@ -2322,7 +2322,7 @@ Create a new action in `app/actions.ts`:
 
 ```ts
 /* ...other imports... */
-import { Config, configSchema, explanationsSchema, Result } from '/lib/types';
+import { Config, configSchema, explanationsSchema, Result } from '@/lib/types';
 
 /* ...rest of the file... */
 
@@ -2545,7 +2545,7 @@ Here's how you could set up the Computer Tool with the AI SDK:
 
 ```ts
 import { anthropic } from '@ai-sdk/anthropic';
-import { getScreenshot, executeComputerAction } from '/utils/computer-use';
+import { getScreenshot, executeComputerAction } from '@/utils/computer-use';
 
 const computerTool = anthropic.tools.computer_20250124({
   displayWidthPx: 1920,
@@ -11812,7 +11812,7 @@ import {
   validateUIMessages,
   TypeValidationError,
 } from 'ai';
-import { type MyUIMessage } from '/types';
+import { type MyUIMessage } from '@/types';
 
 export async function POST(req: Request) {
   const { message, id } = await req.json();
@@ -13101,7 +13101,7 @@ Update the API route to include the tool you've defined:
 ```ts filename="app/api/chat/route.ts" highlight="3,8,14"
 import { openai } from '@ai-sdk/openai';
 import { streamText, convertToModelMessages, UIMessage, stepCountIs } from 'ai';
-import { tools } from '/ai/tools';
+import { tools } from '@/ai/tools';
 
 export async function POST(request: Request) {
   const { messages }: { messages: UIMessage[] } = await request.json();
@@ -13157,7 +13157,7 @@ Update your `page.tsx` file:
 
 import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
-import { Weather } from '/components/weather';
+import { Weather } from '@/components/weather';
 
 export default function Page() {
   const [input, setInput] = useState('');
@@ -13280,8 +13280,8 @@ Finally, update your `page.tsx` file to include the new Stock component:
 
 import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
-import { Weather } from '/components/weather';
-import { Stock } from '/components/stock';
+import { Weather } from '@/components/weather';
+import { Stock } from '@/components/stock';
 
 export default function Page() {
   const [input, setInput] = useState('');
@@ -13951,7 +13951,7 @@ import {
   streamText,
   convertToModelMessages,
 } from 'ai';
-import type { MyUIMessage } from '/ai/types';
+import type { MyUIMessage } from '@/ai/types';
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
@@ -14096,7 +14096,7 @@ The `onData` callback is essential for handling streaming data, especially trans
 
 ```tsx filename="page.tsx"
 import { useChat } from '@ai-sdk/react';
-import type { MyUIMessage } from '/ai/types';
+import type { MyUIMessage } from '@/ai/types';
 
 const { messages } = useChat<MyUIMessage>({
   api: '/api/chat',
@@ -14171,7 +14171,7 @@ const result = (
 
 import { useChat } from '@ai-sdk/react';
 import { useState } from 'react';
-import type { MyUIMessage } from '/ai/types';
+import type { MyUIMessage } from '@/ai/types';
 
 export default function Chat() {
   const [input, setInput] = useState('');
@@ -14763,7 +14763,7 @@ Use the `messageMetadata` callback in `toUIMessageStreamResponse` to send metada
 ```ts filename="app/api/chat/route.ts" highlight="11-20"
 import { openai } from '@ai-sdk/openai';
 import { convertToModelMessages, streamText } from 'ai';
-import type { MyUIMessage } from '/types';
+import type { MyUIMessage } from '@/types';
 
 export async function POST(req: Request) {
   const { messages }: { messages: MyUIMessage[] } = await req.json();
@@ -14809,7 +14809,7 @@ Access metadata through the `message.metadata` property:
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport } from 'ai';
-import type { MyUIMessage } from '/types';
+import type { MyUIMessage } from '@/types';
 
 export default function Chat() {
   const { messages } = useChat<MyUIMessage>({
@@ -15755,9 +15755,9 @@ import {
   Message,
   MessageAvatar,
   MessageContent,
-} from '/components/ai-elements/message';
+} from '@/components/ai-elements/message';
 import { useChat } from '@ai-sdk/react';
-import { Response } from '/components/ai-elements/response';
+import { Response } from '@/components/ai-elements/response';
 
 const Example = () => {
   const { messages } = useChat();
@@ -16044,8 +16044,8 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
-import { Message, MessageContent } from '/components/ai-elements/message';
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -16066,28 +16066,28 @@ import {
   PromptInputTextarea,
   PromptInputToolbar,
   PromptInputTools,
-} from '/components/ai-elements/prompt-input';
+} from '@/components/ai-elements/prompt-input';
 import {
   Actions
   ActionsTrigger,
   ActionsContent,
-} from '/components/ai-elements/actions';
+} from '@/components/ai-elements/actions';
 import { useState } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { Response } from '/components/ai-elements/response';
+import { Response } from '@/components/ai-elements/response';
 import { GlobeIcon } from 'lucide-react';
 import {
   Source,
   Sources,
   SourcesContent,
   SourcesTrigger,
-} from '/components/ai-elements/sources';
+} from '@/components/ai-elements/sources';
 import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
-} from '/components/ai-elements/reasoning';
-import { Loader } from '/components/ai-elements/loader';
+} from '@/components/ai-elements/reasoning';
+import { Loader } from '@/components/ai-elements/loader';
 
 const models = [
   {
@@ -16380,20 +16380,20 @@ import {
   type PromptInputMessage,
   PromptInputSubmit,
   PromptInputTextarea,
-} from '/components/ai-elements/prompt-input';
-import { Message, MessageContent } from '/components/ai-elements/message';
+} from '@/components/ai-elements/prompt-input';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
   Conversation,
   ConversationContent,
-} from '/components/ai-elements/conversation';
+} from '@/components/ai-elements/conversation';
 import {
   WebPreview,
   WebPreviewNavigation,
   WebPreviewUrl,
   WebPreviewBody,
-} from '/components/ai-elements/web-preview';
-import { Loader } from '/components/ai-elements/loader';
-import { Suggestions, Suggestion } from '/components/ai-elements/suggestion';
+} from '@/components/ai-elements/web-preview';
+import { Loader } from '@/components/ai-elements/loader';
+import { Suggestions, Suggestion } from '@/components/ai-elements/suggestion';
 
 interface Chat {
   id: string;
@@ -16669,7 +16669,7 @@ The `Actions` component provides a flexible row of action buttons for AI respons
 ## Usage
 
 ```tsx
-import { Actions, Action } from '/components/ai-elements/actions';
+import { Actions, Action } from '@/components/ai-elements/actions';
 import { ThumbsUpIcon } from 'lucide-react';
 ```
 
@@ -16691,19 +16691,19 @@ Add the following component to your frontend:
 'use client';
 
 import { useState } from 'react';
-import { Actions, Action } from '/components/ai-elements/actions';
-import { Message, MessageContent } from '/components/ai-elements/message';
+import { Actions, Action } from '@/components/ai-elements/actions';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
+} from '@/components/ai-elements/conversation';
 import {
   Input,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
-import { Response } from '/components/ai-elements/response';
+} from '@/components/ai-elements/prompt-input';
+import { Response } from '@/components/ai-elements/response';
 import { RefreshCcwIcon, CopyIcon } from 'lucide-react';
 import { useChat } from '@ai-sdk/react';
 import { Fragment } from 'react';
@@ -16897,7 +16897,7 @@ import {
   ArtifactDescription,
   ArtifactHeader,
   ArtifactTitle,
-} from '/components/ai-elements/artifact';
+} from '@/components/ai-elements/artifact';
 ```
 
 ```tsx
@@ -17096,7 +17096,7 @@ import {
   BranchPage,
   BranchPrevious,
   BranchSelector,
-} from '/components/ai-elements/branch';
+} from '@/components/ai-elements/branch';
 ```
 
 ```tsx
@@ -17261,7 +17261,7 @@ import {
   ChainOfThoughtSearchResult,
   ChainOfThoughtSearchResults,
   ChainOfThoughtStep,
-} from '/components/ai-elements/chain-of-thought';
+} from '@/components/ai-elements/chain-of-thought';
 ```
 
 ```tsx
@@ -17483,7 +17483,7 @@ The `CodeBlock` component provides syntax highlighting, line numbers, and copy t
 import {
   CodeBlock,
   CodeBlockCopyButton,
-} from '/components/ai-elements/code-block';
+} from '@/components/ai-elements/code-block';
 ```
 
 ```tsx
@@ -17505,16 +17505,16 @@ Add the following component to your frontend:
 'use client';
 
 import { experimental_useObject as useObject } from '@ai-sdk/react';
-import { codeBlockSchema } from '/app/api/codegen/route';
+import { codeBlockSchema } from '@/app/api/codegen/route';
 import {
   Input,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
+} from '@/components/ai-elements/prompt-input';
 import {
   CodeBlock,
   CodeBlockCopyButton,
-} from '/components/ai-elements/code-block';
+} from '@/components/ai-elements/code-block';
 import { useState } from 'react';
 
 export default function Page() {
@@ -17734,7 +17734,7 @@ import {
   ContextOutputUsage,
   ContextReasoningUsage,
   ContextCacheUsage,
-} from '/components/ai-elements/context';
+} from '@/components/ai-elements/context';
 ```
 
 ```tsx
@@ -18024,7 +18024,7 @@ import {
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
+} from '@/components/ai-elements/conversation';
 ```
 
 ```tsx
@@ -18062,17 +18062,17 @@ import {
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
-import { Message, MessageContent } from '/components/ai-elements/message';
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
   Input,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
+} from '@/components/ai-elements/prompt-input';
 import { MessageSquare } from 'lucide-react';
 import { useState } from 'react';
 import { useChat } from '@ai-sdk/react';
-import { Response } from '/components/ai-elements/response';
+import { Response } from '@/components/ai-elements/response';
 
 const ConversationDemo = () => {
   const [input, setInput] = useState('');
@@ -18292,7 +18292,7 @@ The `Image` component displays AI-generated images from the AI SDK. It accepts a
 ## Usage
 
 ```tsx
-import { Image } from '/components/ai-elements/image';
+import { Image } from '@/components/ai-elements/image';
 ```
 
 ```tsx
@@ -18330,14 +18330,14 @@ Add the following component to your frontend:
 ```tsx filename="app/page.tsx"
 'use client';
 
-import { Image } from '/components/ai-elements/image';
+import { Image } from '@/components/ai-elements/image';
 import {
   Input,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
+} from '@/components/ai-elements/prompt-input';
 import { useState } from 'react';
-import { Loader } from '/components/ai-elements/loader';
+import { Loader } from '@/components/ai-elements/loader';
 
 const ImageDemo = () => {
   const [prompt, setPrompt] = useState('A futuristic cityscape at sunset');
@@ -18580,7 +18580,7 @@ import {
   InlineCitationCarouselIndex,
   InlineCitationSource,
   InlineCitationText,
-} from '/components/ai-elements/inline-citation';
+} from '@/components/ai-elements/inline-citation';
 ```
 
 ```tsx
@@ -18635,9 +18635,9 @@ import {
   InlineCitationCarouselNext,
   InlineCitationSource,
   InlineCitationQuote,
-} from '/components/ai-elements/inline-citation';
-import { Button } from '/components/ui/button';
-import { citationSchema } from '/app/api/citation/route';
+} from '@/components/ai-elements/inline-citation';
+import { Button } from '@/components/ui/button';
+import { citationSchema } from '@/app/api/citation/route';
 
 const CitationDemo = () => {
   const { object, submit, isLoading } = useObject({
@@ -19022,7 +19022,7 @@ The `Loader` component provides a spinning animation to indicate loading states 
 ## Usage
 
 ```tsx
-import { Loader } from '/components/ai-elements/loader';
+import { Loader } from '@/components/ai-elements/loader';
 ```
 
 ```tsx
@@ -19042,14 +19042,14 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
-import { Message, MessageContent } from '/components/ai-elements/message';
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import {
   Input,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
-import { Loader } from '/components/ai-elements/loader';
+} from '@/components/ai-elements/prompt-input';
+import { Loader } from '@/components/ai-elements/loader';
 import { useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 
@@ -19201,7 +19201,7 @@ The `Message` component displays a chat interface message from either a user or 
 ## Usage
 
 ```tsx
-import { Message, MessageContent } from '/components/ai-elements/message';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 ```
 
 ```tsx
@@ -19225,9 +19225,9 @@ Add the following component to your frontend:
 ```tsx filename="app/page.tsx"
 'use client';
 
-import { Message, MessageContent } from '/components/ai-elements/message';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import { useChat } from '@ai-sdk/react';
-import { Response } from '/components/ai-elements/response';
+import { Response } from '@/components/ai-elements/response';
 
 const MessageDemo = () => {
   const { messages } = useChat();
@@ -19404,7 +19404,7 @@ import {
   OpenInT3,
   OpenInTrigger,
   OpenInv0,
-} from '/components/ai-elements/open-in-chat';
+} from '@/components/ai-elements/open-in-chat';
 ```
 
 ```tsx
@@ -19545,7 +19545,7 @@ import {
   PromptInputToolbar,
   PromptInputTools,
   usePromptInputAttachments,
-} from '/components/ai-elements/prompt-input';
+} from '@/components/ai-elements/prompt-input';
 ```
 
 ```tsx
@@ -19599,7 +19599,7 @@ import {
   PromptInputTextarea,
   PromptInputToolbar,
   PromptInputTools,
-} from '/components/ai-elements/prompt-input';
+} from '@/components/ai-elements/prompt-input';
 import { GlobeIcon, MicIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useChat } from '@ai-sdk/react';
@@ -19607,9 +19607,9 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
-import { Message, MessageContent } from '/components/ai-elements/message';
-import { Response } from '/components/ai-elements/response';
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import { Response } from '@/components/ai-elements/response';
 
 const models = [
   { id: 'gpt-4o', name: 'GPT-4o' },
@@ -20160,7 +20160,7 @@ import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
-} from '/components/ai-elements/reasoning';
+} from '@/components/ai-elements/reasoning';
 ```
 
 ```tsx
@@ -20183,19 +20183,19 @@ import {
   Reasoning,
   ReasoningContent,
   ReasoningTrigger,
-} from '/components/ai-elements/reasoning';
+} from '@/components/ai-elements/reasoning';
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
+} from '@/components/ai-elements/conversation';
 import {
   PromptInput,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
-import { Loader } from '/components/ai-elements/loader';
-import { Message, MessageContent } from '/components/ai-elements/message';
+} from '@/components/ai-elements/prompt-input';
+import { Loader } from '@/components/ai-elements/loader';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import { useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 import { Response } from @/components/ai-elements/response';
@@ -20394,7 +20394,7 @@ This will ensure that the Streamdown styles are applied to your project. See [St
 ## Usage
 
 ```tsx
-import { Response } from '/components/ai-elements/response';
+import { Response } from '@/components/ai-elements/response';
 ```
 
 ```tsx
@@ -20414,10 +20414,10 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
-import { Message, MessageContent } from '/components/ai-elements/message';
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
 import { useChat } from '@ai-sdk/react';
-import { Response } from '/components/ai-elements/response';
+import { Response } from '@/components/ai-elements/response';
 
 const ResponseDemo = () => {
   const { messages } = useChat();
@@ -20567,7 +20567,7 @@ import {
   Sources,
   SourcesContent,
   SourcesTrigger,
-} from '/components/ai-elements/sources';
+} from '@/components/ai-elements/sources';
 ```
 
 ```tsx
@@ -20594,19 +20594,19 @@ import {
   Sources,
   SourcesContent,
   SourcesTrigger,
-} from '/components/ai-elements/sources';
+} from '@/components/ai-elements/sources';
 import {
   Input,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
+} from '@/components/ai-elements/prompt-input';
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from '/components/ai-elements/conversation';
-import { Message, MessageContent } from '/components/ai-elements/message';
-import { Response } from '/components/ai-elements/response';
+} from '@/components/ai-elements/conversation';
+import { Message, MessageContent } from '@/components/ai-elements/message';
+import { Response } from '@/components/ai-elements/response';
 import { useState } from 'react';
 import { DefaultChatTransport } from 'ai';
 
@@ -20825,7 +20825,7 @@ The `Suggestion` component displays a horizontal row of clickable suggestions fo
 ## Usage
 
 ```tsx
-import { Suggestion, Suggestions } from '/components/ai-elements/suggestion';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 ```
 
 ```tsx
@@ -20847,8 +20847,8 @@ import {
   Input,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
-import { Suggestion, Suggestions } from '/components/ai-elements/suggestion';
+} from '@/components/ai-elements/prompt-input';
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion';
 import { useState } from 'react';
 import { useChat } from '@ai-sdk/react';
 
@@ -20997,7 +20997,7 @@ import {
   TaskItem,
   TaskItemFile,
   TaskTrigger,
-} from '/components/ai-elements/task';
+} from '@/components/ai-elements/task';
 ```
 
 ```tsx
@@ -21027,9 +21027,9 @@ import {
   TaskItemFile,
   TaskTrigger,
   TaskContent,
-} from '/components/ai-elements/task';
-import { Button } from '/components/ui/button';
-import { tasksSchema } from '/app/api/task/route';
+} from '@/components/ai-elements/task';
+import { Button } from '@/components/ui/button';
+import { tasksSchema } from '@/app/api/task/route';
 import {
   SiReact,
   SiTypescript,
@@ -21289,7 +21289,7 @@ import {
   ToolHeader,
   ToolOutput,
   ToolInput,
-} from '/components/ai-elements/tool';
+} from '@/components/ai-elements/tool';
 ```
 
 ```tsx
@@ -21313,15 +21313,15 @@ Add the following component to your frontend:
 
 import { useChat } from '@ai-sdk/react';
 import { DefaultChatTransport, type ToolUIPart } from 'ai';
-import { Button } from '/components/ui/button';
-import { Response } from '/components/ai-elements/response';
+import { Button } from '@/components/ui/button';
+import { Response } from '@/components/ai-elements/response';
 import {
   Tool,
   ToolContent,
   ToolHeader,
   ToolInput,
   ToolOutput,
-} from '/components/ai-elements/tool';
+} from '@/components/ai-elements/tool';
 
 type WeatherToolInput = {
   location: string;
@@ -21632,7 +21632,7 @@ import {
   WebPreviewNavigation,
   WebPreviewUrl,
   WebPreviewBody,
-} from '/components/ai-elements/web-preview';
+} from '@/components/ai-elements/web-preview';
 ```
 
 ```tsx
@@ -21674,13 +21674,13 @@ import {
   WebPreviewBody,
   WebPreviewNavigation,
   WebPreviewUrl,
-} from '/components/ai-elements/web-preview';
+} from '@/components/ai-elements/web-preview';
 import { useState } from 'react';
 import {
   Input,
   PromptInputTextarea,
   PromptInputSubmit,
-} from '/components/ai-elements/prompt-input';
+} from '@/components/ai-elements/prompt-input';
 import { Loader } from '../ai-elements/loader';
 
 const WebPreviewDemo = () => {

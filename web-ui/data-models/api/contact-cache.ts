@@ -1,4 +1,4 @@
-import { forOneOrMany, OneOrMany } from '/lib/typescript';
+import { forOneOrMany, OneOrMany } from '@/lib/typescript';
 import { ContactSummary, Contact } from './contact';
 import { isContact } from './guards';
 

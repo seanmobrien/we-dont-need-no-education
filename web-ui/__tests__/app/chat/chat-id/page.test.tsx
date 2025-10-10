@@ -20,7 +20,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Use the globally mocked auth (from jest.setup.ts) and override implementation per test via helper
-import { auth as authMockOriginal } from '/auth';
+import { auth as authMockOriginal } from '@/auth';
 const authMock = authMockOriginal as unknown as jest.Mock;
 
 const setSession = (userId: number | null) => {
@@ -34,7 +34,7 @@ const setSession = (userId: number | null) => {
 };
 
 const drizDbWithInitMock = jest.fn();
-jest.mock('/lib/drizzle-db', () => ({
+jest.mock('@/lib/drizzle-db', () => ({
   drizDbWithInit: (
     cb?: (db: {
       query: { chats: { findFirst: typeof drizDbWithInitMock } };
@@ -46,12 +46,12 @@ jest.mock('/lib/drizzle-db', () => ({
 }));
 
 const isUserAuthorizedMock = jest.fn();
-jest.mock('/lib/site-util/auth', () => ({
+jest.mock('@/lib/site-util/auth', () => ({
   isUserAuthorized: (args: { signedInUserId: number; ownerUserId: number }) =>
     isUserAuthorizedMock(args),
 }));
 
-jest.mock('/lib/nextjs-util', () => ({
+jest.mock('@/lib/nextjs-util', () => ({
   extractParams: async (req: { params: Promise<{ chatId: string }> }) => ({
     chatId: (await req.params).chatId,
   }),
@@ -70,7 +70,7 @@ interface MockChatHistoryProps {
   chatId: string;
   title?: string;
 }
-jest.mock('/components/chat/history', () => {
+jest.mock('@/components/chat/history', () => {
   const ChatHistory = (props: MockChatHistoryProps) => {
     return <div data-testid="chat-history" {...props} />;
   };
@@ -128,9 +128,9 @@ let getChatDetails: (args: {
   userId: number;
 }) => Promise<{ ok: boolean; title?: string }>;
 beforeAll(async () => {
-  const mod = await import('/app/messages/chat/[chatId]/page');
+  const mod = await import('@/app/messages/chat/[chatId]/page');
   ChatDetailPage = mod.default; // ChatDetailPage is the default export
-  const lib = await import('/lib/ai/chat/history');
+  const lib = await import('@/lib/ai/chat/history');
   getChatDetails = lib.getChatDetails; // getChatDetails is a named export
 });
 

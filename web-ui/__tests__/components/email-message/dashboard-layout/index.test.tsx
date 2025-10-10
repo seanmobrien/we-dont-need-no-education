@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import * as DashboardLayoutModule from '/components/email-message/dashboard-layout';
+import * as DashboardLayoutModule from '@/components/email-message/dashboard-layout';
 import '@testing-library/jest-dom';
 
 // Mock all the individual components to avoid dependency issues
@@ -56,7 +56,7 @@ jest.mock(
   },
 );
 
-jest.mock('/components/email-message/dashboard-layout/branding', () => ({
+jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
   Branding: {
     title: 'Mystery Compliance Theater 2000',
     logo: <span data-testid="branding-logo">Logo</span>,

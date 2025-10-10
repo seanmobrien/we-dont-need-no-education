@@ -3,7 +3,7 @@ import {
   parseSortOptions,
   // buildOrderBy,
   parseFilterOptions,
-} from '/lib/components/mui/data-grid/server';
+} from '@/lib/components/mui/data-grid/server';
 import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
 
 describe('utility functions', () => {

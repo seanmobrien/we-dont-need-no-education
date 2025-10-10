@@ -23,6 +23,7 @@ const eslintConfig = [
       'next-env.d.ts',
       '.next',
       'lib/ai/mem0/lib',
+      '.github',
     ],
   },
 ];

@@ -7,12 +7,12 @@
  * dependent on Next.js runtime mocking.
  */
 
-import { BaseDrizzleRepository } from '/lib/api/_baseDrizzleRepository';
+import { BaseDrizzleRepository } from '@/lib/api/_baseDrizzleRepository';
 
 // Mock all external dependencies
-jest.mock('/lib/drizzle-db');
-jest.mock('/lib/logger');
-jest.mock('/lib/react-util');
+jest.mock('@/lib/drizzle-db');
+jest.mock('@/lib/logger');
+jest.mock('@/lib/react-util');
 
 // Test model interface
 interface TestModel {

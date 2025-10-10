@@ -1,15 +1,15 @@
-import { ImportStage } from '/data-models/api/import/email-message';
+import { ImportStage } from '@/data-models/api/import/email-message';
 import { AdditionalStageOptions, StageProcessorContext } from '../types';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 
 import { getQueuedAttachment } from './attachment-download';
 import {
   StagedAttachment,
   StagedAttachmentRepository,
-} from '/lib/api/email/import/staged-attachment';
-import { EmailAttachmentRepository } from '/lib/api/email/database';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+} from '@/lib/api/email/import/staged-attachment';
+import { EmailAttachmentRepository } from '@/lib/api/email/database';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type AttachmentImportResult =
   | {

@@ -5,8 +5,8 @@
 import type { CacheableResponse } from './types';
 import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
-import { log } from '/lib/logger';
-import { generateChatId } from '/lib/ai/core';
+import { log } from '@/lib/logger';
+import { generateChatId } from '@/lib/ai/core';
 
 const config = getCacheConfig();
 

@@ -1,7 +1,7 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 // Fixed chalk import for ESM
 import chalk from 'chalk';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 
 interface ThoughtData {
   thought: string;
@@ -221,7 +221,8 @@ You should:
 8. Verify the hypothesis based on the Chain of Thought steps
 9. Repeat the process until satisfied with the solution
 10. Provide a single, ideally correct answer as the final output
-11. Only set next_thought_needed to false when truly done and a satisfactory answer is reached`,
+11. Only set next_thought_needed to false when truly done and a satisfactory answer is reached
+12. If results include a plan of action, always send it to the to-do list to ensure proper processing.`,
   inputSchema: {
     type: 'object',
     properties: {

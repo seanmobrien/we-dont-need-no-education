@@ -1,5 +1,5 @@
-import { log } from '/lib/logger';
-import { isModelAvailable } from '/lib/ai/aiModelFactory';
+import { log } from '@/lib/logger';
+import { isModelAvailable } from '@/lib/ai/aiModelFactory';
 import { rateLimitQueueManager } from './queue-manager';
 import { rateLimitMetrics } from './metrics';
 import type {
@@ -8,7 +8,7 @@ import type {
   RateLimitedRequest,
 } from './types';
 import { v4 as uuidv4 } from 'uuid';
-import { RateRetryError } from '/lib/react-util/errors/rate-retry-error';
+import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
 // Check if model is available and get fallback if needed
 export function getAvailableModel(

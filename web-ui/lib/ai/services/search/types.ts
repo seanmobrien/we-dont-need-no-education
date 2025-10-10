@@ -76,6 +76,10 @@ export interface AiSearchResult {
  */
 export type AiSearchResultEnvelope = {
   /**
+   * Optional unique identifier assigned by the search service for this specific search operation.
+   */
+  searchId?: string;
+  /**
    * An array of AI search results.
    */
   results: AiSearchResult[];

@@ -1,5 +1,5 @@
 import { config } from './common';
-import { env } from '/lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 import {
   ApplicationInsights,
   DistributedTracingModes,

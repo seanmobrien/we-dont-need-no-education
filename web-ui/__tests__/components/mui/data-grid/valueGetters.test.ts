@@ -1,4 +1,4 @@
-import { valueGetterDate } from '/components/mui/data-grid/valueGetters';
+import { valueGetterDate } from '@/components/mui/data-grid/valueGetters';
 
 describe('valueGetterDate', () => {
   it('should return a Date object when given a timestamp number', () => {

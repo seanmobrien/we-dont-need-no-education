@@ -8,13 +8,13 @@ import {
   useStatistics,
   useModelStatistics,
   useQueueStatistics,
-} from '/lib/hooks/use-statistics';
-import type { ModelStat, QueueInfo } from '/types/statistics';
-import { fetch } from '/lib/nextjs-util/fetch';
-import { act, renderHook, waitFor } from '/__tests__/test-utils';
+} from '@/lib/hooks/use-statistics';
+import type { ModelStat, QueueInfo } from '@/types/statistics';
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { act, renderHook, waitFor } from '@/__tests__/test-utils';
 import { RefObject } from 'react';
-import { log } from '/lib/logger';
-import { isError } from '/lib/react-util/utility-methods';
+import { log } from '@/lib/logger';
+import { isError } from '@/lib/react-util/utility-methods';
 import { assert } from 'console';
 // Mock fetch globally
 //global.fetch = jest.fn();

@@ -12,11 +12,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { EmailDashboardToolbarAction } from '/components/email-message/dashboard-layout/email-dashboard-toolbar-action';
+import { EmailDashboardToolbarAction } from '@/components/email-message/dashboard-layout/email-dashboard-toolbar-action';
 import '@testing-library/jest-dom';
 
 // Mock the MemoryStatusIndicator component
-jest.mock('/components/memory-status', () => {
+jest.mock('@/components/memory-status', () => {
   const MockMemoryStatusIndicator = () => (
     <div data-testid="memory-status-indicator">Memory Status</div>
   );
@@ -27,7 +27,7 @@ jest.mock('/components/memory-status', () => {
 });
 
 // Mock the ThemeSelector component
-jest.mock('/components/theme/theme-selector', () => {
+jest.mock('@/components/theme/theme-selector', () => {
   const MockThemeSelector = () => (
     <div data-testid="theme-selector">Theme Selector</div>
   );

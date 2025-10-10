@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '/auth';
-import { drizDbWithInit } from '/lib/drizzle-db';
-import { schema } from '/lib/drizzle-db/schema';
+import { auth } from '@/auth';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import type { ChatDetails, ChatTurn } from '/lib/ai/chat';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import type { ChatDetails, ChatTurn } from '@/lib/ai/chat';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,8 +1,8 @@
 import type { ImpersonationService } from './impersonation.types';
 import { ImpersonationThirdParty } from './impersonation.thirdparty';
 import { ImpersonationServiceCache } from './impersonation-service-cache';
-import { auth } from '/auth';
-import { log } from '/lib/logger';
+import { auth } from '@/auth';
+import { log } from '@/lib/logger';
 
 /**
  * Strategy selection:
@@ -28,7 +28,7 @@ export const fromRequest = async ({
   }
 
   // Use cache if audience is provided
-  if (audience && session.user.id) {
+  if (session.user.id) {
     const cache = ImpersonationServiceCache.getInstance();
 
     return cache.getOrCreate(session.user.id, audience, async () => {

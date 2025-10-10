@@ -8,12 +8,12 @@
  * for Drizzle ORM queries in data grid operations.
  */
 
-import { selectForGrid } from '/lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
+import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
 import { NextRequest } from 'next/server';
-import { CallToActionDetails } from '/data-models/api/email-properties/extended-properties';
+import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 
 // Mock the dependencies before importing
-jest.mock('/lib/components/mui/data-grid/queryHelpers/utility', () => {
+jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
   const orig = jest.requireActual(
     '/lib/components/mui/data-grid/queryHelpers/utility',
   );
@@ -23,7 +23,7 @@ jest.mock('/lib/components/mui/data-grid/queryHelpers/utility', () => {
   };
 });
 
-jest.mock('/lib/components/mui/data-grid/queryHelpers', () => ({
+jest.mock('@/lib/components/mui/data-grid/queryHelpers', () => ({
   buildDrizzlePagination: jest.fn(),
   buildDrizzleOrderBy: jest.fn(),
   buildDrizzleQueryFilter: jest.fn(),
@@ -50,21 +50,21 @@ jest.mock(
   }),
 );
 
-import { parsePaginationStats } from '/lib/components/mui/data-grid/queryHelpers/utility';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 import {
   buildDrizzleOrderBy,
   buildDrizzlePagination,
   buildDrizzleQueryFilter,
   DrizzleSelectQuery,
-} from '/lib/components/mui/data-grid/queryHelpers';
-import { buildDrizzleQueryFilter as buildDrizzleFilter } from '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter';
-import { buildDrizzleOrderBy as buildDrizzleOrder } from '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
-import { buildDrizzlePagination as buildDrizzlePage } from '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination';
-import { makeMockDb } from '/__tests__/jest.setup';
+} from '@/lib/components/mui/data-grid/queryHelpers';
+import { buildDrizzleQueryFilter as buildDrizzleFilter } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleFilter';
+import { buildDrizzleOrderBy as buildDrizzleOrder } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
+import { buildDrizzlePagination as buildDrizzlePage } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination';
+import { makeMockDb } from '@/__tests__/jest.setup';
 
 // Import and mock the countQueryFactory
-import * as selectForGridModule from '/lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
+import * as selectForGridModule from '@/lib/components/mui/data-grid/queryHelpers/drizzle/selectForGrid';
 
 const mockCountQueryFactory = jest.fn();
 

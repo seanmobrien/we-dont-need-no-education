@@ -6,10 +6,10 @@ import {
   AllFeatureFlagsDefault,
   FeatureFlagStatus,
   KnownFeatureType,
-} from '/lib/site-util/feature-flags';
-import { getAllFeatureFlags } from '/lib/site-util/feature-flags/client';
-import FeatureFlagsContext from '/lib/site-util/feature-flags/context';
-import { LoggedError } from '/lib/react-util';
+} from '@/lib/site-util/feature-flags';
+import { getAllFeatureFlags } from '@/lib/site-util/feature-flags/client';
+import FeatureFlagsContext from '@/lib/site-util/feature-flags/context';
+import { LoggedError } from '@/lib/react-util';
 import { useFlagsmithLoading } from 'flagsmith/react';
 
 const defaultFlags = AllFeatureFlagsDefault as unknown as Record<
@@ -74,7 +74,7 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
       get error() {
         return error ?? undefined;
       },
-      isLoading: isLoading,
+      isLoaded: isLoading,
       isFetching: true,
     }),
     [flags, error, isLoading],

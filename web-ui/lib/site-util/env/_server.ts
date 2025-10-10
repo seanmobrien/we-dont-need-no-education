@@ -17,7 +17,7 @@ import {
   clientRawInstance,
   clientEnvSchema,
 } from './_client';
-import { AiModelType } from '/lib/ai/core';
+import { AiModelType } from '@/lib/ai/core';
 
 /**
  * Builds the raw environment variable instance by merging client variables

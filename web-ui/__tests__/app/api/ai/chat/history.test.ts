@@ -11,9 +11,9 @@
  * - Proper drizzle query construction and record mapping
  */
 
-import { GET } from '/app/api/ai/chat/history/route';
+import { GET } from '@/app/api/ai/chat/history/route';
 import { NextRequest } from 'next/server';
-// import { mockChatHistoryResponse } from '/__tests__/components/chat.mock-data';
+// import { mockChatHistoryResponse } from '@/__tests__/components/chat.mock-data';
 const mockChatHistoryResponse = {
   results: [
     {
@@ -50,64 +50,27 @@ const columnMap = {
   userId: 'user_id',
 } as const;
 
-// Define mocks before they are used
-/*
-const mockDbSelect = jest.fn();
-const mockDbFrom = jest.fn();
-
-// Mock implementations
-mockDbSelect.mockReturnValue({
-  from: mockDbFrom,
-});
-
-// Mock modules
-jest.mock('/lib/drizzle-db', () => ({
-  drizDbWithInit: jest.fn((cb) => cb(mockDb)),
-}));
-
-jest.mock('/lib/drizzle-db/schema', () => ({
-  schema: {
-    chats: {
-      id: 'id',
-      title: 'title',
-      userId: 'userId',
-      createdAt: 'createdAt',
-    },
-  },
-}));
-
-
-jest.mock('drizzle-orm/sql', () => {
-  const mockAs = jest.fn().mockReturnValue(jest.fn());
-  const mockSqlOperator = jest.fn().mockReturnValue({ as: mockAs });
-
-  return {
-    as: jest.fn().mockReturnThis(),
-    eq: mockSqlOperator,
-    count: mockSqlOperator,
-    sum: mockSqlOperator,
-  };
-});
-*/
-
-jest.mock('/lib/components/mui/data-grid/queryHelpers', () => ({
+jest.mock('@/lib/components/mui/data-grid/queryHelpers', () => ({
   selectForGrid: jest.fn(),
 }));
 
-jest.mock('/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
 }));
 
-jest.mock('/lib/react-util', () => ({
+jest.mock('@/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
 }));
 
 // Import mocked dependencies
-import { drizDbWithInit, drizDb } from '/lib/drizzle-db';
-import { selectForGrid } from '/lib/components/mui/data-grid/queryHelpers';
-import { schema } from '/lib/drizzle-db/schema';
+import { drizDbWithInit, drizDb } from '@/lib/drizzle-db';
+import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { schema } from '@/lib/drizzle-db/schema';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+
+const mockConsole = hideConsoleOutput();
 
 describe('/api/ai/chat/history route', () => {
   const mockDb = drizDb() as any;
@@ -120,6 +83,9 @@ describe('/api/ai/chat/history route', () => {
     // jest.clearAllMocks();
     // (drizDbWithInit as jest.Mock).mockResolvedValue(mockDb);
     (selectForGrid as jest.Mock).mockResolvedValue(mockChatHistoryResponse);
+  });
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   describe('GET', () => {
@@ -244,6 +210,7 @@ describe('/api/ai/chat/history route', () => {
     });
 
     it('should handle selectForGrid errors', async () => {
+      mockConsole.setup();
       (selectForGrid as jest.Mock).mockRejectedValue(new Error('Query failed'));
 
       const request = new NextRequest(

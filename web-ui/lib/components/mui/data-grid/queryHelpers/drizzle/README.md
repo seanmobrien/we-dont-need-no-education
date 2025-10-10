@@ -17,9 +17,9 @@ The `buildDrizzleOrderBy` function allows you to:
 import {
   buildDrizzleOrderBy,
   createColumnGetter,
-} from '/lib/components/mui/data-grid/buildDrizzleOrderBy';
-import { db } from '/lib/drizzle-db';
-import { users } from '/drizzle/schema';
+} from '@/lib/components/mui/data-grid/buildDrizzleOrderBy';
+import { db } from '@/lib/drizzle-db';
+import { users } from '@/drizzle/schema';
 
 // Define available columns for sorting
 const sortableColumns = {

@@ -3,7 +3,7 @@ import {
   formatNumber,
   getUsagePercentage,
   getUsageColor,
-} from '/lib/site-util/format';
+} from '@/lib/site-util/format';
 
 describe('Format utilities', () => {
   describe('formatDuration', () => {

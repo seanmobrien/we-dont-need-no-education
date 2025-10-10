@@ -18,7 +18,7 @@ jest.mock('drizzle-orm', () => ({
   sql: jest.fn(),
 }));
 
-jest.mock('/lib/drizzle-db', () => ({
+jest.mock('@/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn(() =>
     Promise.resolve({
       update: jest.fn(() => ({
@@ -41,8 +41,8 @@ jest.mock('@auth/drizzle-adapter', () => ({
 }));
 
 // Import the helper functions directly since they're just utility functions
-import { env } from '/lib/site-util/env'; // Not actually used in tests
-import { resetEnvVariables } from '/__tests__/jest.setup';
+import { env } from '@/lib/site-util/env'; // Not actually used in tests
+import { resetEnvVariables } from '@/__tests__/jest.setup';
 
 /**
  * Validates that the application is running on localhost for local development auth bypass.

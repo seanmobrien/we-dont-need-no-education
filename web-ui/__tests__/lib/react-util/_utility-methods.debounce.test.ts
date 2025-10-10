@@ -1,5 +1,5 @@
-import { hideConsoleOutput } from '/__tests__/test-utils';
-import { debounce } from '/lib/react-util/debounce';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { debounce } from '@/lib/react-util/debounce';
 
 const mockConsole = hideConsoleOutput();
 

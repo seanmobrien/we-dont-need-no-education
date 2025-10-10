@@ -1,10 +1,10 @@
-import { RepositoryCrudController } from '/lib/api/repository-crud-controller';
-import { ComplianceScoresDetailsRepository } from '/lib/api/email/properties/compliance-scores/compliance-scores-details-repository';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { ComplianceScoresDetailsRepository } from '@/lib/api/email/properties/compliance-scores/compliance-scores-details-repository';
 import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '/lib/nextjs-util/server/utils';
+} from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 

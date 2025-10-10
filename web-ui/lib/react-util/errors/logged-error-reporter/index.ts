@@ -1,4 +1,4 @@
-import { ErrorReporterInterface } from '/lib/error-monitoring/types';
+import { ErrorReporterInterface } from '@/lib/error-monitoring/types';
 
 export const reporter = async (): Promise<ErrorReporterInterface> => {
   if (typeof window === 'undefined') {

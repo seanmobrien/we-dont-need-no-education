@@ -1,6 +1,6 @@
 // @ts-nocheck
 import type { TelemetryClient, TelemetryOptions } from './telemetry.types';
-import { fetch } from '/lib/nextjs-util/fetch';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 let version = '2.1.26';
 

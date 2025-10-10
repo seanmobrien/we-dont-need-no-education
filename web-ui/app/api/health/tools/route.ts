@@ -1,6 +1,6 @@
-import { auth } from '/auth';
-import { setupDefaultTools } from '/lib/ai/mcp/setup-default-tools';
-import { wrapRouteRequest } from '/lib/nextjs-util/server';
+import { auth } from '@/auth';
+import { setupDefaultTools } from '@/lib/ai/mcp/providers';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { NextRequest } from 'next/server';
 
 const toolProviderFactory = async ({

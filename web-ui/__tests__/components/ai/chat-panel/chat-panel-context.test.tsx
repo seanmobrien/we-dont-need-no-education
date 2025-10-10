@@ -1,9 +1,9 @@
 import React from 'react';
-import { render } from '/__tests__/test-utils';
+import { render } from '@/__tests__/test-utils';
 import {
   ChatPanelProvider,
   useChatPanelContext,
-} from '/components/ai/chat-panel/chat-panel-context';
+} from '@/components/ai/chat-panel/chat-panel-context';
 
 // Test component to access context
 const TestComponent = () => {

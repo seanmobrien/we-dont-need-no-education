@@ -7,13 +7,13 @@
  * @module __tests__/lib/ai/middleware/chat-history/message-deduplication.test.ts
  */
 
-import { getNewMessages } from '/lib/ai/middleware/chat-history/utility';
-import type { DbTransactionType } from '/lib/drizzle-db';
+import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
+import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 /*
 // Mock database schema
-jest.mock('/lib/drizzle-db', () => ({
+jest.mock('@/lib/drizzle-db', () => ({
   schema: {
     chatMessages: {
       role: 'mocked-role-column',

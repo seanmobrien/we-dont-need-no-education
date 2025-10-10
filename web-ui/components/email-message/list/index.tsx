@@ -5,10 +5,10 @@ import {
   useCallback,
   MouseEvent as ReactMouseEvent,
 } from 'react';
-import { ServerBoundDataGrid } from '/components/mui/data-grid/server-bound-data-grid';
-import siteMap from '/lib/site-util/url-builder';
+import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
+import siteMap from '@/lib/site-util/url-builder';
 import { Box } from '@mui/material';
-import { EmailGridProps } from '/components/mui/data-grid/types';
+import { EmailGridProps } from '@/components/mui/data-grid/types';
 import {
   GridCallbackDetails,
   GridColDef,
@@ -16,8 +16,8 @@ import {
   MuiEvent,
   DataGridProProps,
 } from '@mui/x-data-grid-pro';
-import { ContactSummary } from '/data-models/api/contact';
-import { EmailMessageSummary } from '/data-models/api/email-message';
+import { ContactSummary } from '@/data-models/api/contact';
+import { EmailMessageSummary } from '@/data-models/api/email-message';
 import AttachEmailIcon from '@mui/icons-material/AttachEmail';
 import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';

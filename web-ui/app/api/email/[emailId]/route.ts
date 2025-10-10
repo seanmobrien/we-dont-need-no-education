@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '/lib/nextjs-util/server/utils';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { extractParams } from '/lib/nextjs-util/utils';
+} from '@/lib/nextjs-util/server/utils';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { extractParams } from '@/lib/nextjs-util/utils';
 import { eq } from 'drizzle-orm';
-import { drizDbWithInit, schema } from '/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 
 /**
  * Extracts the emailId out of the route parameters, with some magic to support document IDs if that's what we were given.

@@ -24,7 +24,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import { ModelStatistics } from './model-statistics';
 import { QueueStatistics } from './queue-statistics';
-import { useStatistics } from '/lib/hooks/use-statistics';
+import { useStatistics } from '@/lib/hooks/use-statistics';
 
 export const StatisticsOverview = () => {
   const [dataSource, setDataSource] = useState<'database' | 'redis'>(

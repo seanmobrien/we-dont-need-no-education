@@ -1,6 +1,6 @@
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { User as NextAuthUser } from 'next-auth'; // Added NextAuthConfig
-import { env } from '/lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 import { Provider } from '@auth/core/providers';
 
 /**

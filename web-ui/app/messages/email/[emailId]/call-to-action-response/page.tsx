@@ -1,10 +1,10 @@
 import { Box } from '@mui/material';
 import CtaResponseGrid from './grid';
-import { EmailDashboardLayout } from '/components/email-message/dashboard-layout';
-import { auth } from '/auth';
-import { ChatPanel, ChatPanelLayout } from '/components/ai/chat-panel';
-import { extractParams } from '/lib/nextjs-util/utils';
-import { resolveEmailIdWithRedirect } from '/lib/email/email-id-resolver';
+import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
+import { auth } from '@/auth';
+import { ChatPanel, ChatPanelLayout } from '@/components/ai/chat-panel';
+import { extractParams } from '@/lib/nextjs-util/utils';
+import { resolveEmailIdWithRedirect } from '@/lib/email/email-id-resolver';
 import { Metadata } from 'next';
 
 export const generateMetadata = async (): Promise<Metadata> => {

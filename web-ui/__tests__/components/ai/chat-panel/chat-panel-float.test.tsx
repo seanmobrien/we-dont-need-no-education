@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '/__tests__/test-utils';
-import { ChatPanel } from '/components/ai/chat-panel';
+import { render, screen, fireEvent } from '@/__tests__/test-utils';
+import { ChatPanel } from '@/components/ai/chat-panel';
 
 // Mock the dependencies
 jest.mock('@ai-sdk/react', () => ({
@@ -20,12 +20,12 @@ jest.mock('@ai-sdk/react', () => ({
   }),
 }));
 
-jest.mock('/lib/ai/core', () => ({
+jest.mock('@/lib/ai/core', () => ({
   generateChatId: () => ({ id: 'test-id' }),
   isAnnotatedRetryMessage: () => false,
 }));
 
-jest.mock('/lib/components/ai/chat-fetch-wrapper', () => ({
+jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
   useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
 }));
 

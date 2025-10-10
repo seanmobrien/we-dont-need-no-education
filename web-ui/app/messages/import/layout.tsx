@@ -1,9 +1,9 @@
 import * as React from 'react';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import { SessionProvider } from 'next-auth/react';
-import { auth } from '/auth';
+import { auth } from '@/auth';
 
-import { EmailDashboardLayout } from '/components/email-message/dashboard-layout';
+import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout';
 
 // In Next.js 13+ (app directory), layout components can receive route parameters via the `params` prop.
 // Your usage is correct if this file is in the /app/messages directory and you are using the app router.

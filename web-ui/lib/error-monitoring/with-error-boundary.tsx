@@ -1,6 +1,6 @@
 import React, { ComponentType } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { RenderErrorBoundaryFallback } from '/components/error-boundaries/renderFallback';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
 import { errorReporter, ErrorSeverity } from './error-reporter';
 
 /**

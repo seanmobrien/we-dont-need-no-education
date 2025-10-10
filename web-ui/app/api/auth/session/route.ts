@@ -9,9 +9,9 @@
  * is evaluated on each request.
  */
 
-import { auth } from '/auth';
+import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveUserPublicKeys } from '/lib/site-util/auth/user-keys-server';
+import { getActiveUserPublicKeys } from '@/lib/site-util/auth/user-keys-server';
 
 export const dynamic = 'force-dynamic';
 

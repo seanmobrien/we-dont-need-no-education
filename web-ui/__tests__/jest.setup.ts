@@ -6,32 +6,18 @@ const shouldWriteToConsole = jest
   .requireActual('/lib/react-util')
   .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
 
-jest.mock('/components/general/telemetry/track-with-app-insight', () => ({
-  TrackWithAppInsight: jest.fn((props: any) => {
-    const { children, ...rest } = props;
-    return createElement('div', rest, children);
-  }),
-}));
-jest.mock('@microsoft/applicationinsights-react-js', () => ({
-  withAITracking: (plugin: any, Component: any) => Component,
-}));
-jest.mock('@mui/material/ButtonBase/TouchRipple', () => {
-  return function MockTouchRipple() {
-    return null;
-  };
-});
-jest.mock('/lib/nextjs-util/fetch', () => ({
+jest.mock('@/lib/nextjs-util/fetch', () => ({
   fetch: jest.fn(() =>
     Promise.resolve({ json: jest.fn(() => Promise.resolve({})) }),
   ),
 }));
 
-jest.mock('/lib/nextjs-util/client-navigate', () => ({
+jest.mock('@/lib/nextjs-util/client-navigate', () => ({
   clientReload: jest.fn().mockImplementation(() => {}),
   clientNavigate: jest.fn().mockImplementation(() => {}),
   clientNavigateSignIn: jest.fn().mockImplementation(() => {}),
 }));
-jest.mock('/instrument/browser', () => ({
+jest.mock('@/instrument/browser', () => ({
   getReactPlugin: jest.fn(() => ({
     trackEvent: jest.fn(),
     trackPageView: jest.fn(),
@@ -53,16 +39,6 @@ import { mockDeep } from 'jest-mock-extended';
 
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
-const ErrorBoundary = jest.requireActual('./jest.mock-error-boundary').default;
-
-jest.mock('react-error-boundary', () => {
-  return {
-    ErrorBoundary,
-    FallbackComponent: ({ error }: { error?: Error }) => {
-      return createElement('div', { role: 'alert' }, error?.message);
-    },
-  };
-});
 
 export class MockQueryBuilder implements IMockQueryBuilder {
   readonly from: jest.Mock;
@@ -419,6 +395,8 @@ export const makeMockDb = (): DatabaseType => {
   return mockDb;
 };
 
+type TransactionFn<TRet = any> = (tx: DatabaseType) => Promise<TRet> | TRet;
+
 const makeRecursiveMock = jest
   .fn()
   .mockImplementation(() => jest.fn(() => jest.fn(makeRecursiveMock)));
@@ -427,9 +405,14 @@ jest.mock('drizzle-orm/postgres-js', () => {
     ...actualDrizzle,
     drizzle: jest.fn(() => mockDb),
     sql: jest.fn(() => jest.fn().mockImplementation(() => makeRecursiveMock())),
+    transaction: jest.fn(async (callback: TransactionFn) => {
+      const txRawRet = callback(mockDb);
+      const txRet = isPromise(txRawRet) ? await txRawRet : txRawRet;
+      return txRet;
+    }),
   };
 });
-jest.mock('/lib/neondb/connection', () => {
+jest.mock('@/lib/neondb/connection', () => {
   const pgDb = jest.fn(() => makeRecursiveMock());
   return {
     pgDbWithInit: jest.fn(() => Promise.resolve(makeRecursiveMock())),
@@ -437,7 +420,7 @@ jest.mock('/lib/neondb/connection', () => {
     sql: jest.fn(() => pgDb()),
   };
 });
-jest.mock('/lib/drizzle-db/connection', () => {
+jest.mock('@/lib/drizzle-db/connection', () => {
   return {
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
@@ -454,10 +437,10 @@ jest.mock('/lib/drizzle-db/connection', () => {
         return Promise.resolve(normalCallback(db));
       },
     ),
-    schema: actualSchema,
+    schema: actualSchema.schema ? actualSchema.schema : actualSchema,
   };
 });
-jest.mock('/lib/drizzle-db', () => {
+jest.mock('@/lib/drizzle-db', () => {
   return {
     drizDb: jest.fn((fn?: (driz: DatabaseType) => unknown) => {
       const mockDbInstance = makeMockDb();
@@ -474,34 +457,19 @@ jest.mock('/lib/drizzle-db', () => {
         return Promise.resolve(normalCallback(db));
       },
     ),
-    schema: actualSchema,
+    schema: actualSchema.schema ? actualSchema.schema : actualSchema,
     sql: jest.fn(() => makeRecursiveMock()),
   };
 });
-// Mocking modules before imports
-jest.mock('google-auth-library');
-jest.mock('googleapis');
-jest.mock('postgres', () => {
-  return {
-    default: jest.fn().mockImplementation((strings, ...values) => {
-      return jest.fn(() => Promise.resolve({ rows: [] }));
-    }),
-  };
-});
-jest.mock('next-auth', () => {
-  return jest.fn();
-});
-jest.mock('next-auth/jwt', () => ({
-  getToken: jest.fn(),
-}));
-jest.mock('/auth', () => {
+
+jest.mock('@/auth', () => {
   return {
     auth: jest.fn(() => ({
       id: 'fdsdfs',
     })),
   };
 });
-jest.mock('/lib/site-util/env', () => {
+jest.mock('@/lib/site-util/env', () => {
   return {
     env: jest.fn((key: string) => {
       return process.env[key] || '';
@@ -510,20 +478,6 @@ jest.mock('/lib/site-util/env', () => {
     isRunningOnEdge: jest.fn(() => false),
   };
 });
-
-// Mock Next.js router
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(() => ({
-    push: jest.fn(),
-    replace: jest.fn(),
-    prefetch: jest.fn(),
-    back: jest.fn(),
-    forward: jest.fn(),
-    refresh: jest.fn(),
-  })),
-  usePathname: jest.fn(() => '/test'),
-  useSearchParams: jest.fn(() => new URLSearchParams()),
-}));
 
 export const createRedisClient = jest.fn(() => ({
   connect: jest.fn().mockResolvedValue(undefined),
@@ -555,10 +509,12 @@ const loggerInstance = (() => ({
   silly: jest.fn(makeMockImplementation('silly')),
   verbose: jest.fn(makeMockImplementation('verbose')),
   log: jest.fn(makeMockImplementation('log')),
+  trace: jest.fn(makeMockImplementation('trace')),
 }))();
 
-jest.mock('/lib/logger', () => {
+jest.mock('@/lib/logger', () => {
   return {
+    logEvent: jest.fn(() => Promise.resolve()),
     logger: jest.fn(() => loggerInstance),
     log: jest.fn((cb: (l: typeof loggerInstance) => void) =>
       cb(loggerInstance),
@@ -569,15 +525,15 @@ jest.mock('/lib/logger', () => {
 });
 
 import NextAuth from 'next-auth';
-import { auth } from '/auth';
+import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { sendApiRequest } from '/lib/send-api-request';
+import { sendApiRequest } from '@/lib/send-api-request';
 import postgres from 'postgres';
-import { resetGlobalCache } from '/data-models/api/contact-cache';
-import type { DbDatabaseType } from '/lib/drizzle-db/schema';
+import { resetGlobalCache } from '@/data-models/api/contact-cache';
+import type { DbDatabaseType } from '@/lib/drizzle-db/schema';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { drizDb } from '/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 
 // jest.setup.ts
 // If using React Testing Library
@@ -591,10 +547,10 @@ import { zerialize } from 'zodex';
 import { sql } from 'drizzle-orm';
 import { FormatAlignCenterSharp } from '@mui/icons-material';
 import { createElement } from 'react';
-import { TrackWithAppInsight } from '/components/general/telemetry/track-with-app-insight';
-import instrument, { getAppInsights } from '/instrument/browser';
-import { log } from '/lib/logger';
-import { isKeyOf } from '/lib/typescript';
+import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
+import instrument, { getAppInsights } from '@/instrument/browser';
+import { log } from '@/lib/logger';
+import { FirstParameter, isKeyOf, isPromise } from '@/lib/typescript';
 import { result, xorBy } from 'lodash';
 import {
   IMockInsertBuilder,
@@ -607,30 +563,6 @@ import {
 import { count } from 'console';
 import { ITraits } from 'flagsmith/react';
 globalThis.TextEncoder = TextEncoder as any;
-
-/*
-// Ensure WHATWG Response/Request/Headers exist in all environments (jsdom/node)
-// Node 18+ typically provides these via undici, but jsdom can lack them during tests.
-try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const undici = require('undici');
-  if (!globalThis.Response && undici.Response) {
-    globalThis.Response = undici.Response;
-  }
-  if (!globalThis.Request && undici.Request) {
-    globalThis.Request = undici.Request;
-  }
-  if (!globalThis.Headers && undici.Headers) {
-    globalThis.Headers = undici.Headers;
-  }
-  // Do not override fetch if already mocked below
-  if (!globalThis.fetch && undici.fetch) {
-    globalThis.fetch = undici.fetch;
-  }
-} catch {
-  // ignore if undici is unavailable; tests that require Response will provide their own env
-}
-*/
 
 // Ensure WHATWG Streams exist in Jest (jsdom)
 (() => {
@@ -986,7 +918,7 @@ jest.mock('flagsmith/isomorphic', () => ({
 }));
 
 // Prevent dynamic import side-effects from the logged-error-reporter during tests
-jest.mock('/lib/react-util/errors/logged-error-reporter', () => {
+jest.mock('@/lib/react-util/errors/logged-error-reporter', () => {
   return {
     reporter: jest.fn(() =>
       Promise.resolve({
@@ -1019,22 +951,6 @@ jest.mock('/lib/react-util/errors/logged-error-reporter', () => {
     ),
   };
 });
-/* OMG yikes!
-// Polyfill Response.json if not available (Node.js environment doesn't have it)
-if (!globalThis.Response?.json) {
-  if (globalThis.Response) {
-    (globalThis.Response as any).json = (data: any, init?: ResponseInit) => {
-      return new Response(JSON.stringify(data), {
-        ...init,
-        headers: {
-          'content-type': 'application/json',
-          ...(init?.headers || {}),
-        },
-      });
-    };
-  }
-}
-*/
 
 beforeEach(async () => {
   resetEnvVariables();

@@ -2,12 +2,12 @@
 /**
  * @jest-environment node
  */
-jest.mock('/lib/neondb');
+jest.mock('@/lib/neondb');
 
-import { CallToActionDetailsRepository } from '/lib/api/email/properties/call-to-action/cta-details-repository';
-import { ValidationError } from '/lib/react-util/errors/validation-error';
-import { query, queryExt } from '/lib/neondb';
-import { CallToActionDetails } from '/data-models/api';
+import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { query, queryExt } from '@/lib/neondb';
+import { CallToActionDetails } from '@/data-models/api';
 
 describe('CallToActionDetailsRepository', () => {
   let repository: CallToActionDetailsRepository;

@@ -17,7 +17,7 @@ import type {
   ChatHistoryContext,
   StreamHandlerResult,
 } from './types';
-import { isError } from '/lib/react-util/utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 
 // Tracer and meter instances for chat history operations
 const tracer = trace.getTracer('chat-history-middleware', '1.0.0');

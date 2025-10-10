@@ -32,7 +32,7 @@ Behavior highlights:
 ### Examples
 
 ```ts
-import { errorResponseFactory } from '/lib/nextjs-util/server/error-response';
+import { errorResponseFactory } from '@/lib/nextjs-util/server/error-response';
 
 // Status only
 return errorResponseFactory(404); // body: { error: 'An error occurred', status: 404 }
@@ -60,7 +60,7 @@ return errorResponseFactory({ status: 503 }, err); // { error: 'oops', status: 5
 Normalizes two unknown inputs into `{ status: number; message: string; cause?: string; source?: string }`.
 
 ```ts
-import { parseResponseOptions } from '/lib/nextjs-util/server/error-response';
+import { parseResponseOptions } from '@/lib/nextjs-util/server/error-response';
 
 const opts = parseResponseOptions('Auth failed', {
   status: 401,

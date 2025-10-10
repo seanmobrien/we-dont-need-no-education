@@ -1,6 +1,6 @@
-import { env } from '/lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 import type { AdminTokenConfig } from './impersonation.types';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 
 /**
  * Extracts Keycloak admin configuration from issuer URL

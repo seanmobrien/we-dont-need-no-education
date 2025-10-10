@@ -5,10 +5,10 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { TestVirtualizedChat } from '/components/chat/test-virtualized-chat';
+import { TestVirtualizedChat } from '@/components/chat/test-virtualized-chat';
 
 // Mock the virtualized display to avoid canvas issues in tests
-jest.mock('/components/chat/virtualized-chat-display', () => ({
+jest.mock('@/components/chat/virtualized-chat-display', () => ({
   VirtualizedChatDisplay: ({ turns }: { turns: any[] }) => (
     <div data-testid="virtualized-chat">
       {turns.map((turn, index) => (

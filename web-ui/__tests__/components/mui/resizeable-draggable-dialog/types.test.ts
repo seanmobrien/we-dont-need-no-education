@@ -20,7 +20,7 @@ import {
   type SetRefineSizeFunction,
   type ResizeableDraggablePaperProps,
   type ResizeableDraggableDialogProps,
-} from '/components/mui/resizeable-draggable-dialog/types';
+} from '@/components/mui/resizeable-draggable-dialog/types';
 
 describe('isValidSize utility function', () => {
   describe('valid size objects', () => {

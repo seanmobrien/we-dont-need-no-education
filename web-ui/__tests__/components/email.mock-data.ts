@@ -1,7 +1,7 @@
 import {
   EmailMessage,
   EmailMessageSummary,
-} from '/data-models/api/email-message';
+} from '@/data-models/api/email-message';
 
 export const mockEmailSummary: () => EmailMessageSummary[] = () => [
   {

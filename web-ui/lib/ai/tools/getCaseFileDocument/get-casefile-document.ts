@@ -46,7 +46,7 @@
  * @since 1.0.0
  */
 
-import { drizDbWithInit } from '/lib/drizzle-db';
+import { drizDbWithInit } from '@/lib/drizzle-db';
 import {
   resolveCaseFileIdBatch,
   toolCallbackArrayResultSchemaFactory,
@@ -59,8 +59,8 @@ import {
   ToolCallbackResult,
   ValidCaseFileRequestProps,
 } from '../types';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { log } from '/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
 import { caseFileDocumentShape } from '../caseFileDocumentQuery';
 import {
   caseFileDocumentErrorCounter,
@@ -76,7 +76,7 @@ import {
   CaseFileResponseShape,
 } from '../schemas/case-file-request-props-shape';
 import z from 'zod';
-import { env } from '/lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 import { compactCaseFileDocument } from './compact-casefile-document';
 
 /**
@@ -377,9 +377,9 @@ export const getMultipleCaseFileDocuments = async ({
                 // Estimate tokens for this single document by serializing its content
                 docTokens = countTokens({
                   // We approximate token usage by providing a single message with JSON of the document
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   prompt: [
                     { role: 'user', content: JSON.stringify(doc.document) },
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   ] as any,
                   enableLogging: false,
                 });

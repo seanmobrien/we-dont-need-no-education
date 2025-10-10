@@ -1,8 +1,8 @@
-import { isTruthy } from '/lib/react-util/utility-methods';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { isTruthy } from '@/lib/react-util/utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import z from 'zod';
-import { isAiModelType } from '/lib/ai/core/guards';
-import { AiModelType, AiModelTypeValues } from '/lib/ai/core/unions';
+import { isAiModelType } from '@/lib/ai/core/guards';
+import { AiModelType, AiModelTypeValues } from '@/lib/ai/core/unions';
 
 /**
  * @module site-util/env/_common

@@ -4,11 +4,11 @@
  */
 
 import { jest } from '@jest/globals';
-import { ImpersonationServiceCache } from '/lib/auth/impersonation/impersonation-service-cache';
-import type { ImpersonationService } from '/lib/auth/impersonation';
+import { ImpersonationServiceCache } from '@/lib/auth/impersonation/impersonation-service-cache';
+import type { ImpersonationService } from '@/lib/auth/impersonation';
 
 // Mock LoggedError
-jest.mock('/lib/react-util/errors/logged-error', () => ({
+jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },

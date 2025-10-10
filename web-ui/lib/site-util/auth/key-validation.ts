@@ -8,7 +8,7 @@
  * @module lib/site-util/auth/key-validation
  */
 
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 
 /**
  * Storage key for tracking last key validation timestamp

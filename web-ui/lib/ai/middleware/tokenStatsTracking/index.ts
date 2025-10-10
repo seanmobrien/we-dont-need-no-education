@@ -12,7 +12,7 @@
  *
  * @example Basic usage with middleware
  * ```typescript
- * import { tokenStatsMiddleware } from '/lib/ai/middleware/tokenStatsTracking';
+ * import { tokenStatsMiddleware } from '@/lib/ai/middleware/tokenStatsTracking';
  * import { wrapLanguageModel } from 'ai';
  *
  * const model = wrapLanguageModel({
@@ -23,7 +23,7 @@
  *
  * @example Direct service usage
  * ```typescript
- * import { getTokenStatsService } from '/lib/ai/middleware/tokenStatsTracking';
+ * import { getTokenStatsService } from '@/lib/ai/middleware/tokenStatsTracking';
  *
  * // Check quota before making a request
  * const quotaCheck = await getTokenStatsService().checkQuota('azure', 'hifi', 1000);

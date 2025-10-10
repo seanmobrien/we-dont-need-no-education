@@ -15,7 +15,7 @@ import {
 } from '@mui/material';
 import { FilterList } from '@mui/icons-material';
 import { VirtualizedChatDisplay } from './virtualized-chat-display';
-import { ChatMessage, ChatTurn } from '/lib/ai';
+import { ChatMessage, ChatTurn } from '@/lib/ai';
 
 // Sample data for testing the virtualized chat display
 const sampleTurns = [

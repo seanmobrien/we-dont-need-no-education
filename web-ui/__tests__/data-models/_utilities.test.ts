@@ -1,7 +1,7 @@
 import {
   EmailPropertyTypeTypeValues,
   EmailPropertyCategoryTypeValues,
-} from '/data-models/api/email-properties/property-type';
+} from '@/data-models/api/email-properties/property-type';
 import {
   isEmailPropertyCategory,
   isEmailPropertyType,
@@ -9,7 +9,7 @@ import {
   lookupEmailPropertyType,
   normalizeDateAndTime,
   normalizeNullableNumeric,
-} from '/data-models/_utilities';
+} from '@/data-models/_utilities';
 
 describe('normalizeNullableNumeric', () => {
   it('should return null if the value is null', () => {

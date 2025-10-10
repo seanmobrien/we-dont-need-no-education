@@ -4,9 +4,9 @@
 
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import React from 'react';
-import { renderHook } from '/__tests__/test-utils';
-import { useChatFetchWrapper } from '/lib/components/ai/chat-fetch-wrapper';
-import { fetch } from '/lib/nextjs-util/fetch';
+import { renderHook } from '@/__tests__/test-utils';
+import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 // Polyfill ReadableStream for Node.js test environment
 if (!globalThis.ReadableStream) {
@@ -16,17 +16,17 @@ if (!globalThis.ReadableStream) {
 }
 
 // Mock the logger
-jest.mock('/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   log: jest.fn((fn) => fn({ warn: jest.fn() })),
 }));
 
 // Mock the env helper
-jest.mock('/lib/site-util/env', () => ({
+jest.mock('@/lib/site-util/env', () => ({
   env: jest.fn(() => 'http://localhost:3000'),
 }));
 
 // Mock the hash function
-jest.mock('/lib/ai/core/chat-ids', () => ({
+jest.mock('@/lib/ai/core/chat-ids', () => ({
   notCryptoSafeKeyHash: jest.fn(
     (input: string) => `hash-${input.slice(0, 10)}`,
   ),

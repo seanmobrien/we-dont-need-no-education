@@ -35,16 +35,16 @@ import {
   Paper,
 } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
-import { VirtualizedChatDisplay } from '/components/chat/virtualized-chat-display';
-import { ChatExportMenu } from '/components/chat/chat-export-menu';
+import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
+import { ChatExportMenu } from '@/components/chat/chat-export-menu';
 import {
   ChatMessageFilters,
   type MessageType,
   searchMessageContent,
-} from '/components/chat/chat-message-filters';
+} from '@/components/chat/chat-message-filters';
 import { useChatHistory } from './useChatHistory';
-import { Loading } from '/components/general/loading';
-import type { ChatDetails, ChatTurn } from '/lib/ai/chat/types';
+import { Loading } from '@/components/general/loading';
+import type { ChatDetails, ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '../../../lib/ai/chat/export';
 
 /**
