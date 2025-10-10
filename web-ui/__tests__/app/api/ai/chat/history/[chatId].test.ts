@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* @jest-environment node */
 /**
  * Chat Details API Route Tests
@@ -9,6 +8,8 @@
  * - Error handling for authentication, not found, and database errors
  * - Proper drizzle query construction and data transformation
  */
+
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
