@@ -20,10 +20,10 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import {
   CallToActionDetails,
   CallToActionResponseDetails,
-} from '/data-models/api';
-import { getCallToActionResponse } from '/lib/api/email/properties/client';
+} from '@/data-models/api';
+import { getCallToActionResponse } from '@/lib/api/email/properties/client';
 import { useParams } from 'next/navigation';
-import { EmailMasterPanel } from '/components/mui/data-grid';
+import { EmailMasterPanel } from '@/components/mui/data-grid';
 import { useQuery } from '@tanstack/react-query';
 
 // Stable CSS grid configurations

@@ -1,4 +1,4 @@
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import {
   toolCallbackResultFactory,
   toolCallbackResultSchemaFactory,
@@ -10,10 +10,10 @@ import {
   TodoPriority,
   TodoStatus,
 } from './todo-manager';
-import { SEQUENTIAL_THINKING_TOOL_NAME } from '/lib/ai/tools/sequentialthinking/tool-callback';
+import { SEQUENTIAL_THINKING_TOOL_NAME } from '@/lib/ai/tools/sequentialthinking/tool-callback';
 import z from 'zod';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { isError } from '/lib/react-util/utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { isError } from '@/lib/react-util/utility-methods';
 
 // Zod schema for Todo serialization
 const TodoSchema = z.object({

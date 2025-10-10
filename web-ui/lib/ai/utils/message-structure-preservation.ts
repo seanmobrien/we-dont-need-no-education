@@ -15,12 +15,12 @@ import type {
   MessagePreservationResult,
   PreservationStrategy,
   MessagePartPreservationRules,
-} from '/lib/ai/types/message-structure-preservation';
+} from '@/lib/ai/types/message-structure-preservation';
 import {
   createMessageStructureOptions,
   isPreservationEnabled,
-} from '/lib/ai/types/message-structure-preservation';
-import { log } from '/lib/logger';
+} from '@/lib/ai/types/message-structure-preservation';
+import { log } from '@/lib/logger';
 
 /**
  * Cache for preservation decisions to improve performance

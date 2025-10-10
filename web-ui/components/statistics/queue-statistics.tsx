@@ -26,9 +26,9 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import TokenIcon from '@mui/icons-material/Token';
-import ResizableDraggableDialog from '/components/mui/resizeable-draggable-dialog';
-import type { QueueInfo, QueueRequest } from '/types/statistics';
-import { formatDuration, formatElapsed } from '/lib/site-util/format';
+import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
+import type { QueueInfo, QueueRequest } from '@/types/statistics';
+import { formatDuration, formatElapsed } from '@/lib/site-util/format';
 
 interface QueueStatisticsProps {
   queues: {

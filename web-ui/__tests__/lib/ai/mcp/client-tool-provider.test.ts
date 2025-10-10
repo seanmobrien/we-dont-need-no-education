@@ -1,5 +1,9 @@
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+
+setupImpersonationMock();
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { clientToolProviderFactory } from '/lib/ai/mcp/client-tool-provider';
+import { clientToolProviderFactory } from '@/lib/ai/mcp/providers';
 
 describe('clientToolProviderFactory', () => {
   let provider: ReturnType<typeof clientToolProviderFactory>;

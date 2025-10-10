@@ -2,10 +2,10 @@ import {
   EmailDrizzleRepository,
   EmailDomain,
 } from './email-drizzle-repository';
-import { EmailMessage } from '/data-models/api/email-message';
-import { ContactSummary } from '/data-models/api/contact';
-import { query } from '/lib/neondb';
-import { log } from '/lib/logger';
+import { EmailMessage } from '@/data-models/api/email-message';
+import { ContactSummary } from '@/data-models/api/contact';
+import { query } from '@/lib/neondb';
+import { log } from '@/lib/logger';
 
 /**
  * Request model for creating emails via the service

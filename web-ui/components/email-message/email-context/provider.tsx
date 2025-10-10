@@ -9,7 +9,7 @@ import React, {
   useCallback,
 } from 'react';
 import { EmailContext } from './types';
-import { useChatPanelContext } from '/components/ai/chat-panel/chat-panel-context';
+import { useChatPanelContext } from '@/components/ai/chat-panel/chat-panel-context';
 
 const EmailContextInstance = createContext<EmailContext | undefined>(undefined);
 

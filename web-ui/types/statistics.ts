@@ -14,7 +14,7 @@
  *
  * @example
  * ```typescript
- * import type { ModelStat, StatisticsData } from '/types/statistics';
+ * import type { ModelStat, StatisticsData } from '@/types/statistics';
  *
  * // Working with model statistics
  * const modelStats: ModelStat[] = await fetchModelStats();
@@ -27,7 +27,7 @@
  *
  * @example
  * ```typescript
- * import type { TokenStats, QueueRequest } from '/types/statistics';
+ * import type { TokenStats, QueueRequest } from '@//types/statistics';
  *
  * // Analyzing token usage
  * const hourlyStats: TokenStats = {

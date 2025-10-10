@@ -16,11 +16,11 @@ import {
   withStripRscPrefixPlugin,
   withPublicEnv,
   withBundleAnalyzer,
-} from '/lib/config';
+} from '@/lib/config';
 
 // Import individual modules for more focused testing
-import { StripRscPrefixPlugin } from '/lib/config/strip-rsc-prefix-plugin';
-import { PublicEnv } from '/lib/config/public-env';
+import { StripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
+import { PublicEnv } from '@/lib/config/public-env';
 import { WebpackConfigContext } from 'next/dist/server/config-shared';
 
 describe('lib/config/index.ts', () => {

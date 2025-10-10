@@ -1,8 +1,8 @@
 import NextAuth, { Account, NextAuthConfig, Profile, User } from 'next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { CredentialInput, Provider } from '@auth/core/providers';
-import { isRunningOnEdge } from '/lib/site-util/env';
-import { logEvent } from '/lib/logger';
+import { isRunningOnEdge } from '@/lib/site-util/env';
+import { logEvent } from '@/lib/logger';
 
 import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
 import { authorized } from './lib/auth/authorized';
@@ -148,11 +148,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
     ) {
       if (!dynamicImports.drizzleAdapter) {
         dynamicImports.drizzleAdapter = await import(
-          '/lib/auth/drizzle-adapter'
+          '@/lib/auth/drizzle-adapter'
         );
       }
       if (!dynamicImports.auth.signIn) {
-        dynamicImports.auth.signIn = await import('/lib/auth/sign-in');
+        dynamicImports.auth.signIn = await import('@/lib/auth/sign-in');
       }
       const {
         auth: {
@@ -171,10 +171,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
       };
     }
     if (!dynamicImports.auth.session) {
-      dynamicImports.auth.session = await import('/lib/auth/session');
+      dynamicImports.auth.session = await import('@/lib/auth/session');
     }
     if (!dynamicImports.auth.jwt) {
-      dynamicImports.auth.jwt = await import('/lib/auth/jwt');
+      dynamicImports.auth.jwt = await import('@/lib/auth/jwt');
     }
     const {
       auth: { jwt: { jwt } = {}, session: { session } = {} },

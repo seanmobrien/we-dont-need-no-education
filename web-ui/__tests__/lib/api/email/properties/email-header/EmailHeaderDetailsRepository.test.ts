@@ -2,12 +2,12 @@
 /**
  * @jest-environment node
  */
-jest.mock('/lib/neondb');
+jest.mock('@/lib/neondb');
 
-import { EmailHeaderDetailsRepository } from '/lib/api/email/properties/email-headers/email-header-details-repository';
-import { ValidationError } from '/lib/react-util/errors/validation-error';
-import { query, queryExt } from '/lib/neondb';
-import { EmailProperty } from '/data-models/api';
+import { EmailHeaderDetailsRepository } from '@/lib/api/email/properties/email-headers/email-header-details-repository';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { query, queryExt } from '@/lib/neondb';
+import { EmailProperty } from '@/data-models/api';
 
 describe('EmailHeaderDetailsRepository', () => {
   let repository: EmailHeaderDetailsRepository;

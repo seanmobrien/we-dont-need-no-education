@@ -7,7 +7,7 @@ Provides comprehensive observability for the chat history middleware system:
 import {
   instrumentFlushOperation,
   recordQueueOperation,
-} from '/lib/ai/middleware/chat-history';
+} from '@/lib/ai/middleware/chat-history';
 
 // Instrument flush operations
 const result = await instrumentFlushOperation(flushContext, async () => {
@@ -74,7 +74,7 @@ graph TD
 The primary entry point that orchestrates the entire chat history pipeline with built-in instrumentation:
 
 ```typescript
-import { createChatHistoryMiddleware } from '/lib/ai/middleware/chat-history';
+import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
 
 const chatHistoryMiddleware = createChatHistoryMiddleware({
   // Configuration context
@@ -197,8 +197,8 @@ Comprehensive TypeScript interfaces for the entire system:
 ### 1. Basic Setup
 
 ```typescript
-import { createChatHistoryMiddleware } from '/lib/ai/middleware/chat-history';
-import { aiModelFactory } from '/lib/ai/aiModelFactory';
+import { createChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 
 // Create middleware with configuration
 const chatHistoryMiddleware = createChatHistoryMiddleware({
@@ -401,7 +401,7 @@ console.log(result.textLength); // Response length
 console.log(result.metadata); // Custom metrics
 
 // Manual instrumentation
-import { instrumentFlushOperation } from '/lib/ai/middleware/chat-history';
+import { instrumentFlushOperation } from '@/lib/ai/middleware/chat-history';
 
 const result = await instrumentFlushOperation(context, async () => {
   // Your custom flush logic
@@ -414,7 +414,7 @@ const result = await instrumentFlushOperation(context, async () => {
 Enhanced error tracking with chat context:
 
 ```typescript
-import { createChatHistoryError } from '/lib/ai/middleware/chat-history';
+import { createChatHistoryError } from '@/lib/ai/middleware/chat-history';
 
 // Errors include structured chat context
 throw createChatHistoryError(

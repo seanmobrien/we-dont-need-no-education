@@ -1,5 +1,5 @@
-import { aiModelFactory } from '/lib/ai/aiModelFactory';
-import { getCaseFileDocument } from '/lib/ai/tools';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import { getCaseFileDocument } from '@/lib/ai/tools';
 import { ClientTimelineAgent } from './agent';
 import {
   TimelineAgentProps,
@@ -10,20 +10,20 @@ import {
   GlobalMetadata,
   SerializedTimelineAgent,
 } from './types';
-import { type AiLanguageModelType, generateChatId } from '/lib/ai/core';
-import { drizDb } from '/lib/drizzle-db';
-import { setupDefaultTools } from '../../mcp/setup-default-tools';
+import { type AiLanguageModelType, generateChatId } from '@/lib/ai/core';
+import { drizDb } from '@/lib/drizzle-db';
+import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { NextRequest } from 'next/server';
 import {
   type ChatHistoryContext,
   createAgentHistoryContext,
   wrapChatHistoryMiddleware,
-} from '/lib/ai/middleware/chat-history';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { ToolProviderSet } from '../..';
-import { log } from '/lib/logger';
-import { auth } from '/auth';
-import { generateTextWithRetry } from '/lib/ai/core/generate-text-with-retry';
+} from '@/lib/ai/middleware/chat-history';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import type { ToolProviderSet } from '@/lib/ai/mcp/types';
+import { log } from '@/lib/logger';
+import { auth } from '@/auth';
+import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
 
 type InitializeProps = { req: NextRequest };
 

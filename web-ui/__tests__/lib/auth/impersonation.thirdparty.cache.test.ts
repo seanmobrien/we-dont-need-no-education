@@ -9,7 +9,7 @@
  * - Verifies refresh_token grant path avoids headless login
  * - Verifies expired cached token falls back to login and persists rotated token
  */
-import { createMockTracer } from '/__tests__/jest.mock-tracing';
+import { createMockTracer } from '@/__tests__/jest.mock-tracing';
 // Helpers to craft minimal JWT strings with exp claim
 const b64url = (obj: unknown) =>
   Buffer.from(JSON.stringify(obj), 'utf8')
@@ -72,7 +72,7 @@ const mockEncrypt = jest.fn(async (s: string) => `enc:${s}`);
 const mockDecrypt = jest.fn(async (s: string) =>
   s.startsWith('enc:') ? s.slice(4) : s,
 );
-jest.mock('/lib/site-util/auth/crypto-service', () => ({
+jest.mock('@/lib/site-util/auth/crypto-service', () => ({
   CryptoService: jest.fn().mockImplementation(() => ({
     encrypt: mockEncrypt,
     decrypt: mockDecrypt,
@@ -84,7 +84,7 @@ const redisClient = {
   get: jest.fn(),
   setEx: jest.fn(),
 };
-jest.mock('/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
+jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
   getRedisClient: jest.fn(async () => redisClient),
 }));
 
@@ -104,7 +104,7 @@ jest.mock('@keycloak/keycloak-admin-client', () => ({
   default: MockKcAdminCtor,
 }));
 
-import { auth } from '/auth';
+import { auth } from '@/auth';
 
 const tracer = createMockTracer();
 
@@ -180,7 +180,7 @@ describe('ImpersonationThirdParty - offline token cache lifecycle', () => {
     grantQueue.push({ access_token: 'user-access', expires_in: 3600 });
 
     const { ImpersonationThirdParty } = await import(
-      '/lib/auth/impersonation/impersonation.thirdparty'
+      '@/lib/auth/impersonation/impersonation.thirdparty'
     );
     const svc = await ImpersonationThirdParty.fromRequest({
       session: {

@@ -2,10 +2,10 @@ import {
   EmailService,
   CreateEmailRequest,
   UpdateEmailRequest,
-} from '/lib/api/email/email-service';
-import { EmailDomain } from '/lib/api/email/email-drizzle-repository';
-import { EmailMessage } from '/data-models/api/email-message';
-import { query } from '/lib/neondb';
+} from '@/lib/api/email/email-service';
+import { EmailDomain } from '@/lib/api/email/email-drizzle-repository';
+import { EmailMessage } from '@/data-models/api/email-message';
+import { query } from '@/lib/neondb';
 
 // Mock the EmailDrizzleRepository
 const mockRepository = {
@@ -17,17 +17,17 @@ const mockRepository = {
   findByGlobalMessageId: jest.fn(),
 };
 
-jest.mock('/lib/api/email/email-drizzle-repository', () => ({
+jest.mock('@/lib/api/email/email-drizzle-repository', () => ({
   EmailDrizzleRepository: jest.fn().mockImplementation(() => mockRepository),
 }));
 
 // Mock neondb for query operations
-jest.mock('/lib/neondb', () => ({
+jest.mock('@/lib/neondb', () => ({
   query: jest.fn(),
 }));
 
 // Mock logger
-jest.mock('/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
 }));
 

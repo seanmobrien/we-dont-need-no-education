@@ -59,8 +59,8 @@ import { ChatTurnDisplay } from './chat-turn-display';
 import {
   createTextMeasurer,
   estimateMarkdownHeight,
-} from '/lib/components/ai/height-estimators';
-import { ChatTurn } from '/lib/ai/chat/types';
+} from '@/lib/components/ai/height-estimators';
+import { ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '../../lib/ai/chat/export';
 import { type MessageType, searchMessageContent } from './chat-message-filters';
 

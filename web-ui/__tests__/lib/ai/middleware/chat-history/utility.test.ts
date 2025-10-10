@@ -10,9 +10,9 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { getNextSequence } from '/lib/ai/middleware/chat-history/utility';
-import { drizDb } from '/lib/drizzle-db';
-import type { DbDatabaseType, DbTransactionType } from '/lib/drizzle-db';
+import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
+import { drizDb } from '@/lib/drizzle-db';
+import type { DbDatabaseType, DbTransactionType } from '@/lib/drizzle-db';
 import { SQLWrapper } from 'drizzle-orm';
 import { PgRaw } from 'drizzle-orm/pg-core/query-builders/raw';
 import { RowList } from 'postgres';

@@ -64,13 +64,13 @@ export const isProgressEvent = (
   typeof value === 'object' &&
   !!value &&
   'target' in value &&
-  isXmlHttpRequest((value as any).target) &&
+  isXmlHttpRequest(value.target) &&
   'loaded' in value &&
-  typeof (value as any).loaded === 'number' &&
+  typeof value.loaded === 'number' &&
   'total' in value &&
-  typeof (value as any).total === 'number' &&
+  typeof value.total === 'number' &&
   'lengthComputable' in value &&
-  typeof (value as any).lengthComputable === 'boolean';
+  typeof value.lengthComputable === 'boolean';
 
 // Type guard to check if a value is an Abort error
 // (i.e., not null, not an array, and of type 'object').

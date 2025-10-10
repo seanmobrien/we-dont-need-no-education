@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { render, screen } from '/__tests__/test-utils';
-import { CustomEmailPageItem } from '/components/email-message/dashboard-layout/custom-email-page-item';
+import { render, screen } from '@/__tests__/test-utils';
+import { CustomEmailPageItem } from '@/components/email-message/dashboard-layout/custom-email-page-item';
 import type { NavigationPageItem } from '@toolpad/core/AppProvider';
 
 const makeItem = (
@@ -18,7 +18,7 @@ const makeItem = (
 });
 
 // Mock the siteBuilder utility to produce consistent hrefs
-jest.mock('/lib/site-util/url-builder', () => ({
+jest.mock('@/lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     messages: {

@@ -1,4 +1,4 @@
-import { SimpleRateLimiter } from '/lib/react-util/simple-rate-limiter';
+import { SimpleRateLimiter } from '@/lib/react-util/simple-rate-limiter';
 
 describe('SimpleRateLimiter', () => {
   let rateLimiter: SimpleRateLimiter;

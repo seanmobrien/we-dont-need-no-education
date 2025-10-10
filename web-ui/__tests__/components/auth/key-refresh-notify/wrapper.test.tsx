@@ -1,6 +1,6 @@
 import React from 'react';
-import { render } from '/__tests__/test-utils';
-import { KeyRefreshNotifyWrapper as KeyRefreshWrapper } from '/components/auth/key-refresh-notify/wrapper';
+import { render } from '@/__tests__/test-utils';
+import { KeyRefreshNotifyWrapper as KeyRefreshWrapper } from '@/components/auth/key-refresh-notify/wrapper';
 
 describe('KeyRefreshWrapper', () => {
   it('renders with default state snapshot', () => {

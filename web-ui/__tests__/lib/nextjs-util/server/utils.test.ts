@@ -10,12 +10,12 @@ import {
   buildFallbackGrid,
   createInstrumentedSpan,
   reportEvent,
-} from '/lib/nextjs-util/server/utils';
-import { errorResponseFactory } from '/lib/nextjs-util/server/error-response';
+} from '@/lib/nextjs-util/server/utils';
+import { errorResponseFactory } from '@/lib/nextjs-util/server/error-response';
 import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // Mock external dependencies
 jest.mock('@opentelemetry/api', () => ({
@@ -45,11 +45,11 @@ jest.mock('@opentelemetry/api-logs', () => ({
   },
 }));
 
-jest.mock('/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
 }));
 
-jest.mock('/lib/react-util/errors/logged-error', () => ({
+jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error) => {
       return error;
@@ -59,7 +59,7 @@ jest.mock('/lib/react-util/errors/logged-error', () => ({
   },
 }));
 
-jest.mock('/lib/nextjs-util/server/error-response', () => ({
+jest.mock('@/lib/nextjs-util/server/error-response', () => ({
   errorResponseFactory: (
     message: string,
     options: { cause?: unknown } = {},

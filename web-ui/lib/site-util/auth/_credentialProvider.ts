@@ -4,7 +4,7 @@ import { env } from '../env';
 import { UrlBuilder } from '../url-builder/_impl';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
-import { auth } from '/auth';
+import { auth } from '@/auth';
 import {
   keycloakTokenExchange,
   TokenExchangeError,

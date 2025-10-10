@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
 import { waitFor, act } from '@testing-library/react';
-import { render, screen } from '/__tests__/test-utils';
-import { ResponsiveActionPanel } from '/app/messages/email/[emailId]/call-to-action-response/panel';
-import { CallToActionResponseDetails } from '/data-models/api';
-import { fetch } from '/lib/nextjs-util/fetch';
+import { render, screen } from '@/__tests__/test-utils';
+import { ResponsiveActionPanel } from '@/app/messages/email/[emailId]/call-to-action-response/panel';
+import { CallToActionResponseDetails } from '@/data-models/api';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({

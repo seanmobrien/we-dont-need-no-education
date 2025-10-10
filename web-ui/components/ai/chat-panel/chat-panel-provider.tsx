@@ -5,10 +5,10 @@ import React, {
   SetStateAction,
   PropsWithChildren,
 } from 'react';
-import { debounce } from '/lib/react-util/debounce';
+import { debounce } from '@/lib/react-util/debounce';
 import { ChatPanelConfig, ChatPanelContextValue, DockPosition } from './types';
 import { ChatPanelContext } from './chat-panel-context';
-import { isKeyOf } from '/lib/typescript/_guards';
+import { isKeyOf } from '@/lib/typescript/_guards';
 
 const STORAGE_KEYS = {
   POSITION: 'chatPanelPosition',

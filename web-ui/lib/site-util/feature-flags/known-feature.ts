@@ -15,6 +15,8 @@ export const KnownFeature: Record<KnownFeatureType, KnownFeatureType> =
 
 export type FeatureFlagStatus =
   | boolean
+  | number
+  | string
   | {
       enabled: boolean;
       value?: string | number | object | boolean;
@@ -36,3 +38,10 @@ export const AllFeatureFlagsDefault: AllFeatureFlagStatus = {
   mcp_cache_tools: false,
   mcp_cache_client: true,
 } as const;
+
+export type AllFeatureFlagDefaultType = typeof AllFeatureFlagsDefault;
+
+export type FeatureFlagValueType<K extends KnownFeatureType> =
+  K extends keyof AllFeatureFlagDefaultType
+    ? Pick<AllFeatureFlagDefaultType, K>[K]
+    : never;

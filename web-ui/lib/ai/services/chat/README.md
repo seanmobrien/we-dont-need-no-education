@@ -15,8 +15,8 @@ The `LanguageModelQueue` class provides a sophisticated queuing mechanism for la
 ## Quick Start
 
 ```typescript
-import { LanguageModelQueue } from '/lib/ai/services/chat';
-import { getAiModelProvider } from '/lib/ai/aiModelFactory';
+import { LanguageModelQueue } from '@/lib/ai/services/chat';
+import { getAiModelProvider } from '@/lib/ai/aiModelFactory';
 
 // Create a language model
 const model = getAiModelProvider('gpt-4o');
@@ -66,7 +66,7 @@ Custom error types provide specific handling for different scenarios:
 import {
   MessageTooLargeForQueueError,
   AbortChatMessageRequestError,
-} from '/lib/ai/services/chat';
+} from '@/lib/ai/services/chat';
 
 try {
   await queue.generateText(largeRequest);
@@ -199,8 +199,8 @@ The queue integrates with existing infrastructure:
 ### Basic Usage
 
 ```typescript
-import { LanguageModelQueue } from '/lib/ai/services/chat';
-import { getAiModelProvider } from '/lib/ai/aiModelFactory';
+import { LanguageModelQueue } from '@/lib/ai/services/chat';
+import { getAiModelProvider } from '@/lib/ai/aiModelFactory';
 
 async function basicUsage() {
   // Get a language model (e.g., GPT-4)

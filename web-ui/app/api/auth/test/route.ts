@@ -1,5 +1,5 @@
-import { LoggedError } from '/lib/react-util/client';
-import { fromRequest } from '/lib/auth/impersonation/impersonation-factory';
+import { LoggedError } from '@/lib/react-util/client';
+import { fromRequest } from '@/lib/auth/impersonation/impersonation-factory';
 
 export const GET = async () => {
   try {

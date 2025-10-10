@@ -23,8 +23,8 @@
  */
 
 import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { log } from '/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
 import {
   STATE_PROTOCOL,
   type StatefulMiddlewareConfig,

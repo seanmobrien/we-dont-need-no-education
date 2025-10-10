@@ -10,12 +10,12 @@
  * - Error inheritance and serialization behavior
  */
 
-import { AbortChatMessageRequestError } from '/lib/ai/services/chat/errors/abort-chat-message-request-error';
-import { MessageTooLargeForQueueError } from '/lib/ai/services/chat/errors/message-too-large-for-queue-error';
+import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abort-chat-message-request-error';
+import { MessageTooLargeForQueueError } from '@/lib/ai/services/chat/errors/message-too-large-for-queue-error';
 import {
   isAbortChatMessageRequestError,
   isMessageTooLargeForQueueError,
-} from '/lib/react-util/core';
+} from '@/lib/react-util/core';
 
 describe('AbortChatMessageRequestError', () => {
   describe('Constructor and Properties', () => {

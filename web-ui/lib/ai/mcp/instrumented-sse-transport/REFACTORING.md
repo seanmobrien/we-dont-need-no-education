@@ -147,7 +147,7 @@ lib/ai/mcp/
 ### Direct Usage (Same API)
 
 ```typescript
-import { InstrumentedSseTransport } from '/lib/ai/mcp';
+import { InstrumentedSseTransport } from '@/lib/ai/mcp';
 
 // Same constructor and methods as before
 const transport = new InstrumentedSseTransport({
@@ -172,33 +172,13 @@ import {
   CounterManager,
   SessionManager,
   TraceContextManager,
-} from '/lib/ai/mcp';
+} from '@/lib/ai/mcp';
 
 // Use modules independently
 const counterManager = new CounterManager();
 const sessionManager = new SessionManager(url, counterManager);
 const headers = TraceContextManager.injectTraceContext(baseHeaders);
 ```
-
-## Migration Strategy
-
-### Phase 1: No Changes Required ✅
-
-- The refactored version maintains 100% API compatibility
-- Existing code continues to work without modifications
-- Both implementations export the same interface
-
-### Phase 2: Optional Migration
-
-- Import from the refactored modules if desired
-- Use individual modules for new implementations
-- Original remains available as `OriginalInstrumentedSseTransport`
-
-### Phase 3: Future Enhancements
-
-- Individual modules can be enhanced independently
-- New features can be added to specific concerns
-- Testing and maintenance become much easier
 
 ## Implementation Notes
 
@@ -228,7 +208,7 @@ const headers = TraceContextManager.injectTraceContext(baseHeaders);
 
 ## Testing Strategy
 
-Each module can now be tested independently:
+Each module can be tested independently:
 
 ```typescript
 // Example: Testing CounterManager in isolation
@@ -240,7 +220,3 @@ describe('CounterManager', () => {
   });
 });
 ```
-
-## Conclusion
-
-This refactoring transforms a complex, monolithic class into a well-structured, maintainable architecture while preserving 100% functionality. The modular approach enables better testing, easier maintenance, and clearer code organization without any breaking changes to existing consumers.

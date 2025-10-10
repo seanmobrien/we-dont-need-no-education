@@ -51,8 +51,8 @@ interface ToolOptimizingMiddlewareConfig {
 ### Basic Usage
 
 ```typescript
-import { createToolOptimizingMiddleware } from '/lib/ai/middleware/tool-optimizing-middleware';
-import { aiModelFactory } from '/lib/ai/aiModelFactory';
+import { createToolOptimizingMiddleware } from '@/lib/ai/middleware/tool-optimizing-middleware';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { wrapLanguageModel } from 'ai';
 
 // Create middleware with default configuration
@@ -80,7 +80,7 @@ Tip for custom middleware authors: if you expect wrapper-mode, access fields via
 ### Advanced Configuration
 
 ```typescript
-import { createToolOptimizingMiddleware } from '/lib/ai/middleware/tool-optimizing-middleware';
+import { createToolOptimizingMiddleware } from '@/lib/ai/middleware/tool-optimizing-middleware';
 
 const toolOptimizer = createToolOptimizingMiddleware({
   userId: 'user-123',
@@ -105,7 +105,7 @@ const model = wrapLanguageModel({
 
 ```typescript
 // In your chat route or service
-import { createToolOptimizingMiddleware } from '/lib/ai/middleware/tool-optimizing-middleware';
+import { createToolOptimizingMiddleware } from '@/lib/ai/middleware/tool-optimizing-middleware';
 
 export async function POST(req: Request) {
   const { messages, userId, chatId } = await req.json();

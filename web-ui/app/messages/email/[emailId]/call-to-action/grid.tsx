@@ -5,9 +5,9 @@ import {
   SharedCellDefinitions,
   valueFormatterPercentageIntegerBaseTen,
   valueGetterDate,
-} from '/components/mui/data-grid';
-import renderProgress from '/components/mui/data-grid/cellRenderers/progress/render';
-import { CallToActionDetails } from '/data-models/api/email-properties/extended-properties';
+} from '@/components/mui/data-grid';
+import renderProgress from '@/components/mui/data-grid/cellRenderers/progress/render';
+import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 import type { GridColDef } from '@mui/x-data-grid/models/colDef';
 import { CallToActionPanel } from './panel';
 import { DataGridProProps } from '@mui/x-data-grid-pro';

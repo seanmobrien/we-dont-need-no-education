@@ -10,10 +10,10 @@
  * @since 2025-07-19
  */
 
-import { render, screen } from '/__tests__/test-utils';
+import { render, screen } from '@/__tests__/test-utils';
 import React from 'react';
 
-jest.mock('/components/error-boundaries/ServerSafeErrorManager', () => ({
+jest.mock('@/components/error-boundaries/ServerSafeErrorManager', () => ({
   __esModule: true,
   default: jest.fn(() => <div>Mocked ServerSafeErrorManager</div>),
 }));
@@ -30,7 +30,7 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock theme provider
-jest.mock('/lib/themes', () => ({
+jest.mock('@/lib/themes', () => ({
   useTheme: () => ({
     theme: {
       palette: {
@@ -43,7 +43,7 @@ jest.mock('/lib/themes', () => ({
 }));
 
 // Mock EmailContextProvider
-jest.mock('/components/email-message/email-context', () => ({
+jest.mock('@/components/email-message/email-context', () => ({
   EmailContextProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="email-context-provider">{children}</div>
   ),
@@ -142,7 +142,7 @@ jest.mock(
   }),
 );
 
-jest.mock('/components/email-message/dashboard-layout/branding', () => ({
+jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
   Branding: {
     title: 'Mystery Compliance Theater 2000',
     logo: <span data-testid="branding-logo">Logo</span>,
@@ -202,7 +202,7 @@ jest.mock('@mui/icons-material/PrivacyTip', () => {
   return PrivacyTipIcon;
 });
 
-import { EmailDashboardLayout } from '/components/email-message/dashboard-layout/email-dashboard-layout';
+import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import type { Session } from 'next-auth';
 import { usePathname } from 'next/navigation';
 

@@ -26,23 +26,23 @@ import {
 import {
   EmailMessage,
   EmailMessageSummary,
-} from '/data-models/api/email-message';
+} from '@/data-models/api/email-message';
 import {
   KeyPointsDetails,
   CallToActionDetails,
   CallToActionResponseDetails,
   EmailProperty,
-} from '/data-models/api';
-import { getEmail } from '/lib/api/client';
+} from '@/data-models/api';
+import { getEmail } from '@/lib/api/client';
 import {
   getKeyPoints,
   getCallToAction,
   getCallToActionResponse,
   getNotes,
-} from '/lib/api/email/properties/client';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+} from '@/lib/api/email/properties/client';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { useQuery } from '@tanstack/react-query';
-import { dataGridQueryClient } from '/lib/components/mui/data-grid/query-client';
+import { dataGridQueryClient } from '@/lib/components/mui/data-grid/query-client';
 
 interface EmailDetailPanelProps {
   row: EmailMessageSummary;

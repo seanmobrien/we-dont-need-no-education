@@ -8,14 +8,14 @@
  */
 
 import type { ImpersonationService } from './index';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 interface CachedImpersonationService {
   service: ImpersonationService;
   lastAccessed: number;
   userId: string;
-  audience: string;
+  audience: string | undefined;
 }
 
 interface ImpersonationServiceCacheConfig {
@@ -91,9 +91,14 @@ export class ImpersonationServiceCache {
   /**
    * Generate a cache key for a user's impersonation service by audience.
    */
-  private generateCacheKey(userId: string, audience: string): string {
+  private generateCacheKey(
+    userId: string,
+    audience: string | undefined,
+  ): string {
     // Normalize audience to handle variations
-    const normalizedAudience = audience.toLowerCase().trim();
+    const normalizedAudience = (audience ?? '__no-audience__')
+      .toLowerCase()
+      .trim();
     return `${userId}:${normalizedAudience}`;
   }
 
@@ -102,7 +107,7 @@ export class ImpersonationServiceCache {
    */
   public async getOrCreate(
     userId: string,
-    audience: string,
+    audience: string | undefined,
     factory: () => Promise<ImpersonationService>,
   ): Promise<ImpersonationService> {
     const cacheKey = this.generateCacheKey(userId, audience);
@@ -270,7 +275,10 @@ export class ImpersonationServiceCache {
   /**
    * Invalidate cached impersonation service for a specific user and audience.
    */
-  public invalidateAudience(userId: string, audience: string): void {
+  public invalidateAudience(
+    userId: string,
+    audience: string | undefined,
+  ): void {
     const cacheKey = this.generateCacheKey(userId, audience);
     const entry = this.cache.get(cacheKey);
 
@@ -291,14 +299,14 @@ export class ImpersonationServiceCache {
    */
   public getUserAudiences(userId: string): string[] {
     return Array.from(this.cache.values())
-      .filter((entry) => entry.userId === userId)
-      .map((entry) => entry.audience);
+      .filter((entry) => entry.audience && entry.userId === userId)
+      .map((entry) => entry.audience!);
   }
 
   /**
    * Check if a service is cached for the given user and audience.
    */
-  public has(userId: string, audience: string): boolean {
+  public has(userId: string, audience: string | undefined): boolean {
     const cacheKey = this.generateCacheKey(userId, audience);
     const entry = this.cache.get(cacheKey);
     return entry !== undefined && !this.isExpired(entry);
@@ -359,10 +367,12 @@ export class ImpersonationServiceCache {
 
     for (const entry of this.cache.values()) {
       userCounts.set(entry.userId, (userCounts.get(entry.userId) || 0) + 1);
-      audienceCounts.set(
-        entry.audience,
-        (audienceCounts.get(entry.audience) || 0) + 1,
-      );
+      if (entry.audience) {
+        audienceCounts.set(
+          entry.audience,
+          (audienceCounts.get(entry.audience) || 0) + 1,
+        );
+      }
     }
 
     return {
@@ -390,7 +400,7 @@ export class ImpersonationServiceCache {
   /**
    * Refresh a cached service by removing it from cache (next access will recreate it).
    */
-  public refresh(userId: string, audience: string): void {
+  public refresh(userId: string, audience: string | undefined): void {
     this.invalidateAudience(userId, audience);
     log((l) =>
       l.debug('Refreshed impersonation service', {

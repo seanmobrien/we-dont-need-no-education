@@ -12,7 +12,7 @@
  *
  * @example
  * ```typescript
- * import { useMemoryHealth } from '/lib/hooks/use-memory-health';
+ * import { useMemoryHealth } from '@/lib/hooks/use-memory-health';
  *
  * function HealthMonitor() {
  *   const { healthStatus, subsystems, isLoading, error } = useMemoryHealth();
@@ -32,12 +32,12 @@
  */
 
 import { Query, useQuery } from '@tanstack/react-query';
-import { fetch } from '/lib/nextjs-util/fetch';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   getRefreshInterval,
   type HealthStatus,
-} from '/lib/ai/mem0/types/health-check';
+} from '@/lib/ai/mem0/types/health-check';
 
 /**
  * @typedef {('ok'|'warning'|'error')} SystemHealthStatus

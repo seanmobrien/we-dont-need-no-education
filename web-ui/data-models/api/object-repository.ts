@@ -1,4 +1,4 @@
-import { PartialExceptFor } from '/lib/typescript';
+import { PartialExceptFor } from '@/lib/typescript';
 import { PaginationStats, PaginatedResultset } from '../_types';
 import { ContactSummary, Contact } from './contact';
 

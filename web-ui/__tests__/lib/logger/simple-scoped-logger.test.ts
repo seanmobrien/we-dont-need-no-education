@@ -2,7 +2,7 @@ import { simpleScopedLogger } from '../../../lib/logger/simple-scoped-logger';
 import { log } from '../../../lib/logger/core';
 import type { ILogger } from '../../../lib/logger/types';
 
-jest.mock('/lib/logger/core', () => ({
+jest.mock('@/lib/logger/core', () => ({
   log: jest.fn(),
 }));
 

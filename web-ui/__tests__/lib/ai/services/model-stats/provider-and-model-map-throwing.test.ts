@@ -1,15 +1,15 @@
-import { ProviderMap } from '/lib/ai/services/model-stats/provider-map';
-import { ModelMap } from '/lib/ai/services/model-stats/model-map';
+import { ProviderMap } from '@/lib/ai/services/model-stats/provider-map';
+import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 import {
   ResourceNotFoundError,
   isResourceNotFoundError,
-} from '/lib/ai/services/chat/errors/resource-not-found-error';
+} from '@/lib/ai/services/chat/errors/resource-not-found-error';
 
 // Minimal seeded data to drive lookups
 import {
   PROVIDER_ID_AZURE,
   setupMaps,
-} from '/__tests__/jest.mock-provider-model-maps';
+} from '@/__tests__/jest.mock-provider-model-maps';
 
 describe('ProviderMap OrThrow + ModelMap normalization throwing', () => {
   beforeEach(() => {

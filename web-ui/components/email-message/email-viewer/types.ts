@@ -1,5 +1,5 @@
-import { EmailMessage } from '/data-models/api/email-message';
-import { PickField } from '/lib/typescript';
+import { EmailMessage } from '@/data-models/api/email-message';
+import { PickField } from '@/lib/typescript';
 import { UseSuspenseQueryResult } from '@tanstack/react-query';
 
 export interface EmailViewerProps {

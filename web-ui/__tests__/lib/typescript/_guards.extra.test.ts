@@ -1,4 +1,4 @@
-import { isKeyOf } from '/lib/typescript/_guards';
+import { isKeyOf } from '@/lib/typescript/_guards';
 
 describe('isKeyOf - extra coverage', () => {
   it('supports numeric keys for objects and arrays', () => {

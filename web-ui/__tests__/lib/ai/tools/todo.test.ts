@@ -2,14 +2,14 @@
  * Tests for the Todo Manager and Todo Tools
  */
 
-import { TodoManager, getTodoManager } from '/lib/ai/tools/todo/todo-manager';
+import { TodoManager, getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import {
   createTodoCallback,
   getTodosCallback,
   updateTodoCallback,
   deleteTodoCallback,
   toggleTodoCallback,
-} from '/lib/ai/tools/todo/tool-callback';
+} from '@/lib/ai/tools/todo/tool-callback';
 
 type SerializedTodo = {
   id: string;

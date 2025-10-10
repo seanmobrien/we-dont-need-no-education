@@ -1,5 +1,5 @@
-import { DocumentSchema } from '/lib/ai/tools/schemas/case-file-shape';
-import { zodToStructure } from '/lib/typescript';
+import { DocumentSchema } from '@/lib/ai/tools/schemas/case-file-shape';
+import { zodToStructure } from '@/lib/typescript';
 
 describe('zod-to-json-structure', () => {
   it('should convert DocumentSchema schema to JSON structure', () => {

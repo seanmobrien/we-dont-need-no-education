@@ -5,7 +5,7 @@ import type {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { memoryClientFactory } from '../mem0';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import { MiddlewareStateManager } from './state-management';
 
 /**

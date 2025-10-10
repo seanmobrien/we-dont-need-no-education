@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
-import { rateLimitQueueManager } from '/lib/ai/middleware/key-rate-limiter/queue-manager';
-import { getRedisClient } from '/lib/ai/middleware/cacheWithRedis/redis-client';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { rateLimitQueueManager } from '@/lib/ai/middleware/key-rate-limiter/queue-manager';
+import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 import type {
   RateLimitedRequest,
   ModelClassification,
-} from '/lib/ai/middleware/key-rate-limiter/types';
+} from '@/lib/ai/middleware/key-rate-limiter/types';
 
 export const dynamic = 'force-dynamic';
 

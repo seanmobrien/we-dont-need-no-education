@@ -13,7 +13,7 @@
 import { memo, useMemo } from 'react';
 import { DashboardSidebarPageItem } from '@toolpad/core/DashboardLayout';
 import { NavigationPageItem } from '@toolpad/core/AppProvider';
-import siteBuilder from '/lib/site-util/url-builder';
+import siteBuilder from '@/lib/site-util/url-builder';
 import type { CustomEmailPageItemProps } from './types';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
@@ -25,7 +25,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import type { SxProps, Theme } from '@mui/material/styles';
 import Tooltip from '@mui/material/Tooltip';
-import { getLastPathSegment, normalizePath } from '/lib/react-util/url';
+import { getLastPathSegment, normalizePath } from '@/lib/react-util/url';
 
 const stableSx = {
   activeText: {

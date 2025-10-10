@@ -1,5 +1,5 @@
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { signData } from '/lib/site-util/auth/user-keys';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { signData } from '@/lib/site-util/auth/user-keys';
 
 /**
  * Represents a user's response to a confirmation prompt.

@@ -18,18 +18,18 @@ import CallToActionIcon from '@mui/icons-material/CallToAction';
 import ReplyIcon from '@mui/icons-material/Reply';
 import PrivacyTipIcon from '@mui/icons-material/PrivacyTip';
 import { Session } from 'next-auth';
-import { EmailContextProvider } from '/components/email-message/email-context';
+import { EmailContextProvider } from '@/components/email-message/email-context';
 import { useCallback, useMemo } from 'react';
 import { useParams, usePathname } from 'next/navigation';
-import { useTheme } from '/lib/themes/provider';
+import { useTheme } from '@/lib/themes/provider';
 
 // Import extracted components
 import { CustomEmailPageItem } from './custom-email-page-item';
 import { EmailDashboardToolbarAction } from './email-dashboard-toolbar-action';
 import { Branding } from './branding';
 import { NotificationsProvider } from '@toolpad/core';
-import { KeyRefreshNotifyWrapper } from '/components/auth/key-refresh-notify/wrapper';
-import ServerSafeErrorManager from '/components/error-boundaries/ServerSafeErrorManager';
+import { KeyRefreshNotifyWrapper } from '@/components/auth/key-refresh-notify/wrapper';
+import ServerSafeErrorManager from '@/components/error-boundaries/ServerSafeErrorManager';
 
 /**
  * Slots for the dashboard layout, such as toolbar actions.

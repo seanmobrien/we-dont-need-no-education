@@ -5,11 +5,18 @@
  * @file utils.wrapRouteRequest.test.ts
  * @description Unit tests for wrapRouteRequest utility
  */
-import { wrapRouteRequest } from '/lib/nextjs-util/server';
-import { ILogger, logger } from '/lib/logger';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { ILogger, logger } from '@/lib/logger';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+
+const consoleSpy = hideConsoleOutput();
 
 describe('wrapRouteRequest', () => {
+  afterEach(() => {
+    consoleSpy.dispose();
+  });
   it('should call the wrapped function and return its result', async () => {
+    consoleSpy.setup();
     const fn = jest.fn().mockResolvedValue('ok');
     const wrapped = wrapRouteRequest(fn);
     const paramsPromise = Promise.resolve({ emailId: 'b' });
@@ -19,6 +26,7 @@ describe('wrapRouteRequest', () => {
   });
 
   it('should log info and error if log option is true', async () => {
+    consoleSpy.setup();
     const logSpy = (await logger()) as jest.Mocked<ILogger>;
     const fn = jest.fn().mockImplementation(() => {
       throw new Error('fail');
@@ -36,6 +44,7 @@ describe('wrapRouteRequest', () => {
   });
 
   it('should not log if log option is false', async () => {
+    consoleSpy.setup();
     const logSpy = (await logger()) as jest.Mocked<ILogger>;
     const fn = jest.fn().mockResolvedValue('ok');
     const wrapped = wrapRouteRequest(fn, { log: false });
@@ -47,6 +56,7 @@ describe('wrapRouteRequest', () => {
   });
 
   it('should return errorResponseFactory on thrown error', async () => {
+    consoleSpy.setup();
     const fn = jest.fn().mockImplementation(() => {
       throw new Error('bad');
     });
@@ -60,6 +70,7 @@ describe('wrapRouteRequest', () => {
   });
 
   it('should support async thrown errors', async () => {
+    consoleSpy.setup();
     const fn = jest.fn().mockRejectedValue(new Error('async fail'));
     const wrapped = wrapRouteRequest(fn);
     const result = await wrapped('x', {

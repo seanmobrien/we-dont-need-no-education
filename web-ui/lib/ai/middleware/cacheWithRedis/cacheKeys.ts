@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { getCacheConfig, validateCacheConfig } from './config';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // Enterprise configuration and metrics
 const config = getCacheConfig();

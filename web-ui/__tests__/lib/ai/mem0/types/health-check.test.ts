@@ -9,7 +9,7 @@ import {
   type HealthDetails,
   type AuthServiceHealth,
   type HealthStatus,
-} from '/lib/ai/mem0/types/health-check';
+} from '@/lib/ai/mem0/types/health-check';
 
 describe('Memory Health Check Types', () => {
   describe('determineHealthStatus', () => {

@@ -1,15 +1,15 @@
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import type { IFlagsmith } from 'flagsmith';
-import { auth } from '/auth';
+import { auth } from '@/auth';
 import {
   KnownFeature,
   AllFeatureFlagsDefault,
   type KnownFeatureType,
   type FeatureFlagStatus,
 } from './known-feature';
-import { isKeyOf } from '/lib/typescript';
+import { isKeyOf } from '@/lib/typescript';
 import { env } from '../env';
-import { LoggedError } from '/lib/react-util';
+import { LoggedError } from '@/lib/react-util';
 
 const FLAGSMITH_SERVER = Symbol.for('@noeducation/flagsmith-server');
 
@@ -65,7 +65,7 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
   flagKey: T,
   userId?: string,
   defaultValue?: (typeof AllFeatureFlagsDefault)[T],
-) => {
+): Promise<(typeof AllFeatureFlagsDefault)[T]> => {
   try {
     const server = await identify({ userId });
     return (
@@ -84,7 +84,7 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
       source: 'Flagsmith',
       log: true,
     });
-    return defaultValue;
+    return defaultValue ?? AllFeatureFlagsDefault[flagKey];
   }
 };
 

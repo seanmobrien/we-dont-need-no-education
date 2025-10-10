@@ -10,7 +10,7 @@ import {
   useMediaQuery,
   DialogContentText,
 } from '@mui/material';
-import { useSession } from '/components/auth/session-provider';
+import { useSession } from '@/components/auth/session-provider';
 import { signIn } from 'next-auth/react'; // only needed if you're using next-auth v4-style login helpers
 import { useTheme } from '@mui/material/styles';
 

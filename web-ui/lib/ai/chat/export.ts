@@ -6,7 +6,7 @@
  * - Markdown: Structured text format with headers and timestamps
  */
 
-import type { ChatMessage, ChatTurn } from '/lib/ai/chat/types';
+import type { ChatMessage, ChatTurn } from '@/lib/ai/chat/types';
 
 export interface SelectedChatItem {
   type: 'turn' | 'message';

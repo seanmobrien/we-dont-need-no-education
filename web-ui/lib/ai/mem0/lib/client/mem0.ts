@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from 'axios';
-import { fetch } from '/lib/nextjs-util/fetch';
+import { fetch } from '@/lib/nextjs-util/fetch';
 import {
   AllUsers,
   ProjectOptions,
@@ -18,15 +18,15 @@ import {
 } from './mem0.types';
 import { captureClientEvent, generateHash } from './telemetry';
 import { getMem0ApiUrl } from '../pollyfills';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import type { ImpersonationService } from '/lib/auth/impersonation';
-import { env } from '/lib/site-util/env';
-import { log } from '/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import type { ImpersonationService } from '@/lib/auth/impersonation';
+import { env } from '@/lib/site-util/env';
+import { log } from '@/lib/logger';
 import { apikeys } from 'googleapis/build/src/apis/apikeys';
 import {
   createInstrumentedSpan,
   reportEvent,
-} from '/lib/nextjs-util/server/utils';
+} from '@/lib/nextjs-util/server/utils';
 import type { Span } from '@opentelemetry/api';
 
 class APIError extends Error {

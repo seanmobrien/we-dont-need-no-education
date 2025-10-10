@@ -150,7 +150,7 @@ test.describe('Authentication', () => {
         await page.waitForTimeout(2000);
 
         // Should either redirect to OAuth provider or show some response
-        const currentUrl = page.url();
+        // const currentUrl = page.url();
         //const hasChanged = currentUrl !== (await page.evaluate(() => window.location.href));
 
         // For testing purposes, we'll just verify the button is functional

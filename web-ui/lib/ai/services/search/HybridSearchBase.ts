@@ -1,6 +1,6 @@
 // AzureBaseSearchClient.ts
 
-import { env } from '/lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 import { type IEmbeddingService, EmbeddingService } from '../embedding';
 import type {
   HybridSearchOptions,
@@ -9,9 +9,9 @@ import type {
   HybridSearchPayload,
   AiSearchResultEnvelope,
 } from './types';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { fetch } from '/lib/nextjs-util/fetch';
-import { log, logEvent } from '/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { log, logEvent } from '@/lib/logger';
 import { performance } from 'perf_hooks';
 
 /**

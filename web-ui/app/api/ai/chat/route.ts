@@ -6,26 +6,25 @@ import {
   stepCountIs,
   hasToolCall,
 } from 'ai';
-import { aiModelFactory } from '/lib/ai/aiModelFactory';
-import { isAiLanguageModelType } from '/lib/ai/core/guards';
-import { splitIds, generateChatId } from '/lib/ai/core/chat-ids';
-import { getRetryErrorInfo } from '/lib/ai/chat/error-helpers';
-import { UserToolProviderCache } from '/lib/ai/mcp/user-tool-provider-cache';
-import { wrapChatHistoryMiddleware } from '/lib/ai/middleware/chat-history';
-import { env } from '/lib/site-util/env';
-import { auth } from '/auth';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import { isAiLanguageModelType } from '@/lib/ai/core/guards';
+import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
+import { getRetryErrorInfo } from '@/lib/ai/chat/error-helpers';
+import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
+import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { env } from '@/lib/site-util/env';
+import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { isAbortError, isTruthy } from '/lib/react-util/utility-methods';
-import { wrapRouteRequest } from '/lib/nextjs-util/server';
-import { createUserChatHistoryContext } from '/lib/ai/middleware/chat-history/create-chat-history-context';
-import { ToolProviderSet } from '/lib/ai/mcp/types';
-import { setupDefaultTools } from '/lib/ai/mcp/setup-default-tools';
-import { getAllFeatureFlags } from '/lib/site-util/feature-flags/server';
-// import { RateRetryError } from '/lib/react-util/errors/rate-retry-error';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { isAbortError, isTruthy } from '@/lib/react-util/utility-methods';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server';
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
+import type { ToolProviderSet } from '@/lib/ai/mcp/types';
+import { setupDefaultTools } from '@/lib/ai/mcp/providers';
+import { getAllFeatureFlags } from '@/lib/site-util/feature-flags/server';
 // Allow streaming responses up to 180 seconds
-export const maxDuration = 1440;
+export const maxDuration = 60 * 1000 * 180;
 
 /**
  * Safely disposes of tool providers, suppressing expected AbortErrors during cleanup.
@@ -41,17 +40,18 @@ const safeDisposeToolProviders = async (
   } catch (disposalError) {
     // Suppress AbortErrors during disposal as they're expected during cleanup
     if (!isAbortError(disposalError)) {
-      log((l) =>
-        l.warn('Error during tool provider disposal', {
-          error: disposalError,
-        }),
-      );
+      LoggedError.isTurtlesAllTheWayDownBaby(disposalError, {
+        log: true,
+        severity: 'warn',
+        source: 'route:ai:chat safeDisposeToolProviders',
+        message: 'Error during tool provider disposal',
+      });
     }
   }
 };
 
 // Get the tool provider cache instance
-const toolProviderCache = UserToolProviderCache.getInstance({
+const toolProviderCachePromise = getUserToolProviderCache({
   maxEntriesPerUser: 5, // Allow up to 5 different tool configurations per user
   maxTotalEntries: 200, // Increase total limit for multiple users
   ttl: 45 * 60 * 1000, // 45 minutes (longer than typical chat sessions)
@@ -76,6 +76,7 @@ const toolProviderFactory = async ({
 }) => {
   const flags = await getAllFeatureFlags();
   if (isTruthy(flags['mcp_cache_tools'])) {
+    const toolProviderCache = await toolProviderCachePromise;
     // Use the cache to get or create tool providers
     return toolProviderCache.getOrCreate(
       userId,

@@ -5,7 +5,7 @@ import type {
   DeleteApiRequestParams,
   ReadApiRequestParams,
   WriteApiRequestParams,
-} from '/lib/send-api-request/types';
+} from '@/lib/send-api-request/types';
 
 const { ApiRequestError } = jest.requireActual('/lib/send-api-request');
 

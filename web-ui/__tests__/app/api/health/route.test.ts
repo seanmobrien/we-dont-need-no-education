@@ -6,11 +6,11 @@
  * @description Unit tests for the health check API route at app/api/health/route.ts
  */
 /* eslint-disable @typescript-eslint/no-require-imports */
-import { hideConsoleOutput } from '/__tests__/test-utils';
-import { GET } from '/app/api/health/route';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { GET } from '@/app/api/health/route';
 
 // Mock the memory client factory
-jest.mock('/lib/ai/mem0/memoryclient-factory', () => ({
+jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({
   memoryClientFactory: jest.fn(() =>
     Promise.resolve({
       healthCheck: jest.fn(),

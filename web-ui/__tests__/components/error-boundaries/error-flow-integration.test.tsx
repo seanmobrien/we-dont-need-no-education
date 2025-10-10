@@ -8,14 +8,14 @@ import { render, waitFor, act } from '@testing-library/react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-import { ClientErrorManager } from '/components/error-boundaries/ClientErrorManager';
-import { RenderErrorBoundaryFallback } from '/components/error-boundaries/renderFallback';
-import { errorReporter, ErrorSeverity } from '/lib/error-monitoring';
+import { ClientErrorManager } from '@/components/error-boundaries/ClientErrorManager';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
 import { any } from 'zod';
-import { hideConsoleOutput } from '/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the error reporter and recovery strategies
-jest.mock('/lib/error-monitoring', () => ({
+jest.mock('@/lib/error-monitoring', () => ({
   errorReporter: {
     reportError: jest.fn(),
     reportBoundaryError: jest.fn(),
@@ -30,7 +30,7 @@ jest.mock('/lib/error-monitoring', () => ({
 
 const mockReload = jest.fn();
 
-jest.mock('/lib/error-monitoring/recovery-strategies', () => ({
+jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
   getRecoveryActions: jest.fn(),
   getDefaultRecoveryAction: jest.fn(),
   classifyError: jest.fn(),

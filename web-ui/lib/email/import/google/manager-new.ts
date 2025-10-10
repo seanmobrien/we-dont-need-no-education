@@ -7,12 +7,12 @@ import { TransactionalStateManagerBase } from '../default/transactional-stateman
 import {
   ImportSourceMessage,
   ImportStage,
-} from '/data-models/api/import/email-message';
-import { log } from '/lib/logger';
+} from '@/data-models/api/import/email-message';
+import { log } from '@/lib/logger';
 import {
   getImportMessageSource,
   isKnownGmailError,
-} from '/app/api/email/import/[provider]/_utilitites';
+} from '@/app/api/email/import/[provider]/_utilitites';
 
 class NewStateManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {

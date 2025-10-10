@@ -2,14 +2,14 @@
  * @fileoverview Unit tests for ModelMap class with comprehensive mocking
  */
 
-import { ModelMap } from '/lib/ai/services/model-stats/model-map';
+import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 import { LanguageModelV2 } from '@ai-sdk/provider';
 // Minimal seeded data to drive lookups
 import {
   PROVIDER_ID_AZURE,
   setupMaps,
-} from '/__tests__/jest.mock-provider-model-maps';
-import { hideConsoleOutput } from '/__tests__/test-utils';
+} from '@/__tests__/jest.mock-provider-model-maps';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 const mockConsole = hideConsoleOutput();
 
 describe('ModelMap with Full Mocking', () => {

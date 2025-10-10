@@ -1,4 +1,4 @@
-import { SqlDb, ISqlNeonAdapter, asSql } from '/lib/neondb';
+import { SqlDb, ISqlNeonAdapter, asSql } from '@/lib/neondb';
 
 export const column_recipient = <T extends Record<string, unknown>>(
   sql: SqlDb<T> | ISqlNeonAdapter,

@@ -7,8 +7,8 @@ import { getCacheConfig } from './config';
 import { metricsCollector } from './metrics';
 import { createJailKey } from './cacheKeys';
 import type { getRedisClient } from './redis-client';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { LanguageModelV2Content } from '@ai-sdk/provider';
 
 const config = getCacheConfig();

@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "packages/*",
-    ".upstream/agent-todos"
+    "packages/*"
   ],
   "type": "module",
   "packageManager": "yarn@1.22.22",

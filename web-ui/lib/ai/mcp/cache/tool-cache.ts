@@ -9,10 +9,10 @@
 
 import { createHash } from 'crypto';
 import { ToolSet } from 'ai';
-import { getRedisClient } from '/lib/ai/middleware/cacheWithRedis/redis-client';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import type { ToolProviderFactoryOptions } from './types';
+import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import type { ToolProviderFactoryOptions } from '../types';
 import z from 'zod';
 
 /**

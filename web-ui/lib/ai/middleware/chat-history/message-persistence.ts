@@ -11,9 +11,9 @@
 
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { JSONValue } from 'ai';
-import { drizDb } from '/lib/drizzle-db';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { drizDb } from '@/lib/drizzle-db';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type {
   ChatHistoryContext,
   FlushContext,

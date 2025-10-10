@@ -7,7 +7,7 @@
  */
 
 import { getToolCache } from './tool-cache';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 
 /**
  * Cache administration utilities
@@ -61,7 +61,7 @@ export class MCPToolCacheAdmin {
       ),
     );
 
-    const { toolProviderFactory } = await import('./toolProviderFactory');
+    const { toolProviderFactory } = await import('../providers');
 
     const warmupPromises = commonConfigs.map(async (config) => {
       try {

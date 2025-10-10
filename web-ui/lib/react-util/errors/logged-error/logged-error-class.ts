@@ -1,14 +1,14 @@
 // Documentation is authoritative in: lib/react-util/errors/logged-error.d.ts
 // The runtime implementation remains here. Keep implementation edits minimal.
 
-import { errorLogFactory, log } from '/lib/logger';
+import { errorLogFactory, log } from '@/lib/logger';
 import {
   isAbortError,
   isError,
   isProgressEvent,
 } from './../../utility-methods';
-import { getStackTrace } from '/lib/nextjs-util/get-stack-trace';
-import { asKnownSeverityLevel } from '/lib/logger/constants';
+import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
+import { asKnownSeverityLevel } from '@/lib/logger/constants';
 import { reporter } from './../logged-error-reporter';
 import { TurtleRecursionParams, LoggedErrorOptions } from './types';
 import { ProgressEventError } from '../progress-event-error';

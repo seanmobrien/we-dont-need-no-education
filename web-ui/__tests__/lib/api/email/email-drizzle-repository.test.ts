@@ -4,13 +4,13 @@
 import {
   EmailDrizzleRepository,
   EmailDomain,
-} from '/lib/api/email/email-drizzle-repository';
-import { ValidationError } from '/lib/react-util/errors/validation-error';
+} from '@/lib/api/email/email-drizzle-repository';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { drizDb, drizDbWithInit } from '/lib/drizzle-db';
+import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 /*
 // Mock drizzle-db
-jest.mock('/lib/drizzle-db', () => {
+jest.mock('@/lib/drizzle-db', () => {
   const { mockDeep } = require('jest-mock-extended');
   
   const makeMockDb = () => mockDeep();
@@ -24,7 +24,7 @@ jest.mock('/lib/drizzle-db', () => {
 */
 
 // Mock drizzle schema
-jest.mock('/drizzle/schema', () => {
+jest.mock('@/drizzle/schema', () => {
   const { Table } = require('drizzle-orm');
   const { PgTable } = require('drizzle-orm/pg-core');
 

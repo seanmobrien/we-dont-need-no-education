@@ -14,7 +14,7 @@
  *
  * @example
  * ```typescript
- * import { schema, SchemaType, FullSchemaType } from '/lib/drizzle-db/schema';
+ * import { schema, SchemaType, FullSchemaType } from '@/lib/drizzle-db/schema';
  *
  * // Use the complete schema for database operations
  * const db = drizzle(connection, { schema });
@@ -24,8 +24,8 @@
  * ```
  */
 
-import * as tables from '/drizzle/schema';
-import * as dbRelations from '/drizzle/custom-relations';
+import * as tables from '@/drizzle/schema';
+import * as dbRelations from '@/drizzle/custom-relations';
 import {
   PgQueryResultHKT,
   PgTable,
@@ -73,7 +73,7 @@ export const relations = dbRelations;
  *
  * @example
  * ```typescript
- * import type { DbFullSchemaType } from '/lib/drizzle-db/schema';
+ * import type { DbFullSchemaType } from '@/lib/drizzle-db/schema';
  *
  * function processSchema(schema: DbFullSchemaType) {
  *   // Access any table or relation with full type safety
@@ -135,7 +135,7 @@ const makeMockDb = () =>
  * @typedef {typeof makeMockDb} DatabaseType
  * @example
  * ```typescript
- * import type { DatabaseType } from '/lib/drizzle-db/schema';
+ * import type { DatabaseType } from '@/lib/drizzle-db/schema';
  * // This type represents the database instance with all tables and relations
  * const db: DatabaseType = makeMockDb();
  * // Use the db instance for type-safe queries
@@ -178,7 +178,7 @@ export type DbTransactionParam = Parameters<
  *
  * @example
  * ```typescript
- * import type { DbQueryResultHKT } from '/lib/drizzle-db/schema';
+ * import type { DbQueryResultHKT } from '@/lib/drizzle-db/schema';
  *
  * // This type provides the query builder interface
  * type QueryBuilder = DbQueryResultHKT;
@@ -219,7 +219,7 @@ export type DbQueryResultHKT = DbTransactionParam extends (
  *
  * @example
  * ```typescript
- * import type { DbSchemaType } from '/lib/drizzle-db/schema';
+ * import type { DbSchemaType } from '@/lib/drizzle-db/schema';
  *
  * function queryWithRelations(relationalSchema: DbSchemaType) {
  *   // Only tables with relations are available
@@ -259,8 +259,8 @@ export type DbSchemaType = DbTransactionParam extends (
  *
  * @example
  * ```typescript
- * import type { DbTransactionType } from '/lib/drizzle-db/schema';
- * import { db } from '/lib/drizzle-db';
+ * import type { DbTransactionType } from '@/lib/drizzle-db/schema';
+ * import { db } from '@/lib/drizzle-db';
  *
  * // Type-safe transaction function
  * async function createUserWithProfile(

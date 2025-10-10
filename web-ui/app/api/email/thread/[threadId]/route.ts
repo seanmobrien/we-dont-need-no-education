@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '/lib/nextjs-util/server/utils';
+} from '@/lib/nextjs-util/server/utils';
 import {
   mapRecordToSummary,
   mapRecordToThreadSummary,
-} from '/lib/api/email/util';
-import { query, queryExt } from '/lib/neondb';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+} from '@/lib/api/email/util';
+import { query, queryExt } from '@/lib/neondb';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const dynamic = 'force-dynamic';
 

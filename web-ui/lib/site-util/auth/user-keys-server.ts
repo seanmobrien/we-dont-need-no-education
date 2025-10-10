@@ -4,8 +4,8 @@ import {
   schema,
   type UserPublicKeysType,
   drizDbWithInit,
-} from '/lib/drizzle-db';
-import { auth } from '/auth';
+} from '@/lib/drizzle-db';
+import { auth } from '@/auth';
 
 /**
  * Returns all public keys for a user that were active at a given date.

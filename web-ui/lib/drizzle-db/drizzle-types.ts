@@ -27,7 +27,7 @@
  *   EmailType,
  *   DocumentUnitQueryShape,
  *   DatabaseType
- * } from '/lib/drizzle-db/drizzle-types';
+ * } from '@/lib/drizzle-db/drizzle-types';
  *
  * // Type-safe entity handling
  * function processEmail(email: EmailType) {
@@ -42,7 +42,7 @@
  * ```
  */
 
-import type { FirstParameter } from '/lib/typescript';
+import type { FirstParameter } from '@/lib/typescript';
 import type { DbFullSchemaType, DbDatabaseType } from './schema';
 
 /**
@@ -56,7 +56,7 @@ import type { DbFullSchemaType, DbDatabaseType } from './schema';
  *
  * @example
  * ```typescript
- * import type { DatabaseType } from '/lib/drizzle-db/drizzle-types';
+ * import type { DatabaseType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function performDatabaseOperation(db: DatabaseType) {
  *   // Access to all schema tables and relations
@@ -88,7 +88,7 @@ export type DatabaseType = DbDatabaseType;
  *
  * @example
  * ```typescript
- * import type { TableSelectTypes } from '/lib/drizzle-db/drizzle-types';
+ * import type { TableSelectTypes } from '@/lib/drizzle-db/drizzle-types';
  *
  * // Access specific table result types
  * type UserResult = TableSelectTypes['users'];
@@ -120,7 +120,7 @@ export type TableSelectTypes = {
  *
  * @example
  * ```typescript
- * import type { SchemaType } from '/lib/drizzle-db/drizzle-types';
+ * import type { SchemaType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function getTableFromSchema<T extends keyof SchemaType>(
  *   schema: SchemaType,
@@ -149,7 +149,7 @@ export type SchemaType = DbFullSchemaType;
  *
  * @example
  * ```typescript
- * import type { DocumentUnitType } from '/lib/drizzle-db/drizzle-types';
+ * import type { DocumentUnitType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function analyzeDocumentUnit(unit: DocumentUnitType) {
  *   console.log(`Analyzing unit ${unit.unitId} of type ${unit.documentType}`);
@@ -170,7 +170,7 @@ export type DocumentUnitType = TableSelectTypes['documentUnits'];
  *
  * @example
  * ```typescript
- * import type { DocumentPropertyType } from '/lib/drizzle-db/drizzle-types';
+ * import type { DocumentPropertyType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function extractPropertyValue(property: DocumentPropertyType): string | null {
  *   return property.propertyValue;
@@ -189,7 +189,7 @@ export type DocumentPropertyType = TableSelectTypes['documentProperty'];
  *
  * @example
  * ```typescript
- * import type { DocumentPropertyTypeType } from '/lib/drizzle-db/drizzle-types';
+ * import type { DocumentPropertyTypeType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function getPropertyTypeInfo(propertyType: DocumentPropertyTypeType) {
  *   return {
@@ -212,7 +212,7 @@ export type DocumentPropertyTypeType = TableSelectTypes['emailPropertyType'];
  *
  * @example
  * ```typescript
- * import type { DocumentRelationshipType } from '/lib/drizzle-db/drizzle-types';
+ * import type { DocumentRelationshipType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function processDocumentRelationship(relationship: DocumentRelationshipType) {
  *   console.log(`Relationship between ${relationship.parentDocumentId} and ${relationship.childDocumentId}`);
@@ -231,7 +231,7 @@ export type DocumentRelationshipType = TableSelectTypes['documentRelationship'];
  *
  * @example
  * ```typescript
- * import type { EmailType } from '/lib/drizzle-db/drizzle-types';
+ * import type { EmailType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function displayEmail(email: EmailType) {
  *   return {
@@ -254,7 +254,7 @@ export type EmailType = TableSelectTypes['emails'];
  *
  * @example
  * ```typescript
- * import type { EmailAttachmentType } from '/lib/drizzle-db/drizzle-types';
+ * import type { EmailAttachmentType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function processAttachment(attachment: EmailAttachmentType) {
  *   console.log(`Processing ${attachment.filename} (${attachment.mimeType})`);
@@ -273,7 +273,7 @@ export type EmailAttachmentType = TableSelectTypes['emailAttachments'];
  *
  * @example
  * ```typescript
- * import type { KeyPointType } from '/lib/drizzle-db/drizzle-types';
+ * import type { KeyPointType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function highlightKeyPoint(keyPoint: KeyPointType) {
  *   return `Key Point: ${keyPoint.description}`;
@@ -292,7 +292,7 @@ export type KeyPointType = TableSelectTypes['keyPointsDetails'];
  *
  * @example
  * ```typescript
- * import type { CallToActionType } from '/lib/drizzle-db/drizzle-types';
+ * import type { CallToActionType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function processCallToAction(cta: CallToActionType) {
  *   console.log(`Action required: ${cta.description}`);
@@ -312,7 +312,7 @@ export type CallToActionType = TableSelectTypes['callToActionDetails'];
  *
  * @example
  * ```typescript
- * import type { CallToActionCategoryType } from '/lib/drizzle-db/drizzle-types';
+ * import type { CallToActionCategoryType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function getCategoryInfo(category: CallToActionCategoryType) {
  *   return {
@@ -334,7 +334,7 @@ export type CallToActionCategoryType = TableSelectTypes['callToActionCategory'];
  *
  * @example
  * ```typescript
- * import type { CallToActionResponseType } from '/lib/drizzle-db/drizzle-types';
+ * import type { CallToActionResponseType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function recordResponse(response: CallToActionResponseType) {
  *   console.log(`Response recorded for CTA: ${response.callToActionId}`);
@@ -354,7 +354,7 @@ export type CallToActionResponseType =
  *
  * @example
  * ```typescript
- * import type { CallToActionResponsiveActionLinkType } from '/lib/drizzle-db/drizzle-types';
+ * import type { CallToActionResponsiveActionLinkType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function linkActionToResponse(link: CallToActionResponsiveActionLinkType) {
  *   console.log(`Linking CTA ${link.callToActionId} to response ${link.responseId}`);
@@ -374,7 +374,7 @@ export type CallToActionResponsiveActionLinkType =
  *
  * @example
  * ```typescript
- * import type { UserPublicKeysType } from '/lib/drizzle-db';
+ * import type { UserPublicKeysType } from '@/lib/drizzle-db';
  *
  * function getUserPublicKeys(keys: UserPublicKeysType[]) {
  *   keys.forEach(key => {
@@ -395,7 +395,7 @@ export type UserPublicKeysType = TableSelectTypes['userPublicKeys'];
  *
  * @example
  * ```typescript
- * import type { ViolationDetailsType } from '/lib/drizzle-db/drizzle-types';
+ * import type { ViolationDetailsType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function handleViolation(violation: ViolationDetailsType) {
  *   console.error(`Violation detected: ${violation.description}`);
@@ -415,7 +415,7 @@ export type ViolationDetailsType = TableSelectTypes['violationDetails'];
  *
  * @example
  * ```typescript
- * import type { ModelsType } from '/lib/drizzle-db/drizzle-types';
+ * import type { ModelsType } from '@/lib/drizzle-db/drizzle-types';
  * function getModelInfo(model: ModelsType) {
  *   return {
  *     id: model.modelId,
@@ -438,7 +438,7 @@ export type ModelsType = TableSelectTypes['models'];
  *
  * @example
  * ```typescript
- * import type { ProvidersType } from '/lib/drizzle-db/drizzle-types';
+ * import type { ProvidersType } from '@/lib/drizzle-db/drizzle-types';
  * function getModelInfo(providers: ProvidersType) {
  *   return {
  *     id: providers.modelId,
@@ -461,7 +461,7 @@ export type ProvidersType = TableSelectTypes['providers'];
  *
  * @example
  * ```typescript
- * import type { ModelQuotasType } from '/lib/drizzle-db/drizzle-types';
+ * import type { ModelQuotasType } from '@/lib/drizzle-db/drizzle-types';
  * function getQuotaInfo(quota: ModelQuotasType) {
  *   return {
  *     modelId: quota.modelId,
@@ -485,7 +485,7 @@ export type ModelQuotasType = TableSelectTypes['modelQuotas'];
  *
  * @example
  * ```typescript
- * import type { ComplianceScoreType } from '/lib/drizzle-db/drizzle-types';
+ * import type { ComplianceScoreType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function evaluateCompliance(score: ComplianceScoreType) {
  *   return {
@@ -507,7 +507,7 @@ export type ComplianceScoreType = TableSelectTypes['complianceScoresDetails'];
  * ChatMessagesType
  * @example
  * ```typescript
- * import type { ChatMessagesType } from '/lib/drizzle-db/drizzle-types';
+ * import type { ChatMessagesType } from '@/lib/drizzle-db/drizzle-types';
  *
  * function evaluateChatMessage(message: ChatMessagesType) {
  *   return {
@@ -549,7 +549,7 @@ export type ChatToolCallsType = TableSelectTypes['chatToolCalls'];
  *
  * @example
  * ```typescript
- * import type { QueryBuilders } from '/lib/drizzle-db/drizzle-types';
+ * import type { QueryBuilders } from '@/lib/drizzle-db/drizzle-types';
  *
  * // Type-safe query options
  * const userQuery: QueryBuilders['users'] = {
@@ -746,7 +746,7 @@ export type { DbTransactionType } from './schema';
  *
  * @example
  * ```typescript
- * import { Types } from '/lib/drizzle-db/drizzle-types';
+ * import { Types } from '@/lib/drizzle-db/drizzle-types';
  *
  * // Access table types
  * type UserType = Types.Tables['users'];

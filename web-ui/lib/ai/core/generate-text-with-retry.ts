@@ -1,8 +1,8 @@
-import { isRateRetryError } from '/lib/react-util/errors/rate-retry-error';
+import { isRateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 import { generateText } from 'ai';
 import { rateLimitQueueManager } from '../middleware/key-rate-limiter/queue-manager';
-import { FirstParameter } from '/lib/typescript/_types';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { FirstParameter } from '@/lib/typescript/_types';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const generateTextWithRetry = async ({
   maxRetries = 5,

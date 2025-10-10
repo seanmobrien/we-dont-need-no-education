@@ -1,12 +1,12 @@
 import { BaseObjectRepository } from '../_baseObjectRepository';
 import { ObjectRepository } from '../_types';
-import { ValidationError } from '/lib/react-util/errors/validation-error';
-import { FirstParameter } from '/lib/typescript';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { FirstParameter } from '@/lib/typescript';
 import {
   DocumentUnit,
   DocumentUnitSummary,
   isDocumentUnitType,
-} from '/data-models/api/document-unit';
+} from '@/data-models/api/document-unit';
 import {
   AccountSASPermissions,
   AccountSASResourceTypes,
@@ -15,7 +15,7 @@ import {
   SASProtocol,
   StorageSharedKeyCredential,
 } from '@azure/storage-blob';
-import { env } from '/lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 
 /**
  * Repository for managing `DocumentUnit` objects.

@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, act } from '/__tests__/test-utils';
-import ResizableDraggableDialog from '/components/mui/resizeable-draggable-dialog';
+import { render, screen, fireEvent, act } from '@/__tests__/test-utils';
+import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
 
 describe('ResizableDraggableDialog Background Interaction', () => {
   it('should allow background clicks when modal=false', () => {

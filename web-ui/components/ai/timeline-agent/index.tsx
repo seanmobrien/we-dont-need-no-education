@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { fetch } from '/lib/nextjs-util/fetch';
+import { fetch } from '@/lib/nextjs-util/fetch';
 import {
   Box,
   Card,
@@ -38,14 +38,14 @@ import {
   Upload,
 } from '@mui/icons-material';
 import { useMutation } from '@tanstack/react-query';
-import { TimelineAgent } from '/lib/ai/agents/timeline';
+import { TimelineAgent } from '@/lib/ai/agents/timeline';
 import {
   TimelineSummary,
   ProcessingResult,
   ComplianceRating,
-} from '/lib/ai/agents/timeline/types';
-import { log } from '/lib/logger';
-import { ClientTimelineAgent } from '/lib/ai/agents/timeline/agent';
+} from '@/lib/ai/agents/timeline/types';
+import { log } from '@/lib/logger';
+import { ClientTimelineAgent } from '@/lib/ai/agents/timeline/agent';
 import { useNotifications } from '@toolpad/core/useNotifications';
 
 interface TimelineAgentInterfaceProps {

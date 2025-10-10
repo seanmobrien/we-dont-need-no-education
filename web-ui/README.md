@@ -240,7 +240,7 @@ yarn start
 ### AI Model Integration
 
 ```typescript
-import { aiModelFactory } from '/lib/ai/aiModelFactory';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 
 // Use Azure models (with automatic failover to Google)
 const hifiModel = aiModelFactory('hifi');
@@ -348,7 +348,7 @@ The platform features a sophisticated multi-provider AI system with automatic fa
 ### Model Factory Usage
 
 ```typescript
-import { aiModelFactory, isModelAvailable } from '/lib/ai/aiModelFactory';
+import { aiModelFactory, isModelAvailable } from '@/lib/ai/aiModelFactory';
 
 // Basic model access (Azure primary, Google fallback)
 const hifiModel = aiModelFactory('hifi');
@@ -380,7 +380,7 @@ import {
   handleAzureRateLimit,
   handleGoogleRateLimit,
   temporarilyDisableModel,
-} from '/lib/ai/aiModelFactory';
+} from '@/lib/ai/aiModelFactory';
 
 // The factory automatically handles rate limits
 try {
@@ -405,7 +405,7 @@ import {
   enableModel,
   disableProvider,
   isProviderAvailable,
-} from '/lib/ai/aiModelFactory';
+} from '@/lib/ai/aiModelFactory';
 
 // Check availability before use
 if (isModelAvailable('azure:hifi')) {
@@ -467,7 +467,7 @@ Before writing or fixing tests, always:
 // __tests__/components/email-message/email-list.test.tsx
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { EmailList } from '/components/email-message/email-list';
+import { EmailList } from '@/components/email-message/email-list';
 
 describe('EmailList', () => {
   test('filters emails by compliance violations', async () => {

@@ -10,7 +10,7 @@
  *   preserveMessageStructure,
  *   createPresetConfiguration,
  *   type MessageStructureOptions
- * } from '/lib/ai/message-structure-preservation';
+ * } from '@/lib/ai/message-structure-preservation';
  *
  * const options = createPresetConfiguration('balanced');
  * const result = preserveMessageStructure(messages, options);

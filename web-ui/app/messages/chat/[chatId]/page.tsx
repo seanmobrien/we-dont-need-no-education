@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { notFound, unauthorized } from 'next/navigation';
 import { Box } from '@mui/material';
-import { auth } from '/auth';
-import { EmailDashboardLayout } from '/components/email-message/dashboard-layout/email-dashboard-layout';
-import { ChatHistory } from '/components/chat/history';
-import { extractParams } from '/lib/nextjs-util/utils';
-import { getChatDetails } from '/lib/ai/chat/history';
+import { auth } from '@/auth';
+import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
+import { ChatHistory } from '@/components/chat/history';
+import { extractParams } from '@/lib/nextjs-util/utils';
+import { getChatDetails } from '@/lib/ai/chat/history';
 
 const ChatDetailPage = async (req: { params: Promise<{ chatId: string }> }) => {
   const session = await auth();

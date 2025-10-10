@@ -1,7 +1,7 @@
 'use client'; // Error boundaries must be Client Components
 
-import { RenderErrorBoundaryFallback } from '/components/error-boundaries/renderFallback';
-import { errorReporter, ErrorSeverity } from '/lib/error-monitoring';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
 import { useEffect } from 'react';
 
 type ErrorWithDigest = Error & { digest?: string };

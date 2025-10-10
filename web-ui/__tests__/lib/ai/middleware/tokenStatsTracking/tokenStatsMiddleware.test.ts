@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { setupMaps } from '/__tests__/jest.mock-provider-model-maps';
+import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
 
 setupMaps();
 
 // Mock the token stats service
-jest.mock('/lib/ai/services/model-stats/token-stats-service', () => {
+jest.mock('@/lib/ai/services/model-stats/token-stats-service', () => {
   const theInstance = {
     getTokenStats: jest.fn(),
     getQuota: jest.fn(),
@@ -27,12 +27,12 @@ jest.mock('/lib/ai/services/model-stats/token-stats-service', () => {
 import {
   getInstance,
   reset,
-} from '/lib/ai/services/model-stats/token-stats-service';
+} from '@/lib/ai/services/model-stats/token-stats-service';
 import {
   tokenStatsMiddleware,
   tokenStatsWithQuotaMiddleware,
   TokenStatsServiceType,
-} from '/lib/ai/middleware/tokenStatsTracking';
+} from '@/lib/ai/middleware/tokenStatsTracking';
 import { wrapLanguageModel } from 'ai';
 
 type MockTokenStats = {

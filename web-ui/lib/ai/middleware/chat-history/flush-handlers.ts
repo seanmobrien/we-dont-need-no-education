@@ -10,18 +10,18 @@
  * @since 2025-07-17
  */
 
-// import { chats, chatTurns, chatMessages } from '/drizzle/schema';
+// import { chats, chatTurns, chatMessages } from '@/drizzle/schema';
 import { and, eq, isNull } from 'drizzle-orm';
-import { drizDb, schema } from '/lib/drizzle-db';
-import { log } from '/lib/logger';
+import { drizDb, schema } from '@/lib/drizzle-db';
+import { log } from '@/lib/logger';
 import type { FlushContext, FlushResult, FlushConfig } from './types';
 import { instrumentFlushOperation } from './instrumentation';
 import {
   insertPendingAssistantMessage,
   reserveTurnId,
 } from './import-incoming-message';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { summarizeMessageRecord } from '/lib/ai/chat/message-optimizer-tools';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { summarizeMessageRecord } from '@/lib/ai/chat/message-optimizer-tools';
 
 /**
  * Default configuration for flush operations.

@@ -21,7 +21,7 @@
  *
  * @example
  * ```typescript
- * import { clientReload } from '/lib/nextjs-util/client-navigate';
+ * import { clientReload } from '@/lib/nextjs-util/client-navigate';
  *
  * // Refresh page after critical error
  * const handleCriticalError = () => {
@@ -66,7 +66,7 @@ export const clientReload = () => {
  *
  * @example
  * ```typescript
- * import { clientNavigate } from '/lib/nextjs-util/client-navigate';
+ * import { clientNavigate } from '@/lib/nextjs-util/client-navigate';
  *
  * // Navigate to external site
  * const handleExternalLink = () => {
@@ -120,7 +120,7 @@ export const clientNavigate = (url: string): void => {
  *
  * @example
  * ```typescript
- * import { clientNavigateSignIn } from '/lib/nextjs-util/client-navigate';
+ * import { clientNavigateSignIn } from '@/lib/nextjs-util/client-navigate';
  *
  * // Redirect after session expiration
  * const handleSessionExpired = () => {

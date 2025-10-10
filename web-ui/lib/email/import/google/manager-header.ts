@@ -1,24 +1,24 @@
 import {
   EmailPropertyRepository,
   EmailPropertyTypeRepository,
-} from '/lib/api/email/properties';
+} from '@/lib/api/email/properties';
 
-import { ImportStage } from '/data-models/api/import/email-message';
+import { ImportStage } from '@/data-models/api/import/email-message';
 import {
   EmailProperty,
   EmailPropertyCategoryTypeId,
-} from '/data-models/api/email-properties/property-type';
+} from '@/data-models/api/email-properties/property-type';
 import {
   StageProcessorContext,
   ImportStageManagerFactory,
   AdditionalStageOptions,
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
-import { AggregateError } from '/lib/react-util/errors/aggregate-error';
-import { isError } from '/lib/react-util/utility-methods';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { CustomAppInsightsEvent, log } from '/lib/logger';
-import { newUuid } from '/lib/typescript';
+import { AggregateError } from '@/lib/react-util/errors/aggregate-error';
+import { isError } from '@/lib/react-util/utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { CustomAppInsightsEvent, log } from '@/lib/logger';
+import { newUuid } from '@/lib/typescript';
 const EmailPropertyTypeMap: Map<string, number> = new Map();
 const parseEmailId = (x: string) => {
   const match = x.match(/<([^>]+)>/);

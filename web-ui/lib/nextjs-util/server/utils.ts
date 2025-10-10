@@ -12,7 +12,7 @@
  *
  * @example
  * ```typescript
- * import { wrapRouteRequest, createInstrumentedSpan } from '/lib/nextjs-util/server/utils';
+ * import { wrapRouteRequest, createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
  *
  * // Wrap a route handler with tracing and error handling
  * export const GET = wrapRouteRequest(async (req) => {
@@ -30,9 +30,9 @@
  */
 
 import { errorResponseFactory } from './error-response/index';
-import { env } from '/lib/site-util/env';
-import { log, logger } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { env } from '@/lib/site-util/env';
+import { log, logger } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest } from 'next/server';
 import {
   SpanKind,

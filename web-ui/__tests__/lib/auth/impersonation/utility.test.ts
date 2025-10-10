@@ -8,9 +8,9 @@
 import {
   adminBaseFromIssuer,
   defaultConfigFromEnv,
-} from '/lib/auth/impersonation/utility';
-import type { AdminTokenConfig } from '/lib/auth/impersonation/impersonation.types';
-import { type ILogger, log } from '/lib/logger';
+} from '@/lib/auth/impersonation/utility';
+import type { AdminTokenConfig } from '@/lib/auth/impersonation/impersonation.types';
+import { type ILogger, log } from '@/lib/logger';
 // Mock the dependencies
 
 describe('impersonation/utility', () => {
@@ -177,10 +177,12 @@ describe('impersonation/utility', () => {
   describe('defaultConfigFromEnv', () => {
     beforeEach(() => {
       // Set up default environment variables for tests
-      process.env.AUTH_KEYCLOAK_ISSUER = 'https://auth.example.com/realms/master';
+      process.env.AUTH_KEYCLOAK_ISSUER =
+        'https://auth.example.com/realms/master';
       process.env.AUTH_KEYCLOAK_CLIENT_ID = 'admin-cli';
       process.env.AUTH_KEYCLOAK_CLIENT_SECRET = 'test-secret';
-      process.env.AUTH_KEYCLOAK_REDIRECT_URI = 'https://app.example.com/callback';
+      process.env.AUTH_KEYCLOAK_REDIRECT_URI =
+        'https://app.example.com/callback';
       process.env.AUTH_KEYCLOAK_IMPERSONATOR_USERNAME = 'admin-user';
       process.env.AUTH_KEYCLOAK_IMPERSONATOR_PASSWORD = 'admin-password';
     });

@@ -1,7 +1,7 @@
 import { JSONValue, Tool, ToolCallOptions, ToolExecuteFunction } from 'ai';
 import { LanguageModelV2ToolResultPart } from '@ai-sdk/provider';
-import type { MCPClient } from './types';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import type { MCPClient } from '../types';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 type TArg = JSONValue | unknown | never;
 

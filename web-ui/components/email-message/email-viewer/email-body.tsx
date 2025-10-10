@@ -16,7 +16,7 @@ import {
   Email as EmailIcon,
 } from '@mui/icons-material';
 import Link from 'next/link';
-import siteBuilder from '/lib/site-util/url-builder';
+import siteBuilder from '@/lib/site-util/url-builder';
 import { EmailViewerProps } from './types';
 import { useEmailMessageQuery } from './hooks';
 import { LoadingEmail } from './loading';
