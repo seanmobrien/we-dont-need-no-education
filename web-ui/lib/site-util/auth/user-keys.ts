@@ -1,4 +1,4 @@
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
  * Key pair management for user signing

@@ -1,4 +1,4 @@
-import { ContactCache } from '/data-models/api/contact-cache';
+import { ContactCache } from '@/data-models/api/contact-cache';
 
 const actualApi = jest.requireActual('/data-models/api');
 

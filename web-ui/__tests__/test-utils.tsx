@@ -11,10 +11,10 @@ import {
 import Queries from '@testing-library/dom/types/queries';
 import React, { act, PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from '/lib/themes/provider';
-import { ChatPanelProvider } from '/components/ai/chat-panel';
-import { SessionProvider } from '/components/auth/session-provider';
-import { FlagProvider } from '/components/general/flags/flag-provider';
+import { ThemeProvider } from '@/lib/themes/provider';
+import { ChatPanelProvider } from '@/components/ai/chat-panel';
+import { SessionProvider } from '@/components/auth/session-provider';
+import { FlagProvider } from '@/components/general/flags/flag-provider';
 
 type CustomRenderOptions = RenderOptions & {
   withFlags?: boolean;

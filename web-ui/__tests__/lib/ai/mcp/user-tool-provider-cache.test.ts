@@ -1,8 +1,17 @@
-import { UserToolProviderCache } from '/lib/ai/mcp/user-tool-provider-cache';
-import type { ToolProviderSet } from '/lib/ai/mcp/types';
+import type {
+  ToolProviderSet,
+  UserToolProviderCache as UserToolProviderCacheType,
+} from '@/lib/ai/mcp/types';
 
-import { mockFlagsmithInstanceFactory } from '/__tests__/jest.setup';
+import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+jest.mock('@/lib/site-util/feature-flags/server', () => ({
+  getFeatureFlag: jest.fn(),
+  getAllFeatureFlags: jest.fn(),
+}));
+
+import { mockFlagsmithInstanceFactory } from '@/__tests__/jest.setup';
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
+import { getUserToolProviderCache } from '@/lib/ai/mcp/cache';
 // Mock the ToolProviderSet
 const mockToolProviderSet = {
   dispose: jest.fn(),
@@ -14,10 +23,10 @@ const mockToolProviderSet = {
 // Mock the factory function
 const mockFactory = jest.fn().mockResolvedValue(mockToolProviderSet);
 
-describe('UserToolProviderCache', () => {
-  let cache: UserToolProviderCache;
+describe('getUserToolProviderCache', () => {
+  let cache: UserToolProviderCacheType;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // jest.clearAllMocks();
     jest.useFakeTimers();
     (createFlagsmithInstance as jest.Mock).mockReturnValue(
@@ -28,8 +37,10 @@ describe('UserToolProviderCache', () => {
         },
       }),
     );
+    (getFeatureFlag as jest.Mock).mockResolvedValue(true);
+
     // Create a new cache instance for each test
-    cache = UserToolProviderCache.getInstance({
+    cache = await getUserToolProviderCache({
       maxEntriesPerUser: 2,
       maxTotalEntries: 4,
       ttl: 30000, // 30 seconds
@@ -297,7 +308,7 @@ describe('UserToolProviderCache', () => {
       expect(mockToolProviderSet2.dispose).toHaveBeenCalledTimes(1);
 
       // Verify cache is cleared by checking it creates new entries after disposal
-      const newCache = UserToolProviderCache.getInstance({
+      const newCache = await getUserToolProviderCache({
         maxEntriesPerUser: 2,
         maxTotalEntries: 4,
         ttl: 30000,

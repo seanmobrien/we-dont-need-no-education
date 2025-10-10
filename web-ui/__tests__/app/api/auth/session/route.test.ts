@@ -1,13 +1,13 @@
 /**
  * @jest-environment node
  */
-jest.mock('/auth');
-jest.mock('/lib/drizzle-db');
-jest.mock('/lib/site-util/auth/user-keys-server');
+jest.mock('@/auth');
+jest.mock('@/lib/drizzle-db');
+jest.mock('@/lib/site-util/auth/user-keys-server');
 
-import { GET } from '/app/api/auth/session/route';
-import { getActiveUserPublicKeys } from '/lib/site-util/auth/user-keys-server';
-import { auth } from '/auth';
+import { GET } from '@/app/api/auth/session/route';
+import { getActiveUserPublicKeys } from '@/lib/site-util/auth/user-keys-server';
+import { auth } from '@/auth';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { NextRequest } from 'next/server';
 

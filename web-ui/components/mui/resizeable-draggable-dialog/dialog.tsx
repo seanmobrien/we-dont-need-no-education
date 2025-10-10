@@ -23,7 +23,7 @@ import RestoreIcon from '@mui/icons-material/FilterNone';
 import CloseIcon from '@mui/icons-material/Close';
 import ResizeableDraggablePaper from './resizeable-draggable-paper';
 import { ResizeableDraggableDialogProps } from './types';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 
 /**
  * Enum for dialog window state

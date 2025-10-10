@@ -24,7 +24,7 @@ import {
   getNotes,
 } from '../../../lib/api/email/properties/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { KeyPointsDetails } from '/data-models/api';
+import { KeyPointsDetails } from '@/data-models/api';
 
 // Mock the API functions
 jest.mock('../../../lib/api/client');

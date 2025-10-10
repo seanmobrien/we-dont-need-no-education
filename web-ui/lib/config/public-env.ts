@@ -30,7 +30,7 @@ import type { NextConfig } from 'next';
  *
  * USAGE EXAMPLE
  * ```ts
- * import { PublicEnv } from '/lib/config/public-env';
+ * import { PublicEnv } from '@/lib/config/public-env';
  *
  * console.info('Client log level:', PublicEnv.NEXT_PUBLIC_LOG_LEVEL_CLIENT);
  * ```

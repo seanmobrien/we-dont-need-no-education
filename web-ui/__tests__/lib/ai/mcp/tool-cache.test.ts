@@ -3,20 +3,20 @@
  * Tests the cache key generation, storage, retrieval, and invalidation logic
  */
 
-import { MCPToolCache, serializeCacheEntry } from '/lib/ai/mcp/tool-cache';
+import { MCPToolCache, serializeCacheEntry } from '@/lib/ai/mcp/cache';
 import { ToolSet } from 'ai';
-import type { ToolProviderFactoryOptions } from '/lib/ai/mcp/types';
+import type { ToolProviderFactoryOptions } from '../../../../lib/ai/mcp/types';
 import z from 'zod';
 
 // Mock Redis and logger
-jest.mock('/lib/ai/middleware/cacheWithRedis/redis-client');
-jest.mock('/lib/logger');
-jest.mock('/lib/react-util/errors/logged-error');
+jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
+jest.mock('@/lib/logger');
+jest.mock('@/lib/react-util/errors/logged-error');
 
 import {
   getRedisClient,
   type RedisClientType,
-} from '/lib/ai/middleware/cacheWithRedis/redis-client';
+} from '@/lib/ai/middleware/cacheWithRedis/redis-client';
 
 const mockRedisClient = {
   get: jest.fn(),

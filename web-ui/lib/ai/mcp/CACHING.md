@@ -39,7 +39,7 @@ interface CacheKeyComponents {
 ### Basic Usage
 
 ```typescript
-import { toolProviderFactory } from '/lib/ai/mcp';
+import { toolProviderFactory } from '@/lib/ai/mcp';
 
 // Cache is automatically used - no code changes needed!
 const provider = await toolProviderFactory({
@@ -56,7 +56,7 @@ import {
   getToolCache,
   MCPToolCacheAdmin,
   initializeMCPCache,
-} from '/lib/ai/mcp';
+} from '@/lib/ai/mcp';
 
 // Initialize cache on startup
 await initializeMCPCache();

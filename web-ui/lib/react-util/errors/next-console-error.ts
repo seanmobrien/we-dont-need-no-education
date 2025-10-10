@@ -7,7 +7,7 @@
  *   type guard for working with these errors in React/Next.js applications.
  *
  * @example
- *   import { isConsoleError } from '/lib/react-util/errors/next-console-error';
+ *   import { isConsoleError } from '@/lib/react-util/errors/next-console-error';
  *
  *   try {
  *     // ...some code that may throw...

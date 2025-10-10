@@ -4,9 +4,9 @@ import type {
   MemoryHealthCheckResponse,
   HealthCheckParams,
 } from './types/health-check';
-import { fromRequest, ImpersonationService } from '/lib/auth/impersonation';
-import { env } from '/lib/site-util/env';
-import { log } from '/lib/logger';
+import { fromRequest, ImpersonationService } from '@/lib/auth/impersonation';
+import { env } from '@/lib/site-util/env';
+import { log } from '@/lib/logger';
 
 /**
  * Options for configuring the MemoryClient instance.

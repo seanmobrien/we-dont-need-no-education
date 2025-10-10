@@ -33,8 +33,8 @@ import {
   attemptAutoRecovery,
   ErrorType,
   recoveryStrategies,
-} from '/lib/error-monitoring/recovery-strategies';
-import { clientNavigateSignIn } from '/lib/nextjs-util/client-navigate';
+} from '@/lib/error-monitoring/recovery-strategies';
+import { clientNavigateSignIn } from '@/lib/nextjs-util/client-navigate';
 
 // Mock caches API
 const mockCacheDelete = jest.fn().mockResolvedValue(true);
@@ -268,7 +268,7 @@ describe('Recovery Actions', () => {
         // Mock the error to match this strategy
         jest
           .spyOn(
-            await import('/lib/error-monitoring/recovery-strategies'),
+            await import('@/lib/error-monitoring/recovery-strategies'),
             'classifyError',
           )
           .mockReturnValue(strategyWithoutDefault.errorType);
@@ -461,7 +461,7 @@ describe('Automatic Recovery', () => {
       // Mock an error that has no default action
       jest
         .spyOn(
-          await import('/lib/error-monitoring/recovery-strategies'),
+          await import('@/lib/error-monitoring/recovery-strategies'),
           'getDefaultRecoveryAction',
         )
         .mockReturnValue(null);

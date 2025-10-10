@@ -59,7 +59,7 @@ CREATE TABLE token_consumption_stats (
 ### Basic Token Tracking (Logging Only)
 
 ```typescript
-import { tokenStatsMiddleware } from '/lib/ai/middleware/tokenStatsTracking';
+import { tokenStatsMiddleware } from '@/lib/ai/middleware/tokenStatsTracking';
 import { wrapLanguageModel } from 'ai';
 
 const model = wrapLanguageModel({
@@ -76,7 +76,7 @@ const model = wrapLanguageModel({
 ### Token Tracking with Quota Enforcement
 
 ```typescript
-import { tokenStatsWithQuotaMiddleware } from '/lib/ai/middleware/tokenStatsTracking';
+import { tokenStatsWithQuotaMiddleware } from '@/lib/ai/middleware/tokenStatsTracking';
 
 const model = wrapLanguageModel({
   model: baseModel,
@@ -91,7 +91,7 @@ const model = wrapLanguageModel({
 ### Direct Service Usage
 
 ```typescript
-import { tokenStatsService } from '/lib/ai/middleware/tokenStatsTracking';
+import { tokenStatsService } from '@/lib/ai/middleware/tokenStatsTracking';
 
 // Check quota before making a request
 const quotaCheck = await tokenStatsService.checkQuota('azure', 'hifi', 1000);

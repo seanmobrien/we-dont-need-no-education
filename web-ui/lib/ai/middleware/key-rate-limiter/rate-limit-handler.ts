@@ -1,6 +1,6 @@
-import { getRetryErrorInfo } from '/lib/ai/chat';
-import { log } from '/lib/logger';
-import { temporarilyDisableModel } from '/lib/ai/aiModelFactory';
+import { getRetryErrorInfo } from '@/lib/ai/chat';
+import { log } from '@/lib/logger';
+import { temporarilyDisableModel } from '@/lib/ai/aiModelFactory';
 import { rateLimitMetrics } from './metrics';
 import type { ModelClassification, ModelFailoverConfig } from './types';
 import {
@@ -8,7 +8,7 @@ import {
   getAvailableModel,
   CHAT_RETRY_DELAY_MS,
 } from './model-availability';
-import { RateRetryError } from '/lib/react-util/errors/rate-retry-error';
+import { RateRetryError } from '@/lib/react-util/errors/rate-retry-error';
 
 /**
  * Disables a model based on rate limit headers.

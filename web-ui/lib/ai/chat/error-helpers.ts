@@ -1,5 +1,5 @@
 import { APICallError } from 'ai';
-import { isError } from '/lib/react-util/utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 import type { RetryErrorInfo } from './types';
 
 /**

@@ -1,16 +1,16 @@
 import React from 'react';
-import { render, waitFor, screen } from '/__tests__/test-utils';
-import { FlagProvider } from '/components/general/flags/flag-provider';
+import { render, waitFor, screen } from '@/__tests__/test-utils';
+import { FlagProvider } from '@/components/general/flags/flag-provider';
 
 // Import mocked modules after jest.mock calls
 import { IFlagsmith } from 'flagsmith/react';
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import { useFlagsmithLoading } from 'flagsmith/react';
-import { mockFlagsmithInstanceFactory } from '/__tests__/jest.setup';
+import { mockFlagsmithInstanceFactory } from '@/__tests__/jest.setup';
 import {
   FeatureFlagsApi,
   useFeatureFlagsContext,
-} from '/lib/site-util/feature-flags/context';
+} from '@/lib/site-util/feature-flags/context';
 
 const mockCreateFlagsmithInstance = jest.mocked(createFlagsmithInstance);
 

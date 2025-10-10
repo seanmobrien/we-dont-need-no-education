@@ -1,4 +1,4 @@
-import { isError, isRecord, LoggedError } from '/lib/react-util/core';
+import { isError, isRecord, LoggedError } from '@/lib/react-util/core';
 import {
   ApplicationInsightsBaseType,
   ApplicationInsightsCustomEventName,

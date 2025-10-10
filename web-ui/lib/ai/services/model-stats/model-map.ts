@@ -1,4 +1,4 @@
-import { ResourceNotFoundError } from '/lib/ai/services/chat/errors/resource-not-found-error';
+import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
 /**
  * @module lib/ai/services/model-stats/model-map
  * @fileoverview
@@ -11,19 +11,19 @@ import { ResourceNotFoundError } from '/lib/ai/services/chat/errors/resource-not
  * @since 2025-08-23
  */
 
-import { drizDbWithInit, type DbDatabaseType } from '/lib/drizzle-db';
-import { schema } from '/lib/drizzle-db/schema';
+import { drizDbWithInit, type DbDatabaseType } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and } from 'drizzle-orm';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   ProviderMap,
   ProviderPrimaryNameType,
   ProviderPrimaryNameTypeValues,
 } from './provider-map';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import { LanguageModel } from 'ai';
 import { ModelClassification } from '../../middleware/key-rate-limiter/types';
-import { isKeyOf, newUuid } from '/lib/typescript';
+import { isKeyOf, newUuid } from '@/lib/typescript';
 
 /**
  * Type representing a complete model record with provider information.

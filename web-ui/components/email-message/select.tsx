@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { debounce } from 'lodash';
-import { EmailMessageSummary } from '/data-models/api/email-message';
-import { fetch } from '/lib/nextjs-util/fetch';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { EmailMessageSummary } from '@/data-models/api/email-message';
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 // Simple replacement for removed classnames function
 const classnames = (...classes: (string | undefined)[]): string => {

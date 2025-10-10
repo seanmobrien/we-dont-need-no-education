@@ -10,9 +10,9 @@ import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { isAbortError, isError } from '/lib/react-util/utility-methods';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { log } from '/lib/logger';
+import { isAbortError, isError } from '@/lib/react-util/utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
 
 // Import refactored modules
 import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';
@@ -25,7 +25,7 @@ import {
   SEND_TIMEOUT_MS,
 } from './utils/safety-utils';
 import { MessageProcessor } from './message/message-processor';
-import { ImpersonationService } from '/lib/auth/impersonation';
+import { ImpersonationService } from '@/lib/auth/impersonation';
 
 type InstrumentedSseTransportOptions = {
   url: string;

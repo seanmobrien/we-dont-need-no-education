@@ -7,14 +7,14 @@
  * @author NoEducation Team
  */
 
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import type {
   ConnectableToolProvider,
   ToolProviderFactoryOptions,
   ToolProviderSet,
   MCPClient,
-} from './types';
-import { toolProxyFactory, attachProxyToTool } from './tool-proxy';
+} from '../types';
+import { toolProxyFactory, attachProxyToTool } from '../tools';
 import {
   experimental_createMCPClient as createMCPClient,
   Tool,
@@ -24,63 +24,14 @@ import {
   getResolvedPromises,
   isAbortError,
   isError,
-} from '/lib/react-util/utility-methods';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { InstrumentedSseTransport } from './instrumented-sse-transport';
-import { FirstParameter } from '/lib/typescript';
+} from '@/lib/react-util/utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { InstrumentedSseTransport } from '../instrumented-sse-transport';
+import { FirstParameter } from '@/lib/typescript';
 import { clientToolProviderFactory } from './client-tool-provider';
-import { getToolCache } from './tool-cache';
-import { getAllFeatureFlags } from '/lib/site-util/feature-flags/server';
+import { getToolCache } from '../cache';
+import { getAllFeatureFlags } from '@/lib/site-util/feature-flags/server';
 
-/**
- * Creates a single Model Context Protocol (MCP) client connection.
- *
- * This factory function establishes a connection to an MCP server with comprehensive
- * error handling, resource cleanup, and tool filtering capabilities. It implements
- * graceful degradation by returning a stub provider if connection fails.
- *
- * @async
- * @function toolProviderFactory
- * @param {ToolProviderFactoryOptions} options - Configuration options for the MCP connection
- * @param {string} options.url - The MCP server URL to connect to
- * @param {Record<string, string>} [options.headers] - Optional HTTP headers for authentication
- * @param {boolean} [options.allowWrite=false] - Whether to include write-access tools in the tool set
- * @returns {Promise<ConnectableToolProvider>} A promise that resolves to a connected tool provider
- *
- * @example
- * ```typescript
- * // Create a read-only connection
- * const provider = await toolProviderFactory({
- *   url: 'https://mcp-server.example.com/api',
- *   headers: { 'Authorization': 'Bearer token' },
- *   allowWrite: false
- * });
- *
- * // Use the provider
- * const tools = provider.tools;
- * const isConnected = provider.get_isConnected();
- *
- * // Clean up when done
- * await provider.dispose();
- * ```
- *
- * @example
- * ```typescript
- * // Create a read-write connection
- * const provider = await toolProviderFactory({
- *   url: 'https://mcp-server.example.com/api',
- *   allowWrite: true
- * });
- * ```
- *
- * @throws {never} Never throws - implements graceful degradation with stub provider
- *
- * @see {@link ConnectableToolProvider} For the returned provider interface
- * @see {@link ToolProviderFactoryOptions} For configuration options
- * @see {@link toolProviderSetFactory} For managing multiple providers
- *
- * @since 1.0.0
- */
 export const toolProviderFactory = async ({
   impersonation,
   ...options
@@ -398,41 +349,6 @@ export const toolProviderFactory = async ({
   }
 };
 
-/**
- * Internal helper function that categorizes promise results and handles cleanup.
- *
- * This function uses the `getResolvedPromises` utility to separate fulfilled, rejected,
- * and pending promises, then sets up cleanup hooks for pending connections and logs
- * any rejected connections for monitoring purposes.
- *
- * @async
- * @function getResolvedProvidersWithCleanup
- * @param {Promise<ConnectableToolProvider>[]} promises - Array of provider promises to categorize
- * @param {number} [timeoutMs=60000] - Timeout in milliseconds for promise resolution
- * @returns {Promise<ConnectableToolProvider[]>} Array of successfully connected providers
- *
- * @description
- * **Behavior:**
- * 1. **Categorizes Results**: Uses `getResolvedPromises` to separate fulfilled, rejected, and pending promises
- * 2. **Cleanup Pending**: Sets up cleanup hooks for promises that are still pending after timeout
- * 3. **Error Logging**: Logs rejected connections using `LoggedError.isTurtlesAllTheWayDownBaby`
- * 4. **Resource Management**: Ensures proper disposal of timed-out connections
- *
- * @example
- * ```typescript
- * const promises = [
- *   toolProviderFactory({ url: 'server1.com' }),
- *   toolProviderFactory({ url: 'server2.com' }),
- *   toolProviderFactory({ url: 'server3.com' })
- * ];
- *
- * const connectedProviders = await getResolvedProvidersWithCleanup(promises, 30000);
- * console.log(`${connectedProviders.length} providers connected successfully`);
- * ```
- *
- * @internal
- * @since 1.0.0
- */
 const getResolvedProvidersWithCleanup = async (
   promises: Promise<ConnectableToolProvider>[],
   timeoutMs: number = 60 * 1000,

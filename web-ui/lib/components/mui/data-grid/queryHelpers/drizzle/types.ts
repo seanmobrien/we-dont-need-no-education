@@ -1,4 +1,4 @@
-import type { LikeNextRequest } from '/lib/nextjs-util/types';
+import type { LikeNextRequest } from '@/lib/nextjs-util/types';
 import type {
   GridFilterModel,
   GridFilterItem,

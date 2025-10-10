@@ -8,8 +8,8 @@ import {
   Stack,
 } from '@mui/material';
 import { useCallback, useState } from 'react';
-import { signResponse } from '/lib/ai/client/confirmation';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { signResponse } from '@/lib/ai/client/confirmation';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { useNotifications } from '@toolpad/core/useNotifications';
 import { DynamicToolUIPart, ToolUIPart, UITools } from 'ai';
 

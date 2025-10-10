@@ -2,8 +2,8 @@
  * @jest-environment node
  */
 
-import { parsePaginationOptions } from '/lib/components/mui/data-grid/queryHelpers/utility';
-import { MailQueryBuilder } from '/app/api/email/import/[provider]/_mailQueryBuilder';
+import { parsePaginationOptions } from '@/lib/components/mui/data-grid/queryHelpers/utility';
+import { MailQueryBuilder } from '@/app/api/email/import/[provider]/_mailQueryBuilder';
 
 describe('MailQueryBuilder', () => {
   let builder: MailQueryBuilder;

@@ -7,9 +7,9 @@
 
 import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { tracer, MetricsRecorder, DEBUG_MODE } from '../metrics/otel-metrics';
-import { isError } from '/lib/react-util/utility-methods';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { log } from '/lib/logger';
+import { isError } from '@/lib/react-util/utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
 
 // Timeout constants
 export const CONNECTION_TIMEOUT_MS = 30 * 1000; // 30 seconds for connection

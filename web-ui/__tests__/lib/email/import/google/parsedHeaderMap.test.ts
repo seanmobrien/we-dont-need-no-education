@@ -3,7 +3,7 @@ import {
   EmailHeaderParser,
   isParsedHeaderMap,
   ParsedHeaderMap,
-} from '/lib/email/parsedHeaderMap';
+} from '@/lib/email/parsedHeaderMap';
 import type { gmail_v1 } from 'googleapis';
 
 describe('ParsedHeaderMap', () => {

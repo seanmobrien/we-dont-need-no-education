@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState } from 'react';
 import ContactDropdown from './contact-dropdown';
-import { ContactSummary } from '/data-models/api/contact';
+import { ContactSummary } from '@/data-models/api/contact';
 import { css } from '@emotion/react';
 import fastEqual from 'fast-deep-equal';
 import Modal from '../general/modal';

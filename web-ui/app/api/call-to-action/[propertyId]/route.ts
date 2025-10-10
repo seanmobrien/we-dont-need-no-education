@@ -2,20 +2,20 @@ import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '/lib/nextjs-util/server/utils';
-import { RepositoryCrudController } from '/lib/api/repository-crud-controller';
-import { CallToActionDetailsRepository } from '/lib/api/email/properties/call-to-action/cta-details-repository';
-import { extractParams } from '/lib/nextjs-util/utils';
+} from '@/lib/nextjs-util/server/utils';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
+import { extractParams } from '@/lib/nextjs-util/utils';
 
 import { eq, and, sql } from 'drizzle-orm';
-import { drizDbWithInit, schema } from '/lib/drizzle-db';
+import { drizDbWithInit, schema } from '@/lib/drizzle-db';
 import {
   DrizzleSelectQuery,
   buildDrizzleAttachmentOrEmailFilter,
   getEmailColumn,
   selectForGrid,
-} from '/lib/components/mui/data-grid/queryHelpers';
-import { CallToActionDetails } from '/data-models/api/email-properties/extended-properties';
+} from '@/lib/components/mui/data-grid/queryHelpers';
+import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 
 const repository = new CallToActionDetailsRepository();
 const controller = new RepositoryCrudController(repository);

@@ -17,6 +17,7 @@ declare module 'lib/react-util/hooks/useInEffect' {
      * @param args - Arguments to pass to the operation
      * @returns Promise that resolves with the operation result
      */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     enqueue: <TArgs extends any[], TResult>(
       operation: (...args: TArgs) => Promise<TResult>,
       ...args: TArgs

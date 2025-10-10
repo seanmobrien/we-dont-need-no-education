@@ -9,7 +9,7 @@
  * @since 2025-07-26
  */
 
-import { isLikeNextRequest } from '/lib/nextjs-util/guards';
+import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import type { GridSortModel } from '@mui/x-data-grid-pro';
 import { asc, desc, SQL } from 'drizzle-orm';
 import type { PgColumn } from 'drizzle-orm/pg-core';
@@ -201,7 +201,7 @@ export const buildDrizzleOrderBy = ({
  *
  * @example
  * ```typescript
- * import { users } from '/drizzle/schema';
+ * import { users } from '@/drizzle/schema';
  *
  * const getColumn = createColumnGetter({
  *   name: users.name,
@@ -236,7 +236,7 @@ export const createColumnGetter = (
  *
  * @example
  * ```typescript
- * import { users } from '/drizzle/schema';
+ * import { users } from '@/drizzle/schema';
  *
  * const getColumn = createTableColumnGetter(users, {
  *   // Map custom field names to table columns

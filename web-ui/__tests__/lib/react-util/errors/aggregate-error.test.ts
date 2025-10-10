@@ -1,4 +1,4 @@
-import { AggregateError } from '/lib/react-util/errors/aggregate-error';
+import { AggregateError } from '@/lib/react-util/errors/aggregate-error';
 
 describe('AggregateError', () => {
   it('should create an instance of AggregateError', () => {

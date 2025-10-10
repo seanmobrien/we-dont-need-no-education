@@ -2,7 +2,7 @@ import { trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import { generateChatId } from '../../core';
 import type { ChatHistoryContext } from './types';
 import { tracer } from '../../mcp';
-import { isError } from '/lib/react-util/utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 
 export const AgentUserId = -1;
 

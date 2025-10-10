@@ -116,7 +116,7 @@ Tracks token usage statistics and quota enforcement.
 ### Basic Model Lookup
 
 ```typescript
-import { ModelMap } from '/lib/ai/services/model-stats';
+import { ModelMap } from '@/lib/ai/services/model-stats';
 
 const modelMap = await ModelMap.getInstance();
 
@@ -139,8 +139,8 @@ if (gpt4) {
 ### Working with LanguageModel
 
 ```typescript
-import { aiModelFactory } from '/lib/ai';
-import { ModelMap } from '/lib/ai/services/model-stats';
+import { aiModelFactory } from '@/lib/ai';
+import { ModelMap } from '@/lib/ai/services/model-stats';
 
 const model = aiModelFactory('hifi'); // Returns LanguageModelnstance
 const modelMap = await ModelMap.getInstance();

@@ -1,7 +1,7 @@
-import { render, screen, waitFor } from '/__tests__/test-utils';
+import { render, screen, waitFor } from '@/__tests__/test-utils';
 
 // Mock the API client
-jest.mock('/lib/api/email/properties/client');
+jest.mock('@/lib/api/email/properties/client');
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
   useParams: () => ({ emailId: 'test-email-id' }),
@@ -31,9 +31,9 @@ jest.mock('@tanstack/react-query', () => ({
   useQuery: () => mockUseQuery(),
 }));
 
-import { CallToActionPanel } from '/app/messages/email/[emailId]/call-to-action/panel';
-import { CallToActionDetails } from '/data-models/api';
-import { getCallToActionResponse as getCallToActionResponseFromModule } from '/lib/api/email/properties/client';
+import { CallToActionPanel } from '@/app/messages/email/[emailId]/call-to-action/panel';
+import { CallToActionDetails } from '@/data-models/api';
+import { getCallToActionResponse as getCallToActionResponseFromModule } from '@/lib/api/email/properties/client';
 
 const getCallToActionResponse = getCallToActionResponseFromModule as jest.Mock;
 

@@ -4,11 +4,11 @@
  */
 
 import React from 'react';
-import { render, screen } from '/__tests__/test-utils';
-import { MemoryStatusIndicator } from '/components/memory-status/memory-status-indicator';
+import { render, screen } from '@/__tests__/test-utils';
+import { MemoryStatusIndicator } from '@/components/memory-status/memory-status-indicator';
 
 // Mock the useMemoryHealth hook
-jest.mock('/lib/hooks/use-memory-health', () => ({
+jest.mock('@/lib/hooks/use-memory-health', () => ({
   useMemoryHealth: jest.fn(),
 }));
 

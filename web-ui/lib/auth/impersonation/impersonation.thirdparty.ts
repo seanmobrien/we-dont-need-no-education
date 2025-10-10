@@ -18,14 +18,14 @@ import {
 } from 'openid-client';
 import { got } from 'got';
 import { CookieJar } from 'tough-cookie';
-import { env } from '/lib/site-util/env';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import CryptoService from '/lib/site-util/auth/crypto-service';
+import { env } from '@/lib/site-util/env';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import CryptoService from '@/lib/site-util/auth/crypto-service';
 import type {
   ImpersonationService,
   UserContext,
-} from '/lib/auth/impersonation/impersonation.types';
+} from '@/lib/auth/impersonation/impersonation.types';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { SystemTokenStore } from './system-token-store';
 import { Session } from 'next-auth';

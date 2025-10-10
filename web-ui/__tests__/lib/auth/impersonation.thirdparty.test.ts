@@ -73,7 +73,7 @@ const kcAdminMock = {
 };
 
 // Minimal Keycloak Admin Client mock (captures last created instance)
-jest.mock('/lib/auth/keycloak-factories', () => {
+jest.mock('@/lib/auth/keycloak-factories', () => {
   return {
     keycloakAdminClientFactory: jest.fn().mockImplementation(() => {
       return kcAdminMock;
@@ -82,7 +82,7 @@ jest.mock('/lib/auth/keycloak-factories', () => {
 });
 
 // Mock CryptoService for token encryption/decryption
-jest.mock('/lib/site-util/auth/crypto-service', () => ({
+jest.mock('@/lib/site-util/auth/crypto-service', () => ({
   CryptoService: jest.fn().mockImplementation(() => ({
     encrypt: jest.fn(async (data: string) => `encrypted:${data}`),
     decrypt: jest.fn(async (data: string) => data.replace('encrypted:', '')),
@@ -94,13 +94,13 @@ const redisClient = {
   get: jest.fn().mockResolvedValue(null),
   setEx: jest.fn().mockResolvedValue('OK'),
 };
-jest.mock('/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
+jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
   getRedisClient: jest.fn(async () => redisClient),
 }));
 
 // Import after mocks are set
 import type { MockedFunction } from 'jest-mock';
-import { auth } from '/auth';
+import { auth } from '@/auth';
 
 // Helpers to access the mocked modules with types
 const oc = jest.requireMock('openid-client') as {
@@ -204,7 +204,7 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
     // Import SUT lazily to ensure our mocks are applied first
     const { ImpersonationThirdParty } = await import(
-      '/lib/auth/impersonation/impersonation.thirdparty'
+      '@/lib/auth/impersonation/impersonation.thirdparty'
     );
     // Ensure admin client finds the target user by email (configure captured instance)
     (kcAdminMock.users.find as jest.Mock).mockResolvedValue([
@@ -245,7 +245,7 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
     grantQueue.push({ access_token: 'admin-access', expires_in: 3600 });
 
     const { ImpersonationThirdParty } = await import(
-      '/lib/auth/impersonation/impersonation.thirdparty'
+      '@/lib/auth/impersonation/impersonation.thirdparty'
     );
     // Create service, then set admin users.find to return empty -> user not found
     const svc = await ImpersonationThirdParty.fromRequest({

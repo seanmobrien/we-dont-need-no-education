@@ -1,4 +1,4 @@
-import EmailList from '/components/email-message/list';
+import EmailList from '@/components/email-message/list';
 import { Box } from '@mui/material';
 
 export default function Home() {

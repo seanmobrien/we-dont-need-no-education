@@ -5,9 +5,9 @@ import {
   waitFor,
   act,
   hideConsoleOutput,
-} from '/__tests__/test-utils';
-import EmailViewer from '/components/email-message/email-viewer';
-import { fetch } from '/lib/nextjs-util/fetch';
+} from '@/__tests__/test-utils';
+import EmailViewer from '@/components/email-message/email-viewer';
+import { fetch } from '@/lib/nextjs-util/fetch';
 const TIMEOUT = 30000;
 
 // Mock Promise.withResolvers if not available
@@ -131,23 +131,18 @@ describe('EmailViewer', () => {
             json: () => Promise.resolve([]),
           });
         }
-        if (url.includes('/api/email/test-email-id')) {
-          return Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve(mockEmail),
-          });
-        }
-        return Promise.reject(new Error('Unexpected URL'));
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(mockEmail),
+        });
       });
 
       render(<EmailViewer emailId="test-email-id" />);
 
       // Wait for the email data to load and be displayed
       await waitFor(
-        () => {
-          expect(screen.getByText('Test Subject')).toBeInTheDocument();
-        },
-        { timeout: 5000 },
+        async () =>
+          await expect(screen.getByText('Test Subject')).toBeInTheDocument(),
       );
 
       expect(

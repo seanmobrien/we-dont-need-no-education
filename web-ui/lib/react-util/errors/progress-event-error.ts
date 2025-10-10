@@ -1,5 +1,5 @@
 import { SafeProgressEvent, isProgressEvent } from '../utility-methods';
-import { ErrorContext, IContextEnricher } from '/lib/error-monitoring/types';
+import { ErrorContext, IContextEnricher } from '@/lib/error-monitoring/types';
 
 export class ProgressEventError<
     TEventTarget extends EventTarget = XMLHttpRequest,

@@ -49,8 +49,8 @@
  * @since 1.0.0
  */
 
-import type { PaginatedResultset } from '/data-models/_types';
-import { parsePaginationStats } from '/lib/components/mui/data-grid/queryHelpers/utility';
+import type { PaginatedResultset } from '@/data-models/_types';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 import { buildDrizzleQueryFilter } from './buildDrizzleFilter';
 import { buildDrizzleOrderBy } from './buildDrizzleOrderBy';
 import { buildDrizzlePagination } from './buildDrizzlePagination';
@@ -61,7 +61,7 @@ import type {
 } from './types';
 import type { AnyPgSelect, PgSession } from 'drizzle-orm/pg-core';
 import type { PgCountBuilder } from 'drizzle-orm/pg-core/query-builders/count';
-import { drizDb } from '/lib/drizzle-db';
+import { drizDb } from '@/lib/drizzle-db';
 
 /**
  * Creates both data and count query factories from a base Drizzle select query.
@@ -176,8 +176,8 @@ export const countQueryFactory = (
  * @example
  * ```typescript
  * // Basic usage with email documents
- * import { selectForGrid } from '/lib/components/mui/data-grid/selectForGrid';
- * import { createColumnGetter } from '/lib/components/mui/data-grid/buildDrizzleOrderBy';
+ * import { selectForGrid } from '@/lib/components/mui/data-grid/selectForGrid';
+ * import { createColumnGetter } from '@/lib/components/mui/data-grid/buildDrizzleOrderBy';
  *
  * export async function GET(request: NextRequest) {
  *   const baseQuery = db

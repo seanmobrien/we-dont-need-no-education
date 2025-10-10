@@ -18,12 +18,12 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
 import PauseCircleIcon from '@mui/icons-material/PauseCircle';
-import type { ModelStat } from '/types/statistics';
+import type { ModelStat } from '@/types/statistics';
 import {
   formatNumber,
   getUsagePercentage,
   getUsageColor,
-} from '/lib/site-util/format';
+} from '@/lib/site-util/format';
 
 interface ModelStatisticsProps {
   models: ModelStat[];

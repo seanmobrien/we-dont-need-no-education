@@ -32,7 +32,7 @@ import {
 type Sql<T extends Record<string, unknown>> = PostgresSql<T>;
 
 //import { deprecate } from '../nextjs-util';
-//import { deprecate } from '/lib/nextjs-util/utils';
+//import { deprecate } from '@/lib/nextjs-util/utils';
 
 export type QueryProps<ResultType extends object = Record<string, unknown>> = {
   transform?: <RecordType extends Record<string, unknown>>(

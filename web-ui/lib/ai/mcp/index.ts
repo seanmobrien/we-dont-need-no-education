@@ -3,16 +3,37 @@ export type {
   ConnectableToolProvider,
   ToolProviderFactoryOptions,
   ToolProviderSet,
-} from './types';
+  CachedToolProvider,
+  UserToolProviderCache,
+  UserToolProviderCacheConfig,
+} from './types.ts';
+
+// Re-export cache functionality
 export {
-  toolProviderFactory,
-  toolProviderSetFactory,
-} from './toolProviderFactory';
-export { MCPToolCache, getToolCache, configureToolCache } from './tool-cache';
-export {
+  MCPToolCache,
+  getToolCache,
+  configureToolCache,
+  serializeWithSchema,
+  deserializeWithSchema,
+  serializeCacheEntry,
+  deserializedCacheEntry,
   MCPToolCacheAdmin,
   getCacheEnvConfig,
   initializeMCPCache,
-} from './tool-cache-admin';
+  getUserToolProviderCache,
+} from './cache';
+
+// Re-export provider functionality
+export {
+  toolProviderFactory,
+  toolProviderSetFactory,
+  isToolProvider,
+  clientToolProviderFactory,
+  getMcpClientHeaders,
+  setupDefaultTools,
+} from './providers';
+
+// Re-export tool functionality
+export { toolProxyFactory, attachProxyToTool } from './tools';
 
 export * from './instrumented-sse-transport';

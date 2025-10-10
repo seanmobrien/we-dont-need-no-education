@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { render, screen, fireEvent } from '/__tests__/test-utils';
+import { render, screen, fireEvent } from '@/__tests__/test-utils';
 import { useRouter } from 'next/navigation';
-import EmailList from '/components/email-message/list';
+import EmailList from '@/components/email-message/list';
 
 jest.mock('@toolpad/core/useNotifications', () => ({
   useNotifications: () => ({ show: jest.fn() }),
 }));
 
-jest.mock('/components/mui/data-grid/server-bound-data-grid', () => ({
+jest.mock('@/components/mui/data-grid/server-bound-data-grid', () => ({
   ServerBoundDataGrid: ({
     columns,
     onRowDoubleClick,
@@ -40,7 +40,7 @@ jest.mock('/components/mui/data-grid/server-bound-data-grid', () => ({
   },
 }));
 
-jest.mock('/lib/site-util/url-builder', () => ({
+jest.mock('@/lib/site-util/url-builder', () => ({
   __esModule: true,
   default: {
     api: { email: { url: '/api/email' } },

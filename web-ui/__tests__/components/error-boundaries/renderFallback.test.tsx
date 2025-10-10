@@ -1,16 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-require-imports */
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '/__tests__/test-utils';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@/__tests__/test-utils';
 // import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
-import { RenderErrorBoundaryFallback } from '/components/error-boundaries/renderFallback';
+import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
 
 // Mock the recovery strategies
 const mockReload = jest.fn();
 
-jest.mock('/lib/error-monitoring/recovery-strategies', () => ({
+jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
   getRecoveryActions: jest.fn(),
   getDefaultRecoveryAction: jest.fn(),
   classifyError: jest.fn(),

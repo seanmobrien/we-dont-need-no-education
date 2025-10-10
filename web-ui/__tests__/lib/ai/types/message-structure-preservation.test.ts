@@ -9,14 +9,14 @@ import {
   createMessageStructureOptions,
   isPreservationEnabled,
   hasMessageStructureOptions,
-} from '/lib/ai/types/message-structure-preservation';
+} from '@/lib/ai/types/message-structure-preservation';
 import {
   preserveMessageStructure,
   validateMessageStructureOptions,
   createPresetConfiguration,
   clearPreservationCache,
   getPreservationCacheStats,
-} from '/lib/ai/utils/message-structure-preservation';
+} from '@/lib/ai/utils/message-structure-preservation';
 
 describe('Message Structure Preservation Interface', () => {
   describe('MessageStructureOptions Interface', () => {

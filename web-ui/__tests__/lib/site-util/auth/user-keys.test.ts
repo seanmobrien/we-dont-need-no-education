@@ -8,14 +8,14 @@
  * @module __tests__/lib/site-util/auth/user-keys.test.ts
  */
 
-import { hideConsoleOutput } from '/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 import {
   validateUserKeysAgainstServer,
   hasValidLocalKeys,
   generateUserKeyPair,
   getUserPublicKey,
   getUserPrivateKey,
-} from '/lib/site-util/auth/user-keys';
+} from '@/lib/site-util/auth/user-keys';
 
 // Mock Web Crypto API
 const mockCryptoSubtle = {

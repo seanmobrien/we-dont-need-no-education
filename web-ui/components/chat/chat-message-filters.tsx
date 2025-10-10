@@ -24,7 +24,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { FilterList, Search } from '@mui/icons-material';
-import type { ChatMessage } from '/lib/ai/chat/types';
+import type { ChatMessage } from '@/lib/ai/chat/types';
 
 // Available message types for filtering
 export const MESSAGE_TYPES = ['user', 'assistant', 'system', 'tool'] as const;

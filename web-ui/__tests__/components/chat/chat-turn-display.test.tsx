@@ -1,9 +1,9 @@
-import { render, screen, fireEvent, act } from '/__tests__/test-utils';
-import { ChatTurnDisplay } from '/components/chat/chat-turn-display';
+import { render, screen, fireEvent, act } from '@/__tests__/test-utils';
+import { ChatTurnDisplay } from '@/components/chat/chat-turn-display';
 import { mockChatTurn, mockChatTurnWithTool } from '../chat.mock-data';
 
 // Mock ChatMessageDisplay component
-jest.mock('/components/chat/chat-message-display', () => ({
+jest.mock('@/components/chat/chat-message-display', () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ChatMessageDisplay: ({ message, showMetadata }: any) => (
     <div

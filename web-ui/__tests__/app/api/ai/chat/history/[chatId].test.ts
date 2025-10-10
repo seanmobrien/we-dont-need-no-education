@@ -9,7 +9,12 @@
  * - Proper drizzle query construction and data transformation
  */
 
-import { GET } from '/app/api/ai/chat/history/[chatId]/route';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+setupImpersonationMock();
+
+import { GET } from '@/app/api/ai/chat/history/[chatId]/route';
 import { NextRequest } from 'next/server';
 
 // Define mocks before they are used
@@ -21,15 +26,15 @@ const mockDbLeftJoin = jest.fn();
 const mockDbOrderBy = jest.fn();
 
 // Mock modules
-jest.mock('/auth', () => ({
+jest.mock('@/auth', () => ({
   auth: jest.fn(),
 }));
 
-jest.mock('/lib/drizzle-db', () => ({
+jest.mock('@/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn(),
 }));
 
-jest.mock('/lib/drizzle-db/schema', () => ({
+jest.mock('@/lib/drizzle-db/schema', () => ({
   schema: {
     chats: {
       id: 'chats.id',
@@ -73,16 +78,19 @@ jest.mock('drizzle-orm', () => ({
   and: jest.fn(),
 }));
 
-jest.mock('/lib/react-util', () => ({
+jest.mock('@/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
 }));
 
 // Import mocked dependencies
-import { auth } from '/auth';
-import { drizDbWithInit } from '/lib/drizzle-db';
+import { auth } from '@/auth';
+import { drizDbWithInit } from '@/lib/drizzle-db';
 import { eq, and } from 'drizzle-orm';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+
+const mockConsole = hideConsoleOutput();
 
 describe('/api/ai/chat/history/[chatId] route', () => {
   const mockDb = {
@@ -186,6 +194,10 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     (drizDbWithInit as jest.Mock).mockResolvedValue(mockDb);
     (eq as jest.Mock).mockReturnValue('eq-condition');
     (and as jest.Mock).mockReturnValue('and-condition');
+  });
+
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   describe('GET', () => {
@@ -392,6 +404,7 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     });
 
     it('should handle database connection errors', async () => {
+      mockConsole.setup();
       (drizDbWithInit as jest.Mock).mockRejectedValue(
         new Error('Database connection failed'),
       );
@@ -409,6 +422,7 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     });
 
     it('should handle authentication errors', async () => {
+      mockConsole.setup();
       (auth as jest.Mock).mockRejectedValue(
         new Error('Auth service unavailable'),
       );

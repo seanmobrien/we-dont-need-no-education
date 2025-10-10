@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
-import { drizDbWithInit } from '/lib/drizzle-db';
-import { schema } from '/lib/drizzle-db/schema';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { schema } from '@/lib/drizzle-db/schema';
 import { eq, and, gte, sql } from 'drizzle-orm';
-import { isModelAvailable } from '/lib/ai/aiModelFactory';
-import { getInstance as getTokenStatsService } from '/lib/ai/services/model-stats/token-stats-service';
+import { isModelAvailable } from '@/lib/ai/aiModelFactory';
+import { getInstance as getTokenStatsService } from '@/lib/ai/services/model-stats/token-stats-service';
 
 const { providers, models, modelQuotas, tokenConsumptionStats } = schema;
 

@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RepositoryCrudController } from '/lib/api/repository-crud-controller';
-import { DocumentUnitRepository } from '/lib/api/document-unit';
-import { isTruthy } from '/lib/react-util/utility-methods';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { DocumentUnitRepository } from '@/lib/api/document-unit';
+import { isTruthy } from '@/lib/react-util/utility-methods';
 
 import {
   getMultipleCaseFileDocuments,
   toolCallbackArrayResultSchemaFactory,
-} from '/lib/ai/tools';
+} from '@/lib/ai/tools';
 import z from 'zod';
-import { CaseFileResponseShape } from '/lib/ai/tools/schemas/case-file-request-props-shape';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
+import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 

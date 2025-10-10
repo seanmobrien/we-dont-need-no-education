@@ -1,5 +1,5 @@
-import { documentProperty } from '/drizzle/schema';
-import { schema, sql, DatabaseType } from '/lib/drizzle-db/';
+import { documentProperty } from '@/drizzle/schema';
+import { schema, sql, DatabaseType } from '@/lib/drizzle-db/';
 import { count, inArray } from 'drizzle-orm';
 
 export const column_recipient = () =>

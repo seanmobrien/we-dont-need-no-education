@@ -8,13 +8,13 @@
  * @module __tests__/lib/ai/middleware/chat-history/tool-message-deduplication.test.ts
  */
 
-import { upsertToolMessage } from '/lib/ai/middleware/chat-history/import-incoming-message';
-import { getNewMessages } from '/lib/ai/middleware/chat-history/utility';
-import type { DbTransactionType } from '/lib/drizzle-db';
+import { upsertToolMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
+import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
+import type { DbTransactionType } from '@/lib/drizzle-db';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
 
 // Mock database schema
-jest.mock('/lib/drizzle-db', () => ({
+jest.mock('@/lib/drizzle-db', () => ({
   schema: {
     chatMessages: {
       chatMessageId: 'mocked-chat-message-id',
@@ -44,7 +44,7 @@ jest.mock('/lib/drizzle-db', () => ({
 }));
 
 // Mock logger
-jest.mock('/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   log: jest.fn(() => ({
     debug: jest.fn(),
     info: jest.fn(),

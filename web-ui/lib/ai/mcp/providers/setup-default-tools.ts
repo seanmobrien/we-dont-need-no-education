@@ -30,10 +30,10 @@
  * caller can hand to higher-level AI tooling.
  */
 import { toolProviderSetFactory } from './toolProviderFactory';
-import { env } from '/lib/site-util/env';
-import { ToolProviderFactoryOptions, ToolProviderSet } from './types';
+import { env } from '@/lib/site-util/env';
+import { ToolProviderFactoryOptions, ToolProviderSet } from '../types';
 import { NextRequest } from 'next/server';
-import { fromRequest } from '/lib/auth/impersonation';
+import { fromRequest } from '@/lib/auth/impersonation';
 
 /**
  * Builds a minimal header map for MCP client connections.

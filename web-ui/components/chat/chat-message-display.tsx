@@ -21,7 +21,7 @@ import {
   Code as CodeIcon,
   Info as InfoIcon,
 } from '@mui/icons-material';
-import { ChatMessage } from '/lib/ai/chat/types';
+import { ChatMessage } from '@/lib/ai/chat/types';
 
 interface ChatMessageDisplayProps {
   message: ChatMessage;

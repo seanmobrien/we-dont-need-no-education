@@ -1,8 +1,8 @@
 import { BaseObjectRepository } from '../_baseObjectRepository';
 import { ObjectRepository } from '../_types';
-import { ValidationError } from '/lib/react-util/errors/validation-error';
-import { FirstParameter } from '/lib/typescript';
-import { EmailAttachment } from '/data-models/api/attachment';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { FirstParameter } from '@/lib/typescript';
+import { EmailAttachment } from '@/data-models/api/attachment';
 
 export { buildAttachmentDownloadUrl } from './download-url-builder';
 

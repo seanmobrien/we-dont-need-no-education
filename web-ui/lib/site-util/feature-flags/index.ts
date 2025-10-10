@@ -15,7 +15,7 @@ import {
   type AllFeatureFlagStatus,
 } from './known-feature';
 import type { IFlagsmithTrait } from 'flagsmith/react';
-import { isKeyOf } from '/lib/typescript';
+import { isKeyOf } from '@/lib/typescript';
 
 export { KnownFeature, AllFeatureFlagsDefault };
 export type { KnownFeatureType, FeatureFlagStatus, AllFeatureFlagStatus };
@@ -35,7 +35,13 @@ export const useFeatureFlag = (
     f: FeatureFlagStatus | undefined,
     fallback: boolean | string | number,
   ) => {
-    if (typeof f === 'boolean') return f;
+    if (
+      typeof f === 'boolean' ||
+      typeof f === 'string' ||
+      typeof f === 'number'
+    ) {
+      return f;
+    }
     if (!f) return fallback;
     return f.value ?? fallback;
   };
@@ -57,7 +63,13 @@ export function useFeatureFlags() {
           ? (defaultValue as FeatureFlagStatus)
           : ({ enabled: true, value: defaultValue } as FeatureFlagStatus),
       );
-      if (typeof raw === 'boolean') return raw as unknown as T;
+      if (
+        typeof raw === 'boolean' ||
+        typeof raw === 'string' ||
+        typeof raw === 'number'
+      ) {
+        return raw as unknown as T;
+      }
       if (!raw) return defaultValue;
       return (raw.value ?? defaultValue) as unknown as T;
     },

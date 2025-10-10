@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 // Mock the database connection
 
-import { DbDatabaseType, drizDb, drizDbWithInit } from '/lib/drizzle-db';
+import { DbDatabaseType, drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 /*
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
 const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
@@ -10,7 +10,7 @@ const mockDb = actualDrizzle.drizzle.mock({ actualSchema });
 let mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
 
 // Mock LoggedError
-jest.mock('/lib/react-util/errors/logged-error', () => ({
+jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
   },
@@ -19,9 +19,9 @@ jest.mock('/lib/react-util/errors/logged-error', () => ({
 import {
   resolveCaseFileId,
   resolveCaseFileIdBatch,
-} from '/lib/ai/tools/utility';
-// import { db } from '/lib/drizzle-db';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+} from '@/lib/ai/tools/utility';
+// import { db } from '@/lib/drizzle-db';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 const mockLoggedError = LoggedError as jest.Mocked<typeof LoggedError>;
 

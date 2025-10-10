@@ -1,13 +1,13 @@
-import { wrapRouteRequest } from '/lib/nextjs-util/server';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { NextResponse } from 'next/server';
 import {
   ExtendedMemoryClient,
   memoryClientFactory,
-} from '/lib/ai/mem0/memoryclient-factory';
+} from '@/lib/ai/mem0/memoryclient-factory';
 import {
   determineHealthStatus,
   type HealthStatus,
-} from '/lib/ai/mem0/types/health-check';
+} from '@/lib/ai/mem0/types/health-check';
 
 /**
  * Health Check Route (GET /api/health)

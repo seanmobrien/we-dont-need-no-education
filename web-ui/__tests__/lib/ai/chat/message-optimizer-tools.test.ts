@@ -2,21 +2,24 @@
  * @jest-environment node
  */
 
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+setupImpersonationMock();
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ToolUIPart, UIMessage } from 'ai';
+import { UIMessage } from 'ai';
 import {
   optimizeMessagesWithToolSummarization,
   cacheManager,
   extractToolCallIds,
   hasToolCalls,
-} from '/lib/ai/chat/message-optimizer-tools';
-import { aiModelFactory } from '/lib/ai/aiModelFactory';
+} from '@/lib/ai/chat/message-optimizer-tools';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { generateText, generateObject } from 'ai';
 
 // Mock dependencies
-jest.mock('/lib/ai/aiModelFactory');
+jest.mock('@/lib/ai/aiModelFactory');
 jest.mock('ai');
-jest.mock('/lib/drizzle-db', () => ({
+jest.mock('@/lib/drizzle-db', () => ({
   drizDbWithInit: jest.fn(() => ({
     transaction: jest.fn((callback) =>
       callback({
@@ -32,7 +35,7 @@ jest.mock('/lib/drizzle-db', () => ({
     chatToolCalls: { chatToolCallId: 'chatToolCallId' },
   },
 }));
-jest.mock('/lib/ai/services/model-stats/tool-map', () => ({
+jest.mock('@/lib/ai/services/model-stats/tool-map', () => ({
   ToolMap: {
     getInstance: jest.fn(() =>
       Promise.resolve({
@@ -45,7 +48,7 @@ jest.mock('/lib/ai/services/model-stats/tool-map', () => ({
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'mock-uuid'),
 }));
-jest.mock('/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   log: jest.fn((callback) => {
     const mockLogger = {
       debug: jest.fn(),
@@ -487,8 +490,8 @@ describe('Message Optimizer Tools', () => {
       expect(mockGenerateObject).not.toHaveBeenCalled();
     });
 
-    const summary_input = '[SUMMARIZED - (input) See summary message]';
-    const summary_output = '[SUMMARIZED - (output) See summary message]';
+    // const summary_input = '[SUMMARIZED - (input) See summary message]';
+    // const summary_output = '[SUMMARIZED - (output) See summary message]';
 
     it('should optimize old tool calls while preserving recent interactions', async () => {
       const messages = createStandardUsecase();

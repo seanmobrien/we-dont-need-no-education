@@ -1,18 +1,18 @@
-import { parsePaginationStats } from '/lib/components/mui/data-grid/queryHelpers/utility';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
-import { RepositoryCrudController } from '/lib/api/repository-crud-controller';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import {
   EmailPropertyRepository,
   mapEmailPropertyRecordToObject,
-} from '/lib/api/email/properties/email-property-repository';
-import { buildOrderBy } from '/lib/components/mui/data-grid/server';
-import { db } from '/lib/neondb';
-import { extractParams } from '/lib/nextjs-util/utils';
+} from '@/lib/api/email/properties/email-property-repository';
+import { buildOrderBy } from '@/lib/components/mui/data-grid/server';
+import { db } from '@/lib/neondb';
+import { extractParams } from '@/lib/nextjs-util/utils';
 import { NextRequest } from 'next/server';
 import {
   buildFallbackGrid,
   wrapRouteRequest,
-} from '/lib/nextjs-util/server/utils';
+} from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 

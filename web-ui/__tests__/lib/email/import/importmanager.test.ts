@@ -2,30 +2,31 @@
  * @jest-environment node
  */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-jest.mock('/lib/neondb');
+jest.mock('@/lib/neondb');
 jest.mock('google-auth-library');
 jest.mock('googleapis');
-jest.mock('/lib/send-api-request');
-jest.mock('/lib/api/email/import/google');
+jest.mock('@/lib/send-api-request');
+jest.mock('@/lib/api/email/import/google');
 
-jest.mock('/lib/email/import/google/managermapfactory');
+jest.mock('@/lib/email/import/google/managermapfactory');
 
-import { DefaultImportManager } from '/lib/email/import/importmanager';
+import { DefaultImportManager } from '@/lib/email/import/importmanager';
 import {
   ImportSourceMessage,
   ImportStageValues,
-} from '/data-models/api/import/email-message';
+} from '@/data-models/api/import/email-message';
 import { NextRequest } from 'next/server';
-import { loadEmail } from '/lib/api/email/import/google';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { loadEmail } from '@/lib/api/email/import/google';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
-import { query, queryExt } from '/lib/neondb';
-import { sendApiRequest } from '/lib/send-api-request';
-import { ICancellablePromise, ICancellablePromiseExt } from '/lib/typescript';
-import { managerMapFactory } from '/lib/email/import/google/managermapfactory';
-import { ImportManagerMap } from '/lib/email/import/types';
-import { TransactionalStateManagerBase } from '/lib/email/import/default/transactional-statemanager';
+import { query, queryExt } from '@/lib/neondb';
+import { sendApiRequest } from '@/lib/send-api-request';
+import { ICancellablePromise, ICancellablePromiseExt } from '@/lib/typescript';
+import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
+import { ImportManagerMap } from '@/lib/email/import/types';
+import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const mockManagerMapFactory = managerMapFactory as jest.MockedFunction<
   typeof managerMapFactory
@@ -46,6 +47,9 @@ const mockStateManager = {
   }),
   rollback: jest.fn(),
 };
+
+const consoleSpy = hideConsoleOutput();
+
 describe('DefaultImportManager', () => {
   beforeEach(() => {
     const map = ImportStageValues.reduce((acc, stage) => {
@@ -55,6 +59,10 @@ describe('DefaultImportManager', () => {
     }, {} as ImportManagerMap);
     mockManagerMapFactory.mockReturnValue(map);
   });
+  afterEach(() => {
+    consoleSpy.dispose();
+  });
+
   const provider = 'google';
   const req = {
     headers: {
@@ -114,6 +122,7 @@ describe('DefaultImportManager', () => {
     });
 
     it('should handle errors and return failure', async () => {
+      consoleSpy.setup();
       const emailId = 'testEmailId';
       const error = new Error('Test error');
       mockLoadEmail.mockRejectedValue(error);

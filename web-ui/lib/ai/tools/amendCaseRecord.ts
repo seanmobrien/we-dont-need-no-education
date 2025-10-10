@@ -1,4 +1,4 @@
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import {
   Amendment,
   AmendmentResult,
@@ -18,20 +18,20 @@ import {
   documentUnits,
   keyPointsDetails,
   violationDetails,
-} from '/drizzle/schema';
+} from '@/drizzle/schema';
 import { eq } from 'drizzle-orm';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import { toolCallbackResultFactory } from './utility';
-import { newUuid } from '/lib/typescript';
-import { EmailPropertyTypeTypeId } from '/data-models/api/email-properties/property-type';
+import { newUuid } from '@/lib/typescript';
+import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 import {
   drizDb,
   CallToActionResponsiveActionLinkType,
   DbTransactionType,
   addDocumentRelations,
   addNotesToDocument,
-} from '/lib/drizzle-db';
-import { appMeters } from '/lib/site-util/metrics';
+} from '@/lib/drizzle-db';
+import { appMeters } from '@/lib/site-util/metrics';
 import { CaseFileAmendmentShape } from './schemas/caseFileAmendmentShape';
 import { AmendmentResultShape } from './schemas/amendment-result-schema';
 

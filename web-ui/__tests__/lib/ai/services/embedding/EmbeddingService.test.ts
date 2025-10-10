@@ -4,10 +4,10 @@
 /**
  * Tests for EmbeddingService
  */
-import { EmbeddingService } from '/lib/ai/services/embedding/EmbeddingService';
-import { createEmbeddingModel } from '/lib/ai/aiModelFactory';
+import { EmbeddingService } from '@/lib/ai/services/embedding/EmbeddingService';
+import { createEmbeddingModel } from '@/lib/ai/aiModelFactory';
 
-jest.mock('/lib/ai/aiModelFactory', () => ({
+jest.mock('@/lib/ai/aiModelFactory', () => ({
   createEmbeddingModel: jest.fn(() => ({
     provider: 'test-provider',
     modelId: 'test-model',

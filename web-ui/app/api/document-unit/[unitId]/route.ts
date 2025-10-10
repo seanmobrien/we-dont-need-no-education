@@ -2,16 +2,16 @@ import {
   CaseFileAmendment,
   getCaseFileDocument,
   toolCallbackResultSchemaFactory,
-} from '/lib/ai/tools';
-import { RepositoryCrudController } from '/lib/api/repository-crud-controller';
-import { DocumentUnitRepository } from '/lib/api/document-unit';
-import { extractParams } from '/lib/nextjs-util/utils';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
+} from '@/lib/ai/tools';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { DocumentUnitRepository } from '@/lib/api/document-unit';
+import { extractParams } from '@/lib/nextjs-util/utils';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { NextRequest, NextResponse } from 'next/server';
-import { isError } from '/lib/react-util/utility-methods';
-import { amendCaseRecord } from '/lib/ai/tools/amendCaseRecord';
-import { log } from '/lib/logger';
-import { CaseFileResponseShape } from '/lib/ai/tools/schemas/case-file-request-props-shape';
+import { isError } from '@/lib/react-util/utility-methods';
+import { amendCaseRecord } from '@/lib/ai/tools/amendCaseRecord';
+import { log } from '@/lib/logger';
+import { CaseFileResponseShape } from '@/lib/ai/tools/schemas/case-file-request-props-shape';
 export const dynamic = 'force-dynamic';
 export const GET = wrapRouteRequest(
   async (

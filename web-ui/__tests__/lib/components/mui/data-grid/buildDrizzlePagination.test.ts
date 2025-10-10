@@ -8,14 +8,14 @@
  * verifying its ability to handle various pagination scenarios and parameter formats.
  */
 
-import { buildDrizzlePagination } from '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination';
+import { buildDrizzlePagination } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzlePagination';
 import type {
   LikeNextRequest,
   PaginatedGridListRequest,
-} from '/lib/components/mui/data-grid/types';
+} from '@/lib/components/mui/data-grid/types';
 
 // Mock the parsePaginationStats function
-jest.mock('/lib/components/mui/data-grid/queryHelpers/utility', () => {
+jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
   const orig = jest.requireActual(
     '/lib/components/mui/data-grid/queryHelpers/utility',
   );
@@ -25,7 +25,7 @@ jest.mock('/lib/components/mui/data-grid/queryHelpers/utility', () => {
   };
 });
 
-jest.mock('/lib/nextjs-util/utils', () => {
+jest.mock('@/lib/nextjs-util/utils', () => {
   const nextJsUtils = jest.requireActual('/lib/nextjs-util/utils');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const deprecate = <T extends (...args: any[]) => any>(fn: T) => {
@@ -43,7 +43,7 @@ jest.mock('/lib/nextjs-util/utils', () => {
   };
 });
 
-import { parsePaginationStats } from '/lib/components/mui/data-grid/queryHelpers/utility';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 const mockParsePaginationStats = parsePaginationStats as jest.MockedFunction<
   typeof parsePaginationStats

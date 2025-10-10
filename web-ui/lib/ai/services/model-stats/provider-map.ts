@@ -18,11 +18,11 @@ import {
   type ProvidersType,
   type DbDatabaseType,
   schema,
-} from '/lib/drizzle-db';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { ResourceNotFoundError } from '/lib/ai/services/chat/errors/resource-not-found-error';
-import { isKeyOf } from '/lib/typescript';
-import { log } from '/lib/logger';
+} from '@/lib/drizzle-db';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { ResourceNotFoundError } from '@/lib/ai/services/chat/errors/resource-not-found-error';
+import { isKeyOf } from '@/lib/typescript';
+import { log } from '@/lib/logger';
 
 /**
  * Primary provider canonical names.

@@ -1,4 +1,4 @@
-import { CallToActionDetails } from '/data-models/api/email-properties/extended-properties';
+import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
 import { Chip } from '@mui/material';
 import { GridRenderCellParams } from '@mui/x-data-grid-pro';
 import { useMemo } from 'react';
