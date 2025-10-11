@@ -2,14 +2,15 @@
  * @fileoverview Chat Health Check Hook
  *
  * This module provides React Query hooks for monitoring chat service health status.
- * 
+ *
  * @module lib/hooks/use-chat-health
  * @version 1.0.0
  */
 
 import { Query, useQuery } from '@tanstack/react-query';
-import { fetch } from '/lib/nextjs-util/fetch';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { ChatHealthData, ChatHealthHookResponse } from './types';
 
 /**
  * Chat health status type
@@ -30,17 +31,6 @@ interface ChatHealthResponse {
  */
 interface HealthCheckResponse {
   chat?: ChatHealthResponse;
-}
-
-/**
- * Processed chat health data with subsystem details
- */
-interface ChatHealthData {
-  status: ChatHealthStatus;
-  subsystems?: {
-    cache: ChatHealthStatus;
-    queue: ChatHealthStatus;
-  };
 }
 
 /**
@@ -120,7 +110,7 @@ const stableQueryKey = ['chatHealth'] as const;
 /**
  * React Query hook for chat health monitoring
  */
-export function useChatHealth() {
+export const useChatHealth = (): ChatHealthHookResponse => {
   const query = useQuery<ChatHealthData, Error>({
     queryKey: stableQueryKey,
     queryFn: fetchChatHealth,
@@ -141,4 +131,4 @@ export function useChatHealth() {
     subsystems,
     refreshInterval,
   };
-}
+};

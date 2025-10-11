@@ -33,9 +33,9 @@ import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { MemoryStatusIndicator } from '@/components/memory-status';
-import { DatabaseStatusIndicator } from '@/components/database-status';
-import { ChatStatusIndicator } from '@/components/chat-status';
+import { MemoryStatusIndicator } from '@/components/health/memory-status';
+import { DatabaseStatusIndicator } from '@/components/health/database-status';
+import { ChatStatusIndicator } from '@/components/health/chat-status';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>

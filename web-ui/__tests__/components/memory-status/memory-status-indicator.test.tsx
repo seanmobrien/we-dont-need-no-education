@@ -5,17 +5,12 @@
 
 import React from 'react';
 import { render, screen } from '@/__tests__/test-utils';
-import { MemoryStatusIndicator } from '@/components/memory-status/memory-status-indicator';
+import { MemoryStatusIndicator } from '@/components/health/memory-status/memory-status-indicator';
+import { useMemoryHealth } from '@/lib/hooks/use-memory-health';
 
-// Mock the useMemoryHealth hook
-jest.mock('@/lib/hooks/use-memory-health', () => ({
-  useMemoryHealth: jest.fn(),
-}));
+const mockUseMemoryHealth = useMemoryHealth as jest.Mock;
 
 describe('MemoryStatusIndicator', () => {
-  const mockUseMemoryHealth =
-    require('/lib/hooks/use-memory-health').useMemoryHealth;
-
   it('renders with default props when healthy', () => {
     mockUseMemoryHealth.mockReturnValue({
       healthStatus: 'healthy',

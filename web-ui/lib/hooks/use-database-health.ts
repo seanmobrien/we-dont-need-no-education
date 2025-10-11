@@ -2,38 +2,24 @@
  * @fileoverview Database Health Check Hook
  *
  * This module provides React Query hooks for monitoring database service health status.
- * 
+ *
  * @module lib/hooks/use-database-health
  * @version 1.0.0
  */
 
 import { Query, useQuery } from '@tanstack/react-query';
-import { fetch } from '/lib/nextjs-util/fetch';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-
-/**
- * Database health status type
- */
-type DatabaseHealthStatus = 'ok' | 'warning' | 'error';
-
-/**
- * Database health response structure from the /api/health endpoint
- */
-interface DatabaseHealthResponse {
-  status: DatabaseHealthStatus;
-}
-
-/**
- * Complete health check response structure
- */
-interface HealthCheckResponse {
-  database?: DatabaseHealthResponse;
-}
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import type {
+  RawHealthStatus,
+  HealthCheckResponse,
+  DatabaseHealthResponse,
+} from './types';
 
 /**
  * Fetches database health status from the API health endpoint
  */
-const fetchDatabaseHealth = async (): Promise<DatabaseHealthStatus> => {
+const fetchDatabaseHealth = async (): Promise<RawHealthStatus> => {
   try {
     const response = await fetch('/api/health', {
       method: 'GET',
@@ -54,7 +40,7 @@ const fetchDatabaseHealth = async (): Promise<DatabaseHealthStatus> => {
       throw new Error('Database health status not available in response');
     }
 
-    return databaseData.status;
+    return databaseData.status as RawHealthStatus;
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
@@ -67,7 +53,7 @@ const fetchDatabaseHealth = async (): Promise<DatabaseHealthStatus> => {
 /**
  * Get refresh interval based on health status (in milliseconds)
  */
-const getRefreshInterval = (status: DatabaseHealthStatus): number => {
+const getRefreshInterval = (status: RawHealthStatus): number => {
   switch (status) {
     case 'ok':
       return 180000; // 3 minutes
@@ -84,7 +70,7 @@ const getRefreshInterval = (status: DatabaseHealthStatus): number => {
  * Stable function to calculate refresh interval
  */
 const stableGetRefreshInterval = (
-  query: Query<DatabaseHealthStatus, Error, DatabaseHealthStatus, readonly unknown[]>,
+  query: Query<RawHealthStatus, Error, RawHealthStatus, readonly unknown[]>,
 ) => getRefreshInterval(query.state.data || 'warning');
 
 /**
@@ -101,8 +87,8 @@ const stableQueryKey = ['databaseHealth'] as const;
 /**
  * React Query hook for database health monitoring
  */
-export function useDatabaseHealth() {
-  const query = useQuery<DatabaseHealthStatus, Error>({
+export const useDatabaseHealth = (): DatabaseHealthResponse => {
+  const query = useQuery<RawHealthStatus, Error>({
     queryKey: stableQueryKey,
     queryFn: fetchDatabaseHealth,
     staleTime: 1000,
@@ -119,5 +105,5 @@ export function useDatabaseHealth() {
     ...query,
     healthStatus,
     refreshInterval,
-  };
-}
+  } as DatabaseHealthResponse;
+};
