@@ -33,9 +33,9 @@ import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { MemoryStatusIndicator } from '/components/memory-status';
-import { DatabaseStatusIndicator } from '/components/database-status';
-import { ChatStatusIndicator } from '/components/chat-status';
+import { MemoryStatusIndicator } from '@/components/memory-status';
+import { DatabaseStatusIndicator } from '@/components/database-status';
+import { ChatStatusIndicator } from '@/components/chat-status';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -128,6 +128,8 @@ const stableStyles = {
     width: '100%',
     minHeight: 0, // Allow flex shrinking
     maxHeight: '100%',
+    paddingTop: 0,
+    marginTop: 0,
   } as const,
   chatBox: {
     flex: 1,
@@ -505,6 +507,11 @@ const ChatPanel = ({ page }: { page: string }) => {
   const chatContent = useMemo(
     () => (
       <Stack spacing={2} sx={stableStyles.stack}>
+        <Box sx={stableStyles.statusIconsBox}>
+          <MemoryStatusIndicator size="small" />
+          <DatabaseStatusIndicator size="small" />
+          <ChatStatusIndicator size="small" />
+        </Box>
         <TextField
           inputRef={textFieldRef}
           multiline
@@ -516,11 +523,6 @@ const ChatPanel = ({ page }: { page: string }) => {
           sx={stableStyles.chatInput}
           slotProps={stableChatInputSlotProps}
         />
-        <Box sx={stableStyles.statusIconsBox}>
-          <MemoryStatusIndicator size="small" />
-          <DatabaseStatusIndicator size="small" />
-          <ChatStatusIndicator size="small" />
-        </Box>
         <Box sx={stableStyles.chatBox}>
           <ChatWindow
             messages={messages}
