@@ -15,6 +15,7 @@ export const setupKeyCloakProvider = (): Provider[] => {
         scope: 'openid profile email roles',
       },
     },
+    allowDangerousEmailAccountLinking: true,
   };
   const keycloak = KeyCloak<KeycloakProfile>(providerArgs);
   return [keycloak];

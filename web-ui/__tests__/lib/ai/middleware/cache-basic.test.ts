@@ -27,6 +27,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateText, wrapLanguageModel } from 'ai';
 import { cacheWithRedis } from '@/lib/ai/middleware/cacheWithRedis/cacheWithRedis';
 import { metricsCollector } from '@/lib/ai/middleware/cacheWithRedis/metrics';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the openai model to return consistent responses for testing
 jest.mock('@ai-sdk/openai', () => ({
@@ -43,12 +44,16 @@ jest.mock('@ai-sdk/openai', () => ({
 }));
 
 describe('Cache Basic Functionality', () => {
+  const mockConsole = hideConsoleOutput();
   beforeEach(() => {
     // Reset metrics and mock calls
     metricsCollector.reset();
 
     // Setup cache hit/miss behavior for tests
     mockRedisClient.get.mockResolvedValue(null); // Default to cache miss
+  });
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   it('should cache and retrieve responses correctly', async () => {
@@ -142,6 +147,7 @@ describe('Cache Basic Functionality', () => {
 
   it('should handle Redis errors gracefully', async () => {
     // Simulate Redis connection error
+    mockConsole.setup();
     mockRedisClient.get.mockRejectedValue(new Error('Redis connection failed'));
 
     const model = wrapLanguageModel({
