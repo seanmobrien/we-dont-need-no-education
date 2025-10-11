@@ -4,17 +4,13 @@
  */
 
 import React from 'react';
-import { render, screen } from '/__tests__/test-utils';
-import { ChatStatusIndicator } from '/components/chat-status/chat-status-indicator';
+import { render, screen } from '@/__tests__/test-utils';
+import { ChatStatusIndicator } from '@/components/health/chat-status/chat-status-indicator';
+import { useChatHealth } from '@/lib/hooks/use-chat-health';
 
-// Mock the useChatHealth hook
-jest.mock('/lib/hooks/use-chat-health', () => ({
-  useChatHealth: jest.fn(),
-}));
+const mockUseChatHealth = useChatHealth as jest.Mock;
 
 describe('ChatStatusIndicator', () => {
-  const mockUseChatHealth = require('/lib/hooks/use-chat-health').useChatHealth;
-
   it('renders with default props when healthy', () => {
     mockUseChatHealth.mockReturnValue({
       healthStatus: 'ok',

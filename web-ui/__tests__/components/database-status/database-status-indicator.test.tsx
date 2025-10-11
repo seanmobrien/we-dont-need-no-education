@@ -4,18 +4,13 @@
  */
 
 import React from 'react';
-import { render, screen } from '/__tests__/test-utils';
-import { DatabaseStatusIndicator } from '/components/database-status/database-status-indicator';
+import { render, screen } from '@/__tests__/test-utils';
+import { DatabaseStatusIndicator } from '@/components/health/database-status/database-status-indicator';
+import { useDatabaseHealth } from '@/lib/hooks/use-database-health';
 
-// Mock the useDatabaseHealth hook
-jest.mock('/lib/hooks/use-database-health', () => ({
-  useDatabaseHealth: jest.fn(),
-}));
+const mockUseDatabaseHealth = useDatabaseHealth as jest.Mock;
 
 describe('DatabaseStatusIndicator', () => {
-  const mockUseDatabaseHealth =
-    require('/lib/hooks/use-database-health').useDatabaseHealth;
-
   it('renders with default props when healthy', () => {
     mockUseDatabaseHealth.mockReturnValue({
       healthStatus: 'ok',

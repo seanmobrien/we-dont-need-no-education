@@ -17,7 +17,7 @@ import {
   Error as ErrorIcon,
   Chat as ChatIcon,
 } from '@mui/icons-material';
-import { useChatHealth } from '/lib/hooks/use-chat-health';
+import { useChatHealth } from '@/lib/hooks/use-chat-health';
 
 /**
  * Props for the ChatStatusIndicator component

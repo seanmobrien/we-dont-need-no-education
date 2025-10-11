@@ -17,7 +17,7 @@ import {
   Error as ErrorIcon,
   Storage as DatabaseIcon,
 } from '@mui/icons-material';
-import { useDatabaseHealth } from '/lib/hooks/use-database-health';
+import { useDatabaseHealth } from '@/lib/hooks/use-database-health';
 
 /**
  * Props for the DatabaseStatusIndicator component
@@ -116,7 +116,8 @@ function getTooltipMessage(
       baseMessage = 'Database service is healthy and operational.';
       break;
     case 'warning':
-      baseMessage = 'Database service has warnings. Some operations may be slow.';
+      baseMessage =
+        'Database service has warnings. Some operations may be slow.';
       break;
     case 'error':
       baseMessage = 'Database service is experiencing errors.';
@@ -133,13 +134,8 @@ function getTooltipMessage(
  */
 export const DatabaseStatusIndicator = React.memo<DatabaseStatusIndicatorProps>(
   ({ showLabel = false, size = 'small' }) => {
-    const {
-      healthStatus,
-      isLoading,
-      isError,
-      error,
-      refreshInterval,
-    } = useDatabaseHealth();
+    const { healthStatus, isLoading, isError, error, refreshInterval } =
+      useDatabaseHealth();
 
     const statusIcon = getStatusIcon(healthStatus, isLoading);
     const statusColor = getStatusColor(healthStatus);
