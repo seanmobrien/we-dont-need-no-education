@@ -24,8 +24,8 @@ import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import { User } from 'next-auth';
-// Allow streaming responses up to 180 seconds
-export const maxDuration = 60 * 1000 * 180;
+// Allow streaming responses up to 360 seconds
+//const maxDuration = 60 * 1000 * 360;
 
 /**
  * Safely disposes of tool providers, suppressing expected AbortErrors during cleanup.
