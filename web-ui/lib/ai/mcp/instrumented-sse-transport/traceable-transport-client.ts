@@ -147,7 +147,7 @@ interface ActiveCounters {
   toolCalls: number;
 }
 
-const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const IDLE_TIMEOUT_MS = 60 * 60 * 1000; // 60 minutes
 const CONNECTION_TIMEOUT_MS = 30 * 1000; // 30 seconds for connection
 const SEND_TIMEOUT_MS = 10 * 1000; // 10 seconds for sending messages
 
