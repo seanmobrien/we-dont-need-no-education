@@ -349,6 +349,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should handle database errors gracefully', async () => {
+      consoleSpy.setup();
       mockAuth.mockResolvedValue({
         user: { id: 123 },
       } as never);

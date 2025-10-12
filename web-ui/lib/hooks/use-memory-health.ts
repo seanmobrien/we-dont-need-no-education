@@ -39,147 +39,12 @@ import {
   type HealthStatus,
 } from '@/lib/ai/mem0/types/health-check';
 
-/**
- * @typedef {('ok'|'warning'|'error')} SystemHealthStatus
- * Health status values that can be returned by individual subsystems
- */
-
-/**
- * Memory health response structure from the /api/health endpoint
- *
- * @interface MemoryHealthResponse
- * @description Raw response structure returned by the health check API for memory services.
- * Each subsystem property is optional to handle cases where specific services are unavailable.
- *
- * @example
- * ```typescript
- * // Example API response
- * {
- *   status: 'ok',
- *   db: { status: 'ok' },
- *   vectorStore: { status: 'warning' },
- *   graphStore: { status: 'ok' },
- *   historyStore: { status: 'error' },
- *   authService: { status: 'ok' }
- * }
- * ```
- */
-interface MemoryHealthResponse {
-  /** Overall memory system health status */
-  status: 'ok' | 'warning' | 'error';
-
-  /** Database subsystem health status - optional as service may be unavailable */
-  db?: { status: 'ok' | 'warning' | 'error' };
-
-  /** Vector store subsystem health status - optional as service may be unavailable */
-  vectorStore?: { status: 'ok' | 'warning' | 'error' };
-
-  /** Graph store subsystem health status - optional as service may be unavailable */
-  graphStore?: { status: 'ok' | 'warning' | 'error' };
-
-  /** History store subsystem health status - optional as service may be unavailable */
-  historyStore?: { status: 'ok' | 'warning' | 'error' };
-
-  /** Authentication service health status - optional as service may be unavailable */
-  authService?: { status: 'ok' | 'warning' | 'error' };
-}
-
-/**
- * Detailed memory subsystem status information with guaranteed status values
- *
- * @interface MemorySubsystemStatus
- * @description Normalized subsystem status structure where all properties are required.
- * Missing subsystems from the API response are defaulted to 'error' status to ensure
- * proper error indication in the UI.
- *
- * @example
- * ```typescript
- * const subsystems: MemorySubsystemStatus = {
- *   db: 'ok',
- *   vectorStore: 'warning',
- *   graphStore: 'ok',
- *   historyStore: 'error',
- *   authService: 'ok'
- * };
- * ```
- */
-interface MemorySubsystemStatus {
-  /** Database connection and query execution status */
-  db: 'ok' | 'warning' | 'error';
-
-  /** Vector embedding storage and retrieval status */
-  vectorStore: 'ok' | 'warning' | 'error';
-
-  /** Knowledge graph storage and traversal status */
-  graphStore: 'ok' | 'warning' | 'error';
-
-  /** Conversation history persistence status */
-  historyStore: 'ok' | 'warning' | 'error';
-
-  /** Authentication service availability status */
-  authService: 'ok' | 'warning' | 'error';
-}
-
-/**
- * Complete health check response structure from the /api/health endpoint
- *
- * @interface HealthCheckResponse
- * @description Top-level health check response that may contain multiple service categories.
- * Currently focused on memory services, but extensible for database, chat, and other services.
- *
- * @example
- * ```typescript
- * const response: HealthCheckResponse = {
- *   memory: {
- *     status: 'ok',
- *     db: { status: 'ok' },
- *     vectorStore: { status: 'warning' }
- *   },
- *   database: { status: 'ok' },
- *   chat: { status: 'warning' }
- * };
- * ```
- */
-interface HealthCheckResponse {
-  /** Memory service health details - primary focus of this hook */
-  memory?: MemoryHealthResponse;
-
-  /** General database service status - future extension point */
-  database?: { status: string };
-
-  /** Chat service status - future extension point */
-  chat?: { status: string };
-}
-
-/**
- * Processed memory health data with normalized status and subsystem details
- *
- * @interface MemoryHealthData
- * @description Final data structure returned by the useMemoryHealth hook after processing
- * the raw API response. Converts API status codes to standard HealthStatus enum values
- * and ensures all subsystems have defined status values.
- *
- * @example
- * ```typescript
- * const healthData: MemoryHealthData = {
- *   status: 'healthy',
- *   subsystems: {
- *     db: 'ok',
- *     vectorStore: 'warning',
- *     graphStore: 'ok',
- *     historyStore: 'error',
- *     authService: 'ok'
- *   }
- * };
- * ```
- */
-interface MemoryHealthData {
-  /** Overall health status using standardized HealthStatus enum */
-  status: HealthStatus;
-
-  /** Detailed status for each memory subsystem */
-  subsystems: MemorySubsystemStatus;
-}
+import type {
+  MemoryHealthData,
+  MemorySubsystemStatus,
+  MemoryStatusHookResult,
+  HealthCheckResponse,
+} from '@/lib/hooks/types';
 
 /**
  * Fetches memory health status from the API health endpoint
@@ -234,7 +99,7 @@ const fetchMemoryHealth = async (): Promise<MemoryHealthData> => {
 
     // Map the API status code to standardized health status enum
     const healthStatus: HealthStatus = (() => {
-      switch (memoryData.status) {
+      switch (memoryData.status as HealthStatus | 'ok') {
         case 'ok':
           return 'healthy';
         case 'warning':
@@ -333,16 +198,7 @@ const stableQueryKey = ['memoryHealth'] as const;
  * - Stable references to prevent unnecessary re-renders
  * - Window focus refetch disabled to prevent excessive API calls
  *
- * @returns {Object} Enhanced query result with additional health-specific properties
- * @returns {HealthStatus} returns.healthStatus - Current overall health status
- * @returns {MemorySubsystemStatus|undefined} returns.subsystems - Individual subsystem statuses
- * @returns {number} returns.refreshInterval - Current refresh interval in milliseconds
- * @returns {boolean} returns.isLoading - True when initial data is being fetched
- * @returns {boolean} returns.isFetching - True when any fetch is in progress
- * @returns {boolean} returns.isError - True when query has encountered an error
- * @returns {Error|null} returns.error - Current error object if query failed
- * @returns {MemoryHealthData|undefined} returns.data - Full health data when available
- *
+ * @returns {MemoryStatusHookResult} Enhanced query result with additional health-specific properties
  * @example
  * ```typescript
  * function HealthIndicator() {
@@ -397,7 +253,7 @@ const stableQueryKey = ['memoryHealth'] as const;
  * @see {@link fetchMemoryHealth} for underlying API call implementation
  * @see {@link getRefreshInterval} for refresh interval calculation
  */
-export function useMemoryHealth() {
+export const useMemoryHealth = (): MemoryStatusHookResult => {
   const query = useQuery<MemoryHealthData, Error>({
     queryKey: stableQueryKey,
     queryFn: fetchMemoryHealth,
@@ -419,4 +275,4 @@ export function useMemoryHealth() {
     subsystems,
     refreshInterval,
   };
-}
+};

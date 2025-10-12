@@ -51,10 +51,11 @@ export class LoggedError implements Error {
   // Type guard to check if an object is a LoggedError instance.
   static isLoggedError(e: unknown): e is LoggedError {
     return (
-      typeof e === 'object' &&
-      !!e &&
-      brandLoggedError in e &&
-      e[brandLoggedError] === true
+      e instanceof LoggedError ||
+      (typeof e === 'object' &&
+        !!e &&
+        brandLoggedError in e &&
+        e[brandLoggedError] === true)
     );
   }
 
@@ -238,6 +239,7 @@ export class LoggedError implements Error {
         }
       });
     }
+    this[brandLoggedError] = true;
   }
 
   // Private properties to store error details and metadata.

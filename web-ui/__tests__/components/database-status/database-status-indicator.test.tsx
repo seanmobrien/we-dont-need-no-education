@@ -1,48 +1,48 @@
 /**
- * @file memory-status-indicator.test.tsx
- * @description Unit tests for the MemoryStatusIndicator component
+ * @file database-status-indicator.test.tsx
+ * @description Unit tests for the DatabaseStatusIndicator component
  */
 
 import React from 'react';
 import { render, screen } from '@/__tests__/test-utils';
-import { MemoryStatusIndicator } from '@/components/health/memory-status/memory-status-indicator';
-import { useMemoryHealth } from '@/lib/hooks/use-memory-health';
+import { DatabaseStatusIndicator } from '@/components/health/database-status/database-status-indicator';
+import { useDatabaseHealth } from '@/lib/hooks/use-database-health';
 
-const mockUseMemoryHealth = useMemoryHealth as jest.Mock;
+const mockUseDatabaseHealth = useDatabaseHealth as jest.Mock;
 
-describe('MemoryStatusIndicator', () => {
+describe('DatabaseStatusIndicator', () => {
   it('renders with default props when healthy', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'healthy',
+    mockUseDatabaseHealth.mockReturnValue({
+      healthStatus: 'ok',
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 180000,
     });
 
-    render(<MemoryStatusIndicator />);
+    render(<DatabaseStatusIndicator />);
 
-    // Should render the icon (CheckCircle icon for healthy status)
+    // Should render the icon (CheckCircle icon for ok status)
     expect(screen.getByTestId('CheckCircleIcon')).toBeInTheDocument();
   });
 
   it('renders with label when showLabel is true', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'healthy',
+    mockUseDatabaseHealth.mockReturnValue({
+      healthStatus: 'ok',
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 180000,
     });
 
-    render(<MemoryStatusIndicator showLabel />);
+    render(<DatabaseStatusIndicator showLabel />);
 
     // Should render chip with label
-    expect(screen.getByText('Memory: Healthy')).toBeInTheDocument();
+    expect(screen.getByText('Database: Healthy')).toBeInTheDocument();
   });
 
   it('shows loading state', () => {
-    mockUseMemoryHealth.mockReturnValue({
+    mockUseDatabaseHealth.mockReturnValue({
       healthStatus: 'warning',
       isLoading: true,
       isError: false,
@@ -50,14 +50,14 @@ describe('MemoryStatusIndicator', () => {
       refreshInterval: 30000,
     });
 
-    render(<MemoryStatusIndicator />);
+    render(<DatabaseStatusIndicator />);
 
     // Should show loading spinner
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('shows warning status correctly', () => {
-    mockUseMemoryHealth.mockReturnValue({
+    mockUseDatabaseHealth.mockReturnValue({
       healthStatus: 'warning',
       isLoading: false,
       isError: false,
@@ -65,13 +65,13 @@ describe('MemoryStatusIndicator', () => {
       refreshInterval: 30000,
     });
 
-    render(<MemoryStatusIndicator showLabel />);
+    render(<DatabaseStatusIndicator showLabel />);
 
-    expect(screen.getByText('Memory: Warning')).toBeInTheDocument();
+    expect(screen.getByText('Database: Warning')).toBeInTheDocument();
   });
 
   it('shows error status correctly', () => {
-    mockUseMemoryHealth.mockReturnValue({
+    mockUseDatabaseHealth.mockReturnValue({
       healthStatus: 'error',
       isLoading: false,
       isError: false,
@@ -79,14 +79,14 @@ describe('MemoryStatusIndicator', () => {
       refreshInterval: 5000,
     });
 
-    render(<MemoryStatusIndicator showLabel />);
+    render(<DatabaseStatusIndicator showLabel />);
 
-    expect(screen.getByText('Memory: Error')).toBeInTheDocument();
+    expect(screen.getByText('Database: Error')).toBeInTheDocument();
   });
 
   it('handles error state appropriately', () => {
     const mockError = new Error('Connection failed');
-    mockUseMemoryHealth.mockReturnValue({
+    mockUseDatabaseHealth.mockReturnValue({
       healthStatus: 'error',
       isLoading: false,
       isError: true,
@@ -94,44 +94,44 @@ describe('MemoryStatusIndicator', () => {
       refreshInterval: 5000,
     });
 
-    render(<MemoryStatusIndicator />);
+    render(<DatabaseStatusIndicator />);
 
     // Component should still render with error icon
     expect(screen.getByTestId('ErrorIcon')).toBeInTheDocument();
   });
 
   it('applies small size variant correctly', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'healthy',
+    mockUseDatabaseHealth.mockReturnValue({
+      healthStatus: 'ok',
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 180000,
     });
 
-    render(<MemoryStatusIndicator size="small" showLabel />);
+    render(<DatabaseStatusIndicator size="small" showLabel />);
 
     // Should render with small size
-    expect(screen.getByText('Memory: Healthy')).toBeInTheDocument();
+    expect(screen.getByText('Database: Healthy')).toBeInTheDocument();
   });
 
   it('provides appropriate tooltip content', () => {
-    mockUseMemoryHealth.mockReturnValue({
-      healthStatus: 'healthy',
+    mockUseDatabaseHealth.mockReturnValue({
+      healthStatus: 'ok',
       isLoading: false,
       isError: false,
       error: null,
       refreshInterval: 180000,
     });
 
-    const { container } = render(<MemoryStatusIndicator />);
+    const { container } = render(<DatabaseStatusIndicator />);
 
     // Tooltip should be present via aria-describedby or similar
     const tooltipElement = container.querySelector('[aria-label]');
     expect(tooltipElement).toBeInTheDocument();
     expect(tooltipElement).toHaveAttribute(
       'aria-label',
-      expect.stringContaining('Memory service is healthy'),
+      expect.stringContaining('Database service is healthy'),
     );
   });
 });
