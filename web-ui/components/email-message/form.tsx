@@ -1,7 +1,6 @@
 'use client';
 
 import { log } from '@/lib/logger';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isError } from '@/lib/react-util/utility-methods';
 import {
   useState,
@@ -135,7 +134,7 @@ const EmailForm: ForwardRefRenderFunction<
   const [parentEmailId, setParentEmailId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const { replace: routerReplace, back: routerBack } = useRouter();
-  
+
   // Generate unique IDs for form elements
   const uniqueId = useId();
 
@@ -172,7 +171,9 @@ const EmailForm: ForwardRefRenderFunction<
       }
     },
     onError: (error) => {
-      const errorMessage = isError(error) ? error.message : 'Error saving email.';
+      const errorMessage = isError(error)
+        ? error.message
+        : 'Error saving email.';
       setMessage(errorMessage);
     },
   });
@@ -198,8 +199,8 @@ const EmailForm: ForwardRefRenderFunction<
   // Handle loading error
   useEffect(() => {
     if (emailError) {
-      const errorMessage = isError(emailError) 
-        ? emailError.message 
+      const errorMessage = isError(emailError)
+        ? emailError.message
         : 'Error fetching email details.';
       setMessage(errorMessage);
     }
@@ -213,11 +214,11 @@ const EmailForm: ForwardRefRenderFunction<
     useElementUpdateDispatchCallback<HTMLTextAreaElement>(setEmailContents);
   const setSentTimestampCallback =
     useElementUpdateDispatchCallback(setSentTimestamp);
-    
+
   const saveEmailCallback = useCallback(() => {
     log((l) => l.debug({ message: 'Saving email...' }));
     setMessage('');
-    
+
     const emailData = {
       emailId: emailId ? emailId : undefined,
       sender,
@@ -229,7 +230,7 @@ const EmailForm: ForwardRefRenderFunction<
       threadId,
       parentEmailId,
     };
-    
+
     return writeEmailMutation.mutateAsync(emailData);
   }, [
     emailId,

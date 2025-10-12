@@ -60,7 +60,9 @@ const stableSx = {
  * - `subject`: Displays the subject of the email.
  * - `sentDate`: Displays the date the email was sent.
  */
-const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<EmailMessageSummary>[] => [
+const createColumns = (
+  prefetchEmail: (emailId: string) => void,
+): GridColDef<EmailMessageSummary>[] => [
   {
     field: 'count_attachments',
     headerName: 'Attachments',
@@ -99,6 +101,7 @@ const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<Ema
     renderCell: (params) => {
       return params.value ? (
         <Link
+          onMouseEnter={() => prefetchEmail(params.row.emailId)}
           component={NextLink}
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
