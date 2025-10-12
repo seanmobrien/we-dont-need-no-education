@@ -190,16 +190,19 @@ export class SseMCPTransport implements MCPTransport {
           };
           const processEvents = async () => {
             try {
+              let lastMessage: EventSourceMessage | undefined;
               while (true) {
                 const { done, value } = await reader.read();
-
+                lastMessage = value;
                 if (done) {
                   if (this.connected) {
                     this.connected = false;
-                    throw new MCPClientError({
-                      message:
-                        'MCP SSE Transport Error: Connection closed unexpectedly',
-                    });
+                    log((l) =>
+                      l.warn(
+                        'SSE connection closed unexpectedly; last message: ',
+                        JSON.stringify(lastMessage),
+                      ),
+                    );
                   }
                   return;
                 }

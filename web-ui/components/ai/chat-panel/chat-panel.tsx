@@ -33,9 +33,7 @@ import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { MemoryStatusIndicator } from '@/components/health/memory-status';
-import { DatabaseStatusIndicator } from '@/components/health/database-status';
-import { ChatStatusIndicator } from '@/components/health/chat-status';
+import { FirstParameter } from '@/lib/typescript';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -232,23 +230,14 @@ const ChatPanel = ({ page }: { page: string }) => {
   const {
     id,
     messages,
-    //handleInputChange,
-    //handleSubmit,
     status,
-    //data,
-    //setData,
-    //reload,
     regenerate,
-    //stop,
-    //resumeStream,
     setMessages,
     sendMessage,
-    addToolResult,
+    addToolResult: addToolResultFromHook,
   } = useChat({
-    // id: threadId,
     generateId: generateChatMessageId,
     messages: initialMessages,
-    // maxSteps: 5,
     transport: new DefaultChatTransport({
       api: '/api/ai/chat',
       fetch: chatFetch,
@@ -267,26 +256,6 @@ const ChatPanel = ({ page }: { page: string }) => {
     onError: onChatError,
     experimental_throttle: 100,
   });
-
-  /*
-  // Enhanced input change handler that preserves focus in floating mode
-  const handleInputChangeWithFocusPreservation = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      // Track if we should restore focus after the input change
-      const isFloatingMode = config.position === 'floating';
-      const inputElement = textFieldRef.current;
-      const wasFocused = document.activeElement === inputElement;
-
-      if (isFloatingMode && wasFocused) {
-        shouldRestoreFocus.current = true;
-      }
-
-      // Call the original input change handler
-      setInput(event.target.value);
-    },
-    [setInput, config.position],
-  );
-  */
 
   // Effect to restore focus in floating mode after re-renders
   useEffect(() => {
@@ -368,6 +337,20 @@ const ChatPanel = ({ page }: { page: string }) => {
       caseFileId,
     ],
   );
+
+  const addToolResult = useCallback(
+    async (props: FirstParameter<typeof addToolResultFromHook>) => {
+      const ret = await addToolResultFromHook(props);
+      onSendClick(
+        new MouseEvent(
+          'click',
+        ) as unknown as React.MouseEvent<HTMLButtonElement>,
+      );
+      return ret;
+    },
+    [addToolResultFromHook, onSendClick],
+  );
+
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const inputElement = textFieldRef.current;
@@ -507,11 +490,6 @@ const ChatPanel = ({ page }: { page: string }) => {
   const chatContent = useMemo(
     () => (
       <Stack spacing={2} sx={stableStyles.stack}>
-        <Box sx={stableStyles.statusIconsBox}>
-          <MemoryStatusIndicator size="small" />
-          <DatabaseStatusIndicator size="small" />
-          <ChatStatusIndicator size="small" />
-        </Box>
         <TextField
           inputRef={textFieldRef}
           multiline

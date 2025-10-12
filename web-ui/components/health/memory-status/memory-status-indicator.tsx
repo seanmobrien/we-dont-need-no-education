@@ -20,7 +20,7 @@ import {
 } from '@mui/icons-material';
 import { useMemoryHealth } from '@/lib/hooks/use-memory-health';
 import type { HealthStatus } from '@/lib/ai/mem0/types/health-check';
-import { BOX_SX_VARIANTS, type BoxSxVariantKey } from './memory-status-styles';
+import { BOX_SX_VARIANTS, type BoxSxVariantKey } from '../health-status-styles';
 
 /**
  * Props for the MemoryStatusIndicator component

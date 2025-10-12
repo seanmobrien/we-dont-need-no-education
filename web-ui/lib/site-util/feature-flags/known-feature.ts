@@ -23,21 +23,21 @@ export type FeatureFlagStatus =
     };
 export type AllFeatureFlagStatus = Record<KnownFeatureType, FeatureFlagStatus>;
 
-export const AllFeatureFlagsDefault: AllFeatureFlagStatus = {
-  models_azure: true,
-  models_openai: false,
-  models_google: true,
+export const AllFeatureFlagsDefault = {
+  models_azure: true as boolean,
+  models_openai: false as boolean,
+  models_google: true as boolean,
   models_defaults: {
-    enabled: true,
+    enabled: true as boolean,
     value: {
-      openai: 'lofi',
-      azure: 'lofi',
-      google: 'gemini-1.5-pro',
+      openai: 'lofi' as string,
+      azure: 'lofi' as string,
+      google: 'gemini-1.5-pro' as string,
     },
   },
-  mcp_cache_tools: false,
-  mcp_cache_client: true,
-} as const;
+  mcp_cache_tools: false as boolean,
+  mcp_cache_client: true as boolean,
+} as const satisfies AllFeatureFlagStatus;
 
 export type AllFeatureFlagDefaultType = typeof AllFeatureFlagsDefault;
 

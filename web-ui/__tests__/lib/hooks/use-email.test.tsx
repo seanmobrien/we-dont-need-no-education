@@ -2,7 +2,6 @@
 import { screen, render, renderHook, waitFor, act } from '../../test-utils';
 import { useEmail, useWriteEmail, emailKeys } from '@/lib/hooks/use-email';
 import { getEmail, writeEmailRecord } from '@/lib/api/client';
-import { EmailMessage } from '@/data-models';
 import { UseMutateFunction } from '@tanstack/react-query';
 
 // Mock the API client functions
@@ -53,7 +52,7 @@ describe('useEmailQuery hooks', () => {
     it(
       'should fetch email data successfully',
       async () => {
-        const mockEmail: EmailMessage = {
+        const mockEmail = {
           emailId: '123',
           subject: 'Test Email',
           body: 'Test body',
@@ -140,7 +139,7 @@ describe('useEmailQuery hooks', () => {
     it(
       'should write email data successfully',
       async () => {
-        const mockEmail: EmailMessage = {
+        const mockEmail = {
           emailId: '123',
           subject: 'Test Email',
           body: 'Test body',
@@ -203,13 +202,7 @@ describe('useEmailQuery hooks', () => {
 
         const onErrorSpy = jest.fn();
         let doMutate:
-          | UseMutateFunction<
-              EmailMessage,
-              Error,
-              Omit<EmailMessage, 'emailId'> &
-                Partial<Pick<EmailMessage, 'emailId'>>,
-              unknown
-            >
+          | UseMutateFunction<unknown, Error, any, unknown>
           | undefined = undefined;
         const useHookMutate = () => {
           const res = useWriteEmail({ onError: onErrorSpy });

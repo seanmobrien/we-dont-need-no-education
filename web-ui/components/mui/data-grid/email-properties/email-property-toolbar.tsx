@@ -1,18 +1,16 @@
 'use client';
 
-import {
-  styled,
-  Tooltip,
-  Badge,
-  Divider,
-  Menu,
-  MenuItem,
-  Switch,
-  FormControlLabel,
-  PopoverOrigin,
-  TextField,
-  InputAdornment,
-} from '@mui/material';
+import { styled } from '@mui/material/styles';
+import Tooltip from '@mui/material/Tooltip';
+import Badge from '@mui/material/Badge';
+import Divider from '@mui/material/Divider';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Switch from '@mui/material/Switch';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import type { PopoverOrigin } from '@mui/material/Popover';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
 import {
   QuickFilter,
   Toolbar,
@@ -33,6 +31,10 @@ import SearchIcon from '@mui/icons-material/Search';
 import CancelIcon from '@mui/icons-material/Cancel';
 
 import React, { useMemo, useRef, useState } from 'react';
+import Box from '@mui/material/Box';
+import { ChatStatusIndicator } from '@/components/health/chat-status';
+import { MemoryStatusIndicator } from '@/components/health/memory-status';
+import { DatabaseStatusIndicator } from '@/components/health/database-status';
 
 const StyledQuickFilter = styled(QuickFilter)({
   display: 'grid',
@@ -71,6 +73,7 @@ const StyledQuickFilterTextField = styled(TextField)<{
 
 const stableSx = {
   marginHalf: { mx: 0.5 },
+  marginOneAndHalf: { mx: 1.5 },
 };
 
 const stableSlotProps = {
@@ -80,6 +83,16 @@ const stableSlotProps = {
     },
   },
 };
+
+// Stable material props for QuickFilterClear to avoid recreating objects on each render
+const stableQuickFilterClearMaterial = { sx: { marginRight: -0.75 } } as const;
+
+// Stable sx for the Box that contains the system health indicators
+const stableHealthBoxSx = {
+  display: 'flex',
+  alignItems: 'center',
+  mr: 'auto',
+} as const;
 
 const stableOrigin: Record<string | symbol, PopoverOrigin> = {
   bottomRight: { vertical: 'bottom', horizontal: 'right' },
@@ -112,7 +125,11 @@ const renderQuickFilterTrigger = (
   <Tooltip title="Search" enterDelay={0}>
     <StyledQuickFilterToolbarButton
       {...triggerProps}
-      ownerState={state.expanded ? StableOwnerExpandedState.expanded : StableOwnerExpandedState.default}
+      ownerState={
+        state.expanded
+          ? StableOwnerExpandedState.expanded
+          : StableOwnerExpandedState.default
+      }
       color="default"
     >
       <SearchIcon fontSize="small" />
@@ -144,7 +161,7 @@ const RenderQuickFilterControl = (
                 edge="end"
                 size="small"
                 aria-label="Clear search"
-                material={{ sx: { marginRight: -0.75 } }}
+                material={stableQuickFilterClearMaterial}
               >
                 <CancelIcon fontSize="small" />
               </QuickFilterClear>
@@ -156,7 +173,7 @@ const RenderQuickFilterControl = (
       },
     };
   }, [state.expanded, state.value, serializedSlotProps]);
-  return (  
+  return (
     <StyledQuickFilterTextField
       {...controlProps}
       ownerState={ownerState}
@@ -167,7 +184,7 @@ const RenderQuickFilterControl = (
       slotProps={slotProps}
     />
   );
-}
+};
 
 const ToolbarColumnsAndFilters = () => {
   const Component = React.memo(() => {
@@ -204,6 +221,24 @@ const ToolbarQuickFilter = () => {
     );
   });
   Component.displayName = 'ToolbarQuickFilter';
+  return <Component />;
+};
+
+const SystemHealthPanel = () => {
+  const Component = React.memo(() => (
+    <>
+      <MemoryStatusIndicator />
+      <DatabaseStatusIndicator />
+      <ChatStatusIndicator />
+      <Divider
+        orientation="vertical"
+        variant="middle"
+        flexItem
+        sx={stableSx.marginOneAndHalf}
+      />
+    </>
+  ));
+  Component.displayName = 'SystemHealthPanel';
   return <Component />;
 };
 
@@ -245,7 +280,12 @@ const EmailPropertyToolbar = ({
               onChange={setIncludeAttachments}
             />
           }
-          label={<AttachEmailIcon fontSize="small" sx={{ verticalAlign: 'middle' }} />}
+          label={
+            <AttachEmailIcon
+              fontSize="small"
+              sx={{ verticalAlign: 'middle' }}
+            />
+          }
         />
       </Tooltip>
     );
@@ -293,6 +333,9 @@ const EmailPropertyToolbar = ({
 
   return (
     <Toolbar>
+      <Box sx={stableHealthBoxSx}>
+        <SystemHealthPanel />
+      </Box>
       {memoizedAttachmentsSwitch} <ToolbarColumnsAndFilters />
       {memoizedExport} <ToolbarQuickFilter />
     </Toolbar>
