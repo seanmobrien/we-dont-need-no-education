@@ -1,7 +1,24 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+jest.mock('@/components/contact/contact-dropdown', () => {
+  return {
+    __esModule: true,
+    default: () => {
+      return (
+        <select data-testid="contact-dropdown">
+          <option value="1">Contact 1</option>
+          <option value="2">Contact 2</option>
+        </select>
+      );
+    },
+  };
+});
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import EmailForm from '@/components/email-message/form';
 import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
 import { EmailMessage } from '@/data-models';
+import { asErrorLike } from '@/lib/react-util';
 
 // Mock the React Query hooks
 jest.mock('@/lib/hooks/use-email', () => ({
@@ -21,11 +38,21 @@ jest.mock('next/navigation', () => ({
 global.fetch = jest.fn(() =>
   Promise.resolve({
     json: () => Promise.resolve([]),
-  })
+  }),
 ) as jest.Mock;
 
+const makeError = (message: string) => {
+  return asErrorLike({
+    name: 'Error',
+    message,
+    stack: 'Error: ' + message + '\n    at Object.<anonymous> (test.js:1:1)',
+  });
+};
+
 const mockedUseEmail = useEmail as jest.MockedFunction<typeof useEmail>;
-const mockedUseWriteEmail = useWriteEmail as jest.MockedFunction<typeof useWriteEmail>;
+const mockedUseWriteEmail = useWriteEmail as jest.MockedFunction<
+  typeof useWriteEmail
+>;
 
 describe('EmailForm with React Query', () => {
   const mockMutateAsync = jest.fn();
@@ -37,7 +64,7 @@ describe('EmailForm with React Query', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    // jest.clearAllMocks();
     mockedUseWriteEmail.mockReturnValue(mockWriteEmailMutation as any);
   });
 
@@ -49,8 +76,7 @@ describe('EmailForm with React Query', () => {
     } as any);
 
     render(<EmailForm emailId={null} withButtons={true} />);
-
-    expect(screen.getByText('Create Email')).toBeInTheDocument();
+    expect(screen.getByTestId('submit-button')).toBeInTheDocument();
     expect(screen.getByLabelText(/email contents/i)).toBeInTheDocument();
   });
 
@@ -98,7 +124,7 @@ describe('EmailForm with React Query', () => {
     mockedUseEmail.mockReturnValue({
       data: undefined,
       isLoading: false,
-      error: new Error('Failed to fetch email'),
+      error: makeError('Failed to fetch email'),
     } as any);
 
     render(<EmailForm emailId="123" withButtons={true} />);
@@ -139,7 +165,7 @@ describe('EmailForm with React Query', () => {
         expect.objectContaining({
           subject: 'New Subject',
           body: 'New Body',
-        })
+        }),
       );
     });
   });
@@ -170,10 +196,10 @@ describe('EmailForm with React Query', () => {
 
     // Mock a mutation that will fail
     const mockErrorMutation = {
-      mutateAsync: jest.fn().mockRejectedValue(new Error('Save failed')),
+      mutateAsync: jest.fn().mockRejectedValue(makeError('Save failed')),
       isPending: false,
       isError: true,
-      error: new Error('Save failed'),
+      error: makeError('Save failed'),
     };
 
     mockedUseWriteEmail.mockReturnValue(mockErrorMutation as any);

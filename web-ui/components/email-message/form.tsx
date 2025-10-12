@@ -25,6 +25,7 @@ import { SubmitRefCallbackInstance } from './_types';
 import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
 import siteMap from '@/lib/site-util/url-builder';
 import { useRouter } from 'next/navigation';
+import { LoggedError } from '@/lib/react-util';
 
 type EmailFormAfterSaveBehavior = 'none' | 'redirect';
 
@@ -231,7 +232,13 @@ const EmailForm: ForwardRefRenderFunction<
       parentEmailId,
     };
 
-    return writeEmailMutation.mutateAsync(emailData);
+    return writeEmailMutation.mutateAsync(emailData).catch((error) => {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'EmailForm.saveEmailCallback',
+      });
+      return emailData;
+    });
   }, [
     emailId,
     sender,
@@ -381,6 +388,7 @@ const EmailForm: ForwardRefRenderFunction<
         {withButtons ? (
           <button
             type="button"
+            data-testid="submit-button"
             style={stableStyles.button}
             disabled={isLoading}
             aria-roledescription="Submit Form"

@@ -192,7 +192,11 @@ describe('useEmailQuery hooks', () => {
     it(
       'should handle write errors properly',
       async () => {
-        const mockError = new Error('Failed to write email');
+        const mockError = {
+          message: 'Failed to write email',
+          code: 500,
+          stack: 'trace',
+        };
         // Mock the writeEmailRecord function to reject with error
         mockedWriteEmailRecord.mockImplementation(() => {
           const promise = Promise.reject(mockError);
