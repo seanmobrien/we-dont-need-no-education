@@ -18,21 +18,24 @@ import PublishIcon from '@mui/icons-material/Publish';
 import { useChat } from '@ai-sdk/react';
 import { UIMessage, DefaultChatTransport } from 'ai';
 import { ChatMenu } from './chat-menu';
-import { isAnnotatedRetryMessage } from '/lib/ai/core/guards';
-import type { AiModelType } from '/lib/ai/core/unions';
-import type { AnnotatedRetryMessage } from '/lib/ai/core/types';
-import { splitIds, generateChatId } from '/lib/ai/core/chat-ids';
-import { log } from '/lib/logger';
-import { useChatFetchWrapper } from '/lib/components/ai/chat-fetch-wrapper';
-import { getReactPlugin } from '/instrument/browser';
+import { isAnnotatedRetryMessage } from '@/lib/ai/core/guards';
+import type { AiModelType } from '@/lib/ai/core/unions';
+import type { AnnotatedRetryMessage } from '@/lib/ai/core/types';
+import { splitIds, generateChatId } from '@/lib/ai/core/chat-ids';
+import { log } from '@/lib/logger';
+import { useChatFetchWrapper } from '@/lib/components/ai/chat-fetch-wrapper';
+import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
-import ResizableDraggableDialog from '/components/mui/resizeable-draggable-dialog';
+import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
 import type { DockPosition, ModelSelection } from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
-import { onClientToolRequest } from '/lib/ai/client';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { onClientToolRequest } from '@/lib/ai/client';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { MemoryStatusIndicator } from '@/components/health/memory-status';
+import { DatabaseStatusIndicator } from '@/components/health/database-status';
+import { ChatStatusIndicator } from '@/components/health/chat-status';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -125,6 +128,8 @@ const stableStyles = {
     width: '100%',
     minHeight: 0, // Allow flex shrinking
     maxHeight: '100%',
+    paddingTop: 0,
+    marginTop: 0,
   } as const,
   chatBox: {
     flex: 1,
@@ -140,6 +145,16 @@ const stableStyles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
+  } as const,
+  statusIconsBox: {
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 1,
+    width: '100%',
+    marginTop: -1,
+    marginBottom: 1,
   } as const,
 } as const;
 
@@ -492,6 +507,11 @@ const ChatPanel = ({ page }: { page: string }) => {
   const chatContent = useMemo(
     () => (
       <Stack spacing={2} sx={stableStyles.stack}>
+        <Box sx={stableStyles.statusIconsBox}>
+          <MemoryStatusIndicator size="small" />
+          <DatabaseStatusIndicator size="small" />
+          <ChatStatusIndicator size="small" />
+        </Box>
         <TextField
           inputRef={textFieldRef}
           multiline

@@ -3,8 +3,8 @@
 import {
   SharedCellDefinitions,
   valueGetterDate,
-} from '/components/mui/data-grid';
-import { EmailPropertyDataGrid } from '/components/mui/data-grid/email-properties/email-property-grid';
+} from '@/components/mui/data-grid';
+import { EmailPropertyDataGrid } from '@/components/mui/data-grid/email-properties/email-property-grid';
 import { ResponsiveActionPanel } from './panel';
 import { DataGridProProps } from '@mui/x-data-grid-pro';
 import { useCallback } from 'react';

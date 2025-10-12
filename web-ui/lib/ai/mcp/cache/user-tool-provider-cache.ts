@@ -7,27 +7,16 @@
  * performance.
  */
 
-import { ToolProviderSet } from '/lib/ai/mcp/types';
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-
-interface CachedToolProvider {
-  toolProviders: ToolProviderSet;
-  lastAccessed: number;
-  userId: string;
-  sessionId: string;
-}
-
-interface UserToolProviderCacheConfig {
-  /** Maximum number of cached tool providers per user */
-  maxEntriesPerUser: number;
-  /** Maximum total entries across all users */
-  maxTotalEntries: number;
-  /** Time to live in milliseconds */
-  ttl: number;
-  /** Cleanup interval in milliseconds */
-  cleanupInterval: number;
-}
+import type {
+  CachedToolProvider,
+  ToolProviderSet,
+  UserToolProviderCache,
+  UserToolProviderCacheConfig,
+} from '../types';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+import { globalSingleton } from '@/lib/typescript';
 
 /**
  * Cache for maintaining ToolProviderSet instances per user across HTTP requests.
@@ -54,13 +43,12 @@ interface UserToolProviderCacheConfig {
  * cache.invalidateUser(userId);
  * ```
  */
-export class UserToolProviderCache {
-  private static instance: UserToolProviderCache | null = null;
+class UserToolProviderCacheImpl implements UserToolProviderCache {
   private cache = new Map<string, CachedToolProvider>();
   private cleanupTimer: NodeJS.Timeout | null = null;
   private readonly config: UserToolProviderCacheConfig;
 
-  private constructor(config: Partial<UserToolProviderCacheConfig> = {}) {
+  public constructor(config: Partial<UserToolProviderCacheConfig> = {}) {
     this.config = {
       maxEntriesPerUser: 3, // Max 3 different tool provider configs per user
       maxTotalEntries: 100, // Max 100 total entries across all users
@@ -70,18 +58,6 @@ export class UserToolProviderCache {
     };
 
     this.startCleanupTimer();
-  }
-
-  /**
-   * Get the singleton instance of the cache.
-   */
-  public static getInstance(
-    config?: Partial<UserToolProviderCacheConfig>,
-  ): UserToolProviderCache {
-    if (!UserToolProviderCache.instance) {
-      UserToolProviderCache.instance = new UserToolProviderCache(config);
-    }
-    return UserToolProviderCache.instance;
   }
 
   /**
@@ -389,3 +365,41 @@ export class UserToolProviderCache {
     log((l) => l.info('User tool provider cache shutdown complete'));
   }
 }
+/**
+ * Get the singleton instance of the cache.
+ */
+const getInstanceInternal = async (
+  config?: Partial<UserToolProviderCacheConfig>,
+): Promise<UserToolProviderCache> => {
+  const cachingEnabled = await getFeatureFlag('mcp_cache_tools');
+  if (!cachingEnabled) {
+    const fnNoOp = () => Promise.resolve();
+    return {
+      getOrCreate: (
+        _userId: string,
+        _sessionId: string,
+        _config: {
+          writeEnabled: boolean;
+          memoryDisabled: boolean;
+          headers?: Record<string, string>;
+        },
+        factory: () => Promise<ToolProviderSet>,
+      ) => factory(),
+      shutdown: fnNoOp,
+      clear: fnNoOp,
+      invalidateUser: fnNoOp,
+      invalidateSession: fnNoOp,
+      getStats: () => ({
+        totalEntries: 0,
+        userCounts: {},
+        config: {} as UserToolProviderCacheConfig,
+      }),
+    };
+  }
+  return globalSingleton(
+    '@seanm/wedontneednoeducation/lib/ai/mcp/user-tool-provider-cache',
+    () => new UserToolProviderCacheImpl(config),
+  );
+};
+
+export const getUserToolProviderCache = getInstanceInternal;

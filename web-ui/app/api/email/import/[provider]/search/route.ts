@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { googleProviderFactory } from '../_googleProviderFactory';
 import { parsePaginationStats } from '../_utilitites';
 import { MailQueryBuilder } from '../_mailQueryBuilder';
-import { PaginatedResultset } from '/data-models/_types';
-import { EmailSearchResult } from '/data-models/api/import/email-message';
+import { PaginatedResultset } from '@/data-models/_types';
+import { EmailSearchResult } from '@/data-models/api/import/email-message';
 
 export const dynamic = 'force-dynamic';
 

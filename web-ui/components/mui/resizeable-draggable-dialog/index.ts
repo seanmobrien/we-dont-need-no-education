@@ -12,7 +12,7 @@
  *
  * @example
  * ```tsx
- * import ResizableDraggableDialog from '/components/mui/resizeable-draggable-dialog';
+ * import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
  *
  * function MyComponent() {
  *   const [isOpen, setIsOpen] = useState(false);

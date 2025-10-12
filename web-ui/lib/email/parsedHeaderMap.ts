@@ -1,4 +1,4 @@
-import { ContactSummary } from '/data-models/api/contact';
+import { ContactSummary } from '@/data-models/api/contact';
 import { isKeyOf } from '../typescript';
 
 /**

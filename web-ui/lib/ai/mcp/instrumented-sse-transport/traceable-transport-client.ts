@@ -60,9 +60,9 @@ import { trace, Span, SpanStatusCode, metrics } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { isAbortError, isError } from '/lib/react-util/utility-methods';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { log } from '/lib/logger';
+import { isAbortError, isError } from '@/lib/react-util/utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
 
 // OTEL Configuration
 const OTEL_MODE = process.env.MCP_OTEL_MODE?.toUpperCase() || 'WARNING'; // WARNING or DEBUG

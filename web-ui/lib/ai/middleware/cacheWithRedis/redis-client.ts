@@ -1,8 +1,8 @@
 import { createClient, RedisClientType } from 'redis';
-import { env } from '/lib/site-util/env';
-import { isError } from '/lib/react-util/utility-methods';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { log } from '/lib/logger';
+import { env } from '@/lib/site-util/env';
+import { isError } from '@/lib/react-util/utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
 
 export type { RedisClientType } from 'redis';
 

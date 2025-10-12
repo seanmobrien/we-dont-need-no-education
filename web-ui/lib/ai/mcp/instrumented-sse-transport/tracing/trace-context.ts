@@ -6,7 +6,7 @@
  */
 
 import { trace } from '@opentelemetry/api';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import { DEBUG_MODE } from '../metrics/otel-metrics';
 
 /**

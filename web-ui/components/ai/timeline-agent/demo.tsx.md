@@ -15,9 +15,9 @@
 
 import React, { useState } from 'react';
 import { Box, Typography, Button, Paper, Divider } from '@mui/material';
-import { TimelineAgentFactory } from '/lib/ai/agents/timeline';
-import type { TimelineAgent } from '/lib/ai/agents/timeline/agent';
-import { ComplianceRating } from '/lib/ai/agents/timeline/types';
+import { TimelineAgentFactory } from '@/lib/ai/agents/timeline';
+import type { TimelineAgent } from '@/lib/ai/agents/timeline/agent';
+import { ComplianceRating } from '@/lib/ai/agents/timeline/types';
 
 interface DemoState {
   agent: TimelineAgent | null;

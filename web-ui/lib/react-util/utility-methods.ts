@@ -17,11 +17,60 @@ export const isError = (value: unknown): value is Error => {
   );
 };
 
+export type SafeProgressEvent<T extends EventTarget = EventTarget> = Event & {
+  /**
+   * The **`ProgressEvent.lengthComputable`** read-only property is a boolean flag indicating if the resource concerned by the length
+   * of the operation.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/ProgressEvent/lengthComputable)
+   */
+  readonly lengthComputable: boolean;
+  /**
+   * The **`ProgressEvent.loaded`** read-only property is a number indicating the size of the data already transmitted or processed.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/ProgressEvent/loaded)
+   */
+  readonly loaded: number;
+  readonly target: T | null;
+  /**
+   * The **`ProgressEvent.total`** read-only property is a number indicating the total size of the data being transmitted or processed.
+   *
+   * [MDN Reference](https://developer.mozilla.org/docs/Web/API/ProgressEvent/total)
+   */
+  readonly total: number;
+};
+
+// Type guard to check if a value is an XMLHttpRequest
+export const isXmlHttpRequest = (value: unknown): value is XMLHttpRequest => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'readyState' in value &&
+    'status' in value &&
+    'timeout' in value &&
+    'upload' in value &&
+    'response' in value &&
+    'open' in value &&
+    typeof value.open === 'function' &&
+    'send' in value &&
+    typeof value.send === 'function'
+  );
+};
+
 // Type guard to check if a value is a ProgressEvent from an XMLHttpRequest
 export const isProgressEvent = (
   value: unknown,
-): value is ProgressEvent<XMLHttpRequest> =>
-  value instanceof ProgressEvent && value.target instanceof XMLHttpRequest;
+): value is SafeProgressEvent<XMLHttpRequest> =>
+  typeof value === 'object' &&
+  !!value &&
+  'target' in value &&
+  isXmlHttpRequest(value.target) &&
+  'loaded' in value &&
+  typeof value.loaded === 'number' &&
+  'total' in value &&
+  typeof value.total === 'number' &&
+  'lengthComputable' in value &&
+  typeof value.lengthComputable === 'boolean';
 
 // Type guard to check if a value is an Abort error
 // (i.e., not null, not an array, and of type 'object').

@@ -39,8 +39,8 @@ Otherwise the full `prompt` (including the leading entry) is passed to the optim
 ### Usage Example
 
 ```ts
-import { createToolOptimizingMiddleware } from '/lib/ai/middleware/tool-optimizing-middleware';
-import { aiModelFactory } from '/lib/ai/aiModelFactory';
+import { createToolOptimizingMiddleware } from '@/lib/ai/middleware/tool-optimizing-middleware';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 
 const toolOptimizing = createToolOptimizingMiddleware({
   userId: session.user.id,

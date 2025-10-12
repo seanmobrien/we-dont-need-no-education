@@ -10,7 +10,7 @@
  * For usage examples, see the README:
  * - ./docs/lib/nextjs-util/error-response.md
  */
-import { isError } from '/lib/react-util/utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 
 /**
  * Options that can be used to influence how an error response is produced.

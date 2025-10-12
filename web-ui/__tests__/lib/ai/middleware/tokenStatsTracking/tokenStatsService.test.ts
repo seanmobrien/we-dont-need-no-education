@@ -2,10 +2,10 @@
 // Mock ProviderMap before other imports
 
 // Mock Redis and database before other imports
-jest.mock('/lib/ai/middleware/cacheWithRedis/redis-client');
+jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
 
 // Fix the schema mock to have the correct structure
-jest.mock('/lib/drizzle-db', () => {
+jest.mock('@/lib/drizzle-db', () => {
   const actualModule = jest.requireActual('/lib/drizzle-db');
   // The actualModule.schema contains the nested structure, we need to flatten it
   const flatSchema = actualModule.schema.schema || actualModule.schema;
@@ -19,18 +19,18 @@ import {
   getTokenStatsService,
   TokenStatsServiceType,
   TokenUsageData,
-} from '/lib/ai/middleware/tokenStatsTracking';
-import { reset } from '/lib/ai/services/model-stats/token-stats-service';
-import { getRedisClient } from '/lib/ai/middleware/cacheWithRedis/redis-client';
-//import { drizDbWithInit, schema } from '/lib/drizzle-db';
-import { hideConsoleOutput } from '/__tests__/test-utils';
+} from '@/lib/ai/middleware/tokenStatsTracking';
+import { reset } from '@/lib/ai/services/model-stats/token-stats-service';
+import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+//import { drizDbWithInit, schema } from '@/lib/drizzle-db';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 import {
   setupMaps,
   PROVIDER_ID_AZURE,
   PROVIDER_ID_GOOGLE,
   MODEL_ID_GPT4_NO_QUOTA,
-} from '/__tests__/jest.mock-provider-model-maps';
-import { ModelMap } from '/lib/ai/services/model-stats/model-map';
+} from '@/__tests__/jest.mock-provider-model-maps';
+import { ModelMap } from '@/lib/ai/services/model-stats/model-map';
 
 const mockRedisClient = {
   get: jest.fn(),

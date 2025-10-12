@@ -8,9 +8,9 @@ import {
   ThemeProvider,
   createTheme,
 } from '@mui/material';
-import { ChatPanelProvider } from '/components/ai/chat-panel/chat-panel-context';
-import { ChatPanelLayout } from '/components/ai/chat-panel/chat-panel-layout';
-import ChatPanel from '/components/ai/chat-panel/chat-panel';
+import { ChatPanelProvider } from '@/components/ai/chat-panel/chat-panel-context';
+import { ChatPanelLayout } from '@/components/ai/chat-panel/chat-panel-layout';
+import ChatPanel from '@/components/ai/chat-panel/chat-panel';
 
 // Create a simple dark theme for testing
 const theme = createTheme({

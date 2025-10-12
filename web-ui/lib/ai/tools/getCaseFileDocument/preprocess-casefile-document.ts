@@ -1,8 +1,8 @@
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { zodToStructure } from '/lib/typescript';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { zodToStructure } from '@/lib/typescript';
 import { GenerateTextResult, ToolSet } from 'ai';
-import { log } from '/lib/logger';
-import { aiModelFactory } from '/lib/ai/aiModelFactory';
+import { log } from '@/lib/logger';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import { DocumentResource } from '../documentResource';
 import { DocumentSchema } from '../schemas';
 import { CaseFileResponse, SummarizedDocumentResource } from '../types';
@@ -11,9 +11,9 @@ import {
   caseFileDocumentPreprocessingDurationHistogram,
   caseFileDocumentSizeHistogram,
 } from './metrics';
-import { wrapChatHistoryMiddleware } from '/lib/ai/middleware/chat-history';
-import { generateTextWithRetry } from '/lib/ai/core/generate-text-with-retry';
-import { createAgentHistoryContext } from '/lib/ai/middleware/chat-history/create-chat-history-context';
+import { wrapChatHistoryMiddleware } from '@/lib/ai/middleware/chat-history';
+import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
+import { createAgentHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 
 /**
  * Preprocesses case file documents using AI to extract relevant information based on specified goals.

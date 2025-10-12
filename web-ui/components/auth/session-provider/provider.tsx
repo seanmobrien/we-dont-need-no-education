@@ -18,13 +18,13 @@ import {
   isKeyValidationDue,
   performKeyValidationWorkflow,
   updateKeyValidationTimestamp,
-} from '/lib/site-util/auth/key-validation';
+} from '@/lib/site-util/auth/key-validation';
 import {
   getUserPublicKey,
   generateUserKeyPair,
   getUserPublicKeyForServer,
-} from '/lib/site-util/auth/user-keys';
-import { fetch } from '/lib/nextjs-util/fetch';
+} from '@/lib/site-util/auth/user-keys';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 export const SessionContext = createContext<SessionContextType<object> | null>(
   null,

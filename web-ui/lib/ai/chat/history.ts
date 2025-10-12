@@ -29,8 +29,8 @@
  *  selection and the returned object under the authorized branch—preserving
  *  the guard so unauthorized requests still receive only `{ ok: false }`.
  */
-import { drizDbWithInit } from '/lib/drizzle-db';
-import { isUserAuthorized } from '/lib/site-util/auth';
+import { drizDbWithInit } from '@/lib/drizzle-db';
+import { isUserAuthorized } from '@/lib/site-util/auth';
 
 /**
  * Fetch chat metadata (currently title) if the requesting user owns the chat.

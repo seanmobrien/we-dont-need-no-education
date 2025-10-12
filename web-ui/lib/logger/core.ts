@@ -1,5 +1,5 @@
 import pino from 'pino';
-import { env, isRunningOnServer } from '/lib/site-util/env';
+import { env, isRunningOnServer } from '@/lib/site-util/env';
 import { WrappedLogger } from './wrapped-logger';
 import type { ILogger, EventSeverity, LogEventOverloads } from './types';
 import { CustomAppInsightsEvent } from './event';
@@ -99,8 +99,8 @@ export const log = (cb: (l: ILogger) => void) => {
  */
 export const logEvent: LogEventOverloads = (
   severityOrEvent: EventSeverity | string,
-  eventOrMeasurements?: string | Record<string, number>,
-  measurements?: Record<string, number>,
+  eventOrMeasurements?: string | Record<string, number | string>,
+  measurements?: Record<string, number | string>,
 ) => {
   let severity: EventSeverity = 'info';
   let event: CustomAppInsightsEvent;

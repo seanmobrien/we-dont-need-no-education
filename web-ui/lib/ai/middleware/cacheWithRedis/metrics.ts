@@ -10,8 +10,8 @@
  * - Error categorization and jail behavior monitoring
  */
 
-import { log } from '/lib/logger';
-import { appMeters } from '/lib/site-util/metrics';
+import { log } from '@/lib/logger';
+import { appMeters } from '@/lib/site-util/metrics';
 
 // OpenTelemetry Metrics - Enterprise observability
 const cacheHitsCounter = appMeters.createCounter('ai_cache_hits_total', {

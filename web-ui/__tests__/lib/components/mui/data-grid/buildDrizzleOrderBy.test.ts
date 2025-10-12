@@ -23,8 +23,8 @@ import {
   buildDrizzleOrderBy,
   createColumnGetter,
   createTableColumnGetter,
-} from '/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
-import type { DrizzleSelectQuery } from '/lib/components/mui/data-grid/queryHelpers/drizzle/types';
+} from '@/lib/components/mui/data-grid/queryHelpers/drizzle/buildDrizzleOrderBy';
+import type { DrizzleSelectQuery } from '@/lib/components/mui/data-grid/queryHelpers/drizzle/types';
 import { NextRequest } from 'next/server';
 // Mock console.warn to track warning messages
 const originalConsoleWarn = console.warn;

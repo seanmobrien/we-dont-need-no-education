@@ -1,4 +1,4 @@
-import { ChunkingLogExporter } from '/instrument/chunking/ChunkingLogExporter';
+import { ChunkingLogExporter } from '@/instrument/chunking/ChunkingLogExporter';
 import type {
   ReadableLogRecord,
   LogRecordExporter,

@@ -1,4 +1,4 @@
-import { SimpleCircuitBreaker } from '/lib/react-util/simple-circuit-breaker';
+import { SimpleCircuitBreaker } from '@/lib/react-util/simple-circuit-breaker';
 
 describe('SimpleCircuitBreaker', () => {
   let circuitBreaker: SimpleCircuitBreaker;

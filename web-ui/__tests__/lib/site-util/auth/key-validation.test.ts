@@ -14,7 +14,7 @@ import {
   synchronizeKeys,
   performKeyValidationWorkflow,
   KEY_VALIDATION_INTERVAL,
-} from '/lib/site-util/auth/key-validation';
+} from '@/lib/site-util/auth/key-validation';
 
 // Mock localStorage
 const mockLocalStorage = {
@@ -28,7 +28,7 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Mock the logger
-jest.mock('/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
 }));
 

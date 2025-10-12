@@ -11,7 +11,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { Branding } from '/components/email-message/dashboard-layout/branding';
+import { Branding } from '@/components/email-message/dashboard-layout/branding';
 import '@testing-library/jest-dom';
 
 // Mock Next.js Image component

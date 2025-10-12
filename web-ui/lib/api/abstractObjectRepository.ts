@@ -1,16 +1,19 @@
-import { PaginationStats, PaginatedResultset } from '/data-models/_types';
+import { PaginationStats, PaginatedResultset } from '@/data-models/_types';
 import {
   isError,
   isTemplateStringsArray,
-} from '/lib/react-util/utility-methods';
+} from '@/lib/react-util/utility-methods';
 import { log } from '../logger';
-import type { TransformedFullQueryResults, DbQueryFunction } from '/lib/neondb';
+import type {
+  TransformedFullQueryResults,
+  DbQueryFunction,
+} from '@/lib/neondb';
 import { ValidationError } from '../react-util';
 import { DataIntegrityError } from '../react-util/errors/data-integrity-error';
 import { LoggedError } from '../react-util/errors/logged-error';
 import { RecordToObjectImpl, RecordToSummaryImpl } from './_types';
 import { GridFilterModel, GridSortModel } from '@mui/x-data-grid-pro';
-import { parsePaginationStats } from '/lib/components/mui/data-grid/queryHelpers/utility';
+import { parsePaginationStats } from '@/lib/components/mui/data-grid/queryHelpers/utility';
 
 /**
  * AbstractObjectRepository is a base class for handling database operations

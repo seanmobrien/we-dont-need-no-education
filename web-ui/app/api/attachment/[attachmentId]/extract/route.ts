@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { BlobServiceClient } from '@azure/storage-blob';
-import { env } from '/lib/site-util/env';
-import { log } from '/lib/logger';
-import { AttachmentRepository } from '/lib/api/attachment';
-import { extractParams } from '/lib/nextjs-util/utils';
+import { env } from '@/lib/site-util/env';
+import { log } from '@/lib/logger';
+import { AttachmentRepository } from '@/lib/api/attachment';
+import { extractParams } from '@/lib/nextjs-util/utils';
 
 const attachmentRepository = new AttachmentRepository();
 

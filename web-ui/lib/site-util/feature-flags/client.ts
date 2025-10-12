@@ -6,9 +6,9 @@ import {
   type KnownFeatureType,
   type FeatureFlagStatus,
 } from './known-feature';
-import { isKeyOf } from '/lib/typescript';
+import { isKeyOf } from '@/lib/typescript';
 import { env } from '../env';
-import { LoggedError } from '/lib/react-util';
+import { LoggedError } from '@/lib/react-util';
 
 // Client-bound Flagsmith instance used for client-side flag evaluation.
 export const flagsmithClient = async () => {

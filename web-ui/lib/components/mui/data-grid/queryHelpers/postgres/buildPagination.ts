@@ -1,4 +1,4 @@
-import { isSqlNeonAdapter, unwrapAdapter, SqlDb } from '/lib/neondb';
+import { isSqlNeonAdapter, unwrapAdapter, SqlDb } from '@/lib/neondb';
 import { BuildPaginationProps } from './types';
 import { parsePaginationOptions } from '../utility';
 

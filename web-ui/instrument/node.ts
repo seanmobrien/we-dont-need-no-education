@@ -19,7 +19,7 @@ import { ChunkingLogExporter } from './chunking/ChunkingLogExporter';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { config } from './common';
-import AfterManager from '/lib/site-util/after';
+import AfterManager from '@/lib/site-util/after';
 
 enum KnownSeverityLevel {
   Verbose = 'Verbose',

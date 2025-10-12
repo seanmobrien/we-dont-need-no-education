@@ -133,7 +133,7 @@ The system automatically classifies errors and provides contextual recovery opti
 
 ```tsx
 // app/layout.tsx - Root level error management
-import ServerSafeErrorManager from '/components/error-boundaries/ServerSafeErrorManager';
+import ServerSafeErrorManager from '@/components/error-boundaries/ServerSafeErrorManager';
 
 export default function RootLayout({ children }) {
   return (
@@ -155,7 +155,7 @@ export default function RootLayout({ children }) {
 
 ```tsx
 // app/dashboard/page.tsx - Server component
-import { ErrorManager } from '/components/error-boundaries';
+import { ErrorManager } from '@/components/error-boundaries';
 
 export default function Dashboard() {
   return (
@@ -174,7 +174,7 @@ export default function Dashboard() {
 import {
   ConfigurableErrorManager,
   createSuppressionRule,
-} from '/components/error-boundaries';
+} from '@/components/error-boundaries';
 
 const adminSuppressionRules = [
   createSuppressionRule('admin-polling-error', /Admin polling failed/i, {
@@ -201,8 +201,8 @@ export default function AdminPage() {
 ```tsx
 'use client';
 
-import { useErrorReporter } from '/lib/error-monitoring';
-import { ErrorSeverity } from '/lib/error-monitoring';
+import { useErrorReporter } from '@/lib/error-monitoring';
+import { ErrorSeverity } from '@/lib/error-monitoring';
 
 export function ApiDataComponent() {
   const { reportError, reportApiError } = useErrorReporter();
@@ -242,7 +242,10 @@ export function ApiDataComponent() {
 ### 🔧 HOC Error Boundary Wrapping
 
 ```tsx
-import { withErrorBoundary, ErrorSeverity } from '/components/error-boundaries';
+import {
+  withErrorBoundary,
+  ErrorSeverity,
+} from '@/components/error-boundaries';
 
 const ProblematicComponent = () => {
   // Component that might throw errors
@@ -263,7 +266,7 @@ export default withErrorBoundary(ProblematicComponent, {
 ### 🔧 Inline Error Boundaries
 
 ```tsx
-import { ErrorBoundaryWrapper } from '/components/error-boundaries';
+import { ErrorBoundaryWrapper } from '@/components/error-boundaries';
 
 export function Dashboard() {
   return (
@@ -384,7 +387,7 @@ Each error type has associated recovery strategies:
 ### Development Environment
 
 ```tsx
-import { DevErrorManager } from '/components/error-boundaries';
+import { DevErrorManager } from '@/components/error-boundaries';
 
 // Development configuration:
 // - Shows detailed error information
@@ -397,7 +400,7 @@ import { DevErrorManager } from '/components/error-boundaries';
 ### Production Environment
 
 ```tsx
-import { ProdErrorManager } from '/components/error-boundaries';
+import { ProdErrorManager } from '@/components/error-boundaries';
 
 // Production configuration:
 // - Conservative error reporting
@@ -691,7 +694,7 @@ reportError(error, ErrorSeverity.MEDIUM);
 Access stored errors for debugging:
 
 ```typescript
-import { errorReporter } from '/lib/error-monitoring';
+import { errorReporter } from '@/lib/error-monitoring';
 
 // Get stored errors
 const storedErrors = errorReporter.getStoredErrors();

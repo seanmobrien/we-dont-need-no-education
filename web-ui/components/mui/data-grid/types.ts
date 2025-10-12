@@ -1,4 +1,4 @@
-import type { EmailMessageSummary } from '/data-models/api/email-message';
+import type { EmailMessageSummary } from '@/data-models/api/email-message';
 import {
   type DataGridProProps,
   type GridColDef,

@@ -1,12 +1,12 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
   TimelineAgentFactory,
   ServerTimelineAgent as TimelineAgent,
-} from '/lib/ai/agents/timeline/agent-server';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+} from '@/lib/ai/agents/timeline/agent-server';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 const buildFallback = {
   success: true,

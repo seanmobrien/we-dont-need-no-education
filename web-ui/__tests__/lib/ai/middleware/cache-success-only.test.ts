@@ -19,7 +19,7 @@ const mockRedisClient = {
 };
 
 // Mock the Redis client module
-jest.mock('/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
+jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
   getRedisClient: jest.fn().mockResolvedValue(mockRedisClient),
   closeRedisClient: jest.fn().mockResolvedValue(undefined),
 }));
@@ -28,7 +28,7 @@ import { openai } from '@ai-sdk/openai';
 import { generateText, LanguageModelMiddleware, wrapLanguageModel } from 'ai';
 import { LanguageModelV2, LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
-import { hideConsoleOutput } from '/__tests__/test-utils';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
 import { content } from 'googleapis/build/src/apis/content';
 

@@ -19,20 +19,20 @@ import { NextRequest } from 'next/server';
 // Mock BEFORE importing the route so the route captures our mocks.
 const mockGetUsageReport = jest.fn();
 
-jest.mock('/lib/ai/services/model-stats/token-stats-service', () => ({
+jest.mock('@/lib/ai/services/model-stats/token-stats-service', () => ({
   getInstance: () => ({
     getUsageReport: mockGetUsageReport,
   }),
 }));
 
-jest.mock('/lib/ai/aiModelFactory', () => ({
+jest.mock('@/lib/ai/aiModelFactory', () => ({
   isModelAvailable: () => true,
 }));
 
 // Import AFTER mocks
-import { GET } from '/app/api/ai/chat/stats/models/route';
+import { GET } from '@/app/api/ai/chat/stats/models/route';
 // Import as namespace so we can spy on drizDbWithInit (it's not a jest.fn in global setup)
-import * as drizzleDb from '/lib/drizzle-db';
+import * as drizzleDb from '@/lib/drizzle-db';
 
 type BaseModelRecord = {
   id: string;

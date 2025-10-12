@@ -8,7 +8,7 @@ import { renderHook, act, render } from '@testing-library/react';
 const mockReportError = jest.fn();
 
 // Mock the error reporter module directly
-jest.mock('/lib/error-monitoring/error-reporter', () => ({
+jest.mock('@/lib/error-monitoring/error-reporter', () => ({
   errorReporter: {
     reportError: mockReportError,
   },
@@ -20,9 +20,9 @@ jest.mock('/lib/error-monitoring/error-reporter', () => ({
   },
 }));
 
-import { useErrorReporter } from '/lib/error-monitoring/use-error-reporter';
-import { ErrorSeverity } from '/lib/error-monitoring/error-reporter';
-import { hideConsoleOutput } from '/__tests__/test-utils';
+import { useErrorReporter } from '@/lib/error-monitoring/use-error-reporter';
+import { ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const mockConsole = hideConsoleOutput();
 
@@ -413,9 +413,7 @@ describe('useErrorReporter', () => {
     it('should handle errors in error reporting gracefully', async () => {
       mockReportError.mockRejectedValue(new Error('Reporting failed'));
 
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      mockConsole.setup();
 
       const { result } = renderHook(() => useErrorReporter());
       const testError = new Error('Original error');
@@ -426,18 +424,14 @@ describe('useErrorReporter', () => {
           result.current.reportAsyncError(testError),
         ).resolves.not.toThrow();
       });
-
-      consoleSpy.mockRestore();
-    });
+    }, 15000);
 
     it('should not affect component when reporting fails', async () => {
       mockReportError.mockImplementation(() => {
         throw new Error('Synchronous reporting failure');
       });
 
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      mockConsole.setup();
 
       const { result } = renderHook(() => useErrorReporter());
       const testError = new Error('Test error');
@@ -446,8 +440,6 @@ describe('useErrorReporter', () => {
         // Should not throw
         expect(() => result.current.reportError(testError)).not.toThrow();
       });
-
-      consoleSpy.mockRestore();
     });
   });
 

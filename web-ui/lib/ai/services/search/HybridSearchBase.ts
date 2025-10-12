@@ -1,6 +1,6 @@
 // AzureBaseSearchClient.ts
 
-import { env } from '/lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 import { type IEmbeddingService, EmbeddingService } from '../embedding';
 import type {
   HybridSearchOptions,
@@ -9,9 +9,10 @@ import type {
   HybridSearchPayload,
   AiSearchResultEnvelope,
 } from './types';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { fetch } from '/lib/nextjs-util/fetch';
-import { log } from '/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { log, logEvent } from '@/lib/logger';
+import { performance } from 'perf_hooks';
 
 /**
  * Raw metadata structure returned by Azure AI Search (or compatible hybrid search endpoint)
@@ -318,22 +319,44 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
     this.appendScopeFilter(payload, options ?? ({} as TOptions));
 
     try {
+      const timer = performance.now();
       const res = await fetch(url, {
         method: 'POST',
         headers: {
+          'x-ms-azs-return-searchid': 'true',
+          'Access-Control-Expose-Headers': 'x-ms-azs-searchid',
           'Content-Type': 'application/json',
           'api-key': env('AZURE_AISEARCH_KEY') ?? '',
         },
         body: JSON.stringify(payload),
       });
       const body = await res.json();
-      return HybridSearchClient.parseResponse(
+      const elapsed = performance.now() - timer;
+      const ret = HybridSearchClient.parseResponse(
         body,
         naturalQuery,
         options ?? ({} as TOptions),
       );
+      const searchId = res.headers?.get('x-ms-azs-searchid');
+      if (searchId) {
+        ret.searchId = searchId;
+        logEvent('Search', {
+          SearchServiceName: 'schoollawsearch',
+          SearchId: searchId,
+          IndexName: this.getSearchIndexName(),
+          QueryTerms: naturalQuery,
+          Latency: elapsed,
+          ResultCount: ret.results?.length ?? 0,
+          TopThreeById: ret.results
+            ?.slice(0, 3)
+            .map((r) => r.id)
+            .join(','),
+          ScoringProfile: 'Hybrid',
+        });
+      }
+      return ret;
     } catch (err) {
-      throw LoggedError.isTurtlesAllTheWayDownBaby(err, {
+      const le = LoggedError.isTurtlesAllTheWayDownBaby(err, {
         log: true,
         message: 'Error performing hybrid search',
         source: 'HybridSearchClient.hybridSearch',
@@ -343,6 +366,12 @@ export abstract class HybridSearchClient<TOptions extends HybridSearchOptions> {
           payload,
         },
       });
+      logEvent('error', 'SearchError', {
+        SearchServiceName: 'schoollawsearch',
+        QueryTerms: naturalQuery,
+        ErrorMessage: le.toString(),
+      });
+      throw le;
     }
   }
 }

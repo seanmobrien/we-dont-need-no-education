@@ -29,9 +29,9 @@ const mockEmailService = {
   findEmailIdByGlobalMessageId: jest.fn(),
 };
 
-jest.mock('/lib/api/email/drizzle/query-parts');
+jest.mock('@/lib/api/email/drizzle/query-parts');
 
-jest.mock('/lib/api/email/email-service', () => ({
+jest.mock('@/lib/api/email/email-service', () => ({
   EmailService: jest.fn().mockImplementation(() => mockEmailService),
 }));
 
@@ -60,7 +60,7 @@ const mockSchema = {
 const mockExtractParams = jest.fn();
 
 // Mock modules
-jest.mock('/lib/nextjs-util', () => {
+jest.mock('@/lib/nextjs-util', () => {
   return {
     extractParams: mockExtractParams,
     isLikeNextRequest: jest.fn((req) => {
@@ -79,7 +79,7 @@ const mockDrizDbFactory = jest.fn(() => {
   };
 });
 
-jest.mock('/lib/drizzle-db', () => {
+jest.mock('@/lib/drizzle-db', () => {
   return {
     drizDbWithInit: (cb?: (db: unknown) => unknown): Promise<unknown> => {
       const db = mockDrizDbFactory();
@@ -91,20 +91,20 @@ jest.mock('/lib/drizzle-db', () => {
   };
 });
 
-jest.mock('/lib/components/mui/data-grid/queryHelpers');
+jest.mock('@/lib/components/mui/data-grid/queryHelpers');
 
 import { NextRequest } from 'next/server';
-import { POST, PUT, GET } from '/app/api/email/route';
-import { GET as GetWithId, DELETE } from '/app/api/email/[emailId]/route';
-import { selectForGrid } from '/lib/components/mui/data-grid/queryHelpers';
-import { makeMockDb } from '/__tests__/jest.setup';
+import { POST, PUT, GET } from '@/app/api/email/route';
+import { GET as GetWithId, DELETE } from '@/app/api/email/[emailId]/route';
+import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
+import { makeMockDb } from '@/__tests__/jest.setup';
 import {
   count_kpi,
   count_attachments,
   count_notes,
   count_responsive_actions,
   count_cta,
-} from '/lib/api/email/drizzle/query-parts';
+} from '@/lib/api/email/drizzle/query-parts';
 const ValidEmailId = '123e4567-e89b-12d3-a456-426614174000';
 
 describe('Email API', () => {

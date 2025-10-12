@@ -23,7 +23,7 @@ import {
   Error as ErrorIcon,
 } from '@mui/icons-material';
 import { ChatMessageDisplay } from './chat-message-display';
-import { ChatTurn } from '/lib/ai/chat/types';
+import { ChatTurn } from '@/lib/ai/chat/types';
 import type { SelectedChatItem } from '../../lib/ai/chat/export';
 import {
   ChatMessageFilters,

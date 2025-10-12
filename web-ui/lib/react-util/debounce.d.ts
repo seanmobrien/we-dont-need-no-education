@@ -3,6 +3,8 @@
  * @module debounce
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 declare module 'lib/react-util/debounce' {
   /**
    * Debounced function with cancellation capability.

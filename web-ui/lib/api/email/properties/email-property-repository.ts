@@ -1,9 +1,9 @@
 import {
   EmailProperty,
   EmailPropertyTypeTypeValues,
-} from '/data-models/api/email-properties/property-type';
-import { ValidationError } from '/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '/lib/typescript';
+} from '@/data-models/api/email-properties/property-type';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { FirstParameter, newUuid } from '@/lib/typescript';
 import { BaseObjectRepository } from '../../_baseObjectRepository';
 import { ObjectRepository } from '../../_types';
 

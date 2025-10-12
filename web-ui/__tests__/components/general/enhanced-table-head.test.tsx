@@ -1,6 +1,6 @@
 import React from 'react';
-import { render } from '/__tests__/test-utils';
-import EnhancedTableHead from '/components/general/enhanced-table-head';
+import { render } from '@/__tests__/test-utils';
+import EnhancedTableHead from '@/components/general/enhanced-table-head';
 
 const mockHeadCells = [
   { id: 'name', label: 'Name', numeric: false, disablePadding: false },

@@ -2,15 +2,15 @@ import type {
   EmailMessageSummary,
   EmailMessage,
   EmailMessageStats,
-} from '/data-models/api/email-message';
-import type { PaginatedResultset, PaginationStats } from '/data-models/_types';
+} from '@/data-models/api/email-message';
+import type { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import type { EmailSearchApiParams } from './types';
-import siteMap from '/lib/site-util/url-builder';
+import siteMap from '@/lib/site-util/url-builder';
 import {
   apiRequestHelperFactory,
   ApiRequestHelper,
-} from '/lib/send-api-request';
-import { ICancellablePromiseExt } from '/lib/typescript';
+} from '@/lib/send-api-request';
+import { ICancellablePromiseExt } from '@/lib/typescript';
 
 const apiRequest = <TResult>(
   cb: (api: ApiRequestHelper, builder: typeof siteMap.api.email) => TResult,

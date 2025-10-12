@@ -4,10 +4,10 @@ import {
   StageProcessorContext,
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
-import { ImportStage } from '/data-models/api/import/email-message';
-import { log } from '/lib/logger';
+import { ImportStage } from '@/data-models/api/import/email-message';
+import { log } from '@/lib/logger';
 import { mapContacts } from './utilities';
-import { ContactRepository } from '/lib/api/contacts/database';
+import { ContactRepository } from '@/lib/api/contacts/database';
 
 class ContactStageManager extends TransactionalStateManagerBase {
   constructor(stage: ImportStage, options: AdditionalStageOptions) {

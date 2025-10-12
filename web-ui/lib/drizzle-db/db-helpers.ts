@@ -4,7 +4,7 @@ import {
   documentRelationshipReason,
   documentUnits,
   documentProperty,
-} from '/drizzle/schema';
+} from '@/drizzle/schema';
 import type {
   DatabaseType,
   DbTransactionType,
@@ -12,10 +12,10 @@ import type {
   DocumentRelationshipType,
 } from './drizzle-types';
 import { schema } from './schema';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import { LoggedError } from '../react-util';
 import { newUuid } from '../typescript';
-import { EmailPropertyTypeTypeId } from '/data-models/api/email-properties/property-type';
+import { EmailPropertyTypeTypeId } from '@/data-models/api/email-properties/property-type';
 
 /**
  * Resolves a relationship reason into a valid relationship reason ID.

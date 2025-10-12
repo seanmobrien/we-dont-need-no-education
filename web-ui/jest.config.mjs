@@ -10,7 +10,11 @@ const config = {
   },
   // Ensure environment globals (Response/Request/Headers) are available before modules load
   setupFiles: ['<rootDir>/__tests__/jest.setup.env.ts'],
-  setupFilesAfterEnv: ['<rootDir>/__tests__/jest.setup.ts'], // Setup file for global imports
+  setupFilesAfterEnv: [
+    '<rootDir>/__tests__/jest.mock-node-modules.ts',
+    '<rootDir>/__tests__/jest.mock-health.ts',
+    '<rootDir>/__tests__/jest.setup.ts',
+  ], // Setup file for global imports
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled
   testMatch: [
     '**/__tests__/**/*.test.(ts|tsx)',
@@ -29,7 +33,7 @@ const config = {
       '<rootDir>/__tests__/jest.mock-instrumentation.ts', // Mock instrumentation module
     '^@/lib/site-util/metrics.*$': '<rootDir>/__tests__/jest.mock-metrics.ts', // Alias for lib imports
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
-    '~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
+    '^~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
     '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
   },

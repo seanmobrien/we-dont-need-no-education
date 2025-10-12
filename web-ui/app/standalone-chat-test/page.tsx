@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Container } from '@mui/material';
-import { TestVirtualizedChat } from '/components/chat/test-virtualized-chat';
+import { TestVirtualizedChat } from '@/components/chat/test-virtualized-chat';
 
 export default function StandaloneChatTest() {
   return (

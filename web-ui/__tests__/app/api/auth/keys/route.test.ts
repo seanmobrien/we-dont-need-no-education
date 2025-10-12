@@ -11,21 +11,22 @@
  */
 
 import { NextRequest } from 'next/server';
-import { POST, GET } from '/app/api/auth/keys/route';
-import { auth } from '/auth';
-import { drizDb } from '/lib/drizzle-db';
+import { POST, GET } from '@/app/api/auth/keys/route';
+import { auth } from '@/auth';
+import { drizDb } from '@/lib/drizzle-db';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock dependencies
-jest.mock('/auth');
-jest.mock('/lib/drizzle-db', () => {
+jest.mock('@/auth');
+jest.mock('@/lib/drizzle-db', () => {
   const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
   return {
     drizDb: jest.fn(),
     schema: actualSchema.schema,
   };
 });
-jest.mock('/lib/logger');
-jest.mock('/lib/react-util', () => ({
+jest.mock('@/lib/logger');
+jest.mock('@/lib/react-util', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error) => error),
   },
@@ -47,9 +48,15 @@ const mockDbInstance = {
 
 mockDrizDb.mockReturnValue(mockDbInstance as any);
 
+const consoleSpy = hideConsoleOutput();
+
 describe('/api/auth/keys', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    consoleSpy.dispose();
   });
 
   describe('POST - Upload public key', () => {
@@ -195,6 +202,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should handle database errors gracefully', async () => {
+      consoleSpy.setup();
       mockAuth.mockResolvedValue({
         user: { id: 123 },
       } as never);
@@ -341,6 +349,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should handle database errors gracefully', async () => {
+      consoleSpy.setup();
       mockAuth.mockResolvedValue({
         user: { id: 123 },
       } as never);

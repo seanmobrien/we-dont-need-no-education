@@ -10,7 +10,7 @@ import {
   queryRaw,
   db,
   Resultset,
-} from '/lib/neondb/index-postgres';
+} from '@/lib/neondb/index-postgres';
 
 /*
 const mockSql = jest.fn();

@@ -37,13 +37,13 @@ import {
   type Configuration as OIDCConfiguration,
 } from 'openid-client';
 import { parse as parseHtml } from 'node-html-parser';
-import { createInstrumentedSpan } from '/lib/nextjs-util/server/utils';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { CryptoService } from '/lib/site-util/auth/crypto-service';
-import { getRedisClient } from '/lib/ai/middleware/cacheWithRedis/redis-client';
-import { env } from '/lib/site-util/env';
-import { SimpleRateLimiter } from '/lib/react-util/simple-rate-limiter';
-import { SimpleCircuitBreaker } from '/lib/react-util/simple-circuit-breaker';
+import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { CryptoService } from '@/lib/site-util/auth/crypto-service';
+import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { env } from '@/lib/site-util/env';
+import { SimpleRateLimiter } from '@/lib/react-util/simple-rate-limiter';
+import { SimpleCircuitBreaker } from '@/lib/react-util/simple-circuit-breaker';
 import type {
   AdminTokenConfig,
   TokenResponse,

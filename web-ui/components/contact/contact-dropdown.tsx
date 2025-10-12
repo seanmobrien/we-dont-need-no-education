@@ -1,12 +1,12 @@
 /** @jsxImportSource @emotion/react */
 import React, { useEffect, useState } from 'react';
 import ContactForm from './contact-form';
-import { Contact, ContactSummary } from '/data-models/api/contact';
-import { createContactSummary } from '/data-models/api';
-import { log } from '/lib/logger';
+import { Contact, ContactSummary } from '@/data-models/api/contact';
+import { createContactSummary } from '@/data-models/api';
+import { log } from '@/lib/logger';
 import { css, SerializedStyles } from '@emotion/react';
-import { fetch } from '/lib/nextjs-util/fetch';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { fetch } from '@/lib/nextjs-util/fetch';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 interface ContactDropdownProps {
   displayValue?: 'name' | 'email' | 'both';

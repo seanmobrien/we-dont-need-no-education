@@ -1,5 +1,5 @@
-import { compactCaseFileDocument } from '/lib/ai/tools/getCaseFileDocument/compact-casefile-document';
-import type { DocumentSchemaType } from '/lib/ai/tools/schemas';
+import { compactCaseFileDocument } from '@/lib/ai/tools/getCaseFileDocument/compact-casefile-document';
+import type { DocumentSchemaType } from '@/lib/ai/tools/schemas';
 
 describe('compactCaseFileDocument', () => {
   it('removes null and undefined fields recursively', () => {

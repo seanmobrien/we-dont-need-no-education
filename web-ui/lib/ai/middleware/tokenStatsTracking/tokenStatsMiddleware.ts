@@ -1,5 +1,5 @@
 import { getInstance } from '../../services/model-stats/token-stats-service';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import {
   QuotaCheckResult,
   QuotaEnforcementError,
@@ -7,7 +7,7 @@ import {
   TokenUsageData,
 } from './types';
 import { countTokens } from '../../core/count-tokens';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { MiddlewareStateManager } from '../state-management';
 
 import {

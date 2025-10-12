@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-import { render, screen } from '/__tests__/test-utils';
-import ResizableDraggableDialog from '/components/mui/resizeable-draggable-dialog/dialog';
+import { render, screen } from '@/__tests__/test-utils';
+import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog/dialog';
 import type {
   ResizeableDraggableDialogProps,
   ResizeableDraggablePaperProps,
-} from '/components/mui/resizeable-draggable-dialog/types';
+} from '@/components/mui/resizeable-draggable-dialog/types';
 
 // Mock the ResizeableDraggablePaper component to render children properly
 jest.mock(

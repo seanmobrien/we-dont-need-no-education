@@ -4,7 +4,7 @@ import {
   ErrorSeverity,
   type ErrorContext,
 } from './error-reporter';
-import { log } from '/lib/logger/core';
+import { log } from '@/lib/logger/core';
 
 /**
  * React hook for error reporting within components

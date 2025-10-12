@@ -17,8 +17,8 @@ The `MessageStructureOptions` interface provides:
 ### Simple Configuration
 
 ```typescript
-import { preserveMessageStructure, createMessageStructureOptions } from '/lib/ai/utils/message-structure-preservation';
-import type { MessageStructureOptions } from '/lib/ai/types/message-structure-preservation';
+import { preserveMessageStructure, createMessageStructureOptions } from '@/lib/ai/utils/message-structure-preservation';
+import type { MessageStructureOptions } from '@/lib/ai/types/message-structure-preservation';
 
 // Basic preservation with defaults
 const messages: UIMessage[] = [...];
@@ -269,7 +269,7 @@ const options = {
 Use predefined configurations for common scenarios:
 
 ```typescript
-import { createPresetConfiguration } from '/lib/ai/utils/message-structure-preservation';
+import { createPresetConfiguration } from '@/lib/ai/utils/message-structure-preservation';
 
 // Minimal configuration for basic text preservation
 const minimalConfig = createPresetConfiguration('minimal');
@@ -325,7 +325,7 @@ if (result.debugInfo?.decisions.some((d) => d.reason.includes('Error'))) {
 Validate your configuration before use:
 
 ```typescript
-import { validateMessageStructureOptions } from '/lib/ai/utils/message-structure-preservation';
+import { validateMessageStructureOptions } from '@/lib/ai/utils/message-structure-preservation';
 
 const options = {
   strategy: 'invalid-strategy', // This will cause validation to fail
@@ -349,7 +349,7 @@ Monitor and manage the preservation cache:
 import {
   getPreservationCacheStats,
   clearPreservationCache,
-} from '/lib/ai/utils/message-structure-preservation';
+} from '@/lib/ai/utils/message-structure-preservation';
 
 // Get cache statistics
 const stats = getPreservationCacheStats();
@@ -409,7 +409,7 @@ const result = preserveMessageStructure(messages, preservationOptions);
 ### With Message Optimizer
 
 ```typescript
-import { optimizeMessagesWithToolSummarization } from '/lib/ai/chat/message-optimizer-tools';
+import { optimizeMessagesWithToolSummarization } from '@/lib/ai/chat/message-optimizer-tools';
 
 // First apply structure preservation, then optimization
 const preserved = preserveMessageStructure(messages, {

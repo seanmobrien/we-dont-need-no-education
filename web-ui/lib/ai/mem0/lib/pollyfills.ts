@@ -1,4 +1,4 @@
-import { env } from '/lib/site-util/env';
+import { env } from '@/lib/site-util/env';
 
 /**
  * Overrides default behavior of @ai-sdk/provider-utils loadApiKey to account for the fact that, well, we're not using an API key.

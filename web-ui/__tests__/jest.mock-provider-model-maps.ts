@@ -1,12 +1,12 @@
 import {
   ProviderMapEntry,
   ProviderMap,
-} from '/lib/ai/services/model-stats/provider-map';
+} from '@/lib/ai/services/model-stats/provider-map';
 import {
   type ModelRecord,
   type ModelQuotaRecord,
   ModelMap,
-} from '/lib/ai/services/model-stats/model-map';
+} from '@/lib/ai/services/model-stats/model-map';
 
 export const PROVIDER_ID_AZURE = 'b555b85f-5b2f-45d8-a317-575a3ab50ff2';
 export const PROVIDER_ID_GOOGLE = '91cd42ab-e957-4035-8a2d-3d6c997b9538';

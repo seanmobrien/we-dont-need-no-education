@@ -1,5 +1,5 @@
-import { isError } from '/lib/react-util/utility-methods';
-import { log } from '/lib/logger';
+import { isError } from '@/lib/react-util/utility-methods';
+import { log } from '@/lib/logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,
@@ -10,8 +10,8 @@ import {
   IContextEnricher,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
-import { isDrizzleError, errorFromCode } from '/lib/drizzle-db/drizzle-error';
-import type { PostgresError } from '/lib/drizzle-db/drizzle-error';
+import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
+import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
 
 export { ErrorSeverity };
 
@@ -535,7 +535,7 @@ export class ErrorReporter implements ErrorReporterInterface {
   private async client_reportToApplicationInsights(
     report: ErrorReport,
   ): Promise<void> {
-    await import('/instrument/browser').then((m) => {
+    await import('@/instrument/browser').then((m) => {
       const appInsights = m.getAppInsights();
       if (appInsights) {
         appInsights.trackException({

@@ -1,7 +1,7 @@
-import { RepositoryCrudController } from '/lib/api/repository-crud-controller';
-import { EmailHeaderDetailsRepository } from '/lib/api/email/properties/email-headers/email-header-details-repository';
+import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { EmailHeaderDetailsRepository } from '@/lib/api/email/properties/email-headers/email-header-details-repository';
 import { NextRequest } from 'next/server';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 
 export const dynamic = 'force-dynamic';
 

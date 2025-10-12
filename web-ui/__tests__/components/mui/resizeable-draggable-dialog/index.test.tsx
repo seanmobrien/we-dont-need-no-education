@@ -19,7 +19,7 @@ import ResizableDraggableDialog, {
   type ResizeableDraggablePaperProps,
   type ResizeableDraggableDialogProps,
   isValidSize,
-} from '/components/mui/resizeable-draggable-dialog';
+} from '@/components/mui/resizeable-draggable-dialog';
 
 describe('ResizableDraggableDialog Index Module', () => {
   describe('Default Export', () => {

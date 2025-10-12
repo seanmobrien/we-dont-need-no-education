@@ -1,13 +1,13 @@
 import { BaseObjectRepository } from '../../../_baseObjectRepository';
 import { ObjectRepository } from '../../../_types';
-import { ValidationError } from '/lib/react-util/errors/validation-error';
-import { FirstParameter, newUuid } from '/lib/typescript';
-import { EmailProperty } from '/data-models/api';
+import { ValidationError } from '@/lib/react-util/errors/validation-error';
+import { FirstParameter, newUuid } from '@/lib/typescript';
+import { EmailProperty } from '@/data-models/api';
 import {
   EmailPropertyRepository,
   mapEmailPropertyRecordToObject,
 } from '../email-property-repository';
-import { TransformedFullQueryResults } from '/lib/neondb';
+import { TransformedFullQueryResults } from '@/lib/neondb';
 
 const mapRecordToObject = (record: Record<string, unknown>): EmailProperty => {
   return {

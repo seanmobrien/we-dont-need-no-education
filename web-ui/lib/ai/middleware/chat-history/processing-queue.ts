@@ -14,7 +14,7 @@ import type {
   LanguageModelV2CallOptions,
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
-import { log } from '/lib/logger';
+import { log } from '@/lib/logger';
 import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';
 import type {
@@ -24,12 +24,12 @@ import type {
   StreamHandlerResult,
 } from './types';
 import { recordQueueOperation } from './instrumentation';
-import { ChatMessagesType } from '/lib/drizzle-db/drizzle-types';
+import { ChatMessagesType } from '@/lib/drizzle-db/drizzle-types';
 import {
   safeCompleteMessagePersistence,
   safeInitializeMessagePersistence,
 } from './message-persistence';
-import { isError } from '/lib/react-util/core';
+import { isError } from '@/lib/react-util/core';
 
 /**
  * Sequential processing queue that maintains FIFO order for database operations.

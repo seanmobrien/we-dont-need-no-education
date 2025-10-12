@@ -4,8 +4,8 @@ import type {
   ModelStat,
   QueueInfo,
   QueueSummary,
-} from '/types/statistics';
-import { fetch } from '/lib/nextjs-util/fetch';
+} from '@/types/statistics';
+import { fetch } from '@/lib/nextjs-util/fetch';
 import { LoggedError } from '../react-util';
 
 const STATISTICS_STALE_TIME = 30 * 1000; // 30 seconds

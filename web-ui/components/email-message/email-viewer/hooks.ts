@@ -1,9 +1,9 @@
-import { EmailMessage } from '/data-models/api';
-import { getEmail } from '/lib/api/email/client';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { EmailMessage } from '@/data-models/api';
+import { getEmail } from '@/lib/api/email/client';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { UseEmailApiQueryResult, TResponseMap, EmailAttachment } from './types';
-import { fetch } from '/lib/nextjs-util/fetch';
+import { fetch } from '@/lib/nextjs-util/fetch';
 
 export const emailMessageQuery = async ({
   queryKey,

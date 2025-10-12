@@ -12,9 +12,8 @@
 
 import * as React from 'react';
 import { Stack } from '@mui/material';
-import { ThemeSelector } from '/components/theme/theme-selector';
+import { ThemeSelector } from '@/components/theme/theme-selector';
 import { Account } from '@toolpad/core/Account';
-import { MemoryStatusIndicator } from '/components/memory-status';
 
 /**
  * EmailDashboardToolbarAction renders the toolbar actions for the email dashboard.
@@ -47,7 +46,6 @@ import { MemoryStatusIndicator } from '/components/memory-status';
 export const EmailDashboardToolbarAction = React.memo((): React.JSX.Element => {
   return (
     <Stack direction="row" spacing={1} alignItems="center">
-      <MemoryStatusIndicator size="small" />
       <ThemeSelector />
       <Account />
     </Stack>

@@ -8,21 +8,25 @@
  * @module __tests__/lib/ai/middleware/chat-history/message-deduplication-integration.test.ts
  */
 
-import { importIncomingMessage } from '/lib/ai/middleware/chat-history/import-incoming-message';
-import { getNewMessages } from '/lib/ai/middleware/chat-history/utility';
-import { getNextSequence } from '/lib/ai/middleware/chat-history/utility';
-import { generateChatId } from '/lib/ai/core';
-import { log } from '/lib/logger';
-import type { DbTransactionType } from '/lib/drizzle-db';
-import type { ChatHistoryContext } from '/lib/ai/middleware/chat-history/types';
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+
+setupImpersonationMock();
+
+import { importIncomingMessage } from '@/lib/ai/middleware/chat-history/import-incoming-message';
+import { getNewMessages } from '@/lib/ai/middleware/chat-history/utility';
+import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
+import { generateChatId } from '@/lib/ai/core';
+import { log } from '@/lib/logger';
+import type { DbTransactionType } from '@/lib/drizzle-db';
+import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
-import { createUserChatHistoryContext } from '/lib/ai/middleware/chat-history/create-chat-history-context';
+import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 
 // Mock dependencies
-jest.mock('/lib/ai/middleware/chat-history/utility');
-jest.mock('/lib/ai/core');
-jest.mock('/lib/logger');
-jest.mock('/lib/drizzle-db', () => ({
+jest.mock('@/lib/ai/middleware/chat-history/utility');
+jest.mock('@/lib/ai/core');
+jest.mock('@/lib/logger');
+jest.mock('@/lib/drizzle-db', () => ({
   schema: {
     chats: {
       id: 'mocked-chats-id-column',

@@ -6,6 +6,9 @@
  * @module __tests__/lib/ai/middleware/chat-history/flush-handlers-simple.test.ts
  */
 
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+setupImpersonationMock();
+
 import {
   finalizeAssistantMessage,
   completeChatTurn,
@@ -13,22 +16,22 @@ import {
   markTurnAsError,
   handleFlush,
   DEFAULT_FLUSH_CONFIG,
-} from '/lib/ai/middleware/chat-history/flush-handlers';
+} from '@/lib/ai/middleware/chat-history/flush-handlers';
 import type {
   FlushContext,
   FlushConfig,
-} from '/lib/ai/middleware/chat-history/types';
-import { DbDatabaseType, drizDb } from '/lib/drizzle-db';
-import { makeMockDb } from '/__tests__/jest.setup';
-import { hideConsoleOutput } from '/__tests__/test-utils';
+} from '@/lib/ai/middleware/chat-history/types';
+import { DbDatabaseType } from '@/lib/drizzle-db';
+import { makeMockDb } from '@/__tests__/jest.setup';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the logger
-jest.mock('/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
 }));
 
 // Mock instrumentation functions that might be called
-jest.mock('/lib/ai/middleware/chat-history/instrumentation', () => ({
+jest.mock('@/lib/ai/middleware/chat-history/instrumentation', () => ({
   instrumentFlushOperation: jest.fn(async (fn) => {
     if (typeof fn === 'function') {
       try {
@@ -52,7 +55,7 @@ jest.mock('/lib/ai/middleware/chat-history/instrumentation', () => ({
 }));
 
 // Mock import-incoming-message functions
-jest.mock('/lib/ai/middleware/chat-history/import-incoming-message', () => ({
+jest.mock('@/lib/ai/middleware/chat-history/import-incoming-message', () => ({
   insertPendingAssistantMessage: jest.fn(),
   reserveTurnId: jest.fn(() => Promise.resolve(1)),
 }));
@@ -69,6 +72,7 @@ describe('Flush Handlers - Compilation Fix Test', () => {
   };
   beforeEach(() => {
     // jest.clearAllMocks();
+    setupImpersonationMock();
 
     // Use the global mock database
     mockDbInstance = makeMockDb();

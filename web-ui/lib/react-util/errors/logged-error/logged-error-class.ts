@@ -1,14 +1,14 @@
 // Documentation is authoritative in: lib/react-util/errors/logged-error.d.ts
 // The runtime implementation remains here. Keep implementation edits minimal.
 
-import { errorLogFactory, log } from '/lib/logger';
+import { errorLogFactory, log } from '@/lib/logger';
 import {
   isAbortError,
   isError,
   isProgressEvent,
 } from './../../utility-methods';
-import { getStackTrace } from '/lib/nextjs-util/get-stack-trace';
-import { asKnownSeverityLevel } from '/lib/logger/constants';
+import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
+import { asKnownSeverityLevel } from '@/lib/logger/constants';
 import { reporter } from './../logged-error-reporter';
 import { TurtleRecursionParams, LoggedErrorOptions } from './types';
 import { ProgressEventError } from '../progress-event-error';
@@ -51,10 +51,11 @@ export class LoggedError implements Error {
   // Type guard to check if an object is a LoggedError instance.
   static isLoggedError(e: unknown): e is LoggedError {
     return (
-      typeof e === 'object' &&
-      !!e &&
-      brandLoggedError in e &&
-      e[brandLoggedError] === true
+      e instanceof LoggedError ||
+      (typeof e === 'object' &&
+        !!e &&
+        brandLoggedError in e &&
+        e[brandLoggedError] === true)
     );
   }
 
@@ -238,6 +239,7 @@ export class LoggedError implements Error {
         }
       });
     }
+    this[brandLoggedError] = true;
   }
 
   // Private properties to store error details and metadata.

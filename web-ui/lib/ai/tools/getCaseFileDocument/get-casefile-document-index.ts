@@ -1,5 +1,5 @@
-import { drizDb } from '/lib/drizzle-db';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { drizDb } from '@/lib/drizzle-db';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { DocumentResourceIndex } from '../documentResource';
 import { DocumentIndexResourceToolResult } from '../types';
 import {

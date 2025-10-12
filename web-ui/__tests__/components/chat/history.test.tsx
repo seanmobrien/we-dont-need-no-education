@@ -2,10 +2,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import React from 'react';
-import { render, screen } from '/__tests__/test-utils';
+import { render, screen } from '@/__tests__/test-utils';
 
 // Mock the virtualized chat display to simplify DOM assertions in tests.
-jest.mock('/components/chat', () => ({
+jest.mock('@/components/chat', () => ({
   VirtualizedChatDisplay: ({
     turns,
   }: {
@@ -31,7 +31,7 @@ jest.mock('/components/chat', () => ({
 const mockUseChatDetails = jest.fn();
 
 // Import the real ChatHistory before mocking
-import { ChatHistory as OriginalChatHistory } from '/components/chat/history';
+import { ChatHistory as OriginalChatHistory } from '@/components/chat/history';
 
 // Create a wrapped version that uses our mocked hook
 const ChatHistory = ({ chatId }: { chatId: string; title?: string }) => {

@@ -12,22 +12,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { EmailDashboardToolbarAction } from '/components/email-message/dashboard-layout/email-dashboard-toolbar-action';
+import { EmailDashboardToolbarAction } from '@/components/email-message/dashboard-layout/email-dashboard-toolbar-action';
 import '@testing-library/jest-dom';
 
-// Mock the MemoryStatusIndicator component
-jest.mock('/components/memory-status', () => {
-  const MockMemoryStatusIndicator = () => (
-    <div data-testid="memory-status-indicator">Memory Status</div>
-  );
-  MockMemoryStatusIndicator.displayName = 'MockMemoryStatusIndicator';
-  return {
-    MemoryStatusIndicator: MockMemoryStatusIndicator,
-  };
-});
-
 // Mock the ThemeSelector component
-jest.mock('/components/theme/theme-selector', () => {
+jest.mock('@/components/theme/theme-selector', () => {
   const MockThemeSelector = () => (
     <div data-testid="theme-selector">Theme Selector</div>
   );
@@ -63,21 +52,10 @@ describe('EmailDashboardToolbarAction', () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByTestId('memory-status-indicator')).toBeInTheDocument();
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
 
-    it('should render MemoryStatusIndicator component', () => {
-      render(
-        <TestWrapper>
-          <EmailDashboardToolbarAction />
-        </TestWrapper>,
-      );
-
-      expect(screen.getByTestId('memory-status-indicator')).toBeInTheDocument();
-      expect(screen.getByText('Memory Status')).toBeInTheDocument();
-    });
 
     it('should render ThemeSelector component', () => {
       render(
@@ -122,22 +100,18 @@ describe('EmailDashboardToolbarAction', () => {
         </TestWrapper>,
       );
 
-      const memoryStatus = screen.getByTestId('memory-status-indicator');
       const themeSelector = screen.getByTestId('theme-selector');
       const account = screen.getByTestId('toolpad-account');
 
-      expect(memoryStatus).toBeInTheDocument();
       expect(themeSelector).toBeInTheDocument();
       expect(account).toBeInTheDocument();
 
       // Check that components appear in the correct DOM order: memory, theme, account
-      const parent = memoryStatus.parentElement;
+      const parent = themeSelector.parentElement;
       const children = Array.from(parent?.children || []);
-      const memoryIndex = children.indexOf(memoryStatus);
-      const themeSelectorIndex = children.indexOf(themeSelector);
       const accountIndex = children.indexOf(account);
+      const themeSelectorIndex = children.indexOf(themeSelector);
 
-      expect(memoryIndex).toBeLessThan(themeSelectorIndex);
       expect(themeSelectorIndex).toBeLessThan(accountIndex);
     });
   });
@@ -181,7 +155,6 @@ describe('EmailDashboardToolbarAction', () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByTestId('memory-status-indicator')).toBeInTheDocument();
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -203,7 +176,6 @@ describe('EmailDashboardToolbarAction', () => {
         </ThemeProvider>,
       );
 
-      expect(screen.getByTestId('memory-status-indicator')).toBeInTheDocument();
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -212,7 +184,6 @@ describe('EmailDashboardToolbarAction', () => {
       // Render without ThemeProvider
       render(<EmailDashboardToolbarAction />);
 
-      expect(screen.getByTestId('memory-status-indicator')).toBeInTheDocument();
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -227,7 +198,6 @@ describe('EmailDashboardToolbarAction', () => {
       );
 
       // Child components should be accessible
-      expect(screen.getByTestId('memory-status-indicator')).toBeInTheDocument();
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -257,7 +227,6 @@ describe('EmailDashboardToolbarAction', () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByTestId('memory-status-indicator')).toBeInTheDocument();
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
 
@@ -285,7 +254,6 @@ describe('EmailDashboardToolbarAction', () => {
         </TestWrapper>,
       );
 
-      expect(screen.getByTestId('memory-status-indicator')).toBeInTheDocument();
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -301,9 +269,7 @@ describe('EmailDashboardToolbarAction', () => {
       );
 
       // Stack component from MUI should be working
-      const container = screen.getByTestId(
-        'memory-status-indicator',
-      ).parentElement;
+      const container = screen.getByTestId('theme-selector').parentElement;
       expect(container).toHaveClass('MuiStack-root');
     });
   });

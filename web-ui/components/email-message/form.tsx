@@ -1,8 +1,8 @@
 'use client';
 
-import { log } from '/lib/logger';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
-import { isError } from '/lib/react-util/utility-methods';
+import { log } from '@/lib/logger';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { isError } from '@/lib/react-util/utility-methods';
 import {
   useState,
   useEffect,
@@ -15,17 +15,17 @@ import {
   useId,
 } from 'react';
 
-import { EmailMessage } from '/data-models/api/email-message';
-import ContactDropdown from '/components/contact/contact-dropdown';
-import { ContactSummary } from '/data-models/api/contact';
-import { createContactSummary } from '/data-models/api/factories';
-import { normalizeDateAndTime } from '/data-models/_utilities';
+import { EmailMessage } from '@/data-models/api/email-message';
+import ContactDropdown from '@/components/contact/contact-dropdown';
+import { ContactSummary } from '@/data-models/api/contact';
+import { createContactSummary } from '@/data-models/api/factories';
+import { normalizeDateAndTime } from '@/data-models/_utilities';
 import ContactRecipients from '../contact/contact-recipients';
 import EmailSelect from './select';
 import { SubmitRefCallbackInstance } from './_types';
-import { getEmail, writeEmailRecord } from '/lib/api/client';
-import { AbortablePromise, ICancellablePromiseExt } from '/lib/typescript';
-import siteMap from '/lib/site-util/url-builder';
+import { getEmail, writeEmailRecord } from '@/lib/api/client';
+import { AbortablePromise, ICancellablePromiseExt } from '@/lib/typescript';
+import siteMap from '@/lib/site-util/url-builder';
 import { useRouter } from 'next/navigation';
 
 type EmailFormAfterSaveBehavior = 'none' | 'redirect';

@@ -1,40 +1,53 @@
 export const dynamic = 'force-dynamic';
 
-import { log } from '/lib/logger';
-import { wrapRouteRequest } from '/lib/nextjs-util/server/utils';
-import { LoggedError } from '/lib/react-util/errors/logged-error';
+import { log } from '@/lib/logger';
+import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createMcpHandler } from 'mcp-handler';
 // tool imports
 import {
   searchCaseFile,
   searchCaseFileConfig,
-} from '/lib/ai/tools/searchCaseFile';
+} from '@/lib/ai/tools/searchCaseFile';
 import {
   searchPolicyStore,
   searchPolicyStoreConfig,
-} from '/lib/ai/tools/searchPolicyStore';
+} from '@/lib/ai/tools/searchPolicyStore';
 import {
   amendCaseRecord,
   amendCaseRecordConfig,
-} from '/lib/ai/tools/amendCaseRecord';
+} from '@/lib/ai/tools/amendCaseRecord';
 import {
   getMultipleCaseFileDocuments,
   getMultipleCaseFileDocumentsConfig,
-} from '/lib/ai/tools/getCaseFileDocument/get-casefile-document';
+} from '@/lib/ai/tools/getCaseFileDocument/get-casefile-document';
 import {
   getCaseFileDocumentIndex,
   getCaseFileDocumentIndexConfig,
-} from '/lib/ai/tools/getCaseFileDocument/get-casefile-document-index';
+} from '@/lib/ai/tools/getCaseFileDocument/get-casefile-document-index';
 import {
   SEQUENTIAL_THINKING_TOOL_NAME,
   sequentialThinkingCallback,
   sequentialThinkingCallbackConfig,
-} from '/lib/ai/tools/sequentialthinking/tool-callback';
+} from '@/lib/ai/tools/sequentialthinking/tool-callback';
 import {
   pingPongToolCallback,
   pingPongToolConfig,
-} from '/lib/ai/tools/ping-pong';
-import { isAbortError } from '/lib/react-util';
+} from '@/lib/ai/tools/ping-pong';
+import { isAbortError } from '@/lib/react-util';
+// Todo tool imports
+import {
+  createTodoCallback,
+  createTodoConfig,
+  getTodosCallback,
+  getTodosConfig,
+  updateTodoCallback,
+  updateTodoConfig,
+  // deleteTodoCallback,
+  // deleteTodoConfig,
+  toggleTodoCallback,
+  toggleTodoConfig,
+} from '@/lib/ai/tools/todo';
 
 // Lightweight safe serializers to avoid attempting to stringify circular or
 // large runtime objects (transports, servers, sockets). Keep summaries
@@ -132,6 +145,12 @@ const handler = wrapRouteRequest(
         sequentialThinkingCallbackConfig,
         sequentialThinkingCallback,
       );
+      server.registerTool('createTodo', createTodoConfig, createTodoCallback);
+      server.registerTool('getTodos', getTodosConfig, getTodosCallback);
+      server.registerTool('updateTodo', updateTodoConfig, updateTodoCallback);
+      // server.registerTool('deleteTodo', deleteTodoConfig, deleteTodoCallback);
+      server.registerTool('toggleTodo', toggleTodoConfig, toggleTodoCallback);
+
       const makeErrorHandler = (
         oldHandler: ((error: Error) => void) | undefined,
         dscr: string,

@@ -1,8 +1,8 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { NotesPanel } from '/app/messages/email/[emailId]/notes/panel';
-import { EmailProperty } from '/data-models/api';
+import { NotesPanel } from '@/app/messages/email/[emailId]/notes/panel';
+import { EmailProperty } from '@/data-models/api';
 
 const mockNoteProperty: EmailProperty = {
   propertyId: 'note-test-id',

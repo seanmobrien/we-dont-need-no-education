@@ -3,7 +3,7 @@ jest.mock('openai-chat-tokens', () => ({
 }));
 
 import { promptTokensEstimate } from 'openai-chat-tokens';
-import { countTokens } from '/lib/ai/core/count-tokens';
+import { countTokens } from '@/lib/ai/core/count-tokens';
 import { LanguageModelV2Prompt } from '@ai-sdk/provider';
 
 describe('countTokens helper - function extraction', () => {
