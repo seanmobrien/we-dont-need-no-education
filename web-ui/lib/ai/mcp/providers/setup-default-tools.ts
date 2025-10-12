@@ -33,7 +33,8 @@ import { toolProviderSetFactory } from './toolProviderFactory';
 import { env } from '@/lib/site-util/env';
 import { ToolProviderFactoryOptions, ToolProviderSet } from '../types';
 import { NextRequest } from 'next/server';
-import { fromRequest } from '@/lib/auth/impersonation';
+import { fromUserId as fromUser } from '@/lib/auth/impersonation/impersonation-factory';
+import { User } from 'next-auth';
 
 /**
  * Builds a minimal header map for MCP client connections.
@@ -96,12 +97,14 @@ export const setupDefaultTools = async ({
   writeEnabled,
   req,
   chatHistoryId,
+  user,
   memoryEnabled = true,
 }: {
   writeEnabled?: boolean;
   req?: NextRequest;
   chatHistoryId?: string;
   memoryEnabled?: boolean;
+  user: User | undefined;
 }): Promise<ToolProviderSet> => {
   const options: Array<ToolProviderFactoryOptions> = [];
   const defaultHeaders = {
@@ -121,7 +124,7 @@ export const setupDefaultTools = async ({
     });
   }
   if (memoryEnabled && !env('MEM0_DISABLED')) {
-    const impersonation = await fromRequest({ req });
+    const impersonation = await fromUser({ user });
     options.push({
       allowWrite: true,
       headers: async () => ({

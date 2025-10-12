@@ -1,19 +1,22 @@
 import { auth } from '@/auth';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
+import { User } from 'next-auth';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { NextRequest } from 'next/server';
 
 const toolProviderFactory = async ({
   req,
+  user,
 }: {
   req: NextRequest;
   chatHistoryId: string;
   writeEnabled?: boolean;
   memoryDisabled?: boolean;
-  userId: string;
+  user: User;
   sessionId: string;
 }) =>
   setupDefaultTools({
+    user,
     writeEnabled: false,
     req,
     chatHistoryId: 'health-check',
@@ -36,7 +39,7 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
   const toolProviders = await toolProviderFactory({
     req,
     chatHistoryId: 'health-check',
-    userId: session.user.id!,
+    user: session.user,
     sessionId: 'test-session',
   });
   const tools = Object.keys(toolProviders.tools);

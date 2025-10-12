@@ -68,17 +68,15 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
 ): Promise<(typeof AllFeatureFlagsDefault)[T]> => {
   try {
     const server = await identify({ userId });
-    return (
-      server?.getValue(flagKey, {
-        skipAnalytics: false,
-        json: true,
-        ...(defaultValue === undefined || typeof defaultValue === 'object'
-          ? {}
-          : { fallback: defaultValue }),
-      }) ??
+    return (server?.getValue(flagKey, {
+      skipAnalytics: false,
+      json: true,
+      ...(defaultValue === undefined || typeof defaultValue === 'object'
+        ? {}
+        : { fallback: defaultValue }),
+    }) ??
       defaultValue ??
-      AllFeatureFlagsDefault[flagKey]
-    );
+      AllFeatureFlagsDefault[flagKey]) as (typeof AllFeatureFlagsDefault)[T];
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'Flagsmith',

@@ -3,6 +3,7 @@ import { ImpersonationThirdParty } from './impersonation.thirdparty';
 import { ImpersonationServiceCache } from './impersonation-service-cache';
 import { auth } from '@/auth';
 import { log } from '@/lib/logger';
+import { User } from 'next-auth';
 
 /**
  * Strategy selection:
@@ -26,26 +27,29 @@ export const fromRequest = async ({
     );
     return undefined;
   }
+  return ImpersonationThirdParty.fromUser({ user: session.user, audience });
+};
 
-  // Use cache if audience is provided
-  if (session.user.id) {
-    const cache = ImpersonationServiceCache.getInstance();
-
-    return cache.getOrCreate(session.user.id, audience, async () => {
-      const service = await ImpersonationThirdParty.fromRequest({
-        audience,
-        session,
-      });
-      if (!service) {
-        throw new Error('Failed to create impersonation service');
-      }
-      return service;
-    });
+export const fromUserId = async ({
+  user,
+  audience,
+}: {
+  user: User | undefined;
+  audience?: string;
+}): Promise<ImpersonationService | undefined> => {
+  if (!user || !user.id) {
+    log((l) => l.warn('Impersonation requested without a userId'));
+    return undefined;
   }
-
-  // Fallback to direct creation without caching
-  return ImpersonationThirdParty.fromRequest({
-    audience,
-    session,
+  const cache = ImpersonationServiceCache.getInstance();
+  return cache.getOrCreate(user.id, audience, async () => {
+    const service = await ImpersonationThirdParty.fromUser({
+      user,
+      audience,
+    });
+    if (!service) {
+      throw new Error('Failed to create impersonation service');
+    }
+    return service;
   });
 };

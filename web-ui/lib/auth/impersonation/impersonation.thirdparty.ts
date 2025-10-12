@@ -28,7 +28,7 @@ import type {
 } from '@/lib/auth/impersonation/impersonation.types';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { SystemTokenStore } from './system-token-store';
-import { Session } from 'next-auth';
+import { Session, User } from 'next-auth';
 import { keycloakAdminClientFactory } from '../keycloak-factories';
 
 interface TokenResponse {
@@ -97,37 +97,54 @@ export class ImpersonationThirdParty implements ImpersonationService {
     this.config = config;
   }
 
+  static #getConfig(): ThirdPartyConfig | undefined {
+    const config: ThirdPartyConfig = {
+      issuer: env('AUTH_KEYCLOAK_ISSUER') || '',
+      clientId: env('AUTH_KEYCLOAK_CLIENT_ID') || '',
+      clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET') || '',
+      redirectUri: env('AUTH_KEYCLOAK_REDIRECT_URI') || '',
+    };
+
+    if (
+      !config.issuer ||
+      !config.clientId ||
+      !config.clientSecret ||
+      !config.redirectUri
+    ) {
+      log((l) => l.warn('ImpersonationThirdParty: incomplete config'));
+      return undefined;
+    }
+    return config;
+  }
+
   static async fromRequest({
     session,
+    ...props
   }: {
     audience?: string;
     session: Session;
   }): Promise<ImpersonationThirdParty | undefined> {
+    return ImpersonationThirdParty.fromUser({ user: session?.user, ...props });
+  }
+
+  static async fromUser({
+    user,
+  }: {
+    audience?: string;
+    user: User | undefined;
+  }): Promise<ImpersonationThirdParty | undefined> {
     try {
-      if (!session?.user) return undefined;
+      if (!user) return undefined;
       const userContext: UserContext = {
-        userId: session.user.subject || session.user.id || '',
-        email: session.user.email || undefined,
-        name: session.user.name || undefined,
-        accountId:
-          'account_id' in session.user ? session.user.account_id : undefined,
+        userId: user.subject || user.id || '',
+        email: user.email || undefined,
+        name: user.name || undefined,
+        accountId: 'account_id' in user ? user.account_id : undefined,
       };
       if (!userContext.email) return undefined;
 
-      const config: ThirdPartyConfig = {
-        issuer: env('AUTH_KEYCLOAK_ISSUER') || '',
-        clientId: env('AUTH_KEYCLOAK_CLIENT_ID') || '',
-        clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET') || '',
-        redirectUri: env('AUTH_KEYCLOAK_REDIRECT_URI') || '',
-      };
-
-      if (
-        !config.issuer ||
-        !config.clientId ||
-        !config.clientSecret ||
-        !config.redirectUri
-      ) {
-        log((l) => l.warn('ImpersonationThirdParty: incomplete config'));
+      const config = ImpersonationThirdParty.#getConfig();
+      if (!config) {
         return undefined;
       }
 
@@ -198,9 +215,9 @@ export class ImpersonationThirdParty implements ImpersonationService {
             const adminToken = await this.#adminTokenStore.getAdminToken();
             this.kcAdmin!.setAccessToken(adminToken);
 
-            const userId = await this.findUserIdViaAdmin(
-              this.userContext.email!,
-            );
+            const userId =
+              // this.userContext.userId ??
+              await this.findUserIdViaAdmin(this.userContext.email!);
             if (!userId)
               throw new Error('ImpersonationThirdParty: target user not found');
 

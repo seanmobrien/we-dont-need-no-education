@@ -27,6 +27,7 @@ import NextLink from 'next/link';
 import Link from '@mui/material/Link';
 import type { SxProps, Theme } from '@mui/material/styles';
 import EmailDetailPanel from './email-detail-panel';
+import { usePrefetchEmail } from '@/lib/hooks/use-email';
 
 const stableSx = {
   containerBase: {
@@ -59,7 +60,9 @@ const stableSx = {
  * - `subject`: Displays the subject of the email.
  * - `sentDate`: Displays the date the email was sent.
  */
-const stableColumns: GridColDef<EmailMessageSummary>[] = [
+const createColumns = (
+  prefetchEmail: (emailId: string) => void,
+): GridColDef<EmailMessageSummary>[] => [
   {
     field: 'count_attachments',
     headerName: 'Attachments',
@@ -98,6 +101,7 @@ const stableColumns: GridColDef<EmailMessageSummary>[] = [
     renderCell: (params) => {
       return params.value ? (
         <Link
+          onMouseEnter={() => prefetchEmail(params.row.emailId)}
           component={NextLink}
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
@@ -192,6 +196,7 @@ export const EmailList = ({
     [maxHeight],
   );
   const { push } = useRouter();
+  const prefetchEmail = usePrefetchEmail();
 
   const onRowDoubleClick = useCallback(
     (
@@ -219,12 +224,15 @@ export const EmailList = ({
 
   const getDetailPanelHeight = useCallback(() => 'auto', []);
 
+  // Create columns with prefetching capability
+  const columns = useMemo(() => createColumns(prefetchEmail), [prefetchEmail]);
+
   return (
     <>
       <Box sx={[stableSx.containerBase, containerSx]}>
         <ServerBoundDataGrid<EmailMessageSummary>
           {...props}
-          columns={stableColumns}
+          columns={columns}
           url={siteMap.api.email.url}
           idColumn="emailId"
           onRowDoubleClick={onRowDoubleClick}

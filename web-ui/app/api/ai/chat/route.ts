@@ -22,7 +22,8 @@ import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
-import { getAllFeatureFlags } from '@/lib/site-util/feature-flags/server';
+import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+import { User } from 'next-auth';
 // Allow streaming responses up to 180 seconds
 export const maxDuration = 60 * 1000 * 180;
 
@@ -63,7 +64,7 @@ const toolProviderFactory = async ({
   chatHistoryId,
   memoryDisabled = false,
   writeEnabled = false,
-  userId,
+  user,
   sessionId,
 }: {
   req: NextRequest;
@@ -71,15 +72,15 @@ const toolProviderFactory = async ({
   writeEnabled?: boolean;
   memoryDisabled?: boolean;
   // impersonation?: ImpersonationService;
-  userId: string;
+  user: User;
   sessionId: string;
 }) => {
-  const flags = await getAllFeatureFlags();
-  if (isTruthy(flags['mcp_cache_tools'])) {
+  const flag = await getFeatureFlag('mcp_cache_tools', user?.id);
+  if (isTruthy(flag)) {
     const toolProviderCache = await toolProviderCachePromise;
     // Use the cache to get or create tool providers
     return toolProviderCache.getOrCreate(
-      userId,
+      user.id!,
       sessionId,
       {
         writeEnabled,
@@ -88,6 +89,7 @@ const toolProviderFactory = async ({
       () =>
         setupDefaultTools({
           writeEnabled,
+          user,
           req,
           chatHistoryId,
           memoryEnabled: !memoryDisabled,
@@ -95,6 +97,7 @@ const toolProviderFactory = async ({
     );
   }
   return setupDefaultTools({
+    user,
     writeEnabled,
     req,
     chatHistoryId,
@@ -165,7 +168,7 @@ export const POST = (req: NextRequest) => {
           chatHistoryId,
           memoryDisabled,
           writeEnabled,
-          userId: session?.user?.id || 'anonymous',
+          user: session?.user,
           sessionId: chatHistoryId,
         });
         // Create chat history context
@@ -190,7 +193,7 @@ export const POST = (req: NextRequest) => {
           chatHistoryId,
           memoryDisabled,
           writeEnabled,
-          userId: session?.user?.id || 'anonymous',
+          user: session?.user,
           sessionId: chatHistoryId,
         });
         // In v5: create a UI message stream response and merge the generated stream.
@@ -299,7 +302,7 @@ export const POST = (req: NextRequest) => {
             chatHistoryId,
             memoryDisabled,
             writeEnabled,
-            userId: session?.user?.id || 'anonymous',
+            user: session?.user,
             sessionId: chatHistoryId,
           })).tools,
         });
