@@ -4,7 +4,7 @@
 import { DbDatabaseType, drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 /*
 const actualDrizzle = jest.requireActual('drizzle-orm/postgres-js');
-const actualSchema = jest.requireActual('@/lib/drizzle-db/schema');
+const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
 const mockDb = actualDrizzle.drizzle.mock({ actualSchema });
 */
 let mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
@@ -29,9 +29,11 @@ describe('resolveCaseFileId', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
     mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-    (mockDb.query.documentUnits.findFirst as jest.Mock).mockImplementation(() => {
-      return Promise.resolve(1);
-    });    
+    (mockDb.query.documentUnits.findFirst as jest.Mock).mockImplementation(
+      () => {
+        return Promise.resolve(1);
+      },
+    );
   });
 
   describe('when documentId is a number', () => {
@@ -255,26 +257,32 @@ describe('resolveCaseFileIdBatch', () => {
     const uuid1 = '12345678-1234-4567-8901-123456789012';
     const uuid2 = '87654321-4321-4321-8901-210987654321';
 
-    const setupMockRecords = (source: Array<{ unitId: number; documentPropertyId?: string | null; emailId?: string | null }>) => {
+    const setupMockRecords = (
+      source: Array<{
+        unitId: number;
+        documentPropertyId?: string | null;
+        emailId?: string | null;
+      }>,
+    ) => {
       mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
       const mockRecords = [...source];
-      
+
       // Note: drizDbWithInit is already globally mocked, so we just need to set up
       // the findMany mock to return the expected records
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(mockRecords);
-      
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(
+        mockRecords,
+      );
+
       return mockRecords;
-    }
+    };
 
     it('should resolve UUIDs from database', async () => {
       const requests = [{ caseFileId: uuid1 }, { caseFileId: uuid2 }];
 
-      setupMockRecords(
-        [
-          { unitId: 100, documentPropertyId: uuid1, emailId: null },
-          { unitId: 200, documentPropertyId: null, emailId: uuid2 },
-        ]
-      )
+      setupMockRecords([
+        { unitId: 100, documentPropertyId: uuid1, emailId: null },
+        { unitId: 200, documentPropertyId: null, emailId: uuid2 },
+      ]);
       const result = await resolveCaseFileIdBatch(requests);
 
       expect(result).toEqual([{ caseFileId: 100 }, { caseFileId: 200 }]);
@@ -330,7 +338,9 @@ describe('resolveCaseFileIdBatch', () => {
         { unitId: 999, documentPropertyId: uuid, emailId: null },
       ];
 
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(mockRecords);
+      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue(
+        mockRecords,
+      );
 
       const result = await resolveCaseFileIdBatch(requests);
 
@@ -379,7 +389,6 @@ describe('resolveCaseFileIdBatch', () => {
   });
 
   describe('edge cases', () => {
-      
     beforeEach(() => {
       mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
     });

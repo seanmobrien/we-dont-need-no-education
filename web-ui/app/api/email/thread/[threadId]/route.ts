@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import {
+  buildFallbackGrid,
+  wrapRouteRequest,
+} from '@/lib/nextjs-util/server/utils';
 import {
   mapRecordToSummary,
   mapRecordToThreadSummary,
@@ -9,36 +12,40 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 export const dynamic = 'force-dynamic';
 
-export const GET = wrapRouteRequest(async (
-  req: NextRequest,
-  args: { params: Promise<{ threadId: string }> },
-) => {
-  try {
-    // Extract the slug from params
-  const { threadId } = await args.params;
-    const threadIdNumber = parseInt(threadId, 10);
-    if (isNaN(threadIdNumber)) {
-      return NextResponse.json({ error: 'Invalid thread ID' }, { status: 400 });
-    }
-    const threadRecord = await query(
-      (sql) =>
-        sql`SELECT thread_id, subject, created_at FROM threads WHERE thread_id = ${threadIdNumber};`,
-      {
-        transform: mapRecordToThreadSummary,
-      },
-    );
-    if (threadRecord.length === 0) {
-      return NextResponse.json({ error: 'Thread not found' }, { status: 404 });
-    }
-    // Check if all emails should be pulled
-    const { searchParams } = new URL(req.url);
-    const expand = searchParams.get('expand');
-    if (expand !== 'true' && expand !== '1') {
-      return NextResponse.json(threadRecord[0], { status: 200 });
-    }
-    // pull away
-    const result = await queryExt(
-      (sql) => sql`SELECT 
+export const GET = wrapRouteRequest(
+  async (req: NextRequest, args: { params: Promise<{ threadId: string }> }) => {
+    try {
+      // Extract the slug from params
+      const { threadId } = await args.params;
+      const threadIdNumber = parseInt(threadId, 10);
+      if (isNaN(threadIdNumber)) {
+        return NextResponse.json(
+          { error: 'Invalid thread ID' },
+          { status: 400 },
+        );
+      }
+      const threadRecord = await query(
+        (sql) =>
+          sql`SELECT thread_id, subject, created_at FROM threads WHERE thread_id = ${threadIdNumber};`,
+        {
+          transform: mapRecordToThreadSummary,
+        },
+      );
+      if (threadRecord.length === 0) {
+        return NextResponse.json(
+          { error: 'Thread not found' },
+          { status: 404 },
+        );
+      }
+      // Check if all emails should be pulled
+      const { searchParams } = new URL(req.url);
+      const expand = searchParams.get('expand');
+      if (expand !== 'true' && expand !== '1') {
+        return NextResponse.json(threadRecord[0], { status: 200 });
+      }
+      // pull away
+      const result = await queryExt(
+        (sql) => sql`SELECT 
            e.email_id,
            e.subject,
            e.sent_timestamp,
@@ -62,27 +69,29 @@ export const GET = wrapRouteRequest(async (
          GROUP BY e.email_id, sender.contact_id, sender.name, sender.email
          ORDER BY e.sent_timestamp DESC;
        `,
-      {
-        transform: mapRecordToSummary,
-      },
-    );
-    return NextResponse.json(
-      {
-        ...threadRecord,
-        emails: result.rows,
-        total: result.rowCount,
-      },
-      { status: 200 },
-    );
-  } catch (error) {
-    LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      msg: 'Error fetching email thread',
-      source: 'GET email/thread/[threadId]',
-    });
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 },
-    );
-  }
-}, { buildFallback: buildFallbackGrid });
+        {
+          transform: mapRecordToSummary,
+        },
+      );
+      return NextResponse.json(
+        {
+          ...threadRecord,
+          emails: result.rows,
+          total: result.rowCount,
+        },
+        { status: 200 },
+      );
+    } catch (error) {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        msg: 'Error fetching email thread',
+        source: 'GET email/thread/[threadId]',
+      });
+      return NextResponse.json(
+        { error: 'Internal Server Error' },
+        { status: 500 },
+      );
+    }
+  },
+  { buildFallback: buildFallbackGrid },
+);

@@ -160,7 +160,11 @@ export class EmailRepository extends BaseObjectRepository<
         obj.emailContents,
         obj.globalMessageId ?? null,
         obj.importedFromId ?? null,
-        !obj.sentOn ? null : typeof obj.sentOn === 'string' ? obj.sentOn : obj.sentOn.toISOString(),
+        !obj.sentOn
+          ? null
+          : typeof obj.sentOn === 'string'
+            ? obj.sentOn
+            : obj.sentOn.toISOString(),
       ],
     ];
   }

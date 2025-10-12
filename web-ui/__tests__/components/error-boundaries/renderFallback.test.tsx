@@ -1,15 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-require-imports */
-/**
- * @jest-environment jsdom
- */
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@/__tests__/test-utils';
 // import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
-import { logger } from '@/lib/logger';
 
 // Mock the recovery strategies
 const mockReload = jest.fn();
@@ -20,10 +22,12 @@ jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
   classifyError: jest.fn(),
 }));
 
-const mockGetRecoveryActions = require('@/lib/error-monitoring/recovery-strategies').getRecoveryActions;
-const mockGetDefaultRecoveryAction = require('@/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
-const mockClassifyError = require('@/lib/error-monitoring/recovery-strategies').classifyError;
-
+const mockGetRecoveryActions =
+  require('/lib/error-monitoring/recovery-strategies').getRecoveryActions;
+const mockGetDefaultRecoveryAction =
+  require('/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
+const mockClassifyError =
+  require('/lib/error-monitoring/recovery-strategies').classifyError;
 
 // Create a test theme
 const testTheme = createTheme({
@@ -37,18 +41,40 @@ const testTheme = createTheme({
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ThemeProvider theme={testTheme}>
-    {children}
-  </ThemeProvider>
+  <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
 );
 
 describe('RenderErrorBoundaryFallback', () => {
   const mockResetErrorBoundary = jest.fn();
   const testError = new Error('Test error message');
 
+  let consoleErrorSpy:
+    | jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>
+    | undefined;
+  let consoleLogSpy:
+    | jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>
+    | undefined;
+  let consoleGroupSpy:
+    | jest.SpyInstance<void, [message?: any, ...optionalParams: any[]], any>
+    | undefined;
+  beforeEach(() => {
+    // Turn off console.error logging for these planned exceptions - keeps test output clean.
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleGroupSpy = jest.spyOn(console, 'group').mockImplementation(() => {});
+  });
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
+    consoleErrorSpy = undefined;
+    consoleLogSpy?.mockRestore();
+    consoleLogSpy = undefined;
+    consoleGroupSpy?.mockRestore();
+    consoleGroupSpy = undefined;
+  });
+
   beforeEach(() => {
     // jest.clearAllMocks();
-    
+
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');
     mockGetRecoveryActions.mockReturnValue([
@@ -67,14 +93,17 @@ describe('RenderErrorBoundaryFallback', () => {
     });
   });
 
-  const renderComponent = (error = testError, resetFn = mockResetErrorBoundary) => {
+  const renderComponent = (
+    error = testError,
+    resetFn = mockResetErrorBoundary,
+  ) => {
     return render(
       <TestWrapper>
-        <RenderErrorBoundaryFallback 
-          error={error} 
-          resetErrorBoundary={resetFn} 
+        <RenderErrorBoundaryFallback
+          error={error}
+          resetErrorBoundary={resetFn}
         />
-      </TestWrapper>
+      </TestWrapper>,
     );
   };
 
@@ -83,7 +112,9 @@ describe('RenderErrorBoundaryFallback', () => {
       renderComponent();
 
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-      expect(screen.getByText(/We encountered a network error/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/We encountered a network error/),
+      ).toBeInTheDocument();
       expect(screen.getByText('Test error message')).toBeInTheDocument();
     });
 
@@ -91,7 +122,9 @@ describe('RenderErrorBoundaryFallback', () => {
       mockClassifyError.mockReturnValue('rate_limit');
       renderComponent();
 
-      expect(screen.getByText(/We encountered a rate limit error/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/We encountered a rate limit error/),
+      ).toBeInTheDocument();
     });
 
     it('should handle non-Error objects', () => {
@@ -104,16 +137,21 @@ describe('RenderErrorBoundaryFallback', () => {
       renderComponent();
 
       // Check for error icon (ErrorOutlineIcon)
-      const errorIcon = document.querySelector('[data-testid="ErrorOutlineIcon"]');
-      expect(errorIcon || screen.getByText('Something went wrong')).toBeInTheDocument();
+      const errorIcon = document.querySelector(
+        '[data-testid="ErrorOutlineIcon"]',
+      );
+      expect(
+        errorIcon || screen.getByText('Something went wrong'),
+      ).toBeInTheDocument();
     });
   });
 
   describe('Error Details Expansion', () => {
     it('should show expandable technical details when stack trace is available', () => {
       const errorWithStack = new Error('Error with stack');
-      errorWithStack.stack = 'Error: Error with stack\n    at Component.render\n    at ReactDOM.render';
-      
+      errorWithStack.stack =
+        'Error: Error with stack\n    at Component.render\n    at ReactDOM.render';
+
       renderComponent(errorWithStack);
 
       expect(screen.getByText('Show technical details')).toBeInTheDocument();
@@ -122,12 +160,13 @@ describe('RenderErrorBoundaryFallback', () => {
     it('should expand and collapse technical details', () => {
       // const user = userEvent.setup();
       const errorWithStack = new Error('Error with stack');
-      errorWithStack.stack = 'Error: Error with stack\n    at Component.render\n    at ReactDOM.render';
-      
+      errorWithStack.stack =
+        'Error: Error with stack\n    at Component.render\n    at ReactDOM.render';
+
       renderComponent(errorWithStack);
 
       const expandButton = screen.getByText('Show technical details');
-      
+
       // Expand details
       fireEvent.click(expandButton);
       expect(screen.getByText('Hide technical details')).toBeInTheDocument();
@@ -136,16 +175,20 @@ describe('RenderErrorBoundaryFallback', () => {
       // Collapse details
       fireEvent.click(screen.getByText('Hide technical details'));
       expect(screen.getByText('Show technical details')).toBeInTheDocument();
-      expect(screen.queryByText(/at Component\.render/)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/at Component\.render/),
+      ).not.toBeInTheDocument();
     });
 
     it('should not show technical details when no stack trace', () => {
       const errorNoStack = new Error('Error without stack');
       errorNoStack.stack = undefined;
-      
+
       renderComponent(errorNoStack);
 
-      expect(screen.queryByText('Show technical details')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('Show technical details'),
+      ).not.toBeInTheDocument();
     });
   });
 
@@ -173,7 +216,7 @@ describe('RenderErrorBoundaryFallback', () => {
 
     it('should display recovery actions when available', () => {
       mockGetRecoveryActions.mockReturnValue(mockRecoveryActions);
-      
+
       renderComponent();
 
       expect(screen.getByText('Recovery Options')).toBeInTheDocument();
@@ -199,9 +242,9 @@ describe('RenderErrorBoundaryFallback', () => {
           action: jest.fn(),
         },
       ];
-      
+
       mockGetRecoveryActions.mockReturnValue(manyActions);
-      
+
       renderComponent();
 
       expect(screen.getByText('Retry Request')).toBeInTheDocument();
@@ -213,7 +256,7 @@ describe('RenderErrorBoundaryFallback', () => {
 
     it('should execute recovery action when clicked', async () => {
       mockGetRecoveryActions.mockReturnValue(mockRecoveryActions);
-      
+
       renderComponent();
 
       const retryButton = screen.getByText('Retry Request');
@@ -225,23 +268,25 @@ describe('RenderErrorBoundaryFallback', () => {
     it('should highlight default recovery action', () => {
       mockGetRecoveryActions.mockReturnValue(mockRecoveryActions);
       mockGetDefaultRecoveryAction.mockReturnValue(mockRecoveryActions[0]);
-      
+
       renderComponent();
 
       // Find all buttons with "Retry Request" text
       const retryButtons = screen.getAllByText('Retry Request');
-      
+
       // The recovery action button (first one) should be contained variant (highlighted)
-      const recoveryActionButton = retryButtons.find(button => 
-        button.closest('button')?.classList.contains('MuiButton-contained')
+      const recoveryActionButton = retryButtons.find((button) =>
+        button.closest('button')?.classList.contains('MuiButton-contained'),
       );
       expect(recoveryActionButton).toBeTruthy();
-      expect(recoveryActionButton?.closest('button')).toHaveClass('MuiButton-contained');
+      expect(recoveryActionButton?.closest('button')).toHaveClass(
+        'MuiButton-contained',
+      );
     });
 
     it('should not show recovery options when no actions available', () => {
       mockGetRecoveryActions.mockReturnValue([]);
-      
+
       renderComponent();
 
       expect(screen.queryByText('Recovery Options')).not.toBeInTheDocument();
@@ -256,9 +301,9 @@ describe('RenderErrorBoundaryFallback', () => {
         description: 'Retry the failed network request',
         action: jest.fn(),
       };
-      
+
       mockGetDefaultRecoveryAction.mockReturnValue(defaultAction);
-      
+
       renderComponent();
 
       expect(screen.getByText('Retry Network Request')).toBeInTheDocument();
@@ -266,13 +311,13 @@ describe('RenderErrorBoundaryFallback', () => {
 
     it('should show generic Try Again when no default action', () => {
       mockGetDefaultRecoveryAction.mockReturnValue(null);
-      
+
       renderComponent();
 
       // Get the Try Again button in the dialog actions (not in recovery actions)
       const tryAgainButtons = screen.getAllByText('Try Again');
-      const dialogActionButton = tryAgainButtons.find(button => 
-        button.closest('button')?.classList.contains('MuiButton-contained')
+      const dialogActionButton = tryAgainButtons.find((button) =>
+        button.closest('button')?.classList.contains('MuiButton-contained'),
       );
       expect(dialogActionButton).toBeInTheDocument();
     });
@@ -284,9 +329,9 @@ describe('RenderErrorBoundaryFallback', () => {
         description: 'Try again',
         action: jest.fn(),
       };
-      
+
       mockGetDefaultRecoveryAction.mockReturnValue(defaultAction);
-      
+
       renderComponent();
 
       const tryAgainButton = screen.getByText('Retry Request');
@@ -297,15 +342,15 @@ describe('RenderErrorBoundaryFallback', () => {
 
     it('should close dialog when no default action on Try Again click', async () => {
       mockGetDefaultRecoveryAction.mockReturnValue(null);
-      
+
       renderComponent();
 
       // Get the Try Again button in dialog actions
       const tryAgainButtons = screen.getAllByText('Try Again');
-      const dialogActionButton = tryAgainButtons.find(button => 
-        button.closest('button')?.classList.contains('MuiButton-contained')
+      const dialogActionButton = tryAgainButtons.find((button) =>
+        button.closest('button')?.classList.contains('MuiButton-contained'),
       );
-      
+
       fireEvent.click(dialogActionButton!);
 
       // Dialog should close (component would be unmounted in real scenario)
@@ -354,7 +399,7 @@ describe('RenderErrorBoundaryFallback', () => {
 
     it('should auto-reset error boundary when dialog closes', async () => {
       jest.useFakeTimers();
-      
+
       mockGetDefaultRecoveryAction.mockReturnValue(null);
       renderComponent();
 
@@ -382,7 +427,7 @@ describe('RenderErrorBoundaryFallback', () => {
       // Mock mobile viewport
       Object.defineProperty(window, 'matchMedia', {
         writable: true,
-        value: jest.fn().mockImplementation(query => ({
+        value: jest.fn().mockImplementation((query) => ({
           matches: query.includes('(max-width:'),
           media: query,
           onchange: null,
@@ -412,7 +457,6 @@ describe('RenderErrorBoundaryFallback', () => {
           throw thisError;
         }),
       };
-      const logMock = await logger();
       mockGetRecoveryActions.mockReturnValue([failingAction]);
 
       renderComponent();
@@ -422,7 +466,8 @@ describe('RenderErrorBoundaryFallback', () => {
 
       // Should not crash the component
       expect(screen.getByRole('dialog')).toBeInTheDocument();
-      expect(logMock.error).toHaveBeenCalled();
+      await new Promise((r) => setTimeout(r, 10)); // Wait for any async logs
+      expect(consoleGroupSpy).toHaveBeenCalled();
     });
 
     it('should not close dialog for certain recovery actions', async () => {
@@ -432,9 +477,9 @@ describe('RenderErrorBoundaryFallback', () => {
         description: 'Contact administrator',
         action: jest.fn(),
       };
-      
+
       mockGetRecoveryActions.mockReturnValue([contactAction]);
-      
+
       renderComponent();
 
       const contactButton = screen.getByText('Contact Admin');
@@ -450,7 +495,9 @@ describe('RenderErrorBoundaryFallback', () => {
     it('should have proper ARIA labels', () => {
       renderComponent();
 
-      expect(screen.getByLabelText(/something went wrong/i)).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(/something went wrong/i),
+      ).toBeInTheDocument();
       expect(screen.getByRole('dialog')).toHaveAttribute('aria-labelledby');
       expect(screen.getByRole('dialog')).toHaveAttribute('aria-describedby');
     });
@@ -461,10 +508,12 @@ describe('RenderErrorBoundaryFallback', () => {
 
       // Get the Try Again button in dialog actions
       const tryAgainButtons = screen.getAllByText('Try Again');
-      const dialogActionButton = tryAgainButtons.find(button => 
-        button.closest('button')?.classList.contains('MuiButton-contained')
-      )?.closest('button');
-      
+      const dialogActionButton = tryAgainButtons
+        .find((button) =>
+          button.closest('button')?.classList.contains('MuiButton-contained'),
+        )
+        ?.closest('button');
+
       // Material UI Button may not pass through autoFocus attribute directly
       // Just verify the button exists and is focusable
       expect(dialogActionButton).toBeInTheDocument();
@@ -478,7 +527,7 @@ describe('RenderErrorBoundaryFallback', () => {
 
       const title = screen.getByText('Something went wrong');
       const titleElement = title.closest('.MuiDialogTitle-root');
-      
+
       // Should have error color styling
       expect(titleElement).toBeInTheDocument();
     });
@@ -495,11 +544,11 @@ describe('RenderErrorBoundaryFallback', () => {
 
       render(
         <ThemeProvider theme={darkTheme}>
-          <RenderErrorBoundaryFallback 
-            error={testError} 
-            resetErrorBoundary={mockResetErrorBoundary} 
+          <RenderErrorBoundaryFallback
+            error={testError}
+            resetErrorBoundary={mockResetErrorBoundary}
           />
-        </ThemeProvider>
+        </ThemeProvider>,
       );
 
       expect(screen.getByRole('dialog')).toBeInTheDocument();

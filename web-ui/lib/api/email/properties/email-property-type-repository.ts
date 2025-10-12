@@ -3,10 +3,7 @@ import {
   EmailPropertyCategoryTypeId,
   EmailPropertyCategoryType,
 } from '@/data-models/api/email-properties/property-type';
-import {
-  PaginationStats,
-  PaginatedResultset,
-} from '@/data-models/_types';
+import { PaginationStats, PaginatedResultset } from '@/data-models/_types';
 import {
   lookupEmailPropertyCategory,
   lookupEmailPropertyType,

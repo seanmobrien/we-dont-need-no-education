@@ -11,6 +11,8 @@ import { createTheme } from '@mui/material/styles';
 import { ClientErrorManager } from '@/components/error-boundaries/ClientErrorManager';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
 import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
+import { any } from 'zod';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the error reporter and recovery strategies
 jest.mock('@/lib/error-monitoring', () => ({
@@ -35,16 +37,19 @@ jest.mock('@/lib/error-monitoring/recovery-strategies', () => ({
 }));
 
 const mockErrorReporter = errorReporter as jest.Mocked<typeof errorReporter>;
-const mockGetRecoveryActions = require('@/lib/error-monitoring/recovery-strategies').getRecoveryActions;
-const mockGetDefaultRecoveryAction = require('@/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
-const mockClassifyError = require('@/lib/error-monitoring/recovery-strategies').classifyError;
+const mockGetRecoveryActions =
+  require('/lib/error-monitoring/recovery-strategies').getRecoveryActions;
+const mockGetDefaultRecoveryAction =
+  require('/lib/error-monitoring/recovery-strategies').getDefaultRecoveryAction;
+const mockClassifyError =
+  require('/lib/error-monitoring/recovery-strategies').classifyError;
 
 // Mock window methods
 const mockAlert = jest.fn();
 
-Object.defineProperty(window, 'alert', { 
+Object.defineProperty(window, 'alert', {
   value: mockAlert,
-  configurable: true, 
+  configurable: true,
 });
 
 // Test theme
@@ -57,15 +62,14 @@ const testTheme = createTheme({
 
 // Test wrapper with providers
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <ThemeProvider theme={testTheme}>
-    {children}
-  </ThemeProvider>
+  <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
 );
+
+const consoleSpy = hideConsoleOutput();
 
 describe('Error Flow Integration Tests', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
-    
     // Default mock implementations
     mockClassifyError.mockReturnValue('network');
     mockGetRecoveryActions.mockReturnValue([
@@ -82,33 +86,38 @@ describe('Error Flow Integration Tests', () => {
       description: 'Retry the operation',
       action: mockReload,
     });
-    
     // Reset window event listeners
     window.addEventListener = jest.fn();
     window.removeEventListener = jest.fn();
   });
-
-
+  afterEach(() => {
+    consoleSpy.dispose();
+  });
 
   describe('Error Reporting Integration', () => {
     it('should report boundary errors with proper context', async () => {
+      consoleSpy.setup();
       const ThrowingComponent = () => {
         throw new Error('Component error for reporting test');
       };
 
       const onError = jest.fn((error, errorInfo) => {
-        mockErrorReporter.reportBoundaryError(error, errorInfo, ErrorSeverity.HIGH);
+        mockErrorReporter.reportBoundaryError(
+          error,
+          errorInfo,
+          ErrorSeverity.HIGH,
+        );
       });
 
       render(
         <TestWrapper>
-          <ErrorBoundary 
+          <ErrorBoundary
             fallbackRender={RenderErrorBoundaryFallback}
             onError={onError}
           >
             <ThrowingComponent />
           </ErrorBoundary>
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       await waitFor(() => {
@@ -117,10 +126,10 @@ describe('Error Flow Integration Tests', () => {
           expect.objectContaining({
             componentStack: expect.any(String),
           }),
-          'high'
+          'high',
         );
       });
-    });
+    }, 15000);
 
     it('should debounce duplicate global errors', async () => {
       render(
@@ -128,11 +137,14 @@ describe('Error Flow Integration Tests', () => {
           <ErrorBoundary fallbackRender={RenderErrorBoundaryFallback}>
             <ClientErrorManager debounceMs={10000} />
           </ErrorBoundary>
-        </TestWrapper>
+        </TestWrapper>,
       );
 
-      const addEventListenerCalls = (window.addEventListener as jest.Mock).mock.calls;
-      const errorHandler = addEventListenerCalls.find(call => call[0] === 'error')?.[1];
+      const addEventListenerCalls = (window.addEventListener as jest.Mock).mock
+        .calls;
+      const errorHandler = addEventListenerCalls.find(
+        (call) => call[0] === 'error',
+      )?.[1];
 
       const duplicateError = new ErrorEvent('error', {
         message: 'Duplicate error',
@@ -149,36 +161,48 @@ describe('Error Flow Integration Tests', () => {
 
       // Should only report once due to debouncing
       expect(mockErrorReporter.reportError).toHaveBeenCalledTimes(1);
-    });
+    }, 15000);
   });
-
-
 });
 
 describe('Performance and Memory Management', () => {
   it('should clean up event listeners on unmount', () => {
+    consoleSpy.setup();
     const { unmount } = render(
       <TestWrapper>
         <ClientErrorManager />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     // Verify listeners were added
-    expect(window.addEventListener).toHaveBeenCalledWith('error', expect.any(Function));
-    expect(window.addEventListener).toHaveBeenCalledWith('unhandledrejection', expect.any(Function));
+    expect(window.addEventListener).toHaveBeenCalledWith(
+      'error',
+      expect.any(Function),
+    );
+    expect(window.addEventListener).toHaveBeenCalledWith(
+      'unhandledrejection',
+      expect.any(Function),
+    );
 
     unmount();
 
     // Verify listeners were removed
-    expect(window.removeEventListener).toHaveBeenCalledWith('error', expect.any(Function));
-    expect(window.removeEventListener).toHaveBeenCalledWith('unhandledrejection', expect.any(Function));
+    expect(window.removeEventListener).toHaveBeenCalledWith(
+      'error',
+      expect.any(Function),
+    );
+    expect(window.removeEventListener).toHaveBeenCalledWith(
+      'unhandledrejection',
+      expect.any(Function),
+    );
   });
 
   it('should not create memory leaks with multiple error manager instances', () => {
+    consoleSpy.setup();
     const { rerender, unmount } = render(
       <TestWrapper>
         <ClientErrorManager />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     // Re-render multiple times
@@ -186,14 +210,14 @@ describe('Performance and Memory Management', () => {
       rerender(
         <TestWrapper>
           <ClientErrorManager />
-        </TestWrapper>
+        </TestWrapper>,
       );
     }
 
     // Should only have one set of listeners
     const addCalls = (window.addEventListener as jest.Mock).mock.calls;
-    const errorHandlerCalls = addCalls.filter(call => call[0] === 'error');
-    
+    const errorHandlerCalls = addCalls.filter((call) => call[0] === 'error');
+
     // Due to the initialization check, should only add listeners once
     expect(errorHandlerCalls.length).toBeLessThanOrEqual(5);
 

@@ -46,15 +46,18 @@
  * @since 1.0.0
  */
 
-import { schema } from "@/lib/drizzle-db";
-import { DbTransactionType } from "@/lib/drizzle-db";
-import { ChatHistoryContext } from "./types";
-import { eq, desc } from "drizzle-orm";
-import { log } from "@/lib/logger";
-import { getNextSequence, getNewMessages } from "./utility";
-import { generateChatId } from "@/lib/ai/core";
-import { LanguageModelV1CallOptions } from "ai";
-
+import { schema } from '@/lib/drizzle-db/schema';
+import type { ChatMessagesType, DbTransactionType } from '@/lib/drizzle-db';
+import { ChatHistoryContext, ToolStatus } from './types';
+import { eq, desc, and } from 'drizzle-orm';
+import { log } from '@/lib/logger';
+import { getNextSequence, getNewMessages, getItemOutput } from './utility';
+import { generateChatId } from '@/lib/ai/core';
+import type {
+  LanguageModelV2CallOptions,
+  LanguageModelV2ToolResultPart,
+  SharedV2ProviderOptions,
+} from '@ai-sdk/provider';
 
 // ============================================================================
 // Private Helper Functions
@@ -133,7 +136,11 @@ const getChatId = (context: ChatHistoryContext): string =>
  * });
  * ```
  */
-export const upsertChat = async (tx: DbTransactionType, chatId: string, context: ChatHistoryContext) =>  {
+export const upsertChat = async (
+  tx: DbTransactionType,
+  chatId: string,
+  context: ChatHistoryContext,
+) => {
   const existingChat =
     (
       await tx
@@ -196,7 +203,10 @@ export const upsertChat = async (tx: DbTransactionType, chatId: string, context:
  * console.log(`Reserved turn: ${turnId}`); // e.g., "Reserved turn: 5"
  * ```
  */
-export const reserveTurnId = async  (tx: DbTransactionType, chatId: string): Promise<number> => {
+export const reserveTurnId = async (
+  tx: DbTransactionType,
+  chatId: string,
+): Promise<number> => {
   const thisTurnId = await getNextSequence({
     tableName: 'chat_turns',
     chatId: chatId,
@@ -252,7 +262,7 @@ export const insertChatTurn = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number | undefined,
-  context: ChatHistoryContext
+  context: ChatHistoryContext,
 ) => {
   const thisTurnId = turnId ? turnId : await reserveTurnId(tx, chatId);
   const providerId = ((rId: undefined | string) => {
@@ -260,10 +270,8 @@ export const insertChatTurn = async (
       return undefined;
     }
     const idxOf = rId.lastIndexOf(':');
-    if (idxOf === -1){
-      return rId === chatId
-        ? undefined
-        : rId;
+    if (idxOf === -1) {
+      return rId === chatId ? undefined : rId;
     }
     return rId.substring(idxOf + 1).trim();
   })(context.requestId?.trim());
@@ -282,6 +290,23 @@ export const insertChatTurn = async (
       model: context.model,
     },
   });
+};
+
+/**
+ * Represents detailed information about a tool's execution state and data.
+ * Used for tracking tool calls and results within chat messages.
+ * @internal
+ */
+type ToolInfo = {
+  toolCallId?: string;
+  toolName?: string;
+  input?: string;
+  output?: string;
+  status: ToolStatus;
+  media?: string;
+  providerOptions?: {
+    [key in 'input' | 'output']?: SharedV2ProviderOptions;
+  };
 };
 
 /**
@@ -319,12 +344,12 @@ export const insertChatTurn = async (
  * console.log(messageIds); // [101, 102, 103, 104]
  * ```
  */
-export const reserveMessageIds = async  (
+export const reserveMessageIds = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number,
-  count: number
-): Promise<number[]>  => {
+  count: number,
+): Promise<number[]> => {
   const messageIds = await getNextSequence({
     tableName: 'chat_messages',
     chatId: chatId,
@@ -341,191 +366,281 @@ export const reserveMessageIds = async  (
 };
 
 /**
- * Inserts all prompt messages in a single batch operation with tool call support.
+ * Inserts a pending assistant message row to begin streaming content.
  *
- * @remarks
- * This function processes and persists all incoming messages from the prompt array
- * in a single database operation for maximum efficiency. It handles various message
- * types including user messages, assistant responses, system instructions, and
- * tool interactions with proper relationship tracking.
- *
- * **Message Processing Features:**
- * - Batch insertion for optimal database performance
- * - Automatic content serialization for complex structures
- * - Tool call relationship detection and linking
- * - Role-based message categorization
- * - Sequential ordering preservation
- *
- * **Tool Call Relationship Tracking:**
- * - Tool response messages are linked to their originating calls
- * - Assistant messages with tool calls are properly identified
- * - Provider IDs enable correlation between tool calls and responses
- * - Supports both single and multi-tool calling scenarios
- *
- * **Content Serialization:**
- * - String content is preserved as-is for efficiency
- * - Complex content structures are JSON-serialized
- * - Maintains data integrity while enabling flexible content types
- *
- * **Important Limitations:**
- * - Current implementation doesn't fully support parallel tool calling
- * - Tool call linking assumes sequential processing order
- * - Complex tool call scenarios may require additional handling
- *
- * @param tx - Active database transaction for consistency
- * @param chatId - The chat ID these messages belong to
- * @param turnId - The turn ID these messages belong to
- * @param messageIds - Pre-allocated message IDs for insertion
- * @param prompt - Array of messages to insert
- * @param startOrder - Starting message order number
- * @returns Promise that resolves when all messages are inserted
- *
- * @example
- * ```typescript
- * // Insert conversation with tool call
- * await insertPromptMessages(transaction, 'chat_123', 5, [101, 102, 103], [
- *   { role: 'user', content: 'What\'s the weather?' },
- *   { role: 'assistant', content: [{ type: 'tool-call', toolCallId: 'call_1' }] },
- *   { role: 'tool', content: [{ toolCallId: 'call_1', result: 'Sunny, 72°F' }] }
- * ], 0);
- * ```
- */
-const insertPromptMessages = async (
-  tx: DbTransactionType,
-  chatId: string,
-  turnId: number,
-  messageIds: number[],
-  prompt: LanguageModelV1CallOptions['prompt'],
-  startOrder: number
-) => {
-  let messageOrder = startOrder;
-  await tx.insert(schema.chatMessages).values(
-    prompt.map((p, i) => {
-      let providerId: string | null = null;
-      
-      // Tool call relationship detection and linking
-      // IMPORTANT: This logic does not scale to support parallel tool calling correctly.
-      if (p.role === 'tool') {
-        // Tool response message - link to original tool call
-        if (Array.isArray(p.content) && p.content.length > 0) {
-          providerId = p.content[0].toolCallId;
-        }
-      } else if (p.role === 'assistant') {
-        // Assistant message with tool calls - extract call ID for linking
-        if (Array.isArray(p.content)) {
-          const toolCall = p.content.find(x => x.type === 'tool-call');
-          if (toolCall) {
-            providerId = toolCall.toolCallId;
-          }
-        }
-      }
-      
-      return {
-        chatId: chatId,
-        turnId: turnId,
-        messageId: messageIds[i],
-        providerId, // Links tool calls to responses for relationship tracking
-        role: p.role as 'user' | 'assistant' | 'tool' | 'system',
-        content:
-          typeof p.content === 'string'
-            ? p.content
-            : JSON.stringify(p.content), // Serialize complex content structures
-        messageOrder: messageOrder++,
-        statusId: 2, // Complete status for imported messages
-      };
-    }),
-  ).execute();
-};
-
-/**
- * Creates a pending assistant message record for streaming response handling.
- *
- * @remarks
- * This function prepares the database for an incoming assistant response by
- * creating a message record in "streaming" status. This enables real-time
- * updates during response generation and ensures proper message ordering
- * within the conversation turn.
- *
- * **Streaming Preparation:**
- * - Creates message record with empty content for population during streaming
- * - Sets status to 1 (streaming/in-progress) for real-time tracking
- * - Reserves proper position in message order sequence
- * - Returns complete record for subsequent updates
- *
- * **Status Management:**
- * - Initial status indicates response is being generated
- * - Content starts empty and will be populated during streaming
- * - Message order ensures proper conversation flow
- * - Record can be updated incrementally as response arrives
- *
- * **Integration with Streaming:**
- * - Provides foundation for real-time response updates
- * - Enables status tracking throughout response generation
- * - Supports incremental content updates
- * - Maintains conversation ordering during async operations
- *
- * @param tx - Active database transaction for consistency
- * @param chatId - The chat ID this message belongs to
- * @param turnId - The turn ID this message belongs to
- * @param assistantMessageId - Pre-allocated message ID for the response
- * @param messageOrder - Position in the message sequence
- * @returns Promise resolving to array containing the created message record
- *
- * @example
- * ```typescript
- * // Prepare for streaming assistant response
- * const [pendingMessage] = await insertPendingAssistantMessage(
- *   transaction, 'chat_123', 5, 104, 3
- * );
- * console.log(pendingMessage.statusId); // 1 (streaming)
- * console.log(pendingMessage.content);  // '' (empty, will be populated)
- * ```
+ * @param tx - Active transaction
+ * @param chatId - Chat identifier
+ * @param turnId - Turn identifier
+ * @param messageId - Pre-reserved message id
+ * @param messageOrder - Sequential order for the message
+ * @param content - Initial content payload (typically a JSON stringified text part array)
  */
 export const insertPendingAssistantMessage = async (
   tx: DbTransactionType,
   chatId: string,
   turnId: number,
-  assistantMessageId: number,
+  messageId: number,
   messageOrder: number,
-  content: string = '',
-  statusId: number = 1
-) => {  
-  let newMessageId: number | undefined = assistantMessageId;
-  if (!newMessageId) {
-    [newMessageId] = await reserveMessageIds(tx, chatId, turnId, 1);
+  content: string,
+) => {
+  await tx
+    .insert(schema.chatMessages)
+    .values({
+      chatId,
+      turnId,
+      messageId,
+      role: 'assistant',
+      content,
+      messageOrder,
+      statusId: 1, // pending/in-progress
+    })
+    // Use returning() to align with existing mocked insert chain in tests
+    .returning()
+    .execute();
+};
+
+/**
+ * Simple type guard identifying tool-call parts.
+ */
+const isToolCallPart = (
+  item: unknown,
+): item is {
+  type: 'tool-call';
+  toolCallId?: string;
+  toolName?: string;
+  input?: unknown;
+} => {
+  return (
+    !!item &&
+    typeof item === 'object' &&
+    (item as { type?: unknown }).type === 'tool-call'
+  );
+};
+
+/**
+ * Simple type guard identifying tool-result parts.
+ */
+const isToolResultPart = (
+  item: unknown,
+): item is {
+  type: 'tool-result' | 'dynamic-tool';
+  toolCallId?: string;
+  toolName?: string;
+  output?: unknown;
+  error?: unknown;
+} => {
+  return (
+    !!item &&
+    typeof item === 'object' &&
+    'type' in item &&
+    (item.type === 'tool-result' || item.type === 'dynamic-tool')
+  );
+};
+
+/**
+ * Safely parse JSON-like strings into objects/arrays; otherwise return original value
+ * @param value - The value to parse
+ * @returns Parsed object/array or original value if parsing fails
+ */
+const parseMaybeJson = (value: unknown): unknown => {
+  if (typeof value !== 'string') return value;
+  const s = value.trim();
+  if (!s || (s[0] !== '{' && s[0] !== '[')) return value;
+  try {
+    return JSON.parse(s);
+  } catch {
+    return value;
   }
-  if (!messageOrder) {
-    try {
-      messageOrder = (await getLastMessageOrder(tx, chatId)) + 1;
-    } catch {
-      messageOrder = 1;
+};
+
+/**
+ * Internal utility method for merging a tool message field.
+ *
+ * @param prop - The property to process ('functionCall' or 'toolResult')
+ * @param target - The target object to update
+ * @param toolRow - The incoming tool message row
+ * @param existing - The existing persisted message data
+ * @param isNewerMessage - Whether the incoming message is newer than the existing one
+ * @returns True if the target was updated, false otherwise
+ * @remarks
+ * This method encapsulates the logic for non-destructive merging of tool message fields.
+ * It checks if the incoming message has new data for the specified property
+ * and updates the target object accordingly, preserving existing data when appropriate.
+ * The method returns a boolean indicating whether an update was made.
+ */
+const processField = ({
+  prop,
+  target,
+  toolRow,
+  existing,
+  isNewerMessage,
+}: {
+  prop: 'functionCall' | 'toolResult';
+  target: Partial<ChatMessagesType>;
+  toolRow: ChatMessageRowDraft;
+  existing: Pick<ChatMessagesType, 'functionCall' | 'toolResult' | 'statusId'>;
+  isNewerMessage: boolean;
+}): boolean => {
+  // If the incoming message has a value for this field
+  if (!!toolRow[prop]) {
+    // And the existing message does not
+    if (
+      !existing[prop] ||
+      // Or this is a newer message and the messages are different
+      (isNewerMessage && toolRow[prop] !== existing[prop])
+    ) {
+      target[prop] = toolRow[prop];
+      return true;
     }
   }
-  // Content may or may not be in message format - normalize
-  let thisContent = content?.trim();
-  if (thisContent) {
-    try
-    {
-      const check = JSON.parse(thisContent);
-      if (!Array.isArray(check)) {
-        thisContent = JSON.stringify([{ type: 'text', text: thisContent }]);
-      }
-    } catch {
-      thisContent = JSON.stringify([{ type: 'text', text: thisContent }]);
-    }
+  return false;
+};
+
+/**
+ * Upserts a tool message by providerId, implementing non-destructive merge.
+ *
+ * @remarks
+ * This function implements the core logic for tool message deduplication by:
+ * 1. Looking for existing tool messages with the same providerId
+ * 2. Only updating if the current turnId is greater than the stored modifiedTurnId
+ * 3. Preserving existing functionCall data when adding toolResult
+ * 4. Resetting optimization fields when updating
+ * 5. Adding modifiedTurnId to metadata for tracking
+ *
+ * @param tx - Active database transaction
+ * @param chatId - The chat ID
+ * @param turnId - Current turn ID
+ * @param toolRow - The tool message row to upsert
+ * @returns Promise resolving to the messageId of the upserted record
+ */
+export const upsertToolMessage = async (
+  tx: DbTransactionType,
+  chatId: string,
+  turnId: number,
+  toolRow: ChatMessageRowDraft,
+): Promise<number | null> => {
+  if (!toolRow.providerId) {
+    // No providerId means we can't deduplicate, just insert normally
+    return null;
   }
-  // Add record
-  return await tx.insert(schema.chatMessages).values({
-    chatId: chatId,
-    turnId: turnId,
-    messageId: newMessageId,
-    role: 'assistant',
-    content: thisContent ?? '',
-    messageOrder: messageOrder,
-    statusId
-  })
-  .returning()
-  .execute();
+
+  // Look for existing tool message with this providerId
+  const existingMessages = await tx
+    .select({
+      chatMessageId: schema.chatMessages.chatMessageId,
+      messageId: schema.chatMessages.messageId,
+      turnId: schema.chatMessages.turnId,
+      toolName: schema.chatMessages.toolName,
+      statusId: schema.chatMessages.statusId,
+      functionCall: schema.chatMessages.functionCall,
+      toolResult: schema.chatMessages.toolResult,
+      metadata: schema.chatMessages.metadata,
+      optimizedContent: schema.chatMessages.optimizedContent,
+    })
+    .from(schema.chatMessages)
+    .where(
+      and(
+        eq(schema.chatMessages.chatId, chatId),
+        eq(schema.chatMessages.providerId, toolRow.providerId),
+        eq(schema.chatMessages.role, 'tool'),
+      ),
+    )
+    .limit(1);
+
+  if (existingMessages.length === 0 || !existingMessages[0]) {
+    // No existing message, return null to signal normal insert
+    return null;
+  }
+  // Determine if we want to update the persisted row.  This is true if -
+  // 1. We have data they do not (eg we have a result but none is persisted)
+  // 2. We both have data and our turn > the last modified turn
+  const existing = existingMessages[0];
+  const existingMetadata =
+    (existing?.metadata as { modifiedTurnId?: number } | null) || {};
+  const lastModifiedTurnId = existingMetadata.modifiedTurnId || 0;
+  const isNewerMessage = turnId > lastModifiedTurnId;
+
+  let updated = false;
+
+  // Prepare update data with non-destructive merge
+  const updateData: Partial<typeof schema.chatMessages.$inferInsert> = {
+    functionCall: existing.functionCall,
+    toolResult: existing.toolResult,
+    statusId: existing.statusId,
+    metadata: {
+      ...existingMetadata,
+      providerOptions: {
+        ...(('providerOptions' in existingMetadata
+          ? existingMetadata.providerOptions
+          : null) ?? {}),
+        ...((typeof toolRow.metadata == 'object' &&
+        toolRow.metadata &&
+        'providerOptions' in toolRow.metadata
+          ? toolRow.metadata.providerOptions
+          : null) ?? {}),
+      },
+      modifiedTurnId: turnId,
+    },
+    // Reset optimization fields when updating
+    optimizedContent: null,
+  };
+
+  if (toolRow.statusId > (existing.statusId ?? -1)) {
+    // If incoming status is greater than (eg more complete) than existing, update it
+    updateData.statusId = toolRow.statusId;
+    updated = true;
+  }
+  if (
+    processField({
+      prop: 'functionCall',
+      target: updateData,
+      toolRow,
+      existing,
+      isNewerMessage,
+    })
+  ) {
+    updated = true;
+  }
+  if (
+    processField({
+      prop: 'toolResult',
+      target: updateData,
+      toolRow,
+      existing,
+      isNewerMessage,
+    })
+  ) {
+    updated = true;
+  }
+  if (!updated) {
+    // Return current id signals no update is necessary
+    return existing.messageId;
+  }
+  // If we reach here, we have updates to apply
+
+  // Don't overwrite existing toolResult if incoming is null
+  if (
+    updateData.metadata &&
+    typeof updateData.metadata == 'object' &&
+    'providerOptions' in updateData.metadata &&
+    updateData.metadata.providerOptions &&
+    Object.keys(updateData.metadata.providerOptions).length === 0
+  ) {
+    delete updateData.metadata.providerOptions;
+  }
+  // Update the existing record
+  await tx
+    .update(schema.chatMessages)
+    .set(updateData)
+    .where(eq(schema.chatMessages.chatMessageId, existing.chatMessageId));
+
+  log((l) =>
+    l.debug(
+      `Updated tool message for providerId ${toolRow.providerId} from turn ${existing.turnId} to ${turnId}`,
+    ),
+  );
+
+  return existing.messageId;
 };
 
 // ============================================================================
@@ -544,7 +659,10 @@ export const insertPendingAssistantMessage = async (
  * @param chatId - The chat ID to query for message order
  * @returns Promise resolving to the highest message order (0 if no messages exist)
  */
-const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promise<number> => {
+const getLastMessageOrder = async (
+  tx: DbTransactionType,
+  chatId: string,
+): Promise<number> => {
   const result = await tx
     .select({ maxOrder: schema.chatMessages.messageOrder })
     .from(schema.chatMessages)
@@ -641,10 +759,10 @@ const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promi
  *   params: {
  *     prompt: [
  *       { role: 'user', content: 'What\'s the weather like?' },
- *       { 
- *         role: 'assistant', 
- *         content: [{ 
- *           type: 'tool-call', 
+ *       {
+ *         role: 'assistant',
+ *         content: [{
+ *           type: 'tool-call',
  *           toolCallId: 'call_123',
  *           toolName: 'getWeather',
  *           args: { location: 'San Francisco' }
@@ -652,7 +770,7 @@ const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promi
  *       },
  *       {
  *         role: 'tool',
- *         content: [{ 
+ *         content: [{
  *           toolCallId: 'call_123',
  *           result: { temperature: 72, condition: 'sunny' }
  *         }]
@@ -687,26 +805,31 @@ const getLastMessageOrder = async (tx: DbTransactionType, chatId: string): Promi
 export const importIncomingMessage = async ({
   tx,
   context,
-  params: { prompt },
+  params: { prompt, providerOptions: { backoffice = {} } = {} },
 }: {
   /** Active database transaction ensuring consistency across all operations */
   tx: DbTransactionType;
   /** Chat context containing user, session, and model configuration */
   context: ChatHistoryContext;
   /** Language model call options containing the messages to import */
-  params: LanguageModelV1CallOptions;
+  params: LanguageModelV2CallOptions;
   /** Record identifier for the imported message */
   messageId?: number;
 }) => {
   // Resolve and normalize chat ID from context
   const chatId = getChatId(context);
   let currentMessageOrder = 0;
-
   // Ensure chat session exists with proper metadata
   await upsertChat(tx, chatId, context);
 
+  // Reserve unique turn ID for this conversation cycle
+  const thisTurnId = await reserveTurnId(tx, chatId);
+  log((l) =>
+    l.debug(`Reserved chat turn id: ${thisTurnId} for chat: ${chatId}`),
+  );
+
   // Filter out messages that have already been saved in previous turns
-  const newMessages = await getNewMessages(tx, chatId, prompt);
+  const newMessages = await getNewMessages(tx, chatId, prompt, thisTurnId);
 
   log((l) =>
     l.debug(
@@ -714,16 +837,9 @@ export const importIncomingMessage = async ({
     ),
   );
 
-  // Reserve unique turn ID for this conversation cycle
-  const thisTurnId = await reserveTurnId(tx, chatId);
-  log((l) =>
-    l.debug(
-      `Reserved chat turn id: ${thisTurnId} for chat: ${chatId} with ${newMessages?.length || 0} new messages`,
-    ),
-  );
-
   // Initialize turn record with comprehensive tracking information
   await insertChatTurn(tx, chatId, thisTurnId, context);
+  backoffice.turnId = thisTurnId;
 
   // Get the current highest message order for proper sequencing
   let lastMessageOrder: number;
@@ -738,24 +854,28 @@ export const importIncomingMessage = async ({
   currentMessageOrder = lastMessageOrder + 1;
 
   if (newMessages?.length) {
-    // Reserve sequential message IDs for batch insertion (new messages + assistant response)
-    const messageIds = await reserveMessageIds(
-      tx,
-      chatId,
-      thisTurnId,
-      newMessages?.length ?? 0, // + 1, // +1 for pending assistant response
+    // Transform prompt into rows: tool-call/result -> single 'tool' row; other content grouped by role switches
+    const rows = flattenPromptToRows(
+      newMessages as LanguageModelV2CallOptions['prompt'],
     );
-    // If we have new messages, we can insert them
-    await insertPromptMessages(
-      tx,
-      chatId,
-      thisTurnId,
-      messageIds,
-      newMessages as LanguageModelV1CallOptions['prompt'], // Only insert new messages, not duplicates
-      currentMessageOrder,
-    );
-    currentMessageOrder += newMessages.length;
-  }  
+    if (rows.length > 0) {
+      const messageIds = await reserveMessageIds(
+        tx,
+        chatId,
+        thisTurnId,
+        rows.length,
+      );
+      await insertPromptMessages(
+        tx,
+        chatId,
+        thisTurnId,
+        messageIds,
+        rows,
+        currentMessageOrder,
+      );
+      currentMessageOrder += rows.length;
+    }
+  }
   // Return comprehensive context for continued processing
   return {
     chatId,
@@ -763,4 +883,267 @@ export const importIncomingMessage = async ({
     messageId: undefined as number | undefined,
     nextMessageOrder: currentMessageOrder,
   };
+};
+
+// Removed unused bucketization helpers (replaced by flattenPromptToRows)
+
+// Draft row shape for chat_messages insertion
+type ChatMessageRowDraft = {
+  role: 'user' | 'assistant' | 'tool' | 'system';
+  statusId: number;
+  content?: Array<Record<string, unknown>> | string | null;
+  toolName?: string | null;
+  functionCall?: unknown | null;
+  toolResult?: unknown | null;
+  providerId?: string | null;
+  metadata?: unknown | null;
+};
+
+// Convert prompt into rows honoring requirements 1-3
+const flattenPromptToRows = (
+  prompt: LanguageModelV2CallOptions['prompt'],
+): ChatMessageRowDraft[] => {
+  const messages = Array.isArray(prompt) ? prompt : [prompt];
+  const rows: ChatMessageRowDraft[] = [];
+
+  let currentContentRow: {
+    role: ChatMessageRowDraft['role'];
+    content: Array<Record<string, unknown>>;
+  } | null = null;
+
+  const flushContent = () => {
+    if (currentContentRow && currentContentRow.content.length > 0) {
+      rows.push({
+        statusId: 1,
+        ...currentContentRow,
+      });
+    }
+    currentContentRow = null;
+  };
+
+  const pushToolRow = (info: ToolInfo) => {
+    let statusId: number;
+    switch (info.status) {
+      case 'pending':
+        statusId = 1;
+        break;
+      case 'content':
+        statusId = 2;
+        break;
+      case 'result':
+        statusId = 2;
+        break;
+      case 'error':
+        statusId = 3;
+        break;
+      default:
+        statusId = 1;
+        break;
+    }
+    const row: ChatMessageRowDraft = {
+      statusId,
+      role: 'tool',
+      content: info.media ? info.output : null,
+      toolName: info.toolName ?? null,
+      providerId: info.toolCallId ?? null,
+      functionCall: info.input ? parseMaybeJson(info.input) : null,
+      toolResult:
+        info.output || info.media
+          ? parseMaybeJson(info.media ?? info.output)
+          : null,
+      metadata: info.providerOptions
+        ? { providerOptions: info.providerOptions }
+        : undefined,
+    };
+    rows.push(row);
+  };
+
+  const pushContentItem = (
+    role: ChatMessageRowDraft['role'],
+    value: unknown,
+  ) => {
+    // early-exit on null/undefined/empty-string
+    if (!value) {
+      return;
+    }
+    let item: Record<string, unknown>;
+    // If we have an object we have to to some special handling
+    if (typeof value === 'object') {
+      if ('text' in value) {
+        // If it has a text property then just take it as is (note tools have already been removed by processContentPart)
+        item = value;
+      } else if (Array.isArray(value)) {
+        // If it's an array then we flatten it out by processing each item individually
+        for (const part of value as unknown[]) {
+          processContentPart(part, role);
+        }
+        // And then early exit - nothing left to do for this part
+        return;
+      } else {
+        // Otherwise, we stringify the object as a JSON text part (although honestly I think now that we're upgraded to v5 we could also prob just take as-is?)
+        item = { type: 'text', value: JSON.stringify(value) };
+      }
+    } else {
+      // Otherwise it's a non-object raw value, so we turn it into a text part
+      item = {
+        type: 'text',
+        text: typeof value === 'string' ? value : JSON.stringify(value),
+      };
+    }
+    // Append to the current content row or flush and start anew
+    if (!currentContentRow || currentContentRow.role !== role) {
+      flushContent();
+      currentContentRow = { role, content: [item] };
+    } else {
+      currentContentRow.content.push(item);
+    }
+  };
+
+  const processContentPart = (
+    part: unknown,
+    role: ChatMessageRowDraft['role'],
+  ) => {
+    if (!part) return;
+    // Handle tool-calls special...
+    if (isToolCallPart(part)) {
+      flushContent();
+      pushToolRow({
+        status: 'pending',
+        toolCallId: part.toolCallId,
+        toolName: part.toolName,
+        input:
+          part.input != null
+            ? typeof part.input === 'string'
+              ? part.input
+              : JSON.stringify(part.input)
+            : undefined,
+        providerOptions: (part as { providerOptions?: SharedV2ProviderOptions })
+          .providerOptions
+          ? {
+              input: (part as { providerOptions?: SharedV2ProviderOptions })
+                .providerOptions,
+            }
+          : undefined,
+      });
+      return;
+    }
+    // Handle tool-results special...
+    if (isToolResultPart(part)) {
+      flushContent();
+      const parsed = getItemOutput(part as LanguageModelV2ToolResultPart);
+      pushToolRow({
+        ...parsed,
+        toolCallId: (part as { toolCallId?: string }).toolCallId,
+        toolName: (part as { toolName?: string }).toolName,
+        providerOptions: (part as { providerOptions?: SharedV2ProviderOptions })
+          .providerOptions
+          ? {
+              output: (part as { providerOptions?: SharedV2ProviderOptions })
+                .providerOptions,
+            }
+          : undefined,
+      });
+      flushContent();
+      return;
+    }
+    // Otherwise fallback to normal content item processing
+    pushContentItem(role, part);
+  };
+
+  for (const message of messages) {
+    const role = (message.role as ChatMessageRowDraft['role']) ?? 'user';
+
+    if (typeof message.content === 'string') {
+      pushContentItem(role, message.content);
+      continue;
+    }
+    if (Array.isArray(message.content)) {
+      for (const part of message.content as unknown[]) {
+        processContentPart(part, role);
+      }
+      continue;
+    }
+    if (!!message.content) {
+      processContentPart(message.content, role);
+      continue;
+    }
+    pushContentItem(
+      role,
+      'value' in message && !!message.value ? message.value : message,
+    );
+  }
+
+  flushContent();
+  return rows;
+};
+
+const insertPromptMessages = async (
+  tx: DbTransactionType,
+  chatId: string,
+  turnId: number,
+  messageIds: number[],
+  rows: ChatMessageRowDraft[],
+  startOrder: number,
+) => {
+  let messageOrder = startOrder;
+  const rowsToInsert: Array<typeof schema.chatMessages.$inferInsert> = [];
+  let messageIdIndex = 0;
+
+  // Process each row, checking for tool message upserts
+  for (const row of rows) {
+    if (row.role === 'tool' && row.providerId) {
+      // Try to upsert the tool message
+      const upsertedMessageId = await upsertToolMessage(
+        tx,
+        chatId,
+        turnId,
+        row,
+      );
+
+      if (upsertedMessageId !== null) {
+        // Message was updated, skip inserting a new row
+        log((l) =>
+          l.debug(
+            `Tool message upserted for providerId ${row.providerId}, messageId: ${upsertedMessageId}`,
+          ),
+        );
+        continue;
+      }
+    }
+
+    // For non-tool messages or tool messages that couldn't be upserted, add to insert batch
+    const messageId =
+      messageIdIndex < messageIds.length ? messageIds[messageIdIndex] : 0;
+    messageIdIndex++;
+
+    const rowData = {
+      chatId,
+      turnId,
+      messageId,
+      role: row.role,
+      content:
+        typeof row.content === 'string'
+          ? row.content
+          : row.content != null
+            ? JSON.stringify(row.content)
+            : null,
+      toolName: row.toolName ?? null,
+      functionCall: row.functionCall ?? null,
+      toolResult: row.toolResult ?? null,
+      providerId: row.providerId ?? null,
+      metadata:
+        row.role === 'tool' && row.providerId
+          ? { modifiedTurnId: turnId, ...((row.metadata as object) || {}) }
+          : (row.metadata ?? null),
+      messageOrder: messageOrder++,
+      statusId: 2,
+    };
+
+    rowsToInsert.push(rowData);
+  }
+
+  // Insert any remaining non-upserted messages
+  if (rowsToInsert.length > 0) {
+    await tx.insert(schema.chatMessages).values(rowsToInsert).execute();
+  }
 };

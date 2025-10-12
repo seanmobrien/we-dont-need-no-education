@@ -29,15 +29,10 @@ import {
   PostgresStatement,
 } from './postgres';
 
-
-
-
 type Sql<T extends Record<string, unknown>> = PostgresSql<T>;
 
 //import { deprecate } from '../nextjs-util';
 //import { deprecate } from '@/lib/nextjs-util/utils';
-
-
 
 export type QueryProps<ResultType extends object = Record<string, unknown>> = {
   transform?: <RecordType extends Record<string, unknown>>(
@@ -120,8 +115,8 @@ type RecordsetInitOptionalProps<T extends readonly any[]> =
   | { count: number }
   | { records: ArrayLike<T | Array<any>> };
 
-type RecordsetInitProps<T extends readonly any[]> =
-  RecordsetBaseInitProps<T> & RecordsetInitOptionalProps<T>;
+type RecordsetInitProps<T extends readonly any[]> = RecordsetBaseInitProps<T> &
+  RecordsetInitOptionalProps<T>;
 
 type RecordsetInitWithTransformProps<
   T extends readonly any[],
@@ -232,12 +227,12 @@ const isRecordsetInitWithTransformProps = <
   typeof check.transform === 'function';
 
 export class Resultset<T extends readonly any[] = readonly any[]>
-extends Array<any>  
-implements IResultset<T>
+  extends Array<any>
+  implements IResultset<T>
 {
-  static isResultset<
-    TRow extends readonly any[] = readonly any[],
-  >(check: unknown): check is IResultset<TRow> {
+  static isResultset<TRow extends readonly any[] = readonly any[]>(
+    check: unknown,
+  ): check is IResultset<TRow> {
     if (!Array.isArray(check)) {
       return false;
     }
@@ -259,7 +254,9 @@ implements IResultset<T>
     // No go
     return false;
   }
-  static isRowList<TRow extends readonly any[]>(check: unknown): check is RowList<TRow> {
+  static isRowList<TRow extends readonly any[]>(
+    check: unknown,
+  ): check is RowList<TRow> {
     if (!Array.isArray(check)) {
       return false;
     }
@@ -380,7 +377,6 @@ implements IResultset<T>
       cause: resultset,
     });
   }
-  
 
   get fields(): ColumnList<keyof T> {
     return this.#fields;
@@ -494,7 +490,9 @@ export const asSql = <
  * @param cb - A callback function that receives a postgres Sql instance and returns a Promise of RowList.
  * @returns A Promise that resolves to the query results.
  */
-export const query = async <ResultType extends object = Record<string, unknown>>(
+export const query = async <
+  ResultType extends object = Record<string, unknown>,
+>(
   cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
   props: QueryProps<ResultType> = {},
 ): Promise<Array<ResultType>> => {
@@ -508,7 +506,9 @@ export const query = async <ResultType extends object = Record<string, unknown>>
  * @param cb - A callback function that receives a postgres Sql instance and returns a Promise of RowList with full query results.
  * @returns A Promise that resolves to the full query results.
  */
-export const queryExt = async <ResultType extends object = Record<string, unknown>>(
+export const queryExt = async <
+  ResultType extends object = Record<string, unknown>,
+>(
   cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
   props: QueryProps<ResultType> = {},
 ): Promise<TransformedFullQueryResults<ResultType>> => {
@@ -516,20 +516,20 @@ export const queryExt = async <ResultType extends object = Record<string, unknow
   return applyResultsetTransform(cb(sqlNeonAdapter(sql_1)), props);
 };
 
-export type SqlDb<TRecord = any> =
-  PostgresSql<TRecord>;
+export type SqlDb<TRecord = any> = PostgresSql<TRecord>;
 
-export const queryRaw =
-<RecordType = any>(
+export const queryRaw = <RecordType = any>(
   cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
 ): PendingQuery<RecordType> => cb(pgDb<RecordType>());
 
-export const safeQueryRaw = async <RecordType extends Record<string, unknown> = any>(
+export const safeQueryRaw = async <
+  RecordType extends Record<string, unknown> = any,
+>(
   cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
 ): Promise<PendingQuery<RecordType>> => cb(await pgDbWithInit<RecordType>());
 
 export const db = async <
-  ResultType extends (readonly any[] & Record<string, unknown>)  = any,
+  ResultType extends readonly any[] & Record<string, unknown> = any,
   RecordType extends Record<string, unknown> = ResultType, // ExcludeExactMatch<Record<string, unknown>, ResultType> = any,
 >(
   cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
@@ -548,7 +548,9 @@ export const db = async <
           result.statement as string | PostgresStatement,
           result.command,
           result.columns as ColumnList<keyof ResultType>,
-          result as unknown as ArrayLike<ExcludeExactMatch<Record<string, unknown>, ResultType> & any[]>,
+          result as unknown as ArrayLike<
+            ExcludeExactMatch<Record<string, unknown>, ResultType> & any[]
+          >,
           transform,
         ),
       );

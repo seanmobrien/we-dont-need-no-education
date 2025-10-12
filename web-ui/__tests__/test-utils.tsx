@@ -5,7 +5,7 @@ import {
   RenderOptions,
   screen,
   renderHook,
-  RenderHookOptions,  
+  RenderHookOptions,
   RenderHookResult,
 } from '@testing-library/react';
 import Queries from '@testing-library/dom/types/queries';
@@ -14,6 +14,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/lib/themes/provider';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@/components/auth/session-provider';
+import { FlagProvider } from '@/components/general/flags/flag-provider';
+
+type CustomRenderOptions = RenderOptions & {
+  withFlags?: boolean;
+};
 
 // Create a test QueryClient with disabled retries and logs
 const createTestQueryClient = () =>
@@ -26,7 +31,7 @@ const createTestQueryClient = () =>
         retry: false,
       },
     },
-});
+  });
 
 const AllTheProviders = ({ children }: PropsWithChildren) => {
   const queryClient = createTestQueryClient();
@@ -42,21 +47,46 @@ const AllTheProviders = ({ children }: PropsWithChildren) => {
   );
 };
 
-const customRender = (ui: React.ReactElement, options: RenderOptions = {}) => {
+const AllTheProvidersWithFlags = ({ children }: PropsWithChildren) => {
+  return (
+    <AllTheProviders>
+      <FlagProvider>{children}</FlagProvider>
+    </AllTheProviders>
+  );
+};
+
+const customRender = (
+  ui: React.ReactElement,
+  options: CustomRenderOptions = {},
+) => {
   let ret: any = undefined;
   act(() => {
-    ret = render(ui, { wrapper: AllTheProviders, ...options });
+    ret = render(ui, {
+      wrapper: options.withFlags ? AllTheProvidersWithFlags : AllTheProviders,
+      ...options,
+    });
   });
-  return ret;
+  const rerender = ret.rerender;
+  return {
+    ...ret,
+    rerender: (rerenderUi: React.ReactElement) => {
+      act(() => {
+        rerender(rerenderUi);
+      });
+    },
+  };
 };
 
 const customAsyncRender = async (
   ui: React.ReactElement,
-  options: RenderOptions = {},
+  options: CustomRenderOptions = {},
 ) => {
   let ret: any = undefined;
   await act(async () => {
-    ret = render(ui, { wrapper: AllTheProviders, ...options });
+    ret = render(ui, {
+      wrapper: options.withFlags ? AllTheProvidersWithFlags : AllTheProviders,
+      ...options,
+    });
   });
   return ret;
 };
@@ -69,15 +99,22 @@ const customRenderHook = <
   BaseElement extends Container = Container,
 >(
   hook: (initialProps?: Props) => Result,
-  options?: RenderHookOptions<Props, Q, Container, BaseElement>,
+  options?: RenderHookOptions<Props, Q, Container, BaseElement> & {
+    withFlags?: boolean;
+  },
 ): RenderHookResult<Result, Props> => {
   let ret: RenderHookResult<Result, Props> | undefined = undefined;
   act(() => {
     const normalOptions = options ?? {};
-    const fromHook = renderHook<Result, Props, Q, Container, BaseElement>(hook, {
-      wrapper: normalOptions.wrapper ?? AllTheProviders,
-      ...normalOptions,
-    });
+    const fromHook = renderHook<Result, Props, Q, Container, BaseElement>(
+      hook,
+      {
+        wrapper:
+          normalOptions.wrapper ??
+          (options?.withFlags ? AllTheProvidersWithFlags : AllTheProviders),
+        ...normalOptions,
+      },
+    );
     ret = fromHook;
   });
   return ret!;
@@ -99,7 +136,10 @@ export type { RenderOptions };
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 (global as any).IS_REACT_ACT_ENVIRONMENT = true;
 
-export const jsonResponse = <TData extends object>(data: TData, status?: number) => {
+export const jsonResponse = <TData extends object>(
+  data: TData,
+  status?: number,
+) => {
   const jsonCallback = (): Promise<TData> => Promise.resolve(data as TData);
   const stat = status ?? 200;
   return {
@@ -109,6 +149,72 @@ export const jsonResponse = <TData extends object>(data: TData, status?: number)
     headers: {
       'Content-Type': 'application/json',
     },
-    json: jsonCallback
+    json: jsonCallback,
   };
 };
+
+export type MockedConsole = {
+  error?: jest.SpyInstance;
+  log?: jest.SpyInstance;
+  info?: jest.SpyInstance;
+  group?: jest.SpyInstance;
+  groupEnd?: jest.SpyInstance;
+  table?: jest.SpyInstance;
+  warn?: jest.SpyInstance;
+  setup: () => void;
+  dispose: () => void;
+};
+
+export const hideConsoleOutput = () => {
+  const ret: MockedConsole = {
+    error: undefined,
+    log: undefined,
+    group: undefined,
+    groupEnd: undefined,
+    table: undefined,
+    info: undefined,
+    warn: undefined,
+    setup: () => {
+      ret.error ??= jest.spyOn(console, 'error').mockImplementation(() => {});
+      ret.log ??= jest.spyOn(console, 'log').mockImplementation(() => {});
+      ret.group ??= jest.spyOn(console, 'group').mockImplementation(() => {});
+      ret.groupEnd ??= jest
+        .spyOn(console, 'groupEnd')
+        .mockImplementation(() => {});
+      ret.table ??= jest.spyOn(console, 'table').mockImplementation(() => {});
+      ret.info ??= jest.spyOn(console, 'info').mockImplementation(() => {});
+      ret.warn ??= jest.spyOn(console, 'warn').mockImplementation(() => {});
+    },
+    dispose: () => {
+      ret.error?.mockRestore();
+      delete ret.error;
+      ret.log?.mockRestore();
+      delete ret.log;
+      ret.group?.mockRestore();
+      delete ret.group;
+      ret.groupEnd?.mockRestore();
+      delete ret.groupEnd;
+      ret.table?.mockRestore();
+      delete ret.table;
+      ret.info?.mockRestore();
+      delete ret.info;
+      ret.warn?.mockRestore();
+      delete ret.warn;
+    },
+  };
+  return ret;
+};
+
+let mockIdCounter: number = 0;
+let mockUseId: jest.SpyInstance<string, [], any> | undefined;
+
+beforeEach(() => {
+  mockIdCounter = 0;
+  mockUseId = jest.spyOn(React, 'useId');
+  mockUseId.mockImplementation(() => `mock-id-${mockIdCounter++}`);
+});
+
+afterEach(() => {
+  mockUseId?.mockRestore();
+  mockUseId = undefined;
+});

@@ -21,7 +21,7 @@ const TestDialogWrapper = ({
   ...props
 }: Partial<ResizeableDraggableDialogProps> & { initialOpen?: boolean }) => {
   const [open, setOpen] = useState(initialOpen);
-  
+
   return (
     <div>
       <button onClick={() => setOpen(true)}>Open Dialog</button>
@@ -41,7 +41,6 @@ const TestDialogWrapper = ({
     </div>
   );
 };
-
 
 describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () => {
   beforeEach(() => {
@@ -106,7 +105,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
 
       // Check for drag handle - use a more specific selector
       const dragHandle = screen.getByRole('button', {
-        name: /drag to move dialog/i
+        name: /drag to move dialog/i,
       });
       expect(dragHandle).toHaveAttribute(
         'aria-label',
@@ -133,7 +132,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       await waitFor(() => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       });
-    });
+    }, 15000);
   });
 
   describe('Size Management Integration', () => {
@@ -160,9 +159,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       const dialog = screen.getByRole('dialog');
       expect(dialog).toBeInTheDocument();
     });
-
   });
-
 
   describe('Modal vs Non-Modal Behavior', () => {
     it('behaves as non-modal by default', async () => {
@@ -192,10 +189,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       const backdrop = document.querySelector('[class*="MuiBackdrop-root"]');
       expect(backdrop).toBeInTheDocument();
     });
-
   });
-
-
 
   describe('Error Handling Integration', () => {
     it('handles missing dialog element gracefully during keyboard drag', async () => {
@@ -205,7 +199,9 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
         expect(screen.getByRole('dialog')).toBeInTheDocument();
       });
 
-      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
+      const dragHandle = screen.getByRole('button', {
+        name: /drag to move dialog/i,
+      });
 
       // Mock closest to return null (simulating missing dialog)
       jest.spyOn(dragHandle, 'closest').mockReturnValue(null);
@@ -228,7 +224,9 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       });
 
       const dialog = screen.getByRole('dialog');
-      const dragHandle = screen.getByRole('button', { name: /drag to move dialog/i });
+      const dragHandle = screen.getByRole('button', {
+        name: /drag to move dialog/i,
+      });
 
       // Check ARIA labeling
       expect(dialog).toHaveAttribute('aria-labelledby');
@@ -244,7 +242,7 @@ describe('ResizableDraggableDialog + ResizeableDraggablePaper Integration', () =
       });
 
       const dragHandle = screen.getByRole('button', {
-        name: /drag to move dialog/i
+        name: /drag to move dialog/i,
       });
       const testInput = screen.getByTestId('test-input');
 

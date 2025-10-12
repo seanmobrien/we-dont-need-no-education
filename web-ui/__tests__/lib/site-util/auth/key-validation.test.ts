@@ -1,9 +1,9 @@
 /**
  * @fileoverview Tests for key validation utilities
- * 
+ *
  * Tests the key validation workflow including timing checks,
  * key comparison, and synchronization operations.
- * 
+ *
  * @module __tests__/lib/site-util/auth/key-validation.test.ts
  */
 
@@ -27,7 +27,6 @@ Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
 });
 
-
 // Mock the logger
 jest.mock('@/lib/logger', () => ({
   log: jest.fn(),
@@ -43,36 +42,38 @@ describe('Key Validation Utilities', () => {
   describe('isKeyValidationDue', () => {
     it('should return true when no validation timestamp exists', () => {
       mockLocalStorage.getItem.mockReturnValue(null);
-      
+
       const result = isKeyValidationDue();
-      
+
       expect(result).toBe(true);
-      expect(mockLocalStorage.getItem).toHaveBeenCalledWith('lastKeyValidation');
+      expect(mockLocalStorage.getItem).toHaveBeenCalledWith(
+        'lastKeyValidation',
+      );
     });
 
     it('should return true when validation timestamp is older than interval', () => {
       const oldTimestamp = Date.now() - KEY_VALIDATION_INTERVAL - 1000; // 1 second past interval
       mockLocalStorage.getItem.mockReturnValue(oldTimestamp.toString());
-      
+
       const result = isKeyValidationDue();
-      
+
       expect(result).toBe(true);
     });
 
     it('should return false when validation is recent', () => {
       const recentTimestamp = Date.now() - 1000; // 1 second ago
       mockLocalStorage.getItem.mockReturnValue(recentTimestamp.toString());
-      
+
       const result = isKeyValidationDue();
-      
+
       expect(result).toBe(false);
     });
 
     it('should handle invalid timestamp gracefully', () => {
       mockLocalStorage.getItem.mockReturnValue('invalid-timestamp');
-      
+
       const result = isKeyValidationDue();
-      
+
       expect(result).toBe(true); // Default to validation needed
     });
 
@@ -80,9 +81,9 @@ describe('Key Validation Utilities', () => {
       mockLocalStorage.getItem.mockImplementation(() => {
         throw new Error('localStorage error');
       });
-      
+
       const result = isKeyValidationDue();
-      
+
       expect(result).toBe(true); // Default to validation needed
     });
   });
@@ -91,12 +92,12 @@ describe('Key Validation Utilities', () => {
     it('should store current timestamp in localStorage', () => {
       const mockTimestamp = 1234567890;
       jest.spyOn(Date, 'now').mockReturnValue(mockTimestamp);
-      
+
       updateKeyValidationTimestamp();
-      
+
       expect(mockLocalStorage.setItem).toHaveBeenCalledWith(
         'lastKeyValidation',
-        mockTimestamp.toString()
+        mockTimestamp.toString(),
       );
     });
 
@@ -104,7 +105,7 @@ describe('Key Validation Utilities', () => {
       mockLocalStorage.setItem.mockImplementation(() => {
         throw new Error('localStorage error');
       });
-      
+
       // Should not throw
       expect(() => updateKeyValidationTimestamp()).not.toThrow();
     });
@@ -135,9 +136,9 @@ describe('Key Validation Utilities', () => {
 
     it('should return invalid when no local key exists', async () => {
       mockGetPublicKey.mockResolvedValue(null);
-      
+
       const result = await validateUserKeys(testServerKeys, mockGetPublicKey);
-      
+
       expect(result).toEqual({
         isValid: false,
         hasLocalKey: false,
@@ -149,13 +150,17 @@ describe('Key Validation Utilities', () => {
     it('should return valid when local key matches server key', async () => {
       const testKeyBase64 = 'server-key-1';
       mockGetPublicKey.mockResolvedValue(mockPublicKey);
-      mockExportKey.mockResolvedValue(new Uint8Array([/* mock SPKI data */]));
-      
+      mockExportKey.mockResolvedValue(
+        new Uint8Array([
+          /* mock SPKI data */
+        ]),
+      );
+
       // Mock btoa to return our test key
       global.btoa = jest.fn().mockReturnValue(testKeyBase64);
-      
+
       const result = await validateUserKeys(testServerKeys, mockGetPublicKey);
-      
+
       expect(result).toEqual({
         isValid: true,
         hasLocalKey: true,
@@ -167,11 +172,15 @@ describe('Key Validation Utilities', () => {
     it('should return invalid when local key does not match server keys', async () => {
       const testKeyBase64 = 'different-key';
       mockGetPublicKey.mockResolvedValue(mockPublicKey);
-      mockExportKey.mockResolvedValue(new Uint8Array([/* mock SPKI data */]));
+      mockExportKey.mockResolvedValue(
+        new Uint8Array([
+          /* mock SPKI data */
+        ]),
+      );
       global.btoa = jest.fn().mockReturnValue(testKeyBase64);
-      
+
       const result = await validateUserKeys(testServerKeys, mockGetPublicKey);
-      
+
       expect(result).toEqual({
         isValid: false,
         hasLocalKey: true,
@@ -182,9 +191,9 @@ describe('Key Validation Utilities', () => {
 
     it('should handle errors gracefully', async () => {
       mockGetPublicKey.mockRejectedValue(new Error('Key retrieval failed'));
-      
+
       const result = await validateUserKeys(testServerKeys, mockGetPublicKey);
-      
+
       expect(result.isValid).toBe(false);
       expect(result.action).toBe('retry');
       expect(result.error).toBe('Key retrieval failed');
@@ -213,35 +222,34 @@ describe('Key Validation Utilities', () => {
       mockGenerateKeyPair.mockResolvedValue(mockKeyPair);
       mockExportPublicKey.mockResolvedValue(testPublicKey);
       mockUploadPublicKeyToServer.mockResolvedValue({ success: true });
-  
+
       const result = await synchronizeKeys(
         mockGenerateKeyPair,
         mockExportPublicKey,
         mockUploadPublicKeyToServer,
       );
-      
+
       expect(result).toEqual({
         success: true,
         newPublicKey: testPublicKey,
       });
-      
+
       expect(mockGenerateKeyPair).toHaveBeenCalled();
       expect(mockExportPublicKey).toHaveBeenCalled();
       expect(mockUploadPublicKeyToServer).toHaveBeenCalledWith({
         publicKey: 'new-public-key',
       });
-      
     });
 
     it('should handle key generation failure', async () => {
       mockGenerateKeyPair.mockRejectedValue(new Error('Key generation failed'));
-      
+
       const result = await synchronizeKeys(
         mockGenerateKeyPair,
         mockExportPublicKey,
         mockUploadPublicKeyToServer,
       );
-      
+
       expect(result.success).toBe(false);
       expect(result.error).toBe('Key generation failed');
     });
@@ -249,13 +257,13 @@ describe('Key Validation Utilities', () => {
     it('should handle key export failure', async () => {
       mockGenerateKeyPair.mockResolvedValue(mockKeyPair);
       mockExportPublicKey.mockResolvedValue(null);
-      
+
       const result = await synchronizeKeys(
         mockGenerateKeyPair,
         mockExportPublicKey,
         mockUploadPublicKeyToServer,
       );
-      
+
       expect(result.success).toBe(false);
       expect(result.error).toBe('Failed to export new public key');
     });
@@ -264,16 +272,17 @@ describe('Key Validation Utilities', () => {
       const testPublicKey = 'new-public-key';
       mockGenerateKeyPair.mockResolvedValue(mockKeyPair);
       mockExportPublicKey.mockResolvedValue(testPublicKey);
-      
+
       mockUploadPublicKeyToServer.mockRejectedValueOnce(
-        new Error('Key upload failed: 400 Bad request'));
-      
+        new Error('Key upload failed: 400 Bad request'),
+      );
+
       const result = await synchronizeKeys(
         mockGenerateKeyPair,
         mockExportPublicKey,
         mockUploadPublicKeyToServer,
       );
-      
+
       expect(result.success).toBe(false);
       expect(result.error).toBe('Key upload failed: 400 Bad request');
     });
@@ -282,14 +291,16 @@ describe('Key Validation Utilities', () => {
       const testPublicKey = 'new-public-key';
       mockGenerateKeyPair.mockResolvedValue(mockKeyPair);
       mockExportPublicKey.mockResolvedValue(testPublicKey);
-      mockUploadPublicKeyToServer.mockRejectedValue(new Error('Key upload failed: 400 Bad request'));  
-      
+      mockUploadPublicKeyToServer.mockRejectedValue(
+        new Error('Key upload failed: 400 Bad request'),
+      );
+
       const result = await synchronizeKeys(
         mockGenerateKeyPair,
         mockExportPublicKey,
         mockUploadPublicKeyToServer,
       );
-      
+
       expect(result.success).toBe(false);
       expect(result.error).toBe('Key upload failed: 400 Bad request');
     });
@@ -306,7 +317,7 @@ describe('Key Validation Utilities', () => {
     const testServerKeys = ['server-key-1'];
 
     beforeEach(() => {
-      Object.values(mockKeyManagerMethods).forEach(mock => mock.mockClear());
+      Object.values(mockKeyManagerMethods).forEach((mock) => mock.mockClear());
       (global.fetch as jest.Mock).mockClear();
     });
 
@@ -314,7 +325,7 @@ describe('Key Validation Utilities', () => {
       // Mock valid key validation
       const mockPublicKey = {} as CryptoKey;
       mockKeyManagerMethods.getPublicKey.mockResolvedValue(mockPublicKey);
-      
+
       // Mock crypto.subtle.exportKey
       Object.defineProperty(window, 'crypto', {
         value: {
@@ -324,9 +335,12 @@ describe('Key Validation Utilities', () => {
         },
       });
       global.btoa = jest.fn().mockReturnValue('server-key-1');
-      
-      const result = await performKeyValidationWorkflow(testServerKeys, mockKeyManagerMethods);
-      
+
+      const result = await performKeyValidationWorkflow(
+        testServerKeys,
+        mockKeyManagerMethods,
+      );
+
       expect(result).toEqual({
         validated: true,
         synchronized: false,
@@ -336,21 +350,26 @@ describe('Key Validation Utilities', () => {
     it('should complete workflow with key generation when no local keys exist', async () => {
       // Mock no local key
       mockKeyManagerMethods.getPublicKey.mockResolvedValue(null);
-      
+
       // Mock successful key generation and sync
       mockKeyManagerMethods.generateKeyPair.mockResolvedValue({
         publicKey: {} as CryptoKey,
         privateKey: {} as CryptoKey,
       });
-      mockKeyManagerMethods.exportPublicKeyForServer.mockResolvedValue('new-key');
-      
+      mockKeyManagerMethods.exportPublicKeyForServer.mockResolvedValue(
+        'new-key',
+      );
+
       (global.fetch as jest.Mock).mockResolvedValue({
         ok: true,
         json: () => Promise.resolve({ success: true }),
       });
-      
-      const result = await performKeyValidationWorkflow(testServerKeys, mockKeyManagerMethods);
-      
+
+      const result = await performKeyValidationWorkflow(
+        testServerKeys,
+        mockKeyManagerMethods,
+      );
+
       expect(result).toEqual({
         validated: true,
         synchronized: true,
@@ -358,10 +377,15 @@ describe('Key Validation Utilities', () => {
     });
 
     it('should handle workflow failure gracefully', async () => {
-      mockKeyManagerMethods.getPublicKey.mockRejectedValue(new Error('Workflow error'));
-      
-      const result = await performKeyValidationWorkflow(testServerKeys, mockKeyManagerMethods);
-      
+      mockKeyManagerMethods.getPublicKey.mockRejectedValue(
+        new Error('Workflow error'),
+      );
+
+      const result = await performKeyValidationWorkflow(
+        testServerKeys,
+        mockKeyManagerMethods,
+      );
+
       expect(result.validated).toBe(false);
       expect(result.synchronized).toBe(false);
       expect(result.error).toBe('Workflow error');

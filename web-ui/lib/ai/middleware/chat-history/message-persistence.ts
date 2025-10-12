@@ -1,32 +1,41 @@
 /**
  * @fileoverview Message Persistence Utilities for Chat History Middleware
- * 
+ *
  * This module provides shared utilities for handling message persistence across
  * both streaming and text completion modes in the chat history middleware.
- * 
+ *
  * @module lib/ai/middleware/chat-history/message-persistence
  * @version 1.0.0
  * @since 2025-07-25
  */
 
-import { LanguageModelV1CallOptions } from 'ai';
+import type { LanguageModelV2CallOptions } from '@ai-sdk/provider';
+import { JSONValue } from 'ai';
 import { drizDb } from '@/lib/drizzle-db';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import type { ChatHistoryContext, FlushContext, MessageCompletionContext, MessagePersistenceInit } from './types';
+import type {
+  ChatHistoryContext,
+  FlushContext,
+  MessageCompletionContext,
+  MessagePersistenceInit,
+} from './types';
 import { importIncomingMessage } from './import-incoming-message';
 import { handleFlush } from './flush-handlers';
-import { instrumentMiddlewareInit, createChatHistoryError } from './instrumentation';
+import {
+  instrumentMiddlewareInit,
+  createChatHistoryError,
+} from './instrumentation';
 import { generateChatId } from '../../core';
 
 /**
  * Initializes message persistence by creating chat, turn, and message records.
  * This is used by both streaming and text completion modes.
- * 
+ *
  * @param context - The chat history context
  * @param params - The language model call parameters
  * @returns Promise resolving to the initialized persistence data
- * 
+ *
  * @example
  * ```typescript
  * const { chatId, turnId, messageId } = await initializeMessagePersistence(
@@ -37,26 +46,30 @@ import { generateChatId } from '../../core';
  */
 export const initializeMessagePersistence = async (
   context: ChatHistoryContext,
-  params: LanguageModelV1CallOptions,
+  params: LanguageModelV2CallOptions,
 ): Promise<MessagePersistenceInit> => {
   try {
-    return await drizDb().transaction(async (tx) => 
+    const ret = await drizDb().transaction(async (tx) =>
       importIncomingMessage({
         tx,
         context,
         params,
-      })
+      }),
     );
+    return {
+      ...ret,
+      turnId: ret.turnId.toString(),
+    };
   } catch (error) {
     // Create enhanced error for better observability
     const enhancedError = createChatHistoryError(
       'Error initializing message persistence',
-      { 
+      {
         chatId: context.chatId || 'unknown',
         turnId: undefined,
-        messageId: undefined 
+        messageId: undefined,
       },
-      error instanceof Error ? error : new Error(String(error))
+      error instanceof Error ? error : new Error(String(error)),
     );
 
     LoggedError.isTurtlesAllTheWayDownBaby(enhancedError, {
@@ -68,7 +81,7 @@ export const initializeMessagePersistence = async (
         context,
         userId: context.userId,
         chatId: context.chatId,
-      }
+      },
     });
     throw enhancedError;
   }
@@ -77,10 +90,10 @@ export const initializeMessagePersistence = async (
 /**
  * Completes message persistence by finalizing the message and turn.
  * This is used by both streaming and text completion modes.
- * 
+ *
  * @param completionContext - The context for completing the message
  * @returns Promise resolving to the flush result
- * 
+ *
  * @example
  * ```typescript
  * const result = await completeMessagePersistence({
@@ -104,7 +117,6 @@ export const completeMessagePersistence = async (
       generatedText: completionContext.generatedText,
       startTime: completionContext.startTime,
     };
-
     // Handle completion using the existing flush logic
     const flushResult = await handleFlush(flushContext);
 
@@ -140,7 +152,7 @@ export const completeMessagePersistence = async (
         chatId: completionContext.chatId,
         turnId: completionContext.turnId,
         messageId: completionContext.messageId,
-      }
+      },
     });
     throw error;
   }
@@ -149,17 +161,20 @@ export const completeMessagePersistence = async (
 /**
  * Safely handles message persistence initialization with error handling.
  * Returns null if initialization fails to allow continued operation.
- * 
+ *
  * @param context - The chat history context
  * @param params - The language model call parameters
  * @returns Promise resolving to initialization data or null if failed
  */
 export const safeInitializeMessagePersistence = async (
   context: ChatHistoryContext,
-  params: LanguageModelV1CallOptions,
+  params: LanguageModelV2CallOptions,
 ): Promise<MessagePersistenceInit | null> => {
   try {
     context.chatId ??= generateChatId().id;
+    params.providerOptions ??= {};
+    params.providerOptions.backoffice ??= {} as Record<string, JSONValue>;
+    params.providerOptions.backoffice.chatId = context.chatId;
     return await instrumentMiddlewareInit(context, async () => {
       return await initializeMessagePersistence(context, params);
     });
@@ -172,7 +187,7 @@ export const safeInitializeMessagePersistence = async (
 /**
  * Safely handles message persistence completion with error handling.
  * Logs errors but doesn't throw to avoid breaking the response flow.
- * 
+ *
  * @param completionContext - The context for completing the message
  * @returns Promise resolving to flush result or a failure result
  */

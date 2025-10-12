@@ -6,7 +6,10 @@ import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
 /**
  * Configuration interface for BaseDrizzleRepository
  */
-export interface DrizzleRepositoryConfig<T extends object, KId extends keyof T> {
+export interface DrizzleRepositoryConfig<
+  T extends object,
+  KId extends keyof T,
+> {
   /** The Drizzle table schema */
   table: PgTable;
   /** The primary key column in the table (optional - will be auto-detected if not provided) */

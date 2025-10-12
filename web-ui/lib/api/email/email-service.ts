@@ -1,4 +1,7 @@
-import { EmailDrizzleRepository, EmailDomain } from './email-drizzle-repository';
+import {
+  EmailDrizzleRepository,
+  EmailDomain,
+} from './email-drizzle-repository';
 import { EmailMessage } from '@/data-models/api/email-message';
 import { ContactSummary } from '@/data-models/api/contact';
 import { query } from '@/lib/neondb';
@@ -50,17 +53,17 @@ export type UpdateEmailRequest = {
  * It bridges between the API layer and the data access layer, handling
  * complex operations like fetching related data (contacts, recipients)
  * and converting between different data models.
- * 
+ *
  * This service abstracts the complexity of working with the drizzle repository
  * and provides a clean interface for the API routes.
- * 
+ *
  * @example
  * ```typescript
  * const service = new EmailService();
- * 
+ *
  * // Get emails with full contact information
  * const emails = await service.getEmailsSummary({ page: 1, num: 10 });
- * 
+ *
  * // Create new email with recipients
  * const newEmail = await service.createEmail({
  *   senderId: 123,
@@ -79,7 +82,7 @@ export class EmailService {
 
   /**
    * Retrieves a single email by ID with full details
-   * 
+   *
    * @param emailId - The email ID to retrieve
    * @returns Promise resolving to email with full details or null
    */
@@ -92,18 +95,22 @@ export class EmailService {
 
       // Fetch sender information
       const senderResult = await query(
-        (sql) => sql`SELECT contact_id, name, email FROM contacts WHERE contact_id = ${emailDomain.senderId}`,
+        (sql) =>
+          sql`SELECT contact_id, name, email FROM contacts WHERE contact_id = ${emailDomain.senderId}`,
       );
-      
-      const sender: ContactSummary = senderResult.length > 0 ? {
-        contactId: senderResult[0].contact_id as number,
-        name: senderResult[0].name as string,
-        email: senderResult[0].email as string,
-      } : {
-        contactId: emailDomain.senderId,
-        name: 'Unknown',
-        email: 'unknown@example.com',
-      };
+
+      const sender: ContactSummary =
+        senderResult.length > 0
+          ? {
+              contactId: senderResult[0].contact_id as number,
+              name: senderResult[0].name as string,
+              email: senderResult[0].email as string,
+            }
+          : {
+              contactId: emailDomain.senderId,
+              name: 'Unknown',
+              email: 'unknown@example.com',
+            };
 
       // Fetch recipients information
       const recipientsResult = await query(
@@ -145,7 +152,7 @@ export class EmailService {
 
   /**
    * Creates a new email with recipients
-   * 
+   *
    * @param request - Email creation request
    * @returns Promise resolving to created email with full details
    */
@@ -153,7 +160,7 @@ export class EmailService {
     try {
       // Support taking senderId from either the direct field or sender object
       const senderId = request.senderId ?? request.sender?.contactId;
-      
+
       if (!senderId) {
         throw new Error('Sender ID is required');
       }
@@ -176,7 +183,9 @@ export class EmailService {
       }
 
       // Create document unit for the email content
-      const importDate = createdEmail.sentTimestamp ? new Date(createdEmail.sentTimestamp) : new Date();
+      const importDate = createdEmail.sentTimestamp
+        ? new Date(createdEmail.sentTimestamp)
+        : new Date();
       await query(
         (sql) => sql`
           INSERT INTO document_units (email_id, content, created_on, document_type)
@@ -206,7 +215,7 @@ export class EmailService {
 
   /**
    * Updates an existing email
-   * 
+   *
    * @param request - Email update request
    * @returns Promise resolving to updated email with full details
    */
@@ -224,9 +233,12 @@ export class EmailService {
       if (senderId !== undefined) updateData.senderId = senderId;
       if (request.subject !== undefined) updateData.subject = request.subject;
       if (request.body !== undefined) updateData.emailContents = request.body;
-      if (request.sentOn !== undefined) updateData.sentTimestamp = request.sentOn;
-      if (request.threadId !== undefined) updateData.threadId = request.threadId;
-      if (request.parentEmailId !== undefined) updateData.parentId = request.parentEmailId;
+      if (request.sentOn !== undefined)
+        updateData.sentTimestamp = request.sentOn;
+      if (request.threadId !== undefined)
+        updateData.threadId = request.threadId;
+      if (request.parentEmailId !== undefined)
+        updateData.parentId = request.parentEmailId;
 
       const updatedEmail = await this.repository.update(updateData);
 
@@ -257,14 +269,14 @@ export class EmailService {
 
   /**
    * Deletes an email by ID
-   * 
+   *
    * @param emailId - The email ID to delete
    * @returns Promise resolving to true if deleted, false if not found
    */
   async deleteEmail(emailId: string): Promise<boolean> {
     try {
       const result = await this.repository.delete(emailId);
-      
+
       log((l) =>
         l.verbose({
           message: '[[AUDIT]] - Email deleted via service:',
@@ -282,37 +294,50 @@ export class EmailService {
 
   /**
    * Finds an email by its global message ID
-   * 
+   *
    * @param globalMessageId - The global message ID to search for
    * @returns Promise resolving to email ID or null if not found
    */
-  async findEmailIdByGlobalMessageId(globalMessageId: string): Promise<string | null> {
+  async findEmailIdByGlobalMessageId(
+    globalMessageId: string,
+  ): Promise<string | null> {
     try {
-      const email = await this.repository.findByGlobalMessageId(globalMessageId);
+      const email =
+        await this.repository.findByGlobalMessageId(globalMessageId);
       return email?.emailId || null;
     } catch (error) {
-      log((l) => l.error({ source: 'EmailService::findEmailIdByGlobalMessageId', error }));
+      log((l) =>
+        l.error({
+          source: 'EmailService::findEmailIdByGlobalMessageId',
+          error,
+        }),
+      );
       throw error;
     }
   }
 
   /**
    * Inserts or updates recipients for an email
-   * 
+   *
    * @param emailId - The email ID
    * @param recipients - Array of recipient information
    * @param replaceExisting - Whether to delete existing recipients first
    */
   private async insertRecipients(
     emailId: string,
-    recipients: Array<{ recipientId: number; recipientName?: string; recipientEmail?: string }>,
+    recipients: Array<{
+      recipientId: number;
+      recipientName?: string;
+      recipientEmail?: string;
+    }>,
     replaceExisting = false,
   ): Promise<void> {
     try {
       if (replaceExisting) {
         // Delete existing recipients
         await query(
-          (sql) => sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`,
+          (sql) =>
+            sql`DELETE FROM email_recipients WHERE email_id = ${emailId}`,
         );
       }
 

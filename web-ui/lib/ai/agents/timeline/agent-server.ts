@@ -1,6 +1,5 @@
-import { generateText, wrapLanguageModel } from 'ai';
-import { aiModelFactory } from '../../aiModelFactory';
-import { getCaseFileDocument } from '../../tools';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
+import { getCaseFileDocument } from '@/lib/ai/tools';
 import { ClientTimelineAgent } from './agent';
 import {
   TimelineAgentProps,
@@ -11,16 +10,20 @@ import {
   GlobalMetadata,
   SerializedTimelineAgent,
 } from './types';
-import { AiLanguageModelType, generateChatId } from '../../core';
+import { type AiLanguageModelType, generateChatId } from '@/lib/ai/core';
 import { drizDb } from '@/lib/drizzle-db';
-import { setupDefaultTools } from '../../mcp/setup-default-tools';
+import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { NextRequest } from 'next/server';
-import { ChatHistoryContext, createChatHistoryMiddleware } from '../../middleware';
+import {
+  type ChatHistoryContext,
+  createAgentHistoryContext,
+  wrapChatHistoryMiddleware,
+} from '@/lib/ai/middleware/chat-history';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { ToolProviderSet } from '../..';
+import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { log } from '@/lib/logger';
-import { createAgentHistoryContext } from '../../middleware/chat-history/create-chat-history-context';
 import { auth } from '@/auth';
+import { generateTextWithRetry } from '@/lib/ai/core/generate-text-with-retry';
 
 type InitializeProps = { req: NextRequest };
 
@@ -55,7 +58,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   readonly #processedDocuments = new Set<string>();
   readonly #documentMetadata = new Map<string, DocumentMetadata>();
   readonly #documentContent = new Map<string, string>();
-  #userId: string | undefined
+  #userId: string | undefined;
   #timelineState: TimelineSummary = {
     globalMetadata: {
       caseId: '',
@@ -83,6 +86,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     lastUpdated: new Date().toISOString(),
   };
   #isInitialized = false;
+  #chatHistoryContext: ChatHistoryContext | undefined;
 
   constructor(props: TimelineAgentProps | SerializedTimelineAgent) {
     super(props);
@@ -103,7 +107,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   ): Promise<void> {
     if (this.#isInitialized) return;
     const session = await auth();
-    this.#userId = session?.user?.id;    
+    this.#userId = session?.user?.id;
     const initialDocId = Array.from(this.#pendingDocuments)[0];
     if (!(this.propertyId ?? initialDocId)) {
       throw new Error('No initial document provided');
@@ -259,14 +263,14 @@ class ServerTimelineAgent extends ClientTimelineAgent {
   ): Promise<Partial<GlobalMetadata>> {
     const prompt = `
     Analyze the following document and extract case metadata. Return a JSON object with the following fields:
-    - caseId: string - The ID of the request case file
-    - communicationId: string - The ID of the email or attachment the request originates from
+    - caseId: string - The documentPropertyId of the target call-to-action case file; usually formatted as a uuid.
+    - communicationId: string - The ID of the email or attachment the target call-to-action originates from; usually formatted as an integer.
     - caseType: "FERPA" | "MNGDPA" | "Other"
-    - requestType: string - The type of requset
+    - requestType: string - The type of request being made (eg "Data Request from Subject", "Public Data Request", "Educational Records Request", "Title IX Request", "Other", etc.)
     - requestDate: ISO date string - The date the request was made
     - requesterName: string - The name of the requester
     - institutionName: string - The name of the institution handling the request
-    - complianceDeadline: ISO date string - The nearest compliance deadline for the request
+    - complianceDeadline: ISO date string - The nearest enforceable compliance deadline based on requestType and requestDate, considering any applicable laws or regulations and the request complexity.
     - currentStatus: string - The current status of the request
 
     Document:
@@ -508,7 +512,6 @@ class ServerTimelineAgent extends ClientTimelineAgent {
     this.#timelineState.complianceRatings.accuracy = ComplianceRating.Good;
     this.#timelineState.complianceRatings.transparency = ComplianceRating.Good;
   }
-  #chatHistoryContext: ChatHistoryContext | undefined;
   // Common methods and properties for all agents can be defined here
   protected async generateResponse<TResultType extends string | object>(
     input: string,
@@ -517,36 +520,40 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       req,
       operation,
       opProps,
-    }: { 
-      model?: AiLanguageModelType; 
-      req?: NextRequest; 
-      operation?: string; 
+    }: {
+      model?: AiLanguageModelType;
+      req?: NextRequest;
+      operation?: string;
       opProps?: Record<string, unknown>;
     } = {},
-  ): Promise<TResultType> {      
+  ): Promise<TResultType> {
     let tools: ToolProviderSet | undefined = undefined;
     try {
-      const baseModel = aiModelFactory(model ?? 'lofi');
-      this.#chatHistoryContext =
-        this.#chatHistoryContext ??
-        createAgentHistoryContext({
-          model,          
-          originatingUserId: this.#userId ?? '-1',
-          operation: operation ? `timeline:${operation}` : 'timeline:agent',
-          opTags: opProps,
-          chatId: generateChatId(Math.random() * 1000).id,          
-        });
-        
-      const hal = wrapLanguageModel({
-          model: baseModel,
-          middleware: createChatHistoryMiddleware({...this.#chatHistoryContext, model: baseModel.modelId }),
-        })
+      this.#chatHistoryContext ??= createAgentHistoryContext({
+        model,
+        originatingUserId: this.#userId ?? '-1',
+        operation: operation ? `timeline:${operation}` : 'timeline:agent',
+        opTags: opProps,
+        chatId: generateChatId(Math.random() * 1000).id,
+      });
+      if (!this.#chatHistoryContext) {
+        throw new TypeError('Unknown failure creating chat history context.');
+      }
+      const hal = wrapChatHistoryMiddleware({
+        chatHistoryContext: this.#chatHistoryContext,
+        model: aiModelFactory(model ?? 'lofi'),
+      });
       tools = await setupDefaultTools({ req });
-      const ret = await generateText({
+      const ret = await generateTextWithRetry({
         model: hal,
         prompt: input,
-        tools: tools.get_tools(),
-        maxSteps: 20,
+        tools: tools.tools,
+        // maxSteps: 20,
+        experimental_telemetry: {
+          isEnabled: true,
+          functionId:
+            'agent-timeline-' + (operation ? operation : 'model-request'),
+        },
         //experimental_continueSteps: true,
       });
       this.#chatHistoryContext.iteration++;
@@ -564,7 +571,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
       // Otherwise, return the text response
       return ret.text as TResultType;
     } catch (error) {
-      throw LoggedError.isTurtlesAllTheWayDownBaby(error,{
+      throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'TimelineAgent',
         message: 'Error generating response',
@@ -577,11 +584,11 @@ class ServerTimelineAgent extends ClientTimelineAgent {
         },
       });
     } finally {
-      if (tools){
-        try{
+      if (tools) {
+        try {
           tools.dispose();
-        }catch(e){
-          log(l => l.error('Error disposing tools', e));
+        } catch (e) {
+          log((l) => l.error('Error disposing tools', e));
         }
       }
     }

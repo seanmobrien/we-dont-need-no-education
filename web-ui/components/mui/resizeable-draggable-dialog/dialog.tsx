@@ -71,7 +71,6 @@ const DraggableHandle = styled('div')`
   }
 `;
 
-
 const stableStyles = {
   dialogTitle: {
     marginY: 0,
@@ -230,9 +229,12 @@ const ResizableDraggableDialog = ({
   /**
    * Handle close button click
    */
-  const handleCloseClick = useCallback((evt: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
-    handleClose(evt as React.MouseEvent<HTMLAnchorElement>);
-  }, [handleClose]);
+  const handleCloseClick = useCallback(
+    (evt: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
+      handleClose(evt as React.MouseEvent<HTMLAnchorElement>);
+    },
+    [handleClose],
+  );
 
   /**
    * Memoized render function for the resizable draggable paper component.
@@ -248,9 +250,9 @@ const ResizableDraggableDialog = ({
     (muiPaperProps: PaperProps) => {
       let dialogHeight = height;
       let dialogWidth = width;
-      
+
       if (windowState === WindowState.Maximized) {
-        // Use full viewport dimensions for maximized state  
+        // Use full viewport dimensions for maximized state
         dialogHeight = window.innerHeight - 20; // Minimal margin
         dialogWidth = window.innerWidth - 20;
       } else if (windowState === WindowState.Minimized) {
@@ -269,46 +271,52 @@ const ResizableDraggableDialog = ({
           minConstraints={minConstraints}
           maxConstraints={[
             window.innerWidth - 20, // Leave some margin
-            window.innerHeight - 20
-          ]}        
+            window.innerHeight - 20,
+          ]}
           onResize={onResize}
-         
         />
       );
     },
-    [height, width, windowState, paperProps, dialogDraggableHandleId, minConstraints, onResize],
+    [
+      height,
+      width,
+      windowState,
+      paperProps,
+      dialogDraggableHandleId,
+      minConstraints,
+      onResize,
+    ],
   );
-
 
   /**
    * Validate initial dimensions against constraints.
    * Logs a warning if initialHeight or initialWidth are outside the defined constraints.
    */
-  React.useEffect(() => {    
+  React.useEffect(() => {
     let newHeight = height;
-    let newWidth = width; 
-    if (
-      height < minConstraints[1] 
-    ) {
+    let newWidth = width;
+    if (height < minConstraints[1]) {
       console.warn(`initialHeight ${height} is outside constraints`);
       newHeight = minConstraints[1];
     }
-    if (
-      height > (window.innerHeight - 20)
-    ) {
+    if (height > window.innerHeight - 20) {
       console.warn(`initialHeight ${height} is outside constraints`);
-      newHeight = (window.innerHeight - 20);
+      newHeight = window.innerHeight - 20;
     }
     if (width < minConstraints[0]) {
       console.warn(`initialWidth ${width} is outside constraints`);
       newWidth = minConstraints[0];
-    }    
-    if ((width > window.innerWidth - 20)) {
-      console.warn(`initialWidth ${width} is outside constraints`);
-      newWidth = window.innerWidth - 20;      
     }
-    if (!onResize){
-      log(l => l.warn('onResize callback is not provided, dynamic resizing will not work.'));
+    if (width > window.innerWidth - 20) {
+      console.warn(`initialWidth ${width} is outside constraints`);
+      newWidth = window.innerWidth - 20;
+    }
+    if (!onResize) {
+      log((l) =>
+        l.warn(
+          'onResize callback is not provided, dynamic resizing will not work.',
+        ),
+      );
     }
     onResize?.(newWidth, newHeight);
   }, [height, width, minConstraints, onResize]);
@@ -317,31 +325,38 @@ const ResizableDraggableDialog = ({
    * Memoized slotProps for Dialog component to prevent unnecessary re-renders.
    * Only updates when modal prop changes.
    */
-  const dialogSlotProps = useMemo(() => ({
-    root: {
-      style: {
-        // Allow pointer events to pass through when non-modal
-        pointerEvents: modal === false ? ('none' as const) : ('auto' as const),
+  const dialogSlotProps = useMemo(
+    () => ({
+      root: {
+        style: {
+          // Allow pointer events to pass through when non-modal
+          pointerEvents:
+            modal === false ? ('none' as const) : ('auto' as const),
+        },
       },
-    },
-  }), [modal]);
+    }),
+    [modal],
+  );
 
   /**
    * Memoized sx styles for Dialog component to prevent unnecessary re-renders.
    * Only updates when modal prop changes.
    */
-  const dialogSx = useMemo(() => ({
-    // Additional styling if needed
-    ...(modal === false && {
-      '& .MuiDialog-container': {
-        pointerEvents: 'none',
-      },
-      '& .MuiDialog-paper': {
-        // Ensure the dialog paper itself still receives pointer events
-        pointerEvents: 'auto !important',
-      },
+  const dialogSx = useMemo(
+    () => ({
+      // Additional styling if needed
+      ...(modal === false && {
+        '& .MuiDialog-container': {
+          pointerEvents: 'none',
+        },
+        '& .MuiDialog-paper': {
+          // Ensure the dialog paper itself still receives pointer events
+          pointerEvents: 'auto !important',
+        },
+      }),
     }),
-  }), [modal]);
+    [modal],
+  );
 
   return (
     <React.Fragment>
@@ -360,9 +375,11 @@ const ResizableDraggableDialog = ({
           id={dialogDraggableHandleId}
           role="button"
           tabIndex={0}
-          aria-label="Drag to move dialog. Use arrow keys to move, hold Shift for larger steps."         
+          aria-label="Drag to move dialog. Use arrow keys to move, hold Shift for larger steps."
         >
-          <Typography component="h3"  sx={stableStyles.dialogTitle}>{title}</Typography>
+          <Typography component="h3" sx={stableStyles.dialogTitle}>
+            {title}
+          </Typography>
           <div style={{ flex: 1 }}>&nbsp;</div>
           <WindowControls>
             <IconButton
@@ -378,7 +395,11 @@ const ResizableDraggableDialog = ({
               size="small"
               onClick={handleMaximize}
               data-id="button-window-maximize"
-              aria-label={windowState === WindowState.Maximized ? "Restore dialog" : "Maximize dialog"}
+              aria-label={
+                windowState === WindowState.Maximized
+                  ? 'Restore dialog'
+                  : 'Maximize dialog'
+              }
               sx={{ padding: '2px' }}
             >
               {windowState === WindowState.Maximized ? (
@@ -387,9 +408,9 @@ const ResizableDraggableDialog = ({
                 <MaximizeIcon fontSize="small" />
               )}
             </IconButton>
-            <IconButton 
-              size="small" 
-              data-id='button-window-inline'
+            <IconButton
+              size="small"
+              data-id="button-window-inline"
               onClick={handleCloseClick}
               aria-label="Close dialog"
               sx={{ padding: '2px' }}

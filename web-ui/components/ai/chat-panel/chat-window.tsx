@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Box } from '@mui/material';
-import { Message } from 'ai';
-import Loading from '@/components/general/loading';
+import { UIMessage } from 'ai';
+import { Loading } from '@/components/general/loading';
 import { ChatMessageV2 } from './chat-message';
 import { createElementMeasurer } from '@/lib/components/ai/height-estimators';
 import { log } from '@/lib/logger';
@@ -16,24 +16,29 @@ export const ChatWindow = ({
   errorMessage,
   addToolResult,
 }: {
-  messages: Array<Message>;
+  messages: Array<UIMessage>;
   loading: boolean;
   errorMessage?: string | null;
-  addToolResult: <TResult>({}: { toolCallId: string; result: TResult }) => void;
+  addToolResult: <TResult>({}: {
+    tool: string;
+    output: TResult;
+    toolCallId: string;
+  }) => void;
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
-  const {config: { size: { height } }} = useChatPanelContext();
+  const {
+    config: {
+      size: { height },
+    },
+  } = useChatPanelContext();
   useEffect(() => {
     if (!parentRef.current) {
       return;
     }
-    const availableHeight = height - parentRef.current.getBoundingClientRect().x;
+    const availableHeight =
+      height - parentRef.current.getBoundingClientRect().x;
     parentRef.current.style.maxHeight = `${availableHeight - 25}px`;
-
-
   }, [height]);
-
-
 
   const rowVirtualizer = useVirtualizer({
     count: messages.length,
@@ -95,8 +100,8 @@ export const ChatWindow = ({
 
   const items = [...messages].reverse(); // For inverted render
 
-  return (    
-    <Box      
+  return (
+    <Box
       ref={parentRef}
       sx={{
         height: '100%',
@@ -127,7 +132,7 @@ export const ChatWindow = ({
             parts = [],
             role,
             id: messageId,
-            createdAt,
+            // createdAt,
           } = items[virtualRow.index];
 
           return (
@@ -137,15 +142,15 @@ export const ChatWindow = ({
                 parts,
                 role,
                 id: messageId,
-                createdAt,
+                // createdAt,
               }}
               virtualRow={virtualRow}
               addToolResult={addToolResult}
               onMeasureElement={rowVirtualizer.measureElement}
-            />            
+            />
           );
         })}
       </Box>
-    </Box>    
+    </Box>
   );
 };

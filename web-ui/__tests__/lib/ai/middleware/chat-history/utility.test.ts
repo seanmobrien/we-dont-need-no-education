@@ -1,10 +1,10 @@
 /**
  * @fileoverview Unit tests for chat history utility functions
- * 
+ *
  * These tests verify the behavior of utility functions used throughout
  * the chat history middleware, particularly the getNextSequence function
  * for generating scoped IDs.
- * 
+ *
  * @module __tests__/lib/ai/middleware/chat-history/utility.test.ts
  */
 
@@ -25,11 +25,11 @@ const mockTx = {
 
 describe('Chat History Utility Functions', () => {
   let idCounter = 0;
-  
+
   beforeEach(() => {
     // jest.clearAllMocks();
     mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-    
+
     /*
     mockDb.execute.mockImplementation((query: string | SQLWrapper) => {
       // Mock implementation to return a predictable sequence of IDs      
@@ -51,22 +51,18 @@ describe('Chat History Utility Functions', () => {
   });
 
   describe('getNextSequence', () => {
-  
     beforeEach(() => {
       mockDb = drizDb() as jest.Mocked<DbDatabaseType>;
-      mockDb.execute.mockResolvedValue([
-        { allocate_scoped_ids: 1 },
-      ] as any);
+      mockDb.execute.mockResolvedValue([{ allocate_scoped_ids: 1 }] as any);
     });
 
     describe('chat_turns table', () => {
-      
       it('should generate single turn ID', async () => {
         // Arrange
         const chatId = 'chat-123';
         const expectedId = 1;
         mockDb.execute.mockResolvedValue([
-          { allocate_scoped_ids: expectedId }
+          { allocate_scoped_ids: expectedId },
         ] as any);
 
         // Act
@@ -78,7 +74,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual([expectedId]);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, 1)`
+          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, 1)`,
         );
       });
 
@@ -88,7 +84,7 @@ describe('Chat History Utility Functions', () => {
         const count = 3;
         const expectedIds = [1, 2, 3];
         mockDb.execute.mockResolvedValue(
-          expectedIds.map(id => ({ allocate_scoped_ids: id })) as any 
+          expectedIds.map((id) => ({ allocate_scoped_ids: id })) as any,
         );
 
         // Act
@@ -101,7 +97,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual(expectedIds);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, ${count})`
+          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, ${count})`,
         );
       });
 
@@ -110,7 +106,7 @@ describe('Chat History Utility Functions', () => {
         const chatId = 'chat-789';
         const expectedId = 5;
         mockTx.execute.mockResolvedValue([
-          { allocate_scoped_ids: expectedId }
+          { allocate_scoped_ids: expectedId },
         ] as any);
 
         // Act
@@ -123,7 +119,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual([expectedId]);
         expect(mockTx.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, 1)`
+          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, 1)`,
         );
         expect(mockDb.execute).not.toHaveBeenCalled();
       });
@@ -143,7 +139,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual([]);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, 0)`
+          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, 0)`,
         );
       });
     });
@@ -155,7 +151,7 @@ describe('Chat History Utility Functions', () => {
         const turnId = 2;
         const expectedId = 10;
         mockDb.execute.mockResolvedValue([
-          { allocate_scoped_ids: expectedId }
+          { allocate_scoped_ids: expectedId },
         ] as any);
 
         // Act
@@ -168,7 +164,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual([expectedId]);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', ${turnId}, 1)`
+          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', ${turnId}, 1)`,
         );
       });
 
@@ -179,7 +175,7 @@ describe('Chat History Utility Functions', () => {
         const count = 5;
         const expectedIds = [11, 12, 13, 14, 15];
         mockDb.execute.mockResolvedValue(
-          expectedIds.map(id => ({ allocate_scoped_ids: id })) as any 
+          expectedIds.map((id) => ({ allocate_scoped_ids: id })) as any,
         );
 
         // Act
@@ -193,7 +189,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual(expectedIds);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', ${turnId}, ${count})`
+          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', ${turnId}, ${count})`,
         );
       });
 
@@ -203,7 +199,7 @@ describe('Chat History Utility Functions', () => {
         const turnId = 1;
         const expectedId = 20;
         mockTx.execute.mockResolvedValue([
-          { allocate_scoped_ids: expectedId }
+          { allocate_scoped_ids: expectedId },
         ] as any);
 
         // Act
@@ -217,7 +213,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual([expectedId]);
         expect(mockTx.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', ${turnId}, 1)`
+          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', ${turnId}, 1)`,
         );
         expect(mockDb.execute).not.toHaveBeenCalled();
       });
@@ -229,7 +225,7 @@ describe('Chat History Utility Functions', () => {
         const count = 100;
         const expectedIds = Array.from({ length: count }, (_, i) => i + 1);
         mockDb.execute.mockResolvedValue(
-          expectedIds.map(id => ({ allocate_scoped_ids: id })) as any 
+          expectedIds.map((id) => ({ allocate_scoped_ids: id })) as any,
         );
 
         // Act
@@ -244,7 +240,7 @@ describe('Chat History Utility Functions', () => {
         expect(result).toEqual(expectedIds);
         expect(result).toHaveLength(count);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', ${turnId}, ${count})`
+          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', ${turnId}, ${count})`,
         );
       });
     });
@@ -261,7 +257,7 @@ describe('Chat History Utility Functions', () => {
           getNextSequence({
             chatId,
             tableName: 'chat_turns',
-          })
+          }),
         ).rejects.toThrow('Database connection failed');
       });
 
@@ -278,7 +274,7 @@ describe('Chat History Utility Functions', () => {
             chatId,
             tableName: 'chat_messages',
             turnId,
-          })
+          }),
         ).rejects.toThrow('Invalid turnId');
       });
 
@@ -294,7 +290,7 @@ describe('Chat History Utility Functions', () => {
             chatId,
             tableName: 'chat_turns',
             tx: mockTx,
-          })
+          }),
         ).rejects.toThrow('Transaction rolled back');
       });
     });
@@ -305,7 +301,7 @@ describe('Chat History Utility Functions', () => {
         const chatId = '';
         const expectedId = 1;
         mockDb.execute.mockResolvedValue([
-          { allocate_scoped_ids: expectedId }
+          { allocate_scoped_ids: expectedId },
         ] as any);
 
         // Act
@@ -317,7 +313,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual([expectedId]);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_turns', '', 0, 1)`
+          `SELECT * FROM allocate_scoped_ids('chat_turns', '', 0, 1)`,
         );
       });
 
@@ -326,7 +322,7 @@ describe('Chat History Utility Functions', () => {
         const chatId = "chat-with-'quotes-and-special-chars";
         const expectedId = 1;
         mockDb.execute.mockResolvedValue([
-          { allocate_scoped_ids: expectedId }
+          { allocate_scoped_ids: expectedId },
         ] as any);
 
         // Act
@@ -338,7 +334,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual([expectedId]);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, 1)`
+          `SELECT * FROM allocate_scoped_ids('chat_turns', '${chatId}', 0, 1)`,
         );
       });
 
@@ -348,7 +344,7 @@ describe('Chat History Utility Functions', () => {
         const turnId = 0;
         const expectedId = 1;
         mockDb.execute.mockResolvedValue([
-          { allocate_scoped_ids: expectedId }
+          { allocate_scoped_ids: expectedId },
         ] as any);
 
         // Act
@@ -361,7 +357,7 @@ describe('Chat History Utility Functions', () => {
         // Assert
         expect(result).toEqual([expectedId]);
         expect(mockDb.execute).toHaveBeenCalledWith(
-          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', 0, 1)`
+          `SELECT * FROM allocate_scoped_ids('chat_messages', '${chatId}', 0, 1)`,
         );
       });
 
@@ -369,7 +365,7 @@ describe('Chat History Utility Functions', () => {
         // Arrange
         const chatId = 'chat-malformed';
         mockDb.execute.mockResolvedValue([
-          { wrong_field: 123 }
+          { wrong_field: 123 },
         ] as unknown as any);
 
         // Act
@@ -403,7 +399,7 @@ describe('Chat History Utility Functions', () => {
         // This test ensures TypeScript compilation catches missing turnId
         // The following would cause a TypeScript error:
         // getNextSequence({ chatId: 'test', tableName: 'chat_messages' })
-        
+
         // This should compile correctly:
         const validCall = getNextSequence({
           chatId: 'test',

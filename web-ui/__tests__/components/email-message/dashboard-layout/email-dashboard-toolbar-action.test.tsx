@@ -1,9 +1,9 @@
 /**
  * @fileoverview Unit tests for EmailDashboardToolbarAction component
- * 
+ *
  * Tests the EmailDashboardToolbarAction component used in the email dashboard
  * layout toolbar, including theme selector and account controls.
- * 
+ *
  * @module __tests__/components/email-message/dashboard-layout/email-dashboard-toolbar-action
  * @version 1.0.0
  * @since 2025-07-19
@@ -28,9 +28,7 @@ jest.mock('@/components/theme/theme-selector', () => {
 
 // Mock the Toolpad Account component
 jest.mock('@toolpad/core/Account', () => {
-  const MockAccount = () => (
-    <div data-testid="toolpad-account">Account</div>
-  );
+  const MockAccount = () => <div data-testid="toolpad-account">Account</div>;
   MockAccount.displayName = 'MockAccount';
   return {
     Account: MockAccount,
@@ -51,20 +49,21 @@ describe('EmailDashboardToolbarAction', () => {
       render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
+
 
     it('should render ThemeSelector component', () => {
       render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByText('Theme Selector')).toBeInTheDocument();
     });
@@ -73,9 +72,9 @@ describe('EmailDashboardToolbarAction', () => {
       render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
       expect(screen.getByText('Account')).toBeInTheDocument();
     });
@@ -86,40 +85,42 @@ describe('EmailDashboardToolbarAction', () => {
       const { container } = render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       // Should contain a Stack component with direction="row"
       const stackElement = container.querySelector('[class*="MuiStack-root"]');
       expect(stackElement).toBeInTheDocument();
     });
 
-    it('should render both components in the correct order', () => {
+    it('should render all components in the correct order', () => {
       render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       const themeSelector = screen.getByTestId('theme-selector');
       const account = screen.getByTestId('toolpad-account');
-      
+
       expect(themeSelector).toBeInTheDocument();
       expect(account).toBeInTheDocument();
-      
-      // Check that theme selector appears before account in DOM order
+
+      // Check that components appear in the correct DOM order: memory, theme, account
       const parent = themeSelector.parentElement;
       const children = Array.from(parent?.children || []);
-      const themeSelectorIndex = children.indexOf(themeSelector);
       const accountIndex = children.indexOf(account);
-      
+      const themeSelectorIndex = children.indexOf(themeSelector);
+
       expect(themeSelectorIndex).toBeLessThan(accountIndex);
     });
   });
 
   describe('Component Properties', () => {
     it('should apply memo optimization', () => {
-      expect(EmailDashboardToolbarAction.displayName).toBe('EmailDashboardToolbarAction');
+      expect(EmailDashboardToolbarAction.displayName).toBe(
+        'EmailDashboardToolbarAction',
+      );
     });
 
     it('should be a React component (memoized)', () => {
@@ -131,7 +132,7 @@ describe('EmailDashboardToolbarAction', () => {
       const { container } = render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
       expect(container.firstChild).toBeInTheDocument();
     });
@@ -143,17 +144,17 @@ describe('EmailDashboardToolbarAction', () => {
       const slots = {
         toolbarActions: EmailDashboardToolbarAction,
       };
-      
+
       expect(typeof slots.toolbarActions).toBe('object'); // Memoized component
       expect(slots.toolbarActions).toBeDefined();
-      
+
       // Should be able to render as a component
       render(
         <TestWrapper>
           <slots.toolbarActions />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -172,9 +173,9 @@ describe('EmailDashboardToolbarAction', () => {
       render(
         <ThemeProvider theme={darkTheme}>
           <EmailDashboardToolbarAction />
-        </ThemeProvider>
+        </ThemeProvider>,
       );
-      
+
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -182,7 +183,7 @@ describe('EmailDashboardToolbarAction', () => {
     it('should handle missing theme gracefully', () => {
       // Render without ThemeProvider
       render(<EmailDashboardToolbarAction />);
-      
+
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -193,9 +194,9 @@ describe('EmailDashboardToolbarAction', () => {
       render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       // Child components should be accessible
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
@@ -205,9 +206,9 @@ describe('EmailDashboardToolbarAction', () => {
       const { container } = render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       // Should not have any accessibility violations at the container level
       expect(container.firstChild).toBeInTheDocument();
     });
@@ -223,12 +224,12 @@ describe('EmailDashboardToolbarAction', () => {
       render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
-      
+
       console.error = originalError;
     });
   });
@@ -236,21 +237,23 @@ describe('EmailDashboardToolbarAction', () => {
   describe('Performance', () => {
     it('should be memoized to prevent unnecessary re-renders', () => {
       // Test that the component is wrapped in React.memo
-      expect(EmailDashboardToolbarAction.displayName).toBe('EmailDashboardToolbarAction');
-      
+      expect(EmailDashboardToolbarAction.displayName).toBe(
+        'EmailDashboardToolbarAction',
+      );
+
       // Multiple renders should not cause issues
       const { rerender } = render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       rerender(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       expect(screen.getByTestId('theme-selector')).toBeInTheDocument();
       expect(screen.getByTestId('toolpad-account')).toBeInTheDocument();
     });
@@ -262,9 +265,9 @@ describe('EmailDashboardToolbarAction', () => {
       render(
         <TestWrapper>
           <EmailDashboardToolbarAction />
-        </TestWrapper>
+        </TestWrapper>,
       );
-      
+
       // Stack component from MUI should be working
       const container = screen.getByTestId('theme-selector').parentElement;
       expect(container).toHaveClass('MuiStack-root');

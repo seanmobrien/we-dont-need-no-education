@@ -1,28 +1,27 @@
 import {
   pgTable,
-  foreignKey,
-  uuid,
-  text,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  type AnyPgColumn,
   index,
+  foreignKey,
+  unique,
   check,
-  serial,
+  text,
   integer,
-  varchar,
-  timestamp,
   jsonb,
+  smallint,
+  uuid,
+  timestamp,
+  // type AnyPgColumn,
+  serial,
+  varchar,
   uniqueIndex,
   vector,
-  unique,
-  smallint,
   boolean,
   bigint,
   doublePrecision,
   date,
   numeric,
-  primaryKey,
   time,
+  primaryKey,
   real,
   pgView,
   interval,
@@ -30,30 +29,6 @@ import {
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-
-// New table: user_public_keys
-export const userPublicKeys = pgTable(
-  'user_public_keys',
-  {
-    id: serial('id').primaryKey().notNull(),
-    userId: integer('user_id').notNull(),
-    publicKey: text('public_key').notNull(), // base64-encoded public key
-    effectiveDate: timestamp('effective_date', { mode: 'string' }).notNull(),
-    expirationDate: timestamp('expiration_date', { mode: 'string' }),
-    createdAt: timestamp('created_at', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-    updatedAt: timestamp('updated_at', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`).notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [users.id],
-      name: 'fk_user_public_keys_user_id',
-    }).onDelete('cascade'),
-    index('idx_user_public_keys_user_id').using('btree', table.userId.asc().nullsLast().op('int4_ops')),
-    index('idx_user_public_keys_effective').using('btree', table.effectiveDate.asc().nullsLast().op('timestamp_ops')),
-    index('idx_user_public_keys_expiration').using('btree', table.expirationDate.asc().nullsLast().op('timestamp_ops')),
-  ]
-);
 
 export const importStageType = pgEnum('import_stage_type', [
   'staged',
@@ -64,6 +39,63 @@ export const importStageType = pgEnum('import_stage_type', [
   'complete',
 ]);
 export const recipientType = pgEnum('recipient_type', ['to', 'cc', 'bcc']);
+
+export const chatMessages = pgTable(
+  'chat_messages',
+  {
+    chatId: text('chat_id').notNull(),
+    turnId: integer('turn_id').notNull(),
+    messageId: integer('message_id').notNull(),
+    role: text().notNull(),
+    content: text(),
+    toolName: text('tool_name'),
+    functionCall: jsonb('function_call'),
+    messageOrder: integer('message_order').notNull(),
+    statusId: smallint('status_id').notNull(),
+    providerId: text('provider_id'),
+    metadata: jsonb(),
+    toolInstanceId: uuid('tool_instance_id'),
+    optimizedContent: text('optimized_content'),
+    toolResult: jsonb('tool_result'),
+    messageTimestamp: timestamp('message_timestamp', {
+      withTimezone: true,
+      mode: 'string',
+    }).default(sql`CURRENT_TIMESTAMP`),
+    chatMessageId: uuid('chat_message_id')
+      .defaultRandom()
+      .primaryKey()
+      .notNull(),
+  },
+  (table) => [
+    index('idx_messages_provider_id').using(
+      'btree',
+      table.providerId.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_messages_status_id').using(
+      'btree',
+      table.statusId.asc().nullsLast().op('int2_ops'),
+    ),
+    index('idx_messages_tool_instance_id').using(
+      'btree',
+      table.toolInstanceId.asc().nullsLast().op('uuid_ops'),
+    ),
+    foreignKey({
+      columns: [table.chatId, table.turnId],
+      foreignColumns: [chatTurns.chatId, chatTurns.turnId],
+      name: 'chat_messages_chat_id_turn_id_fkey',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.statusId],
+      foreignColumns: [messageStatuses.id],
+      name: 'chat_messages_status_id_fkey',
+    }),
+    unique('ux_chat_message').on(table.chatId, table.turnId, table.messageId),
+    check(
+      'chat_messages_role_check',
+      sql`role = ANY (ARRAY['user'::text, 'assistant'::text, 'tool'::text, 'system'::text])`,
+    ),
+  ],
+);
 
 export const callToActionExpectedResponse = pgTable(
   'call_to_action_expected_response',
@@ -123,13 +155,11 @@ export const documentUnits = pgTable(
       foreignColumns: [emails.emailId],
       name: 'document_units_email_id_fkey',
     }).onDelete('cascade'),
-    /* I don't understand drizzle well enough to know why yet, but this FK fucks everything up
     foreignKey({
       columns: [table.documentPropertyId],
       foreignColumns: [documentProperty.propertyId],
       name: 'document_units_email_property_id_fkey1',
     }).onDelete('cascade'),
-  */
     check(
       'document_type_check_allowed_values',
       sql`(document_type)::text = ANY (ARRAY[('email'::character varying)::text, ('attachment'::character varying)::text, ('note'::character varying)::text, ('key_point'::character varying)::text, ('cta_response'::character varying)::text, ('cta'::character varying)::text, ('sentiment'::character varying)::text, ('pending_upload'::character varying)::text, ('compliance'::character varying)::text]))) NOT VALID`,
@@ -220,13 +250,13 @@ export const documentProperty = pgTable(
       foreignColumns: [emailPropertyType.documentPropertyTypeId],
       name: 'document_property_email_property_type',
     }),
-    foreignKey({
-      columns: [table.documentId],
-      foreignColumns: [documentUnits.unitId],
-      name: 'document_property_emails',
-    })
-      .onUpdate('cascade')
-      .onDelete('cascade'),
+    /*
+	foreignKey({
+			columns: [table.documentId],
+			foreignColumns: [documentUnits.unitId],
+			name: "document_property_emails"
+		}).onUpdate("cascade").onDelete("cascade"),
+		*/
   ],
 );
 
@@ -304,44 +334,6 @@ export const messageStatuses = pgTable(
   (table) => [unique('message_statuses_code_key').on(table.code)],
 );
 
-export const intermediateLlmRequestLogs = pgTable(
-  'intermediate_llm_request_logs',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    chatId: text('chat_id').notNull(),
-    turnId: integer('turn_id').notNull(),
-    toolInstanceId: uuid('tool_instance_id'),
-    providerId: text('provider_id'),
-    createdAt: timestamp('created_at', {
-      withTimezone: true,
-      mode: 'string',
-    }).defaultNow(),
-    prompt: jsonb(),
-    response: jsonb(),
-    promptTokens: integer('prompt_tokens'),
-    completionTokens: integer('completion_tokens'),
-    totalTokens: integer('total_tokens'),
-    latencyMs: integer('latency_ms'),
-    error: text(),
-    warnings: text().array(),
-  },
-  (table) => [
-    index('idx_llm_logs_provider_id').using(
-      'btree',
-      table.providerId.asc().nullsLast().op('text_ops'),
-    ),
-    index('idx_llm_logs_tool_instance_id').using(
-      'btree',
-      table.toolInstanceId.asc().nullsLast().op('uuid_ops'),
-    ),
-    foreignKey({
-      columns: [table.chatId, table.turnId],
-      foreignColumns: [chatTurns.chatId, chatTurns.turnId],
-      name: 'intermediate_llm_request_logs_chat_id_turn_id_fkey',
-    }).onDelete('cascade'),
-  ],
-);
-
 export const analysisStage = pgTable('analysis_stage', {
   analysisStageId: integer('analysis_stage_id').primaryKey().notNull(),
   description: text(),
@@ -401,29 +393,38 @@ export const threads = pgTable('threads', {
   externalId: varchar('external_id', { length: 255 }),
 });
 
-export const chatHistory = pgTable(
-  'chat_history',
+export const userPublicKeys = pgTable(
+  'user_public_keys',
   {
-    chatHistoryId: uuid('chat_history_id').primaryKey().notNull(),
-    timestamp: timestamp({ mode: 'string' })
+    id: serial().primaryKey().notNull(),
+    userId: integer('user_id').notNull(),
+    publicKey: text('public_key').notNull(),
+    effectiveDate: timestamp('effective_date', { mode: 'string' }).notNull(),
+    expirationDate: timestamp('expiration_date', { mode: 'string' }),
+    createdAt: timestamp('created_at', { mode: 'string' })
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
-    request: text().notNull(),
-    result: jsonb(),
-    userId: integer('user_id').notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
   },
   (table) => [
-    index('idx_user_timestamp')
-      .using(
-        'btree',
-        table.userId.asc().nullsLast().op('int4_ops'),
-        table.timestamp.desc().nullsFirst().op('int4_ops'),
-      )
-      .with({ deduplicate_items: 'true' }),
+    index('idx_user_public_keys_effective').using(
+      'btree',
+      table.effectiveDate.asc().nullsLast().op('timestamp_ops'),
+    ),
+    index('idx_user_public_keys_expiration').using(
+      'btree',
+      table.expirationDate.asc().nullsLast().op('timestamp_ops'),
+    ),
+    index('idx_user_public_keys_user_id').using(
+      'btree',
+      table.userId.asc().nullsLast().op('int4_ops'),
+    ),
     foreignKey({
       columns: [table.userId],
       foreignColumns: [users.id],
-      name: 'fk_chat_history_user',
+      name: 'user_public_keys_user_id_fkey',
     }).onDelete('cascade'),
   ],
 );
@@ -432,10 +433,12 @@ export const accounts = pgTable(
   'accounts',
   {
     id: serial().primaryKey().notNull(),
-    userId: integer("user_id").notNull(),
+    userId: integer('user_id').notNull(),
     type: varchar({ length: 255 }).notNull(),
     provider: varchar({ length: 255 }).notNull(),
-    providerAccountId: varchar("provider_account_id", { length: 255 }).notNull(),
+    providerAccountId: varchar('provider_account_id', {
+      length: 255,
+    }).notNull(),
     refreshToken: text('refresh_token'),
     accessToken: text('access_token'),
     // You can use { mode: "bigint" } if numbers are exceeding js number limitations
@@ -459,8 +462,8 @@ export const sessions = pgTable(
   'sessions',
   {
     id: serial().primaryKey().notNull(),
-    sessionToken: varchar({ length: 255 }).notNull(),
-    userId: integer("user_id").notNull(),
+    sessionToken: varchar('session_token', { length: 255 }).notNull(),
+    userId: integer('user_id').notNull(),
     expires: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
   },
   (table) => [
@@ -502,7 +505,7 @@ export const emailAttachments = pgTable(
     filePath: text('file_path').notNull(),
     extractedText: text('extracted_text'),
     // TODO: failed to parse database type 'tsvector'
-    // extractedTextTsv: unknown("extracted_text_tsv"),
+    // extractedTextTsv: unknown('extracted_text_tsv'),
     policyId: integer('policy_id'),
     summary: text(),
     emailId: uuid('email_id').notNull(),
@@ -514,11 +517,17 @@ export const emailAttachments = pgTable(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),
     ),
-    //index("idx_attachment_search").using("gin", table.extractedTextTsv.asc().nullsLast().op("tsvector_ops")),
+    /*
+    index('idx_attachment_search').using(
+      'gin',
+      table.extractedTextTsv.asc().nullsLast().op('tsvector_ops'),
+    ),
+		*/
     index('idx_email_attachments_email_id').using(
       'btree',
       table.emailId.asc().nullsLast().op('uuid_ops'),
     ),
+
     foreignKey({
       columns: [table.emailId],
       foreignColumns: [emails.emailId],
@@ -526,6 +535,7 @@ export const emailAttachments = pgTable(
     })
       .onUpdate('cascade')
       .onDelete('cascade'),
+
     foreignKey({
       columns: [table.policyId],
       foreignColumns: [policiesStatutes.policyId],
@@ -589,7 +599,7 @@ export const stagingMessage = pgTable(
     id: uuid().primaryKey().notNull(),
     // TODO: failed to parse database type 'email_message_type'
     // message: unknown('message'),
-    userId: integer("user_id"),
+    userId: integer('user_id'),
   },
   (table) => [
     index('fki_fk_staging_message_users').using(
@@ -909,10 +919,203 @@ export const users = pgTable('users', {
   id: serial().primaryKey().notNull(),
   name: varchar({ length: 255 }),
   email: varchar({ length: 255 }),
-  emailVerified: timestamp({ withTimezone: true, mode: 'string' }),
+  emailVerified: timestamp('email_verified', {
+    withTimezone: true,
+    mode: 'string',
+  }),
   image: text(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }),
+});
+
+export const models = pgTable(
+  'models',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    providerId: uuid('provider_id').notNull(),
+    modelName: text('model_name').notNull(),
+    displayName: text('display_name'),
+    description: text(),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+  },
+  (table) => [
+    index('idx_models_active').using(
+      'btree',
+      table.isActive.asc().nullsLast().op('bool_ops'),
+    ),
+    index('idx_models_model_name').using(
+      'btree',
+      table.modelName.asc().nullsLast().op('text_ops'),
+    ),
+    index('idx_models_provider_id').using(
+      'btree',
+      table.providerId.asc().nullsLast().op('uuid_ops'),
+    ),
+    foreignKey({
+      columns: [table.providerId],
+      foreignColumns: [providers.id],
+      name: 'models_provider_id_fkey',
+    }).onDelete('cascade'),
+    unique('models_provider_model_unique').on(
+      table.providerId,
+      table.modelName,
+    ),
+  ],
+);
+
+export const modelQuotas = pgTable(
+  'model_quotas',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    maxTokensPerMessage: integer('max_tokens_per_message'),
+    maxTokensPerMinute: integer('max_tokens_per_minute'),
+    maxTokensPerDay: integer('max_tokens_per_day'),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    isActive: boolean('is_active').default(true).notNull(),
+    modelId: uuid('model_id').notNull(),
+  },
+  (table) => [
+    index('idx_model_quotas_model_id').using(
+      'btree',
+      table.modelId.asc().nullsLast().op('uuid_ops'),
+    ),
+    foreignKey({
+      columns: [table.modelId],
+      foreignColumns: [models.id],
+      name: 'model_quotas_model_id_fkey',
+    }).onDelete('cascade'),
+    unique('model_quotas_model_unique').on(table.modelId),
+  ],
+);
+
+export const tokenConsumptionStats = pgTable(
+  'token_consumption_stats',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    windowStart: timestamp('window_start', {
+      withTimezone: true,
+      mode: 'string',
+    }).notNull(),
+    windowEnd: timestamp('window_end', {
+      withTimezone: true,
+      mode: 'string',
+    }).notNull(),
+    windowType: text('window_type').notNull(),
+    promptTokens: integer('prompt_tokens').default(0).notNull(),
+    completionTokens: integer('completion_tokens').default(0).notNull(),
+    totalTokens: integer('total_tokens').default(0).notNull(),
+    requestCount: integer('request_count').default(0).notNull(),
+    lastUpdated: timestamp('last_updated', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    modelId: uuid('model_id').notNull(),
+  },
+  (table) => [
+    index('idx_token_stats_model_id').using(
+      'btree',
+      table.modelId.asc().nullsLast().op('uuid_ops'),
+    ),
+    foreignKey({
+      columns: [table.modelId],
+      foreignColumns: [models.id],
+      name: 'token_consumption_stats_model_id_fkey',
+    }).onDelete('cascade'),
+    unique('token_stats_model_window_unique').on(
+      table.windowStart,
+      table.windowType,
+      table.modelId,
+    ),
+    check(
+      'token_stats_window_type_check',
+      sql`window_type = ANY (ARRAY['minute'::text, 'hour'::text, 'day'::text])`,
+    ),
+  ],
+);
+
+export const providers = pgTable(
+  'providers',
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    name: text().notNull(),
+    displayName: text('display_name').notNull(),
+    description: text(),
+    baseUrl: text('base_url'),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    updatedAt: timestamp('updated_at', {
+      withTimezone: true,
+      mode: 'string',
+    }).defaultNow(),
+    aliases: text().array(),
+  },
+  (table) => [
+    index('idx_providers_active').using(
+      'btree',
+      table.isActive.asc().nullsLast().op('bool_ops'),
+    ),
+    index('idx_providers_name').using(
+      'btree',
+      table.name.asc().nullsLast().op('text_ops'),
+    ),
+    unique('providers_name_unique').on(table.name),
+  ],
+);
+
+export const chatToolCalls = pgTable(
+  'chat_tool_calls',
+  {
+    chatToolCallId: uuid('chat_tool_call_id')
+      .defaultRandom()
+      .primaryKey()
+      .notNull(),
+    chatToolId: uuid('chat_tool_id').notNull(),
+    chatMessageId: uuid('chat_message_id').notNull(),
+    providerId: text('provider_id').notNull(),
+    input: text(),
+    output: text(),
+    timestamp: time({ withTimezone: true }).notNull(),
+    providerOptions: jsonb('provider_options'),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.chatMessageId],
+      foreignColumns: [chatMessages.chatMessageId],
+      name: 'fk_chat_message',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.chatToolId],
+      foreignColumns: [chatTool.chatToolId],
+      name: 'fk_chat_tool',
+    }).onDelete('cascade'),
+  ],
+);
+
+export const chatTool = pgTable('chat_tool', {
+  chatToolId: uuid('chat_tool_id').primaryKey().notNull(),
+  toolName: text('tool_name').notNull(),
+  inputSchema: text('input_schema'),
+  outputSchema: text('output_schema'),
+  description: text().notNull(),
+  providerOptions: jsonb('provider_options'),
 });
 
 export const documentPropertyCallToActionCategory = pgTable(
@@ -1138,119 +1341,6 @@ export const tokenUsage = pgTable(
   ],
 );
 
-// New tables for token consumption statistics and quota management
-
-// Providers table to centralize AI provider information
-export const providers = pgTable(
-  'providers',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    name: text().notNull(), // 'azure', 'google', 'openai', etc.
-    displayName: text('display_name').notNull(), // 'Azure OpenAI', 'Google AI', etc.
-    description: text(), // Optional provider description
-    baseUrl: text('base_url'), // Optional base URL for API calls
-    isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-  },
-  (table) => [
-    // Ensure unique provider names
-    unique('providers_name_unique').on(table.name),
-    index('idx_providers_name').using('btree', table.name.asc().nullsLast().op('text_ops')),
-    index('idx_providers_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
-  ],
-);
-
-// Normalized models table to centralize provider+model combinations
-export const models = pgTable(
-  'models',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    providerId: uuid('provider_id').notNull(), // Reference to providers table
-    modelName: text('model_name').notNull(), // 'hifi', 'lofi', 'gemini-pro', etc.
-    displayName: text('display_name'), // Optional human-readable name
-    description: text(), // Optional model description
-    isActive: boolean('is_active').default(true).notNull(),
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-  },
-  (table) => [
-    // Ensure unique provider/model combination
-    unique('models_provider_model_unique').on(table.providerId, table.modelName),
-    index('idx_models_provider_id').using('btree', table.providerId.asc().nullsLast().op('uuid_ops')),
-    index('idx_models_model_name').using('btree', table.modelName.asc().nullsLast().op('text_ops')),
-    index('idx_models_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
-    foreignKey({
-      columns: [table.providerId],
-      foreignColumns: [providers.id],
-      name: 'models_provider_id_fkey',
-    }).onDelete('cascade'),
-  ],
-);
-
-export const modelQuotas = pgTable(
-  'model_quotas',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    modelId: uuid('model_id').notNull(), // Reference to models table
-    maxTokensPerMessage: integer('max_tokens_per_message'), // Per-message limit
-    maxTokensPerMinute: integer('max_tokens_per_minute'), // Rate limit
-    maxTokensPerDay: integer('max_tokens_per_day'), // Daily quota
-    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).defaultNow(),
-    isActive: boolean('is_active').default(true).notNull(),
-  },
-  (table) => [
-    // Ensure unique quota configuration per model
-    unique('model_quotas_model_unique').on(table.modelId),
-    index('idx_model_quotas_model_id').using('btree', table.modelId.asc().nullsLast().op('uuid_ops')),
-    index('idx_model_quotas_active').using('btree', table.isActive.asc().nullsLast().op('bool_ops')),
-    foreignKey({
-      columns: [table.modelId],
-      foreignColumns: [models.id],
-      name: 'model_quotas_model_id_fkey',
-    }).onDelete('cascade'),
-  ],
-);
-
-export const tokenConsumptionStats = pgTable(
-  'token_consumption_stats',
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    modelId: uuid('model_id').notNull(), // Reference to models table
-    windowStart: timestamp('window_start', { withTimezone: true, mode: 'string' }).notNull(),
-    windowEnd: timestamp('window_end', { withTimezone: true, mode: 'string' }).notNull(),
-    windowType: text('window_type').notNull(), // 'minute', 'hour', 'day'
-    promptTokens: integer('prompt_tokens').default(0).notNull(),
-    completionTokens: integer('completion_tokens').default(0).notNull(),
-    totalTokens: integer('total_tokens').default(0).notNull(),
-    requestCount: integer('request_count').default(0).notNull(),
-    lastUpdated: timestamp('last_updated', { withTimezone: true, mode: 'string' }).defaultNow(),
-  },
-  (table) => [
-    // Ensure unique stats per model/window combination
-    unique('token_stats_model_window_unique').on(
-      table.modelId, 
-      table.windowStart, 
-      table.windowType
-    ),
-    index('idx_token_stats_model_id').using('btree', table.modelId.asc().nullsLast().op('uuid_ops')),
-    index('idx_token_stats_window_start').using('btree', table.windowStart.asc().nullsLast().op('timestamptz_ops')),
-    index('idx_token_stats_window_type').using('btree', table.windowType.asc().nullsLast().op('text_ops')),
-    index('idx_token_stats_last_updated').using('btree', table.lastUpdated.asc().nullsLast().op('timestamptz_ops')),
-    // Check constraint for valid window types
-    check(
-      'token_stats_window_type_check',
-      sql`window_type IN ('minute', 'hour', 'day')`,
-    ),
-    foreignKey({
-      columns: [table.modelId],
-      foreignColumns: [models.id],
-      name: 'token_consumption_stats_model_id_fkey',
-    }).onDelete('cascade'),
-  ],
-);
-
 export const documentUnitAnalysisFunctionAudit = pgTable(
   'document_unit_analysis_function_audit',
   {
@@ -1329,59 +1419,6 @@ export const stagingAttachment = pgTable(
   ],
 );
 
-export const chatMessages = pgTable(
-  'chat_messages',
-  {
-    chatId: text('chat_id').notNull(),
-    turnId: integer('turn_id').notNull(),
-    messageId: integer('message_id').notNull(),
-    role: text().notNull(),
-    content: text(),
-    toolName: text('tool_name'),
-    functionCall: jsonb('function_call'),
-    toolResult: jsonb('tool_result'),
-    messageOrder: integer('message_order').notNull(),
-    statusId: smallint('status_id').notNull(),
-    providerId: text('provider_id'),
-    metadata: jsonb(),
-    toolInstanceId: uuid('tool_instance_id'),
-    optimizedContent: text('optimized_content'),
-    messageTimestamp: timestamp('message_timestamp', { mode: 'string' }).default(sql`CURRENT_TIMESTAMP`),
-  },
-  (table) => [
-    index('idx_messages_provider_id').using(
-      'btree',
-      table.providerId.asc().nullsLast().op('text_ops'),
-    ),
-    index('idx_messages_status_id').using(
-      'btree',
-      table.statusId.asc().nullsLast().op('int2_ops'),
-    ),
-    index('idx_messages_tool_instance_id').using(
-      'btree',
-      table.toolInstanceId.asc().nullsLast().op('uuid_ops'),
-    ),
-    foreignKey({
-      columns: [table.chatId, table.turnId],
-      foreignColumns: [chatTurns.chatId, chatTurns.turnId],
-      name: 'chat_messages_chat_id_turn_id_fkey',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [table.statusId],
-      foreignColumns: [messageStatuses.id],
-      name: 'chat_messages_status_id_fkey',
-    }),
-    primaryKey({
-      columns: [table.chatId, table.turnId, table.messageId],
-      name: 'chat_messages_pkey',
-    }),
-    check(
-      'chat_messages_role_check',
-      sql`role = ANY (ARRAY['user'::text, 'assistant'::text, 'tool'::text, 'system'::text])`,
-    ),
-  ],
-);
-
 export const chatTurns = pgTable(
   'chat_turns',
   {
@@ -1404,7 +1441,7 @@ export const chatTurns = pgTable(
     errors: text().array(),
     metadata: jsonb(),
     providerId: text('provider_id'),
-    optimizedPromtpAssistant: text('optimized_prompt_assistant'),
+    optimizedPromptAssistant: text('optimized_prompt_assistant'),
     optimizedPromptUser: text('optimized_prompt_user'),
     optimizedToolResults: text('optimized_tool_results'),
   },

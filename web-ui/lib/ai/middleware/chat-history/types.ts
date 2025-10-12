@@ -25,9 +25,6 @@
  *        ↓                    ↓                 ↓           ↓
  *   Session Setup      Stream Processing   Task Queue   Completion
  * ```
- *
- * **Integration Points:**
- * - **AI SDK Integration**: Compatible with Vercel AI SDK streaming interfaces
  * - **Database Operations**: Structured for efficient ORM and query operations
  * - **Middleware Pipeline**: Designed for seamless integration with processing chains
  * - **Real-time Systems**: Optimized for streaming and asynchronous processing
@@ -52,60 +49,9 @@
  * @since 1.0.0
  */
 
-import type { DbTransactionType, ChatMessagesType } from "@/lib/drizzle-db";
-import type { LanguageModelV1ProviderMetadata} from '@/lib/ai/types';
-import { LanguageModelV1StreamPart } from "ai";
-import { Span } from "@opentelemetry/api";
-
-/**
-Tool result content part of a prompt. It contains the result of the tool call with the matching ID.
- */
-export type LanguageModelV1ToolResultPart = {
-    type: 'tool-result';
-    /**
-  ID of the tool call that this result is associated with.
-   */
-    toolCallId: string;
-    /**
-  Name of the tool that generated this result.
-    */
-    toolName: string;
-    /**
-  Result of the tool call. This is a JSON-serializable object.
-     */
-    result: unknown;
-    /**
-  Optional flag if the result is an error or an error message.
-     */
-    isError?: boolean;
-    /**
-  Tool results as an array of parts. This enables advanced tool results including images.
-  When this is used, the `result` field should be ignored (if the provider supports content).
-     */
-    content?: Array<{
-        type: 'text';
-        /**
-Text content.
-         */
-        text: string;
-    } | {
-        type: 'image';
-        /**
-base-64 encoded image data
-         */
-        data: string;
-        /**
-Mime type of the image.
-         */
-        mimeType?: string;
-    }>;
-    /**
-     * Additional provider-specific metadata. They are passed through
-     * to the provider from the AI SDK and enable provider-specific
-     * functionality that can be fully encapsulated in the provider.
-     */
-    providerMetadata?: LanguageModelV1ProviderMetadata;
-}
+import type { DbTransactionType, ChatMessagesType } from '@/lib/drizzle-db';
+import { LanguageModelV2StreamPart } from '@ai-sdk/provider';
+import { Span } from '@opentelemetry/api';
 
 // ============================================================================
 // Core Context Types
@@ -173,6 +119,13 @@ export interface ChatHistoryContext {
   chatId?: string;
 
   /**
+   * Optional unique identifier for the current turn within the chat session.
+   * When provided, enables precise tracking of user interactions and model responses.
+   * When omitted, a new turn will be created automatically.
+   */
+  turnId?: string;
+
+  /**
    * Optional unique identifier for the current request.
    * Enables distributed tracing, debugging, and request correlation.
    * Recommended for production systems and monitoring.
@@ -238,13 +191,19 @@ export interface ChatHistoryContext {
   dispose: () => Promise<void>;
 }
 
+/**
+ * Represents the execution status of a tool within a chat message.
+ * @internal
+ */
+export type ToolStatus = 'pending' | 'result' | 'error' | 'content';
+
 // ============================================================================
 // Stream Processing Types
 // ============================================================================
 
 /**
  * Context information required for processing individual stream chunks.
- * 
+ *
  * @remarks
  * This interface maintains the state needed during real-time stream processing.
  * It tracks the current position in the conversation, accumulates generated content,
@@ -291,45 +250,62 @@ export interface ChatHistoryContext {
  * ```
  */
 export interface StreamHandlerContext {
-  /** 
+  /**
    * Unique identifier for the current chat session.
    * Links stream chunks to their conversation context.
    */
   chatId: string;
-  
-  /** 
+
+  /**
    * Unique identifier for the current conversation turn.
    * Groups related messages within a request/response cycle.
    */
   turnId: number;
-  
-  /** 
+
+  /**
    * Optional unique identifier for the assistant message being generated.
    * Used for incremental updates to the response content.
    */
   messageId?: number;
-  
-  /** 
+
+  /**
    * Current position in the message ordering sequence.
    * Ensures proper message flow and conversation continuity.
    */
   currentMessageOrder: number;
-  
-  /** 
+
+  /**
    * Accumulated text content from processed stream chunks.
    * Built incrementally as the AI response is generated.
    */
   generatedText: string;
 
   /**
+   * Structured collection of objects reconstructed from phased streaming
+   * parts (*-start / *-delta / *-end). Each entry is one logical object; for
+   * streaming objects (like tool-input) the final assembled form is pushed
+   * on *-end. Non-streaming generic *-start parts are pushed immediately as
+   * normalized objects with their '-start' suffix removed.
+   */
+  generatedJSON: Array<Record<string, unknown>>;
+
+  /**
    * A map of currently known tool calls that are awaiting response.
    */
   toolCalls: Map<string, ChatMessagesType>;
+
+  /**
+   * Creates a StreamHandlerResult from the current context.
+   * @returns The created StreamHandlerResult.
+   */
+  createResult: (
+    success?: boolean | Partial<StreamHandlerResult>,
+  ) => StreamHandlerResult;
 }
 
 /**
  * Result information returned after processing a stream chunk.
- * 
+ *
  * @remarks
  * This interface captures the outcome of processing an individual stream chunk,
  * including updated state information and success status. It enables the calling
@@ -375,29 +351,53 @@ export interface StreamHandlerContext {
  */
 export interface StreamHandlerResult {
   /**
-   * Unique identifier for the current message being processed.
-   * Used to track and update specific messages in the database.
+   *the conversation identifier for the
+   * processed chunk.
+   *
+   */
+  chatId: string;
+
+  /**
+   * This is the numeric turn identifier associated with
+   * the processed chunk.
+   *
+   */
+  turnId: number;
+
+  /**
+   * messageId of the current chunk being processed.
+   *
+   */
+  messageId: number;
+  /**
+   * Message identifier to assign to the next messsage record created.
    */
   currentMessageId: number | undefined;
-  /** 
+  /**
    * Updated message order counter after processing the chunk.
    * Reflects the current position in the conversation sequence.
    */
   currentMessageOrder: number;
-  
-  /** 
+
+  /**
    * Updated accumulated text after processing the chunk.
    * Contains all generated content up to this point in the response.
    */
   generatedText: string;
-  
+
+  /**
+   * Updated accumulated JSON objects added to the pending stream.
+   * Contains all generated content included in the current message up to this point in the response.
+   */
+  generatedJSON: Array<Record<string, unknown>>;
+
   /**
    * Map of tool IDs to their corresponding chat messages.
    * Tracks all tool invocations and their responses.
    */
   toolCalls: Map<string, ChatMessagesType>;
 
-  /** 
+  /**
    * Indicates whether the stream chunk was successfully processed.
    * When false, the chunk processing encountered an error or exception.
    */
@@ -467,43 +467,43 @@ export interface StreamHandlerResult {
  * ```
  */
 export interface QueuedTask {
-  /** 
+  /**
    * Unique identifier for the task within the processing queue.
    * Used for tracking, debugging, and ensuring ordered processing.
    */
   id: number;
-  
-  /** 
+
+  /**
    * The stream chunk data to be processed.
    * Contains the actual AI-generated content or metadata from the stream.
    */
-  chunk: LanguageModelV1StreamPart;
-  
-  /** 
+  chunk: LanguageModelV2StreamPart;
+
+  /**
    * Processing context required for handling the chunk.
    * Maintains state information and identifiers for database operations.
    */
   context: StreamHandlerContext;
-  
-  /** 
+
+  /**
    * Promise that resolves when the task processing completes.
    * Enables asynchronous coordination and error handling.
    */
   promise: Promise<void>;
-  
-  /** 
+
+  /**
    * Function to call when task processing succeeds.
    * Signals successful completion to waiting consumers.
    */
   resolve: () => void;
-  
-  /** 
+
+  /**
    * Function to call when task processing fails.
    * Enables error propagation and recovery strategies.
    */
   reject: (error: Error) => void;
-  
-  /** 
+
+  /**
    * Optional result from processing the task.
    * Populated after successful completion for downstream consumption.
    */
@@ -516,7 +516,7 @@ export interface QueuedTask {
 
 /**
  * Context information required for flush operations when completing a chat turn.
- * 
+ *
  * @remarks
  * This interface provides all necessary information for finalizing a conversation turn,
  * including content persistence, performance metrics calculation, and status updates.
@@ -569,31 +569,31 @@ export interface QueuedTask {
  * ```
  */
 export interface FlushContext {
-  /** 
+  /**
    * Unique identifier of the chat/conversation being completed.
    * Links the flush operation to the specific conversation context.
    */
   chatId: string;
-  
-  /** 
+
+  /**
    * Turn number within the conversation (optional for some operations).
    * Enables sequencing and ordering of conversation exchanges.
    */
   turnId?: number;
-  
-  /** 
+
+  /**
    * Unique database identifier for the message record (optional).
    * Used for direct database targeting when available.
    */
   messageId?: number;
-  
-  /** 
+
+  /**
    * Complete generated text content from the AI response.
    * Represents the final accumulated content for persistence.
    */
   generatedText: string;
-  
-  /** 
+
+  /**
    * Timestamp when the generation process began.
    * Used for calculating response latency and performance metrics.
    */
@@ -802,84 +802,154 @@ export interface FlushResult {
  * ```
  */
 export interface FlushConfig {
-  /** 
+  /**
    * Whether to automatically generate chat titles based on conversation content.
    * When enabled, uses AI to create descriptive titles from initial exchanges.
    */
   autoGenerateTitle: boolean;
-  
-  /** 
+
+  /**
    * Maximum character length for generated chat titles.
    * Ensures titles remain readable and fit within UI constraints.
    */
   maxTitleLength: number;
-  
-  /** 
+
+  /**
    * Target number of words to include in generated titles.
    * Balances descriptiveness with brevity for optimal readability.
    */
   titleWordCount: number;
-  
-  /** 
+
+  /**
    * Interval in milliseconds between periodic flush operations.
    * Controls how frequently partial content is persisted to storage.
    */
   flushIntervalMs?: number;
-  
-  /** 
+
+  /**
    * Maximum time in milliseconds to wait for flush operations to complete.
    * Prevents hanging operations and ensures system responsiveness.
    */
   timeoutMs?: number;
-  
-  /** 
+
+  /**
    * Whether to collect and report performance metrics during flush operations.
    * Enables monitoring and optimization of persistence performance.
    */
   enableMetrics?: boolean;
-  
-  /** 
+
+  /**
    * Number of messages to batch together for efficient database operations.
    * Optimizes I/O performance while maintaining reasonable memory usage.
    */
   batchSize?: number;
-  
-  /** 
+
+  /**
    * Maximum number of retry attempts for failed flush operations.
    * Provides resilience against transient failures and network issues.
    */
   retryAttempts?: number;
-  
-  /** 
+
+  /**
    * Whether to enable content compression for large messages.
    * Reduces storage requirements and network overhead for substantial responses.
    */
   compressionEnabled?: boolean;
-  
-  /** 
+
+  /**
    * Whether to enable verbose logging during flush operations.
    * Useful for development and debugging of persistence workflows.
    */
   verboseLogging?: boolean;
 }
 /**
- * Result from initializing message persistence.
+ * Result information returned when initializing message persistence.
+ *
+ * @remarks
+ * This interface captures identifiers provisioned at the start of a persistence
+ * operation for a chat turn (e.g., reserving message IDs). These identifiers are
+ * passed forward to subsequent steps that complete the persistence process.
+ *
+ * @interface MessagePersistenceInit
+ * @category Completion
+ * @example
+ * ```typescript
+ * const init: MessagePersistenceInit = {
+ *   chatId: 'chat_123',
+ *   turnId: '5',
+ *   messageId: 42
+ * };
+ * ```
  */
-
 export interface MessagePersistenceInit {
+  /**
+   * Unique identifier of the chat/conversation being persisted.
+   */
   chatId: string;
-  turnId: number;
+
+  /**
+   * String representation of the current turn id (may be coerced from number
+   * by upstream utilities). Used for sequencing and DB targeting.
+   */
+  turnId: string;
+
+  /**
+   * Optional reserved message identifier for the assistant response.
+   * When present, downstream steps should use this id for updates.
+   */
   messageId?: number;
 }
-/**
- * Context for completing message persistence.
- */
 
+/**
+ * Context information required to complete message persistence for a chat turn.
+ *
+ * @remarks
+ * This interface is provided to the finalization step that writes the completed
+ * content, updates message/turn status, and records performance metrics.
+ *
+ * @interface MessageCompletionContext
+ * @category Completion
+ * @example
+ * ```typescript
+ * const completion: MessageCompletionContext = {
+ *   chatId: 'chat_123',
+ *   turnId: 5,
+ *   messageId: 42,
+ *   generatedText: 'Final response',
+ *   startTime: Date.now() - 1200
+ * };
+ * ```
+ */
 export interface MessageCompletionContext {
+  /**
+   * Optional Drizzle transaction instance for atomic DB operations.
+   * When provided, all completion writes should be performed with this txn.
+   */
   tx?: DbTransactionType;
+
+  /**
+   * Identifier of the chat/conversation being completed.
+   */
   chatId: string;
+
+  /**
+   * Optional numeric turn id (preferred form for DB operations).
+   */
   turnId?: number;
+
+  /**
+   * Optional message id of the message to finalize.
+   */
   messageId?: number;
+
+  /**
+   * The final accumulated text content to persist for the assistant message.
+   */
   generatedText: string;
+
+  /**
+   * Epoch milliseconds timestamp indicating when generation started.
+   * Used to compute processing duration/latency.
+   */
   startTime: number;
 }

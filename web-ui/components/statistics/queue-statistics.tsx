@@ -37,14 +37,14 @@ interface QueueStatisticsProps {
   };
 }
 
-const RequestDetailsDialog = ({ 
-  request, 
-  open, 
-  onClose 
-}: { 
-  request: QueueRequest | null; 
-  open: boolean; 
-  onClose: () => void; 
+const RequestDetailsDialog = ({
+  request,
+  open,
+  onClose,
+}: {
+  request: QueueRequest | null;
+  open: boolean;
+  onClose: () => void;
 }) => {
   if (!request) return null;
 
@@ -61,7 +61,11 @@ const RequestDetailsDialog = ({
         <Grid size={{ xs: 12, md: 6 }}>
           <Card variant="outlined" className="primary">
             <CardContent>
-              <Typography variant="h6" gutterBottom color="var(--color-primary-accent)">
+              <Typography
+                variant="h6"
+                gutterBottom
+                color="var(--color-primary-accent)"
+              >
                 Metadata
               </Typography>
               <Typography variant="body2" color="var(--color-secondary-accent)">
@@ -71,23 +75,33 @@ const RequestDetailsDialog = ({
                 <strong>Generation:</strong> {request.metadata.generation}
               </Typography>
               <Typography variant="body2" color="var(--color-secondary-accent)">
-                <strong>Submitted:</strong> {new Date(request.metadata.submittedAt).toLocaleString()}
+                <strong>Submitted:</strong>{' '}
+                {new Date(request.metadata.submittedAt).toLocaleString()}
               </Typography>
               <Typography variant="body2" color="var(--color-secondary-accent)">
                 <strong>Queue Time:</strong> {formatDuration(request.queueTime)}
               </Typography>
               {request.tokenEstimate && (
-                <Typography variant="body2" color="var(--color-secondary-accent)">
+                <Typography
+                  variant="body2"
+                  color="var(--color-secondary-accent)"
+                >
                   <strong>Est. Tokens:</strong> {request.tokenEstimate}
                 </Typography>
               )}
               {request.metadata.userId && (
-                <Typography variant="body2" color="var(--color-secondary-accent)">
+                <Typography
+                  variant="body2"
+                  color="var(--color-secondary-accent)"
+                >
                   <strong>User ID:</strong> {request.metadata.userId}
                 </Typography>
               )}
               {request.metadata.chatHistoryId && (
-                <Typography variant="body2" color="var(--color-secondary-accent)">
+                <Typography
+                  variant="body2"
+                  color="var(--color-secondary-accent)"
+                >
                   <strong>Chat ID:</strong> {request.metadata.chatHistoryId}
                 </Typography>
               )}
@@ -97,21 +111,41 @@ const RequestDetailsDialog = ({
         <Grid size={{ xs: 12, md: 6 }}>
           <Card variant="outlined" className="secondary">
             <CardContent>
-              <Typography variant="h6" gutterBottom color="var(--color-primary-accent)">
+              <Typography
+                variant="h6"
+                gutterBottom
+                color="var(--color-primary-accent)"
+              >
                 Messages
               </Typography>
               <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
-                {request.request.messages && request.request.messages.length > 0 ? (
+                {request.request.messages &&
+                request.request.messages.length > 0 ? (
                   request.request.messages.map((message, index: number) => (
-                    <Box key={index} mb={1} p={1} bgcolor="grey.50" borderRadius={1} className="accent">
-                      <Typography variant="caption" color="var(--color-primary-accent)">
+                    <Box
+                      key={index}
+                      mb={1}
+                      p={1}
+                      bgcolor="grey.50"
+                      borderRadius={1}
+                      className="accent"
+                    >
+                      <Typography
+                        variant="caption"
+                        color="var(--color-primary-accent)"
+                      >
                         {message.role || 'unknown'}:
                       </Typography>
-                      <Typography variant="body2" sx={{ wordBreak: 'break-word' }} color="var(--color-secondary-accent)">
-                        {typeof message.content === 'string' 
-                          ? message.content.substring(0, 200) + (message.content.length > 200 ? '...' : '')
-                          : JSON.stringify(message.content).substring(0, 200) + '...'
-                        }
+                      <Typography
+                        variant="body2"
+                        sx={{ wordBreak: 'break-word' }}
+                        color="var(--color-secondary-accent)"
+                      >
+                        {typeof message.content === 'string'
+                          ? message.content.substring(0, 200) +
+                            (message.content.length > 200 ? '...' : '')
+                          : JSON.stringify(message.content).substring(0, 200) +
+                            '...'}
                       </Typography>
                     </Box>
                   ))
@@ -126,7 +160,12 @@ const RequestDetailsDialog = ({
         </Grid>
       </Grid>
       <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
-        <Button onClick={onClose} color="primary" variant="contained" className="primary">
+        <Button
+          onClick={onClose}
+          color="primary"
+          variant="contained"
+          className="primary"
+        >
           Close
         </Button>
       </Box>
@@ -134,14 +173,16 @@ const RequestDetailsDialog = ({
   );
 };
 
-const QueueTable = ({ 
-  requests, 
-  title 
-}: { 
-  requests: QueueRequest[]; 
-  title: string; 
+const QueueTable = ({
+  requests,
+  title,
+}: {
+  requests: QueueRequest[];
+  title: string;
 }) => {
-  const [selectedRequest, setSelectedRequest] = useState<QueueRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<QueueRequest | null>(
+    null,
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const handleViewRequest = (request: QueueRequest) => {
@@ -159,10 +200,19 @@ const QueueTable = ({
 
   return (
     <>
-      <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }} color="var(--color-primary-accent)">
+      <Typography
+        variant="subtitle1"
+        gutterBottom
+        sx={{ mt: 2 }}
+        color="var(--color-primary-accent)"
+      >
         {title} ({requests.length} requests)
       </Typography>
-      <TableContainer component={Paper} variant="outlined" className="secondary">
+      <TableContainer
+        component={Paper}
+        variant="outlined"
+        className="secondary"
+      >
         <Table size="small">
           <TableHead>
             <TableRow>
@@ -177,7 +227,11 @@ const QueueTable = ({
             {requests.map((request) => (
               <TableRow key={request.id} hover>
                 <TableCell>
-                  <Typography variant="body2" fontFamily="monospace" color="var(--color-primary-accent)">
+                  <Typography
+                    variant="body2"
+                    fontFamily="monospace"
+                    color="var(--color-primary-accent)"
+                  >
                     {request.id.substring(0, 8)}...
                   </Typography>
                 </TableCell>
@@ -186,7 +240,13 @@ const QueueTable = ({
                     size="small"
                     icon={<AccessTimeIcon />}
                     label={formatDuration(request.queueTime)}
-                    color={request.queueTime > 300000 ? "error" : request.queueTime > 60000 ? "warning" : "default"}
+                    color={
+                      request.queueTime > 300000
+                        ? 'error'
+                        : request.queueTime > 60000
+                          ? 'warning'
+                          : 'default'
+                    }
                     className="accent"
                   />
                 </TableCell>
@@ -206,8 +266,13 @@ const QueueTable = ({
                   )}
                 </TableCell>
                 <TableCell>
-                  <Typography variant="body2" color="var(--color-secondary-accent)">
-                    {new Date(request.metadata.submittedAt).toLocaleTimeString()}
+                  <Typography
+                    variant="body2"
+                    color="var(--color-secondary-accent)"
+                  >
+                    {new Date(
+                      request.metadata.submittedAt,
+                    ).toLocaleTimeString()}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -236,12 +301,12 @@ const QueueTable = ({
   );
 };
 
-const QueueGenerationDetails = ({ 
-  generation, 
-  queueData 
-}: { 
-  generation: 1 | 2; 
-  queueData: QueueInfo['queues']['generation1']; 
+const QueueGenerationDetails = ({
+  generation,
+  queueData,
+}: {
+  generation: 1 | 2;
+  queueData: QueueInfo['queues']['generation1'];
 }) => {
   return (
     <Card
@@ -360,10 +425,10 @@ export const QueueStatistics = ({ queues }: QueueStatisticsProps) => {
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" color="var(--color-primary-accent)">
                 {queueInfo.classification.toUpperCase()} Models
-                <Chip 
-                  size="small" 
-                  label={queueInfo.totalPending} 
-                  color="warning" 
+                <Chip
+                  size="small"
+                  label={queueInfo.totalPending}
+                  color="warning"
                   sx={{ ml: 1 }}
                   className="accent"
                 />
@@ -372,15 +437,15 @@ export const QueueStatistics = ({ queues }: QueueStatisticsProps) => {
             <AccordionDetails>
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <QueueGenerationDetails 
-                    generation={1} 
-                    queueData={queueInfo.queues.generation1} 
+                  <QueueGenerationDetails
+                    generation={1}
+                    queueData={queueInfo.queues.generation1}
                   />
                 </Grid>
                 <Grid size={{ xs: 12, md: 6 }}>
-                  <QueueGenerationDetails 
-                    generation={2} 
-                    queueData={queueInfo.queues.generation2} 
+                  <QueueGenerationDetails
+                    generation={2}
+                    queueData={queueInfo.queues.generation2}
                   />
                 </Grid>
               </Grid>

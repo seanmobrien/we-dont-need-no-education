@@ -99,8 +99,8 @@ export const log = (cb: (l: ILogger) => void) => {
  */
 export const logEvent: LogEventOverloads = (
   severityOrEvent: EventSeverity | string,
-  eventOrMeasurements?: string | Record<string, number>,
-  measurements?: Record<string, number>,
+  eventOrMeasurements?: string | Record<string, number | string>,
+  measurements?: Record<string, number | string>,
 ) => {
   let severity: EventSeverity = 'info';
   let event: CustomAppInsightsEvent;

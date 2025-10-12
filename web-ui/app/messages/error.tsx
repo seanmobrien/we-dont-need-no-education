@@ -13,15 +13,14 @@ export default function Error({
   error: ErrorWithDigest;
   reset: () => void;
 }) {
- 
-  useEffect(() => {    
+  useEffect(() => {
     if (error) {
       errorReporter.reportBoundaryError(
         error,
         {
           errorBoundary: 'MessagesError',
         },
-        ErrorSeverity.MEDIUM
+        ErrorSeverity.MEDIUM,
       );
     }
   }, [error]);

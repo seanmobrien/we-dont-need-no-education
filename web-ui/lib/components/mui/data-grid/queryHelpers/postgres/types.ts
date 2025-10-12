@@ -1,12 +1,18 @@
 import type { LikeNextRequest } from '@/lib/nextjs-util/types';
-import type { GridFilterModel, GridFilterItem, GridSortModel } from '@mui/x-data-grid-pro';
+import type {
+  GridFilterModel,
+  GridFilterItem,
+  GridSortModel,
+} from '@mui/x-data-grid-pro';
 import type { Sql } from 'postgres';
 import type { ISqlNeonAdapter, SqlDb } from '@/lib/neondb';
 
 /**
  * Props for configuring the buildOrderBy function for PostgreSQL.
  */
-export type BuildOrderByProps<RecordType extends Record<string, unknown> = Record<string, unknown>> = {
+export type BuildOrderByProps<
+  RecordType extends Record<string, unknown> = Record<string, unknown>,
+> = {
   /**
    * The PostgreSQL client or adapter instance.
    */
@@ -15,12 +21,7 @@ export type BuildOrderByProps<RecordType extends Record<string, unknown> = Recor
   /**
    * The request object, typically similar to Next.js's request, URL, or direct sort model.
    */
-  source: 
-    | LikeNextRequest
-    | URL 
-    | string 
-    | GridSortModel 
-    | undefined;
+  source: LikeNextRequest | URL | string | GridSortModel | undefined;
 
   /**
    * The default sort model or column name to use if none is provided.
@@ -36,7 +37,9 @@ export type BuildOrderByProps<RecordType extends Record<string, unknown> = Recor
 /**
  * Props for configuring the buildPagination function for PostgreSQL.
  */
-export type BuildPaginationProps<RecordType extends Record<string, unknown> = Record<string, unknown>> = {
+export type BuildPaginationProps<
+  RecordType extends Record<string, unknown> = Record<string, unknown>,
+> = {
   /**
    * The PostgreSQL client or adapter instance.
    */
@@ -66,7 +69,9 @@ export type BuildPaginationProps<RecordType extends Record<string, unknown> = Re
 /**
  * Props for configuring the buildQueryFilter function for PostgreSQL.
  */
-export type BuildQueryFilterProps<RecordType extends Record<string, unknown> = Record<string, unknown>> = {
+export type BuildQueryFilterProps<
+  RecordType extends Record<string, unknown> = Record<string, unknown>,
+> = {
   /**
    * The PostgreSQL client or adapter instance.
    */
@@ -112,4 +117,3 @@ export type BuildItemFilterProps = {
    */
   columnMap?: ((sourceColumnName: string) => string) | Record<string, string>;
 };
-

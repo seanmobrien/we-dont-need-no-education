@@ -82,11 +82,14 @@ import { useQuery, UseQueryResult } from '@tanstack/react-query';
  */
 async function fetchChatDetails(chatId: string): Promise<ChatDetails | null> {
   try {
-    const response = await fetch(`/api/ai/chat/history/${encodeURIComponent(chatId)}`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
-      cache: 'no-store',
-    });
+    const response = await fetch(
+      `/api/ai/chat/history/${encodeURIComponent(chatId)}`,
+      {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+        cache: 'no-store',
+      },
+    );
 
     if (response.status === 404) return null;
     if (!response.ok)
@@ -127,7 +130,9 @@ async function fetchChatDetails(chatId: string): Promise<ChatDetails | null> {
  * @param chatId Unique chat identifier.
  * @returns React Query result descriptor for the asynchronous fetch.
  */
-export function useChatHistory(chatId: string): UseQueryResult<ChatDetails | null, Error> {
+export function useChatHistory(
+  chatId: string,
+): UseQueryResult<ChatDetails | null, Error> {
   return useQuery<ChatDetails | null, Error>({
     queryKey: ['chatDetails', chatId],
     queryFn: () => fetchChatDetails(chatId),

@@ -9,6 +9,7 @@ import { createJailKey } from './cacheKeys';
 import type { getRedisClient } from './redis-client';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { LanguageModelV2Content } from '@ai-sdk/provider';
 
 const config = getCacheConfig();
 
@@ -26,12 +27,20 @@ export const cacheSuccessfulResponse = async (
   response: CacheableResponse,
   context: string = '',
 ): Promise<void> => {
+  const extractText = (content: Array<LanguageModelV2Content>) => {
+    return content
+      .map((item) => (item.type === 'text' ? item.text : ''))
+      .filter((text) => text.length > 0)
+      .join(' ');
+  };
   try {
+    const extractedText = extractText(response.content);
+
     await redis.setEx(
       cacheKey,
       config.cacheTtl,
       JSON.stringify({
-        text: response.text,
+        text: extractedText,
         finishReason: response.finishReason,
         usage: response.usage,
         warnings: response.warnings,
@@ -41,7 +50,7 @@ export const cacheSuccessfulResponse = async (
       }),
     );
 
-    const responseSize = response.text?.length || 0;
+    const responseSize = extractedText?.length || 0;
 
     // Record metrics
     if (config.enableMetrics) {
@@ -49,9 +58,11 @@ export const cacheSuccessfulResponse = async (
     }
 
     if (config.enableLogging) {
-      log( l => l.verbose(
-        `💾 Cached successful ${context}response for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-      ));
+      log((l) =>
+        l.verbose(
+          `💾 Cached successful ${context}response for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
+        ),
+      );
     }
   } catch (cacheStoreError) {
     if (config.enableMetrics) {
@@ -65,7 +76,7 @@ export const cacheSuccessfulResponse = async (
         },
         source: 'cacheWithRedis',
         log: true,
-      });      
+      });
     }
   }
 };
@@ -99,7 +110,11 @@ export const handleCacheJail = async (
     jailEntry.lastResponse = {
       finishReason: response.finishReason || 'unknown',
       hasWarnings: !!(response.warnings && response.warnings.length > 0),
-      textLength: response.text?.length || 0,
+      textLength:
+        response.content?.reduce(
+          (acc, part) => acc + (part.type === 'text' ? part.text.length : 0),
+          0,
+        ) || 0,
     };
 
     // Store updated jail entry
@@ -115,17 +130,21 @@ export const handleCacheJail = async (
     }
 
     if (config.enableLogging) {
-      log(l => l.verbose(
-        `🏪 ${context}cache jail updated for key ${cacheKey.substring(0, config.maxKeyLogLength)}... (count: ${jailEntry.count}/${config.jailThreshold})`,
-      ));
+      log((l) =>
+        l.verbose(
+          `🏪 ${context}cache jail updated for key ${cacheKey.substring(0, config.maxKeyLogLength)}... (count: ${jailEntry.count}/${config.jailThreshold})`,
+        ),
+      );
     }
 
     // Check if we've hit the threshold
     if (jailEntry.count >= config.jailThreshold) {
       if (config.enableLogging) {
-      log(l => l.verbose(        
-          `🔓 ${context}cache jail threshold reached for key ${cacheKey.substring(0, config.maxKeyLogLength)}... - promoting to cache`,
-        ));
+        log((l) =>
+          l.verbose(
+            `🔓 ${context}cache jail threshold reached for key ${cacheKey.substring(0, config.maxKeyLogLength)}... - promoting to cache`,
+          ),
+        );
       }
 
       // Promote to cache
@@ -138,7 +157,11 @@ export const handleCacheJail = async (
 
       // Record promotion metrics
       if (config.enableMetrics) {
-        const responseSize = response.text?.length || 0;
+        const responseSize =
+          response.content?.reduce(
+            (acc, part) => acc + (part.type === 'text' ? part.text.length : 0),
+            0,
+          ) || 0;
         metricsCollector.recordJailPromotion(cacheKey, responseSize);
       }
     }

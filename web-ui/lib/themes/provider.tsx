@@ -3,21 +3,19 @@ import React, {
   createContext,
   useContext,
   useState,
-  ReactNode,
   useEffect,
   useCallback,
+  PropsWithChildren,
 } from 'react';
 import { ThemeProvider as MuiThemeProvider } from '@mui/material/styles';
 import type { ThemeType, ThemeContextType } from './types';
 import { themes } from './definitions';
-import Loading from '@/components/general/loading';
+import { Loading } from '@/components/general/loading';
 import { log } from '@/lib/logger';
-
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 interface ThemeProviderProps {
-  children: ReactNode;
   defaultTheme?: ThemeType;
 }
 
@@ -26,7 +24,7 @@ const THEME_STORAGE_KEY = 'selectedTheme';
 export const ThemeProvider = ({
   children,
   defaultTheme = 'dark',
-}: ThemeProviderProps) => {
+}: PropsWithChildren<ThemeProviderProps>) => {
   const [currentTheme, setCurrentTheme] = useState<ThemeType>(defaultTheme);
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -40,7 +38,7 @@ export const ThemeProvider = ({
         savedTheme !== currentTheme &&
         (savedTheme === 'dark' || savedTheme === 'light')
       ) {
-        setCurrentTheme(savedTheme);        
+        setCurrentTheme(savedTheme);
       }
     }
   }, [hasMounted, currentTheme]);
@@ -49,8 +47,14 @@ export const ThemeProvider = ({
   useEffect(() => {
     if (typeof window !== 'undefined') {
       document.documentElement.setAttribute('data-theme', currentTheme);
-      document.documentElement.setAttribute('data-toolpad-color-scheme', currentTheme);
-      document.documentElement.setAttribute('data-mui-color-scheme', currentTheme);
+      document.documentElement.setAttribute(
+        'data-toolpad-color-scheme',
+        currentTheme,
+      );
+      document.documentElement.setAttribute(
+        'data-mui-color-scheme',
+        currentTheme,
+      );
     }
   }, [currentTheme]);
 
@@ -77,7 +81,7 @@ export const ThemeProvider = ({
   return (
     <>
       <ThemeContext.Provider value={contextValue}>
-        <MuiThemeProvider theme={themes[currentTheme]} defaultMode='dark'>
+        <MuiThemeProvider theme={themes[currentTheme]} defaultMode="dark">
           {hasMounted ? children : <Loading />}
         </MuiThemeProvider>
       </ThemeContext.Provider>

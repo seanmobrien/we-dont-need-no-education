@@ -2,25 +2,24 @@
 
 import { ChangeEvent, useCallback, useMemo, useState } from 'react';
 import ImportRecord from './import-record';
-import {
-  InputLabel,
-  InputAdornment,
-  TextField,
-  Button,
-  Box,
-  TableContainer,
-  Paper,
-  Table,
-  TableBody,
-  CircularProgress,
-} from '@mui/material';
+import InputLabel from '@mui/material/InputLabel';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Box from '@mui/material/Box';
+import TableContainer from '@mui/material/TableContainer';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import Mail from '@mui/icons-material/Mail';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { searchEmails } from '@/lib/api/email/import/google';
 import { log } from '@/lib/logger';
-import { default as EnhancedTableHead } from '@/components/general/enhanced-table-head';
-import { HeadCell } from '@/components/general/_types';
+import EnhancedTableHead, {
+  HeadCell,
+} from '@/components/general/enhanced-table-head';
 import { ImportRecordNotifyProps } from './types';
 import { MessageImportStatus } from '@/data-models/api/import/email-message';
 type ActionButonTaskType = 'load' | 'import' | 'cancel';

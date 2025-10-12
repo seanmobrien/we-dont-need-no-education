@@ -21,7 +21,7 @@ export default function Error({ error, reset }: ErrorProps) {
       {
         errorBoundary: 'RootError',
       },
-      ErrorSeverity.HIGH
+      ErrorSeverity.HIGH,
     );
   }, [error]);
 

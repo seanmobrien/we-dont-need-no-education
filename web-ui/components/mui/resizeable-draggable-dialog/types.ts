@@ -145,7 +145,10 @@ export type ResizeableDraggablePaperProps = PaperProps & {
  * ```
  */
 export type ResizeableDraggableDialogProps = PropsWithChildren<
-  Omit<DialogProps, 'open' | 'hideBackdrop' | 'disableEnforceFocus' | 'onClose'> & {    
+  Omit<
+    DialogProps,
+    'open' | 'hideBackdrop' | 'disableEnforceFocus' | 'onClose'
+  > & {
     isOpenState: boolean;
     paperProps?: Omit<
       ResizeableDraggablePaperProps,
@@ -157,7 +160,7 @@ export type ResizeableDraggableDialogProps = PropsWithChildren<
       | 'dialogId'
     >;
     modal?: boolean;
-    dialogActions?: (props: DialogActionProps) => JSX.Element;    
+    dialogActions?: (props: DialogActionProps) => JSX.Element;
     /**
      * @deprecated I dont know if we want to set this from here?
      */
@@ -173,7 +176,7 @@ export type ResizeableDraggableDialogProps = PropsWithChildren<
     /**
      * Called to notify parent of new height/width
      * @param width {number} The new width.
-     * @param height {number} The new height.     
+     * @param height {number} The new height.
      */
     onResize?: (width: number, height: number) => void;
     /**
@@ -181,10 +184,12 @@ export type ResizeableDraggableDialogProps = PropsWithChildren<
      * @param evt {Event} The event that triggered the close.
      * @param reason {string} The reason for the close, such as 'backdropClick' or 'escapeKeyDown'.
      */
-    onClose: (evt: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, reason: 'backdropClick' | 'escapeKeyDown' | '') => void;
+    onClose: (
+      evt: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+      reason: 'backdropClick' | 'escapeKeyDown' | '',
+    ) => void;
   }
 >;
-
 
 /**
  * Runtime validation function for Size type.

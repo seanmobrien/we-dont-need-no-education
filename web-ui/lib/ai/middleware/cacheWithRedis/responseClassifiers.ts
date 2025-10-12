@@ -14,9 +14,9 @@ export const isSuccessfulResponse = (response: CacheableResponse): boolean => {
   return !!(
     response &&
     response.finishReason !== 'error' &&
-    response.text !== undefined &&
-    response.text !== null &&
-    response.text.length > 0 &&
+    !!response.content &&
+    Array.isArray(response.content) &&
+    response.content.some((x) => x.type === 'text' && !!x.text) &&
     response.finishReason !== 'other' &&
     response.finishReason !== 'content-filter' &&
     (!response.warnings || response.warnings.length === 0)
@@ -32,8 +32,9 @@ export const isSuccessfulResponse = (response: CacheableResponse): boolean => {
 export const isProblematicResponse = (response: CacheableResponse): boolean => {
   return !!(
     response &&
-    response.text &&
-    response.text.length > 0 &&
+    !!response.content &&
+    Array.isArray(response.content) &&
+    response.content.length > 0 &&
     response.finishReason !== 'error' && // Never jail errors
     (response.finishReason === 'other' ||
       response.finishReason === 'content-filter' ||

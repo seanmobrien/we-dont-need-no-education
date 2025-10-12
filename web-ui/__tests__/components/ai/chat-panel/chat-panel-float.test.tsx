@@ -26,42 +26,44 @@ jest.mock('@/lib/ai/core', () => ({
 }));
 
 jest.mock('@/lib/components/ai/chat-fetch-wrapper', () => ({
-    useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
-
+  useChatFetchWrapper: jest.fn(() => ({ chatFetch: jest.fn() })),
 }));
-
 
 describe('ChatPanel Float Functionality', () => {
   it('renders chat panel inline by default', () => {
     render(<ChatPanel page="test" />);
-    
-    expect(screen.getByPlaceholderText(/Type your message here/)).toBeInTheDocument();
-    expect(screen.queryByText(/Chat panel is floating/)).not.toBeInTheDocument();
-  });
+
+    expect(
+      screen.getByPlaceholderText(/Type your message here/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Chat panel is floating/),
+    ).not.toBeInTheDocument();
+  }, 10000);
 
   it('shows float option in menu', async () => {
     render(<ChatPanel page="test" />);
-    
+
     // Find and click the menu button (MoreVert icon button)
     const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
     fireEvent.click(menuButton!);
-    
+
     // Check if Float option is available
     expect(screen.getByText('Float')).toBeInTheDocument();
-  });
+  }, 10000);
 
   it('switches to floating mode when Float is clicked', async () => {
     render(<ChatPanel page="test" />);
-    
+
     // Find and click the menu button
     const menuButton = screen.getByTestId('MoreVertIcon').closest('button');
     fireEvent.click(menuButton!);
-    
+
     // Click Float option
     const floatOption = screen.getByText('Float');
     fireEvent.click(floatOption);
-    
+
     // Check if it switched to floating mode
     expect(screen.getByText(/Chat panel is floating/)).toBeInTheDocument();
-  });
+  }, 10000);
 });

@@ -241,11 +241,11 @@ const ResponsiveActionPanelContent = ({
               </Box>
             ) : error ? (
               <>
-              <Alert severity="error">
-                {typeof error === 'object' && !!error && 'message' in error
-                  ? error.message
-                  : 'Failed to load related call-to-action'}
-              </Alert>
+                <Alert severity="error">
+                  {typeof error === 'object' && !!error && 'message' in error
+                    ? error.message
+                    : 'Failed to load related call-to-action'}
+                </Alert>
               </>
             ) : !relatedCTA ? (
               <Typography variant="body2" color="textSecondary">

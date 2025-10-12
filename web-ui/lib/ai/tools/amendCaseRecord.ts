@@ -6,7 +6,10 @@ import {
   ResponsiveActionAssociation,
   ToolCallbackResult,
 } from './types';
-import { resolveCaseFileId, toolCallbackArrayResultSchemaFactory } from './utility';
+import {
+  resolveCaseFileId,
+  toolCallbackArrayResultSchemaFactory,
+} from './utility';
 import {
   callToActionDetails,
   callToActionDetailsCallToActionResponse,
@@ -30,7 +33,7 @@ import {
 } from '@/lib/drizzle-db';
 import { appMeters } from '@/lib/site-util/metrics';
 import { CaseFileAmendmentShape } from './schemas/caseFileAmendmentShape';
-import { AmendmentResultShape } from './schemas/amendmentResultSchema';
+import { AmendmentResultShape } from './schemas/amendment-result-schema';
 
 // OpenTelemetry Metrics for AmendCaseRecord Tool
 const amendCaseRecordCounter = appMeters.createCounter(
@@ -440,7 +443,7 @@ const associateResponsiveActions = async ({
       'The source document id must have a document property ID to associate with a CTA.',
     );
   }
-  
+
   const targetActions = (
     await tx.query.documentUnits.findMany({
       where: (documentUnits, { inArray, eq, and }) =>
@@ -775,8 +778,7 @@ export const amendCaseRecord = async ({
     FailedRecords: failedRecords,
   });
 };
-export const amendCaseRecordConfig = 
-{
+export const amendCaseRecordConfig = {
   description:
     'This tool supports updating values within existing case file documents.  It provides the following capabilities:\n' +
     '  - Adding a note to the file.\n' +
@@ -788,8 +790,7 @@ export const amendCaseRecordConfig =
   inputSchema: {
     update: CaseFileAmendmentShape,
   },
-  outputSchema:
-    toolCallbackArrayResultSchemaFactory(AmendmentResultShape),
+  outputSchema: toolCallbackArrayResultSchemaFactory(AmendmentResultShape),
   annotations: {
     title: 'Amend Case File Document',
     readOnlyHint: false,

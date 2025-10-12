@@ -1,6 +1,6 @@
 /**
  * @fileoverview Counter Management for MCP Transport
- * 
+ *
  * This module handles tracking of active sessions and tool calls with
  * safe increment/decrement operations and debugging capabilities.
  */

@@ -17,17 +17,14 @@ const ServerBoundDataGridPropsSchema = z.object({
       }),
     )
     .nonempty(),
-  url: z
-    .string()
-    .url()
-    .or(
-      z.object({
-        pathname: z.string(),
-        searchParams: z.object({}).catchall(z.any()).optional(),
-        hash: z.string().optional(),
-      }),
-    )
-    .optional(),
+  url: z.union([
+    z.string().url(),
+    z.object({
+      pathname: z.string(),
+      searchParams: z.object({}).catchall(z.any()).optional(),
+      hash: z.string().optional(),
+    }),
+  ]).optional(),
   // getRecordData: z.function().optional(),
   idColumn: z.string(),
   slotProps: z

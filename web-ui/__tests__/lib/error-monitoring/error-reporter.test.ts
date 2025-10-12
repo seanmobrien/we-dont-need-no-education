@@ -1,7 +1,10 @@
 /**
  * @jest-environment jsdom
  */
-import { ErrorReporter, ErrorSeverity } from '@/lib/error-monitoring/error-reporter';
+import {
+  ErrorReporter,
+  ErrorSeverity,
+} from '@/lib/error-monitoring/error-reporter';
 
 // Mock external dependencies
 const mockGtag = jest.fn();
@@ -23,10 +26,18 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 // Mock console methods
-const mockConsoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
-const mockConsoleGroup = jest.spyOn(console, 'group').mockImplementation(() => {});
-const mockConsoleGroupEnd = jest.spyOn(console, 'groupEnd').mockImplementation(() => {});
-const mockConsoleTable = jest.spyOn(console, 'table').mockImplementation(() => {});
+const mockConsoleError = jest
+  .spyOn(console, 'error')
+  .mockImplementation(() => {});
+const mockConsoleGroup = jest
+  .spyOn(console, 'group')
+  .mockImplementation(() => {});
+const mockConsoleGroupEnd = jest
+  .spyOn(console, 'groupEnd')
+  .mockImplementation(() => {});
+const mockConsoleTable = jest
+  .spyOn(console, 'table')
+  .mockImplementation(() => {});
 
 describe('ErrorReporter', () => {
   let errorReporter: ErrorReporter;

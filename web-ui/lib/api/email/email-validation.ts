@@ -9,7 +9,9 @@ const dateLike = z
     z
       .string()
       .min(1)
-      .refine((v) => !Number.isNaN(Date.parse(v)), { message: 'Invalid date string' }),
+      .refine((v) => !Number.isNaN(Date.parse(v)), {
+        message: 'Invalid date string',
+      }),
   ])
   .transform((v) => (v instanceof Date ? v : new Date(v)));
 
@@ -35,7 +37,11 @@ const rawRecipientSchema = z
 // Sender schema (supports snake variant)
 const senderSchema = z
   .object({ contactId: z.number().int().positive() })
-  .or(z.object({ contact_id: z.number().int().positive() }).transform((s) => ({ contactId: s.contact_id })));
+  .or(
+    z
+      .object({ contact_id: z.number().int().positive() })
+      .transform((s) => ({ contactId: s.contact_id })),
+  );
 
 // Create email schema (required core fields)
 export const createEmailRequestSchema = z
@@ -47,11 +53,16 @@ export const createEmailRequestSchema = z
     sentOn: dateLike.optional(),
     threadId: z.number().int().positive().nullable().optional(),
     parentEmailId: z.string().min(1).nullable().optional(),
-    recipients: z.array(rawRecipientSchema).min(1, 'At least one recipient is required'),
+    recipients: z
+      .array(rawRecipientSchema)
+      .min(1, 'At least one recipient is required'),
   })
   .superRefine((val, ctx) => {
     if (!val.senderId && !val.sender?.contactId) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'senderId or sender.contactId is required' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'senderId or sender.contactId is required',
+      });
     }
   });
 
@@ -79,18 +90,29 @@ export const updateEmailRequestSchema = z
       val.parentEmailId === undefined &&
       val.recipients === undefined
     ) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'At least one field to update must be provided' });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one field to update must be provided',
+      });
     }
   });
 
 export type CreateEmailRequestInput = z.infer<typeof createEmailRequestSchema>;
 export type UpdateEmailRequestInput = z.infer<typeof updateEmailRequestSchema>;
 
-export interface ValidationSuccess<T> { success: true; data: T }
-export interface ValidationFailure { success: false; error: z.ZodError }
+export interface ValidationSuccess<T> {
+  success: true;
+  data: T;
+}
+export interface ValidationFailure {
+  success: false;
+  error: z.ZodError;
+}
 export type ValidationResult<T> = ValidationSuccess<T> | ValidationFailure;
 
-export function validateCreateEmail(raw: unknown): ValidationResult<CreateEmailRequest> {
+export function validateCreateEmail(
+  raw: unknown,
+): ValidationResult<CreateEmailRequest> {
   const parsed = createEmailRequestSchema.safeParse(raw);
   if (!parsed.success) return { success: false, error: parsed.error };
   const v = parsed.data;
@@ -112,7 +134,9 @@ export function validateCreateEmail(raw: unknown): ValidationResult<CreateEmailR
   return { success: true, data: normalized };
 }
 
-export function validateUpdateEmail(raw: unknown): ValidationResult<UpdateEmailRequest> {
+export function validateUpdateEmail(
+  raw: unknown,
+): ValidationResult<UpdateEmailRequest> {
   const parsed = updateEmailRequestSchema.safeParse(raw);
   if (!parsed.success) return { success: false, error: parsed.error };
   const v = parsed.data;

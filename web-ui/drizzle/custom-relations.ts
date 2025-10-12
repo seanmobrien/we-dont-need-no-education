@@ -11,7 +11,6 @@ import {
   documentUnitAnalysisStageAudit,
   analysisStage,
   users,
-  chatHistory,
   messageStatuses,
   turnStatuses,
   chats,
@@ -44,6 +43,10 @@ import {
   models,
   modelQuotas,
   tokenConsumptionStats,
+  chatToolCalls,
+  chatTool,
+  mcpSessions,
+  mcpEvents,
 } from './schema';
 
 export const callToActionExpectedResponseRelations = relations(
@@ -237,13 +240,6 @@ export const analysisStageRelations = relations(analysisStage, ({ many }) => ({
   documentUnitAnalysisStageAudits: many(documentUnitAnalysisStageAudit),
 }));
 
-export const chatHistoryRelations = relations(chatHistory, ({ one }) => ({
-  user: one(users, {
-    fields: [chatHistory.userId],
-    references: [users.id],
-  }),
-}));
-
 // New chat history relations
 export const messageStatusesRelations = relations(
   messageStatuses,
@@ -251,6 +247,21 @@ export const messageStatusesRelations = relations(
     chatMessages: many(chatMessages),
   }),
 );
+
+export const mcpSessionsRelations = relations(mcpSessions, ({ one, many }) => ({
+  chatTurn: one(chatTurns, {
+    fields: [mcpSessions.chatId],
+    references: [chatTurns.chatId],
+  }),
+  mcpEvents: many(mcpEvents),
+}));
+
+export const mcpEventsRelations = relations(mcpEvents, ({ one }) => ({
+  mcpSession: one(mcpSessions, {
+    fields: [mcpEvents.sessionId],
+    references: [mcpSessions.id],
+  }),
+}));
 
 export const turnStatusesRelations = relations(turnStatuses, ({ many }) => ({
   chatTurns: many(chatTurns),
@@ -266,6 +277,7 @@ export const chatsRelations = relations(chats, ({ one, many }) => ({
 }));
 
 export const chatTurnsRelations = relations(chatTurns, ({ one, many }) => ({
+  mcpSessions: many(mcpSessions),
   chat: one(chats, {
     fields: [chatTurns.chatId],
     references: [chats.id],
@@ -278,20 +290,24 @@ export const chatTurnsRelations = relations(chatTurns, ({ one, many }) => ({
   tokenUsage: many(tokenUsage),
 }));
 
-export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
-  chat: one(chats, {
-    fields: [chatMessages.chatId],
-    references: [chats.id],
+export const chatMessagesRelations = relations(
+  chatMessages,
+  ({ one, many }) => ({
+    chat: one(chats, {
+      fields: [chatMessages.chatId],
+      references: [chats.id],
+    }),
+    turn: one(chatTurns, {
+      fields: [chatMessages.chatId, chatMessages.turnId],
+      references: [chatTurns.chatId, chatTurns.turnId],
+    }),
+    status: one(messageStatuses, {
+      fields: [chatMessages.statusId],
+      references: [messageStatuses.id],
+    }),
+    chatToolCalls: many(chatToolCalls),
   }),
-  turn: one(chatTurns, {
-    fields: [chatMessages.turnId],
-    references: [chatTurns.turnId],
-  }),
-  status: one(messageStatuses, {
-    fields: [chatMessages.statusId],
-    references: [messageStatuses.id],
-  }),
-}));
+);
 
 export const tokenUsageRelations = relations(tokenUsage, ({ one }) => ({
   turn: one(chatTurns, {
@@ -301,7 +317,6 @@ export const tokenUsageRelations = relations(tokenUsage, ({ one }) => ({
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
-  chatHistories: many(chatHistory),
   stagingMessages: many(stagingMessage),
   accounts: many(accounts, {
     relationName: 'accounts_userId_users_id',
@@ -553,23 +568,39 @@ export const stagingAttachmentRelations = relations(
   }),
 );
 
-
 // Relations for the new normalized model tables
-export const modelsRelations = relations(models, ({many}) => ({
+export const modelsRelations = relations(models, ({ many }) => ({
   modelQuotas: many(modelQuotas),
   tokenConsumptionStats: many(tokenConsumptionStats),
 }));
 
-export const modelQuotasRelations = relations(modelQuotas, ({one}) => ({
+export const modelQuotasRelations = relations(modelQuotas, ({ one }) => ({
   model: one(models, {
     fields: [modelQuotas.modelId],
-    references: [models.id]
+    references: [models.id],
   }),
 }));
 
-export const tokenConsumptionStatsRelations = relations(tokenConsumptionStats, ({one}) => ({
-  model: one(models, {
-    fields: [tokenConsumptionStats.modelId],
-    references: [models.id]
+export const tokenConsumptionStatsRelations = relations(
+  tokenConsumptionStats,
+  ({ one }) => ({
+    model: one(models, {
+      fields: [tokenConsumptionStats.modelId],
+      references: [models.id],
+    }),
   }),
+);
+export const chatToolCallsRelations = relations(chatToolCalls, ({ one }) => ({
+  chatMessage: one(chatMessages, {
+    fields: [chatToolCalls.chatMessageId],
+    references: [chatMessages.chatMessageId],
+  }),
+  chatTool: one(chatTool, {
+    fields: [chatToolCalls.chatToolId],
+    references: [chatTool.chatToolId],
+  }),
+}));
+
+export const chatToolRelations = relations(chatTool, ({ many }) => ({
+  chatToolCalls: many(chatToolCalls),
 }));

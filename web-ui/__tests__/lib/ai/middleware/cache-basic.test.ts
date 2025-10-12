@@ -27,12 +27,13 @@ import { openai } from '@ai-sdk/openai';
 import { generateText, wrapLanguageModel } from 'ai';
 import { cacheWithRedis } from '@/lib/ai/middleware/cacheWithRedis/cacheWithRedis';
 import { metricsCollector } from '@/lib/ai/middleware/cacheWithRedis/metrics';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the openai model to return consistent responses for testing
 jest.mock('@ai-sdk/openai', () => ({
   openai: jest.fn(() => ({
     doGenerate: jest.fn(async () => ({
-      text: 'The answer is 4',
+      content: [{ type: 'text', text: 'The answer is 4' }],
       finishReason: 'stop',
       usage: { totalTokens: 10 },
       warnings: undefined,
@@ -43,6 +44,7 @@ jest.mock('@ai-sdk/openai', () => ({
 }));
 
 describe('Cache Basic Functionality', () => {
+  const mockConsole = hideConsoleOutput();
   beforeEach(() => {
     // Reset metrics and mock calls
     metricsCollector.reset();
@@ -50,11 +52,14 @@ describe('Cache Basic Functionality', () => {
     // Setup cache hit/miss behavior for tests
     mockRedisClient.get.mockResolvedValue(null); // Default to cache miss
   });
+  afterEach(() => {
+    mockConsole.dispose();
+  });
 
   it('should cache and retrieve responses correctly', async () => {
     // Setup: First call is cache miss, second call is cache hit
     const cachedResponse = JSON.stringify({
-      text: 'The answer is 4',
+      content: [{ type: 'text', text: 'The answer is 4' }],
       finishReason: 'stop',
       usage: { totalTokens: 10 },
       warnings: undefined,
@@ -142,6 +147,7 @@ describe('Cache Basic Functionality', () => {
 
   it('should handle Redis errors gracefully', async () => {
     // Simulate Redis connection error
+    mockConsole.setup();
     mockRedisClient.get.mockRejectedValue(new Error('Redis connection failed'));
 
     const model = wrapLanguageModel({

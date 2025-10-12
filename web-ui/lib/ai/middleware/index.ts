@@ -2,15 +2,16 @@
 export { retryRateLimitMiddlewareFactory } from './key-rate-limiter/middleware';
 export { rateLimitQueueManager } from './key-rate-limiter/queue-manager';
 export { rateLimitMetrics } from './key-rate-limiter/metrics';
-export type { 
-  RateLimitedRequest, 
-  ProcessedResponse, 
-  RateLimitMetrics, 
+export type {
+  RateLimitedRequest,
+  ProcessedResponse,
+  RateLimitMetrics,
   ModelClassification,
-  ModelFailoverConfig 
+  ModelFailoverConfig,
 } from './key-rate-limiter/types';
 export {
-  createChatHistoryMiddleware,
+  createChatHistoryMiddlewareEx,
+  wrapChatHistoryMiddleware,
   type ChatHistoryContext,
 } from './chat-history';
 export { setNormalizedDefaultsMiddleware } from './set-normalized-defaults';
@@ -38,3 +39,16 @@ export {
   type QuotaCheckResult,
   type TokenStatsMiddlewareConfig,
 } from './tokenStatsTracking';
+export {
+  MiddlewareStateManager,
+  type SerializableLanguageModelMiddleware,
+  type SerializableMiddleware,
+  type StatefulMiddlewareConfig,
+  type StateManagementParams,
+  type MiddlewareMetadata,
+} from './state-management';
+export {
+  createToolOptimizingMiddleware,
+  type ToolOptimizingMiddlewareConfig,
+  getToolOptimizingMiddlewareMetrics,
+} from './tool-optimizing-middleware';

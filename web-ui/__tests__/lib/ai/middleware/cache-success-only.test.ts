@@ -25,32 +25,28 @@ jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
 }));
 
 import { openai } from '@ai-sdk/openai';
-import {
-  generateText,
-  LanguageModelV1,
-  LanguageModelV1CallOptions,
-  LanguageModelV1Middleware,
-  wrapLanguageModel,
-} from 'ai';
+import { generateText, LanguageModelMiddleware, wrapLanguageModel } from 'ai';
+import { LanguageModelV2, LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
-import type { RedisClientType } from 'redis';
+import { content } from 'googleapis/build/src/apis/content';
 
 // Mock function to simulate different response types
 const createMockMiddleware = (
   mockResponse: Record<string, unknown>,
-): LanguageModelV1Middleware => ({
+): LanguageModelMiddleware => ({
   wrapGenerate: async () => {
-    return mockResponse as unknown as ReturnType<LanguageModelV1['doGenerate']>;
+    return mockResponse as unknown as ReturnType<LanguageModelV2['doGenerate']>;
   },
   transformParams: async ({ params }: { params: Record<string, unknown> }) =>
-    params as LanguageModelV1CallOptions,
+    params as LanguageModelV2CallOptions,
 });
 
 const wrapMockMiddleware = (
-  model: LanguageModelV1,
+  model: LanguageModelV2,
   mockResponse: Record<string, unknown>,
-): LanguageModelV1 =>
+): LanguageModelV2 =>
   wrapLanguageModel({
     model: wrapLanguageModel({
       model: model,
@@ -69,8 +65,8 @@ describe('Cache Success-Only Functionality', () => {
   it('should cache successful responses', async () => {
     const baseModel = openai('gpt-4o-mini');
 
-    const successMiddleware: LanguageModelV1Middleware = createMockMiddleware({
-      text: 'This is a successful response',
+    const successMiddleware: LanguageModelMiddleware = createMockMiddleware({
+      content: [{ type: 'text', text: 'This is a successful response' }],
       finishReason: 'stop',
       usage: { totalTokens: 10 },
       warnings: undefined,
@@ -98,32 +94,39 @@ describe('Cache Success-Only Functionality', () => {
   });
 
   it('should NOT cache error responses', async () => {
-    const baseModel = openai('gpt-4o-mini');
+    const mockConsole = hideConsoleOutput();
+    mockConsole.setup();
 
-    const errorModel = wrapMockMiddleware(baseModel, {
-      text: '',
-      finishReason: 'error',
-      usage: { totalTokens: 10 },
-      warnings: ['API Error occurred'],
-    });
+    try {
+      const baseModel = openai('gpt-4o-mini');
 
-    const result = await generateText({
-      model: errorModel,
-      messages: [{ role: 'user', content: 'Test error response' }],
-    });
+      const errorModel = wrapMockMiddleware(baseModel, {
+        content: [{ type: 'text', text: '' }],
+        finishReason: 'error',
+        usage: { totalTokens: 10 },
+        warnings: ['API Error occurred'],
+      });
 
-    expect(result.text).toBe('');
+      const result = await generateText({
+        model: errorModel,
+        messages: [{ role: 'user', content: 'Test error response' }],
+      });
 
-    // Check metrics - should not show successful cache
-    const metrics = metricsCollector.getMetrics();
-    expect(metrics.successfulCaches).toBe(0);
+      expect(result.text).toBe('');
+
+      // Check metrics - should not show successful cache
+      const metrics = metricsCollector.getMetrics();
+      expect(metrics.successfulCaches).toBe(0);
+    } finally {
+      mockConsole.dispose();
+    }
   });
 
   it('should NOT cache content filter responses initially', async () => {
     const baseModel = openai('gpt-4o-mini');
 
     const filterModel = wrapMockMiddleware(baseModel, {
-      text: 'Filtered content',
+      content: [{ type: 'text', text: 'Filtered content' }],
       finishReason: 'content-filter',
       usage: { totalTokens: 5 },
       warnings: undefined,
@@ -143,33 +146,40 @@ describe('Cache Success-Only Functionality', () => {
   });
 
   it('should NOT cache responses with warnings initially', async () => {
-    const baseModel = openai('gpt-4o-mini');
+    const mockConsole = hideConsoleOutput();
+    mockConsole.setup();
 
-    const warningModel = wrapMockMiddleware(baseModel, {
-      text: 'Response with warnings',
-      finishReason: 'stop',
-      usage: { totalTokens: 15 },
-      warnings: ['Rate limit warning'],
-    });
+    try {
+      const baseModel = openai('gpt-4o-mini');
 
-    const result = await generateText({
-      model: warningModel,
-      messages: [{ role: 'user', content: 'Test warning response' }],
-    });
+      const warningModel = wrapMockMiddleware(baseModel, {
+        content: [{ type: 'text', text: 'Response with warnings' }],
+        finishReason: 'stop',
+        usage: { totalTokens: 15 },
+        warnings: ['Rate limit warning'],
+      });
 
-    expect(result.text).toBe('Response with warnings');
+      const result = await generateText({
+        model: warningModel,
+        messages: [{ role: 'user', content: 'Test warning response' }],
+      });
 
-    // Check metrics
-    const metrics = metricsCollector.getMetrics();
-    expect(metrics.successfulCaches).toBe(0);
-    expect(metrics.problematicResponses).toBe(1);
+      expect(result.text).toBe('Response with warnings');
+
+      // Check metrics
+      const metrics = metricsCollector.getMetrics();
+      expect(metrics.successfulCaches).toBe(0);
+      expect(metrics.problematicResponses).toBe(1);
+    } finally {
+      mockConsole.dispose();
+    }
   });
 
   it('should NOT cache empty text responses', async () => {
     const baseModel = openai('gpt-4o-mini');
 
     const emptyModel = wrapMockMiddleware(baseModel, {
-      text: '',
+      content: [{ type: 'text', text: '' }],
       finishReason: 'stop',
       usage: { totalTokens: 1 },
       warnings: undefined,

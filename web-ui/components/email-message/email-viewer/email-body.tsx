@@ -23,9 +23,9 @@ import { LoadingEmail } from './loading';
 import { Attachments } from './attachments';
 
 export const EmailBody: React.FC<EmailViewerProps> = ({ emailId }) => {
- const { email, isFetching } = useEmailMessageQuery({
-   emailId: emailId,   
- });
+  const { email, isFetching } = useEmailMessageQuery({
+    emailId: emailId,
+  });
   return isFetching ? (
     <LoadingEmail />
   ) : (

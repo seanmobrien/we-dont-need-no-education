@@ -11,15 +11,16 @@ export const dynamic = 'force-dynamic';
 
 /**
  * Handles GET request to fetch chat details by ID
- * 
+ *
  * @param req - The Next.js request object
  * @param params - Route parameters containing chatId
  * @returns JSON response with chat details or error
  */
-export const GET = wrapRouteRequest(async (
-  req: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
-): Promise<NextResponse> => {
+export const GET = wrapRouteRequest(
+  async (
+    req: NextRequest,
+    { params }: { params: Promise<{ chatId: string }> },
+  ): Promise<NextResponse> => {
     const { chatId } = await params;
     try {
       // Validate session authentication
@@ -72,6 +73,7 @@ export const GET = wrapRouteRequest(async (
           messageOrder: schema.chatMessages.messageOrder,
           toolName: schema.chatMessages.toolName,
           functionCall: schema.chatMessages.functionCall,
+          toolResult: schema.chatMessages.toolResult,
           messageStatusId: schema.chatMessages.statusId,
           providerId: schema.chatMessages.providerId,
           messageMetadata: schema.chatMessages.metadata,
@@ -119,6 +121,7 @@ export const GET = wrapRouteRequest(async (
             messageOrder: Number(row.messageOrder),
             toolName: String(row.toolName),
             functionCall: row.functionCall as Record<string, unknown> | null,
+            toolResult: row.toolResult as Record<string, unknown> | null,
             statusId: Number(row.messageStatusId),
             providerId: String(row.providerId),
             metadata: row.messageMetadata as Record<string, unknown>,
@@ -147,4 +150,6 @@ export const GET = wrapRouteRequest(async (
         { status: 500 },
       );
     }
-}, { buildFallback: { id: 'not-enabled', title: 'Wait for build to complete' } });
+  },
+  { buildFallback: { id: 'not-enabled', title: 'Wait for build to complete' } },
+);

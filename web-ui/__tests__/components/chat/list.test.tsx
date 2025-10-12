@@ -55,7 +55,7 @@ describe('ChatList', () => {
 
   it('should render initially without errors', () => {
     render(<ChatList />);
-    
+
     expect(screen.getByRole('grid')).toBeInTheDocument();
     expect(screen.getByText('Mock Data Grid')).toBeInTheDocument();
   });
@@ -82,12 +82,15 @@ describe('ChatList', () => {
     render(<ChatList />);
 
     const dataGrid = screen.getByTestId('server-bound-data-grid');
-    expect(dataGrid).toHaveAttribute('data-url', 'http://localhost:3000/api/ai/chat/history');
+    expect(dataGrid).toHaveAttribute(
+      'data-url',
+      'http://localhost:3000/api/ai/chat/history',
+    );
   });
 
   it('should render with custom maxHeight', () => {
     render(<ChatList maxHeight={500} />);
-    
+
     // The component should render without errors
     expect(screen.getByRole('grid')).toBeInTheDocument();
   });
@@ -101,7 +104,7 @@ describe('ChatList', () => {
 
   it('should render with proper box structure', () => {
     const { container } = render(<ChatList />);
-    
+
     // Check that the Box component structure is present
     const boxElement = container.firstChild;
     expect(boxElement).toHaveStyle('display: flex');
@@ -130,5 +133,25 @@ describe('ChatList', () => {
     render(<ChatList {...customProps} />);
 
     expect(screen.getByRole('grid')).toBeInTheDocument();
+  });
+
+  it('should add viewType query parameter for system view', () => {
+    render(<ChatList viewType="system" />);
+
+    const dataGrid = screen.getByTestId('server-bound-data-grid');
+    expect(dataGrid).toHaveAttribute(
+      'data-url',
+      'http://localhost:3000/api/ai/chat/history?viewType=system',
+    );
+  });
+
+  it('should not add viewType query parameter for default user view', () => {
+    render(<ChatList viewType="user" />);
+
+    const dataGrid = screen.getByTestId('server-bound-data-grid');
+    expect(dataGrid).toHaveAttribute(
+      'data-url',
+      'http://localhost:3000/api/ai/chat/history',
+    );
   });
 });

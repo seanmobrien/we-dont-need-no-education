@@ -19,7 +19,11 @@ describe('DualKeyMap', () => {
   ];
 
   beforeEach(() => {
-    map = new DualKeyMap<TestRecord, number, string>('id', 'name', entries.values());
+    map = new DualKeyMap<TestRecord, number, string>(
+      'id',
+      'name',
+      entries.values(),
+    );
   });
 
   it('should initialize with entries', () => {

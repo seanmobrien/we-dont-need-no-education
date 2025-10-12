@@ -9,7 +9,8 @@ jest.mock('@/lib/ai/middleware', () => ({
   retryRateLimitMiddlewareFactory: jest.fn(),
   setNormalizedDefaultsMiddleware: jest.fn(),
   rateLimitMiddleware: jest.fn(),
-  createChatHistoryMiddleware: jest.fn(),
+  createChatHistoryMiddlewareEx: jest.fn(),
+  wrapChatHistoryMiddleware: jest.fn(),
   tokenStatsMiddleware: jest.fn(),
   tokenStatsWithQuotaMiddleware: jest.fn(),
   tokenStatsLoggingOnlyMiddleware: jest.fn(),
@@ -20,7 +21,8 @@ jest.mock('@/lib/ai/middleware', () => ({
 import {
   setNormalizedDefaultsMiddleware,
   retryRateLimitMiddlewareFactory,
-  createChatHistoryMiddleware,
+  createChatHistoryMiddlewareEx,
+  wrapChatHistoryMiddleware,
   tokenStatsMiddleware,
   tokenStatsWithQuotaMiddleware,
   tokenStatsLoggingOnlyMiddleware,
@@ -114,6 +116,7 @@ describe('AI Model Types', () => {
       'azure:embedding',
       'google:completions',
       'google:embedding',
+      'google:gemini-2.0-flash',
     ]);
   });
 

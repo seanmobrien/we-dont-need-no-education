@@ -1,169 +1,127 @@
-import NextAuth, {
-  Session,
-  User as NextAuthUser,
-  Account,
-  NextAuthConfig,
-} from 'next-auth'; // Added NextAuthConfig
-import { Adapter, AdapterUser } from '@auth/core/adapters';
-import type { Provider } from '@auth/core/providers';
-import { skipCSRFCheck } from '@auth/core';
-import { NextRequest } from 'next/server';
-import { JWT } from 'next-auth/jwt';
-import Google, { GoogleProfile } from 'next-auth/providers/google';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import { isRunningOnEdge, env } from '@/lib/site-util/env';
+import NextAuth, { Account, NextAuthConfig, Profile, User } from 'next-auth'; // Added NextAuthConfig
+import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
+import type { CredentialInput, Provider } from '@auth/core/providers';
+import { isRunningOnEdge } from '@/lib/site-util/env';
 import { logEvent } from '@/lib/logger';
 
-/**
- * Extends NextAuthUser to include the account_id, which our provider helpfully sets
- */
-type NextAuthUserWithAccountId = NextAuthUser & { account_id?: number };
+import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
+import { authorized } from './lib/auth/authorized';
+import { JWT } from '@auth/core/jwt';
+import { Awaitable, DefaultSession, Session } from '@auth/core/types';
 
-const hasSecretHeaderBypass = (req: Request | undefined): boolean => {
-  if (!req) {
-    return false;
-  }
-  const headerName = env('AUTH_HEADER_BYPASS_KEY');
-  const checkHeaderValue = env('AUTH_HEADER_BYPASS_VALUE');
-  if (!headerName || !checkHeaderValue) {
-    return false;
-  }
-  const headerValue = req?.headers.get(headerName);
-  // Disable CSRF validation if Skynet credentials are used
-  return headerValue === checkHeaderValue;
+type DynamicImports = {
+  drizzleAdapter: {
+    setupDrizzleAdapter: () => Promise<Adapter>;
+  };
+  auth: {
+    session: {
+      session: (
+        params: ({
+          session: { user: AdapterUser } & AdapterSession;
+          /** Available when {@link AuthConfig.session} is set to `strategy: "database"`. */
+          user: AdapterUser;
+        } & {
+          session: Session;
+          /** Available when {@link AuthConfig.session} is set to `strategy: "jwt"` */
+          token: JWT;
+        }) & {
+          /**
+           * Available when using {@link AuthConfig.session} `strategy: "database"` and an update is triggered for the session.
+           *
+           * :::note
+           * You should validate this data before using it.
+           * :::
+           */
+          // Using any for library compatibility
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          newSession: any;
+          trigger?: 'update';
+        },
+      ) => Awaitable<Session | DefaultSession>;
+    };
+    signIn: {
+      signIn: (params: {
+        user: User | AdapterUser;
+        account?: Account | null;
+        /**
+         * If OAuth provider is used, it contains the full
+         * OAuth profile returned by your provider.
+         */
+        profile?: Profile;
+        /**
+         * If Email provider is used, on the first call, it contains a
+         * `verificationRequest: true` property to indicate it is being triggered in the verification request flow.
+         * When the callback is invoked after a user has clicked on a sign in link,
+         * this property will not be present. You can check for the `verificationRequest` property
+         * to avoid sending emails to addresses or domains on a blocklist or to only explicitly generate them
+         * for email address in an allow list.
+         */
+        email?: {
+          verificationRequest?: boolean;
+        };
+        /** If Credentials provider is used, it contains the user credentials */
+        credentials?: Record<string, CredentialInput>;
+      }) => Awaitable<boolean | string>;
+    };
+    jwt: {
+      jwt: (params: {
+        /**
+         * When `trigger` is `"signIn"` or `"signUp"`, it will be a subset of {@link JWT},
+         * `name`, `email` and `image` will be included.
+         *
+         * Otherwise, it will be the full {@link JWT} for subsequent calls.
+         */
+        token: JWT;
+        /**
+         * Either the result of the {@link OAuthConfig.profile} or the {@link CredentialsConfig.authorize} callback.
+         * @note available when `trigger` is `"signIn"` or `"signUp"`.
+         *
+         * Resources:
+         * - [Credentials Provider](https://authjs.dev/getting-started/authentication/credentials)
+         * - [User database model](https://authjs.dev/guides/creating-a-database-adapter#user-management)
+         */
+        user: User | AdapterUser;
+        /**
+         * Contains information about the provider that was used to sign in.
+         * Also includes {@link TokenSet}
+         * @note available when `trigger` is `"signIn"` or `"signUp"`
+         */
+        account?: Account | null;
+        /**
+         * The OAuth profile returned from your provider.
+         * (In case of OIDC it will be the decoded ID Token or /userinfo response)
+         * @note available when `trigger` is `"signIn"`.
+         */
+        profile?: Profile;
+        /**
+         * Check why was the jwt callback invoked. Possible reasons are:
+         * - user sign-in: First time the callback is invoked, `user`, `profile` and `account` will be present.
+         * - user sign-up: a user is created for the first time in the database (when {@link AuthConfig.session}.strategy is set to `"database"`)
+         * - update event: Triggered by the `useSession().update` method.
+         * In case of the latter, `trigger` will be `undefined`.
+         */
+        trigger?: 'signIn' | 'signUp' | 'update';
+        /** @deprecated use `trigger === "signUp"` instead */
+        isNewUser?: boolean;
+        /**
+         * When using {@link AuthConfig.session} `strategy: "jwt"`, this is the data
+         * sent from the client via the `useSession().update` method.
+         *
+         * ⚠ Note, you should validate this data before using it.
+         */
+        // Using any for library compatibility
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        session?: any;
+      }) => Awaitable<JWT | null>;
+    };
+  };
 };
 
-/**
- * Validates that the application is running on localhost for local development auth bypass.
- * Throws a scary error if not running on localhost to prevent accidental production use.
- */
-const validateLocalhost = (req: Request | undefined): void => {
-  const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
-  if (!bypassUserId) {
-    return; // No bypass configured, nothing to validate
-  }
+const dynamicImports: DynamicImports = {
+  auth: {},
+} as DynamicImports;
 
-  // Extract hostname from various possible sources
-  let hostname = '';
-  
-  if (req) {
-    // Try to get hostname from the request
-    const url = new URL(req.url);
-    hostname = url.hostname;
-  } else {
-    // Fallback to environment variable
-    const publicHostname = env('NEXT_PUBLIC_HOSTNAME');
-    if (publicHostname) {
-      hostname = new URL(publicHostname).hostname;
-    }
-  }
-
-  // Check if running on localhost
-  const isLocalhost = hostname === 'localhost' || 
-                     hostname === '127.0.0.1' || 
-                     hostname.startsWith('192.168.') ||
-                     hostname.startsWith('10.') ||
-                     hostname.startsWith('172.16.') ||
-                     hostname.endsWith('.local');
-
-  if (!isLocalhost) {
-    throw new Error(`
-🚨🚨🚨 CRITICAL SECURITY WARNING 🚨🚨🚨
-
-LOCAL_DEV_AUTH_BYPASS_USER_ID is set but you're not running on localhost!
-Current hostname: ${hostname}
-
-This environment variable MUST NEVER be set in production or any non-local environment.
-If you see this error:
-1. IMMEDIATELY remove LOCAL_DEV_AUTH_BYPASS_USER_ID from your environment
-2. Check your .env files and remove any reference to this variable
-3. NEVER commit code with this variable set to any value
-
-Continuing with this variable set in a non-localhost environment could compromise 
-the security of your entire application and expose user data.
-
-Remember: We don't threaten to fire people for exposing secrets - we make threats 
-against things people actually care about. Don't make us test that theory.
-
-🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
-    `);
-  }
-};
-
-/**
- * Checks if local development auth bypass is enabled and validates environment
- */
-const shouldUseLocalDevBypass = (req: Request | undefined): boolean => {
-  const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
-  if (!bypassUserId || bypassUserId.trim() === '') {
-    return false;
-  }
-  
-  validateLocalhost(req);
-  return true;
-};
-
-const bypassUserId = env('LOCAL_DEV_AUTH_BYPASS_USER_ID');
-
-
-const providers: Provider[] = [
-  Google<GoogleProfile>({
-    clientId: process.env.GOOGLE_CLIENT_ID as string, // Added type assertion
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET as string, // Added type assertion
-    authorization: {
-      params: {
-        access_type: 'offline',
-        prompt: 'consent',
-        response_type: 'code',
-        scope:
-          'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/gmail.readonly', //
-      },
-    },
-  }),    
-  ...(bypassUserId ? [CredentialsProvider({
-    id: 'local-dev-bypass', // Unique for the provider
-    name: 'Local Dev Bypass',
-    credentials: {
-      secret: {
-        label: '',
-        type: 'hidden',
-      },
-      ...(bypassUserId ? {
-        bypass: {
-        label: 'Local Development Bypass',
-        type: 'hidden',
-        value: 'true',
-      },      
-      } : {}),      
-    },
-    authorize: async (
-      credentials: Record<string, unknown> | undefined,
-      req: Request,
-    ): Promise<NextAuthUser | null> => {
-      // Check to see if this is our chatbot doing secret chatbot stuff
-      if (hasSecretHeaderBypass(req)) {
-        return {
-          id: '3',
-          account_id: 3, // custom field
-          image: '',
-          name: 'secret header',
-          email: 'secret-header@notadomain.org',
-        } as NextAuthUser & { account_id: number }; // Type assertion for custom field
-      }
-      // Check to see if local development bypass is an option
-      if (shouldUseLocalDevBypass(req)) {
-        return {
-          id: bypassUserId,
-          account_id: parseInt(bypassUserId!) || 1, // Parse user ID or default to 1
-          image: '',
-          name: `Local Dev User ${bypassUserId}`,
-          email: `localdev-${bypassUserId}@localhost.dev`,
-        } as NextAuthUser & { account_id: number };
-      }
-      return null; // Authentication failed
-    },
-  })] : []) as Provider[] // Only add if bypassUserId is set,
-];
+const providers: Provider[] = [...setupKeyCloakProvider()];
 
 export const providerMap = providers.map((provider) => {
   if (typeof provider === 'function') {
@@ -174,7 +132,7 @@ export const providerMap = providers.map((provider) => {
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth(
-  async (req: NextRequest | undefined): Promise<NextAuthConfig> => {
+  async (): Promise<NextAuthConfig> => {
     // Added NextAuthConfig return type
     let adapter: Adapter | undefined;
 
@@ -188,49 +146,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
       !isRunningOnEdge() &&
       process.env.NEXT_PHASE !== 'phase-production-build'
     ) {
-      const { sql } = await import('drizzle-orm');
-      const { drizDbWithInit, schema } = await import('@/lib/drizzle-db');
-      const { DrizzleAdapter } = await import('@auth/drizzle-adapter');
-
-      adapter = DrizzleAdapter(await drizDbWithInit(), {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        usersTable: schema.users as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        accountsTable: schema.accounts as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        sessionsTable: schema.sessions as any,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        verificationTokensTable: schema.verificationTokens as any,
-      });
-      signInImpl = async (
-        {
-          account,
-        }: { account?: Account | Record<string, unknown> } | undefined = {
-          account: undefined,
+      if (!dynamicImports.drizzleAdapter) {
+        dynamicImports.drizzleAdapter = await import(
+          '@/lib/auth/drizzle-adapter'
+        );
+      }
+      if (!dynamicImports.auth.signIn) {
+        dynamicImports.auth.signIn = await import('@/lib/auth/sign-in');
+      }
+      const {
+        auth: {
+          signIn: { signIn },
         },
-      ) => {
-        // Ensure account is not null or undefined before accessing its properties
-        if (
-          account &&
-          account.provider === 'google' &&
-          account.refresh_token &&
-          account.access_token &&
-          account.providerAccountId
-        ) {
-          await (drizDbWithInit()
-            .then(db => db
-            .update(schema.accounts)
-            .set({
-              accessToken: String(account.access_token),
-              refreshToken: String(account.refresh_token),
-            })
-            .where(
-              sql`provider='google' AND "provider_account_id" = ${account.providerAccountId}`,
-            )));
-        }
-        logEvent('signIn');
-        return true;
-      };
+        drizzleAdapter: { setupDrizzleAdapter },
+      } = dynamicImports;
+      adapter = await setupDrizzleAdapter();
+      // Custom signIn implementation to handle authentication callbacks
+      signInImpl = signIn;
     } else {
       adapter = undefined; // No adapter for edge runtime, client, or build
       signInImpl = async () => {
@@ -238,65 +170,33 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
         return false;
       };
     }
-
+    if (!dynamicImports.auth.session) {
+      dynamicImports.auth.session = await import('@/lib/auth/session');
+    }
+    if (!dynamicImports.auth.jwt) {
+      dynamicImports.auth.jwt = await import('@/lib/auth/jwt');
+    }
+    const {
+      auth: { jwt: { jwt } = {}, session: { session } = {} },
+    } = dynamicImports;
     return {
       adapter,
       callbacks: {
-        authorized: async ({ auth }: { auth: Session | null; request?: Request }) => {          
-          return !!auth;
-        },
+        authorized,
         signIn: signInImpl,
-        jwt: async ({
-          token,
-          user,
-        }: {
-          token: JWT;
-          user?: NextAuthUserWithAccountId | NextAuthUser | AdapterUser | null;
-        }) => {
-          if (user) {
-            token.id = user.id;
-            // Check to see if we were given an account_id, which is a custom field we set in the authorize function of the CredentialsProvider
-            if ('account_id' in user && !!user.account_id) {
-              token.account_id = user.account_id;
-            }
-          }
-          return token;
-        },
-        session: async ({
-          session,
-          token,
-        }: {
-          session: Session;
-          token: JWT;
-        }) => {
-          if (session.user) {
-            if (token.id) {
-              session.user.id = String(token.id);
-            }
-            if (token.name && !session.user.name) {
-              session.user.name = String(token.name);
-            }
-            if (token.email && !session.user.email) {
-              session.user.email = String(token.email);
-            }
-            if (token.account_id !== undefined) {
-              // Store account_id for use in the sesion callback
-              (session.user as NextAuthUserWithAccountId).account_id =
-                token.account_id;
-            }
-          }
-          return session;
-        },
+        jwt,
+        session,
       },
       providers,
+      pages: {
+        signIn: '/auth/signin',
+      },
       session: { strategy: 'jwt' },
-      skipCSRFCheck:
-        req && hasSecretHeaderBypass(req) ? skipCSRFCheck : undefined,
       theme: {
         colorScheme: 'auto', // 'auto' for system preference, 'light' or 'dark'
         logo: '/static/logo/logo-dark.png',
-        brandColor: '#1898a8', // Custom brand color        
-      }
+        brandColor: '#1898a8', // Custom brand color
+      },
     };
   },
 );

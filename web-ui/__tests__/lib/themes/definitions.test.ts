@@ -24,7 +24,9 @@ describe('Theme Definitions', () => {
   });
 
   it('should have consistent theme structure', () => {
-    expect(darkTheme.typography.fontFamily).toBe(colorfulTheme.typography.fontFamily);
+    expect(darkTheme.typography.fontFamily).toBe(
+      colorfulTheme.typography.fontFamily,
+    );
     expect(darkTheme.spacing(1)).toBe(colorfulTheme.spacing(1));
   });
 });

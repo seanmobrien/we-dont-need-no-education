@@ -1,6 +1,9 @@
-import { log } from "@/lib/logger";
-import { toolCallbackResultFactory, toolCallbackResultSchemaFactory } from "./utility";
-import z from "zod";
+import { log } from '@/lib/logger';
+import {
+  toolCallbackResultFactory,
+  toolCallbackResultSchemaFactory,
+} from './utility';
+import z from 'zod';
 
 export const pingPongToolCallback = ({
   userPing,
@@ -71,4 +74,4 @@ export const pingPongToolConfig = {
     idempotentHint: true,
     openWorldHint: false,
   },
-  } as const;
+} as const;

@@ -1,6 +1,6 @@
 import z from 'zod';
 import { SummarizedDocumentSchema } from './summarized-document-results';
-import { DocumentSchema } from './caseFileShape';
+import { DocumentSchema } from './case-file-shape';
 
 /**
  * Schema for validating the properties required to request processing of a case file.

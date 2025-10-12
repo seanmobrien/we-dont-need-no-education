@@ -44,7 +44,7 @@ describe('isMemberOfUnion', () => {
   it('should return false if the members parameter is undefined', () => {
     type Union = 'a' | 'b' | 'c';
     expect(isMemberOfUnion<Union>('a', undefined as unknown as Union[])).toBe(
-      false
+      false,
     );
   });
 });

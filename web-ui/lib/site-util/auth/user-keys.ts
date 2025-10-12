@@ -1,7 +1,5 @@
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
-
-
 /**
  * Key pair management for user signing
  */
@@ -125,7 +123,9 @@ class UserKeyManager {
    */
   static async exportPublicKeyForServer({
     publicKey,
-  }: { publicKey?: CryptoKey | undefined } | undefined = {}): Promise<string | null> {
+  }: { publicKey?: CryptoKey | undefined } | undefined = {}): Promise<
+    string | null
+  > {
     const key = publicKey ?? (await this.getPublicKey());
     if (!key) return null;
 
@@ -162,7 +162,7 @@ class UserKeyManager {
       LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         message: 'Failed to validate against server keys',
-        context: { serverKeys }
+        context: { serverKeys },
       });
       return false;
     }
@@ -198,7 +198,7 @@ class UserKeyManager {
 export const signData = async (data: string): Promise<string> => {
   await UserKeyManager.ensureKeyPair();
   const privateKey = await UserKeyManager.getPrivateKey();
-  
+
   if (!privateKey) {
     throw new Error('Failed to retrieve user private key');
   }
@@ -206,7 +206,7 @@ export const signData = async (data: string): Promise<string> => {
   // Create a message to sign
   const encoder = new TextEncoder();
   const dataBuffer = encoder.encode(data);
-  
+
   // Sign the data
   const signature = await crypto.subtle.sign(
     {
@@ -214,7 +214,7 @@ export const signData = async (data: string): Promise<string> => {
       hash: 'SHA-256',
     },
     privateKey,
-    dataBuffer
+    dataBuffer,
   );
 
   // Convert signature to base64 string
@@ -225,9 +225,9 @@ export const signData = async (data: string): Promise<string> => {
  * Export user's public key for server-side verification setup
  * Call this when user first logs in to associate their public key with their account
  */
-export const getUserPublicKeyForServer = async (props?: { publicKey?: CryptoKey | undefined }): Promise<
-  string | null
-> => {
+export const getUserPublicKeyForServer = async (props?: {
+  publicKey?: CryptoKey | undefined;
+}): Promise<string | null> => {
   return await UserKeyManager.exportPublicKeyForServer(props);
 };
 
@@ -241,7 +241,9 @@ export const initializeUserKeys = async (): Promise<void> => {
 /**
  * Validates that the user's local keys match server-registered keys
  */
-export const validateUserKeysAgainstServer = async (serverKeys: string[]): Promise<boolean> => {
+export const validateUserKeysAgainstServer = async (
+  serverKeys: string[],
+): Promise<boolean> => {
   return await UserKeyManager.validateAgainstServerKeys(serverKeys);
 };
 
@@ -255,7 +257,10 @@ export const hasValidLocalKeys = async (): Promise<boolean> => {
 /**
  * Generate and return a new key pair, storing it locally
  */
-export const generateUserKeyPair = async (): Promise<{ publicKey: CryptoKey; privateKey: CryptoKey }> => {
+export const generateUserKeyPair = async (): Promise<{
+  publicKey: CryptoKey;
+  privateKey: CryptoKey;
+}> => {
   return await UserKeyManager.generateKeyPair();
 };
 
@@ -272,5 +277,3 @@ export const getUserPublicKey = async (): Promise<CryptoKey | null> => {
 export const getUserPrivateKey = async (): Promise<CryptoKey | null> => {
   return await UserKeyManager.getPrivateKey();
 };
-
-

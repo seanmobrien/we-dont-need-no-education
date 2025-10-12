@@ -16,9 +16,7 @@ import type {
 import { apiRequestHelperFactory } from '@/lib/send-api-request';
 
 import siteMap from '@/lib/site-util/url-builder';
-import type {
-  PaginatedResultset,
-} from '@/data-models/_types';
+import type { PaginatedResultset } from '@/data-models/_types';
 import type {
   EmailSearchResult,
   ImportResponse,

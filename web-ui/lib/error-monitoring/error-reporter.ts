@@ -1,86 +1,169 @@
-import { isError } from '@/lib/react-util/_utility-methods';
-import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { isError } from '@/lib/react-util/utility-methods';
 import { log } from '@/lib/logger';
+import {
+  ErrorSeverity,
+  KnownEnvironmentType,
+  ErrorContext,
+  ErrorReport,
+  ErrorReporterConfig,
+  ErrorReporterInterface,
+  IContextEnricher,
+} from './types';
+import { isRunningOnEdge } from '../site-util/env';
+import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
+import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
+
+export { ErrorSeverity };
+
+export type {
+  KnownEnvironmentType,
+  ErrorContext,
+  ErrorReport,
+  ErrorReporterConfig,
+  ErrorReporterInterface,
+};
+
+const isGtagClient = <T>(
+  check: T,
+): check is T & {
+  gtag: (
+    signal: string,
+    event: string,
+    params: Record<string, unknown>,
+  ) => void;
+} =>
+  typeof check === 'object' &&
+  check !== null &&
+  'gtag' in check &&
+  typeof check.gtag === 'function';
+
+const asEnvironment = (input: string): KnownEnvironmentType => {
+  return ['development', 'staging', 'production'].includes(input)
+    ? (input as KnownEnvironmentType)
+    : 'development';
+};
 
 /**
- * Error severity levels for reporting and prioritization
+ * Type guard to check if a value is an ErrorReport
+ * @param check unknown value to check
+ * @returns boolean indicating if the value is an ErrorReport
  */
-export enum ErrorSeverity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
-}
+const isErrorReport = (check: unknown): check is ErrorReport =>
+  typeof check === 'object' &&
+  check !== null &&
+  'error' in check &&
+  isError(check.error) &&
+  'context' in check &&
+  check.context !== null &&
+  'severity' in check &&
+  check.severity !== null &&
+  check.severity !== undefined;
 
-/**
- * Error context information for better debugging
- */
-export interface ErrorContext {
-  userId?: string;
-  sessionId?: string;
-  source?: string;
-  userAgent?: string;  
-  url?: string;
-  timestamp?: Date;
-  componentStack?: string;
-  errorBoundary?: string;
-  breadcrumbs?: string[];
-  additionalData?: Record<string, unknown>;
-}
+const defaultConfig: ErrorReporterConfig = {
+  enableStandardLogging: true,
+  enableConsoleLogging: process.env.NODE_ENV === 'development',
+  enableExternalReporting: process.env.NODE_ENV === 'production',
+  enableLocalStorage: true,
+  maxStoredErrors: 50,
+  environment: asEnvironment(process.env.NODE_ENV),
+};
 
-/**
- * Error report structure for external monitoring services
- */
-export interface ErrorReport {
-  error: Error;
-  severity: ErrorSeverity;
-  context: ErrorContext;
-  fingerprint?: string;
-  tags?: Record<string, string>;
-}
-
-/**
- * Configuration for error reporting
- */
-export interface ErrorReporterConfig {
-  enableConsoleLogging: boolean;
-  enableExternalReporting: boolean;
-  enableLocalStorage: boolean;
-  maxStoredErrors: number;
-  environment: 'development' | 'staging' | 'production';
-}
-
-const isGtagClient = <T>(check: T) : check is T & { gtag: (signal: string, event: string, params: Record<string, unknown>) => void } => 
-  typeof check === 'object' && check !== null && 'gtag' in check && typeof (check.gtag) === 'function';
+const isContextEnricher = (check: unknown): check is IContextEnricher =>
+  typeof check === 'object' &&
+  check !== null &&
+  'enrichContext' in check &&
+  typeof (check as IContextEnricher).enrichContext === 'function';
 
 /**
  * Centralized error reporting system
  * Handles logging, external service reporting, and error analytics
  */
-export class ErrorReporter {
+export class ErrorReporter implements ErrorReporterInterface {
   private config: ErrorReporterConfig;
-  private static instance: ErrorReporter;
 
   private constructor(config: ErrorReporterConfig) {
     this.config = config;
   }
 
+  /**
+   * Create a new instance of ErrorReporter
+   * @param config ErrorReporter configuration
+   * @returns ErrorReporter instance
+   */
+  public static createInstance = (
+    config: Partial<ErrorReporterConfig>,
+  ): ErrorReporterInterface =>
+    new ErrorReporter({
+      ...defaultConfig,
+      ...config,
+    });
 
   /**
    * Get singleton instance of ErrorReporter
    */
-  public static getInstance(config?: ErrorReporterConfig): ErrorReporter {
-    if (!ErrorReporter.instance) {
-      const defaultConfig: ErrorReporterConfig = {
-        enableConsoleLogging: process.env.NODE_ENV === 'development',
-        enableExternalReporting: process.env.NODE_ENV === 'production',
-        enableLocalStorage: true,
-        maxStoredErrors: 50,
-        environment: (process.env.NODE_ENV as 'development' | 'staging' | 'production') || 'development',
-      };
-      ErrorReporter.instance = new ErrorReporter(config || defaultConfig);
+  public static getInstance(
+    config?: ErrorReporterConfig,
+  ): ErrorReporterInterface {
+    const GLOBAL_KEY = Symbol.for(
+      '@noeducation/error-monitoring:ErrorReporter',
+    );
+    const registry = globalThis as unknown as {
+      [key: symbol]: ErrorReporterInterface | undefined;
+    };
+    if (!registry[GLOBAL_KEY]) {
+      registry[GLOBAL_KEY] = ErrorReporter.createInstance(config ?? {});
     }
-    return ErrorReporter.instance;
+    return registry[GLOBAL_KEY]!;
+  }
+
+  async #createErrorReport(
+    error: Error | unknown,
+    severity: ErrorSeverity = ErrorSeverity.MEDIUM,
+    context: Partial<ErrorContext> = {},
+  ): Promise<ErrorReport> {
+    let baseReport: ErrorReport;
+    // Check to see if this is an error report already
+    if (isErrorReport(error)) {
+      baseReport = error;
+      if (!Object.keys(error).length || !error.error.message) {
+        baseReport.error = this.normalizeError({
+          ...baseReport.error,
+          message:
+            baseReport?.error.message ?? 'Unknown error - No details provided',
+        });
+      }
+    } else {
+      // Ensure we have a proper Error object
+      const errorObj = this.normalizeError(error);
+      baseReport = {
+        error: errorObj,
+        severity,
+      } as ErrorReport;
+      if (
+        !Object.keys(error as object).length ||
+        !(error as { message?: string }).message
+      ) {
+        (error as { message?: string }).message =
+          'Unknown error - No details provided';
+      }
+    }
+
+    // Enrich context with browser/environment data
+    const enrichedContext = await this.enrichContext({
+      ...(baseReport.context ?? {}),
+      ...context,
+    });
+
+    // Create error report
+    return {
+      ...baseReport,
+      fingerprint: this.generateFingerprint(baseReport.error!, enrichedContext),
+      context: enrichedContext,
+      tags: {
+        ...(baseReport.tags ?? {}),
+        ...this.generateTags(baseReport.error!, enrichedContext),
+      },
+    };
   }
 
   /**
@@ -89,37 +172,32 @@ export class ErrorReporter {
   public async reportError(
     error: Error | unknown,
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-    context: Partial<ErrorContext> = {}
+    context: Partial<ErrorContext> = {},
   ): Promise<void> {
     try {
       // Ensure we have a proper Error object
-      const errorObj = this.normalizeError(error);
-      
-      // Enrich context with browser/environment data
-      const enrichedContext = this.enrichContext(context);
-      
-      // Create error report
-      const report: ErrorReport = {
-        error: errorObj,
-        severity,
-        context: enrichedContext,
-        fingerprint: this.generateFingerprint(errorObj, enrichedContext),
-        tags: this.generateTags(errorObj, enrichedContext),
-      };
+      const report = await this.#createErrorReport(error, severity, context);
 
-      // Use LoggedError for consistent logging
-      LoggedError.isTurtlesAllTheWayDownBaby(errorObj, {
-        log: this.config.enableConsoleLogging,
-        source: 'ErrorReporter',
-        critical: severity === ErrorSeverity.CRITICAL,
-        ...enrichedContext,
-      });
+      if (this.config.enableStandardLogging) {
+        const source = report.context.source ?? 'ErrorReporter';
+        log((l) =>
+          l.error({
+            source,
+            body: JSON.stringify(report.error),
+            severity: report.severity,
+            fingerprint: report.fingerprint,
+            tags: report.tags,
+            context: report.context,
+            [Symbol.toStringTag]: `${source}: (${report.fingerprint ?? 'no fingerprint'}) ${report.error.message}`,
+          }),
+        );
+      }
 
       // Console logging for development
       if (this.config.enableConsoleLogging) {
         console.group(`🐛 Error Report [${severity.toUpperCase()}]`);
-        console.error('Error:', errorObj);
-        console.table(enrichedContext);
+        console.error('Error:', report.error);
+        console.table(report.context);
         console.groupEnd();
       }
 
@@ -148,7 +226,7 @@ export class ErrorReporter {
   public async reportBoundaryError(
     error: Error,
     errorInfo: { componentStack?: string; errorBoundary?: string },
-    severity: ErrorSeverity = ErrorSeverity.HIGH
+    severity: ErrorSeverity = ErrorSeverity.HIGH,
   ): Promise<void> {
     await this.reportError(error, severity, {
       componentStack: errorInfo.componentStack,
@@ -162,7 +240,7 @@ export class ErrorReporter {
    */
   public async reportUnhandledRejection(
     reason: unknown,
-    promise: Promise<unknown>
+    promise: Promise<unknown>,
   ): Promise<void> {
     const error = reason instanceof Error ? reason : new Error(String(reason));
     await this.reportError(error, ErrorSeverity.HIGH, {
@@ -176,18 +254,25 @@ export class ErrorReporter {
    */
   public setupGlobalHandlers(): void {
     if (typeof window === 'undefined') return;
+    if (isRunningOnEdge()) {
+      console.log('setupGlobalHandlers::edge');
+    }
 
     // Unhandled errors
     window.addEventListener('error', (event) => {
-      this.reportError(event.error || new Error(event.message), ErrorSeverity.HIGH, {
-        url: window.location.href,
-        breadcrumbs: ['global-error-handler'],
-        additionalData: {
-          filename: event.filename,
-          lineno: event.lineno,
-          colno: event.colno,
+      this.reportError(
+        event.error || new Error(event.message),
+        ErrorSeverity.HIGH,
+        {
+          url: window.location.href,
+          breadcrumbs: ['global-error-handler'],
+          additionalData: {
+            filename: event.filename,
+            lineno: event.lineno,
+            colno: event.colno,
+          },
         },
-      });
+      );
     });
 
     // Unhandled promise rejections
@@ -212,7 +297,9 @@ export class ErrorReporter {
   /**
    * Enrich error context with browser and application data
    */
-  private enrichContext(context: Partial<ErrorContext>): ErrorContext {
+  private async enrichContext(
+    context: Partial<ErrorContext>,
+  ): Promise<ErrorContext> {
     const enriched: ErrorContext = {
       timestamp: new Date(),
       ...context,
@@ -223,6 +310,86 @@ export class ErrorReporter {
       enriched.url = window.location.href;
     }
 
+    // If the error (or wrapped cause/originalError) is a Postgres/Drizzle
+    // error, extract comprehensive failure information and attach it to
+    // the context. We purposely truncate potentially-large or
+    // sensitive fields (SQL text, parameter arrays) to avoid leaking data
+    // while still providing useful diagnostics.
+    try {
+      const candidates: unknown[] = [];
+      if (context && 'error' in context && context.error)
+        candidates.push(context.error);
+      // Some wrappers store the lower-level error on `cause` or `originalError`.
+      const maybeErr = (context as unknown as { error?: unknown }).error;
+      const maybeCause =
+        (maybeErr as unknown as { cause?: unknown; originalError?: unknown })
+          ?.cause ??
+        (maybeErr as unknown as { cause?: unknown; originalError?: unknown })
+          ?.originalError;
+      if (maybeCause) candidates.push(maybeCause);
+
+      for (const c of candidates) {
+        if (isDrizzleError(c)) {
+          const pg = c as PostgresError;
+          const dbFailure = {
+            sqlstate: pg.code,
+            codeDescription: errorFromCode(pg.code),
+            severity: pg.severity,
+            detail: pg.detail,
+            hint: pg.hint,
+            position: pg.position,
+            internalPosition: pg.internalPosition,
+            internalQuery: pg.internalQuery,
+            where: pg.where,
+            schema: pg.schema,
+            table: pg.table,
+            column: pg.column,
+            dataType: pg.dataType,
+            constraint: pg.constraint,
+            file: pg.file,
+            line: pg.line,
+            routine: pg.routine,
+            // Truncate long SQL or parameter payloads to keep reports safe and small
+            query:
+              typeof pg.query === 'string'
+                ? pg.query.slice(0, 2000)
+                : undefined,
+            parameters: Array.isArray(pg.parameters)
+              ? pg.parameters.slice(0, 20)
+              : undefined,
+            // Keep a minimal reference to nested errors where useful
+            causeName:
+              (pg.cause as unknown as { name?: string })?.name ?? undefined,
+            originalErrorName:
+              (pg.originalError as unknown as { name?: string })?.name ??
+              undefined,
+          } as const;
+
+          // Attach under a stable key so downstream consumers can read it.
+          (enriched as Record<string, unknown>).dbError = dbFailure;
+          break; // one DB error is enough
+        }
+      }
+    } catch (err) {
+      // extraction should never crash the reporter; if it does, log and continue
+      log((l) =>
+        l.warn('Failed to extract DB failure info for error reporter', err),
+      );
+    }
+
+    // Give our error a chance to enrich the context further
+    if (isContextEnricher(enriched.error)) {
+      try {
+        const further = await enriched.error.enrichContext(enriched);
+        if (further) {
+          Object.assign(enriched, further);
+        }
+      } catch (err) {
+        log((l) =>
+          l.warn('Error in custom context enricher for error reporting', err),
+        );
+      }
+    }
     return enriched;
   }
 
@@ -231,13 +398,18 @@ export class ErrorReporter {
    */
   private generateFingerprint(error: Error, context: ErrorContext): string {
     const key = `${error.name}:${error.message}:${context.url || 'unknown'}`;
-    return btoa(key).replace(/[^a-zA-Z0-9]/g, '').substring(0, 16);
+    return btoa(encodeURIComponent(key))
+      .replace(/[^a-zA-Z0-9]/g, '')
+      .substring(0, 16);
   }
 
   /**
    * Generate tags for error categorization
    */
-  private generateTags(error: Error, context: ErrorContext): Record<string, string> {
+  private generateTags(
+    error: Error,
+    context: ErrorContext,
+  ): Record<string, string> {
     return {
       environment: this.config.environment,
       errorType: error.name,
@@ -252,7 +424,9 @@ export class ErrorReporter {
    */
   private storeErrorLocally(report: ErrorReport): void {
     try {
-      if (typeof localStorage === 'undefined') { return; }
+      if (typeof localStorage === 'undefined') {
+        return;
+      }
       const stored = JSON.parse(localStorage.getItem('error-reports') || '[]');
       stored.push({
         ...report,
@@ -271,13 +445,11 @@ export class ErrorReporter {
     }
   }
 
-
-
   /**
    * Report to Google Analytics if available
    */
   private async reportToGoogleAnalytics(report: ErrorReport): Promise<void> {
-    if (isGtagClient(window)) {
+    if (typeof window !== 'undefined' && isGtagClient(window)) {
       window.gtag('event', 'exception', {
         description: report.error.message,
         fatal: report.severity === ErrorSeverity.CRITICAL,
@@ -287,14 +459,83 @@ export class ErrorReporter {
     }
   }
 
-  /**
-   * Report to Application Insights if available
-   */
-  private async reportToApplicationInsights(report: ErrorReport): Promise<void> {
-    // Implementation would depend on Application Insights setup
-    // This is a placeholder for Azure Application Insights integration
-    if (typeof window === 'undefined') return;
-    await import('@/instrument/browser').then(m => {
+  private async server_reportToApplicationInsights(
+    report: ErrorReport,
+  ): Promise<void> {
+    try {
+      // Dynamic import so code doesn't hard-depend on OpenTelemetry at runtime
+      const otel = await import('@opentelemetry/api');
+      const { trace, context, SpanStatusCode } =
+        otel as typeof import('@opentelemetry/api');
+
+      const activeSpan = trace.getSpan(context.active());
+      // Build safe attributes: ensure values are primitive (strings)
+      const safeAttributes: Record<string, string> = {
+        'error.fingerprint': report.fingerprint ?? '',
+        ...(report.tags ?? {}),
+        severity: String(report.severity),
+        context: JSON.stringify(report.context || {}),
+      };
+
+      // If there is an active and still-recording span, attach the error there.
+      // Span.isRecording() is the official guard to know if the span can accept events/attributes.
+      if (
+        activeSpan &&
+        typeof (activeSpan as { isRecording: () => boolean }).isRecording ===
+          'function' &&
+        (activeSpan as { isRecording: () => boolean }).isRecording()
+      ) {
+        try {
+          activeSpan.setAttributes(
+            safeAttributes as unknown as import('@opentelemetry/api').Attributes,
+          );
+        } catch {
+          // ignore attribute errors
+        }
+        activeSpan.recordException(report.error as unknown as Error);
+        activeSpan.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: report.error.message,
+        });
+        activeSpan.addEvent('error.reported', {
+          context: safeAttributes.context,
+        } as import('@opentelemetry/api').Attributes);
+        return;
+      }
+
+      // If there was an active span but it has ended (or no active span), create a new
+      // short-lived span that is linked to the original span context so the error stays
+      // correlated to the same trace.
+      const tracer = trace.getTracer('noeducation/error-reporter');
+      const links = activeSpan
+        ? [{ context: activeSpan.spanContext() }]
+        : undefined;
+      const span = tracer.startSpan('error.report', {
+        attributes:
+          safeAttributes as unknown as import('@opentelemetry/api').Attributes,
+        links,
+      });
+      try {
+        span.recordException(report.error as unknown as Error);
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: report.error.message,
+        });
+        span.addEvent('error.reported', {
+          context: safeAttributes.context,
+        } as import('@opentelemetry/api').Attributes);
+      } finally {
+        span.end();
+      }
+    } catch (err) {
+      log((l) => l.warn('OpenTelemetry error reporting failed', err));
+    }
+  }
+
+  private async client_reportToApplicationInsights(
+    report: ErrorReport,
+  ): Promise<void> {
+    await import('@/instrument/browser').then((m) => {
       const appInsights = m.getAppInsights();
       if (appInsights) {
         appInsights.trackException({
@@ -308,7 +549,25 @@ export class ErrorReporter {
         });
       }
     });
-    log((l) => l.debug('Would report to Application Insights:', report));
+  }
+
+  /**
+   * Report to Application Insights if available
+   */
+  private async reportToApplicationInsights(
+    report: ErrorReport,
+  ): Promise<void> {
+    // Implementation would depend on Application Insights setup
+    // This is a placeholder for Azure Application Insights integration
+    if (typeof window === 'undefined') {
+      await this.server_reportToApplicationInsights(report);
+      return;
+    }
+    if (process.env.NEXT_RUNTIME === 'EDGE') {
+      log((l) => l.debug('Would report to Application Insights:', report));
+      return;
+    }
+    await this.client_reportToApplicationInsights(report);
   }
 
   /**

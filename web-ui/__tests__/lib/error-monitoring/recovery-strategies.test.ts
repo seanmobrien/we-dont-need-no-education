@@ -19,8 +19,11 @@ Object.defineProperty(window, 'open', { value: mockOpen, writable: true });
 // Ensure global window is set for typeof checks
 (global as any).window = window;
 
-Object.defineProperty(navigator, 'onLine', { value: true, writable: true, configurable: true });
-
+Object.defineProperty(navigator, 'onLine', {
+  value: true,
+  writable: true,
+  configurable: true,
+});
 
 // Now import the module after setting up mocks
 import {
@@ -44,12 +47,8 @@ Object.defineProperty(window, 'caches', {
 });
 
 describe('Error Classification', () => {
-  beforeEach(() => {
-  
-  });
-  afterEach(() => {
-   
-  });
+  beforeEach(() => {});
+  afterEach(() => {});
 
   describe('classifyError', () => {
     it('should classify network errors correctly', () => {
@@ -60,7 +59,7 @@ describe('Error Classification', () => {
         new TypeError('Failed to fetch'),
       ];
 
-      networkErrors.forEach(error => {
+      networkErrors.forEach((error) => {
         expect(classifyError(error)).toBe(ErrorType.NETWORK);
       });
     });
@@ -73,7 +72,7 @@ describe('Error Classification', () => {
         new Error('Login required'),
       ];
 
-      authErrors.forEach(error => {
+      authErrors.forEach((error) => {
         expect(classifyError(error)).toBe(ErrorType.AUTHENTICATION);
       });
     });
@@ -86,7 +85,7 @@ describe('Error Classification', () => {
         new Error('Not allowed to perform this action'),
       ];
 
-      permissionErrors.forEach(error => {
+      permissionErrors.forEach((error) => {
         expect(classifyError(error)).toBe(ErrorType.PERMISSION);
       });
     });
@@ -98,7 +97,7 @@ describe('Error Classification', () => {
         new Error('HTTP 429 error'),
       ];
 
-      rateLimitErrors.forEach(error => {
+      rateLimitErrors.forEach((error) => {
         expect(classifyError(error)).toBe(ErrorType.RATE_LIMIT);
       });
     });
@@ -112,7 +111,7 @@ describe('Error Classification', () => {
         new Error('504 Gateway Timeout'),
       ];
 
-      serverErrors.forEach(error => {
+      serverErrors.forEach((error) => {
         expect(classifyError(error)).toBe(ErrorType.SERVER);
       });
     });
@@ -122,10 +121,12 @@ describe('Error Classification', () => {
         new Error('Validation failed'),
         new Error('Invalid input data'),
         new Error('Required field missing'),
-        Object.assign(new Error('Custom validation'), { name: 'ValidationError' }),
+        Object.assign(new Error('Custom validation'), {
+          name: 'ValidationError',
+        }),
       ];
 
-      validationErrors.forEach(error => {
+      validationErrors.forEach((error) => {
         expect(classifyError(error)).toBe(ErrorType.VALIDATION);
       });
     });
@@ -137,7 +138,7 @@ describe('Error Classification', () => {
         new RangeError('Array index out of bounds'),
       ];
 
-      clientErrors.forEach(error => {
+      clientErrors.forEach((error) => {
         expect(classifyError(error)).toBe(ErrorType.CLIENT);
       });
     });
@@ -149,15 +150,16 @@ describe('Error Classification', () => {
         new Error('Unclassified error type'),
       ];
 
-      unknownErrors.forEach(error => {
+      unknownErrors.forEach((error) => {
         expect(classifyError(error)).toBe(ErrorType.UNKNOWN);
       });
     });
 
     it('should handle errors with stack traces', () => {
       const error = new Error('Network issue');
-      error.stack = 'Error: Network issue\n    at auth.js:123\n    at fetch.js:456';
-      
+      error.stack =
+        'Error: Network issue\n    at auth.js:123\n    at fetch.js:456';
+
       expect(classifyError(error)).toBe(ErrorType.AUTHENTICATION);
     });
   });
@@ -209,9 +211,9 @@ describe('Recovery Actions', () => {
     it('should return fallback actions for unknown error types', () => {
       // Create an error that will be classified as unknown
       const unknownError = new Error('Some completely unknown error type');
-      
+
       const actions = getRecoveryActions(unknownError);
-      
+
       // Should return the unknown error type actions as fallback
       expect(actions).toHaveLength(2);
       expect(actions[0].id).toBe('refresh-page');
@@ -223,12 +225,21 @@ describe('Recovery Actions', () => {
     it('should return the default action for each error type', () => {
       const testCases = [
         { error: new Error('Network failed'), expectedId: 'retry-request' },
-        { error: new Error('Authentication failed'), expectedId: 'login-redirect' },
+        {
+          error: new Error('Authentication failed'),
+          expectedId: 'login-redirect',
+        },
         { error: new Error('Permission denied'), expectedId: 'contact-admin' },
         { error: new Error('Rate limit exceeded'), expectedId: 'wait-retry' },
-        { error: new Error('Internal server error'), expectedId: 'retry-later' },
+        {
+          error: new Error('Internal server error'),
+          expectedId: 'retry-later',
+        },
         { error: new Error('Validation failed'), expectedId: 'review-input' },
-        { error: new TypeError('Cannot read property'), expectedId: 'refresh-page' },
+        {
+          error: new TypeError('Cannot read property'),
+          expectedId: 'refresh-page',
+        },
         { error: new Error('Unknown error'), expectedId: 'refresh-page' },
       ];
 
@@ -241,7 +252,7 @@ describe('Recovery Actions', () => {
     it('should return default action for unknown error types', () => {
       const unknownError = new Error('Some completely unknown error type');
       const defaultAction = getDefaultRecoveryAction(unknownError);
-      
+
       // Should return the default action for unknown errors (refresh-page)
       expect(defaultAction).not.toBeNull();
       expect(defaultAction?.id).toBe('refresh-page');
@@ -249,16 +260,22 @@ describe('Recovery Actions', () => {
 
     it('should return first action if no default is specified', async () => {
       // Find a strategy without a default action
-      const strategyWithoutDefault = recoveryStrategies.find(s => !s.defaultAction);
-      
+      const strategyWithoutDefault = recoveryStrategies.find(
+        (s) => !s.defaultAction,
+      );
+
       if (strategyWithoutDefault) {
         // Mock the error to match this strategy
-        jest.spyOn(await import('@/lib/error-monitoring/recovery-strategies'), 'classifyError')
+        jest
+          .spyOn(
+            await import('@/lib/error-monitoring/recovery-strategies'),
+            'classifyError',
+          )
           .mockReturnValue(strategyWithoutDefault.errorType);
-        
+
         const error = new Error('Test error');
         const defaultAction = getDefaultRecoveryAction(error);
-        
+
         expect(defaultAction?.id).toBe(strategyWithoutDefault.actions[0].id);
       }
     });
@@ -274,7 +291,7 @@ describe('Recovery Action Execution', () => {
     it('should execute retry-request action', () => {
       const networkError = new Error('Network failed');
       const actions = getRecoveryActions(networkError);
-      const retryAction = actions.find(a => a.id === 'retry-request');
+      const retryAction = actions.find((a) => a.id === 'retry-request');
 
       expect(retryAction).toBeDefined();
       expect(retryAction?.automatic).toBe(true);
@@ -283,23 +300,27 @@ describe('Recovery Action Execution', () => {
 
       // Since JSDOM's location API is problematic, we'll test that the action
       // exists and is callable without actually executing browser navigation
-      expect(typeof retryAction?.action).toBe('function');      
+      expect(typeof retryAction?.action).toBe('function');
     });
 
     it('should execute check-connection action', () => {
       const networkError = new Error('Network failed');
       const actions = getRecoveryActions(networkError);
-      const checkAction = actions.find(a => a.id === 'check-connection');
+      const checkAction = actions.find((a) => a.id === 'check-connection');
 
       // Test when online
       (navigator as any).onLine = true;
       checkAction?.action();
-      expect(mockAlert).toHaveBeenCalledWith('Connection appears to be working. Please try again.');
+      expect(mockAlert).toHaveBeenCalledWith(
+        'Connection appears to be working. Please try again.',
+      );
 
       // Test when offline
       (navigator as any).onLine = false;
       checkAction?.action();
-      expect(mockAlert).toHaveBeenCalledWith('No internet connection detected. Please check your connection.');
+      expect(mockAlert).toHaveBeenCalledWith(
+        'No internet connection detected. Please check your connection.',
+      );
     });
   });
 
@@ -307,20 +328,22 @@ describe('Recovery Action Execution', () => {
     it('should execute login-redirect action', () => {
       const authError = new Error('Authentication failed');
       const actions = getRecoveryActions(authError);
-      const loginAction = actions.find(a => a.id === 'login-redirect');
+      const loginAction = actions.find((a) => a.id === 'login-redirect');
 
       expect(loginAction).toBeDefined();
       expect(loginAction?.automatic).toBe(true);
       expect(loginAction?.delay).toBe(2000);
       expect(loginAction?.action).toBe(clientNavigateSignIn);
-      
+
       // Test that the action can be called (it will fail due to jsdom but that's expected)
       expect(() => {
         try {
           loginAction?.action();
         } catch (error) {
           // Expected to fail in jsdom test environment
-          expect((error as Error).message.includes('Not implemented: navigation')).toBe(true);
+          expect(
+            (error as Error).message.includes('Not implemented: navigation'),
+          ).toBe(true);
         }
       }).not.toThrow();
     });
@@ -330,18 +353,18 @@ describe('Recovery Action Execution', () => {
     it('should execute contact-admin action', () => {
       const permissionError = new Error('Access denied');
       const actions = getRecoveryActions(permissionError);
-      const contactAction = actions.find(a => a.id === 'contact-admin');
+      const contactAction = actions.find((a) => a.id === 'contact-admin');
 
       contactAction?.action();
       expect(mockAlert).toHaveBeenCalledWith(
-        'You do not have permission to perform this action. Please contact your administrator.'
+        'You do not have permission to perform this action. Please contact your administrator.',
       );
     });
 
     it('should execute go-back action', () => {
       const permissionError = new Error('Access denied');
       const actions = getRecoveryActions(permissionError);
-      const backAction = actions.find(a => a.id === 'go-back');
+      const backAction = actions.find((a) => a.id === 'go-back');
 
       backAction?.action();
       expect(mockBack).toHaveBeenCalled();
@@ -352,15 +375,14 @@ describe('Recovery Action Execution', () => {
     it('should execute contact-support action', () => {
       const serverError = new Error('Internal server error');
       const actions = getRecoveryActions(serverError);
-      const supportAction = actions.find(a => a.id === 'contact-support');
+      const supportAction = actions.find((a) => a.id === 'contact-support');
 
       supportAction?.action();
       expect(mockOpen).toHaveBeenCalledWith(
-        expect.stringContaining('mailto:support@example.com')
+        expect.stringContaining('mailto:support@example.com'),
       );
     });
   });
-
 });
 
 describe('Automatic Recovery', () => {
@@ -376,42 +398,42 @@ describe('Automatic Recovery', () => {
   describe('attemptAutoRecovery', () => {
     it('should execute automatic recovery for network errors', async () => {
       const networkError = new Error('Network failed');
-      
+
       const recoveryPromise = attemptAutoRecovery(networkError);
-      
+
       // Fast-forward through the delay
       jest.advanceTimersByTime(1000);
-      
+
       // Wait for all promises to resolve
       await jest.runOnlyPendingTimersAsync();
-      
+
       const result = await recoveryPromise;
-      
-      // The recovery should attempt to execute. In jsdom it may succeed (return true) 
+
+      // The recovery should attempt to execute. In jsdom it may succeed (return true)
       // even though it logs errors, because window.location.reload() is called but doesn't actually reload
       expect(result).toBe(true); // Returns true because the action executes without throwing
     });
 
     it('should not execute recovery for non-automatic actions', async () => {
       const permissionError = new Error('Access denied');
-      
+
       const result = await attemptAutoRecovery(permissionError);
-      
+
       expect(result).toBe(false);
       expect(mockAlert).not.toHaveBeenCalled();
     });
 
     it('should handle recovery action failures gracefully', async () => {
       const networkError = new Error('Network failed');
-      
+
       const recoveryPromise = attemptAutoRecovery(networkError);
       jest.advanceTimersByTime(1000);
-      
+
       // Wait for all promises to resolve
       await jest.runOnlyPendingTimersAsync();
-      
+
       const result = await recoveryPromise;
-      
+
       // The recovery action will execute in jsdom environment and return true
       // because the action doesn't actually throw an error, just logs to console
       expect(result).toBe(true);
@@ -419,31 +441,35 @@ describe('Automatic Recovery', () => {
 
     it('should respect delay settings', async () => {
       const authError = new Error('Authentication failed');
-      
+
       const recoveryPromise = attemptAutoRecovery(authError);
-      
+
       // Should not execute immediately
       expect(mockAlert).not.toHaveBeenCalled();
-      
+
       // Fast-forward through the delay
       jest.advanceTimersByTime(2000);
-      
+
       // Wait for all promises to resolve
       await jest.runOnlyPendingTimersAsync();
-      
+
       await recoveryPromise;
       // Verify the action was executed (auth redirect would change location)
     });
 
     it('should return false for errors without default actions', async () => {
       // Mock an error that has no default action
-      jest.spyOn(await import('@/lib/error-monitoring/recovery-strategies'), 'getDefaultRecoveryAction')
+      jest
+        .spyOn(
+          await import('@/lib/error-monitoring/recovery-strategies'),
+          'getDefaultRecoveryAction',
+        )
         .mockReturnValue(null);
-      
+
       const unknownError = new Error('No default action');
-      
+
       const result = await attemptAutoRecovery(unknownError);
-      
+
       expect(result).toBe(false);
     });
   });
@@ -451,13 +477,13 @@ describe('Automatic Recovery', () => {
 
 describe('Recovery Strategy Configuration', () => {
   it('should have valid configuration for all strategies', () => {
-    recoveryStrategies.forEach(strategy => {
+    recoveryStrategies.forEach((strategy) => {
       expect(strategy.errorType).toBeDefined();
       expect(strategy.detect).toBeInstanceOf(Function);
       expect(Array.isArray(strategy.actions)).toBe(true);
       expect(strategy.actions.length).toBeGreaterThan(0);
 
-      strategy.actions.forEach(action => {
+      strategy.actions.forEach((action) => {
         expect(action.id).toBeDefined();
         expect(action.label).toBeDefined();
         expect(action.description).toBeDefined();
@@ -467,26 +493,26 @@ describe('Recovery Strategy Configuration', () => {
   });
 
   it('should have unique error types', () => {
-    const errorTypes = recoveryStrategies.map(s => s.errorType);
+    const errorTypes = recoveryStrategies.map((s) => s.errorType);
     const uniqueErrorTypes = [...new Set(errorTypes)];
-    
+
     expect(errorTypes.length).toBe(uniqueErrorTypes.length);
   });
 
   it('should have unique action IDs within each strategy', () => {
-    recoveryStrategies.forEach(strategy => {
-      const actionIds = strategy.actions.map(a => a.id);
+    recoveryStrategies.forEach((strategy) => {
+      const actionIds = strategy.actions.map((a) => a.id);
       const uniqueActionIds = [...new Set(actionIds)];
-      
+
       expect(actionIds.length).toBe(uniqueActionIds.length);
     });
   });
 
   it('should have valid default actions when specified', () => {
-    recoveryStrategies.forEach(strategy => {
+    recoveryStrategies.forEach((strategy) => {
       if (strategy.defaultAction) {
         const defaultActionExists = strategy.actions.some(
-          action => action.id === strategy.defaultAction
+          (action) => action.id === strategy.defaultAction,
         );
         expect(defaultActionExists).toBe(true);
       }
@@ -504,7 +530,7 @@ describe('Edge Cases', () => {
   it('should handle null/undefined stack traces', () => {
     const error = new Error('Test error');
     error.stack = undefined;
-    
+
     const errorType = classifyError(error);
     expect(errorType).toBe(ErrorType.UNKNOWN);
   });
@@ -513,6 +539,4 @@ describe('Edge Cases', () => {
     const mixedCaseError = new Error('NETWORK ERROR OCCURRED');
     expect(classifyError(mixedCaseError)).toBe(ErrorType.NETWORK);
   });
-
- 
 });

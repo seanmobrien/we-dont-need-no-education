@@ -3,47 +3,49 @@
 import { getAppInsights } from '@/instrument/browser';
 import { useSession } from '@/components/auth/session-provider';
 import { Session } from 'next-auth';
-import { usePathname } from 'next/dist/client/components/navigation';
-import { useEffect } from 'react';
+import {
+  usePathname,
+  useSearchParams,
+} from 'next/dist/client/components/navigation';
+import { useEffect, useMemo } from 'react';
+import { makeAbsoluteUrl } from '@/lib/react-util/url';
 
 export const TrackWithAppInsight = () => {
   const { status, data: session } = useSession<Session>();
-
   const pathname = usePathname();
-  let userId: string | null = null,
-    email: string | null = null;
-  // If we've authenticated, pass user context to app insights
-  if (
-    status === 'authenticated' &&
-    session &&
-    session.user &&
-    session.user.id
-  ) {
-    const { user } = session;
-    userId = user.id ?? null;
-    email = user.email ?? null;
-  }
+  const searchParams = useSearchParams();
+
+  const user = session?.user;
+  const userId = user?.id ?? null;
+  const email = user?.email ?? null;
+
+  const pageUri = useMemo(() => {
+    const qs = searchParams?.toString();
+    return qs
+      ? `${makeAbsoluteUrl(pathname)}?${qs}`
+      : `${makeAbsoluteUrl(pathname)}`;
+  }, [pathname, searchParams]);
+
   useEffect(() => {
-    const name = document.title;
     const appInsights = getAppInsights();
-    if (!appInsights) {
-      return;
-    }
-    if (userId !== null) {
+    if (!appInsights) return;
+
+    if (status === 'authenticated' && userId !== null) {
       appInsights.setAuthenticatedUserContext(userId, email || '', true);
     } else {
       appInsights.clearAuthenticatedUserContext();
     }
+
+    const name = document.title;
     appInsights.trackPageView({
       name,
-      uri: window.location.href,
+      uri: pageUri,
       properties: {
         contentName: name,
-        id: pathname, // optional but helpful
+        id: pathname,
       },
     });
-  }, [pathname, email, userId]);
+  }, [status, pathname, pageUri, email, userId]);
 
-  // TODO: this would be a good place to add any custom telemetry hooks on useEffect
-  return <></>;
+  return null;
 };

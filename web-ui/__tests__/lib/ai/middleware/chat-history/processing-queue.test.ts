@@ -1,21 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Unit tests for ProcessingQueue class
- * 
+ *
  * This test suite validates the FIFO sequential processing queue used for handling
  * chat history stream chunks. Tests cover enqueue operations, task processing,
  * context propagation, error handling, and queue monitoring.
- * 
+ *
  * @module __tests__/lib/ai/middleware/chat-history/processing-queue
  * @version 1.0.0
  * @since 2025-07-17
  */
 
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+
+setupImpersonationMock();
+
 import { ProcessingQueue } from '@/lib/ai/middleware/chat-history/processing-queue';
 import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-handlers';
 import { log } from '@/lib/logger';
-import type { LanguageModelV1StreamPart } from 'ai';
+import type { LanguageModelV2StreamPart } from '@ai-sdk/provider';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';
+import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
 
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/chat-history/stream-handlers', () => ({
@@ -35,35 +40,39 @@ jest.mock('@/lib/logger', () => ({
 }));
 
 // Type-safe mocks
-const mockProcessStreamChunk = processStreamChunk as jest.MockedFunction<typeof processStreamChunk>;
+const mockProcessStreamChunk = processStreamChunk as jest.MockedFunction<
+  typeof processStreamChunk
+>;
 const mockLog = log as jest.MockedFunction<typeof log>;
 
 describe('ProcessingQueue', () => {
   let queue: ProcessingQueue;
   let mockContext: StreamHandlerContext;
-  let mockChunk: LanguageModelV1StreamPart;
+  let mockChunk: LanguageModelV2StreamPart;
 
   beforeEach(() => {
     // Reset all mocks
     // jest.clearAllMocks();
-    
+
     // Create fresh queue instance
     queue = new ProcessingQueue();
-    
+
     // Setup mock context
-    mockContext = {
+    mockContext = ensureCreateResult({
       chatId: 'test-chat-123',
       turnId: 1,
       messageId: 42,
       currentMessageOrder: 1,
       generatedText: '',
-      toolCalls: new Map()
-    };
-    
+      generatedJSON: [],
+      toolCalls: new Map(),
+    });
+
     // Setup mock chunk
     mockChunk = {
       type: 'text-delta',
-      textDelta: 'Hello world',
+      delta: 'Hello world',
+      id: 'chunk-1',
     };
   });
 
@@ -172,11 +181,13 @@ describe('ProcessingQueue', () => {
     it('should handle task processing errors gracefully', async () => {
       const error = new Error('Processing failed');
       mockProcessStreamChunk.mockRejectedValue(error);
-      
-      await expect(queue.enqueue(mockChunk, mockContext)).rejects.toThrow('Processing failed');
-      
+
+      await expect(queue.enqueue(mockChunk, mockContext)).rejects.toThrow(
+        'Processing failed',
+      );
+
       expect(mockLog).toHaveBeenCalledWith(expect.any(Function));
-      
+
       expect(queue.getQueueLength()).toBe(0);
       expect(queue.isProcessing()).toBe(false);
     });
@@ -188,20 +199,28 @@ describe('ProcessingQueue', () => {
         generatedText: 'Success',
         success: true,
       };
-      
-      const chunk1 = { type: 'text-delta' as const, textDelta: 'Fail' };
-      const chunk2 = { type: 'text-delta' as const, textDelta: 'Success' };
-      
+
+      const chunk1 = {
+        type: 'text-delta' as const,
+        delta: 'Fail',
+        id: 'chunk-1',
+      };
+      const chunk2 = {
+        type: 'text-delta' as const,
+        delta: 'Success',
+        id: 'chunk-2',
+      };
+
       mockProcessStreamChunk
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce(mockResult);
-      
+
       const promise1 = queue.enqueue(chunk1, mockContext);
       const promise2 = queue.enqueue(chunk2, mockContext);
-      
+
       await expect(promise1).rejects.toThrow('First task failed');
       await promise2;
-      
+
       expect(queue.getQueueLength()).toBe(0);
       expect(queue.isProcessing()).toBe(false);
     });
@@ -212,16 +231,16 @@ describe('ProcessingQueue', () => {
         generatedText: 'Test',
         success: true,
       };
-      
+
       mockProcessStreamChunk.mockResolvedValue(mockResult);
-      
+
       // Enqueue multiple tasks
       const promise1 = queue.enqueue(mockChunk, mockContext);
       const promise2 = queue.enqueue(mockChunk, mockContext);
       const promise3 = queue.enqueue(mockChunk, mockContext);
-      
+
       await Promise.all([promise1, promise2, promise3]);
-      
+
       // Verify all tasks were processed (each should have unique ID)
       expect(mockProcessStreamChunk).toHaveBeenCalledTimes(3);
     });
@@ -234,25 +253,26 @@ describe('ProcessingQueue', () => {
         generatedText: 'Test',
         success: true,
       };
-      
+
       // Use a slow mock to test queue length tracking
-      mockProcessStreamChunk.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve(mockResult), 50))
+      mockProcessStreamChunk.mockImplementation(
+        () =>
+          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50)),
       );
-      
+
       expect(queue.getQueueLength()).toBe(0);
-      
+
       const promise1 = queue.enqueue(mockChunk, mockContext);
       expect(queue.getQueueLength()).toBe(1);
-      
+
       const promise2 = queue.enqueue(mockChunk, mockContext);
       expect(queue.getQueueLength()).toBe(2);
-      
+
       const promise3 = queue.enqueue(mockChunk, mockContext);
       expect(queue.getQueueLength()).toBe(3);
-      
+
       await Promise.all([promise1, promise2, promise3]);
-      
+
       expect(queue.getQueueLength()).toBe(0);
     });
 
@@ -262,17 +282,18 @@ describe('ProcessingQueue', () => {
         generatedText: 'Test',
         success: true,
       };
-      
+
       // Use a slow mock to test processing state
-      mockProcessStreamChunk.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve(mockResult), 50))
+      mockProcessStreamChunk.mockImplementation(
+        () =>
+          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50)),
       );
-      
+
       expect(queue.isProcessing()).toBe(false);
-      
+
       const promise = queue.enqueue(mockChunk, mockContext);
       expect(queue.isProcessing()).toBe(true);
-      
+
       await promise;
       expect(queue.isProcessing()).toBe(false);
     });
@@ -283,24 +304,25 @@ describe('ProcessingQueue', () => {
         generatedText: 'Test',
         success: true,
       };
-      
-      mockProcessStreamChunk.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve(mockResult), 50))
+
+      mockProcessStreamChunk.mockImplementation(
+        () =>
+          new Promise((resolve) => setTimeout(() => resolve(mockResult), 50)),
       );
-      
+
       const promise1 = queue.enqueue(mockChunk, mockContext);
       const promise2 = queue.enqueue(mockChunk, mockContext);
-      
+
       expect(queue.getQueueLength()).toBe(2);
       expect(queue.isProcessing()).toBe(true);
-      
+
       await Promise.all([promise1, promise2]);
-      
+
       expect(queue.getQueueLength()).toBe(0);
       expect(queue.isProcessing()).toBe(false);
     });
   });
-/*
+  /*
   describe('context propagation', () => {
     it('should update subsequent contexts with successful results', async () => {
       const mockResult1: StreamHandlerResult = {
@@ -391,22 +413,26 @@ describe('ProcessingQueue', () => {
         generatedText: 'Test',
         success: true,
       };
-      
+
       mockProcessStreamChunk.mockResolvedValue(mockResult);
-      
+
       // Rapidly enqueue many tasks
-      const promises = Array.from({ length: 10 }, (_, i) => 
+      const promises = Array.from({ length: 10 }, (_, i) =>
         queue.enqueue(
-          { type: 'text-delta' as const, textDelta: `chunk-${i}` },
-          { ...mockContext, currentMessageOrder: i }
-        )
+          {
+            type: 'text-delta' as const,
+            delta: `chunk-${i}`,
+            id: `chunk-${i}`,
+          },
+          { ...mockContext, currentMessageOrder: i },
+        ),
       );
-      
+
       expect(queue.getQueueLength()).toBe(10);
       expect(queue.isProcessing()).toBe(true);
-      
+
       await Promise.all(promises);
-      
+
       expect(queue.getQueueLength()).toBe(0);
       expect(queue.isProcessing()).toBe(false);
       expect(mockProcessStreamChunk).toHaveBeenCalledTimes(10);
@@ -418,19 +444,20 @@ describe('ProcessingQueue', () => {
         generatedText: 'Test',
         success: true,
       };
-      
-      mockProcessStreamChunk.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve(mockResult), 100))
+
+      mockProcessStreamChunk.mockImplementation(
+        () =>
+          new Promise((resolve) => setTimeout(() => resolve(mockResult), 100)),
       );
-      
+
       const promise = queue.enqueue(mockChunk, mockContext);
-      
+
       // Query state multiple times during processing
       expect(queue.getQueueLength()).toBe(1);
       expect(queue.isProcessing()).toBe(true);
-      
+
       await promise;
-      
+
       expect(queue.getQueueLength()).toBe(0);
       expect(queue.isProcessing()).toBe(false);
     });

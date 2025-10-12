@@ -1,13 +1,29 @@
-import { isErrorLike, isStringOrErrorLike, asErrorLike, ErrorLike } from '@/lib/react-util/errors/error-like';
+import {
+  isErrorLike,
+  isStringOrErrorLike,
+  asErrorLike,
+  ErrorLike,
+} from '@/lib/react-util/errors/error-like';
 
 describe('isErrorLike', () => {
   it('returns true for a valid ErrorLike object', () => {
-    const err: ErrorLike = { message: 'fail', name: 'TestError', stack: 'stacktrace', cause: {} };
+    const err: ErrorLike = {
+      message: 'fail',
+      name: 'TestError',
+      stack: 'stacktrace',
+      cause: {},
+    };
     expect(isErrorLike(err)).toBe(true);
   });
 
   it('returns true for a branded ErrorLike object', () => {
-    const err: ErrorLike = { message: 'fail', name: 'TestError', stack: 'stacktrace', cause: {}, [Object.getOwnPropertySymbols({})[0]]: true };
+    const err: ErrorLike = {
+      message: 'fail',
+      name: 'TestError',
+      stack: 'stacktrace',
+      cause: {},
+      [Object.getOwnPropertySymbols({})[0]]: true,
+    };
     // Brand it using asErrorLike
     const branded = asErrorLike(err);
     expect(isErrorLike(branded)).toBe(true);
@@ -51,11 +67,20 @@ describe('isStringOrErrorLike', () => {
 describe('asErrorLike', () => {
   it('converts a string to an ErrorLike', () => {
     const result = asErrorLike('fail');
-    expect(result).toMatchObject({ message: 'fail', name: 'Error', stack: undefined, cause: undefined });
+    expect(result).toMatchObject({
+      message: 'fail',
+      name: 'Error',
+      stack: undefined,
+      cause: undefined,
+    });
     expect(isErrorLike(result)).toBe(true);
   });
   it('pulls stack from line/file/column options', () => {
-    const result = asErrorLike('fail', { filename: 'test.js', lineno: 10, colno: 5 })!;
+    const result = asErrorLike('fail', {
+      filename: 'test.js',
+      lineno: 10,
+      colno: 5,
+    })!;
     expect(result).toMatchObject({
       message: 'fail',
       name: 'Error',
@@ -69,7 +94,7 @@ describe('asErrorLike', () => {
   });
   it('passthrough for errorlike', () => {
     const source = asErrorLike('test');
-    const result = asErrorLike(source)!;    
+    const result = asErrorLike(source)!;
     expect(result).toBe(source);
   });
   it('proxies source property on actual error objects', () => {

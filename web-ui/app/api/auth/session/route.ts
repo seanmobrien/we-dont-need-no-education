@@ -38,7 +38,9 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
       // getActiveUserPublicKeys expects userId (number) and date
       // If session.id is not a number, try to parseInt, else skip
       const userId =
-        typeof session.user.id === 'number' ? session.user.id : parseInt(session.user.id, 10);
+        typeof session.user.id === 'number'
+          ? session.user.id
+          : parseInt(session.user.id, 10);
       if (!isNaN(userId)) {
         keys = await getActiveUserPublicKeys({ userId });
       }

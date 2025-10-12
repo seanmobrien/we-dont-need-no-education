@@ -63,57 +63,56 @@ export type PublicEnvValue = (typeof PublicEnv)[PublicEnvKey];
  * Canonical collection of public (and safe mirrored) environment variables.
  * All properties are `readonly` via `as const` to preserve literal types.
  */
-export const PublicEnv = {    
-   /**
-    * Base hostname, scheme, and port used for constructing absolute URLs on the client.
-    * Example: `https://app.example.com`
-    */
-    NEXT_PUBLIC_HOSTNAME: process.env.NEXT_PUBLIC_HOSTNAME,
+export const PublicEnv = {
+  /**
+   * Base hostname, scheme, and port used for constructing absolute URLs on the client.
+   * Example: `https://app.example.com`
+   */
+  NEXT_PUBLIC_HOSTNAME: process.env.NEXT_PUBLIC_HOSTNAME,
 
-   /**
-    * Minimum log level for client‑side logging infrastructure.
-    * Expected values commonly include: `debug`, `info`, `warn`, `error`.
-    * Used to filter browser console / telemetry noise in production.
-    */
-    NEXT_PUBLIC_LOG_LEVEL_CLIENT: process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT,
+  /**
+   * Minimum log level for client‑side logging infrastructure.
+   * Expected values commonly include: `debug`, `info`, `warn`, `error`.
+   * Used to filter browser console / telemetry noise in production.
+   */
+  NEXT_PUBLIC_LOG_LEVEL_CLIENT: process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT,
 
-   /**
-    * Public (non‑secret) Azure Monitor connection string variant. Some
-    * deployments may choose to expose a limited or proxy endpoint publicly
-    * for client telemetry. Prefer the private value where available.
-    */
-    NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
-      process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
+  /**
+   * Public (non‑secret) Azure Monitor connection string variant. Some
+   * deployments may choose to expose a limited or proxy endpoint publicly
+   * for client telemetry. Prefer the private value where available.
+   */
+  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
+    process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
 
-   /**
-    * Server‑side Azure Monitor connection string with fallback to the
-    * public variant if the private one is not defined. This property itself
-    * is NOT made public by Next.js (no `NEXT_PUBLIC_` prefix) and therefore
-    * remains server‑only at runtime. Client references collapse at build time.
-    */
-    AZURE_MONITOR_CONNECTION_STRING:
-      process.env.AZURE_MONITOR_CONNECTION_STRING ??
-      process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
+  /**
+   * Server‑side Azure Monitor connection string with fallback to the
+   * public variant if the private one is not defined. This property itself
+   * is NOT made public by Next.js (no `NEXT_PUBLIC_` prefix) and therefore
+   * remains server‑only at runtime. Client references collapse at build time.
+   */
+  AZURE_MONITOR_CONNECTION_STRING:
+    process.env.AZURE_MONITOR_CONNECTION_STRING ??
+    process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
 
-   /**
-    * Optional Material UI (MUI) license key required for certain premium
-    * component packages. Exposed publicly because the library expects the
-    * value in browser context; ensure the key is intended for client use.
-    */
-    NEXT_PUBLIC_MUI_LICENSE: process.env.NEXT_PUBLIC_MUI_LICENSE,
-  } as const;
+  /**
+   * Optional Material UI (MUI) license key required for certain premium
+   * component packages. Exposed publicly because the library expects the
+   * value in browser context; ensure the key is intended for client use.
+   */
+  NEXT_PUBLIC_MUI_LICENSE: process.env.NEXT_PUBLIC_MUI_LICENSE,
+} as const;
 
 export const withPublicEnv = <TArg extends NextConfig>(
-    nextConfig: TArg
-  ): TArg => {
-    return {
-      ...nextConfig,
-      publicRuntimeConfig: {
-        ...(nextConfig.publicRuntimeConfig ?? {}),
-        ...PublicEnv,
-      },
-    };
+  nextConfig: TArg,
+): TArg => {
+  return {
+    ...nextConfig,
+    publicRuntimeConfig: {
+      ...(nextConfig.publicRuntimeConfig ?? {}),
+      ...PublicEnv,
+    },
   };
+};
 
-
-  export default PublicEnv;
+export default PublicEnv;

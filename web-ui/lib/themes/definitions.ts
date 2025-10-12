@@ -72,7 +72,7 @@ const defaults = {
       styleOverrides: {
         root: {
           borderRadius: '16px',
-        },    
+        },
       },
     },
     MuiDrawer: {
@@ -93,7 +93,8 @@ const defaults = {
     MuiSvgIcon: {
       styleOverrides: {
         root: {
-          color: 'var(--color-primary-main) !important',
+          // color: 'var(--color-primary-main) !important',
+          // color: 'var(--color-primary-main)',
         },
       },
     },
@@ -285,8 +286,8 @@ export const colorfulTheme: Theme = createTheme({
     },
     background: {
       default: '#ffffff', // (255,255,255)
-      paper: '#ffffff',            
-    },    
+      paper: '#ffffff',
+    },
     text: {
       primary: '#000000',
       secondary: '#666666',
@@ -303,7 +304,7 @@ export const colorfulTheme: Theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          ...defaults.components.MuiButton.styleOverrides.root,        
+          ...defaults.components.MuiButton.styleOverrides.root,
           textTransform: 'none',
         },
       },
@@ -311,7 +312,7 @@ export const colorfulTheme: Theme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          ...defaults.components.MuiPaper.styleOverrides.root,          
+          ...defaults.components.MuiPaper.styleOverrides.root,
           backgroundColor: '#ffffff',
           border: '1px solid #f5a9b8', // Subtle accent border
         },

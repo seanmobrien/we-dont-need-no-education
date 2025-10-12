@@ -83,7 +83,10 @@ export type RetryErrorInfo =
 
 
     
-
+/**
+ * A single atomic message within a chat turn. Represents user, assistant,
+ * system, or tool/function output.
+ */
 export interface ChatMessage {
 	/** Parent turn identifier (denormalized for convenience). */
 	turnId: number;
@@ -96,21 +99,29 @@ export interface ChatMessage {
 	/** Position of the message within its turn (0-based or 1-based depending on ingest; treat as opaque ordering key). */
 	messageOrder: number;
 	/** Tool name when role === 'tool' (nullable if not applicable). */
-	toolName: string | null;
+	toolName?: string | null;
 	/** Serialized function call payload (model dependent). */
-	functionCall: Record<string, unknown> | null;
+	functionCall?: Record<string, unknown> | null;
+	/** Tool execution result/return value. */
+	toolResult?: Record<string, unknown> | null;
 	/** Status code id for message lifecycle (domain enum mapping). */
 	statusId: number;
 	/** Upstream provider identifier (e.g. 'azure-openai', 'google'). */
 	providerId: string | null;
 	/** Arbitrary structured metadata (token counts, annotations, etc.). */
-	metadata: Record<string, unknown> | null;
+	metadata?: Record<string, unknown> | null;
 	/** Tool instance correlation id linking to external invocation context. */
 	toolInstanceId: string | null;
 	/** Optimized / condensed variant of content (summaries, embeddings pre-processed text). */
 	optimizedContent: string | null;
 }
 
+
+/**
+ * A logical unit of interaction consisting of one or more related messages
+ * (e.g., user prompt + assistant response + tool calls). Turn boundaries often
+ * align with a single full model invocation cycle.
+ */
 export interface ChatTurn {
 	/** Sequential id within a chat (monotonic). */
 	turnId: number;

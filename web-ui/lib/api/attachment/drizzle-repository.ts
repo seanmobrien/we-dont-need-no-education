@@ -6,7 +6,9 @@ import { ValidationError } from '@/lib/react-util/errors/validation-error';
 /**
  * Maps a database record to an EmailAttachment domain object
  */
-const mapRecordToEmailAttachment = (record: Record<string, unknown>): EmailAttachment => ({
+const mapRecordToEmailAttachment = (
+  record: Record<string, unknown>,
+): EmailAttachment => ({
   attachmentId: record.attachmentId as number,
   fileName: record.fileName as string,
   filePath: record.filePath as string,
@@ -22,7 +24,9 @@ const mapRecordToEmailAttachment = (record: Record<string, unknown>): EmailAttac
 /**
  * Maps a database record to a partial EmailAttachment (summary view)
  */
-const mapRecordToEmailAttachmentSummary = (record: Record<string, unknown>): Partial<EmailAttachment> => ({
+const mapRecordToEmailAttachmentSummary = (
+  record: Record<string, unknown>,
+): Partial<EmailAttachment> => ({
   attachmentId: record.attachmentId as number,
   fileName: record.fileName as string,
   filePath: record.filePath as string,
@@ -35,7 +39,7 @@ const mapRecordToEmailAttachmentSummary = (record: Record<string, unknown>): Par
 /**
  * EmailAttachmentDrizzleRepository provides Drizzle ORM-based data access
  * for email attachment records in a flattened format suitable for REST API consumption.
- * 
+ *
  * This repository matches the output format of the existing SQL-based implementation
  * while leveraging Drizzle's type-safe query capabilities.
  */
@@ -102,7 +106,9 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
   /**
    * Prepares EmailAttachment data for database insertion
    */
-  protected prepareInsertData(model: Omit<EmailAttachment, 'attachmentId'>): Record<string, unknown> {
+  protected prepareInsertData(
+    model: Omit<EmailAttachment, 'attachmentId'>,
+  ): Record<string, unknown> {
     return {
       fileName: model.fileName,
       filePath: model.filePath,
@@ -119,11 +125,13 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
   /**
    * Prepares EmailAttachment data for database updates
    */
-  protected prepareUpdateData(model: Partial<EmailAttachment>): Record<string, unknown> {
+  protected prepareUpdateData(
+    model: Partial<EmailAttachment>,
+  ): Record<string, unknown> {
     // Exclude non-updatable fields and fields not in database schema
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { attachmentId, emailId, extractedTextTsv, ...updateFields } = model;
-    
+
     // Filter out undefined values to only include fields being updated
     const updateData: Record<string, unknown> = {};
     Object.entries(updateFields).forEach(([key, value]) => {
@@ -131,7 +139,7 @@ export class EmailAttachmentDrizzleRepository extends BaseDrizzleRepository<
         updateData[key] = value;
       }
     });
-    
+
     return updateData;
   }
 }

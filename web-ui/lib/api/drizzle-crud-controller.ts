@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { BaseDrizzleRepository } from './_baseDrizzleRepository';
-import {
-  PickField,
-} from '@/lib/typescript';
-import { LikeNextRequest } from '@/lib/nextjs-util/types'
+import { PickField } from '@/lib/typescript';
+import { LikeNextRequest } from '@/lib/nextjs-util/types';
 import { isRequestOrApiRequest } from '@/lib/nextjs-util/guards';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import {
-  PaginatedResultset,
-} from '@/data-models/_types';
+import { PaginatedResultset } from '@/data-models/_types';
 import type { PaginationStats } from '@/data-models/_types';
 import { GridSortModel, GridFilterModel } from '@mui/x-data-grid-pro';
 import { PaginatedGridListRequest } from '../components/mui/data-grid';
@@ -205,7 +201,7 @@ export class DrizzleCrudRepositoryController<
     try {
       const params = await args.params;
       const body = await req.json();
-      
+
       const keys = Object.keys(params);
       if (keys.length !== 1) {
         return NextResponse.json(
@@ -216,10 +212,10 @@ export class DrizzleCrudRepositoryController<
 
       const idKey = keys[0] as TRepositoryKey;
       const idValue = params[idKey];
-      
+
       // Ensure the ID is included in the update data
       const updateData = { ...body, [idKey]: idValue };
-      
+
       const updatedRecord = await this.repository.update(updateData);
       return NextResponse.json(updatedRecord, { status: 200 });
     } catch (error) {

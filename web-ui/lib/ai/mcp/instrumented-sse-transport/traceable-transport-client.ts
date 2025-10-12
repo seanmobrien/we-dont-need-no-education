@@ -60,7 +60,7 @@ import { trace, Span, SpanStatusCode, metrics } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isAbortError, isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 
@@ -257,7 +257,15 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       this.#onmessage = opts.onmessage;
       this.#onerror = this.#safeErrorHandler((e: unknown) => {
         if (isError(e)) {
-          opts.onerror(e);
+          if (isAbortError(e)) {
+            log((l) =>
+              l.verbose(
+                `InstrumentedSseTransport (From error handler...) aborted; isClosing=${this.#isClosing}`,
+              ),
+            );
+          } else {
+            opts.onerror(e);
+          }
         } else {
           opts.onerror(new Error(String(e)));
         }
@@ -292,6 +300,21 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         );
       }
     } catch (error) {
+      /*
+      if (isAbortError(error)) {
+        // Suppress abort errors; this is a disconnect not a construction failure.
+        const isClosing = this.#isClosing;
+        log((l) =>
+          l.verbose(
+            `InstrumentedSseTransport construction aborted; isClosing=${isClosing}`,
+          ),
+        );
+      }
+      */
+      error = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'MCP Transport Constructor',
+      });
       // Record construction failure
       connectionCounter.add(1, {
         'mcp.transport.url': opts.url,
@@ -309,7 +332,6 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         code: SpanStatusCode.ERROR,
         message: isError(error) ? error.message : String(error),
       });
-
       log((l) =>
         l.error('Failed to initialize InstrumentedSseTransport', {
           data: { error: isError(error) ? error.message : String(error) },
@@ -560,6 +582,16 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         log((l) => l.debug('MCP Client Transport started successfully'));
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        // Suppress abort errors; this is a disconnect not a construction failure.
+        const isClosing = this.#isClosing;
+        log((l) =>
+          l.verbose(
+            `InstrumentedSseTransport start() aborted; isClosing=${isClosing}`,
+          ),
+        );
+        return;
+      }
       // Record failed connection
       connectionCounter.add(1, {
         'mcp.transport.url': this.url?.toString() || 'unknown',

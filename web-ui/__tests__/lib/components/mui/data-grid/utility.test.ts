@@ -61,7 +61,9 @@ describe('utility functions', () => {
       expect(parseSortOptions({} as any)).toBeUndefined();
       expect(parseSortOptions(123 as any)).toBeUndefined();
       // String input should be parsed if it looks like sort format
-      expect(parseSortOptions('foo:asc')).toEqual([{ field: 'foo', sort: 'asc' }]);
+      expect(parseSortOptions('foo:asc')).toEqual([
+        { field: 'foo', sort: 'asc' },
+      ]);
     });
 
     it('parses sort param with extra spaces', () => {

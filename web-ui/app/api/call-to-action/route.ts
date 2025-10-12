@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
-import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
-import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
-import { extractParams } from '@/lib/nextjs-util/utils';
 import { CallToActionDetails } from '@/data-models/api/email-properties/extended-properties';
-import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
+import {
+  buildFallbackGrid,
+  wrapRouteRequest,
+} from '@/lib/nextjs-util/server/utils';
 import { eq, and, sql, SQL } from 'drizzle-orm';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { schema } from '@/lib/drizzle-db/schema';
@@ -12,18 +12,12 @@ import {
   getEmailColumn,
   selectForGrid,
 } from '@/lib/components/mui/data-grid/queryHelpers';
-import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
-
-const repository = new CallToActionDetailsRepository();
-const controller = new RepositoryCrudController(repository);
 
 export const dynamic = 'force-dynamic';
 
 export const GET = wrapRouteRequest(
-  async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
-    const { emailId } = await extractParams<{ emailId: string }>(args);
-
+  async (req: NextRequest) => {
     const db = await drizDbWithInit();
 
     // Define the base query that matches the original SQL structure
@@ -105,17 +99,7 @@ export const GET = wrapRouteRequest(
         schema.documentUnits,
         eq(schema.documentUnits.unitId, schema.documentProperty.documentId),
       )
-      .where(
-        and(
-          eq(schema.documentProperty.documentPropertyTypeId, 4),
-          buildDrizzleAttachmentOrEmailFilter({
-            attachments: req,
-            email_id: emailId,
-            email_id_column: schema.documentUnits.emailId,
-            document_id_column: schema.documentProperty.documentId,
-          }),
-        ),
-      );
+      .where(and(eq(schema.documentProperty.documentPropertyTypeId, 4)));
 
     // Column getter function for filtering and sorting
     const getColumn = (columnName: string): PgColumn | SQL | undefined => {
@@ -185,10 +169,3 @@ export const GET = wrapRouteRequest(
   },
   { buildFallback: buildFallbackGrid },
 );
-
-export const POST = wrapRouteRequest(async (
-  req: NextRequest,
-  args: { params: Promise<{ propertyId: string }> },
-) => {
-  return controller.create(req, args);
-});

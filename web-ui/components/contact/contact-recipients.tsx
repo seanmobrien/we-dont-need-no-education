@@ -33,26 +33,29 @@ const ContactRecipients: React.FC<ContactRecipientsProps> = ({
   const [currentContacts, setCurrentContacts] =
     useState<ContactSummary[]>(contacts);
   const enableEditMode = useCallback(() => setIsEditing(true), [setIsEditing]);
-  const disableEditMode = useCallback(() => setIsEditing(false), [setIsEditing]);
+  const disableEditMode = useCallback(
+    () => setIsEditing(false),
+    [setIsEditing],
+  );
   const filterContacts = useCallback(
     (contact: ContactSummary) =>
       currentContacts.findIndex((c) => c.contactId === contact.contactId) ===
       -1,
-    [currentContacts]
+    [currentContacts],
   );
   const handleAddContact = useCallback(
     (newContact: ContactSummary) =>
       setCurrentContacts([...currentContacts, newContact]),
-    [currentContacts]
+    [currentContacts],
   );
   const handleRemoveContact = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
       const contactId = parseInt(event.currentTarget.dataset.target ?? '');
       setCurrentContacts(
-        currentContacts.filter((contact) => contact.contactId !== contactId)
+        currentContacts.filter((contact) => contact.contactId !== contactId),
       );
     },
-    [currentContacts]
+    [currentContacts],
   );
   const handleSave = useCallback(() => {
     onContactsUpdate(currentContacts);

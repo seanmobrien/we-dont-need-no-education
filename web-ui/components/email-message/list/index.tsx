@@ -1,5 +1,10 @@
 'use client';
-import { JSX, useMemo, useCallback } from 'react';
+import {
+  JSX,
+  useMemo,
+  useCallback,
+  MouseEvent as ReactMouseEvent,
+} from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
 import { Box } from '@mui/material';
@@ -18,9 +23,29 @@ import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
 import CallToActionIcon from '@mui/icons-material/CallToAction';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import NextLink from 'next/link';
+import Link from '@mui/material/Link';
+import type { SxProps, Theme } from '@mui/material/styles';
 import EmailDetailPanel from './email-detail-panel';
 import { usePrefetchEmail } from '@/lib/hooks/use-email';
+
+const stableSx = {
+  containerBase: {
+    display: 'flex',
+    flexDirection: 'column',
+    width: 1,
+  } satisfies SxProps<Theme>,
+  subjectLink: {
+    color: 'primary.main',
+    textDecoration: 'none',
+    '&:hover': { textDecoration: 'underline' },
+    '&:focusVisible': {
+      outline: '2px solid',
+      outlineColor: 'primary.main',
+      outlineOffset: 2,
+    },
+  } satisfies SxProps<Theme>,
+} as const;
 
 /**
  * Defines the column configuration for the email message list grid.
@@ -43,6 +68,9 @@ const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<Ema
     renderHeader: () => <AttachEmailIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : ''),
     width: 30,
+    minWidth: 48,
+    headerAlign: 'center',
+    align: 'center',
     type: 'number',
   },
   {
@@ -50,6 +78,9 @@ const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<Ema
     headerName: 'Thread',
     editable: false,
     width: 20,
+    minWidth: 56,
+    headerAlign: 'center',
+    align: 'center',
   },
   {
     field: 'sender',
@@ -68,18 +99,13 @@ const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<Ema
     renderCell: (params) => {
       return params.value ? (
         <Link
+          component={NextLink}
           href={siteMap.messages.email(params.row.emailId).toString()}
           title="Open email message"
-          style={{
-            color: '#2563eb',
-            textDecoration: 'none',
-          }}
-          onMouseEnter={(e) => {
-            (e.target as HTMLElement).style.textDecoration = 'underline';
-            // Prefetch email data on hover for better UX
-            prefetchEmail(params.row.emailId);
-          }}
-          onMouseLeave={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
+          aria-label={
+            params.value ? `Open email: ${params.value}` : 'Open email'
+          }
+          sx={stableSx.subjectLink}
         >
           {params.value}
         </Link>
@@ -94,6 +120,9 @@ const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<Ema
     renderHeader: () => <KeyIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : '-'),
     width: 10,
+    minWidth: 56,
+    headerAlign: 'center',
+    align: 'center',
     type: 'number',
   },
   {
@@ -102,6 +131,9 @@ const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<Ema
     renderHeader: () => <TextSnippetIcon fontSize="small" />,
     valueFormatter: (v: number) => (v ? v : '-'),
     width: 10,
+    minWidth: 56,
+    headerAlign: 'center',
+    align: 'center',
     type: 'number',
   },
   {
@@ -113,6 +145,9 @@ const createColumns = (prefetchEmail: (emailId: string) => void): GridColDef<Ema
     },
     valueFormatter: (v: number) => (v ? v : '-'),
     width: 10,
+    minWidth: 56,
+    headerAlign: 'center',
+    align: 'center',
     type: 'number',
   },
   {
@@ -163,7 +198,7 @@ export const EmailList = ({
   const onRowDoubleClick = useCallback(
     (
       params: GridRowParams<EmailMessageSummary>,
-      event: MuiEvent<React.MouseEvent<HTMLElement, MouseEvent>>,
+      event: MuiEvent<ReactMouseEvent<HTMLElement, MouseEvent>>,
       details: GridCallbackDetails,
     ) => {
       if (onRowDoubleClickProps) {
@@ -191,14 +226,7 @@ export const EmailList = ({
 
   return (
     <>
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          width: '100%',
-          ...containerSx,
-        }}
-      >
+      <Box sx={[stableSx.containerBase, containerSx]}>
         <ServerBoundDataGrid<EmailMessageSummary>
           {...props}
           columns={columns}

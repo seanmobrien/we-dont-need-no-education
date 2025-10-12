@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Tests for lib/config/index.ts
- * 
+ *
  * This module tests all the configuration plugins and utilities exported from lib/config:
  * - withIgnorePacks: Webpack configuration to ignore certain packages
  * - StripRscPrefixPlugin & withStripRscPrefixPlugin: Source map normalization for React Server Components
@@ -28,13 +28,13 @@ describe('lib/config/index.ts', () => {
     it('should export all expected functions and objects', () => {
       expect(withIgnorePacks).toBeDefined();
       expect(typeof withIgnorePacks).toBe('function');
-      
+
       expect(withStripRscPrefixPlugin).toBeDefined();
       expect(typeof withStripRscPrefixPlugin).toBe('function');
-      
+
       expect(withPublicEnv).toBeDefined();
       expect(typeof withPublicEnv).toBe('function');
-      
+
       expect(withBundleAnalyzer).toBeDefined();
       expect(typeof withBundleAnalyzer).toBe('function');
     });
@@ -42,9 +42,9 @@ describe('lib/config/index.ts', () => {
 
   describe('withIgnorePacks', () => {
     const mockWebpack = {
-      IgnorePlugin: jest.fn().mockImplementation((config) => ({ 
+      IgnorePlugin: jest.fn().mockImplementation((config) => ({
         pluginName: 'IgnorePlugin',
-        config 
+        config,
       })),
     };
 
@@ -86,7 +86,10 @@ describe('lib/config/index.ts', () => {
       expect(typeof result.webpack).toBe('function');
 
       // Execute the webpack function
-      const webpackResult = result.webpack!(mockWebpackConfig, mockArgs as unknown as WebpackConfigContext);
+      const webpackResult = result.webpack!(
+        mockWebpackConfig,
+        mockArgs as unknown as WebpackConfigContext,
+      );
 
       expect(mockWebpack.IgnorePlugin).toHaveBeenCalledWith({
         resourceRegExp: /^pg-native$|^cloudflare:sockets$/,
@@ -95,7 +98,7 @@ describe('lib/config/index.ts', () => {
       expect(mockWebpackConfig.plugins).toHaveLength(1);
       expect(mockWebpackConfig.plugins[0]).toEqual({
         pluginName: 'IgnorePlugin',
-        config: { resourceRegExp: /^pg-native$|^cloudflare:sockets$/ }
+        config: { resourceRegExp: /^pg-native$|^cloudflare:sockets$/ },
       });
 
       expect(webpackResult).toBe(mockWebpackConfig);
@@ -120,7 +123,7 @@ describe('lib/config/index.ts', () => {
         mockWebpackConfig,
         mockArgs as any,
       );
-      
+
       // Should add both existing and ignore plugins
       expect(mockWebpackConfig.plugins).toHaveLength(2);
       expect(mockWebpackConfig.plugins[0]).toBe(existingWebpackPlugin);
@@ -204,7 +207,7 @@ describe('lib/config/index.ts', () => {
 
         expect(mockCompiler.hooks.compilation.tap).toHaveBeenCalledWith(
           'StripRscPrefixPlugin',
-          expect.any(Function)
+          expect.any(Function),
         );
 
         // Trigger compilation hook
@@ -215,7 +218,7 @@ describe('lib/config/index.ts', () => {
             name: 'StripRscPrefixPlugin',
             stage: 'dev-tooling',
           },
-          expect.any(Function)
+          expect.any(Function),
         );
       });
 
@@ -234,11 +237,12 @@ describe('lib/config/index.ts', () => {
 
       it('should skip map files without rsc/ssr prefixes', () => {
         const assets = {
-          'main.js.map': { 
-            source: () => JSON.stringify({
-              sources: ['src/index.ts', 'lib/utils.ts'],
-              mappings: 'AAAA',
-            }) 
+          'main.js.map': {
+            source: () =>
+              JSON.stringify({
+                sources: ['src/index.ts', 'lib/utils.ts'],
+                mappings: 'AAAA',
+              }),
           },
         };
 
@@ -253,7 +257,7 @@ describe('lib/config/index.ts', () => {
         const sourceMap = {
           sources: [
             '/(rsc)/./lib/ai/middleware/chat-history/index.ts',
-            '/(rsc)/lib/components/chat.tsx', 
+            '/(rsc)/lib/components/chat.tsx',
             '(rsc)/./src/utils.ts',
             '/normal/path.ts',
           ],
@@ -261,7 +265,7 @@ describe('lib/config/index.ts', () => {
         };
 
         const assets = {
-          'server.js.map': { 
+          'server.js.map': {
             source: () => JSON.stringify(sourceMap),
           },
         };
@@ -277,12 +281,12 @@ describe('lib/config/index.ts', () => {
               sources: [
                 '/lib/ai/middleware/chat-history/index.ts',
                 '/lib/components/chat.tsx',
-                '/src/utils.ts', 
+                '/src/utils.ts',
                 '/normal/path.ts',
               ],
               mappings: 'AAAA',
             }),
-          })
+          }),
         );
 
         expect(mockCompiler.webpack.sources.RawSource).toHaveBeenCalledWith(
@@ -294,7 +298,7 @@ describe('lib/config/index.ts', () => {
               '/normal/path.ts',
             ],
             mappings: 'AAAA',
-          })
+          }),
         );
       });
 
@@ -309,7 +313,7 @@ describe('lib/config/index.ts', () => {
         };
 
         const assets = {
-          'server.js.map': { 
+          'server.js.map': {
             source: () => JSON.stringify(sourceMap),
           },
         };
@@ -329,20 +333,20 @@ describe('lib/config/index.ts', () => {
               ],
               mappings: 'BBBB',
             }),
-          })
+          }),
         );
       });
 
       it('should handle malformed JSON gracefully', () => {
         const assets = {
-          'broken.js.map': { 
+          'broken.js.map': {
             source: () => 'invalid json (rsc)',
           },
         };
 
         StripRscPrefixPlugin.apply(mockCompiler);
         mockCompiler._compilationCallback(mockCompilation);
-        
+
         // Should not throw
         expect(() => {
           mockCompilation._processAssetsCallback(assets);
@@ -358,7 +362,7 @@ describe('lib/config/index.ts', () => {
         });
 
         const assets = {
-          'func.js.map': { 
+          'func.js.map': {
             source: () => sourceMapStr,
           },
           'prop.js.map': {
@@ -379,7 +383,7 @@ describe('lib/config/index.ts', () => {
               sources: ['/test.ts'],
               mappings: 'AAAA',
             }),
-          })
+          }),
         );
         expect(mockCompilation.updateAsset).toHaveBeenNthCalledWith(
           2,
@@ -389,21 +393,18 @@ describe('lib/config/index.ts', () => {
               sources: ['/test.ts'],
               mappings: 'AAAA',
             }),
-          })
+          }),
         );
       });
 
       it('should handle multiple slashes correctly', () => {
         const sourceMap = {
-          sources: [
-            '/(rsc)/./././lib/test.ts',
-            '/(rsc)///lib/test2.ts',
-          ],
+          sources: ['/(rsc)/./././lib/test.ts', '/(rsc)///lib/test2.ts'],
           mappings: 'AAAA',
         };
 
         const assets = {
-          'test.js.map': { 
+          'test.js.map': {
             source: () => JSON.stringify(sourceMap),
           },
         };
@@ -416,7 +417,7 @@ describe('lib/config/index.ts', () => {
         // Check what the actual normalized result is
         const actualCall = mockCompilation.updateAsset.mock.calls[0];
         const actualContent = JSON.parse(actualCall[1].content);
-        
+
         // Verify that RSC prefixes were removed and paths start with /
         expect(actualContent.sources[0]).toMatch(/^\/.*lib\/test\.ts$/);
         expect(actualContent.sources[1]).toMatch(/^\/.*lib\/test2\.ts$/);
@@ -470,7 +471,10 @@ describe('lib/config/index.ts', () => {
 
         result.webpack!(mockWebpackConfig, mockArgs as any);
 
-        expect(existingWebpack).toHaveBeenCalledWith(mockWebpackConfig, mockArgs);
+        expect(existingWebpack).toHaveBeenCalledWith(
+          mockWebpackConfig,
+          mockArgs,
+        );
         expect(mockWebpackConfig.plugins).toHaveLength(2);
         expect(mockWebpackConfig.plugins[0]).toBe(existingPlugin);
         expect(mockWebpackConfig.plugins[1]).toBe(StripRscPrefixPlugin);
@@ -499,7 +503,9 @@ describe('lib/config/index.ts', () => {
       it('should have all expected properties', () => {
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_HOSTNAME');
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_LOG_LEVEL_CLIENT');
-        expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING');
+        expect(PublicEnv).toHaveProperty(
+          'NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING',
+        );
         expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_MUI_LICENSE');
       });
@@ -511,9 +517,11 @@ describe('lib/config/index.ts', () => {
 
         // Re-import to get fresh values
         jest.resetModules();
-        const { PublicEnv: FreshPublicEnv } = require('@/lib/config/public-env');
+        const { PublicEnv: FreshPublicEnv } = require('/lib/config/public-env');
 
-        expect(FreshPublicEnv.NEXT_PUBLIC_HOSTNAME).toBe('https://test.example.com');
+        expect(FreshPublicEnv.NEXT_PUBLIC_HOSTNAME).toBe(
+          'https://test.example.com',
+        );
         expect(FreshPublicEnv.NEXT_PUBLIC_LOG_LEVEL_CLIENT).toBe('debug');
         expect(FreshPublicEnv.NEXT_PUBLIC_MUI_LICENSE).toBe('test-license-key');
       });
@@ -521,7 +529,7 @@ describe('lib/config/index.ts', () => {
       it('should handle undefined environment variables', () => {
         // Re-import with clean env
         jest.resetModules();
-        const { PublicEnv: FreshPublicEnv } = require('@/lib/config/public-env');
+        const { PublicEnv: FreshPublicEnv } = require('/lib/config/public-env');
 
         expect(FreshPublicEnv.NEXT_PUBLIC_HOSTNAME).toBeUndefined();
         expect(FreshPublicEnv.NEXT_PUBLIC_LOG_LEVEL_CLIENT).toBeUndefined();
@@ -531,28 +539,38 @@ describe('lib/config/index.ts', () => {
       it('should implement fallback for AZURE_MONITOR_CONNECTION_STRING', () => {
         // Test private value takes precedence
         process.env.AZURE_MONITOR_CONNECTION_STRING = 'private-connection';
-        process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING = 'public-connection';
+        process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING =
+          'public-connection';
 
         jest.resetModules();
-        const { PublicEnv: FreshPublicEnv } = require('@/lib/config/public-env');
+        const { PublicEnv: FreshPublicEnv } = require('/lib/config/public-env');
 
-        expect(FreshPublicEnv.AZURE_MONITOR_CONNECTION_STRING).toBe('private-connection');
+        expect(FreshPublicEnv.AZURE_MONITOR_CONNECTION_STRING).toBe(
+          'private-connection',
+        );
 
         // Test fallback to public value
         delete process.env.AZURE_MONITOR_CONNECTION_STRING;
-        process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING = 'public-connection';
+        process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING =
+          'public-connection';
 
         jest.resetModules();
-        const { PublicEnv: FreshPublicEnv2 } = require('@/lib/config/public-env');
+        const {
+          PublicEnv: FreshPublicEnv2,
+        } = require('/lib/config/public-env');
 
-        expect(FreshPublicEnv2.AZURE_MONITOR_CONNECTION_STRING).toBe('public-connection');
+        expect(FreshPublicEnv2.AZURE_MONITOR_CONNECTION_STRING).toBe(
+          'public-connection',
+        );
 
         // Test both undefined
         delete process.env.AZURE_MONITOR_CONNECTION_STRING;
         delete process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
 
         jest.resetModules();
-        const { PublicEnv: FreshPublicEnv3 } = require('@/lib/config/public-env');
+        const {
+          PublicEnv: FreshPublicEnv3,
+        } = require('/lib/config/public-env');
 
         expect(FreshPublicEnv3.AZURE_MONITOR_CONNECTION_STRING).toBeUndefined();
       });
@@ -562,12 +580,13 @@ describe('lib/config/index.ts', () => {
         // The object should be readonly at the type level
         expect(typeof PublicEnv).toBe('object');
         expect(PublicEnv).not.toBeNull();
-        
-        
+
         // Verify the properties exist and are accessible
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_HOSTNAME');
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_LOG_LEVEL_CLIENT');
-        expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING');
+        expect(PublicEnv).toHaveProperty(
+          'NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING',
+        );
         expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_MUI_LICENSE');
       });
@@ -609,7 +628,9 @@ describe('lib/config/index.ts', () => {
         });
 
         // PublicEnv values should override existing ones
-        expect(result.publicRuntimeConfig!.NEXT_PUBLIC_HOSTNAME).toBe(PublicEnv.NEXT_PUBLIC_HOSTNAME);
+        expect(result.publicRuntimeConfig!.NEXT_PUBLIC_HOSTNAME).toBe(
+          PublicEnv.NEXT_PUBLIC_HOSTNAME,
+        );
       });
 
       it('should preserve type information', () => {
@@ -689,18 +710,22 @@ describe('lib/config/index.ts', () => {
       };
 
       // Mock the @next/bundle-analyzer require
-      const mockBundleAnalyzer = jest.fn().mockImplementation((options) => 
-        (config: any) => ({
+      const mockBundleAnalyzer = jest
+        .fn()
+        .mockImplementation((options) => (config: any) => ({
           ...config,
           _bundleAnalyzer: options,
-        })
-      );
+        }));
 
-      jest.doMock('@next/bundle-analyzer', () => mockBundleAnalyzer, { virtual: true });
+      jest.doMock('@next/bundle-analyzer', () => mockBundleAnalyzer, {
+        virtual: true,
+      });
 
       // Re-import to get the mocked version
       jest.resetModules();
-      const { withBundleAnalyzer: FreshWithBundleAnalyzer } = require('@/lib/config/bundle-analyzers');
+      const {
+        withBundleAnalyzer: FreshWithBundleAnalyzer,
+      } = require('/lib/config/bundle-analyzers');
 
       const result = FreshWithBundleAnalyzer(originalConfig);
 
@@ -750,11 +775,7 @@ describe('lib/config/index.ts', () => {
 
       // Chain all config functions
       const result = withBundleAnalyzer(
-        withPublicEnv(
-          withStripRscPrefixPlugin(
-            withIgnorePacks(baseConfig)
-          )
-        )
+        withPublicEnv(withStripRscPrefixPlugin(withIgnorePacks(baseConfig))),
       );
 
       // Should preserve original config

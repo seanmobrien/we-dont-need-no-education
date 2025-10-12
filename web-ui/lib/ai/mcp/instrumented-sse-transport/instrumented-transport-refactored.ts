@@ -1,6 +1,6 @@
 /**
  * @fileoverview Refactored Instrumented SSE MCP Transport Client
- * 
+ *
  * This is a refactored version of the original InstrumentedSseTransport that
  * delegates specific concerns to dedicated modules while maintaining the
  * same external interface and functionality.
@@ -10,7 +10,7 @@ import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { SseMCPTransport } from '../ai.sdk';
 import type { JSONRPCMessage } from '../ai.sdk';
 
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isAbortError, isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { log } from '@/lib/logger';
 
@@ -19,12 +19,18 @@ import { tracer, MetricsRecorder, DEBUG_MODE } from './metrics/otel-metrics';
 import { CounterManager } from './metrics/counter-manager';
 import { SessionManager } from './session/session-manager';
 import { TraceContextManager } from './tracing/trace-context';
-import { SafetyUtils, CONNECTION_TIMEOUT_MS, SEND_TIMEOUT_MS } from './utils/safety-utils';
+import {
+  SafetyUtils,
+  CONNECTION_TIMEOUT_MS,
+  SEND_TIMEOUT_MS,
+} from './utils/safety-utils';
 import { MessageProcessor } from './message/message-processor';
+import { ImpersonationService } from '@/lib/auth/impersonation';
 
 type InstrumentedSseTransportOptions = {
   url: string;
-  headers?: Record<string, string>;
+  headers?: () => Promise<Record<string, string>>;
+  // impersonation?: ImpersonationService;
   onclose?: () => void;
   onmessage?: (message: JSONRPCMessage) => void;
   onerror: ((error: unknown) => void) | ((error: Error) => void);
@@ -36,7 +42,7 @@ type InstrumentedSseTransportOptions = {
  * This refactored version maintains the same external interface while delegating
  * specific concerns to specialized modules:
  * - MetricsRecorder: OpenTelemetry metrics recording
- * - CounterManager: Active session and tool call tracking  
+ * - CounterManager: Active session and tool call tracking
  * - SessionManager: Session lifecycle and timeout management
  * - TraceContextManager: Distributed tracing support
  * - SafetyUtils: Error handling and timeout utilities
@@ -50,7 +56,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
   #sessionManager: SessionManager;
   #safetyUtils: SafetyUtils;
   #messageProcessor: MessageProcessor;
-
+  #impersonation?: ImpersonationService;
   // Core transport state
   #onmessage?: (message: JSONRPCMessage) => void;
   #onerror: (error: unknown) => void;
@@ -58,17 +64,30 @@ export class InstrumentedSseTransport extends SseMCPTransport {
   #transportSpan?: Span;
   #connectionStartTime: number = 0;
   #isClosing = false;
+  #heartbeatTimer?: ReturnType<typeof setInterval>;
+  #inactivityTimer?: ReturnType<typeof setTimeout>;
+  #lastActivity: number = Date.now();
+  #closed = false;
+  #getHeaders: () => Promise<Record<string, string>>;
 
-  constructor(opts: InstrumentedSseTransportOptions) {
+  // Heartbeat / inactivity constants (tunable)
+  static readonly HEARTBEAT_INTERVAL_MS = 15_000; // send watchdog ping / check every 15s
+  static readonly INACTIVITY_TIMEOUT_MS = 60_000 * 60 * 2; // if no inbound activity for 2 hours -> close
+  static readonly POST_ERROR_AUTOCLOSE_DELAY_MS = 2_000; // grace period before forced close after fatal error
+
+  constructor({
+    // impersonation,
+    headers: getHeaders,
+    ...opts
+  }: InstrumentedSseTransportOptions) {
     let constructorSpan: Span | undefined;
-
     try {
       // Start constructor instrumentation as child of current active span
       constructorSpan = tracer.startSpan('mcp.transport.constructor', {
         attributes: {
           'mcp.transport.url': opts.url,
           'mcp.transport.mode': DEBUG_MODE ? 'DEBUG' : 'WARNING',
-          'mcp.transport.has_headers': !!opts.headers,
+          'mcp.transport.has_headers': !!getHeaders,
         },
       });
 
@@ -78,18 +97,17 @@ export class InstrumentedSseTransport extends SseMCPTransport {
             data: {
               url: opts.url,
               mode: DEBUG_MODE ? 'DEBUG' : 'WARNING',
-              headers: opts.headers ? Object.keys(opts.headers) : [],
             },
           }),
         );
       }
 
       // Inject trace context into headers for distributed tracing before calling super
-      const enhancedHeaders = TraceContextManager.injectTraceContext(
-        opts.headers || {},
-      );
-      super({ ...opts, headers: enhancedHeaders }); // Call the base constructor with enhanced headers
-
+      const headers = TraceContextManager.injectTraceContext({});
+      super({ ...opts, headers }); // Call the base constructor with enhanced headers
+      // Capture impersonation service if provided
+      // this.#impersonation = impersonation;
+      this.#getHeaders = getHeaders || (() => Promise.resolve({}));
       if (!opts.onerror) {
         const error = new Error('onerror handler is required');
         constructorSpan?.recordException(error);
@@ -104,17 +122,22 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       this.#counterManager = new CounterManager();
       this.#sessionManager = new SessionManager(opts.url, this.#counterManager);
       this.#safetyUtils = new SafetyUtils(opts.url);
-      this.#messageProcessor = new MessageProcessor(opts.url, this.#sessionManager, this.#counterManager);
+      this.#messageProcessor = new MessageProcessor(
+        opts.url,
+        this.#sessionManager,
+        this.#counterManager,
+      );
 
       // Set up event handlers
       this.#onclose = opts.onclose;
       this.#onmessage = opts.onmessage;
       this.#onerror = this.#safetyUtils.createSafeErrorHandler((e: unknown) => {
         opts.onerror(
-        LoggedError.isTurtlesAllTheWayDownBaby(e, {
-          log: true,
-          message: 'MCP SSE Transport: Error occurred'
-        }));        
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+            log: true,
+            message: 'MCP SSE Transport: Error occurred',
+          }),
+        );
       });
 
       // Override base callbacks with instrumented versions
@@ -147,7 +170,10 @@ export class InstrumentedSseTransport extends SseMCPTransport {
     } catch (error) {
       // Record construction failure
       MetricsRecorder.recordConnection(opts.url, 'constructor', 'error');
-      MetricsRecorder.recordError('constructor', isError(error) ? error.name : 'unknown');
+      MetricsRecorder.recordError(
+        'constructor',
+        isError(error) ? error.name : 'unknown',
+      );
 
       constructorSpan?.recordException(error as Error);
       constructorSpan?.setStatus({
@@ -224,13 +250,20 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       if (DEBUG_MODE) {
         log((l) =>
           l.debug('Starting MCP Client Transport', {
-            data: { url: this.url?.toString(), mode: DEBUG_MODE ? 'DEBUG' : 'WARNING' },
+            data: {
+              url: this.url?.toString(),
+              mode: DEBUG_MODE ? 'DEBUG' : 'WARNING',
+            },
           }),
         );
       }
 
       // Record connection attempt
-      MetricsRecorder.recordConnection(this.url?.toString() || 'unknown', 'start', 'attempt');
+      MetricsRecorder.recordConnection(
+        this.url?.toString() || 'unknown',
+        'start',
+        'attempt',
+      );
 
       // Apply connection timeout
       await this.#safetyUtils.withTimeout(
@@ -240,7 +273,14 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       );
 
       // Record successful connection
-      MetricsRecorder.recordConnection(this.url?.toString() || 'unknown', 'start', 'success');
+      MetricsRecorder.recordConnection(
+        this.url?.toString() || 'unknown',
+        'start',
+        'success',
+      );
+
+      // Initialize heartbeat & inactivity watchdog AFTER successful start
+      this.#initializeConnectionWatchdogs();
 
       span.setStatus({ code: SpanStatusCode.OK });
       this.#safetyUtils.completeOperation(operationId, 'success');
@@ -249,9 +289,26 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         log((l) => l.debug('MCP Client Transport started successfully'));
       }
     } catch (error) {
+      if (isAbortError(error)) {
+        // Suppress abort errors; this is a disconnect not a construction failure.
+        const isClosing = this.#isClosing;
+        log((l) =>
+          l.verbose(
+            `InstrumentedTransport::MCP Client Transport start() aborted; isClosing=${isClosing}`,
+          ),
+        );
+        return;
+      }
       // Record failed connection
-      MetricsRecorder.recordConnection(this.url?.toString() || 'unknown', 'start', 'error');
-      MetricsRecorder.recordError('start', isError(error) ? error.name : 'unknown');
+      MetricsRecorder.recordConnection(
+        this.url?.toString() || 'unknown',
+        'start',
+        'error',
+      );
+      MetricsRecorder.recordError(
+        'start',
+        isError(error) ? error.name : 'unknown',
+      );
 
       span?.recordException(error as Error);
       span?.setStatus({
@@ -274,6 +331,22 @@ export class InstrumentedSseTransport extends SseMCPTransport {
     } finally {
       // Don't end the transport span here - it should stay active for the connection duration
     }
+  }
+
+  protected override async resolveHeaders(): Promise<Headers> {
+    const ret = await super.resolveHeaders();
+    const dynamicHeaders = await this.#getHeaders();
+    Object.entries(dynamicHeaders).forEach(([key, value]) => {
+      ret.set(key, value);
+    });
+    // If impersonation service is provided, add impersonation headers
+    if (this.#impersonation) {
+      const token = await this.#impersonation.getImpersonatedToken();
+      if (token) {
+        ret.set('Authorization', `Bearer ${token}`);
+      }
+    }
+    return ret;
   }
 
   override async close(): Promise<void> {
@@ -307,11 +380,27 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       // Close all active sessions
       this.#sessionManager.closeAllSessions();
 
-      await super.close();
+      // Stop timers early to avoid late firing while awaiting super.close()
+      this.#clearWatchdogs();
+
+      try {
+        await super.close();
+      } catch (e) {
+        // Swallow AbortError that can arise from closing streams mid-flight
+        if (isAbortError(e)) {
+          log((l) =>
+            l.verbose(
+              'InstrumentedSseTransport.close: Ignoring AbortError during close()',
+            ),
+          );
+        } else {
+          throw e;
+        }
+      }
 
       // End the transport span
       if (this.#transportSpan) {
-        try{
+        try {
           const connectionDuration = this.#connectionStartTime
             ? Date.now() - this.#connectionStartTime
             : 0;
@@ -320,9 +409,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
           });
           this.#transportSpan.setStatus({ code: SpanStatusCode.OK });
           this.#transportSpan.end();
-        }catch(e){
+        } catch (e) {
           LoggedError.isTurtlesAllTheWayDownBaby(e, {
-            log: true
+            log: true,
           });
         }
       }
@@ -330,11 +419,16 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       span.setStatus({ code: SpanStatusCode.OK });
       this.#safetyUtils.completeOperation(operationId, 'success');
 
+      this.#closed = true;
+
       if (DEBUG_MODE) {
         log((l) => l.debug('MCP Client Transport closed successfully'));
       }
     } catch (error) {
-      MetricsRecorder.recordError('close', isError(error) ? error.name : 'unknown');
+      MetricsRecorder.recordError(
+        'close',
+        isError(error) ? error.name : 'unknown',
+      );
 
       span?.recordException(error as Error);
       span?.setStatus({
@@ -348,7 +442,7 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         l.error('Failed to close MCP Client Transport', {
           data: { error: isError(error) ? error.message : String(error) },
         }),
-      );      
+      );
       // throw error;
     } finally {
       span?.end();
@@ -404,7 +498,10 @@ export class InstrumentedSseTransport extends SseMCPTransport {
         );
       }
     } catch (error) {
-      MetricsRecorder.recordError('send', isError(error) ? error.name : 'unknown');
+      MetricsRecorder.recordError(
+        'send',
+        isError(error) ? error.name : 'unknown',
+      );
 
       span?.recordException(error as Error);
       span?.setStatus({
@@ -513,6 +610,9 @@ export class InstrumentedSseTransport extends SseMCPTransport {
       // Process the inbound message
       this.#messageProcessor.processInboundMessage(message);
 
+      // Update activity time for watchdog
+      this.#lastActivity = Date.now();
+
       this.#onmessage?.(message); // pass through to client
     } catch (e) {
       log((l) => l.error('Error handling MCP Client Transport message:', e));
@@ -532,6 +632,95 @@ export class InstrumentedSseTransport extends SseMCPTransport {
     } catch (e) {
       log((l) => l.error('Error handling MCP Client Transport error:', e));
     }
+
+    // If we are not already closing, schedule an automatic close to prevent
+    // lingering hung transports after an unrecoverable error. Abort errors
+    // are treated as graceful shutdowns upstream, so only close on non-abort.
+    if (!this.#isClosing && !isAbortError(error)) {
+      this.#schedulePostErrorAutoclose();
+    }
+  }
+
+  // === Heartbeat & Watchdog Management ===
+
+  /**
+   * Initialize heartbeat interval and inactivity timeout watchdog.
+   * These guard against silent hung connections where the underlying SSE
+   * stream remains open but no messages are received (e.g., network middlebox
+   * buffering or server-side stall).
+   */
+  #initializeConnectionWatchdogs(): void {
+    this.#lastActivity = Date.now();
+    this.#clearWatchdogs();
+
+    // Heartbeat interval: record metric + (optionally) emit trace event.
+    this.#heartbeatTimer = setInterval(() => {
+      // Only act if not closing/closed
+      if (this.#isClosing || this.#closed) return;
+      const now = Date.now();
+      MetricsRecorder.recordConnection(
+        this.url?.toString() || 'unknown',
+        'heartbeat',
+        'success',
+      );
+      // Inactivity check piggybacked here (alternative to separate timeout reset)
+      if (
+        now - this.#lastActivity >
+        InstrumentedSseTransport.INACTIVITY_TIMEOUT_MS
+      ) {
+        log((l) =>
+          l.warn(
+            'MCP Client Transport inactivity threshold exceeded; initiating graceful close',
+            {
+              url: this.url?.toString(),
+              idleMs: now - this.#lastActivity,
+              threshold: InstrumentedSseTransport.INACTIVITY_TIMEOUT_MS,
+            },
+          ),
+        );
+        this.close().catch((err) =>
+          log((l) =>
+            l.error('Error while closing after inactivity watchdog', {
+              error: isError(err) ? err.message : String(err),
+            }),
+          ),
+        );
+      }
+    }, InstrumentedSseTransport.HEARTBEAT_INTERVAL_MS);
+  }
+
+  /** Clear heartbeat and inactivity timers. */
+  #clearWatchdogs(): void {
+    if (this.#heartbeatTimer) {
+      clearInterval(this.#heartbeatTimer);
+      this.#heartbeatTimer = undefined;
+    }
+    if (this.#inactivityTimer) {
+      clearTimeout(this.#inactivityTimer);
+      this.#inactivityTimer = undefined;
+    }
+  }
+
+  /** Schedule forced close after fatal error to prevent resource leaks. */
+  #schedulePostErrorAutoclose(): void {
+    // Avoid multiple schedules
+    if (this.#inactivityTimer || this.#isClosing || this.#closed) return;
+    this.#inactivityTimer = setTimeout(() => {
+      if (this.#isClosing || this.#closed) return;
+      log((l) =>
+        l.warn('Auto-closing MCP Client Transport after error grace period', {
+          url: this.url?.toString(),
+          delayMs: InstrumentedSseTransport.POST_ERROR_AUTOCLOSE_DELAY_MS,
+        }),
+      );
+      this.close().catch((err) =>
+        log((l) =>
+          l.error('Error during post-error autoclose', {
+            error: isError(err) ? err.message : String(err),
+          }),
+        ),
+      );
+    }, InstrumentedSseTransport.POST_ERROR_AUTOCLOSE_DELAY_MS);
   }
 }
 

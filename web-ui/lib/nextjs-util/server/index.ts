@@ -1,3 +1,3 @@
-export { ErrorResponse } from './error-response';
+export { errorResponseFactory } from './error-response';
 export * from './utils';
 export type { ServerErrorResponseType } from './types';

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Trace Context Management for MCP Transport
- * 
+ *
  * This module handles distributed tracing support with trace context injection
  * for HTTP headers.
  */
@@ -57,7 +57,9 @@ export class TraceContextManager {
    * Updates existing headers object with trace context in place
    * Returns true if trace context was injected, false otherwise
    */
-  static updateHeadersWithTraceContext(headers: Record<string, string>): boolean {
+  static updateHeadersWithTraceContext(
+    headers: Record<string, string>,
+  ): boolean {
     const originalKeyCount = Object.keys(headers).length;
     const enhancedHeaders = TraceContextManager.injectTraceContext(headers);
 

@@ -14,7 +14,7 @@ const pageStyles = {
     padding: 2rem;
     gap: 4rem;
     font-family: var(--font-geist-sans);
-    
+
     @media (min-width: 640px) {
       padding: 5rem;
       padding-bottom: 5rem;
@@ -25,7 +25,7 @@ const pageStyles = {
     flex-direction: column;
     gap: 2rem;
     align-items: center;
-    
+
     @media (min-width: 640px) {
       align-items: flex-start;
     }
@@ -42,7 +42,7 @@ const pageStyles = {
     gap: 1rem;
     align-items: center;
     flex-direction: column;
-    
+
     @media (min-width: 640px) {
       flex-direction: row;
     }
@@ -52,7 +52,7 @@ const pageStyles = {
     flex-direction: column;
     gap: 1rem;
     align-items: center;
-    
+
     @media (min-width: 640px) {
       flex-direction: row;
     }
@@ -61,7 +61,7 @@ const pageStyles = {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    
+
     &:hover {
       text-decoration: underline;
       text-underline-offset: 4px;

@@ -5,7 +5,6 @@ import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
 import React, { useEffect } from 'react';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
-
 const TEST_URL = 'http://localhost:9999/api/test';
 
 const createWrapper = () => {
@@ -57,7 +56,7 @@ describe('useDataSource', () => {
     expect(typeof result.current.getRows).toBe('function');
     expect(typeof result.current.updateRow).toBe('function');
   });
-  
+
   it('should update row via PUT request', async () => {
     const mockUpdatedRow = { id: 1, name: 'Updated Test' };
 
@@ -85,5 +84,4 @@ describe('useDataSource', () => {
       });
     }
   });
-
 });

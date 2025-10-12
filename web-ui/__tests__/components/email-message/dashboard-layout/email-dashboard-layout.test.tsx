@@ -1,9 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @fileoverview Unit tests for EmailDashboardLayout component
- * 
+ *
  * Tests the main EmailDashboardLayout component including navigation,
  * session handling, and dashboard layout integration.
- * 
+ *
  * @module __tests__/components/email-message/dashboard-layout/email-dashboard-layout
  * @version 1.0.0
  * @since 2025-07-19
@@ -25,6 +26,7 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+  usePathname: jest.fn(() => '/messages'),
 }));
 
 // Mock theme provider
@@ -49,31 +51,45 @@ jest.mock('@/components/email-message/email-context', () => ({
 
 // Mock Toolpad components
 jest.mock('@toolpad/core/nextjs', () => ({
-  NextAppProvider: ({ children, navigation, branding, session }: {
+  NextAppProvider: ({
+    children,
+    navigation,
+    branding,
+    session,
+  }: {
     children: React.ReactNode;
     theme?: unknown;
     navigation: { length?: number } | unknown[];
     branding: { title?: string };
     session: unknown;
   }) => (
-    <div data-testid="next-app-provider" data-session={session ? 'authenticated' : 'unauthenticated'}>
+    <div
+      data-testid="next-app-provider"
+      data-session={session ? 'authenticated' : 'unauthenticated'}
+    >
       <div data-testid="branding-title">{branding?.title}</div>
-      <div data-testid="navigation-items">{Array.isArray(navigation) ? navigation.length : 0} items</div>
+      <div data-testid="navigation-items">
+        {Array.isArray(navigation) ? navigation.length : 0} items
+      </div>
       {children}
     </div>
   ),
 }));
 
 jest.mock('@toolpad/core/DashboardLayout', () => ({
-  DashboardLayout: ({ children, slots, renderPageItem }: {
+  DashboardLayout: ({
+    children,
+    slots,
+    renderPageItem,
+  }: {
     children: React.ReactNode;
     slots: { toolbarActions?: React.ComponentType };
     renderPageItem: unknown;
   }) => (
     <div data-testid="dashboard-layout">
       <div data-testid="toolbar-actions">
-        {slots && typeof slots.toolbarActions === 'function' 
-          ? React.createElement(slots.toolbarActions) 
+        {slots && typeof slots.toolbarActions === 'function'
+          ? React.createElement(slots.toolbarActions)
           : 'No toolbar actions'}
       </div>
       <div data-testid="page-items">
@@ -82,7 +98,11 @@ jest.mock('@toolpad/core/DashboardLayout', () => ({
       {children}
     </div>
   ),
-  DashboardSidebarPageItem: ({ item }: { item: { segment?: string; title: string } }) => (
+  DashboardSidebarPageItem: ({
+    item,
+  }: {
+    item: { segment?: string; title: string };
+  }) => (
     <div data-testid={`sidebar-item-${item.segment || item.title}`}>
       {item.title}
     </div>
@@ -90,23 +110,37 @@ jest.mock('@toolpad/core/DashboardLayout', () => ({
 }));
 
 // Mock sub-components
-jest.mock('@/components/email-message/dashboard-layout/custom-email-page-item', () => ({
-  CustomEmailPageItem: ({ item, mini, emailId }: { 
-    item: { title: string }; 
-    mini: boolean; 
-    emailId: string;
-  }) => (
-    <div data-testid="custom-email-page-item" data-mini={mini} data-email-id={emailId}>
-      {item.title}
-    </div>
-  ),
-}));
+jest.mock(
+  '/components/email-message/dashboard-layout/custom-email-page-item',
+  () => ({
+    CustomEmailPageItem: ({
+      item,
+      mini,
+      emailId,
+    }: {
+      item: { title: string };
+      mini: boolean;
+      emailId: string;
+    }) => (
+      <div
+        data-testid="custom-email-page-item"
+        data-mini={mini}
+        data-email-id={emailId}
+      >
+        {item.title}
+      </div>
+    ),
+  }),
+);
 
-jest.mock('@/components/email-message/dashboard-layout/email-dashboard-toolbar-action', () => ({
-  EmailDashboardToolbarAction: () => (
-    <div data-testid="email-dashboard-toolbar-action">Toolbar Actions</div>
-  ),
-}));
+jest.mock(
+  '/components/email-message/dashboard-layout/email-dashboard-toolbar-action',
+  () => ({
+    EmailDashboardToolbarAction: () => (
+      <div data-testid="email-dashboard-toolbar-action">Toolbar Actions</div>
+    ),
+  }),
+);
 
 jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
   Branding: {
@@ -116,7 +150,9 @@ jest.mock('@/components/email-message/dashboard-layout/branding', () => ({
 }));
 
 // Mock MUI icons
-const MockIcon = ({ testId }: { testId: string }) => <span data-testid={testId}>{testId}</span>;
+const MockIcon = ({ testId }: { testId: string }) => (
+  <span data-testid={testId}>{testId}</span>
+);
 
 jest.mock('@mui/icons-material/Sync', () => {
   const SyncIcon = () => <MockIcon testId="sync-icon" />;
@@ -166,11 +202,9 @@ jest.mock('@mui/icons-material/PrivacyTip', () => {
   return PrivacyTipIcon;
 });
 
-
-
-
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 import type { Session } from 'next-auth';
+import { usePathname } from 'next/navigation';
 
 describe('EmailDashboardLayout', () => {
   const mockSession: Session = {
@@ -197,7 +231,7 @@ describe('EmailDashboardLayout', () => {
   describe('Component Rendering', () => {
     it('should render without crashing', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('email-context-provider')).toBeInTheDocument();
       expect(screen.getByTestId('next-app-provider')).toBeInTheDocument();
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
@@ -205,14 +239,14 @@ describe('EmailDashboardLayout', () => {
 
     it('should render children content', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-content')).toBeInTheDocument();
       expect(screen.getByText('Dashboard Content')).toBeInTheDocument();
     });
 
     it('should wrap content in EmailContextProvider', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('email-context-provider')).toBeInTheDocument();
     });
   });
@@ -220,14 +254,14 @@ describe('EmailDashboardLayout', () => {
   describe('Session Handling', () => {
     it('should pass authenticated session to NextAppProvider', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       const provider = screen.getByTestId('next-app-provider');
       expect(provider).toHaveAttribute('data-session', 'authenticated');
     });
 
     it('should handle null session', () => {
       render(<EmailDashboardLayout {...defaultProps} session={null} />);
-      
+
       const provider = screen.getByTestId('next-app-provider');
       expect(provider).toHaveAttribute('data-session', 'unauthenticated');
     });
@@ -236,27 +270,27 @@ describe('EmailDashboardLayout', () => {
   describe('Navigation Generation', () => {
     it('should generate navigation with email ID', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       // Should have navigation items including email-specific ones
       const navigationElement = screen.getByTestId('navigation-items');
       expect(navigationElement).toBeInTheDocument();
-      
+
       // Should contain multiple navigation items
       expect(navigationElement.textContent).toMatch(/\d+ items/);
     });
 
     it('should generate navigation without email ID', () => {
       mockParams.emailId = undefined;
-      
+
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       const navigationElement = screen.getByTestId('navigation-items');
       expect(navigationElement).toBeInTheDocument();
     });
 
     it('should include standard navigation items', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       // Navigation should be generated with appropriate items
       const navigationElement = screen.getByTestId('navigation-items');
       expect(navigationElement).toBeInTheDocument();
@@ -266,24 +300,28 @@ describe('EmailDashboardLayout', () => {
   describe('Branding Integration', () => {
     it('should apply correct branding configuration', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       const brandingTitle = screen.getByTestId('branding-title');
-      expect(brandingTitle).toHaveTextContent('Mystery Compliance Theater 2000');
+      expect(brandingTitle).toHaveTextContent(
+        'Mystery Compliance Theater 2000',
+      );
     });
   });
 
   describe('Dashboard Layout Configuration', () => {
     it('should configure toolbar actions slot', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       const toolbarActions = screen.getByTestId('toolbar-actions');
       expect(toolbarActions).toBeInTheDocument();
-      expect(screen.getByTestId('email-dashboard-toolbar-action')).toBeInTheDocument();
+      expect(
+        screen.getByTestId('email-dashboard-toolbar-action'),
+      ).toBeInTheDocument();
     });
 
     it('should provide custom renderPageItem function', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       const pageItems = screen.getByTestId('page-items');
       expect(pageItems).toHaveTextContent('Custom renderPageItem');
     });
@@ -292,14 +330,14 @@ describe('EmailDashboardLayout', () => {
   describe('Custom Page Item Rendering', () => {
     it('should render CustomEmailPageItem for View Email items', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       // The custom page item should be available for rendering
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
 
     it('should handle mini sidebar mode', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
   });
@@ -307,7 +345,7 @@ describe('EmailDashboardLayout', () => {
   describe('Theme Integration', () => {
     it('should integrate with theme provider', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       // Should render without theme-related errors
       expect(screen.getByTestId('next-app-provider')).toBeInTheDocument();
     });
@@ -317,17 +355,17 @@ describe('EmailDashboardLayout', () => {
     it('should use emailId from URL parameters', () => {
       const emailId = 'specific-email-456';
       mockParams.emailId = emailId;
-      
+
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
 
     it('should handle missing emailId parameter', () => {
       mockParams.emailId = undefined;
-      
+
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
   });
@@ -335,27 +373,27 @@ describe('EmailDashboardLayout', () => {
   describe('Navigation Items Structure', () => {
     it('should include List Emails navigation', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
 
     it('should include Import Emails navigation', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
 
     it('should conditionally include View Email navigation when emailId exists', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
 
     it('should exclude View Email navigation when emailId is missing', () => {
       mockParams.emailId = undefined;
-      
+
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
   });
@@ -363,20 +401,20 @@ describe('EmailDashboardLayout', () => {
   describe('Memoization and Performance', () => {
     it('should memoize navigation based on emailId', () => {
       const { rerender } = render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       // Same emailId should not cause unnecessary re-computation
       rerender(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
 
     it('should update navigation when emailId changes', () => {
       const { rerender } = render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       // Change emailId
       mockParams.emailId = 'new-email-789';
       rerender(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
   });
@@ -388,17 +426,19 @@ describe('EmailDashboardLayout', () => {
       console.error = jest.fn();
 
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
-      
+
       console.error = originalError;
     });
 
     it('should handle invalid session data', () => {
       const invalidSession = {} as Session;
-      
-      render(<EmailDashboardLayout {...defaultProps} session={invalidSession} />);
-      
+
+      render(
+        <EmailDashboardLayout {...defaultProps} session={invalidSession} />,
+      );
+
       expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
     });
   });
@@ -406,15 +446,15 @@ describe('EmailDashboardLayout', () => {
   describe('Integration with Provider Components', () => {
     it('should nest providers in correct order', () => {
       render(<EmailDashboardLayout {...defaultProps} />);
-      
+
       const emailContext = screen.getByTestId('email-context-provider');
       const nextAppProvider = screen.getByTestId('next-app-provider');
       const dashboardLayout = screen.getByTestId('dashboard-layout');
-      
+
       expect(emailContext).toBeInTheDocument();
       expect(nextAppProvider).toBeInTheDocument();
       expect(dashboardLayout).toBeInTheDocument();
-      
+
       // Check nesting - email context should contain next app provider
       expect(emailContext).toContainElement(nextAppProvider);
       expect(nextAppProvider).toContainElement(dashboardLayout);

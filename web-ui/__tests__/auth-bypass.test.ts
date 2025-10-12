@@ -4,7 +4,7 @@
 
 import { jest } from '@jest/globals';
 
- // Polyfill fetch for Node.js test environment
+// Polyfill fetch for Node.js test environment
 // Polyfill Request for Node.js test environment
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -12,7 +12,6 @@ global.Request = Request as any;
 global.URL = URL;
 
 // Mock the environment utilities
-
 
 // Mock drizzle-orm and related`` database imports
 jest.mock('drizzle-orm', () => ({
@@ -57,7 +56,7 @@ const validateLocalhost = (req: Request | undefined): void => {
 
   // Extract hostname from various possible sources
   let hostname = '';
-  
+
   if (req) {
     // Try to get hostname from the request
     const url = new URL(req.url);
@@ -71,12 +70,13 @@ const validateLocalhost = (req: Request | undefined): void => {
   }
 
   // Check if running on localhost
-  const isLocalhost = hostname === 'localhost' || 
-                     hostname === '127.0.0.1' || 
-                     hostname.startsWith('192.168.') ||
-                     hostname.startsWith('10.') ||
-                     hostname.startsWith('172.16.') ||
-                     hostname.endsWith('.local');
+  const isLocalhost =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.startsWith('192.168.') ||
+    hostname.startsWith('10.') ||
+    hostname.startsWith('172.16.') ||
+    hostname.endsWith('.local');
 
   if (!isLocalhost) {
     throw new Error(`
@@ -110,7 +110,7 @@ const shouldUseLocalDevBypass = (req: Request | undefined): boolean => {
   if (!bypassUserId || bypassUserId.trim() === '') {
     return false;
   }
-  
+
   validateLocalhost(req);
   return true;
 };
@@ -145,29 +145,39 @@ describe('Local Development Auth Bypass', () => {
   });
 
   describe('validateLocalhost', () => {
-    it('should pass validation when running on localhost', async () => {      
+    it('should pass validation when running on localhost', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
       process.env.NEXT_PUBLIC_HOSTNAME = 'http://localhost:3000';
       // Mock a request to localhost
-      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
+      const mockRequest = new Request(
+        'http://localhost:3000/test',
+      ) as unknown as Request;
 
       expect(() => validateLocalhost(mockRequest)).not.toThrow();
     });
 
-    it('should throw error when bypass is set but not on localhost', async () => {      
+    it('should throw error when bypass is set but not on localhost', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
       process.env.NEXT_PUBLIC_HOSTNAME = 'https://production.com';
-      // Mock a request to production      
-      const mockRequest = new Request('https://production.com/test') as unknown as Request;
+      // Mock a request to production
+      const mockRequest = new Request(
+        'https://production.com/test',
+      ) as unknown as Request;
 
-      expect(() => validateLocalhost(mockRequest)).toThrow(/CRITICAL SECURITY WARNING/);
-      expect(() => validateLocalhost(mockRequest)).toThrow(/LOCAL_DEV_AUTH_BYPASS_USER_ID/);
+      expect(() => validateLocalhost(mockRequest)).toThrow(
+        /CRITICAL SECURITY WARNING/,
+      );
+      expect(() => validateLocalhost(mockRequest)).toThrow(
+        /LOCAL_DEV_AUTH_BYPASS_USER_ID/,
+      );
     });
 
-    it('should pass when bypass is not set', async () => {      
+    it('should pass when bypass is not set', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = undefined;
       process.env.NEXT_PUBLIC_HOSTNAME = 'https://production.com';
-      const mockRequest = new Request('https://production.com/test') as unknown as Request;
+      const mockRequest = new Request(
+        'https://production.com/test',
+      ) as unknown as Request;
 
       expect(() => validateLocalhost(mockRequest)).not.toThrow();
     });
@@ -184,18 +194,22 @@ describe('Local Development Auth Bypass', () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = undefined;
 
       for (const pattern of localhostPatterns) {
-        const mockRequest = new Request(pattern + '/test') as unknown as Request;
+        const mockRequest = new Request(
+          pattern + '/test',
+        ) as unknown as Request;
         expect(() => validateLocalhost(mockRequest)).not.toThrow();
       }
     });
   });
 
   describe('shouldUseLocalDevBypass', () => {
-    it('should return true when bypass user ID is set and on localhost', async () => { 
+    it('should return true when bypass user ID is set and on localhost', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
       process.env.NEXT_PUBLIC_HOSTNAME = 'http://localhost:3000';
 
-      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
+      const mockRequest = new Request(
+        'http://localhost:3000/test',
+      ) as unknown as Request;
 
       expect(shouldUseLocalDevBypass(mockRequest)).toBe(true);
     });
@@ -203,7 +217,9 @@ describe('Local Development Auth Bypass', () => {
     it('should return false when bypass user ID is not set', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = undefined;
 
-      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
+      const mockRequest = new Request(
+        'http://localhost:3000/test',
+      ) as unknown as Request;
 
       expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
     });
@@ -212,17 +228,23 @@ describe('Local Development Auth Bypass', () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '';
       process.env.NEXT_PUBLIC_HOSTNAME = 'http://localhost:3000';
 
-      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
+      const mockRequest = new Request(
+        'http://localhost:3000/test',
+      ) as unknown as Request;
 
       expect(shouldUseLocalDevBypass(mockRequest)).toBe(false);
-      });
+    });
 
     it('should throw error when bypass is set but not on localhost', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '123';
       process.env.NEXT_PUBLIC_HOSTNAME = 'https://production.com';
-      const mockRequest = new Request('https://production.com/test') as unknown as Request;
+      const mockRequest = new Request(
+        'https://production.com/test',
+      ) as unknown as Request;
 
-      expect(() => shouldUseLocalDevBypass(mockRequest)).toThrow(/CRITICAL SECURITY WARNING/);
+      expect(() => shouldUseLocalDevBypass(mockRequest)).toThrow(
+        /CRITICAL SECURITY WARNING/,
+      );
     });
   });
 
@@ -231,7 +253,9 @@ describe('Local Development Auth Bypass', () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = '456';
       process.env.NEXT_PUBLIC_HOSTNAME = 'http://localhost:3000';
 
-      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
+      const mockRequest = new Request(
+        'http://localhost:3000/test',
+      ) as unknown as Request;
       const user = createLocalDevBypassUser(mockRequest);
 
       expect(user).toEqual({
@@ -246,7 +270,9 @@ describe('Local Development Auth Bypass', () => {
     it('should return null when bypass is not enabled', async () => {
       process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID = undefined;
 
-      const mockRequest = new Request('http://localhost:3000/test') as unknown as Request;
+      const mockRequest = new Request(
+        'http://localhost:3000/test',
+      ) as unknown as Request;
       const user = createLocalDevBypassUser(mockRequest);
 
       expect(user).toBeNull();
@@ -257,21 +283,32 @@ describe('Local Development Auth Bypass', () => {
     it('should ensure .env files do not contain LOCAL_DEV_AUTH_BYPASS_USER_ID', async () => {
       const fs = await import('fs');
       const path = await import('path');
-      
+
       const webUiRoot = path.resolve(__dirname, '..');
-      const envFiles = ['.env', '.env.local', '.env.development', '.env.production'];
-      
+      const envFiles = [
+        '.env',
+        '.env.local',
+        '.env.development',
+        '.env.production',
+      ];
+
       for (const envFile of envFiles) {
         const envPath = path.join(webUiRoot, envFile);
-        
+
         if (fs.existsSync(envPath)) {
           const envContent = fs.readFileSync(envPath, 'utf-8');
-          
+
           // Check that the bypass variable is not set to any non-empty value
           const bypassRegex = /^LOCAL_DEV_AUTH_BYPASS_USER_ID\s*=\s*(.+)$/m;
           const match = envContent.match(bypassRegex);
-          
-          if (match && match[1] && match[1].trim() !== '' && match[1].trim() !== '""' && match[1].trim() !== "''") {
+
+          if (
+            match &&
+            match[1] &&
+            match[1].trim() !== '' &&
+            match[1].trim() !== '""' &&
+            match[1].trim() !== "''"
+          ) {
             fail(`
   🚨 SECURITY VIOLATION DETECTED 🚨
 

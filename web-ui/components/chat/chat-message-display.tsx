@@ -1,73 +1,81 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Chip, 
-  Accordion, 
-  AccordionSummary, 
+import {
+  Box,
+  Typography,
+  Chip,
+  Accordion,
+  AccordionSummary,
   AccordionDetails,
   IconButton,
   Collapse,
   Paper,
   Grid,
-  Divider
+  Divider,
+  Checkbox,
+  FormControlLabel,
 } from '@mui/material';
-import { 
+import {
   ExpandMore as ExpandMoreIcon,
   Code as CodeIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
 } from '@mui/icons-material';
-
-interface ChatMessage {
-  turnId: number;
-  messageId: number;
-  role: string;
-  content: string | null;
-  messageOrder: number;
-  toolName: string | null;
-  // Additional message-level metadata fields
-  functionCall: Record<string, unknown> | null;
-  statusId: number;
-  providerId: string | null;
-  metadata: Record<string, unknown> | null;
-  toolInstanceId: string | null;
-  optimizedContent: string | null;
-}
+import { ChatMessage } from '@/lib/ai/chat/types';
 
 interface ChatMessageDisplayProps {
   message: ChatMessage;
   showMetadata?: boolean;
+  enableSelection?: boolean;
+  isSelected?: boolean;
+  onSelectionChange?: (messageId: number, checked: boolean) => void;
 }
 
-export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({ 
-  message, 
-  showMetadata = false 
+export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
+  message,
+  showMetadata = false,
+  enableSelection = false,
+  isSelected = false,
+  onSelectionChange,
 }) => {
   const [metadataExpanded, setMetadataExpanded] = useState(false);
 
   return (
-    <Box 
-      sx={{ 
-        mb: 2, 
-        p: 2, 
+    <Box
+      sx={{
+        mb: 2,
+        p: 2,
         bgcolor: message.role === 'user' ? 'action.hover' : 'background.paper',
         borderRadius: 1,
         border: '1px solid',
-        borderColor: 'divider'
+        borderColor: 'divider',
       }}
     >
       {/* Message Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, gap: 1 }}>
-        <Chip 
-          label={message.role} 
+        {enableSelection && (
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={isSelected}
+                onChange={(e) =>
+                  onSelectionChange?.(message.messageId, e.target.checked)
+                }
+              />
+            }
+            label=""
+            sx={{ mr: 1, '& .MuiFormControlLabel-label': { display: 'none' } }}
+          />
+        )}
+        <Chip
+          label={message.role}
           size="small"
           color={message.role === 'user' ? 'secondary' : 'primary'}
         />
         {message.toolName && (
-          <Chip 
-            label={`Tool: ${message.toolName}`} 
+          <Chip
+            label={`Tool: ${message.toolName}`}
             size="small"
             variant="outlined"
             icon={<CodeIcon fontSize="small" />}
@@ -78,34 +86,56 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
             size="small"
             onClick={() => setMetadataExpanded(!metadataExpanded)}
             sx={{ ml: 'auto' }}
-            aria-label={metadataExpanded ? 'Hide metadata' : 'Show more metadata'}
+            aria-label={
+              metadataExpanded ? 'Hide metadata' : 'Show more metadata'
+            }
           >
             <InfoIcon fontSize="small" />
           </IconButton>
         )}
       </Box>
       {/* Message Content */}
-      <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', mb: 1 }}>
+      <Typography
+        variant="body2"
+        sx={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word',
+          wordWrap: 'break-word',
+          overflowWrap: 'break-word',
+          mb: 1,
+          maxWidth: '100%',
+        }}
+      >
         {message.content || '<no content>'}
       </Typography>
       {/* Optimized Content (if different from regular content) */}
-      {message.optimizedContent && message.optimizedContent !== message.content && (
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography variant="caption">Optimized Content</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
-              {message.optimizedContent}
-            </Typography>
-          </AccordionDetails>
-        </Accordion>
-      )}
+      {message.optimizedContent &&
+        message.optimizedContent !== message.content && (
+          <Accordion>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography variant="caption">Optimized Content</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography
+                variant="body2"
+                sx={{
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
+                  wordWrap: 'break-word',
+                  overflowWrap: 'break-word',
+                  maxWidth: '100%',
+                }}
+              >
+                {message.optimizedContent}
+              </Typography>
+            </AccordionDetails>
+          </Accordion>
+        )}
       {/* Metadata Section */}
       {showMetadata && (
         <Collapse in={metadataExpanded}>
           <Divider sx={{ my: 1 }} />
-          <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
+          <Paper variant="outlined" sx={{ p: 2 }} elevation={3}>
             <Typography variant="subtitle2" gutterBottom>
               Message Metadata
             </Typography>
@@ -153,9 +183,36 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
                       borderRadius: 1,
                       overflow: 'auto',
                       maxHeight: 200,
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '100%',
                     }}
                   >
                     {JSON.stringify(message.functionCall, null, 2)}
+                  </Box>
+                </Grid>
+              )}
+              {message.toolResult && (
+                <Grid size={12}>
+                  <Typography variant="caption" display="block">
+                    Tool Result:
+                  </Typography>
+                  <Box
+                    component="pre"
+                    sx={{
+                      fontSize: '0.75rem',
+                      backgroundColor: 'success.light',
+                      color: 'success.contrastText',
+                      p: 1,
+                      borderRadius: 1,
+                      overflow: 'auto',
+                      maxHeight: 200,
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '100%',
+                    }}
+                  >
+                    {JSON.stringify(message.toolResult, null, 2)}
                   </Box>
                 </Grid>
               )}
@@ -164,19 +221,22 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
                   <Typography variant="caption" display="block">
                     Metadata:
                   </Typography>
-                  <Box
+                  <Paper
+                    elevation={4}
                     component="pre"
                     sx={{
                       fontSize: '0.75rem',
-                      backgroundColor: 'grey.100',
                       p: 1,
                       borderRadius: 1,
                       overflow: 'auto',
                       maxHeight: 200,
+                      wordBreak: 'break-all',
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '100%',
                     }}
                   >
                     {JSON.stringify(message.metadata, null, 2)}
-                  </Box>
+                  </Paper>
                 </Grid>
               )}
             </Grid>

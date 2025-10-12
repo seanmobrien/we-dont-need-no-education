@@ -213,7 +213,7 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
   });
 
   // Initialize the agent using server-side API
-  const initializeAgent = useCallback(async () => {    
+  const initializeAgent = useCallback(async () => {
     mutate('test-1');
   }, [mutate]);
 
@@ -362,12 +362,24 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
         notifications.show(otherMutationProps.error.message, {
           severity: 'error',
           autoHideDuration: 60000,
-        });        
+        });
       } else {
         //no-op?
       }
     }
-  }, [initializeAgent, state, mutate, isPending, data, isSuccess, otherMutationProps, isError, notifications, initialDocumentId, caseId]);
+  }, [
+    initializeAgent,
+    state,
+    mutate,
+    isPending,
+    data,
+    isSuccess,
+    otherMutationProps,
+    isError,
+    notifications,
+    initialDocumentId,
+    caseId,
+  ]);
 
   const documentCounts = state.agent?.getDocumentCounts() || {
     pending: 0,

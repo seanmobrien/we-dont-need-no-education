@@ -1,2 +1,2 @@
-export { ChatHistory } from './history';
+export { ChatHistory } from './chat-history';
 export { useChatHistory } from './useChatHistory';

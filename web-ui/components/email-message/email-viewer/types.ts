@@ -1,6 +1,6 @@
-import { EmailMessage } from "@/data-models/api/email-message";
-import { PickField } from "@/lib/typescript";
-import { UseSuspenseQueryResult } from "@tanstack/react-query";
+import { EmailMessage } from '@/data-models/api/email-message';
+import { PickField } from '@/lib/typescript';
+import { UseSuspenseQueryResult } from '@tanstack/react-query';
 
 export interface EmailViewerProps {
   emailId: string;
@@ -21,7 +21,6 @@ type UseEmailApiPropNameMap<TQuery extends TQueryType> = PickField<
   },
   TQuery
 >;
-
 
 export type TQueryType = 'email-message' | 'email-attachment-list';
 

@@ -14,17 +14,14 @@ export const mapContacts = (
     const workingHeaders = headers;
     return headersToMatch
       .flatMap((headerName) =>
-        workingHeaders
-          .getAllValues(headerName)
-          .flatMap((v) =>
-            mapContact(
-              {
-                value:
-                  typeof v === 'string' ? v : `${v.name ?? ''} <${v.email}>`,
-              },
-              headerName.toLocaleLowerCase() as RecipientType,
-            ),
+        workingHeaders.getAllValues(headerName).flatMap((v) =>
+          mapContact(
+            {
+              value: typeof v === 'string' ? v : `${v.name ?? ''} <${v.email}>`,
+            },
+            headerName.toLocaleLowerCase() as RecipientType,
           ),
+        ),
       )
       .filter((x) => !!x);
   }

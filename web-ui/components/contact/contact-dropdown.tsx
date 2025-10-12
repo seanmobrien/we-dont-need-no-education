@@ -31,7 +31,7 @@ const ContactDropdown = ({
   contact,
   setValue,
   filter = () => true,
-  style
+  style,
 }: ContactDropdownProps) => {
   const [contacts, setContacts] = useState<ContactSummary[]>([]);
   const [showContactForm, setShowContactForm] = useState(false);
@@ -51,7 +51,10 @@ const ContactDropdown = ({
       .then((data) => setContacts(data))
       .catch((error) => {
         if (error.name !== 'AbortError') {
-          LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'chat-panel' });
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'chat-panel',
+          });
         }
       });
 

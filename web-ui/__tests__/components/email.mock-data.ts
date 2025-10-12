@@ -52,7 +52,7 @@ export const mockEmail = ({
   emailId?: number;
 } = {}): EmailMessage => {
   const src = mockEmailSummary().find(
-    (email) => email.emailId === (emailId || '1')
+    (email) => email.emailId === (emailId || '1'),
   );
   if (!src) {
     throw new Error(`Email with id ${emailId} not found`);

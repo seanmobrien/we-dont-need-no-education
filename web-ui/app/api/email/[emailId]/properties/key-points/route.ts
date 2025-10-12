@@ -1,11 +1,8 @@
 import { NextRequest } from 'next/server';
-import { buildFallbackGrid, wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import {
-  RepositoryCrudController,
-} from '@/lib/api/repository-crud-controller';
-import {
-  KeyPointsDetailsRepository,
-} from '@/lib/api/email/properties/key-points/key-points-details-repository';
+  buildFallbackGrid,
+  wrapRouteRequest,
+} from '@/lib/nextjs-util/server/utils';
 import { extractParams } from '@/lib/nextjs-util/utils';
 import { KeyPointsDetails } from '@/data-models/api/email-properties/extended-properties';
 import { drizDbWithInit } from '@/lib/drizzle-db';
@@ -14,97 +11,89 @@ import { selectForGrid } from '@/lib/components/mui/data-grid/queryHelpers';
 import { buildDrizzleAttachmentOrEmailFilter } from '@/lib/components/mui/data-grid/queryHelpers';
 import { PgColumn } from 'drizzle-orm/pg-core';
 
-export const dynamic = 'force-dynamic';
+export const GET = wrapRouteRequest(
+  async (req: NextRequest, args: { params: Promise<{ emailId: string }> }) => {
+    const { emailId } = await extractParams<{ emailId: string }>(args);
 
-const repository = new KeyPointsDetailsRepository();
-const controller = new RepositoryCrudController(repository);
+    const db = await drizDbWithInit();
 
-export const GET = wrapRouteRequest(async (
-  req: NextRequest,
-  args: { params: Promise<{ emailId: string; attachments: boolean }> },
-) => {
-  const { emailId } = await extractParams<{ emailId: string }>(args);
+    // Based on the original query, this uses the "KeyPoints" table directly
+    // Define the base query that matches the original SQL structure
+    const baseQuery = db
+      .select()
+      .from(schema.keyPoints)
+      .where(
+        buildDrizzleAttachmentOrEmailFilter({
+          attachments: req,
+          email_id: emailId,
+          email_id_column: schema.keyPoints.emailId,
+          document_id_column: schema.keyPoints.documentId,
+        }),
+      );
 
-  const db = await drizDbWithInit();
+    // Column getter function for filtering and sorting
+    const getColumn = (columnName: string): PgColumn | undefined => {
+      switch (columnName) {
+        case 'property_id':
+          return schema.keyPoints.propertyId;
+        case 'email_id':
+          return schema.keyPoints.emailId;
+        case 'document_id':
+          return schema.keyPoints.documentId;
+        case 'relevance':
+          return schema.keyPoints.relevance;
+        case 'compliance':
+          return schema.keyPoints.compliance;
+        case 'severity_ranking':
+          return schema.keyPoints.severityRanking;
+        case 'value':
+          return schema.keyPoints.propertyValue;
+        case 'created_on':
+          return schema.keyPoints.sentTimestamp;
 
-  // Based on the original query, this uses the "KeyPoints" table directly
-  // Define the base query that matches the original SQL structure
-  const baseQuery = db
-    .select()
-    .from(schema.keyPoints)
-    .where(
-      buildDrizzleAttachmentOrEmailFilter({
-        attachments: req,
-        email_id: emailId,
-        email_id_column: schema.keyPoints.emailId,
-        document_id_column: schema.keyPoints.documentId,
-      }),
-    );
-
-  // Column getter function for filtering and sorting
-  const getColumn = (columnName: string): PgColumn | undefined => {
-    switch (columnName) {
-      case 'property_id':
-        return schema.keyPoints.propertyId;
-      case 'email_id':
-        return schema.keyPoints.emailId;
-      case 'document_id':
-        return schema.keyPoints.documentId;
-      case 'relevance':
-        return schema.keyPoints.relevance;
-      case 'compliance':
-        return schema.keyPoints.compliance;
-      case 'severity_ranking':
-        return schema.keyPoints.severityRanking;
-      case 'value':
-        return schema.keyPoints.propertyValue;
-      case 'created_on':
-        return schema.keyPoints.sentTimestamp;
-
-      case 'tags':
-        return schema.keyPoints.tags;
-      case 'policy_basis':
-        return schema.keyPoints.policyBasis;
-      default:
-        return columnName in schema.keyPoints ? schema.keyPoints[columnName as keyof typeof schema.keyPoints] as PgColumn : undefined ;
-    }
-  };
-
-  // Record mapper to transform database records to KeyPointsDetails objects
-  const recordMapper = (
-    record: Record<string, unknown>,
-  ): Partial<KeyPointsDetails> => {
-    return {
-      propertyId: record.propertyId as string,
-      documentId: record.documentId as number,
-      createdOn: record.createdOn
-        ? new Date(Date.parse(record.createdOn as string))
-        : new Date(),
-      relevance: record.relevance as number | null,
-      compliance: record.compliance as number | null,
-      severity: record.severityRanking as number | null,
-      inferred: record.inferred as boolean,
-      value: record.propertyValue as string,
-      policy_basis: record.policyBasis as string[] | undefined,
-      tags: record.tags as string[] | undefined,
+        case 'tags':
+          return schema.keyPoints.tags;
+        case 'policy_basis':
+          return schema.keyPoints.policyBasis;
+        default:
+          return columnName in schema.keyPoints
+            ? (schema.keyPoints[
+                columnName as keyof typeof schema.keyPoints
+              ] as PgColumn)
+            : undefined;
+      }
     };
-  };
 
-  // Use selectForGrid to apply filtering, sorting, and pagination
-  const result = await selectForGrid<Partial<KeyPointsDetails>>({
-    req,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    query: baseQuery as any,
-    getColumn,
-    recordMapper,
-  });
+    // Record mapper to transform database records to KeyPointsDetails objects
+    const recordMapper = (
+      record: Record<string, unknown>,
+    ): Partial<KeyPointsDetails> => {
+      return {
+        propertyId: record.propertyId as string,
+        documentId: record.documentId as number,
+        createdOn: record.createdOn
+          ? new Date(Date.parse(record.createdOn as string))
+          : new Date(),
+        relevance: record.relevance as number | null,
+        compliance: record.compliance as number | null,
+        severity: record.severityRanking as number | null,
+        inferred: record.inferred as boolean,
+        value: record.propertyValue as string,
+        policy_basis: record.policyBasis as string[] | undefined,
+        tags: record.tags as string[] | undefined,
+      };
+    };
 
-  return Response.json(result);
-}, { buildFallback: buildFallbackGrid });
+    // Use selectForGrid to apply filtering, sorting, and pagination
+    const result = await selectForGrid<Partial<KeyPointsDetails>>({
+      req,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      query: baseQuery as any,
+      getColumn,
+      recordMapper,
+    });
 
-export const POST = wrapRouteRequest(async (
-  req: NextRequest,
-  args: { params: Promise<{ emailId: string; propertyId: string }> },
-) => {
-  return controller.create(req, args);
-});
+    return Response.json(result);
+  },
+  { buildFallback: buildFallbackGrid },
+);

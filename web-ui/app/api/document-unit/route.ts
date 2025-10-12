@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
 import { DocumentUnitRepository } from '@/lib/api/document-unit';
-import { isTruthy } from '@/lib/react-util/_utility-methods';
+import { isTruthy } from '@/lib/react-util/utility-methods';
 
 import {
   getMultipleCaseFileDocuments,
@@ -54,12 +54,4 @@ export const GET = wrapRouteRequest(async (req: NextRequest) => {
       { status: 500 },
     );
   }
-});
-
-export const POST = wrapRouteRequest(async (
-  req: NextRequest,
-  data: { params: Promise<{ unitId: number }> },
-) => {
-  const controller = new RepositoryCrudController(new DocumentUnitRepository());
-  return controller.create(req, data);
 });

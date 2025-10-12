@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import baseDocumentPropertyShape from './baseDocumentPropertyShape';
+import baseDocumentPropertyShape from './base-document-property-shape';
 
 const CtaResponse = z.object({
   complianceRating: z.number().nullable().optional(),

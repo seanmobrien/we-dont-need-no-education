@@ -8,7 +8,7 @@ import type {
   GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 import type { DataSourceProps, ExtendedGridDataSource } from './types';
-import { isError, isTruthy } from '@/lib/react-util/_utility-methods';
+import { isError, isTruthy } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fetch } from '@/lib/nextjs-util/fetch';
@@ -138,7 +138,9 @@ export const useDataSource = ({
     const isDrizzle = isTruthy(searchParams.get('drizzle'));
     if (isDrizzle) {
       const baseUrl = new URL(urlFromProps, window.location.origin);
-      url = new URL(new URL(baseUrl.pathname + '/drizzle', window.location.origin));
+      url = new URL(
+        new URL(baseUrl.pathname + '/drizzle', window.location.origin),
+      );
     } else {
       url = urlFromProps;
     }

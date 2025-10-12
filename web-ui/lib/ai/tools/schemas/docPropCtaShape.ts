@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import baseDocumentPropertyShape from './baseDocumentPropertyShape';
+import baseDocumentPropertyShape from './base-document-property-shape';
 
 const CtaSchema = z.object({
   openedDate: z.string().optional().nullable().describe('ISO date CTA opened'),

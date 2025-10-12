@@ -15,7 +15,7 @@ import {
 } from '../types';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
 import { AggregateError } from '@/lib/react-util/errors/aggregate-error';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { CustomAppInsightsEvent, log } from '@/lib/logger';
 import { newUuid } from '@/lib/typescript';

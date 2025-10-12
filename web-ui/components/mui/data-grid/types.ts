@@ -1,9 +1,8 @@
-import { EmailMessageSummary } from '@/data-models/api/email-message';
-// import { GetGridRecordDataProps } from '@/lib/components/mui/data-grid';
+import type { EmailMessageSummary } from '@/data-models/api/email-message';
 import {
-  DataGridProProps,
-  GridColDef,
-  GridValidRowModel,
+  type DataGridProProps,
+  type GridColDef,
+  type GridValidRowModel,
 } from '@mui/x-data-grid-pro';
 
 export type ServerBoundDataGridProps<

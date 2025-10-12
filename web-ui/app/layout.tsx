@@ -6,11 +6,14 @@ import { AppRouterCacheProvider } from '@mui/material-nextjs/v15-appRouter';
 import { ThemeProvider } from '@/lib/themes/provider';
 import './globals.css';
 import QueryProvider from '@/components/general/react-query/query-provider';
-import { TrackWithAppInsight } from '@/components/general/telemetry';
+import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import { ChatPanelProvider } from '@/components/ai/chat-panel';
 import { SessionProvider } from '@/components/auth/session-provider';
 import { KeyRefreshNotify } from '@/components/auth/key-refresh-notify';
 import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
+import { Suspense } from 'react';
+import { cookies } from 'next/headers';
+import { FlagProvider } from '@/components/general/flags/flag-provider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -36,27 +39,39 @@ const stableAppRouterOptions = {
   enableCssLayer: true,
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeName = await cookies().then((x) =>
+    x.get('theme')?.value === 'light' ? 'light' : 'dark',
+  );
+  // Server-evaluate feature flags for hydration on the client.
+  // const featureFlags = await getAllFeatureFlags();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <InitColorSchemeScript defaultMode="dark" />
+        <InitColorSchemeScript defaultMode={themeName} />
         <QueryProvider>
           <SessionProvider>
             <ChatPanelProvider>
-              <TrackWithAppInsight />
-              <KeyRefreshNotify />
-              <MuiXLicense />
-              <AppRouterCacheProvider options={stableAppRouterOptions}>
-                <ThemeProvider defaultTheme="dark">{children}</ThemeProvider>
-              </AppRouterCacheProvider>
+              <FlagProvider>
+                <Suspense>
+                  <TrackWithAppInsight />
+                </Suspense>
+                <KeyRefreshNotify />
+                <MuiXLicense />
+                <AppRouterCacheProvider options={stableAppRouterOptions}>
+                  <ThemeProvider defaultTheme={themeName}>
+                    {children}
+                  </ThemeProvider>
+                </AppRouterCacheProvider>
+              </FlagProvider>
             </ChatPanelProvider>
           </SessionProvider>
         </QueryProvider>

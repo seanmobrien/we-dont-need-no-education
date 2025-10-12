@@ -9,6 +9,11 @@
  * - Proper drizzle query construction and data transformation
  */
 
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+setupImpersonationMock();
+
 import { GET } from '@/app/api/ai/chat/history/[chatId]/route';
 import { NextRequest } from 'next/server';
 
@@ -83,17 +88,22 @@ jest.mock('@/lib/react-util', () => ({
 import { auth } from '@/auth';
 import { drizDbWithInit } from '@/lib/drizzle-db';
 import { eq, and } from 'drizzle-orm';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+
+const mockConsole = hideConsoleOutput();
 
 describe('/api/ai/chat/history/[chatId] route', () => {
   const mockDb = {
     select: mockDbSelect,
   };
 
-  const mockChatResult = [{
-    id: 'test-chat-id',
-    title: 'Test Chat',
-    createdAt: '2025-01-01T10:00:00Z',
-  }];
+  const mockChatResult = [
+    {
+      id: 'test-chat-id',
+      title: 'Test Chat',
+      createdAt: '2025-01-01T10:00:00Z',
+    },
+  ];
 
   const mockTurnsAndMessagesResult = [
     {
@@ -148,13 +158,13 @@ describe('/api/ai/chat/history/[chatId] route', () => {
 
   beforeEach(() => {
     // jest.clearAllMocks();
-    
+
     // Setup default successful auth
     (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
 
     // Reset call count for each test
     let callCount = 0;
-    
+
     // Mock the select method to return different chains for different calls
     mockDbSelect.mockImplementation(() => {
       callCount++;
@@ -163,9 +173,9 @@ describe('/api/ai/chat/history/[chatId] route', () => {
         return {
           from: jest.fn().mockReturnValue({
             where: jest.fn().mockReturnValue({
-              limit: jest.fn().mockReturnValue(mockChatResult)
-            })
-          })
+              limit: jest.fn().mockReturnValue(mockChatResult),
+            }),
+          }),
         };
       } else {
         // Second call for turns and messages
@@ -173,24 +183,30 @@ describe('/api/ai/chat/history/[chatId] route', () => {
           from: jest.fn().mockReturnValue({
             leftJoin: jest.fn().mockReturnValue({
               where: jest.fn().mockReturnValue({
-                orderBy: jest.fn().mockReturnValue(mockTurnsAndMessagesResult)
-              })
-            })
-          })
+                orderBy: jest.fn().mockReturnValue(mockTurnsAndMessagesResult),
+              }),
+            }),
+          }),
         };
       }
     });
-    
+
     (drizDbWithInit as jest.Mock).mockResolvedValue(mockDb);
     (eq as jest.Mock).mockReturnValue('eq-condition');
     (and as jest.Mock).mockReturnValue('and-condition');
   });
 
+  afterEach(() => {
+    mockConsole.dispose();
+  });
+
   describe('GET', () => {
     it('should return chat details for authenticated user', async () => {
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history/test-chat-id',
+      );
       const params = Promise.resolve({ chatId: 'test-chat-id' });
-      
+
       const response = await GET(request, { params });
       const data = await response.json();
 
@@ -251,10 +267,12 @@ describe('/api/ai/chat/history/[chatId] route', () => {
 
     it('should return 401 for unauthenticated requests', async () => {
       (auth as jest.Mock).mockResolvedValue(null);
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history/test-chat-id',
+      );
       const params = Promise.resolve({ chatId: 'test-chat-id' });
-      
+
       const response = await GET(request, { params });
       const data = await response.json();
 
@@ -271,26 +289,30 @@ describe('/api/ai/chat/history/[chatId] route', () => {
           return {
             from: jest.fn().mockReturnValue({
               where: jest.fn().mockReturnValue({
-                limit: jest.fn().mockReturnValue([]) // Empty result for chat query
-              })
-            })
+                limit: jest.fn().mockReturnValue([]), // Empty result for chat query
+              }),
+            }),
           };
         } else {
           return {
             from: jest.fn().mockReturnValue({
               leftJoin: jest.fn().mockReturnValue({
                 where: jest.fn().mockReturnValue({
-                  orderBy: jest.fn().mockReturnValue(mockTurnsAndMessagesResult)
-                })
-              })
-            })
+                  orderBy: jest
+                    .fn()
+                    .mockReturnValue(mockTurnsAndMessagesResult),
+                }),
+              }),
+            }),
           };
         }
       });
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history/non-existent-id');
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history/non-existent-id',
+      );
       const params = Promise.resolve({ chatId: 'non-existent-id' });
-      
+
       const response = await GET(request, { params });
       const data = await response.json();
 
@@ -299,12 +321,14 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     });
 
     it('should handle chat with null title', async () => {
-      const mockChatWithNullTitle = [{
-        id: 'test-chat-id',
-        title: null,
-        createdAt: '2025-01-01T10:00:00Z',
-      }];
-      
+      const mockChatWithNullTitle = [
+        {
+          id: 'test-chat-id',
+          title: null,
+          createdAt: '2025-01-01T10:00:00Z',
+        },
+      ];
+
       let callCount = 0;
       mockDbSelect.mockImplementation(() => {
         callCount++;
@@ -312,26 +336,28 @@ describe('/api/ai/chat/history/[chatId] route', () => {
           return {
             from: jest.fn().mockReturnValue({
               where: jest.fn().mockReturnValue({
-                limit: jest.fn().mockReturnValue(mockChatWithNullTitle)
-              })
-            })
+                limit: jest.fn().mockReturnValue(mockChatWithNullTitle),
+              }),
+            }),
           };
         } else {
           return {
             from: jest.fn().mockReturnValue({
               leftJoin: jest.fn().mockReturnValue({
                 where: jest.fn().mockReturnValue({
-                  orderBy: jest.fn().mockReturnValue([]) // No turns
-                })
-              })
-            })
+                  orderBy: jest.fn().mockReturnValue([]), // No turns
+                }),
+              }),
+            }),
           };
         }
       });
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history/test-chat-id',
+      );
       const params = Promise.resolve({ chatId: 'test-chat-id' });
-      
+
       const response = await GET(request, { params });
       const data = await response.json();
 
@@ -348,26 +374,28 @@ describe('/api/ai/chat/history/[chatId] route', () => {
           return {
             from: jest.fn().mockReturnValue({
               where: jest.fn().mockReturnValue({
-                limit: jest.fn().mockReturnValue(mockChatResult)
-              })
-            })
+                limit: jest.fn().mockReturnValue(mockChatResult),
+              }),
+            }),
           };
         } else {
           return {
             from: jest.fn().mockReturnValue({
               leftJoin: jest.fn().mockReturnValue({
                 where: jest.fn().mockReturnValue({
-                  orderBy: jest.fn().mockReturnValue([]) // No turns/messages
-                })
-              })
-            })
+                  orderBy: jest.fn().mockReturnValue([]), // No turns/messages
+                }),
+              }),
+            }),
           };
         }
       });
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history/test-chat-id',
+      );
       const params = Promise.resolve({ chatId: 'test-chat-id' });
-      
+
       const response = await GET(request, { params });
       const data = await response.json();
 
@@ -376,11 +404,16 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     });
 
     it('should handle database connection errors', async () => {
-      (drizDbWithInit as jest.Mock).mockRejectedValue(new Error('Database connection failed'));
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
+      mockConsole.setup();
+      (drizDbWithInit as jest.Mock).mockRejectedValue(
+        new Error('Database connection failed'),
+      );
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history/test-chat-id',
+      );
       const params = Promise.resolve({ chatId: 'test-chat-id' });
-      
+
       const response = await GET(request, { params });
       const data = await response.json();
 
@@ -389,11 +422,16 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     });
 
     it('should handle authentication errors', async () => {
-      (auth as jest.Mock).mockRejectedValue(new Error('Auth service unavailable'));
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
+      mockConsole.setup();
+      (auth as jest.Mock).mockRejectedValue(
+        new Error('Auth service unavailable'),
+      );
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history/test-chat-id',
+      );
       const params = Promise.resolve({ chatId: 'test-chat-id' });
-      
+
       const response = await GET(request, { params });
       const data = await response.json();
 
@@ -404,12 +442,14 @@ describe('/api/ai/chat/history/[chatId] route', () => {
     });
 
     it('should handle chat with null createdAt', async () => {
-      const mockChatWithNullCreatedAt = [{
-        id: 'test-chat-id',
-        title: 'Test Chat',
-        createdAt: null,
-      }];
-      
+      const mockChatWithNullCreatedAt = [
+        {
+          id: 'test-chat-id',
+          title: 'Test Chat',
+          createdAt: null,
+        },
+      ];
+
       let callCount = 0;
       mockDbSelect.mockImplementation(() => {
         callCount++;
@@ -417,31 +457,35 @@ describe('/api/ai/chat/history/[chatId] route', () => {
           return {
             from: jest.fn().mockReturnValue({
               where: jest.fn().mockReturnValue({
-                limit: jest.fn().mockReturnValue(mockChatWithNullCreatedAt)
-              })
-            })
+                limit: jest.fn().mockReturnValue(mockChatWithNullCreatedAt),
+              }),
+            }),
           };
         } else {
           return {
             from: jest.fn().mockReturnValue({
               leftJoin: jest.fn().mockReturnValue({
                 where: jest.fn().mockReturnValue({
-                  orderBy: jest.fn().mockReturnValue([])
-                })
-              })
-            })
+                  orderBy: jest.fn().mockReturnValue([]),
+                }),
+              }),
+            }),
           };
         }
       });
-      
-      const request = new NextRequest('http://localhost:3000/api/ai/chat/history/test-chat-id');
+
+      const request = new NextRequest(
+        'http://localhost:3000/api/ai/chat/history/test-chat-id',
+      );
       const params = Promise.resolve({ chatId: 'test-chat-id' });
-      
+
       const response = await GET(request, { params });
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/); // ISO string pattern
+      expect(data.createdAt).toMatch(
+        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
+      ); // ISO string pattern
     });
   });
 });

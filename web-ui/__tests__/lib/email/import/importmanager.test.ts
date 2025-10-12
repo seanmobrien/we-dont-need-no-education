@@ -26,6 +26,7 @@ import { ICancellablePromise, ICancellablePromiseExt } from '@/lib/typescript';
 import { managerMapFactory } from '@/lib/email/import/google/managermapfactory';
 import { ImportManagerMap } from '@/lib/email/import/types';
 import { TransactionalStateManagerBase } from '@/lib/email/import/default/transactional-statemanager';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 const mockManagerMapFactory = managerMapFactory as jest.MockedFunction<
   typeof managerMapFactory
@@ -46,6 +47,9 @@ const mockStateManager = {
   }),
   rollback: jest.fn(),
 };
+
+const consoleSpy = hideConsoleOutput();
+
 describe('DefaultImportManager', () => {
   beforeEach(() => {
     const map = ImportStageValues.reduce((acc, stage) => {
@@ -55,6 +59,10 @@ describe('DefaultImportManager', () => {
     }, {} as ImportManagerMap);
     mockManagerMapFactory.mockReturnValue(map);
   });
+  afterEach(() => {
+    consoleSpy.dispose();
+  });
+
   const provider = 'google';
   const req = {
     headers: {
@@ -114,6 +122,7 @@ describe('DefaultImportManager', () => {
     });
 
     it('should handle errors and return failure', async () => {
+      consoleSpy.setup();
       const emailId = 'testEmailId';
       const error = new Error('Test error');
       mockLoadEmail.mockRejectedValue(error);

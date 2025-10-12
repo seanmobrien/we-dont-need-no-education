@@ -2,15 +2,17 @@
 import { JSX, useMemo, useCallback } from 'react';
 import { ServerBoundDataGrid } from '@/components/mui/data-grid/server-bound-data-grid';
 import siteMap from '@/lib/site-util/url-builder';
-import { Box } from '@mui/material';
-import {
+import Box from '@mui/material/Box';
+
+import type { MuiEvent } from '@mui/x-internals/types';
+import type {
   GridCallbackDetails,
   GridColDef,
   GridRowParams,
-  MuiEvent,
-} from '@mui/x-data-grid-pro';
+} from '@mui/x-data-grid/models';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import siteBuilder from '@/lib/site-util/url-builder';
 
 /**
  * Chat summary interface matching the API response
@@ -20,6 +22,10 @@ interface ChatSummary {
   title: string | null;
   userId: number;
   createdAt: string;
+  chatMetadata: object | null;
+  totalTokens: number;
+  totalMessages: number;
+  totalTurns: number;
 }
 
 /**
@@ -27,6 +33,7 @@ interface ChatSummary {
  */
 interface ChatGridProps {
   maxHeight?: number | string;
+  viewType?: 'user' | 'system';
   onRowDoubleClick?: (
     params: GridRowParams<ChatSummary>,
     event: MuiEvent<React.MouseEvent<HTMLElement, MouseEvent>>,
@@ -47,19 +54,40 @@ const stableColumns: GridColDef<ChatSummary>[] = [
       const title = params.value || `Chat ${params.row.id.slice(-8)}`;
       return (
         <Link
-          href={`/chat/${params.row.id}`}
+          href={siteBuilder.messages.chat.page(
+            encodeURIComponent(params.row.id),
+          )}
           title="Open chat"
           style={{
-            color: '#2563eb',
+            // color: '#2563eb',
             textDecoration: 'none',
           }}
-          onMouseEnter={(e) => (e.target as HTMLElement).style.textDecoration = 'underline'}
-          onMouseLeave={(e) => (e.target as HTMLElement).style.textDecoration = 'none'}
+          onMouseEnter={(e) =>
+            ((e.target as HTMLElement).style.textDecoration = 'underline')
+          }
+          onMouseLeave={(e) =>
+            ((e.target as HTMLElement).style.textDecoration = 'none')
+          }
         >
           {title}
         </Link>
       );
     },
+  },
+  {
+    field: 'totalTurns',
+    headerName: 'Turns',
+    editable: false,
+  },
+  {
+    field: 'totalMessages',
+    headerName: 'Messages',
+    editable: false,
+  },
+  {
+    field: 'totalTokens',
+    headerName: 'Tokens',
+    editable: false,
   },
   {
     field: 'createdAt',
@@ -88,6 +116,7 @@ const stableColumns: GridColDef<ChatSummary>[] = [
  */
 export const ChatList = ({
   maxHeight = undefined,
+  viewType = 'user',
   onRowDoubleClick: onRowDoubleClickProps,
   ...props
 }: ChatGridProps): JSX.Element => {
@@ -98,6 +127,18 @@ export const ChatList = ({
     [maxHeight],
   );
   const { push } = useRouter();
+
+  // Build URL with viewType parameter (only add if not default 'user')
+  const gridUrl = useMemo(() => {
+    const url = new URL(
+      siteMap.api.ai.chat.history().toString(),
+      window.location.origin,
+    );
+    if (viewType !== 'user') {
+      url.searchParams.set('viewType', viewType);
+    }
+    return url.toString();
+  }, [viewType]);
 
   const onRowDoubleClick = useCallback(
     (
@@ -111,7 +152,9 @@ export const ChatList = ({
       if (!event.isPropagationStopped()) {
         const chatId = params.row.id;
         if (chatId) {
-          push(`/chat/${chatId}`);
+          push(
+            String(siteBuilder.messages.chat.page(encodeURIComponent(chatId))),
+          );
         }
       }
     },
@@ -131,7 +174,7 @@ export const ChatList = ({
         <ServerBoundDataGrid<ChatSummary>
           {...props}
           columns={stableColumns}
-          url={siteMap.api.ai.chat.history().toString()}
+          url={gridUrl}
           idColumn="id"
           onRowDoubleClick={onRowDoubleClick}
         />

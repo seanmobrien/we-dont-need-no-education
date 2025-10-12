@@ -7,10 +7,10 @@
 // Mock the dependencies
 jest.mock('@/lib/drizzle-db', () => {
   const { mockDeep } = require('jest-mock-extended');
-  
+
   // Create a mock database instance that supports all drizzle operations
   const makeMockDb = () => mockDeep();
-  
+
   return {
     drizDb: jest.fn((fn) => {
       const mockDbInstance = makeMockDb();

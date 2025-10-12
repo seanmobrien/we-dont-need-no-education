@@ -7,7 +7,7 @@ import type {
   WriteApiRequestParams,
 } from '@/lib/send-api-request/types';
 
-const { ApiRequestError } = jest.requireActual('@/lib/send-api-request');
+const { ApiRequestError } = jest.requireActual('/lib/send-api-request');
 
 const sendApiRequest = jest.fn((x) => {
   return Promise.resolve({});
@@ -15,22 +15,22 @@ const sendApiRequest = jest.fn((x) => {
 
 const sendApiGetRequest = (
   params: ReadApiRequestParams,
-  additional: AdditionalRequestParams
+  additional: AdditionalRequestParams,
 ) => sendApiRequest({ method: 'get', ...params, ...additional });
 
 const sendApiPostRequest = (
   params: WriteApiRequestParams,
-  additional: AdditionalRequestParams
+  additional: AdditionalRequestParams,
 ) => sendApiRequest({ method: 'post', ...params, ...additional });
 
 const sendApiDeleteRequest = (
   params: DeleteApiRequestParams,
-  additional: AdditionalRequestParams
+  additional: AdditionalRequestParams,
 ) => sendApiRequest({ method: 'delete', ...params, ...additional });
 
 const sendApiPutRequest = (
   params: WriteApiRequestParams,
-  additional: AdditionalRequestParams
+  additional: AdditionalRequestParams,
 ) => sendApiRequest({ method: 'put', ...params, ...additional });
 
 let allApiHelpers: ApiRequestHelper[] = [];

@@ -24,6 +24,9 @@ import {
   TestModel,
 } from './target-repositories';
 import { DatabaseMockType } from '../jest.setup';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
+
+const mockConsole = hideConsoleOutput();
 
 describe('BaseDrizzleRepository', () => {
   let repository: TestDrizzleRepository;
@@ -36,10 +39,10 @@ describe('BaseDrizzleRepository', () => {
   ) => Partial<TestModel>;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
-    mockDb = await drizDbWithInit() as DatabaseMockType;
+    // jest.clearAllMocks();
+    mockDb = (await drizDbWithInit()) as DatabaseMockType;
     mockDb.__setRecords([]);
-    
+
     // Mock table and column
     mockTable = {} as PgTable;
     mockIdColumn = {} as PgColumn;
@@ -67,6 +70,9 @@ describe('BaseDrizzleRepository', () => {
 
     repository = new TestDrizzleRepository(config);
   });
+  afterEach(() => {
+    mockConsole.dispose();
+  });
 
   describe('list', () => {
     it('should return paginated results with default pagination', async () => {
@@ -75,38 +81,40 @@ describe('BaseDrizzleRepository', () => {
         { id: 1, name: 'Test 1' },
         { id: 2, name: 'Test 2' },
       ];
-      
+
       // Mock count query - first select call returns count query
       const mockCountQuery = {
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
-            execute: jest.fn().mockResolvedValue([mockCountRecord])
+            execute: jest.fn().mockResolvedValue([mockCountRecord]),
           }),
-          execute: jest.fn().mockResolvedValue([mockCountRecord])
+          execute: jest.fn().mockResolvedValue([mockCountRecord]),
         }),
-        execute: jest.fn().mockResolvedValue([mockCountRecord])
+        execute: jest.fn().mockResolvedValue([mockCountRecord]),
       };
-      
-      // Mock data query - second select call returns data query  
+
+      // Mock data query - second select call returns data query
       const mockDataQuery = {
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
             offset: jest.fn().mockReturnValue({
               limit: jest.fn().mockReturnValue({
-                execute: jest.fn().mockResolvedValue(mockRecords)
-              })
-            })
+                execute: jest.fn().mockResolvedValue(mockRecords),
+              }),
+            }),
           }),
           offset: jest.fn().mockReturnValue({
             limit: jest.fn().mockReturnValue({
-              execute: jest.fn().mockResolvedValue(mockRecords)
-            })
-          })
-        })
+              execute: jest.fn().mockResolvedValue(mockRecords),
+            }),
+          }),
+        }),
       };
 
-      mockDb.select.mockReturnValueOnce(mockCountQuery).mockReturnValueOnce(mockDataQuery);
-      
+      mockDb.select
+        .mockReturnValueOnce(mockCountQuery)
+        .mockReturnValueOnce(mockDataQuery);
+
       const result = await repository.list();
 
       expect(result).toEqual({
@@ -131,23 +139,25 @@ describe('BaseDrizzleRepository', () => {
       // Mock count query
       const mockCountQuery = {
         from: jest.fn().mockReturnValue({
-          execute: jest.fn().mockResolvedValue([mockCountRecord])
+          execute: jest.fn().mockResolvedValue([mockCountRecord]),
         }),
-        execute: jest.fn().mockResolvedValue([mockCountRecord])
+        execute: jest.fn().mockResolvedValue([mockCountRecord]),
       };
-      
-      // Mock data query  
+
+      // Mock data query
       const mockDataQuery = {
         from: jest.fn().mockReturnValue({
           offset: jest.fn().mockReturnValue({
             limit: jest.fn().mockReturnValue({
-              execute: jest.fn().mockResolvedValue(mockRecords)
-            })
-          })
-        })
+              execute: jest.fn().mockResolvedValue(mockRecords),
+            }),
+          }),
+        }),
       };
 
-      mockDb.select.mockReturnValueOnce(mockCountQuery).mockReturnValueOnce(mockDataQuery);
+      mockDb.select
+        .mockReturnValueOnce(mockCountQuery)
+        .mockReturnValueOnce(mockDataQuery);
 
       const result = await repository.list({ page: 2, num: 5, total: 15 });
 
@@ -166,9 +176,9 @@ describe('BaseDrizzleRepository', () => {
       const mockSelectQuery = {
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
-            execute: jest.fn().mockResolvedValue([mockRecord])
-          })
-        })
+            execute: jest.fn().mockResolvedValue([mockRecord]),
+          }),
+        }),
       };
 
       mockDb.select.mockReturnValue(mockSelectQuery);
@@ -188,9 +198,9 @@ describe('BaseDrizzleRepository', () => {
       const mockSelectQuery = {
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
-            execute: jest.fn().mockResolvedValue([])
-          })
-        })
+            execute: jest.fn().mockResolvedValue([]),
+          }),
+        }),
       };
 
       mockDb.select.mockReturnValue(mockSelectQuery);
@@ -201,6 +211,7 @@ describe('BaseDrizzleRepository', () => {
     });
 
     it('should throw error when multiple records found', async () => {
+      mockConsole.setup();
       const mockRecords = [
         { id: 1, name: 'Test 1' },
         { id: 1, name: 'Test 2' },
@@ -209,17 +220,17 @@ describe('BaseDrizzleRepository', () => {
       const mockSelectQuery = {
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
-            execute: jest.fn().mockResolvedValue(mockRecords)
-          })
-        })
+            execute: jest.fn().mockResolvedValue(mockRecords),
+          }),
+        }),
       };
 
       mockDb.select.mockReturnValue(mockSelectQuery);
 
       let rejected: unknown | undefined = undefined;
-      await (repository.get(1).catch((e) => {
+      await repository.get(1).catch((e) => {
         rejected = e;
-      }));
+      });
       expect(rejected).toBeDefined();
     });
   });
@@ -253,6 +264,7 @@ describe('BaseDrizzleRepository', () => {
     });
 
     it('should throw error when create fails', async () => {
+      mockConsole.setup();
       const newModel = { name: 'New Test', description: 'New Description' };
 
       const mockInsertQuery = {
@@ -263,10 +275,10 @@ describe('BaseDrizzleRepository', () => {
 
       mockDb.insert.mockReturnValue(mockInsertQuery);
       let rejected: unknown | undefined = undefined;
-      await (repository.create(newModel).catch((e) => rejected = e));
+      await repository.create(newModel).catch((e) => (rejected = e));
       expect(rejected).toBeDefined();
+    });
   });
-});
 
   describe('update', () => {
     it('should update and return the updated record', async () => {
@@ -299,6 +311,7 @@ describe('BaseDrizzleRepository', () => {
     });
 
     it('should throw error when record not found for update', async () => {
+      mockConsole.setup();
       const updateModel = { id: 999, name: 'Updated Test' };
 
       const mockUpdateQuery = {
@@ -311,7 +324,7 @@ describe('BaseDrizzleRepository', () => {
 
       mockDb.update.mockReturnValue(mockUpdateQuery);
       let rejected: unknown | undefined = undefined;
-      await (repository.update(updateModel).catch((e) => rejected = e));
+      await repository.update(updateModel).catch((e) => (rejected = e));
       expect(rejected).toBeDefined();
     });
   });
@@ -325,7 +338,7 @@ describe('BaseDrizzleRepository', () => {
           returning: jest.fn().mockReturnValue({
             then: jest.fn().mockImplementation((callback) => {
               return callback([deletedRecord]);
-            })
+            }),
           }),
         }),
       };
@@ -344,7 +357,7 @@ describe('BaseDrizzleRepository', () => {
           returning: jest.fn().mockReturnValue({
             then: jest.fn().mockImplementation((callback) => {
               return callback([]);
-            })
+            }),
           }),
         }),
       };
@@ -389,9 +402,9 @@ describe('BaseDrizzleRepository', () => {
       const mockCountQuery = {
         from: jest.fn().mockReturnValue({
           where: jest.fn().mockReturnValue({
-            execute: jest.fn().mockResolvedValue([mockCountRecord])
-          })
-        })
+            execute: jest.fn().mockResolvedValue([mockCountRecord]),
+          }),
+        }),
       };
 
       // Mock data query with where clause
@@ -400,14 +413,16 @@ describe('BaseDrizzleRepository', () => {
           where: jest.fn().mockReturnValue({
             offset: jest.fn().mockReturnValue({
               limit: jest.fn().mockReturnValue({
-                execute: jest.fn().mockResolvedValue(mockRecords)
-              })
-            })
-          })
-        })
+                execute: jest.fn().mockResolvedValue(mockRecords),
+              }),
+            }),
+          }),
+        }),
       };
 
-      mockDb.select.mockReturnValueOnce(mockCountQuery).mockReturnValueOnce(mockDataQuery);
+      mockDb.select
+        .mockReturnValueOnce(mockCountQuery)
+        .mockReturnValueOnce(mockDataQuery);
 
       const result = await filteredRepository.list();
 
@@ -429,8 +444,8 @@ describe('BaseDrizzleRepository', () => {
       // Mock count query without where clause
       const mockCountQuery = {
         from: jest.fn().mockReturnValue({
-          execute: jest.fn().mockResolvedValue([mockCountRecord])
-        })
+          execute: jest.fn().mockResolvedValue([mockCountRecord]),
+        }),
       };
 
       // Mock data query without where clause
@@ -438,13 +453,15 @@ describe('BaseDrizzleRepository', () => {
         from: jest.fn().mockReturnValue({
           offset: jest.fn().mockReturnValue({
             limit: jest.fn().mockReturnValue({
-              execute: jest.fn().mockResolvedValue(mockRecords)
-            })
-          })
-        })
+              execute: jest.fn().mockResolvedValue(mockRecords),
+            }),
+          }),
+        }),
       };
 
-      mockDb.select.mockReturnValueOnce(mockCountQuery).mockReturnValueOnce(mockDataQuery);
+      mockDb.select
+        .mockReturnValueOnce(mockCountQuery)
+        .mockReturnValueOnce(mockDataQuery);
 
       const result = await repository.list();
 

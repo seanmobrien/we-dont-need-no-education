@@ -1,8 +1,10 @@
 'use client'; // Error boundaries must be Client Components
 
+import * as React from 'react';
 import { useEffect } from 'react';
 import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
+import { FlagProvider } from '@/components/general/flags/flag-provider';
 
 type GlobalErrorProps = {
   error: Error & { digest?: string };
@@ -21,7 +23,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
       {
         errorBoundary: 'GlobalError',
       },
-      ErrorSeverity.CRITICAL
+      ErrorSeverity.CRITICAL,
     );
   }, [error]);
 
@@ -32,19 +34,23 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif' }}>
-        {/* Use the same beautiful error dialog but in a minimal layout */}
-        <div style={{ 
-          minHeight: '100vh', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          backgroundColor: '#fafafa'
-        }}>
-          <RenderErrorBoundaryFallback 
-            error={error} 
-            resetErrorBoundary={reset} 
-          />
-        </div>
+        {/* Provide feature flags context so the error UI and any children can call */}
+        <FlagProvider>
+          <div
+            style={{
+              minHeight: '100vh',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: '#fafafa',
+            }}
+          >
+            <RenderErrorBoundaryFallback
+              error={error}
+              resetErrorBoundary={reset}
+            />
+          </div>
+        </FlagProvider>
       </body>
     </html>
   );

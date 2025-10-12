@@ -1,8 +1,8 @@
 import { createAzure } from '@ai-sdk/azure';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { createOpenAI } from '@ai-sdk/openai';
 import { env } from '@/lib/site-util/env';
-import { EmbeddingModelV1, LanguageModelV1 } from '@ai-sdk/provider';
-import { ChatOptions, EmbeddingOptions } from './types';
+import { EmbeddingModelV2, LanguageModelV2 } from '@ai-sdk/provider';
 import { AiModelType, isAiLanguageModelType } from '@/lib/ai/core';
 import {
   AiModelTypeValue_Embedding,
@@ -11,14 +11,18 @@ import {
 import { log } from '@/lib/logger';
 
 import { customProvider, createProviderRegistry, wrapLanguageModel } from 'ai';
-import { cacheWithRedis, retryRateLimitMiddlewareFactory, setNormalizedDefaultsMiddleware, tokenStatsLoggingOnlyMiddleware } from './middleware';
+import {
+  cacheWithRedis,
+  setNormalizedDefaultsMiddleware,
+  MiddlewareStateManager,
+  tokenStatsLoggingOnlyMiddleware,
+} from './middleware';
 
 /**
  * Model availability manager for programmatic control of model enabling/disabling
  */
 class ModelAvailabilityManager {
   private availabilityMap = new Map<string, boolean>();
-  private static instance: ModelAvailabilityManager;
 
   private constructor() {
     // Initialize all models as available by default
@@ -26,10 +30,13 @@ class ModelAvailabilityManager {
   }
 
   static getInstance(): ModelAvailabilityManager {
-    if (!ModelAvailabilityManager.instance) {
-      ModelAvailabilityManager.instance = new ModelAvailabilityManager();
+    const KEY = Symbol.for('@noeducation/aiModelFactory:availability');
+    type GlobalReg = { [k: symbol]: ModelAvailabilityManager | undefined };
+    const g = globalThis as unknown as GlobalReg;
+    if (!g[KEY]) {
+      g[KEY] = new ModelAvailabilityManager();
     }
-    return ModelAvailabilityManager.instance;
+    return g[KEY]!;
   }
 
   /**
@@ -42,7 +49,7 @@ class ModelAvailabilityManager {
   /**
    * Check if a provider is available (checks if any model for that provider is available)
    */
-  isProviderAvailable(provider: 'azure' | 'google'): boolean {
+  isProviderAvailable(provider: 'azure' | 'google' | 'openai'): boolean {
     const providerModels = Array.from(this.availabilityMap.keys()).filter(
       (key) => key.startsWith(`${provider}:`),
     );
@@ -69,7 +76,7 @@ class ModelAvailabilityManager {
   /**
    * Disable all models for a provider
    */
-  disableProvider(provider: 'azure' | 'google'): void {
+  disableProvider(provider: 'azure' | 'google' | 'openai'): void {
     const modelTypes = ['hifi', 'lofi', 'completions', 'embedding'];
     const googleSpecificModels = [
       'gemini-pro',
@@ -83,13 +90,15 @@ class ModelAvailabilityManager {
       [...modelTypes, ...googleSpecificModels].forEach((model) =>
         this.disableModel(`google:${model}`),
       );
+    } else if (provider === 'openai') {
+      modelTypes.forEach((model) => this.disableModel(`openai:${model}`));
     }
   }
 
   /**
    * Enable all models for a provider
    */
-  enableProvider(provider: 'azure' | 'google'): void {
+  enableProvider(provider: 'azure' | 'google' | 'openai'): void {
     const modelTypes = ['hifi', 'lofi', 'completions', 'embedding'];
     const googleSpecificModels = [
       'gemini-pro',
@@ -103,6 +112,8 @@ class ModelAvailabilityManager {
       [...modelTypes, ...googleSpecificModels].forEach((model) =>
         this.enableModel(`google:${model}`),
       );
+    } else if (provider === 'openai') {
+      modelTypes.forEach((model) => this.enableModel(`openai:${model}`));
     }
   }
 
@@ -141,7 +152,10 @@ const getAvailability = () => ModelAvailabilityManager.getInstance();
 /**
  * Setup middleware for language models with caching and retry logic
  */
-const setupMiddleware = (provider: string,model: LanguageModelV1): LanguageModelV1 => {
+const setupMiddleware = (
+  provider: string,
+  model: LanguageModelV2,
+): LanguageModelV2 => {
   return wrapLanguageModel({
     model: wrapLanguageModel({
       model: wrapLanguageModel({
@@ -152,122 +166,198 @@ const setupMiddleware = (provider: string,model: LanguageModelV1): LanguageModel
     }),
     middleware: [
       tokenStatsLoggingOnlyMiddleware({ provider }),
+      /*
       retryRateLimitMiddlewareFactory({
         model,
-      }),      
+      }),
+      */
     ],
   });
-  
 };
 
 /**
  * Azure custom provider with model aliases for our existing model names
  * Maps hifi, lofi, embedding to Azure-hosted models
  */
-let _azureProvider: ReturnType<typeof customProvider> | undefined;
 const getAzureProvider = () => {
-  if (_azureProvider) return _azureProvider;
-  _azureProvider = customProvider({
-  languageModels: {
-    // Custom aliases for Azure models
-    hifi: setupMiddleware(
-      'azure',
-      createAzure({
-        baseURL: env('AZURE_OPENAI_ENDPOINT'),
-        apiKey: env('AZURE_API_KEY'),
-      }).chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI')),
-    ),
-    lofi: setupMiddleware(
-      'azure',
-      createAzure({
-        baseURL: env('AZURE_OPENAI_ENDPOINT'),
-        apiKey: env('AZURE_API_KEY'),
-      }).chat(env('AZURE_OPENAI_DEPLOYMENT_LOFI')),
-    ),
-    completions: setupMiddleware(
-      'azure',
-      createAzure({
-        baseURL: env('AZURE_OPENAI_ENDPOINT'),
-        apiKey: env('AZURE_API_KEY'),
-      }).completion(env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS')),
-    ),
-  },
-  textEmbeddingModels: {
-    embedding: createAzure({
-      baseURL: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
-      apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
-    }).textEmbeddingModel(env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING')),
-  },
-  // Fallback to the raw Azure provider for any models not explicitly defined
-  fallbackProvider: createAzure({
-    baseURL: env('AZURE_OPENAI_ENDPOINT'),
-    apiKey: env('AZURE_API_KEY'),
-  }),
+  const KEY = Symbol.for('@noeducation/aiModelFactory:azureProvider');
+  type GlobalReg = {
+    [k: symbol]: ReturnType<typeof customProvider> | undefined;
+  };
+  const g = globalThis as unknown as GlobalReg;
+  if (g[KEY]) return g[KEY]!;
+  g[KEY] = customProvider({
+    languageModels: {
+      // Custom aliases for Azure models
+      hifi: setupMiddleware(
+        'azure',
+        createAzure({
+          baseURL: env('AZURE_OPENAI_ENDPOINT'),
+          apiKey: env('AZURE_API_KEY'),
+          useDeploymentBasedUrls: true,
+          apiVersion: '2025-04-01-preview',
+        }).chat(env('AZURE_OPENAI_DEPLOYMENT_HIFI')),
+      ),
+      lofi: setupMiddleware(
+        'azure',
+        createAzure({
+          baseURL: env('AZURE_OPENAI_ENDPOINT'),
+          apiKey: env('AZURE_API_KEY'),
+          useDeploymentBasedUrls: true,
+          apiVersion: '2025-04-01-preview',
+        }).chat(env('AZURE_OPENAI_DEPLOYMENT_LOFI')),
+      ),
+      completions: setupMiddleware(
+        'azure',
+        createAzure({
+          baseURL: env('AZURE_OPENAI_ENDPOINT'),
+          apiKey: env('AZURE_API_KEY'),
+          useDeploymentBasedUrls: true,
+          apiVersion: '2025-04-01-preview',
+        }).completion(env('AZURE_OPENAI_DEPLOYMENT_COMPLETIONS')),
+      ),
+    },
+    textEmbeddingModels: {
+      embedding: createAzure({
+        baseURL: env('AZURE_OPENAI_ENDPOINT_EMBEDDING'),
+        apiKey: env('AZURE_OPENAI_KEY_EMBEDDING'),
+        useDeploymentBasedUrls: true,
+        apiVersion: '2025-04-01-preview',
+      }).textEmbeddingModel(env('AZURE_OPENAI_DEPLOYMENT_EMBEDDING')),
+    },
+    // Fallback to the raw Azure provider for any models not explicitly defined
+    fallbackProvider: createAzure({
+      baseURL: env('AZURE_OPENAI_ENDPOINT'),
+      apiKey: env('AZURE_API_KEY'),
+      apiVersion: '2025-04-01-preview',
+      useDeploymentBasedUrls: true,
+    }),
   });
-  return _azureProvider;
+  return g[KEY]!;
 };
 
 /**
  * Google custom provider with model aliases matching Azure as much as possible
  * Maps hifi, lofi, embedding to Google-hosted models
  */
-let _googleProvider: ReturnType<typeof customProvider> | undefined;
 const getGoogleProvider = () => {
-  if (_googleProvider) return _googleProvider;
-  _googleProvider = customProvider({
-  languageModels: {
-    // Match Azure aliases with equivalent Google models
-    hifi: setupMiddleware(
-      'google',
-      createGoogleGenerativeAI({
+  const KEY = Symbol.for('@noeducation/aiModelFactory:googleProvider');
+  type GlobalReg = {
+    [k: symbol]: ReturnType<typeof customProvider> | undefined;
+  };
+  const g = globalThis as unknown as GlobalReg;
+  if (g[KEY]) return g[KEY]!;
+  g[KEY] = customProvider({
+    languageModels: {
+      // Match Azure aliases with equivalent Google models
+      hifi: setupMiddleware(
+        'google',
+        createGoogleGenerativeAI({
+          apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
+        }).chat('gemini-2.5-pro'), // High-quality model equivalent to Azure hifi
+      ),
+      lofi: setupMiddleware(
+        'google',
+        createGoogleGenerativeAI({
+          apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
+        }).chat('gemini-2.5-flash'), // Fast model equivalent to Azure lofi
+      ),
+      'gemini-2.0-flash': setupMiddleware(
+        'google',
+        createGoogleGenerativeAI({
+          apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
+        }).chat('gemini-2.0-flash'), // Fast model equivalent to Azure lofi
+      ),
+      // Google-specific model aliases
+      'gemini-pro': setupMiddleware(
+        'google',
+        createGoogleGenerativeAI({
+          apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
+        }).chat('gemini-2.5-pro'),
+      ),
+    },
+    textEmbeddingModels: {
+      embedding: createGoogleGenerativeAI({
         apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-2.5-pro'), // High-quality model equivalent to Azure hifi
-    ),
-    lofi: setupMiddleware(
-      'google',
-      createGoogleGenerativeAI({
-        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-2.5-flash'), // Fast model equivalent to Azure lofi
-    ),
-    'gemini-2.0-flash': setupMiddleware(
-      'google',
-      createGoogleGenerativeAI({
-        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-2.0-flash'), // Fast model equivalent to Azure lofi
-    ),
-    // Google-specific model aliases
-    'gemini-pro': setupMiddleware(
-      'google',
-      createGoogleGenerativeAI({
-        apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-      }).chat('gemini-2.5-pro'),
-    ),
-  },
-  textEmbeddingModels: {
-    embedding: createGoogleGenerativeAI({
+      }).textEmbeddingModel('text-embedding-004'), // Google embedding equivalent to Azure embedding
+    },
+    // Fallback to the raw Google provider for any models not explicitly defined
+    fallbackProvider: createGoogleGenerativeAI({
       apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-    }).textEmbeddingModel('text-embedding-004'), // Google embedding equivalent to Azure embedding
-  },
-  // Fallback to the raw Google provider for any models not explicitly defined
-  fallbackProvider: createGoogleGenerativeAI({
-    apiKey: env('GOOGLE_GENERATIVE_AI_API_KEY'),
-  }),
+    }),
   });
-  return _googleProvider;
+  return g[KEY]!;
 };
 
 /**
- * Provider registry with Azure as default and Google as fallback
- * Supports creating models by alias with Azure as primary, falling back to Google
+ * OpenAI custom provider with model aliases matching Azure and Google
+ * Maps hifi, lofi, embedding to OpenAI-hosted models
  */
-let _providerRegistry: ReturnType<typeof createProviderRegistry> | undefined;
-export const getProviderRegistry = () => {
-  if (_providerRegistry) return _providerRegistry;
-  _providerRegistry = createProviderRegistry({
-    azure: getAzureProvider(),
-    google: getGoogleProvider(),
+const getOpenAIProvider = () => {
+  const KEY = Symbol.for('@noeducation/aiModelFactory:openaiProvider');
+  type GlobalReg = {
+    [k: symbol]: ReturnType<typeof customProvider> | undefined;
+  };
+  const g = globalThis as unknown as GlobalReg;
+  if (g[KEY]) return g[KEY]!;
+  g[KEY] = customProvider({
+    languageModels: {
+      // Match Azure aliases with equivalent OpenAI models
+      hifi: setupMiddleware(
+        'openai',
+        createOpenAI({
+          apiKey: env('OPENAI_API_KEY'),
+        }).chat(env('OPENAI_HIFI')), // High-quality model equivalent to Azure hifi
+      ),
+      lofi: setupMiddleware(
+        'openai',
+        createOpenAI({
+          apiKey: env('OPENAI_API_KEY'),
+        }).chat(env('OPENAI_LOFI')), // Fast model equivalent to Azure lofi
+      ),
+      completions: setupMiddleware(
+        'openai',
+        createOpenAI({
+          apiKey: env('OPENAI_API_KEY'),
+        }).completion(env('OPENAI_LOFI')), // Use lofi for completions
+      ),
+    },
+    textEmbeddingModels: {
+      embedding: createOpenAI({
+        apiKey: env('OPENAI_API_KEY'),
+      }).textEmbeddingModel(env('OPENAI_EMBEDDING')), // OpenAI embedding model
+    },
+    // Fallback to the raw OpenAI provider for any models not explicitly defined
+    fallbackProvider: createOpenAI({
+      apiKey: env('OPENAI_API_KEY'),
+    }),
   });
-  return _providerRegistry;
+  return g[KEY]!;
+};
+
+/**
+ * Provider registry with Azure as default, Google and OpenAI as fallbacks
+ * Supports creating models by alias with Azure as primary, falling back to Google and OpenAI
+ */
+export const getProviderRegistry = () => {
+  const KEY = Symbol.for('@noeducation/aiModelFactory:providerRegistry');
+  type GlobalReg = {
+    [k: symbol]: ReturnType<typeof createProviderRegistry> | undefined;
+  };
+  const g = globalThis as unknown as GlobalReg;
+  if (g[KEY]) return g[KEY]!;
+  g[KEY] = createProviderRegistry(
+    {
+      azure: getAzureProvider(),
+      google: getGoogleProvider(),
+      openai: getOpenAIProvider(),
+    },
+    {
+      languageModelMiddleware:
+        MiddlewareStateManager.Instance.getMiddlewareInstance(),
+    },
+  );
+  return g[KEY]!;
 };
 
 /**
@@ -280,6 +370,7 @@ export const getProviderRegistry = () => {
 interface NormalizeModelKeyForProviderOverloads {
   (provider: 'azure', modelType: AiModelType): `azure:${string}`;
   (provider: 'google', modelType: AiModelType): `google:${string}`;
+  (provider: 'openai', modelType: AiModelType): `openai:${string}`;
 }
 
 /**
@@ -322,28 +413,21 @@ const normalizeModelKeyForProvider: NormalizeModelKeyForProviderOverloads = (
  * Returns an embedding model when called with a deployment ID of `'embedding'` or `'google-embedding'` and optional embedding options.
  * @param deploymentId - The deployment identifier for the embedding model.
  * @param options - Optional configuration for the embedding model.
- * @returns An instance of `EmbeddingModelV1<string>`.
+ * @returns An instance of `EmbeddingModelV2<string>`.
  *
  * @overload
  * Returns a language model when called with any other deployment ID and optional chat options.
  * @param deploymentId - The deployment identifier for the language model, excluding embedding types.
  * @param options - Optional configuration for the language model.
- * @returns An instance of `LanguageModelV1`.
+ * @returns An instance of `LanguageModel`.
  */
 interface GetAiModelProviderOverloads {
   (): ReturnType<typeof getAzureProvider>;
-  (
-    deploymentId: 'embedding' | 'google-embedding',
-    options?: EmbeddingOptions,
-  ): EmbeddingModelV1<string>;
+  (deploymentId: 'embedding' | 'google-embedding'): EmbeddingModelV2<string>;
   (
     deploymentId: Exclude<AiModelType, 'embedding' | 'google-embedding'>,
-    options?: ChatOptions,
-  ): LanguageModelV1;
-  (
-    deploymentId: AiModelType,
-    options?: ChatOptions | EmbeddingOptions,
-  ): LanguageModelV1 | EmbeddingModelV1<string>;
+  ): LanguageModelV2;
+  (deploymentId: AiModelType): LanguageModelV2 | EmbeddingModelV2<string>;
 }
 
 /**
@@ -369,8 +453,6 @@ const caseProviderMatch = (
  */
 export const aiModelFactory: GetAiModelProviderOverloads = (
   modelType?: AiModelType,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  options?: ChatOptions | EmbeddingOptions,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): any => {
   if (typeof modelType === 'undefined') {
@@ -378,6 +460,7 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
   }
   const azureModelKey = normalizeModelKeyForProvider('azure', modelType);
   const googleModelKey = normalizeModelKeyForProvider('google', modelType);
+  const openaiModelKey = normalizeModelKeyForProvider('openai', modelType);
 
   if (isAiLanguageModelType(modelType)) {
     switch (modelType) {
@@ -392,14 +475,13 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
             return getProviderRegistry().languageModel(azureModelKey);
           } catch (error) {
             // If Azure fails, temporarily disable it and try Google
-            getAvailability().temporarilyDisableModel(
-              azureModelKey,
-              60000,
-            ); // 1 minute
-            log(l => l.warn(
-              `Azure model ${modelType} failed, temporarily disabled:`,
-              error,
-            ));
+            getAvailability().temporarilyDisableModel(azureModelKey, 60000); // 1 minute
+            log((l) =>
+              l.warn(
+                `Azure model ${modelType} failed, temporarily disabled:`,
+                error,
+              ),
+            );
           }
         }
 
@@ -415,10 +497,19 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
       case caseProviderMatch('google:', modelType): {
         // Matches any string starting with 'google:'
         // Google-specific models
-  if (!getAvailability().isModelAvailable(googleModelKey)) {
+        if (!getAvailability().isModelAvailable(googleModelKey)) {
           throw new Error(`Google model ${modelType} is currently disabled`);
         }
-  return getProviderRegistry().languageModel(googleModelKey);
+        return getProviderRegistry().languageModel(googleModelKey);
+      }
+
+      case caseProviderMatch('openai:', modelType): {
+        // Matches any string starting with 'openai:'
+        // OpenAI-specific models
+        if (!getAvailability().isModelAvailable(openaiModelKey)) {
+          throw new Error(`OpenAI model ${modelType} is currently disabled`);
+        }
+        return getProviderRegistry().languageModel(openaiModelKey);
       }
 
       default:
@@ -434,18 +525,26 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
     switch (modelType) {
       case 'embedding':
       case caseProviderMatch('azure:', modelType): // Matches any string starting with 'azure
-  const embed = getProviderRegistry().textEmbeddingModel(azureModelKey);
+        const embed = getProviderRegistry().textEmbeddingModel(azureModelKey);
         if (embed != null) {
           return embed;
         }
         break;
       case 'google-embedding':
       case caseProviderMatch('google:', modelType): // Matches any string starting with 'google:'
-  const googleEmbed = getProviderRegistry().textEmbeddingModel(googleModelKey);
+        const googleEmbed =
+          getProviderRegistry().textEmbeddingModel(googleModelKey);
         if (googleEmbed != null) {
           return googleEmbed;
         }
         break; // Continue to handle embedding models below
+      case caseProviderMatch('openai:', modelType): // Matches any string starting with 'openai:'
+        const openaiEmbed =
+          getProviderRegistry().textEmbeddingModel(openaiModelKey);
+        if (openaiEmbed != null) {
+          return openaiEmbed;
+        }
+        break;
       default:
         break;
     }
@@ -453,7 +552,7 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
   // If we make it all the way here we were given a bad model string
   throw new TypeError(
     `Invalid AiModelType provided (${modelType}).  Expected one of the aliased names: $'hifi', 'lofi', \
-      'completions']} or a provider-prefixed model name like 'azure:chatgtp-4o-minni' or 'google:gemini-flash-2.0'.`,
+      'completions']} or a provider-prefixed model name like 'azure:chatgtp-4o-minni', 'google:gemini-flash-2.0', or 'openai:gpt-4'.`,
     {
       cause: modelType,
     },
@@ -463,18 +562,14 @@ export const aiModelFactory: GetAiModelProviderOverloads = (
 /**
  * Convenience function to create Azure embedding model
  */
-export const createEmbeddingModel = (
-  options?: EmbeddingOptions,
-): EmbeddingModelV1<string> =>
-  aiModelFactory(AiModelTypeValue_Embedding, options);
+export const createEmbeddingModel = (): EmbeddingModelV2<string> =>
+  aiModelFactory(AiModelTypeValue_Embedding);
 
 /**
  * Convenience function to create Google embedding model
  */
-export const createGoogleEmbeddingModel = (
-  options?: EmbeddingOptions,
-): EmbeddingModelV1<string> =>
-  aiModelFactory(AiModelTypeValue_GoogleEmbedding, options);
+export const createGoogleEmbeddingModel = (): EmbeddingModelV2<string> =>
+  aiModelFactory(AiModelTypeValue_GoogleEmbedding);
 
 /**
  * Model availability control functions
@@ -496,15 +591,16 @@ export const enableModel = (modelKey: string): void =>
 
 /**
  * Disable all models for a provider
- * @param provider - Either 'azure' or 'google'
+ * @param provider - Either 'azure', 'google', or 'openai'
  */
-export const disableProvider = (provider: 'azure' | 'google'): void =>
-  getAvailability().disableProvider(provider);
+export const disableProvider = (
+  provider: 'azure' | 'google' | 'openai',
+): void => getAvailability().disableProvider(provider);
 /**
  * Enable all models for a provider
- * @param provider - Either 'azure' or 'google'
+ * @param provider - Either 'azure', 'google', or 'openai'
  */
-export const enableProvider = (provider: 'azure' | 'google'): void =>
+export const enableProvider = (provider: 'azure' | 'google' | 'openai'): void =>
   getAvailability().enableProvider(provider);
 
 /**
@@ -512,8 +608,10 @@ export const enableProvider = (provider: 'azure' | 'google'): void =>
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
  * @param durationMs - Duration in milliseconds to disable the model
  */
-export const temporarilyDisableModel = (modelKey: string, durationMs: number): void =>
-  getAvailability().temporarilyDisableModel(modelKey, durationMs);
+export const temporarilyDisableModel = (
+  modelKey: string,
+  durationMs: number,
+): void => getAvailability().temporarilyDisableModel(modelKey, durationMs);
 /**
  * Check if a model is currently available
  * @param modelKey - The model key in format 'provider:model' (e.g., 'azure:hifi')
@@ -524,11 +622,12 @@ export const isModelAvailable = (modelKey: string): boolean =>
 
 /**
  * Check if a provider is available
- * @param provider - Either 'azure' or 'google'
+ * @param provider - Either 'azure', 'google', or 'openai'
  * @returns True if the provider has any available models, false otherwise
  */
-export const isProviderAvailable = (provider: 'azure' | 'google'): boolean =>
-  getAvailability().isProviderAvailable(provider);
+export const isProviderAvailable = (
+  provider: 'azure' | 'google' | 'openai',
+): boolean => getAvailability().isProviderAvailable(provider);
 /**
  * Get the current availability status of all models (for debugging)
  * @returns Object mapping model keys to their availability status
@@ -539,7 +638,8 @@ export const getModelAvailabilityStatus = (): Record<string, boolean> =>
 /**
  * Reset all models to their default available state
  */
-export const resetModelAvailability = (): void => getAvailability().resetToDefaults();
+export const resetModelAvailability = (): void =>
+  getAvailability().resetToDefaults();
 
 /**
  * Convenience functions for common scenarios
@@ -550,17 +650,13 @@ export const resetModelAvailability = (): void => getAvailability().resetToDefau
  * @param durationMs - Duration in milliseconds to disable Azure (default: 5 minutes)
  */
 export const handleAzureRateLimit = (durationMs: number = 300000): void => {
-  log(l => l.warn('Azure rate limit detected, temporarily disabling Azure models'));
+  log((l) =>
+    l.warn('Azure rate limit detected, temporarily disabling Azure models'),
+  );
   getAvailability().temporarilyDisableModel('azure:hifi', durationMs);
   getAvailability().temporarilyDisableModel('azure:lofi', durationMs);
-  getAvailability().temporarilyDisableModel(
-    'azure:completions',
-    durationMs,
-  );
-  getAvailability().temporarilyDisableModel(
-    'azure:embedding',
-    durationMs,
-  );
+  getAvailability().temporarilyDisableModel('azure:completions', durationMs);
+  getAvailability().temporarilyDisableModel('azure:embedding', durationMs);
 };
 
 /**
@@ -568,23 +664,30 @@ export const handleAzureRateLimit = (durationMs: number = 300000): void => {
  * @param durationMs - Duration in milliseconds to disable Google (default: 5 minutes)
  */
 export const handleGoogleRateLimit = (durationMs: number = 300000): void => {
-  log(l => l.warn('Google rate limit detected, temporarily disabling Google models'));
+  log((l) =>
+    l.warn('Google rate limit detected, temporarily disabling Google models'),
+  );
   getAvailability().temporarilyDisableModel('google:hifi', durationMs);
   getAvailability().temporarilyDisableModel('google:lofi', durationMs);
-  getAvailability().temporarilyDisableModel(
-    'google:embedding',
-    durationMs,
-  );
-  getAvailability().temporarilyDisableModel(
-    'google:gemini-pro',
-    durationMs,
-  );
-  getAvailability().temporarilyDisableModel(
-    'google:gemini-flash',
-    durationMs,
-  );
+  getAvailability().temporarilyDisableModel('google:embedding', durationMs);
+  getAvailability().temporarilyDisableModel('google:gemini-pro', durationMs);
+  getAvailability().temporarilyDisableModel('google:gemini-flash', durationMs);
   getAvailability().temporarilyDisableModel(
     'google:google-embedding',
     durationMs,
   );
+};
+
+/**
+ * Handle OpenAI rate limiting by temporarily disabling OpenAI models
+ * @param durationMs - Duration in milliseconds to disable OpenAI (default: 5 minutes)
+ */
+export const handleOpenAIRateLimit = (durationMs: number = 300000): void => {
+  log((l) =>
+    l.warn('OpenAI rate limit detected, temporarily disabling OpenAI models'),
+  );
+  getAvailability().temporarilyDisableModel('openai:hifi', durationMs);
+  getAvailability().temporarilyDisableModel('openai:lofi', durationMs);
+  getAvailability().temporarilyDisableModel('openai:completions', durationMs);
+  getAvailability().temporarilyDisableModel('openai:embedding', durationMs);
 };

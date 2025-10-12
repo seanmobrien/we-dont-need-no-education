@@ -1,15 +1,9 @@
 'use client';
 
 import { useState, useEffect, ChangeEvent, useCallback } from 'react';
-import {
-  EmailMessage,
-} from '@/data-models/api/email-message';
-import {
-  normalizeDateAndTime,
-} from '@/data-models/_utilities';
-import {
-  PaginationStats,
-} from '@/data-models/_types';
+import { EmailMessage } from '@/data-models/api/email-message';
+import { normalizeDateAndTime } from '@/data-models/_utilities';
+import { PaginationStats } from '@/data-models/_types';
 import {
   setUuid,
   getUuid,
@@ -32,7 +26,8 @@ const stableStyles = {
     padding: '1.5rem',
     width: '100%',
     borderRadius: '0.5rem',
-    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    boxShadow:
+      '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
     maxWidth: '100%',
   } as const,
   title: {
@@ -311,39 +306,21 @@ const BulkEmailForm: React.FC = () => {
 
   return (
     <div style={stableStyles.container}>
-      <h2 style={stableStyles.title}>
-        Bulk Add Emails
-      </h2>
-      {error && (
-        <p style={stableStyles.errorText}>
-          {error}
-        </p>
-      )}
+      <h2 style={stableStyles.title}>Bulk Add Emails</h2>
+      {error && <p style={stableStyles.errorText}>{error}</p>}
       {loading ? (
-        <p style={stableStyles.loadingText}>
-          Loading emails...
-        </p>
+        <p style={stableStyles.loadingText}>Loading emails...</p>
       ) : bulkUpdateOperation ? (
-        <p style={stableStyles.loadingText}>
-          Saving emails...
-        </p>
+        <p style={stableStyles.loadingText}>Saving emails...</p>
       ) : (
         <div>
           <table style={stableStyles.table}>
             <thead>
               <tr>
-                <th style={stableStyles.tableCell}>
-                  Sender
-                </th>
-                <th style={stableStyles.tableCell}>
-                  Recipients
-                </th>
-                <th style={stableStyles.tableCell}>
-                  Sent On
-                </th>
-                <th style={stableStyles.tableCell}>
-                  Actions
-                </th>
+                <th style={stableStyles.tableCell}>Sender</th>
+                <th style={stableStyles.tableCell}>Recipients</th>
+                <th style={stableStyles.tableCell}>Sent On</th>
+                <th style={stableStyles.tableCell}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -387,10 +364,7 @@ const BulkEmailForm: React.FC = () => {
                         onChange={handleDateInputChange}
                       />
                     </td>
-                    <td
-                      style={stableStyles.tableCellFull}
-                      rowSpan={4}
-                    >
+                    <td style={stableStyles.tableCellFull} rowSpan={4}>
                       <button
                         onClick={() => {
                           const emailToDelete = emails[index];
@@ -429,11 +403,13 @@ const BulkEmailForm: React.FC = () => {
                   </tr>
 
                   <tr data-row-index={index}>
-                    <td style={{
-                      ...stableStyles.tableCellTop,
-                      ...stableStyles.fontSemibold,
-                      ...stableStyles.alignTop,
-                    }}>
+                    <td
+                      style={{
+                        ...stableStyles.tableCellTop,
+                        ...stableStyles.fontSemibold,
+                        ...stableStyles.alignTop,
+                      }}
+                    >
                       Parent Email
                     </td>
 
@@ -452,10 +428,12 @@ const BulkEmailForm: React.FC = () => {
                   </tr>
 
                   <tr data-row-index={index}>
-                    <td style={{
-                      ...stableStyles.tableCellTop,
-                      ...stableStyles.fontSemibold,
-                    }}>
+                    <td
+                      style={{
+                        ...stableStyles.tableCellTop,
+                        ...stableStyles.fontSemibold,
+                      }}
+                    >
                       Subject
                     </td>
 
@@ -471,16 +449,15 @@ const BulkEmailForm: React.FC = () => {
                   </tr>
 
                   <tr data-row-index={index}>
-                    <td style={{
-                      ...stableStyles.tableCellBottom,
-                      ...stableStyles.fontSemibold,
-                    }}>
+                    <td
+                      style={{
+                        ...stableStyles.tableCellBottom,
+                        ...stableStyles.fontSemibold,
+                      }}
+                    >
                       Body
                     </td>
-                    <td
-                      colSpan={2}
-                      style={stableStyles.tableCellBottomSpan}
-                    >
+                    <td colSpan={2} style={stableStyles.tableCellBottomSpan}>
                       <textarea
                         aria-label="Body"
                         style={stableStyles.textareaFull}

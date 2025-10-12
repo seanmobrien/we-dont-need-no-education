@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+
+setupImpersonationMock();
+
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn(),
@@ -7,8 +11,6 @@ jest.mock('@/lib/react-util/errors/logged-error', () => ({
   isError: jest.fn((error: any) => error instanceof Error),
 }));
 jest.mock('@/lib/ai/services/search');
-// jest.mock('@/lib/ai/services/search/HybridDocumentSearch');
-jest.mock('@/lib/logger');
 
 import { localSearchCaseFile } from '@/lib/ai/tools/searchCaseFile';
 import {
@@ -25,7 +27,7 @@ describe('searchCaseFile', () => {
   const mockError = jest.fn();
 
   beforeEach(() => {
-    (HybridDocumentSearch as jest.Mock).mockImplementation(() => ({
+    (HybridDocumentSearch as unknown as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
     }));
     (log as jest.Mock).mockImplementation((cb) =>

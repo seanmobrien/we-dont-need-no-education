@@ -1,7 +1,11 @@
 import { eq, lte, gte, and, or, isNull } from 'drizzle-orm';
-import { DatabaseType, schema, type UserPublicKeysType, drizDbWithInit } from '@/lib/drizzle-db';
+import {
+  DatabaseType,
+  schema,
+  type UserPublicKeysType,
+  drizDbWithInit,
+} from '@/lib/drizzle-db';
 import { auth } from '@/auth';
-
 
 /**
  * Returns all public keys for a user that were active at a given date.
@@ -17,8 +21,10 @@ export const getActiveUserPublicKeys = async ({
   userId: number;
   effectiveDate?: string | Date;
   db?: DatabaseType;
-}): Promise<string[]> =>  {
-  const dbInstance = await (database ? Promise.resolve(database) : drizDbWithInit());
+}): Promise<string[]> => {
+  const dbInstance = await (database
+    ? Promise.resolve(database)
+    : drizDbWithInit());
   const date =
     typeof effectiveDate === 'undefined'
       ? new Date()

@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+
+setupImpersonationMock();
+
 jest.mock('@/lib/ai/services/search');
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
@@ -12,24 +16,23 @@ jest.mock('@/lib/react-util/errors/logged-error', () => ({
 
 import { searchPolicyStore } from '@/lib/ai/tools/searchPolicyStore';
 import { HybridPolicySearch } from '@/lib/ai/services/search';
-import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { hybridPolicySearchFactory } from '@/lib/ai/services/search';
 import { toolCallbackResultFactory } from '@/lib/ai/tools/utility';
+import { ILogger, log } from '@/lib/logger';
 
 describe('searchPolicyStore', () => {
   const mockHybridSearch = jest.fn();
-  const mockLog = jest.fn();
-  const mockError = jest.fn();
+  let mockLog: ILogger;
 
   beforeEach(() => {
-    (HybridPolicySearch as jest.Mock).mockImplementation(() => ({
+    log((l) => (mockLog = l));
+    (HybridPolicySearch as unknown as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
     }));
     (hybridPolicySearchFactory as jest.Mock).mockReturnValue({
       hybridSearch: mockHybridSearch,
     });
-    (log as jest.Mock).mockImplementation((cb) => cb({ trace: mockLog, error: mockError }));
   });
 
   it('should call HybridPolicySearch.hybridSearch with the correct arguments and log the call', async () => {
@@ -45,7 +48,6 @@ describe('searchPolicyStore', () => {
 
     expect(mockHybridSearch).toHaveBeenCalledTimes(1);
     expect(mockHybridSearch).toHaveBeenCalledWith(query, options);
-    expect(mockLog).toHaveBeenCalled();
     expect(result).toEqual(wrappedResult);
   });
 

@@ -27,7 +27,9 @@ jest.mock('@/lib/site-util/env', () => ({
 
 // Mock the hash function
 jest.mock('@/lib/ai/core/chat-ids', () => ({
-  notCryptoSafeKeyHash: jest.fn((input: string) => `hash-${input.slice(0, 10)}`),
+  notCryptoSafeKeyHash: jest.fn(
+    (input: string) => `hash-${input.slice(0, 10)}`,
+  ),
 }));
 
 // Mock Response for test environment
@@ -47,8 +49,8 @@ const mockResponse = (body: string | object, init: ResponseInit = {}) => ({
       const data = typeof body === 'string' ? body : JSON.stringify(body);
       controller.enqueue(new TextEncoder().encode(data));
       controller.close();
-    }
-  })
+    },
+  }),
 });
 
 // Create a test query client and wrapper
@@ -67,7 +69,6 @@ const createTestWrapper = () => {
 
   return TestWrapper;
 };
-
 
 describe('TanStack React Query Chat Integration', () => {
   beforeEach(() => {
@@ -88,7 +89,9 @@ describe('TanStack React Query Chat Integration', () => {
 
     it('should create chatFetch function that makes requests', async () => {
       const mockResponseData = { message: 'success' };
-      (fetch as jest.Mock).mockResolvedValueOnce(mockResponse(mockResponseData));
+      (fetch as jest.Mock).mockResolvedValueOnce(
+        mockResponse(mockResponseData),
+      );
 
       const { result } = renderHook(() => useChatFetchWrapper(), {
         wrapper: createTestWrapper(),
@@ -98,7 +101,7 @@ describe('TanStack React Query Chat Integration', () => {
 
       // Test the chatFetch function exists and is callable
       expect(typeof chatFetch).toBe('function');
-      
+
       // Note: Due to the complex streaming implementation, we'll test the wrapper creation
       // rather than the full request flow in this unit test
     });
@@ -113,8 +116,8 @@ describe('TanStack React Query Chat Integration', () => {
       } catch (error) {
         expect(error).toEqual(
           expect.objectContaining({
-            message: expect.stringContaining('No QueryClient set')
-          })
+            message: expect.stringContaining('No QueryClient set'),
+          }),
         );
       }
 

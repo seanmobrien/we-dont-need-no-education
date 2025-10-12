@@ -1,6 +1,8 @@
-import { isTruthy } from '@/lib/react-util/_utility-methods';
+import { isTruthy } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import z from 'zod';
+import { isAiModelType } from '@/lib/ai/core/guards';
+import { AiModelType, AiModelTypeValues } from '@/lib/ai/core/unions';
 
 /**
  * @module site-util/env/_common
@@ -127,6 +129,22 @@ export const ZodProcessors = {
   logLevel: (level: string = 'info'): z.ZodDefault<z.ZodString> =>
     z.string().default(level ?? 'info'),
 
+  aiModelType: (
+    defaultValue: AiModelType,
+  ): z.ZodDefault<z.ZodType<AiModelType, z.ZodTypeDef, unknown>> =>
+    z
+      .preprocess((val, ctx) => {
+        if (isAiModelType(val)) {
+          return val;
+        }
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Invalid AI model type: ${val}`,
+          path: ctx.path,
+        });
+        return z.NEVER;
+      }, z.enum(AiModelTypeValues))
+      .default(defaultValue),
   /**
    * Processor for integer values.
    * Ensures the value is a valid integer and provides a default value of 120 if not specified.
@@ -161,13 +179,17 @@ export const ZodProcessors = {
   truthy: (
     defaultValue = false,
   ): z.ZodType<boolean, z.ZodEffectsDef<z.ZodBoolean>, unknown> =>
-    z.preprocess((val: unknown) => {
-      return typeof val === undefined ||
-        val === null ||
-        (typeof val === 'string' && val.trim() === '')
-        ? !!defaultValue
-        : isTruthy(val);
-    }, z.boolean(), z.boolean()),
+    z.preprocess(
+      (val: unknown) => {
+        return typeof val === undefined ||
+          val === null ||
+          (typeof val === 'string' && val.trim() === '')
+          ? !!defaultValue
+          : isTruthy(val);
+      },
+      z.boolean(),
+      z.boolean(),
+    ),
 
   /**
    * Processor for array values.

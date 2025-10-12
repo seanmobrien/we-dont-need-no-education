@@ -175,7 +175,7 @@ describe('ResizableDraggableDialog Index Module', () => {
         modal: false,
       };
 
-      expect(testProps.isOpenState).toBe(true);      
+      expect(testProps.isOpenState).toBe(true);
       expect(testProps.title).toBe('Test Dialog');
       expect(testProps.modal).toBe(false);
     });

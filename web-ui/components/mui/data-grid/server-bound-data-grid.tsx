@@ -1,37 +1,41 @@
 'use client';
+import { useDataSource } from '@/lib/components/mui/data-grid/useDataSource';
+import { useGetRowId } from '@/lib/components/mui/data-grid/useGetRowId';
 import {
-  StableDefaultInitialState,
   StableDefaultPageSizeOptions,
-  useGetRowId,
-  useDataSource,
-} from '@/lib/components/mui/data-grid';
+  StableDefaultInitialState,
+} from '@/lib/components/mui/data-grid/default-values';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import TableContainer from '@mui/material/TableContainer';
+import type { SxProps, Theme } from '@mui/material/styles';
 
-import { Box, Paper, TableContainer } from '@mui/material';
 import {
   DataGridPro,
-  DataGridProProps,
-  GridGetRowsError,
-  GridGetRowsParams,
-  GridLoadingOverlayVariant,
-  GridUpdateRowError,
-  GridValidRowModel,
+  type DataGridProProps,
+  type GridGetRowsParams,
+  type GridLoadingOverlayVariant,
+  type GridUpdateRowError,
+  type GridGetRowsError,
+  type GridValidRowModel,
 } from '@mui/x-data-grid-pro';
+
 import { useCallback, useMemo } from 'react';
-import { ServerBoundDataGridProps } from './types';
-import { useNotifications } from '@toolpad/core';
+import type { ServerBoundDataGridProps } from './types';
+import { useNotifications } from '@toolpad/core/useNotifications';
 
 import ServerBoundDataGridPropsSchema from './server-bound-data-grid-props-schema';
 
 const stableWrapperStyles = {
-  box: { width: 'auto', maxWidth: 1 },
-  paper: { width: 'auto', mb: 2, overflow: 'hidden' },
+  box: { width: 'auto', maxWidth: 1 } satisfies SxProps<Theme>,
+  paper: { width: 'auto', mb: 2, overflow: 'hidden' } satisfies SxProps<Theme>,
   table: {
     display: 'flex',
-    flexBasis: 'column',
+    flexDirection: 'column',
     minHeight: '400px',
     maxHeight: '75%',
-  },
-};
+  } satisfies SxProps<Theme>,
+} as const;
 
 export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
   columns,
@@ -105,7 +109,7 @@ export const ServerBoundDataGrid = <TRowModel extends GridValidRowModel>({
       sx={stableWrapperStyles.box}
     >
       <Paper sx={stableWrapperStyles.paper}>
-        <TableContainer style={stableWrapperStyles.table}>
+        <TableContainer sx={stableWrapperStyles.table}>
           <DataGridPro<TRowModel>
             filterDebounceMs={300}
             autoHeight={true}

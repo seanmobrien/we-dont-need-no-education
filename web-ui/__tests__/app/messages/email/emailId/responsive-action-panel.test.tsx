@@ -49,16 +49,15 @@ beforeEach(() => {
   // Clear and setup fetch mock - it's already mocked globally in jest.setup.ts
   (fetch as jest.Mock).mockClear();
   (fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        results: [mockRelatedCTA],
-        pageStats: { page: 1, num: 10, total: 1 },
-      }),
-    });
+    ok: true,
+    json: async () => ({
+      results: [mockRelatedCTA],
+      pageStats: { page: 1, num: 10, total: 1 },
+    }),
+  });
 });
 
 describe('ResponsiveActionPanel', () => {
-
   it('renders responsive action details correctly', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
 
@@ -116,7 +115,6 @@ describe('ResponsiveActionPanel', () => {
   it('fetches and displays related call-to-action', async () => {
     render(<ResponsiveActionPanel row={mockResponseDetails} />);
 
-
     await waitFor(() => {
       expect(fetch as jest.Mock).toHaveBeenCalledWith(
         '/api/email/test-email-id/properties/call-to-action',
@@ -165,7 +163,6 @@ describe('ResponsiveActionPanel', () => {
 
     expect(screen.getByTestId('circular-progress')).toBeInTheDocument();
   });
-
 
   it('handles no related CTA found', async () => {
     (fetch as jest.Mock).mockResolvedValue({

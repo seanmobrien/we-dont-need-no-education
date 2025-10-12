@@ -27,20 +27,21 @@ import { QueueStatistics } from './queue-statistics';
 import { useStatistics } from '@/lib/hooks/use-statistics';
 
 export const StatisticsOverview = () => {
-  const [dataSource, setDataSource] = useState<'database' | 'redis'>('database');
-  
-  const {
-    models,
-    queues,
-    isLoading,
-    isError,
-    error,
-    refetch
-  } = useStatistics(dataSource);
+  const [dataSource, setDataSource] = useState<'database' | 'redis'>(
+    'database',
+  );
+
+  const { models, queues, isLoading, isError, error, refetch } =
+    useStatistics(dataSource);
 
   if (isLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="400px"
+      >
         <CircularProgress />
       </Box>
     );
@@ -48,8 +49,8 @@ export const StatisticsOverview = () => {
 
   if (isError) {
     return (
-      <Alert 
-        severity="error" 
+      <Alert
+        severity="error"
         action={
           <IconButton onClick={refetch} color="inherit" size="small">
             <RefreshIcon />
@@ -62,21 +63,26 @@ export const StatisticsOverview = () => {
   }
 
   if (!models.data || !queues.data) {
-    return (
-      <Alert severity="info">
-        No statistics data available
-      </Alert>
-    );
+    return <Alert severity="info">No statistics data available</Alert>;
   }
 
   const totalModels = models.data.length;
-  const activeModels = models.data.filter(m => m.isActive).length;
-  const availableModels = models.data.filter(m => m.available).length;
+  const activeModels = models.data.filter((m) => m.isActive).length;
+  const availableModels = models.data.filter((m) => m.available).length;
 
   return (
     <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4" component="h1" color="var(--color-primary-accent)">
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        mb={3}
+      >
+        <Typography
+          variant="h4"
+          component="h1"
+          color="var(--color-primary-accent)"
+        >
           AI Model Statistics
         </Typography>
         <Box display="flex" alignItems="center" gap={2}>
@@ -84,7 +90,9 @@ export const StatisticsOverview = () => {
             control={
               <Switch
                 checked={dataSource === 'redis'}
-                onChange={(e) => setDataSource(e.target.checked ? 'redis' : 'database')}
+                onChange={(e) =>
+                  setDataSource(e.target.checked ? 'redis' : 'database')
+                }
                 disabled={dataSource === 'redis'} // Disable Redis for now as it's not implemented
               />
             }
@@ -110,9 +118,7 @@ export const StatisticsOverview = () => {
               <Typography color="textSecondary" gutterBottom>
                 Total Models
               </Typography>
-              <Typography variant="h4">
-                {totalModels}
-              </Typography>
+              <Typography variant="h4">{totalModels}</Typography>
             </CardContent>
           </Card>
         </Grid>
@@ -125,10 +131,10 @@ export const StatisticsOverview = () => {
               <Typography variant="h4" color="primary">
                 {activeModels}
               </Typography>
-              <Chip 
-                size="small" 
-                icon={<CheckCircleIcon />} 
-                label={`${Math.round((activeModels / totalModels) * 100)}%`} 
+              <Chip
+                size="small"
+                icon={<CheckCircleIcon />}
+                label={`${Math.round((activeModels / totalModels) * 100)}%`}
                 color="success"
               />
             </CardContent>
@@ -143,11 +149,17 @@ export const StatisticsOverview = () => {
               <Typography variant="h4" color="success.main">
                 {availableModels}
               </Typography>
-              <Chip 
-                size="small" 
-                icon={availableModels === activeModels ? <CheckCircleIcon /> : <ErrorIcon />} 
-                label={`${Math.round((availableModels / activeModels) * 100)}%`} 
-                color={availableModels === activeModels ? "success" : "warning"}
+              <Chip
+                size="small"
+                icon={
+                  availableModels === activeModels ? (
+                    <CheckCircleIcon />
+                  ) : (
+                    <ErrorIcon />
+                  )
+                }
+                label={`${Math.round((availableModels / activeModels) * 100)}%`}
+                color={availableModels === activeModels ? 'success' : 'warning'}
               />
             </CardContent>
           </Card>
@@ -158,14 +170,21 @@ export const StatisticsOverview = () => {
               <Typography color="textSecondary" gutterBottom>
                 Queued Requests
               </Typography>
-              <Typography variant="h4" color={queues.data.summary.totalPending > 0 ? "warning.main" : "text.primary"}>
+              <Typography
+                variant="h4"
+                color={
+                  queues.data.summary.totalPending > 0
+                    ? 'warning.main'
+                    : 'text.primary'
+                }
+              >
                 {queues.data.summary.totalPending}
               </Typography>
               {queues.data.summary.totalPending > 0 && (
-                <Chip 
-                  size="small" 
-                  icon={<ErrorIcon />} 
-                  label="Pending" 
+                <Chip
+                  size="small"
+                  icon={<ErrorIcon />}
+                  label="Pending"
                   color="warning"
                 />
               )}
@@ -189,8 +208,13 @@ export const StatisticsOverview = () => {
       <Accordion>
         <AccordionSummary expandIcon={<ExpandMoreIcon />}>
           <Typography variant="h6" color="var(--color-primary-accent)">
-            Queue Details {queues.data.summary.totalPending > 0 && (
-              <Chip size="small" label={queues.data.summary.totalPending} color="warning" />
+            Queue Details{' '}
+            {queues.data.summary.totalPending > 0 && (
+              <Chip
+                size="small"
+                label={queues.data.summary.totalPending}
+                color="warning"
+              />
             )}
           </Typography>
         </AccordionSummary>

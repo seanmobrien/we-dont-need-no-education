@@ -1,20 +1,19 @@
-
 /**
  * @fileoverview Drizzle Pagination Builder for Data Grid
- * 
+ *
  * This module provides functionality to apply dynamic pagination logic to Drizzle PgSelectBuilder
  * queries, similar to the postgres.js buildPagination function but adapted for Drizzle ORM.
- * 
+ *
  * @module lib/components/mui/data-grid/buildDrizzlePagination
  * @version 1.0.0
  * @since 2025-07-27
  */
-import { LikeNextRequest } from '@/lib/nextjs-util/types';
-import { PaginatedGridListRequest } from '../../types';
+import type { LikeNextRequest } from '@/lib/nextjs-util/types';
+import type { PaginatedGridListRequest } from '../../types';
 import type { DrizzleSelectQuery } from './types';
-import { AnyPgSelect } from 'drizzle-orm/pg-core';
+import type { AnyPgSelect } from 'drizzle-orm/pg-core';
 import { parsePaginationStats as parsePaginationStatsImpl } from '../utility';
-import { deprecate } from 'util';
+import { deprecate } from '@/lib/nextjs-util/utils';
 /**
  * Props for configuring Drizzle pagination functionality.
  */
@@ -22,7 +21,10 @@ export type BuildDrizzlePaginationProps = {
   /**
    * The Drizzle select query to apply pagination to.
    */
-  query: Pick<Exclude<DrizzleSelectQuery, Array<Record<string, unknown>>>, 'limit' | 'offset'>;
+  query: Pick<
+    Exclude<DrizzleSelectQuery, Array<Record<string, unknown>>>,
+    'limit' | 'offset'
+  >;
 
   /**
    * The request object containing pagination parameters.
@@ -55,34 +57,37 @@ export type BuildDrizzlePaginationProps = {
  * console.log(stats); // { page: 2, num: 20, total: 0, offset: 20 }
  * ```
  */
-export const parsePaginationStats = deprecate((
-  req:
-    | URL
-    | URLSearchParams
-    | (PaginatedGridListRequest | undefined)
-    | LikeNextRequest,
-): PaginatedGridListRequest & { offset: number } => parsePaginationStatsImpl(req), 
-"DP0010 - parsePaginationStats.  Import from '@/lib/components/mui/data-grid/queryHelpers/utility instead.");
+export const parsePaginationStats = deprecate(
+  (
+    req:
+      | URL
+      | URLSearchParams
+      | (PaginatedGridListRequest | undefined)
+      | LikeNextRequest,
+  ): PaginatedGridListRequest & { offset: number } =>
+    parsePaginationStatsImpl(req),
+  "DP0010 - parsePaginationStats.  Import from '@/lib/components/mui/data-grid/queryHelpers/utility instead.",
+);
 
 /**
  * Applies dynamic pagination logic to a Drizzle select query.
- * 
+ *
  * This function parses pagination parameters from various sources and applies
  * the appropriate LIMIT and OFFSET clauses to a Drizzle query builder.
- * 
+ *
  * @param props - Configuration props for building the pagination
  * @returns The query builder with pagination applied
- * 
+ *
  * @example
  * ```typescript
  * import { db, users } from '@/drizzle/schema';
- * 
+ *
  * const query = db.select().from(users);
  * const paginatedQuery = buildDrizzlePagination({
  *   query,
  *   req: searchParams, // or URL, URLSearchParams, etc.
  * });
- * 
+ *
  * const results = await paginatedQuery;
  * ```
  */
@@ -90,7 +95,6 @@ export const buildDrizzlePagination = ({
   query,
   req,
 }: BuildDrizzlePaginationProps): DrizzleSelectQuery => {
-  const { num, offset } = parsePaginationStats(req);
-  return (query.offset(offset) as AnyPgSelect)
-  .limit(num) as DrizzleSelectQuery;
+  const { num, offset } = parsePaginationStatsImpl(req);
+  return (query.offset(offset) as AnyPgSelect).limit(num) as DrizzleSelectQuery;
 };

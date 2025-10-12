@@ -1,39 +1,52 @@
 /**
  * @fileoverview Sequential Processing Queue for Chat History
- * 
+ *
  * This module provides a queue-based system to ensure that stream chunks
  * are processed in FIFO order, even when individual database operations
  * have varying completion times.
- * 
+ *
  * @module lib/ai/middleware/chat-history/processing-queue
  * @version 1.0.0
  * @since 2025-07-17
  */
 
-import type { LanguageModelV1StreamPart } from 'ai';
+import type {
+  LanguageModelV2CallOptions,
+  LanguageModelV2StreamPart,
+} from '@ai-sdk/provider';
 import { log } from '@/lib/logger';
+import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';
-import type { QueuedTask, StreamHandlerContext, StreamHandlerResult } from './types';
+import type {
+  ChatHistoryContext,
+  QueuedTask,
+  StreamHandlerContext,
+  StreamHandlerResult,
+} from './types';
 import { recordQueueOperation } from './instrumentation';
-
-
+import { ChatMessagesType } from '@/lib/drizzle-db/drizzle-types';
+import {
+  safeCompleteMessagePersistence,
+  safeInitializeMessagePersistence,
+} from './message-persistence';
+import { isError } from '@/lib/react-util/core';
 
 /**
  * Sequential processing queue that maintains FIFO order for database operations.
- * 
+ *
  * This queue ensures that even if individual database operations complete at
  * different speeds, the results are applied in the correct order to maintain
  * data consistency and proper state management.
- * 
+ *
  * @example
  * ```typescript
  * const queue = new ProcessingQueue();
- * 
+ *
  * // Add chunks - they'll be processed in order
  * queue.enqueue(chunk1, context1);
  * queue.enqueue(chunk2, context2);
  * queue.enqueue(chunk3, context3);
- * 
+ *
  * // Even if chunk2 completes first, results applied in order
  * ```
  */
@@ -44,16 +57,16 @@ export class ProcessingQueue {
 
   /**
    * Adds a chunk to the processing queue.
-   * 
+   *
    * The chunk will be processed in FIFO order, ensuring that state updates
    * are applied sequentially even if database operations complete out of order.
-   * 
+   *
    * @param chunk - The stream chunk to process
    * @param context - The processing context
    * @returns Promise that resolves when the chunk has been processed
    */
   async enqueue(
-    chunk: LanguageModelV1StreamPart,
+    chunk: LanguageModelV2StreamPart,
     context: StreamHandlerContext,
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
@@ -67,24 +80,24 @@ export class ProcessingQueue {
       };
 
       this.queue.push(task);
-      
+
       // Record queue metrics
       recordQueueOperation('enqueue', true, this.queue.length);
-      
+
       this.processQueue();
     });
   }
 
   /**
    * Processes a single task by calling the stream chunk handler.
-   * 
+   *
    * @param task - The task to process
    * @returns Promise that resolves with the processing result
    */
   private async processTask(task: QueuedTask): Promise<void> {
     try {
       const result = await processStreamChunk(task.chunk, task.context);
-      
+
       if (!result.success) {
         recordQueueOperation('process', false, this.queue.length);
         throw new Error(`Processing failed for chunk type: ${task.chunk.type}`);
@@ -138,7 +151,9 @@ export class ProcessingQueue {
           recordQueueOperation('complete', true, this.queue.length - 1);
         } catch (error) {
           recordQueueOperation('complete', false, this.queue.length - 1);
-          task.reject(error instanceof Error ? error : new Error(String(error)));
+          task.reject(
+            error instanceof Error ? error : new Error(String(error)),
+          );
         }
 
         // Remove completed task
@@ -151,10 +166,10 @@ export class ProcessingQueue {
 
   /**
    * Updates the context for all remaining tasks in the queue.
-   * 
+   *
    * This ensures that state changes (like updated message order or
    * accumulated text) are propagated to subsequent tasks.
-   * 
+   *
    * @param result - The result from the completed task
    */
   private updateSubsequentContexts(result: StreamHandlerResult): void {
@@ -169,7 +184,7 @@ export class ProcessingQueue {
 
   /**
    * Gets the current queue length for monitoring purposes.
-   * 
+   *
    * @returns The number of tasks currently in the queue
    */
   getQueueLength(): number {
@@ -178,10 +193,144 @@ export class ProcessingQueue {
 
   /**
    * Checks if the queue is currently processing tasks.
-   * 
+   *
    * @returns True if processing is active, false otherwise
    */
   isProcessing(): boolean {
     return this.processing;
   }
 }
+
+type StreamContext = {
+  chatId: string;
+  turnId: string;
+  messageId: number | undefined;
+  currentMessageOrder: number;
+  toolCalls: Map<string, ChatMessagesType>;
+  streamedText: string;
+  errors: Error[];
+  generatedJSON: Array<Record<string, unknown>>;
+};
+
+export const enqueueStream = async ({
+  stream,
+  params,
+  context,
+  processingQueue,
+}: {
+  stream: ReadableStream<LanguageModelV2StreamPart>;
+  params: LanguageModelV2CallOptions;
+  context: ChatHistoryContext;
+  processingQueue: ProcessingQueue;
+}): Promise<{
+  stream: ReadableStream<LanguageModelV2StreamPart>;
+  generatedText: Promise<string>;
+  result: Promise<StreamContext>;
+}> => {
+  const startTime = Date.now();
+  const generatedText = Promise.withResolvers<string>();
+  const result = Promise.withResolvers<StreamContext>();
+  // Initialize message persistence
+  const messagePersistence = await safeInitializeMessagePersistence(
+    context,
+    params,
+  );
+  if (!messagePersistence) {
+    throw new Error('Failed to initialize message persistence');
+  }
+  const { chatId, turnId, messageId } = messagePersistence;
+
+  const streamContext: StreamContext = {
+    chatId,
+    currentMessageOrder: 0,
+    turnId,
+    messageId,
+    streamedText: '',
+    toolCalls: new Map<string, ChatMessagesType>(),
+    errors: [],
+    generatedJSON: [],
+  };
+
+  const transformStream = new TransformStream<
+    LanguageModelV2StreamPart,
+    LanguageModelV2StreamPart
+  >({
+    async transform(chunk, controller) {
+      // Enqueue chunk immediately for maximum transparency
+      // If this fails, let the error propagate - don't try again
+      controller.enqueue(chunk);
+      // Process chunk through queue to maintain FIFO order
+      const handlerContext: StreamHandlerContext = ensureCreateResult({
+        chatId: streamContext.chatId!,
+        turnId: parseInt(streamContext.turnId!, 10),
+        toolCalls: streamContext.toolCalls,
+        messageId: streamContext.messageId,
+        currentMessageOrder: streamContext.currentMessageOrder,
+        generatedText: streamContext.streamedText,
+        generatedJSON: streamContext.generatedJSON,
+      });
+      // Queue processing maintains order and updates local state
+      processingQueue
+        .enqueue(chunk, handlerContext)
+        .then(() => {
+          // Context is updated by the queue processor
+          // Get the latest state for subsequent chunks
+          streamContext.currentMessageOrder =
+            handlerContext.currentMessageOrder;
+          streamContext.streamedText = handlerContext.generatedText;
+          streamContext.messageId = handlerContext.messageId;
+        })
+        .catch((error: Error) => {
+          log((l) =>
+            l.error('Queued chunk processing failed', {
+              error,
+              turnId: streamContext.turnId,
+              chatId: streamContext.chatId,
+              chunkType: chunk.type,
+              queueLength: processingQueue.getQueueLength(),
+            }),
+          );
+          streamContext.errors.push(error);
+        });
+    },
+
+    async flush() {
+      try {
+        // Complete message persistence using shared utility
+        await safeCompleteMessagePersistence({
+          chatId: streamContext.chatId,
+          turnId: Number(streamContext.turnId),
+          messageId: streamContext.messageId,
+          generatedText: streamContext.streamedText,
+          startTime,
+        });
+        generatedText.resolve(streamContext.streamedText);
+        result.resolve(streamContext);
+      } catch (error) {
+        log((l) =>
+          l.error('Failed to finalize message persistence state.', {
+            error,
+            turnId: streamContext.turnId,
+            chatId: streamContext.chatId,
+          }),
+        );
+        streamContext.errors.push(
+          isError(error) ? error : new Error(String(error)),
+        );
+      }
+      context.turnId = streamContext.turnId;
+      generatedText.resolve(streamContext.streamedText);
+      if (streamContext.errors.length > 0) {
+        result.reject(streamContext);
+      } else {
+        result.resolve(streamContext);
+      }
+    },
+  });
+
+  return {
+    stream: stream.pipeThrough(transformStream),
+    generatedText: generatedText.promise,
+    result: result.promise,
+  };
+};

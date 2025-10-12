@@ -6,59 +6,63 @@ import type { ClientErrorManagerConfig } from './ClientErrorManager';
  * without causing them to become client components
  */
 const ServerSafeErrorManager = dynamic(
-  () => import('./ErrorManagerProvider').then(mod => ({ 
-    default: mod.DefaultErrorManager 
-  })),
+  () =>
+    import('./ErrorManagerProvider').then((mod) => ({
+      default: mod.DefaultErrorManager,
+    })),
   {
-    ssr: false,
+    ssr: true,
     loading: () => null,
-  }
+  },
 );
 
 /**
  * Server-safe error manager with custom configuration
  */
 const ConfigurableServerSafeErrorManager = dynamic(
-  () => import('./ErrorManagerProvider').then(mod => ({ 
-    default: mod.ErrorManagerProvider 
-  })),
+  () =>
+    import('./ErrorManagerProvider').then((mod) => ({
+      default: mod.ErrorManagerProvider,
+    })),
   {
-    ssr: false,
+    ssr: true,
     loading: () => null,
-  }
+  },
 );
 
 /**
  * Development-specific error manager (shows more details)
  */
 const DevServerSafeErrorManager = dynamic(
-  () => import('./ErrorManagerProvider').then(mod => ({ 
-    default: mod.DevErrorManager 
-  })),
+  () =>
+    import('./ErrorManagerProvider').then((mod) => ({
+      default: mod.DevErrorManager,
+    })),
   {
-    ssr: false,
+    ssr: true,
     loading: () => null,
-  }
+  },
 );
 
 /**
  * Production-specific error manager (more conservative)
  */
 const ProdServerSafeErrorManager = dynamic(
-  () => import('./ErrorManagerProvider').then(mod => ({ 
-    default: mod.ProdErrorManager 
-  })),
+  () =>
+    import('./ErrorManagerProvider').then((mod) => ({
+      default: mod.ProdErrorManager,
+    })),
   {
-    ssr: false,
+    ssr: true,
     loading: () => null,
-  }
+  },
 );
 
 // Default export for easy importing
 export default ServerSafeErrorManager;
 
 // Named exports for specific configurations
-export { 
+export {
   ConfigurableServerSafeErrorManager as ConfigurableErrorManager,
   DevServerSafeErrorManager as DevErrorManager,
   ProdServerSafeErrorManager as ProdErrorManager,

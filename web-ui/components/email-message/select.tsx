@@ -40,7 +40,10 @@ const EmailSelect: React.FC<{
         }
         setEmails(data.results);
       } catch (error) {
-        LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'email-select' });
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'email-select',
+        });
       } finally {
         setLoading(false);
       }
@@ -62,7 +65,10 @@ const EmailSelect: React.FC<{
           const data = await response.json();
           setSelectedEmailDetails(data);
         } catch (error) {
-          LoggedError.isTurtlesAllTheWayDownBaby(error, { log: true, source: 'email-select' });
+          LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            source: 'email-select',
+          });
         } finally {
           setLoading(false);
         }

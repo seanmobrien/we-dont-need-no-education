@@ -5,7 +5,7 @@
 */
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
+/*
 (() => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -28,3 +28,4 @@
     // undici may be unavailable in some environments; ignore silently
   }
 })();
+*/

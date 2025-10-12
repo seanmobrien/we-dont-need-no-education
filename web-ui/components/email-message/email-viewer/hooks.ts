@@ -1,15 +1,15 @@
-import { EmailMessage } from "@/data-models/api";
-import { getEmail } from "@/lib/api/email/client";
+import { EmailMessage } from '@/data-models/api';
+import { getEmail } from '@/lib/api/email/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { useSuspenseQuery } from "@tanstack/react-query";
-import {
-  UseEmailApiQueryResult,
-  TResponseMap,
-  EmailAttachment,
-} from './types';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { UseEmailApiQueryResult, TResponseMap, EmailAttachment } from './types';
 import { fetch } from '@/lib/nextjs-util/fetch';
 
-export const emailMessageQuery = async ({queryKey}: { queryKey: ['email-message', string] }) => {  
+export const emailMessageQuery = async ({
+  queryKey,
+}: {
+  queryKey: ['email-message', string];
+}) => {
   if (queryKey.length < 2) {
     throw new Error('Invalid query key for emailMessageQuery');
   }
@@ -17,14 +17,13 @@ export const emailMessageQuery = async ({queryKey}: { queryKey: ['email-message'
     throw new Error(`Invalid query key type: ${queryKey[0]}`);
   }
   const emailId = queryKey[1];
-  try
-  {
-    const email = await getEmail(emailId);  
+  try {
+    const email = await getEmail(emailId);
     if (!email) {
       throw new Error('Email not found');
     }
     return email;
-  }catch (error) {
+  } catch (error) {
     const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
       message: 'Error fetching email details',
@@ -32,11 +31,8 @@ export const emailMessageQuery = async ({queryKey}: { queryKey: ['email-message'
       source: 'EmailViewer: emailMessageQuery',
     });
     throw le;
-  }  
+  }
 };
-
-
-
 
 export const emailApiQuery = async <
   TQuery extends 'email-message' | 'email-attachment-list',
@@ -87,7 +83,10 @@ export const emailApiQuery = async <
       });
     }
     const data = (await response.json()) as TResponseMap<TQuery>;
-    if (!data || (queryKey[0] === 'email-attachment-list' && !Array.isArray(data))) {
+    if (
+      !data ||
+      (queryKey[0] === 'email-attachment-list' && !Array.isArray(data))
+    ) {
       throw new Error(`Invalid ${description} data`, {
         cause: { data, name: 'InvalidResponseError' },
       });
@@ -103,9 +102,6 @@ export const emailApiQuery = async <
     throw le;
   }
 };
-
-
-
 
 export const useEmailMessageQuery = ({
   emailId,
@@ -124,7 +120,6 @@ export const useEmailMessageQuery = ({
   };
   return ret;
 };
-
 
 export const useEmailAttachmentsQuery = ({
   emailId,

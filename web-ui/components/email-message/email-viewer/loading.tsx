@@ -1,25 +1,19 @@
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import LinearProgress from "@mui/material/LinearProgress";
-import Typography from "@mui/material/Typography";
+/**
+ * Email viewer loading indicators.
+ *
+ * Small wrappers around the generic `Loading` component with pre-set text
+ * for email-specific contexts, keeping call-sites concise and consistent.
+ */
+import { Loading } from '@/components/general/loading';
 
-export const Loading = ({ text }: { text: string }) => {
-  return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" gutterBottom>
-          {text}
-        </Typography>
-        <LinearProgress />
-      </CardContent>
-    </Card>
-  );
-};
+/**
+ * Displays a standard loading card while an email message is being fetched.
+ */
+export const LoadingEmail = () => <Loading text="Loading Email..." loading />;
 
-export const LoadingEmail = () => (
-<Loading text="Loading Email..." />
-);
-
+/**
+ * Displays a standard loading card while email attachments are being fetched.
+ */
 export const LoadingAttachments = () => (
-  <Loading text="Loading Attachments..." />
+  <Loading text="Loading Attachments..." loading />
 );

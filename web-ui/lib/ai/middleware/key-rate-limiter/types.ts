@@ -1,4 +1,5 @@
-import { LanguageModelV1, LanguageModelV1Middleware } from "ai";
+import type { LanguageModelV2Middleware } from '@ai-sdk/provider';
+import { LanguageModel } from 'ai';
 
 export interface RateLimitedRequest {
   id: string;
@@ -9,7 +10,9 @@ export interface RateLimitedRequest {
   };
   metadata: {
     chatHistoryId?: string;
+    chatTurnId?: string;
     userId?: string;
+    retryAfter?: number;
     submittedAt: string;
     generation: 1 | 2; // gen-1 or gen-2 retry queue
   };
@@ -35,21 +38,20 @@ export interface RateLimitMetrics {
 
 export type ModelClassification = 'hifi' | 'lofi' | 'completions' | 'embedding';
 
-export interface ModelFailoverConfig {
+export type ModelFailoverConfig = {
   primaryProvider: 'azure' | 'google';
   fallbackProvider: 'azure' | 'google';
-  // modelClassification: ModelClassification;
-}
+};
 
 export type RateLimitRetryContext = {
   modelClass: ModelClassification;
   failover: ModelFailoverConfig;
 };
 
-export type RetryRateLimitMiddlewareType = LanguageModelV1Middleware & {
+export type RetryRateLimitMiddlewareType = LanguageModelV2Middleware & {
   rateLimitContext: () => RateLimitRetryContext | undefined;
 };
 
 export type RateLimitFactoryOptions = {
-  model: LanguageModelV1;
+  model: LanguageModel;
 };

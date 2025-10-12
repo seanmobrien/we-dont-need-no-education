@@ -1,36 +1,31 @@
 /**
  * @fileoverview Drizzle OrderBy Builder for Data Grid
- * 
+ *
  * This module provides functionality to apply dynamic ordering logic to Drizzle PgSelectBuilder
  * queries, similar to the postgres.js buildOrderBy function but adapted for Drizzle ORM.
- * 
+ *
  * @module lib/components/mui/data-grid/buildDrizzleOrderBy
  * @version 1.0.0
  * @since 2025-07-26
  */
 
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
-import { GridSortModel } from '@mui/x-data-grid';
+import type { GridSortModel } from '@mui/x-data-grid-pro';
 import { asc, desc, SQL } from 'drizzle-orm';
-import { PgColumn } from 'drizzle-orm/pg-core';
+import type { PgColumn } from 'drizzle-orm/pg-core';
 import { isGridSortModel } from '../../guards';
-// import { columnMapFactory, parseSortOptions } from '../utility';
-import {
-  BuildDrizzleOrderByProps,
-  DrizzleSortedQuery,
-} from './types';
+import type { BuildDrizzleOrderByProps, DrizzleSortedQuery } from './types';
 import { columnMapFactory, parseSortOptions } from '../utility';
-
 
 /**
  * Applies dynamic order by logic to a Drizzle select query.
- * 
+ *
  * This function parses sort options from various sources (URL parameters, GridSortModel, etc.)
  * and applies the appropriate orderBy clauses to a Drizzle query builder.
- * 
+ *
  * @param props - Configuration props for building the order by clause
  * @returns The query builder with orderBy applied
- * 
+ *
  * @example
  * ```typescript
  * // Basic usage with a simple column map
@@ -49,32 +44,32 @@ import { columnMapFactory, parseSortOptions } from '../utility';
  *     }
  *   }
  * });
- * 
+ *
  * // Usage with table schema object
  * const tableColumns = {
  *   name: users.name,
  *   email: users.email,
  *   created_at: users.createdAt,
  * };
- * 
+ *
  * const orderedQuery = buildDrizzleOrderBy({
  *   query: db.select().from(users),
  *   source: req.url,
  *   defaultSort: [{ field: 'name', sort: 'asc' }],
  *   getColumn: (name) => tableColumns[name as keyof typeof tableColumns]
  * });
- * 
+ *
  * // Advanced usage with custom SQL expressions
  * const orderedQuery = buildDrizzleOrderBy({
  *   query: db.select().from(users),
  *   source: sortModel,
  *   getColumn: (name) => {
  *     switch (name) {
- *       case 'full_name': 
+ *       case 'full_name':
  *         return sql`${users.firstName} || ' ' || ${users.lastName}`;
- *       case 'name': 
+ *       case 'name':
  *         return users.name;
- *       default: 
+ *       default:
  *         return undefined;
  *     }
  *   }
@@ -126,7 +121,9 @@ export const buildDrizzleOrderBy = ({
     }
 
     // Apply all order by expressions
-    return Array.isArray(query) ? query : query.orderBy(...orderByExpressions) as DrizzleSortedQuery;
+    return Array.isArray(query)
+      ? query
+      : (query.orderBy(...orderByExpressions) as DrizzleSortedQuery);
   };
 
   /**
@@ -195,17 +192,17 @@ export const buildDrizzleOrderBy = ({
 
 /**
  * Helper function to create a column getter from a schema object.
- * 
+ *
  * This utility simplifies the creation of the getColumn function when you have
  * a schema object or table reference.
- * 
+ *
  * @param columns - Object mapping column names to Drizzle column objects
  * @returns A getColumn function for use with buildDrizzleOrderBy
- * 
+ *
  * @example
  * ```typescript
  * import { users } from '@/drizzle/schema';
- * 
+ *
  * const getColumn = createColumnGetter({
  *   name: users.name,
  *   email: users.email,
@@ -213,7 +210,7 @@ export const buildDrizzleOrderBy = ({
  *   // Custom SQL expression
  *   full_name: sql`${users.firstName} || ' ' || ${users.lastName}`,
  * });
- * 
+ *
  * const orderedQuery = buildDrizzleOrderBy({
  *   query: db.select().from(users),
  *   source: req.url,
@@ -222,31 +219,31 @@ export const buildDrizzleOrderBy = ({
  * ```
  */
 export const createColumnGetter = (
-  columns: Record<string, PgColumn | SQL>
+  columns: Record<string, PgColumn | SQL>,
 ): ((columnName: string) => PgColumn | SQL | undefined) => {
   return (columnName: string) => columns[columnName];
 };
 
 /**
  * Helper function to create a simple column getter for a single table.
- * 
+ *
  * This utility uses reflection to automatically map common column naming patterns.
  * It's useful when you want basic column mapping without defining every column manually.
- * 
+ *
  * @param table - The Drizzle table object
  * @param customMappings - Optional custom column mappings
  * @returns A getColumn function for use with buildDrizzleOrderBy
- * 
+ *
  * @example
  * ```typescript
  * import { users } from '@/drizzle/schema';
- * 
+ *
  * const getColumn = createTableColumnGetter(users, {
  *   // Map custom field names to table columns
  *   display_name: users.name,
  *   user_email: users.email,
  * });
- * 
+ *
  * const orderedQuery = buildDrizzleOrderBy({
  *   query: db.select().from(users),
  *   source: gridSortModel,
@@ -256,32 +253,38 @@ export const createColumnGetter = (
  */
 export const createTableColumnGetter = (
   table: Record<string, unknown>,
-  customMappings: Record<string, PgColumn | SQL> = {}
+  customMappings: Record<string, PgColumn | SQL> = {},
 ): ((columnName: string) => PgColumn | SQL | undefined) => {
   return (columnName: string) => {
     // Check custom mappings first
     if (customMappings[columnName]) {
       return customMappings[columnName];
     }
-    
+
     // Try direct table property access (only for valid identifier names)
-    if (!columnName.includes('-') && table[columnName] && typeof table[columnName] === 'object') {
+    if (
+      !columnName.includes('-') &&
+      table[columnName] &&
+      typeof table[columnName] === 'object'
+    ) {
       return table[columnName] as PgColumn;
     }
-    
+
     // Try common naming pattern conversions (only for valid identifier names)
     if (!columnName.includes('-')) {
-      const camelCase = columnName.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      const camelCase = columnName.replace(/_([a-z])/g, (_, letter) =>
+        letter.toUpperCase(),
+      );
       if (table[camelCase] && typeof table[camelCase] === 'object') {
         return table[camelCase] as PgColumn;
       }
-      
+
       const snakeCase = columnName.replace(/([A-Z])/g, '_$1').toLowerCase();
       if (table[snakeCase] && typeof table[snakeCase] === 'object') {
         return table[snakeCase] as PgColumn;
       }
     }
-    
+
     return undefined;
   };
 };

@@ -38,9 +38,11 @@ export const handleResponseCaching = async (
   } else {
     // Log why we're not caching
     if (config.enableLogging) {
-      log(l => l.warn(
-        `❌ Not caching ${context}response (finishReason: ${response.finishReason}, hasText: ${!!(response.text && response.text.length > 0)}) for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
-      ));
+      log((l) =>
+        l.warn(
+          `❌ Not caching ${context}response (finishReason: ${response.finishReason}, hasText: ${!!(response.content && response.content.length > 0)}) for key: ${cacheKey.substring(0, config.maxKeyLogLength)}...`,
+        ),
+      );
     }
   }
 };

@@ -1,8 +1,8 @@
+import { PaginationStats, PaginatedResultset } from '@/data-models/_types';
 import {
-  PaginationStats,
-  PaginatedResultset,
-} from '@/data-models/_types';
-import { isError, isTemplateStringsArray } from '@/lib/react-util/_utility-methods';
+  isError,
+  isTemplateStringsArray,
+} from '@/lib/react-util/utility-methods';
 import { log } from '../logger';
 import type {
   TransformedFullQueryResults,
@@ -225,7 +225,7 @@ export class AbstractObjectRepository<T extends object> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     values: Array<any>,
   ) => {
-    values = values?.map(x => (x instanceof Date ? x.toISOString() : x));
+    values = values?.map((x) => (x instanceof Date ? x.toISOString() : x));
     return isTemplateStringsArray(sqlQuery)
       ? sql(sqlQuery, ...values)
       : sql(sqlQuery, values);

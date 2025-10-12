@@ -10,19 +10,19 @@ describe('ResizableDraggableDialog Background Interaction', () => {
   it('should allow background clicks when modal=false', () => {
     const mockOnClose = jest.fn();
     const mockBackgroundClick = jest.fn();
-    
+
     render(
       <div>
-        <div 
+        <div
           data-testid="background-element"
           onClick={mockBackgroundClick}
-          style={{ 
-            position: 'absolute', 
-            top: 0, 
-            left: 0, 
-            width: '100%', 
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
             height: '100%',
-            zIndex: 1 
+            zIndex: 1,
           }}
         >
           Background Content
@@ -37,27 +37,27 @@ describe('ResizableDraggableDialog Background Interaction', () => {
         >
           <div>Dialog Content</div>
         </ResizableDraggableDialog>
-      </div>
+      </div>,
     );
 
     // Verify dialog is rendered
     expect(screen.getByText('Test Dialog')).toBeInTheDocument();
     expect(screen.getByText('Dialog Content')).toBeInTheDocument();
-    
+
     // Click on background element
     const backgroundElement = screen.getByTestId('background-element');
     act(() => fireEvent.click(backgroundElement));
 
     // Background click should be received
     expect(mockBackgroundClick).toHaveBeenCalledTimes(1);
-    
+
     // Dialog should not be closed by background click in non-modal mode
     expect(mockOnClose).not.toHaveBeenCalled();
   });
 
   it('should render correctly when modal=false', () => {
     const mockOnClose = jest.fn();
-    
+
     render(
       <ResizableDraggableDialog
         isOpenState={true}
@@ -68,7 +68,7 @@ describe('ResizableDraggableDialog Background Interaction', () => {
         height={300}
       >
         <div>Dialog Content</div>
-      </ResizableDraggableDialog>
+      </ResizableDraggableDialog>,
     );
 
     // Verify dialog is rendered correctly
@@ -79,7 +79,7 @@ describe('ResizableDraggableDialog Background Interaction', () => {
   it('should still allow dialog content interaction when modal=false', () => {
     const mockOnClose = jest.fn();
     const mockDialogButtonClick = jest.fn();
-    
+
     render(
       <ResizableDraggableDialog
         isOpenState={true}
@@ -92,7 +92,7 @@ describe('ResizableDraggableDialog Background Interaction', () => {
         <button onClick={mockDialogButtonClick} data-testid="dialog-button">
           Dialog Button
         </button>
-      </ResizableDraggableDialog>
+      </ResizableDraggableDialog>,
     );
 
     // Click on dialog button
@@ -100,7 +100,7 @@ describe('ResizableDraggableDialog Background Interaction', () => {
     act(() => {
       fireEvent.click(dialogButton);
     });
-    
+
     // Dialog button click should work
     expect(mockDialogButtonClick).toHaveBeenCalledTimes(1);
   });

@@ -475,11 +475,13 @@ export { metricsCollector };
 export function setupConsoleMetrics(): () => void {
   return metricsCollector.onMetricsUpdate((metrics) => {
     if (metrics.totalResponses % 10 === 0 && metrics.totalResponses > 0) {
-      log(l => l.info( 
-        `📊 Cache Metrics - Hit Rate: ${(metrics.hitRate * 100).toFixed(1)}%, ` +
-          `Hits: ${metrics.cacheHits}, Misses: ${metrics.cacheMisses}, ` +
-          `Jail Promotions: ${metrics.jailPromotions}, Errors: ${metrics.cacheErrors}`,
-      ));
+      log((l) =>
+        l.info(
+          `📊 Cache Metrics - Hit Rate: ${(metrics.hitRate * 100).toFixed(1)}%, ` +
+            `Hits: ${metrics.cacheHits}, Misses: ${metrics.cacheMisses}, ` +
+            `Jail Promotions: ${metrics.jailPromotions}, Errors: ${metrics.cacheErrors}`,
+        ),
+      );
     }
   });
 }

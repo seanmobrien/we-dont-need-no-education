@@ -2,9 +2,9 @@
 -- Insert commonly used AI providers and models
 
 -- First, insert providers
-INSERT INTO providers ("name", display_name, description) VALUES
-('azure-openai.chat', 'Azure OpenAI', 'Microsoft Azure OpenAI Service for enterprise AI solutions'),
-('google', 'Google AI', 'Google AI Platform including Gemini models')
+INSERT INTO providers ("name", display_name, description, aliases) VALUES
+('azure-openai.chat', 'Azure OpenAI', 'Microsoft Azure OpenAI Service for enterprise AI solutions', {'azure.chat'}),
+('google', 'Google AI', 'Google AI Platform including Gemini models', NULL)
 ON CONFLICT ("name") DO UPDATE SET
     display_name = EXCLUDED.display_name,
     description = EXCLUDED.description,

@@ -1,10 +1,14 @@
 import type { LikeNextRequest } from '@/lib/nextjs-util/types';
-import type { GridFilterModel, GridSortModel, GridFilterItem } from '@mui/x-data-grid-pro';
+import type {
+  GridFilterModel,
+  GridSortModel,
+  GridFilterItem,
+} from '@mui/x-data-grid-pro';
 import { isLikeNextRequest } from '@/lib/nextjs-util/guards';
 import { isGridSortModel, isString, isURL } from './postgres/guards';
 import { isGridFilterModel } from '../guards';
-import { ArrayElement } from '@/lib/typescript';
-import { PaginatedGridListRequest } from '../types';
+import type { ArrayElement } from '@/lib/typescript/_types';
+import type { PaginatedGridListRequest } from '../types';
 import { normalizeNullableNumeric } from '@/data-models/_utilities';
 type GridSortItem = ArrayElement<GridSortModel>;
 
@@ -66,20 +70,19 @@ export const parseFilterOptions = (
   return appendAdditional({ items: [] });
 };
 
-
 /**
  * Factory function to create a column mapping function.
  */
 export const columnMapFactory = (
-  columnMap: ((sourceColumnName: string) => string) | Record<string, string>
+  columnMap: ((sourceColumnName: string) => string) | Record<string, string>,
 ): ((sourceColumnName: string) => string) => {
   if (typeof columnMap === 'function') {
     return columnMap;
   }
-  
-  return (sourceColumnName: string) => columnMap[sourceColumnName] || sourceColumnName;
-};
 
+  return (sourceColumnName: string) =>
+    columnMap[sourceColumnName] || sourceColumnName;
+};
 
 type ParseSortOptionsParam =
   | URLSearchParams
@@ -93,11 +96,15 @@ type ParseSortOptionsParam =
  */
 export const parseSortOptions = (
   source?: ParseSortOptionsParam,
-): typeof source extends infer TSource ? TSource extends ParseSortOptionsParam ? GridSortModel : undefined : never => {  
+): typeof source extends infer TSource
+  ? TSource extends ParseSortOptionsParam
+    ? GridSortModel
+    : undefined
+  : never => {
   if (source === null) {
     return [] as GridSortModel; // Test expects [] for null
   }
-  
+
   if (source === undefined) {
     return undefined as undefined; // Test expects undefined for undefined
   }
@@ -111,7 +118,7 @@ export const parseSortOptions = (
     if (source.trim() === '') {
       return undefined as undefined;
     }
-    
+
     try {
       const parsed = JSON.parse(source);
       if (isGridSortModel(parsed)) {
@@ -121,26 +128,28 @@ export const parseSortOptions = (
       // If parsing as json fails, try [field]:asc|desc format
       const extracted = source.split(',').reduce((acc, item) => {
         if (!item.trim()) return acc; // Skip empty items
-        
+
         // Split only on the first colon to handle cases like 'foo:bar:desc'
         const colonIndex = item.indexOf(':');
         if (colonIndex === -1) {
           // No colon found, use default sort
-          acc.push({ 
-            field: item.trim(), 
-            sort: 'asc' as 'asc' | 'desc'
+          acc.push({
+            field: item.trim(),
+            sort: 'asc' as 'asc' | 'desc',
           });
         } else {
           const field = item.substring(0, colonIndex);
           const direction = item.substring(colonIndex + 1).trim();
-          acc.push({ 
+          acc.push({
             field: field, // Preserve spaces in field name per test
-            sort: (direction.toLowerCase() === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc'
+            sort: (direction.toLowerCase() === 'desc' ? 'desc' : 'asc') as
+              | 'asc'
+              | 'desc',
           });
         }
         return acc;
       }, [] as GridSortItem[]);
-      
+
       if (extracted.length > 0) {
         return extracted as GridSortModel;
       }
@@ -150,9 +159,7 @@ export const parseSortOptions = (
 
   if (source instanceof URLSearchParams) {
     const sortParam = source.get('sort');
-    return sortParam
-      ? parseSortOptions(sortParam)
-      : undefined;
+    return sortParam ? parseSortOptions(sortParam) : undefined;
   }
 
   if (isURL(source)) {
@@ -174,8 +181,8 @@ export const parseSortOptions = (
 export const parsePaginationOptions = (
   source: LikeNextRequest | URL | URLSearchParams | string | undefined,
   defaultPageSize: number = 25,
-  maxPageSize: number = 100
-): { offset: number; limit: number } | { num: number; page: string; } => {
+  maxPageSize: number = 100,
+): { offset: number; limit: number } | { num: number; page: string } => {
   let page = 0;
   let pageSize = defaultPageSize;
 
@@ -204,7 +211,7 @@ export const parsePaginationOptions = (
   if (searchParams) {
     const pageParam = searchParams.get('page');
     const pageSizeParam = searchParams.get('pageSize');
-        
+
     if (pageParam) {
       const parsedPage = parseInt(pageParam, 10);
       if (!isNaN(parsedPage) && parsedPage >= 0) {
@@ -228,14 +235,13 @@ export const parsePaginationOptions = (
               : Math.min(numValue, maxPageSize),
           page: (pageParam ?? '').trim(),
         };
-      }      
+      }
     }
   }
 
   const offset = page * pageSize;
   return { offset, limit: pageSize };
 };
-
 
 /**
  * Parses pagination statistics from a given request object.

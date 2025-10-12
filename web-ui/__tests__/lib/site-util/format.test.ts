@@ -1,4 +1,9 @@
-import { formatDuration, formatNumber, getUsagePercentage, getUsageColor } from '@/lib/site-util/format';
+import {
+  formatDuration,
+  formatNumber,
+  getUsagePercentage,
+  getUsageColor,
+} from '@/lib/site-util/format';
 
 describe('Format utilities', () => {
   describe('formatDuration', () => {

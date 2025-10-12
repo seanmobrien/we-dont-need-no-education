@@ -42,9 +42,7 @@ describe('Theme Integration', () => {
     */
     // The theme provider should set the data-theme attribute
     // This test ensures our changes don't break the basic theme functionality
-    expect(document.documentElement.getAttribute('data-theme')).toBe(
-      'light',
-    );
+    expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
   it('switches to dark theme correctly', () => {

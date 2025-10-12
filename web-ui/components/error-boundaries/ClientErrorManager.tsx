@@ -1,8 +1,20 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback, SetStateAction, Dispatch } from 'react';
+import {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  SetStateAction,
+  Dispatch,
+} from 'react';
 import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
-import { asErrorLike, ErrorLike, isErrorLike, StringOrErrorLike } from '@/lib/react-util/errors/error-like';
+import {
+  asErrorLike,
+  ErrorLike,
+  isErrorLike,
+  StringOrErrorLike,
+} from '@/lib/react-util/errors/error-like';
 
 /**
  * Configuration for error suppression patterns
@@ -77,7 +89,7 @@ type SuppressionResult = {
   suppress: boolean;
   rule?: ErrorSuppressionRule;
   completely?: boolean;
-}; 
+};
 
 const shouldSuppressError = ({
   error,
@@ -87,11 +99,16 @@ const shouldSuppressError = ({
   suppressionRules: ErrorSuppressionRule[];
 }): SuppressionResult => {
   const testMatch = (pattern: string | RegExp, value: string): boolean => {
-    return !!value && (typeof pattern === 'string' ? value.includes(pattern) : pattern.test(value));
-  }
-  const errorMessage = normalizeErrorMessage(error.message);    
+    return (
+      !!value &&
+      (typeof pattern === 'string'
+        ? value.includes(pattern)
+        : pattern.test(value))
+    );
+  };
+  const errorMessage = normalizeErrorMessage(error.message);
   const errorSource = error.source;
-  const matchedRule = suppressionRules.find(rule => {
+  const matchedRule = suppressionRules.find((rule) => {
     // Check if the error message matches the rule pattern
     const messageMatches = testMatch(rule.pattern, errorMessage);
     if (!messageMatches) {
@@ -103,7 +120,7 @@ const shouldSuppressError = ({
       if (!sourceMatches) {
         return false;
       }
-    } 
+    }
     // If we reach here, the rule is a match.
     return true;
   });
@@ -248,7 +265,7 @@ const processError = ({
   if (surfaceToErrorBoundary) {
     // Surface to React error boundary if configured
     setErrorToThrow(errorObj);
-  } 
+  }
   return true;
 };
 
@@ -319,21 +336,28 @@ export const ClientErrorManager = ({
         colno: event.colno || 0,
       });
       if (errorObj) {
-        if (!processError({
-          errorObj,
-          lastErrorMap: lastErrorMap.current,
-          suppressionRules,
-          reportSuppressedErrors,
-          surfaceToErrorBoundary,
-          debounceMs,
-          setErrorToThrow,          
-        })) {
+        if (
+          !processError({
+            errorObj,
+            lastErrorMap: lastErrorMap.current,
+            suppressionRules,
+            reportSuppressedErrors,
+            surfaceToErrorBoundary,
+            debounceMs,
+            setErrorToThrow,
+          })
+        ) {
           // Error was suppressed
           event.preventDefault();
-        } 
+        }
       }
     },
-    [debounceMs, suppressionRules, surfaceToErrorBoundary, reportSuppressedErrors],
+    [
+      debounceMs,
+      suppressionRules,
+      surfaceToErrorBoundary,
+      reportSuppressedErrors,
+    ],
   );
 
   /**
@@ -354,7 +378,12 @@ export const ClientErrorManager = ({
         });
       }
     },
-    [suppressionRules, reportSuppressedErrors, surfaceToErrorBoundary, debounceMs],
+    [
+      suppressionRules,
+      reportSuppressedErrors,
+      surfaceToErrorBoundary,
+      debounceMs,
+    ],
   );
 
   // Set up global error listeners
@@ -391,7 +420,7 @@ export const ClientErrorManager = ({
 
   // This component renders nothing
   return null;
-}
+};
 
 /**
  * Utility function to create custom suppression rules
@@ -399,7 +428,7 @@ export const ClientErrorManager = ({
 export function createSuppressionRule(
   id: string,
   pattern: string | RegExp,
-  options: Partial<Omit<ErrorSuppressionRule, 'id' | 'pattern'>> = {}
+  options: Partial<Omit<ErrorSuppressionRule, 'id' | 'pattern'>> = {},
 ): ErrorSuppressionRule {
   return {
     id,
@@ -415,6 +444,9 @@ export function useErrorSuppression(rules: ErrorSuppressionRule[]) {
   useEffect(() => {
     // This would require a global error manager instance
     // For now, just log that rules were added
-    console.debug('Added error suppression rules:', rules.map(r => r.id));
+    console.debug(
+      'Added error suppression rules:',
+      rules.map((r) => r.id),
+    );
   }, [rules]);
 }

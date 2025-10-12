@@ -1,7 +1,8 @@
 'use client';
 
 import { log } from '@/lib/logger';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { isError } from '@/lib/react-util/utility-methods';
 import {
   useState,
   useCallback,
@@ -17,12 +18,8 @@ import {
 import { EmailMessage } from '@/data-models/api/email-message';
 import ContactDropdown from '@/components/contact/contact-dropdown';
 import { ContactSummary } from '@/data-models/api/contact';
-import {
-  createContactSummary,
-} from '@/data-models/api/factories';
-import {
-  normalizeDateAndTime,
-} from '@/data-models/_utilities';
+import { createContactSummary } from '@/data-models/api/factories';
+import { normalizeDateAndTime } from '@/data-models/_utilities';
 import ContactRecipients from '../contact/contact-recipients';
 import EmailSelect from './select';
 import { SubmitRefCallbackInstance } from './_types';
@@ -56,7 +53,8 @@ const stableStyles = {
     margin: '0 auto',
     padding: '1.5rem',
     borderRadius: '0.5rem',
-    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
+    boxShadow:
+      '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
   } as const,
   input: {
     width: '100%',
@@ -266,11 +264,7 @@ const EmailForm: ForwardRefRenderFunction<
       <h2 style={stableStyles.title}>
         {emailId ? 'Edit Email' : 'Create Email'}
       </h2>
-      {message && (
-        <p style={stableStyles.errorText}>
-          {message}
-        </p>
-      )}
+      {message && <p style={stableStyles.errorText}>{message}</p>}
       <div style={stableStyles.formContainer}>
         <div>
           <label

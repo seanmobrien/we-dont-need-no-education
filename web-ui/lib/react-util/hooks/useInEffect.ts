@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { LoggedError } from '../errors';
-import { isError } from '../_utility-methods';
+import { isError } from '../utility-methods';
 import { log } from '@/lib/logger';
 
 type UseInEffectRecordResolver = {
@@ -16,27 +16,6 @@ type PendingUseInEffectRecord = {
   operation: Promise<unknown>;
 };
 
-/**
- * Custom React hook that manages a queue of asynchronous operations, ensuring they are executed sequentially
- * within the component's lifecycle using `useEffect`. This hook is useful for scenarios where you need to
- * serialize async side effects and guarantee that only one is processed at a time, even across component remounts.
- *
- * The hook maintains an internal queue and processes each operation in order, handling resolution and rejection
- * of promises, and ensuring that operations are not lost if the component is unmounted and remounted.
- *
- * @returns An object containing the `enqueue` function:
- * - `enqueue`: A function to add an async operation to the queue. It accepts an async function and its arguments,
- *   returning a promise that resolves or rejects with the result of the operation.
- *
- * @example
- * const { enqueue } = useInEffect();
- * enqueue(async (msg: string) => msg + 'World', 'Hello, ').then(console.log); // Logs: "Hello, World"
- *
- * @remarks
- * - Only one instance of the effect should be mounted at a time. Multiple mounts will log a warning.
- * - The queue persists across component remounts, ensuring pending operations are not lost.
- * - Designed for advanced use cases where effect serialization is required.
- */
 export const useInEffect = () => {
   const refQueue = useRef<{
     queue: Array<UseInEffectRecord>;
@@ -45,10 +24,6 @@ export const useInEffect = () => {
     mountedEffects: number;
   }>({ queue: [], isProcessing: false, mountedEffects: 0 });
 
-  /**
-   * This is where the special sauce lives - the registered useEffect handles calling queued operations
-   * within the useEffect scope of the component lifecycle
-   */
   useEffect(() => {
     let currentTimeout: NodeJS.Timeout | undefined;
     let thisIsActive = true;

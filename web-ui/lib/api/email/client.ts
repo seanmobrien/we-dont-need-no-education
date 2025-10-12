@@ -3,10 +3,7 @@ import type {
   EmailMessage,
   EmailMessageStats,
 } from '@/data-models/api/email-message';
-import type {
-  PaginatedResultset,
-  PaginationStats,
-} from '@/data-models/_types';
+import type { PaginatedResultset, PaginationStats } from '@/data-models/_types';
 import type { EmailSearchApiParams } from './types';
 import siteMap from '@/lib/site-util/url-builder';
 import {
@@ -16,7 +13,7 @@ import {
 import { ICancellablePromiseExt } from '@/lib/typescript';
 
 const apiRequest = <TResult>(
-  cb: (api: ApiRequestHelper, builder: typeof siteMap.api.email) => TResult
+  cb: (api: ApiRequestHelper, builder: typeof siteMap.api.email) => TResult,
 ): TResult => {
   const apiHelper = apiRequestHelperFactory({ area: 'email' });
   const builder = siteMap.api.email;
@@ -38,7 +35,7 @@ export const getEmailList = ({
     apiHelper.get<ReadonlyArray<EmailMessageSummary>>({
       url: builder.page({ page, num }),
       action: 'list',
-    })
+    }),
   );
 
 /**
@@ -52,7 +49,7 @@ export const getEmail = (id: string): ICancellablePromiseExt<EmailMessage> =>
     apiHelper.get<EmailMessage>({
       url: builder.page(id),
       action: 'load',
-    })
+    }),
   );
 
 /**
@@ -62,14 +59,14 @@ export const getEmail = (id: string): ICancellablePromiseExt<EmailMessage> =>
  * @returns {ICancellablePromiseExt<EmailMessage>} A ICancellablePromiseExt that resolves to the created email message.
  */
 export const createEmailRecord = (
-  email: Omit<EmailMessage, 'emailId'>
+  email: Omit<EmailMessage, 'emailId'>,
 ): ICancellablePromiseExt<EmailMessage> =>
   apiRequest((apiHelper, builder) =>
     apiHelper.post<EmailMessage>({
       url: builder.page(),
       action: 'create',
       input: email,
-    })
+    }),
   );
 
 /**
@@ -79,14 +76,14 @@ export const createEmailRecord = (
  * @returns {ICancellablePromiseExt<EmailMessage>} A ICancellablePromiseExt that resolves to the updated email message.
  */
 export const updateEmailRecord = (
-  email: EmailMessage
+  email: EmailMessage,
 ): ICancellablePromiseExt<EmailMessage> =>
   apiRequest((apiHelper, builder) =>
     apiHelper.put<EmailMessage>({
       url: builder.page(),
       action: 'update',
       input: email,
-    })
+    }),
   );
 
 /**
@@ -97,9 +94,9 @@ export const updateEmailRecord = (
  * @returns A cancellable promise that resolves to the email message.
  */
 export const writeEmailRecord = (
-  email: Omit<EmailMessage, 'emailId'> & Partial<Pick<EmailMessage, 'emailId'>>
+  email: Omit<EmailMessage, 'emailId'> & Partial<Pick<EmailMessage, 'emailId'>>,
 ): ICancellablePromiseExt<EmailMessage> =>
-  email.emailId ?? 0 > 0
+  (email.emailId ?? 0 > 0)
     ? updateEmailRecord(email as EmailMessage)
     : createEmailRecord(email);
 
@@ -110,13 +107,13 @@ export const writeEmailRecord = (
  * @returns {ICancellablePromiseExt<EmailMessageSummary>} A ICancellablePromiseExt that resolves to the summary of the deleted email message.
  */
 export const deleteEmailRecord = (
-  id: number
+  id: number,
 ): ICancellablePromiseExt<EmailMessageSummary> =>
   apiRequest((apiHelper, builder) =>
     apiHelper.delete<EmailMessageSummary>({
       url: builder.page(id),
       action: 'delete',
-    })
+    }),
   );
 
 /**
@@ -129,7 +126,7 @@ export const getEmailStats = (): ICancellablePromiseExt<EmailMessageStats> =>
     apiHelper.get<EmailMessageStats>({
       url: builder.stats(),
       action: 'stats',
-    })
+    }),
   );
 
 /**
@@ -139,11 +136,11 @@ export const getEmailStats = (): ICancellablePromiseExt<EmailMessageStats> =>
  * @returns {ICancellablePromiseExt<PaginatedResultset<EmailMessageSummary>>} A ICancellablePromiseExt that resolves to a paginated result set of email message summaries.
  */
 export const getEmailSearchResults = (
-  ops: EmailSearchApiParams
+  ops: EmailSearchApiParams,
 ): ICancellablePromiseExt<PaginatedResultset<EmailMessageSummary>> =>
   apiRequest((apiHelper, builder) =>
     apiHelper.get<PaginatedResultset<EmailMessageSummary>>({
       url: builder.search(ops),
       action: 'search',
-    })
+    }),
   );

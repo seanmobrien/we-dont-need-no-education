@@ -3,15 +3,16 @@
  */
 /**
  * @fileoverview Unit tests for Call-to-Action API route
- * 
+ *
  * Tests the GET and POST endpoints for call-to-action properties,
  * including pagination, filtering, and repository integration.
  */
 
 import { NextRequest } from 'next/server';
-import { GET, POST } from '@/app/api/email/[emailId]/properties/call-to-action/route';
+import { GET } from '@/app/api/email/[emailId]/properties/call-to-action/route';
 import { CallToActionDetailsRepository } from '@/lib/api/email/properties/call-to-action/cta-details-repository';
 import { RepositoryCrudController } from '@/lib/api/repository-crud-controller';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock external dependencies
 jest.mock('@/lib/neondb');
@@ -19,7 +20,7 @@ jest.mock('@/lib/components/mui/data-grid/queryHelpers/postgres');
 
 // Mock the API modules
 jest.mock(
-  '@/lib/api/email/properties/call-to-action/cta-details-repository',
+  '/lib/api/email/properties/call-to-action/cta-details-repository',
   () => ({
     CallToActionDetailsRepository: jest.fn().mockImplementation(() => ({
       mapRecordToObject: jest.fn(),
@@ -27,14 +28,12 @@ jest.mock(
     })),
   }),
 );
-jest.mock('@/lib/api/repository-crud-controller', () => ({  
+jest.mock('@/lib/api/repository-crud-controller', () => ({
   RepositoryCrudController: jest.fn().mockImplementation(() => ({
     listFromRepository: jest.fn(),
     create: jest.fn(),
   })),
 }));
-
-
 
 // Mock data
 const mockEmailId = 'test-email-123';
@@ -49,7 +48,7 @@ const mockCallToActionData = [
     opened_date: '2024-01-15',
     closed_date: null,
     compliancy_close_date: '2024-02-15',
-    completion_percentage: 0.00,
+    completion_percentage: 0.0,
     compliance_rating: null,
     inferred: false,
     compliance_date_enforceable: true,
@@ -64,34 +63,40 @@ const mockCallToActionData = [
     title_ix_applicable_reasons: ['Educational records involved'],
     closure_actions: ['Documentation provided', 'Follow-up scheduled'],
     compliance_average_chapter_13: 0.85,
-    compliance_chapter_13_reasons: ['Timely response', 'Complete documentation']
-  }
+    compliance_chapter_13_reasons: [
+      'Timely response',
+      'Complete documentation',
+    ],
+  },
 ];
-
-
+const mockConsole = hideConsoleOutput();
 describe('Call-to-Action API Route', () => {
   let mockRequest: NextRequest;
   let mockParams: { params: Promise<{ emailId: string; propertyId: string }> };
 
   beforeEach(() => {
-    // jest.clearAllMocks();  
-   
+    // jest.clearAllMocks();
+
     // Setup mock request
-    mockRequest = new NextRequest('http://localhost:3000/api/email/test-email-123/properties/call-to-action?page=1&num=20');
+    mockRequest = new NextRequest(
+      'http://localhost:3000/api/email/test-email-123/properties/call-to-action?page=1&num=20',
+    );
     mockParams = {
-      params: Promise.resolve({ emailId: mockEmailId, propertyId: 'property-123' })
+      params: Promise.resolve({
+        emailId: mockEmailId,
+        propertyId: 'property-123',
+      }),
     };
+  });
+
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   describe('GET /api/email/[emailId]/properties/call-to-action', () => {
     it('should have a GET function that can be imported', () => {
       expect(GET).toBeDefined();
       expect(typeof GET).toBe('function');
-    });
-
-    it('should have a POST function that can be imported', () => {
-      expect(POST).toBeDefined();
-      expect(typeof POST).toBe('function');
     });
 
     it('should verify mocking infrastructure is working', () => {
@@ -103,25 +108,13 @@ describe('Call-to-Action API Route', () => {
     });
 
     it('should handle various request scenarios without throwing', () => {
+      mockConsole.setup();
       // Test that the route handlers exist and are callable (basic smoke test)
       expect(() => {
         GET(mockRequest, mockParams).catch(() => {
           // Expected to fail in mock environment, but shouldn't throw synchronously
         });
       }).not.toThrow();
-      
-      expect(() => {
-        POST(mockRequest, mockParams).catch(() => {
-          // Expected to fail in mock environment, but shouldn't throw synchronously  
-        });
-      }).not.toThrow();
-    });
-  });
-
-  describe('POST /api/email/[emailId]/properties/call-to-action', () => {
-    it('should be defined and callable', () => {
-      expect(POST).toBeDefined();
-      expect(typeof POST).toBe('function');
     });
   });
 
@@ -130,17 +123,17 @@ describe('Call-to-Action API Route', () => {
       // Verify our test data has the expected structure
       expect(mockCallToActionData).toHaveLength(1);
       const firstItem = mockCallToActionData[0];
-      
+
       const expectedFields = [
         'property_id',
         'property_value',
         'opened_date',
         'completion_percentage',
         'severity',
-        'title_ix_applicable'
+        'title_ix_applicable',
       ];
 
-      expectedFields.forEach(field => {
+      expectedFields.forEach((field) => {
         expect(firstItem).toHaveProperty(field);
       });
     });
@@ -150,7 +143,6 @@ describe('Call-to-Action API Route', () => {
     it('should have proper error handling infrastructure', () => {
       // Basic test to ensure route doesn't crash during import
       expect(GET).toBeDefined();
-      expect(POST).toBeDefined();
     });
   });
 });

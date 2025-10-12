@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * @fileoverview Tests for Chat History OpenTelemetry Instrumentation
- * 
+ *
  * This test file verifies that the OTEL instrumentation properly captures
  * metrics and traces for chat history operations.
  */
@@ -55,7 +55,10 @@ jest.mock('@opentelemetry/api', () => ({
   },
 }));
 
-import type { FlushResult, FlushContext } from '@/lib/ai/middleware/chat-history/types';
+import type {
+  FlushResult,
+  FlushContext,
+} from '@/lib/ai/middleware/chat-history/types';
 import {
   instrumentFlushOperation,
   instrumentStreamChunk,
@@ -63,7 +66,7 @@ import {
   createChatHistoryError,
 } from '@/lib/ai/middleware/chat-history/instrumentation';
 import { getStackTrace } from '@/lib/nextjs-util/get-stack-trace';
-import { isError } from '@/lib/react-util/_utility-methods';
+import { isError } from '@/lib/react-util/utility-methods';
 
 describe('Chat History Instrumentation', () => {
   beforeEach(() => {
@@ -90,7 +93,10 @@ describe('Chat History Instrumentation', () => {
       };
       const mockOperation = jest.fn(() => Promise.resolve(mockResult));
 
-      const result = await instrumentFlushOperation(mockFlushContext, mockOperation);
+      const result = await instrumentFlushOperation(
+        mockFlushContext,
+        mockOperation,
+      );
 
       expect(result).toEqual(mockResult);
       expect(mockTracer.startSpan).toHaveBeenCalledWith('chat_history.flush', {
@@ -111,15 +117,17 @@ describe('Chat History Instrumentation', () => {
 
     it('should instrument failed flush operation', async () => {
       const mockError = {
-        message: 'Flush failed', 
-        stack: getStackTrace(), 
-        name: 'FlushError', 
-        cause: { message: 'Strange and terrible forces' } 
+        message: 'Flush failed',
+        stack: getStackTrace(),
+        name: 'FlushError',
+        cause: { message: 'Strange and terrible forces' },
       };
 
       try {
-        await instrumentFlushOperation(mockFlushContext, jest
-        .fn(() => Promise.reject(mockError)));
+        await instrumentFlushOperation(
+          mockFlushContext,
+          jest.fn(() => Promise.reject(mockError)),
+        );
       } catch (e) {
         expect(isError(e)).toBeTruthy();
         const err = e as Error;
@@ -140,7 +148,7 @@ describe('Chat History Instrumentation', () => {
       const mockOperation = jest.fn(() => Promise.reject(mockError));
 
       await expect(
-        instrumentFlushOperation(mockFlushContext, mockOperation)
+        instrumentFlushOperation(mockFlushContext, mockOperation),
       ).rejects.toThrow('Operation threw');
 
       expect(mockSpan.recordException).toHaveBeenCalledWith(mockError);
@@ -160,7 +168,7 @@ describe('Chat History Instrumentation', () => {
     };
 
     it('should instrument failed stream chunk processing', async () => {
-      const mockResult  = {
+      const mockResult = {
         currentMessageOrder: 1,
         generatedText: 'Partial',
         success: false,
@@ -168,7 +176,11 @@ describe('Chat History Instrumentation', () => {
 
       const mockOperation = jest.fn(() => Promise.resolve(mockResult));
 
-      const result = await instrumentStreamChunk('tool-call', mockContext, mockOperation as any);
+      const result = await instrumentStreamChunk(
+        'tool-call',
+        mockContext,
+        mockOperation as any,
+      );
 
       expect(result).toEqual(mockResult);
 
@@ -216,14 +228,16 @@ describe('Chat History Instrumentation', () => {
       const error = createChatHistoryError(
         'Enhanced error message',
         context,
-        originalError
+        originalError,
       );
 
       expect(error.message).toBe('Enhanced error message');
       expect(error.name).toBe('ChatHistoryError');
       expect(error.cause).toBe(originalError);
       expect(Object.hasOwnProperty.call(error, 'chatContext')).toBe(true);
-      expect((error as Error & { chatContext: unknown }).chatContext).toEqual(context);
+      expect((error as Error & { chatContext: unknown }).chatContext).toEqual(
+        context,
+      );
     });
 
     it('should create error without original error', () => {

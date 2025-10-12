@@ -6,16 +6,28 @@ import { render, screen } from '@/__tests__/test-utils';
 
 // Mock the virtualized chat display to simplify DOM assertions in tests.
 jest.mock('@/components/chat', () => ({
-  VirtualizedChatDisplay: ({ turns }: { turns: ReadonlyArray<{ messages: ReadonlyArray<{ turnId: number; messageId: number; content: string }> }> }) => (
+  VirtualizedChatDisplay: ({
+    turns,
+  }: {
+    turns: ReadonlyArray<{
+      messages: ReadonlyArray<{
+        turnId: number;
+        messageId: number;
+        content: string;
+      }>;
+    }>;
+  }) => (
     <div data-testid="virtualized-chat-display">
-      {turns.flatMap(t => t.messages).map(m => (
-        <div key={`${m.turnId}-${m.messageId}`}>{m.content}</div>
-      ))}
+      {turns
+        .flatMap((t) => t.messages)
+        .map((m) => (
+          <div key={`${m.turnId}-${m.messageId}`}>{m.content}</div>
+        ))}
     </div>
   ),
 }));
 
-// Mock the useChatDetails hook directly 
+// Mock the useChatDetails hook directly
 const mockUseChatDetails = jest.fn();
 
 // Import the real ChatHistory before mocking
@@ -25,7 +37,7 @@ import { ChatHistory as OriginalChatHistory } from '@/components/chat/history';
 const ChatHistory = ({ chatId }: { chatId: string; title?: string }) => {
   // Replace the actual hook call with our mock
   const queryResult = mockUseChatDetails(chatId);
-  
+
   // Call the original component logic but with mocked hook result
   const { data, isLoading, isError, error, refetch } = queryResult;
 
@@ -38,7 +50,10 @@ const ChatHistory = ({ chatId }: { chatId: string; title?: string }) => {
       <div>
         <div>Failed to load chat</div>
         <div>{(error as Error).message}</div>
-        <div style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => refetch()}>
+        <div
+          style={{ cursor: 'pointer', textDecoration: 'underline' }}
+          onClick={() => refetch()}
+        >
           Retry
         </div>
       </div>
@@ -55,9 +70,11 @@ const ChatHistory = ({ chatId }: { chatId: string; title?: string }) => {
       <div>Created: {new Date(data.createdAt).toLocaleString()}</div>
       <div>
         <div data-testid="virtualized-chat-display">
-          {data.turns.flatMap((t: any) => t.messages).map((m: any) => (
-            <div key={`${m.turnId}-${m.messageId}`}>{m.content}</div>
-          ))}
+          {data.turns
+            .flatMap((t: any) => t.messages)
+            .map((m: any) => (
+              <div key={`${m.turnId}-${m.messageId}`}>{m.content}</div>
+            ))}
         </div>
       </div>
     </>
@@ -68,7 +85,9 @@ describe('ChatHistory (React Query integration)', () => {
   const chatId = 'chat_123456789';
 
   beforeAll(() => {
-  (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    (
+      globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
   });
 
   afterEach(() => {
@@ -103,14 +122,16 @@ describe('ChatHistory (React Query integration)', () => {
     });
 
     render(<ChatHistory chatId={chatId} title="" />);
-    
+
     // Wait for error state
     expect(screen.getByText(/failed to load chat/i)).toBeInTheDocument();
-    
+
     // Check if error message contains server error details
-    expect(screen.getByText((content, element) => {
-      return element !== null && content.includes('500');
-    })).toBeInTheDocument();
+    expect(
+      screen.getByText((content, element) => {
+        return element !== null && content.includes('500');
+      }),
+    ).toBeInTheDocument();
 
     // Update mock to return success after retry
     mockUseChatDetails.mockReturnValue({
@@ -118,7 +139,7 @@ describe('ChatHistory (React Query integration)', () => {
         id: chatId,
         title: 'Recovered',
         createdAt: new Date().toISOString(),
-        turns: []
+        turns: [],
       },
       isLoading: false,
       isError: false,
@@ -198,7 +219,7 @@ describe('ChatHistory (React Query integration)', () => {
     });
 
     render(<ChatHistory chatId={chatId} title="" />);
-    
+
     expect(screen.getByText('Sample Title')).toBeInTheDocument();
     expect(screen.getByText(/created:/i)).toBeInTheDocument();
     expect(screen.getByText('Hello')).toBeInTheDocument();

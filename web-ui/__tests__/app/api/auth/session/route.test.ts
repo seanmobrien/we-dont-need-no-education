@@ -11,8 +11,6 @@ import { auth } from '@/auth';
 import { NextURL } from 'next/dist/server/web/next-url';
 import { NextRequest } from 'next/server';
 
-
-
 const mockedAuth = auth as jest.MockedFunction<typeof auth>;
 const mockedGetActiveUserPublicKeys =
   getActiveUserPublicKeys as jest.MockedFunction<
