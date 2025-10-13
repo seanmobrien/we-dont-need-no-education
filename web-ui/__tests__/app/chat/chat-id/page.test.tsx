@@ -121,7 +121,6 @@ const findChatHistoryProps = (
 
 // Import module under test AFTER mocks so dependencies are mocked correctly.
 let ChatDetailPage: (args: {
-  url: string;
   params: Promise<{ chatId: string }>;
 }) => Promise<React.JSX.Element>;
 let getChatDetails: (args: {
@@ -150,7 +149,6 @@ describe('ChatDetailPage', () => {
     setSession(null);
     await expect(
       ChatDetailPage({
-        url: 'http://localhost/messages/chat/abc123',
         params: Promise.resolve({ chatId: 'abc123' }),
       }),
     ).rejects.toThrow('UNAUTHORIZED');
@@ -163,7 +161,6 @@ describe('ChatDetailPage', () => {
     drizDbWithInitMock.mockResolvedValueOnce(undefined); // no chat
     await expect(
       ChatDetailPage({
-        url: 'http://localhost/messages/chat/abc123',
         params: Promise.resolve({ chatId: 'abc123' }),
       }),
     ).rejects.toThrow('NOT_FOUND');
@@ -181,7 +178,6 @@ describe('ChatDetailPage', () => {
     isUserAuthorizedMock.mockResolvedValueOnce(false);
     await expect(
       ChatDetailPage({
-        url: 'http://localhost/messages/chat/abc123',
         params: Promise.resolve({ chatId: 'abc123' }),
       }),
     ).rejects.toThrow('NOT_FOUND');
@@ -197,7 +193,6 @@ describe('ChatDetailPage', () => {
     });
     isUserAuthorizedMock.mockResolvedValueOnce(true);
     const jsx = await ChatDetailPage({
-      url: 'http://localhost/messages/chat/abc123',
       params: Promise.resolve({ chatId: 'abc123' }),
     });
     expect(jsx).toBeTruthy();
@@ -214,7 +209,6 @@ describe('ChatDetailPage', () => {
     });
     isUserAuthorizedMock.mockResolvedValueOnce(true);
     const jsx = await ChatDetailPage({
-      url: 'http://localhost/messages/chat/abc123',
       params: Promise.resolve({ chatId: 'zzz999' }),
     });
     const props = findChatHistoryProps(jsx);

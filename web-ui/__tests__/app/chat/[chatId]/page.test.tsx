@@ -21,7 +21,6 @@ jest.mock('next/navigation', () => ({
 
 // Use the globally mocked auth (from jest.setup.ts) and override implementation per test via helper
 import { auth as authMockOriginal } from '@/auth';
-import { NextURL } from 'next/dist/server/web/next-url';
 const authMock = authMockOriginal as unknown as jest.Mock;
 
 const setSession = (userId: number | null) => {
@@ -122,7 +121,6 @@ const findChatHistoryProps = (
 
 // Import module under test AFTER mocks so dependencies are mocked correctly.
 let ChatDetailPage: (args: {
-  url: string;
   params: Promise<{ chatId: string }>;
 }) => Promise<React.JSX.Element>;
 let getChatDetails: (args: {
@@ -151,7 +149,6 @@ describe('ChatDetailPage', () => {
     setSession(null);
     await expect(
       ChatDetailPage({
-        url: 'http://localhost/messages/chat/abc123',
         params: Promise.resolve({ chatId: 'abc123' }),
       }),
     ).rejects.toThrow('UNAUTHORIZED');
@@ -164,7 +161,6 @@ describe('ChatDetailPage', () => {
     drizDbWithInitMock.mockResolvedValueOnce(undefined); // no chat
     await expect(
       ChatDetailPage({
-        url: 'http://localhost/messages/chat/abc123',
         params: Promise.resolve({ chatId: 'abc123' }),
       }),
     ).rejects.toThrow('NOT_FOUND');
@@ -182,7 +178,6 @@ describe('ChatDetailPage', () => {
     isUserAuthorizedMock.mockResolvedValueOnce(false);
     await expect(
       ChatDetailPage({
-        url: 'http://localhost/messages/chat/abc123',
         params: Promise.resolve({ chatId: 'abc123' }),
       }),
     ).rejects.toThrow('NOT_FOUND');
@@ -198,7 +193,6 @@ describe('ChatDetailPage', () => {
     });
     isUserAuthorizedMock.mockResolvedValueOnce(true);
     const jsx = await ChatDetailPage({
-      url: 'http://localhost/messages/chat/abc123',
       params: Promise.resolve({ chatId: 'abc123' }),
     });
     expect(jsx).toBeTruthy();

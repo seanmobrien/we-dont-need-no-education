@@ -11,10 +11,7 @@ import { notFound, unauthorized } from 'next/navigation';
  * Server-rendered inner component that performs async auth/permission checks.
  * Returns either Access Denied UI or the dashboard content.
  */
-const ChatDetailPage = async (req: {
-  url: string;
-  params: Promise<{ chatId: string }>;
-}) => {
+const ChatDetailPage = async (req: { params: Promise<{ chatId: string }> }) => {
   const props = { session: await auth() };
 
   if (!props.session) {
