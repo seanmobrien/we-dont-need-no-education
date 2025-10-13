@@ -11,7 +11,7 @@
  */
 
 import { z } from 'zod';
-import { isRunningOnClient, ZodProcessors } from './_common';
+import { getMappedSource, isRunningOnClient, ZodProcessors } from './_common';
 import {
   clientEnvFactory,
   clientRawInstance,
@@ -169,7 +169,7 @@ const buildRawInstance = () => {
       process.env.NEXT_PUBLIC_HOSTNAME,
     ).toString();
   }
-  return raw;
+  return getMappedSource(raw);
 };
 
 /*

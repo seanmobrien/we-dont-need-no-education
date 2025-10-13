@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { isAiLanguageModelType, AiLanguageModelType } from '@/lib/ai/client';
-import { ZodProcessors } from './_common';
+import { getMappedSource, ZodProcessors } from './_common';
 
 /**
  * The type representing the validated client environment variables.
@@ -94,4 +94,4 @@ export const clientEnvSchema = z.object({
  * @doc
  */
 export const clientEnvFactory = (): ClientEnvType =>
-  clientEnvSchema.parse(clientRawInstance);
+  clientEnvSchema.parse(getMappedSource(clientRawInstance));
