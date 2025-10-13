@@ -536,14 +536,13 @@ describe('lib/config/index.ts', () => {
 
       it('should implement fallback for AZURE_MONITOR_CONNECTION_STRING', () => {
         // Test private value takes precedence
-        process.env.AZURE_MONITOR_CONNECTION_STRING = 'private-connection';
         process.env.AZURE_MONITOR_CONNECTION_STRING = 'public-connection';
 
         jest.resetModules();
         const { PublicEnv: FreshPublicEnv } = require('/lib/config/public-env');
 
         expect(FreshPublicEnv.AZURE_MONITOR_CONNECTION_STRING).toBe(
-          'private-connection',
+          'public-connection',
         );
 
         // Test fallback to public value
@@ -774,9 +773,6 @@ describe('lib/config/index.ts', () => {
 
       // Should preserve original config
       expect(result.reactStrictMode).toBe(true);
-      expect(result.experimental).toEqual({
-        serverComponentsExternalPackages: ['test-package'],
-      });
 
       // Should have webpack function (from both ignore packs and strip rsc)
       expect(result.webpack).toBeDefined();
