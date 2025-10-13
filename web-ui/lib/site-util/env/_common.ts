@@ -235,7 +235,7 @@ export const getMappedSource = <
 >(
   source: TSource,
 ): Record<keyof TSource, string | number | undefined> => {
-  // Handle environemnts where process.env does not exist (eg client)
+  // Handle environments where process.env does not exist (eg client)
   if (
     typeof process !== 'object' ||
     !process ||

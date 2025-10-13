@@ -88,9 +88,13 @@ const buildRawInstance = () => {
     AUTH_HEADER_BYPASS_KEY: process.env.AUTH_HEADER_BYPASS_KEY,
     /** HTTP header value for authentication bypass in development. Example: 'dev-secret-123' */
     AUTH_HEADER_BYPASS_VALUE: process.env.AUTH_HEADER_BYPASS_VALUE,
+    /*
+    AZURE_MONITOR_CONNECTION_STRING:
+      process.env.AZURE_MONITOR_CONNECTION_STRING,
+    */
     /** Azure Monitor Application Insights connection string. Example: 'InstrumentationKey=12345678-1234-1234-1234-123456789012' */
-    NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
-      process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
+    AZURE_MONITOR_CONNECTION_STRING:
+      process.env.AZURE_MONITOR_CONNECTION_STRING,
     /** Azure Storage account connection string. Example: 'DefaultEndpointsProtocol=https;AccountName=myaccount;AccountKey=...' */
     AZURE_STORAGE_CONNECTION_STRING:
       process.env.AZURE_STORAGE_CONNECTION_STRING,
