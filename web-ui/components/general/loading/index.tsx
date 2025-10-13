@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * General-purpose loading and error indicator components.
  *

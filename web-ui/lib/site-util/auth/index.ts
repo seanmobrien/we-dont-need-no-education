@@ -1,4 +1,3 @@
-export * from './index';
 export * from './key-validation';
 export * from './security';
 export * from './user-keys-server';

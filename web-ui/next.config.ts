@@ -22,7 +22,7 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
             publicRuntimeConfig: {
               hostname: process.env.NEXT_PUBLIC_HOSTNAME,
             },
-            transpilePackages: ['zod', 'zerialize'],
+            // transpilePackages: ['zod', 'zerialize'],
           }),
         ),
       ),

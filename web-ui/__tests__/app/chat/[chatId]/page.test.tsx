@@ -21,6 +21,7 @@ jest.mock('next/navigation', () => ({
 
 // Use the globally mocked auth (from jest.setup.ts) and override implementation per test via helper
 import { auth as authMockOriginal } from '@/auth';
+import { NextURL } from 'next/dist/server/web/next-url';
 const authMock = authMockOriginal as unknown as jest.Mock;
 
 const setSession = (userId: number | null) => {
@@ -121,8 +122,9 @@ const findChatHistoryProps = (
 
 // Import module under test AFTER mocks so dependencies are mocked correctly.
 let ChatDetailPage: (args: {
+  url: string;
   params: Promise<{ chatId: string }>;
-}) => Promise<React.ReactElement>;
+}) => Promise<React.JSX.Element>;
 let getChatDetails: (args: {
   chatId: string;
   userId: number;
@@ -148,7 +150,10 @@ describe('ChatDetailPage', () => {
   test('unauthorized when no session', async () => {
     setSession(null);
     await expect(
-      ChatDetailPage({ params: Promise.resolve({ chatId: 'abc123' }) }),
+      ChatDetailPage({
+        url: 'http://localhost/messages/chat/abc123',
+        params: Promise.resolve({ chatId: 'abc123' }),
+      }),
     ).rejects.toThrow('UNAUTHORIZED');
     expect(unauthorizedMock).toHaveBeenCalledTimes(1);
     expect(notFoundMock).not.toHaveBeenCalled();
@@ -158,7 +163,10 @@ describe('ChatDetailPage', () => {
     setSession(42);
     drizDbWithInitMock.mockResolvedValueOnce(undefined); // no chat
     await expect(
-      ChatDetailPage({ params: Promise.resolve({ chatId: 'abc123' }) }),
+      ChatDetailPage({
+        url: 'http://localhost/messages/chat/abc123',
+        params: Promise.resolve({ chatId: 'abc123' }),
+      }),
     ).rejects.toThrow('NOT_FOUND');
     expect(unauthorizedMock).not.toHaveBeenCalled();
     expect(notFoundMock).toHaveBeenCalledTimes(1);
@@ -173,7 +181,10 @@ describe('ChatDetailPage', () => {
     });
     isUserAuthorizedMock.mockResolvedValueOnce(false);
     await expect(
-      ChatDetailPage({ params: Promise.resolve({ chatId: 'abc123' }) }),
+      ChatDetailPage({
+        url: 'http://localhost/messages/chat/abc123',
+        params: Promise.resolve({ chatId: 'abc123' }),
+      }),
     ).rejects.toThrow('NOT_FOUND');
     expect(notFoundMock).toHaveBeenCalledTimes(1);
   });
@@ -187,6 +198,7 @@ describe('ChatDetailPage', () => {
     });
     isUserAuthorizedMock.mockResolvedValueOnce(true);
     const jsx = await ChatDetailPage({
+      url: 'http://localhost/messages/chat/abc123',
       params: Promise.resolve({ chatId: 'abc123' }),
     });
     expect(jsx).toBeTruthy();

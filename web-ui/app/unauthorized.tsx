@@ -20,7 +20,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
  * Custom 404 Not Found page with Material UI styling
  * Follows the application's design system and provides helpful navigation options
  */
-export default function NotFound() {
+export default function Unauthorized() {
   const router = useRouter();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -88,7 +88,7 @@ export default function NotFound() {
               mb: 2,
             }}
           >
-            404
+            403
           </Typography>
 
           {/* Subheading */}
@@ -102,7 +102,7 @@ export default function NotFound() {
               mb: 2,
             }}
           >
-            Page Not Found
+            Unauthorized Access
           </Typography>
 
           {/* Description */}
@@ -116,8 +116,9 @@ export default function NotFound() {
               mx: 'auto',
             }}
           >
-            The page you&apos;re looking for doesn&apos;t exist or may have been
-            moved. Let&apos;s get you back on track with your case management.
+            You do not have permission to access this page. It may have been
+            moved or is restricted. Let&apos;s get you back on track with your
+            case management.
           </Typography>
 
           {/* Action buttons */}
