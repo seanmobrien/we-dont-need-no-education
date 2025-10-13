@@ -223,3 +223,39 @@ export const ZodProcessors = {
       .nullable()
       .transform((val) => (val ? val.trim() : null)),
 };
+
+/**
+ * Retrieves environment variable values from the provided source object,
+ * giving precedence to `process.env` values if they exist and are non-empty.
+ * @param source The source value to read from.
+ * @returns A record with keys from the source and values from either process.env or the source.
+ */
+export const getMappedSource = <
+  TSource extends Record<string, string | number | undefined>,
+>(
+  source: TSource,
+): Record<keyof TSource, string | number | undefined> => {
+  // Handle environemnts where process.env does not exist (eg client)
+  if (
+    typeof process !== 'object' ||
+    !process ||
+    typeof process.env !== 'object' ||
+    !process.env
+  ) {
+    return source;
+  }
+  const getRawValue = (key: keyof TSource): string | number | undefined => {
+    const envValue = process.env[key as string];
+    if (typeof envValue === 'string' && envValue.trim() !== '') {
+      return envValue;
+    }
+    return source[key];
+  };
+  return Object.keys(source).reduce(
+    (acc, key) => {
+      acc[key as keyof TSource] = getRawValue(key as keyof TSource);
+      return acc;
+    },
+    {} as Record<keyof TSource, string | number | undefined>,
+  );
+};
