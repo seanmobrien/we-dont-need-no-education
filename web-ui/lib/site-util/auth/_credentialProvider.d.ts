@@ -1,6 +1,4 @@
 declare module '@/lib/site-util/auth/_credentialProvider' {
-  import { NextApiRequest } from 'next';
-  import { NextRequest } from 'next/server';
   import { ICredential, CredentialOptions } from './_types';
 
   /**
