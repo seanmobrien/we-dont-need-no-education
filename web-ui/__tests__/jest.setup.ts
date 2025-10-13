@@ -601,7 +601,9 @@ const Zodex = require('zodex').Zodex;
 
 const DefaultEnvVariables = {
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
-  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
+  AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
+    'azure-applicationinsights-connection-string',
+  AZURE_MONITOR_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
   NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID: 'test-environment-id',
   NEXT_PUBLIC_FLAGSMITH_API_URL: 'https://api.flagsmith.com/api/v1/',

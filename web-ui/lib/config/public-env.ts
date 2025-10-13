@@ -1,4 +1,4 @@
-import type { NextConfig } from 'next';
+import { NextConfigPlugin } from './types';
 
 /**
  * Public Environment Configuration (Next.js)
@@ -81,19 +81,18 @@ export const PublicEnv = {
    * Public (non‑secret) Azure Monitor connection string variant. Some
    * deployments may choose to expose a limited or proxy endpoint publicly
    * for client telemetry. Prefer the private value where available.
+  AZURE_MONITOR_CONNECTION_STRING:
+    process.env.AZURE_MONITOR_CONNECTION_STRING,
    */
-  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
-    process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
 
   /**
    * Server‑side Azure Monitor connection string with fallback to the
    * public variant if the private one is not defined. This property itself
-   * is NOT made public by Next.js (no `NEXT_PUBLIC_` prefix) and therefore
-   * remains server‑only at runtime. Client references collapse at build time.
+   * is NOT made public by Next.js (no `NEXT_PUBLIC_` prefix), so runtime
+   * options will not be available but the value present at compile time will
+   * persist.
    */
-  AZURE_MONITOR_CONNECTION_STRING:
-    process.env.AZURE_MONITOR_CONNECTION_STRING ??
-    process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING,
+  AZURE_MONITOR_CONNECTION_STRING: process.env.AZURE_MONITOR_CONNECTION_STRING,
 
   /**
    * Optional Material UI (MUI) license key required for certain premium
@@ -103,9 +102,7 @@ export const PublicEnv = {
   NEXT_PUBLIC_MUI_LICENSE: process.env.NEXT_PUBLIC_MUI_LICENSE,
 } as const;
 
-export const withPublicEnv = <TArg extends NextConfig>(
-  nextConfig: TArg,
-): TArg => {
+export const withPublicEnv: NextConfigPlugin = (nextConfig) => {
   return {
     ...nextConfig,
     publicRuntimeConfig: {

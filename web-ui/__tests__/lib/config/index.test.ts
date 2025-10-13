@@ -490,7 +490,7 @@ describe('lib/config/index.ts', () => {
       process.env = { ...originalEnv };
       delete process.env.NEXT_PUBLIC_HOSTNAME;
       delete process.env.NEXT_PUBLIC_LOG_LEVEL_CLIENT;
-      delete process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
+      delete process.env.AZURE_MONITOR_CONNECTION_STRING;
       delete process.env.AZURE_MONITOR_CONNECTION_STRING;
       delete process.env.NEXT_PUBLIC_MUI_LICENSE;
     });
@@ -503,9 +503,7 @@ describe('lib/config/index.ts', () => {
       it('should have all expected properties', () => {
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_HOSTNAME');
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_LOG_LEVEL_CLIENT');
-        expect(PublicEnv).toHaveProperty(
-          'NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING',
-        );
+        expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
         expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_MUI_LICENSE');
       });
@@ -539,8 +537,7 @@ describe('lib/config/index.ts', () => {
       it('should implement fallback for AZURE_MONITOR_CONNECTION_STRING', () => {
         // Test private value takes precedence
         process.env.AZURE_MONITOR_CONNECTION_STRING = 'private-connection';
-        process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING =
-          'public-connection';
+        process.env.AZURE_MONITOR_CONNECTION_STRING = 'public-connection';
 
         jest.resetModules();
         const { PublicEnv: FreshPublicEnv } = require('/lib/config/public-env');
@@ -551,8 +548,7 @@ describe('lib/config/index.ts', () => {
 
         // Test fallback to public value
         delete process.env.AZURE_MONITOR_CONNECTION_STRING;
-        process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING =
-          'public-connection';
+        process.env.AZURE_MONITOR_CONNECTION_STRING = 'public-connection';
 
         jest.resetModules();
         const {
@@ -565,7 +561,7 @@ describe('lib/config/index.ts', () => {
 
         // Test both undefined
         delete process.env.AZURE_MONITOR_CONNECTION_STRING;
-        delete process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
+        delete process.env.AZURE_MONITOR_CONNECTION_STRING;
 
         jest.resetModules();
         const {
@@ -584,9 +580,7 @@ describe('lib/config/index.ts', () => {
         // Verify the properties exist and are accessible
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_HOSTNAME');
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_LOG_LEVEL_CLIENT');
-        expect(PublicEnv).toHaveProperty(
-          'NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING',
-        );
+        expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
         expect(PublicEnv).toHaveProperty('AZURE_MONITOR_CONNECTION_STRING');
         expect(PublicEnv).toHaveProperty('NEXT_PUBLIC_MUI_LICENSE');
       });

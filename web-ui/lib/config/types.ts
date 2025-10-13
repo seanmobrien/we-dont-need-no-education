@@ -1,3 +1,5 @@
+import type { NextConfig } from 'next/types';
+
 export type RawSourceClassProps = {
   source: string | Buffer;
 };
@@ -41,3 +43,15 @@ export type WebpackCompiler = {
 export type WebpackPlugin = {
   apply: (compiler: WebpackCompiler) => void;
 };
+
+export type NextConfigPlugin<TArg extends NextConfig = NextConfig> = <
+  ConfigType extends TArg,
+>(
+  nextConfig: ConfigType,
+) => ConfigType;
+
+export type NextConfigPluginFactory<TOptions extends object = object> = <
+  TArg extends NextConfig,
+>(
+  options?: TOptions,
+) => NextConfigPlugin<TArg>;
