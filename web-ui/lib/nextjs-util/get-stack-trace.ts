@@ -1,12 +1,3 @@
-/**
- * Retrieves the current stack trace as a string, optionally skipping a specified number of stack frames.
- *
- * @param options - An optional object to configure stack trace retrieval.
- * @param options.skip - The number of stack frames to skip from the top (default is 1).
- * @param options.max - The maximum number of stack frames to include (default is all).
- * @param options.myCodeOnly - If true, filters the stack to include only frames from your code (excluding node_modules) (default is true).
- * @returns The stack trace as a string, with the specified number of frames skipped.
- */
 export const getStackTrace = ({
   skip = 1,
   max,

@@ -1,10 +1,3 @@
-/**
- * @module lib/site-util/feature-flags
- *
- * Client-side feature flag helpers (hooks) plus re-exports of server
- * helpers implemented in `./server` so callers can import from a
- * single module path.
- */
 import { useFeatureFlagsContext } from './context';
 
 import {
