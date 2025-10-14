@@ -1,6 +1,6 @@
-declare module '@/lib/site-util/url-builder/_impl' {
-  import { IUrlBuilder, UrlBuilderInfo } from './_types';
+import type { IUrlBuilder, UrlBuilderInfo } from './_types';
 
+declare module '@/lib/site-util/url-builder/_impl' {
   /**
    * The `UrlBuilder` class is responsible for constructing and manipulating URLs
    * based on a hierarchical structure of segments and optional slugs. It provides

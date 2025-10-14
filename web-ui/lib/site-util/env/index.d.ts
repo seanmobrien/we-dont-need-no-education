@@ -1,7 +1,7 @@
-declare module '@/lib/site-util/env' {
-  import { ServerEnvType } from './_server';
-  import { ClientEnvType } from './_client';
+import { ServerEnvType } from './_server';
+import { ClientEnvType } from './_client';
 
+declare module '@/lib/site-util/env' {
   /**
    * This module provides utilities for managing environment variables in a TypeScript application.
    * It includes functions and types for handling both server and client environment variables,

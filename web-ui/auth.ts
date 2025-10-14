@@ -114,6 +114,9 @@ type DynamicImports = {
         session?: any;
       }) => Awaitable<JWT | null>;
     };
+    redirect: {
+      redirect: (params: { url: string; baseUrl: string }) => Awaitable<string>;
+    };
   };
 };
 
@@ -172,13 +175,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
     }
     if (!dynamicImports.auth.session) {
       dynamicImports.auth.session = await import('@/lib/auth/session');
+      if (!dynamicImports.auth.session.session) {
+        throw new Error('Failed to load session callback');
+      }
     }
+    const session = dynamicImports.auth.session.session;
     if (!dynamicImports.auth.jwt) {
       dynamicImports.auth.jwt = await import('@/lib/auth/jwt');
+      if (!dynamicImports.auth.jwt.jwt) {
+        throw new Error('Failed to load jwt callback');
+      }
     }
-    const {
-      auth: { jwt: { jwt } = {}, session: { session } = {} },
-    } = dynamicImports;
+    const jwt = dynamicImports.auth.jwt.jwt;
+    if (!dynamicImports.auth.redirect) {
+      dynamicImports.auth.redirect = await import('@/lib/auth/redirect');
+      if (!dynamicImports.auth.redirect.redirect) {
+        throw new Error('Failed to load redirect callback');
+      }
+    }
+    const redirect = dynamicImports.auth.redirect.redirect;
     return {
       adapter,
       callbacks: {
@@ -186,6 +201,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth(
         signIn: signInImpl,
         jwt,
         session,
+        redirect,
       },
       providers,
       pages: {

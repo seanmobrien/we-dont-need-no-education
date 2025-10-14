@@ -1,15 +1,21 @@
-declare module '@/lib/site-util/url-builder' {
-  import { IUrlBuilder } from './_impl';
+import type {
+  PageOverloads,
+  MappedPageOverloads,
+  IUrlBuilder,
+  UrlBuilderInfo,
+  UrlMap,
+} from './_types';
+import { mappedUrlBuilderFactory } from './_from-map';
 
+declare module '@/lib/site-util/url-builder' {
+  export { mappedUrlBuilderFactory };
   export type {
     PageOverloads,
     MappedPageOverloads,
+    UrlMap,
     IUrlBuilder,
     UrlBuilderInfo,
-    UrlMap,
-  } from './_types';
-
-  export { mappedUrlBuilderFactory } from './_from-map';
+  };
 
   /**
    * Gets an absolute URL from a path using the application's hostname
