@@ -97,7 +97,7 @@ function updateDtsWithJSDoc(dtsPath, exportsWithDocs, options) {
     const jsdoc = item.jsdoc.trim();
     // Properly escape backslashes in the pattern string so the RegExp is valid
     const regex = new RegExp(
-      `(^|\\n)(\\s*)(/\\*\\*[\\s\\S]*?\\*\\/\\s*)?(export\\s+(declare\\s+)?(function|const|class|interface|type|enum)\\s+${name}\\b)`,
+      `(^|\\n)(\\s*)(/\\\\*\\\\*[\\s\\S]*?\\\\*\\\\/\\s*)?(export\\s+(declare\\s+)?(function|const|class|interface|type|enum)\\s+${name}\\b)`,
       'm',
     );
     const m = dtsText.match(regex);
