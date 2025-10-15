@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 /**
  * Type definitions for PostgreSQL query results
  * @module @/lib/neondb/types

@@ -45,7 +45,7 @@ import {
 import { useChatHistory } from './useChatHistory';
 import { Loading } from '@/components/general/loading';
 import type { ChatDetails, ChatTurn } from '@/lib/ai/chat/types';
-import type { SelectedChatItem } from '../../../lib/ai/chat/export';
+import type { SelectedChatItem } from '@/lib/ai/chat/export';
 
 /**
  * Get all messages from the chat for filter component

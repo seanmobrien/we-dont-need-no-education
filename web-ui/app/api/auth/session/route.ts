@@ -12,6 +12,7 @@
 import { auth } from '@/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { getActiveUserPublicKeys } from '@/lib/site-util/auth/user-keys-server';
+import { isSessionActive } from '@/lib/site-util/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,8 +32,9 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
   const { nextUrl } = req;
 
   const session = await auth();
+  const isActiveSession = isSessionActive({ session });
   let keys: string[] | undefined = undefined;
-  if (nextUrl) {
+  if (isActiveSession && nextUrl) {
     const getKeys = nextUrl.searchParams.get('get-keys');
     if (getKeys && session?.user?.id) {
       // getActiveUserPublicKeys expects userId (number) and date
@@ -47,7 +49,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     }
   }
   return NextResponse.json({
-    status: session ? 'authenticated' : 'unauthenticated',
+    status: isActiveSession ? 'authenticated' : 'unauthenticated',
     data: session ?? null,
     publicKeys: keys,
   });

@@ -4,6 +4,7 @@
 
 jest.mock('got');
 
+import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 import type { Got } from 'got';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -65,15 +66,16 @@ jest.mock('got', () => ({
 }));
 */
 
-const kcAdminMock = {
-  setAccessToken: jest.fn(),
-  users: {
-    find: jest.fn(),
-  },
-};
+let kcAdminMock: any = null;
 
 // Minimal Keycloak Admin Client mock (captures last created instance)
 jest.mock('@/lib/auth/keycloak-factories', () => {
+  kcAdminMock = {
+    setAccessToken: jest.fn(),
+    users: {
+      find: jest.fn(),
+    },
+  };
   return {
     keycloakAdminClientFactory: jest.fn().mockImplementation(() => {
       return kcAdminMock;
@@ -100,7 +102,6 @@ jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
 
 // Import after mocks are set
 import type { MockedFunction } from 'jest-mock';
-import { auth } from '@/auth';
 
 // Helpers to access the mocked modules with types
 const oc = jest.requireMock('openid-client') as {
@@ -135,8 +136,6 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
     got = require('got').got as Got;
     mockGot = got as jest.Mocked<Got>;
 
-    kcAdminMock.setAccessToken.mockReset();
-    kcAdminMock.users.find.mockReset();
     // Ensure env vars used by fromRequest are present
     process.env.AUTH_KEYCLOAK_ISSUER = issuer;
     process.env.AUTH_KEYCLOAK_CLIENT_ID = 'test-client-id';
@@ -150,15 +149,13 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
   test('happy path: admin login via form -> impersonation -> user token', async () => {
     // Arrange auth() to return a session with user info
-    (auth as jest.Mock).mockResolvedValue({
-      user: {
-        id: 'admin-user-id',
-        subject: 'admin-sub',
-        email: 'target.user@example.com',
-        name: 'Admin User',
-        account_id: 'acct-1',
-      },
-    });
+    withJestTestExtensions().session!.user = {
+      id: 'admin-user-id',
+      subject: 'admin-sub',
+      email: 'target.user@example.com',
+      name: 'Admin User',
+      account_id: 'acct-1',
+    } as any;
 
     // Build login page HTML with a simple form and hidden inputs
     const loginHtml = `
@@ -203,9 +200,11 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
     );
 
     // Import SUT lazily to ensure our mocks are applied first
-    const { ImpersonationThirdParty } = await import(
-      '@/lib/auth/impersonation/impersonation.thirdparty'
-    );
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const {
+      ImpersonationThirdParty,
+    } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     // Ensure admin client finds the target user by email (configure captured instance)
     (kcAdminMock.users.find as jest.Mock).mockResolvedValue([
       { id: 'target-user-id' },
@@ -227,14 +226,12 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
   test('error: target user not found', async () => {
     // Arrange auth() to return a session with user info
-    (auth as jest.Mock).mockResolvedValue({
-      user: {
-        id: 'admin-user-id',
-        subject: 'admin-sub',
-        email: 'missing.user@example.com',
-        name: 'Admin User',
-      },
-    });
+    withJestTestExtensions().session!.user = {
+      id: 'admin-user-id',
+      subject: 'admin-sub',
+      email: 'missing.user@example.com',
+      name: 'Admin User',
+    };
 
     // HTTP: admin login flow still succeeds
     mockGot.get.mockResolvedValueOnce({
@@ -244,9 +241,10 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
     grantQueue.push({ access_token: 'admin-access', expires_in: 3600 });
 
-    const { ImpersonationThirdParty } = await import(
-      '@/lib/auth/impersonation/impersonation.thirdparty'
-    );
+    const {
+      ImpersonationThirdParty,
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+    } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     // Create service, then set admin users.find to return empty -> user not found
     const svc = await ImpersonationThirdParty.fromRequest({
       session: mockSession,
@@ -259,106 +257,4 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
     //expect(mockGot.get).toHaveBeenCalledTimes(1);
     //expect(mockGot.post).toHaveBeenCalledTimes(0);
   });
-  /*
-
-  test('error: admin login page parse fails (no form action)', async () => {
-    // Arrange session
-    (auth as jest.Mock).mockResolvedValue({
-      user: {
-        id: 'admin-user-id',
-        subject: 'admin-sub',
-        email: 'target.user@example.com',
-        name: 'Admin User',
-      },
-    });
-    (kcAdminMock.users.find as jest.Mock).mockImplementation(async () => {
-      return [{ id: 'target-user-id' }];
-    });
-    // First authorize returns HTML without a <form>
-    mockGot.get.mockResolvedValueOnce({
-      //statusCode: 200,
-      statusCode: 302,
-      body: '<html>no form here</html>',
-    });
-    mockGot.get.mockResolvedValueOnce({
-      statusCode: 200,
-      //statusCode: 302,
-      body: '<html>no form here</html>',
-    });
-    mockGot.post.mockResolvedValueOnce({
-      statusCode: 200,
-      //statusCode: 302,
-      body: '<div>no form</div>',
-    });
-
-    const { ImpersonationThirdParty } = await import(
-      '/lib/auth/impersonation/impersonation.thirdparty'
-    );
-    const svc = await ImpersonationThirdParty.fromRequest({
-      session: mockSession,
-    });
-    await expect(svc!.getImpersonatedToken()).rejects.toThrow(
-      /All admin token acquisition strategies failed/i,
-    );
-
-    expect(mockGot.get).toHaveBeenCalledTimes(2);
-    expect(mockGot.post).toHaveBeenCalledTimes(0);
-  });
-  test('error: authorize after impersonation did not return 302', async () => {
-    // Arrange session
-    (auth as jest.Mock).mockResolvedValue({
-      user: {
-        id: 'admin-user-id',
-        subject: 'admin-sub',
-        email: 'target.user@example.com',
-        name: 'Admin User',
-      },
-    });
-    (kcAdminMock.users.find as jest.Mock).mockImplementation(async () => {
-      return [{ id: 'target-user-id' }];
-    });
-    // Build login page HTML with a simple form
-    const loginHtml = `
-      <html><body>
-        <form action="/realms/test/login-actions/authenticate">
-          <input type="hidden" name="session_code" value="abc" />
-          <input type="hidden" name="execution" value="exec" />
-          <input type="hidden" name="client_id" value="test-client-id" />
-          <input type="hidden" name="tab_id" value="tab" />
-        </form>
-      </body></html>
-    `;
-
-    // Sequence: GET authorize -> 200 login page, POST login -> 302, GET authorize -> 302 with admin code,
-    // POST impersonation -> 200, GET authorize for user -> 200 (unexpected, should be 302)
-    mockGot.get
-      .mockResolvedValueOnce({ statusCode: 200, body: loginHtml })
-      .mockResolvedValueOnce({
-        statusCode: 302,
-        headers: { location: `${redirectUri}?code=admin-code&state=state` },
-      })
-      .mockResolvedValueOnce({ statusCode: 200, body: 'unexpected ok' });
-
-    mockGot.post
-      .mockResolvedValueOnce({
-        statusCode: 302,
-        headers: { location: '/continue' },
-      })
-      .mockResolvedValueOnce({ statusCode: 200 });
-
-    // authorizationCodeGrant for admin only (user path will error before usage)
-    grantQueue.push({ access_token: 'admin-access', expires_in: 3600 });
-
-    const { ImpersonationThirdParty } = await import(
-      '/lib/auth/impersonation/impersonation.thirdparty'
-    );
-    const svc = await ImpersonationThirdParty.fromRequest({
-      session: mockSession,
-    });
-
-    await expect(svc!.getImpersonatedToken()).rejects.toThrow(
-      /expected 302 from authorize/i,
-    );
-  });
-*/
 });

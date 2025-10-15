@@ -11,7 +11,6 @@ import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
 // Mock dependencies
 jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
 jest.mock('@/lib/ai/core/count-tokens');
-jest.mock('@/auth');
 jest.mock('@/lib/logger');
 
 describe('LanguageModelQueue', () => {

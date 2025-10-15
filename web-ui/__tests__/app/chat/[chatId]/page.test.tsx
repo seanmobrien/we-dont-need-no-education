@@ -1,4 +1,5 @@
 import React from 'react';
+import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 
 /**
  * NOTE: Global test environment mocks are defined in __tests__/jest.setup.ts.
@@ -20,16 +21,15 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Use the globally mocked auth (from jest.setup.ts) and override implementation per test via helper
-import { auth as authMockOriginal } from '@/auth';
-const authMock = authMockOriginal as unknown as jest.Mock;
+// import { auth as authMockOriginal } from '@/auth';
+// const authMock = authMockOriginal as unknown as jest.Mock;
 
 const setSession = (userId: number | null) => {
   if (userId == null) {
-    authMock.mockImplementation(() => Promise.resolve(null));
+    // authMock.mockImplementation(() => Promise.resolve(null));
+    withJestTestExtensions().session = null;
   } else {
-    authMock.mockImplementation(() =>
-      Promise.resolve({ user: { id: userId } }),
-    );
+    withJestTestExtensions().session!.user.id = String(userId);
   }
 };
 
@@ -138,11 +138,13 @@ beforeAll(async () => {
 
 describe('ChatDetailPage', () => {
   beforeEach(() => {
+    /*
     unauthorizedMock.mockClear();
     notFoundMock.mockClear();
-    authMock.mockReset();
+    // authMock.mockReset();
     drizDbWithInitMock.mockReset();
     isUserAuthorizedMock.mockReset();
+    */
   });
 
   test('unauthorized when no session', async () => {

@@ -10,7 +10,7 @@ import { log } from '@/lib/logger/core';
  * React hook for error reporting within components
  * Provides a convenient way to report errors with component context
  */
-export function useErrorReporter() {
+export const useErrorReporter = () => {
   const reportError = useCallback(
     (
       error: Error | unknown,
@@ -102,4 +102,4 @@ export function useErrorReporter() {
     reportUserAction,
     reportApiError,
   };
-}
+};

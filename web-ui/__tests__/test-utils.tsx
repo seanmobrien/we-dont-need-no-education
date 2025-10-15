@@ -165,7 +165,12 @@ export type MockedConsole = {
   dispose: () => void;
 };
 
+let lastMockedConsole: MockedConsole | undefined = undefined;
+
 export const hideConsoleOutput = () => {
+  if (lastMockedConsole) {
+    return lastMockedConsole;
+  }
   const ret: MockedConsole = {
     error: undefined,
     log: undefined,
@@ -202,6 +207,7 @@ export const hideConsoleOutput = () => {
       delete ret.warn;
     },
   };
+  lastMockedConsole = ret;
   return ret;
 };
 
@@ -217,4 +223,9 @@ beforeEach(() => {
 afterEach(() => {
   mockUseId?.mockRestore();
   mockUseId = undefined;
+  // Automatically clean up any console mocking
+  if (lastMockedConsole) {
+    lastMockedConsole.dispose();
+    lastMockedConsole = undefined;
+  }
 });

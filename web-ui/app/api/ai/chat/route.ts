@@ -32,12 +32,16 @@ import { User } from 'next-auth';
  * @param toolProviders - The tool provider set to dispose
  */
 const safeDisposeToolProviders = async (
+  user: User | null,
   toolProviders: ToolProviderSet | undefined,
 ): Promise<void> => {
   if (!toolProviders) return;
-
   try {
-    await toolProviders.dispose();
+    // I think we only want to dispose if we created them
+    const flag = await getFeatureFlag('mcp_cache_tools', user?.id);
+    if (!isTruthy(flag)) {
+      await toolProviders.dispose();
+    }
   } catch (disposalError) {
     // Suppress AbortErrors during disposal as they're expected during cleanup
     if (!isAbortError(disposalError)) {
@@ -50,14 +54,6 @@ const safeDisposeToolProviders = async (
     }
   }
 };
-
-// Get the tool provider cache instance
-const toolProviderCachePromise = getUserToolProviderCache({
-  maxEntriesPerUser: 5, // Allow up to 5 different tool configurations per user
-  maxTotalEntries: 200, // Increase total limit for multiple users
-  ttl: 45 * 60 * 1000, // 45 minutes (longer than typical chat sessions)
-  cleanupInterval: 10 * 60 * 1000, // Cleanup every 10 minutes
-});
 
 const toolProviderFactory = async ({
   req,
@@ -77,7 +73,12 @@ const toolProviderFactory = async ({
 }) => {
   const flag = await getFeatureFlag('mcp_cache_tools', user?.id);
   if (isTruthy(flag)) {
-    const toolProviderCache = await toolProviderCachePromise;
+    const toolProviderCache = await getUserToolProviderCache({
+      maxEntriesPerUser: 5, // Allow up to 5 different tool configurations per user
+      maxTotalEntries: 200, // Increase total limit for multiple users
+      ttl: 45 * 60 * 1000, // 45 minutes (longer than typical chat sessions)
+      cleanupInterval: 10 * 60 * 1000, // Cleanup every 10 minutes
+    });
     // Use the cache to get or create tool providers
     return toolProviderCache.getOrCreate(
       user.id!,
@@ -370,7 +371,7 @@ export const POST = (req: NextRequest) => {
           source: 'route:ai:chat',
           severity: 'error',
         });
-        await safeDisposeToolProviders(toolProviders);
+        await safeDisposeToolProviders(session?.user, toolProviders);
         return NextResponse.error();
       }
     },
@@ -379,7 +380,7 @@ export const POST = (req: NextRequest) => {
         role: 'assistant',
         content: "I'm currently disabled for solution rebuild.",
       },
-      errorCallback: () => safeDisposeToolProviders(toolProviders),
+      errorCallback: () => safeDisposeToolProviders(null, toolProviders),
     },
   )(req);
 };
