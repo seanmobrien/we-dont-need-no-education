@@ -1,6 +1,6 @@
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import type { IFlagsmith } from 'flagsmith';
-// import { auth } from '@/auth';
+import { auth } from '@/auth';
 import {
   KnownFeature,
   AllFeatureFlagsDefault,
@@ -38,8 +38,8 @@ const identify = async ({
   userId?: string;
 }): Promise<IFlagsmith<string, string> | null> => {
   if (!userId) {
-    // const session = await auth();
-    // userId = session?.user?.id;
+    const session = await auth();
+    userId = session?.user?.id;
     if (!userId) {
       userId = 'server';
     }
