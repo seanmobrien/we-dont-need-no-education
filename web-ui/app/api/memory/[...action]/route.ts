@@ -116,5 +116,3 @@ export const POST = createHandler('POST');
 export const PUT = createHandler('PUT');
 export const PATCH = createHandler('PATCH');
 export const DELETE = createHandler('DELETE');
-
-export const PUSH = createHandler('PATCH');
