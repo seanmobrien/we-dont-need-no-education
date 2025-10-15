@@ -1,5 +1,4 @@
 import type { Provider } from '@auth/core/providers';
-import KeyCloak, { KeycloakProfile } from '@auth/core/providers/keycloak.js';
 import { env } from '../site-util/env';
 
 export const setupKeyCloakProvider = (): Provider[] => {
