@@ -7,14 +7,8 @@ import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 type RouteContext = {
   // Next's generated types sometimes make params a Promise (see .next types), so
   // reflect that here by allowing params to be a Promise or the raw object.
-  params:
-    | Promise<{
-        action: string[]; // Rest segments that determine the downstream Mem0 endpoint
-      }>
-    | {
-        action: string[];
-      }
-    | undefined;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params: Promise<any>;
 };
 
 export const dynamic = 'force-dynamic';
