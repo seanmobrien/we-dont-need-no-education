@@ -6,6 +6,22 @@ import { CustomAppInsightsEvent } from './event';
 
 let _logger: ILogger;
 
+const normalizeLogLevel = (level: string | undefined | null) => {
+  if (!level) return 'info';
+  const lcLevel = level.toLowerCase();
+  const validLevels = [
+    'fatal',
+    'error',
+    'warn',
+    'info',
+    'debug',
+    'trace',
+    'verbose',
+    'silly',
+  ];
+  return validLevels.includes(lcLevel) ? lcLevel : 'info';
+};
+
 /**
  * Returns a promise that resolves to an instance of ILogger.
  *
@@ -16,7 +32,7 @@ export const logger = (): Promise<ILogger> =>
     if (!_logger) {
       if (isRunningOnServer()) {
         _logger = pino<'verbose' | 'silly', false>({
-          level: env('LOG_LEVEL_SERVER') ?? 'info',
+          level: normalizeLogLevel(env('LOG_LEVEL_SERVER')),
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },
@@ -34,7 +50,7 @@ export const logger = (): Promise<ILogger> =>
             };
 
         _logger = pino<'verbose' | 'silly', false>({
-          level: env('NEXT_PUBLIC_LOG_LEVEL_CLIENT') ?? 'info',
+          level: normalizeLogLevel(env('NEXT_PUBLIC_LOG_LEVEL_CLIENT')),
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },
