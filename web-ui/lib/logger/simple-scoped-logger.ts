@@ -1,13 +1,6 @@
 import type { SimpleLogger, ILogger } from './types';
 import { log } from './core';
 
-/**
- * Represents a single log record for the simple scoped logger.
- * @property source - The source or context of the log message.
- * @property timestamp - The ISO timestamp when the log was created.
- * @property message - The main log message, as a string or object.
- * @property data - Optional additional data to include with the log.
- */
 type SimpleScoppedLogRecord = {
   /**
    * The source or context for all log messages from this logger.
@@ -30,11 +23,6 @@ type SimpleScoppedLogRecord = {
   data?: unknown[];
 };
 
-/**
- * Properties for configuring a simple scoped logger instance.
- * @property source - The source or context for all log messages from this logger.
- * @property format - Optional function to format the log record before logging.
- */
 type SimpleScopedLoggerProps = {
   /**
    * The source or context for all log messages from this logger.
@@ -48,10 +36,6 @@ type SimpleScopedLoggerProps = {
   format?: (msg: SimpleScoppedLogRecord) => object;
 };
 
-/**
- * Overload signatures for the simpleScopedLogger factory function.
- * Allows creating a logger by passing either a source string or a configuration object.
- */
 interface SimpleScopedLoggerOverloads {
   /**
    * Creates a SimpleLogger with a specified source and optional formatting function.
@@ -67,13 +51,6 @@ interface SimpleScopedLoggerOverloads {
   (source: string): SimpleLogger;
 }
 
-/**
- * Creates a simple scoped logger that prefixes all log messages with a source/context.
- * Optionally allows formatting of log records before they are logged.
- *
- * @param sourceOrProps - Either a string (source) or a configuration object.
- * @returns A SimpleLogger with debug, info, warn, and error methods.
- */
 export const simpleScopedLogger: SimpleScopedLoggerOverloads = (
   sourceOrProps: string | SimpleScopedLoggerProps,
 ): SimpleLogger => {
@@ -125,7 +102,6 @@ export const simpleScopedLogger: SimpleScopedLoggerOverloads = (
         }
       });
     }
-
 
     log((l) => action(l, valueToLog));
   };

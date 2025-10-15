@@ -1,36 +1,12 @@
-import { ContactSummary } from '@/data-models/api/contact';
 import { isKeyOf } from '../typescript';
 
-/**
- * Represents an email header with a name and value.
- */
 export interface EmailHeader {
-  /**
-   * The name of the header before the `:` separator. For example, `To`.
-   */
   name?: string | null;
-  /**
-   * The value of the header after the `:` separator. For example, `someuser@example.com`.
-   */
   value?: string | null;
 }
 
-/**
- * Parses an email ID from a string.
- *
- * @param {string} x - The string to parse.
- * @returns {string} The parsed email ID.
- */
-export type ContactInHeader = Omit<ContactSummary, 'name' | 'contactId'> & {
-  name?: string;
-};
+export type ContactInHeader = { email: string; name?: string };
 
-/**
- * Properties for parsing an array of headers.
- *
- * @property {string} [split] - The delimiter used to split the header string.
- * @property {(arg0: string) => string} [parse] - A function to parse each split header string.
- */
 export type ParseHeaderArrayRecord = {
   split?: string;
   parse?: (arg0: string) => string | ContactInHeader;
@@ -42,19 +18,6 @@ type ParseHeaderOptions = {
   extractBrackets?: boolean;
 };
 
-/**
- * Extracts contact information from a string.
- *
- * The input string is expected to be in the format "Name <email@example.com>".
- * If the input string matches this format, the function returns an object with
- * `name` and `email` properties. If the input string does not match this format,
- * the function returns an object with only the `email` property.
- *
- * @param x - The input string containing the contact information.
- * @returns An object containing the extracted contact information.
- *          If the input string matches the expected format, the object will have
- *          `name` and `email` properties. Otherwise, it will only have the `email` property.
- */
 export class EmailHeaderParser implements ParseHeaderArrayRecord {
   readonly #parser: (x: string) => ContactInHeader | string;
   readonly #split?: string;
