@@ -5,9 +5,13 @@ import { memoryClientFactory } from '@/lib/ai/mem0';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 
 type RouteContext = {
-  params: {
-    action?: string[]; // Rest segments that determine the downstream Mem0 endpoint
-  };
+  // Next's generated types sometimes make params a Promise (see .next types), so
+  // reflect that here by allowing params to be a Promise or the raw object.
+  params: Promise<{
+    action: string[]; // Rest segments that determine the downstream Mem0 endpoint
+  }> | {
+    action: string[];
+  } | undefined;
 };
 
 export const dynamic = 'force-dynamic';
@@ -18,10 +22,14 @@ const sanitizeSegments = (segments: string[] = []): string[] =>
   segments.map((segment) => segment.replace(/^\/+|\/+$/g, '')).filter(Boolean);
 
 const resolveMem0Path = (params: RouteContext['params']): string => {
-  const segments = Array.isArray(params?.action)
-    ? params?.action
-    : params?.action
-      ? [params.action]
+  // params may be a Promise when provided by Next's types; handle that by
+  // accepting both Promise and direct object. The caller should await if
+  // necessary before calling this helper.
+  const rawParams = params as { action?: string[] } | undefined;
+  const segments = Array.isArray(rawParams?.action)
+    ? rawParams.action
+    : rawParams?.action
+      ? [rawParams.action as unknown as string]
       : [];
   const normalized = sanitizeSegments(segments);
   const suffix = normalized.join('/');
@@ -55,7 +63,8 @@ const proxyRequestToMem0 = async (
     ...(normalizedUserId ? { defaults: { user_id: normalizedUserId } } : {}),
   });
 
-  const basePath = resolveMem0Path(context.params ?? {});
+  const rawParams = context.params instanceof Promise ? await context.params : context.params;
+  const basePath = resolveMem0Path(rawParams ?? undefined);
   const queryString = request.nextUrl.search;
   const targetPath = queryString ? `${basePath}${queryString}` : basePath;
 

@@ -1,6 +1,6 @@
-declare module '@/lib/site-util/auth/security' {
-  import type { Session } from 'next-auth';
+import type { Session } from 'next-auth';
 
+declare module '@/lib/site-util/auth/security' {
   /**
    * Determines whether a signed-in user is authorized to access (read and/or write) another user's resources.
    *

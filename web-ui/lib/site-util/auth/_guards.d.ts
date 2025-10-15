@@ -1,6 +1,6 @@
-declare module '@/lib/site-util/auth/_guards' {
-  import { SessionExt } from './_types';
+import type { SessionExt } from './_types';
 
+declare module '@/lib/site-util/auth/_guards' {
   /**
    * Type guard to check if a session object is a SessionExt
    *

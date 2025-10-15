@@ -1,6 +1,6 @@
-declare module '@/lib/site-util/auth/user-keys-server' {
-  import { DatabaseType } from '@/lib/drizzle-db';
+import type { DatabaseType } from '../../drizzle-db';
 
+declare module '@/lib/site-util/auth/user-keys-server' {
   /**
    * Returns all public keys for a user that were active at a given date.
    *
@@ -53,7 +53,7 @@ declare module '@/lib/site-util/auth/user-keys-server' {
    * ```
    */
   export const getActiveUserPublicKeys: (params: {
-    userId: number;
+    userId?: number;
     effectiveDate?: string | Date;
     db?: DatabaseType;
   }) => Promise<string[]>;
