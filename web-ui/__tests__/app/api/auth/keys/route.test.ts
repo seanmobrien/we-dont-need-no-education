@@ -12,12 +12,13 @@
 
 import { NextRequest } from 'next/server';
 import { POST, GET } from '@/app/api/auth/keys/route';
-import { auth } from '@/auth';
+// import { auth } from '@/auth';
 import { drizDb } from '@/lib/drizzle-db';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 
 // Mock dependencies
-jest.mock('@/auth');
+// jest.mock('@/auth');
 jest.mock('@/lib/drizzle-db', () => {
   const actualSchema = jest.requireActual('/lib/drizzle-db/schema');
   return {
@@ -32,7 +33,7 @@ jest.mock('@/lib/react-util', () => ({
   },
 }));
 
-const mockAuth = auth as jest.MockedFunction<typeof auth>;
+// const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockDrizDb = drizDb as jest.MockedFunction<typeof drizDb>;
 
 // Mock database instance
@@ -72,9 +73,7 @@ describe('/api/auth/keys', () => {
 
     it('should successfully upload a new public key', async () => {
       // Mock authenticated session
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+      withJestTestExtensions().session!.user!.id = String(123);
 
       // Mock no existing key
       mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue(null);
@@ -111,7 +110,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should return 401 when not authenticated', async () => {
-      mockAuth.mockResolvedValue(null as never);
+      withJestTestExtensions().session = null;
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
@@ -126,9 +125,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should return 400 for invalid request format', async () => {
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+      withJestTestExtensions().session!.user!.id = String(123);
 
       const request = createMockRequest({}); // Missing publicKey
       const response = await POST(request);
@@ -143,9 +140,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should return 400 for invalid user ID', async () => {
-      mockAuth.mockResolvedValue({
-        user: { id: 'invalid-id' },
-      } as never);
+      withJestTestExtensions().session!.user!.id = 'invalid-id';
 
       const request = createMockRequest({ publicKey: validPublicKey });
       const response = await POST(request);
@@ -160,9 +155,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should return 400 for invalid public key format', async () => {
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+      withJestTestExtensions().session!.user!.id = String(123);
 
       const request = createMockRequest({ publicKey: 'invalid-key' });
       const response = await POST(request);
@@ -177,15 +170,13 @@ describe('/api/auth/keys', () => {
     });
 
     it('should return success when key already exists', async () => {
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+      withJestTestExtensions().session!.user!.id = String(123);
 
       // Mock existing key
       mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue({
         id: 1,
         publicKey: validPublicKey,
-        userId: 123,
+        userId: '123',
       });
 
       const request = createMockRequest({ publicKey: validPublicKey });
@@ -203,9 +194,7 @@ describe('/api/auth/keys', () => {
 
     it('should handle database errors gracefully', async () => {
       consoleSpy.setup();
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+      withJestTestExtensions().session!.user!.id = String(123);
 
       // Mock database error
       mockDbInstance.query.userPublicKeys.findFirst.mockRejectedValue(
@@ -225,9 +214,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should handle custom expiration date', async () => {
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+      withJestTestExtensions().session!.user!.id = String(123);
 
       mockDbInstance.query.userPublicKeys.findFirst.mockResolvedValue(null);
 
@@ -264,9 +251,7 @@ describe('/api/auth/keys', () => {
 
   describe('GET - Retrieve user public keys', () => {
     it('should return user public keys when authenticated', async () => {
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+      withJestTestExtensions().session!.user!.id = String(123);
 
       const mockKeys = [
         {
@@ -300,7 +285,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should return 401 when not authenticated', async () => {
-      mockAuth.mockResolvedValue(null as never);
+      withJestTestExtensions().session = null;
 
       const response = await GET();
 
@@ -314,9 +299,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should return 400 for invalid user ID', async () => {
-      mockAuth.mockResolvedValue({
-        user: { id: 'invalid-id' },
-      } as never);
+      withJestTestExtensions().session!.user!.id = 'invalid-id';
 
       const response = await GET();
 
@@ -330,9 +313,7 @@ describe('/api/auth/keys', () => {
     });
 
     it('should return empty array when no keys exist', async () => {
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+      withJestTestExtensions().session!.user!.id = String(123);
 
       mockDbInstance.query.userPublicKeys.findMany.mockResolvedValue([]);
 
@@ -350,9 +331,8 @@ describe('/api/auth/keys', () => {
 
     it('should handle database errors gracefully', async () => {
       consoleSpy.setup();
-      mockAuth.mockResolvedValue({
-        user: { id: 123 },
-      } as never);
+
+      withJestTestExtensions().session!.user!.id = String(123);
 
       mockDbInstance.query.userPublicKeys.findMany.mockRejectedValue(
         new Error('Database connection failed'),

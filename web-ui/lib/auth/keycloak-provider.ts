@@ -1,5 +1,5 @@
 import type { Provider } from '@auth/core/providers';
-import KeyCloak, { KeycloakProfile } from 'next-auth/providers/keycloak';
+import KeyCloak, { KeycloakProfile } from '@auth/core/providers/keycloak.js';
 import { env } from '../site-util/env';
 
 export const setupKeyCloakProvider = (): Provider[] => {
@@ -17,6 +17,13 @@ export const setupKeyCloakProvider = (): Provider[] => {
     },
     allowDangerousEmailAccountLinking: true,
   };
-  const keycloak = KeyCloak<KeycloakProfile>(providerArgs);
+  // const keycloak = KeyCloak<KeycloakProfile>(providerArgs);
+  const keycloak = {
+    id: 'keycloak',
+    name: 'Keycloak',
+    type: 'oidc',
+    style: { brandColor: '#428bca' },
+    options: providerArgs,
+  } as Provider;
   return [keycloak];
 };

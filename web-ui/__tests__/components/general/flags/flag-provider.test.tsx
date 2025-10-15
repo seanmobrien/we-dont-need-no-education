@@ -1,4 +1,5 @@
 import React from 'react';
+import { auth } from '@/auth';
 import { render, waitFor, screen } from '@/__tests__/test-utils';
 import { FlagProvider } from '@/components/general/flags/flag-provider';
 

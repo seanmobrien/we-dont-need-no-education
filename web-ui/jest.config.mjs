@@ -11,8 +11,10 @@ const config = {
   // Ensure environment globals (Response/Request/Headers) are available before modules load
   setupFiles: ['<rootDir>/__tests__/jest.setup.env.ts'],
   setupFilesAfterEnv: [
+    '<rootDir>/__tests__/jest.test-extensions.ts',
     '<rootDir>/__tests__/jest.mock-node-modules.ts',
     '<rootDir>/__tests__/jest.mock-health.ts',
+    '<rootDir>/__tests__/jest.mock-auth.ts',
     '<rootDir>/__tests__/jest.setup.ts',
   ], // Setup file for global imports
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled
@@ -35,6 +37,7 @@ const config = {
     '^@/(.*)$': '<rootDir>/$1', // Alias for module imports
     '^~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
     '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',
+    // '^next-auth/providers/keycloak$': '<rootDir>/__tests__/mocks/keycloak-provider.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
   },
   transform: {

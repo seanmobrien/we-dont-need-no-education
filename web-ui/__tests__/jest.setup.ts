@@ -462,6 +462,7 @@ jest.mock('@/lib/drizzle-db', () => {
   };
 });
 
+/*
 jest.mock('@/auth', () => {
   return {
     auth: jest.fn(() => ({
@@ -469,6 +470,7 @@ jest.mock('@/auth', () => {
     })),
   };
 });
+*/
 jest.mock('@/lib/site-util/env', () => {
   return {
     env: jest.fn((key: string) => {
@@ -524,8 +526,6 @@ jest.mock('@/lib/logger', () => {
   };
 });
 
-import NextAuth from 'next-auth';
-import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
@@ -590,11 +590,6 @@ globalThis.TextEncoder = TextEncoder as any;
 })();
 
 // Automocks
-
-(NextAuth as jest.Mock).mockImplementation(() => jest.fn);
-(auth as jest.Mock).mockImplementation(() => {
-  return jest.fn(() => Promise.resolve({ id: 'test-id' }));
-});
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const Zodex = require('zodex').Zodex;

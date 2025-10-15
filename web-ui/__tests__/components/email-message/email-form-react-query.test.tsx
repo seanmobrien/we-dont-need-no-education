@@ -19,6 +19,7 @@ import EmailForm from '@/components/email-message/form';
 import { useEmail, useWriteEmail } from '@/lib/hooks/use-email';
 import { EmailMessage } from '@/data-models';
 import { asErrorLike } from '@/lib/react-util';
+import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the React Query hooks
 jest.mock('@/lib/hooks/use-email', () => ({
@@ -54,6 +55,8 @@ const mockedUseWriteEmail = useWriteEmail as jest.MockedFunction<
   typeof useWriteEmail
 >;
 
+const mockConsole = hideConsoleOutput();
+
 describe('EmailForm with React Query', () => {
   const mockMutateAsync = jest.fn();
   const mockWriteEmailMutation = {
@@ -66,6 +69,9 @@ describe('EmailForm with React Query', () => {
   beforeEach(() => {
     // jest.clearAllMocks();
     mockedUseWriteEmail.mockReturnValue(mockWriteEmailMutation as any);
+  });
+  afterEach(() => {
+    mockConsole.dispose();
   });
 
   it('should render form for creating new email', () => {
@@ -188,18 +194,19 @@ describe('EmailForm with React Query', () => {
   });
 
   it('should handle save errors properly', async () => {
+    mockConsole.setup();
     mockedUseEmail.mockReturnValue({
       data: undefined,
       isLoading: false,
       error: null,
     } as any);
-
+    const error = makeError('Save failed');
     // Mock a mutation that will fail
     const mockErrorMutation = {
-      mutateAsync: jest.fn().mockRejectedValue(makeError('Save failed')),
+      mutateAsync: jest.fn().mockRejectedValue(error),
       isPending: false,
       isError: true,
-      error: makeError('Save failed'),
+      error,
     };
 
     mockedUseWriteEmail.mockReturnValue(mockErrorMutation as any);
