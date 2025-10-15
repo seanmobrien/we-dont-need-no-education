@@ -1,17 +1,25 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const path = require('path');
 const ts = require('typescript');
 
 function usage() {
-  console.log(`Usage: node index.js --dirs=dir1,dir2 [--dry-run] [--apply] [--create-dts] [--conservative|--no-conservative]\n\nOptions:\n  --dirs        Comma-separated list of directories to operate on (required)\n  --dry-run     Print proposed changes but don't write files (default: true)\n  --apply       Apply changes (clears dry-run)\n  --create-dts  If set, create a sibling .d.ts when none exists (default: false)\n  --conservative If set, only remove JSDoc when sibling .d.ts exists (default: true)\n  --no-conservative Allow creating .d.ts if missing when --create-dts is set\n`);
+  console.log(
+    `Usage: node index.js --dirs=dir1,dir2 [--dry-run] [--apply] [--create-dts] [--conservative|--no-conservative]\n\nOptions:\n  --dirs        Comma-separated list of directories to operate on (required)\n  --dry-run     Print proposed changes but don't write files (default: true)\n  --apply       Apply changes (clears dry-run)\n  --create-dts  If set, create a sibling .d.ts when none exists (default: false)\n  --conservative If set, only remove JSDoc when sibling .d.ts exists (default: true)\n  --no-conservative Allow creating .d.ts if missing when --create-dts is set\n`,
+  );
 }
 
 function parseArgs() {
   const args = process.argv.slice(2);
   const out = { dirs: [], dryRun: true, createDts: false, conservative: true };
   for (const a of args) {
-    if (a.startsWith('--dirs=')) out.dirs = a.split('=')[1].split(',').map(s => s.trim()).filter(Boolean);
+    if (a.startsWith('--dirs='))
+      out.dirs = a
+        .split('=')[1]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
     if (a === '--dry-run') out.dryRun = true;
     if (a === '--apply') out.dryRun = false;
     if (a === '--create-dts') out.createDts = true;
@@ -57,7 +65,10 @@ function getLeadingJSDocForStatement(sourceText, stmt) {
 }
 
 function isExported(node) {
-  return !!(node.modifiers && node.modifiers.some(m => m.kind === ts.SyntaxKind.ExportKeyword));
+  return !!(
+    node.modifiers &&
+    node.modifiers.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+  );
 }
 
 function getExportedNamesFromStatement(stmt) {
@@ -73,7 +84,9 @@ function getExportedNamesFromStatement(stmt) {
 }
 
 function updateDtsWithJSDoc(dtsPath, exportsWithDocs, options) {
-  let dtsText = fs.existsSync(dtsPath) ? fs.readFileSync(dtsPath, 'utf8') : null;
+  let dtsText = fs.existsSync(dtsPath)
+    ? fs.readFileSync(dtsPath, 'utf8')
+    : null;
   const edits = [];
   if (!dtsText) {
     if (!options.createDts) return { created: false, edits: [] };
@@ -84,14 +97,18 @@ function updateDtsWithJSDoc(dtsPath, exportsWithDocs, options) {
     const name = item.name;
     const jsdoc = item.jsdoc.trim();
     // Try to find an export declaration for the name
-    const regex = new RegExp(`(^|\\n)(\\s*)(/\*\*[\s\S]*?\*/\\s*)?(export\\s+(declare\\s+)?(function|const|class|interface|type|enum)\\s+${name}\\b)`, 'm');
+    const regex = new RegExp(
+      `(^|\\n)(\\s*)(/\*\*[\s\S]*?\*/\\s*)?(export\\s+(declare\\s+)?(function|const|class|interface|type|enum)\\s+${name}\\b)`,
+      'm',
+    );
     const m = dtsText.match(regex);
     if (m) {
       const existingJsdoc = m[3];
       if (existingJsdoc && existingJsdoc.trim().startsWith('/**')) {
         continue; // already documented
       }
-      const insertPos = m.index + (m[1] ? m[1].length : 0) + (m[2] ? m[2].length : 0);
+      const insertPos =
+        m.index + (m[1] ? m[1].length : 0) + (m[2] ? m[2].length : 0);
       const before = dtsText.slice(0, insertPos);
       const after = dtsText.slice(insertPos);
       dtsText = before + jsdoc + '\n' + after;
@@ -113,7 +130,7 @@ function updateDtsWithJSDoc(dtsPath, exportsWithDocs, options) {
 }
 
 function removeRangesFromText(text, ranges) {
-  const sorted = ranges.slice().sort((a,b)=>b.pos-a.pos);
+  const sorted = ranges.slice().sort((a, b) => b.pos - a.pos);
   let out = text;
   for (const r of sorted) {
     out = out.slice(0, r.pos) + out.slice(r.end);
@@ -123,7 +140,12 @@ function removeRangesFromText(text, ranges) {
 
 function processFile(filePath, options) {
   const text = fs.readFileSync(filePath, 'utf8');
-  const sourceFile = ts.createSourceFile(filePath, text, ts.ScriptTarget.Latest, true);
+  const sourceFile = ts.createSourceFile(
+    filePath,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+  );
   const candidateDocs = [];
 
   for (const stmt of sourceFile.statements) {
@@ -133,14 +155,18 @@ function processFile(filePath, options) {
     const names = getExportedNamesFromStatement(stmt);
     if (names.length === 0) continue;
     for (const j of jsdocs) {
-      candidateDocs.push({ stmt, ranges: { pos: j.pos, end: j.end }, text: j.text, names });
+      candidateDocs.push({
+        stmt,
+        ranges: { pos: j.pos, end: j.end },
+        text: j.text,
+        names,
+      });
     }
   }
 
   if (candidateDocs.length === 0) return null;
 
   const siblingDts = filePath.replace(/\.(ts|tsx)$/, '.d.ts');
-  const actions = [];
   const exportsWithDocs = [];
   for (const c of candidateDocs) {
     const js = c.text + '\n';
@@ -149,14 +175,20 @@ function processFile(filePath, options) {
 
   const dtsExists = fs.existsSync(siblingDts);
   if (!dtsExists && options.conservative && !options.createDts) {
-    return { file: filePath, dts: siblingDts, skipped: true, reason: 'no-dts-conservative' };
+    return {
+      file: filePath,
+      dts: siblingDts,
+      skipped: true,
+      reason: 'no-dts-conservative',
+    };
   }
 
   const updateResult = updateDtsWithJSDoc(siblingDts, exportsWithDocs, options);
 
   const removedRanges = [];
   if (!options.dryRun) {
-    for (const c of candidateDocs) removedRanges.push({ pos: c.ranges.pos, end: c.ranges.end });
+    for (const c of candidateDocs)
+      removedRanges.push({ pos: c.ranges.pos, end: c.ranges.end });
   }
 
   if (!options.dryRun && removedRanges.length > 0) {
@@ -164,7 +196,13 @@ function processFile(filePath, options) {
     fs.writeFileSync(filePath, newText, 'utf8');
   }
 
-  return { file: filePath, dts: siblingDts, dtsExists, edits: updateResult.edits, removed: !options.dryRun ? removedRanges.length : 0 };
+  return {
+    file: filePath,
+    dts: siblingDts,
+    dtsExists,
+    edits: updateResult.edits,
+    removed: !options.dryRun ? removedRanges.length : 0,
+  };
 }
 
 function run(options) {
@@ -190,7 +228,12 @@ function run(options) {
 
 function main() {
   const opts = parseArgs();
-  const options = { dirs: opts.dirs, dryRun: opts.dryRun, createDts: opts.createDts, conservative: opts.conservative };
+  const options = {
+    dirs: opts.dirs,
+    dryRun: opts.dryRun,
+    createDts: opts.createDts,
+    conservative: opts.conservative,
+  };
   console.log('Options:', options);
   const result = run(options);
   console.log('\nSummary:');
@@ -198,14 +241,19 @@ function main() {
   console.log('Files with leading exported JSDoc:', result.filesWithJSDoc);
   for (const p of result.plannedChanges) {
     console.log('\n- File:', p.file);
-    if (p.skipped) console.log('  Skipped (no sibling .d.ts and conservative mode).');
+    if (p.skipped)
+      console.log('  Skipped (no sibling .d.ts and conservative mode).');
     else {
       console.log('  Sibling .d.ts:', p.dts, 'exists=', !!p.dtsExists);
       console.log('  Edits:', p.edits || []);
-      console.log('  JSDoc blocks to remove (count):', p.removed || (p.edits ? p.edits.length : 0));
+      console.log(
+        '  JSDoc blocks to remove (count):',
+        p.removed || (p.edits ? p.edits.length : 0),
+      );
     }
   }
-  if (options.dryRun) console.log('\nDry run: no files modified. Use --apply to write changes.');
+  if (options.dryRun)
+    console.log('\nDry run: no files modified. Use --apply to write changes.');
 }
 
 if (require.main === module) main();

@@ -1,10 +1,6 @@
-import TimelineAgentFactory, {
-  TimelineAgent,
-} from '../../../../lib/ai/agents/timeline/agent';
-import { ComplianceRating } from '../../../../lib/ai/agents/timeline/types';
+import { TimelineAgent } from '../../../../lib/ai/agents/timeline/agent';
 
 describe('TimelineAgent', () => {
-  let agent: TimelineAgent;
   it('passes a dummy test', () => {
     expect(true).toBe(true);
   });

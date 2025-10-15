@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * Test to verify EmailDetailPanel component works correctly
  * This includes comprehensive tests for loading states, fully loaded email, and expandable property panels
@@ -139,7 +139,7 @@ describe('EmailDetailPanel', () => {
     return promise;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   const createFailedPromise = (error: Error) => {
     const promise: any = {};
     promise.then = jest.fn().mockReturnValue({
@@ -436,7 +436,7 @@ describe('EmailDetailPanel', () => {
       // React Query may resolve too quickly in tests
       try {
         screen.getByRole('progressbar');
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
       } catch (e) {
         // Loading state might have resolved too quickly
       }

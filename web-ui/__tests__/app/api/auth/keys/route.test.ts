@@ -1,5 +1,5 @@
 /* @jest-environment node */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  *
  * @fileoverview Tests for the auth keys API endpoint

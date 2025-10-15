@@ -168,7 +168,6 @@ describe('ResizableDraggableDialog Index Module', () => {
 
     it('should work with type inference', () => {
       // Test that TypeScript can infer types correctly
-      const mockSetState = jest.fn();
       const testProps: Partial<ResizeableDraggableDialogProps> = {
         isOpenState: true,
         title: 'Test Dialog',

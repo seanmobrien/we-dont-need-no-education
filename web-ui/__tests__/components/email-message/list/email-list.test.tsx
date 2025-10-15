@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
 import React from 'react';
 import { render, screen, fireEvent } from '@/__tests__/test-utils';
 import { useRouter } from 'next/navigation';

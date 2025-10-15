@@ -27,7 +27,7 @@ describe('isKeyOf - extra coverage', () => {
       if (isKeyOf(k, o)) {
         // inside this branch TypeScript should treat k as keyof T
         // and allow property access
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const v = (o as any)[k];
         return v;
       }

@@ -1,6 +1,6 @@
 /* @jest-environment node */
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
+ 
 /**
  * Chat History API Route Tests
  *

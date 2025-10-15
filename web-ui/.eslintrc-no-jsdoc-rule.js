@@ -6,9 +6,14 @@ module.exports = {
     'no-jsdoc-in-ts/no-jsdoc': {
       create(context) {
         const filename = context.getFilename();
-        if (filename.endsWith('.d.ts')) return {};
+        // Normalize path separators for regex checks
+        const normalized = filename.replace(/\\/g, '/').toLowerCase();
+        // Skip declaration files
+        if (normalized.endsWith('.d.ts')) return {};
+        // Skip any files in folders whose name contains 'test' (e.g., __tests__, tests)
+        if (/\/[^/]*test[^/]*\//.test(normalized)) return {};
         // Only run on .ts and .tsx files (but not .d.ts)
-        if (!/\.tsx?$/.test(filename)) return {};
+        if (!/\.tsx?$/.test(normalized)) return {};
 
         return {
           Program(node) {

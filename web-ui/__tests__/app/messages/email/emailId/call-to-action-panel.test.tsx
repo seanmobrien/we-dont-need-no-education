@@ -9,7 +9,7 @@ jest.mock('next/navigation', () => ({
 
 // Mock MUI components that may cause theme issues
 jest.mock('@mui/material/LinearProgress', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const MockLinearProgress = (props: any) => (
     <div data-testid="linear-progress" data-value={props.value} {...props} />
   );
@@ -17,7 +17,7 @@ jest.mock('@mui/material/LinearProgress', () => {
 });
 
 jest.mock('@mui/material/CircularProgress', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const MockCircularProgress = (props: any) => (
     <div data-testid="circular-progress" {...props} />
   );

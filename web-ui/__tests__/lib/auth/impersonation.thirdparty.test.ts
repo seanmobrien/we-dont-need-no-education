@@ -7,7 +7,7 @@ jest.mock('got');
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 import type { Got } from 'got';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * Tests for ImpersonationThirdParty (Authorization Code flow)
  * - Happy path: admin code via login form, impersonation, then user code exchange
@@ -132,7 +132,7 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
   beforeEach(() => {
     jest.mock('got');
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+     
     got = require('got').got as Got;
     mockGot = got as jest.Mocked<Got>;
 
@@ -201,9 +201,9 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
     // Import SUT lazily to ensure our mocks are applied first
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const {
       ImpersonationThirdParty,
+       
     } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     // Ensure admin client finds the target user by email (configure captured instance)
     (kcAdminMock.users.find as jest.Mock).mockResolvedValue([
@@ -243,7 +243,7 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
     const {
       ImpersonationThirdParty,
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
     } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     // Create service, then set admin users.find to return empty -> user not found
     const svc = await ImpersonationThirdParty.fromRequest({

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { render, screen, fireEvent } from '@/__tests__/test-utils';
 import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
 import { mockChatTurn, mockChatTurnWithTool } from '../chat.mock-data';

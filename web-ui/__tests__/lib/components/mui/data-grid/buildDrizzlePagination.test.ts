@@ -27,7 +27,7 @@ jest.mock('@/lib/components/mui/data-grid/queryHelpers/utility', () => {
 
 jest.mock('@/lib/nextjs-util/utils', () => {
   const nextJsUtils = jest.requireActual('/lib/nextjs-util/utils');
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const deprecate = <T extends (...args: any[]) => any>(fn: T) => {
     const deprecatedFn = function (
       this: ThisParameterType<T>,
@@ -207,7 +207,7 @@ describe('buildDrizzlePagination', () => {
         offset: 60,
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const req: LikeNextRequest = new Request(
         'https://example.com/api/data?page=3&pageSize=30',
       ) as any;

@@ -30,7 +30,6 @@ import { LanguageModelV2, LanguageModelV2CallOptions } from '@ai-sdk/provider';
 import { cacheWithRedis } from '../../../../lib/ai/middleware/cacheWithRedis/cacheWithRedis';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { metricsCollector } from '../../../../lib/ai/middleware/cacheWithRedis/metrics';
-import { content } from 'googleapis/build/src/apis/content';
 
 // Mock function to simulate different response types
 const createMockMiddleware = (

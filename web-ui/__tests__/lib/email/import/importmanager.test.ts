@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 jest.mock('@/lib/neondb');
 jest.mock('google-auth-library');
 jest.mock('googleapis');
@@ -53,7 +53,7 @@ const consoleSpy = hideConsoleOutput();
 describe('DefaultImportManager', () => {
   beforeEach(() => {
     const map = ImportStageValues.reduce((acc, stage) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       acc[stage] = jest.fn(() => mockStateManager) as any;
       return acc;
     }, {} as ImportManagerMap);

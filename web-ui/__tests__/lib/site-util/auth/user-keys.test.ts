@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * @fileoverview Tests for UserKeyManager enhancements
  *
@@ -77,7 +77,7 @@ Object.defineProperty(window, 'indexedDB', {
 
 // Define it as a let so that someone -could- reassign it, even though
 // we don't...
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 let requestIndex = 0;
 const mockConsole = hideConsoleOutput();
 describe('UserKeyManager Enhancements', () => {

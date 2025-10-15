@@ -89,7 +89,7 @@ describe('resolveEmailId', () => {
         },
       },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     mockDrizDb.mockResolvedValue(mockDb as any);
 
     const result = await resolveEmailId(documentId);
@@ -110,7 +110,7 @@ describe('resolveEmailId', () => {
         },
       },
     };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     mockDrizDb.mockResolvedValue(mockDb as any);
 
     // Mock console.error to avoid test output noise

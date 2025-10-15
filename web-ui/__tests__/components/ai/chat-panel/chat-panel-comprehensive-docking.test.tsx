@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * @fileoverview Comprehensive tests for chat panel docking functionality
  * Tests all docking positions: top, left, right, bottom, maximized, and float

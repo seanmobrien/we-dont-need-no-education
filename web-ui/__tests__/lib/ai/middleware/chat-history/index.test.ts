@@ -1,3 +1,4 @@
+ 
 /**
  * @jest-environment node
  * @fileoverview Unit tests for chat history middleware main entry point
@@ -8,7 +9,7 @@
  * @module __tests__/lib/ai/middleware/chat-history/index.test.ts
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
