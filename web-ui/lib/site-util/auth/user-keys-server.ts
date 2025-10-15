@@ -12,7 +12,7 @@ export const getActiveUserPublicKeys = async ({
   effectiveDate,
   userId: userIdFromProps,
 }: {
-  userId: number;
+  userId?: number;
   effectiveDate?: string | Date;
   db?: DatabaseType;
 }): Promise<string[]> => {
@@ -25,7 +25,7 @@ export const getActiveUserPublicKeys = async ({
       : typeof effectiveDate === 'string'
         ? new Date(effectiveDate)
         : effectiveDate;
-  let userId: number;
+  let userId: number | undefined;
   if (userIdFromProps) {
     userId = userIdFromProps;
   } else {

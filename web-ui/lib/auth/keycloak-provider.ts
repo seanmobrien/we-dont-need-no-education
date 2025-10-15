@@ -16,7 +16,6 @@ export const setupKeyCloakProvider = (): Provider[] => {
     },
     allowDangerousEmailAccountLinking: true,
   };
-  // const keycloak = KeyCloak<KeycloakProfile>(providerArgs);
   const keycloak = {
     id: 'keycloak',
     name: 'Keycloak',

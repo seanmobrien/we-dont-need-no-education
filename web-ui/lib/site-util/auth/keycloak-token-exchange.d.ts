@@ -1,7 +1,7 @@
-declare module '@/lib/site-util/auth/keycloak-token-exchange' {
-  import { NextApiRequest } from 'next';
-  import { NextRequest } from 'next/server';
+import { NextApiRequest } from 'next';
+import { NextRequest } from 'next/server';
 
+declare module '@/lib/site-util/auth/keycloak-token-exchange' {
   /**
    * Configuration for Keycloak token exchange operations
    */
@@ -91,9 +91,7 @@ declare module '@/lib/site-util/auth/keycloak-token-exchange' {
     /**
      * Extract and validate Google tokens from token exchange response
      */
-    private extractGoogleTokens(
-      response: TokenExchangeResponse,
-    ): GoogleTokens;
+    private extractGoogleTokens(response: TokenExchangeResponse): GoogleTokens;
 
     /**
      * Convenience method that combines token extraction and exchange

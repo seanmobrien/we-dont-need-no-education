@@ -1,9 +1,9 @@
-declare module '@/lib/site-util/auth/_types' {
-  import { OAuth2Client } from 'google-auth-library';
-  import { NextApiRequest } from 'next';
-  import { Session } from 'next-auth';
-  import { NextRequest } from 'next/server';
+import { OAuth2Client } from 'google-auth-library';
+import { NextApiRequest } from 'next';
+import { Session } from 'next-auth';
+import { NextRequest } from 'next/server';
 
+declare module '@/lib/site-util/auth/_types' {
   /**
    * Server-side session tokens with promise-based access
    *

@@ -1,6 +1,6 @@
-declare module '@/lib/site-util/auth/_credentialProvider' {
-  import { ICredential, CredentialOptions } from './_types';
+import type { ICredential, CredentialOptions } from './_types';
 
+declare module '@/lib/site-util/auth/_credentialProvider' {
   /**
    * Credential factory function
    *
