@@ -8,6 +8,7 @@ import {
   determineHealthStatus,
   type HealthStatus,
 } from '@/lib/ai/mem0/types/health-check';
+import { env } from '@/lib/site-util/env';
 
 /**
  * Health Check Route (GET /api/health)
@@ -102,6 +103,8 @@ type HealthSystemResponseTypeMap = {
  */
 type HealthCheckResponse = {
   [key in HealthCheckSystem]?: HealthSystemResponseTypeMap[key];
+} & {
+  server: string;
 };
 
 /**
@@ -222,6 +225,7 @@ export const GET = wrapRouteRequest(async () => {
   const [memoryHealth] = await Promise.all([memoryHealthPromise]);
 
   const healthCheckResponse: HealthCheckResponse = {
+    server: env('NEXT_PUBLIC_HOSTNAME') ?? 'unknown',
     database: { status: 'ok' },
     chat: { status: 'ok', cache: { status: 'ok' }, queue: { status: 'ok' } },
     memory: memoryHealth,
