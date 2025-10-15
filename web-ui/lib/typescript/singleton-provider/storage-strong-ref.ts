@@ -18,35 +18,7 @@ import {
   SingletonStorageStrategy,
 } from './types';
 
-/**
- * Storage strategy using strong references on the global object.
- *
- * This class stores singleton instances directly on `globalThis`, maintaining strong
- * references that prevent garbage collection. It tracks all keys internally to enable
- * cleanup operations.
- *
- * Key characteristics:
- * - **Strong references**: Instances are never garbage collected until explicitly deleted
- * - **Global persistence**: Instances persist across module reloads (in dev environments)
- * - **Manual cleanup**: Provides clear() method to remove all tracked instances
- * - **Key tracking**: Maintains internal set of keys for efficient bulk operations
- *
- * @implements {SingletonStorageStrategy}
- *
- * @example
- * const storage = new StrongReferenceStorage();
- * const myKey = Symbol('myService');
- * storage.set(myKey, { data: 'value' });
- * const instance = storage.get(myKey); // Returns the stored object
- * storage.has(myKey); // true
- * storage.delete(myKey); // Removes the instance
- *
- * @example
- * // Bulk cleanup
- * storage.set(Symbol('service1'), service1);
- * storage.set(Symbol('service2'), service2);
- * storage.clear(); // Removes all tracked instances
- */
+
 export class StrongReferenceStorage implements SingletonStorageStrategy {
   /**
    * Internal set tracking all keys that have been set.

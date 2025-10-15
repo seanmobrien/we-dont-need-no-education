@@ -8,49 +8,7 @@ import {
   SingletonStorageStrategy,
 } from './types';
 
-/**
- * Singleton provider class for managing singleton instances with advanced memory management.
- *
- * The SingletonProvider implements a sophisticated singleton pattern that supports both
- * global and scoped singleton storage. It provides configurable memory management through
- * WeakMap support, allowing singletons to be garbage collected when no longer referenced.
- *
- * Key features:
- * - **Dual Storage Strategy**: Supports both global scope and WeakMap-based storage
- * - **Memory Management**: Configurable weak references to prevent memory leaks
- * - **Type Safety**: Full TypeScript support with generic type parameters
- * - **Thread Safety**: Safe for use in Node.js environments with proper locking
- * - **Resource Cleanup**: Comprehensive cleanup methods for memory management
- *
- * The class uses a singleton pattern itself, with the Instance property providing
- * access to the global provider instance.
- *
- * @example
- * ```typescript
- * // Get the global singleton provider instance
- * const provider = SingletonProvider.Instance;
- *
- * // Create a database connection singleton
- * const db = provider.getOrCreate('database', () => createDbConnection());
- *
- * // Create a cache with weak references for better memory management
- * const cache = provider.getOrCreate('cache', () => new Map(), { weakRef: true });
- *
- * // Check if a singleton exists
- * if (provider.has('user-service')) {
- *   const service = provider.get('user-service');
- *   // Use existing service
- * }
- *
- * // Manually set a singleton value
- * provider.set('config', appConfig);
- *
- * // Clean up all singletons
- * provider.clear();
- * ```
- *
- * @since 1.0.0
- */
+
 export class SingletonProvider {
   #strongStorage = new StrongReferenceStorage();
   #weakStorage = new WeakReferenceStorage();

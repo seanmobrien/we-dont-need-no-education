@@ -16,10 +16,7 @@ interface WithErrorBoundaryConfig {
   isolate?: boolean; // If true, errors won't bubble up to parent boundaries
 }
 
-/**
- * Higher-order component that wraps a component with an error boundary
- * Provides automatic error reporting and isolation for component errors
- */
+
 export function withErrorBoundary<P extends object>(
   WrappedComponent: ComponentType<P>,
   config: WithErrorBoundaryConfig = {},
@@ -79,9 +76,7 @@ export function withErrorBoundary<P extends object>(
   return WithErrorBoundaryComponent;
 }
 
-/**
- * Decorator version for use with class components or TypeScript decorators
- */
+
 export function ErrorBoundaryDecorator(config?: WithErrorBoundaryConfig) {
   return function <T extends ComponentType<Record<string, unknown>>>(
     target: T,
