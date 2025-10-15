@@ -3,10 +3,10 @@
  * @module @/lib/hooks/use-email
  */
 
-declare module '@/lib/hooks/use-email' {
-  import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
-  import type { EmailMessage } from '@/data-models';
+import type { EmailMessage } from '../../data-models';
+import type { UseQueryResult, UseMutationResult } from '@tanstack/react-query';
 
+declare module '@/lib/hooks/use-email' {
   /**
    * Query keys for email-related queries
    */
@@ -24,14 +24,14 @@ declare module '@/lib/hooks/use-email' {
    * @param options - React Query options for caching and refetch behavior
    * @returns React Query result with email data, loading state, and error state
    */
-  export const useEmail: (
+  export function useEmail(
     emailId: string | null,
     options?: {
       enabled?: boolean;
       staleTime?: number;
       gcTime?: number;
     },
-  ) => UseQueryResult<EmailMessage, Error>;
+  ): UseQueryResult<EmailMessage, Error>;
 
   /**
    * Hook for updating an email record using React Query mutation.
@@ -40,7 +40,7 @@ declare module '@/lib/hooks/use-email' {
    *
    * @returns React Query mutation result for updating email records
    */
-  export const useUpdateEmail: () => UseMutationResult<
+  export function useUpdateEmail(): UseMutationResult<
     EmailMessage,
     Error,
     { id: string; data: Partial<EmailMessage> },

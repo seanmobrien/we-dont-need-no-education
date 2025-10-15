@@ -43,17 +43,17 @@ declare module '@/lib/site-util/env' {
   /**
    * Checks if code is running on the client (browser)
    */
-  export const isRunningOnClient: () => boolean;
+  export function isRunningOnClient(): boolean;
 
   /**
    * Checks if code is running on the server (Node.js)
    */
-  export const isRunningOnServer: () => boolean;
+  export function isRunningOnServer(): boolean;
 
   /**
    * Checks if code is running on the edge runtime
    */
-  export const isRunningOnEdge: () => boolean;
+  export function isRunningOnEdge(): boolean;
 
   export type { ServerEnvType, ClientEnvType };
 

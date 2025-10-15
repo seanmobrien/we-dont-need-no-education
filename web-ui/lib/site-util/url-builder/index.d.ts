@@ -29,7 +29,7 @@ declare module '@/lib/site-util/url-builder' {
    * console.log(url.href); // "https://example.com/api/users"
    * ```
    */
-  export const getAbsoluteUrl: (path: string) => URL;
+  export function getAbsoluteUrl(path: string): URL;
 
   /**
    * Default site URL builder instance

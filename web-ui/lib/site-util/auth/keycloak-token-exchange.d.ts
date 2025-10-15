@@ -116,13 +116,13 @@ declare module '@/lib/site-util/auth/keycloak-token-exchange' {
    * const tokens = await keycloakTokenExchange().getGoogleTokensFromRequest(req);
    * ```
    */
-  export const keycloakTokenExchange: () => KeycloakTokenExchange;
+  export function keycloakTokenExchange(): KeycloakTokenExchange;
 
   /**
    * Legacy function for backward compatibility
    * @deprecated Use keycloakTokenExchange.getGoogleTokensFromRequest instead
    */
-  export const getGoogleTokensFromKeycloak: (
+  export function getGoogleTokensFromKeycloak(
     req: NextRequest | NextApiRequest,
-  ) => Promise<GoogleTokens>;
+  ): Promise<GoogleTokens>;
 }

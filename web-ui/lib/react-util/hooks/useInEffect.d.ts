@@ -45,5 +45,5 @@ declare module 'lib/react-util/hooks/useInEffect' {
    * - The queue persists across component remounts, ensuring pending operations are not lost.
    * - Designed for advanced use cases where effect serialization is required.
    */
-  export const useInEffect: () => UseInEffectReturn;
+  export function useInEffect(): UseInEffectReturn;
 }

@@ -3,10 +3,14 @@
  * @module @/lib/hooks/use-statistics
  */
 
-declare module '@/lib/hooks/use-statistics' {
-  import type { UseQueryResult } from '@tanstack/react-query';
-  import type { ModelStat, QueueInfo, QueueSummary } from '@/types/statistics';
+import type {
+  ModelStat,
+  QueueInfo,
+  QueueSummary,
+} from '../../types/statistics';
+import type { UseQueryResult } from '@tanstack/react-query';
 
+declare module '@/lib/hooks/use-statistics' {
   /**
    * Hook for fetching model statistics using React Query.
    *
@@ -15,9 +19,9 @@ declare module '@/lib/hooks/use-statistics' {
    * @param source - Data source: 'database' for real-time or 'redis' for cached stats
    * @returns React Query result with model statistics data
    */
-  export const useModelStatistics: (
+  export function useModelStatistics(
     source?: 'database' | 'redis',
-  ) => UseQueryResult<ModelStat[], Error>;
+  ): UseQueryResult<ModelStat[], Error>;
 
   /**
    * Hook for fetching queue statistics using React Query.
@@ -26,7 +30,7 @@ declare module '@/lib/hooks/use-statistics' {
    *
    * @returns React Query result with queue statistics data
    */
-  export const useQueueStatistics: () => UseQueryResult<
+  export function useQueueStatistics(): UseQueryResult<
     {
       summary: QueueSummary;
       queues: QueueInfo[];
@@ -42,7 +46,7 @@ declare module '@/lib/hooks/use-statistics' {
    * @param modelSource - Data source for model stats: 'database' or 'redis'
    * @returns Combined query results with loading states and refetch function
    */
-  export const useStatistics: (modelSource?: 'database' | 'redis') => {
+  export function useStatistics(modelSource?: 'database' | 'redis'): {
     models: UseQueryResult<ModelStat[], Error>;
     queues: UseQueryResult<
       {

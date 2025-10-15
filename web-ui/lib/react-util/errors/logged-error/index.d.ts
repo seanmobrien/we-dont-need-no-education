@@ -616,7 +616,7 @@ declare module 'lib/react-util/errors/logged-error' {
    *
    * @since 1.0.0
    */
-  export const dumpError: (e: unknown) => string;
+  export function dumpError(e: unknown): string;
 
   /**
    * Determines if an error represents an aborted/canceled operation.

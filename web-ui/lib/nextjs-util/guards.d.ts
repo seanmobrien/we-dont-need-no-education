@@ -1,8 +1,8 @@
-declare module '@/lib/nextjs-util/guards' {
-  import type { NextApiRequest, NextApiResponse } from 'next';
-  import type { NextRequest, NextResponse } from 'next/server';
-  import type { LikeNextRequest, LikeNextResponse } from './types';
+import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextRequest, NextResponse } from 'next/server';
+import type { LikeNextRequest, LikeNextResponse } from './types';
 
+declare module '@/lib/nextjs-util/guards' {
   /**
    * Type guard to check if the given object is a NextApiRequest or NextRequest.
    *
@@ -12,7 +12,7 @@ declare module '@/lib/nextjs-util/guards' {
    * @param req - The object to check.
    * @returns `true` if `req` is a NextApiRequest or NextRequest, otherwise `false`.
    */
-  export const isRequestOrApiRequest: (req: unknown) => req is LikeNextRequest;
+  export function isRequestOrApiRequest(req: unknown): req is LikeNextRequest;
 
   /**
    * Type guard to check if the request is a NextApiRequest.
@@ -20,7 +20,7 @@ declare module '@/lib/nextjs-util/guards' {
    * @param req - The request object to check.
    * @returns True if the request is a NextApiRequest, false otherwise.
    */
-  export const isNextApiRequest: (req: unknown) => req is NextApiRequest;
+  export function isNextApiRequest(req: unknown): req is NextApiRequest;
 
   /**
    * Type guard to check if the request is a NextRequest.
@@ -28,7 +28,7 @@ declare module '@/lib/nextjs-util/guards' {
    * @param req - The request object to check.
    * @returns True if the request is a NextRequest, false otherwise.
    */
-  export const isNextRequest: (req: unknown) => req is NextRequest;
+  export function isNextRequest(req: unknown): req is NextRequest;
 
   /**
    * Determines if the provided object is similar to a Next.js request object.
@@ -40,7 +40,7 @@ declare module '@/lib/nextjs-util/guards' {
    * @param req - The object to test for Next.js request compatibility.
    * @returns `true` if `req` is like a Next.js request, otherwise `false`.
    */
-  export const isLikeNextRequest: (req: unknown) => req is LikeNextRequest;
+  export function isLikeNextRequest(req: unknown): req is LikeNextRequest;
 
   /**
    * Type guard to check if the given object is a LikeNextResponse.
@@ -48,9 +48,9 @@ declare module '@/lib/nextjs-util/guards' {
    * @param res - The object to check.
    * @returns `true` if `res` is a LikeNextResponse, otherwise `false`.
    */
-  export const isLikeNextResponse: <Data = unknown>(
+  export function isLikeNextResponse<Data = unknown>(
     res: unknown,
-  ) => res is LikeNextResponse<Data>;
+  ): res is LikeNextResponse<Data>;
 
   /**
    * Type guard to check if the response is a NextApiResponse.
@@ -58,9 +58,9 @@ declare module '@/lib/nextjs-util/guards' {
    * @param res - The response object to check.
    * @returns True if the response is a NextApiResponse, false otherwise.
    */
-  export const isNextApiResponse: <Data = unknown>(
+  export function isNextApiResponse<Data = unknown>(
     res: unknown,
-  ) => res is NextApiResponse<Data>;
+  ): res is NextApiResponse<Data>;
 
   /**
    * Type guard to check if the response is a NextResponse.
@@ -68,7 +68,7 @@ declare module '@/lib/nextjs-util/guards' {
    * @param res - The response object to check.
    * @returns True if the response is a NextResponse, false otherwise.
    */
-  export const isNextResponse: <Data = unknown>(
+  export function isNextResponse<Data = unknown>(
     res: unknown,
-  ) => res is NextResponse<Data>;
+  ): res is NextResponse<Data>;
 }
