@@ -1,24 +1,27 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * @module db
  * This module provides a connection to the Neon database using the postgres.js driver.
  */
 
-declare module '@/lib/neondb/index-postgres' {
-  import type {
-    PostgresSql,
-    PostgresRowList as RowList,
-    PostgresParameterOrFragment as ParameterOrFragment,
-    PostgresPendingQuery as PendingQuery,
-    PostgresStatement,
-  } from './postgres';
-  import type { IResultset } from './types';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
-  export type QueryProps<ResultType extends object = Record<string, unknown>> = {
-    transform?: <RecordType extends Record<string, unknown>>(
-      result: RecordType,
-    ) => ResultType;
-    enhanced?: boolean;
-  };
+import type {
+  PostgresSql,
+  PostgresRowList as RowList,
+  PostgresParameterOrFragment as ParameterOrFragment,
+  PostgresPendingQuery as PendingQuery,
+  PostgresStatement,
+} from './postgres';
+import type { IResultset } from './types';
+declare module '@/lib/neondb/index-postgres' {
+  export type QueryProps<ResultType extends object = Record<string, unknown>> =
+    {
+      transform?: <RecordType extends Record<string, unknown>>(
+        result: RecordType,
+      ) => ResultType;
+      enhanced?: boolean;
+    };
 
   export type TransformedFullQueryResults<
     ResultType extends object = Record<string, unknown>,
@@ -70,99 +73,88 @@ declare module '@/lib/neondb/index-postgres' {
       template: TemplateStringsArray,
       ...parameters: readonly ParameterOrFragment<any[keyof any]>[]
     ): PendingQuery<any>;
-    <
-      ArrayModeOverride extends boolean = true,
-      FullResultsOverride extends boolean = ArrayModeOverride,
-    >(
-      string: string,
-      params?: any[],
-    ): PendingQuery<any>;
+    (string: string, params?: any[]): PendingQuery<any>;
   }
 
   /**
    * Creates an adapter function for executing SQL queries.
    * Supports both template literals (safe) and raw strings (unsafe).
    */
-  export const sqlNeonAdapter: (sql: SqlDb<any>) => ISqlNeonAdapter;
+  export function sqlNeonAdapter(sql: SqlDb<any>): ISqlNeonAdapter;
 
   /**
    * Type guard for ISqlNeonAdapter.
    */
-  export const isSqlNeonAdapter: (check: unknown) => check is ISqlNeonAdapter;
+  export function isSqlNeonAdapter(check: unknown): check is ISqlNeonAdapter;
 
   /**
    * Unwraps the underlying SQL adapter from a wrapped instance.
    */
-  export const unwrapAdapter: <
+  export function unwrapAdapter<
     TModel extends Record<string, unknown> = Record<string, unknown>,
-  >(
-    adapter: ISqlNeonAdapter,
-  ) => SqlDb<TModel>;
+  >(adapter: ISqlNeonAdapter): SqlDb<TModel>;
 
   /**
    * Returns SQL database adapter, unwrapping if necessary.
    */
-  export const asSql: <
+  export function asSql<
     TModel extends Record<string, unknown> = Record<string, unknown>,
-  >(
-    adapter: ISqlNeonAdapter | SqlDb<TModel>,
-  ) => SqlDb<TModel>;
+  >(adapter: ISqlNeonAdapter | SqlDb<TModel>): SqlDb<TModel>;
 
   /**
    * Executes a query against the Neon database.
    */
-  export const query: <
-    ResultType extends object = Record<string, unknown>,
-  >(
+  export function query<ResultType extends object = Record<string, unknown>>(
     cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
     props?: QueryProps<ResultType>,
-  ) => Promise<Array<ResultType>>;
+  ): Promise<Array<ResultType>>;
 
   /**
    * Executes a query against the Neon database with extended results.
    */
-  export const queryExt: <
-    ResultType extends object = Record<string, unknown>,
-  >(
+  export function queryExt<ResultType extends object = Record<string, unknown>>(
     cb: (sql: ISqlNeonAdapter) => Promise<RowList<any>>,
     props?: QueryProps<ResultType>,
-  ) => Promise<TransformedFullQueryResults<ResultType>>;
+  ): Promise<TransformedFullQueryResults<ResultType>>;
 
   export type SqlDb<TRecord = any> = PostgresSql<TRecord>;
 
   /**
    * Execute a raw query synchronously (connection must be initialized).
    */
-  export const queryRaw: <RecordType = any>(
+  export function queryRaw<RecordType = any>(
     cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
-  ) => PendingQuery<RecordType>;
+  ): PendingQuery<RecordType>;
 
   /**
    * Execute a raw query with async initialization.
    */
-  export const safeQueryRaw: <
+  export function safeQueryRaw<
     RecordType extends Record<string, unknown> = any,
   >(
     cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
-  ) => Promise<PendingQuery<RecordType>>;
+  ): Promise<PendingQuery<RecordType>>;
 
   /**
    * Execute a database query and return an IResultset with optional transformation.
    */
-  export const db: <
+  export function db<
     ResultType extends readonly any[] & Record<string, unknown> = any,
     RecordType extends Record<string, unknown> = ResultType,
   >(
     cb: (sql: SqlDb<RecordType>) => PendingQuery<RecordType>,
     props?: QueryProps<ResultType>,
-  ) => Promise<IResultset<ResultType>>;
+  ): Promise<IResultset<ResultType>>;
 
-  export type DbQueryFunction<X extends boolean, Y extends boolean> =
-    ISqlNeonAdapter;
+  // ts-expect-error
+  export type DbQueryFunction<
+    X extends boolean,
+    Y extends boolean,
+  > = ISqlNeonAdapter;
 
   /**
    * Get the database connection (synchronous, must be initialized).
    * @deprecated Use pgDb() instead for better consistency.
    */
-  export const sql: () => SqlDb<any>;
+  export function sql(): SqlDb<any>;
 }

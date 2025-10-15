@@ -96,10 +96,7 @@ declare module '@/lib/site-util/feature-flags/client' {
    *
    * @see {@link https://docs.flagsmith.com/clients/javascript | Flagsmith JavaScript SDK}
    */
-  export const flagsmithClient: () => Promise<IFlagsmith<
-    string,
-    string
-  > | null>;
+  export function flagsmithClient(): Promise<IFlagsmith<string, string> | null>;
 
   /**
    * Retrieve a single feature flag value from Flagsmith with type-safe defaults.
@@ -192,11 +189,11 @@ declare module '@/lib/site-util/feature-flags/client' {
    * @see getFeatureFlag (server) - Server-side equivalent
    * @see useFeatureFlag - React hook wrapper (recommended for components)
    */
-  export const getFeatureFlag: <T extends KnownFeatureType>(
+  export function getFeatureFlag<T extends KnownFeatureType>(
     flagKey: T,
     userId?: string,
     defaultValue?: (typeof AllFeatureFlagsDefault)[T],
-  ) => Promise<(typeof AllFeatureFlagsDefault)[T] | undefined>;
+  ): Promise<(typeof AllFeatureFlagsDefault)[T] | undefined>;
 
   /**
    * Retrieve all feature flags at once from Flagsmith.
@@ -300,7 +297,7 @@ declare module '@/lib/site-util/feature-flags/client' {
    * @see useAIFeatureFlags - React hook wrapper (recommended for components)
    * @see FlagProvider - Primary consumer of this function
    */
-  export const getAllFeatureFlags: (
+  export function getAllFeatureFlags(
     userId?: string,
-  ) => Promise<Record<KnownFeatureType, FeatureFlagStatus>>;
+  ): Promise<Record<KnownFeatureType, FeatureFlagStatus>>;
 }

@@ -500,7 +500,7 @@ declare module '@/lib/site-util/feature-flags/context' {
    * }
    * ```
    */
-  export const useFeatureFlagsContext: () => FeatureFlagsApi;
+  export function useFeatureFlagsContext(): FeatureFlagsApi;
 
   /**
    * Default export of `FeatureFlagsContext` for convenience.

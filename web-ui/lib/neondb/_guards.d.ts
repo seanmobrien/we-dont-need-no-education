@@ -2,11 +2,10 @@
  * Type guard functions for PostgreSQL result types
  * @module @/lib/neondb/_guards
  */
+import type { PostgresError, RowList } from 'postgres';
+import type { IResultset } from './types';
 
 declare module '@/lib/neondb/_guards' {
-  import type { PostgresError, RowList } from 'postgres';
-  import type { IResultset } from './types';
-
   /**
    * Type guard to check if an error is a PostgresError.
    *
@@ -54,7 +53,7 @@ declare module '@/lib/neondb/_guards' {
    * }
    * ```
    */
-  export const isDbError: (error: unknown) => error is PostgresError;
+  export function isDbError(error: unknown): error is PostgresError;
 
   /**
    * Type guard function to check if a given value is an instance of `IResultset<T>`.
@@ -106,9 +105,10 @@ declare module '@/lib/neondb/_guards' {
    * }
    * ```
    */
-  export const isResultset: <T extends readonly any[]>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export function isResultset<T extends readonly any[]>(
     check: unknown,
-  ) => check is IResultset<T>;
+  ): check is IResultset<T>;
 
   /**
    * Checks if the provided value is a RowList of a specific type.
@@ -167,7 +167,8 @@ declare module '@/lib/neondb/_guards' {
    * }
    * ```
    */
-  export const isRowList: <T extends readonly any[]>(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export function isRowList<T extends readonly any[]>(
     check: unknown,
-  ) => check is RowList<T>;
+  ): check is RowList<T>;
 }

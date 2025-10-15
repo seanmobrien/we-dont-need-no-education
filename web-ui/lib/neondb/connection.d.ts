@@ -1,11 +1,11 @@
+import type { PostgresSql } from './postgres';
+
 /**
  * PostgreSQL database driver connection manager
  * @module @/lib/neondb/connection
  */
 
 declare module '@/lib/neondb/connection' {
-  import type { PostgresSql } from './postgres';
-
   /**
    * Singleton database driver for managing PostgreSQL connections via the Neon serverless driver.
    *
@@ -147,7 +147,8 @@ declare module '@/lib/neondb/connection' {
    * // users is typed as PostgresRowList<User[]>
    * ```
    */
-  export const pgDbWithInit: <TRecord = any>() => Promise<PostgresSql<TRecord>>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export function pgDbWithInit<TRecord = any>(): Promise<PostgresSql<TRecord>>;
 
   /**
    * Synchronously returns a type-safe PostgreSQL connection.
@@ -172,5 +173,6 @@ declare module '@/lib/neondb/connection' {
    * });
    * ```
    */
-  export const pgDb: <TRecord = any>() => PostgresSql<TRecord>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  export function pgDb<TRecord = any>(): PostgresSql<TRecord>;
 }

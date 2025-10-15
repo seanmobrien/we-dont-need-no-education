@@ -1,12 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// import {  Sql,
-// RowList,
-// ParameterOrFragment,
-// PendingQuery,
-// ColumnList,
-// ResultMeta,
-// Statement,
-// } from 'postgres';
+
 import { pgDb, pgDbWithInit } from './connection';
 import { isDbError } from './_guards';
 import { CommandMeta, IResultset } from './types';
@@ -25,9 +18,6 @@ import {
 } from './postgres';
 
 type Sql<T extends Record<string, unknown>> = PostgresSql<T>;
-
-//import { deprecate } from '../nextjs-util';
-//import { deprecate } from '@/lib/nextjs-util/utils';
 
 export type QueryProps<ResultType extends object = Record<string, unknown>> = {
   transform?: <RecordType extends Record<string, unknown>>(

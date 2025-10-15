@@ -1,8 +1,18 @@
-import {
-  AllFeatureFlagStatus,
-  FeatureFlagStatus,
+import type {
+  KnownFeature,
+  AllFeatureFlagsDefault,
   KnownFeatureType,
-} from '@/lib/site-util/feature-flags/known-feature';
+  FeatureFlagStatus,
+  AllFeatureFlagStatus,
+} from './known-feature';
+
+import type { FeatureFlagsApi, defaultFlags } from './context';
+
+import type {
+  getFeatureFlag,
+  getAllFeatureFlags,
+  flagsmithServer,
+} from './server';
 
 declare module '@/lib/site-util/feature-flags' {
   /**
@@ -13,18 +23,15 @@ declare module '@/lib/site-util/feature-flags' {
    * single module path.
    */
 
-  export {
+  export type {
     KnownFeature,
     AllFeatureFlagsDefault,
-    type KnownFeatureType,
-    type FeatureFlagStatus,
-    type AllFeatureFlagStatus,
-  } from '@/lib/site-util/feature-flags/known-feature';
+    KnownFeatureType,
+    FeatureFlagStatus,
+    AllFeatureFlagStatus,
+  };
 
-  export {
-    type FeatureFlagsApi,
-    defaultFlags,
-  } from '@/lib/site-util/feature-flags/context';
+  export type { FeatureFlagsApi, defaultFlags };
 
   /**
    * React hook to get a single feature flag value
@@ -41,10 +48,10 @@ declare module '@/lib/site-util/feature-flags' {
    * }
    * ```
    */
-  export const useFeatureFlag: (
+  export function useFeatureFlag(
     flagKey: KnownFeatureType,
     defaultValue?: boolean | string | number,
-  ) => boolean | string | number;
+  ): boolean | string | number;
 
   /**
    * React hook to access the feature flags API
@@ -95,9 +102,5 @@ declare module '@/lib/site-util/feature-flags' {
    */
   export function useAIFeatureFlags(): AllFeatureFlagStatus;
 
-  export {
-    getFeatureFlag,
-    getAllFeatureFlags,
-    flagsmithServer,
-  } from '@/lib/site-util/feature-flags/server';
+  export type { getFeatureFlag, getAllFeatureFlags, flagsmithServer };
 }
