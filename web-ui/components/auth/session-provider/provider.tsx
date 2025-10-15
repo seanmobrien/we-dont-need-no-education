@@ -280,7 +280,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
     status: currentStatus,
     data: data?.data ?? null,
     isFetching,
-    userHash: userHash ?? undefined,
+    userHash: userHash === null ? undefined : userHash,
     refetch,
     publicKeys: data?.publicKeys,
     keyValidation: {
