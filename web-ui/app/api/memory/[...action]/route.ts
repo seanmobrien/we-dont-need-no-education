@@ -7,11 +7,14 @@ import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 type RouteContext = {
   // Next's generated types sometimes make params a Promise (see .next types), so
   // reflect that here by allowing params to be a Promise or the raw object.
-  params: Promise<{
-    action: string[]; // Rest segments that determine the downstream Mem0 endpoint
-  }> | {
-    action: string[];
-  } | undefined;
+  params:
+    | Promise<{
+        action: string[]; // Rest segments that determine the downstream Mem0 endpoint
+      }>
+    | {
+        action: string[];
+      }
+    | undefined;
 };
 
 export const dynamic = 'force-dynamic';
@@ -63,7 +66,8 @@ const proxyRequestToMem0 = async (
     ...(normalizedUserId ? { defaults: { user_id: normalizedUserId } } : {}),
   });
 
-  const rawParams = context.params instanceof Promise ? await context.params : context.params;
+  const rawParams =
+    context.params instanceof Promise ? await context.params : context.params;
   const basePath = resolveMem0Path(rawParams ?? undefined);
   const queryString = request.nextUrl.search;
   const targetPath = queryString ? `${basePath}${queryString}` : basePath;
