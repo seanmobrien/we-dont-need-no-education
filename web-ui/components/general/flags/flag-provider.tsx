@@ -12,7 +12,7 @@ import FeatureFlagsContext from '@/lib/site-util/feature-flags/context';
 import { LoggedError } from '@/lib/react-util';
 import { useFlagsmithLoading } from 'flagsmith/react';
 import { useSession } from '@/components/auth/session-provider';
-import { Session } from '@auth/core/types';
+import type { Session } from '@auth/core/types';
 
 const defaultFlags = AllFeatureFlagsDefault as unknown as Record<
   KnownFeatureType,
@@ -28,7 +28,6 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
     isLoading: false,
     error: null,
   };
-  console.log('status=', status, 'userHash=', userHash);
   const sessionLoaded = status !== 'loading';
   useEffect(() => {
     let isSubscribed = true;

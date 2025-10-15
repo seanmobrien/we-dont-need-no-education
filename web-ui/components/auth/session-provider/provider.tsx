@@ -97,7 +97,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
     'loading' | 'processing' | 'authenticated' | 'unauthenticated'
   >('loading');
   const previousKeyValidationStatus = useRef<KeyValidationStatus>('unknown');
-  const [userHash, setUserHash] = useState<string>();
+  const [userHash, setUserHash] = useState<string | null>();
 
   // Session query - fetch with keys when validation is due
   const shouldGetKeys = isKeyValidationDue();
@@ -141,11 +141,13 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
     };
     // compute user hash
     // no-op on server or if crypto not available
-    if (
-      typeof window === 'undefined' ||
-      !window.crypto ||
-      !window.crypto.subtle
-    ) {
+    if (typeof window === 'undefined') {
+      return unmountedEffect;
+    }
+    if (!window.crypto || !window.crypto.subtle) {
+      if (userHash !== null) {
+        setUserHash(null);
+      }
       return unmountedEffect;
     }
     const input = data?.data?.user?.email;
@@ -262,26 +264,23 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
   }, [dataStatus]);
 
   // Determine current session status
-  const currentStatus:
-    | 'loading'
-    | 'processing'
-    | 'authenticated'
-    | 'unauthenticated' = isLoading
-    ? 'loading'
-    : dataStatus === 'authenticated'
-      ? keyValidationStatus === 'validating' ||
-        keyValidationStatus === 'synchronizing' ||
-        !userHash
-        ? 'loading'
-        : 'authenticated'
-      : (dataStatus ?? 'unauthenticated');
+  const currentStatus: 'loading' | 'authenticated' | 'unauthenticated' =
+    isLoading
+      ? 'loading'
+      : dataStatus === 'authenticated'
+        ? keyValidationStatus === 'validating' ||
+          keyValidationStatus === 'synchronizing' ||
+          userHash === undefined
+          ? 'loading'
+          : 'authenticated'
+        : (dataStatus ?? 'unauthenticated');
 
   // Create context value, only updating if values actually changed
   const contextValue: SessionContextType<object> = {
     status: currentStatus,
     data: data?.data ?? null,
     isFetching,
-    userHash,
+    userHash: userHash === null ? undefined : userHash,
     refetch,
     publicKeys: data?.publicKeys,
     keyValidation: {
