@@ -97,7 +97,7 @@ export const SessionProvider: React.FC<PropsWithChildren<object>> = ({
     'loading' | 'processing' | 'authenticated' | 'unauthenticated'
   >('loading');
   const previousKeyValidationStatus = useRef<KeyValidationStatus>('unknown');
-  const [userHash, setUserHash] = useState<string | undefined | null>();
+  const [userHash, setUserHash] = useState<string | null>();
 
   // Session query - fetch with keys when validation is due
   const shouldGetKeys = isKeyValidationDue();
