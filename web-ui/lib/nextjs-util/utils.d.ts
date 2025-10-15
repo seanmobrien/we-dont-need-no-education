@@ -1,4 +1,4 @@
-import { LikeNextRequest, LikeNextResponse } from '@/lib/nextjs-util/types';
+import { LikeNextRequest, LikeNextResponse } from './types';
 import { OutgoingMessage } from 'http';
 
 declare module '@/lib/nextjs-util/utils' {
@@ -29,10 +29,10 @@ declare module '@/lib/nextjs-util/utils' {
    * const authorization = getHeaderValue(req, 'authorization');
    * ```
    */
-  export const getHeaderValue: (
+  export function getHeaderValue(
     req: LikeNextRequest | LikeNextResponse | OutgoingMessage,
     headerName: string,
-  ) => string | string[] | undefined | number | null;
+  ): string | string[] | undefined | number | null;
 
   /**
    * Extracts and resolves parameters from a Next.js request object.
@@ -62,9 +62,9 @@ declare module '@/lib/nextjs-util/utils' {
    * const syncParams = await extractParams({ params: { id: '123' } });
    * ```
    */
-  export const extractParams: <T extends object>(req: {
+  export function extractParams<T extends object>(req: {
     params: T | Promise<T>;
-  }) => Promise<T>;
+  }): Promise<T>;
 
   /**
    * Creates a deprecated wrapper around a function that emits Node.js deprecation warnings.
@@ -109,9 +109,9 @@ declare module '@/lib/nextjs-util/utils' {
    * ```
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  export const deprecate: <T extends (...args: any[]) => any>(
+  export function deprecate<T extends (...args: any[]) => any>(
     fn: T,
     message?: string,
     code?: string,
-  ) => T;
+  ): T;
 }

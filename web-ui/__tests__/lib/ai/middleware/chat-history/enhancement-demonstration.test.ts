@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
 /**
  * @fileoverview Demonstration test showing the chat history enhancement in action
  *

@@ -39,6 +39,8 @@ const config = {
     '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',
     // '^next-auth/providers/keycloak$': '<rootDir>/__tests__/mocks/keycloak-provider.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
+    '^\\./lib/auth/keycloak-provider$':
+      '<rootDir>/__tests__/mocks/keycloak-provider.js', // Mock static file imports
   },
   transform: {
     '^.+\\.(ts|tsx)$': [

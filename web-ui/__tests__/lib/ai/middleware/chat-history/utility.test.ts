@@ -8,14 +8,11 @@
  * @module __tests__/lib/ai/middleware/chat-history/utility.test.ts
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 import { getNextSequence } from '@/lib/ai/middleware/chat-history/utility';
 import { drizDb } from '@/lib/drizzle-db';
 import type { DbDatabaseType, DbTransactionType } from '@/lib/drizzle-db';
-import { SQLWrapper } from 'drizzle-orm';
-import { PgRaw } from 'drizzle-orm/pg-core/query-builders/raw';
-import { RowList } from 'postgres';
 
 let mockDb: jest.Mocked<DbDatabaseType>;
 
@@ -24,8 +21,6 @@ const mockTx = {
 } as unknown as jest.Mocked<DbTransactionType>;
 
 describe('Chat History Utility Functions', () => {
-  let idCounter = 0;
-
   beforeEach(() => {
     // jest.clearAllMocks();
     mockDb = drizDb() as jest.Mocked<DbDatabaseType>;

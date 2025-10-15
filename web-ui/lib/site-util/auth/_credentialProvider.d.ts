@@ -54,7 +54,7 @@ declare module '@/lib/site-util/auth/_credentialProvider' {
    * });
    * ```
    */
-  export const credentialFactory: (
+  export function credentialFactory(
     options: CredentialOptions,
-  ) => Promise<ICredential>;
+  ): Promise<ICredential>;
 }

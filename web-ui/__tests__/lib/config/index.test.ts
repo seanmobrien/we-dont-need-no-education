@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
 /**
  * Tests for lib/config/index.ts
  *

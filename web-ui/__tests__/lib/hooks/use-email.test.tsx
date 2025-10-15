@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { screen, render, renderHook, waitFor, act } from '../../test-utils';
 import { useEmail, useWriteEmail, emailKeys } from '@/lib/hooks/use-email';
 import { getEmail, writeEmailRecord } from '@/lib/api/client';

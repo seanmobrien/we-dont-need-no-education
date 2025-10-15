@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { mockDeep } from 'jest-mock-extended';
 import type { OAuth2Client } from 'google-auth-library';
 import type { GaxiosError, GaxiosResponse } from 'gaxios';

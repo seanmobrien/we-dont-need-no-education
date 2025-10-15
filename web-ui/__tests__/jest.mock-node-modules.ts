@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 jest.mock('google-auth-library');
 jest.mock('googleapis');
 

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * Test utilities: Drizzle ORM query builder mock types and helpers.
  *

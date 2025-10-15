@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { ensureCreateResult } from '@/lib/ai/middleware/chat-history/stream-handler-result';
 import { processStreamChunk } from '@/lib/ai/middleware/chat-history/stream-handlers';
 import type { StreamHandlerContext } from '@/lib/ai/middleware/chat-history/types';

@@ -7,7 +7,7 @@ import { jest } from '@jest/globals';
 // Polyfill fetch for Node.js test environment
 // Polyfill Request for Node.js test environment
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 global.Request = Request as any;
 global.URL = URL;
 

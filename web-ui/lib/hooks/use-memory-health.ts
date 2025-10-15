@@ -183,76 +183,7 @@ const stableRetryDelay = (attemptIndex: number) =>
  */
 const stableQueryKey = ['memoryHealth'] as const;
 
-/**
- * React Query hook for memory health monitoring with adaptive refresh intervals
- *
- * @function useMemoryHealth
- * @description Primary hook for monitoring memory service health status. Automatically
- * adjusts refresh frequency based on current health status - more frequent polling
- * when services are unhealthy, less frequent when all systems are healthy.
- *
- * Features:
- * - Dynamic refresh intervals based on health status
- * - Exponential backoff retry strategy
- * - Automatic error logging and recovery
- * - Stable references to prevent unnecessary re-renders
- * - Window focus refetch disabled to prevent excessive API calls
- *
- * @returns {MemoryStatusHookResult} Enhanced query result with additional health-specific properties
- * @example
- * ```typescript
- * function HealthIndicator() {
- *   const {
- *     healthStatus,
- *     subsystems,
- *     isLoading,
- *     isError,
- *     error,
- *     refreshInterval
- *   } = useMemoryHealth();
- *
- *   if (isLoading) return <Spinner />;
- *   if (isError) return <ErrorAlert error={error} />;
- *
- *   return (
- *     <HealthDashboard
- *       status={healthStatus}
- *       subsystems={subsystems}
- *       refreshRate={refreshInterval}
- *     />
- *   );
- * }
- * ```
- *
- * @example
- * ```typescript
- * // Using in a status badge component
- * function StatusBadge() {
- *   const { healthStatus, subsystems } = useMemoryHealth();
- *
- *   const failingServices = Object.entries(subsystems || {})
- *     .filter(([, status]) => status === 'error')
- *     .map(([name]) => name);
- *
- *   return (
- *     <Badge
- *       color={healthStatus === 'healthy' ? 'success' : 'error'}
- *       tooltip={
- *         failingServices.length > 0
- *           ? `Failing: ${failingServices.join(', ')}`
- *           : 'All systems operational'
- *       }
- *     >
- *       {healthStatus}
- *     </Badge>
- *   );
- * }
- * ```
- *
- * @see {@link MemoryHealthData} for data structure details
- * @see {@link fetchMemoryHealth} for underlying API call implementation
- * @see {@link getRefreshInterval} for refresh interval calculation
- */
+
 export const useMemoryHealth = (): MemoryStatusHookResult => {
   const query = useQuery<MemoryHealthData, Error>({
     queryKey: stableQueryKey,

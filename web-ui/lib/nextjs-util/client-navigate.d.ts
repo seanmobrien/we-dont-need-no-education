@@ -42,7 +42,7 @@ declare module '@/lib/nextjs-util/client-navigate' {
    * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Location/reload | MDN: Location.reload()}
    * @since 1.0.0
    */
-  export const clientReload: () => void;
+  export function clientReload(): void;
 
   /**
    * Navigates to a specified URL using browser's native navigation.
@@ -87,7 +87,7 @@ declare module '@/lib/nextjs-util/client-navigate' {
    * @see {@link https://nextjs.org/docs/app/api-reference/functions/use-router | Next.js useRouter} - For client-side routing within Next.js
    * @since 1.0.0
    */
-  export const clientNavigate: (url: string) => void;
+  export function clientNavigate(url: string): void;
 
   /**
    * Navigates to the application's sign-in page with a full page reload.
@@ -134,5 +134,5 @@ declare module '@/lib/nextjs-util/client-navigate' {
    * @see {@link https://nextjs.org/docs/app/building-your-application/authentication | Next.js Authentication} - For authentication patterns
    * @since 1.0.0
    */
-  export const clientNavigateSignIn: () => void;
+  export function clientNavigateSignIn(): void;
 }

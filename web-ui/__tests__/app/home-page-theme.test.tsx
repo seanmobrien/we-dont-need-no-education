@@ -1,4 +1,3 @@
-import { auth } from '@/auth';
 import { render } from '@/__tests__/test-utils';
 import { ThemeProvider } from '@/lib/themes/provider';
 import HomePage from '@/app/page';

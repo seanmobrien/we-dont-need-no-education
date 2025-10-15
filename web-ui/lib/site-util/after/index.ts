@@ -26,17 +26,7 @@ interface GlobalAfterRegistry {
   [AFTER_MANAGER_KEY]?: AfterManager;
 }
 
-/**
- * AfterManager
- *
- * Centralized utility for registering and running teardown/after hooks.
- * Typical usage:
- *
- * const mgr = AfterManager.getInstance();
- * mgr.add('teardown', async () => { await cleanup(); });
- *
- * The manager is designed to be a process-global singleton that survives module reloads.
- */
+
 export default class AfterManager {
   /** Default timeout (ms) for waiting on registered handlers to complete */
   static readonly #TIMEOUT = 7500;

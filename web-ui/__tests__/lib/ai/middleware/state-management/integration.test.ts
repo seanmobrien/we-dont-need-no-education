@@ -1,5 +1,6 @@
+ 
 /** @jest-environment node */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * @fileoverview Integration Tests for State Management Protocol
  *

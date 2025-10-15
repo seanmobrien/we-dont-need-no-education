@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
 /**
  * @fileoverview Unit tests for selectForGrid utility function
  *

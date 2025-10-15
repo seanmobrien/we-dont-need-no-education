@@ -49,8 +49,8 @@ declare module 'lib/react-util/debounce' {
    * debouncedUpdate.cancel(); // Cancels the pending invocation
    * ```
    */
-  export const debounce: <R, T extends (...args: any[]) => R>(
+  export function debounce<R, T extends (...args: any[]) => R>(
     func: T,
     delay: number | { wait: number; timeout?: number },
-  ) => DebouncedFunction<R, T>;
+  ): DebouncedFunction<R, T>;
 }

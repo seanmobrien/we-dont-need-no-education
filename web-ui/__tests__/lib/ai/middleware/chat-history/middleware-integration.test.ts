@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
 setupImpersonationMock();
@@ -56,7 +56,7 @@ import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 import { schema, drizDb } from '@/lib/drizzle-db';
 
 jest.mock('@/lib/logger', () => ({

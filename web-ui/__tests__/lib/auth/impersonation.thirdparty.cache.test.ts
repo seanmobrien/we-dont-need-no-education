@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * Offline token cache lifecycle tests for ImpersonationThirdParty
  * - Uses Redis + CryptoService mocks to simulate encrypted cached refresh token
@@ -164,9 +164,9 @@ describe('ImpersonationThirdParty - offline token cache lifecycle', () => {
     // Only user grant needed (admin came from refresh path)
     grantQueue.push({ access_token: 'user-access', expires_in: 3600 });
 
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const {
       ImpersonationThirdParty,
+       
     } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     const svc = await ImpersonationThirdParty.fromRequest({
       session: {

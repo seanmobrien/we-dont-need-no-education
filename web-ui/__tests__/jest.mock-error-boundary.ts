@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * Test utility: Simple Error Boundary component for Jest/RTL scenarios.
  *

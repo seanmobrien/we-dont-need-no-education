@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 
 // Mock next-auth and our auth wrapper to use the test extensions session
 
@@ -6,8 +6,8 @@ jest.mock('next-auth', () => jest.fn);
 
 jest.mock('@/auth', () => {
   const originalModule = jest.requireActual('@/auth');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const withJestTestExtensions =
+     
     require('@/__tests__/jest.test-extensions').withJestTestExtensions;
   return {
     __esModule: true,

@@ -108,7 +108,7 @@ describe('SingletonProvider', () => {
       const factory = jest.fn(() => 'primitive value');
 
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.getOrCreate('weak-invalid', factory as any, { weakRef: true });
       }).toThrow('Weak reference singletons require a non-null object value.');
     });
@@ -138,11 +138,11 @@ describe('SingletonProvider', () => {
       const factory = jest.fn(() => null);
 
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.getOrCreate('null-key', factory as any);
       }).toThrow(TypeError);
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.getOrCreate('null-key', factory as any);
       }).toThrow(
         'Factory for global singleton cannot return null or undefined.',
@@ -153,11 +153,11 @@ describe('SingletonProvider', () => {
       const factory = jest.fn(() => undefined);
 
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.getOrCreate('undefined-key', factory as any);
       }).toThrow(TypeError);
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.getOrCreate('undefined-key', factory as any);
       }).toThrow(
         'Factory for global singleton cannot return null or undefined.',
@@ -221,7 +221,7 @@ describe('SingletonProvider', () => {
 
     it('should throw when setting weak reference singleton with non-object value', () => {
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.set('weak-set-invalid', 'primitive' as any, { weakRef: true });
       }).toThrow('Weak reference singletons require a non-null object value.');
     });
@@ -238,14 +238,14 @@ describe('SingletonProvider', () => {
 
     it('should throw error when value is null', () => {
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.set('null-set', null as any);
       }).toThrow(TypeError);
     });
 
     it('should throw error when value is undefined', () => {
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.set('undefined-set', undefined as any);
       }).toThrow(TypeError);
     });
@@ -459,9 +459,9 @@ describe('globalSingleton', () => {
   });
 
   it('should throw error when factory returns null or undefined', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const nullFactory = jest.fn(() => null as any);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const undefinedFactory = jest.fn(() => undefined as any);
 
     expect(() => {
@@ -562,7 +562,7 @@ describe('error handling', () => {
     });
 
     await expect(async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       await provider.getOrCreate('async-error', asyncErrorFactory as any);
     }).rejects.toThrow('Async factory error');
   });
@@ -571,13 +571,13 @@ describe('error handling', () => {
     const invalidFactories = [
       () => null,
       () => undefined,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       () => (({}) as any).nonExistent, // This would be undefined
     ];
 
     invalidFactories.forEach((factory, index) => {
       expect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         provider.getOrCreate(`invalid-${index}`, factory as any);
       }).toThrow(TypeError);
     });

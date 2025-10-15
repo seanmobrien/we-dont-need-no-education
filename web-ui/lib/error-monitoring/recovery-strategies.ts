@@ -67,9 +67,7 @@ const uiOnly = (
   }
 };
 
-/**
- * Analyzes an error and determines its type
- */
+
 export function classifyError(error: Error): ErrorType {
   const message = error.message.toLowerCase();
   const stack = error.stack?.toLowerCase() || '';
@@ -152,9 +150,7 @@ export function classifyError(error: Error): ErrorType {
   return ErrorType.UNKNOWN;
 }
 
-/**
- * Recovery strategies for different error types
- */
+
 export const recoveryStrategies: RecoveryStrategy[] = [
   {
     errorType: ErrorType.NETWORK,
@@ -388,18 +384,14 @@ export const recoveryStrategies: RecoveryStrategy[] = [
   },
 ];
 
-/**
- * Gets recovery actions for a specific error
- */
+
 export function getRecoveryActions(error: Error): RecoveryAction[] {
   const errorType = classifyError(error);
   const strategy = recoveryStrategies.find((s) => s.errorType === errorType);
   return strategy?.actions || [];
 }
 
-/**
- * Gets the default recovery action for an error
- */
+
 export function getDefaultRecoveryAction(error: Error): RecoveryAction | null {
   const errorType = classifyError(error);
   const strategy = recoveryStrategies.find((s) => s.errorType === errorType);
@@ -412,9 +404,7 @@ export function getDefaultRecoveryAction(error: Error): RecoveryAction | null {
   return strategy.actions.find((a) => a.id === defaultActionId) || null;
 }
 
-/**
- * Executes automatic recovery if available
- */
+
 export async function attemptAutoRecovery(error: Error): Promise<boolean> {
   const defaultAction = getDefaultRecoveryAction(error);
 

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
@@ -19,14 +19,11 @@ import { HybridPolicySearch } from '@/lib/ai/services/search';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { hybridPolicySearchFactory } from '@/lib/ai/services/search';
 import { toolCallbackResultFactory } from '@/lib/ai/tools/utility';
-import { ILogger, log } from '@/lib/logger';
 
 describe('searchPolicyStore', () => {
   const mockHybridSearch = jest.fn();
-  let mockLog: ILogger;
 
   beforeEach(() => {
-    log((l) => (mockLog = l));
     (HybridPolicySearch as unknown as jest.Mock).mockImplementation(() => ({
       hybridSearch: mockHybridSearch,
     }));

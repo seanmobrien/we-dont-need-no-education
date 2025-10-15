@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 jest.mock('./connection', () => jest.fn());
 jest.mock('postgres');
 import {
@@ -84,7 +84,7 @@ describe('query', () => {
   it('should throw if isDbError returns true', async () => {
     const error = new Error('db error');
     const cb = jest.fn().mockResolvedValue(error);
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+     
     jest.spyOn(require('./_guards'), 'isDbError').mockReturnValue(true);
     await expect(query(cb)).rejects.toBe(error);
   });

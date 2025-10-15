@@ -253,5 +253,5 @@ declare module '@/__tests__/jest.test-extensions' {
    * });
    * ```
    */
-  export const useJestTestExtensions: () => JestTestExtensions;
+  export function useJestTestExtensions(): JestTestExtensions;
 }

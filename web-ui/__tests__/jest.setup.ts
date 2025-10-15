@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 // jest.mock('got');
 
@@ -33,7 +33,7 @@ jest.mock('@/instrument/browser', () => ({
   instrument: jest.fn(),
 }));
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
 
@@ -569,7 +569,7 @@ globalThis.TextEncoder = TextEncoder as any;
   try {
     if (typeof (globalThis as any).TransformStream === 'undefined') {
       // Prefer Node's built-in streams if available
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const web = require('stream/web');
       if (web?.TransformStream) {
         (globalThis as any).TransformStream = web.TransformStream;
@@ -582,7 +582,7 @@ globalThis.TextEncoder = TextEncoder as any;
     // fall through to ponyfill
   }
   // Fallback ponyfill
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const ponyfill = require('web-streams-polyfill');
   (globalThis as any).TransformStream ||= ponyfill.TransformStream;
   (globalThis as any).ReadableStream ||= ponyfill.ReadableStream;
@@ -591,7 +591,7 @@ globalThis.TextEncoder = TextEncoder as any;
 
 // Automocks
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const Zodex = require('zodex').Zodex;
 
 const DefaultEnvVariables = {
@@ -636,7 +636,7 @@ const DefaultEnvVariables = {
 let originalProcessEnv = (() => {
   try {
     const origConfig = dotenv.parse(
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
     );
     return {
@@ -886,7 +886,7 @@ export const mockFlagsmithInstanceFactory = ({
 beforeAll(() => {
   try {
     const origConfig = dotenv.parse(
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
     );
     originalProcessEnv = {

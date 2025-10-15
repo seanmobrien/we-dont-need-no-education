@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * @fileoverview Unit tests for chat error classes and their associated type guards
  *

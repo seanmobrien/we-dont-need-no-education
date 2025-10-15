@@ -33,7 +33,7 @@ class MockImpersonationServiceCache {
       totalEntries: 0,
       userCounts: 0,
       audienceCounts: 0,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       config: {} as any,
     };
   }

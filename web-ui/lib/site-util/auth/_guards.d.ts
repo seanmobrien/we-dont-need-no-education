@@ -21,5 +21,5 @@ declare module '@/lib/site-util/auth/_guards' {
    * }
    * ```
    */
-  export const isSessionExt: (session: unknown) => session is SessionExt;
+  export function isSessionExt(session: unknown): session is SessionExt;
 }

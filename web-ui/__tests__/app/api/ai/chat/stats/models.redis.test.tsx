@@ -46,7 +46,7 @@ type BaseModelRecord = {
 };
 
 describe('/api/ai/chat/stats/models?source=redis', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   let mockDb: any;
   beforeEach(() => {
     // jest.clearAllMocks();

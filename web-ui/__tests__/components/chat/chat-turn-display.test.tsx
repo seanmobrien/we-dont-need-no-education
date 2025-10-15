@@ -4,7 +4,7 @@ import { mockChatTurn, mockChatTurnWithTool } from '../chat.mock-data';
 
 // Mock ChatMessageDisplay component
 jest.mock('@/components/chat/chat-message-display', () => ({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   ChatMessageDisplay: ({ message, showMetadata }: any) => (
     <div
       data-testid={`message-${message.messageId}`}

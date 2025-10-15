@@ -194,7 +194,7 @@ declare module '@/lib/nextjs-util/server/utils' {
    *
    * @public
    */
-  export const createInstrumentedSpan: ({
+  export function createInstrumentedSpan({
     spanName,
     attributes,
     tracerName,
@@ -204,7 +204,7 @@ declare module '@/lib/nextjs-util/server/utils' {
     spanName: string;
     attributes?: Record<string, string | number | boolean>;
     autoLog?: boolean;
-  }) => Promise<{
+  }): Promise<{
     parentContext: unknown;
     contextWithSpan: unknown;
     span: Span;
@@ -251,7 +251,7 @@ declare module '@/lib/nextjs-util/server/utils' {
    *
    * @public
    */
-  export const reportEvent: ({
+  export function reportEvent({
     eventName,
     tracerName,
     additionalData,
@@ -259,5 +259,5 @@ declare module '@/lib/nextjs-util/server/utils' {
     eventName: string;
     tracerName?: string;
     additionalData?: Record<string, unknown>;
-  }) => Promise<void>;
+  }): Promise<void>;
 }

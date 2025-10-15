@@ -44,7 +44,7 @@ declare module '@/lib/site-util/auth/user-keys' {
    * });
    * ```
    */
-  export const signData: (data: string) => Promise<string>;
+  export function signData(data: string): Promise<string>;
 
   /**
    * Export user's public key for server-side verification setup
@@ -69,9 +69,9 @@ declare module '@/lib/site-util/auth/user-keys' {
    * }
    * ```
    */
-  export const getUserPublicKeyForServer: (props?: {
+  export function getUserPublicKeyForServer(props?: {
     publicKey?: CryptoKey | undefined;
-  }) => Promise<string | null>;
+  }): Promise<string | null>;
 
   /**
    * Initialize user's key pair (call this on app startup or user login)
@@ -90,7 +90,7 @@ declare module '@/lib/site-util/auth/user-keys' {
    * }, []);
    * ```
    */
-  export const initializeUserKeys: () => Promise<void>;
+  export function initializeUserKeys(): Promise<void>;
 
   /**
    * Validates that the user's local keys match server-registered keys
@@ -116,9 +116,9 @@ declare module '@/lib/site-util/auth/user-keys' {
    * }
    * ```
    */
-  export const validateUserKeysAgainstServer: (
+  export function validateUserKeysAgainstServer(
     serverKeys: string[],
-  ) => Promise<boolean>;
+  ): Promise<boolean>;
 
   /**
    * Checks if user has valid keys stored locally
@@ -137,7 +137,7 @@ declare module '@/lib/site-util/auth/user-keys' {
    * }
    * ```
    */
-  export const hasValidLocalKeys: () => Promise<boolean>;
+  export function hasValidLocalKeys(): Promise<boolean>;
 
   /**
    * Generate and return a new key pair, storing it locally
@@ -163,7 +163,7 @@ declare module '@/lib/site-util/auth/user-keys' {
    * });
    * ```
    */
-  export const generateUserKeyPair: () => Promise<{
+  export function generateUserKeyPair(): Promise<{
     publicKey: CryptoKey;
     privateKey: CryptoKey;
   }>;
@@ -184,7 +184,7 @@ declare module '@/lib/site-util/auth/user-keys' {
    * }
    * ```
    */
-  export const getUserPublicKey: () => Promise<CryptoKey | null>;
+  export function getUserPublicKey(): Promise<CryptoKey | null>;
 
   /**
    * Get the user's stored private key
@@ -207,5 +207,5 @@ declare module '@/lib/site-util/auth/user-keys' {
    * }
    * ```
    */
-  export const getUserPrivateKey: () => Promise<CryptoKey | null>;
+  export function getUserPrivateKey(): Promise<CryptoKey | null>;
 }

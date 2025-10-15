@@ -74,10 +74,7 @@ const isContextEnricher = (check: unknown): check is IContextEnricher =>
   'enrichContext' in check &&
   typeof (check as IContextEnricher).enrichContext === 'function';
 
-/**
- * Centralized error reporting system
- * Handles logging, external service reporting, and error analytics
- */
+
 export class ErrorReporter implements ErrorReporterInterface {
   private config: ErrorReporterConfig;
 

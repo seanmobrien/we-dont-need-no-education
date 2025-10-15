@@ -61,5 +61,5 @@ declare module '@/lib/site-util/metrics' {
    * // Returns something like: "a3f8d2e1b9c7"
    * ```
    */
-  export const hashUserId: (userId: string) => string;
+  export function hashUserId(userId: string): string;
 }

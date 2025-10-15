@@ -5,7 +5,7 @@
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { UIMessage } from 'ai';
 import {
   optimizeMessagesWithToolSummarization,

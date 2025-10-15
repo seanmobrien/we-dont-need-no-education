@@ -3,7 +3,8 @@ import { ValidKeyValidationStatusValues } from './values';
 /**
  * Key validation states for user session
  */
-export type KeyValidationStatus = typeof ValidKeyValidationStatusValues[number]
+export type KeyValidationStatus =
+  (typeof ValidKeyValidationStatusValues)[number];
 
 export type SessionResponse<TSessionData extends object> = {
   status: 'authenticated' | 'unauthenticated';
@@ -16,6 +17,7 @@ export type SessionContextType<TSessionData extends object> = {
   data: TSessionData | null;
   isFetching: boolean;
   refetch: () => void;
+  userHash?: string;
   publicKeys?: string[];
   keyValidation: {
     status: KeyValidationStatus;
@@ -23,4 +25,3 @@ export type SessionContextType<TSessionData extends object> = {
     error?: string;
   };
 };
-
