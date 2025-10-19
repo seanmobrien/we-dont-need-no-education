@@ -3,19 +3,17 @@ import { z } from 'zod';
 export const HybridSearchOptionsSchema = z.object({
   hitsPerPage: z
     .number()
-    .min(5)
-    .max(100)
-    .optional()
-    .describe('Results per page (5-100, default 15)'),
-  page: z
-    .number()
     .min(1)
+    .max(25)
     .optional()
-    .describe('Page number (default 1)'),
+    .describe('Results per page (1-25, default 15)'),
+  page: z.number().min(1).optional().describe('Page number (default 1)'),
   metadata: z
     .record(z.string(), z.string())
     .optional()
-    .describe('Key-value pairs for filtering; prefer explicit filters when available'),
+    .describe(
+      'Key-value pairs for filtering; prefer explicit filters when available',
+    ),
   count: z
     .boolean()
     .optional()
@@ -23,7 +21,9 @@ export const HybridSearchOptionsSchema = z.object({
   continuationToken: z
     .string()
     .optional()
-    .describe('Pagination token for retrieving next results; alternative to page/hitsPerPage'),
+    .describe(
+      'Pagination token for retrieving next results; alternative to page/hitsPerPage',
+    ),
   exhaustive: z
     .boolean()
     .optional()
@@ -52,7 +52,9 @@ export const CaseFileSearchOptionsSchema = HybridSearchOptionsSchema.extend({
       ]),
     )
     .optional()
-    .describe('Search scope: email, attachment, core-document, key-point, call-to-action, responsive-action, note'),
+    .describe(
+      'Search scope: email, attachment, core-document, key-point, call-to-action, responsive-action, note',
+    ),
   emailId: z.string().optional().describe('Filter by email ID'),
   threadId: z.string().optional().describe('Filter by thread ID'),
   attachmentId: z.number().optional().describe('Filter by attachment ID'),
@@ -74,9 +76,7 @@ export const AiSearchResultSchema = z.object({
     .record(z.string(), z.unknown())
     .optional()
     .describe('Key-value metadata pairs'),
-  score: z
-    .number()
-    .describe('Relevance score after semantic re-ranking'),
+  score: z.number().describe('Relevance score after semantic re-ranking'),
 });
 
 export const AiSearchResultEnvelopeSchema = z.object({

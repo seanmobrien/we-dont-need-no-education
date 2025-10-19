@@ -16,7 +16,7 @@ import {
   setNormalizedDefaultsMiddleware,
   MiddlewareStateManager,
   tokenStatsLoggingOnlyMiddleware,
-} from './middleware';
+} from '../middleware';
 
 /**
  * Model availability manager for programmatic control of model enabling/disabling

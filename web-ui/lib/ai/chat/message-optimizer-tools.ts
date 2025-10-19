@@ -826,7 +826,7 @@ export const summarizeMessageRecord = async ({
   ${prevMessages.join('\n----\n')}
 
   CURRENT MESSAGE:
-  ${JSON.stringify(thisMessage.content, null, 2)}
+  ${typeof thisMessage.content === 'string' ? thisMessage.content : JSON.stringify(thisMessage.content, null, 2)}
 
   CURRENT CHAT TITLE:
   ${thisMessage.chat.title || 'Untitled Chat'}

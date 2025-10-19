@@ -1,6 +1,8 @@
-/**
- * A type alias that represents a server error response in a Next.js application.
- *
- * @type {ServerErrorResponseType} ServerErrorResponse
- */
+import { Span } from '@opentelemetry/sdk-trace-base';
+
 export type ServerErrorResponseType = Response;
+
+export type WrappedResponseContext<TContext extends Record<string, unknown>> = {
+  params: Promise<TContext>;
+  span: Span;
+};

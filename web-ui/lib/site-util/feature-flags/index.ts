@@ -31,12 +31,11 @@ export const useFeatureFlag = (
     if (
       typeof f === 'boolean' ||
       typeof f === 'string' ||
-      typeof f === 'number'
+      typeof f === 'number' ||
+      f === undefined
     ) {
-      return f;
+      return f ?? fallback;
     }
-    if (!f) return fallback;
-    return f.value ?? fallback;
   };
 
   const raw = ctx.getFlag(flagKey, wrapDefault(defaultValue));

@@ -201,14 +201,6 @@ export const TimelineAgentInterface: React.FC<TimelineAgentInterfaceProps> = ({
     },
     onError: (error) => {
       throw error;
-      /*
-      setState((prev) => ({
-        ...prev,
-        isProcessing: false,
-        error:
-          error instanceof Error ? error.message : 'Failed to initialize agent',
-      }));
-      */
     },
   });
 

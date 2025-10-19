@@ -236,8 +236,12 @@ export default class MemoryClient {
     }
     // Authenticate
     await this.#updateAuthorizationIfNeeded();
-    // TODO: This is where we would add retry logic, caching, etc
-    const requestUrl = new URL(url, this.host).toString();
+    // normalize input url
+    const normalUrl = url.toLocaleLowerCase().trim();
+    const isSwaggerDocs = normalUrl === 'docs';
+    const requestUrl = isSwaggerDocs
+      ? new URL('docs', env('MEM0_API_HOST')).toString()
+      : new URL(normalUrl, this.host).toString();
     const response = await fetch(requestUrl, {
       ...options,
       headers: {
@@ -250,8 +254,10 @@ export default class MemoryClient {
       const errorData = await response.text();
       throw new APIError(`API request failed: ${errorData}`);
     }
-    const jsonResponse = await response.json();
-    return jsonResponse;
+    if (isSwaggerDocs) {
+      return (await response.text()) as unknown as TResult;
+    }
+    return await response.json();
   }
 
   _preparePayload(messages: Array<Message>, options: MemoryOptions): object {

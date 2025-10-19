@@ -218,7 +218,12 @@ const handler = wrapRouteRequest(
               }
               return {
                 role: 'assistant',
-                content: `MCP Server ${dscr} aborted`,
+                content: [
+                  {
+                    text: `The request was aborted.`,
+                    type: 'text',
+                  },
+                ],
               };
             }
 
@@ -298,85 +303,42 @@ const handler = wrapRouteRequest(
               );
               ret = {
                 role: 'assistant',
-                content: `An error occurred while processing your request: ${error instanceof Error ? error.message : String(error)}. Please try again later.`,
+                content: [
+                  {
+                    text: `An error occurred while processing your request: ${le.message}. Please try again later.`,
+                    type: 'text',
+                  },
+                ],
               };
             }
             return ret;
           } catch (e) {
-            log((l) =>
-              l.error('Error in MCP Server error handler', {
-                error: safeSerialize(e),
-                originalError: safeSerialize(error),
-                server: safeServerDescriptor(server),
-                args: safeArgsSummary(args),
-              }),
-            );
+            const le = LoggedError.isTurtlesAllTheWayDownBaby(e, {
+              log: true,
+              source: 'mcp:tools',
+              originalError: safeSerialize(error),
+              server: safeServerDescriptor(server),
+              args: safeArgsSummary(args),
+            });
             return {
               role: 'assistant',
-              content: `A critical error occurred while processing your request: ${e instanceof Error ? e.message : String(e)}. Please try again later.`,
+              content: [
+                {
+                  text: `An internal error occurred while processing your request (${le.message}). Please try again later.`,
+                  type: 'text',
+                },
+              ],
             };
           }
         };
       };
-
       server.server.onerror = makeErrorHandler(server.server.onerror, 'server');
-      /*
-
-
-
-    server.server.onclose = (...args: any[]) => {
-      log((l) =>
-        l.info({
-          message: 'MCP Server closed',
-          data: {
-            server,
-            args,
-          },
-        }),
-      );
-      return oldClose?.call(...args);
-    };
-    server.server.oninitialized = (...args: any[]) => {
-      log((l) =>
-        l.info({
-          message: 'MCP Server initialized',
-          data: {
-            server,
-            args,
-          },
-        }),
-      );
-      return oldInit?.call(...args);
-    };
-    if (server.server.transport) {
-      server.server.transport.onerror = makeErrorHandler(
-        oldError,
-        'transport',
-      );
-    }
-    */
-      /*
-
-    server.server.onerror = makeErrorHandler(oldError, 'server');
-    if (server.server.transport) {
-      server.server.transport.onerror = makeErrorHandler(
-        oldTransportError,
-        'transport',
-      );
-  }
-      */
     },
-    {
-      /*
-    capabilities: {
-      resources: {},
-    },
-    */
-    },
+    {},
     {
       redisUrl: process.env.REDIS_URL,
       basePath: '/api/ai/tools',
-      maxDuration: 60 * 5 * 1000, // 15 minutes
+      maxDuration: 60 * 30 * 1000, // 30 minutes
       verboseLogs: true,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onEvent: (event, ...args: any[]) => {

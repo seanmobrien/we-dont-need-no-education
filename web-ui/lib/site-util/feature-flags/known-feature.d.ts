@@ -172,6 +172,10 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
     | {
         enabled: boolean;
         value?: string | number | object | boolean;
+      }
+    | {
+        max: number;
+        detect: number;
       };
 
   /**

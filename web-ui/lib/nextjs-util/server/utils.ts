@@ -2,7 +2,7 @@ import { errorResponseFactory } from './error-response/index';
 import { env } from '@/lib/site-util/env';
 import { log, logger } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import type { NextRequest } from 'next/server';
+import type { NextRequest, NextResponse } from 'next/server';
 import {
   SpanKind,
   SpanStatusCode,
@@ -16,6 +16,7 @@ import {
   type SpanContext,
 } from '@opentelemetry/api';
 import { AnyValueMap } from '@opentelemetry/api-logs';
+import { WrappedResponseContext } from './types';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
@@ -25,24 +26,37 @@ const globalBuildFallback = {
   __status: 'Service disabled during build.',
 } as const;
 
-export function wrapRouteRequest<A extends unknown[], R extends Response>(
-  fn: (...args: A) => Promise<R>,
+export const wrapRouteRequest = <
+  A extends
+    | []
+    | [NextRequest | Request]
+    | [NextRequest | Request, Pick<WrappedResponseContext<TContext>, 'params'>]
+    | [NextRequest | Request, WrappedResponseContext<TContext>],
+  TContext extends Record<string, unknown> = Record<string, unknown>,
+>(
+  fn: (...args: A) => Promise<Response | NextResponse | undefined>,
   options: {
     log?: boolean;
     buildFallback?: object | typeof EnableOnBuild;
     errorCallback?: (error: unknown) => void | Promise<void>;
   } = {},
-): (...args: A) => Promise<Response> {
+): ((
+  request: NextRequest,
+  context:
+    | Pick<WrappedResponseContext<TContext>, 'params'>
+    | WrappedResponseContext<TContext>,
+) => Promise<Response | NextResponse | undefined>) => {
   const {
     log: shouldLog = env('NODE_ENV') !== 'production',
     buildFallback,
     errorCallback,
   } = options ?? {};
-  return async (...args: A): Promise<Response> => {
-    const req = args[0] as unknown as Request | NextRequest | undefined;
-    const context = args[1] as
-      | { params: Promise<Record<string, unknown>> }
-      | undefined;
+  return async (
+    request: NextRequest,
+    context: Pick<WrappedResponseContext<TContext>, 'params'>,
+  ): Promise<Response | NextResponse | undefined> => {
+    const req = request;
+
     // Build attributes and parent context for tracing from the request
     const { attributes, parentCtx } = await getRequestSpanInit(req, context);
 
@@ -74,27 +88,24 @@ export function wrapRouteRequest<A extends unknown[], R extends Response>(
               ? context.params
               : Promise.resolve({} as Record<string, unknown>));
             const url = (req as unknown as Request)?.url ?? '<no-req>';
+            span.setAttribute('request.url', url);
+            span.setAttribute('route.params', safeStringify(extractedParams));
             log((l) =>
               l.info(`Processing route request [${url}]`, {
                 args: JSON.stringify(extractedParams),
               }),
             );
-            // Also invoke concrete logger instance to satisfy tests that spy on logger()
-            try {
-              const directLogger = (await logger()) as unknown as {
-                info?: (...args: unknown[]) => void;
-              };
-              if (directLogger && typeof directLogger.info === 'function') {
-                directLogger.info(`Processing route request [${url}]`, {
-                  args: JSON.stringify(extractedParams),
-                });
-              }
-            } catch {
-              /* ignore logger lookup errors in tests */
-            }
           }
           // Invoke the original handler with the same args shape
-          const result = await fn(...args);
+          const result = await (
+            fn as unknown as (
+              req: NextRequest,
+              context: WrappedResponseContext<TContext>,
+            ) => Promise<Response | NextResponse | undefined>
+          )(request, {
+            ...context,
+            span,
+          } as WrappedResponseContext<TContext>);
           try {
             if (result && typeof result === 'object' && 'status' in result) {
               span.setAttribute(
@@ -179,12 +190,12 @@ export function wrapRouteRequest<A extends unknown[], R extends Response>(
       },
     );
   };
-}
+};
 
-async function getRequestSpanInit(
+const getRequestSpanInit = async (
   req: Request | NextRequest | undefined,
   ctx?: { params: Promise<Record<string, unknown>> },
-): Promise<{ attributes: Attributes; parentCtx: OtelContext }> {
+): Promise<{ attributes: Attributes; parentCtx: OtelContext }> => {
   const { path, query, method } = getPathQueryAndMethod(req);
   const routeParams = await (!!ctx?.params
     ? ctx.params
@@ -215,7 +226,7 @@ async function getRequestSpanInit(
     'request.headers': safeStringify(sanitizedHeaders),
   };
   return { attributes, parentCtx: extracted };
-}
+};
 
 const getPathQueryAndMethod = (
   req: Request | NextRequest | undefined,

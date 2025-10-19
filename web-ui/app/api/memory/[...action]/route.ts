@@ -30,7 +30,13 @@ const resolveMem0Path = (params: RouteContext['params']): string => {
       : [];
   const normalized = sanitizeSegments(segments);
   const suffix = normalized.join('/');
-  return suffix ? `api/v1/${suffix}` : 'api/v1/';
+  if (!suffix) {
+    return `api/v1/`;
+  }
+  if (suffix === 'docs') {
+    return 'docs';
+  }
+  return `api/v1/${suffix}`;
 };
 
 const proxyRequestToMem0 = async (
@@ -94,7 +100,11 @@ const proxyRequestToMem0 = async (
     ...(body ? { body } : {}),
   });
 
-  return NextResponse.json(result);
+  return targetPath === 'docs'
+    ? new NextResponse(result, {
+        headers: { 'Content-Type': 'text/html' },
+      })
+    : NextResponse.json(result);
 };
 
 const createHandler = (method: string) =>

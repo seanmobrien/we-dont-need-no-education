@@ -8,8 +8,15 @@
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { ILogger, logger } from '@/lib/logger';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
+import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 
 const consoleSpy = hideConsoleOutput();
+
+const mockNextRequest = (): NextRequest => {
+  return new NextRequest('http://localhost/test', {
+    method: 'GET',
+  });
+};
 
 describe('wrapRouteRequest', () => {
   afterEach(() => {
@@ -20,8 +27,18 @@ describe('wrapRouteRequest', () => {
     const fn = jest.fn().mockResolvedValue('ok');
     const wrapped = wrapRouteRequest(fn);
     const paramsPromise = Promise.resolve({ emailId: 'b' });
-    const result = await wrapped('a', { params: paramsPromise });
-    expect(fn).toHaveBeenCalledWith('a', { params: paramsPromise });
+    const req = mockNextRequest();
+    const result = await wrapped(req, { params: paramsPromise });
+    expect(fn).toHaveBeenCalledWith(req, {
+      params: paramsPromise,
+      span: expect.objectContaining({
+        _spanContext: expect.objectContaining({
+          spanId: expect.any(String),
+          traceId: expect.any(String),
+          traceFlags: expect.any(Number),
+        }),
+      }),
+    });
     expect(result).toBe('ok');
   });
 
@@ -32,14 +49,14 @@ describe('wrapRouteRequest', () => {
       throw new Error('fail');
     });
     const wrapped = wrapRouteRequest(fn, { log: true });
-    const result = await wrapped('x', {
+    const result = await wrapped(mockNextRequest(), {
       params: Promise.resolve({ emailId: 'y' }),
     });
     await new Promise((r) => setTimeout(r, 10)); // Wait for any async logs
     expect(logSpy.error as jest.Mock).toHaveBeenCalled();
     expect(logSpy.info as jest.Mock).toHaveBeenCalled();
     expect(result).toBeInstanceOf(Response);
-    const body = await result.json();
+    const body = await result!.json();
     expect(body.error).toContain('An unexpected error occurred');
   });
 
@@ -48,7 +65,7 @@ describe('wrapRouteRequest', () => {
     const logSpy = (await logger()) as jest.Mocked<ILogger>;
     const fn = jest.fn().mockResolvedValue('ok');
     const wrapped = wrapRouteRequest(fn, { log: false });
-    const result = await wrapped('x', {
+    const result = await wrapped(mockNextRequest(), {
       params: Promise.resolve({ emailId: 'y' }),
     });
     expect(logSpy.info as jest.Mock).not.toHaveBeenCalled();
@@ -61,11 +78,11 @@ describe('wrapRouteRequest', () => {
       throw new Error('bad');
     });
     const wrapped = wrapRouteRequest(fn);
-    const result = await wrapped('x', {
+    const result = await wrapped(mockNextRequest(), {
       params: Promise.resolve({ emailId: 'y' }),
     });
     expect(result).toBeInstanceOf(Response);
-    const body = await result.json();
+    const body = await result!.json();
     expect(body.error).toContain('An unexpected error occurred');
   });
 
@@ -73,11 +90,11 @@ describe('wrapRouteRequest', () => {
     consoleSpy.setup();
     const fn = jest.fn().mockRejectedValue(new Error('async fail'));
     const wrapped = wrapRouteRequest(fn);
-    const result = await wrapped('x', {
+    const result = await wrapped(mockNextRequest(), {
       params: Promise.resolve({ emailId: 'y' }),
     });
     expect(result).toBeInstanceOf(Response);
-    const body = await result.json();
+    const body = await result!.json();
     expect(body.error).toContain('An unexpected error occurred');
   });
 });
