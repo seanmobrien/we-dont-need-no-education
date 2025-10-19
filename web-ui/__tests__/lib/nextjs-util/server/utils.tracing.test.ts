@@ -2,14 +2,13 @@
  * @jest-environment node
  */
 
- 
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { trace } from '@opentelemetry/api';
 
 describe('wrapRouteRequest tracing', () => {
   test('extracts parent from trace headers and sets attributes', async () => {
     // Create a dummy handler
-     
+
     const handler = wrapRouteRequest(async (_req: any) => {
       return new Response(JSON.stringify({ ok: true }), { status: 201 });
     });
@@ -56,8 +55,10 @@ describe('wrapRouteRequest tracing', () => {
       .spyOn(trace, 'getTracer')
       .mockReturnValue({ startActiveSpan: startActiveSpanSpy } as any);
 
-    const res = await handler(req as any);
-    expect(res.status).toBe(201);
+    const res = await handler(req as any, {
+      params: Promise.resolve({ id: '123' }),
+    });
+    expect(res!.status).toBe(201);
 
     // Verify startActiveSpan was called with expected attributes
     expect(startActiveSpanSpy).toHaveBeenCalled();
@@ -85,7 +86,6 @@ describe('wrapRouteRequest tracing', () => {
   });
 
   test('handles NextRequest.nextUrl path/query extraction and header redaction', async () => {
-     
     const handler = wrapRouteRequest(async (_req: any) => {
       return new Response(JSON.stringify({ ok: true }), { status: 202 });
     });
@@ -130,8 +130,10 @@ describe('wrapRouteRequest tracing', () => {
       .spyOn(trace, 'getTracer')
       .mockReturnValue({ startActiveSpan: startActiveSpanSpy } as any);
 
-    const res = await handler(req as any);
-    expect(res.status).toBe(202);
+    const res = await handler(req as any, {
+      params: Promise.resolve({ id: '123' }),
+    });
+    expect(res!.status).toBe(202);
 
     expect(startActiveSpanSpy).toHaveBeenCalled();
     const call = startActiveSpanSpy.mock.calls[0];

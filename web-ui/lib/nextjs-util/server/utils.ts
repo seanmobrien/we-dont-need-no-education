@@ -29,9 +29,12 @@ const globalBuildFallback = {
 export const wrapRouteRequest = <
   A extends
     | []
-    | [NextRequest | Request]
-    | [NextRequest | Request, Pick<WrappedResponseContext<TContext>, 'params'>]
-    | [NextRequest | Request, WrappedResponseContext<TContext>],
+    | [NextRequest]
+    | [Request]
+    | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
+    | [NextRequest, WrappedResponseContext<TContext>]
+    | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
+    | [Request, WrappedResponseContext<TContext>],
   TContext extends Record<string, unknown> = Record<string, unknown>,
 >(
   fn: (...args: A) => Promise<Response | NextResponse | undefined>,
