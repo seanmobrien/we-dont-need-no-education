@@ -330,9 +330,7 @@ describe('Server Utils', () => {
         headers: new Map(),
       } as any;
 
-      const response = await handler(mockRequest, {
-        params: Promise.resolve({ id: '123' }),
-      });
+      const response = await handler(mockRequest);
       if (!response) {
         throw new Error('Response is undefined');
       }
@@ -388,9 +386,7 @@ describe('Server Utils', () => {
         });
 
         const mockRequest = {} as NextRequest;
-        const response = await handler(mockRequest, {
-          params: Promise.resolve({ id: '123' }),
-        });
+        const response = await handler(mockRequest);
         if (!response) {
           throw new Error('Response is undefined');
         }
@@ -419,9 +415,7 @@ describe('Server Utils', () => {
         });
 
         const mockRequest = {} as NextRequest;
-        const response = await handler(mockRequest, {
-          params: Promise.resolve({ id: '123' }),
-        });
+        const response = await handler(mockRequest);
         if (!response) {
           throw new Error('Response is undefined');
         }
@@ -448,9 +442,7 @@ describe('Server Utils', () => {
       );
 
       const mockRequest = {} as NextRequest;
-      const response = await handler(mockRequest, {
-        params: Promise.resolve({ id: '123' }),
-      });
+      const response = await handler(mockRequest);
 
       if (!response) {
         throw new Error('Response is undefined');
@@ -474,9 +466,7 @@ describe('Server Utils', () => {
 
       const mockRequest = {} as NextRequest;
 
-      const response = await handler(mockRequest, {
-        params: Promise.resolve({ id: '123' }),
-      });
+      const response = await handler(mockRequest);
 
       expect(response!.status).toBe(500);
       expect(response).toBeInstanceOf(Response);
@@ -497,7 +487,7 @@ describe('Server Utils', () => {
         headers: new Map(),
       } as any;
 
-      await handler(mockRequest, { params: Promise.resolve({ id: '123' }) });
+      await handler(mockRequest);
 
       expect(log).toHaveBeenCalledWith(expect.any(Function));
     });
@@ -522,7 +512,7 @@ describe('Server Utils', () => {
           headers: new Map(),
         } as any;
 
-        await handler(mockRequest, { params: Promise.resolve({ id: '123' }) });
+        await handler(mockRequest);
 
         expect(log).not.toHaveBeenCalled();
       } finally {
@@ -548,7 +538,7 @@ describe('Server Utils', () => {
 
       const mockRequest = {} as NextRequest;
 
-      await handler(mockRequest, { params: Promise.resolve({ id: '123' }) });
+      await handler(mockRequest);
 
       expect(errorCallback).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -574,9 +564,7 @@ describe('Server Utils', () => {
       const mockRequest = {} as NextRequest;
 
       // Should not throw despite callback error
-      const response = await handler(mockRequest, {
-        params: Promise.resolve({ id: '123' }),
-      });
+      const response = await handler(mockRequest);
       expect(response).toBeInstanceOf(Response);
     });
 

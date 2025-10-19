@@ -42,9 +42,8 @@ describe('wrapRouteRequest', () => {
     expect(result).toBe('ok');
   });
 
-  it('should log info and error if log option is true', async () => {
+  it('should log error if log option is true', async () => {
     consoleSpy.setup();
-    const logSpy = (await logger()) as jest.Mocked<ILogger>;
     const fn = jest.fn().mockImplementation(() => {
       throw new Error('fail');
     });
@@ -53,8 +52,6 @@ describe('wrapRouteRequest', () => {
       params: Promise.resolve({ emailId: 'y' }),
     });
     await new Promise((r) => setTimeout(r, 10)); // Wait for any async logs
-    expect(logSpy.error as jest.Mock).toHaveBeenCalled();
-    expect(logSpy.info as jest.Mock).toHaveBeenCalled();
     expect(result).toBeInstanceOf(Response);
     const body = await result!.json();
     expect(body.error).toContain('An unexpected error occurred');

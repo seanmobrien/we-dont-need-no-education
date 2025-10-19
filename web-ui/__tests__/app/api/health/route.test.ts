@@ -5,11 +5,11 @@
  * @file route.test.ts
  * @description Unit tests for the health check API route at app/api/health/route.ts
  */
- 
- 
+
 import { auth } from '@/auth';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { GET } from '@/app/api/health/route';
+import { NextRequest } from 'next/server';
 
 // Mock the memory client factory
 jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({

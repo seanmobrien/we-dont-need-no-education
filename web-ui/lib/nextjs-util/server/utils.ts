@@ -1,6 +1,6 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@/lib/site-util/env';
-import { log, logger } from '@/lib/logger';
+import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest, NextResponse } from 'next/server';
 import {
@@ -43,22 +43,15 @@ export const wrapRouteRequest = <
     buildFallback?: object | typeof EnableOnBuild;
     errorCallback?: (error: unknown) => void | Promise<void>;
   } = {},
-): ((
-  request: NextRequest,
-  context:
-    | Pick<WrappedResponseContext<TContext>, 'params'>
-    | WrappedResponseContext<TContext>,
-) => Promise<Response | NextResponse | undefined>) => {
+): ((...args: A) => Promise<Response | NextResponse>) => {
   const {
     log: shouldLog = env('NODE_ENV') !== 'production',
     buildFallback,
     errorCallback,
   } = options ?? {};
-  return async (
-    request: NextRequest,
-    context: Pick<WrappedResponseContext<TContext>, 'params'>,
-  ): Promise<Response | NextResponse | undefined> => {
-    const req = request;
+  return async (...args: A): Promise<Response | NextResponse> => {
+    const req = args[0] as NextRequest;
+    const context = args[1] as WrappedResponseContext<TContext>;
 
     // Build attributes and parent context for tracing from the request
     const { attributes, parentCtx } = await getRequestSpanInit(req, context);
@@ -104,13 +97,13 @@ export const wrapRouteRequest = <
             fn as unknown as (
               req: NextRequest,
               context: WrappedResponseContext<TContext>,
-            ) => Promise<Response | NextResponse | undefined>
-          )(request, {
+            ) => Promise<Response | NextResponse>
+          )(req, {
             ...context,
             span,
           } as WrappedResponseContext<TContext>);
           try {
-            if (result && typeof result === 'object' && 'status' in result) {
+            if (typeof result === 'object' && 'status' in result) {
               span.setAttribute(
                 'http.status_code',
                 (result as Response).status,
@@ -143,16 +136,6 @@ export const wrapRouteRequest = <
                 req,
               },
             });
-            try {
-              const directLogger = (await logger()) as unknown as {
-                error?: (...args: unknown[]) => void;
-              };
-              if (directLogger && typeof directLogger.error === 'function') {
-                directLogger.error('Route handler error', { error });
-              }
-            } catch {
-              /* ignore logger lookup errors in tests */
-            }
           }
           // If a callback was provided, invoke it within a try/catch to avoid secondary errors
           if (errorCallback) {

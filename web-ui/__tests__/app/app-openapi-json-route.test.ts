@@ -51,7 +51,7 @@ describe('openapi route', () => {
     const req = new Request(
       'http://localhost/openapi',
     ) as unknown as NextRequest;
-    const res = await handler(req, { params: {} as any });
+    const res = await handler();
     expect(res).toBeDefined();
     const json = await (res as Response).json();
 
@@ -80,7 +80,7 @@ describe('openapi route', () => {
     const req = new Request(
       'http://localhost/openapi',
     ) as unknown as NextRequest;
-    const res = await handler(req, { params: {} as any });
+    const res = await handler();
     const json = await (res as Response).json();
 
     expect(json.url).toBe('');

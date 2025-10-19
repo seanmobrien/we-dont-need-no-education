@@ -55,9 +55,7 @@ describe('wrapRouteRequest tracing', () => {
       .spyOn(trace, 'getTracer')
       .mockReturnValue({ startActiveSpan: startActiveSpanSpy } as any);
 
-    const res = await handler(req as any, {
-      params: Promise.resolve({ id: '123' }),
-    });
+    const res = await handler(req as any);
     expect(res!.status).toBe(201);
 
     // Verify startActiveSpan was called with expected attributes
@@ -130,9 +128,7 @@ describe('wrapRouteRequest tracing', () => {
       .spyOn(trace, 'getTracer')
       .mockReturnValue({ startActiveSpan: startActiveSpanSpy } as any);
 
-    const res = await handler(req as any, {
-      params: Promise.resolve({ id: '123' }),
-    });
+    const res = await handler(req as any);
     expect(res!.status).toBe(202);
 
     expect(startActiveSpanSpy).toHaveBeenCalled();
