@@ -2,8 +2,6 @@
  * @jest-environment node
  */
 
- 
- 
 import {
   wrapRouteRequest,
   EnableOnBuild,
@@ -16,6 +14,7 @@ import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 
 // Mock external dependencies
 jest.mock('@opentelemetry/api', () => ({
@@ -331,8 +330,12 @@ describe('Server Utils', () => {
         headers: new Map(),
       } as any;
 
-      const response = await handler(mockRequest);
-
+      const response = await handler(mockRequest, {
+        params: Promise.resolve({ id: '123' }),
+      });
+      if (!response) {
+        throw new Error('Response is undefined');
+      }
       expect(response.status).toBe(200);
       expect(mockSpan.setStatus).toHaveBeenCalledWith({
         code: SpanStatusCode.OK,
@@ -384,9 +387,13 @@ describe('Server Utils', () => {
           throw new Error('Handler should not execute during build');
         });
 
-        const mockRequest = {} as Request;
-        const response = await handler(mockRequest);
-
+        const mockRequest = {} as NextRequest;
+        const response = await handler(mockRequest, {
+          params: Promise.resolve({ id: '123' }),
+        });
+        if (!response) {
+          throw new Error('Response is undefined');
+        }
         expect(response.status).toBe(200);
         expect(response.statusText).toBe('OK-BUILD-FALLBACK');
         expect(mockSpan.setAttribute).toHaveBeenCalledWith(
@@ -411,9 +418,13 @@ describe('Server Utils', () => {
           throw new Error('Handler should not execute during build');
         });
 
-        const mockRequest = {} as Request;
-        const response = await handler(mockRequest);
-
+        const mockRequest = {} as NextRequest;
+        const response = await handler(mockRequest, {
+          params: Promise.resolve({ id: '123' }),
+        });
+        if (!response) {
+          throw new Error('Response is undefined');
+        }
         expect(response.status).toBe(200);
         expect(response.statusText).toBe('OK-BUILD-FALLBACK');
         expect(mockSpan.setAttribute).toHaveBeenCalledWith(
@@ -436,9 +447,14 @@ describe('Server Utils', () => {
         { buildFallback: EnableOnBuild },
       );
 
-      const mockRequest = {} as Request;
-      const response = await handler(mockRequest);
+      const mockRequest = {} as NextRequest;
+      const response = await handler(mockRequest, {
+        params: Promise.resolve({ id: '123' }),
+      });
 
+      if (!response) {
+        throw new Error('Response is undefined');
+      }
       expect(response.status).toBe(200);
       expect(await response.text()).toBe('executed during build');
     });
@@ -456,11 +472,13 @@ describe('Server Utils', () => {
         throw testError;
       });
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
-      const response = await handler(mockRequest);
+      const response = await handler(mockRequest, {
+        params: Promise.resolve({ id: '123' }),
+      });
 
-      expect(response.status).toBe(500);
+      expect(response!.status).toBe(500);
       expect(response).toBeInstanceOf(Response);
       expect(mockSpan.recordException).toHaveBeenCalledWith(testError);
       expect(mockSpan.setStatus).toHaveBeenCalledWith({
@@ -479,7 +497,7 @@ describe('Server Utils', () => {
         headers: new Map(),
       } as any;
 
-      await handler(mockRequest);
+      await handler(mockRequest, { params: Promise.resolve({ id: '123' }) });
 
       expect(log).toHaveBeenCalledWith(expect.any(Function));
     });
@@ -504,7 +522,7 @@ describe('Server Utils', () => {
           headers: new Map(),
         } as any;
 
-        await handler(mockRequest);
+        await handler(mockRequest, { params: Promise.resolve({ id: '123' }) });
 
         expect(log).not.toHaveBeenCalled();
       } finally {
@@ -528,9 +546,9 @@ describe('Server Utils', () => {
         { errorCallback },
       );
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
-      await handler(mockRequest);
+      await handler(mockRequest, { params: Promise.resolve({ id: '123' }) });
 
       expect(errorCallback).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -553,10 +571,12 @@ describe('Server Utils', () => {
         { errorCallback },
       );
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
       // Should not throw despite callback error
-      const response = await handler(mockRequest);
+      const response = await handler(mockRequest, {
+        params: Promise.resolve({ id: '123' }),
+      });
       expect(response).toBeInstanceOf(Response);
     });
 
@@ -597,8 +617,8 @@ describe('Server Utils', () => {
         return new Response('success');
       });
 
-      const mockRequest = {} as Request;
-      const mockContext = {};
+      const mockRequest = {} as NextRequest;
+      const mockContext = { params: Promise.resolve({ id: '123' }) };
 
       await handler(mockRequest, mockContext);
 
@@ -607,7 +627,7 @@ describe('Server Utils', () => {
         'route.request',
         expect.objectContaining({
           attributes: expect.objectContaining({
-            'route.params': expect.stringContaining('{}'),
+            'route.params': expect.stringContaining('{\"id\":\"123\"}'),
           }),
         }),
         expect.any(Object),

@@ -131,7 +131,10 @@ const extractRequestParams = async (req: NextRequest) => {
   };
 };
 
-export const POST = (req: NextRequest) => {
+export const POST = (
+  req: NextRequest,
+  context: { params: Promise<Record<string, unknown>> },
+) => {
   let toolProviders: ToolProviderSet | undefined = undefined;
 
   return wrapRouteRequest(
@@ -382,5 +385,5 @@ export const POST = (req: NextRequest) => {
       },
       errorCallback: () => safeDisposeToolProviders(null, toolProviders),
     },
-  )(req);
+  )(req, context);
 };
