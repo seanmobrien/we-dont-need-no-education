@@ -11,7 +11,14 @@ export const authorized = async ({
   if (request) {
     const { nextUrl } = request;
     const publicFolders = ['/static/'];
+    const publicPages = ['/', '/privacy'];
+    
     if (publicFolders.some((folder) => nextUrl.pathname.startsWith(folder))) {
+      return true;
+    }
+    
+    // Allow anonymous access to homepage and privacy page
+    if (publicPages.includes(nextUrl.pathname)) {
       return true;
     }
   }

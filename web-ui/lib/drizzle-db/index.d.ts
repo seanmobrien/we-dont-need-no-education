@@ -3,6 +3,59 @@
  * @module @/lib/drizzle-db
  */
 
+import type {
+  DatabaseType,
+  SchemaType,
+  DocumentUnitType,
+  DocumentPropertyType,
+  DocumentPropertyTypeType,
+  DocumentRelationshipType,
+  EmailType,
+  EmailAttachmentType,
+  KeyPointType,
+  CallToActionType,
+  CallToActionCategoryType,
+  CallToActionResponseType,
+  CallToActionResponsiveActionLinkType,
+  ChatMessagesType,
+  ChatsType,
+  ChatTurnsType,
+  UserPublicKeysType,
+  ViolationDetailsType,
+  ComplianceScoreType,
+  QueryBuilders,
+  DocumentUnitQueryShape,
+  DocumentPropertyQueryShape,
+  EmailQueryShape,
+  EmailAttachmentQueryShape,
+  KeyPointQueryShape,
+  CallToActionQueryShape,
+  CallToActionCategoryQueryShape,
+  CallToActionResponseQueryShape,
+  ViolationDetailsQueryShape,
+  ComplianceScoresDetailsQueryShape,
+  ProvidersType,
+  ModelsType,
+  ModelQuotasType,
+  Types,
+} from './drizzle-types';
+
+import type {
+  DbFullSchemaType,
+  DbSchemaType,
+  DbDatabaseType,
+  DbQueryResultHKT,
+  DbTransactionType,
+} from './schema';
+
+import type { schema, drizDbWithInit, drizDb } from './connection';
+import type {
+  getDocumentRelationReason,
+  addDocumentRelations,
+  addNotesToDocument,
+} from './db-helpers';
+import type { sql, DrizzleSqlType } from './drizzle-sql';
+
 declare module '@/lib/drizzle-db' {
   export type {
     DatabaseType,
@@ -39,17 +92,18 @@ declare module '@/lib/drizzle-db' {
     ModelsType,
     ModelQuotasType,
     Types,
-  } from './drizzle-types';
-
-  export type {
     DbFullSchemaType,
     DbSchemaType,
     DbDatabaseType,
     DbQueryResultHKT,
     DbTransactionType,
-  } from './schema';
-
-  export * from './connection';
-  export * from './db-helpers';
-  export { sql, type DrizzleSqlType } from './drizzle-sql';
+    schema,
+    drizDbWithInit,
+    drizDb,
+    getDocumentRelationReason,
+    addDocumentRelations,
+    addNotesToDocument,
+    sql,
+    DrizzleSqlType,
+  };
 }
