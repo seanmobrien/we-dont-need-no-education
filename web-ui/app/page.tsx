@@ -1,5 +1,5 @@
 'use client';
-import { Box, Button, Container, Typography, Grid, Card, CardContent, useTheme } from '@mui/material';
+import { Box, Button, Container, Typography, Card, CardContent, useTheme } from '@mui/material';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -201,39 +201,48 @@ export default function Home() {
             Powerful Features for Advocacy
           </Typography>
           
-          <Grid container spacing={4}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'repeat(2, 1fr)',
+                lg: 'repeat(3, 1fr)',
+              },
+              gap: 4,
+            }}
+          >
             {features.map((feature, index) => (
-              <Grid item xs={12} md={6} lg={4} key={index}>
-                <Card
-                  sx={{
-                    height: '100%',
-                    bgcolor: theme.palette.mode === 'dark' ? 'var(--color-surface-primary)' : '#fff',
-                    borderRadius: 2,
-                    border: '1px solid',
-                    borderColor: theme.palette.mode === 'dark' ? 'var(--color-border-main)' : '#e0e0e0',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      borderColor: 'var(--color-primary-main)',
-                      boxShadow: `0 8px 24px ${theme.palette.mode === 'dark' ? 'rgba(25, 191, 207, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
-                    },
-                  }}
-                >
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ mb: 2 }}>
-                      {feature.icon}
-                    </Box>
-                    <Typography variant="h5" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
-                      {feature.title}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-                      {feature.description}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Grid>
+              <Card
+                key={index}
+                sx={{
+                  height: '100%',
+                  bgcolor: theme.palette.mode === 'dark' ? 'var(--color-surface-primary)' : '#fff',
+                  borderRadius: 2,
+                  border: '1px solid',
+                  borderColor: theme.palette.mode === 'dark' ? 'var(--color-border-main)' : '#e0e0e0',
+                  transition: 'all 0.3s ease',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    borderColor: 'var(--color-primary-main)',
+                    boxShadow: `0 8px 24px ${theme.palette.mode === 'dark' ? 'rgba(25, 191, 207, 0.2)' : 'rgba(0, 0, 0, 0.1)'}`,
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ mb: 2 }}>
+                    {feature.icon}
+                  </Box>
+                  <Typography variant="h5" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
+                    {feature.title}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                    {feature.description}
+                  </Typography>
+                </CardContent>
+              </Card>
             ))}
-          </Grid>
+          </Box>
         </Box>
 
         {/* Technology Stack Section */}
@@ -263,48 +272,51 @@ export default function Home() {
           >
             Our platform combines cutting-edge AI technology with robust security and privacy protections:
           </Typography>
-          <Grid container spacing={3} sx={{ maxWidth: '800px', mx: 'auto' }}>
-            <Grid item xs={12} sm={6}>
-              <Box sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
-                  AI-Powered Intelligence
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Azure OpenAI and LangChain4j for sophisticated evidence analysis
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
-                  Secure Infrastructure
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  PostgreSQL with encryption at rest and in transit
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
-                  Modern Web Stack
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Next.js 15, TypeScript, and Material UI for a seamless experience
-                </Typography>
-              </Box>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Box sx={{ textAlign: 'center', p: 2 }}>
-                <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
-                  Open Source
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Fully open-source and available for self-hosting
-                </Typography>
-              </Box>
-            </Grid>
-          </Grid>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+              },
+              gap: 3,
+              maxWidth: '800px',
+              mx: 'auto',
+            }}
+          >
+            <Box sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
+                AI-Powered Intelligence
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Azure OpenAI and LangChain4j for sophisticated evidence analysis
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
+                Secure Infrastructure
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                PostgreSQL with encryption at rest and in transit
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
+                Modern Web Stack
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Next.js 15, TypeScript, and Material UI for a seamless experience
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'center', p: 2 }}>
+              <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
+                Open Source
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Fully open-source and available for self-hosting
+              </Typography>
+            </Box>
+          </Box>
         </Box>
 
         {/* CTA Section */}
