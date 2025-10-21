@@ -354,7 +354,7 @@ export default function PrivacyPolicy() {
             <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
               We may update this Privacy Policy from time to time to reflect changes in our practices or for legal, 
               regulatory, or operational reasons. We will notify you of any material changes by posting the updated 
-              policy on this page and updating the &ldquo;Last Updated&rdquo; date. We encourage you to review this policy 
+              policy on this page and updating the “Last Updated” date. We encourage you to review this policy 
               periodically to stay informed about how we protect your information.
             </Typography>
           </Box>
