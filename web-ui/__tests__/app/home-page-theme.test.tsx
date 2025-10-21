@@ -1,15 +1,23 @@
-import { render } from '@/__tests__/test-utils';
+import { render, screen } from '@/__tests__/test-utils';
 import { ThemeProvider } from '@/lib/themes/provider';
 import HomePage from '@/app/page';
 
-// Mock the EmailList component since it requires server connections
-jest.mock('@/components/email-message/list', () => {
-  const MockEmailList = () => (
-    <div data-testid="mock-email-list">Email List</div>
-  );
-  MockEmailList.displayName = 'MockEmailList';
-  return MockEmailList;
-});
+// Mock next-auth/react
+jest.mock('next-auth/react', () => ({
+  useSession: jest.fn(() => ({
+    data: null,
+    status: 'unauthenticated',
+  })),
+}));
+
+// Mock next/navigation
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+  })),
+}));
 
 describe('Home Page Theme Support', () => {
   beforeEach(() => {
@@ -29,10 +37,9 @@ describe('Home Page Theme Support', () => {
     // Verify the theme attribute is set
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
 
-    // Verify the page renders without crashing
-    expect(
-      container.querySelector('[data-testid="mock-email-list"]'),
-    ).toBeInTheDocument();
+    // Verify the page renders with the new homepage content
+    expect(screen.getByText(/Title IX Victim Advocacy Platform/i)).toBeInTheDocument();
+    expect(container).toBeInTheDocument();
   });
 
   it('renders home page with dark theme support', () => {
@@ -47,13 +54,12 @@ describe('Home Page Theme Support', () => {
     // Verify the theme attribute is set
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
 
-    // Verify the page renders without crashing
-    expect(
-      container.querySelector('[data-testid="mock-email-list"]'),
-    ).toBeInTheDocument();
+    // Verify the page renders with the new homepage content
+    expect(screen.getByText(/Title IX Victim Advocacy Platform/i)).toBeInTheDocument();
+    expect(container).toBeInTheDocument();
   });
 
-  it('home page uses MUI Box for theme-aware styling', () => {
+  it('home page uses MUI components for theme-aware styling', () => {
     const ThemedHomePage = () => (
       <ThemeProvider defaultTheme="light">
         <HomePage />
@@ -62,10 +68,12 @@ describe('Home Page Theme Support', () => {
 
     const { container } = render(<ThemedHomePage />);
 
-    // Verify that MUI components are being used (they should have MUI classes)
+    // The home page should use MUI Box components which get MUI styling
     const mainContainer = container.firstChild as HTMLElement;
-
-    // The home page should now use MUI Box components which get MUI styling
     expect(mainContainer).toBeInTheDocument();
+    
+    // Verify key content sections are present
+    expect(screen.getByText(/Empowering victims/i)).toBeInTheDocument();
+    expect(screen.getByText(/Why We Built This/i)).toBeInTheDocument();
   });
 });
