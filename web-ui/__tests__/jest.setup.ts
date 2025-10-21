@@ -1,4 +1,4 @@
- 
+process.env.MEM0_API_BASE_PATH = process.env.MEM0_API_BASE_PATH ?? 'api/v1';
 
 // jest.mock('got');
 
@@ -33,7 +33,6 @@ jest.mock('@/instrument/browser', () => ({
   instrument: jest.fn(),
 }));
 
- 
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
 
@@ -569,7 +568,7 @@ globalThis.TextEncoder = TextEncoder as any;
   try {
     if (typeof (globalThis as any).TransformStream === 'undefined') {
       // Prefer Node's built-in streams if available
-       
+
       const web = require('stream/web');
       if (web?.TransformStream) {
         (globalThis as any).TransformStream = web.TransformStream;
@@ -582,7 +581,7 @@ globalThis.TextEncoder = TextEncoder as any;
     // fall through to ponyfill
   }
   // Fallback ponyfill
-   
+
   const ponyfill = require('web-streams-polyfill');
   (globalThis as any).TransformStream ||= ponyfill.TransformStream;
   (globalThis as any).ReadableStream ||= ponyfill.ReadableStream;
@@ -591,7 +590,6 @@ globalThis.TextEncoder = TextEncoder as any;
 
 // Automocks
 
- 
 const Zodex = require('zodex').Zodex;
 
 const DefaultEnvVariables = {
@@ -636,7 +634,6 @@ const DefaultEnvVariables = {
 let originalProcessEnv = (() => {
   try {
     const origConfig = dotenv.parse(
-       
       require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
     );
     return {
@@ -886,7 +883,6 @@ export const mockFlagsmithInstanceFactory = ({
 beforeAll(() => {
   try {
     const origConfig = dotenv.parse(
-       
       require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
     );
     originalProcessEnv = {

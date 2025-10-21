@@ -5,10 +5,13 @@ import {
   memoryClientFactory,
 } from '@/lib/ai/mem0/memoryclient-factory';
 import {
+  MemoryHealthCheckResponse,
   determineHealthStatus,
-  type HealthStatus,
 } from '@/lib/ai/mem0/types/health-check';
+import { getMemoryHealthCache } from '@/lib/api/health/memory';
+import { checkDatabaseHealth } from '@/lib/api/health/database';
 import { env } from '@/lib/site-util/env';
+import { LoggedError } from '@/lib/react-util';
 
 /**
  * Health Check Route (GET /api/health)
@@ -110,28 +113,39 @@ type HealthCheckResponse = {
 /**
  * Maps health status to health check status code
  */
-function mapHealthStatusToCode(status: HealthStatus): HealthCheckStatusCode {
-  switch (status) {
-    case 'healthy':
-      return 'ok';
-    case 'warning':
-      return 'warning';
-    case 'error':
-      return 'error';
-    default:
-      return 'error';
-  }
+// Transform raw MemoryHealthCheckResponse into the HealthCheckStatusEntry shape
+function transformMemoryResponse(
+  resp: MemoryHealthCheckResponse,
+): HealthCheckStatusEntry<
+  'db' | 'vectorStore' | 'graphStore' | 'historyStore' | 'authService'
+> {
+  const details = resp?.details;
+  const status: HealthCheckStatusCode = details
+    ? determineHealthStatus(details) === 'healthy'
+      ? 'ok'
+      : determineHealthStatus(details) === 'warning'
+        ? 'warning'
+        : 'error'
+    : 'error';
+
+  return {
+    status,
+    db: { status: details?.system_db_available ? 'ok' : 'error' },
+    vectorStore: { status: details?.vector_store_available ? 'ok' : 'error' },
+    graphStore: { status: details?.graph_store_available ? 'ok' : 'error' },
+    historyStore: { status: details?.history_store_available ? 'ok' : 'error' },
+    authService: { status: details?.auth_service?.healthy ? 'ok' : 'error' },
+  };
 }
 
 /**
  * Checks memory system health by calling the Mem0 health check endpoint
  * Returns granular subsystem health information
  */
-async function checkMemoryHealth(): Promise<
-  HealthCheckStatusEntry<
-    'db' | 'vectorStore' | 'graphStore' | 'historyStore' | 'authService'
-  >
-> {
+async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
+  const cache = getMemoryHealthCache();
+  const cached = cache.get();
+  if (cached) return cached;
   try {
     const memoryClient = await memoryClientFactory<ExtendedMemoryClient>({});
     const healthResponse = await memoryClient.healthCheck({
@@ -139,56 +153,60 @@ async function checkMemoryHealth(): Promise<
       verbose: 1,
     });
 
-    const { details } = healthResponse;
-
-    // Create granular subsystem status entries
-    const subsystems = {
-      db: {
-        status: details.system_db_available
-          ? ('ok' as const)
-          : ('error' as const),
-      },
-      vectorStore: {
-        status: details.vector_store_available
-          ? ('ok' as const)
-          : ('error' as const),
-      },
-      graphStore: {
-        status: details.graph_store_available
-          ? ('ok' as const)
-          : ('error' as const),
-      },
-      historyStore: {
-        status: details.history_store_available
-          ? ('ok' as const)
-          : ('error' as const),
-      },
-      authService: {
-        status: details.auth_service.healthy
-          ? ('ok' as const)
-          : ('error' as const),
-      },
-    };
-
-    // Determine overall memory system status
-    const overallHealthStatus = determineHealthStatus(details);
-    const overallStatusCode = mapHealthStatusToCode(overallHealthStatus);
-
-    return {
-      status: overallStatusCode,
-      ...subsystems,
-    };
+    // Cache the raw mem0 response and return it directly
+    try {
+      cache.set(healthResponse);
+    } catch {}
+    return healthResponse;
   } catch (error) {
     // If we can't reach the memory service, consider everything an error
-    console.error('Memory health check failed:', error);
-    return {
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'memory-health-check',
+      context: {},
+    });
+    // If mem0 failed, create a minimal fallback MemoryHealthCheckResponse-like object
+    const fallback: MemoryHealthCheckResponse = {
       status: 'error',
-      db: { status: 'error' },
-      vectorStore: { status: 'error' },
-      graphStore: { status: 'error' },
-      historyStore: { status: 'error' },
-      authService: { status: 'error' },
+      message: 'unavailable',
+      timestamp: new Date().toISOString(),
+      service: 'mem0',
+      mem0: {
+        version: '0',
+        build_type: 'unknown',
+        build_info: '',
+        verbose: {
+          mem0_version: '0',
+          build_details: { type: '', info: '', path: '' },
+          build_stamp: '',
+        },
+      },
+      details: {
+        client_active: false,
+        system_db_available: false,
+        vector_enabled: false,
+        vector_store_available: false,
+        graph_enabled: false,
+        graph_store_available: false,
+        history_store_available: false,
+        auth_service: {
+          healthy: false,
+          enabled: false,
+          server_url: '',
+          realm: '',
+          client_id: '',
+          auth_url: '',
+          token_url: '',
+          jkws_url: '',
+        },
+        errors: [],
+      },
     };
+    try {
+      const cache = getMemoryHealthCache();
+      cache.set(fallback);
+    } catch {}
+    return fallback;
   }
 }
 
@@ -198,37 +216,62 @@ async function checkMemoryHealth(): Promise<
  * Wrapped for unified logging / error semantics.
  */
 export const GET = wrapRouteRequest(async () => {
-  // Get memory health asynchronously with timeout
+  // Get memory health asynchronously with timeout; checkMemoryHealth caches raw mem0 response
   const memoryHealthPromise = Promise.race([
     checkMemoryHealth(),
-    new Promise<
-      HealthCheckStatusEntry<
-        'db' | 'vectorStore' | 'graphStore' | 'historyStore' | 'authService'
-      >
-    >(
-      (resolve) =>
-        setTimeout(
-          () =>
-            resolve({
-              status: 'error',
-              db: { status: 'error' },
-              vectorStore: { status: 'error' },
-              graphStore: { status: 'error' },
-              historyStore: { status: 'error' },
-              authService: { status: 'error' },
-            }),
-          15000,
-        ), // 15 second timeout
+    new Promise<MemoryHealthCheckResponse>((resolve) =>
+      setTimeout(
+        () =>
+          resolve({
+            status: 'error',
+            message: 'timeout',
+            timestamp: new Date().toISOString(),
+            service: 'mem0',
+            mem0: {
+              version: '0',
+              build_type: 'unknown',
+              build_info: '',
+              verbose: {
+                mem0_version: '0',
+                build_details: { type: '', info: '', path: '' },
+                build_stamp: '',
+              },
+            },
+            details: {
+              client_active: false,
+              system_db_available: false,
+              vector_enabled: false,
+              vector_store_available: false,
+              graph_enabled: false,
+              graph_store_available: false,
+              history_store_available: false,
+              auth_service: {
+                healthy: false,
+                enabled: false,
+                server_url: '',
+                realm: '',
+                client_id: '',
+                auth_url: '',
+                token_url: '',
+                jkws_url: '',
+              },
+              errors: [],
+            },
+          }),
+        15000,
+      ),
     ),
   ]);
 
   const [memoryHealth] = await Promise.all([memoryHealthPromise]);
 
+  const databaseStatus = await checkDatabaseHealth();
+
   const healthCheckResponse: HealthCheckResponse = {
     server: env('NEXT_PUBLIC_HOSTNAME') ?? 'unknown',
-    database: { status: 'ok' },
+    database: databaseStatus,
     chat: { status: 'ok', cache: { status: 'ok' }, queue: { status: 'ok' } },
-    memory: memoryHealth,
+    memory: transformMemoryResponse(memoryHealth),
   };
 
   return NextResponse.json(healthCheckResponse, { status: 200 });

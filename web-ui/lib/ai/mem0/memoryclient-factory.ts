@@ -110,7 +110,7 @@ class SchoolLawyerMemoryClient
       verbose: verbose.toString(),
     });
 
-    const url = `api/v1/stats/health-check?${searchParams.toString()}`;
+    const url = `stats/health-check?${searchParams.toString()}`;
 
     try {
       const response = await this._fetchWithErrorHandling(url, {

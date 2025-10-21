@@ -144,6 +144,8 @@ const buildRawInstance = () => {
     MEM0_DISABLED: process.env.MEM0_DISABLED,
     /** Mem0 API service host URL. Example: 'https://api.mem0.ai' */
     MEM0_API_HOST: process.env.MEM0_API_HOST,
+    /** Base path appended to Mem0 API requests. Example: 'api/v1' */
+    MEM0_API_BASE_PATH: process.env.MEM0_API_BASE_PATH ?? 'api/v1',
     /** Mem0 UI dashboard host URL. Example: 'https://app.mem0.ai' */
     MEM0_UI_HOST: process.env.MEM0_UI_HOST,
     /** Mem0 service username for authentication. Example: 'user@example.com' */
@@ -479,6 +481,12 @@ const serverEnvSchema = z
     MEM0_API_HOST: ZodProcessors.url().describe(
       'Mem0 API service host URL for memory operations. Example: https://api.mem0.ai',
     ),
+    MEM0_API_BASE_PATH: z
+      .string()
+      .default('api/v1')
+      .describe(
+        'Base path segment appended to Mem0 API requests (without leading slash). Example: api/v1',
+      ),
     MEM0_UI_HOST: ZodProcessors.url().describe(
       'Mem0 UI dashboard host URL for memory management. Example: https://app.mem0.ai',
     ),
