@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from 'axios';
 import { fetch } from '@/lib/nextjs-util/fetch';
 import {
   AllUsers,
@@ -16,13 +15,12 @@ import {
   Message,
   FeedbackPayload,
 } from './mem0.types';
-import { captureClientEvent, generateHash } from './telemetry';
+import { generateHash } from './telemetry';
 import { getMem0ApiUrl } from '../pollyfills';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { ImpersonationService } from '@/lib/auth/impersonation';
 import { env } from '@/lib/site-util/env';
 import { log } from '@/lib/logger';
-import { apikeys } from 'googleapis/build/src/apis/apikeys';
 import {
   createInstrumentedSpan,
   reportEvent,
@@ -70,7 +68,6 @@ export default class MemoryClient {
   headers: Record<string, string>;
   telemetryId: string;
   impersonation?: ImpersonationService;
-  #defaultOptions: Partial<RequestInit>;
   #clientInitialized = false;
 
   _validateAuth(): any {
@@ -118,10 +115,6 @@ export default class MemoryClient {
 
     this.headers = {
       'Content-Type': 'application/json',
-    };
-
-    this.#defaultOptions = {
-      headers: this.headers,
     };
 
     this._validateAuth();
@@ -236,12 +229,54 @@ export default class MemoryClient {
     }
     // Authenticate
     await this.#updateAuthorizationIfNeeded();
-    // normalize input url
-    const normalUrl = url.toLocaleLowerCase().trim();
-    const isSwaggerDocs = normalUrl === 'docs';
+    const joinPathSegments = (base: string, target: string): string => {
+      const trimmedTarget = target.replace(/^\/+/, '');
+      if (!base) {
+        return trimmedTarget;
+      }
+      const normalizedBase = base.replace(/^\/+|\/+$/g, '');
+      if (!trimmedTarget) {
+        return normalizedBase;
+      }
+      return `${normalizedBase}/${trimmedTarget}`;
+    };
+
+    const trimmedInput = url.trim();
+    if (!trimmedInput) {
+      throw new APIError('API request path cannot be empty');
+    }
+
+    const relativePath = trimmedInput.replace(/^\/+/, '');
+    const [pathSegment] = relativePath.split('?');
+    const normalizedPath = pathSegment.replace(/\/+$/, '').toLowerCase();
+    const isSwaggerDocs = normalizedPath === 'docs';
+
+    const basePathRaw = env('MEM0_API_BASE_PATH');
+    const sanitizedBase = basePathRaw.trim().replace(/^\/+|\/+$/g, '');
+
+    const trimmedRelative = relativePath.replace(/^\/+/, '');
+    const alreadyPrefixed =
+      sanitizedBase.length > 0 &&
+      (trimmedRelative === sanitizedBase ||
+        trimmedRelative.startsWith(`${sanitizedBase}/`));
+
+    const shouldBypassBase =
+      isSwaggerDocs ||
+      /^[vV]\d+\//.test(relativePath) ||
+      relativePath.startsWith('http://') ||
+      relativePath.startsWith('https://') ||
+      alreadyPrefixed;
+
+    const effectivePath = shouldBypassBase
+      ? relativePath.replace(/^\/+/, '')
+      : joinPathSegments(sanitizedBase, relativePath);
+
     const requestUrl = isSwaggerDocs
-      ? new URL('docs', env('MEM0_API_HOST')).toString()
-      : new URL(normalUrl, this.host).toString();
+      ? new URL(
+          relativePath.replace(/^\/+/, ''),
+          env('MEM0_API_HOST'),
+        ).toString()
+      : new URL(effectivePath, this.host).toString();
     const response = await fetch(requestUrl, {
       ...options,
       headers: {
@@ -318,7 +353,7 @@ export default class MemoryClient {
     return this._instrument('ping', async () => {
       try {
         const response = await this._fetchWithErrorHandling<PingResponse>(
-          '/api/v1/ping/',
+          'ping/',
           {
             method: 'GET',
           },
@@ -399,7 +434,7 @@ export default class MemoryClient {
       const payloadKeys = Object.keys(payload);
       this._captureEvent('add', [payloadKeys]);
 
-      const response = await this._fetchWithErrorHandling(`api/v1/memories/`, {
+      const response = await this._fetchWithErrorHandling(`memories/`, {
         method: 'POST',
         headers: this.headers,
         body: JSON.stringify(payload),
@@ -419,7 +454,7 @@ export default class MemoryClient {
       this._captureEvent('update', [payloadKeys]);
 
       const response = await this._fetchWithErrorHandling(
-        `api/v1/memories/${memoryId}/`,
+        `memories/${memoryId}/`,
         {
           method: 'PUT',
           headers: this.headers,
@@ -433,7 +468,7 @@ export default class MemoryClient {
   async get(memoryId: string): Promise<Memory> {
     return this._instrument('get', async (span) => {
       this._captureEvent('get', []);
-      return this._fetchWithErrorHandling(`api/v1/memories/${memoryId}/`, {
+      return this._fetchWithErrorHandling(`memories/${memoryId}/`, {
         headers: this.headers,
       });
     });
@@ -468,8 +503,8 @@ export default class MemoryClient {
 
       if (api_version === 'v2') {
         const url = paginated_response
-          ? `${this.host}/v2/memories/?${appendedParams}`
-          : `${this.host}/v2/memories/`;
+          ? `v2/memories/?${appendedParams}`
+          : `v2/memories/`;
         return this._fetchWithErrorHandling(url, {
           method: 'POST',
           headers: this.headers,
@@ -478,8 +513,8 @@ export default class MemoryClient {
       } else {
         const params = new URLSearchParams(this._prepareParams(otherOptions));
         const url = paginated_response
-          ? `api/v1/memories/?${params}&${appendedParams}`
-          : `api/v1/memories/?${params}`;
+          ? `memories/?${params}&${appendedParams}`
+          : `memories/?${params}`;
         return this._fetchWithErrorHandling(url, {
           headers: this.headers,
         });
@@ -507,15 +542,12 @@ export default class MemoryClient {
         if (payload.project_name) delete payload.project_name;
       }
       const endpoint =
-        api_version === 'v2' ? '/v2/memories/search/' : '/v1/memories/search/';
-      const response = await this._fetchWithErrorHandling(
-        `${this.host}${endpoint}`,
-        {
-          method: 'POST',
-          headers: this.headers,
-          body: JSON.stringify(payload),
-        },
-      );
+        api_version === 'v2' ? 'v2/memories/search/' : 'memories/search/';
+      const response = await this._fetchWithErrorHandling(endpoint, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(payload),
+      });
       return response;
     });
   }
@@ -523,7 +555,7 @@ export default class MemoryClient {
   async delete(memoryId: string): Promise<{ message: string }> {
     return this._instrument('delete', async (span) => {
       this._captureEvent('delete', [memoryId]);
-      return this._fetchWithErrorHandling(`api/v1/memories/${memoryId}/`, {
+      return this._fetchWithErrorHandling(`memories/${memoryId}/`, {
         method: 'DELETE',
         headers: this.headers,
       });
@@ -549,7 +581,7 @@ export default class MemoryClient {
       }
       const params = new URLSearchParams(this._prepareParams(options));
       const response = await this._fetchWithErrorHandling(
-        `api/v1/memories/?${params}`,
+        `memories/?${params}`,
         {
           method: 'DELETE',
           headers: this.headers,
@@ -563,7 +595,7 @@ export default class MemoryClient {
     return this._instrument('history', async (span) => {
       this._captureEvent('history', []);
       const response = await this._fetchWithErrorHandling(
-        `api/v1/memories/${memoryId}/history/`,
+        `memories/${memoryId}/history/`,
         {
           headers: this.headers,
         },
@@ -592,7 +624,7 @@ export default class MemoryClient {
       // @ts-expect-error 3rd party code
       const params = new URLSearchParams(options);
       const response = await this._fetchWithErrorHandling(
-        `api/v1/entities/?${params}`,
+        `entities/?${params}`,
         {
           headers: this.headers,
         },
@@ -613,7 +645,7 @@ export default class MemoryClient {
       data.entity_type = 'user';
     }
     const response = await this._fetchWithErrorHandling(
-      `api/v1/entities/${data.entity_type}/${data.entity_id}/`,
+      `entities/${data.entity_type}/${data.entity_id}/`,
       {
         method: 'DELETE',
         headers: this.headers,
@@ -670,7 +702,7 @@ export default class MemoryClient {
       for (const entity of to_delete) {
         try {
           await this._fetchWithErrorHandling(
-            `/v2/entities/${entity.type}/${entity.name}/${qp.size > 0 ? `?${qp.toString()}` : ''}`,
+            `v2/entities/${entity.type}/${entity.name}/${qp.size > 0 ? `?${qp.toString()}` : ''}`,
             {
               method: 'DELETE',
             },
@@ -708,7 +740,7 @@ export default class MemoryClient {
         memory_id: memory.memoryId,
         text: memory.text,
       }));
-      const response = await this._fetchWithErrorHandling(`api/v1/batch/`, {
+      const response = await this._fetchWithErrorHandling(`batch/`, {
         method: 'PUT',
         headers: this.headers,
         body: JSON.stringify({ memories: memoriesBody }),
@@ -723,7 +755,7 @@ export default class MemoryClient {
       const memoriesBody = memories.map((memory) => ({
         memory_id: memory,
       }));
-      const response = await this._fetchWithErrorHandling(`api/v1/batch/`, {
+      const response = await this._fetchWithErrorHandling(`batch/`, {
         method: 'DELETE',
         headers: this.headers,
         body: JSON.stringify({ memories: memoriesBody }),
@@ -749,7 +781,7 @@ export default class MemoryClient {
       fields?.forEach((field) => params.append('fields', field));
 
       const response = await this._fetchWithErrorHandling(
-        `api/v1/orgs/organizations/${this.organizationId}/projects/${this.projectId}/?${params.toString()}`,
+        `orgs/organizations/${this.organizationId}/projects/${this.projectId}/?${params.toString()}`,
         {
           headers: this.headers,
         },
@@ -771,7 +803,7 @@ export default class MemoryClient {
       }
 
       const response = await this._fetchWithErrorHandling(
-        `api/v1/orgs/organizations/${this.organizationId}/projects/${this.projectId}/`,
+        `orgs/organizations/${this.organizationId}/projects/${this.projectId}/`,
         {
           method: 'PATCH',
           headers: this.headers,
@@ -788,7 +820,7 @@ export default class MemoryClient {
       this._captureEvent('get_webhooks', []);
       const project_id = data?.projectId || this.projectId;
       const response = await this._fetchWithErrorHandling(
-        `api/v1/webhooks/projects/${project_id}/`,
+        `webhooks/projects/${project_id}/`,
         {
           headers: this.headers,
         },
@@ -801,7 +833,7 @@ export default class MemoryClient {
     return this._instrument('createWebhook', async (span) => {
       this._captureEvent('create_webhook', []);
       const response = await this._fetchWithErrorHandling(
-        `api/v1/webhooks/projects/${this.projectId}/`,
+        `webhooks/projects/${this.projectId}/`,
         {
           method: 'POST',
           headers: this.headers,
@@ -817,7 +849,7 @@ export default class MemoryClient {
       this._captureEvent('update_webhook', []);
       const project_id = webhook.projectId || this.projectId;
       const response = await this._fetchWithErrorHandling(
-        `api/v1/webhooks/${webhook.webhookId}/`,
+        `webhooks/${webhook.webhookId}/`,
         {
           method: 'PUT',
           headers: this.headers,
@@ -838,7 +870,7 @@ export default class MemoryClient {
       this._captureEvent('delete_webhook', []);
       const webhook_id = data.webhookId || data;
       const response = await this._fetchWithErrorHandling(
-        `api/v1/webhooks/${webhook_id}/`,
+        `webhooks/${webhook_id}/`,
         {
           method: 'DELETE',
           headers: this.headers,
@@ -852,7 +884,7 @@ export default class MemoryClient {
     return this._instrument('feedback', async (span) => {
       const payloadKeys = Object.keys(data || {});
       this._captureEvent('feedback', [payloadKeys]);
-      const response = await this._fetchWithErrorHandling(`api/v1/feedback/`, {
+      const response = await this._fetchWithErrorHandling(`feedback/`, {
         method: 'POST',
         headers: this.headers,
         body: JSON.stringify(data),

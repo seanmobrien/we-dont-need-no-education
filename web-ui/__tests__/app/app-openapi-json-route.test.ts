@@ -15,6 +15,7 @@ const mockFetch = jest.fn();
 jest.mock('@/lib/site-util/env', () => ({
   env: (k: string) => {
     if (k === 'MEM0_API_HOST') return 'https://mem0.example';
+    if (k === 'MEM0_API_BASE_PATH') return 'api/v1';
     if (k === 'NEXT_PUBLIC_HOSTNAME') return 'https://app.example';
     return '';
   },
