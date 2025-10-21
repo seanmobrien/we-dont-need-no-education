@@ -35,7 +35,7 @@ export interface AuthServiceHealth {
   client_id: string;
   auth_url: string;
   token_url: string;
-  jkws_url: string;
+  jwks_url: string;
 }
 
 /**

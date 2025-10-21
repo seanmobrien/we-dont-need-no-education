@@ -33,10 +33,9 @@ export const ensureMemoryCacheConfigured = async () => {
 
   const p = (async () => {
     try {
-      const ttl = (await getFeatureFlag(
-        'health_memory_cache_ttl',
-      )) as unknown as number;
-      if (typeof ttl === 'number' && ttl > 0) {
+      const ttlFlag = await getFeatureFlag('health_memory_cache_ttl');
+      const ttl = Number(ttlFlag);
+      if (Number.isFinite(ttl) && ttl > 0) {
         const cache = new MemoryHealthCache({ ttlMs: ttl * 1000 });
         SingletonProvider.Instance.set('memory-health-cache', cache);
       }

@@ -35,10 +35,9 @@ export const ensureDatabaseCacheConfigured = async () => {
 
   const p = (async () => {
     try {
-      const ttl = (await getFeatureFlag(
-        'health_database_cache_ttl',
-      )) as unknown as number;
-      if (typeof ttl === 'number' && ttl > 0) {
+      const rawTtl = await getFeatureFlag('health_database_cache_ttl');
+      const ttl = Number(rawTtl);
+      if (Number.isFinite(ttl) && ttl > 0) {
         const cache = new DatabaseHealthCache({ ttlMs: ttl * 1000 });
         SingletonProvider.Instance.set('database-health-cache', cache);
       }

@@ -251,12 +251,14 @@ export default class MemoryClient {
     const normalizedPath = pathSegment.replace(/\/+$/, '').toLowerCase();
     const isSwaggerDocs = normalizedPath === 'docs';
 
-    const basePathRaw = env('MEM0_API_BASE_PATH') ?? '';
+    const basePathRaw = env('MEM0_API_BASE_PATH');
     const sanitizedBase = basePathRaw.trim().replace(/^\/+|\/+$/g, '');
 
+    const trimmedRelative = relativePath.replace(/^\/+/, '');
     const alreadyPrefixed =
       sanitizedBase.length > 0 &&
-      relativePath.replace(/^\/+/, '').startsWith(`${sanitizedBase}/`);
+      (trimmedRelative === sanitizedBase ||
+        trimmedRelative.startsWith(`${sanitizedBase}/`));
 
     const shouldBypassBase =
       isSwaggerDocs ||
