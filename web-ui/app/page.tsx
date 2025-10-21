@@ -1,6 +1,14 @@
 'use client';
-import { Box, Button, Container, Typography, Card, CardContent, useTheme } from '@mui/material';
-import { useSession } from 'next-auth/react';
+import {
+  Box,
+  Button,
+  Container,
+  Typography,
+  Card,
+  CardContent,
+  useTheme,
+} from '@mui/material';
+import { useSession } from '@/components/auth/session-provider';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
@@ -27,34 +35,58 @@ export default function Home() {
 
   const features = [
     {
-      icon: <EmailIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
+      icon: (
+        <EmailIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />
+      ),
       title: 'Email Evidence Management',
-      description: 'Import, organize, and analyze email communications to build comprehensive cases from institutional correspondence.',
+      description:
+        'Import, organize, and analyze email communications to build comprehensive cases from institutional correspondence.',
     },
     {
-      icon: <ChatIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
+      icon: (
+        <ChatIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />
+      ),
       title: 'AI-Powered Analysis',
-      description: 'Leverage advanced AI to identify Title IX violations, institutional failures, and critical evidence in school communications.',
+      description:
+        'Leverage advanced AI to identify Title IX violations, institutional failures, and critical evidence in school communications.',
     },
     {
-      icon: <SearchIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
+      icon: (
+        <SearchIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />
+      ),
       title: 'Smart Document Search',
-      description: 'Semantic search capabilities find similar patterns of institutional misconduct across all your evidence.',
+      description:
+        'Semantic search capabilities find similar patterns of institutional misconduct across all your evidence.',
     },
     {
-      icon: <AssessmentIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
+      icon: (
+        <AssessmentIcon
+          sx={{ fontSize: 48, color: 'var(--color-primary-main)' }}
+        />
+      ),
       title: 'Case Building Dashboard',
-      description: 'Real-time monitoring of evidence analysis and case strength with comprehensive reporting tools.',
+      description:
+        'Real-time monitoring of evidence analysis and case strength with comprehensive reporting tools.',
     },
     {
-      icon: <SecurityIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
+      icon: (
+        <SecurityIcon
+          sx={{ fontSize: 48, color: 'var(--color-primary-main)' }}
+        />
+      ),
       title: 'Privacy-First Design',
-      description: 'Your data is encrypted at rest and in transit. We never sell, mine, or share your information with third parties.',
+      description:
+        'Your data is encrypted at rest and in transit. We never sell, mine, or share your information with third parties.',
     },
     {
-      icon: <StorageIcon sx={{ fontSize: 48, color: 'var(--color-primary-main)' }} />,
+      icon: (
+        <StorageIcon
+          sx={{ fontSize: 48, color: 'var(--color-primary-main)' }}
+        />
+      ),
       title: 'Self-Hosting Available',
-      description: 'Complete control over your data with the ability to self-host the entire platform on your own infrastructure.',
+      description:
+        'Complete control over your data with the ability to self-host the entire platform on your own infrastructure.',
     },
   ];
 
@@ -62,9 +94,10 @@ export default function Home() {
     <Box
       sx={{
         minHeight: '100vh',
-        background: theme.palette.mode === 'dark' 
-          ? 'linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%)'
-          : 'linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)',
+        background:
+          theme.palette.mode === 'dark'
+            ? 'linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%)'
+            : 'linear-gradient(180deg, #ffffff 0%, #f5f5f5 100%)',
       }}
     >
       {/* Hero Section */}
@@ -78,7 +111,11 @@ export default function Home() {
         >
           <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
             <Image
-              src={theme.palette.mode === 'dark' ? '/static/logo/logo-dark.png' : '/static/logo/logo-light.png'}
+              src={
+                theme.palette.mode === 'dark'
+                  ? '/static/logo/logo-dark.png'
+                  : '/static/logo/logo-light.png'
+              }
               alt="Title IX Advocacy Platform"
               width={200}
               height={200}
@@ -86,7 +123,7 @@ export default function Home() {
               style={{ maxWidth: '200px', height: 'auto' }}
             />
           </Box>
-          
+
           <Typography
             variant="h2"
             component="h1"
@@ -94,7 +131,8 @@ export default function Home() {
               fontWeight: 700,
               mb: 3,
               fontSize: { xs: '2rem', md: '3.5rem' },
-              background: 'linear-gradient(135deg, var(--color-primary-main) 0%, var(--color-secondary-main) 100%)',
+              background:
+                'linear-gradient(135deg, var(--color-primary-main) 0%, var(--color-secondary-main) 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
@@ -113,10 +151,18 @@ export default function Home() {
               fontSize: { xs: '1.1rem', md: '1.5rem' },
             }}
           >
-            Empowering victims, families, and advocates to fight back against educational institutions that mishandle Title IX cases
+            Empowering victims, families, and advocates to fight back against
+            educational institutions that mishandle Title IX cases
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 2,
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
             <Button
               variant="contained"
               size="large"
@@ -180,10 +226,13 @@ export default function Home() {
               color: 'text.secondary',
             }}
           >
-            When educational institutions suppress or improperly process instances of abuse, harassment, or other illegal activity, 
-            victims and families are often left without resources to fight back. This platform levels the playing field by providing 
-            advanced AI-powered document analysis capabilities that would typically require expensive legal teams. We believe every 
-            victim deserves access to powerful tools to hold institutions accountable.
+            When educational institutions suppress or improperly process
+            instances of abuse, harassment, or other illegal activity, victims
+            and families are often left without resources to fight back. This
+            platform levels the playing field by providing advanced AI-powered
+            document analysis capabilities that would typically require
+            expensive legal teams. We believe every victim deserves access to
+            powerful tools to hold institutions accountable.
           </Typography>
         </Box>
 
@@ -200,7 +249,7 @@ export default function Home() {
           >
             Powerful Features for Advocacy
           </Typography>
-          
+
           <Box
             sx={{
               display: 'grid',
@@ -217,10 +266,16 @@ export default function Home() {
                 key={index}
                 sx={{
                   height: '100%',
-                  bgcolor: theme.palette.mode === 'dark' ? 'var(--color-surface-primary)' : '#fff',
+                  bgcolor:
+                    theme.palette.mode === 'dark'
+                      ? 'var(--color-surface-primary)'
+                      : '#fff',
                   borderRadius: 2,
                   border: '1px solid',
-                  borderColor: theme.palette.mode === 'dark' ? 'var(--color-border-main)' : '#e0e0e0',
+                  borderColor:
+                    theme.palette.mode === 'dark'
+                      ? 'var(--color-border-main)'
+                      : '#e0e0e0',
                   transition: 'all 0.3s ease',
                   '&:hover': {
                     transform: 'translateY(-4px)',
@@ -230,13 +285,19 @@ export default function Home() {
                 }}
               >
                 <CardContent sx={{ p: 3 }}>
-                  <Box sx={{ mb: 2 }}>
-                    {feature.icon}
-                  </Box>
-                  <Typography variant="h5" component="h3" sx={{ mb: 2, fontWeight: 600 }}>
+                  <Box sx={{ mb: 2 }}>{feature.icon}</Box>
+                  <Typography
+                    variant="h5"
+                    component="h3"
+                    sx={{ mb: 2, fontWeight: 600 }}
+                  >
                     {feature.title}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ lineHeight: 1.7 }}
+                  >
                     {feature.description}
                   </Typography>
                 </CardContent>
@@ -270,7 +331,8 @@ export default function Home() {
               color: 'text.secondary',
             }}
           >
-            Our platform combines cutting-edge AI technology with robust security and privacy protections:
+            Our platform combines cutting-edge AI technology with robust
+            security and privacy protections:
           </Typography>
           <Box
             sx={{
@@ -285,7 +347,10 @@ export default function Home() {
             }}
           >
             <Box sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
+              <Typography
+                variant="h6"
+                sx={{ mb: 1, color: 'var(--color-primary-main)' }}
+              >
                 AI-Powered Intelligence
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -293,7 +358,10 @@ export default function Home() {
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
+              <Typography
+                variant="h6"
+                sx={{ mb: 1, color: 'var(--color-primary-main)' }}
+              >
                 Secure Infrastructure
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -301,15 +369,22 @@ export default function Home() {
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
+              <Typography
+                variant="h6"
+                sx={{ mb: 1, color: 'var(--color-primary-main)' }}
+              >
                 Modern Web Stack
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Next.js 15, TypeScript, and Material UI for a seamless experience
+                Next.js 15, TypeScript, and Material UI for a seamless
+                experience
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'center', p: 2 }}>
-              <Typography variant="h6" sx={{ mb: 1, color: 'var(--color-primary-main)' }}>
+              <Typography
+                variant="h6"
+                sx={{ mb: 1, color: 'var(--color-primary-main)' }}
+              >
                 Open Source
               </Typography>
               <Typography variant="body2" color="text.secondary">
@@ -346,7 +421,8 @@ export default function Home() {
               mx: 'auto',
             }}
           >
-            Join victims and advocates using AI-powered tools to hold educational institutions accountable for Title IX violations.
+            Join victims and advocates using AI-powered tools to hold
+            educational institutions accountable for Title IX violations.
           </Typography>
           <Button
             variant="contained"
@@ -371,7 +447,10 @@ export default function Home() {
         <Box
           sx={{
             borderTop: '1px solid',
-            borderColor: theme.palette.mode === 'dark' ? 'var(--color-border-main)' : '#e0e0e0',
+            borderColor:
+              theme.palette.mode === 'dark'
+                ? 'var(--color-border-main)'
+                : '#e0e0e0',
             py: 4,
             textAlign: 'center',
           }}
@@ -379,7 +458,14 @@ export default function Home() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
             Open Source • Privacy-First • Self-Hostable
           </Typography>
-          <Box sx={{ display: 'flex', gap: 3, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 3,
+              justifyContent: 'center',
+              flexWrap: 'wrap',
+            }}
+          >
             <Button
               variant="text"
               size="small"
