@@ -151,6 +151,14 @@ export default function PrivacyPolicy() {
               </li>
               <li>
                 <Typography variant="body1">
+                  <strong>Multiple Authentication Options:</strong> Choose a
+                  privacy-preserving local account for standard access, or
+                  connect a Google account for automatic email import — Google
+                  authentication is only required for the import capability.
+                </Typography>
+              </li>
+              <li>
+                <Typography variant="body1">
                   <strong>Access Controls:</strong> Strict access controls
                   ensure that only you can access your evidence and case data.
                   Our team cannot access your private information without your
@@ -329,8 +337,21 @@ export default function PrivacyPolicy() {
                         textDecoration: 'none',
                       }}
                     >
-                      Memory System (mem0)
+                      Memory System Repository
+                    </a>{' '}
+                    - Built on the excellent{' '}
+                    <a
+                      href="https://github.com/mem0ai/mem0"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        color: 'var(--color-primary-main)',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      mem0ai platform
                     </a>
+                    , includes Docker containers for all dependent systems
                   </Typography>
                 </Box>
               </li>
