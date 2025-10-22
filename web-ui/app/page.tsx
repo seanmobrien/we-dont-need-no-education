@@ -492,6 +492,14 @@ export default function Home() {
             >
               Privacy Policy
             </Button>
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => router.push('/terms')}
+              sx={{ color: 'var(--color-primary-main)' }}
+            >
+              Terms of Service
+            </Button>
           </Box>
         </Box>
       </Container>

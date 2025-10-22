@@ -16,13 +16,10 @@ export const nextConfig: NextConfig = withStripRscPrefixPlugin(
               : {}),
             experimental: {
               webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'INP', 'TTFB', 'FID'],
-              // useLightningcss: true,
-              // cssChunking: true,
             },
             publicRuntimeConfig: {
               hostname: process.env.NEXT_PUBLIC_HOSTNAME,
             },
-            // transpilePackages: ['zod', 'zerialize'],
           }),
         ),
       ),

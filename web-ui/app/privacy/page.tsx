@@ -499,15 +499,30 @@ export default function PrivacyPolicy() {
             onClick={() => router.push('/')}
             sx={{
               bgcolor: 'var(--color-primary-main)',
+              mr: 2,
               color: '#000',
               px: 4,
               py: 1.5,
               '&:hover': {
-                bgcolor: 'var(--color-primary-accent)',
+                bgcolor: 'var(--color-secondary-accent)',
               },
             }}
           >
             Return to Home
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => router.push('/terms')}
+            sx={{
+              borderColor: 'var(--color-primary-main)',
+              color: 'var(--color-primary-main)',
+              '&:hover': {
+                borderColor: 'var(--color-secondary-accent)',
+                color: 'var(--color-secondary-accent)',
+              },
+            }}
+          >
+            Terms of Service
           </Button>
         </Box>
       </Container>

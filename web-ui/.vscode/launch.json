@@ -6,16 +6,12 @@
             "type": "node",
             "request": "launch",
             "cwd": "${workspaceFolder}",
-            "runtimeExecutable": "node",
+            "runtimeExecutable": "npm",
             "sourceMapRenames": true,
             "runtimeArgs": [
                 "--inspect",
-                //"--preserve-symlinks",
-                //"--preserve-symlinks-main",
-                // "--trace-deprecation",
-                // "--trace-warnings",
                 "--experimental-modules",
-                "--run",
+                "run-script",
                 "dev"
             ]
         },
@@ -26,10 +22,10 @@
             "env": {
                 "NODE_OPTIONS": "--inspect --trace-deprecation --trace-warnings"
             },
-            "program": "${workspaceFolder}/node_modules/.bin/next",
+            "runtimeExecutable": "npm",
             "runtimeArgs": [
                 "--experimental-modules",
-                "--run",
+                "run-script",
                 "dev"
             ]
         },
