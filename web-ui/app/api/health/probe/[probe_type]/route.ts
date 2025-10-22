@@ -60,8 +60,11 @@ type ProbeParams = { probe_type: string };
 export const GET = wrapRouteRequest(
   async (
     _req: NextRequest,
-    { params, span }: { params: Promise<ProbeParams>; span: Span },
+    { params, span }: { params: Promise<ProbeParams>; span?: Span },
   ): Promise<NextResponse> => {
+    if (!span) {
+      throw new TypeError('No span provided to health probe route.');
+    }
     const resolvedParams = await params;
     const probeType = (resolvedParams?.probe_type ?? 'liveness').toLowerCase();
 
