@@ -7,7 +7,6 @@ jest.mock('got');
 import { withJestTestExtensions } from '@/__tests__/jest.test-extensions';
 import type { Got } from 'got';
 
- 
 /**
  * Tests for ImpersonationThirdParty (Authorization Code flow)
  * - Happy path: admin code via login form, impersonation, then user code exchange
@@ -96,7 +95,7 @@ const redisClient = {
   get: jest.fn().mockResolvedValue(null),
   setEx: jest.fn().mockResolvedValue('OK'),
 };
-jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
+jest.mock('@/lib/redis-client', () => ({
   getRedisClient: jest.fn(async () => redisClient),
 }));
 
@@ -132,7 +131,7 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
   beforeEach(() => {
     jest.mock('got');
-     
+
     got = require('got').got as Got;
     mockGot = got as jest.Mocked<Got>;
 
@@ -203,7 +202,6 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
     const {
       ImpersonationThirdParty,
-       
     } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     // Ensure admin client finds the target user by email (configure captured instance)
     (kcAdminMock.users.find as jest.Mock).mockResolvedValue([
@@ -243,7 +241,6 @@ describe('ImpersonationThirdParty (Authorization Code flow)', () => {
 
     const {
       ImpersonationThirdParty,
-       
     } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     // Create service, then set admin users.find to return empty -> user not found
     const svc = await ImpersonationThirdParty.fromRequest({

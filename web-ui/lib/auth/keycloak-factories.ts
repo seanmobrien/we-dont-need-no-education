@@ -1,5 +1,62 @@
-import KeycloakAdminClient from '@keycloak/keycloak-admin-client';
-import { ConnectionConfig } from '@keycloak/keycloak-admin-client/lib/client';
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
+export interface RequestArgs {
+  method: Method;
+  path?: string;
+  urlParamKeys?: string[];
+  queryParamKeys?: string[];
+  keyTransform?: Record<string, string>;
+  catchNotFound?: boolean;
+  payloadKey?: string;
+  returnResourceIdInLocationHeader?: {
+    field: string;
+  };
+  /**
+   * Keys to be ignored, meaning that they will not be filtered out of the request payload even if they are a part of `urlParamKeys` or `queryParamKeys`,
+   */
+  ignoredKeys?: string[];
+  headers?: [string, string][] | Record<string, string> | Headers;
+}
+
+export type ConnectionConfig = {
+  baseUrl?: string;
+  realmName?: string;
+  requestOptions?: RequestInit;
+  requestArgOptions?: Pick<RequestArgs, 'catchNotFound'>;
+};
+
+export type KeycloakAdminClient = {
+  users: unknown;
+  userStorageProvider: unknown;
+  groups: unknown;
+  roles: unknown;
+  organizations: unknown;
+  workflows: unknown;
+  clients: unknown;
+  realms: unknown;
+  clientScopes: unknown;
+  clientPolicies: unknown;
+  identityProviders: unknown;
+  components: unknown;
+  serverInfo: unknown;
+  whoAmI: unknown;
+  attackDetection: unknown;
+  authenticationManagement: unknown;
+  cache: unknown;
+  baseUrl: string;
+  realmName: string;
+  scope?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  auth(credentials: unknown): Promise<void>;
+  registerTokenProvider(provider: unknown): void;
+  setAccessToken(token: string): void;
+  getAccessToken(): Promise<string | undefined>;
+  getRequestOptions(): RequestInit | undefined;
+  getGlobalRequestArgOptions(): Pick<RequestArgs, 'catchNotFound'> | undefined;
+  setConfig(connectionConfig: ConnectionConfig): void;
+};
+
+let KeycloakAdminClientImpl: any = null;
 
 /**
  * Create a configured Keycloak Admin client.
@@ -19,4 +76,10 @@ import { ConnectionConfig } from '@keycloak/keycloak-admin-client/lib/client';
  */
 export const keycloakAdminClientFactory = (
   config: ConnectionConfig,
-): KeycloakAdminClient => new KeycloakAdminClient(config);
+): KeycloakAdminClient => {
+  if (!KeycloakAdminClientImpl) {
+    KeycloakAdminClientImpl =
+      require('@keycloak/keycloak-admin-client').default;
+  }
+  return new KeycloakAdminClientImpl(config);
+};

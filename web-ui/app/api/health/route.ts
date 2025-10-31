@@ -12,6 +12,7 @@ import { getMemoryHealthCache } from '@/lib/api/health/memory';
 import { checkDatabaseHealth } from '@/lib/api/health/database';
 import { env } from '@/lib/site-util/env';
 import { LoggedError } from '@/lib/react-util';
+import { fromRequest } from '@/lib/auth/impersonation';
 
 /**
  * Health Check Route (GET /api/health)
@@ -145,15 +146,19 @@ function transformMemoryResponse(
 async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
   const cache = getMemoryHealthCache();
   const cached = cache.get();
-  if (cached) return cached;
+  if (cached && cached.status === 'ok') {
+    return cached;
+  }
   try {
-    const memoryClient = await memoryClientFactory<ExtendedMemoryClient>({});
+    const memoryClient = await memoryClientFactory<ExtendedMemoryClient>({
+      impersonation: await fromRequest(),
+    });
     const healthResponse = await memoryClient.healthCheck({
       strict: false,
       verbose: 1,
     });
 
-    // Cache the raw mem0 response and return it directly
+    // Cache the raw mem0 response and return it directl  y
     try {
       cache.set(healthResponse);
     } catch {}

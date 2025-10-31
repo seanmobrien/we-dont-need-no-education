@@ -29,6 +29,7 @@ import { AiModelType } from '@/lib/ai/core';
 const buildRawInstance = () => {
   const raw = {
     ...clientRawInstance,
+    AUTH_SECRET: process.env.AUTH_SECRET,
     /** Server-side logging level - controls verbosity of server logs. Example: 'debug', 'info', 'warn', 'error' */
     LOG_LEVEL_SERVER: process.env.LOG_LEVEL_SERVER ?? 'warn',
     /** Primary database connection URL for pooled connections. Example: 'postgresql://user:pass@host:5432/dbname' */
@@ -84,14 +85,6 @@ const buildRawInstance = () => {
     AUTH_GOOGLE_SECRET: process.env.AUTH_GOOGLE_SECRET,
     /** Google API key for service access. Example: 'AIzaSyD1234567890abcdef...' */
     AUTH_GOOGLE_APIKEY: process.env.AUTH_GOOGLE_APIKEY,
-    /** HTTP header name for authentication bypass in development. Example: 'x-auth-bypass-key' */
-    AUTH_HEADER_BYPASS_KEY: process.env.AUTH_HEADER_BYPASS_KEY,
-    /** HTTP header value for authentication bypass in development. Example: 'dev-secret-123' */
-    AUTH_HEADER_BYPASS_VALUE: process.env.AUTH_HEADER_BYPASS_VALUE,
-    /*
-    AZURE_MONITOR_CONNECTION_STRING:
-      process.env.AZURE_MONITOR_CONNECTION_STRING,
-    */
     /** Azure Monitor Application Insights connection string. Example: 'InstrumentationKey=12345678-1234-1234-1234-123456789012' */
     AZURE_MONITOR_CONNECTION_STRING:
       process.env.AZURE_MONITOR_CONNECTION_STRING,
@@ -140,8 +133,6 @@ const buildRawInstance = () => {
     REDIS_PASSWORD: process.env.REDIS_PASSWORD,
     /** User ID to bypass authentication in local development. Example: 'dev-user-123' */
     LOCAL_DEV_AUTH_BYPASS_USER_ID: process.env.LOCAL_DEV_AUTH_BYPASS_USER_ID,
-    /** Flag to disable Mem0 memory service integration. Example: 'true' or 'false' */
-    MEM0_DISABLED: process.env.MEM0_DISABLED,
     /** Mem0 API service host URL. Example: 'https://api.mem0.ai' */
     MEM0_API_HOST: process.env.MEM0_API_HOST,
     /** Base path appended to Mem0 API requests. Example: 'api/v1' */
@@ -190,6 +181,10 @@ const ZodAiModelType = () => z.enum(AiModelTypeValues);
  */
 const serverEnvSchema = z
   .object({
+    AUTH_SECRET: z
+      .string()
+      .min(1)
+      .describe('auth.js secret used when signing tokens'),
     LOG_LEVEL_SERVER: ZodProcessors.logLevel().describe(
       'Server-side logging level for application logs. Example: debug, info, warn, error',
     ),
@@ -335,18 +330,6 @@ const serverEnvSchema = z
       .describe(
         'Google API key for accessing Google services (Gmail, Drive, etc.). Example: AIzaSyD1234567890abcdef...',
       ),
-    AUTH_HEADER_BYPASS_KEY: z
-      .string()
-      .optional()
-      .describe(
-        'HTTP header name for development authentication bypass (optional). Example: x-auth-bypass-key',
-      ),
-    AUTH_HEADER_BYPASS_VALUE: z
-      .string()
-      .optional()
-      .describe(
-        'HTTP header value for development authentication bypass (optional). Example: dev-secret-123',
-      ),
     AZURE_STORAGE_CONNECTION_STRING: z
       .string()
       .min(1)
@@ -418,12 +401,7 @@ const serverEnvSchema = z
       .describe(
         'Keycloak OAuth client secret for authentication (optional). Example: abc123-def456-ghi789',
       ),
-    AUTH_KEYCLOAK_ISSUER: z
-      .string()
-      .min(1)
-      .default(
-        'https://login.jollybush-836e15bc.westus3.azurecontainerapps.io/',
-      )
+    AUTH_KEYCLOAK_ISSUER: ZodProcessors.url()
       .optional()
       .describe(
         'Keycloak issuer URL for token validation. Default: development instance (optional). Example: https://auth.example.com/realms/myrealm',
@@ -475,9 +453,6 @@ const serverEnvSchema = z
       .describe(
         'User ID for bypassing authentication in local development (optional). Example: dev-user-123',
       ),
-    MEM0_DISABLED: ZodProcessors.truthy(false).describe(
-      'Flag to disable Mem0 memory service integration. Default: false. Example: true or false',
-    ),
     MEM0_API_HOST: ZodProcessors.url().describe(
       'Mem0 API service host URL for memory operations. Example: https://api.mem0.ai',
     ),
@@ -509,9 +484,8 @@ const serverEnvSchema = z
     MEM0_API_KEY: z
       .string()
       .optional()
-      .default('SKYNET')
       .describe(
-        'Mem0 API key for service authentication. Default: SKYNET. Example: mem0_sk_1234567890abcdef...',
+        'Mem0 API key for service authentication. Example: mem0_sk_1234567890abcdef...',
       ),
     NODE_ENV: z
       .string()
@@ -578,7 +552,7 @@ export type ServerEnvType = ReturnType<typeof serverEnvSchema.parse>;
  *
  * @remarks
  * - Returns empty object when running on client-side (SSR safety)
- * - Falls back to client environment if DATABASE_URL is missing
+ * - Falls back to client environment if AUTH_SECRET is missing
  * - Validates all environment variables against their schemas
  * - Provides default values for optional configuration
  */
@@ -586,11 +560,11 @@ export const serverEnvFactory = (): ServerEnvType => {
   try {
     return isRunningOnClient()
       ? ({} as ServerEnvType)
-      : serverEnvSchema.parse(buildRawInstance());
+      : serverEnvSchema.parse({ ...buildRawInstance(), ...process.env });
   } catch (e) {
-    // Check an environment variable to verify really are running on server
-    if ((process.env.DATABASE_URL ?? '').length === 0) {
-      // We aren't - suppress (arguably could return client here)
+    // AUTH_SECRET is only server-side and super required...if it's missing, we're probably a client bundle
+    if ((process.env.AUTH_SECRET ?? '').length === 0) {
+      // We aren't - return client environment pretending to be server
       return clientEnvFactory() as unknown as ServerEnvType;
     }
     // Otherwise, rethrow the error

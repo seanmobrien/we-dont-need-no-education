@@ -4,7 +4,9 @@ export const KnownFeatureValues = [
   'models_google',
   'models_defaults',
   'mcp_cache_tools',
+  'mem0_mcp_tools_enabled',
   'mcp_cache_client',
+  'mcp_protocol_http_stream',
   'models_fetch_cache_ttl',
   'models_fetch_concurrency',
   'models_fetch_enhanced',
@@ -37,6 +39,7 @@ export type FeatureFlagStatus =
 export type AllFeatureFlagStatus = Record<KnownFeatureType, FeatureFlagStatus>;
 
 export const AllFeatureFlagsDefault = {
+  mem0_mcp_tools_enabled: true as boolean,
   models_fetch_cache_ttl: 300 as number,
   models_fetch_concurrency: 8 as number,
   models_fetch_enhanced: true as boolean,
@@ -61,6 +64,7 @@ export const AllFeatureFlagsDefault = {
   },
   mcp_cache_tools: false as boolean,
   mcp_cache_client: true as boolean,
+  mcp_protocol_http_stream: false as boolean,
   health_database_cache_ttl: 120 as number,
   health_memory_cache_ttl: 60 as number,
   health_startup_failure_threshold: 10 as number,

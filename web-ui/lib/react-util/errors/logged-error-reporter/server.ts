@@ -1,30 +1,30 @@
 import type { ErrorReporterInterface } from '@/lib/error-monitoring/types';
 import { ErrorReporter } from '@/lib/error-monitoring/error-reporter';
+import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 
-/**
- * Provides access to the shared ErrorReporter instance used by LoggedError.
- *
- * Usage: LoggedErrorReported.Instance.reportError({...})
- */
-class LoggedErrorReporter {
-  static #instance: ErrorReporterInterface | undefined;
-  static get Instance(): ErrorReporterInterface {
-    if (!LoggedErrorReporter.#instance) {
-      LoggedErrorReporter.#instance = ErrorReporter.createInstance({
-        enableStandardLogging: true,
-        enableConsoleLogging: false,
-        enableExternalReporting: true,
-        enableLocalStorage: false,
-      });
-    }
-    if (!LoggedErrorReporter.#instance) {
-      throw new TypeError(
-        'Failed to initialize LoggedErrorReporter - telemetry error tracking will not work',
-      );
-    }
-    return LoggedErrorReporter.#instance;
+const REPORTER_SINGLETON_KEY =
+  '@noeducation/lib/react-util/errors/logged-error-reporter/server';
+
+const createReporterInstance = (): ErrorReporterInterface => {
+  const reporter = ErrorReporter.createInstance({
+    enableStandardLogging: true,
+    enableConsoleLogging: false,
+    enableExternalReporting: true,
+    enableLocalStorage: false,
+  });
+
+  if (!reporter) {
+    throw new TypeError(
+      'Failed to initialize LoggedErrorReporter - telemetry error tracking will not work',
+    );
   }
-}
+
+  return reporter;
+};
+
 export const serverReporter = (): ErrorReporterInterface => {
-  return LoggedErrorReporter.Instance;
+  return SingletonProvider.Instance.getOrCreate(
+    REPORTER_SINGLETON_KEY,
+    createReporterInstance,
+  );
 };

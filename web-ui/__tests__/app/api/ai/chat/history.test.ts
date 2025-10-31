@@ -1,6 +1,5 @@
 /* @jest-environment node */
- 
- 
+
 /**
  * Chat History API Route Tests
  *
@@ -52,10 +51,6 @@ const columnMap = {
 
 jest.mock('@/lib/components/mui/data-grid/queryHelpers', () => ({
   selectForGrid: jest.fn(),
-}));
-
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
 }));
 
 jest.mock('@/lib/react-util', () => ({

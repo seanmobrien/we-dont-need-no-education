@@ -3,7 +3,7 @@ import type { Readable } from 'stream';
 import type { IncomingMessage } from 'http';
 import { EventEmitter } from 'events';
 type Handler = (...args: unknown[]) => void;
-import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { getRedisClient } from '@/lib/redis-client';
 import { makeResponse, makeStreamResponse } from './response';
 import { fetchConfigSync } from '@/lib/site-util/feature-flags/fetch-config';
 import { LoggedError } from '@/lib/react-util';

@@ -1,13 +1,7 @@
 /**
- * Types for the error reporting module.
- *
- * These are extracted so other modules (and tests) can consume the
- * ErrorReporter surface without importing the implementation.
+ * @see ./types.ts for type definitions and documentation
  */
 
-/**
- * Error severity levels for reporting and prioritization
- */
 export enum ErrorSeverity {
   LOW = 'low',
   MEDIUM = 'medium',
@@ -15,14 +9,8 @@ export enum ErrorSeverity {
   CRITICAL = 'critical',
 }
 
-/**
- * Known environment strings used by the reporter
- */
 export type KnownEnvironmentType = 'development' | 'staging' | 'production';
 
-/**
- * Error context information for better debugging
- */
 export interface ErrorContext {
   userId?: string;
   sessionId?: string;
@@ -37,9 +25,6 @@ export interface ErrorContext {
   error?: Error;
 }
 
-/**
- * Error report structure for external monitoring services
- */
 export interface ErrorReport {
   error: Error;
   severity: ErrorSeverity;
@@ -48,9 +33,11 @@ export interface ErrorReport {
   tags?: Record<string, string>;
 }
 
-/**
- * Configuration for error reporting
- */
+export type ErrorReporterConfigDebounceParams = {
+  debounceIntervalMs: number;
+  debounceCleanupIntervalMs: number;
+};
+
 export interface ErrorReporterConfig {
   enableStandardLogging: boolean;
   enableConsoleLogging: boolean;
@@ -58,14 +45,9 @@ export interface ErrorReporterConfig {
   enableLocalStorage: boolean;
   maxStoredErrors: number;
   environment: KnownEnvironmentType;
+  debounce?: ErrorReporterConfigDebounceParams;
 }
 
-/**
- * Interface describing the runtime surface of the ErrorReporter class.
- *
- * Implementations should match this shape so callers can depend on the
- * contract rather than the concrete class.
- */
 export interface ErrorReporterInterface {
   reportError(
     error: Error | unknown,

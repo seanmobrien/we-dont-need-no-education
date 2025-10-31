@@ -44,10 +44,6 @@ jest.mock('@opentelemetry/api-logs', () => ({
   },
 }));
 
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-}));
-
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error) => {

@@ -9,7 +9,7 @@ import {
 } from './responseClassifiers';
 import { cacheSuccessfulResponse, handleCacheJail } from './cacheOperations';
 import { getCacheConfig } from './config';
-import type { getRedisClient } from './redis-client';
+import type { getRedisClient } from '@/lib/redis-client';
 import { log } from '@/lib/logger';
 
 const config = getCacheConfig();

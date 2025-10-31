@@ -3,21 +3,18 @@ import { render, waitFor, screen } from '@/__tests__/test-utils';
 import { FlagProvider } from '@/components/general/flags/flag-provider';
 
 // Import mocked modules after jest.mock calls
-import { IFlagsmith } from 'flagsmith/react';
 import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import { useFlagsmithLoading } from 'flagsmith/react';
-import { mockFlagsmithInstanceFactory } from '@/__tests__/jest.setup';
+//import { mockFlagsmithInstanceFactory } from '@/__tests__/jest.setup';
 import {
   FeatureFlagsApi,
   useFeatureFlagsContext,
 } from '@/lib/site-util/feature-flags/context';
 
-const mockCreateFlagsmithInstance = jest.mocked(createFlagsmithInstance);
+const mockCreateFlagsmithInstance = createFlagsmithInstance as jest.Mock;
 
 describe('FlagProvider', () => {
   let currentContext: FeatureFlagsApi | undefined = undefined;
-  const mockEnvironmentId = 'test-environment-id';
-  const mockApiUrl = 'https://api.flagsmith.com/api/v1/';
   let mockFlagsmithLoading = {
     isLoading: true,
     isFetching: false,
@@ -53,18 +50,12 @@ describe('FlagProvider', () => {
       isFetching: false,
       error: null,
     };
-    jest.mock('flagsmith/react');
+
     (useFlagsmithLoading as jest.Mock).mockReturnValue(mockFlagsmithLoading);
 
     // Setup default env mock behavior
-    process.env.NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID = mockEnvironmentId;
-    process.env.NEXT_PUBLIC_FLAGSMITH_API_URL = mockApiUrl;
-
-    // Setup flagsmith instance mock using the factory
-    const mockFlagsmithInstance = mockFlagsmithInstanceFactory();
-    mockCreateFlagsmithInstance.mockReturnValue(
-      mockFlagsmithInstance as unknown as IFlagsmith<string, string>,
-    );
+    // process.env.NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID = mockEnvironmentId;
+    // process.env.NEXT_PUBLIC_FLAGSMITH_API_URL = mockApiUrl;
   });
   afterEach(() => {
     currentContext = undefined;
@@ -82,31 +73,6 @@ describe('FlagProvider', () => {
     const { context } = await getFlagsmithContext();
     expect(context).toBeDefined();
     expect(context.error).toBe(mockFlagsmithLoading.error);
-  });
-
-  it('supports configurable mock with props', () => {
-    // Create a mock with custom configuration
-    const customMock = mockFlagsmithInstanceFactory({
-      initialized: true,
-      identifier: 'test-user-123',
-      traits: { role: 'admin', department: 'engineering' },
-      flags: { feature_a: true, feature_b: 'enabled', feature_c: 42 },
-      loadingState: 'loaded',
-    });
-
-    // Verify the mock has the configured values
-    expect(customMock.initialised()).toBe(true);
-    expect(customMock.identity()).toBe('test-user-123');
-    expect(customMock.getAllTraits()).toEqual({
-      role: 'admin',
-      department: 'engineering',
-    });
-    expect(customMock.getAllFlags()).toEqual({
-      feature_a: true,
-      feature_b: 'enabled',
-      feature_c: 42,
-    });
-    expect(customMock.loadingState()).toBe('loaded');
   });
 
   it('renders children wrapped in FlagsmithProvider', async () => {

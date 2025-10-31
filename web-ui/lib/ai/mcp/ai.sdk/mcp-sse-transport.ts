@@ -239,7 +239,10 @@ export class SseMCPTransport implements MCPTransport {
                 }
               }
             } catch (error) {
-              if (error instanceof Error && error.name === 'AbortError') {
+              if (
+                (error instanceof Error && error.name === 'AbortError') ||
+                (error instanceof TypeError && error.message === 'terminated')
+              ) {
                 resolve();
                 return;
               }
@@ -253,7 +256,7 @@ export class SseMCPTransport implements MCPTransport {
             }
           };
 
-          await processEvents();
+          processEvents();
         } catch (error) {
           if (isAbortError(error)) {
             // no-op

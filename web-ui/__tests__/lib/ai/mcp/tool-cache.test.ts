@@ -5,27 +5,22 @@
 
 import { MCPToolCache, serializeCacheEntry } from '@/lib/ai/mcp/cache';
 import { ToolSet } from 'ai';
-import type { ToolProviderFactoryOptions } from '../../../../lib/ai/mcp/types';
+import type { ToolProviderFactoryOptions } from '@/lib/ai/mcp/types';
 import z from 'zod';
+import { createAutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 
 // Mock Redis and logger
-jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
-jest.mock('@/lib/logger');
+jest.mock('@/lib/redis-client');
 jest.mock('@/lib/react-util/errors/logged-error');
 
-import {
-  getRedisClient,
-  type RedisClientType,
-} from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { getRedisClient, type RedisClientType } from '@/lib/redis-client';
 
 const mockRedisClient = {
   get: jest.fn(),
   setEx: jest.fn(),
   del: jest.fn(),
   keys: jest.fn(),
-}; //as unknown as ReturnType<typeof getRedisClient> extends Promise<infer T>
-//? T
-//: never;
+};
 
 // Override the mocked getRedisClient to return our mock
 jest
@@ -59,6 +54,23 @@ describe('MCPToolCache', () => {
   };
 
   beforeEach(() => {
+    (createAutoRefreshFeatureFlag as jest.Mock).mockImplementation(
+      async (options) => {
+        if (options.key === 'mcp_cache_tools') {
+          return {
+            key: options.key,
+            userId: options.userId ?? 'server',
+            value: true,
+          };
+        }
+        return {
+          key: options.key,
+          userId: options.userId ?? 'server',
+          value: options.initialValue ?? false,
+        };
+      },
+    );
+
     // Use fake timers for all tests
     jest.useFakeTimers();
     // Set a consistent starting time

@@ -2,7 +2,6 @@
  * @jest-environment node
  */
 
- 
 /**
  * Offline token cache lifecycle tests for ImpersonationThirdParty
  * - Uses Redis + CryptoService mocks to simulate encrypted cached refresh token
@@ -85,7 +84,7 @@ const redisClient = {
   get: jest.fn(),
   setEx: jest.fn(),
 };
-jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client', () => ({
+jest.mock('@/lib/redis-client', () => ({
   getRedisClient: jest.fn(async () => redisClient),
 }));
 
@@ -166,7 +165,6 @@ describe('ImpersonationThirdParty - offline token cache lifecycle', () => {
 
     const {
       ImpersonationThirdParty,
-       
     } = require('@/lib/auth/impersonation/impersonation.thirdparty');
     const svc = await ImpersonationThirdParty.fromRequest({
       session: {

@@ -1,6 +1,6 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@/lib/site-util/env';
-import { log } from '@/lib/logger';
+import { log, safeSerialize } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest, NextResponse } from 'next/server';
 import {
@@ -85,7 +85,7 @@ export const wrapRouteRequest = <
               : Promise.resolve({} as Record<string, unknown>));
             const url = (req as unknown as Request)?.url ?? '<no-req>';
             span.setAttribute('request.url', url);
-            span.setAttribute('route.params', safeStringify(extractedParams));
+            span.setAttribute('route.params', safeSerialize(extractedParams));
             log((l) =>
               l.info(`Processing route request [${url}]`, {
                 args: JSON.stringify(extractedParams),
@@ -208,8 +208,8 @@ const getRequestSpanInit = async (
     'request.path': path,
     'request.query': query,
     'http.method': method,
-    'route.params': safeStringify(routeParams),
-    'request.headers': safeStringify(sanitizedHeaders),
+    'route.params': safeSerialize(routeParams),
+    'request.headers': safeSerialize(sanitizedHeaders),
   };
   return { attributes, parentCtx: extracted };
 };
@@ -279,14 +279,6 @@ const sanitizeHeaders = (
     out[k] = redacted.has(k) ? '***' : v;
   }
   return out;
-};
-
-const safeStringify = (value: unknown): string => {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return '<unserializable>';
-  }
 };
 
 export const createInstrumentedSpan = async ({

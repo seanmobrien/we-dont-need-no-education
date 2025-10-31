@@ -1,4 +1,4 @@
-import { getRedisClient } from '../cacheWithRedis/redis-client';
+import { getRedisClient } from '@/lib/redis-client';
 import type { RateLimitedRequest, ProcessedResponse } from './types';
 
 const REDIS_PREFIX = 'rate-limit';

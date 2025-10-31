@@ -6,16 +6,6 @@
  * - openid-client for OIDC discovery and token exchange
  * - got + tough-cookie for HTTP with cookie jar (impersonation + authorize redirects)
  */
-
-import KeycloakAdminClient from '@keycloak/keycloak-admin-client';
-import {
-  discovery,
-  buildAuthorizationUrl,
-  authorizationCodeGrant,
-  randomState,
-  randomNonce,
-  type Configuration as OIDCConfiguration,
-} from 'openid-client';
 import { got } from 'got';
 import { CookieJar } from 'tough-cookie';
 import { env } from '@/lib/site-util/env';
@@ -30,7 +20,7 @@ import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { SystemTokenStore } from './system-token-store';
 import { Session, User } from 'next-auth';
 import { keycloakAdminClientFactory } from '../keycloak-factories';
-
+import type { KeycloakAdminClient } from '../keycloak-factories';
 interface TokenResponse {
   access_token: string;
   token_type?: string;
@@ -76,6 +66,36 @@ const adminBaseFromIssuer = (
   }
 };
 
+let openIdClientModule: {
+  discovery: Function;
+  buildAuthorizationUrl: Function;
+  authorizationCodeGrant: Function;
+  randomState: Function;
+  randomNonce: Function;
+} | null = null;
+//type Configuration as OIDCConfiguration
+
+const getOpenIdClientModule = () => {
+  if (openIdClientModule) {
+    return openIdClientModule;
+  }
+  const {
+    discovery,
+    buildAuthorizationUrl,
+    authorizationCodeGrant,
+    randomState,
+    randomNonce,
+  } = require('openid-client');
+  openIdClientModule = {
+    discovery,
+    buildAuthorizationUrl,
+    authorizationCodeGrant,
+    randomState,
+    randomNonce,
+  };
+  return openIdClientModule;
+};
+
 // no-op: query builder not needed with openid-client's authorizationUrl
 
 /**
@@ -85,7 +105,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
   private readonly userContext: UserContext;
   private readonly config: ThirdPartyConfig;
   private kcAdmin?: KeycloakAdminClient;
-  private oidcConfig?: OIDCConfiguration;
+  private oidcConfig?: any;
   private cookieJar?: CookieJar;
   private cachedToken?: string;
   private tokenExpiry?: Date;
@@ -140,6 +160,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
         email: user.email || undefined,
         name: user.name || undefined,
         accountId: 'account_id' in user ? user.account_id : undefined,
+        hash: user.hash || undefined,
       };
       if (!userContext.email) return undefined;
 
@@ -164,7 +185,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
 
   private async initializeClients(): Promise<void> {
     // OIDC discovery and client
-    this.oidcConfig = await discovery(
+    this.oidcConfig = await getOpenIdClientModule().discovery(
       new URL(this.config.issuer),
       this.config.clientId,
       this.config.clientSecret,
@@ -357,10 +378,12 @@ export class ImpersonationThirdParty implements ImpersonationService {
     if (!this.oidcConfig || !this.cookieJar)
       throw new Error('OIDC config/cookieJar not initialized');
 
-    const state = randomState();
-    const nonce = randomNonce();
+    const openIdClient = getOpenIdClientModule();
 
-    const authorizeUrl = buildAuthorizationUrl(this.oidcConfig, {
+    const state = openIdClient.randomState();
+    const nonce = openIdClient.randomNonce();
+
+    const authorizeUrl = openIdClient.buildAuthorizationUrl(this.oidcConfig, {
       redirect_uri: this.config.redirectUri,
       scope: 'openid',
       response_type: 'code',
@@ -389,10 +412,14 @@ export class ImpersonationThirdParty implements ImpersonationService {
       );
 
     const currentUrl = new URL(location, this.config.redirectUri);
-    const token = await authorizationCodeGrant(this.oidcConfig, currentUrl, {
-      expectedState: state,
-      expectedNonce: nonce,
-    });
+    const token = await openIdClient.authorizationCodeGrant(
+      this.oidcConfig,
+      currentUrl,
+      {
+        expectedState: state,
+        expectedNonce: nonce,
+      },
+    );
 
     return {
       access_token: token.access_token as string,

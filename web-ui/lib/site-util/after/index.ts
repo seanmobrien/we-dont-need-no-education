@@ -26,7 +26,6 @@ interface GlobalAfterRegistry {
   [AFTER_MANAGER_KEY]?: AfterManager;
 }
 
-
 export default class AfterManager {
   /** Default timeout (ms) for waiting on registered handlers to complete */
   static readonly #TIMEOUT = 7500;
@@ -100,7 +99,6 @@ export default class AfterManager {
    * @private
    */
   async #start(): Promise<void> {
-    console.warn('In AfterManager::start', getStackTrace());
     AfterManager.asBranded(AfterManager.#teardown);
     if (!AfterManager.#prexit) {
       try {

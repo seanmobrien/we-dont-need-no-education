@@ -70,6 +70,10 @@ await MCPToolCacheAdmin.clearCache();
 // Health check
 const health = await MCPToolCacheAdmin.healthCheck();
 console.log('Cache healthy:', health.healthy);
+
+// Direct cache access (advanced)
+const cache = await getToolCache();
+const stats = await cache.getStats();
 ```
 
 ### Environment Configuration
@@ -157,16 +161,6 @@ console.log({
 ```typescript
 const health = await MCPToolCacheAdmin.healthCheck();
 // Returns: { healthy: boolean, details: {...} }
-```
-
-### Cache Warming
-
-```typescript
-// Pre-populate cache with common configurations
-await MCPToolCacheAdmin.warmCache([
-  { url: 'https://common-server.com/mcp', allowWrite: false },
-  { url: 'https://admin-server.com/mcp', allowWrite: true },
-]);
 ```
 
 ## Error Handling
