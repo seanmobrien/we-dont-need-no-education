@@ -25,7 +25,14 @@ export type ConnectionConfig = {
 };
 
 export type KeycloakAdminClient = {
-  users: unknown;
+  users: {
+    find(query: {
+      username?: string;
+      email?: string;
+      search?: string;
+      exact?: boolean;
+    }): Promise<Array<{ id: string; username?: string; email?: string }>>;
+  };
   userStorageProvider: unknown;
   groups: unknown;
   roles: unknown;

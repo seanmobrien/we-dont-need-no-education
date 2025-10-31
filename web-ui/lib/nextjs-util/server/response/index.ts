@@ -50,28 +50,68 @@ export class FetchResponse {
   }
 }
 
-export function makeResponse(v: {
+export default FetchResponse;
+
+export const makeResponse = (v: {
   body: Buffer;
   headers: Record<string, string>;
   statusCode: number;
-}): Response {
+}): Response => {
   const resp = new FetchResponse(v.body, {
     status: v.statusCode,
     headers: v.headers,
   });
   return resp as unknown as Response;
-}
+};
 
-export default FetchResponse;
+/**
+ * Create a JSON Response-like object similar to NextResponse.json().
+ * Automatically sets Content-Type to application/json and serializes the body.
+ *
+ * @param data - The data to serialize as JSON
+ * @param init - Optional ResponseInit with status, statusText, and headers
+ * @returns A WHATWG-compliant Response object
+ *
+ * @example
+ * ```typescript
+ * // Simple JSON response
+ * const response = makeJsonResponse({ message: 'Hello' });
+ *
+ * // With custom status and headers
+ * const response = makeJsonResponse(
+ *   { error: 'Not found' },
+ *   { status: 404, headers: { 'X-Custom': 'value' } }
+ * );
+ * ```
+ */
+export const makeJsonResponse = (
+  data: unknown,
+  init?: ResponseInit,
+): Response => {
+  const jsonBody = JSON.stringify(data);
+  const bodyBuffer = Buffer.from(jsonBody, 'utf8');
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...((init?.headers as Record<string, string>) ?? {}),
+  };
+
+  const resp = new FetchResponse(bodyBuffer, {
+    status: init?.status ?? 200,
+    headers,
+  });
+
+  return resp as unknown as Response;
+};
 
 /**
  * Create a Response-like wrapper around a stream.Readable.
  * The returned object exposes .stream() to get the Readable, and minimal metadata.
  */
-export function makeStreamResponse(
+export const makeStreamResponse = (
   stream: Readable,
   init: { status?: number; headers?: Record<string, string> } = {},
-): Response {
+): Response => {
   const headers = new Headers();
   for (const [k, v] of Object.entries(init.headers ?? {})) headers.append(k, v);
   const resp: {
@@ -108,4 +148,4 @@ export function makeStreamResponse(
     },
   };
   return resp as unknown as Response;
-}
+};

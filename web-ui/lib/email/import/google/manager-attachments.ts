@@ -2,6 +2,7 @@ import { ImportStage } from '@/data-models/api/import/email-message';
 import { AdditionalStageOptions, StageProcessorContext } from '../types';
 import { log } from '@/lib/logger';
 import { TransactionalStateManagerBase } from '../default/transactional-statemanager';
+import { Semaphore, SemaphoreManager } from '@/lib/nextjs-util/semaphore-manager';
 
 import { getQueuedAttachment } from './attachment-download';
 import {
@@ -23,14 +24,45 @@ type AttachmentImportResult =
     };
 
 class AttachmentStateManager extends TransactionalStateManagerBase {
+  readonly #stagedAttachmentRepository: StagedAttachmentRepository;
+  readonly #attachmentRepository = new EmailAttachmentRepository();
+  private readonly semaphoreManager: SemaphoreManager;
+
   constructor(stage: ImportStage, options: AdditionalStageOptions) {
     super(stage, options);
     this.#stagedAttachmentRepository =
       options.stagedAttachmentRepository ?? new StagedAttachmentRepository();
+
+    // Initialize semaphore with 5 concurrent downloads (conservative limit)
+    // This prevents resource exhaustion with large emails containing many attachments
+    this.semaphoreManager = new SemaphoreManager(new Semaphore(5));
+
+    log((l) =>
+      l.info({
+        message: 'AttachmentStateManager initialized with concurrency control',
+        source: 'AttachmentStateManager',
+        maxConcurrentDownloads: 5,
+      }),
+    );
+  }
+  /**
+   * Process attachment with semaphore-controlled concurrency.
+   * Wraps processAttachment with acquire/release to limit concurrent downloads.
+   */
+  private async processAttachmentWithLimit(
+    context: StageProcessorContext,
+    record: StagedAttachment,
+  ): Promise<AttachmentImportResult> {
+    const sem = this.semaphoreManager.sem;
+    await sem.acquire();
+
+    try {
+      return await this.processAttachment(context, record);
+    } finally {
+      sem.release();
+    }
   }
 
-  readonly #stagedAttachmentRepository: StagedAttachmentRepository;
-  readonly #attachmentRepository = new EmailAttachmentRepository();
   async processAttachment(
     context: StageProcessorContext,
     record: StagedAttachment,
@@ -118,16 +150,44 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
       return context;
     }
 
-    const allPromises = (
-      await this.#stagedAttachmentRepository.getForMessage(target.id!)
-    ).map((attachment) =>
-      this.processAttachment(context, {
+    const attachments = await this.#stagedAttachmentRepository.getForMessage(
+      target.id!,
+    );
+
+    // Log processing start with semaphore state
+    const state = this.semaphoreManager.sem.getState();
+    log((l) =>
+      l.info({
+        message: 'Starting attachment processing with concurrency control',
+        source: 'AttachmentStateManager',
+        attachmentCount: attachments.length,
+        maxConcurrent: state.maxConcurrency,
+      }),
+    );
+
+    // Process with concurrency limit via semaphore
+    const allPromises = attachments.map((attachment) =>
+      this.processAttachmentWithLimit(context, {
         ...attachment,
         stagedMessageId: attachment.stagedMessageId ?? target.id!,
       }),
     );
 
     const result = await Promise.all(allPromises);
+
+    // Log completion with final state
+    const finalState = this.semaphoreManager.sem.getState();
+    log((l) =>
+      l.info({
+        message: 'Attachment processing completed',
+        source: 'AttachmentStateManager',
+        totalAttachments: result.length,
+        successCount: result.filter((r) => r.status === 'success').length,
+        errorCount: result.filter((r) => r.status === 'error').length,
+        finalSemaphoreState: finalState,
+      }),
+    );
+
     if (result.some((r) => r.status === 'error')) {
       log((l) =>
         l.error({
@@ -140,6 +200,20 @@ class AttachmentStateManager extends TransactionalStateManagerBase {
     }
 
     return context;
+  }
+
+  /**
+   * Get current processing status for monitoring.
+   * Returns semaphore state for observability.
+   */
+  getProcessingStatus() {
+    const state = this.semaphoreManager.sem.getState();
+    return {
+      activeDownloads: state.activeOperations,
+      queuedDownloads: state.waitingCount,
+      maxConcurrent: state.maxConcurrency,
+      availableSlots: state.availableSlots,
+    };
   }
 }
 

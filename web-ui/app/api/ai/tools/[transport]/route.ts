@@ -284,7 +284,7 @@ const mcpHandler = createMcpHandler(
 const handler = wrapRouteRequest(
   async (
     req: NextRequest,
-    context: { params: Promise<{ transport: string[] }> },
+    context: { params: Promise<{ transport: string }> },
   ) => {
     const { transport: transportFromProps } = await context.params;
     const transport = Array.isArray(transportFromProps)
@@ -292,6 +292,7 @@ const handler = wrapRouteRequest(
       : transportFromProps;
     const token = await extractToken(req);
     if (!token) {
+      log((l) => l.warn({ message: `Unauthorized access attempt`, transport }));
       throw new ApiRequestError(
         'Unauthorized',
         unauthorizedServiceResponse({
@@ -322,7 +323,7 @@ const handler = wrapRouteRequest(
         }),
       );
     }
-    log((l) => l.debug('MCP Tool route called', { transport }));
+    log((l) => l.debug('Calling MCP Tool route.', { transport }));
     return await mcpHandler(req);
   },
   { log: true },

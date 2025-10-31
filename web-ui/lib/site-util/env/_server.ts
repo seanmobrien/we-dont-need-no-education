@@ -127,6 +127,8 @@ const buildRawInstance = () => {
     /** Keycloak impersonator offline token for user impersonation tokens (optional). Example: admin */
     AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN:
       process.env.AUTH_KEYCLOAK_IMPERSONATOR_OFFLINE_TOKEN,
+    /** Keycloak OAuth scope for authentication. Example: 'openid profile email roles mcp-tool' */
+    AUTH_KEYCLOAK_SCOPE: process.env.AUTH_KEYCLOAK_SCOPE,
     /** Redis connection URL for caching and session storage. Example: 'redis://localhost:6379' */
     REDIS_URL: process.env.REDIS_URL,
     /** Redis password for authentication. Example: 'redis-secret-password' */
@@ -405,6 +407,13 @@ const serverEnvSchema = z
       .optional()
       .describe(
         'Keycloak issuer URL for token validation. Default: development instance (optional). Example: https://auth.example.com/realms/myrealm',
+      ),
+    AUTH_KEYCLOAK_SCOPE: z
+      .string()
+      .optional()
+      .default('openid profile email roles mcp_tool')
+      .describe(
+        'Keycloak OAuth scope for authentication (optional). Example: openid profile email roles mcp-tool',
       ),
     AUTH_KEYCLOAK_IMPERSONATION_AUDIENCE: z
       .string()
