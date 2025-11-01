@@ -1,3 +1,5 @@
+import { SingletonProvider } from '../typescript';
+
 type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 export interface RequestArgs {
   method: Method;
@@ -31,7 +33,7 @@ export type KeycloakAdminClient = {
       email?: string;
       search?: string;
       exact?: boolean;
-    }): Promise<Array<{ id: string; username?: string; email?: string }>>;
+    }): Promise<Array<{ id?: string; username?: string; email?: string }>>;
   };
   userStorageProvider: unknown;
   groups: unknown;
@@ -63,30 +65,18 @@ export type KeycloakAdminClient = {
   setConfig(connectionConfig: ConnectionConfig): void;
 };
 
-let KeycloakAdminClientImpl: any = null;
-
-/**
- * Create a configured Keycloak Admin client.
- *
- * This factory wraps the KeycloakAdminClient constructor and provides a single
- * place to create clients in the codebase. The passed `config` object is
- * forwarded directly to the upstream Keycloak admin client library.
- *
- * @param {ConnectionConfig} config - Connection settings for the Keycloak Admin client.
- * @returns {KeycloakAdminClient} An initialized Keycloak admin client instance.
- *
- * @example
- * ```ts
- * import { keycloakAdminClientFactory } from '@/lib/auth/keycloak-factories';
- * const client = keycloakAdminClientFactory({ baseUrl: 'https://auth', realmName: 'master' });
- * ```
- */
-export const keycloakAdminClientFactory = (
+export const keycloakAdminClientFactory = async (
   config: ConnectionConfig,
-): KeycloakAdminClient => {
-  if (!KeycloakAdminClientImpl) {
-    KeycloakAdminClientImpl =
-      require('@keycloak/keycloak-admin-client').default;
-  }
-  return new KeycloakAdminClientImpl(config);
+): Promise<KeycloakAdminClient> => {
+  const keycloakAdminClientModule =
+    await SingletonProvider.Instance.getOrCreate(
+      Symbol.for(
+        '@no-education/dynamic-modules/@keycloak/keycloak-admin-client',
+      ),
+      async () => {
+        const module = await import('@keycloak/keycloak-admin-client');
+        return module;
+      },
+    );
+  return new keycloakAdminClientModule.default(config);
 };

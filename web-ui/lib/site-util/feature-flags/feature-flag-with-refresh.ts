@@ -2,8 +2,14 @@ import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { getFeatureFlag } from './server';
 import { log } from '@/lib/logger/core';
 import { auth } from '@/auth';
-import { FeatureFlagValueType, KnownFeatureType } from './known-feature';
+import {
+  AllFeatureFlagsDefault,
+  FeatureFlagValueType,
+  isKnownFeatureType,
+  KnownFeatureType,
+} from './known-feature';
 import fastEqual from 'fast-deep-equal/es6';
+import { SingletonProvider } from '@/lib/typescript/singleton-provider';
 
 const DEFAULT_TTL_MS = 3 * 60 * 1000; // 3 minutes
 
@@ -237,6 +243,49 @@ export const createAutoRefreshFeatureFlagSync = <T extends KnownFeatureType>(
   options: AutoRefreshFeatureFlagOptions<T>,
 ): AutoRefreshFeatureFlag<T> =>
   AutoRefreshFeatureFlagImpl.createSync<T>(options);
+
+export type WellKnownFlagBrand =
+  `@no-education/features-flags/auto-refresh/${KnownFeatureType}::${string}`;
+
+export const wellKnownFlag = <T extends KnownFeatureType>(
+  key: T,
+  salt?: string,
+): Promise<AutoRefreshFeatureFlag<T>> => {
+  if (!isKnownFeatureType(key)) {
+    throw new TypeError(`Invalid KnownFeatureType key: ${String(key)}`);
+  }
+  const sym = Symbol(
+    `@no-education/features-flags/auto-refresh/${key}::${salt ?? '--no-salt--'}`,
+  );
+  const provider = SingletonProvider.Instance;
+  return provider.getOrCreate(sym, () =>
+    createAutoRefreshFeatureFlag<T>({
+      key: key,
+      userId: salt ?? 'server',
+      initialValue: AllFeatureFlagsDefault[key] as FeatureFlagValueType<T>,
+    }),
+  );
+};
+
+export const wellKnownFlagSync = <T extends KnownFeatureType>(
+  key: T,
+  salt?: string,
+): AutoRefreshFeatureFlag<T> => {
+  if (!isKnownFeatureType(key)) {
+    throw new TypeError(`Invalid KnownFeatureType key: ${String(key)}`);
+  }
+  const sym = Symbol(
+    `@no-education/features-flags/auto-refresh/${key}::${salt ?? '--no-salt--'}`,
+  );
+  const provider = SingletonProvider.Instance;
+  return provider.getOrCreate(sym, () =>
+    createAutoRefreshFeatureFlagSync<T>({
+      key: key,
+      userId: salt ?? 'server',
+      initialValue: AllFeatureFlagsDefault[key] as FeatureFlagValueType<T>,
+    }),
+  );
+};
 
 /*
 While a neat idea, it's a bit magical, and being honest crashed the server,

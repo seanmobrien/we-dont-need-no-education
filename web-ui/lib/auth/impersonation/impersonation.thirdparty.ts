@@ -198,7 +198,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
         'ImpersonationThirdParty: unable to parse realm from issuer',
       );
     const { origin, realm } = parsed;
-    this.kcAdmin = keycloakAdminClientFactory({
+    this.kcAdmin = await keycloakAdminClientFactory({
       baseUrl: origin,
       realmName: realm,
     });

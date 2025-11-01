@@ -231,61 +231,6 @@ const onMcpEvent = (event: McpEvent, ...args: unknown[]) => {
   }
 };
 
-const mcpHandler = createMcpHandler(
-  (server) => {
-    log((l) =>
-      l.info('=== MCP Handler: Server callback called ===', {
-        serverInfo: safeSerialize.serverDescriptor(server),
-      }),
-    );
-    console.log('=== Registering MCP tools ===');
-    server.registerTool(
-      'playPingPong',
-      pingPongToolConfig,
-      pingPongToolCallback,
-    );
-    server.registerTool(
-      'searchPolicyStore',
-      searchPolicyStoreConfig,
-      searchPolicyStore,
-    );
-    server.registerTool('searchCaseFile', searchCaseFileConfig, searchCaseFile);
-    server.registerTool(
-      'getMultipleCaseFileDocuments',
-      getMultipleCaseFileDocumentsConfig,
-      getMultipleCaseFileDocuments,
-    );
-    server.registerTool(
-      'getCaseFileDocumentIndex',
-      getCaseFileDocumentIndexConfig,
-      getCaseFileDocumentIndex,
-    );
-    server.registerTool(
-      'amendCaseFileDocument',
-      amendCaseRecordConfig,
-      amendCaseRecord,
-    );
-    server.registerTool(
-      SEQUENTIAL_THINKING_TOOL_NAME,
-      sequentialThinkingCallbackConfig,
-      sequentialThinkingCallback,
-    );
-    server.registerTool('createTodo', createTodoConfig, createTodoCallback);
-    server.registerTool('getTodos', getTodosConfig, getTodosCallback);
-    server.registerTool('updateTodo', updateTodoConfig, updateTodoCallback);
-    server.registerTool('toggleTodo', toggleTodoConfig, toggleTodoCallback);
-    server.server.onerror = makeErrorHandler(server, 'server');
-  },
-  {},
-  {
-    redisUrl: process.env.REDIS_URL,
-    basePath: '/api/ai/tools/',
-    maxDuration: 60 * 5 * 1000, // 15 minutes
-    verboseLogs: true,
-    // onEvent: onMcpEvent,
-  },
-);
-
 const handler = wrapRouteRequest(
   async (
     req: NextRequest,
@@ -329,6 +274,65 @@ const handler = wrapRouteRequest(
       );
     }
     log((l) => l.debug('Calling MCP Tool route.', { transport }));
+
+    const mcpHandler = createMcpHandler(
+      (server) => {
+        log((l) =>
+          l.info('=== MCP Handler: Server callback called ===', {
+            serverInfo: safeSerialize.serverDescriptor(server),
+          }),
+        );
+        console.log('=== Registering MCP tools ===');
+        server.registerTool(
+          'playPingPong',
+          pingPongToolConfig,
+          pingPongToolCallback,
+        );
+        server.registerTool(
+          'searchPolicyStore',
+          searchPolicyStoreConfig,
+          searchPolicyStore,
+        );
+        server.registerTool(
+          'searchCaseFile',
+          searchCaseFileConfig,
+          searchCaseFile,
+        );
+        server.registerTool(
+          'getMultipleCaseFileDocuments',
+          getMultipleCaseFileDocumentsConfig,
+          getMultipleCaseFileDocuments,
+        );
+        server.registerTool(
+          'getCaseFileDocumentIndex',
+          getCaseFileDocumentIndexConfig,
+          getCaseFileDocumentIndex,
+        );
+        server.registerTool(
+          'amendCaseFileDocument',
+          amendCaseRecordConfig,
+          amendCaseRecord,
+        );
+        server.registerTool(
+          SEQUENTIAL_THINKING_TOOL_NAME,
+          sequentialThinkingCallbackConfig,
+          sequentialThinkingCallback,
+        );
+        server.registerTool('createTodo', createTodoConfig, createTodoCallback);
+        server.registerTool('getTodos', getTodosConfig, getTodosCallback);
+        server.registerTool('updateTodo', updateTodoConfig, updateTodoCallback);
+        server.registerTool('toggleTodo', toggleTodoConfig, toggleTodoCallback);
+        server.server.onerror = makeErrorHandler(server, 'server');
+      },
+      {},
+      {
+        redisUrl: process.env.REDIS_URL,
+        basePath: '/api/ai/tools/',
+        maxDuration: 60 * 5 * 1000, // 15 minutes
+        verboseLogs: true,
+        // onEvent: onMcpEvent,
+      },
+    );
 
     // Call mcpHandler directly without await - it manages the SSE stream itself
     return mcpHandler(req);

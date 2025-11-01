@@ -77,7 +77,7 @@ jest.mock('@/lib/auth/keycloak-factories', () => {
   };
   return {
     keycloakAdminClientFactory: jest.fn().mockImplementation(() => {
-      return kcAdminMock;
+      return Promise.resolve(kcAdminMock);
     }),
   };
 });

@@ -7,13 +7,20 @@ import { MCPToolCache, serializeCacheEntry } from '@/lib/ai/mcp/cache';
 import { ToolSet } from 'ai';
 import type { ToolProviderFactoryOptions } from '@/lib/ai/mcp/types';
 import z from 'zod';
-import { createAutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import {
+  wellKnownFlag,
+  wellKnownFlagSync,
+} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 
 // Mock Redis and logger
 jest.mock('@/lib/redis-client');
 jest.mock('@/lib/react-util/errors/logged-error');
 
 import { getRedisClient, type RedisClientType } from '@/lib/redis-client';
+import {
+  AllFeatureFlagsDefault,
+  KnownFeatureType,
+} from '@/lib/site-util/feature-flags';
 
 const mockRedisClient = {
   get: jest.fn(),
@@ -54,19 +61,35 @@ describe('MCPToolCache', () => {
   };
 
   beforeEach(() => {
-    (createAutoRefreshFeatureFlag as jest.Mock).mockImplementation(
-      async (options) => {
-        if (options.key === 'mcp_cache_tools') {
+    (wellKnownFlag as jest.Mock).mockImplementation(
+      async (key: KnownFeatureType, salt?: string) => {
+        if (key === 'mcp_cache_tools') {
           return {
-            key: options.key,
-            userId: options.userId ?? 'server',
+            key,
+            userId: salt ?? 'server',
             value: true,
           };
         }
         return {
-          key: options.key,
-          userId: options.userId ?? 'server',
-          value: options.initialValue ?? false,
+          key,
+          userId: salt ?? 'server',
+          value: AllFeatureFlagsDefault[key],
+        };
+      },
+    );
+    (wellKnownFlagSync as jest.Mock).mockImplementation(
+      (key: KnownFeatureType, salt?: string) => {
+        if (key === 'mcp_cache_tools') {
+          return {
+            key,
+            userId: salt ?? 'server',
+            value: true,
+          };
+        }
+        return {
+          key,
+          userId: salt ?? 'server',
+          value: AllFeatureFlagsDefault[key],
         };
       },
     );

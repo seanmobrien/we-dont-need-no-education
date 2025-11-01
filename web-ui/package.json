@@ -8,7 +8,7 @@
   "type": "module",
   "packageManager": "yarn@1.22.22",
   "engines": {
-    "node": "22.x",
+    "node": "24.x",
     "yarn": ">=1.22.0"
   },
   "scripts": {

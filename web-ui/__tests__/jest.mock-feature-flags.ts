@@ -297,6 +297,8 @@ jest.mock('@/lib/site-util/feature-flags/feature-flag-with-refresh', () => {
         return createAutoRefreshFlagImpl(options);
       },
     ),
+    wellKnownFlag: jest.fn(originalModule.wellKnownFlag),
+    wellKnownFlagSync: jest.fn(originalModule.wellKnownFlagSync),
   };
 });
 
@@ -309,8 +311,9 @@ import { createFlagsmithInstance } from 'flagsmith/isomorphic';
 import {
   createAutoRefreshFeatureFlag,
   createAutoRefreshFeatureFlagSync,
+  wellKnownFlag,
+  wellKnownFlagSync,
 } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
-import { mock } from 'node:test';
 
 afterEach(() => {
   const CACHE_ENABLED_FLAG_KEY = Symbol.for(
