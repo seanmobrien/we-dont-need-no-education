@@ -4,8 +4,6 @@ import { log } from '@/lib/logger/core';
 import { auth } from '@/auth';
 import { FeatureFlagValueType, KnownFeatureType } from './known-feature';
 import fastEqual from 'fast-deep-equal/es6';
-import { string } from 'zod/v4';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 
 const DEFAULT_TTL_MS = 3 * 60 * 1000; // 3 minutes
 
