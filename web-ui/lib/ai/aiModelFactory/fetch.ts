@@ -9,10 +9,7 @@ import {
 } from '@/lib/nextjs-util/semaphore-manager';
 type Handler = (...args: unknown[]) => void;
 import { getRedisClient } from '@/lib/redis-client';
-import {
-  makeResponse,
-  makeStreamResponse,
-} from '@/lib/nextjs-util/server/response';
+import { makeResponse } from '@/lib/nextjs-util/server/response';
 import {
   fetchConfigSync,
   type FetchConfig,
