@@ -1,9 +1,18 @@
 export const dynamic = 'force-dynamic';
+export const maxDuration = 300; // 5 minutes for SSE connections
 
 import { log, safeSerialize } from '@/lib/logger';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { createMcpHandler } from 'mcp-handler';
+import {
+  extractToken,
+  KnownScopeIndex,
+  KnownScopeValues,
+  unauthorizedServiceResponse,
+} from '@/lib/auth/utilities';
+import { ApiRequestError } from '@/lib/send-api-request';
+import type { NextRequest } from 'next/server';
 // tool imports
 import {
   searchCaseFile,
@@ -48,14 +57,6 @@ import {
 } from '@/lib/ai/tools/todo';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@/lib/typescript';
-import type { NextRequest } from 'next/server';
-import {
-  extractToken,
-  KnownScopeIndex,
-  KnownScopeValues,
-  unauthorizedServiceResponse,
-} from '@/lib/auth/utilities';
-import { ApiRequestError } from '@/lib/send-api-request';
 
 type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;
@@ -232,7 +233,12 @@ const onMcpEvent = (event: McpEvent, ...args: unknown[]) => {
 
 const mcpHandler = createMcpHandler(
   (server) => {
-    console.log('Registering MCP tools');
+    log((l) =>
+      l.info('=== MCP Handler: Server callback called ===', {
+        serverInfo: safeSerialize.serverDescriptor(server),
+      }),
+    );
+    console.log('=== Registering MCP tools ===');
     server.registerTool(
       'playPingPong',
       pingPongToolConfig,
@@ -267,17 +273,16 @@ const mcpHandler = createMcpHandler(
     server.registerTool('createTodo', createTodoConfig, createTodoCallback);
     server.registerTool('getTodos', getTodosConfig, getTodosCallback);
     server.registerTool('updateTodo', updateTodoConfig, updateTodoCallback);
-    // server.registerTool('deleteTodo', deleteTodoConfig, deleteTodoCallback);
     server.registerTool('toggleTodo', toggleTodoConfig, toggleTodoCallback);
     server.server.onerror = makeErrorHandler(server, 'server');
   },
   {},
   {
     redisUrl: process.env.REDIS_URL,
-    basePath: '/api/ai/tools',
+    basePath: '/api/ai/tools/',
     maxDuration: 60 * 5 * 1000, // 15 minutes
     verboseLogs: true,
-    onEvent: onMcpEvent,
+    // onEvent: onMcpEvent,
   },
 );
 
@@ -324,7 +329,9 @@ const handler = wrapRouteRequest(
       );
     }
     log((l) => l.debug('Calling MCP Tool route.', { transport }));
-    return await mcpHandler(req);
+
+    // Call mcpHandler directly without await - it manages the SSE stream itself
+    return mcpHandler(req);
   },
   { log: true },
 );

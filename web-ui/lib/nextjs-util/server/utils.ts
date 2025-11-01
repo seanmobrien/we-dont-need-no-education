@@ -286,18 +286,24 @@ export const createInstrumentedSpan = async ({
   attributes,
   tracerName = 'app-instrumentation',
   autoLog = true,
+  kind,
 }: {
   tracerName?: string;
   spanName: string;
   attributes?: Record<string, string | number | boolean>;
   autoLog?: boolean;
+  kind?: SpanKind;
 }) => {
   let span: Span | undefined;
 
   try {
     const tracer = trace.getTracer(tracerName);
     const parentContext = otelContext.active();
-    span = tracer.startSpan(spanName, undefined, parentContext);
+    span = tracer.startSpan(
+      spanName,
+      kind ? { kind } : undefined,
+      parentContext,
+    );
 
     // Set attributes if provided
     if (attributes) {

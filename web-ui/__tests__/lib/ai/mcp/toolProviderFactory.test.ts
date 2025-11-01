@@ -164,7 +164,6 @@ describe('toolProviderFactory', () => {
           headers: mockOptions.headers,
           onerror: expect.any(Function),
           onclose: expect.any(Function),
-          onmessage: expect.any(Function),
         }),
       );
     });

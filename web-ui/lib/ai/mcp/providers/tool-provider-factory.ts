@@ -32,25 +32,13 @@ import { InstrumentedSseTransport } from '../instrumented-sse-transport';
 import { FirstParameter, newUuid } from '@/lib/typescript';
 import { clientToolProviderFactory } from './client-tool-provider';
 import { getToolCache } from '../cache';
-import {
-  type AutoRefreshFeatureFlag,
-  createAutoRefreshFeatureFlag,
-} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { getStreamingTransportFlag } from '../tool-flags';
 
 type MCPClientConfig = FirstParameter<typeof createMCPClient>;
 
-let httpStreamEnabledFlag: AutoRefreshFeatureFlag<'mcp_protocol_http_stream'> | null =
-  null;
 const getHttpStreamEnabledFlag = async () => {
-  if (!httpStreamEnabledFlag) {
-    httpStreamEnabledFlag = await await createAutoRefreshFeatureFlag({
-      key: 'mcp_protocol_http_stream',
-      userId: 'server',
-      initialValue: false,
-      load: true,
-    });
-  }
-  return httpStreamEnabledFlag.value;
+  const ret = await getStreamingTransportFlag();
+  return ret.value;
 };
 
 type McpClientOptions = ToolProviderFactoryOptions & {
@@ -89,28 +77,6 @@ const createTransport = async ({
             source: 'MCPClientMessageHandler',
             message: 'MCP Client SSE Close Error',
             critical: true,
-          });
-        }
-      },
-      /**
-       * Handles incoming SSE messages with error protection.
-       * @param {unknown} message - The received SSE message
-       */
-      onmessage(message: unknown) {
-        try {
-          // Handle incoming messages if needed for debugging/monitoring
-          log((l) =>
-            l.info({ message: 'MCP Client SSE Message:', data: message }),
-          );
-        } catch (e) {
-          LoggedError.isTurtlesAllTheWayDownBaby(e, {
-            log: true,
-            source: 'MCPClientMessageHandler',
-            message: 'MCP Client SSE Message Error',
-            critical: true,
-            data: {
-              message,
-            },
           });
         }
       },

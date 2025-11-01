@@ -36,10 +36,6 @@ import { NextRequest } from 'next/server';
 import { fromUserId as fromUser } from '@/lib/auth/impersonation/impersonation-factory';
 import { User } from 'next-auth';
 import { encode, getToken } from 'next-auth/jwt';
-import {
-  AutoRefreshFeatureFlag,
-  createAutoRefreshFeatureFlag,
-} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 import { getMem0EnabledFlag, getStreamingTransportFlag } from '../tool-flags';
 
 /**

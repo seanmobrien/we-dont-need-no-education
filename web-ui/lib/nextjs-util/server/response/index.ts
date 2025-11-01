@@ -1,3 +1,4 @@
+import { isRunningOnServer } from '@/lib/site-util/env';
 import { Readable } from 'stream';
 
 /**
@@ -88,18 +89,27 @@ export const makeJsonResponse = (
   data: unknown,
   init?: ResponseInit,
 ): Response => {
-  const jsonBody = JSON.stringify(data);
-  const bodyBuffer = Buffer.from(jsonBody, 'utf8');
-
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((init?.headers as Record<string, string>) ?? {}),
   };
-
-  const resp = new FetchResponse(bodyBuffer, {
-    status: init?.status ?? 200,
+  const responseInit = {
+    status: init?.status,
     headers,
-  });
+  };
+
+  try {
+    if (isRunningOnServer()) {
+      // In Node.js environment, use NextResponse
+      const { NextResponse } = require('next/server');
+      return NextResponse.json(data, responseInit);
+    }
+  } catch (error) {
+    // fallback to fetchresponse below
+  }
+  const jsonBody = JSON.stringify(data);
+  const bodyBuffer = Buffer.from(jsonBody, 'utf8');
+  const resp = new FetchResponse(bodyBuffer, responseInit);
 
   return resp as unknown as Response;
 };
