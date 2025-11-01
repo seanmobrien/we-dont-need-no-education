@@ -99,7 +99,7 @@
     "mcp-handler": "^1.0.2",
     "mui-markdown": "^2.0.1",
     "next": "^15.5.2",
-    "next-auth": "^5.0.0-beta.25",
+    "next-auth": "^5.0.0-beta.30",
     "node-html-parser": "^7.0.1",
     "openai": "^5.10.2",
     "openai-chat-tokens": "^0.2.8",
