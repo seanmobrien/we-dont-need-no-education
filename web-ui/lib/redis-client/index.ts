@@ -42,7 +42,7 @@ export const getRedisClient = async (
     let promiseQuit: Promise<string> | null = null;
     const originalQuit = client.quit.bind(client);
     let onQuit: (() => Promise<void>) | undefined;
-    client.quit = async (fromInternal?: Symbol) => {
+    client.quit = async (fromInternal?: symbol) => {
       if (!client) {
         if (!promiseQuit) {
           log((l) =>
@@ -87,7 +87,7 @@ export const getRedisClient = async (
         }
         return;
       }
-      await (client.quit as (fromInternal?: Symbol) => Promise<string>)(
+      await (client.quit as (fromInternal?: symbol) => Promise<string>)(
         REGISTRY_KEY,
       );
     };

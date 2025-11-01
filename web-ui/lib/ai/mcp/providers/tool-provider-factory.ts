@@ -113,7 +113,7 @@ const createClient = async ({
   });
 
   // Create MCP client with transport and error handling
-  let mcpClient = await createMCPClient({
+  const mcpClient = await createMCPClient({
     transport,
     /**
      * Handles uncaught errors from the MCP client with nested error protection.
