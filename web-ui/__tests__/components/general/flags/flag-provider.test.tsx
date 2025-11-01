@@ -11,8 +11,6 @@ import {
   useFeatureFlagsContext,
 } from '@/lib/site-util/feature-flags/context';
 
-const mockCreateFlagsmithInstance = createFlagsmithInstance as jest.Mock;
-
 describe('FlagProvider', () => {
   let currentContext: FeatureFlagsApi | undefined = undefined;
   let mockFlagsmithLoading = {
