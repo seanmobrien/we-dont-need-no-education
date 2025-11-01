@@ -4,6 +4,7 @@ import { SessionWithAccountId } from './types';
 import { log } from '../logger/core';
 
 const hashFromServer = async (input: string): Promise<string> => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { createHash } = require('crypto');
   return createHash('sha256').update(input).digest('hex');
 };

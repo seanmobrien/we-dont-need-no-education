@@ -10,10 +10,7 @@ import {
 type Handler = (...args: unknown[]) => void;
 import { getRedisClient } from '@/lib/redis-client';
 import { makeResponse } from '@/lib/nextjs-util/server/response';
-import {
-  fetchConfigSync,
-  type FetchConfig,
-} from '@/lib/site-util/feature-flags/fetch-config';
+import { fetchConfigSync } from '@/lib/site-util/feature-flags/fetch-config';
 import { LoggedError } from '@/lib/react-util';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
 import { log } from '@/lib/logger';
@@ -466,14 +463,15 @@ export class FetchManager {
           }
 
           // Use buffering strategy for non-streaming responses
-          const bufferedResult = await this.bufferingStrategy.handleBufferedResponse(
-            cacheKey,
-            gotStream,
-            headersLower,
-            resHead.statusCode ?? 200,
-            url,
-            span,
-          );
+          const bufferedResult =
+            await this.bufferingStrategy.handleBufferedResponse(
+              cacheKey,
+              gotStream,
+              headersLower,
+              resHead.statusCode ?? 200,
+              url,
+              span,
+            );
           return bufferedResult.response;
         } catch (err) {
           try {

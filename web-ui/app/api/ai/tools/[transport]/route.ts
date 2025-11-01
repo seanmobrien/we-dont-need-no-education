@@ -57,6 +57,7 @@ import {
 } from '@/lib/ai/tools/todo';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@/lib/typescript';
+import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 
 type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;
@@ -275,6 +276,10 @@ const handler = wrapRouteRequest(
     }
     log((l) => l.debug('Calling MCP Tool route.', { transport }));
 
+    const maxDuration = (await wellKnownFlag('mcp_max_duration')).value;
+    const traceLevel = (await wellKnownFlag('mcp_trace_level')).value;
+    const verboseLogs = ['debug', 'verbose', 'silly'].includes(traceLevel);
+
     const mcpHandler = createMcpHandler(
       (server) => {
         log((l) =>
@@ -328,9 +333,9 @@ const handler = wrapRouteRequest(
       {
         redisUrl: process.env.REDIS_URL,
         basePath: '/api/ai/tools/',
-        maxDuration: 60 * 5 * 1000, // 15 minutes
-        verboseLogs: true,
-        // onEvent: onMcpEvent,
+        maxDuration,
+        verboseLogs,
+        onEvent: verboseLogs ? onMcpEvent : undefined,
       },
     );
 

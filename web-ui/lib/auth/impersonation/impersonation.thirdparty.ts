@@ -67,10 +67,15 @@ const adminBaseFromIssuer = (
 };
 
 let openIdClientModule: {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   discovery: Function;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   buildAuthorizationUrl: Function;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   authorizationCodeGrant: Function;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   randomState: Function;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   randomNonce: Function;
 } | null = null;
 //type Configuration as OIDCConfiguration
@@ -85,7 +90,9 @@ const getOpenIdClientModule = () => {
     authorizationCodeGrant,
     randomState,
     randomNonce,
-  } = require('openid-client');
+  } =
+    /*eslint-disable-next-line @typescript-eslint/no-require-imports*/
+    require('openid-client');
   openIdClientModule = {
     discovery,
     buildAuthorizationUrl,
@@ -105,6 +112,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
   private readonly userContext: UserContext;
   private readonly config: ThirdPartyConfig;
   private kcAdmin?: KeycloakAdminClient;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private oidcConfig?: any;
   private cookieJar?: CookieJar;
   private cachedToken?: string;

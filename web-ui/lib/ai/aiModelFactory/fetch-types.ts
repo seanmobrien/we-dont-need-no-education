@@ -9,7 +9,6 @@
  */
 
 import type { LRUCache } from 'lru-cache';
-import type { Readable } from 'stream';
 import type { FetchConfig } from '@/lib/site-util/feature-flags/fetch-config';
 
 /**
@@ -68,6 +67,7 @@ export interface CacheStrategyDeps {
   /** Map tracking inflight requests for deduplication */
   inflightMap: Map<string, Promise<CachedValue>>;
   /** Function to get Redis client */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getRedisClient: () => Promise<any>;
   /** Fetch configuration */
   fetchConfig: () => Required<FetchConfig>;
@@ -112,6 +112,7 @@ export interface BufferingStrategyDeps {
     alreadyBufferedChunks: Buffer[],
   ) => Promise<void>;
   /** Function to get Redis client for caching */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getRedisClient: () => Promise<any>;
   /** Fetch configuration */
   fetchConfig: () => Required<FetchConfig>;

@@ -74,8 +74,8 @@ export const keycloakAdminClientFactory = async (
         '@no-education/dynamic-modules/@keycloak/keycloak-admin-client',
       ),
       async () => {
-        const module = await import('@keycloak/keycloak-admin-client');
-        return module;
+        const mod = await import('@keycloak/keycloak-admin-client');
+        return mod;
       },
     );
   return new keycloakAdminClientModule.default(config);

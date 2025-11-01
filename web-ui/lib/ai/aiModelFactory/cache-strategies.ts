@@ -20,7 +20,6 @@ import type {
   CachedValue,
   SpanLike,
 } from './fetch-types';
-import type { FetchConfig } from '@/lib/site-util/feature-flags/fetch-config';
 
 /**
  * Cache strategies for multi-layer fetch caching

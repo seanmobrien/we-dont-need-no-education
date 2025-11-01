@@ -1,5 +1,4 @@
 import { log } from '@/lib/logger';
-import { getStackTrace } from '@/lib/nextjs-util';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**

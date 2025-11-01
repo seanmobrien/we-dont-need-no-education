@@ -14,11 +14,9 @@ import type {
   ToolProviderSet,
   MCPClient,
 } from '../types';
-import { toolProxyFactory, attachProxyToTool } from '../tools';
+import { toolProxyFactory } from '../tools';
 import {
   experimental_createMCPClient as createMCPClient,
-  HttpChatTransport,
-  MCPTransport,
   Tool,
   ToolSet,
 } from 'ai';
@@ -29,7 +27,7 @@ import {
 } from '@/lib/react-util/utility-methods';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { InstrumentedSseTransport } from '../instrumented-sse-transport';
-import { FirstParameter, newUuid } from '@/lib/typescript';
+import { FirstParameter } from '@/lib/typescript';
 import { clientToolProviderFactory } from './client-tool-provider';
 import { getToolCache } from '../cache';
 import { getStreamingTransportFlag } from '../tool-flags';

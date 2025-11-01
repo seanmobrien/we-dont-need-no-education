@@ -1,3 +1,4 @@
+import { log, safeSerialize } from '@/lib/logger';
 import { isRunningOnServer } from '@/lib/site-util/env';
 import { Readable } from 'stream';
 
@@ -101,11 +102,15 @@ export const makeJsonResponse = (
   try {
     if (isRunningOnServer()) {
       // In Node.js environment, use NextResponse
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { NextResponse } = require('next/server');
       return NextResponse.json(data, responseInit);
     }
-  } catch (error) {
+  } catch (_error) {
     // fallback to fetchresponse below
+    log((l) =>
+      l.warn('cannot use NextResponse from the edge: ', safeSerialize(_error)),
+    );
   }
   const jsonBody = JSON.stringify(data);
   const bodyBuffer = Buffer.from(jsonBody, 'utf8');
