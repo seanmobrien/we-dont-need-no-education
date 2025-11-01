@@ -357,7 +357,7 @@ declare module '@/lib/error-monitoring/types' {
      * Errors with the same fingerprint within this interval will be suppressed.
      * Set to 0 to disable debouncing.
      *
-     * @default 5000 (5 seconds)
+     * @default 60000 (60 seconds)
      */
     debounceIntervalMs: number;
 
