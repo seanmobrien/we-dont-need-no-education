@@ -61,7 +61,7 @@ const getGlobalFlagSync = <T extends KnownFeatureType>(
   createFlag: (() => AutoRefreshFeatureFlag<T>) | FeatureFlagValueType<T>,
 ) => {
   const provider = SingletonProvider.Instance;
-  return provider.getOrCreate(CACHE_ENABLED_FLAG_KEY, () =>
+  return provider.getOrCreate(key, () =>
     typeof createFlag === 'function'
       ? createFlag()
       : createAutoRefreshFeatureFlagSync({
