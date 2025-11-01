@@ -34,6 +34,7 @@ import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { FirstParameter } from '@/lib/typescript';
+import { panelStableStyles } from './styles';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -103,58 +104,6 @@ const generateChatMessageId = (): string => {
   const { id: messageId } = generateChatId();
   return `${threadId}:${messageId}`;
 };
-
-// Stable style objects
-const stableStyles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: 2,
-    width: '100%',
-    height: '100%', // Fill available height instead of viewport
-    boxSizing: 'border-box',
-  } as const,
-  chatInput: {
-    marginBottom: 2,
-    flexShrink: 0,
-    width: '100%',
-  } as const,
-  stack: {
-    flexGrow: 1,
-    overflow: 'hidden',
-    width: '100%',
-    minHeight: 0, // Allow flex shrinking
-    maxHeight: '100%',
-    paddingTop: 0,
-    marginTop: 0,
-  } as const,
-  chatBox: {
-    flex: 1,
-    minHeight: 0,
-    overflow: 'hidden',
-  } as const,
-  placeholderBox: {
-    padding: 2,
-    textAlign: 'center',
-    color: 'text.secondary',
-  } as const,
-  inputAdornmentBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  } as const,
-  statusIconsBox: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 1,
-    width: '100%',
-    marginTop: -1,
-    marginBottom: 1,
-  } as const,
-} as const;
 
 const ChatPanel = ({ page }: { page: string }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -413,7 +362,7 @@ const ChatPanel = ({ page }: { page: string }) => {
       input: {
         endAdornment: (
           <InputAdornment position="end">
-            <Box sx={stableStyles.inputAdornmentBox}>
+            <Box sx={panelStableStyles.inputAdornmentBox}>
               <IconButton
                 edge="end"
                 onClick={onSendClick}
@@ -489,7 +438,7 @@ const ChatPanel = ({ page }: { page: string }) => {
   // Create chat content component
   const chatContent = useMemo(
     () => (
-      <Stack spacing={2} sx={stableStyles.stack}>
+      <Stack spacing={2} sx={panelStableStyles.stack}>
         <TextField
           inputRef={textFieldRef}
           multiline
@@ -498,10 +447,10 @@ const ChatPanel = ({ page }: { page: string }) => {
           placeholder="Type your message here..."
           // onChange={handleInputChangeWithFocusPreservation}
           onKeyDown={handleInputKeyDown}
-          sx={stableStyles.chatInput}
+          sx={panelStableStyles.chatInput}
           slotProps={stableChatInputSlotProps}
         />
-        <Box sx={stableStyles.chatBox}>
+        <Box sx={panelStableStyles.chatBox}>
           <ChatWindow
             messages={messages}
             loading={status === 'submitted'}
@@ -573,7 +522,7 @@ const ChatPanel = ({ page }: { page: string }) => {
   }
 
   return (
-    <Box id={`chat-panel-${threadId}`} sx={stableStyles.container}>
+    <Box id={`chat-panel-${threadId}`} sx={panelStableStyles.container}>
       {chatContent}
     </Box>
   );
