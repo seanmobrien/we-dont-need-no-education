@@ -55,7 +55,6 @@ import { createChatHistoryMiddlewareEx } from '@/lib/ai/middleware/chat-history'
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ChatHistoryContext } from '@/lib/ai/middleware/chat-history/types';
 
-import { schema, drizDb } from '@/lib/drizzle-db';
 
 jest.mock('@/lib/react-util', () => ({
   LoggedError: {
