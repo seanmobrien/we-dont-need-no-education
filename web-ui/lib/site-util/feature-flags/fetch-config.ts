@@ -110,6 +110,10 @@ class FetchConfigManager {
     return Math.max(0, this._refreshAt - Date.now());
   }
 
+  get isInitialized(): boolean {
+    return this._refreshAt > 0;
+  }
+
   /**
    * Refresh configuration value from Flagsmith
    */
@@ -275,7 +279,7 @@ export const fetchConfig = async (): Promise<Required<FetchConfig>> => {
   const manager = getManager();
 
   // If never initialized, do it now
-  if (manager.isStale && manager.ttlRemaining === 0) {
+  if (!manager.isInitialized) {
     return manager.initialize();
   }
 
@@ -313,6 +317,7 @@ export const forceRefreshFetchConfig = async (): Promise<Required<FetchConfig>> 
 export const getFetchConfigStatus = () => {
   const manager = getManager();
   return {
+    isInitialized: manager.isInitialized,
     isStale: manager.isStale,
     ttlRemaining: manager.ttlRemaining,
     lastError: manager.lastError,
