@@ -299,16 +299,20 @@ export const createInstrumentedSpan = async ({
   try {
     const tracer = trace.getTracer(tracerName);
     const parentContext = otelContext.active();
+    
+    // Construct options object with kind and attributes
+    const options: { kind?: SpanKind; attributes?: Attributes } = {};
+    if (kind !== undefined) {
+      options.kind = kind;
+    }
+    if (attributes !== undefined) {
+      options.attributes = attributes;
+    }
+    
     span = tracer.startSpan(
       spanName,
-      kind ? { kind } : undefined,
-      parentContext,
+      Object.keys(options).length > 0 ? options : undefined,
     );
-
-    // Set attributes if provided
-    if (attributes) {
-      span.setAttributes(attributes);
-    }
 
     const contextWithSpan = trace.setSpan(parentContext, span);
 
