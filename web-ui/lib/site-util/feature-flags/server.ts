@@ -23,7 +23,7 @@ const createFlagsmithServerInstance = async (): Promise<
     environmentID: env('FLAGSMITH_SDK_KEY'),
     api: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
     enableAnalytics: true,
-    enableLogs: true,
+    enableLogs: env('NODE_ENV') === 'development',
   });
   flagsmithServer.startListening(REFRESH_INTERVAL);
   return flagsmithServer;

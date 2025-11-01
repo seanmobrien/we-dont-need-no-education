@@ -124,7 +124,7 @@ export class MCPToolCacheAdmin {
  * Environment variable configuration for cache tuning
  */
 export const getCacheEnvConfig = () => {
-  let toolCacheEnabled = getCacheEnabledFlagSync().value;
+  const toolCacheEnabled = getCacheEnabledFlagSync().value;
   return {
     MCP_CACHE_TTL: parseInt(process.env.MCP_CACHE_TTL || '86400'), // 24 hours default
     MCP_CACHE_MAX_MEMORY: parseInt(process.env.MCP_CACHE_MAX_MEMORY || '100'), // 100 entries default
