@@ -2,7 +2,6 @@ import { JWT } from 'next-auth/jwt';
 import { NextAuthUserWithAccountId } from './types';
 import { AdapterUser } from '@auth/core/adapters';
 import { Account } from 'next-auth';
-import { env } from '../site-util/env';
 import { decodeToken } from './utilities';
 import { log } from '../logger';
 
