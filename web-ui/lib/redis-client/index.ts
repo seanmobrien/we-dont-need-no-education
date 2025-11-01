@@ -73,7 +73,7 @@ export const getRedisClient = async (
 
     if (!subscribeMode) {
       // Disable subscribe methods - this ensures error stack traces
-      // point to where the subscribe call hanpppened, not
+      // point to where the subscribe call happened, not
       client.subscribe = subsribeModelDisabled;
       client.pSubscribe = subsribeModelDisabled;
       client.unsubscribe = subsribeModelDisabled;
