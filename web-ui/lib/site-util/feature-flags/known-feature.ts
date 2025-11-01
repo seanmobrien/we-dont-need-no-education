@@ -1,10 +1,14 @@
 export const KnownFeatureValues = [
-  'models_azure',
-  'models_openai',
-  'models_google',
-  'models_defaults',
+  'mem0_mcp_tools_enabled',
   'mcp_cache_tools',
   'mcp_cache_client',
+  'mcp_max_duration',
+  'mcp_protocol_http_stream',
+  'mcp_trace_level',
+  'models_azure',
+  'models_defaults',
+  'models_openai',
+  'models_google',
   'models_fetch_cache_ttl',
   'models_fetch_concurrency',
   'models_fetch_enhanced',
@@ -15,6 +19,12 @@ export const KnownFeatureValues = [
   'health_startup_failure_threshold',
 ] as const;
 export type KnownFeatureType = (typeof KnownFeatureValues)[number];
+
+export const isKnownFeatureType = (check: unknown): check is KnownFeatureType =>
+  !!check &&
+  KnownFeatureValues.some(
+    (value) => String(value) === String(check).toLocaleLowerCase(),
+  );
 export const KnownFeature: Record<KnownFeatureType, KnownFeatureType> =
   KnownFeatureValues.reduce(
     (acc, value) => ({ ...acc, [value]: value }),
@@ -37,6 +47,7 @@ export type FeatureFlagStatus =
 export type AllFeatureFlagStatus = Record<KnownFeatureType, FeatureFlagStatus>;
 
 export const AllFeatureFlagsDefault = {
+  mem0_mcp_tools_enabled: true as boolean,
   models_fetch_cache_ttl: 300 as number,
   models_fetch_concurrency: 8 as number,
   models_fetch_enhanced: true as boolean,
@@ -61,6 +72,9 @@ export const AllFeatureFlagsDefault = {
   },
   mcp_cache_tools: false as boolean,
   mcp_cache_client: true as boolean,
+  mcp_max_duration: (1000 * 60 * 15) as number,
+  mcp_protocol_http_stream: false as boolean,
+  mcp_trace_level: 'warn' as string,
   health_database_cache_ttl: 120 as number,
   health_memory_cache_ttl: 60 as number,
   health_startup_failure_threshold: 10 as number,

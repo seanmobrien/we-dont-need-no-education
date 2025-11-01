@@ -5,27 +5,29 @@
 
 import { MCPToolCache, serializeCacheEntry } from '@/lib/ai/mcp/cache';
 import { ToolSet } from 'ai';
-import type { ToolProviderFactoryOptions } from '../../../../lib/ai/mcp/types';
+import type { ToolProviderFactoryOptions } from '@/lib/ai/mcp/types';
 import z from 'zod';
+import {
+  wellKnownFlag,
+  wellKnownFlagSync,
+} from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 
 // Mock Redis and logger
-jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
-jest.mock('@/lib/logger');
+jest.mock('@/lib/redis-client');
 jest.mock('@/lib/react-util/errors/logged-error');
 
+import { getRedisClient, type RedisClientType } from '@/lib/redis-client';
 import {
-  getRedisClient,
-  type RedisClientType,
-} from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+  AllFeatureFlagsDefault,
+  KnownFeatureType,
+} from '@/lib/site-util/feature-flags';
 
 const mockRedisClient = {
   get: jest.fn(),
   setEx: jest.fn(),
   del: jest.fn(),
   keys: jest.fn(),
-}; //as unknown as ReturnType<typeof getRedisClient> extends Promise<infer T>
-//? T
-//: never;
+};
 
 // Override the mocked getRedisClient to return our mock
 jest
@@ -59,6 +61,39 @@ describe('MCPToolCache', () => {
   };
 
   beforeEach(() => {
+    (wellKnownFlag as jest.Mock).mockImplementation(
+      async (key: KnownFeatureType, salt?: string) => {
+        if (key === 'mcp_cache_tools') {
+          return {
+            key,
+            userId: salt ?? 'server',
+            value: true,
+          };
+        }
+        return {
+          key,
+          userId: salt ?? 'server',
+          value: AllFeatureFlagsDefault[key],
+        };
+      },
+    );
+    (wellKnownFlagSync as jest.Mock).mockImplementation(
+      (key: KnownFeatureType, salt?: string) => {
+        if (key === 'mcp_cache_tools') {
+          return {
+            key,
+            userId: salt ?? 'server',
+            value: true,
+          };
+        }
+        return {
+          key,
+          userId: salt ?? 'server',
+          value: AllFeatureFlagsDefault[key],
+        };
+      },
+    );
+
     // Use fake timers for all tests
     jest.useFakeTimers();
     // Set a consistent starting time

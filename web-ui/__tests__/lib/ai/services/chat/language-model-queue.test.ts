@@ -9,7 +9,7 @@ import { AbortChatMessageRequestError } from '@/lib/ai/services/chat/errors/abor
 import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
 
 // Mock dependencies
-jest.mock('@/lib/ai/middleware/cacheWithRedis/redis-client');
+jest.mock('@/lib/redis-client');
 jest.mock('@/lib/ai/core/count-tokens');
 jest.mock('@/lib/logger');
 

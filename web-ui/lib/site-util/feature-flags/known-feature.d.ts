@@ -122,6 +122,26 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
   export const KnownFeature: Record<KnownFeatureType, KnownFeatureType>;
 
   /**
+   * Type guard to test whether a string is a known feature flag key.
+   *
+   * This helper is useful when validating runtime input (for example, values
+   * received from environment variables, HTTP query parameters, or external
+   * services) before using them with typed feature flag helpers.
+   *
+   * @example
+   * ```typescript
+   * if (isKnownFeatureType(maybeKey)) {
+   *   // TypeScript now knows maybeKey is a KnownFeatureType
+   *   const val: FeatureFlagValueType<typeof maybeKey> = await getFeatureFlag(maybeKey);
+   * }
+   * ```
+   *
+   * @param value - Value to test
+   * @returns `true` when the value is a KnownFeatureType
+   */
+  export function isKnownFeatureType(value: unknown): value is KnownFeatureType;
+
+  /**
    * Discriminated union type representing the possible states of a feature flag.
    *
    * Feature flags can have different value types depending on their purpose:

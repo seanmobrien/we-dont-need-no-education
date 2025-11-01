@@ -1,6 +1,6 @@
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@/lib/site-util/env';
-import { log } from '@/lib/logger';
+import { log, safeSerialize } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import type { NextRequest, NextResponse } from 'next/server';
 import {
@@ -85,7 +85,7 @@ export const wrapRouteRequest = <
               : Promise.resolve({} as Record<string, unknown>));
             const url = (req as unknown as Request)?.url ?? '<no-req>';
             span.setAttribute('request.url', url);
-            span.setAttribute('route.params', safeStringify(extractedParams));
+            span.setAttribute('route.params', safeSerialize(extractedParams));
             log((l) =>
               l.info(`Processing route request [${url}]`, {
                 args: JSON.stringify(extractedParams),
@@ -208,8 +208,8 @@ const getRequestSpanInit = async (
     'request.path': path,
     'request.query': query,
     'http.method': method,
-    'route.params': safeStringify(routeParams),
-    'request.headers': safeStringify(sanitizedHeaders),
+    'route.params': safeSerialize(routeParams),
+    'request.headers': safeSerialize(sanitizedHeaders),
   };
   return { attributes, parentCtx: extracted };
 };
@@ -281,36 +281,31 @@ const sanitizeHeaders = (
   return out;
 };
 
-const safeStringify = (value: unknown): string => {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return '<unserializable>';
-  }
-};
-
 export const createInstrumentedSpan = async ({
   spanName,
   attributes,
   tracerName = 'app-instrumentation',
   autoLog = true,
+  kind,
 }: {
   tracerName?: string;
   spanName: string;
   attributes?: Record<string, string | number | boolean>;
   autoLog?: boolean;
+  kind?: SpanKind;
 }) => {
   let span: Span | undefined;
 
   try {
     const tracer = trace.getTracer(tracerName);
     const parentContext = otelContext.active();
-    span = tracer.startSpan(spanName, undefined, parentContext);
-
-    // Set attributes if provided
-    if (attributes) {
-      span.setAttributes(attributes);
-    }
+    
+    span = tracer.startSpan(
+      spanName,
+      kind !== undefined || attributes !== undefined
+        ? { kind, attributes }
+        : undefined,
+    );
 
     const contextWithSpan = trace.setSpan(parentContext, span);
 

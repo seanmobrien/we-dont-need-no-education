@@ -7,9 +7,11 @@ import {
 import { MCPTransport, MCPClientError } from 'ai';
 import { JSONRPCMessage, JSONRPCMessageSchema } from './json-rpc-message';
 import { fetch } from '@/lib/nextjs-util/fetch';
-import { log } from '@/lib/logger';
+import { log, safeSerialize } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { isAbortError } from '@/lib/react-util/utility-methods';
+import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
+import type { Span } from '@opentelemetry/api';
 
 export class SseMCPTransport implements MCPTransport {
   /** The discovered endpoint URL for sending messages via POST */
@@ -20,14 +22,20 @@ export class SseMCPTransport implements MCPTransport {
   protected url: URL;
   /** Current connection status */
   protected connected = false;
+  /** Flag to prevent multiple simultaneous connection attempts */
+  protected connecting = false;
+  /** Promise for ongoing connection attempt */
+  protected connectionPromise?: Promise<void>;
   /** SSE connection wrapper with close and optional destroy methods */
   protected sseConnection?: {
     close: () => Promise<void>;
     /** Best-effort destroy: free underlying stream resources */
     destroy?: () => Promise<void> | void;
   };
-  /** HTTP headers to include in requests */
-  private headers?: Record<string, string>;
+  /** HTTP headers to include in requests - can be static or async function */
+  private headers?:
+    | Record<string, string>
+    | (() => Promise<Record<string, string>>);
   /**
    * Callback invoked when the connection is closed.
    * @event
@@ -61,27 +69,56 @@ export class SseMCPTransport implements MCPTransport {
     headers,
   }: {
     url: string;
-    headers?: Record<string, string>;
+    headers?: Record<string, string> | (() => Promise<Record<string, string>>);
   }) {
     this.url = new URL(url);
     this.headers = headers;
   }
 
   async start(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      if (this.connected) {
-        return resolve();
-      }
+    // If already connected, resolve immediately
+    if (this.connected) {
+      log((l) =>
+        l.info('SSE Transport already connected, resolving immediately'),
+      );
+      return Promise.resolve();
+    }
 
+    // If a connection is already in progress, wait for it
+    if (this.connecting && this.connectionPromise) {
+      log((l) =>
+        l.info('SSE Transport connection already in progress, waiting...'),
+      );
+      return this.connectionPromise;
+    }
+
+    // Mark as connecting and create the connection promise
+    this.connecting = true;
+
+    this.connectionPromise = new Promise<void>(async (resolve, reject) => {
+      log((l) =>
+        l.info('SSE Transport starting connection', { url: this.url.href }),
+      );
       this.abortController = new AbortController();
-
-      const establishConnection = async () => {
         let reader: ReadableStream<EventSourceMessage> | undefined;
         try {
+          log((l) =>
+            l.info('SSE Transport: Fetching SSE endpoint', {
+              url: this.url.href,
+            }),
+          );
           const response = await fetch(this.url.href, {
             headers: await this.resolveHeaders(),
             signal: this.abortController?.signal,
           });
+
+          log((l) =>
+            l.info('SSE Transport: Received response', {
+              status: response.status,
+              ok: response.ok,
+              hasBody: !!response.body,
+            }),
+          );
 
           if (!response.ok || !response.body) {
             const error = new MCPClientError({
@@ -92,6 +129,7 @@ export class SseMCPTransport implements MCPTransport {
               source: 'MCP SSE Transport::establishConnection',
             });
             this.onerror?.(error);
+            this.connecting = false;
             return reject(error);
           }
           // Connection established, now wait for 'endpoint' event
@@ -190,10 +228,24 @@ export class SseMCPTransport implements MCPTransport {
           };
           const processEvents = async () => {
             try {
+              log((l) =>
+                l.info('SSE Transport: Entering event processing loop'),
+              );
               let lastMessage: EventSourceMessage | undefined;
               while (true) {
+                log((l) => l.verbose('SSE Transport: Waiting for next event'));
                 const { done, value } = await reader.read();
                 lastMessage = value;
+
+                log((l) =>
+                  l.info('SSE Transport: Received event', {
+                    done,
+                    hasValue: !!value,
+                    event: value?.event,
+                    dataLength: value?.data?.length,
+                  }),
+                );
+
                 if (done) {
                   if (this.connected) {
                     this.connected = false;
@@ -209,7 +261,17 @@ export class SseMCPTransport implements MCPTransport {
 
                 const { event, data } = value;
 
+                log((l) =>
+                  l.info('SSE Transport: Processing event', {
+                    event,
+                    dataPreview: data?.substring(0, 100),
+                  }),
+                );
+
                 if (event === 'endpoint') {
+                  log((l) =>
+                    l.info('SSE Transport: Received endpoint event', { data }),
+                  );
                   this.endpoint = new URL(data, this.url);
 
                   if (this.endpoint.origin !== this.url.origin) {
@@ -219,6 +281,13 @@ export class SseMCPTransport implements MCPTransport {
                   }
 
                   this.connected = true;
+                  this.connecting = false;
+                  log((l) =>
+                    l.info(
+                      'SSE Transport: Connection established, endpoint set',
+                      { endpoint: this.endpoint?.href },
+                    ),
+                  );
                   resolve();
                 } else if (event === 'message') {
                   try {
@@ -239,7 +308,10 @@ export class SseMCPTransport implements MCPTransport {
                 }
               }
             } catch (error) {
-              if (error instanceof Error && error.name === 'AbortError') {
+              if (
+                (error instanceof Error && error.name === 'AbortError') ||
+                (error instanceof TypeError && error.message === 'terminated')
+              ) {
                 resolve();
                 return;
               }
@@ -249,10 +321,12 @@ export class SseMCPTransport implements MCPTransport {
                 source: 'MCP SSE Transport::processEvents',
               });
               this.onerror?.(error);
+              this.connecting = false;
               reject(error);
             }
           };
 
+          log((l) => l.info('SSE Transport: Starting event processing'));
           await processEvents();
         } catch (error) {
           if (isAbortError(error)) {
@@ -273,38 +347,87 @@ export class SseMCPTransport implements MCPTransport {
             );
           });
           this.onerror?.(error);
+          this.connecting = false;
           reject(error);
         }
-      };
+      });
 
-      establishConnection();
-    });
+    return this.connectionPromise;
   }
 
   protected async resolveHeaders(): Promise<Headers> {
-    const headers = new Headers(this.headers);
+    const headerRecord =
+      typeof this.headers === 'function' ? await this.headers() : this.headers;
+    const headers = new Headers(headerRecord);
     headers.set('Accept', 'text/event-stream');
     return headers;
   }
 
   async close(): Promise<void> {
-    this.connected = false;
-    const connection = this.sseConnection
-      ?.close()
-      .catch((e) => {
-        LoggedError.isTurtlesAllTheWayDownBaby(e, {
-          message: 'Error closing SSE connection',
-          log: true,
-          severity: 'warn',
-          source: 'MCP SSE Transport::close',
+    await this.withSpan('mcp.transport.sse.close', async () => {
+      this.connected = false;
+      this.connecting = false;
+      this.connectionPromise = undefined;
+      const connection = this.sseConnection
+        ?.close()
+        .catch((e) => {
+          LoggedError.isTurtlesAllTheWayDownBaby(e, {
+            message: 'Error closing SSE connection',
+            log: true,
+            severity: 'warn',
+            source: 'MCP SSE Transport::close',
+          });
+        })
+        .finally(() => {
+          this.sseConnection = undefined;
         });
-      })
-      .finally(() => {
-        this.sseConnection = undefined;
-      });
-    this.abortController?.abort();
-    await connection;
-    this.onclose?.();
+      this.abortController?.abort();
+      await connection;
+      this.onclose?.();
+    });
+  }
+
+  /**
+   * Executes a callback within an instrumented OpenTelemetry span.
+   *
+   * This method wraps `createInstrumentedSpan` to provide convenient span-based
+   * instrumentation for transport operations. The span is automatically:
+   * - Started with the provided name and attributes
+   * - Set as the active span during callback execution
+   * - Marked as successful if callback completes without error
+   * - Marked as failed and records exception if callback throws
+   * - Ended after callback completes (success or failure)
+   *
+   * @param spanName - Name of the span (e.g., 'mcp.transport.operation')
+   * @param callback - Async function to execute within the span context
+   * @param attributes - Optional span attributes (key-value pairs)
+   * @returns Promise resolving to the callback's return value
+   *
+   * @example
+   * ```typescript
+   * const result = await transport.withSpan(
+   *   'mcp.custom.operation',
+   *   async (span) => {
+   *     span.setAttribute('custom.attribute', 'value');
+   *     return await performOperation();
+   *   },
+   *   { 'operation.type': 'custom' }
+   * );
+   * ```
+   */
+  protected async withSpan<TResult>(
+    spanName: string,
+    callback: (span: Span) => Promise<TResult>,
+    attributes?: Record<string, string | number | boolean>,
+  ): Promise<TResult> {
+    const instrumented = await createInstrumentedSpan({
+      spanName,
+      attributes,
+      tracerName: 'mcp-transport',
+      autoLog: true,
+    });
+
+    return await instrumented.executeWithContext(callback);
   }
 
   async send(message: JSONRPCMessage): Promise<void> {
@@ -313,46 +436,53 @@ export class SseMCPTransport implements MCPTransport {
         message: 'MCP SSE Transport Error: Not connected',
       });
     }
+    await this.withSpan('mcp.transport.sse.send', async (span) => {
+      span.setAttribute('mcp.send.message', safeSerialize(message));
+      try {
+        const headers = await this.resolveHeaders();
+        headers.set('Content-Type', 'application/json');
+        const init = {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(message),
+          signal: this.abortController?.signal,
+        };
 
-    try {
-      const headers = await this.resolveHeaders();
-      headers.set('Content-Type', 'application/json');
-      const init = {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(message),
-        signal: this.abortController?.signal,
-      };
+        const response = await fetch(this.endpoint!, init);
 
-      const response = await fetch(this.endpoint, init);
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => null);
-        const error = new MCPClientError({
-          message: `MCP SSE Transport Error: POSTing to endpoint (HTTP ${response.status}): ${text}`,
-        });
-        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        if (!response.ok) {
+          const text = await response.text().catch(() => null);
+          const error = new MCPClientError({
+            message: `MCP SSE Transport Error: POSTing to endpoint (HTTP ${response.status}): ${text}`,
+          });
+          const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+            log: true,
+            data: {
+              status: response.status,
+              statusText: response.statusText,
+              body: text,
+              url: this.endpoint?.href,
+              response: safeSerialize(response),
+            },
+            source: 'MCP SSE Transport::send',
+          });
+          span.recordException(le);
+          this.onerror?.(le);
+          return;
+        }
+        log((l) => l.info('MCP SSE Transport: Message sent successfully'));
+      } catch (error) {
+        const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          message: `MCP SSE Transport: Send error - ${LoggedError.buildMessage(error)}`,
           log: true,
-          data: {
-            status: response.status,
-            statusText: response.statusText,
-            body: text,
-            url: this.endpoint?.href,
-          },
           source: 'MCP SSE Transport::send',
         });
-        this.onerror?.(error);
+        span.recordException(le);
+
+        this.onerror?.(le);
         return;
       }
-    } catch (error) {
-      LoggedError.isTurtlesAllTheWayDownBaby(error, {
-        message: `MCP SSE Transport: Send error - ${LoggedError.buildMessage(error)}`,
-        log: true,
-        source: 'MCP SSE Transport::send',
-      });
-      this.onerror?.(error);
-      return;
-    }
+    });
   }
 }
 

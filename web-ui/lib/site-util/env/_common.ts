@@ -79,15 +79,24 @@ export const runtime = (): RuntimeConfig => currentRuntime;
  *
  * @returns {boolean} `true` if running on the server, otherwise `false`.
  */
-export const isRunningOnServer = (): boolean => currentRuntime !== 'client';
+export const isRunningOnServer = (): boolean =>
+  currentRuntime !== 'client' && !!process.env.AUTH_SECRET;
 
 /**
  * Checks if the code is running on the client.
  *
  * @returns {boolean} `true` if running on the client, otherwise `false`.
  */
-export const isRunningOnClient = (): boolean => currentRuntime === 'client';
-
+export const isRunningOnClient = (): boolean => {
+  switch (currentRuntime) {
+    case 'client':
+      return true;
+    case 'edge':
+      return false;
+    default:
+      return !process.env.AUTH_SECRET;
+  }
+};
 /**
  * Checks if the code is running on the edge.
  *

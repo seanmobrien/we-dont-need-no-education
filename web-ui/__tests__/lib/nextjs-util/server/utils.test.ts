@@ -44,10 +44,6 @@ jest.mock('@opentelemetry/api-logs', () => ({
   },
 }));
 
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
-}));
-
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
   LoggedError: {
     isTurtlesAllTheWayDownBaby: jest.fn((error) => {
@@ -141,11 +137,7 @@ describe('Server Utils', () => {
       });
 
       expect(trace.getTracer).toHaveBeenCalledWith('app-instrumentation');
-      expect(mockTracer.startSpan).toHaveBeenCalledWith(
-        'test-span',
-        undefined,
-        mockContext,
-      );
+      expect(mockTracer.startSpan).toHaveBeenCalledWith('test-span', undefined);
       expect(result.span).toBe(mockSpan);
     });
 
@@ -166,7 +158,39 @@ describe('Server Utils', () => {
         attributes,
       });
 
-      expect(mockSpan.setAttributes).toHaveBeenCalledWith(attributes);
+      expect(mockTracer.startSpan).toHaveBeenCalledWith('test-span', {
+        attributes,
+      });
+    });
+    /*
+    test('sets span kind', async () => {
+      const { SpanKind } = await import('@opentelemetry/api');
+
+      await createInstrumentedSpan({
+        spanName: 'test-span',
+        kind: SpanKind.CLIENT,
+      });
+
+      expect(mockTracer.startSpan).toHaveBeenCalledWith(
+        
+        {'test-span', kind: SpanKind.CLIENT },
+      );
+    });
+*/
+    test('sets both kind and attributes', async () => {
+      const { SpanKind } = await import('@opentelemetry/api');
+      const attributes = { 'test.key': 'value' };
+
+      await createInstrumentedSpan({
+        spanName: 'test-span',
+        kind: SpanKind.SERVER,
+        attributes,
+      });
+
+      expect(mockTracer.startSpan).toHaveBeenCalledWith('test-span', {
+        kind: SpanKind.SERVER,
+        attributes,
+      });
     });
 
     test('executes function successfully', async () => {

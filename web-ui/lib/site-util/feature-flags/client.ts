@@ -17,6 +17,7 @@ export const flagsmithClient = async () => {
   await flagsmithClient.init({
     environmentID: env('NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID'),
     api: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
+    enableAnalytics: true,
   });
   flagsmithClient.startListening(REFRESH_INTERVAL);
   return flagsmithClient;

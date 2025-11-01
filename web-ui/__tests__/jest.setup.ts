@@ -1,11 +1,5 @@
 process.env.MEM0_API_BASE_PATH = process.env.MEM0_API_BASE_PATH ?? 'api/v1';
 
-// jest.mock('got');
-
-const shouldWriteToConsole = jest
-  .requireActual('/lib/react-util')
-  .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
-
 jest.mock('@/lib/nextjs-util/fetch', () => ({
   fetch: jest.fn(() =>
     Promise.resolve({ json: jest.fn(() => Promise.resolve({})) }),
@@ -369,24 +363,7 @@ export const makeMockDb = (): DatabaseType => {
   // Ensure the query structure is properly mocked with the expected methods
   if (mockDb.query && mockDb.query.documentUnits) {
     // Set default behaviors - tests can override these
-    /*
-    if (
-      !(
-        mockDb.query.documentUnits.findMany as jest.Mock
-      ).getMockImplementation()
-    ) {
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue([]);
-    }
-    if (
-      !(
-        mockDb.query.documentUnits.findFirst as jest.Mock
-      ).getMockImplementation()
-    ) {
-      (mockDb.query.documentUnits.findFirst as jest.Mock).mockResolvedValue(
-        null,
-      );
-    }
-    */
+
     if (!(mockDb.$count as jest.Mock).getMockImplementation()) {
       (mockDb.$count as jest.Mock).mockResolvedValue(1);
     }
@@ -461,15 +438,6 @@ jest.mock('@/lib/drizzle-db', () => {
   };
 });
 
-/*
-jest.mock('@/auth', () => {
-  return {
-    auth: jest.fn(() => ({
-      id: 'fdsdfs',
-    })),
-  };
-});
-*/
 jest.mock('@/lib/site-util/env', () => {
   return {
     env: jest.fn((key: string) => {
@@ -477,51 +445,6 @@ jest.mock('@/lib/site-util/env', () => {
     }),
     isRunningOnServer: jest.fn(() => typeof window === 'undefined'),
     isRunningOnEdge: jest.fn(() => false),
-  };
-});
-
-export const createRedisClient = jest.fn(() => ({
-  connect: jest.fn().mockResolvedValue(undefined),
-  quit: jest.fn().mockResolvedValue(undefined),
-  get: jest.fn().mockResolvedValue(null),
-  set: jest.fn().mockResolvedValue('OK'),
-  setEx: jest.fn().mockResolvedValue('OK'),
-  del: jest.fn().mockResolvedValue(1),
-  flushDb: jest.fn().mockResolvedValue('OK'),
-  on: jest.fn(),
-}));
-// Mock Redis client for cache tests
-jest.mock('redis', () => ({
-  createClient: createRedisClient,
-}));
-
-const makeMockImplementation = (name: string) => {
-  return (...args: unknown[]) =>
-    shouldWriteToConsole
-      ? console.log(`logger::${name} called with `, args)
-      : () => {};
-};
-
-const loggerInstance = (() => ({
-  warn: jest.fn(makeMockImplementation('warn')),
-  error: jest.fn(makeMockImplementation('error')),
-  info: jest.fn(makeMockImplementation('info')),
-  debug: jest.fn(makeMockImplementation('debug')),
-  silly: jest.fn(makeMockImplementation('silly')),
-  verbose: jest.fn(makeMockImplementation('verbose')),
-  log: jest.fn(makeMockImplementation('log')),
-  trace: jest.fn(makeMockImplementation('trace')),
-}))();
-
-jest.mock('@/lib/logger', () => {
-  return {
-    logEvent: jest.fn(() => Promise.resolve()),
-    logger: jest.fn(() => loggerInstance),
-    log: jest.fn((cb: (l: typeof loggerInstance) => void) =>
-      cb(loggerInstance),
-    ),
-    errorLogFactory: jest.fn((x) => x),
-    simpleScopedLogger: jest.fn(() => loggerInstance),
   };
 });
 
@@ -599,7 +522,7 @@ const DefaultEnvVariables = {
   AZURE_MONITOR_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
   NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID: 'test-environment-id',
-  NEXT_PUBLIC_FLAGSMITH_API_URL: 'https://api.flagsmith.com/api/v1/',
+  NEXT_PUBLIC_FLAGSMITH_API_URL: 'https://api.flagsmith.notadomain.net/api/v1/',
   FLAGSMITH_SDK_KEY: 'test-server-id',
   AUTH_KEYCLOAK_ISSUER: 'https://keycloak.example.com/realms/test',
   AUTH_KEYCLOAK_CLIENT_ID: 'test-client-id',
@@ -894,22 +817,6 @@ beforeAll(() => {
   }
 });
 
-jest.mock('flagsmith/react', () => {
-  return {
-    FlagsmithProvider: ({ children }: { children: React.ReactNode }) =>
-      children,
-    useFlagsmith: jest.fn(() => mockFlagsmithInstanceFactory()),
-    useFlagsmithLoading: jest.fn(() => ({
-      isLoading: false,
-      error: null,
-      isFetching: false,
-    })),
-  };
-});
-jest.mock('flagsmith/isomorphic', () => ({
-  createFlagsmithInstance: jest.fn(() => mockFlagsmithInstanceFactory()),
-}));
-
 // Prevent dynamic import side-effects from the logged-error-reporter during tests
 jest.mock('@/lib/react-util/errors/logged-error-reporter', () => {
   return {
@@ -948,9 +855,6 @@ jest.mock('@/lib/react-util/errors/logged-error-reporter', () => {
 beforeEach(async () => {
   resetEnvVariables();
   resetGlobalCache();
-  for (const [, value] of Object.entries(loggerInstance)) {
-    (value as jest.Mock).mockClear();
-  }
 });
 
 afterEach(() => {

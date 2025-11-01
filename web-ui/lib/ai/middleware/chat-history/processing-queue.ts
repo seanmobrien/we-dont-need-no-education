@@ -15,6 +15,7 @@ import type {
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
 import { log } from '@/lib/logger';
+import { Semaphore } from '@/lib/nextjs-util/semaphore-manager';
 import { ensureCreateResult } from './stream-handler-result';
 import { processStreamChunk } from './stream-handlers';
 import type {
@@ -52,7 +53,7 @@ import { isError } from '@/lib/react-util/core';
  */
 export class ProcessingQueue {
   private queue: QueuedTask[] = [];
-  private processing = false;
+  private semaphore = new Semaphore(1); // Mutex: ensures only 1 task processes at a time
   private nextTaskId = 1;
 
   /**
@@ -124,13 +125,18 @@ export class ProcessingQueue {
   /**
    * Processes the queue in FIFO order, waiting for each task to complete
    * before applying its results and moving to the next task.
+   *
+   * Uses Semaphore(1) as a mutex to ensure only one processor runs at a time.
    */
   private async processQueue(): Promise<void> {
-    if (this.processing || this.queue.length === 0) {
-      return;
+    // Check if already processing or queue empty
+    const state = this.semaphore.getState();
+    if (state.availableSlots === 0 || this.queue.length === 0) {
+      return; // Already processing or nothing to process
     }
 
-    this.processing = true;
+    // Acquire mutex lock - only one processor can run
+    await this.semaphore.acquire();
 
     try {
       while (this.queue.length > 0) {
@@ -160,7 +166,8 @@ export class ProcessingQueue {
         this.queue.shift();
       }
     } finally {
-      this.processing = false;
+      // Release mutex lock
+      this.semaphore.release();
     }
   }
 
@@ -194,10 +201,24 @@ export class ProcessingQueue {
   /**
    * Checks if the queue is currently processing tasks.
    *
-   * @returns True if processing is active, false otherwise
+   * @returns True if processing is active (semaphore acquired), false otherwise
    */
   isProcessing(): boolean {
-    return this.processing;
+    return this.semaphore.getState().activeOperations > 0;
+  }
+
+  /**
+   * Gets detailed queue status for monitoring and debugging.
+   *
+   * @returns Object containing queue metrics and semaphore state
+   */
+  getQueueStatus() {
+    const state = this.semaphore.getState();
+    return {
+      queueLength: this.queue.length,
+      isProcessing: state.activeOperations > 0,
+      semaphoreState: state,
+    };
   }
 }
 

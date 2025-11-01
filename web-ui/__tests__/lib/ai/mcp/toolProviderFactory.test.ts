@@ -1,7 +1,6 @@
 /**
- * @jest-environment jsdom
+ * @jest-environment node
  */
- 
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 
@@ -43,7 +42,7 @@ jest.mock('@/lib/ai/mcp/cache', () => {
     invalidateCache: async () => Promise.resolve(),
   };
   return {
-    getToolCache: jest.fn().mockReturnValue(mock),
+    getToolCache: jest.fn(() => Promise.resolve(mock)),
   };
 });
 
@@ -83,6 +82,7 @@ import type {
 } from '../../../../lib/ai/mcp/types';
 import { ToolSet } from 'ai';
 import z from 'zod';
+import { createAutoRefreshFeatureFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
 
 const mockTools: ToolSet = {
   'read-tool': {
@@ -125,6 +125,11 @@ describe('toolProviderFactory', () => {
     mockCreateMCPClient.mockResolvedValue(mockMCPClient);
   });
 
+  afterEach(() => {
+    // Cleanup any remaining mocks
+    // jest.clearAllMocks();
+  });
+
   describe('successful connection', () => {
     it('should create a connected provider with all tools when allowWrite is true', async () => {
       const options = { ...mockOptions, allowWrite: true };
@@ -147,7 +152,10 @@ describe('toolProviderFactory', () => {
     });
 
     it('should create InstrumentedSseTransport with correct options', async () => {
-      await toolProviderFactory(mockOptions);
+      await toolProviderFactory({
+        ...mockOptions,
+        sse: true,
+      });
 
       expect(mockInstrumentedSseTransport).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -156,13 +164,36 @@ describe('toolProviderFactory', () => {
           headers: mockOptions.headers,
           onerror: expect.any(Function),
           onclose: expect.any(Function),
-          onmessage: expect.any(Function),
         }),
       );
     });
 
     it('should create MCP client with transport and error handler', async () => {
       await toolProviderFactory(mockOptions);
+      (createAutoRefreshFeatureFlag as jest.Mock).mockImplementation(
+        async (ops: any) => {
+          switch (ops.key) {
+            case 'mcp_enable_tool_caching':
+              return {
+                key: ops.key,
+                userId: ops.userId!,
+                value: false,
+              };
+            case 'mcp_protocol_http_stream':
+              return {
+                key: ops.key,
+                userId: ops.userId!,
+                value: true,
+              };
+            default:
+              return {
+                key: ops.key,
+                userId: ops.userId!,
+                value: ops.initialValue!,
+              };
+          }
+        },
+      );
 
       expect(mockCreateMCPClient).toHaveBeenCalledWith({
         transport: expect.any(Object),
@@ -370,7 +401,11 @@ describe('toolProviderSetFactory', () => {
   };
 
   beforeEach(() => {
-    jest.mock('');
+    (createAutoRefreshFeatureFlag as jest.Mock).mockResolvedValue({
+      key: 'mcp_enable_tool_caching',
+      userId: 'server',
+      value: false,
+    } as unknown as never);
     // Reset individual mocks instead of clearing all global mocks
     mockGetResolvedPromises.mockReset();
     mockLoggedError.isTurtlesAllTheWayDownBaby.mockReset();
@@ -401,12 +436,29 @@ describe('toolProviderSetFactory', () => {
     });
 
     it('should aggregate tools from all providers', async () => {
-      (createFlagsmithInstance as jest.Mock).mockReturnValue(
-        mockFlagsmithInstanceFactory({
-          flags: {
-            mcp_enable_tool_caching: true,
-          },
-        }),
+      (createAutoRefreshFeatureFlag as jest.Mock).mockImplementation(
+        async (ops: any) => {
+          switch (ops.key) {
+            case 'mcp_enable_tool_caching':
+              return {
+                key: ops.key,
+                userId: ops.userId!,
+                value: true,
+              };
+            case 'mcp_protocol_http_stream':
+              return {
+                key: ops.key,
+                userId: ops.userId!,
+                value: false,
+              };
+            default:
+              return {
+                key: ops.key,
+                userId: ops.userId!,
+                value: ops.initialValue!,
+              };
+          }
+        },
       );
 
       const tools = {
@@ -414,9 +466,9 @@ describe('toolProviderSetFactory', () => {
         tool2: { ...mockTools['read-tool'] },
         tool3: { ...mockTools['read-tool'] },
       };
-      mockGetCachedTools.mockResolvedValue({ tool1: tools.tool1 });
-      mockGetCachedTools.mockResolvedValue({ tool2: tools.tool2 });
-      mockGetCachedTools.mockResolvedValue({ tool3: tools.tool3 });
+      mockGetCachedTools.mockResolvedValueOnce({ tool1: tools.tool1 });
+      mockGetCachedTools.mockResolvedValueOnce({ tool2: tools.tool2 });
+      mockGetCachedTools.mockResolvedValueOnce({ tool3: tools.tool3 });
       mockCreateMCPClient.mockResolvedValueOnce({
         tools: jest.fn().mockReturnValue(tools),
         close: jest.fn(),
@@ -429,14 +481,27 @@ describe('toolProviderSetFactory', () => {
         tools: jest.fn().mockReturnValue(tools),
         close: jest.fn(),
       });
-      /*
-      const provider1 = createMockProvider({ tool1: tools.tool1 });
-      const provider2 = createMockProvider({ tool2: tools.tool2 });
-      const provider3 = createMockProvider({ tool3: tools.tool3 });
-      */
+
+      // Mock getResolvedPromises to resolve immediately without creating real timeouts
       mockGetResolvedPromises.mockClear();
       mockGetResolvedPromises.mockImplementation(
-        originalReactUtil!.getResolvedPromises,
+        async (promises: Promise<any>[]) => {
+          const results = await Promise.allSettled(promises);
+          return {
+            fulfilled: results
+              .filter(
+                (r): r is PromiseFulfilledResult<any> =>
+                  r.status === 'fulfilled',
+              )
+              .map((r) => r.value),
+            rejected: results
+              .filter(
+                (r): r is PromiseRejectedResult => r.status === 'rejected',
+              )
+              .map((r) => r.reason),
+            pending: [],
+          };
+        },
       );
 
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
@@ -472,8 +537,8 @@ describe('toolProviderSetFactory', () => {
         customTimeout,
       );
     });
-
     it('should dispose all providers with timeout protection', async () => {
+      jest.useFakeTimers();
       const mockProvider = createMockProvider();
       mockGetResolvedPromises.mockResolvedValue({
         fulfilled: [mockProvider, mockProvider, mockProvider],
@@ -484,8 +549,9 @@ describe('toolProviderSetFactory', () => {
       const providerSet = await toolProviderSetFactory(mockProviderOptions);
 
       await providerSet.dispose();
-
       expect(mockProvider.dispose).toHaveBeenCalledTimes(3);
+
+      jest.advanceTimersByTime(1000 * 60 * 60 * 24);
     });
   });
 
@@ -608,7 +674,10 @@ describe('toolProviderSetFactory', () => {
 });
 
 describe('integration scenarios', () => {
+  it('is a test', () => {});
+
   it('should handle complex real-world scenario', async () => {
+    jest.useFakeTimers();
     // Mock a scenario with mixed success/failure
     const successfulProvider = {
       get_mcpClient: jest.fn().mockReturnValue({}),
@@ -648,6 +717,7 @@ describe('integration scenarios', () => {
       'search-tool': {},
     });
 
+    jest.advanceTimersByTime(1000 * 60 * 60 * 24);
     // Should cleanup gracefully
     await providerSet.dispose();
     expect(successfulProvider.dispose).toHaveBeenCalled();

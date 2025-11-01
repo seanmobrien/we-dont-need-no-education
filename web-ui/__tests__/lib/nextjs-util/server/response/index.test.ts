@@ -1,0 +1,657 @@
+/**
+ * Unit tests for response.ts - WHATWG-like Response implementations
+ */
+
+import { Readable } from 'stream';
+import {
+  FetchResponse,
+  makeResponse,
+  makeJsonResponse,
+  makeStreamResponse,
+} from '@/lib/nextjs-util/server/response';
+
+describe('FetchResponse', () => {
+  describe('constructor', () => {
+    it('should create a response with default values', () => {
+      const response = new FetchResponse(Buffer.from('test'));
+
+      expect(response.body).toBeInstanceOf(Buffer);
+      expect(response.body.toString()).toBe('test');
+      expect(response.status).toBe(200);
+      expect(response.headers).toBeInstanceOf(Headers);
+    });
+
+    it('should create a response with custom status', () => {
+      const response = new FetchResponse(Buffer.from('test'), { status: 404 });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should create a response with custom headers', () => {
+      const response = new FetchResponse(Buffer.from('test'), {
+        headers: { 'Content-Type': 'text/plain', 'X-Custom': 'value' },
+      });
+
+      expect(response.headers.get('Content-Type')).toBe('text/plain');
+      expect(response.headers.get('X-Custom')).toBe('value');
+    });
+
+    it('should handle empty body', () => {
+      const response = new FetchResponse(Buffer.alloc(0));
+
+      expect(response.body).toBeInstanceOf(Buffer);
+      expect(response.body.length).toBe(0);
+    });
+
+    it('should handle null body by allocating empty buffer', () => {
+      const response = new FetchResponse(null as any);
+
+      expect(response.body).toBeInstanceOf(Buffer);
+      expect(response.body.length).toBe(0);
+    });
+  });
+
+  describe('ok()', () => {
+    it('should return true for 2xx status codes', () => {
+      expect(new FetchResponse(Buffer.from(''), { status: 200 }).ok()).toBe(
+        true,
+      );
+      expect(new FetchResponse(Buffer.from(''), { status: 201 }).ok()).toBe(
+        true,
+      );
+      expect(new FetchResponse(Buffer.from(''), { status: 204 }).ok()).toBe(
+        true,
+      );
+      expect(new FetchResponse(Buffer.from(''), { status: 299 }).ok()).toBe(
+        true,
+      );
+    });
+
+    it('should return false for non-2xx status codes', () => {
+      expect(new FetchResponse(Buffer.from(''), { status: 199 }).ok()).toBe(
+        false,
+      );
+      expect(new FetchResponse(Buffer.from(''), { status: 300 }).ok()).toBe(
+        false,
+      );
+      expect(new FetchResponse(Buffer.from(''), { status: 404 }).ok()).toBe(
+        false,
+      );
+      expect(new FetchResponse(Buffer.from(''), { status: 500 }).ok()).toBe(
+        false,
+      );
+    });
+  });
+
+  describe('text()', () => {
+    it('should return body as UTF-8 string', async () => {
+      const response = new FetchResponse(Buffer.from('Hello, World!'));
+      const text = await response.text();
+
+      expect(text).toBe('Hello, World!');
+    });
+
+    it('should handle empty body', async () => {
+      const response = new FetchResponse(Buffer.alloc(0));
+      const text = await response.text();
+
+      expect(text).toBe('');
+    });
+
+    it('should handle UTF-8 characters', async () => {
+      const response = new FetchResponse(Buffer.from('Hello 世界 🌍'));
+      const text = await response.text();
+
+      expect(text).toBe('Hello 世界 🌍');
+    });
+  });
+
+  describe('json()', () => {
+    it('should parse JSON body', async () => {
+      const data = { message: 'Hello', count: 42 };
+      const response = new FetchResponse(Buffer.from(JSON.stringify(data)));
+      const json = await response.json();
+
+      expect(json).toEqual(data);
+    });
+
+    it('should handle nested objects', async () => {
+      const data = {
+        user: { name: 'John', age: 30 },
+        items: [1, 2, 3],
+      };
+      const response = new FetchResponse(Buffer.from(JSON.stringify(data)));
+      const json = await response.json();
+
+      expect(json).toEqual(data);
+    });
+
+    it('should throw on invalid JSON', async () => {
+      const response = new FetchResponse(Buffer.from('not valid json'));
+
+      await expect(response.json()).rejects.toThrow();
+    });
+
+    it('should handle empty object', async () => {
+      const response = new FetchResponse(Buffer.from('{}'));
+      const json = await response.json();
+
+      expect(json).toEqual({});
+    });
+
+    it('should handle arrays', async () => {
+      const data = [1, 2, 3, 'four'];
+      const response = new FetchResponse(Buffer.from(JSON.stringify(data)));
+      const json = await response.json();
+
+      expect(json).toEqual(data);
+    });
+  });
+
+  describe('arrayBuffer()', () => {
+    it('should return ArrayBuffer from body', () => {
+      const data = Buffer.from([1, 2, 3, 4, 5]);
+      const response = new FetchResponse(data);
+      const arrayBuffer = response.arrayBuffer();
+
+      expect(arrayBuffer).toBeDefined();
+      expect(arrayBuffer.byteLength).toBe(5);
+      expect(new Uint8Array(arrayBuffer)).toEqual(new Uint8Array([1, 2, 3, 4, 5]));
+    });
+
+    it('should handle empty buffer', () => {
+      const response = new FetchResponse(Buffer.alloc(0));
+      const arrayBuffer = response.arrayBuffer();
+
+      expect(arrayBuffer).toBeDefined();
+      expect(arrayBuffer.byteLength).toBe(0);
+    });
+
+    it('should return independent ArrayBuffer slice', () => {
+      const data = Buffer.from([1, 2, 3, 4, 5]);
+      const response = new FetchResponse(data);
+      const arrayBuffer = response.arrayBuffer();
+
+      // Modify original buffer
+      data[0] = 99;
+
+      // ArrayBuffer should be independent
+      expect(new Uint8Array(arrayBuffer)[0]).toBe(1);
+    });
+  });
+
+  describe('stream()', () => {
+    it('should return Readable stream', () => {
+      const response = new FetchResponse(Buffer.from('test data'));
+      const stream = response.stream();
+
+      expect(stream).toBeInstanceOf(Readable);
+    });
+
+    it('should stream body content', async () => {
+      const testData = 'Hello, Stream!';
+      const response = new FetchResponse(Buffer.from(testData));
+      const stream = response.stream();
+
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(Buffer.from(chunk));
+      }
+
+      const result = Buffer.concat(chunks).toString('utf8');
+      expect(result).toBe(testData);
+    });
+
+    it('should end stream after body', async () => {
+      const response = new FetchResponse(Buffer.from('test'));
+      const stream = response.stream();
+
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(Buffer.from(chunk));
+      }
+
+      // Stream should have ended
+      expect(stream.readable).toBe(false);
+    });
+  });
+});
+
+describe('makeResponse', () => {
+  it('should create Response from body, headers, and status code', () => {
+    const body = Buffer.from('Test content');
+    const headers = { 'Content-Type': 'text/plain' };
+    const statusCode = 201;
+
+    const response = makeResponse({ body, headers, statusCode });
+
+    expect(response.status).toBe(201);
+    expect(response.headers.get('Content-Type')).toBe('text/plain');
+  });
+
+  it('should handle multiple headers', () => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Custom-Header': 'value',
+      Authorization: 'Bearer token',
+    };
+
+    const response = makeResponse({
+      body: Buffer.from('{}'),
+      headers,
+      statusCode: 200,
+    });
+
+    expect(response.headers.get('Content-Type')).toBe('application/json');
+    expect(response.headers.get('X-Custom-Header')).toBe('value');
+    expect(response.headers.get('Authorization')).toBe('Bearer token');
+  });
+
+  it('should handle empty body', () => {
+    const response = makeResponse({
+      body: Buffer.alloc(0),
+      headers: {},
+      statusCode: 204,
+    });
+
+    expect(response.status).toBe(204);
+  });
+
+  it('should be compatible with Response interface', async () => {
+    const response = makeResponse({
+      body: Buffer.from('test'),
+      headers: {},
+      statusCode: 200,
+    });
+
+    // Should have Response-like methods
+    expect(typeof response.text).toBe('function');
+    expect(typeof response.json).toBe('function');
+    expect(response.status).toBe(200);
+  });
+});
+
+describe('makeJsonResponse', () => {
+  describe('basic functionality', () => {
+    it('should create JSON response with default status 200', async () => {
+      const data = { message: 'Hello' };
+      const response = makeJsonResponse(data);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+
+      const json = await response.json();
+      expect(json).toEqual(data);
+    });
+
+    it('should serialize data as JSON', async () => {
+      const data = { name: 'John', age: 30, active: true };
+      const response = makeJsonResponse(data);
+
+      const text = await response.text();
+      expect(text).toBe(JSON.stringify(data));
+    });
+
+    it('should handle nested objects', async () => {
+      const data = {
+        user: { id: 1, name: 'Alice' },
+        items: [{ id: 1 }, { id: 2 }],
+      };
+      const response = makeJsonResponse(data);
+
+      const json = await response.json();
+      expect(json).toEqual(data);
+    });
+
+    it('should handle arrays', async () => {
+      const data = [1, 2, 3, 'four', { five: 5 }];
+      const response = makeJsonResponse(data);
+
+      const json = await response.json();
+      expect(json).toEqual(data);
+    });
+
+    it('should handle primitives', async () => {
+      const response1 = makeJsonResponse('string');
+      expect(await response1.json()).toBe('string');
+
+      const response2 = makeJsonResponse(42);
+      expect(await response2.json()).toBe(42);
+
+      const response3 = makeJsonResponse(true);
+      expect(await response3.json()).toBe(true);
+
+      const response4 = makeJsonResponse(null);
+      expect(await response4.json()).toBe(null);
+    });
+  });
+
+  describe('status codes', () => {
+    it('should accept custom status code', () => {
+      const response = makeJsonResponse({ error: 'Not found' }, { status: 404 });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should handle various status codes', () => {
+      expect(makeJsonResponse({}, { status: 201 }).status).toBe(201);
+      expect(makeJsonResponse({}, { status: 400 }).status).toBe(400);
+      expect(makeJsonResponse({}, { status: 500 }).status).toBe(500);
+    });
+  });
+
+  describe('headers', () => {
+    it('should automatically set Content-Type to application/json', () => {
+      const response = makeJsonResponse({ data: 'test' });
+
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+    });
+
+    it('should merge custom headers with Content-Type', () => {
+      const response = makeJsonResponse(
+        { data: 'test' },
+        {
+          headers: {
+            'X-Custom-Header': 'value',
+            Authorization: 'Bearer token',
+          },
+        },
+      );
+
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+      expect(response.headers.get('X-Custom-Header')).toBe('value');
+      expect(response.headers.get('Authorization')).toBe('Bearer token');
+    });
+
+    it('should allow overriding Content-Type', () => {
+      const response = makeJsonResponse(
+        { data: 'test' },
+        {
+          headers: {
+            'Content-Type': 'application/vnd.api+json',
+          },
+        },
+      );
+
+      expect(response.headers.get('Content-Type')).toBe('application/vnd.api+json');
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle empty object', async () => {
+      const response = makeJsonResponse({});
+
+      expect(await response.json()).toEqual({});
+    });
+
+    it('should handle empty array', async () => {
+      const response = makeJsonResponse([]);
+
+      expect(await response.json()).toEqual([]);
+    });
+
+    it('should handle undefined in init', () => {
+      const response = makeJsonResponse({ data: 'test' }, undefined);
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+    });
+
+    it('should handle init without headers', () => {
+      const response = makeJsonResponse({ data: 'test' }, { status: 201 });
+
+      expect(response.status).toBe(201);
+      expect(response.headers.get('Content-Type')).toBe('application/json');
+    });
+
+    it('should handle special characters in JSON', async () => {
+      const data = { message: 'Hello "World" \n\t 世界' };
+      const response = makeJsonResponse(data);
+
+      const json = await response.json();
+      expect(json).toEqual(data);
+    });
+  });
+
+  describe('NextResponse.json() compatibility', () => {
+    it('should mirror NextResponse.json() signature', () => {
+      // Simple usage
+      const response1 = makeJsonResponse({ message: 'Hello' });
+      expect(response1.status).toBe(200);
+
+      // With ResponseInit
+      const response2 = makeJsonResponse(
+        { error: 'Not found' },
+        { status: 404, headers: { 'X-Request-Id': '123' } },
+      );
+      expect(response2.status).toBe(404);
+      expect(response2.headers.get('X-Request-Id')).toBe('123');
+    });
+
+    it('should work in place of NextResponse.json()', async () => {
+      // Typical Next.js API route patterns
+      const successResponse = makeJsonResponse(
+        { success: true, data: { id: 1 } },
+        { status: 200 },
+      );
+      expect(await successResponse.json()).toEqual({
+        success: true,
+        data: { id: 1 },
+      });
+
+      const errorResponse = makeJsonResponse(
+        { success: false, error: 'Validation failed' },
+        { status: 400 },
+      );
+      expect(await errorResponse.json()).toEqual({
+        success: false,
+        error: 'Validation failed',
+      });
+    });
+  });
+});
+
+describe('makeStreamResponse', () => {
+  describe('basic functionality', () => {
+    it('should create response from Readable stream', () => {
+      const stream = Readable.from(['chunk1', 'chunk2']);
+      const response = makeStreamResponse(stream);
+
+      expect(response.status).toBe(200);
+      expect(response.headers).toBeInstanceOf(Headers);
+    });
+
+    it('should provide stream() method to access Readable', () => {
+      const originalStream = Readable.from(['test']);
+      const response = makeStreamResponse(originalStream);
+
+      const stream = (response as any).stream();
+      expect(stream).toBe(originalStream);
+    });
+
+    it('should handle custom status', () => {
+      const stream = Readable.from(['test']);
+      const response = makeStreamResponse(stream, { status: 201 });
+
+      expect(response.status).toBe(201);
+    });
+
+    it('should handle custom headers', () => {
+      const stream = Readable.from(['test']);
+      const response = makeStreamResponse(stream, {
+        headers: { 'Content-Type': 'text/event-stream', 'X-Custom': 'value' },
+      });
+
+      expect(response.headers.get('Content-Type')).toBe('text/event-stream');
+      expect(response.headers.get('X-Custom')).toBe('value');
+    });
+  });
+
+  describe('text()', () => {
+    it('should concatenate stream chunks as text', async () => {
+      const stream = Readable.from(['Hello', ' ', 'World']);
+      const response = makeStreamResponse(stream);
+
+      const text = await response.text();
+      expect(text).toBe('Hello World');
+    });
+
+    it('should handle Buffer chunks', async () => {
+      const stream = Readable.from([
+        Buffer.from('Hello'),
+        Buffer.from(' '),
+        Buffer.from('World'),
+      ]);
+      const response = makeStreamResponse(stream);
+
+      const text = await response.text();
+      expect(text).toBe('Hello World');
+    });
+
+    it('should handle empty stream', async () => {
+      const stream = Readable.from([]);
+      const response = makeStreamResponse(stream);
+
+      const text = await response.text();
+      expect(text).toBe('');
+    });
+
+    it('should handle UTF-8 characters', async () => {
+      const stream = Readable.from(['Hello ', '世界 ', '🌍']);
+      const response = makeStreamResponse(stream);
+
+      const text = await response.text();
+      expect(text).toBe('Hello 世界 🌍');
+    });
+  });
+
+  describe('json()', () => {
+    it('should parse JSON from stream', async () => {
+      const data = { message: 'Hello', count: 42 };
+      const stream = Readable.from([JSON.stringify(data)]);
+      const response = makeStreamResponse(stream);
+
+      const json = await response.json();
+      expect(json).toEqual(data);
+    });
+
+    it('should handle chunked JSON', async () => {
+      const data = { message: 'Hello', count: 42 };
+      const jsonString = JSON.stringify(data);
+      const mid = Math.floor(jsonString.length / 2);
+      const stream = Readable.from([
+        jsonString.slice(0, mid),
+        jsonString.slice(mid),
+      ]);
+      const response = makeStreamResponse(stream);
+
+      const json = await response.json();
+      expect(json).toEqual(data);
+    });
+
+    it('should throw on invalid JSON', async () => {
+      const stream = Readable.from(['not valid json']);
+      const response = makeStreamResponse(stream);
+
+      await expect(response.json()).rejects.toThrow();
+    });
+  });
+
+  describe('arrayBuffer()', () => {
+    it('should concatenate stream chunks into ArrayBuffer', async () => {
+      const stream = Readable.from([
+        Buffer.from([1, 2, 3]),
+        Buffer.from([4, 5]),
+      ]);
+      const response = makeStreamResponse(stream);
+
+      const arrayBuffer = await response.arrayBuffer();
+      expect(arrayBuffer).toBeDefined();
+      expect(new Uint8Array(arrayBuffer)).toEqual(
+        new Uint8Array([1, 2, 3, 4, 5]),
+      );
+    });
+
+    it('should handle string chunks', async () => {
+      const stream = Readable.from(['Hello', 'World']);
+      const response = makeStreamResponse(stream);
+
+      const arrayBuffer = await response.arrayBuffer();
+      const text = Buffer.from(arrayBuffer).toString('utf8');
+      expect(text).toBe('HelloWorld');
+    });
+
+    it('should handle empty stream', async () => {
+      const stream = Readable.from([]);
+      const response = makeStreamResponse(stream);
+
+      const arrayBuffer = await response.arrayBuffer();
+      expect(arrayBuffer.byteLength).toBe(0);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('should handle stream errors gracefully', async () => {
+      const stream = new Readable({
+        read() {
+          this.emit('error', new Error('Stream error'));
+        },
+      });
+      const response = makeStreamResponse(stream);
+
+      await expect(response.text()).rejects.toThrow('Stream error');
+    });
+
+    it('should handle init without headers', () => {
+      const stream = Readable.from(['test']);
+      const response = makeStreamResponse(stream, { status: 201 });
+
+      expect(response.status).toBe(201);
+      expect(response.headers).toBeInstanceOf(Headers);
+    });
+
+    it('should handle undefined init', () => {
+      const stream = Readable.from(['test']);
+      const response = makeStreamResponse(stream, undefined);
+
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('use cases', () => {
+    it('should work for SSE (Server-Sent Events)', () => {
+      const stream = new Readable({
+        read() {
+          this.push('data: message1\n\n');
+          this.push('data: message2\n\n');
+          this.push(null);
+        },
+      });
+
+      const response = makeStreamResponse(stream, {
+        status: 200,
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+        },
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toBe('text/event-stream');
+      expect(response.headers.get('Cache-Control')).toBe('no-cache');
+    });
+
+    it('should work for streaming large files', async () => {
+      const chunks = Array.from({ length: 100 }, (_, i) =>
+        Buffer.from(`chunk${i}`),
+      );
+      const stream = Readable.from(chunks);
+
+      const response = makeStreamResponse(stream);
+      const text = await response.text();
+
+      expect(text).toBe(chunks.map((c) => c.toString()).join(''));
+    });
+  });
+});

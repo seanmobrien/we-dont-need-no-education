@@ -14,7 +14,7 @@ import type {
   ToolProviderSet,
   MCPClient,
 } from '../types';
-import { toolProxyFactory, attachProxyToTool } from '../tools';
+import { toolProxyFactory } from '../tools';
 import {
   experimental_createMCPClient as createMCPClient,
   Tool,
@@ -30,30 +30,29 @@ import { InstrumentedSseTransport } from '../instrumented-sse-transport';
 import { FirstParameter } from '@/lib/typescript';
 import { clientToolProviderFactory } from './client-tool-provider';
 import { getToolCache } from '../cache';
-import { getAllFeatureFlags } from '@/lib/site-util/feature-flags/server';
+import { getStreamingTransportFlag } from '../tool-flags';
 
-export const toolProviderFactory = async ({
-  impersonation,
+type MCPClientConfig = FirstParameter<typeof createMCPClient>;
+
+const getHttpStreamEnabledFlag = async () => {
+  const ret = await getStreamingTransportFlag();
+  return ret.value;
+};
+
+type McpClientOptions = ToolProviderFactoryOptions & {
+  onerror: (error: unknown) => unknown;
+  userId: string | undefined;
+};
+
+const createTransport = async ({
+  onerror,
+  userId,
   ...options
-}: ToolProviderFactoryOptions): Promise<ConnectableToolProvider> => {
-  const onerror = ((error: unknown) => {
-    const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
-      log: true,
-      source: 'MCPClientMessageHandler',
-      relog: true,
-    });
-    return {
-      role: 'assistant',
-      content: `An error occurred while connecting to the MCP server: ${le.message}. Please try again later.`,
-    };
-  }) as unknown as (error: unknown) => void;
+}: McpClientOptions): Promise<MCPClientConfig['transport']> => {
+  const flagsHttpStreamEnabled = await getHttpStreamEnabledFlag();
 
-  try {
-    const user = impersonation ? impersonation.getUserContext() : undefined;
-    const userId = user ? String(user.userId) : undefined;
-    const features = await getAllFeatureFlags(userId);
-
-    type MCPClientConfig = FirstParameter<typeof createMCPClient>;
+  // If http streaming is disabled or sse is explicitly requested
+  if (!flagsHttpStreamEnabled || options.sse === true) {
     const tx: Omit<MCPClientConfig['transport'], 'headers'> = {
       type: 'sse',
       url: options.url,
@@ -79,88 +78,131 @@ export const toolProviderFactory = async ({
           });
         }
       },
-      /**
-       * Handles incoming SSE messages with error protection.
-       * @param {unknown} message - The received SSE message
-       */
-      onmessage(message: unknown) {
-        try {
-          // Handle incoming messages if needed for debugging/monitoring
-          log((l) =>
-            l.info({ message: 'MCP Client SSE Message:', data: message }),
-          );
-        } catch (e) {
-          LoggedError.isTurtlesAllTheWayDownBaby(e, {
-            log: true,
-            source: 'MCPClientMessageHandler',
-            message: 'MCP Client SSE Message Error',
-            critical: true,
-            data: {
-              message,
-            },
-          });
-        }
-      },
     };
 
     // Create instrumented SSE transport with comprehensive error handling
-    const transport = new InstrumentedSseTransport({
+    return new InstrumentedSseTransport({
       url: options.url,
       onerror,
       ...tx,
     });
+  }
+  const headers = options.headers ? await options.headers() : {};
+  // NOTE: We really should implement full auth here, but lets try and work with what we have
+  const streamableHttpClientTransport = await import(
+    '@modelcontextprotocol/sdk/client/streamableHttp.js'
+  ).then((mod) => mod.StreamableHTTPClientTransport);
+  return new streamableHttpClientTransport(new URL(options.url), {
+    sessionId: userId ? `user-${userId}` : undefined,
+    requestInit: {
+      ...(headers ? { headers } : {}),
+    },
+  });
+};
+const createClient = async ({
+  onerror,
+  userId,
+  ...options
+}: McpClientOptions): Promise<MCPClient> => {
+  const transport: MCPClientConfig['transport'] = await createTransport({
+    onerror,
+    userId,
+    ...options,
+  });
 
+  // Create MCP client with transport and error handling
+  const mcpClient = await createMCPClient({
+    transport,
+    /**
+     * Handles uncaught errors from the MCP client with nested error protection.
+     * @param {unknown} error - The uncaught error from the MCP client
+     * @returns {object} Assistant message with error information
+     */
+    onUncaughtError: (error: unknown): object => {
+      try {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'MCPClientMessageHandler',
+          message: 'MCP Client SSE Uncaught Error',
+          critical: true,
+        });
+        return {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: `An error occurred while processing your request: ${isError(error) ? error.message : String(error)}. Please try again later.`,
+            },
+          ],
+        };
+      } catch (e) {
+        // Fallback error handling if logging itself fails. This prevents the
+        // app from crashing, but swallows the error.  If you are seeing this
+        // message in logs, it indicates a deeper issue is at play.
+        log((l) => l.error('MCP Client Uncaught Error Handler Error:', e));
+        return {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: `A critical error occurred while processing your request. Please try again later.`,
+            },
+          ],
+        };
+      }
+    },
+  });
+  return mcpClient;
+};
+
+const wrapToolsetWithProxies = <TTools extends ToolSet>({
+  mcpClient,
+  tools,
+}: {
+  mcpClient: MCPClient;
+  tools: TTools;
+}): TTools => {
+  // Cache hit: wrap cached tools with proxies to restore function context
+  return Object.entries(tools).reduce(
+    (acc, [toolName, cachedTool]) => {
+      acc[toolName] = toolProxyFactory<unknown, unknown>({
+        mcpClient,
+        name: toolName,
+        tool: cachedTool as Tool<unknown, unknown>,
+      });
+      return acc;
+    },
+    {} as Record<string, unknown>,
+  ) as TTools;
+};
+
+export const toolProviderFactory = async ({
+  impersonation,
+  ...options
+}: ToolProviderFactoryOptions): Promise<ConnectableToolProvider> => {
+  const onerror = ((error: unknown) => {
+    const le = LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'MCPClientMessageHandler',
+      relog: true,
+    });
+    return {
+      role: 'assistant',
+      content: `An error occurred while connecting to the MCP server: ${le.message}. Please try again later.`,
+    };
+  }) as unknown as (error: unknown) => void;
+
+  try {
+    const user = impersonation ? impersonation.getUserContext() : undefined;
+    const userId = user ? String(user.hash ?? user.userId) : undefined;
     // Create MCP client with transport and error handling
-    let mcpClient = await createMCPClient({
-      transport,
-      /**
-       * Handles uncaught errors from the MCP client with nested error protection.
-       * @param {unknown} error - The uncaught error from the MCP client
-       * @returns {object} Assistant message with error information
-       */
-      onUncaughtError: (error: unknown): object => {
-        try {
-          LoggedError.isTurtlesAllTheWayDownBaby(error, {
-            log: true,
-            source: 'MCPClientMessageHandler',
-            message: 'MCP Client SSE Uncaught Error',
-            critical: true,
-          });
-          return {
-            role: 'assistant',
-            content: [
-              {
-                type: 'text',
-                text: `An error occurred while processing your request: ${isError(error) ? error.message : String(error)}. Please try again later.`,
-              },
-            ],
-          };
-        } catch (e) {
-          // Fallback error handling if logging itself fails. This prevents the
-          // app from crashing, but swallows the error.  If you are seeing this
-          // message in logs, it indicates a deeper issue is at play.
-          log((l) => l.error('MCP Client Uncaught Error Handler Error:', e));
-          return {
-            role: 'assistant',
-            content: [
-              {
-                type: 'text',
-                text: `A critical error occurred while processing your request. Please try again later.`,
-              },
-            ],
-          };
-        }
-      },
+    let mcpClient = await createClient({
+      onerror,
+      userId,
+      ...options,
     });
 
-    // Check cache first for faster tool discovery
-    const toolCache = features?.mcp_cache_tools
-      ? getToolCache()
-      : {
-          getCachedTools: async () => Promise.resolve(null),
-          setCachedTools: async () => Promise.resolve(),
-          invalidateCache: async () => Promise.resolve(),
-        };
+    const toolCache = await getToolCache();
     const cachedTools: ToolSet | null = await toolCache.getCachedTools(options);
     let tools: ToolSet;
 
@@ -183,27 +225,7 @@ export const toolProviderFactory = async ({
       // Use the live tools directly (they have valid function context)
       tools = filteredTools;
     } else {
-      // Cache hit: wrap cached tools with proxies to restore function context
-      tools = Object.entries(cachedTools).reduce(
-        (acc, [toolName, cachedTool]) => {
-          acc[toolName] = toolProxyFactory<unknown, unknown>({
-            mcpClient: async (name: string) => {
-              const liveTools = await mcpClient.tools();
-              Object.entries(liveTools).forEach(([liveName, liveTool]) => {
-                const cachedTool = acc[liveName];
-                if (cachedTool) {
-                  attachProxyToTool(liveTool);
-                }
-              });
-              return liveTools[name] as Tool<unknown, unknown> | undefined;
-            },
-            name: toolName,
-            tool: cachedTool as Tool<unknown, unknown>,
-          });
-          return acc;
-        },
-        {} as ToolSet,
-      );
+      tools = wrapToolsetWithProxies({ mcpClient, tools: cachedTools });
     }
 
     let isConnected = true;
@@ -582,9 +604,10 @@ export const toolProviderSetFactory = async (
                 );
               } else {
                 // Re-throw non-AbortErrors so they can be properly logged
-                throw e;
+                return Promise.reject(e);
               }
             }
+            return Promise.resolve();
           }),
         ),
         new Promise((resolve) => setTimeout(resolve, 30 * 1000)), // Wait 30 seconds max for disposal

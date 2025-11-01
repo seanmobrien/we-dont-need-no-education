@@ -39,14 +39,7 @@ const extractDbError = (val: unknown): DbError | undefined => {
 
   // Walk standard wrapping locations
   const fromCause = extractDbError(e.cause);
-  if (fromCause) return fromCause;
-  /*
-  if (e.cause && typeof e.cause === "object") {
-    const maybeDeeper = extractDbError((e.cause as MaybeWrappedError).error);
-    if (maybeDeeper) return maybeDeeper;
-  }
-    */
-  return extractDbError(e.error);
+  return fromCause ? fromCause : extractDbError(e.error);
 };
 
 export const getDbError = (error: unknown): DbError | undefined =>

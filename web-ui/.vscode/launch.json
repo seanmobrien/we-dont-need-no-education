@@ -11,6 +11,7 @@
             "runtimeArgs": [
                 "--inspect",
                 "--experimental-modules",
+                "--preserve-symlinks",
                 "run-script",
                 "dev"
             ]
@@ -19,12 +20,35 @@
             "name": "Next.js: debug trace deprecation",
             "type": "node",
             "request": "launch",
-            "env": {
-                "NODE_OPTIONS": "--inspect --trace-deprecation --trace-warnings"
-            },
             "runtimeExecutable": "npm",
+            "console": "internalConsole",
+            "internalConsoleOptions": "openOnFirstSessionStart",
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "${workspaceFolder}",
+            "resolveSourceMapLocations": [
+                "${workspaceFolder}/**",
+                "!**/node_modules/**"
+            ],
+            "showAsyncStacks": true,
+            "skipFiles": [
+                "(rsc)/**",
+                "(instrument)/**",
+                "<node_internals>/**",
+                "**/node_modules/**",
+                "**/.next/**",
+                "**/out/**",
+                "**/.vercel/**",
+                "**/.turbo/**",
+                "**/.expo/**",
+                "**/.expo-shared/**",
+                "**/.vscode/**",
+            ],
+            "outputCapture": "std",
             "runtimeArgs": [
                 "--experimental-modules",
+                "--inspect",
+                "--trace-deprecation",
+                "--trace-warnings",
                 "run-script",
                 "dev"
             ]
