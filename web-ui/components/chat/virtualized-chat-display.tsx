@@ -70,6 +70,13 @@ import { type MessageType, searchMessageContent } from './chat-message-filters';
 export const FALLBACK_CONTAINER_WIDTH = 1200;
 
 /**
+ * Delay in milliseconds to wait after accordion state change before remeasuring.
+ * This matches Material-UI's default transition duration to ensure the accordion
+ * animation completes before height measurement.
+ */
+const ACCORDION_TRANSITION_DELAY_MS = 300;
+
+/**
  * Text measurement utility for estimating heights of chat messages
  */
 const textMeasurer = createTextMeasurer();
@@ -364,12 +371,20 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
         >
           {rowVirtualizer.getVirtualItems().map((virtualItem) => {
             const turn = turns[virtualItem.index];
+            let elementRef: Element | null = null;
 
             return (
               <Box
                 key={virtualItem.key}
                 data-index={virtualItem.index}
-                ref={rowVirtualizer.measureElement}
+                ref={(el) => {
+                  // Store element reference for efficient remeasurement
+                  elementRef = el;
+                  // Also pass to virtualizer for ResizeObserver setup
+                  if (rowVirtualizer.measureElement && el) {
+                    rowVirtualizer.measureElement(el);
+                  }
+                }}
                 sx={{
                   position: 'absolute',
                   top: 0,
@@ -389,15 +404,10 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                     // Force remeasurement when accordion state changes
                     // Add a small delay to ensure accordion transition completes
                     setTimeout(() => {
-                      if (rowVirtualizer.measureElement) {
-                        const element = parentRef.current?.querySelector(
-                          `[data-index="${virtualItem.index}"]`,
-                        );
-                        if (element) {
-                          rowVirtualizer.measureElement(element);
-                        }
+                      if (rowVirtualizer.measureElement && elementRef) {
+                        rowVirtualizer.measureElement(elementRef);
                       }
-                    }, 300); // MUI default transition duration
+                    }, ACCORDION_TRANSITION_DELAY_MS);
                   }}
                   globalFilters={globalFilters}
                 />

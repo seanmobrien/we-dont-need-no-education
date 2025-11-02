@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -43,7 +43,6 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
   const [metadataExpanded, setMetadataExpanded] = useState(false);
   const [optimizedContentExpanded, setOptimizedContentExpanded] =
     useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
 
   // Notify parent when accordion state changes to trigger remeasurement
   useEffect(() => {
@@ -54,7 +53,6 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
 
   return (
     <Box
-      ref={containerRef}
       sx={{
         mb: 2,
         p: 2,
