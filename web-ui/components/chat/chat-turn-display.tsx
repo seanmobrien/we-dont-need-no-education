@@ -169,6 +169,7 @@ interface ChatTurnDisplayProps {
   enableSelection?: boolean;
   selectedItems?: SelectedChatItem[];
   onSelectionChange?: (selectedItems: SelectedChatItem[]) => void;
+  onHeightChange?: () => void;
   globalFilters?: {
     typeFilters: Set<MessageType>;
     contentFilter: string;
@@ -182,6 +183,7 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
   enableSelection = false,
   selectedItems = [],
   onSelectionChange,
+  onHeightChange,
   globalFilters = { typeFilters: new Set(), contentFilter: '' },
 }) => {
   const [propertiesExpanded, setPropertiesExpanded] = useState(false);
@@ -592,6 +594,7 @@ export const ChatTurnDisplay: React.FC<ChatTurnDisplayProps> = ({
                 enableSelection={enableSelection}
                 isSelected={isMessageSelected}
                 onSelectionChange={handleMessageSelectionChange}
+                onHeightChange={onHeightChange}
               />
             );
           })

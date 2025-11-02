@@ -369,6 +369,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
               <Box
                 key={virtualItem.key}
                 data-index={virtualItem.index}
+                ref={rowVirtualizer.measureElement}
                 sx={{
                   position: 'absolute',
                   top: 0,
@@ -384,6 +385,19 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                   enableSelection={enableSelection}
                   selectedItems={selectedItems}
                   onSelectionChange={onSelectionChange}
+                  onHeightChange={() => {
+                    // Force remeasurement when accordion state changes
+                    if (rowVirtualizer.measureElement) {
+                      // The element will be remeasured by ResizeObserver automatically
+                      // But we can also manually trigger it if needed
+                      const element = parentRef.current?.querySelector(
+                        `[data-index="${virtualItem.index}"]`,
+                      );
+                      if (element) {
+                        rowVirtualizer.measureElement(element);
+                      }
+                    }
+                  }}
                   globalFilters={globalFilters}
                 />
               </Box>

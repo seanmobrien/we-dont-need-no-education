@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -29,6 +29,7 @@ interface ChatMessageDisplayProps {
   enableSelection?: boolean;
   isSelected?: boolean;
   onSelectionChange?: (messageId: number, checked: boolean) => void;
+  onHeightChange?: () => void;
 }
 
 export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
@@ -37,11 +38,23 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
   enableSelection = false,
   isSelected = false,
   onSelectionChange,
+  onHeightChange,
 }) => {
   const [metadataExpanded, setMetadataExpanded] = useState(false);
+  const [optimizedContentExpanded, setOptimizedContentExpanded] =
+    useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Notify parent when accordion state changes to trigger remeasurement
+  useEffect(() => {
+    if (onHeightChange) {
+      onHeightChange();
+    }
+  }, [metadataExpanded, optimizedContentExpanded, onHeightChange]);
 
   return (
     <Box
+      ref={containerRef}
       sx={{
         mb: 2,
         p: 2,
@@ -111,7 +124,10 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
       {/* Optimized Content (if different from regular content) */}
       {message.optimizedContent &&
         message.optimizedContent !== message.content && (
-          <Accordion>
+          <Accordion
+            expanded={optimizedContentExpanded}
+            onChange={(_, isExpanded) => setOptimizedContentExpanded(isExpanded)}
+          >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="caption">Optimized Content</Typography>
             </AccordionSummary>
