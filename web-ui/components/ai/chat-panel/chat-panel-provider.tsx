@@ -146,6 +146,10 @@ export const ChatPanelProvider: React.FC<
         fieldsEqual(newConfig, config, key),
       );
       if (!areEqual) {
+        // Enforce minimum height before merging
+        if (newConfig.size?.height !== undefined && newConfig.size.height < 300) {
+          newConfig.size.height = 300;
+        }
         setConfigState({
           ...config,
           ...newConfig,
