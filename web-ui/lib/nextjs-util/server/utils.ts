@@ -299,12 +299,13 @@ export const createInstrumentedSpan = async ({
   try {
     const tracer = trace.getTracer(tracerName);
     const parentContext = otelContext.active();
-    
+
     span = tracer.startSpan(
       spanName,
       kind !== undefined || attributes !== undefined
         ? { kind, attributes }
         : undefined,
+      parentContext,
     );
 
     const contextWithSpan = trace.setSpan(parentContext, span);
