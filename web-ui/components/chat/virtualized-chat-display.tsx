@@ -137,6 +137,17 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
 
   // Store element references for efficient remeasurement
   const elementRefsMap = useRef<Map<number, Element>>(new Map());
+  
+  // Store timeout IDs to enable cleanup
+  const timeoutIdsMap = useRef<Map<number, NodeJS.Timeout>>(new Map());
+
+  // Clean up all pending timeouts on unmount
+  React.useEffect(() => {
+    return () => {
+      timeoutIdsMap.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIdsMap.current.clear();
+    };
+  }, []);
 
   // Estimate size for each turn based on content using improved measurement
   /**
@@ -330,6 +341,34 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
         : undefined, // Enable dynamic measurement when ResizeObserver is available
   });
 
+  /**
+   * Create a memoized height change handler for a specific turn index.
+   * This prevents unnecessary re-renders by creating stable callback references.
+   */
+  const createHeightChangeHandler = useCallback(
+    (itemIndex: number) => () => {
+      // Clear any existing timeout for this item
+      const existingTimeout = timeoutIdsMap.current.get(itemIndex);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+
+      // Schedule new measurement after transition completes
+      const timeoutId = setTimeout(() => {
+        const element = elementRefsMap.current.get(itemIndex);
+        if (rowVirtualizer.measureElement && element) {
+          rowVirtualizer.measureElement(element);
+        }
+        // Clean up timeout reference
+        timeoutIdsMap.current.delete(itemIndex);
+      }, ACCORDION_TRANSITION_DELAY_MS);
+
+      // Store timeout ID for cleanup
+      timeoutIdsMap.current.set(itemIndex, timeoutId);
+    },
+    [rowVirtualizer],
+  );
+
   return (
     <Box>
       {/* Controls */}
@@ -391,6 +430,12 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                   } else {
                     // Clean up when element is unmounted
                     elementRefsMap.current.delete(itemIndex);
+                    // Clear any pending timeout for this item
+                    const timeoutId = timeoutIdsMap.current.get(itemIndex);
+                    if (timeoutId) {
+                      clearTimeout(timeoutId);
+                      timeoutIdsMap.current.delete(itemIndex);
+                    }
                   }
                 }}
                 sx={{
@@ -408,16 +453,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                   enableSelection={enableSelection}
                   selectedItems={selectedItems}
                   onSelectionChange={onSelectionChange}
-                  onHeightChange={() => {
-                    // Force remeasurement when accordion state changes
-                    // Add a small delay to ensure accordion transition completes
-                    setTimeout(() => {
-                      const element = elementRefsMap.current.get(itemIndex);
-                      if (rowVirtualizer.measureElement && element) {
-                        rowVirtualizer.measureElement(element);
-                      }
-                    }, ACCORDION_TRANSITION_DELAY_MS);
-                  }}
+                  onHeightChange={createHeightChangeHandler(itemIndex)}
                   globalFilters={globalFilters}
                 />
               </Box>

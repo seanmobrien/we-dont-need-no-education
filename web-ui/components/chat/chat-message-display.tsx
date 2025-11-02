@@ -50,8 +50,17 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
     onHeightChangeRef.current = onHeightChange;
   }, [onHeightChange]);
 
+  // Track if this is the initial mount to avoid triggering remeasurement unnecessarily
+  const isInitialMount = React.useRef(true);
+
   // Notify parent when accordion state changes to trigger remeasurement
   useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     if (onHeightChangeRef.current) {
       onHeightChangeRef.current();
     }
