@@ -130,6 +130,7 @@ declare module '@auth/core/types' {
         auth: Session | null;
       }) => Awaitable<boolean | NextResponse | Response | undefined>;
     };
+    skipCSRFCheck?: boolean;
   };
 }
 
@@ -171,6 +172,7 @@ export declare module '@auth/core' {
         auth: Session | null;
       }) => Awaitable<boolean | NextResponse | Response | undefined>;
     };
+    skipCSRFCheck?: boolean;
   };
 }
 
