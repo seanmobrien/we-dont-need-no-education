@@ -5,7 +5,7 @@ export const panelStableStyles = {
     alignItems: 'center',
     padding: 2,
     width: 1,
-    height: '-webkit-fill-available',
+    height: ['100%', '-moz-available', '-webkit-fill-available'],
     boxSizing: 'border-box',
   } as const,
   chatInput: {
