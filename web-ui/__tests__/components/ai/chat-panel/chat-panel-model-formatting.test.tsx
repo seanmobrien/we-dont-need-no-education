@@ -86,7 +86,7 @@ describe('ChatPanel Model String Formatting', () => {
         { text: 'Test message' },
         expect.objectContaining({
           headers: expect.objectContaining({
-            'x-active-model': 'azure:lofi', // Default should be azure:hifi
+            'x-active-model': 'azure:lofi', // Default should be azure:lofi
           }),
         }),
       );
