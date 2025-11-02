@@ -1,11 +1,8 @@
 import { Session } from '@auth/core/types';
 import { NextRequest } from 'next/server';
-import {
-  extractToken,
-  unauthorizedServiceResponse,
-  KnownScopeValues,
-  KnownScopeIndex,
-} from './utilities';
+import { extractToken, KnownScopeValues, KnownScopeIndex } from './utilities';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
+
 import { log } from '../logger';
 
 export const authorized = async ({
