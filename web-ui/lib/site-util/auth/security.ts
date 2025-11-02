@@ -1,4 +1,4 @@
-import type { Session, User } from 'next-auth';
+import type { Session, User } from '@auth/core/types';
 
 export const isUserAuthorized = ({
   signedInUserId,

@@ -1,4 +1,14 @@
-import NextAuth, { Account, NextAuthConfig, Profile, User } from 'next-auth'; // Added NextAuthConfig
+import type {
+  Account,
+  Profile,
+  User,
+  Awaitable,
+  DefaultSession,
+  Session,
+  AuthConfig,
+} from '@auth/core/types';
+
+import NextAuth from 'next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { CredentialInput, Provider } from '@auth/core/providers';
 import { isRunningOnEdge } from '@/lib/site-util/env';
@@ -6,8 +16,7 @@ import { logEvent } from '@/lib/logger';
 
 import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
 import { authorized } from './lib/auth/authorized';
-import { JWT } from '@auth/core/jwt';
-import { Awaitable, DefaultSession, Session } from '@auth/core/types';
+import type { JWT } from '@auth/core/jwt';
 
 type DynamicImports = {
   drizzleAdapter: {
@@ -135,7 +144,7 @@ export const providerMap = providers.map((provider) => {
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth(
-  async (): Promise<NextAuthConfig> => {
+  async (): Promise<AuthConfig> => {
     // Added NextAuthConfig return type
     let adapter: Adapter | undefined;
 

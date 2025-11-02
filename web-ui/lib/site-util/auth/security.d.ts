@@ -1,4 +1,4 @@
-import type { Session } from 'next-auth';
+import type { Session } from '@auth/core/types';
 
 declare module '@/lib/site-util/auth/security' {
   /**
