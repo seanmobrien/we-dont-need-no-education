@@ -9,8 +9,8 @@ import {
   extractToken,
   KnownScopeIndex,
   KnownScopeValues,
-  unauthorizedServiceResponse,
 } from '@/lib/auth/utilities';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 import { ApiRequestError } from '@/lib/send-api-request';
 import type { NextRequest } from 'next/server';
 // tool imports
