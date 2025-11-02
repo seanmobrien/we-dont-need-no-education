@@ -387,16 +387,17 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                   onSelectionChange={onSelectionChange}
                   onHeightChange={() => {
                     // Force remeasurement when accordion state changes
-                    if (rowVirtualizer.measureElement) {
-                      // The element will be remeasured by ResizeObserver automatically
-                      // But we can also manually trigger it if needed
-                      const element = parentRef.current?.querySelector(
-                        `[data-index="${virtualItem.index}"]`,
-                      );
-                      if (element) {
-                        rowVirtualizer.measureElement(element);
+                    // Add a small delay to ensure accordion transition completes
+                    setTimeout(() => {
+                      if (rowVirtualizer.measureElement) {
+                        const element = parentRef.current?.querySelector(
+                          `[data-index="${virtualItem.index}"]`,
+                        );
+                        if (element) {
+                          rowVirtualizer.measureElement(element);
+                        }
                       }
-                    }
+                    }, 300); // MUI default transition duration
                   }}
                   globalFilters={globalFilters}
                 />
