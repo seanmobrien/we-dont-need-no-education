@@ -39,7 +39,14 @@ const Home = async (args: { params: Promise<{ emailId: string }> }) => {
           }}
         >
           <NoteGrid />
-          <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              '& > div': {
+                height: '-webkit-fill-available',
+              },
+            }}
+          >
             <ChatPanel page="email-notes" />
           </Box>
         </Box>

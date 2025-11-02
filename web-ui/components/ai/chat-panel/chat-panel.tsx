@@ -28,13 +28,22 @@ import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
-import type { DockPosition, ModelSelection } from './types';
+import type {
+  AiProvider,
+  DockPosition,
+  ModelSelection,
+  ModelType,
+} from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { FirstParameter } from '@/lib/typescript';
 import { panelStableStyles } from './styles';
+import {
+  AllFeatureFlagsDefault,
+  useFeatureFlags,
+} from '@/lib/site-util/feature-flags';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -111,10 +120,14 @@ const ChatPanel = ({ page }: { page: string }) => {
   const [initialMessages, setInitialMessages] = useState<
     UIMessage[] | undefined
   >(undefined);
+  const { getFlag } = useFeatureFlags();
+  const {
+    value: { provider, chat_model } = { provider: 'azure', chat_model: 'lofi' },
+  } = getFlag('models_defaults', AllFeatureFlagsDefault['models_defaults']);
   const [activeModelSelection, setActiveModelSelection] =
     useState<ModelSelection>({
-      provider: 'azure',
-      model: 'hifi',
+      provider: provider as AiProvider,
+      model: chat_model as ModelType,
     });
   const [rateLimitTimeout, setRateLimitTimeout] = useState<
     Map<AiModelType, Date>
@@ -522,7 +535,11 @@ const ChatPanel = ({ page }: { page: string }) => {
   }
 
   return (
-    <Box id={`chat-panel-${threadId}`} sx={panelStableStyles.container}>
+    <Box
+      id={`chat-panel-${threadId}`}
+      data-component="chat-panel"
+      sx={panelStableStyles.container}
+    >
       {chatContent}
     </Box>
   );

@@ -86,7 +86,7 @@ describe('ChatPanel Model String Formatting', () => {
         { text: 'Test message' },
         expect.objectContaining({
           headers: expect.objectContaining({
-            'x-active-model': 'azure:hifi', // Default should be azure:hifi
+            'x-active-model': 'azure:lofi', // Default should be azure:hifi
           }),
         }),
       );
@@ -120,7 +120,7 @@ describe('ChatPanel Model String Formatting', () => {
         { text: 'Test message with Google' },
         expect.objectContaining({
           headers: expect.objectContaining({
-            'x-active-model': 'google:hifi', // Should now be google:hifi
+            'x-active-model': 'google:lofi', // Should now be google:lofi
           }),
         }),
       );
@@ -184,7 +184,7 @@ describe('ChatPanel Model String Formatting', () => {
         { text: 'Test message with OpenAI' },
         expect.objectContaining({
           headers: expect.objectContaining({
-            'x-active-model': 'openai:hifi', // Should now be openai:hifi
+            'x-active-model': 'openai:lofi', // Should now be openai:lofi
           }),
         }),
       );

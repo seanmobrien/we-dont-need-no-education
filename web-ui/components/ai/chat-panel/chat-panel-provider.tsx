@@ -146,6 +146,9 @@ export const ChatPanelProvider: React.FC<
         fieldsEqual(newConfig, config, key),
       );
       if (!areEqual) {
+        if ((newConfig.size?.height ?? Number.MAX_SAFE_INTEGER) < 300) {
+          config.size.height = 300;
+        }
         setConfigState({
           ...config,
           ...newConfig,
