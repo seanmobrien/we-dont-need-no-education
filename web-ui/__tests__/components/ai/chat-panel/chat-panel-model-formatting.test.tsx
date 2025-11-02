@@ -184,7 +184,7 @@ describe('ChatPanel Model String Formatting', () => {
         { text: 'Test message with OpenAI' },
         expect.objectContaining({
           headers: expect.objectContaining({
-            'x-active-model': 'openai:lofi', // Should now be openai:lofi
+            'x-active-model': 'openai:lofi', // Should be openai:lofi
           }),
         }),
       );
