@@ -44,12 +44,18 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
   const [optimizedContentExpanded, setOptimizedContentExpanded] =
     useState(false);
 
+  // Store the latest onHeightChange callback in a ref to avoid unnecessary effect triggers
+  const onHeightChangeRef = React.useRef(onHeightChange);
+  React.useEffect(() => {
+    onHeightChangeRef.current = onHeightChange;
+  }, [onHeightChange]);
+
   // Notify parent when accordion state changes to trigger remeasurement
   useEffect(() => {
-    if (onHeightChange) {
-      onHeightChange();
+    if (onHeightChangeRef.current) {
+      onHeightChangeRef.current();
     }
-  }, [metadataExpanded, optimizedContentExpanded, onHeightChange]);
+  }, [metadataExpanded, optimizedContentExpanded]);
 
   return (
     <Box

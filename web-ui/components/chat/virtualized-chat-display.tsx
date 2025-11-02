@@ -135,6 +135,9 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
   const [showTurnProperties, setShowTurnProperties] = useState(false);
   const [showMessageMetadata, setShowMessageMetadata] = useState(false);
 
+  // Store element references for efficient remeasurement
+  const elementRefsMap = useRef<Map<number, Element>>(new Map());
+
   // Estimate size for each turn based on content using improved measurement
   /**
    * Estimate (optimistically) the vertical pixel footprint of a turn.
@@ -371,18 +374,23 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
         >
           {rowVirtualizer.getVirtualItems().map((virtualItem) => {
             const turn = turns[virtualItem.index];
-            let elementRef: Element | null = null;
+            const itemIndex = virtualItem.index;
 
             return (
               <Box
                 key={virtualItem.key}
                 data-index={virtualItem.index}
                 ref={(el) => {
-                  // Store element reference for efficient remeasurement
-                  elementRef = el;
-                  // Also pass to virtualizer for ResizeObserver setup
-                  if (rowVirtualizer.measureElement && el) {
-                    rowVirtualizer.measureElement(el);
+                  // Store element reference in map for efficient remeasurement
+                  if (el) {
+                    elementRefsMap.current.set(itemIndex, el);
+                    // Also pass to virtualizer for ResizeObserver setup
+                    if (rowVirtualizer.measureElement) {
+                      rowVirtualizer.measureElement(el);
+                    }
+                  } else {
+                    // Clean up when element is unmounted
+                    elementRefsMap.current.delete(itemIndex);
                   }
                 }}
                 sx={{
@@ -404,8 +412,9 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                     // Force remeasurement when accordion state changes
                     // Add a small delay to ensure accordion transition completes
                     setTimeout(() => {
-                      if (rowVirtualizer.measureElement && elementRef) {
-                        rowVirtualizer.measureElement(elementRef);
+                      const element = elementRefsMap.current.get(itemIndex);
+                      if (rowVirtualizer.measureElement && element) {
+                        rowVirtualizer.measureElement(element);
                       }
                     }, ACCORDION_TRANSITION_DELAY_MS);
                   }}
