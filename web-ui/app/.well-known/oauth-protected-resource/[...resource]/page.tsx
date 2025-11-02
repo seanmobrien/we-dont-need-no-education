@@ -10,18 +10,17 @@ const handler = protectedResourceHandler({
   authServerUrls: [env('AUTH_KEYCLOAK_ISSUER')!],
 });
 
-const protectedResource = async (req: NextRequest) => {
+const protectedResource = async (req: NextRequest): Promise<void> => {
   try {
     const response =
       req.method === 'OPTIONS'
         ? metadataCorsOptionsRequestHandler()
         : handler(req);
-    return response;
+    return response as unknown as Promise<void>;
   } catch (error) {
     throw LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
       source: 'protected-resource',
-      message: `Error handling protected resource request: ${error.message}`,
     });
   }
 };
