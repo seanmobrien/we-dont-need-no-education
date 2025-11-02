@@ -30,13 +30,18 @@ const Home = async (args: { params: Promise<{ emailId: string }> }) => {
         <Box
           sx={{
             width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
             '& > :not(style)': {
               m: 1,
             },
           }}
         >
           <KpiGrid />
-          <ChatPanel page="email-key-points" />
+          <Box sx={{ flexGrow: 1, minHeight: 0 }}>
+            <ChatPanel page="email-key-points" />
+          </Box>
         </Box>
       </ChatPanelLayout>
     </EmailDashboardLayout>
