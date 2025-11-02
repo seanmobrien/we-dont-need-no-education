@@ -17,6 +17,7 @@ import {
 } from '@opentelemetry/api';
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
+import { makeJsonResponse } from './response';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
@@ -376,6 +377,25 @@ export const createInstrumentedSpan = async ({
       },
     };
   }
+};
+export const unauthorizedServiceResponse = ({
+  req,
+  scopes = [],
+}: {
+  req: NextRequest;
+  scopes?: Array<string>;
+}) => {
+  const { nextUrl } = req;
+  const resourceMetadataPath = `/.well-known/oauth-protected-resource${nextUrl.pathname}`;
+  return makeJsonResponse(
+    { error: 'Unauthorized', message: 'Active session required.' },
+    {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataPath}"${scopes && scopes.length > 0 ? ` scope="${scopes.join(' ')}"` : ''}`,
+      },
+    },
+  );
 };
 
 export const reportEvent = async ({

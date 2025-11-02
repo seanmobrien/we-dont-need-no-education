@@ -1,5 +1,5 @@
 import { getToken, JWT } from 'next-auth/jwt';
-import type { NextRequest } from 'next/server';
+// import type { NextRequest } from 'next/server';
 import { env } from '@/lib/site-util/env';
 import { makeJsonResponse } from '@/lib/nextjs-util/server/response';
 import {
@@ -20,11 +20,11 @@ export const KnownScopeIndex = {
 const REQUEST_DECODED_TOKEN: unique symbol = Symbol.for(
   '@/no-education/api/auth/decoded-token',
 );
-type RequestWithToken = NextRequest & {
+type RequestWithToken = Request & {
   [REQUEST_DECODED_TOKEN]?: JWT;
 };
 
-export const extractToken = async (req: NextRequest): Promise<JWT | null> => {
+export const extractToken = async (req: Request): Promise<JWT | null> => {
   const check = (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN];
   if (check) {
     return check;
@@ -44,27 +44,6 @@ export const extractToken = async (req: NextRequest): Promise<JWT | null> => {
     (req as RequestWithToken)[REQUEST_DECODED_TOKEN] = ret;
   }
   return ret;
-};
-
-export const unauthorizedServiceResponse = ({
-  req,
-  scopes = [],
-}: {
-  req: NextRequest;
-  scopes?: Array<string>;
-}) => {
-  const { nextUrl } = req;
-  const resourceMetadataPath = `/.well-known/oauth-protected-resource${nextUrl.pathname}`;
-
-  return makeJsonResponse(
-    { error: 'Unauthorized', message: 'Active session required.' },
-    {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataPath}"${scopes && scopes.length > 0 ? ` scope="${scopes.join(' ')}"` : ''}`,
-      },
-    },
-  );
 };
 
 /**
