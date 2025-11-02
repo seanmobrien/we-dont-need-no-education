@@ -43,7 +43,7 @@ const Home = async (args: { params: Promise<{ emailId: string }> }) => {
             sx={{
               flexGrow: 1,
               '& > div': {
-                height: '-webkit-fill-available',
+                height: ['100%', 'fill-available', '-webkit-fill-available'],
               },
             }}
           >
