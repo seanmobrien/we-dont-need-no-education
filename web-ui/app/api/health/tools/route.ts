@@ -1,8 +1,8 @@
 import { auth } from '@/auth';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
-import { User } from 'next-auth';
+import type { User } from '@auth/core/types';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server';
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 const toolProviderFactory = async ({
   req,

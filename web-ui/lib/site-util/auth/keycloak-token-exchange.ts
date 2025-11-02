@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
-import { getToken } from 'next-auth/jwt';
+// import { getToken } from 'next-auth/jwt';
+import { getToken } from '@auth/core/jwt';
 import { NextRequest } from 'next/server';
 import { NextApiRequest } from 'next';
 import { env } from '../env';

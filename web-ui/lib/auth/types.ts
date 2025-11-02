@@ -1,11 +1,6 @@
-import { Session } from '@auth/core/types';
-import { User as NextAuthUser } from 'next-auth'; // Added NextAuthConfig
+import type { Session, User as NextAuthUser } from '@auth/core/types';
 
-export type NextAuthUserWithAccountId = NextAuthUser & {
-  account_id?: number;
-  hash?: string;
-};
+type NextAuthUserWithAccountId = NextAuthUser;
+type SessionWithAccountId = Session;
 
-export type SessionWithAccountId = Session & {
-  user?: NextAuthUserWithAccountId;
-};
+export type { NextAuthUserWithAccountId, SessionWithAccountId };

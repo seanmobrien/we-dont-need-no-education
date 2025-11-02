@@ -1,5 +1,4 @@
-import { Session } from '@auth/core/types';
-import { User as NextAuthUser } from 'next-auth'; // Added NextAuthConfig
+import type { Session, User as NextAuthUser } from '@auth/core/types';
 /**
  * Auth types shared by the application.
  * @module @/lib/auth/types

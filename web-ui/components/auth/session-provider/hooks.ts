@@ -1,7 +1,7 @@
 import { useContext } from 'react';
 import { SessionContext } from './provider';
-import { type SessionContextType } from './types';
-import { Session } from '@auth/core/types';
+import type { SessionContextType } from './types';
+import type { Session } from '@auth/core/types';
 
 /**
  * Hook to access session context

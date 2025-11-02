@@ -23,7 +23,7 @@ import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/c
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { User } from 'next-auth';
+import type { User } from '@auth/core/types';
 // Allow streaming responses up to 360 seconds
 //const maxDuration = 60 * 1000 * 360;
 
