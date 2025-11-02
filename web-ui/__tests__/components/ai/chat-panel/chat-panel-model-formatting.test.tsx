@@ -120,7 +120,7 @@ describe('ChatPanel Model String Formatting', () => {
         { text: 'Test message with Google' },
         expect.objectContaining({
           headers: expect.objectContaining({
-            'x-active-model': 'google:lofi', // Should now be google:lofi
+            'x-active-model': 'google:lofi', // Should be google:lofi
           }),
         }),
       );
