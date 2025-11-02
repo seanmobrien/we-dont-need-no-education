@@ -124,7 +124,10 @@ const instrumentServer = () => {
       new UndiciInstrumentation({
         ignoreRequestHook: (request) => {
           // Ignore requests to auth session endpoint, too spammy
-          if (request.path.includes('/api/auth/session')) {
+          if (
+            request.path.includes('api/auth/session') ||
+            request.path.includes('api/health')
+          ) {
             return true;
           }
           return false;
