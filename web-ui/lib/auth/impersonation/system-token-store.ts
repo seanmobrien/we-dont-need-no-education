@@ -222,8 +222,7 @@ export class SystemTokenStore {
    * @description Contains discovered endpoints and configuration from Keycloak's
    * .well-known/openid_configuration endpoint. Cached to avoid repeated discovery.
    */
-  // es-lint-disable-next-line @typescript-eslint/no-explicit-any
-  private oidcConfig?: any;
+  private oidcConfig?: Record<string, unknown>;
 
   /**
    * Rate limiter for authentication attempts
