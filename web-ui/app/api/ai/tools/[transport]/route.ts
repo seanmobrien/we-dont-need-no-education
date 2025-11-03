@@ -243,7 +243,11 @@ const handler = wrapRouteRequest(
       : transportFromProps;
     const token = await extractToken(req);
     if (!token) {
-      log((l) => l.warn({ message: `Unauthorized access attempt`, transport }));
+      log((l) =>
+        l.warn(
+          `Unauthorized access attempt (no token).  Transport: ${safeSerialize(transport)}`,
+        ),
+      );
       throw new ApiRequestError(
         'Unauthorized',
         unauthorizedServiceResponse({
@@ -261,7 +265,9 @@ const handler = wrapRouteRequest(
       )
     ) {
       log((l) =>
-        l.warn({ message: `Unauthorized access attempt`, transport, token }),
+        l.warn(
+          `Unauthorized access attempt (no access), token: ${JSON.stringify(token)}, Transport: ${safeSerialize(transport)}`,
+        ),
       );
       throw new ApiRequestError(
         'Unauthorized',
