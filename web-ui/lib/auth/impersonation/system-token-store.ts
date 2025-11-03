@@ -26,6 +26,9 @@
  * @version 2.0.0
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
+
 import { CookieJar } from 'tough-cookie';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
@@ -219,6 +222,7 @@ export class SystemTokenStore {
    * @description Contains discovered endpoints and configuration from Keycloak's
    * .well-known/openid_configuration endpoint. Cached to avoid repeated discovery.
    */
+  // es-lint-disable-next-line @typescript-eslint/no-explicit-any
   private oidcConfig?: any;
 
   /**
