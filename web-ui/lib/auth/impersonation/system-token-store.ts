@@ -26,8 +26,6 @@
  * @version 2.0.0
  */
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-
 import { CookieJar } from 'tough-cookie';
 import { got } from 'got';
 import { parse as parseHtml } from 'node-html-parser';
@@ -47,15 +45,10 @@ import type {
 import { defaultConfigFromEnv } from './utility';
 
 let openIdClientModule: {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   discovery: Function;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   buildAuthorizationUrl: Function;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   authorizationCodeGrant: Function;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   randomState: Function;
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
   randomNonce: Function;
 } | null = null;
 //type Configuration as OIDCConfiguration
@@ -226,7 +219,6 @@ export class SystemTokenStore {
    * @description Contains discovered endpoints and configuration from Keycloak's
    * .well-known/openid_configuration endpoint. Cached to avoid repeated discovery.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private oidcConfig?: any;
 
   /**

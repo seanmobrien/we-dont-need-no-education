@@ -393,7 +393,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
 
     const authorizeUrl = openIdClient.buildAuthorizationUrl(this.oidcConfig, {
       redirect_uri: this.config.redirectUri,
-      scope: env('AUTH_KEYCLOAK_SCOPE') ?? 'openid profile email mcp_tools',
+      scope: env('AUTH_KEYCLOAK_SCOPE') ?? 'openid mcp_tool',
       response_type: 'code',
       response_mode: 'query',
       prompt: 'none',
