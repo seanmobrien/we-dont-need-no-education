@@ -128,16 +128,21 @@ export const setupDefaultTools = async ({
         })
       : null;
     const streamingTransport = await getStreamingTransportFlag();
-    const toolRoute = `/api/ai/tools/${streamingTransport.value ? 'mcp' : 'sse'}`;
-    const sessionToken = req.cookies?.get('authjs.session-token')?.value;
+    const url = new URL(
+      `/api/ai/tools/${streamingTransport.value ? 'mcp' : 'sse'}`,
+      env('NEXT_PUBLIC_HOSTNAME'),
+    );
+    const sessionTokenKey =
+      (url.protocol === 'https:' ? '__Secure-' : '') + 'authjs.session-token';
+    const sessionToken = req.cookies?.get(sessionTokenKey)?.value;
     options.push({
       allowWrite: writeEnabled,
-      url: new URL(toolRoute, env('NEXT_PUBLIC_HOSTNAME')).toString(),
+      url: url.toString(),
       headers: async () => ({
         ...defaultHeaders,
         ...(encoded ? { Authorization: `Bearer ${encoded}` } : {}),
         ...(sessionToken
-          ? { Cookie: `authjs.session-token=${sessionToken}` }
+          ? { Cookie: `${sessionTokenKey}=${sessionToken}` }
           : {}),
       }),
     });
