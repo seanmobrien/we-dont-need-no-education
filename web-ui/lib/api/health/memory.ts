@@ -2,7 +2,6 @@ import InMemoryCache from './base-cache';
 import type { MemoryHealthCheckResponse } from '@/lib/ai/mem0/types/health-check';
 import { globalSingletonAsync } from '@/lib/typescript/singleton-provider';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
-import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 
 export class MemoryHealthCache extends InMemoryCache<MemoryHealthCheckResponse> {
   constructor(config?: { ttlMs?: number }) {
