@@ -556,12 +556,17 @@ export const toolProviderSetFactory = async (
     timeoutMs,
   );
   const allProviders = [clientToolProviderFactory(), ...resolvedProviders];
-  const isHealthy = allProviders.length === providers.length;
+  const isHealthy = allProviders.length === providers.length + 1;
   return {
     /** @type {ConnectableToolProvider[]} Array of successfully connected providers */
     providers: allProviders,
     get isHealthy(): boolean {
-      return isHealthy;
+      return (
+        isHealthy &&
+        allProviders.every(
+          (p) => p.get_isConnected() && Object.keys(p.tools).length > 0,
+        )
+      );
     },
     /**
      * Aggregates tools from all connected providers into a single ToolSet.

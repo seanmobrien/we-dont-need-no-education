@@ -144,7 +144,7 @@ function transformMemoryResponse(
  * Returns granular subsystem health information
  */
 async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
-  const cache = getMemoryHealthCache();
+  const cache = await getMemoryHealthCache();
   const cached = cache.get();
   if (cached && cached.status === 'ok') {
     return cached;
@@ -158,7 +158,7 @@ async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
       verbose: 1,
     });
 
-    // Cache the raw mem0 response and return it directl  y
+    // Cache the raw mem0 response and return it directly
     try {
       cache.set(healthResponse);
     } catch {}
@@ -208,7 +208,7 @@ async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
       },
     };
     try {
-      const cache = getMemoryHealthCache();
+      const cache = await getMemoryHealthCache();
       cache.set(fallback);
     } catch {}
     return fallback;

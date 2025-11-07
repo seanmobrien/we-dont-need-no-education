@@ -1,7 +1,7 @@
-import { OAuth2Client } from 'google-auth-library';
-import { NextApiRequest } from 'next';
-import { Session } from 'next-auth';
-import { NextRequest } from 'next/server';
+import type { OAuth2Client } from 'google-auth-library';
+import type { NextApiRequest } from 'next';
+import type { Session } from '@auth/core/types';
+import type { NextRequest } from 'next/server';
 
 declare module '@/lib/site-util/auth/_types' {
   /**

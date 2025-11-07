@@ -1,5 +1,5 @@
 'use client';
-import { Session } from 'next-auth';
+import type { Session } from '@auth/core/types';
 import * as React from 'react';
 import { useState } from 'react';
 import Box from '@mui/material/Box';

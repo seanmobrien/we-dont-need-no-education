@@ -1,9 +1,6 @@
 import { determineHealthStatus } from '@/lib/ai/mem0/types/health-check';
 import { checkDatabaseHealth } from '@/lib/api/health/database';
-import {
-  ensureMemoryCacheConfigured,
-  getMemoryHealthCache,
-} from '@/lib/api/health/memory';
+import { getMemoryHealthCache } from '@/lib/api/health/memory';
 import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
@@ -93,8 +90,7 @@ export const GET = wrapRouteRequest(
           return NextResponse.json({ status: 'error' }, { status: 503 });
         }
 
-        await ensureMemoryCacheConfigured();
-        const memCache = getMemoryHealthCache();
+        const memCache = await getMemoryHealthCache();
         const memResponse = memCache?.get();
         const memStatus =
           memResponse && memResponse.details

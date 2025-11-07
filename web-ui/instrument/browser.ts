@@ -114,6 +114,10 @@ const getAppInsights = () => {
               }
             }
           }
+
+          if (JSON.stringify(envelope).includes('/health')) {
+            return false;
+          }
           return true;
         },
       );

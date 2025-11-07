@@ -2,6 +2,7 @@ import { JWT } from '@auth/core/jwt';
 
 import { SessionWithAccountId } from './types';
 import { log } from '../logger/core';
+import { Session } from '@auth/core/types';
 
 const hashFromServer = async (input: string): Promise<string> => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -36,12 +37,17 @@ const hash = async (input: string): Promise<string | undefined> => {
 };
 
 export const session = async ({
-  session,
+  session: sessionFromProps,
   token,
 }: {
-  session: SessionWithAccountId;
+  session: Session;
   token: JWT;
-}): Promise<SessionWithAccountId> => {
+}): Promise<Session> => {
+  const session = sessionFromProps as SessionWithAccountId;
+  if (!session.user && token && token.email) {
+    // support loading session user from token if not present
+    session.user = {} as SessionWithAccountId['user'];
+  }
   if (session.user) {
     if (token.id) {
       session.user.id = String(token.id);

@@ -1,7 +1,5 @@
-import { getToken, JWT } from 'next-auth/jwt';
-// import type { NextRequest } from 'next/server';
+import { getToken, type JWT } from '@auth/core/jwt';
 import { env } from '@/lib/site-util/env';
-import { makeJsonResponse } from '@/lib/nextjs-util/server/response';
 import {
   decodeJwt,
   jwtVerify,

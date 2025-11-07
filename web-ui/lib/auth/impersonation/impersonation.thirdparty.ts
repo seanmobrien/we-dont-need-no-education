@@ -18,7 +18,7 @@ import type {
 } from '@/lib/auth/impersonation/impersonation.types';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { SystemTokenStore } from './system-token-store';
-import { Session, User } from 'next-auth';
+import type { Session, User } from '@auth/core/types';
 import { keycloakAdminClientFactory } from '../keycloak-factories';
 import type { KeycloakAdminClient } from '../keycloak-factories';
 interface TokenResponse {
@@ -393,7 +393,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
 
     const authorizeUrl = openIdClient.buildAuthorizationUrl(this.oidcConfig, {
       redirect_uri: this.config.redirectUri,
-      scope: 'openid',
+      scope: env('AUTH_KEYCLOAK_SCOPE') ?? 'openid mcp_tool',
       response_type: 'code',
       response_mode: 'query',
       prompt: 'none',

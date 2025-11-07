@@ -1,4 +1,14 @@
-import NextAuth, { Account, NextAuthConfig, Profile, User } from 'next-auth'; // Added NextAuthConfig
+import type {
+  Account,
+  Profile,
+  User,
+  Awaitable,
+  DefaultSession,
+  Session,
+  AuthConfig,
+} from '@auth/core/types';
+
+import NextAuth from 'next-auth'; // Added NextAuthConfig
 import type { Adapter, AdapterSession, AdapterUser } from '@auth/core/adapters';
 import type { CredentialInput, Provider } from '@auth/core/providers';
 import { isRunningOnEdge } from '@/lib/site-util/env';
@@ -6,8 +16,7 @@ import { logEvent } from '@/lib/logger';
 
 import { setupKeyCloakProvider } from './lib/auth/keycloak-provider';
 import { authorized } from './lib/auth/authorized';
-import { JWT } from '@auth/core/jwt';
-import { Awaitable, DefaultSession, Session } from '@auth/core/types';
+import type { JWT } from '@auth/core/jwt';
 
 type DynamicImports = {
   drizzleAdapter: {
@@ -134,85 +143,83 @@ export const providerMap = providers.map((provider) => {
   return { id: provider.id, name: provider.name };
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth(
-  async (): Promise<NextAuthConfig> => {
-    // Added NextAuthConfig return type
-    let adapter: Adapter | undefined;
+export const { handlers, auth, signIn, signOut } = NextAuth(async () => {
+  // Added NextAuthConfig return type
+  let adapter: Adapter | undefined;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let signInImpl: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let signInImpl: any;
 
-    // Skip database adapter during build process, on edge, or client-side (which should never happen)
-    if (
-      process.env.NEXT_RUNTIME === 'nodejs' &&
-      typeof window === 'undefined' &&
-      !isRunningOnEdge() &&
-      process.env.NEXT_PHASE !== 'phase-production-build'
-    ) {
-      if (!dynamicImports.drizzleAdapter) {
-        dynamicImports.drizzleAdapter = await import(
-          '@/lib/auth/drizzle-adapter'
-        );
-      }
-      if (!dynamicImports.auth.signIn) {
-        dynamicImports.auth.signIn = await import('@/lib/auth/sign-in');
-      }
-      const {
-        auth: {
-          signIn: { signIn },
-        },
-        drizzleAdapter: { setupDrizzleAdapter },
-      } = dynamicImports;
-      adapter = await setupDrizzleAdapter();
-      // Custom signIn implementation to handle authentication callbacks
-      signInImpl = signIn;
-    } else {
-      adapter = undefined; // No adapter for edge runtime, client, or build
-      signInImpl = async () => {
-        logEvent('signIn');
-        return false;
-      };
+  // Skip database adapter during build process, on edge, or client-side (which should never happen)
+  if (
+    process.env.NEXT_RUNTIME === 'nodejs' &&
+    typeof window === 'undefined' &&
+    !isRunningOnEdge() &&
+    process.env.NEXT_PHASE !== 'phase-production-build'
+  ) {
+    if (!dynamicImports.drizzleAdapter) {
+      dynamicImports.drizzleAdapter = await import(
+        '@/lib/auth/drizzle-adapter'
+      );
     }
-    if (!dynamicImports.auth.session) {
-      dynamicImports.auth.session = await import('@/lib/auth/session');
-      if (!dynamicImports.auth.session.session) {
-        throw new Error('Failed to load session callback');
-      }
+    if (!dynamicImports.auth.signIn) {
+      dynamicImports.auth.signIn = await import('@/lib/auth/sign-in');
     }
-    const session = dynamicImports.auth.session.session;
-    if (!dynamicImports.auth.jwt) {
-      dynamicImports.auth.jwt = await import('@/lib/auth/jwt');
-      if (!dynamicImports.auth.jwt.jwt) {
-        throw new Error('Failed to load jwt callback');
-      }
-    }
-    const jwt = dynamicImports.auth.jwt.jwt;
-    if (!dynamicImports.auth.redirect) {
-      dynamicImports.auth.redirect = await import('@/lib/auth/redirect');
-      if (!dynamicImports.auth.redirect.redirect) {
-        throw new Error('Failed to load redirect callback');
-      }
-    }
-    const redirect = dynamicImports.auth.redirect.redirect;
-    return {
-      adapter,
-      callbacks: {
-        authorized,
-        signIn: signInImpl,
-        jwt,
-        session,
-        redirect,
+    const {
+      auth: {
+        signIn: { signIn },
       },
-      providers,
-      pages: {
-        signIn: '/auth/signin',
-      },
-      session: { strategy: 'jwt' },
-      theme: {
-        colorScheme: 'auto', // 'auto' for system preference, 'light' or 'dark'
-        logo: '/static/logo/logo-dark.png',
-        brandColor: '#1898a8', // Custom brand color
-      },
+      drizzleAdapter: { setupDrizzleAdapter },
+    } = dynamicImports;
+    adapter = await setupDrizzleAdapter();
+    // Custom signIn implementation to handle authentication callbacks
+    signInImpl = signIn;
+  } else {
+    adapter = undefined; // No adapter for edge runtime, client, or build
+    signInImpl = async () => {
+      logEvent('signIn');
+      return false;
     };
-  },
-);
+  }
+  if (!dynamicImports.auth.session) {
+    dynamicImports.auth.session = await import('@/lib/auth/session');
+    if (!dynamicImports.auth.session.session) {
+      throw new Error('Failed to load session callback');
+    }
+  }
+  const session = dynamicImports.auth.session.session;
+  if (!dynamicImports.auth.jwt) {
+    dynamicImports.auth.jwt = await import('@/lib/auth/jwt');
+    if (!dynamicImports.auth.jwt.jwt) {
+      throw new Error('Failed to load jwt callback');
+    }
+  }
+  const jwt = dynamicImports.auth.jwt.jwt;
+  if (!dynamicImports.auth.redirect) {
+    dynamicImports.auth.redirect = await import('@/lib/auth/redirect');
+    if (!dynamicImports.auth.redirect.redirect) {
+      throw new Error('Failed to load redirect callback');
+    }
+  }
+  const redirect = dynamicImports.auth.redirect.redirect;
+  return {
+    adapter,
+    callbacks: {
+      authorized,
+      signIn: signInImpl,
+      jwt,
+      session,
+      redirect,
+    },
+    providers,
+    pages: {
+      signIn: '/auth/signin',
+    },
+    session: { strategy: 'jwt' },
+    theme: {
+      colorScheme: 'auto', // 'auto' for system preference, 'light' or 'dark'
+      logo: '/static/logo/logo-dark.png',
+      brandColor: '#1898a8', // Custom brand color
+    },
+  } satisfies AuthConfig;
+});

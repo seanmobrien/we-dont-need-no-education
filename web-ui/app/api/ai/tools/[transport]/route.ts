@@ -9,8 +9,8 @@ import {
   extractToken,
   KnownScopeIndex,
   KnownScopeValues,
-  unauthorizedServiceResponse,
 } from '@/lib/auth/utilities';
+import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 import { ApiRequestError } from '@/lib/send-api-request';
 import type { NextRequest } from 'next/server';
 // tool imports
@@ -243,9 +243,13 @@ const handler = wrapRouteRequest(
       : transportFromProps;
     const token = await extractToken(req);
     if (!token) {
-      log((l) => l.warn({ message: `Unauthorized access attempt`, transport }));
+      log((l) =>
+        l.warn(
+          `Unauthorized access attempt (no token).  Transport: ${safeSerialize(transport)}`,
+        ),
+      );
       throw new ApiRequestError(
-        'Unauthorized',
+        'Unauthorized - No Token',
         unauthorizedServiceResponse({
           req,
           scopes: [
@@ -261,10 +265,12 @@ const handler = wrapRouteRequest(
       )
     ) {
       log((l) =>
-        l.warn({ message: `Unauthorized access attempt`, transport, token }),
+        l.warn(
+          `Unauthorized access attempt (no access), token: ${JSON.stringify(token)}, Transport: ${safeSerialize(transport)}`,
+        ),
       );
       throw new ApiRequestError(
-        'Unauthorized',
+        `Unauthorized - ${JSON.stringify(token)}`,
         unauthorizedServiceResponse({
           req,
           scopes: [

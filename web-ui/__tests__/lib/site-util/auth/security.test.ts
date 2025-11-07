@@ -2,7 +2,7 @@ import {
   isUserAuthorized,
   isSessionActive,
 } from '@/lib/site-util/auth/security';
-import type { Session } from 'next-auth';
+import type { Session } from '@auth/core/types';
 
 describe('isUserAuthorized', () => {
   test('returns false if either id missing', async () => {

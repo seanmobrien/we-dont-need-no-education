@@ -411,9 +411,9 @@ const serverEnvSchema = z
     AUTH_KEYCLOAK_SCOPE: z
       .string()
       .optional()
-      .default('openid profile email roles mcp_tool')
+      .default('openid mcp_tool')
       .describe(
-        'Keycloak OAuth scope for authentication (optional). Example: openid profile email roles mcp-tool',
+        'Keycloak OAuth scope for authentication (optional). Example: openid mcp_tool',
       ),
     AUTH_KEYCLOAK_IMPERSONATION_AUDIENCE: z
       .string()

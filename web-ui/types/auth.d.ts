@@ -1,117 +1,12 @@
-/**
- * @fileoverview NextAuth.js TypeScript type extensions and custom session handling
- *
- * This module extends the official NextAuth.js types to include custom user properties,
- * session data, and JWT token fields specific to this application's authentication system.
- * It provides type-safe access to authentication data throughout the application.
- *
- * The extensions include:
- * - Custom User interface with application-specific fields (account_id, subject)
- * - Extended Session interface with database user ID for easy querying
- * - Enhanced JWT interface with OAuth tokens and account linking
- * - Account interface extensions for provider-specific data
- *
- * @example
- * ```typescript
- * import { getServerSession } from 'next-auth';
- * import type { Session } from 'next-auth';
- *
- * // Type-safe session access with custom properties
- * export async function getUserData() {
- *   const session = await getServerSession(authOptions) as Session;
- *
- *   if (session?.id) {
- *     // Access custom session properties
- *     console.log('User ID:', session.id);
- *     console.log('User email:', session.user.email);
- *
- *     // Query user data using the database ID
- *     const userData = await db.users.findUnique({
- *       where: { id: session.id }
- *     });
- *
- *     return userData;
- *   }
- * }
- * ```
- *
- * @example
- * ```typescript
- * import type { JWT, Account } from 'next-auth/jwt';
- *
- * // JWT callback with extended token properties
- * export async function jwt({ token, account }: {
- *   token: JWT;
- *   account?: Account;
- *   user?: User;
- * }) {
- *   // Link account on initial sign in
- *   if (account && user) {
- *     token.access_token = account.access_token;
- *     token.refresh_token = account.refresh_token;
- *     token.account_id = account.providerAccountId;
- *     token.user_id = user.account_id; // Our internal user ID
- *   }
- *
- *   // Handle token refresh
- *   if (token.refresh_token && shouldRefreshToken(token)) {
- *     const newTokens = await refreshAccessToken(token.refresh_token);
- *     token.access_token = newTokens.access_token;
- *     token.refresh_token = newTokens.refresh_token ?? token.refresh_token;
- *   }
- *
- *   return token;
- * }
- * ```
- *
- * @example
- * ```typescript
- * import type { User, Account } from 'next-auth';
- *
- * // OAuth profile callback with custom user mapping
- * export async function signIn({ user, account, profile }: {
- *   user: User;
- *   account: Account | null;
- *   profile?: any;
- * }) {
- *   // Link or create user account
- *   if (account && profile) {
- *     const existingUser = await db.users.findUnique({
- *       where: { subject: profile.sub }
- *     });
- *
- *     if (!existingUser) {
- *       // Create new user
- *       const newUser = await db.users.create({
- *         data: {
- *           subject: profile.sub,
- *           email: profile.email,
- *           name: profile.name,
- *           image: profile.picture,
- *           emailVerified: profile.email_verified ? new Date() : null,
- *         }
- *       });
- *
- *       user.id = newUser.id.toString();
- *       user.account_id = newUser.id;
- *       user.subject = profile.sub;
- *     } else {
- *       // Link existing user
- *       user.id = existingUser.id.toString();
- *       user.account_id = existingUser.id;
- *       user.subject = existingUser.subject;
- *     }
- *   }
- *
- *   return true;
- * }
- * ```
- */
+import type {
+  Account as BaseAccount,
+  DefaultSession,
+  User,
+} from '@auth/core/types';
+import type { JWT } from '@auth/core/jwt';
+import type { AuthConfig as BaseAuthConfig } from '@auth/core';
 
-import { DefaultSession, Account as BaseAccount } from 'next-auth';
-import { JWT as BaseJWT } from 'next-auth/jwt';
-
-declare module 'next-auth' {
+declare module '@auth/core/types' {
   /**
    * Extended user object with application-specific properties.
    *
@@ -198,11 +93,90 @@ declare module 'next-auth' {
      */
     id: number;
   }
+  export type AuthConfig = BaseAuthConfig & {
+    callbacks: BaseAuthConfig['callbacks'] & {
+      /**
+       * Invoked when a user needs authorization, using [Middleware](https://nextjs.org/docs/advanced-features/middleware).
+       *
+       * You can override this behavior by returning a {@link NextResponse}.
+       *
+       * @example
+       * ```ts title="app/auth.ts"
+       * async authorized({ request, auth }) {
+       *   const url = request.nextUrl
+       *
+       *   if(request.method === "POST") {
+       *     const { authToken } = (await request.json()) ?? {}
+       *     // If the request has a valid auth token, it is authorized
+       *     const valid = await validateAuthToken(authToken)
+       *     if(valid) return true
+       *     return NextResponse.json("Invalid auth token", { status: 401 })
+       *   }
+       *
+       *   // Logged in users are authenticated, otherwise redirect to login page
+       *   return !!auth.user
+       * }
+       * ```
+       *
+       * :::warning
+       * If you are returning a redirect response, make sure that the page you are redirecting to is not protected by this callback,
+       * otherwise you could end up in an infinite redirect loop.
+       * :::
+       */
+      authorized?: (params: {
+        /** The request to be authorized. */
+        request: NextRequest;
+        /** The authenticated user or token, if any. */
+        auth: Session | null;
+      }) => Awaitable<boolean | NextResponse | Response | undefined>;
+    };
+    skipCSRFCheck?: boolean;
+  };
 }
 
-// The `JWT` interface can be found in the `next-auth/jwt` submodule
+export declare module '@auth/core' {
+  export type AuthConfig = BaseAuthConfig & {
+    callbacks: BaseAuthConfig['callbacks'] & {
+      /**
+       * Invoked when a user needs authorization, using [Middleware](https://nextjs.org/docs/advanced-features/middleware).
+       *
+       * You can override this behavior by returning a {@link NextResponse}.
+       *
+       * @example
+       * ```ts title="app/auth.ts"
+       * async authorized({ request, auth }) {
+       *   const url = request.nextUrl
+       *
+       *   if(request.method === "POST") {
+       *     const { authToken } = (await request.json()) ?? {}
+       *     // If the request has a valid auth token, it is authorized
+       *     const valid = await validateAuthToken(authToken)
+       *     if(valid) return true
+       *     return NextResponse.json("Invalid auth token", { status: 401 })
+       *   }
+       *
+       *   // Logged in users are authenticated, otherwise redirect to login page
+       *   return !!auth.user
+       * }
+       * ```
+       *
+       * :::warning
+       * If you are returning a redirect response, make sure that the page you are redirecting to is not protected by this callback,
+       * otherwise you could end up in an infinite redirect loop.
+       * :::
+       */
+      authorized?: (params: {
+        /** The request to be authorized. */
+        request: NextRequest;
+        /** The authenticated user or token, if any. */
+        auth: Session | null;
+      }) => Awaitable<boolean | NextResponse | Response | undefined>;
+    };
+    skipCSRFCheck?: boolean;
+  };
+}
 
-declare module 'next-auth/jwt' {
+declare module '@auth/core/jwt' {
   /**
    * Extended JWT token object with OAuth and application-specific data.
    *

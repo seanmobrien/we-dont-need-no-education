@@ -28,14 +28,12 @@ describe('health feature-flag driven behavior', () => {
       return undefined;
     });
 
-    const { ensureMemoryCacheConfigured, getMemoryHealthCache } = await import(
-      '@/lib/api/health/memory'
-    );
+    const { getMemoryHealthCache } = await import('@/lib/api/health/memory');
 
     jest.useFakeTimers();
 
-    await ensureMemoryCacheConfigured();
-    const cache = getMemoryHealthCache();
+    // await ensureMemoryCacheConfigured();
+    const cache = await getMemoryHealthCache();
 
     // Minimal mem0-like payload
     const payload = {

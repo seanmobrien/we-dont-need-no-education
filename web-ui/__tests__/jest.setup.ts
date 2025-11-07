@@ -472,7 +472,12 @@ import { createElement } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '@/instrument/browser';
 import { log } from '@/lib/logger';
-import { FirstParameter, isKeyOf, isPromise } from '@/lib/typescript';
+import {
+  FirstParameter,
+  isKeyOf,
+  isPromise,
+  SingletonProvider,
+} from '@/lib/typescript';
 import { result, xorBy } from 'lodash';
 import {
   IMockInsertBuilder,
@@ -855,6 +860,7 @@ jest.mock('@/lib/react-util/errors/logged-error-reporter', () => {
 beforeEach(async () => {
   resetEnvVariables();
   resetGlobalCache();
+  SingletonProvider.Instance.clear();
 });
 
 afterEach(() => {

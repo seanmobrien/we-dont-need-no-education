@@ -34,8 +34,8 @@ import { env } from '@/lib/site-util/env';
 import { ToolProviderFactoryOptions, ToolProviderSet } from '../types';
 import { NextRequest } from 'next/server';
 import { fromUserId as fromUser } from '@/lib/auth/impersonation/impersonation-factory';
-import { User } from 'next-auth';
-import { encode, getToken } from 'next-auth/jwt';
+import type { User } from '@auth/core/types';
+import { encode, getToken } from '@auth/core/jwt';
 import { getMem0EnabledFlag, getStreamingTransportFlag } from '../tool-flags';
 
 /**
@@ -123,21 +123,26 @@ export const setupDefaultTools = async ({
       ? await encode({
           token,
           secret: env('AUTH_SECRET'),
-          maxAge: 60 * 60 * 24 * 30,
+          maxAge: 60 * 60,
           salt: 'bearer-token', // flavor for bearer token use
         })
       : null;
     const streamingTransport = await getStreamingTransportFlag();
-    const toolRoute = `/api/ai/tools/${streamingTransport.value ? 'mcp' : 'sse'}`;
-    const sessionToken = req.cookies?.get('authjs.session-token')?.value;
+    const url = new URL(
+      `/api/ai/tools/${streamingTransport.value ? 'mcp' : 'sse'}`,
+      env('NEXT_PUBLIC_HOSTNAME'),
+    );
+    const sessionTokenKey =
+      (url.protocol === 'https:' ? '__Secure-' : '') + 'authjs.session-token';
+    const sessionToken = req.cookies?.get(sessionTokenKey)?.value;
     options.push({
       allowWrite: writeEnabled,
-      url: new URL(toolRoute, env('NEXT_PUBLIC_HOSTNAME')).toString(),
+      url: url.toString(),
       headers: async () => ({
         ...defaultHeaders,
         ...(encoded ? { Authorization: `Bearer ${encoded}` } : {}),
         ...(sessionToken
-          ? { Cookie: `authjs.session-token=${sessionToken}` }
+          ? { Cookie: `${sessionTokenKey}=${sessionToken}` }
           : {}),
       }),
     });

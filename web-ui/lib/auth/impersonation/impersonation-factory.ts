@@ -3,7 +3,7 @@ import { ImpersonationThirdParty } from './impersonation.thirdparty';
 import { ImpersonationServiceCache } from './impersonation-service-cache';
 import { auth } from '@/auth';
 import { log } from '@/lib/logger';
-import { User } from 'next-auth';
+import type { User } from '@auth/core/types';
 
 /**
  * Strategy selection:

@@ -3,8 +3,8 @@
  * @module components/auth/session-provider/hooks
  */
 
-import { type SessionContextType } from './types';
-import { Session } from '@auth/core/types';
+import type { SessionContextType } from './types';
+import type { Session } from '@auth/core/types';
 
 declare module '@/components/auth/session-provider/hooks' {
   /**

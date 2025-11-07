@@ -1,3 +1,5 @@
+import { AiProvider, ModelType } from '@/components/ai/chat-panel/types';
+
 export const KnownFeatureValues = [
   'mem0_mcp_tools_enabled',
   'mcp_cache_tools',
@@ -65,9 +67,9 @@ export const AllFeatureFlagsDefault = {
   models_defaults: {
     enabled: true as boolean,
     value: {
-      openai: 'lofi' as string,
-      azure: 'lofi' as string,
-      google: 'gemini-1.5-pro' as string,
+      provider: 'azure' as AiProvider,
+      chat_model: 'lofi' as ModelType,
+      tool_model: 'lofi' as ModelType,
     },
   },
   mcp_cache_tools: false as boolean,
