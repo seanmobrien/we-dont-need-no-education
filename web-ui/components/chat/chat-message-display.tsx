@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -29,6 +29,7 @@ interface ChatMessageDisplayProps {
   enableSelection?: boolean;
   isSelected?: boolean;
   onSelectionChange?: (messageId: number, checked: boolean) => void;
+  onHeightChange?: () => void;
 }
 
 export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
@@ -37,8 +38,33 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
   enableSelection = false,
   isSelected = false,
   onSelectionChange,
+  onHeightChange,
 }) => {
   const [metadataExpanded, setMetadataExpanded] = useState(false);
+  const [optimizedContentExpanded, setOptimizedContentExpanded] =
+    useState(false);
+
+  // Store the latest onHeightChange callback in a ref to avoid unnecessary effect triggers
+  const onHeightChangeRef = React.useRef(onHeightChange);
+  React.useEffect(() => {
+    onHeightChangeRef.current = onHeightChange;
+  }, [onHeightChange]);
+
+  // Track if this is the initial mount to avoid triggering remeasurement unnecessarily
+  const isInitialMount = React.useRef(true);
+
+  // Notify parent when accordion state changes to trigger remeasurement
+  useEffect(() => {
+    // Skip on initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (onHeightChangeRef.current) {
+      onHeightChangeRef.current();
+    }
+  }, [metadataExpanded, optimizedContentExpanded]);
 
   return (
     <Box
@@ -111,7 +137,10 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
       {/* Optimized Content (if different from regular content) */}
       {message.optimizedContent &&
         message.optimizedContent !== message.content && (
-          <Accordion>
+          <Accordion
+            expanded={optimizedContentExpanded}
+            onChange={(_, isExpanded) => setOptimizedContentExpanded(isExpanded)}
+          >
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="caption">Optimized Content</Typography>
             </AccordionSummary>

@@ -70,6 +70,13 @@ import { type MessageType, searchMessageContent } from './chat-message-filters';
 export const FALLBACK_CONTAINER_WIDTH = 1200;
 
 /**
+ * Delay in milliseconds to wait after accordion state change before remeasuring.
+ * This matches Material-UI's default transition duration to ensure the accordion
+ * animation completes before height measurement.
+ */
+const ACCORDION_TRANSITION_DELAY_MS = 300;
+
+/**
  * Text measurement utility for estimating heights of chat messages
  */
 const textMeasurer = createTextMeasurer();
@@ -127,6 +134,20 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
   const parentRef = useRef<HTMLDivElement>(null);
   const [showTurnProperties, setShowTurnProperties] = useState(false);
   const [showMessageMetadata, setShowMessageMetadata] = useState(false);
+
+  // Store element references for efficient remeasurement
+  const elementRefsMap = useRef<Map<number, Element>>(new Map());
+  
+  // Store timeout IDs to enable cleanup
+  const timeoutIdsMap = useRef<Map<number, NodeJS.Timeout>>(new Map());
+
+  // Clean up all pending timeouts on unmount
+  React.useEffect(() => {
+    return () => {
+      timeoutIdsMap.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      timeoutIdsMap.current.clear();
+    };
+  }, []);
 
   // Estimate size for each turn based on content using improved measurement
   /**
@@ -320,6 +341,34 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
         : undefined, // Enable dynamic measurement when ResizeObserver is available
   });
 
+  /**
+   * Create a memoized height change handler for a specific turn index.
+   * This prevents unnecessary re-renders by creating stable callback references.
+   */
+  const createHeightChangeHandler = useCallback(
+    (itemIndex: number) => () => {
+      // Clear any existing timeout for this item
+      const existingTimeout = timeoutIdsMap.current.get(itemIndex);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+      }
+
+      // Schedule new measurement after transition completes
+      const timeoutId = setTimeout(() => {
+        const element = elementRefsMap.current.get(itemIndex);
+        if (rowVirtualizer.measureElement && element) {
+          rowVirtualizer.measureElement(element);
+        }
+        // Clean up timeout reference
+        timeoutIdsMap.current.delete(itemIndex);
+      }, ACCORDION_TRANSITION_DELAY_MS);
+
+      // Store timeout ID for cleanup
+      timeoutIdsMap.current.set(itemIndex, timeoutId);
+    },
+    [rowVirtualizer],
+  );
+
   return (
     <Box>
       {/* Controls */}
@@ -364,11 +413,31 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
         >
           {rowVirtualizer.getVirtualItems().map((virtualItem) => {
             const turn = turns[virtualItem.index];
+            const itemIndex = virtualItem.index;
 
             return (
               <Box
                 key={virtualItem.key}
                 data-index={virtualItem.index}
+                ref={(el) => {
+                  // Store element reference in map for efficient remeasurement
+                  if (el) {
+                    elementRefsMap.current.set(itemIndex, el);
+                    // Also pass to virtualizer for ResizeObserver setup
+                    if (rowVirtualizer.measureElement) {
+                      rowVirtualizer.measureElement(el);
+                    }
+                  } else {
+                    // Clean up when element is unmounted
+                    elementRefsMap.current.delete(itemIndex);
+                    // Clear any pending timeout for this item
+                    const timeoutId = timeoutIdsMap.current.get(itemIndex);
+                    if (timeoutId) {
+                      clearTimeout(timeoutId);
+                      timeoutIdsMap.current.delete(itemIndex);
+                    }
+                  }
+                }}
                 sx={{
                   position: 'absolute',
                   top: 0,
@@ -384,6 +453,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
                   enableSelection={enableSelection}
                   selectedItems={selectedItems}
                   onSelectionChange={onSelectionChange}
+                  onHeightChange={createHeightChangeHandler(itemIndex)}
                   globalFilters={globalFilters}
                 />
               </Box>
