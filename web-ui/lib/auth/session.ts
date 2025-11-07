@@ -44,6 +44,10 @@ export const session = async ({
   token: JWT;
 }): Promise<Session> => {
   const session = sessionFromProps as SessionWithAccountId;
+  if (!session.user && token && token.email) {
+    // support loading session user from token if not present
+    session.user = {} as SessionWithAccountId['user'];
+  }
   if (session.user) {
     if (token.id) {
       session.user.id = String(token.id);

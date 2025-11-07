@@ -31,7 +31,7 @@ export const authorized = async ({
         const expiresAt = new Date(auth.expires).getTime();
         if (Date.now() > expiresAt) {
           log((l) =>
-            l.warn('Session has expired', { expiresAt, now: Date.now() }),
+            l.warn('Session has expired', { expiresAt, now: Date.now(), auth }),
           );
           return unauthorizedServiceResponse({
             req: request,
@@ -52,6 +52,7 @@ export const authorized = async ({
             l.warn('Token has expired', {
               expiresAt: token.exp,
               now: Date.now(),
+              token,
             }),
           );
           return unauthorizedServiceResponse({
@@ -66,7 +67,7 @@ export const authorized = async ({
       return true;
     }
     // Handle API requests per https://modelcontextprotocol.io/specification/draft/basic/authorization
-    if (nextUrl.pathname.startsWith('/api/')) {
+    if (nextUrl.pathname.startsWith('/api/') && !auth) {
       return unauthorizedServiceResponse({
         req: request,
         scopes: [

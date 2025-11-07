@@ -12,6 +12,7 @@ export class SingletonProvider {
   #strongStorage = new StrongReferenceStorage();
   #weakStorage = new WeakReferenceStorage();
   #storageByKey: Map<SingletonStorageKey, SingletonStorageStrategy> = new Map();
+  #pendingFactories: Map<SingletonStorageKey, Promise<unknown>> = new Map();
 
   static get Instance(): SingletonProvider {
     const globalSymbol = Symbol.for(
@@ -117,6 +118,50 @@ export class SingletonProvider {
     const storage = this.#selectStorage(config);
     this.#store(key, storage, value);
     return value;
+  }
+
+  async getOrCreateAsync<T, S extends string | symbol = string>(
+    symbol: S,
+    factory: () => Promise<IsNotNull<T>>,
+    config: SingletonConfig = {},
+  ): Promise<T> {
+    const key = this.#toStorageKey(symbol);
+
+    // Check if instance already exists
+    const existing = this.#lookupExisting<T>(key);
+    if (existing !== undefined) {
+      return existing;
+    }
+
+    // Check if a factory is currently running for this key
+    const pendingFactory = this.#pendingFactories.get(key);
+    if (pendingFactory) {
+      return pendingFactory as Promise<T>;
+    }
+
+    // Create new instance with factory
+    const factoryPromise = (async () => {
+      try {
+        const value = await factory();
+        if (value === undefined || value === null) {
+          throw new TypeError(
+            'Factory for global singleton cannot return null or undefined.',
+          );
+        }
+
+        const storage = this.#selectStorage(config);
+        this.#store(key, storage, value);
+        return value;
+      } finally {
+        // Clean up pending factory tracking
+        this.#pendingFactories.delete(key);
+      }
+    })();
+
+    // Track the pending factory
+    this.#pendingFactories.set(key, factoryPromise);
+
+    return factoryPromise;
   }
 
   has<S extends string | symbol = string>(symbol: S): boolean {

@@ -17,10 +17,7 @@ jest.mock('@/lib/api/health/memory', () => ({
 }));
 
 import { checkDatabaseHealth } from '@/lib/api/health/database';
-import {
-  getMemoryHealthCache,
-  ensureMemoryCacheConfigured,
-} from '@/lib/api/health/memory';
+import { getMemoryHealthCache } from '@/lib/api/health/memory';
 
 const buildHealthyMemoryDetails = () => ({
   client_active: true,
@@ -53,9 +50,9 @@ describe('health probe route', () => {
 
   beforeEach(() => {
     // Reset singletons between tests
-    SingletonProvider.Instance.delete('startup-failure-counter');
-    (ensureMemoryCacheConfigured as jest.Mock).mockResolvedValue(undefined);
-    jest.clearAllMocks();
+    // SingletonProvider.Instance.delete('startup-failure-counter');
+    // (getMemoryHealthCache as jest.Mock).mockResolvedValue(undefined);
+    // jest.clearAllMocks();
   });
 
   it('returns ok for liveness', async () => {

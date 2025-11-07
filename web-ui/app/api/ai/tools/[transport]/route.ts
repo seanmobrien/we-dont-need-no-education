@@ -249,7 +249,7 @@ const handler = wrapRouteRequest(
         ),
       );
       throw new ApiRequestError(
-        'Unauthorized',
+        'Unauthorized - No Token',
         unauthorizedServiceResponse({
           req,
           scopes: [
@@ -270,7 +270,7 @@ const handler = wrapRouteRequest(
         ),
       );
       throw new ApiRequestError(
-        'Unauthorized',
+        `Unauthorized - ${JSON.stringify(token)}`,
         unauthorizedServiceResponse({
           req,
           scopes: [

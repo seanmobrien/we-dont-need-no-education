@@ -123,7 +123,7 @@ export const setupDefaultTools = async ({
       ? await encode({
           token,
           secret: env('AUTH_SECRET'),
-          maxAge: 60 * 60 * 24 * 30,
+          maxAge: 60 * 60,
           salt: 'bearer-token', // flavor for bearer token use
         })
       : null;
