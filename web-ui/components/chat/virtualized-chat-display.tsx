@@ -137,7 +137,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
 
   // Store element references for efficient remeasurement
   const elementRefsMap = useRef<Map<number, Element>>(new Map());
-  
+
   // Store timeout IDs to enable cleanup
   const timeoutIdsMap = useRef<Map<number, NodeJS.Timeout>>(new Map());
 
@@ -419,7 +419,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
               <Box
                 key={virtualItem.key}
                 data-index={virtualItem.index}
-                ref={(el) => {
+                ref={(el: Element | null) => {
                   // Store element reference in map for efficient remeasurement
                   if (el) {
                     elementRefsMap.current.set(itemIndex, el);

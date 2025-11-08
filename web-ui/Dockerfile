@@ -244,13 +244,15 @@ RUN echo "*/$RATE_RETRY_INTERVAL_MINUTES * * * * /app/scripts/rate-retry-client.
 RUN crontab -u nextjs /etc/crontabs/nextjs
 
 # Ensure log directory exists, set owner and execute modes
-RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app && chmod +x /app/scripts/rate-retry-client.sh
-
-USER nextjs
+RUN mkdir -p /var/log && chown nextjs:nodejs /var/log && chown -R nextjs:nodejs /app && chmod +x /app/scripts/*.sh
 
 EXPOSE 3000
 
+# Expose debug port for Node.js inspector (when RUN_DEBUGGER=1)
+EXPOSE 9229
+
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/config/next-config-js/output
-# Start cron daemon and then start the Next.js server
-CMD ["sh", "-c", "crond -f -d 8 & node server.js"]
+# Start cron daemon as root, then switch to nextjs user to run the server
+# If RUN_DEBUGGER=1, start Node.js with inspector enabled
+CMD ["sh", "-c", "crond && if [ \"$RUN_DEBUGGER\" = \"1\" ]; then su nextjs -c 'node --inspect=0.0.0.0:9229 server.js'; else su nextjs -c 'node server.js'; fi"]
