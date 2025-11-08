@@ -7,6 +7,7 @@ import {
   type JWTPayload,
 } from 'jose';
 import { LRUCache } from 'lru-cache';
+import { LoggedError } from '../react-util';
 
 export const KnownScopeValues = ['mcp-tool:read', 'mcp-tool'] as const;
 export type KnownScope = (typeof KnownScopeValues)[number];
@@ -27,21 +28,34 @@ export const extractToken = async (req: Request): Promise<JWT | null> => {
   if (check) {
     return check;
   }
-  const ret =
-    (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN] ??
-    (await getToken({
-      req: req,
-      secret: env('AUTH_SECRET'),
-    })) ??
-    (await getToken({
-      req: req,
-      secret: env('AUTH_SECRET'),
-      salt: `bearer-token`,
-    }));
-  if (ret && req) {
-    (req as RequestWithToken)[REQUEST_DECODED_TOKEN] = ret;
+  const url = new URL(env('NEXT_PUBLIC_HOSTNAME'));
+  const sessionTokenKey =
+    (url.protocol === 'https:' ? '__Secure-' : '') + 'authjs.session-token';
+  try {
+    const shh = env('AUTH_SECRET');
+    const ret =
+      (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN] ??
+      (await getToken({
+        req: req,
+        secret: shh,
+        salt: sessionTokenKey,
+      })) ??
+      (await getToken({
+        req: req,
+        secret: shh,
+        salt: `bearer-token`,
+      }));
+    if (ret && req) {
+      (req as RequestWithToken)[REQUEST_DECODED_TOKEN] = ret;
+    }
+    return ret;
+  } catch (error) {
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
+      log: true,
+      source: 'auth-utilities::extractToken',
+    });
+    return null;
   }
-  return ret;
 };
 
 /**

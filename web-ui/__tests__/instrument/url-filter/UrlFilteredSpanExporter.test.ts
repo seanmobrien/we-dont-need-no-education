@@ -17,6 +17,7 @@ describe('UrlFilteredSpanExporter', () => {
   beforeEach(() => {
     innerExporter = new InMemorySpanExporter();
     testCache = new LRUCache<string, boolean>({ max: 100, ttl: 60000 });
+    process.env.LOG_LEVEL_SERVER = 'info';
   });
 
   afterEach(() => {
@@ -64,6 +65,28 @@ describe('UrlFilteredSpanExporter', () => {
       exporter.export(spans, (result: ExportResult) => {
         const exported = innerExporter.getFinishedSpans();
         expect(exported.length).toBe(0);
+        done();
+      });
+    });
+
+    it('should skip filter spans if log level is silly', (done) => {
+      process.env.LOG_LEVEL_SERVER = 'silly';
+      const exporter = new UrlFilteredSpanExporter(innerExporter, {
+        rules: ['/api/auth'],
+        cache: testCache,
+      });
+
+      const provider = new BasicTracerProvider();
+      const tracer = provider.getTracer('test');
+
+      const span = tracer.startSpan('auth-span');
+      span.setAttribute('http.url', '/api/auth/login');
+      span.end();
+
+      const spans = [span] as unknown as ReadableSpan[];
+      exporter.export(spans, (result: ExportResult) => {
+        const exported = innerExporter.getFinishedSpans();
+        expect(exported.length).toBe(1);
         done();
       });
     });

@@ -6,6 +6,8 @@ import { UrlFilterEngine } from './url-filter-engine';
 import { UrlFilterOptions } from './url-filter-rules';
 import { LRUCache } from 'lru-cache';
 import { globalSingleton } from '@/lib/typescript/singleton-provider';
+import { env } from '@/lib/site-util/env';
+import { result } from 'lodash';
 
 /*
  * Global LRU cache tracking filtered span IDs.
@@ -106,6 +108,11 @@ export class UrlFilteredSpanExporter
     spans: ReadableSpan[],
     resultCallback: (result: ExportResult) => void,
   ): void {
+    // Bypass filtering in silly log level for full traceability
+    if (env('LOG_LEVEL_SERVER') === 'silly') {
+      this.#inner.export(spans, resultCallback);
+      return;
+    }
     try {
       const cache = this.#cache;
 
