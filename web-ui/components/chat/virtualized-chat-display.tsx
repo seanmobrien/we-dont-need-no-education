@@ -360,7 +360,7 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
         if (rowVirtualizer.measureElement && element) {
           rowVirtualizer.measureElement(element);
         }
-        // Clean up timeout reference
+        // Clean up timeout reference (always execute, even if measurement didn't occur)
         timeoutIdsMap.current.delete(itemIndex);
       }, ACCORDION_TRANSITION_DELAY_MS);
 
