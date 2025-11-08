@@ -142,13 +142,26 @@ function transformMemoryResponse(
 /**
  * Checks memory system health by calling the Mem0 health check endpoint
  * Returns granular subsystem health information
+ * 
+ * Caching behavior:
+ * - Returns cached responses for all status types (ok, warning, error)
+ * - Uses different TTLs based on status:
+ *   - ok: 60 seconds (default)
+ *   - warning: 30 seconds (default)
+ *   - error: 10 seconds (default)
+ * - This prevents cascading failures during outages while still allowing
+ *   relatively quick recovery detection
  */
 async function checkMemoryHealth(): Promise<MemoryHealthCheckResponse> {
   const cache = await getMemoryHealthCache();
   const cached = cache.get();
-  if (cached && cached.status === 'ok') {
+  
+  // Return cached response if available, regardless of status
+  // The cache TTL is status-dependent, so errors/warnings expire faster
+  if (cached) {
     return cached;
   }
+  
   try {
     const memoryClient = await memoryClientFactory<ExtendedMemoryClient>({
       impersonation: await fromRequest(),
