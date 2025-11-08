@@ -8,7 +8,7 @@
  * @module __tests__/lib/ai/middleware/tool-optimizing-middleware/performance.test.ts
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();

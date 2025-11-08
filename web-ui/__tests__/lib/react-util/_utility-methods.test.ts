@@ -94,7 +94,7 @@ describe('_utility-methods', () => {
 
   describe('isTemplateStringsArray', () => {
     it('should return true for template strings array', () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+       
       const templateFn = (
         strings: TemplateStringsArray,
         ..._values: unknown[]

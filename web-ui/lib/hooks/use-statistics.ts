@@ -63,9 +63,7 @@ const fetchQueueStatistics = async (): Promise<{
   return data.data;
 };
 
-/**
- * Hook for fetching model statistics using React Query
- */
+
 export const useModelStatistics = (
   source: 'database' | 'redis' = 'database',
 ) => {
@@ -80,9 +78,7 @@ export const useModelStatistics = (
   });
 };
 
-/**
- * Hook for fetching queue statistics using React Query
- */
+
 export const useQueueStatistics = () => {
   return useQuery({
     queryKey: ['queueStatistics'],
@@ -95,9 +91,7 @@ export const useQueueStatistics = () => {
   });
 };
 
-/**
- * Hook for fetching both model and queue statistics
- */
+
 export const useStatistics = (
   modelSource: 'database' | 'redis' = 'database',
 ) => {

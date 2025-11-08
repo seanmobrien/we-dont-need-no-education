@@ -153,7 +153,11 @@ export const ChatList = ({
         const chatId = params.row.id;
         if (chatId) {
           push(
-            String(siteBuilder.messages.chat.page(encodeURIComponent(chatId))),
+            String(
+              siteBuilder.messages.chat
+                .detail(encodeURIComponent(chatId))
+                .toString(),
+            ),
           );
         }
       }

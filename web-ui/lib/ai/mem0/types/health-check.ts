@@ -1,9 +1,9 @@
 /**
  * Memory Health Check Types
  * ========================
- * 
+ *
  * Type definitions for the Mem0 API health check response structure.
- * Based on the sample JSON structure from /api/v1/stats/health-check endpoint.
+ * Based on the sample JSON structure from the Mem0 stats/health-check endpoint (base path configurable).
  */
 
 /**
@@ -35,7 +35,7 @@ export interface AuthServiceHealth {
   client_id: string;
   auth_url: string;
   token_url: string;
-  jkws_url: string;
+  jwks_url: string;
 }
 
 /**
@@ -96,8 +96,8 @@ export function determineHealthStatus(details: HealthDetails): HealthStatus {
     details.auth_service.healthy,
   ];
 
-  const unavailableServices = criticalServices.filter(service => !service);
-  
+  const unavailableServices = criticalServices.filter((service) => !service);
+
   // Warning if one or more services are unavailable
   if (unavailableServices.length > 0) {
     return 'warning';

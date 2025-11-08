@@ -2,8 +2,6 @@
  * @jest-environment node
  */
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   wrapRouteRequest,
   EnableOnBuild,
@@ -16,6 +14,7 @@ import { trace, context as otelContext, propagation } from '@opentelemetry/api';
 import { SpanStatusCode } from '@opentelemetry/api';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { NextRequest } from 'next/dist/server/web/spec-extension/request';
 
 // Mock external dependencies
 jest.mock('@opentelemetry/api', () => ({
@@ -31,7 +30,8 @@ jest.mock('@opentelemetry/api', () => ({
     extract: jest.fn(),
   },
   SpanKind: {
-    SERVER: 'server',
+    SERVER: 1,
+    CLIENT: 2,
   },
   SpanStatusCode: {
     OK: 'ok',
@@ -43,10 +43,6 @@ jest.mock('@opentelemetry/api-logs', () => ({
   logs: {
     getLogger: jest.fn(),
   },
-}));
-
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(),
 }));
 
 jest.mock('@/lib/react-util/errors/logged-error', () => ({
@@ -142,11 +138,9 @@ describe('Server Utils', () => {
       });
 
       expect(trace.getTracer).toHaveBeenCalledWith('app-instrumentation');
-      expect(mockTracer.startSpan).toHaveBeenCalledWith(
-        'test-span',
-        undefined,
-        mockContext,
-      );
+      expect(mockTracer.startSpan).toHaveBeenCalledWith<
+        [string, undefined, object]
+      >('test-span', undefined, mockContext);
       expect(result.span).toBe(mockSpan);
     });
 
@@ -167,7 +161,49 @@ describe('Server Utils', () => {
         attributes,
       });
 
-      expect(mockSpan.setAttributes).toHaveBeenCalledWith(attributes);
+      expect(mockTracer.startSpan).toHaveBeenCalledWith(
+        'test-span',
+        {
+          attributes,
+        },
+        mockContext,
+      );
+    });
+
+    test('sets span kind', async () => {
+      const { SpanKind } = await import('@opentelemetry/api');
+
+      await createInstrumentedSpan({
+        spanName: 'test-span',
+        kind: SpanKind.CLIENT,
+      });
+
+      expect(mockTracer.startSpan).toHaveBeenCalledWith(
+        'test-span',
+        {
+          kind: SpanKind.CLIENT,
+        },
+        mockContext,
+      );
+    });
+    test('sets both kind and attributes', async () => {
+      const { SpanKind } = await import('@opentelemetry/api');
+      const attributes = { 'test.key': 'value' };
+
+      await createInstrumentedSpan({
+        spanName: 'test-span',
+        kind: SpanKind.SERVER,
+        attributes,
+      });
+
+      expect(mockTracer.startSpan).toHaveBeenCalledWith(
+        'test-span',
+        {
+          kind: SpanKind.SERVER,
+          attributes,
+        },
+        mockContext,
+      );
     });
 
     test('executes function successfully', async () => {
@@ -332,7 +368,9 @@ describe('Server Utils', () => {
       } as any;
 
       const response = await handler(mockRequest);
-
+      if (!response) {
+        throw new Error('Response is undefined');
+      }
       expect(response.status).toBe(200);
       expect(mockSpan.setStatus).toHaveBeenCalledWith({
         code: SpanStatusCode.OK,
@@ -384,9 +422,11 @@ describe('Server Utils', () => {
           throw new Error('Handler should not execute during build');
         });
 
-        const mockRequest = {} as Request;
+        const mockRequest = {} as NextRequest;
         const response = await handler(mockRequest);
-
+        if (!response) {
+          throw new Error('Response is undefined');
+        }
         expect(response.status).toBe(200);
         expect(response.statusText).toBe('OK-BUILD-FALLBACK');
         expect(mockSpan.setAttribute).toHaveBeenCalledWith(
@@ -411,9 +451,11 @@ describe('Server Utils', () => {
           throw new Error('Handler should not execute during build');
         });
 
-        const mockRequest = {} as Request;
+        const mockRequest = {} as NextRequest;
         const response = await handler(mockRequest);
-
+        if (!response) {
+          throw new Error('Response is undefined');
+        }
         expect(response.status).toBe(200);
         expect(response.statusText).toBe('OK-BUILD-FALLBACK');
         expect(mockSpan.setAttribute).toHaveBeenCalledWith(
@@ -436,9 +478,12 @@ describe('Server Utils', () => {
         { buildFallback: EnableOnBuild },
       );
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
       const response = await handler(mockRequest);
 
+      if (!response) {
+        throw new Error('Response is undefined');
+      }
       expect(response.status).toBe(200);
       expect(await response.text()).toBe('executed during build');
     });
@@ -456,11 +501,11 @@ describe('Server Utils', () => {
         throw testError;
       });
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
       const response = await handler(mockRequest);
 
-      expect(response.status).toBe(500);
+      expect(response!.status).toBe(500);
       expect(response).toBeInstanceOf(Response);
       expect(mockSpan.recordException).toHaveBeenCalledWith(testError);
       expect(mockSpan.setStatus).toHaveBeenCalledWith({
@@ -528,7 +573,7 @@ describe('Server Utils', () => {
         { errorCallback },
       );
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
       await handler(mockRequest);
 
@@ -553,7 +598,7 @@ describe('Server Utils', () => {
         { errorCallback },
       );
 
-      const mockRequest = {} as Request;
+      const mockRequest = {} as NextRequest;
 
       // Should not throw despite callback error
       const response = await handler(mockRequest);
@@ -597,8 +642,8 @@ describe('Server Utils', () => {
         return new Response('success');
       });
 
-      const mockRequest = {} as Request;
-      const mockContext = {};
+      const mockRequest = {} as NextRequest;
+      const mockContext = { params: Promise.resolve({ id: '123' }) };
 
       await handler(mockRequest, mockContext);
 
@@ -607,7 +652,7 @@ describe('Server Utils', () => {
         'route.request',
         expect.objectContaining({
           attributes: expect.objectContaining({
-            'route.params': expect.stringContaining('{}'),
+            'route.params': expect.stringContaining('{\"id\":\"123\"}'),
           }),
         }),
         expect.any(Object),

@@ -91,7 +91,7 @@ declare module 'lib/react-util/errors/error-like' {
    * @param value - The value to check
    * @returns True if value is ErrorLike, false otherwise
    */
-  export const isErrorLike: (value: unknown) => value is ErrorLike;
+  export function isErrorLike(value: unknown): value is ErrorLike;
 
   /**
    * Type guard to check if a value is a non-empty string or an ErrorLike object.
@@ -99,9 +99,9 @@ declare module 'lib/react-util/errors/error-like' {
    * @param value - The value to check
    * @returns True if value is a non-empty string or ErrorLike, false otherwise
    */
-  export const isStringOrErrorLike: (
+  export function isStringOrErrorLike(
     value: unknown,
-  ) => value is StringOrErrorLike;
+  ): value is StringOrErrorLike;
 
   /**
    * Converts a string or ErrorLike value into a branded ErrorLike object.
@@ -113,8 +113,8 @@ declare module 'lib/react-util/errors/error-like' {
    * @param options - Optional configuration for the error (name, stack, cause, etc.)
    * @returns A branded ErrorLike object
    */
-  export const asErrorLike: (
+  export function asErrorLike(
     value: unknown,
     options?: AsErrorLikeOptions,
-  ) => ErrorLike | undefined;
+  ): ErrorLike | undefined;
 }

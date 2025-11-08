@@ -1,39 +1,8 @@
-/**
- * @fileoverview Server-side utilities for Next.js applications
- *
- * This module provides essential utilities for Next.js server-side operations including:
- * - Route handler wrapping with error handling and OpenTelemetry tracing
- * - Build-time execution control and fallbacks
- * - OpenTelemetry span creation and instrumentation utilities
- * - Request processing and context extraction helpers
- *
- * The utilities are designed to work seamlessly with Next.js App Router and provide
- * comprehensive observability, error handling, and build-time safety features.
- *
- * @example
- * ```typescript
- * import { wrapRouteRequest, createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
- *
- * // Wrap a route handler with tracing and error handling
- * export const GET = wrapRouteRequest(async (req) => {
- *   const instrumented = await createInstrumentedSpan({
- *     spanName: 'process-data',
- *     attributes: { 'operation': 'data-processing' }
- *   });
- *
- *   return await instrumented.executeWithContext(async (span) => {
- *     span.setAttribute('records_processed', 100);
- *     return Response.json({ success: true });
- *   });
- * });
- * ```
- */
-
 import { errorResponseFactory } from './error-response/index';
 import { env } from '@/lib/site-util/env';
-import { log, logger } from '@/lib/logger';
+import { log, safeSerialize } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import type { NextRequest } from 'next/server';
+import type { NextRequest, NextResponse } from 'next/server';
 import {
   SpanKind,
   SpanStatusCode,
@@ -47,130 +16,44 @@ import {
   type SpanContext,
 } from '@opentelemetry/api';
 import { AnyValueMap } from '@opentelemetry/api-logs';
+import { WrappedResponseContext } from './types';
+import { makeJsonResponse } from './response';
 
-/**
- * Sentinel used to explicitly enable a wrapped route/handler during the production build phase.
- *
- * When passed to {@link wrapRouteRequest} via the `buildFallback` option, this symbol disables the
- * default "build guard" that would otherwise short‑circuit handler execution during
- * Next.js build phases (e.g., `phase-production-build`).
- *
- * Use sparingly and only for handlers that are guaranteed to be deterministic and safe to run
- * at build time (no external side effects, network calls, or dependency on unavailable services).
- *
- * @remarks
- * Default behavior without this symbol is to return a lightweight JSON payload indicating the
- * service is disabled while building. Passing this symbol opts the handler into executing instead.
- *
- * @example
- * ```ts
- * export const GET = wrapRouteRequest(async () => {
- *   return Response.json({ ok: true });
- * }, { buildFallback: EnableOnBuild });
- * ```
- *
- * @public
- */
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');
 
-/**
- * Default fallback object returned by grid services while the solution is undergoing a production build.
- * Mirrors an empty data grid structure in order to avoid triggering any client-side errors.
- *
- * @public
- */
 export const buildFallbackGrid = { rows: [], rowCount: 0 };
 
-/**
- * Default fallback object returned by services while the solution is undergoing a production build.
- *
- * This sentinel value indicates that the service layer is temporarily disabled during the build process.
- * Consumers can use its presence to short-circuit calls and present a maintenance or disabled state.
- *
- * @remarks
- * Intended for use by server-side utilities and service stubs to prevent real service execution
- * during build steps (e.g., SSR/ISR/SSG).
- *
- * @property __status - Human-readable message explaining that the service is disabled during build.
- * @defaultValue An object containing a status message indicating the service is disabled during build.
- * @public
- */
 const globalBuildFallback = {
   __status: 'Service disabled during build.',
 } as const;
 
-// Note: handler can be 0, 1, or 2 args; we'll infer via a generic below
-
-/**
- * Wraps a route handler function with error handling, logging, and OpenTelemetry tracing for Next.js API/app routes.
- *
- * This utility returns an async function that provides comprehensive error handling and observability:
- * - Automatically creates OpenTelemetry spans for request tracing
- * - Logs request details when logging is enabled
- * - Handles build-time fallbacks to prevent execution during production builds
- * - Catches and logs errors, returning structured errorResponseFactory objects
- * - Supports custom error callbacks for additional error processing
- *
- * The wrapper preserves the original handler's type signature and supports both Fetch API `Request`
- * and Next.js `NextRequest` types. Route parameters are automatically extracted and included in traces.
- *
- * @template A - Array of arguments passed to the handler function
- * @template R - Response type returned by the handler function
- * @param fn - The route handler function to wrap (can be sync or async)
- * @param options - Configuration options for the wrapper
- * @param options.log - Whether to log request details (default: true in non-production, false in production)
- * @param options.buildFallback - Fallback response during build time, or EnableOnBuild to allow execution
- * @param options.errorCallback - Optional callback invoked when errors occur, receives the error object
- * @returns An async function that returns the handler result or an errorResponseFactory on error
- *
- * @example
- * ```typescript
- * // Basic usage with automatic error handling
- * export const GET = wrapRouteRequest(async (req: NextRequest) => {
- *   const data = await fetchData();
- *   return Response.json({ data });
- * });
- *
- * // With custom error callback
- * export const POST = wrapRouteRequest(
- *   async (req: NextRequest) => {
- *     return Response.json({ success: true });
- *   },
- *   {
- *     errorCallback: (error) => {
- *       console.error('Custom error handling:', error);
- *     }
- *   }
- * );
- *
- * // Allow execution during build time
- * export const GET = wrapRouteRequest(
- *   async () => Response.json({ buildTimeData: true }),
- *   { buildFallback: EnableOnBuild }
- * );
- * ```
- *
- * @public
- */
-// Generic preserves the original handler signature (0, 1, or 2 args)
-export function wrapRouteRequest<A extends unknown[], R extends Response>(
-  fn: (...args: A) => Promise<R>,
+export const wrapRouteRequest = <
+  A extends
+    | []
+    | [NextRequest]
+    | [Request]
+    | [NextRequest, Pick<WrappedResponseContext<TContext>, 'params'>]
+    | [NextRequest, WrappedResponseContext<TContext>]
+    | [Request, Pick<WrappedResponseContext<TContext>, 'params'>]
+    | [Request, WrappedResponseContext<TContext>],
+  TContext extends Record<string, unknown> = Record<string, unknown>,
+>(
+  fn: (...args: A) => Promise<Response | NextResponse | undefined>,
   options: {
     log?: boolean;
     buildFallback?: object | typeof EnableOnBuild;
     errorCallback?: (error: unknown) => void | Promise<void>;
   } = {},
-): (...args: A) => Promise<Response> {
+): ((...args: A) => Promise<Response | NextResponse>) => {
   const {
     log: shouldLog = env('NODE_ENV') !== 'production',
     buildFallback,
     errorCallback,
   } = options ?? {};
-  return async (...args: A): Promise<Response> => {
-    const req = args[0] as unknown as Request | NextRequest | undefined;
-    const context = args[1] as
-      | { params: Promise<Record<string, unknown>> }
-      | undefined;
+  return async (...args: A): Promise<Response | NextResponse> => {
+    const req = args[0] as NextRequest;
+    const context = args[1] as WrappedResponseContext<TContext>;
+
     // Build attributes and parent context for tracing from the request
     const { attributes, parentCtx } = await getRequestSpanInit(req, context);
 
@@ -202,29 +85,26 @@ export function wrapRouteRequest<A extends unknown[], R extends Response>(
               ? context.params
               : Promise.resolve({} as Record<string, unknown>));
             const url = (req as unknown as Request)?.url ?? '<no-req>';
+            span.setAttribute('request.url', url);
+            span.setAttribute('route.params', safeSerialize(extractedParams));
             log((l) =>
               l.info(`Processing route request [${url}]`, {
                 args: JSON.stringify(extractedParams),
               }),
             );
-            // Also invoke concrete logger instance to satisfy tests that spy on logger()
-            try {
-              const directLogger = (await logger()) as unknown as {
-                info?: (...args: unknown[]) => void;
-              };
-              if (directLogger && typeof directLogger.info === 'function') {
-                directLogger.info(`Processing route request [${url}]`, {
-                  args: JSON.stringify(extractedParams),
-                });
-              }
-            } catch {
-              /* ignore logger lookup errors in tests */
-            }
           }
           // Invoke the original handler with the same args shape
-          const result = await fn(...args);
+          const result = await (
+            fn as unknown as (
+              req: NextRequest,
+              context: WrappedResponseContext<TContext>,
+            ) => Promise<Response | NextResponse>
+          )(req, {
+            ...context,
+            span,
+          } as WrappedResponseContext<TContext>);
           try {
-            if (result && typeof result === 'object' && 'status' in result) {
+            if (typeof result === 'object' && 'status' in result) {
               span.setAttribute(
                 'http.status_code',
                 (result as Response).status,
@@ -257,16 +137,6 @@ export function wrapRouteRequest<A extends unknown[], R extends Response>(
                 req,
               },
             });
-            try {
-              const directLogger = (await logger()) as unknown as {
-                error?: (...args: unknown[]) => void;
-              };
-              if (directLogger && typeof directLogger.error === 'function') {
-                directLogger.error('Route handler error', { error });
-              }
-            } catch {
-              /* ignore logger lookup errors in tests */
-            }
           }
           // If a callback was provided, invoke it within a try/catch to avoid secondary errors
           if (errorCallback) {
@@ -307,24 +177,12 @@ export function wrapRouteRequest<A extends unknown[], R extends Response>(
       },
     );
   };
-}
+};
 
-/**
- * Builds span attributes and an OpenTelemetry parent context for a request.
- *
- * This internal function extracts tracing context from incoming HTTP requests and prepares
- * the necessary attributes for span creation. It handles W3C trace context propagation
- * from request headers and derives request metadata for observability.
- *
- * @internal
- * @param req - The incoming request object (Request or NextRequest)
- * @param ctx - Optional route context containing dynamic parameters
- * @returns Promise resolving to span attributes and parent context
- */
-async function getRequestSpanInit(
+const getRequestSpanInit = async (
   req: Request | NextRequest | undefined,
   ctx?: { params: Promise<Record<string, unknown>> },
-): Promise<{ attributes: Attributes; parentCtx: OtelContext }> {
+): Promise<{ attributes: Attributes; parentCtx: OtelContext }> => {
   const { path, query, method } = getPathQueryAndMethod(req);
   const routeParams = await (!!ctx?.params
     ? ctx.params
@@ -351,22 +209,12 @@ async function getRequestSpanInit(
     'request.path': path,
     'request.query': query,
     'http.method': method,
-    'route.params': safeStringify(routeParams),
-    'request.headers': safeStringify(sanitizedHeaders),
+    'route.params': safeSerialize(routeParams),
+    'request.headers': safeSerialize(sanitizedHeaders),
   };
   return { attributes, parentCtx: extracted };
-}
+};
 
-/**
- * Extracts path, query string, and HTTP method from a request object.
- *
- * Handles both standard Fetch API Request objects and Next.js NextRequest objects,
- * providing consistent path and query extraction regardless of the request type.
- *
- * @internal
- * @param req - The request object to extract information from
- * @returns Object containing path, query string, and HTTP method
- */
 const getPathQueryAndMethod = (
   req: Request | NextRequest | undefined,
 ): {
@@ -397,17 +245,6 @@ const getPathQueryAndMethod = (
   return { path, query, method };
 };
 
-/**
- * Extracts and normalizes HTTP headers from a request object.
- *
- * Converts headers to a consistent lowercase key format and handles both
- * Fetch API and Next.js request types. Safely handles cases where headers
- * might not be available or iterable.
- *
- * @internal
- * @param req - The request object to extract headers from
- * @returns Record of header key-value pairs with lowercase keys
- */
 const getHeadersObject = (
   req: Request | NextRequest | undefined,
 ): Record<string, string> => {
@@ -428,17 +265,6 @@ const getHeadersObject = (
   return out;
 };
 
-/**
- * Sanitizes HTTP headers by redacting sensitive information.
- *
- * Replaces sensitive header values (like authorization tokens, cookies, API keys)
- * with placeholder text to prevent accidental exposure in logs or traces.
- * Headers are considered sensitive if they contain authentication or session data.
- *
- * @internal
- * @param headers - The headers object to sanitize
- * @returns New headers object with sensitive values redacted
- */
 const sanitizeHeaders = (
   headers: Record<string, string>,
 ): Record<string, string> => {
@@ -456,116 +282,32 @@ const sanitizeHeaders = (
   return out;
 };
 
-/**
- * Safely serializes a value to JSON string with error handling.
- *
- * Attempts to convert any value to its JSON string representation.
- * If serialization fails (e.g., due to circular references, functions, or other non-serializable values),
- * returns a fallback string indicating the value couldn't be serialized.
- *
- * @internal
- * @param value - The value to serialize
- * @returns JSON string representation or fallback message
- */
-const safeStringify = (value: unknown): string => {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return '<unserializable>';
-  }
-};
-
-/**
- * Creates an OpenTelemetry span with automatic parent context association and error handling.
- *
- * This utility function provides a comprehensive wrapper for OpenTelemetry span creation and management.
- * It automatically:
- * - Associates the span with the active parent context for proper trace hierarchy
- * - Sets span attributes and status codes
- * - Records exceptions and error details on failures
- * - Provides a context-aware execution wrapper for callback functions
- * - Falls back to no-op behavior when OpenTelemetry is unavailable
- *
- * The returned object includes all necessary span utilities and a context-aware execution method
- * that ensures proper span lifecycle management and error propagation.
- *
- * @param options - Configuration options for span creation
- * @param options.spanName - The name for the span (used in tracing dashboards)
- * @param options.attributes - Optional key-value pairs to set as span attributes
- * @param options.tracerName - Name of the tracer to use (default: 'app-instrumentation')
- * @param options.autoLog - Whether to automatically log errors (default: true)
- * @returns Promise resolving to an object containing span utilities and execution context
- *
- * @returns
- * ```typescript
- * {
- *   parentContext: OtelContext;        // The parent context used for span creation
- *   contextWithSpan: OtelContext;      // Context with the span set as active
- *   span: Span;                        // The created OpenTelemetry span
- *   executeWithContext: Function;      // Method to execute callbacks within span context
- * }
- * ```
- *
- * @example
- * ```typescript
- * // Basic span creation and execution
- * const instrumented = await createInstrumentedSpan({
- *   spanName: 'database.query',
- *   attributes: { 'db.table': 'users', 'db.operation': 'select' }
- * });
- *
- * const result = await instrumented.executeWithContext(async (span) => {
- *   span.setAttribute('db.rows_returned', 42);
- *   return await database.query('SELECT * FROM users');
- * });
- * ```
- *
- * @example
- * ```typescript
- * // Custom tracer and error handling
- * const instrumented = await createInstrumentedSpan({
- *   spanName: 'external-api-call',
- *   tracerName: 'api-client',
- *   attributes: { 'api.endpoint': '/users', 'api.method': 'GET' }
- * });
- *
- * try {
- *   const data = await instrumented.executeWithContext(async (span) => {
- *     const response = await fetch('https://api.example.com/users');
- *     span.setAttribute('http.status_code', response.status);
- *     return response.json();
- *   });
- *   console.log('API response:', data);
- * } catch (error) {
- *   // Error is automatically recorded on the span
- *   console.error('API call failed:', error);
- * }
- * ```
- *
- * @public
- */
 export const createInstrumentedSpan = async ({
   spanName,
   attributes,
   tracerName = 'app-instrumentation',
   autoLog = true,
+  kind,
 }: {
   tracerName?: string;
   spanName: string;
   attributes?: Record<string, string | number | boolean>;
   autoLog?: boolean;
+  kind?: SpanKind;
 }) => {
   let span: Span | undefined;
 
   try {
     const tracer = trace.getTracer(tracerName);
     const parentContext = otelContext.active();
-    span = tracer.startSpan(spanName, undefined, parentContext);
 
-    // Set attributes if provided
-    if (attributes) {
-      span.setAttributes(attributes);
-    }
+    span = tracer.startSpan(
+      spanName,
+      kind !== undefined || attributes !== undefined
+        ? { kind, attributes }
+        : undefined,
+      parentContext,
+    );
 
     const contextWithSpan = trace.setSpan(parentContext, span);
 
@@ -573,11 +315,6 @@ export const createInstrumentedSpan = async ({
       parentContext,
       contextWithSpan,
       span,
-      /**
-       * Executes a callback function within the span context
-       * @param fn - The function to execute within the span context
-       * @returns The result of the callback function
-       */
       executeWithContext: async <TResult>(
         fn: (span: Span) => Promise<TResult>,
       ): Promise<TResult> => {
@@ -641,45 +378,26 @@ export const createInstrumentedSpan = async ({
     };
   }
 };
+export const unauthorizedServiceResponse = ({
+  req,
+  scopes = [],
+}: {
+  req: NextRequest;
+  scopes?: Array<string>;
+}) => {
+  const { nextUrl } = req;
+  const resourceMetadataPath = `/.well-known/oauth-protected-resource${nextUrl.pathname}`;
+  return makeJsonResponse(
+    { error: 'Unauthorized', message: 'Active session required.' },
+    {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': `Bearer resource_metadata="${resourceMetadataPath}"${scopes && scopes.length > 0 ? ` scope="${scopes.join(' ')}"` : ''}`,
+      },
+    },
+  );
+};
 
-/**
- * Captures a client event with telemetry data and OpenTelemetry tracing.
- *
- * This function provides server-side event capture functionality that integrates with
- * the application's telemetry system and OpenTelemetry tracing. It creates a span
- * for the event and records relevant metadata for observability and analytics.
- *
- * The function is designed to work with client instances that have telemetry tracking
- * enabled, capturing method calls, performance metrics, and error conditions.
- *
- * @param eventName - The name of the event being captured (e.g., 'add', 'search', 'delete')
- * @param instance - The client instance that triggered the event (must have telemetryId, host, and constructor.name)
- * @param additionalData - Optional additional data to include with the event
- * @param additionalData.keys - Array of keys or payload information for the event
- * @param additionalData.success - Whether the operation was successful
- * @param additionalData.args_count - Number of arguments passed to the method
- * @param additionalData.error - Error information if the operation failed
- * @param additionalData - Any other custom properties to include
- *
- * @example
- * ```typescript
- * // Capture a successful API call
- * await reportEvent('search', memoryClient, {
- *   success: true,
- *   args_count: 2,
- *   keys: ['query', 'options']
- * });
- *
- * // Capture a failed operation
- * await reportEvent('add', memoryClient, {
- *   success: false,
- *   error: 'API rate limit exceeded',
- *   args_count: 1
- * });
- * ```
- *
- * @public
- */
 export const reportEvent = async ({
   eventName,
   tracerName = 'noeducation/telemetry',

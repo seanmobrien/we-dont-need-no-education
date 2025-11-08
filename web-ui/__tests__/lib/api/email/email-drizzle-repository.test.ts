@@ -1,12 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-require-imports */
+ 
+ 
 
 import {
   EmailDrizzleRepository,
   EmailDomain,
 } from '@/lib/api/email/email-drizzle-repository';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 import { drizDb, drizDbWithInit } from '@/lib/drizzle-db';
 /*
 // Mock drizzle-db
@@ -54,7 +54,7 @@ jest.mock('@/drizzle/schema', () => {
 
 describe('EmailDrizzleRepository', () => {
   let repository: EmailDrizzleRepository;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
   let mockDb: any;
 
   beforeEach(() => {

@@ -26,6 +26,18 @@ const eslintConfig = [
       '.github',
     ],
   },
+  // Disable certain TypeScript rules for test folders
+  {
+    files: ['**/tests/**', '**/__tests__/**'],
+    languageOptions: {
+      parserOptions: { ecmaVersion: 'latest' },
+    },
+    rules: {
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ];
 
 export default eslintConfig;

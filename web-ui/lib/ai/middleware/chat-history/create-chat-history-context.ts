@@ -1,7 +1,7 @@
 import { trace, SpanKind, SpanStatusCode } from '@opentelemetry/api';
-import { generateChatId } from '../../core';
+import { generateChatId } from '@/lib/ai/core';
 import type { ChatHistoryContext } from './types';
-import { tracer } from '../../mcp';
+import { tracer } from '@/lib/ai/mcp/instrumented-sse-transport/metrics/otel-metrics';
 import { isError } from '@/lib/react-util/utility-methods';
 
 export const AgentUserId = -1;

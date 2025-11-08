@@ -18,6 +18,7 @@ import {
   Chat as ChatIcon,
 } from '@mui/icons-material';
 import { useChatHealth } from '@/lib/hooks/use-chat-health';
+import { BOX_SX_VARIANTS, BoxSxVariantKey } from '../health-status-styles';
 
 /**
  * Props for the ChatStatusIndicator component
@@ -155,7 +156,7 @@ function getTooltipMessage(
  * ChatStatusIndicator displays the current health status of the chat service
  */
 export const ChatStatusIndicator = React.memo<ChatStatusIndicatorProps>(
-  ({ showLabel = false, size = 'small' }) => {
+  ({ showLabel = false, size = 'medium' }) => {
     const {
       healthStatus,
       subsystems,
@@ -177,12 +178,7 @@ export const ChatStatusIndicator = React.memo<ChatStatusIndicatorProps>(
       refreshInterval,
     );
 
-    const boxSx = {
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: `${statusColor}.main`,
-    };
+    const boxSx = BOX_SX_VARIANTS[`${statusColor}-${size}` as BoxSxVariantKey];
 
     if (showLabel) {
       return (

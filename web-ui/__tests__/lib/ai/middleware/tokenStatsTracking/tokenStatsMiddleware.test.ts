@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
 
 setupMaps();

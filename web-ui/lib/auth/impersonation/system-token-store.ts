@@ -26,21 +26,16 @@
  * @version 2.0.0
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
+
 import { CookieJar } from 'tough-cookie';
 import { got } from 'got';
-import {
-  discovery,
-  buildAuthorizationUrl,
-  authorizationCodeGrant,
-  randomState,
-  randomNonce,
-  type Configuration as OIDCConfiguration,
-} from 'openid-client';
 import { parse as parseHtml } from 'node-html-parser';
 import { createInstrumentedSpan } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 import { CryptoService } from '@/lib/site-util/auth/crypto-service';
-import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { getRedisClient } from '@/lib/redis-client';
 import { env } from '@/lib/site-util/env';
 import { SimpleRateLimiter } from '@/lib/react-util/simple-rate-limiter';
 import { SimpleCircuitBreaker } from '@/lib/react-util/simple-circuit-breaker';
@@ -51,6 +46,36 @@ import type {
   FormLoginResult,
 } from './impersonation.types';
 import { defaultConfigFromEnv } from './utility';
+
+let openIdClientModule: {
+  discovery: Function;
+  buildAuthorizationUrl: Function;
+  authorizationCodeGrant: Function;
+  randomState: Function;
+  randomNonce: Function;
+} | null = null;
+//type Configuration as OIDCConfiguration
+
+const getOpenIdClientModule = () => {
+  if (openIdClientModule) {
+    return openIdClientModule;
+  }
+  const {
+    discovery,
+    buildAuthorizationUrl,
+    authorizationCodeGrant,
+    randomState,
+    randomNonce,
+  } = require('openid-client');
+  openIdClientModule = {
+    discovery,
+    buildAuthorizationUrl,
+    authorizationCodeGrant,
+    randomState,
+    randomNonce,
+  };
+  return openIdClientModule;
+};
 
 /**
  * SystemTokenStore - Thread-safe singleton for centralized admin token management
@@ -197,7 +222,7 @@ export class SystemTokenStore {
    * @description Contains discovered endpoints and configuration from Keycloak's
    * .well-known/openid_configuration endpoint. Cached to avoid repeated discovery.
    */
-  private oidcConfig?: OIDCConfiguration;
+  private oidcConfig?: Record<string, unknown>;
 
   /**
    * Rate limiter for authentication attempts
@@ -854,7 +879,7 @@ export class SystemTokenStore {
 
       this.oidcConfig = await discoveryInstrumented.executeWithContext(
         async (discoverySpan) => {
-          const config = await discovery(
+          const config = await getOpenIdClientModule().discovery(
             new URL(this.config.issuer),
             this.config.clientId,
             this.config.clientSecret,
@@ -890,15 +915,18 @@ export class SystemTokenStore {
     }
 
     // Build authorization URL and initiate login flow
-    const authorizeUrl = buildAuthorizationUrl(this.oidcConfig, {
-      redirect_uri: this.config.redirectUri,
-      scope: 'openid email profile offline_access',
-      response_type: 'code',
-      response_mode: 'query',
-      prompt: 'login',
-      state,
-      nonce,
-    });
+    const authorizeUrl = getOpenIdClientModule().buildAuthorizationUrl(
+      this.oidcConfig,
+      {
+        redirect_uri: this.config.redirectUri,
+        scope: 'openid email profile offline_access',
+        response_type: 'code',
+        response_mode: 'query',
+        prompt: 'login',
+        state,
+        nonce,
+      },
+    );
 
     const authResponse = await client.get(authorizeUrl.toString());
 
@@ -1158,10 +1186,14 @@ export class SystemTokenStore {
           throw new Error('OIDC configuration not initialized');
         }
 
-        const token = await authorizationCodeGrant(this.oidcConfig, codeUrl, {
-          expectedState: state,
-          expectedNonce: nonce,
-        });
+        const token = await getOpenIdClientModule().authorizationCodeGrant(
+          this.oidcConfig,
+          codeUrl,
+          {
+            expectedState: state,
+            expectedNonce: nonce,
+          },
+        );
 
         const accessToken = token.access_token as string;
         if (!accessToken) {
@@ -1198,8 +1230,10 @@ export class SystemTokenStore {
       // Initialize OIDC configuration for proper token exchange
       await this.#ensureOIDCConfiguration();
 
-      const state = randomState();
-      const nonce = randomNonce();
+      const openIdClient = getOpenIdClientModule();
+
+      const state = openIdClient.randomState();
+      const nonce = openIdClient.randomNonce();
       let codeUrl: URL | null | undefined;
 
       try {
@@ -1229,15 +1263,18 @@ export class SystemTokenStore {
         }
 
         span.setAttribute('auth.login_form_required', true);
-        const authorizeUrl = buildAuthorizationUrl(this.oidcConfig!, {
-          redirect_uri: this.config.redirectUri,
-          scope: 'openid email profile offline_access',
-          response_type: 'code',
-          response_mode: 'query',
-          prompt: 'login',
-          state,
-          nonce,
-        });
+        const authorizeUrl = openIdClient.buildAuthorizationUrl(
+          this.oidcConfig!,
+          {
+            redirect_uri: this.config.redirectUri,
+            scope: 'openid email profile offline_access',
+            response_type: 'code',
+            response_mode: 'query',
+            prompt: 'login',
+            state,
+            nonce,
+          },
+        );
 
         const loginResult = await this.#processLoginForm(
           client,
@@ -1395,7 +1432,7 @@ export class SystemTokenStore {
 
           this.oidcConfig = await discoveryInstrumented.executeWithContext(
             async (discoverySpan) => {
-              const config = await discovery(
+              const config = await getOpenIdClientModule().discovery(
                 new URL(this.config.issuer),
                 this.config.clientId,
                 this.config.clientSecret,

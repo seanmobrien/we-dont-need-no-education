@@ -10,26 +10,39 @@ import {
 import { isKeyOf } from '@/lib/typescript';
 import { env } from '../env';
 import { LoggedError } from '@/lib/react-util';
+import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 
-const FLAGSMITH_SERVER = Symbol.for('@noeducation/flagsmith-server');
+const FLAGSMITH_SERVER_SINGLETON_KEY = '@noeducation/flagsmith-server';
+const REFRESH_INTERVAL = 1000 * 60 * 5; // Refresh every 5 minutes
+
+const createFlagsmithServerInstance = async (): Promise<
+  IFlagsmith<string, string>
+> => {
+  const flagsmithServer = createFlagsmithInstance();
+  await flagsmithServer.init({
+    environmentID: env('FLAGSMITH_SDK_KEY'),
+    api: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
+    enableAnalytics: true,
+    enableLogs: env('NODE_ENV') === 'development',
+  });
+  flagsmithServer.startListening(REFRESH_INTERVAL);
+  return flagsmithServer;
+};
 
 // Server-bound Flagsmith instance used for server-side flag evaluation.
-export const flagsmithServer = async () => {
-  const REFRESH_INTERVAL = 1000 * 60 * 5; // Refresh every 5 minutes
-  const globalRegistry: typeof globalThis & {
-    [FLAGSMITH_SERVER]?: IFlagsmith<string, string>;
-  } = globalThis;
-  if (!globalRegistry[FLAGSMITH_SERVER]) {
-    const flagsmithServer = createFlagsmithInstance();
-    await flagsmithServer.init({
-      environmentID: env('FLAGSMITH_SDK_KEY'),
-      api: env('NEXT_PUBLIC_FLAGSMITH_API_URL'),
-    });
-    flagsmithServer.startListening(REFRESH_INTERVAL);
-    globalRegistry[FLAGSMITH_SERVER] = flagsmithServer;
-    return flagsmithServer;
+export const flagsmithServer = async (): Promise<
+  IFlagsmith<string, string>
+> => {
+  const existing = SingletonProvider.Instance.get<IFlagsmith<string, string>>(
+    FLAGSMITH_SERVER_SINGLETON_KEY,
+  );
+  if (existing) {
+    return existing;
   }
-  return globalRegistry[FLAGSMITH_SERVER];
+
+  const instance = await createFlagsmithServerInstance();
+  SingletonProvider.Instance.set(FLAGSMITH_SERVER_SINGLETON_KEY, instance);
+  return instance;
 };
 
 const identify = async ({
@@ -39,7 +52,7 @@ const identify = async ({
 }): Promise<IFlagsmith<string, string> | null> => {
   if (!userId) {
     const session = await auth();
-    userId = session?.user?.id;
+    userId = session?.user?.hash ?? session?.user?.id?.toString();
     if (!userId) {
       userId = 'server';
     }
@@ -68,17 +81,15 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
 ): Promise<(typeof AllFeatureFlagsDefault)[T]> => {
   try {
     const server = await identify({ userId });
-    return (
-      server?.getValue(flagKey, {
-        skipAnalytics: false,
-        json: true,
-        ...(defaultValue === undefined || typeof defaultValue === 'object'
-          ? {}
-          : { fallback: defaultValue }),
-      }) ??
+    return (server?.getValue(flagKey, {
+      skipAnalytics: false,
+      json: true,
+      ...(defaultValue === undefined || typeof defaultValue === 'object'
+        ? {}
+        : { fallback: defaultValue }),
+    }) ??
       defaultValue ??
-      AllFeatureFlagsDefault[flagKey]
-    );
+      AllFeatureFlagsDefault[flagKey]) as (typeof AllFeatureFlagsDefault)[T];
   } catch (error) {
     LoggedError.isTurtlesAllTheWayDownBaby(error, {
       source: 'Flagsmith',
@@ -88,7 +99,9 @@ export const getFeatureFlag = async <T extends KnownFeatureType>(
   }
 };
 
-export const getAllFeatureFlags = async (userId?: string) => {
+export const getAllFeatureFlags = async (
+  userId?: string,
+): Promise<Record<KnownFeatureType, FeatureFlagStatus>> => {
   try {
     const server = await identify({ userId });
     if (!server) {
@@ -105,7 +118,10 @@ export const getAllFeatureFlags = async (userId?: string) => {
                   enabled: true,
                   value,
                 }
-            : AllFeatureFlagsDefault[key];
+            : {
+                enabled: !!AllFeatureFlagsDefault[key],
+                value: AllFeatureFlagsDefault[key],
+              };
         }
         return acc;
       },

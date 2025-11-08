@@ -29,16 +29,31 @@ export const ChatWindow = ({
   const {
     config: {
       size: { height },
+      position: dockPosition,
     },
   } = useChatPanelContext();
   useEffect(() => {
     if (!parentRef.current) {
       return;
     }
-    const availableHeight =
-      height - parentRef.current.getBoundingClientRect().x;
+    if (dockPosition === 'inline') {
+      parentRef.current.style.maxHeight = 'initial';
+      return;
+    }
+    let parent: HTMLElement | null = parentRef.current;
+    const body = document.body;
+    while (parent && !body.isSameNode(parent)) {
+      if (parent.dataset['component'] === 'chat-panel') {
+        break;
+      }
+      parent = parent.parentElement;
+    }
+    if (!parent) {
+      parent = parentRef.current;
+    }
+    const availableHeight = height - parent.getBoundingClientRect().x;
     parentRef.current.style.maxHeight = `${availableHeight - 25}px`;
-  }, [height]);
+  }, [height, dockPosition]);
 
   const rowVirtualizer = useVirtualizer({
     count: messages.length,
@@ -107,7 +122,6 @@ export const ChatWindow = ({
         height: '100%',
         width: '100%',
         border: '1px solid #ccc',
-        marginTop: 2,
         backgroundColor: 'var(--color-surface-overlay)',
         borderRadius: 4,
         p: 2,

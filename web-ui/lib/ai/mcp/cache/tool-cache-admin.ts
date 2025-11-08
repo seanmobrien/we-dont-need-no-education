@@ -6,22 +6,28 @@
  * @version 1.0.0
  */
 
-import { getToolCache } from './tool-cache';
+import { getToolCache, MCPToolCache } from './tool-cache';
 import { log } from '@/lib/logger';
+import { getCacheEnabledFlag, getCacheEnabledFlagSync } from '../tool-flags';
 
 /**
  * Cache administration utilities
  */
 export class MCPToolCacheAdmin {
-  private static toolCache = getToolCache();
+  /**
+   * Gets the tool cache instance
+   */
+  private static async getCache<T>(cb: (x: MCPToolCache) => T = (x) => x as T) {
+    const toolCache = await getToolCache();
+    return await cb(toolCache);
+  }
 
   /**
    * Displays comprehensive cache statistics
    */
   static async showStats(): Promise<void> {
     try {
-      const stats = await this.toolCache.getStats();
-
+      const stats = await this.getCache((x) => x.getStats());
       log((l) =>
         l.info('MCP Tool Cache Statistics:', {
           memoryEntries: stats.memorySize,
@@ -41,46 +47,11 @@ export class MCPToolCacheAdmin {
    */
   static async clearCache(): Promise<void> {
     try {
-      await this.toolCache.clearAll();
+      (await getToolCache()).clearAll();
       log((l) => l.info('All MCP tool caches cleared'));
     } catch (error) {
       log((l) => l.error('Failed to clear cache:', error));
     }
-  }
-
-  /**
-   * Warm up cache by pre-loading tools for common configurations
-   * @param commonConfigs Array of frequently used MCP server configurations
-   */
-  static async warmCache(
-    commonConfigs: Array<{ url: string; allowWrite?: boolean }>,
-  ): Promise<void> {
-    log((l) =>
-      l.info(
-        `Warming MCP tool cache for ${commonConfigs.length} configurations...`,
-      ),
-    );
-
-    const { toolProviderFactory } = await import('../providers');
-
-    const warmupPromises = commonConfigs.map(async (config) => {
-      try {
-        const provider = await toolProviderFactory(config);
-        const tools = provider.tools;
-        await provider.dispose();
-
-        log((l) =>
-          l.debug(`Cache warmed for ${config.url}`, {
-            toolCount: Object.keys(tools).length,
-          }),
-        );
-      } catch (error) {
-        log((l) => l.warn(`Cache warmup failed for ${config.url}:`, error));
-      }
-    });
-
-    await Promise.allSettled(warmupPromises);
-    log((l) => l.info('MCP tool cache warmup completed'));
   }
 
   /**
@@ -96,8 +67,28 @@ export class MCPToolCacheAdmin {
         redisKeys: number;
         hitRate?: number;
       };
+      disabled?: undefined | true;
     };
   }> {
+    log((l) =>
+      l.verbose(
+        'healthCheck:MCP tool caching disabled via environment variable',
+      ),
+    );
+
+    const cacheEnabledFlag = await getCacheEnabledFlag();
+    if (!cacheEnabledFlag.value) {
+      return {
+        healthy: true,
+        details: {
+          memoryCache: false,
+          redisCache: false,
+          stats: undefined,
+          disabled: true,
+        },
+      };
+    }
+
     const details = {
       memoryCache: false,
       redisCache: false,
@@ -115,7 +106,7 @@ export class MCPToolCacheAdmin {
       details.memoryCache = true;
 
       // Test Redis cache by getting stats
-      const stats = await this.toolCache.getStats();
+      const stats = await this.getCache((x) => x.getStats());
       details.redisCache = stats.redisKeys >= 0; // Redis accessible if we can get key count
       details.stats = stats;
 
@@ -132,24 +123,25 @@ export class MCPToolCacheAdmin {
 /**
  * Environment variable configuration for cache tuning
  */
-export const getCacheEnvConfig = () => ({
-  MCP_CACHE_TTL: parseInt(process.env.MCP_CACHE_TTL || '86400'), // 24 hours default
-  MCP_CACHE_MAX_MEMORY: parseInt(process.env.MCP_CACHE_MAX_MEMORY || '100'), // 100 entries default
-  MCP_CACHE_ENABLED: process.env.MCP_CACHE_ENABLED !== 'false', // Enabled by default
-  MCP_CACHE_PREFIX: process.env.MCP_CACHE_PREFIX || 'mcp:tools',
-});
+export const getCacheEnvConfig = () => {
+  const toolCacheEnabled = getCacheEnabledFlagSync().value;
+  return {
+    MCP_CACHE_TTL: parseInt(process.env.MCP_CACHE_TTL || '86400'), // 24 hours default
+    MCP_CACHE_MAX_MEMORY: parseInt(process.env.MCP_CACHE_MAX_MEMORY || '100'), // 100 entries default
+    MCP_CACHE_ENABLED: toolCacheEnabled,
+    MCP_CACHE_PREFIX: process.env.MCP_CACHE_PREFIX || 'mcp:tools',
+  };
+};
 
 /**
  * Middleware function to automatically warm cache on startup
  */
 export const initializeMCPCache = async () => {
-  const config = getCacheEnvConfig();
-
-  if (!config.MCP_CACHE_ENABLED) {
+  const cacheEnabled = await getCacheEnabledFlag();
+  if (!cacheEnabled.value) {
     log((l) => l.info('MCP tool caching disabled via environment variable'));
     return;
   }
-
   try {
     const healthCheck = await MCPToolCacheAdmin.healthCheck();
 

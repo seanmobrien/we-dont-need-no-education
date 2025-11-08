@@ -5,7 +5,6 @@
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { UIMessage } from 'ai';
 import {
   optimizeMessagesWithToolSummarization,
@@ -48,18 +47,6 @@ jest.mock('@/lib/ai/services/model-stats/tool-map', () => ({
 jest.mock('uuid', () => ({
   v4: jest.fn(() => 'mock-uuid'),
 }));
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn((callback) => {
-    const mockLogger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-    };
-    callback(mockLogger);
-  }),
-}));
-
 const mockAiModelFactory = aiModelFactory as jest.MockedFunction<
   typeof aiModelFactory
 >;

@@ -543,7 +543,7 @@ class ServerTimelineAgent extends ClientTimelineAgent {
         chatHistoryContext: this.#chatHistoryContext,
         model: aiModelFactory(model ?? 'lofi'),
       });
-      tools = await setupDefaultTools({ req });
+      tools = await setupDefaultTools({ user: undefined, req });
       const ret = await generateTextWithRetry({
         model: hal,
         prompt: input,

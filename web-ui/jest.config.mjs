@@ -9,10 +9,17 @@ const config = {
     },
   },
   // Ensure environment globals (Response/Request/Headers) are available before modules load
-  setupFiles: ['<rootDir>/__tests__/jest.setup.env.ts'],
+  setupFiles: [
+    '<rootDir>/__tests__/jest.mock-log.ts',
+    '<rootDir>/__tests__/jest.setup.env.ts',
+  ],
   setupFilesAfterEnv: [
+    '<rootDir>/__tests__/jest.test-extensions.ts',
     '<rootDir>/__tests__/jest.mock-node-modules.ts',
+    '<rootDir>/__tests__/jest.mock-redis.ts',
     '<rootDir>/__tests__/jest.mock-health.ts',
+    '<rootDir>/__tests__/jest.mock-auth.ts',
+    '<rootDir>/__tests__/jest.mock-feature-flags.ts',
     '<rootDir>/__tests__/jest.setup.ts',
   ], // Setup file for global imports
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled
@@ -36,6 +43,8 @@ const config = {
     '^~@/(.*)$': '<rootDir>/__tests__/$1', // Alias for module imports
     '^zodex$': '<rootDir>/__tests__/mocks/zodex.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy', // Mock CSS imports
+    '^(@|\\.)/lib/auth/keycloak-provider$':
+      '<rootDir>/__tests__/mocks/keycloak-provider.js', // Mock static file imports
   },
   transform: {
     '^.+\\.(ts|tsx)$': [
@@ -57,12 +66,11 @@ const config = {
     '<rootDir>/(rsc)',
     '.upstream',
   ],
-  // collectCoverage: true, // Enable coverage collection
-  //collectCoverage: false, // Enable coverage collection
   collectCoverageFrom: [
     '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
     '!**/*.d.ts', // Exclude type declaration files
-    '!__(tests|mocks)__/**/*.*', // Exclude type declaration files
+    '!__(tests|mocks)__/**/*.*', // Exclude test and mock files
+    '!tests/**/*.*', // Exclude playwright test files
     //'!**/*.{jsx,tsx}', // Exclude JSX-based
     '!.next/**/*.*', // Exclude next build files
     '!.upstream/**/*.*', // Exclude upstream build files

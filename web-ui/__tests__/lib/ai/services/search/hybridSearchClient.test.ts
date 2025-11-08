@@ -40,7 +40,7 @@ class TestClient extends HybridSearchClient<TestOptions> {
   protected getSearchIndexName(): string {
     return 'test-index';
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   protected appendScopeFilter(_payload: HybridSearchPayload): void {
     /* intentionally not used in test subclass */
   }

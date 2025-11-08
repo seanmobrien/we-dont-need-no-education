@@ -6,16 +6,6 @@
  * - openid-client for OIDC discovery and token exchange
  * - got + tough-cookie for HTTP with cookie jar (impersonation + authorize redirects)
  */
-
-import KeycloakAdminClient from '@keycloak/keycloak-admin-client';
-import {
-  discovery,
-  buildAuthorizationUrl,
-  authorizationCodeGrant,
-  randomState,
-  randomNonce,
-  type Configuration as OIDCConfiguration,
-} from 'openid-client';
 import { got } from 'got';
 import { CookieJar } from 'tough-cookie';
 import { env } from '@/lib/site-util/env';
@@ -28,9 +18,9 @@ import type {
 } from '@/lib/auth/impersonation/impersonation.types';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { SystemTokenStore } from './system-token-store';
-import { Session } from 'next-auth';
+import type { Session, User } from '@auth/core/types';
 import { keycloakAdminClientFactory } from '../keycloak-factories';
-
+import type { KeycloakAdminClient } from '../keycloak-factories';
 interface TokenResponse {
   access_token: string;
   token_type?: string;
@@ -76,6 +66,43 @@ const adminBaseFromIssuer = (
   }
 };
 
+let openIdClientModule: {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  discovery: Function;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  buildAuthorizationUrl: Function;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  authorizationCodeGrant: Function;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  randomState: Function;
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  randomNonce: Function;
+} | null = null;
+//type Configuration as OIDCConfiguration
+
+const getOpenIdClientModule = () => {
+  if (openIdClientModule) {
+    return openIdClientModule;
+  }
+  const {
+    discovery,
+    buildAuthorizationUrl,
+    authorizationCodeGrant,
+    randomState,
+    randomNonce,
+  } =
+    /*eslint-disable-next-line @typescript-eslint/no-require-imports*/
+    require('openid-client');
+  openIdClientModule = {
+    discovery,
+    buildAuthorizationUrl,
+    authorizationCodeGrant,
+    randomState,
+    randomNonce,
+  };
+  return openIdClientModule;
+};
+
 // no-op: query builder not needed with openid-client's authorizationUrl
 
 /**
@@ -85,7 +112,8 @@ export class ImpersonationThirdParty implements ImpersonationService {
   private readonly userContext: UserContext;
   private readonly config: ThirdPartyConfig;
   private kcAdmin?: KeycloakAdminClient;
-  private oidcConfig?: OIDCConfiguration;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private oidcConfig?: any;
   private cookieJar?: CookieJar;
   private cachedToken?: string;
   private tokenExpiry?: Date;
@@ -97,37 +125,55 @@ export class ImpersonationThirdParty implements ImpersonationService {
     this.config = config;
   }
 
+  static #getConfig(): ThirdPartyConfig | undefined {
+    const config: ThirdPartyConfig = {
+      issuer: env('AUTH_KEYCLOAK_ISSUER') || '',
+      clientId: env('AUTH_KEYCLOAK_CLIENT_ID') || '',
+      clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET') || '',
+      redirectUri: env('AUTH_KEYCLOAK_REDIRECT_URI') || '',
+    };
+
+    if (
+      !config.issuer ||
+      !config.clientId ||
+      !config.clientSecret ||
+      !config.redirectUri
+    ) {
+      log((l) => l.warn('ImpersonationThirdParty: incomplete config'));
+      return undefined;
+    }
+    return config;
+  }
+
   static async fromRequest({
     session,
+    ...props
   }: {
     audience?: string;
     session: Session;
   }): Promise<ImpersonationThirdParty | undefined> {
+    return ImpersonationThirdParty.fromUser({ user: session?.user, ...props });
+  }
+
+  static async fromUser({
+    user,
+  }: {
+    audience?: string;
+    user: User | undefined;
+  }): Promise<ImpersonationThirdParty | undefined> {
     try {
-      if (!session?.user) return undefined;
+      if (!user) return undefined;
       const userContext: UserContext = {
-        userId: session.user.subject || session.user.id || '',
-        email: session.user.email || undefined,
-        name: session.user.name || undefined,
-        accountId:
-          'account_id' in session.user ? session.user.account_id : undefined,
+        userId: user.subject || user.id || '',
+        email: user.email || undefined,
+        name: user.name || undefined,
+        accountId: 'account_id' in user ? user.account_id : undefined,
+        hash: user.hash || undefined,
       };
       if (!userContext.email) return undefined;
 
-      const config: ThirdPartyConfig = {
-        issuer: env('AUTH_KEYCLOAK_ISSUER') || '',
-        clientId: env('AUTH_KEYCLOAK_CLIENT_ID') || '',
-        clientSecret: env('AUTH_KEYCLOAK_CLIENT_SECRET') || '',
-        redirectUri: env('AUTH_KEYCLOAK_REDIRECT_URI') || '',
-      };
-
-      if (
-        !config.issuer ||
-        !config.clientId ||
-        !config.clientSecret ||
-        !config.redirectUri
-      ) {
-        log((l) => l.warn('ImpersonationThirdParty: incomplete config'));
+      const config = ImpersonationThirdParty.#getConfig();
+      if (!config) {
         return undefined;
       }
 
@@ -147,7 +193,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
 
   private async initializeClients(): Promise<void> {
     // OIDC discovery and client
-    this.oidcConfig = await discovery(
+    this.oidcConfig = await getOpenIdClientModule().discovery(
       new URL(this.config.issuer),
       this.config.clientId,
       this.config.clientSecret,
@@ -160,7 +206,7 @@ export class ImpersonationThirdParty implements ImpersonationService {
         'ImpersonationThirdParty: unable to parse realm from issuer',
       );
     const { origin, realm } = parsed;
-    this.kcAdmin = keycloakAdminClientFactory({
+    this.kcAdmin = await keycloakAdminClientFactory({
       baseUrl: origin,
       realmName: realm,
     });
@@ -198,9 +244,9 @@ export class ImpersonationThirdParty implements ImpersonationService {
             const adminToken = await this.#adminTokenStore.getAdminToken();
             this.kcAdmin!.setAccessToken(adminToken);
 
-            const userId = await this.findUserIdViaAdmin(
-              this.userContext.email!,
-            );
+            const userId =
+              // this.userContext.userId ??
+              await this.findUserIdViaAdmin(this.userContext.email!);
             if (!userId)
               throw new Error('ImpersonationThirdParty: target user not found');
 
@@ -340,12 +386,14 @@ export class ImpersonationThirdParty implements ImpersonationService {
     if (!this.oidcConfig || !this.cookieJar)
       throw new Error('OIDC config/cookieJar not initialized');
 
-    const state = randomState();
-    const nonce = randomNonce();
+    const openIdClient = getOpenIdClientModule();
 
-    const authorizeUrl = buildAuthorizationUrl(this.oidcConfig, {
+    const state = openIdClient.randomState();
+    const nonce = openIdClient.randomNonce();
+
+    const authorizeUrl = openIdClient.buildAuthorizationUrl(this.oidcConfig, {
       redirect_uri: this.config.redirectUri,
-      scope: 'openid',
+      scope: env('AUTH_KEYCLOAK_SCOPE') ?? 'openid mcp_tool',
       response_type: 'code',
       response_mode: 'query',
       prompt: 'none',
@@ -372,10 +420,14 @@ export class ImpersonationThirdParty implements ImpersonationService {
       );
 
     const currentUrl = new URL(location, this.config.redirectUri);
-    const token = await authorizationCodeGrant(this.oidcConfig, currentUrl, {
-      expectedState: state,
-      expectedNonce: nonce,
-    });
+    const token = await openIdClient.authorizationCodeGrant(
+      this.oidcConfig,
+      currentUrl,
+      {
+        expectedState: state,
+        expectedNonce: nonce,
+      },
+    );
 
     return {
       access_token: token.access_token as string,

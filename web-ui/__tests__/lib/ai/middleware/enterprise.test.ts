@@ -7,6 +7,26 @@
  * Comprehensive test suite for configuration, metrics, and advanced behaviors
  */
 
+jest.mock('@/lib/site-util/after', () => {
+  const afterManager = {
+    getInstance: () => ({
+      add: jest.fn(),
+      remove: jest.fn(),
+      processExit: jest.fn(),
+    }),
+    processExit: jest.fn(),
+  };
+  return {
+    AfterManager: afterManager,
+    processExit: jest.fn(),
+    getInstance: () => ({
+      add: jest.fn(),
+      remove: jest.fn(),
+      processExit: jest.fn(),
+    }),
+  };
+});
+
 import { resetEnvVariables, withRedisConnection } from '@/__tests__/jest.setup';
 import {
   getCacheConfig,
@@ -18,10 +38,7 @@ import {
   setupConsoleMetrics,
   getPrometheusMetrics,
 } from '@/lib/ai/middleware/cacheWithRedis/metrics';
-import {
-  getRedisClient,
-  closeRedisClient,
-} from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { getRedisClient, closeRedisClient } from '@/lib/redis-client';
 import type { RedisClientType } from 'redis';
 
 describe('Enterprise Cache Features', () => {

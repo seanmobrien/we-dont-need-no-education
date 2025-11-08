@@ -22,21 +22,26 @@ import { wrapRouteRequest } from '@/lib/nextjs-util/server';
 import { createUserChatHistoryContext } from '@/lib/ai/middleware/chat-history/create-chat-history-context';
 import type { ToolProviderSet } from '@/lib/ai/mcp/types';
 import { setupDefaultTools } from '@/lib/ai/mcp/providers';
-import { getAllFeatureFlags } from '@/lib/site-util/feature-flags/server';
-// Allow streaming responses up to 180 seconds
-export const maxDuration = 60 * 1000 * 180;
+import { getFeatureFlag } from '@/lib/site-util/feature-flags/server';
+import type { User } from '@auth/core/types';
+// Allow streaming responses up to 360 seconds
+//const maxDuration = 60 * 1000 * 360;
 
 /**
  * Safely disposes of tool providers, suppressing expected AbortErrors during cleanup.
  * @param toolProviders - The tool provider set to dispose
  */
 const safeDisposeToolProviders = async (
+  user: User | null,
   toolProviders: ToolProviderSet | undefined,
 ): Promise<void> => {
   if (!toolProviders) return;
-
   try {
-    await toolProviders.dispose();
+    // I think we only want to dispose if we created them
+    const flag = await getFeatureFlag('mcp_cache_tools', user?.id);
+    if (!isTruthy(flag)) {
+      await toolProviders.dispose();
+    }
   } catch (disposalError) {
     // Suppress AbortErrors during disposal as they're expected during cleanup
     if (!isAbortError(disposalError)) {
@@ -50,20 +55,12 @@ const safeDisposeToolProviders = async (
   }
 };
 
-// Get the tool provider cache instance
-const toolProviderCachePromise = getUserToolProviderCache({
-  maxEntriesPerUser: 5, // Allow up to 5 different tool configurations per user
-  maxTotalEntries: 200, // Increase total limit for multiple users
-  ttl: 45 * 60 * 1000, // 45 minutes (longer than typical chat sessions)
-  cleanupInterval: 10 * 60 * 1000, // Cleanup every 10 minutes
-});
-
 const toolProviderFactory = async ({
   req,
   chatHistoryId,
   memoryDisabled = false,
   writeEnabled = false,
-  userId,
+  user,
   sessionId,
 }: {
   req: NextRequest;
@@ -71,15 +68,20 @@ const toolProviderFactory = async ({
   writeEnabled?: boolean;
   memoryDisabled?: boolean;
   // impersonation?: ImpersonationService;
-  userId: string;
+  user: User;
   sessionId: string;
 }) => {
-  const flags = await getAllFeatureFlags();
-  if (isTruthy(flags['mcp_cache_tools'])) {
-    const toolProviderCache = await toolProviderCachePromise;
+  const flag = await getFeatureFlag('mcp_cache_tools', user?.id);
+  if (isTruthy(flag)) {
+    const toolProviderCache = await getUserToolProviderCache({
+      maxEntriesPerUser: 5, // Allow up to 5 different tool configurations per user
+      maxTotalEntries: 200, // Increase total limit for multiple users
+      ttl: 45 * 60 * 1000, // 45 minutes (longer than typical chat sessions)
+      cleanupInterval: 10 * 60 * 1000, // Cleanup every 10 minutes
+    });
     // Use the cache to get or create tool providers
     return toolProviderCache.getOrCreate(
-      userId,
+      user.id!,
       sessionId,
       {
         writeEnabled,
@@ -88,6 +90,7 @@ const toolProviderFactory = async ({
       () =>
         setupDefaultTools({
           writeEnabled,
+          user,
           req,
           chatHistoryId,
           memoryEnabled: !memoryDisabled,
@@ -95,6 +98,7 @@ const toolProviderFactory = async ({
     );
   }
   return setupDefaultTools({
+    user,
     writeEnabled,
     req,
     chatHistoryId,
@@ -165,7 +169,7 @@ export const POST = (req: NextRequest) => {
           chatHistoryId,
           memoryDisabled,
           writeEnabled,
-          userId: session?.user?.id || 'anonymous',
+          user: session?.user,
           sessionId: chatHistoryId,
         });
         // Create chat history context
@@ -190,7 +194,7 @@ export const POST = (req: NextRequest) => {
           chatHistoryId,
           memoryDisabled,
           writeEnabled,
-          userId: session?.user?.id || 'anonymous',
+          user: session?.user,
           sessionId: chatHistoryId,
         });
         // In v5: create a UI message stream response and merge the generated stream.
@@ -299,7 +303,7 @@ export const POST = (req: NextRequest) => {
             chatHistoryId,
             memoryDisabled,
             writeEnabled,
-            userId: session?.user?.id || 'anonymous',
+            user: session?.user,
             sessionId: chatHistoryId,
           })).tools,
         });
@@ -367,7 +371,7 @@ export const POST = (req: NextRequest) => {
           source: 'route:ai:chat',
           severity: 'error',
         });
-        await safeDisposeToolProviders(toolProviders);
+        await safeDisposeToolProviders(session?.user, toolProviders);
         return NextResponse.error();
       }
     },
@@ -376,7 +380,7 @@ export const POST = (req: NextRequest) => {
         role: 'assistant',
         content: "I'm currently disabled for solution rebuild.",
       },
-      errorCallback: () => safeDisposeToolProviders(toolProviders),
+      errorCallback: () => safeDisposeToolProviders(null, toolProviders),
     },
   )(req);
 };

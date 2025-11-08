@@ -1,5 +1,5 @@
 import { isError } from '@/lib/react-util/utility-methods';
-import { log } from '@/lib/logger';
+import { log, safeSerialize } from '@/lib/logger';
 import {
   ErrorSeverity,
   KnownEnvironmentType,
@@ -8,11 +8,13 @@ import {
   ErrorReporterConfig,
   ErrorReporterInterface,
   IContextEnricher,
+  ErrorReporterConfigDebounceParams,
 } from './types';
 import { isRunningOnEdge } from '../site-util/env';
 import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
-
+import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
+import { shouldSuppressError } from './utility';
 export { ErrorSeverity };
 
 export type {
@@ -74,15 +76,21 @@ const isContextEnricher = (check: unknown): check is IContextEnricher =>
   'enrichContext' in check &&
   typeof (check as IContextEnricher).enrichContext === 'function';
 
-/**
- * Centralized error reporting system
- * Handles logging, external service reporting, and error analytics
- */
+const ERROR_REPORTER_SINGLETON_KEY =
+  '@noeducation/error-monitoring:ErrorReporter';
+
 export class ErrorReporter implements ErrorReporterInterface {
   private config: ErrorReporterConfig;
+  private debounceSettings: ErrorReporterConfigDebounceParams;
+  private debounceSet = new Map<string, number>();
+  private lastDebounceCleanup = Date.now();
 
   private constructor(config: ErrorReporterConfig) {
     this.config = config;
+    this.debounceSettings = config.debounce ?? {
+      debounceIntervalMs: 60000,
+      debounceCleanupIntervalMs: 300000,
+    };
   }
 
   /**
@@ -101,19 +109,45 @@ export class ErrorReporter implements ErrorReporterInterface {
   /**
    * Get singleton instance of ErrorReporter
    */
-  public static getInstance(
-    config?: ErrorReporterConfig,
-  ): ErrorReporterInterface {
-    const GLOBAL_KEY = Symbol.for(
-      '@noeducation/error-monitoring:ErrorReporter',
+  public static getInstance = (
+    config?: Partial<ErrorReporterConfig>,
+  ): ErrorReporterInterface =>
+    SingletonProvider.Instance.getOrCreate(ERROR_REPORTER_SINGLETON_KEY, () =>
+      ErrorReporter.createInstance(config ?? {}),
     );
-    const registry = globalThis as unknown as {
-      [key: symbol]: ErrorReporterInterface | undefined;
-    };
-    if (!registry[GLOBAL_KEY]) {
-      registry[GLOBAL_KEY] = ErrorReporter.createInstance(config ?? {});
+
+  private shouldDebounce(report: ErrorReport): boolean {
+    if (!report.fingerprint) {
+      // Without a fingerprint we don't have a basis to debounce
+      return false;
     }
-    return registry[GLOBAL_KEY]!;
+    const now = Date.now();
+    const lastReported = this.debounceSet.get(report.fingerprint);
+    // If we are below the debounce interval then skip reporting
+    if (
+      lastReported &&
+      now - lastReported < this.debounceSettings.debounceIntervalMs
+    ) {
+      return true;
+    }
+    // Update last reported time for this fingerprint
+    this.debounceSet.set(report.fingerprint, now);
+
+    // Periodically clean up old entries to prevent memory bloat
+    if (
+      now - this.lastDebounceCleanup >
+      this.debounceSettings.debounceCleanupIntervalMs
+    ) {
+      this.lastDebounceCleanup = now;
+      const expirationTime = now - this.debounceSettings.debounceIntervalMs;
+      for (const [fingerprint, timestamp] of this.debounceSet.entries()) {
+        if (timestamp < expirationTime) {
+          this.debounceSet.delete(fingerprint);
+        }
+      }
+    }
+
+    return false;
   }
 
   async #createErrorReport(
@@ -139,10 +173,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         error: errorObj,
         severity,
       } as ErrorReport;
-      if (
-        !Object.keys(error as object).length ||
-        !(error as { message?: string }).message
-      ) {
+      if (!(error as { message?: string }).message) {
         (error as { message?: string }).message =
           'Unknown error - No details provided';
       }
@@ -177,7 +208,14 @@ export class ErrorReporter implements ErrorReporterInterface {
     try {
       // Ensure we have a proper Error object
       const report = await this.#createErrorReport(error, severity, context);
-
+      // Check for debounce/deduping
+      if (
+        shouldSuppressError({ error: report.error }).suppress ||
+        this.shouldDebounce(report)
+      ) {
+        return;
+      }
+      // Standard logging
       if (this.config.enableStandardLogging) {
         const source = report.context.source ?? 'ErrorReporter';
         log((l) =>
@@ -216,7 +254,12 @@ export class ErrorReporter implements ErrorReporterInterface {
       }
     } catch (reportingError) {
       // Avoid infinite loops - just log to console
-      log((l) => l.error('Error in error reporting system', reportingError));
+      log((l) =>
+        l.error('Error in error reporting system', {
+          cause: safeSerialize(error, { maxObjectDepth: 2 }),
+          reportingError: safeSerialize(reportingError),
+        }),
+      );
     }
   }
 
@@ -474,7 +517,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         'error.fingerprint': report.fingerprint ?? '',
         ...(report.tags ?? {}),
         severity: String(report.severity),
-        context: JSON.stringify(report.context || {}),
+        context: safeSerialize(JSON.stringify(report.context || {})),
       };
 
       // If there is an active and still-recording span, attach the error there.
@@ -486,13 +529,11 @@ export class ErrorReporter implements ErrorReporterInterface {
         (activeSpan as { isRecording: () => boolean }).isRecording()
       ) {
         try {
-          activeSpan.setAttributes(
-            safeAttributes as unknown as import('@opentelemetry/api').Attributes,
-          );
+          activeSpan.setAttributes(safeAttributes);
         } catch {
           // ignore attribute errors
         }
-        activeSpan.recordException(report.error as unknown as Error);
+        activeSpan.recordException(report.error);
         activeSpan.setStatus({
           code: SpanStatusCode.ERROR,
           message: report.error.message,
@@ -511,19 +552,18 @@ export class ErrorReporter implements ErrorReporterInterface {
         ? [{ context: activeSpan.spanContext() }]
         : undefined;
       const span = tracer.startSpan('error.report', {
-        attributes:
-          safeAttributes as unknown as import('@opentelemetry/api').Attributes,
+        attributes: safeAttributes,
         links,
       });
       try {
-        span.recordException(report.error as unknown as Error);
+        span.recordException(report.error);
         span.setStatus({
           code: SpanStatusCode.ERROR,
           message: report.error.message,
         });
         span.addEvent('error.reported', {
           context: safeAttributes.context,
-        } as import('@opentelemetry/api').Attributes);
+        });
       } finally {
         span.end();
       }
@@ -557,8 +597,6 @@ export class ErrorReporter implements ErrorReporterInterface {
   private async reportToApplicationInsights(
     report: ErrorReport,
   ): Promise<void> {
-    // Implementation would depend on Application Insights setup
-    // This is a placeholder for Azure Application Insights integration
     if (typeof window === 'undefined') {
       await this.server_reportToApplicationInsights(report);
       return;

@@ -2,7 +2,7 @@ import type {
   LanguageModelV2Middleware,
   LanguageModelV2StreamPart,
 } from '@ai-sdk/provider';
-import { getRedisClient } from './redis-client';
+import { getRedisClient } from '@/lib/redis-client';
 import { getCacheConfig, validateCacheConfig } from './config';
 import { metricsCollector } from './metrics';
 import { createCacheKey } from './cacheKeys';

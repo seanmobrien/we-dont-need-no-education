@@ -1,3 +1,4 @@
+ 
 /**
  * @jest-environment node
  * @fileoverview Integration tests for tool optimizing middleware
@@ -8,7 +9,7 @@
  * @module __tests__/lib/ai/middleware/tool-optimizing-middleware/integration.test.ts
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
 setupImpersonationMock();
@@ -216,7 +217,7 @@ describe('Tool Optimizing Middleware Integration Tests', () => {
         parts: [{ type: 'text', text: `Stack message ${i}` }],
       })) as UIMessage[];
 
-      let params: LanguageModelV2CallOptions = {
+      const params: LanguageModelV2CallOptions = {
         model: 'stack-model',
         messages,
         tools: [{ type: 'function', name: 'stack_tool', inputSchema: {} }],

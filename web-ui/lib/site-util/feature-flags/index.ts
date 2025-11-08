@@ -1,10 +1,3 @@
-/**
- * @module lib/site-util/feature-flags
- *
- * Client-side feature flag helpers (hooks) plus re-exports of server
- * helpers implemented in `./server` so callers can import from a
- * single module path.
- */
 import { useFeatureFlagsContext } from './context';
 
 import {
@@ -13,6 +6,7 @@ import {
   type KnownFeatureType,
   type FeatureFlagStatus,
   type AllFeatureFlagStatus,
+  FeatureFlagValueType,
 } from './known-feature';
 import type { IFlagsmithTrait } from 'flagsmith/react';
 import { isKeyOf } from '@/lib/typescript';
@@ -38,12 +32,11 @@ export const useFeatureFlag = (
     if (
       typeof f === 'boolean' ||
       typeof f === 'string' ||
-      typeof f === 'number'
+      typeof f === 'number' ||
+      f === undefined
     ) {
-      return f;
+      return f ?? fallback;
     }
-    if (!f) return fallback;
-    return f.value ?? fallback;
   };
 
   const raw = ctx.getFlag(flagKey, wrapDefault(defaultValue));
@@ -53,9 +46,9 @@ export const useFeatureFlag = (
 export function useFeatureFlags() {
   const ctx = useFeatureFlagsContext();
   return {
-    getFlag: <T extends boolean | string | number>(
-      key: KnownFeatureType,
-      defaultValue: T,
+    getFlag: <T extends KnownFeatureType>(
+      key: T,
+      defaultValue: FeatureFlagValueType<T>,
     ) => {
       const raw = ctx.getFlag(
         key,
@@ -68,10 +61,10 @@ export function useFeatureFlags() {
         typeof raw === 'string' ||
         typeof raw === 'number'
       ) {
-        return raw as unknown as T;
+        return raw as unknown as FeatureFlagValueType<T>;
       }
       if (!raw) return defaultValue;
-      return (raw.value ?? defaultValue) as unknown as T;
+      return (raw.value ?? defaultValue) as unknown as FeatureFlagValueType<T>;
     },
     getFlags: (keys: KnownFeatureType[], defaults?: FeatureFlagStatus[]) =>
       ctx.getFlags(keys, defaults),
@@ -91,6 +84,13 @@ export function useFlag(
 
 // Re-export server helpers (server-side Flagsmith usage)
 export { getFeatureFlag, getAllFeatureFlags, flagsmithServer } from './server';
+
+// Re-export auto-refresh feature flag
+export {
+  type AutoRefreshFeatureFlag,
+  createAutoRefreshFeatureFlagSync,
+  createAutoRefreshFeatureFlag,
+} from './feature-flag-with-refresh';
 
 export function useAIFeatureFlags(): AllFeatureFlagStatus {
   const flags = useFeatureFlags();

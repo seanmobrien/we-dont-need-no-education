@@ -7,7 +7,7 @@
 
 import { LanguageModelV2 } from '@ai-sdk/provider';
 import { v4 as uuidv4 } from 'uuid';
-import { getRedisClient } from '../../../middleware/cacheWithRedis/redis-client';
+import { getRedisClient } from '@/lib/redis-client';
 import { countTokens } from '../../../core/count-tokens';
 import { auth } from '@/auth';
 import { log } from '@/lib/logger';

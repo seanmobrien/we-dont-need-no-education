@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
+ 
 /**
  * @jest-environment jsdom
  */
@@ -11,7 +11,6 @@ import { createTheme } from '@mui/material/styles';
 import { ClientErrorManager } from '@/components/error-boundaries/ClientErrorManager';
 import { RenderErrorBoundaryFallback } from '@/components/error-boundaries/renderFallback';
 import { errorReporter, ErrorSeverity } from '@/lib/error-monitoring';
-import { any } from 'zod';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 
 // Mock the error reporter and recovery strategies

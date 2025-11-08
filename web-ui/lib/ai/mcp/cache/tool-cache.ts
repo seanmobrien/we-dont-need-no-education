@@ -9,41 +9,22 @@
 
 import { createHash } from 'crypto';
 import { ToolSet } from 'ai';
-import { getRedisClient } from '@/lib/ai/middleware/cacheWithRedis/redis-client';
+import { getRedisClient, RedisClientType } from '@/lib/redis-client';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
+import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
 import type { ToolProviderFactoryOptions } from '../types';
+import type {
+  ToolCacheConfig,
+  ToolCacheEntry,
+  TypedToolCacheEntry,
+  SchemaFieldEnvelope,
+} from './types';
 import z from 'zod';
+import { MemoryToolCache } from './memory-tool-cache';
+import { getCacheEnabledFlag } from '../tool-flags';
 
-/**
- * Cache entry structure for MCP tools
- */
-type ToolCacheEntry = {
-  tools: ToolSet;
-  timestamp: number;
-  serverCapabilities?: string;
-};
-
-type TypedToolCacheEntry<TOOLS extends ToolSet> = ToolCacheEntry & {
-  tools: TOOLS;
-};
-
-type SchemaFieldEnvelope = {
-  __zerialize__schemaField: true;
-  serialized: string;
-};
-
-/**
- * Configuration for tool caching behavior
- */
-interface ToolCacheConfig {
-  /** Default TTL in seconds (24 hours) */
-  defaultTtl: number;
-  /** Maximum in-memory cache size */
-  maxMemoryEntries: number;
-  /** Key prefix for Redis keys */
-  keyPrefix: string;
-}
+const MCP_TOOL_CACHE_SINGLETON_KEY = '@noeducation/mcp-tool-cache';
 
 const DEFAULT_CONFIG: ToolCacheConfig = {
   defaultTtl: 24 * 60 * 60, // 24 hours
@@ -52,108 +33,12 @@ const DEFAULT_CONFIG: ToolCacheConfig = {
 };
 
 /**
- * In-memory LRU cache for fastest access with TTL awareness
- */
-class MemoryToolCache {
-  private cache = new Map<string, ToolCacheEntry>();
-  private accessOrder = new Map<string, number>();
-  private accessCounter = 0;
-  private ttlTimers = new Map<string, NodeJS.Timeout>();
-
-  constructor(
-    private maxSize: number,
-    private defaultTtl: number,
-  ) {}
-
-  get(key: string): ToolCacheEntry | null {
-    const entry = this.cache.get(key);
-    if (entry) {
-      this.accessOrder.set(key, ++this.accessCounter);
-      return entry;
-    }
-    return null;
-  }
-
-  set(key: string, entry: ToolCacheEntry, ttl?: number): void {
-    // Evict oldest if at capacity
-    if (this.cache.size >= this.maxSize && !this.cache.has(key)) {
-      const oldestKey = this.findOldestKey();
-      if (oldestKey) {
-        this.removeEntry(oldestKey);
-      }
-    }
-
-    // Clear existing timer if updating entry
-    this.clearTtlTimer(key);
-
-    this.cache.set(key, entry);
-    this.accessOrder.set(key, ++this.accessCounter);
-
-    // Set TTL timer for automatic expiration
-    const effectiveTtl = ttl || this.defaultTtl;
-    const timer = setTimeout(() => {
-      this.removeEntry(key);
-    }, effectiveTtl * 1000);
-
-    this.ttlTimers.set(key, timer);
-  }
-
-  private findOldestKey(): string | null {
-    let oldestKey: string | null = null;
-    let oldestAccess = Infinity;
-
-    for (const [key, access] of this.accessOrder) {
-      if (access < oldestAccess) {
-        oldestAccess = access;
-        oldestKey = key;
-      }
-    }
-
-    return oldestKey;
-  }
-
-  private removeEntry(key: string): void {
-    this.cache.delete(key);
-    this.accessOrder.delete(key);
-    this.clearTtlTimer(key);
-  }
-
-  private clearTtlTimer(key: string): void {
-    const timer = this.ttlTimers.get(key);
-    if (timer) {
-      clearTimeout(timer);
-      this.ttlTimers.delete(key);
-    }
-  }
-
-  invalidateKey(key: string): void {
-    this.removeEntry(key);
-  }
-
-  clear(): void {
-    // Clear all timers first
-    for (const timer of this.ttlTimers.values()) {
-      clearTimeout(timer);
-    }
-
-    this.cache.clear();
-    this.accessOrder.clear();
-    this.ttlTimers.clear();
-    this.accessCounter = 0;
-  }
-
-  size(): number {
-    return this.cache.size;
-  }
-}
-
-/**
  * Comprehensive MCP Tool Cache with Redis primary and memory fallback
  */
 export class MCPToolCache {
   private memoryCache: MemoryToolCache;
   private config: ToolCacheConfig;
-  private redisSubscriber?: Awaited<ReturnType<typeof getRedisClient>>;
+  private redisSubscriber?: RedisClientType;
 
   constructor(config: Partial<ToolCacheConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -161,7 +46,7 @@ export class MCPToolCache {
       this.config.maxMemoryEntries,
       this.config.defaultTtl,
     );
-    // Setup Redis subscription asynchronously (non-blocking)
+    // Setup Redis subscription asynchronously (non-blocking) TODO: Look at turning this on and off with feature support
     this.setupRedisInvalidationSubscription().catch((error) => {
       log((l) =>
         l.warn('Failed to initialize Redis keyspace notifications:', error),
@@ -200,6 +85,11 @@ export class MCPToolCache {
   async getCachedTools<TOOLS extends ToolSet = ToolSet>(
     options: ToolProviderFactoryOptions,
   ): Promise<TOOLS | null> {
+    const enabled = (await getCacheEnabledFlag()).value;
+    if (!enabled) {
+      log((l) => l.verbose(`ToolProviderFactory: Tool Caching disabled.`));
+      return null;
+    }
     const cacheKey = this.createCacheKey(options);
 
     try {
@@ -259,6 +149,11 @@ export class MCPToolCache {
     tools: ToolSet,
     ttl?: number,
   ): Promise<void> {
+    const enabled = (await getCacheEnabledFlag()).value;
+    if (!enabled) {
+      return;
+    }
+
     const cacheKey = this.createCacheKey(options);
     const entry: ToolCacheEntry = {
       tools,
@@ -359,6 +254,14 @@ export class MCPToolCache {
     hitRate?: number;
   }> {
     try {
+      const enabled = (await getCacheEnabledFlag()).value;
+      if (!enabled) {
+        return {
+          memorySize: -1,
+          redisKeys: -1,
+        };
+      }
+
       const redis = await getRedisClient();
       const redisKeys = await redis.keys(`${this.config.keyPrefix}:*`);
 
@@ -389,7 +292,7 @@ export class MCPToolCache {
   private async setupRedisInvalidationSubscription(): Promise<void> {
     try {
       // Create separate Redis connection for pub/sub
-      this.redisSubscriber = await getRedisClient();
+      this.redisSubscriber = await getRedisClient({ subscribeMode: true });
 
       // Enable keyspace notifications for expired events
       await this.redisSubscriber.configSet('notify-keyspace-events', 'Ex');
@@ -636,25 +539,32 @@ export const deserializedCacheEntry = <TOOLS extends ToolSet = ToolSet>(
   }
 };
 
-// Global singleton instance
-let globalToolCache: MCPToolCache | null = null;
-
 /**
  * Gets the global MCP tool cache instance
+ * @returns Promise resolving to the singleton MCPToolCache instance
  */
-export const getToolCache = (): MCPToolCache => {
-  if (!globalToolCache) {
-    globalToolCache = new MCPToolCache();
+export const getToolCache = async (): Promise<MCPToolCache> => {
+  const existing = SingletonProvider.Instance.get<MCPToolCache>(
+    MCP_TOOL_CACHE_SINGLETON_KEY,
+  );
+  if (existing) {
+    return existing;
   }
-  return globalToolCache;
+
+  const instance = new MCPToolCache();
+  SingletonProvider.Instance.set(MCP_TOOL_CACHE_SINGLETON_KEY, instance);
+  return instance;
 };
 
 /**
- * Configures the global tool cache
+ * Configures the global tool cache with custom settings
+ * @param config Partial configuration to override defaults
+ * @returns Promise resolving to the configured MCPToolCache instance
  */
-export const configureToolCache = (
+export const configureToolCache = async (
   config: Partial<ToolCacheConfig>,
-): MCPToolCache => {
-  globalToolCache = new MCPToolCache(config);
-  return globalToolCache;
+): Promise<MCPToolCache> => {
+  const instance = new MCPToolCache(config);
+  SingletonProvider.Instance.set(MCP_TOOL_CACHE_SINGLETON_KEY, instance);
+  return instance;
 };

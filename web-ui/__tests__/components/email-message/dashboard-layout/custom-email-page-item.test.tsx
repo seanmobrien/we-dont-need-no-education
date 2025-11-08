@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 import React from 'react';
 import { render, screen } from '@/__tests__/test-utils';
 import { CustomEmailPageItem } from '@/components/email-message/dashboard-layout/custom-email-page-item';

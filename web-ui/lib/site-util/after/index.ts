@@ -1,5 +1,4 @@
 import { log } from '@/lib/logger';
-import { getStackTrace } from '@/lib/nextjs-util';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
 
 /**
@@ -26,17 +25,6 @@ interface GlobalAfterRegistry {
   [AFTER_MANAGER_KEY]?: AfterManager;
 }
 
-/**
- * AfterManager
- *
- * Centralized utility for registering and running teardown/after hooks.
- * Typical usage:
- *
- * const mgr = AfterManager.getInstance();
- * mgr.add('teardown', async () => { await cleanup(); });
- *
- * The manager is designed to be a process-global singleton that survives module reloads.
- */
 export default class AfterManager {
   /** Default timeout (ms) for waiting on registered handlers to complete */
   static readonly #TIMEOUT = 7500;
@@ -110,7 +98,6 @@ export default class AfterManager {
    * @private
    */
   async #start(): Promise<void> {
-    console.warn('In AfterManager::start', getStackTrace());
     AfterManager.asBranded(AfterManager.#teardown);
     if (!AfterManager.#prexit) {
       try {

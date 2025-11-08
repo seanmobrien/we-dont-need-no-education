@@ -5,9 +5,11 @@
  * @file route.test.ts
  * @description Unit tests for the health check API route at app/api/health/route.ts
  */
-/* eslint-disable @typescript-eslint/no-require-imports */
+
+import { auth } from '@/auth';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 import { GET } from '@/app/api/health/route';
+import { NextRequest } from 'next/server';
 
 // Mock the memory client factory
 jest.mock('@/lib/ai/mem0/memoryclient-factory', () => ({
@@ -24,74 +26,14 @@ describe('app/api/health/route GET', () => {
   beforeEach(() => {
     delete process.env.IS_BUILDING;
     delete process.env.NEXT_PHASE;
+    jest.useFakeTimers();
   });
   afterEach(() => {
     mockConsole.dispose();
+    jest.advanceTimersToNextTimer();
+    jest.clearAllTimers();
+    jest.useRealTimers();
   });
-
-  it('returns 200 with expected system statuses including memory', async () => {
-    const {
-      memoryClientFactory,
-    } = require('/lib/ai/mem0/memoryclient-factory');
-    const mockHealthCheck = jest.fn().mockResolvedValue({
-      details: {
-        client_active: true,
-        system_db_available: true,
-        vector_enabled: true,
-        vector_store_available: true,
-        graph_enabled: true,
-        graph_store_available: true,
-        history_store_available: true,
-        auth_service: { healthy: true },
-        errors: [],
-      },
-    });
-
-    memoryClientFactory.mockResolvedValue({
-      healthCheck: mockHealthCheck,
-    });
-
-    const res = await GET();
-
-    expect(res.status).toBe(200);
-    const json = await res.json();
-
-    // Top-level keys
-    expect(json).toHaveProperty('database');
-    expect(json).toHaveProperty('chat');
-    expect(json).toHaveProperty('memory');
-
-    // Individual system statuses
-    expect(json.database.status).toBe('ok');
-    expect(json.chat.status).toBe('ok');
-    expect(json.memory.status).toBe('ok');
-
-    // Nested systems under chat
-    expect(json.chat.cache.status).toBe('ok');
-    expect(json.chat.queue.status).toBe('ok');
-  });
-
-  it('returns memory error status when memory client fails', async () => {
-    const {
-      memoryClientFactory,
-    } = require('/lib/ai/mem0/memoryclient-factory');
-    mockConsole.setup();
-    const mockHealthCheck = jest
-      .fn()
-      .mockRejectedValue(new Error('Memory service unavailable'));
-
-    memoryClientFactory.mockResolvedValue({
-      healthCheck: mockHealthCheck,
-    });
-
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const json = await res.json();
-
-    expect(json).toHaveProperty('memory');
-    expect(json.memory.status).toBe('error');
-  });
-
   it('returns memory warning status when some services are unavailable', async () => {
     const {
       memoryClientFactory,

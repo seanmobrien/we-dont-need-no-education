@@ -28,14 +28,22 @@ import { getReactPlugin } from '@/instrument/browser';
 import { withAITracking } from '@microsoft/applicationinsights-react-js';
 import { ChatWindow } from './chat-window';
 import ResizableDraggableDialog from '@/components/mui/resizeable-draggable-dialog';
-import type { DockPosition, ModelSelection } from './types';
+import type {
+  AiProvider,
+  DockPosition,
+  ModelSelection,
+  ModelType,
+} from './types';
 import { useChatPanelContext } from './chat-panel-context';
 import { DockedPanel } from './docked-panel';
 import { onClientToolRequest } from '@/lib/ai/client';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
-import { MemoryStatusIndicator } from '@/components/health/memory-status';
-import { DatabaseStatusIndicator } from '@/components/health/database-status';
-import { ChatStatusIndicator } from '@/components/health/chat-status';
+import { FirstParameter } from '@/lib/typescript';
+import { panelStableStyles } from './styles';
+import {
+  AllFeatureFlagsDefault,
+  useFeatureFlags,
+} from '@/lib/site-util/feature-flags';
 
 // Define stable functions and values outside component to avoid re-renders
 const getThreadStorageKey = (threadId: string): string =>
@@ -106,68 +114,20 @@ const generateChatMessageId = (): string => {
   return `${threadId}:${messageId}`;
 };
 
-// Stable style objects
-const stableStyles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: 2,
-    width: '100%',
-    height: '100%', // Fill available height instead of viewport
-    boxSizing: 'border-box',
-  } as const,
-  chatInput: {
-    marginBottom: 2,
-    flexShrink: 0,
-    width: '100%',
-  } as const,
-  stack: {
-    flexGrow: 1,
-    overflow: 'hidden',
-    width: '100%',
-    minHeight: 0, // Allow flex shrinking
-    maxHeight: '100%',
-    paddingTop: 0,
-    marginTop: 0,
-  } as const,
-  chatBox: {
-    flex: 1,
-    minHeight: 0,
-    overflow: 'hidden',
-  } as const,
-  placeholderBox: {
-    padding: 2,
-    textAlign: 'center',
-    color: 'text.secondary',
-  } as const,
-  inputAdornmentBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  } as const,
-  statusIconsBox: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 1,
-    width: '100%',
-    marginTop: -1,
-    marginBottom: 1,
-  } as const,
-} as const;
-
 const ChatPanel = ({ page }: { page: string }) => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string>(getInitialThreadId);
   const [initialMessages, setInitialMessages] = useState<
     UIMessage[] | undefined
   >(undefined);
+  const { getFlag } = useFeatureFlags();
+  const {
+    value: { provider, chat_model } = { provider: 'azure', chat_model: 'lofi' },
+  } = getFlag('models_defaults', AllFeatureFlagsDefault['models_defaults']);
   const [activeModelSelection, setActiveModelSelection] =
     useState<ModelSelection>({
-      provider: 'azure',
-      model: 'hifi',
+      provider: provider as AiProvider,
+      model: chat_model as ModelType,
     });
   const [rateLimitTimeout, setRateLimitTimeout] = useState<
     Map<AiModelType, Date>
@@ -232,23 +192,14 @@ const ChatPanel = ({ page }: { page: string }) => {
   const {
     id,
     messages,
-    //handleInputChange,
-    //handleSubmit,
     status,
-    //data,
-    //setData,
-    //reload,
     regenerate,
-    //stop,
-    //resumeStream,
     setMessages,
     sendMessage,
-    addToolResult,
+    addToolResult: addToolResultFromHook,
   } = useChat({
-    // id: threadId,
     generateId: generateChatMessageId,
     messages: initialMessages,
-    // maxSteps: 5,
     transport: new DefaultChatTransport({
       api: '/api/ai/chat',
       fetch: chatFetch,
@@ -267,26 +218,6 @@ const ChatPanel = ({ page }: { page: string }) => {
     onError: onChatError,
     experimental_throttle: 100,
   });
-
-  /*
-  // Enhanced input change handler that preserves focus in floating mode
-  const handleInputChangeWithFocusPreservation = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      // Track if we should restore focus after the input change
-      const isFloatingMode = config.position === 'floating';
-      const inputElement = textFieldRef.current;
-      const wasFocused = document.activeElement === inputElement;
-
-      if (isFloatingMode && wasFocused) {
-        shouldRestoreFocus.current = true;
-      }
-
-      // Call the original input change handler
-      setInput(event.target.value);
-    },
-    [setInput, config.position],
-  );
-  */
 
   // Effect to restore focus in floating mode after re-renders
   useEffect(() => {
@@ -368,6 +299,20 @@ const ChatPanel = ({ page }: { page: string }) => {
       caseFileId,
     ],
   );
+
+  const addToolResult = useCallback(
+    async (props: FirstParameter<typeof addToolResultFromHook>) => {
+      const ret = await addToolResultFromHook(props);
+      onSendClick(
+        new MouseEvent(
+          'click',
+        ) as unknown as React.MouseEvent<HTMLButtonElement>,
+      );
+      return ret;
+    },
+    [addToolResultFromHook, onSendClick],
+  );
+
   const handleInputKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLDivElement>) => {
       const inputElement = textFieldRef.current;
@@ -430,7 +375,7 @@ const ChatPanel = ({ page }: { page: string }) => {
       input: {
         endAdornment: (
           <InputAdornment position="end">
-            <Box sx={stableStyles.inputAdornmentBox}>
+            <Box sx={panelStableStyles.inputAdornmentBox}>
               <IconButton
                 edge="end"
                 onClick={onSendClick}
@@ -506,12 +451,7 @@ const ChatPanel = ({ page }: { page: string }) => {
   // Create chat content component
   const chatContent = useMemo(
     () => (
-      <Stack spacing={2} sx={stableStyles.stack}>
-        <Box sx={stableStyles.statusIconsBox}>
-          <MemoryStatusIndicator size="small" />
-          <DatabaseStatusIndicator size="small" />
-          <ChatStatusIndicator size="small" />
-        </Box>
+      <Stack spacing={2} sx={panelStableStyles.stack}>
         <TextField
           inputRef={textFieldRef}
           multiline
@@ -520,10 +460,10 @@ const ChatPanel = ({ page }: { page: string }) => {
           placeholder="Type your message here..."
           // onChange={handleInputChangeWithFocusPreservation}
           onKeyDown={handleInputKeyDown}
-          sx={stableStyles.chatInput}
+          sx={panelStableStyles.chatInput}
           slotProps={stableChatInputSlotProps}
         />
-        <Box sx={stableStyles.chatBox}>
+        <Box sx={panelStableStyles.chatBox}>
           <ChatWindow
             messages={messages}
             loading={status === 'submitted'}
@@ -595,7 +535,11 @@ const ChatPanel = ({ page }: { page: string }) => {
   }
 
   return (
-    <Box id={`chat-panel-${threadId}`} sx={stableStyles.container}>
+    <Box
+      id={`chat-panel-${threadId}`}
+      data-component="chat-panel"
+      sx={panelStableStyles.container}
+    >
       {chatContent}
     </Box>
   );

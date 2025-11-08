@@ -1,21 +1,19 @@
+ 
 /** @jest-environment node */
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 /**
  * @fileoverview Integration Tests for State Management Protocol
  *
  * These tests demonstrate the full end-to-end functionality of the state management
  * protocol including state collection and restoration across multiple middleware.
- */ import { setupImpersonationMock } from '@/__tests__/jest.mock-impersonation';
+ */
 
-setupImpersonationMock();
-
-import { aiModelFactory } from '@/lib/ai';
+import { aiModelFactory } from '@/lib/ai/aiModelFactory';
 import {
   MiddlewareStateManager,
   setNormalizedDefaultsMiddleware,
 } from '@/lib/ai/middleware';
 import { generateText, wrapLanguageModel } from 'ai';
-import { setupMaps } from '@/__tests__/jest.mock-provider-model-maps';
 
 const makeMiddleware = () => ({
   wrapGenerate: async (options: any) => {
@@ -62,10 +60,18 @@ describe('State Management Protocol Integration', () => {
   let actualModel: any;
   let mockDoGenerate: jest.SpyInstance;
 
-  beforeAll(async () => {
+  beforeEach(() => {
+    const setupImpersonationMock =
+      require('@/__tests__/jest.mock-impersonation').setupImpersonationMock;
+    const setupMaps =
+      require('@/__tests__/jest.mock-provider-model-maps').setupMaps;
+
+    setupImpersonationMock();
     setupMaps();
     actualModel = aiModelFactory('lofi');
+  });
 
+  beforeAll(async () => {
     /*
     let text = await generateText({
       model: actualModel,

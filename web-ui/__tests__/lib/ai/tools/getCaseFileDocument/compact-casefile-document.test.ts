@@ -147,7 +147,7 @@ describe('compactCaseFileDocument', () => {
       unitId: 1,
       docProp: { documentType: 'email', doc: { emailId: 2 } },
       docProps: [],
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
     } as any;
     const copy = JSON.parse(JSON.stringify(doc));
     const result = compactCaseFileDocument(doc);

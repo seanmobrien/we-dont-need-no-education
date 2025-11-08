@@ -103,7 +103,8 @@ declare module '@/lib/ai/mcp/types' {
    * @property {ImpersonationService} [impersonation] - Optional impersonation service instance
    *   for making authenticated requests on behalf of users. Enables secure delegation of
    *   tool execution permissions while maintaining proper access controls and audit logging.
-   *
+   * @property {boolean} [stdio] - Optional flag indicating whether the tool is accessible
+   * over stdio streams.  Defaults to false.
    * @example
    * ```typescript
    * // Basic configuration for a read-only tool provider
@@ -135,6 +136,7 @@ declare module '@/lib/ai/mcp/types' {
     allowWrite?: boolean;
     req?: Request;
     impersonation?: unknown;
+    sse?: boolean;
   };
 
   /**

@@ -21,7 +21,7 @@ describe('Memory Health Check Types', () => {
       client_id: 'test-client',
       auth_url: 'https://example.com/auth',
       token_url: 'https://example.com/token',
-      jkws_url: 'https://example.com/certs',
+      jwks_url: 'https://example.com/certs',
     });
 
     const createMockHealthDetails = (

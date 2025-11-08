@@ -34,7 +34,7 @@ export default function NotFound() {
   };
 
   const handleSearch = () => {
-    router.push('/messages/email'); // Navigate to main email search
+    router.push('/messages'); // Navigate to main email search
   };
 
   return (
@@ -57,15 +57,16 @@ export default function NotFound() {
             borderRadius: 3,
             maxWidth: 600,
             width: '100%',
-            background: theme.palette.mode === 'dark' 
-              ? 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)'
-              : 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
+            background:
+              theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)'
+                : 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
           }}
         >
           {/* 404 Icon */}
           <Box sx={{ mb: 3 }}>
-            <ErrorOutlineIcon 
-              sx={{ 
+            <ErrorOutlineIcon
+              sx={{
                 fontSize: isMobile ? 80 : 120,
                 color: theme.palette.primary.main,
                 opacity: 0.8,
@@ -74,9 +75,9 @@ export default function NotFound() {
           </Box>
 
           {/* Main heading */}
-          <Typography 
-            variant={isMobile ? "h3" : "h2"} 
-            component="h1" 
+          <Typography
+            variant={isMobile ? 'h3' : 'h2'}
+            component="h1"
             gutterBottom
             sx={{
               fontWeight: 700,
@@ -91,11 +92,11 @@ export default function NotFound() {
           </Typography>
 
           {/* Subheading */}
-          <Typography 
-            variant="h5" 
-            component="h2" 
+          <Typography
+            variant="h5"
+            component="h2"
             gutterBottom
-            sx={{ 
+            sx={{
               fontWeight: 500,
               color: theme.palette.text.primary,
               mb: 2,
@@ -105,23 +106,23 @@ export default function NotFound() {
           </Typography>
 
           {/* Description */}
-          <Typography 
-            variant="body1" 
+          <Typography
+            variant="body1"
             color="text.secondary"
-            sx={{ 
+            sx={{
               mb: 4,
               lineHeight: 1.6,
               maxWidth: 400,
               mx: 'auto',
             }}
           >
-            The page you&apos;re looking for doesn&apos;t exist or may have been moved. 
-            Let&apos;s get you back on track with your case management.
+            The page you&apos;re looking for doesn&apos;t exist or may have been
+            moved. Let&apos;s get you back on track with your case management.
           </Typography>
 
           {/* Action buttons */}
-          <Box 
-            sx={{ 
+          <Box
+            sx={{
               display: 'flex',
               gap: 2,
               justifyContent: 'center',
@@ -180,10 +181,10 @@ export default function NotFound() {
         </Paper>
 
         {/* Additional help text */}
-        <Typography 
-          variant="body2" 
+        <Typography
+          variant="body2"
           color="text.secondary"
-          sx={{ 
+          sx={{
             mt: 3,
             opacity: 0.7,
           }}

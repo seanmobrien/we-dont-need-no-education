@@ -7,6 +7,7 @@
     "isolatedModules": true,
     "incremental": true,
     "noEmit": true,
+    "removeComments": true,
     "jsx": "preserve", // Ensure JSX is supported
     "lib": [
       "dom",
@@ -28,6 +29,7 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
@@ -50,9 +52,11 @@
   "include": [
     "./*.ts",
     "next-env.d.ts",
+    "**/*.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
+    ".next/types/**/*.d.ts",
   ],
   "exclude": [
     "node_modules",

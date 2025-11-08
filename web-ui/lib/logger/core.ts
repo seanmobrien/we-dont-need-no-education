@@ -6,17 +6,28 @@ import { CustomAppInsightsEvent } from './event';
 
 let _logger: ILogger;
 
-/**
- * Returns a promise that resolves to an instance of ILogger.
- *
- * @returns {Promise<ILogger>} A promise that resolves to an ILogger instance.
- */
+const normalizeLogLevel = (level: string | undefined | null) => {
+  if (!level) return 'info';
+  const lcLevel = level.toLowerCase();
+  const validLevels = [
+    'fatal',
+    'error',
+    'warn',
+    'info',
+    'debug',
+    'trace',
+    'verbose',
+    'silly',
+  ];
+  return validLevels.includes(lcLevel) ? lcLevel : 'info';
+};
+
 export const logger = (): Promise<ILogger> =>
   new Promise((resolve) => {
     if (!_logger) {
       if (isRunningOnServer()) {
         _logger = pino<'verbose' | 'silly', false>({
-          level: env('LOG_LEVEL_SERVER') ?? 'info',
+          level: normalizeLogLevel(env('LOG_LEVEL_SERVER')),
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },
@@ -34,7 +45,7 @@ export const logger = (): Promise<ILogger> =>
             };
 
         _logger = pino<'verbose' | 'silly', false>({
-          level: env('NEXT_PUBLIC_LOG_LEVEL_CLIENT') ?? 'info',
+          level: normalizeLogLevel(env('NEXT_PUBLIC_LOG_LEVEL_CLIENT')),
           name: 'app',
           timestamp: pino.stdTimeFunctions.isoTime,
           customLevels: { verbose: 5, silly: 1 },
@@ -48,11 +59,6 @@ export const logger = (): Promise<ILogger> =>
 
 const resolvedPromise = Promise.resolve();
 
-/**
- * Executes a callback function with the provided logger instance.
- *
- * @param cb - A callback function that takes a logger instance as an argument.
- */
 export const log = (cb: (l: ILogger) => void) => {
   if (_logger) {
     const cbRet = cb(_logger);
@@ -61,42 +67,6 @@ export const log = (cb: (l: ILogger) => void) => {
   return logger().then(cb);
 };
 
-/**
- * @remarks
- * This helper function provides multiple overloads for logging events.
- * @method
- * @name LogEventOverloads#(eventName: string): Promise<ILogger>
- * @description Logs an event with the specified name.
- * @param {string} eventName - The name of the event to log.
- * @returns {Promise<ILogger>} A promise that resolves to an ILogger instance.
- *
- * @method
- * @name LogEventOverloads#(eventName: string, measurements: Record<string, number>): Promise<ILogger>
- * @description Logs an event with the specified name and measurements.
- * @param {string} eventName - The name of the event to log.
- * @param {Record<string, number>} measurements - A record of measurements associated with the event.
- * @returns {Promise<ILogger>} A promise that resolves to an ILogger instance.
- *
- * @method
- * @name LogEventOverloads#(severity: EventSeverity, eventName: string): Promise<ILogger>
- * @description Logs an event with the specified severity and name.
- * @param {EventSeverity} severity - The severity level of the event.
- * @param {string} eventName - The name of the event to log.
- * @returns {Promise<ILogger>} A promise that resolves to an ILogger instance.
- *
- * @method
- * @description Logs an event with the specified severity, name, and measurements.
- * @param {EventSeverity} severity - The severity level of the event.
- * @param {string} eventName - The name of the event to log.
- * @param {Record<string, number>} measurements - A record of measurements associated with the event.
- * @returns {Promise<ILogger>} A promise that resolves to an ILogger instance.
- *
- * @example
- * ```typescript
- * logEvent('UserLoggedIn', { userId: 123 });
- * logEvent('error', 'ErrorOccurred');
- * ```
- */
 export const logEvent: LogEventOverloads = (
   severityOrEvent: EventSeverity | string,
   eventOrMeasurements?: string | Record<string, number | string>,

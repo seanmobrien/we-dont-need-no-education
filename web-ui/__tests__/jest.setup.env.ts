@@ -4,7 +4,6 @@
  modules define classes that extend Response at module-evaluation time.
 */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /*
 (() => {
   try {

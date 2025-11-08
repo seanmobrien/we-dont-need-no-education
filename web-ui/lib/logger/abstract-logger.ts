@@ -12,9 +12,6 @@ import { CustomAppInsightsEvent } from './event';
 import type { ILogger } from './types';
 
 export class AbstractLogger implements ILogger {
-  /**
-   *
-   */
   constructor() {}
 
   protected logInfoMessage(record: object): void {

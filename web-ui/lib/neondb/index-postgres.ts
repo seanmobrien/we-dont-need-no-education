@@ -1,17 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/**
- * @module db
- * This module provides a connection to the Neon database using the postgres.js driver.
- */
 
-// import {  Sql,
-// RowList,
-// ParameterOrFragment,
-// PendingQuery,
-// ColumnList,
-// ResultMeta,
-// Statement,
-// } from 'postgres';
 import { pgDb, pgDbWithInit } from './connection';
 import { isDbError } from './_guards';
 import { CommandMeta, IResultset } from './types';
@@ -30,9 +18,6 @@ import {
 } from './postgres';
 
 type Sql<T extends Record<string, unknown>> = PostgresSql<T>;
-
-//import { deprecate } from '../nextjs-util';
-//import { deprecate } from '@/lib/nextjs-util/utils';
 
 export type QueryProps<ResultType extends object = Record<string, unknown>> = {
   transform?: <RecordType extends Record<string, unknown>>(
@@ -414,17 +399,6 @@ export interface ISqlNeonAdapter {
 
 const wrappedAdapter: unique symbol = Symbol('SqlNeonAdapter::WrappedAdapter');
 
-/**
- * Creates an adapter function for executing SQL queries using the provided `sql` instance.
- *
- * The returned function can be called with either a raw SQL string (executed unsafely)
- * or a template string (executed safely with parameterization). It also attaches the original
- * `sql` instance to the returned function under the `wrappedAdapter` symbol.
- *
- * @param sql - The SQL instance to use for executing queries.
- * @returns An adapter function that can execute SQL queries using either raw strings or template strings,
- *          and exposes the original `sql` instance via the `wrappedAdapter` symbol.
- */
 export const sqlNeonAdapter = (sql: Sql<any>): ISqlNeonAdapter => {
   const ret = (
     template: string | TemplateStringsArray,
@@ -439,42 +413,17 @@ export const sqlNeonAdapter = (sql: Sql<any>): ISqlNeonAdapter => {
   return ret;
 };
 
-/**
- * Type guard to determine if the provided value implements the `ISqlNeonAdapter` interface.
- *
- * Checks if the input is a function and contains a property keyed by `wrappedAdapter`
- * whose value is an object, which are characteristics of the `ISqlNeonAdapter`.
- *
- * @param check - The value to be checked.
- * @returns `true` if `check` is an `ISqlNeonAdapter`, otherwise `false`.
- */
 export const isSqlNeonAdapter = (check: unknown): check is ISqlNeonAdapter =>
   typeof check === 'function' &&
   wrappedAdapter in check &&
   typeof (check as ISqlNeonAdapter)[wrappedAdapter] === 'object';
 
-/**
- * Unwraps the underlying SQL database adapter from a wrapped SqlDb instance.
- *
- * @typeParam TModel - The type of the model records handled by the SQL database.
- * @param adapter - The wrapped SQL Neon adapter instance.
- * @returns The unwrapped `SqlDb` instance typed with `TModel`.
- */
 export const unwrapAdapter = <
   TModel extends Record<string, unknown> = Record<string, unknown>,
 >(
   adapter: ISqlNeonAdapter,
 ) => adapter[wrappedAdapter] as SqlDb<TModel>;
 
-/**
- * Returns a SQL database adapter of type `SqlDb<TModel>` from the provided adapter.
- * If the adapter is an `ISqlNeonAdapter`, it unwraps and returns the underlying `SqlDb<TModel>`.
- * Otherwise, it returns the adapter as-is.
- *
- * @typeParam TModel - The type of the model records handled by the SQL database.
- * @param adapter - The adapter instance, which can be either an `ISqlNeonAdapter` or a `SqlDb<TModel>`.
- * @returns The unwrapped `SqlDb<TModel>` if the adapter is an `ISqlNeonAdapter`, or the adapter itself.
- */
 export const asSql = <
   TModel extends Record<string, unknown> = Record<string, unknown>,
 >(
@@ -484,12 +433,6 @@ export const asSql = <
     ? (adapter[wrappedAdapter] as SqlDb<TModel>)
     : adapter;
 
-/**
- * Executes a query against the Neon database.
- *
- * @param cb - A callback function that receives a postgres Sql instance and returns a Promise of RowList.
- * @returns A Promise that resolves to the query results.
- */
 export const query = async <
   ResultType extends object = Record<string, unknown>,
 >(
@@ -500,12 +443,6 @@ export const query = async <
   return await applyTransform<ResultType>(cb(sqlNeonAdapter(sql_1)), props);
 };
 
-/**
- * Executes a query against the Neon database with extended results.
- *
- * @param cb - A callback function that receives a postgres Sql instance and returns a Promise of RowList with full query results.
- * @returns A Promise that resolves to the full query results.
- */
 export const queryExt = async <
   ResultType extends object = Record<string, unknown>,
 >(

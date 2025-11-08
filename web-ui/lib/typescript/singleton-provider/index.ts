@@ -53,50 +53,15 @@ import type { SingletonConfig } from './types';
 export type { SingletonConfig, SingletonStorageStrategy } from './types';
 export { SingletonProvider } from './provider';
 
-/**
- * Retrieves or lazily creates a singleton instance stored on the global scope.
- *
- * This function provides a convenient, high-level API for creating global singletons
- * using well-known symbol keys. It leverages the SingletonProvider.Instance internally
- * to manage singleton lifecycle with configurable memory management strategies.
- *
- * The function supports both strong and weak references, allowing applications to
- * choose between persistent storage (strong references) and memory-efficient storage
- * (weak references) that can be garbage collected when no longer referenced.
- *
- * @template T - Type of the singleton value
- * @template S - Symbol string namespace used with Symbol.for (defaults to string)
- * @param symbol - Global symbol namespace for the singleton (string or symbol)
- * @param factory - Function that creates the singleton value when it doesn't exist
- * @param config - Optional configuration for storage strategy (defaults to strong references)
- * @returns The cached or newly-created singleton instance
- *
- * @throws {TypeError} If the factory returns null or undefined
- *
- * @example
- * ```typescript
- * // Basic usage with string key
- * const db = globalSingleton('database', () => createDatabaseConnection());
- *
- * // Using symbol key for better isolation
- * const loggerSymbol = Symbol.for('app-logger');
- * const logger = globalSingleton(loggerSymbol, () => new Logger());
- *
- * // Memory-efficient singleton with weak references
- * const cache = globalSingleton('cache', () => new Map(), { weakRef: true });
- *
- * // Multiple calls return the same instance
- * const db1 = globalSingleton('database', createDb);
- * const db2 = globalSingleton('database', createDb);
- * console.log(db1 === db2); // true
- * ```
- *
- * @see {@link SingletonProvider} for the underlying provider class
- * @see {@link SingletonConfig} for configuration options
- * @since 1.0.0
- */
 export const globalSingleton = <T, S extends string | symbol = string>(
   symbol: S,
   factory: () => IsNotNull<T>,
   config: SingletonConfig = {},
 ): T => SingletonProvider.Instance.getOrCreate<T, S>(symbol, factory, config);
+
+export const globalSingletonAsync = <T, S extends string | symbol = string>(
+  symbol: S,
+  factory: () => Promise<IsNotNull<T>>,
+  config: SingletonConfig = {},
+): Promise<T> =>
+  SingletonProvider.Instance.getOrCreateAsync<T, S>(symbol, factory, config);

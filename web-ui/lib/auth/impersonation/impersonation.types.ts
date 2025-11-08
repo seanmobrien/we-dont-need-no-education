@@ -15,6 +15,8 @@ export type UserContext = {
   name?: string;
   /** Account ID if available */
   accountId?: string | number;
+  /** SHA256 hash of user email if available */
+  hash?: string;
 };
 
 /**

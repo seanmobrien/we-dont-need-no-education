@@ -15,11 +15,11 @@ import {
   TokenExchangeError,
 } from '../../../../lib/site-util/auth/keycloak-token-exchange';
 import axios from 'axios';
-import { getToken } from 'next-auth/jwt';
+import { getToken } from '@auth/core/jwt';
 
 // Mock dependencies
 jest.mock('axios');
-jest.mock('next-auth/jwt');
+// jest.mock('@auth/core/jwt');
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedGetToken = getToken as jest.MockedFunction<typeof getToken>;

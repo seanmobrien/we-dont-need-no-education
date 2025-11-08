@@ -1,10 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-// jest.mock('got');
-
-const shouldWriteToConsole = jest
-  .requireActual('/lib/react-util')
-  .isTruthy(process.env.TESTS_WRITE_TO_CONSOLE);
+process.env.MEM0_API_BASE_PATH = process.env.MEM0_API_BASE_PATH ?? 'api/v1';
 
 jest.mock('@/lib/nextjs-util/fetch', () => ({
   fetch: jest.fn(() =>
@@ -33,7 +27,6 @@ jest.mock('@/instrument/browser', () => ({
   instrument: jest.fn(),
 }));
 
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
 
@@ -137,6 +130,7 @@ const mockDbFactory = (): DatabaseMockType => {
 
   const insertBuilder = {
     values: jest.fn(),
+    execute: jest.fn(() => qb.execute()),
     onConflictDoUpdate: jest.fn(),
     __setCurrentTable: (table: unknown) => {
       (qb as unknown as { [CurrentTable]: unknown })[CurrentTable] = table;
@@ -175,6 +169,8 @@ const mockDbFactory = (): DatabaseMockType => {
   });
   insertBuilder.onConflictDoUpdate.mockReturnValue(insertBuilder);
 
+  const INITIALIZED = Symbol.for('____initialized_query_builder____');
+  type ProxiedDb = typeof db & { [INITIALIZED]?: boolean };
   const initMocks = () => {
     qbMethodValues.forEach((key: keyof IMockQueryBuilder) => {
       if (
@@ -185,11 +181,10 @@ const mockDbFactory = (): DatabaseMockType => {
         return;
       }
       const current = qb[key];
-      if (!current) {
-        qb[key] = jest.fn();
-      }
+
       if (key === 'execute') {
         qb[key].mockImplementation(async () => {
+          (db as ProxiedDb)[INITIALIZED] = false;
           const executeMock = qb[key].mock;
           const count = executeMock.calls.length;
           const thisIndex = count - 1;
@@ -283,10 +278,18 @@ const mockDbFactory = (): DatabaseMockType => {
           // If we made it this far then we use the default result
           return theRows;
         });
-      } else if (key === 'insert') {
-        (qb[key] as jest.Mock).mockImplementation(() => insertBuilder);
+      } else if (!current) {
+        qb[key] = jest.fn(
+          ['insert', 'values'].includes(String(key))
+            ? () => insertBuilder as any
+            : () => db as any,
+        ) as jest.Mock;
       } else {
-        qb[key].mockImplementation(() => db);
+        (qb[key] as jest.Mock).mockImplementation(
+          ['insert', 'values'].includes(String(key))
+            ? () => insertBuilder as any
+            : () => db as any,
+        );
       }
     });
     Array.from(
@@ -358,7 +361,59 @@ const mockDbFactory = (): DatabaseMockType => {
       initMocks();
     });
   };
-  return db;
+  db.transaction = jest.fn(async (callback: TransactionFn) => {
+    const txRawRet = callback(mockDb);
+    const txRet = isPromise(txRawRet) ? await txRawRet : txRawRet;
+    return txRet;
+  });
+
+  const proxy = new Proxy(db, {
+    get(target, prop, receiver) {
+      if (prop === 'from' || prop === 'select' || prop === 'where') {
+        (target as ProxiedDb)[INITIALIZED] = true;
+      } else if (prop === 'then') {
+        if ((target as ProxiedDb)[INITIALIZED] === true) {
+          return jest.fn((onOk, onError) => {
+            let p = new Promise(async (resolve, reject) => {
+              try {
+                const result = await qb.execute();
+                (target as ProxiedDb)[INITIALIZED] = false;
+                resolve(result);
+              } catch (error) {
+                reject(error);
+              }
+            });
+            if (onOk) {
+              p = p.then(onOk);
+            }
+            if (onError) {
+              p = p.catch(onError);
+            }
+            return p;
+          });
+        }
+        return undefined;
+      } else if (prop === 'innerMock') {
+        return qb;
+      }
+      const asProxied = Reflect.get(target, prop, receiver);
+      if (!asProxied || typeof asProxied !== 'function') {
+        return asProxied;
+      }
+      return new Proxy(asProxied, {
+        apply(target, thisArg, args) {
+          const ret = asProxied.apply(target, args);
+          if (isPromise<IMockQueryBuilder>(ret)) {
+            return ret.then((r) => (r === qb ? proxy : r));
+          } else if (ret === qb) {
+            return proxy;
+          }
+          return ret;
+        },
+      });
+    },
+  });
+  return proxy as unknown as DatabaseMockType;
 };
 
 let mockDb: DatabaseMockType = mockDbFactory();
@@ -370,24 +425,7 @@ export const makeMockDb = (): DatabaseType => {
   // Ensure the query structure is properly mocked with the expected methods
   if (mockDb.query && mockDb.query.documentUnits) {
     // Set default behaviors - tests can override these
-    /*
-    if (
-      !(
-        mockDb.query.documentUnits.findMany as jest.Mock
-      ).getMockImplementation()
-    ) {
-      (mockDb.query.documentUnits.findMany as jest.Mock).mockResolvedValue([]);
-    }
-    if (
-      !(
-        mockDb.query.documentUnits.findFirst as jest.Mock
-      ).getMockImplementation()
-    ) {
-      (mockDb.query.documentUnits.findFirst as jest.Mock).mockResolvedValue(
-        null,
-      );
-    }
-    */
+
     if (!(mockDb.$count as jest.Mock).getMockImplementation()) {
       (mockDb.$count as jest.Mock).mockResolvedValue(1);
     }
@@ -462,13 +500,6 @@ jest.mock('@/lib/drizzle-db', () => {
   };
 });
 
-jest.mock('@/auth', () => {
-  return {
-    auth: jest.fn(() => ({
-      id: 'fdsdfs',
-    })),
-  };
-});
 jest.mock('@/lib/site-util/env', () => {
   return {
     env: jest.fn((key: string) => {
@@ -479,53 +510,6 @@ jest.mock('@/lib/site-util/env', () => {
   };
 });
 
-export const createRedisClient = jest.fn(() => ({
-  connect: jest.fn().mockResolvedValue(undefined),
-  quit: jest.fn().mockResolvedValue(undefined),
-  get: jest.fn().mockResolvedValue(null),
-  set: jest.fn().mockResolvedValue('OK'),
-  setEx: jest.fn().mockResolvedValue('OK'),
-  del: jest.fn().mockResolvedValue(1),
-  flushDb: jest.fn().mockResolvedValue('OK'),
-  on: jest.fn(),
-}));
-// Mock Redis client for cache tests
-jest.mock('redis', () => ({
-  createClient: createRedisClient,
-}));
-
-const makeMockImplementation = (name: string) => {
-  return (...args: unknown[]) =>
-    shouldWriteToConsole
-      ? console.log(`logger::${name} called with `, args)
-      : () => {};
-};
-
-const loggerInstance = (() => ({
-  warn: jest.fn(makeMockImplementation('warn')),
-  error: jest.fn(makeMockImplementation('error')),
-  info: jest.fn(makeMockImplementation('info')),
-  debug: jest.fn(makeMockImplementation('debug')),
-  silly: jest.fn(makeMockImplementation('silly')),
-  verbose: jest.fn(makeMockImplementation('verbose')),
-  log: jest.fn(makeMockImplementation('log')),
-  trace: jest.fn(makeMockImplementation('trace')),
-}))();
-
-jest.mock('@/lib/logger', () => {
-  return {
-    logEvent: jest.fn(() => Promise.resolve()),
-    logger: jest.fn(() => loggerInstance),
-    log: jest.fn((cb: (l: typeof loggerInstance) => void) =>
-      cb(loggerInstance),
-    ),
-    errorLogFactory: jest.fn((x) => x),
-    simpleScopedLogger: jest.fn(() => loggerInstance),
-  };
-});
-
-import NextAuth from 'next-auth';
-import { auth } from '@/auth';
 import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 import { sendApiRequest } from '@/lib/send-api-request';
@@ -550,7 +534,12 @@ import { createElement } from 'react';
 import { TrackWithAppInsight } from '@/components/general/telemetry/track-with-app-insight';
 import instrument, { getAppInsights } from '@/instrument/browser';
 import { log } from '@/lib/logger';
-import { FirstParameter, isKeyOf, isPromise } from '@/lib/typescript';
+import {
+  FirstParameter,
+  isKeyOf,
+  isPromise,
+  SingletonProvider,
+} from '@/lib/typescript';
 import { result, xorBy } from 'lodash';
 import {
   IMockInsertBuilder,
@@ -562,14 +551,16 @@ import {
 } from './jest.mock-drizzle';
 import { count } from 'console';
 import { ITraits } from 'flagsmith/react';
+import { P } from 'ts-pattern';
 globalThis.TextEncoder = TextEncoder as any;
+globalThis.TextDecoder = TextDecoder as any;
 
 // Ensure WHATWG Streams exist in Jest (jsdom)
 (() => {
   try {
     if (typeof (globalThis as any).TransformStream === 'undefined') {
       // Prefer Node's built-in streams if available
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+
       const web = require('stream/web');
       if (web?.TransformStream) {
         (globalThis as any).TransformStream = web.TransformStream;
@@ -582,7 +573,7 @@ globalThis.TextEncoder = TextEncoder as any;
     // fall through to ponyfill
   }
   // Fallback ponyfill
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+
   const ponyfill = require('web-streams-polyfill');
   (globalThis as any).TransformStream ||= ponyfill.TransformStream;
   (globalThis as any).ReadableStream ||= ponyfill.ReadableStream;
@@ -591,20 +582,16 @@ globalThis.TextEncoder = TextEncoder as any;
 
 // Automocks
 
-(NextAuth as jest.Mock).mockImplementation(() => jest.fn);
-(auth as jest.Mock).mockImplementation(() => {
-  return jest.fn(() => Promise.resolve({ id: 'test-id' }));
-});
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const Zodex = require('zodex').Zodex;
 
 const DefaultEnvVariables = {
   AZURE_STORAGE_CONNECTION_STRING: 'azure-storage-connection-string',
-  NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING:
+  AZURE_APPLICATIONINSIGHTS_CONNECTION_STRING:
+    'azure-applicationinsights-connection-string',
+  AZURE_MONITOR_CONNECTION_STRING:
     'azure-applicationinsights-connection-string',
   NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID: 'test-environment-id',
-  NEXT_PUBLIC_FLAGSMITH_API_URL: 'https://api.flagsmith.com/api/v1/',
+  NEXT_PUBLIC_FLAGSMITH_API_URL: 'https://api.flagsmith.notadomain.net/api/v1/',
   FLAGSMITH_SDK_KEY: 'test-server-id',
   AUTH_KEYCLOAK_ISSUER: 'https://keycloak.example.com/realms/test',
   AUTH_KEYCLOAK_CLIENT_ID: 'test-client-id',
@@ -639,7 +626,6 @@ const DefaultEnvVariables = {
 let originalProcessEnv = (() => {
   try {
     const origConfig = dotenv.parse(
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
     );
     return {
@@ -889,7 +875,6 @@ export const mockFlagsmithInstanceFactory = ({
 beforeAll(() => {
   try {
     const origConfig = dotenv.parse(
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('fs').readFileSync('.env.local', { encoding: 'utf-8' }),
     );
     originalProcessEnv = {
@@ -900,22 +885,6 @@ beforeAll(() => {
     return {};
   }
 });
-
-jest.mock('flagsmith/react', () => {
-  return {
-    FlagsmithProvider: ({ children }: { children: React.ReactNode }) =>
-      children,
-    useFlagsmith: jest.fn(() => mockFlagsmithInstanceFactory()),
-    useFlagsmithLoading: jest.fn(() => ({
-      isLoading: false,
-      error: null,
-      isFetching: false,
-    })),
-  };
-});
-jest.mock('flagsmith/isomorphic', () => ({
-  createFlagsmithInstance: jest.fn(() => mockFlagsmithInstanceFactory()),
-}));
 
 // Prevent dynamic import side-effects from the logged-error-reporter during tests
 jest.mock('@/lib/react-util/errors/logged-error-reporter', () => {
@@ -955,9 +924,7 @@ jest.mock('@/lib/react-util/errors/logged-error-reporter', () => {
 beforeEach(async () => {
   resetEnvVariables();
   resetGlobalCache();
-  for (const [, value] of Object.entries(loggerInstance)) {
-    (value as jest.Mock).mockClear();
-  }
+  SingletonProvider.Instance.clear();
 });
 
 afterEach(() => {

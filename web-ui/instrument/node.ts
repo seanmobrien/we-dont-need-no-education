@@ -14,12 +14,14 @@ import {
   AzureMonitorMetricExporter,
   AzureMonitorLogExporter,
 } from '@azure/monitor-opentelemetry-exporter';
-import { ChunkingTraceExporter } from './chunking/ChunkingTraceExporter';
-import { ChunkingLogExporter } from './chunking/ChunkingLogExporter';
+import { ChunkingTraceExporter } from './chunking/chunking-trace-exporter';
+import { ChunkingLogExporter } from './chunking/chunking-log-exporter';
 import { PinoInstrumentation } from '@opentelemetry/instrumentation-pino';
 import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { config } from './common';
 import AfterManager from '@/lib/site-util/after';
+import UrlFilteredSpanExporter from './url-filter/url-filter-trace-exporter';
+import UrlFilteredLogExporter from './url-filter/url-filtered-log-exporter';
 
 enum KnownSeverityLevel {
   Verbose = 'Verbose',
@@ -81,7 +83,7 @@ const instrumentServer = () => {
     return;
   }
 
-  const connStr = process.env.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING;
+  const connStr = process.env.AZURE_MONITOR_CONNECTION_STRING;
 
   // Skip instrumentation in development if no valid connection string
   if (
@@ -93,17 +95,25 @@ const instrumentServer = () => {
     console.log('[otel] Skipping Azure Monitor in development mode');
     return;
   }
-
-  const traceExporter = new ChunkingTraceExporter(
-    new AzureMonitorTraceExporter({ connectionString: connStr }),
-    { maxChunkChars: 8000, keepOriginalKey: false },
+  const urlFilter = {
+    rules: ['/api/auth/login', '/api/auth/session', '/api/health'],
+  };
+  const traceExporter = new UrlFilteredSpanExporter(
+    new ChunkingTraceExporter(
+      new AzureMonitorTraceExporter({ connectionString: connStr }),
+      { maxChunkChars: 8000, keepOriginalKey: false },
+    ),
+    urlFilter,
   );
   const metricExporter = new AzureMonitorMetricExporter({
     connectionString: connStr,
   });
-  const logExporter = new ChunkingLogExporter(
-    new AzureMonitorLogExporter({ connectionString: connStr }),
-    { maxChunkChars: 8000, keepOriginalKey: false },
+  const logExporter = new UrlFilteredLogExporter(
+    new ChunkingLogExporter(
+      new AzureMonitorLogExporter({ connectionString: connStr }),
+      { maxChunkChars: 8000, keepOriginalKey: false },
+    ),
+    urlFilter,
   );
 
   const sdk = new NodeSDK({
@@ -121,15 +131,7 @@ const instrumentServer = () => {
       exporter: metricExporter,
     }),
     instrumentations: [
-      new UndiciInstrumentation({
-        ignoreRequestHook: (request) => {
-          // Ignore requests to auth session endpoint, too spammy
-          if (request.path.includes('/api/auth/session')) {
-            return true;
-          }
-          return false;
-        },
-      }),
+      new UndiciInstrumentation({}),
       new PinoInstrumentation({
         disableLogSending: false,
         logHook: (span, record) => {

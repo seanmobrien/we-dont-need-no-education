@@ -23,13 +23,7 @@ const RecordIsDirty = Symbol('RecordIsDirty');
  */
 const RecordUuid = Symbol('RecordUuid');
 
-/**
- * Returns an object containing symbols used as decorators.
- *
- * @returns An object with the following properties:
- * - `dirty`: A symbol representing if a record is dirty.
- * - `uuid`: A symbol representing the UUID of a record.
- */
+
 export const getDecoratorSymbols = () => ({
   dirty: RecordIsDirty,
   uuid: RecordUuid,
@@ -55,13 +49,7 @@ export type RecordWithUuid<T extends object> = T & {
   [RecordUuid]?: string | null;
 };
 
-/**
- * Checks if a given object has a dirty state.
- *
- * @template T - The type of the object.
- * @param check - The object to check.
- * @returns {boolean} - Returns `true` if the object has a dirty state, otherwise `false`.
- */
+
 export const isRecordWithDirtyState = <T extends object>(
   check: unknown
 ): check is RecordWithDirtyState<T> => {
@@ -69,23 +57,11 @@ export const isRecordWithDirtyState = <T extends object>(
   return record[RecordIsDirty] !== undefined;
 };
 
-/**
- * Checks if a given record is marked as dirty.
- *
- * @param record - The record to check.
- * @returns {boolean} - Returns `true` if the record is dirty, otherwise `false`.
- */
+
 export const isRecordDirty = (record: object): boolean =>
   isRecordWithDirtyState(record) && record[RecordIsDirty] === true;
 
-/**
- * Marks a given record as dirty by setting a `RecordIsDirty` property.
- *
- * @template T - The type of the record.
- * @param {object} record - The record to be marked as dirty.
- * @param {boolean} [isDirty=true] - A boolean flag indicating whether the record is dirty. Defaults to `true`.
- * @returns {record is RecordWithDirtyState<T>} - Returns `true` if the record has successfully had a dirty flag applied.
- */
+
 export const setRecordDirty = <T extends object>(
   record: object,
   isDirty: boolean = true
@@ -94,13 +70,7 @@ export const setRecordDirty = <T extends object>(
   return true;
 };
 
-/**
- * Checks if a given object has a uuid flag
- *
- * @template T - The type of the object.
- * @param check - The object to check.
- * @returns {boolean} - Returns `true` if the object has a uuid, otherwise `false`.
- */
+
 export const isRecordWithUuid = <T extends object>(
   check: T | unknown
 ): check is RecordWithUuid<T> =>
@@ -108,35 +78,14 @@ export const isRecordWithUuid = <T extends object>(
     typeof check === 'object' &&
     (check as RecordWithUuid<T>)[RecordUuid] !== undefined) == true;
 
-/**
- * Retrieves the UUID from a record if it contains one.
- *
- * @param record - The record from which to retrieve the UUID.
- * @returns The UUID as a string if the record contains one, otherwise `undefined`.
- */
+
 export const getUuid = (record: unknown): string | null | undefined =>
   isRecordWithUuid(record) ? record[RecordUuid] : undefined;
 
-/**
- * Generates a new UUID (Universally Unique Identifier).
- *
- * If the code is running in a Node.js environment (where `window` is undefined),
- * it generates a UUID using a random string based on `Math.random()`.
- * If the code is running in a browser environment, it uses the `crypto.randomUUID()` method
- * to generate a more secure UUID.
- *
- * @returns {string} A new UUID string.
- */
+
 export const newUuid = () => uuidv4();
 
-/**
- * Sets a UUID on the given record.
- *
- * @template T - The type of the record.
- * @param {T} record - The record to set the UUID on.
- * @param {string | null} [uuid] - The UUID to set. If not provided, a new UUID will be generated.
- * @returns {RecordWithUuid<T>} The record with the UUID set.
- */
+
 export const setUuid = <T extends object>(
   record: T,
   uuid?: string | null

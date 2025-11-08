@@ -11,6 +11,8 @@ import { getAllFeatureFlags } from '@/lib/site-util/feature-flags/client';
 import FeatureFlagsContext from '@/lib/site-util/feature-flags/context';
 import { LoggedError } from '@/lib/react-util';
 import { useFlagsmithLoading } from 'flagsmith/react';
+import { useSession } from '@/components/auth/session-provider';
+import type { Session } from '@auth/core/types';
 
 const defaultFlags = AllFeatureFlagsDefault as unknown as Record<
   KnownFeatureType,
@@ -21,18 +23,18 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
   const [flags, setFlags] = useState<
     Record<KnownFeatureType, FeatureFlagStatus>
   >(AllFeatureFlagsDefault);
-
+  const { userHash, status } = useSession<Session>();
   const { isLoading, error, isFetching } = useFlagsmithLoading() ?? {
     isLoading: false,
     error: null,
   };
-
+  const sessionLoaded = status !== 'loading';
   useEffect(() => {
     let isSubscribed = true;
 
     const loadFlags = async () => {
       try {
-        const allFlags = await getAllFeatureFlags();
+        const allFlags = await getAllFeatureFlags(userHash);
         if (isSubscribed) {
           setFlags(allFlags);
         }
@@ -44,12 +46,14 @@ export const FlagProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    void loadFlags();
+    if (sessionLoaded && !isLoading) {
+      loadFlags();
+    }
 
     return () => {
       isSubscribed = false;
     };
-  }, [isLoading]);
+  }, [isLoading, sessionLoaded, userHash]);
 
   const api = useMemo<FeatureFlagsApi>(
     () => ({

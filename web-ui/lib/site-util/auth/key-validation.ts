@@ -1,56 +1,23 @@
-/**
- * @fileoverview Key validation utilities for user authentication
- *
- * This module provides utilities for validating user cryptographic keys
- * against server-stored public keys, ensuring users maintain valid
- * credentials for secure operations.
- *
- * @module lib/site-util/auth/key-validation
- */
-
 import { log } from '@/lib/logger';
 
-/**
- * Storage key for tracking last key validation timestamp
- */
 const KEY_VALIDATION_STORAGE_KEY = 'lastKeyValidation';
 
-/**
- * Interval between key validations (2 hours in milliseconds)
- */
 export const KEY_VALIDATION_INTERVAL = 2 * 60 * 60 * 1000;
 
-/**
- * Result of key validation operation
- */
 export interface KeyValidationResult {
-  /** Whether the validation was successful */
   isValid: boolean;
-  /** Whether user has a local private key */
   hasLocalKey: boolean;
-  /** Whether local key matches any server keys */
   matchesServerKey: boolean;
-  /** Error message if validation failed */
   error?: string;
-  /** Recommended action based on validation result */
   action: 'none' | 'generate_key' | 'upload_key' | 'retry';
 }
 
-/**
- * Result of key synchronization operation
- */
 export interface KeySyncResult {
-  /** Whether synchronization was successful */
   success: boolean;
-  /** New public key that was uploaded (base64 encoded) */
   newPublicKey?: string;
-  /** Error message if sync failed */
   error?: string;
 }
 
-/**
- * Checks if key validation is due based on last validation timestamp
- */
 export function isKeyValidationDue(): boolean {
   try {
     const lastValidation =
@@ -76,9 +43,6 @@ export function isKeyValidationDue(): boolean {
   }
 }
 
-/**
- * Updates the last key validation timestamp
- */
 export function updateKeyValidationTimestamp(): void {
   try {
     localStorage.setItem(KEY_VALIDATION_STORAGE_KEY, Date.now().toString());
@@ -87,45 +51,11 @@ export function updateKeyValidationTimestamp(): void {
   }
 }
 
-/**
- * Converts a CryptoKey public key to base64 string for comparison
- */
 async function exportPublicKeyToBase64(publicKey: CryptoKey): Promise<string> {
   const exported = await crypto.subtle.exportKey('spki', publicKey);
   return btoa(String.fromCharCode(...new Uint8Array(exported)));
 }
 
-/**
- * Derives the public key from a private key
-async function derivePublicKeyFromPrivate(privateKey: CryptoKey): Promise<CryptoKey> {
-  // For ECDSA, we need to extract the public key from the private key
-  // This is done by exporting the private key and importing just the public portion
-  const exported = await crypto.subtle.exportKey('pkcs8', privateKey);
-  const buffer = new Uint8Array(exported);
-  
-  // Extract the public key portion from the PKCS#8 private key
-  // This is a simplified approach - in production, you might want to use a library
-  // For now, we'll generate a matching public key by creating a key pair with the same algorithm
-  
-  // Alternative approach: derive public key by creating signature and verifying
-  // This is more reliable for ECDSA keys
-  const testData = new TextEncoder().encode('test');
-  const signature = await crypto.subtle.sign(
-    { name: 'ECDSA', hash: 'SHA-256' },
-    privateKey,
-    testData
-  );
-  
-  // Since we can't directly derive the public key from private key in Web Crypto API,
-  // we'll use the fact that the key pair was stored together in IndexedDB
-  // and retrieve the public key from there
-  throw new Error('Cannot derive public key from private key directly in Web Crypto API');
-}
- */
-
-/**
- * Validates user's local cryptographic keys against server's registered public keys
- */
 export async function validateUserKeys(
   serverPublicKeys: string[],
   getUserPublicKey: () => Promise<CryptoKey | null>,
@@ -185,9 +115,6 @@ export async function validateUserKeys(
   }
 }
 
-/**
- * Synchronizes user keys by generating new keys and uploading to server
- */
 export async function synchronizeKeys(
   generateKeyPair: () => Promise<{
     publicKey: CryptoKey;
@@ -216,32 +143,6 @@ export async function synchronizeKeys(
     await uploadPublicKeyToServer({
       publicKey: newPublicKeyBase64,
     });
-
-    /*
-    // Upload public key to server
-    const uploadResponse = await fetch('/api/auth/keys', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        publicKey: newPublicKeyBase64,
-      }),
-    });
-    
-    if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      throw new Error(`Key upload failed: ${uploadResponse.status} ${errorText}`);
-    }
-    
-    const result = await uploadResponse.json();
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Key upload was not successful');
-    }
-    */
-
-    // Update validation timestamp on successful sync
     updateKeyValidationTimestamp();
 
     log((l) => l.info('Key synchronization completed successfully'));
@@ -259,11 +160,6 @@ export async function synchronizeKeys(
   }
 }
 
-/**
- * Performs the complete key validation and synchronization workflow
- *
- * This is the main function that should be called to validate and sync keys
- */
 export async function performKeyValidationWorkflow(
   serverPublicKeys: string[],
   keyManagerMethods: {

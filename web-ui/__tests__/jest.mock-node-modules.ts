@@ -1,6 +1,5 @@
 import { createElement } from 'react';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 jest.mock('google-auth-library');
 jest.mock('googleapis');
 
@@ -51,9 +50,3 @@ jest.mock('react-error-boundary', () => {
     },
   };
 });
-jest.mock('next-auth', () => {
-  return jest.fn();
-});
-jest.mock('next-auth/jwt', () => ({
-  getToken: jest.fn(),
-}));
