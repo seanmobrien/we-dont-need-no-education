@@ -130,6 +130,7 @@ const mockDbFactory = (): DatabaseMockType => {
 
   const insertBuilder = {
     values: jest.fn(),
+    execute: jest.fn(() => qb.execute()),
     onConflictDoUpdate: jest.fn(),
     __setCurrentTable: (table: unknown) => {
       (qb as unknown as { [CurrentTable]: unknown })[CurrentTable] = table;
@@ -168,6 +169,8 @@ const mockDbFactory = (): DatabaseMockType => {
   });
   insertBuilder.onConflictDoUpdate.mockReturnValue(insertBuilder);
 
+  const INITIALIZED = Symbol.for('____initialized_query_builder____');
+  type ProxiedDb = typeof db & { [INITIALIZED]?: boolean };
   const initMocks = () => {
     qbMethodValues.forEach((key: keyof IMockQueryBuilder) => {
       if (
@@ -178,11 +181,10 @@ const mockDbFactory = (): DatabaseMockType => {
         return;
       }
       const current = qb[key];
-      if (!current) {
-        qb[key] = jest.fn();
-      }
+
       if (key === 'execute') {
         qb[key].mockImplementation(async () => {
+          (db as ProxiedDb)[INITIALIZED] = false;
           const executeMock = qb[key].mock;
           const count = executeMock.calls.length;
           const thisIndex = count - 1;
@@ -276,10 +278,18 @@ const mockDbFactory = (): DatabaseMockType => {
           // If we made it this far then we use the default result
           return theRows;
         });
-      } else if (key === 'insert') {
-        (qb[key] as jest.Mock).mockImplementation(() => insertBuilder);
+      } else if (!current) {
+        qb[key] = jest.fn(
+          ['insert', 'values'].includes(String(key))
+            ? () => insertBuilder as any
+            : () => db as any,
+        ) as jest.Mock;
       } else {
-        qb[key].mockImplementation(() => db);
+        (qb[key] as jest.Mock).mockImplementation(
+          ['insert', 'values'].includes(String(key))
+            ? () => insertBuilder as any
+            : () => db as any,
+        );
       }
     });
     Array.from(
@@ -351,7 +361,59 @@ const mockDbFactory = (): DatabaseMockType => {
       initMocks();
     });
   };
-  return db;
+  db.transaction = jest.fn(async (callback: TransactionFn) => {
+    const txRawRet = callback(mockDb);
+    const txRet = isPromise(txRawRet) ? await txRawRet : txRawRet;
+    return txRet;
+  });
+
+  const proxy = new Proxy(db, {
+    get(target, prop, receiver) {
+      if (prop === 'from' || prop === 'select' || prop === 'where') {
+        (target as ProxiedDb)[INITIALIZED] = true;
+      } else if (prop === 'then') {
+        if ((target as ProxiedDb)[INITIALIZED] === true) {
+          return jest.fn((onOk, onError) => {
+            let p = new Promise(async (resolve, reject) => {
+              try {
+                const result = await qb.execute();
+                (target as ProxiedDb)[INITIALIZED] = false;
+                resolve(result);
+              } catch (error) {
+                reject(error);
+              }
+            });
+            if (onOk) {
+              p = p.then(onOk);
+            }
+            if (onError) {
+              p = p.catch(onError);
+            }
+            return p;
+          });
+        }
+        return undefined;
+      } else if (prop === 'innerMock') {
+        return qb;
+      }
+      const asProxied = Reflect.get(target, prop, receiver);
+      if (!asProxied || typeof asProxied !== 'function') {
+        return asProxied;
+      }
+      return new Proxy(asProxied, {
+        apply(target, thisArg, args) {
+          const ret = asProxied.apply(target, args);
+          if (isPromise<IMockQueryBuilder>(ret)) {
+            return ret.then((r) => (r === qb ? proxy : r));
+          } else if (ret === qb) {
+            return proxy;
+          }
+          return ret;
+        },
+      });
+    },
+  });
+  return proxy as unknown as DatabaseMockType;
 };
 
 let mockDb: DatabaseMockType = mockDbFactory();
@@ -489,6 +551,7 @@ import {
 } from './jest.mock-drizzle';
 import { count } from 'console';
 import { ITraits } from 'flagsmith/react';
+import { P } from 'ts-pattern';
 globalThis.TextEncoder = TextEncoder as any;
 globalThis.TextDecoder = TextDecoder as any;
 

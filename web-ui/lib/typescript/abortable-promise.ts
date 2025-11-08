@@ -40,6 +40,7 @@ export class AbortablePromise<T> implements ICancellablePromiseExt<T> {
         settled = true;
         resolve(value);
       };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const wrappedReject = (reason?: any) => {
         settled = true;
         reject(reason);

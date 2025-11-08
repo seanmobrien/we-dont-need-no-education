@@ -66,12 +66,10 @@ const config = {
     '<rootDir>/(rsc)',
     '.upstream',
   ],
-  // collectCoverage: true, // Enable coverage collection
-  //collectCoverage: false, // Enable coverage collection
   collectCoverageFrom: [
     '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
     '!**/*.d.ts', // Exclude type declaration files
-    '!__(tests|mocks)/**/*.*', // Exclude test and mock files
+    '!__(tests|mocks)__/**/*.*', // Exclude test and mock files
     '!tests/**/*.*', // Exclude playwright test files
     //'!**/*.{jsx,tsx}', // Exclude JSX-based
     '!.next/**/*.*', // Exclude next build files

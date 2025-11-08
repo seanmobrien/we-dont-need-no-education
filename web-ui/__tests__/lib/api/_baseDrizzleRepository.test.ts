@@ -14,7 +14,6 @@ jest.mock('@/lib/react-util', () => ({
   },
 }));
 
- 
 import { drizDbWithInit, drizDb } from '@/lib/drizzle-db';
 import { DrizzleRepositoryConfig } from '@/lib/api/_types';
 import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
@@ -40,7 +39,7 @@ describe('BaseDrizzleRepository', () => {
 
   beforeEach(async () => {
     // jest.clearAllMocks();
-    mockDb = (await drizDbWithInit()) as DatabaseMockType;
+    mockDb = (await drizDbWithInit()).innerMock as DatabaseMockType;
     mockDb.__setRecords([]);
 
     // Mock table and column

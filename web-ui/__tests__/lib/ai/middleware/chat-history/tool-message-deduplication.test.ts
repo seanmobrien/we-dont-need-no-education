@@ -1,4 +1,3 @@
- 
 /**
  * @fileoverview Unit tests for tool message deduplication functionality
  *
@@ -41,16 +40,6 @@ jest.mock('@/lib/drizzle-db', () => ({
       toolName: 'mocked-chat-tool-name',
     },
   },
-}));
-
-// Mock logger
-jest.mock('@/lib/logger', () => ({
-  log: jest.fn(() => ({
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  })),
 }));
 
 describe('Tool Message Deduplication', () => {
