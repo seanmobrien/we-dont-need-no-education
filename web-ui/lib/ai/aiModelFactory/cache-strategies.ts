@@ -13,6 +13,7 @@ import { LoggedError } from '@/lib/react-util';
 import {
   makeResponse,
   makeStreamResponse,
+  nodeStreamToReadableStream,
 } from '@/lib/nextjs-util/server/response';
 import type {
   CacheStrategyDeps,
@@ -167,7 +168,7 @@ export class CacheStrategies {
 
         span.setAttribute('http.redis_stream_replay', true);
         span.setAttribute('http.status_code', meta?.statusCode ?? 200);
-        return makeStreamResponse(pass, {
+        return makeStreamResponse(nodeStreamToReadableStream(pass), {
           status: meta?.statusCode ?? 200,
           headers: meta?.headers ?? {},
         });

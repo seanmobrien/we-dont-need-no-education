@@ -490,6 +490,7 @@ import {
 import { count } from 'console';
 import { ITraits } from 'flagsmith/react';
 globalThis.TextEncoder = TextEncoder as any;
+globalThis.TextDecoder = TextDecoder as any;
 
 // Ensure WHATWG Streams exist in Jest (jsdom)
 (() => {

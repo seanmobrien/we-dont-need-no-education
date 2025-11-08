@@ -71,7 +71,8 @@ const config = {
   collectCoverageFrom: [
     '**/*.{ts,tsx}', // Collect coverage from TypeScript files in src directory
     '!**/*.d.ts', // Exclude type declaration files
-    '!__(tests|mocks)__/**/*.*', // Exclude type declaration files
+    '!__(tests|mocks)/**/*.*', // Exclude test and mock files
+    '!tests/**/*.*', // Exclude playwright test files
     //'!**/*.{jsx,tsx}', // Exclude JSX-based
     '!.next/**/*.*', // Exclude next build files
     '!.upstream/**/*.*', // Exclude upstream build files

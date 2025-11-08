@@ -1,5 +1,3 @@
- 
- 
 /**
  * Tests for lib/config/index.ts
  *
@@ -8,6 +6,8 @@
  * - StripRscPrefixPlugin & withStripRscPrefixPlugin: Source map normalization for React Server Components
  * - PublicEnv & withPublicEnv: Public environment variable configuration
  * - withBundleAnalyzer: Bundle analyzer integration
+ * - withTypescriptConfig: TypeScript configuration
+ * - withReactConfig & withReactConfigFactory: React configuration with options
  */
 
 import type { NextConfig } from 'next';
@@ -22,6 +22,11 @@ import {
 import { StripRscPrefixPlugin } from '@/lib/config/strip-rsc-prefix-plugin';
 import { PublicEnv } from '@/lib/config/public-env';
 import { WebpackConfigContext } from 'next/dist/server/config-shared';
+import { withTypescriptConfig } from '@/lib/config/typescript-config';
+import {
+  withReactConfig,
+  withReactConfigFactory,
+} from '@/lib/config/react-config';
 
 describe('lib/config/index.ts', () => {
   describe('exports', () => {
@@ -804,6 +809,332 @@ describe('lib/config/index.ts', () => {
       expect(result.customObject).toEqual({ nested: true });
       expect(result.reactStrictMode).toBe(true);
       expect(result.publicRuntimeConfig).toEqual(PublicEnv);
+    });
+  });
+
+  describe('withTypescriptConfig', () => {
+    it('should preserve existing Next.js configuration', () => {
+      const originalConfig: NextConfig = {
+        reactStrictMode: true,
+        env: { TEST: 'value' },
+        experimental: {
+          serverComponentsExternalPackages: ['test-package'],
+        },
+      };
+
+      const result = withTypescriptConfig(originalConfig);
+
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.env).toEqual({ TEST: 'value' });
+      expect(result.experimental).toEqual({
+        serverComponentsExternalPackages: ['test-package'],
+      });
+    });
+
+    it('should return a new config object (not mutate original)', () => {
+      const originalConfig: NextConfig = {
+        reactStrictMode: true,
+      };
+
+      const result = withTypescriptConfig(originalConfig);
+
+      expect(result).not.toBe(originalConfig);
+      expect(result.reactStrictMode).toBe(true);
+    });
+
+    it('should handle empty config', () => {
+      const originalConfig: NextConfig = {};
+      const result = withTypescriptConfig(originalConfig);
+
+      expect(result).toBeDefined();
+      expect(result).not.toBe(originalConfig);
+    });
+
+    it('should preserve all existing properties', () => {
+      const originalConfig: NextConfig = {
+        reactStrictMode: true,
+        poweredByHeader: true,
+        compress: false,
+        generateEtags: false,
+        pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+        webpack: (config) => config,
+        env: { CUSTOM: 'value' },
+      };
+
+      const result = withTypescriptConfig(originalConfig);
+
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.poweredByHeader).toBe(true);
+      expect(result.compress).toBe(false);
+      expect(result.generateEtags).toBe(false);
+      expect(result.pageExtensions).toEqual(['tsx', 'ts', 'jsx', 'js']);
+      expect(result.webpack).toBeDefined();
+      expect(result.env).toEqual({ CUSTOM: 'value' });
+    });
+
+    it('should preserve type information', () => {
+      interface CustomConfig extends NextConfig {
+        customProperty: string;
+      }
+
+      const originalConfig: CustomConfig = {
+        customProperty: 'test',
+        reactStrictMode: true,
+      };
+
+      const result = withTypescriptConfig(originalConfig);
+
+      expect(result.customProperty).toBe('test');
+      expect(result.reactStrictMode).toBe(true);
+    });
+  });
+
+  describe('withReactConfig', () => {
+    it('should set default React configuration', () => {
+      const originalConfig: NextConfig = {};
+      const result = withReactConfig(originalConfig);
+
+      expect(result.poweredByHeader).toBe(false);
+      expect(result.productionBrowserSourceMaps).toBe(true);
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.experimental?.reactCompiler).toBe(true);
+    });
+
+    it('should preserve existing Next.js configuration', () => {
+      const originalConfig: NextConfig = {
+        env: { TEST: 'value' },
+        compress: false,
+      };
+
+      const result = withReactConfig(originalConfig);
+
+      expect(result.env).toEqual({ TEST: 'value' });
+      expect(result.compress).toBe(false);
+      expect(result.reactStrictMode).toBe(true);
+    });
+
+    it('should merge with existing experimental config', () => {
+      const originalConfig: NextConfig = {
+        experimental: {
+          serverComponentsExternalPackages: ['test-package'],
+          typedRoutes: true,
+        },
+      };
+
+      const result = withReactConfig(originalConfig);
+
+      expect(result.experimental).toEqual({
+        serverComponentsExternalPackages: ['test-package'],
+        typedRoutes: true,
+        reactCompiler: true,
+      });
+    });
+
+    it('should override poweredByHeader even if set in original config', () => {
+      const originalConfig: NextConfig = {
+        poweredByHeader: true,
+      };
+
+      const result = withReactConfig(originalConfig);
+
+      expect(result.poweredByHeader).toBe(false);
+    });
+
+    it('should enable production browser source maps by default', () => {
+      const originalConfig: NextConfig = {};
+      const result = withReactConfig(originalConfig);
+
+      expect(result.productionBrowserSourceMaps).toBe(true);
+    });
+
+    it('should preserve type information', () => {
+      interface CustomConfig extends NextConfig {
+        customProperty: string;
+      }
+
+      const originalConfig: CustomConfig = {
+        customProperty: 'test',
+        reactStrictMode: false,
+      };
+
+      const result = withReactConfig(originalConfig);
+
+      expect(result.customProperty).toBe('test');
+      expect(result.reactStrictMode).toBe(true); // Should be overridden
+    });
+  });
+
+  describe('withReactConfigFactory', () => {
+    it('should create a config function with default options', () => {
+      const configFn = withReactConfigFactory();
+      const originalConfig: NextConfig = {};
+      const result = configFn(originalConfig);
+
+      expect(result.poweredByHeader).toBe(false);
+      expect(result.productionBrowserSourceMaps).toBe(true);
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.experimental?.reactCompiler).toBe(true);
+    });
+
+    it('should respect reactCompiler option when set to false', () => {
+      const configFn = withReactConfigFactory({ reactCompiler: false });
+      const originalConfig: NextConfig = {};
+      const result = configFn(originalConfig);
+
+      expect(result.experimental?.reactCompiler).toBe(false);
+    });
+
+    it('should respect reactCompiler option when set to true', () => {
+      const configFn = withReactConfigFactory({ reactCompiler: true });
+      const originalConfig: NextConfig = {};
+      const result = configFn(originalConfig);
+
+      expect(result.experimental?.reactCompiler).toBe(true);
+    });
+
+    it('should respect disableSourceMaps option when set to true', () => {
+      const configFn = withReactConfigFactory({ disableSourceMaps: true });
+      const originalConfig: NextConfig = {};
+      const result = configFn(originalConfig);
+
+      expect(result.productionBrowserSourceMaps).toBe(false);
+    });
+
+    it('should respect disableSourceMaps option when set to false', () => {
+      const configFn = withReactConfigFactory({ disableSourceMaps: false });
+      const originalConfig: NextConfig = {};
+      const result = configFn(originalConfig);
+
+      expect(result.productionBrowserSourceMaps).toBe(true);
+    });
+
+    it('should handle both options together', () => {
+      const configFn = withReactConfigFactory({
+        reactCompiler: false,
+        disableSourceMaps: true,
+      });
+      const originalConfig: NextConfig = {};
+      const result = configFn(originalConfig);
+
+      expect(result.experimental?.reactCompiler).toBe(false);
+      expect(result.productionBrowserSourceMaps).toBe(false);
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.poweredByHeader).toBe(false);
+    });
+
+    it('should preserve existing experimental config when disabling compiler', () => {
+      const configFn = withReactConfigFactory({ reactCompiler: false });
+      const originalConfig: NextConfig = {
+        experimental: {
+          serverComponentsExternalPackages: ['test-package'],
+        },
+      };
+      const result = configFn(originalConfig);
+
+      expect(result.experimental).toEqual({
+        serverComponentsExternalPackages: ['test-package'],
+        reactCompiler: false,
+      });
+    });
+
+    it('should handle empty options object', () => {
+      const configFn = withReactConfigFactory({});
+      const originalConfig: NextConfig = {};
+      const result = configFn(originalConfig);
+
+      expect(result.poweredByHeader).toBe(false);
+      expect(result.productionBrowserSourceMaps).toBe(true);
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.experimental?.reactCompiler).toBe(true);
+    });
+
+    it('should handle partial options', () => {
+      const configFn = withReactConfigFactory({ reactCompiler: false });
+      const originalConfig: NextConfig = {};
+      const result = configFn(originalConfig);
+
+      expect(result.experimental?.reactCompiler).toBe(false);
+      expect(result.productionBrowserSourceMaps).toBe(true); // default
+    });
+
+    it('should create different functions with different options', () => {
+      const configFn1 = withReactConfigFactory({ reactCompiler: true });
+      const configFn2 = withReactConfigFactory({ reactCompiler: false });
+      const originalConfig: NextConfig = {};
+
+      const result1 = configFn1(originalConfig);
+      const result2 = configFn2(originalConfig);
+
+      expect(result1.experimental?.reactCompiler).toBe(true);
+      expect(result2.experimental?.reactCompiler).toBe(false);
+    });
+
+    it('should preserve type information', () => {
+      interface CustomConfig extends NextConfig {
+        customProperty: string;
+      }
+
+      const configFn = withReactConfigFactory({ reactCompiler: false });
+      const originalConfig: CustomConfig = {
+        customProperty: 'test',
+      };
+
+      const result = configFn(originalConfig);
+
+      expect(result.customProperty).toBe('test');
+      expect(result.experimental?.reactCompiler).toBe(false);
+    });
+  });
+
+  describe('integration: typescript + react configs', () => {
+    it('should work when both configs are chained', () => {
+      const baseConfig: NextConfig = {
+        env: { TEST: 'value' },
+      };
+
+      const result = withReactConfig(withTypescriptConfig(baseConfig));
+
+      expect(result.env).toEqual({ TEST: 'value' });
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.poweredByHeader).toBe(false);
+      expect(result.productionBrowserSourceMaps).toBe(true);
+      expect(result.experimental?.reactCompiler).toBe(true);
+    });
+
+    it('should work with all configs chained together', () => {
+      const baseConfig: NextConfig = {
+        env: { TEST: 'value' },
+      };
+
+      const result = withReactConfig(
+        withTypescriptConfig(
+          withPublicEnv(withStripRscPrefixPlugin(withIgnorePacks(baseConfig))),
+        ),
+      );
+
+      expect(result.env).toEqual({ TEST: 'value' });
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.poweredByHeader).toBe(false);
+      expect(result.productionBrowserSourceMaps).toBe(true);
+      expect(result.experimental?.reactCompiler).toBe(true);
+      expect(result.webpack).toBeDefined();
+      expect(result.publicRuntimeConfig).toEqual(PublicEnv);
+    });
+
+    it('should work with custom react config factory in chain', () => {
+      const baseConfig: NextConfig = {};
+
+      const customReactConfig = withReactConfigFactory({
+        reactCompiler: false,
+        disableSourceMaps: true,
+      });
+
+      const result = customReactConfig(withTypescriptConfig(baseConfig));
+
+      expect(result.reactStrictMode).toBe(true);
+      expect(result.poweredByHeader).toBe(false);
+      expect(result.productionBrowserSourceMaps).toBe(false);
+      expect(result.experimental?.reactCompiler).toBe(false);
     });
   });
 });

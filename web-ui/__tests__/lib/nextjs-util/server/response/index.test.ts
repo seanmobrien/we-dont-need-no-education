@@ -2,13 +2,30 @@
  * Unit tests for response.ts - WHATWG-like Response implementations
  */
 
-import { Readable } from 'stream';
 import {
   FetchResponse,
   makeResponse,
   makeJsonResponse,
   makeStreamResponse,
 } from '@/lib/nextjs-util/server/response';
+
+// Helper to create ReadableStream from chunks
+const createReadableStream = (
+  chunks: (string | Uint8Array)[],
+): ReadableStream<Uint8Array> => {
+  return new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) {
+        if (typeof chunk === 'string') {
+          controller.enqueue(new TextEncoder().encode(chunk));
+        } else {
+          controller.enqueue(chunk);
+        }
+      }
+      controller.close();
+    },
+  });
+};
 
 describe('FetchResponse', () => {
   describe('constructor', () => {
@@ -181,11 +198,11 @@ describe('FetchResponse', () => {
   });
 
   describe('stream()', () => {
-    it('should return Readable stream', () => {
+    it('should return ReadableStream', () => {
       const response = new FetchResponse(Buffer.from('test data'));
       const stream = response.stream();
 
-      expect(stream).toBeInstanceOf(Readable);
+      expect(stream).toBeInstanceOf(ReadableStream);
     });
 
     it('should stream body content', async () => {
@@ -193,26 +210,37 @@ describe('FetchResponse', () => {
       const response = new FetchResponse(Buffer.from(testData));
       const stream = response.stream();
 
-      const chunks: Buffer[] = [];
-      for await (const chunk of stream) {
-        chunks.push(Buffer.from(chunk));
+      const reader = stream.getReader();
+      const chunks: Uint8Array[] = [];
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
       }
 
-      const result = Buffer.concat(chunks).toString('utf8');
-      expect(result).toBe(testData);
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const result = new Uint8Array(totalLength);
+      let offset = 0;
+      for (const chunk of chunks) {
+        result.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      const text = new TextDecoder().decode(result);
+      expect(text).toBe(testData);
     });
 
     it('should end stream after body', async () => {
       const response = new FetchResponse(Buffer.from('test'));
       const stream = response.stream();
 
-      const chunks: Buffer[] = [];
-      for await (const chunk of stream) {
-        chunks.push(Buffer.from(chunk));
-      }
-
-      // Stream should have ended
-      expect(stream.readable).toBe(false);
+      const reader = stream.getReader();
+      const { done, value } = await reader.read();
+      expect(value).toBeDefined();
+      
+      const secondRead = await reader.read();
+      expect(secondRead.done).toBe(true);
     });
   });
 });
@@ -453,16 +481,16 @@ describe('makeJsonResponse', () => {
 
 describe('makeStreamResponse', () => {
   describe('basic functionality', () => {
-    it('should create response from Readable stream', () => {
-      const stream = Readable.from(['chunk1', 'chunk2']);
+    it('should create response from ReadableStream', () => {
+      const stream = createReadableStream(['chunk1', 'chunk2']);
       const response = makeStreamResponse(stream);
 
       expect(response.status).toBe(200);
       expect(response.headers).toBeInstanceOf(Headers);
     });
 
-    it('should provide stream() method to access Readable', () => {
-      const originalStream = Readable.from(['test']);
+    it('should provide stream() method to access ReadableStream', () => {
+      const originalStream = createReadableStream(['test']);
       const response = makeStreamResponse(originalStream);
 
       const stream = (response as any).stream();
@@ -470,14 +498,14 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle custom status', () => {
-      const stream = Readable.from(['test']);
+      const stream = createReadableStream(['test']);
       const response = makeStreamResponse(stream, { status: 201 });
 
       expect(response.status).toBe(201);
     });
 
     it('should handle custom headers', () => {
-      const stream = Readable.from(['test']);
+      const stream = createReadableStream(['test']);
       const response = makeStreamResponse(stream, {
         headers: { 'Content-Type': 'text/event-stream', 'X-Custom': 'value' },
       });
@@ -489,18 +517,18 @@ describe('makeStreamResponse', () => {
 
   describe('text()', () => {
     it('should concatenate stream chunks as text', async () => {
-      const stream = Readable.from(['Hello', ' ', 'World']);
+      const stream = createReadableStream(['Hello', ' ', 'World']);
       const response = makeStreamResponse(stream);
 
       const text = await response.text();
       expect(text).toBe('Hello World');
     });
 
-    it('should handle Buffer chunks', async () => {
-      const stream = Readable.from([
-        Buffer.from('Hello'),
-        Buffer.from(' '),
-        Buffer.from('World'),
+    it('should handle Uint8Array chunks', async () => {
+      const stream = createReadableStream([
+        new TextEncoder().encode('Hello'),
+        new TextEncoder().encode(' '),
+        new TextEncoder().encode('World'),
       ]);
       const response = makeStreamResponse(stream);
 
@@ -509,7 +537,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle empty stream', async () => {
-      const stream = Readable.from([]);
+      const stream = createReadableStream([]);
       const response = makeStreamResponse(stream);
 
       const text = await response.text();
@@ -517,7 +545,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle UTF-8 characters', async () => {
-      const stream = Readable.from(['Hello ', '世界 ', '🌍']);
+      const stream = createReadableStream(['Hello ', '世界 ', '🌍']);
       const response = makeStreamResponse(stream);
 
       const text = await response.text();
@@ -528,7 +556,7 @@ describe('makeStreamResponse', () => {
   describe('json()', () => {
     it('should parse JSON from stream', async () => {
       const data = { message: 'Hello', count: 42 };
-      const stream = Readable.from([JSON.stringify(data)]);
+      const stream = createReadableStream([JSON.stringify(data)]);
       const response = makeStreamResponse(stream);
 
       const json = await response.json();
@@ -539,7 +567,7 @@ describe('makeStreamResponse', () => {
       const data = { message: 'Hello', count: 42 };
       const jsonString = JSON.stringify(data);
       const mid = Math.floor(jsonString.length / 2);
-      const stream = Readable.from([
+      const stream = createReadableStream([
         jsonString.slice(0, mid),
         jsonString.slice(mid),
       ]);
@@ -550,7 +578,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should throw on invalid JSON', async () => {
-      const stream = Readable.from(['not valid json']);
+      const stream = createReadableStream(['not valid json']);
       const response = makeStreamResponse(stream);
 
       await expect(response.json()).rejects.toThrow();
@@ -559,9 +587,9 @@ describe('makeStreamResponse', () => {
 
   describe('arrayBuffer()', () => {
     it('should concatenate stream chunks into ArrayBuffer', async () => {
-      const stream = Readable.from([
-        Buffer.from([1, 2, 3]),
-        Buffer.from([4, 5]),
+      const stream = createReadableStream([
+        new Uint8Array([1, 2, 3]),
+        new Uint8Array([4, 5]),
       ]);
       const response = makeStreamResponse(stream);
 
@@ -573,16 +601,16 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle string chunks', async () => {
-      const stream = Readable.from(['Hello', 'World']);
+      const stream = createReadableStream(['Hello', 'World']);
       const response = makeStreamResponse(stream);
 
       const arrayBuffer = await response.arrayBuffer();
-      const text = Buffer.from(arrayBuffer).toString('utf8');
+      const text = new TextDecoder().decode(arrayBuffer);
       expect(text).toBe('HelloWorld');
     });
 
     it('should handle empty stream', async () => {
-      const stream = Readable.from([]);
+      const stream = createReadableStream([]);
       const response = makeStreamResponse(stream);
 
       const arrayBuffer = await response.arrayBuffer();
@@ -592,9 +620,9 @@ describe('makeStreamResponse', () => {
 
   describe('edge cases', () => {
     it('should handle stream errors gracefully', async () => {
-      const stream = new Readable({
-        read() {
-          this.emit('error', new Error('Stream error'));
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.error(new Error('Stream error'));
         },
       });
       const response = makeStreamResponse(stream);
@@ -603,7 +631,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle init without headers', () => {
-      const stream = Readable.from(['test']);
+      const stream = createReadableStream(['test']);
       const response = makeStreamResponse(stream, { status: 201 });
 
       expect(response.status).toBe(201);
@@ -611,7 +639,7 @@ describe('makeStreamResponse', () => {
     });
 
     it('should handle undefined init', () => {
-      const stream = Readable.from(['test']);
+      const stream = createReadableStream(['test']);
       const response = makeStreamResponse(stream, undefined);
 
       expect(response.status).toBe(200);
@@ -620,11 +648,11 @@ describe('makeStreamResponse', () => {
 
   describe('use cases', () => {
     it('should work for SSE (Server-Sent Events)', () => {
-      const stream = new Readable({
-        read() {
-          this.push('data: message1\n\n');
-          this.push('data: message2\n\n');
-          this.push(null);
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('data: message1\n\n'));
+          controller.enqueue(new TextEncoder().encode('data: message2\n\n'));
+          controller.close();
         },
       });
 
@@ -644,14 +672,14 @@ describe('makeStreamResponse', () => {
 
     it('should work for streaming large files', async () => {
       const chunks = Array.from({ length: 100 }, (_, i) =>
-        Buffer.from(`chunk${i}`),
+        `chunk${i}`,
       );
-      const stream = Readable.from(chunks);
+      const stream = createReadableStream(chunks);
 
       const response = makeStreamResponse(stream);
       const text = await response.text();
 
-      expect(text).toBe(chunks.map((c) => c.toString()).join(''));
+      expect(text).toBe(chunks.join(''));
     });
   });
 });

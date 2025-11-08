@@ -11,6 +11,13 @@ export const DEFAULT_SUPPRESSION_RULES: ErrorSuppressionRule[] = [
     reason: 'Known AI service issue that does not affect functionality',
   },
   {
+    id: 'ai-content-track-metric-undefined',
+    pattern: /.*undefined \(reading .trackMetric.\)/i,
+    suppressCompletely: true,
+    reason:
+      'Known App Insights service issue that does not affect functionality',
+  },
+  {
     id: 'script-load-errors',
     pattern: /Loading chunk \d+ failed/i,
     source: /chunk/i,

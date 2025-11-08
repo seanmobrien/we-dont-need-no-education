@@ -14,7 +14,7 @@ import { isRunningOnEdge } from '../site-util/env';
 import { isDrizzleError, errorFromCode } from '@/lib/drizzle-db/drizzle-error';
 import type { PostgresError } from '@/lib/drizzle-db/drizzle-error';
 import { SingletonProvider } from '@/lib/typescript/singleton-provider/provider';
-
+import { shouldSuppressError } from './utility';
 export { ErrorSeverity };
 
 export type {
@@ -173,10 +173,7 @@ export class ErrorReporter implements ErrorReporterInterface {
         error: errorObj,
         severity,
       } as ErrorReport;
-      if (
-        !Object.keys(error as object).length ||
-        !(error as { message?: string }).message
-      ) {
+      if (!(error as { message?: string }).message) {
         (error as { message?: string }).message =
           'Unknown error - No details provided';
       }
@@ -212,7 +209,10 @@ export class ErrorReporter implements ErrorReporterInterface {
       // Ensure we have a proper Error object
       const report = await this.#createErrorReport(error, severity, context);
       // Check for debounce/deduping
-      if (this.shouldDebounce(report)) {
+      if (
+        shouldSuppressError({ error: report.error }).suppress ||
+        this.shouldDebounce(report)
+      ) {
         return;
       }
       // Standard logging

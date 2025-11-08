@@ -18,6 +18,7 @@ import { LoggedError } from '@/lib/react-util';
 import {
   makeResponse,
   makeStreamResponse,
+  nodeStreamToReadableStream,
 } from '@/lib/nextjs-util/server/response';
 import { log } from '@/lib/logger';
 import type { BufferingStrategyDeps, CachedValue } from './fetch-types';
@@ -211,7 +212,7 @@ export class BufferingStrategy {
 
       span.setAttribute('http.status_code', statusCode);
       return {
-        response: makeStreamResponse(pass, {
+        response: makeStreamResponse(nodeStreamToReadableStream(pass), {
           status: statusCode,
           headers,
         }),

@@ -1,25 +1,27 @@
+import type {
+  ErrorSuppressionRule as ImportedErrorSuppressionRule,
+  SuppressionResult as ImportedSuppressionResult,
+} from '@/lib/error-monitoring/types';
+
 /**
- * Configuration for error suppression patterns
+ * Imported from lib/error-monitoring/types - use that definition instead.
+ * @deprecated('Use ErrorSuppressionRule from lib/error-monitoring/types instead')
  */
-export interface ErrorSuppressionRule {
-  /** Unique identifier for this rule */
-  id: string;
-  /** Pattern to match against error messages (string contains or regex) */
-  pattern: string | RegExp;
-  /** Optional: match against error source/filename */
-  source?: string | RegExp;
-  /** Whether to completely suppress (no logging) or just prevent UI display */
-  suppressCompletely?: boolean;
-  /** Description of why this error is suppressed */
-  reason?: string;
-}
+type ErrorSuppressionRule = ImportedErrorSuppressionRule;
+
+/** Imported from lib/error-monitoring/types - use that definition instead.
+ * @deprecated('Use SuppressionResult from lib/error-monitoring/types instead')
+ */
+type SuppressionResult = ImportedSuppressionResult;
+
+export type { ErrorSuppressionRule, SuppressionResult };
 
 /**
  * Configuration for ClientErrorManager
  */
 export interface ClientErrorManagerConfig {
   /** Array of error suppression rules */
-  suppressionRules?: ErrorSuppressionRule[];
+  suppressionRules?: ImportedErrorSuppressionRule[];
   /** Whether to surface non-suppressed errors to React error boundaries */
   surfaceToErrorBoundary?: boolean;
   /** Whether to report suppressed errors (with low severity) */
@@ -27,9 +29,3 @@ export interface ClientErrorManagerConfig {
   /** Debounce time for duplicate errors (ms) */
   debounceMs?: number;
 }
-
-export type SuppressionResult = {
-  suppress: boolean;
-  rule?: ErrorSuppressionRule;
-  completely?: boolean;
-};

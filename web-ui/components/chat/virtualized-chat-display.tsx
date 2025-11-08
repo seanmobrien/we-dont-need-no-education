@@ -143,9 +143,10 @@ export const VirtualizedChatDisplay: React.FC<VirtualizedChatDisplayProps> = ({
 
   // Clean up all pending timeouts on unmount
   React.useEffect(() => {
+    const thisTimeoutIdsMap = timeoutIdsMap.current;
     return () => {
-      timeoutIdsMap.current.forEach((timeoutId) => clearTimeout(timeoutId));
-      timeoutIdsMap.current.clear();
+      thisTimeoutIdsMap.forEach((timeoutId) => clearTimeout(timeoutId));
+      thisTimeoutIdsMap.clear();
     };
   }, []);
 

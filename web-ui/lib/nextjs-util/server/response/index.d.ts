@@ -10,7 +10,7 @@
  * Key features:
  * - FetchResponse: Buffer-backed Response implementation with text(), json(), arrayBuffer()
  * - makeJsonResponse: Drop-in replacement for NextResponse.json() with same signature
- * - makeStreamResponse: Response wrapper around Node.js Readable streams
+ * - makeStreamResponse: Response wrapper around Web API ReadableStream
  * - makeResponse: General-purpose Response factory from raw buffers
  *
  * For usage examples, see the comprehensive test suite:
@@ -18,8 +18,6 @@
  */
 
 declare module '@/lib/nextjs-util/server/response' {
-  import type { Readable } from 'stream';
-
   /**
    * Minimal WHATWG-like Response implementation for server-side use.
    *
@@ -189,35 +187,87 @@ declare module '@/lib/nextjs-util/server/response' {
     arrayBuffer(): ArrayBuffer;
 
     /**
-     * Returns a Node.js Readable stream of the response body.
+     * Returns a Web API ReadableStream of the response body.
      *
-     * Creates a new stream that pushes the entire body buffer and then ends.
+     * Creates a new stream that enqueues the entire body buffer and then closes.
      * Useful for piping the response to writable streams or for chunk processing.
+     * Compatible with Next.js edge runtime.
      *
-     * @returns Readable stream containing the response body
+     * @returns ReadableStream containing the response body
      *
      * @example
      * ```typescript
      * const response = new FetchResponse(Buffer.from('Stream content'));
      * const stream = response.stream();
      *
-     * // Pipe to stdout
-     * stream.pipe(process.stdout);
+     * // Read the stream
+     * const reader = stream.getReader();
+     * const { done, value } = await reader.read();
      *
      * // Or collect chunks
-     * const chunks: Buffer[] = [];
-     * for await (const chunk of stream) {
-     *   chunks.push(chunk);
+     * const chunks: Uint8Array[] = [];
+     * const reader = stream.getReader();
+     * while (true) {
+     *   const { done, value } = await reader.read();
+     *   if (done) break;
+     *   chunks.push(value);
      * }
      * ```
      */
-    stream(): Readable;
+    stream(): ReadableStream<Uint8Array>;
   }
 
   /**
    * Default export of FetchResponse class for convenience.
    */
   export default FetchResponse;
+
+  /**
+   * Convert a Node.js Readable stream to a Web API ReadableStream.
+   * Useful for adapting Node.js streams to edge-compatible APIs.
+   *
+   * This utility function bridges the gap between Node.js stream ecosystem
+   * and Web API streams, enabling use of Node.js libraries in edge runtimes
+   * and ensuring compatibility with Next.js edge functions.
+   *
+   * @param nodeStream - Node.js Readable stream to convert
+   * @returns Web API ReadableStream that mirrors the Node stream
+   *
+   * @example
+   * ```typescript
+   * import { Readable } from 'stream';
+   * import { nodeStreamToReadableStream, makeStreamResponse } from '@/lib/nextjs-util/server/response';
+   *
+   * const nodeStream = Readable.from(['chunk1', 'chunk2']);
+   * const webStream = nodeStreamToReadableStream(nodeStream);
+   * const response = makeStreamResponse(webStream);
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Convert file stream to edge-compatible stream
+   * import { createReadStream } from 'fs';
+   * const fileStream = createReadStream('./data.json');
+   * const webStream = nodeStreamToReadableStream(fileStream);
+   * return makeStreamResponse(webStream, {
+   *   headers: { 'Content-Type': 'application/json' }
+   * });
+   * ```
+   *
+   * @example
+   * ```typescript
+   * // Convert PassThrough stream
+   * import { PassThrough } from 'stream';
+   * const pass = new PassThrough();
+   * pass.write('Hello ');
+   * pass.write('World');
+   * pass.end();
+   * const webStream = nodeStreamToReadableStream(pass);
+   * ```
+   */
+  export const nodeStreamToReadableStream: (
+    nodeStream: NodeJS.ReadableStream,
+  ) => ReadableStream<Uint8Array>;
 
   /**
    * Creates a Response-like object from raw components.
@@ -341,9 +391,9 @@ declare module '@/lib/nextjs-util/server/response' {
   ) => Response;
 
   /**
-   * Creates a Response wrapper around a Node.js Readable stream.
+   * Creates a Response wrapper around a Web API ReadableStream.
    *
-   * This function wraps a Node.js stream in a Response-like interface, allowing
+   * This function wraps a ReadableStream in a Response-like interface, allowing
    * streaming data to be handled consistently with other Response objects. The
    * returned object exposes methods to consume the stream as text, JSON, or
    * ArrayBuffer, as well as direct stream access.
@@ -354,12 +404,13 @@ declare module '@/lib/nextjs-util/server/response' {
    * - Chunked data processing from databases or APIs
    * - Piping data between services without buffering
    * - Long-running operations with progressive output
+   * - Edge runtime compatible streaming (Next.js edge functions)
    *
    * **Important:** The stream can only be consumed once. After reading via text(),
    * json(), or arrayBuffer(), the stream is exhausted. Use stream() for direct
    * access when you need fine-grained control over consumption.
    *
-   * @param stream - Node.js Readable stream to wrap
+   * @param stream - Web API ReadableStream to wrap
    * @param init - Optional configuration object
    * @param init.status - HTTP status code (default: 200)
    * @param init.headers - HTTP headers to include
@@ -368,23 +419,29 @@ declare module '@/lib/nextjs-util/server/response' {
    * @example
    * ```typescript
    * // Create a simple streaming response
-   * const stream = Readable.from(['chunk1', 'chunk2', 'chunk3']);
+   * const stream = new ReadableStream({
+   *   start(controller) {
+   *     controller.enqueue(new TextEncoder().encode('chunk1'));
+   *     controller.enqueue(new TextEncoder().encode('chunk2'));
+   *     controller.close();
+   *   }
+   * });
    * const response = makeStreamResponse(stream, {
    *   status: 200,
    *   headers: { 'Content-Type': 'text/plain' }
    * });
    *
-   * const text = await response.text(); // "chunk1chunk2chunk3"
+   * const text = await response.text(); // "chunk1chunk2"
    * ```
    *
    * @example
    * ```typescript
    * // Server-Sent Events (SSE) streaming
-   * const eventStream = new Readable({
-   *   read() {
-   *     this.push('data: {"message":"Hello"}\n\n');
-   *     this.push('data: {"message":"World"}\n\n');
-   *     this.push(null); // End stream
+   * const eventStream = new ReadableStream({
+   *   start(controller) {
+   *     controller.enqueue(new TextEncoder().encode('data: {"message":"Hello"}\n\n'));
+   *     controller.enqueue(new TextEncoder().encode('data: {"message":"World"}\n\n'));
+   *     controller.close();
    *   }
    * });
    *
@@ -400,34 +457,35 @@ declare module '@/lib/nextjs-util/server/response' {
    *
    * @example
    * ```typescript
-   * // Stream large JSON data in chunks
-   * import { createReadStream } from 'fs';
-   * const fileStream = createReadStream('./large-data.json');
-   * const response = makeStreamResponse(fileStream);
-   *
-   * const json = await response.json(); // Parses after consuming all chunks
-   * ```
-   *
-   * @example
-   * ```typescript
    * // Process stream chunks manually
-   * const dataStream = Readable.from(['{"chunk":', '1}']);
+   * const dataStream = new ReadableStream({
+   *   start(controller) {
+   *     controller.enqueue(new TextEncoder().encode('{"chunk":'));
+   *     controller.enqueue(new TextEncoder().encode('1}'));
+   *     controller.close();
+   *   }
+   * });
    * const response = makeStreamResponse(dataStream);
    *
    * const stream = response.stream();
-   * for await (const chunk of stream) {
-   *   console.log('Received:', chunk.toString());
-   *   // Process each chunk as it arrives
+   * const reader = stream.getReader();
+   * while (true) {
+   *   const { done, value } = await reader.read();
+   *   if (done) break;
+   *   console.log('Received:', new TextDecoder().decode(value));
    * }
    * ```
    *
    * @example
    * ```typescript
    * // Stream binary data
-   * const binaryStream = Readable.from([
-   *   Buffer.from([0x48, 0x65]),
-   *   Buffer.from([0x6c, 0x6c, 0x6f])
-   * ]);
+   * const binaryStream = new ReadableStream({
+   *   start(controller) {
+   *     controller.enqueue(new Uint8Array([0x48, 0x65]));
+   *     controller.enqueue(new Uint8Array([0x6c, 0x6c, 0x6f]));
+   *     controller.close();
+   *   }
+   * });
    * const response = makeStreamResponse(binaryStream, {
    *   headers: { 'Content-Type': 'application/octet-stream' }
    * });
@@ -438,25 +496,10 @@ declare module '@/lib/nextjs-util/server/response' {
    *
    * @example
    * ```typescript
-   * // Database result streaming (conceptual)
-   * const queryStream = database.createQueryStream('SELECT * FROM large_table');
-   * const response = makeStreamResponse(queryStream, {
-   *   headers: {
-   *     'Content-Type': 'application/x-ndjson',
-   *     'Transfer-Encoding': 'chunked'
-   *   }
-   * });
-   *
-   * // Client receives rows progressively without buffering entire result
-   * return response;
-   * ```
-   *
-   * @example
-   * ```typescript
    * // Handle stream errors
-   * const errorStream = new Readable({
-   *   read() {
-   *     this.emit('error', new Error('Stream failed'));
+   * const errorStream = new ReadableStream({
+   *   start(controller) {
+   *     controller.error(new Error('Stream failed'));
    *   }
    * });
    * const response = makeStreamResponse(errorStream);
@@ -469,7 +512,7 @@ declare module '@/lib/nextjs-util/server/response' {
    * ```
    */
   export const makeStreamResponse: (
-    stream: Readable,
+    stream: ReadableStream<Uint8Array>,
     init?: { status?: number; headers?: Record<string, string> },
   ) => Response;
 }

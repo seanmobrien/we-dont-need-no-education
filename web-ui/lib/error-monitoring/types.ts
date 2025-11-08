@@ -76,3 +76,24 @@ export interface ErrorReporterInterface {
 export type IContextEnricher = {
   enrichContext: (context: ErrorContext) => Promise<ErrorContext>;
 };
+/**
+ * Configuration for error suppression patterns
+ */
+export interface ErrorSuppressionRule {
+  /** Unique identifier for this rule */
+  id: string;
+  /** Pattern to match against error messages (string contains or regex) */
+  pattern: string | RegExp;
+  /** Optional: match against error source/filename */
+  source?: string | RegExp;
+  /** Whether to completely suppress (no logging) or just prevent UI display */
+  suppressCompletely?: boolean;
+  /** Description of why this error is suppressed */
+  reason?: string;
+}
+
+export type SuppressionResult = {
+  suppress: boolean;
+  rule?: ErrorSuppressionRule;
+  completely?: boolean;
+};

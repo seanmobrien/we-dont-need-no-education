@@ -13,7 +13,10 @@
  */
 
 import { LoggedError } from '@/lib/react-util';
-import { makeStreamResponse } from '@/lib/nextjs-util/server/response';
+import {
+  makeStreamResponse,
+  nodeStreamToReadableStream,
+} from '@/lib/nextjs-util/server/response';
 import type { StreamingStrategyDeps } from './fetch-types';
 import type { EventEmitter } from 'events';
 import type { Readable } from 'stream';
@@ -109,7 +112,7 @@ export class StreamingStrategy {
     ee.on('error', releaseOnce as Handler);
 
     span.setAttribute('http.status_code', statusCode);
-    return makeStreamResponse(stream, {
+    return makeStreamResponse(nodeStreamToReadableStream(stream), {
       status: statusCode,
       headers,
     });
