@@ -25,6 +25,7 @@ const TodoSchema = z.object({
   priority: z.enum(['high', 'medium', 'low']),
   createdAt: z.string(),
   updatedAt: z.string(),
+  userId: z.string().optional(),
 });
 
 const TodoListSchema = z.object({
@@ -36,6 +37,7 @@ const TodoListSchema = z.object({
   todos: z.array(TodoSchema),
   createdAt: z.string().optional(),
   updatedAt: z.string().optional(),
+  userId: z.string().optional(),
 });
 
 type TodoListLike = TodoList;
@@ -73,12 +75,14 @@ export const createTodoCallback = ({
   status,
   priority,
   todos,
+  userId,
 }: {
   listId?: string;
   title: string;
   description?: string;
   status?: TodoStatus;
   priority?: TodoPriority;
+  userId?: string;
   todos?: Array<{
     id?: string;
     title: string;
@@ -96,6 +100,7 @@ export const createTodoCallback = ({
         todoCount: todos?.length ?? 0,
         status,
         priority,
+        userId,
       }),
     );
 
@@ -106,6 +111,7 @@ export const createTodoCallback = ({
       description,
       status,
       priority,
+      userId,
       todos: todos?.map((todo) => ({
         id: todo.id,
         title: todo.title,
@@ -172,6 +178,10 @@ Create or replace a Title IX / FERPA compliance task list. Provide the full set 
       .enum(['high', 'medium', 'low'])
       .optional()
       .describe('Optional priority level for the list.'),
+    userId: z
+      .string()
+      .optional()
+      .describe('Optional user identifier to scope the list to a specific user.'),
     todos: z
       .array(
         z.object({
@@ -219,19 +229,21 @@ Create or replace a Title IX / FERPA compliance task list. Provide the full set 
 export const getTodosCallback = ({
   completed,
   listId,
+  userId,
 }: {
   completed?: boolean;
   listId?: string;
+  userId?: string;
 }) => {
   try {
-    log((l) => l.info('getTodos tool called', { completed, listId }));
+    log((l) => l.info('getTodos tool called', { completed, listId, userId }));
 
     const manager = getTodoManager();
 
     if (listId) {
       const list =
-        manager.getTodoList(listId, { completed }) ??
-        manager.getTodoList(listId);
+        manager.getTodoList(listId, { completed, userId }) ??
+        manager.getTodoList(listId, { userId });
 
       if (!list) {
         const message = `Todo list with id ${listId} not found`;
@@ -241,7 +253,7 @@ export const getTodosCallback = ({
       return toolCallbackResultFactory(serializeTodoList(list));
     }
 
-    const lists = manager.getTodoLists({ completed });
+    const lists = manager.getTodoLists({ completed, userId });
 
     return toolCallbackResultFactory(
       lists.map((list) => serializeTodoList(list)),
@@ -316,6 +328,12 @@ Each todo list contains metadata plus a \`todos\` collection, and every todo inc
       .describe(
         'Optional list identifier. When provided, returns only the matching todo list.',
       ),
+    userId: z
+      .string()
+      .optional()
+      .describe(
+        'Optional user identifier to filter todos/lists by user ownership.',
+      ),
   },
   outputSchema: {
     result: z.union([
@@ -353,6 +371,7 @@ export const updateTodoCallback = ({
   completed,
   status,
   priority,
+  userId,
 }: {
   id: string;
   title?: string;
@@ -360,6 +379,7 @@ export const updateTodoCallback = ({
   completed?: boolean;
   status?: TodoStatus;
   priority?: TodoPriority;
+  userId?: string;
 }) => {
   try {
     log((l) =>
@@ -370,6 +390,7 @@ export const updateTodoCallback = ({
         completed,
         status,
         priority,
+        userId,
       }),
     );
 
@@ -380,7 +401,7 @@ export const updateTodoCallback = ({
       completed,
       status,
       priority,
-    });
+    }, { userId });
 
     if (!todo) {
       return toolCallbackResultFactory(
@@ -453,6 +474,10 @@ Use this tool to update an existing task so the session stays aligned with Title
       .enum(['high', 'medium', 'low'])
       .optional()
       .describe('New priority for the todo'),
+    userId: z
+      .string()
+      .optional()
+      .describe('Optional user identifier to verify ownership before updating.'),
   },
   outputSchema: toolCallbackResultSchemaFactory(TodoSchema),
   annotations: {
@@ -465,12 +490,12 @@ Use this tool to update an existing task so the session stays aligned with Title
 } as const;
 
 // Delete Todo Tool
-export const deleteTodoCallback = ({ id }: { id: string }) => {
+export const deleteTodoCallback = ({ id, userId }: { id: string; userId?: string }) => {
   try {
-    log((l) => l.info('deleteTodo tool called', { id }));
+    log((l) => l.info('deleteTodo tool called', { id, userId }));
 
     const manager = getTodoManager();
-    const result = manager.deleteTodo(id);
+    const result = manager.deleteTodo(id, { userId });
 
     if (!result) {
       return toolCallbackResultFactory(
@@ -494,6 +519,10 @@ export const deleteTodoConfig = {
   description: 'Delete a todo item by its ID.',
   inputSchema: {
     id: z.string().describe('The ID of the todo to delete'),
+    userId: z
+      .string()
+      .optional()
+      .describe('Optional user identifier to verify ownership before deleting.'),
   },
   outputSchema: toolCallbackResultSchemaFactory(
     z.object({
@@ -511,12 +540,12 @@ export const deleteTodoConfig = {
 } as const;
 
 // Toggle Todo Completion Tool
-export const toggleTodoCallback = ({ id }: { id: string }) => {
+export const toggleTodoCallback = ({ id, userId }: { id: string; userId?: string }) => {
   try {
-    log((l) => l.info('toggleTodo tool called', { id }));
+    log((l) => l.info('toggleTodo tool called', { id, userId }));
 
     const manager = getTodoManager();
-    const list = manager.toggleTodo(id);
+    const list = manager.toggleTodo(id, { userId });
 
     if (!list) {
       return toolCallbackResultFactory(
@@ -541,6 +570,10 @@ export const toggleTodoConfig = {
     'Advance a todo through pending → active → complete and automatically update the parent list status (active when work starts, complete when all tasks finish).',
   inputSchema: {
     id: z.string().describe('The ID of the todo to toggle'),
+    userId: z
+      .string()
+      .optional()
+      .describe('Optional user identifier to verify ownership before toggling.'),
   },
   outputSchema: toolCallbackResultSchemaFactory(TodoListSchema),
   annotations: {

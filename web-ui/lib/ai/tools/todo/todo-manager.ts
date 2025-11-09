@@ -16,6 +16,7 @@ export interface Todo {
   priority: TodoPriority;
   createdAt: Date;
   updatedAt: Date;
+  userId?: string;
 }
 
 export interface TodoList {
@@ -27,6 +28,7 @@ export interface TodoList {
   todos: Todo[];
   createdAt: Date;
   updatedAt: Date;
+  userId?: string;
 }
 
 export type TodoListUpsertInput = {
@@ -37,6 +39,7 @@ export type TodoListUpsertInput = {
   priority?: TodoPriority;
   createdAt?: Date;
   updatedAt?: Date;
+  userId?: string;
   todos?: Array<{
     id?: string;
     title: string;
@@ -77,9 +80,9 @@ export class TodoManager {
   createTodo(
     title: string,
     description?: string,
-    options?: { status?: TodoStatus; priority?: TodoPriority },
+    options?: { status?: TodoStatus; priority?: TodoPriority; userId?: string },
   ): Todo {
-    const list = this.ensureDefaultList();
+    const list = this.ensureDefaultList(options?.userId);
     const todo = this.createTodoRecord(
       {
         title,
@@ -88,6 +91,7 @@ export class TodoManager {
         priority: options?.priority,
       },
       list.id,
+      options?.userId,
     );
 
     list.todos.push(todo);
@@ -95,7 +99,7 @@ export class TodoManager {
     this.todos.set(todo.id, todo);
     this.todoToList.set(todo.id, list.id);
 
-    log((l) => l.debug('Todo created', { id: todo.id, title }));
+    log((l) => l.debug('Todo created', { id: todo.id, title, userId: options?.userId }));
 
     return todo;
   }
@@ -116,8 +120,9 @@ export class TodoManager {
     }
 
     const createdAt = input.createdAt ?? existingList?.createdAt ?? now;
+    const userId = input.userId;
     const todos = (input.todos ?? []).map((todoInput) =>
-      this.createTodoRecord(todoInput, listId),
+      this.createTodoRecord(todoInput, listId, userId),
     );
 
     const list: TodoList = {
@@ -129,6 +134,7 @@ export class TodoManager {
       todos,
       createdAt,
       updatedAt: input.updatedAt ?? now,
+      userId,
     };
 
     this.todoLists.set(listId, list);
@@ -143,6 +149,7 @@ export class TodoManager {
         title: input.title,
         replaced: Boolean(existingList),
         itemCount: todos.length,
+        userId,
       }),
     );
 
@@ -150,38 +157,65 @@ export class TodoManager {
   }
 
   /**
-   * Retrieve all todo lists, optionally filtering todos by completion state.
+   * Retrieve all todo lists, optionally filtering todos by completion state and/or userId.
    */
-  getTodoLists(options?: { completed?: boolean }): TodoList[] {
+  getTodoLists(options?: { completed?: boolean; userId?: string }): TodoList[] {
     const completed = options?.completed;
-    return Array.from(this.todoLists.values()).map((list) =>
-      this.cloneListWithFilter(list, completed),
-    );
+    const userId = options?.userId;
+    return Array.from(this.todoLists.values())
+      .filter((list) => !userId || list.userId === userId)
+      .map((list) =>
+        this.cloneListWithFilter(list, completed),
+      );
   }
 
   /**
-   * Retrieve a single todo list by ID.
+   * Retrieve a single todo list by ID, optionally filtering by userId.
    */
   getTodoList(
     id: string,
-    options?: { completed?: boolean },
+    options?: { completed?: boolean; userId?: string },
   ): TodoList | undefined {
     const list = this.todoLists.get(id);
     if (!list) {
+      return undefined;
+    }
+    // If userId is provided and doesn't match, return undefined
+    if (options?.userId && list.userId !== options.userId) {
       return undefined;
     }
     return this.cloneListWithFilter(list, options?.completed);
   }
 
   /**
-   * Get all todos, optionally filtered by completion status.
+   * Get all todos, optionally filtered by completion status and/or userId.
+   * Supports both legacy boolean parameter and new options object for backward compatibility.
    */
-  getTodos(completed?: boolean): Todo[] {
-    const todos = Array.from(this.todos.values());
-    if (completed === undefined) {
-      return todos;
+  getTodos(
+    completedOrOptions?: boolean | { completed?: boolean; userId?: string },
+  ): Todo[] {
+    let completed: boolean | undefined;
+    let userId: string | undefined;
+
+    // Handle backward compatibility for boolean parameter
+    if (typeof completedOrOptions === 'boolean') {
+      completed = completedOrOptions;
+    } else if (completedOrOptions) {
+      completed = completedOrOptions.completed;
+      userId = completedOrOptions.userId;
     }
-    return todos.filter((todo) => todo.completed === completed);
+
+    let todos = Array.from(this.todos.values());
+    
+    if (userId !== undefined) {
+      todos = todos.filter((todo) => todo.userId === userId);
+    }
+    
+    if (completed !== undefined) {
+      return todos.filter((todo) => todo.completed === completed);
+    }
+    
+    return todos;
   }
 
   /**
@@ -192,7 +226,7 @@ export class TodoManager {
   }
 
   /**
-   * Update an existing todo.
+   * Update an existing todo. Optionally verify userId for authorization.
    */
   updateTodo(
     id: string,
@@ -203,9 +237,15 @@ export class TodoManager {
       status?: TodoStatus;
       priority?: TodoPriority;
     },
+    options?: { userId?: string },
   ): Todo | undefined {
     const todo = this.todos.get(id);
     if (!todo) {
+      return undefined;
+    }
+
+    // If userId is provided and doesn't match, deny update
+    if (options?.userId && todo.userId !== options.userId) {
       return undefined;
     }
 
@@ -242,15 +282,22 @@ export class TodoManager {
     list.updatedAt = updatedTodo.updatedAt;
     this.updateListStatus(list);
 
-    log((l) => l.debug('Todo updated', { id, updates }));
+    log((l) => l.debug('Todo updated', { id, updates, userId: options?.userId }));
 
     return updatedTodo;
   }
 
   /**
-   * Delete a todo by ID.
+   * Delete a todo by ID. Optionally verify userId for authorization.
    */
-  deleteTodo(id: string): boolean {
+  deleteTodo(id: string, options?: { userId?: string }): boolean {
+    const todo = this.todos.get(id);
+    
+    // If userId is provided and doesn't match, deny deletion
+    if (todo && options?.userId && todo.userId !== options.userId) {
+      return false;
+    }
+
     const listId = this.todoToList.get(id);
     const list = listId ? this.todoLists.get(listId) : undefined;
 
@@ -267,18 +314,23 @@ export class TodoManager {
     }
 
     if (result) {
-      log((l) => l.debug('Todo deleted', { id }));
+      log((l) => l.debug('Todo deleted', { id, userId: options?.userId }));
     }
 
     return result;
   }
 
   /**
-   * Toggle the completed status of a todo.
+   * Toggle the completed status of a todo. Optionally verify userId for authorization.
    */
-  toggleTodo(id: string): TodoList | undefined {
+  toggleTodo(id: string, options?: { userId?: string }): TodoList | undefined {
     const todo = this.todos.get(id);
     if (!todo) {
+      return undefined;
+    }
+
+    // If userId is provided and doesn't match, deny toggle
+    if (options?.userId && todo.userId !== options.userId) {
       return undefined;
     }
 
@@ -324,6 +376,7 @@ export class TodoManager {
         listId,
         status: updatedTodo.status,
         completed: updatedTodo.completed,
+        userId: options?.userId,
       }),
     );
 
@@ -359,6 +412,7 @@ export class TodoManager {
       updatedAt?: Date;
     },
     listId: string,
+    userId?: string,
   ): Todo {
     const id =
       input.id ??
@@ -381,6 +435,7 @@ export class TodoManager {
       priority: input.priority ?? 'medium',
       createdAt,
       updatedAt,
+      userId,
     };
 
     this.todoToList.set(id, listId);
@@ -482,15 +537,17 @@ export class TodoManager {
     list.status = 'pending';
   }
 
-  private ensureDefaultList(): TodoList {
-    const existing = this.todoLists.get(DEFAULT_LIST_ID);
+  private ensureDefaultList(userId?: string): TodoList {
+    // Use different default list IDs for different users
+    const listId = userId ? `${DEFAULT_LIST_ID}-${userId}` : DEFAULT_LIST_ID;
+    const existing = this.todoLists.get(listId);
     if (existing) {
       return existing;
     }
 
     const now = new Date();
     const list: TodoList = {
-      id: DEFAULT_LIST_ID,
+      id: listId,
       title: DEFAULT_LIST_TITLE,
       description: undefined,
       status: DEFAULT_LIST_STATUS,
@@ -498,9 +555,10 @@ export class TodoManager {
       todos: [],
       createdAt: now,
       updatedAt: now,
+      userId,
     };
 
-    this.todoLists.set(DEFAULT_LIST_ID, list);
+    this.todoLists.set(listId, list);
     return list;
   }
 
