@@ -18,6 +18,8 @@ export const KnownFeatureValues = [
   'models_fetch_trace_level',
   'health_database_cache_ttl',
   'health_memory_cache_ttl',
+  'health_memory_cache_error_ttl',
+  'health_memory_cache_warning_ttl',
   'health_startup_failure_threshold',
 ] as const;
 export type KnownFeatureType = (typeof KnownFeatureValues)[number];
@@ -79,6 +81,8 @@ export const AllFeatureFlagsDefault = {
   mcp_trace_level: 'warn' as string,
   health_database_cache_ttl: 120 as number,
   health_memory_cache_ttl: 60 as number,
+  health_memory_cache_error_ttl: 10 as number,
+  health_memory_cache_warning_ttl: 30 as number,
   health_startup_failure_threshold: 10 as number,
 } as const satisfies AllFeatureFlagStatus;
 
