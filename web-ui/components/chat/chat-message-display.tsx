@@ -99,7 +99,7 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
           size="small"
           color={message.role === 'user' ? 'secondary' : 'primary'}
         />
-        {message.toolName && (
+        {message.toolName && message.toolResult && (
           <Chip
             label={`Tool: ${message.toolName}`}
             size="small"
