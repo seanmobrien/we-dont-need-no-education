@@ -6,9 +6,12 @@ import { DEFAULT_SUPPRESSION_RULES } from './default-suppression-rules';
  * Normalize error messages by removing repeating 'Uncaught ' prefixes
  * Example: 'Uncaught Uncaught Uncaught [object] test Uncaught' -> '[object] test Uncaught'
  */
-const normalizeErrorMessage = (message: string): string => {
+const normalizeErrorMessage = (
+  message: string,
+  { maxLength = 100 }: { maxLength?: number } = {},
+): string => {
   // Remove repeating 'Uncaught ' at the beginning of the string
-  return message.replace(/^(?:Uncaught\s+)+/g, '');
+  return message.replace(/^(?:Uncaught\s+)+/g, '').substring(0, maxLength);
 };
 
 /**
