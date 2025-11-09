@@ -28,6 +28,14 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      # Extract short SHA for use throughout workflow
+      - name: Extract short SHA
+        id: sha
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "short=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "::notice::Short SHA: $SHORT_SHA"
+
       # Validate all required secrets exist (fail-fast principle)
       - name: Validate required secrets and configuration
         run: |
@@ -149,6 +157,7 @@ jobs:
             type=ref,event=branch
             type=sha,prefix={{branch}}-
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{branch}}-${{ steps.sha.outputs.short }}
 
       # Build Docker image with environment file
       - name: Build and push Docker image
@@ -188,6 +197,7 @@ jobs:
           echo "::notice::Deployment Context"
           echo "::notice::  Branch: ${{ github.ref_name }}"
           echo "::notice::  Commit: ${{ github.sha }}"
+          echo "::notice::  Short SHA: ${{ steps.sha.outputs.short }}"
           echo "::notice::  Actor: ${{ github.actor }}"
           echo "::notice::  Run ID: ${{ github.run_id }}"
           echo "::notice::  Triggered by: ${{ github.event_name }}"
