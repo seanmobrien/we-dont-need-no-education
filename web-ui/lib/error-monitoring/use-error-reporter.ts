@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useMemo } from 'react';
 import {
   errorReporter,
   ErrorSeverity,
@@ -6,16 +6,16 @@ import {
 } from './error-reporter';
 import { log } from '@/lib/logger/core';
 
-
 export const useErrorReporter = () => {
-  const reportError = useCallback(
-    (
+  const reporter = errorReporter();
+  return useMemo(() => {
+    const reportError = (
       error: Error | unknown,
       severity: ErrorSeverity = ErrorSeverity.MEDIUM,
       additionalContext: Partial<ErrorContext> = {},
     ) => {
       try {
-        errorReporter.reportError(error, severity, {
+        return reporter.reportError(error, severity, {
           ...additionalContext,
           breadcrumbs: [
             'component-error',
@@ -26,18 +26,14 @@ export const useErrorReporter = () => {
         // Silently handle reporting errors to avoid affecting the component
         log((l) => l.error('Error reporting failed:', reportingError));
       }
-    },
-    [],
-  );
-
-  const reportAsyncError = useCallback(
-    async (
+    };
+    const reportAsyncError = async (
       error: Error | unknown,
       severity: ErrorSeverity = ErrorSeverity.MEDIUM,
       additionalContext: Partial<ErrorContext> = {},
     ) => {
       try {
-        await errorReporter.reportError(error, severity, {
+        await reporter.reportError(error, severity, {
           ...additionalContext,
           breadcrumbs: [
             'async-component-error',
@@ -48,37 +44,31 @@ export const useErrorReporter = () => {
         // Silently handle reporting errors to avoid affecting the component
         log((l) => l.error('Error reporting failed:', reportingError));
       }
-    },
-    [],
-  );
+    };
 
-  const reportUserAction = useCallback(
-    (
+    const reportUserAction = (
       error: Error | unknown,
       action: string,
       severity: ErrorSeverity = ErrorSeverity.LOW,
     ) => {
       try {
-        errorReporter.reportError(error, severity, {
+        reporter.reportError(error, severity, {
           breadcrumbs: ['user-action', action],
           additionalData: { userAction: action },
         });
       } catch (reportingError) {
         log((l) => l.error('Error reporting failed:', reportingError));
       }
-    },
-    [],
-  );
+    };
 
-  const reportApiError = useCallback(
-    (
+    const reportApiError = (
       error: Error | unknown,
       endpoint: string,
       method: string = 'GET',
       severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     ) => {
       try {
-        errorReporter.reportError(error, severity, {
+        reporter.reportError(error, severity, {
           breadcrumbs: ['api-error', method.toUpperCase(), endpoint],
           additionalData: {
             endpoint,
@@ -89,14 +79,13 @@ export const useErrorReporter = () => {
       } catch (reportingError) {
         log((l) => l.error('Error reporting failed:', reportingError));
       }
-    },
-    [],
-  );
+    };
 
-  return {
-    reportError,
-    reportAsyncError,
-    reportUserAction,
-    reportApiError,
-  };
+    return {
+      reportError,
+      reportAsyncError,
+      reportUserAction,
+      reportApiError,
+    };
+  }, [reporter]);
 };

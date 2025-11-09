@@ -58,6 +58,7 @@ import {
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { FirstParameter } from '@/lib/typescript';
 import { wellKnownFlag } from '@/lib/site-util/feature-flags/feature-flag-with-refresh';
+import { auth } from '@/auth';
 
 type McpConfig = Exclude<Parameters<typeof createMcpHandler>[2], undefined>;
 type OnEventHandler = Exclude<McpConfig['onEvent'], undefined>;
@@ -232,6 +233,51 @@ const onMcpEvent = (event: McpEvent, ...args: unknown[]) => {
   }
 };
 
+const checkAccess = async (req: NextRequest) => {
+  const checkResource = (
+    resource_access: { [key: string]: string[] } | undefined,
+  ) => {
+    if (!resource_access) {
+      console.log('No resource access found in session');
+      return false;
+    }
+    const mcpToolAccess = resource_access['mcp-tool'];
+    if (!mcpToolAccess) {
+      console.log('No mcp-tool access found in session resource access');
+      return false;
+    }
+    if (
+      !mcpToolAccess.includes(KnownScopeValues[KnownScopeIndex.ToolRead]) &&
+      !mcpToolAccess.includes(KnownScopeValues[KnownScopeIndex.ToolReadWrite])
+    ) {
+      console.log(
+        'tool-read or tool-write scope not found in mcp-tool access',
+        mcpToolAccess,
+      );
+      return false;
+    }
+    return true;
+  };
+  const checkSession = async () => {
+    const session = await auth();
+    if (!session) {
+      console.log('No session found');
+      return false;
+    }
+    return checkResource(session.resource_access);
+  };
+  const checkToken = async () => {
+    const token = await extractToken(req);
+    if (!token) {
+      console.log('No token found');
+      return false;
+    }
+    return checkResource(token.resource_access);
+  };
+  const check = await Promise.all([checkSession(), checkToken()]);
+  return check[0] || check[1];
+};
+
 const handler = wrapRouteRequest(
   async (
     req: NextRequest,
@@ -241,15 +287,15 @@ const handler = wrapRouteRequest(
     const transport = Array.isArray(transportFromProps)
       ? transportFromProps.join('/')
       : transportFromProps;
-    const token = await extractToken(req);
-    if (!token) {
+    const hasAccess = await checkAccess(req);
+    if (!hasAccess) {
       log((l) =>
         l.warn(
           `Unauthorized access attempt (no token).  Transport: ${safeSerialize(transport)}`,
         ),
       );
       throw new ApiRequestError(
-        'Unauthorized - No Token',
+        'Unauthorized',
         unauthorizedServiceResponse({
           req,
           scopes: [
@@ -259,27 +305,7 @@ const handler = wrapRouteRequest(
         }),
       );
     }
-    if (
-      !token?.resource_access?.['mcp-tool']?.includes(
-        KnownScopeValues[KnownScopeIndex.ToolRead],
-      )
-    ) {
-      log((l) =>
-        l.warn(
-          `Unauthorized access attempt (no access), token: ${JSON.stringify(token)}, Transport: ${safeSerialize(transport)}`,
-        ),
-      );
-      throw new ApiRequestError(
-        `Unauthorized - ${JSON.stringify(token)}`,
-        unauthorizedServiceResponse({
-          req,
-          scopes: [
-            KnownScopeValues[KnownScopeIndex.ToolRead],
-            KnownScopeValues[KnownScopeIndex.ToolReadWrite],
-          ],
-        }),
-      );
-    }
+
     log((l) => l.debug('Calling MCP Tool route.', { transport }));
 
     const maxDuration = (await wellKnownFlag('mcp_max_duration')).value;
@@ -344,7 +370,6 @@ const handler = wrapRouteRequest(
         onEvent: verboseLogs ? onMcpEvent : undefined,
       },
     );
-
     // Call mcpHandler directly without await - it manages the SSE stream itself
     return mcpHandler(req);
   },

@@ -34,7 +34,7 @@ describe('UrlBuilder', () => {
     const target = mappedUrlBuilderFactory();
     expect(target).not.toBeNull();
     const bulkEdit = target.email.bulkEdit();
-    expect(bulkEdit.toString()).toBe(`${hostname}/messages/email/bulk-edit`);
+    expect(bulkEdit.toString()).toBe(`/messages/email/bulk-edit`);
   });
 
   describe('UrlBuilder.page', () => {

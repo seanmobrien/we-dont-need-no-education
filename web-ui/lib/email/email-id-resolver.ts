@@ -3,6 +3,7 @@ import { isValidUuid } from '@/lib/ai/tools/utility';
 import { redirect, notFound } from 'next/navigation';
 import { LoggedError } from '../react-util';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
+import { SiteRoute } from '../site-util/url-builder/_types';
 
 /**
  * Resolves an email ID from either a UUID or document unit ID, with automatic redirects.
@@ -51,7 +52,10 @@ export async function resolveEmailIdWithRedirect(
     }
 
     // Document ID was used - redirect to the email ID equivalent
-    const redirectPath = currentPath.replace(`[emailId]`, doc.emailId);
+    const redirectPath = currentPath.replace(
+      `[emailId]`,
+      doc.emailId,
+    ) as SiteRoute;
     redirect(redirectPath);
   } catch (error) {
     if (isRedirectError(error)) {

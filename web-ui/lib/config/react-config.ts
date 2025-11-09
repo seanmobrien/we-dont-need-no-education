@@ -14,6 +14,7 @@ export const withReactConfigFactory: NextConfigPluginFactory<
       ...nextConfig,
       poweredByHeader: false,
       productionBrowserSourceMaps: disableSourceMaps !== true,
+      reactProductionProfiling: disableSourceMaps !== true,
       reactStrictMode: true,
       experimental: {
         ...nextConfig.experimental,

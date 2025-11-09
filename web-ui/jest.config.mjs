@@ -9,10 +9,7 @@ const config = {
     },
   },
   // Ensure environment globals (Response/Request/Headers) are available before modules load
-  setupFiles: [
-    '<rootDir>/__tests__/jest.mock-log.ts',
-    '<rootDir>/__tests__/jest.setup.env.ts',
-  ],
+  setupFiles: ['<rootDir>/__tests__/jest.mock-log.ts'],
   setupFilesAfterEnv: [
     '<rootDir>/__tests__/jest.test-extensions.ts',
     '<rootDir>/__tests__/jest.mock-node-modules.ts',
@@ -20,6 +17,7 @@ const config = {
     '<rootDir>/__tests__/jest.mock-health.ts',
     '<rootDir>/__tests__/jest.mock-auth.ts',
     '<rootDir>/__tests__/jest.mock-feature-flags.ts',
+    '<rootDir>/__tests__/jest.setup.env.ts',
     '<rootDir>/__tests__/jest.setup.ts',
   ], // Setup file for global imports
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'], // File extensions to be handled

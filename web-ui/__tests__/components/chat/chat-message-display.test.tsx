@@ -4,6 +4,7 @@ import {
   mockChatMessage,
   mockAssistantMessage,
   mockToolMessage,
+  mockToolMessageWithoutResult,
 } from '../chat.mock-data';
 
 describe('ChatMessageDisplay', () => {
@@ -359,5 +360,48 @@ describe('ChatMessageDisplay', () => {
 
     // Should not render dialog container for non-tool messages
     expect(screen.queryByText(/Tool Details:/)).not.toBeInTheDocument();
+  });
+
+  it('should show tool badge only when tool has output (toolResult exists)', () => {
+    render(<ChatMessageDisplay message={mockToolMessage} />);
+
+    // Should show tool badge when toolResult is present
+    expect(screen.getByText('Tool: test-tool')).toBeInTheDocument();
+  });
+
+  it('should NOT show tool badge when tool has no output (toolResult is null)', () => {
+    render(<ChatMessageDisplay message={mockToolMessageWithoutResult} />);
+
+    // Should NOT show tool badge when toolResult is null
+    expect(screen.queryByText(/Tool:/)).not.toBeInTheDocument();
+  });
+
+  it('should show tool badge with toolResult in metadata section', () => {
+    render(
+      <ChatMessageDisplay message={mockToolMessage} showMetadata={true} />,
+    );
+
+    // Click the metadata expand button
+    const expandButton = screen.getByLabelText('Show more metadata');
+    fireEvent.click(expandButton);
+
+    // Should display tool result in metadata
+    expect(screen.getByText(/Tool Result:/)).toBeInTheDocument();
+  });
+
+  it('should not show tool result section in metadata when toolResult is null', () => {
+    render(
+      <ChatMessageDisplay
+        message={mockToolMessageWithoutResult}
+        showMetadata={true}
+      />,
+    );
+
+    // Click the metadata expand button
+    const expandButton = screen.getByLabelText('Show more metadata');
+    fireEvent.click(expandButton);
+
+    // Should NOT display tool result section when toolResult is null
+    expect(screen.queryByText(/Tool Result:/)).not.toBeInTheDocument();
   });
 });

@@ -71,6 +71,22 @@ export const mockToolMessage = {
   optimizedContent: 'Optimized tool content',
 };
 
+export const mockToolMessageWithoutResult = {
+  turnId: 1,
+  messageId: 4,
+  role: 'assistant',
+  content: 'Calling tool...',
+  messageOrder: 4,
+  toolName: 'test-tool',
+  functionCall: { function: 'test', args: { param: 'value' } },
+  toolResult: null,
+  statusId: 1,
+  providerId: 'test-provider',
+  metadata: null,
+  toolInstanceId: 'tool-123',
+  optimizedContent: null,
+};
+
 export const mockChatTurn = {
   turnId: 1,
   createdAt: '2025-01-01T10:00:00Z',

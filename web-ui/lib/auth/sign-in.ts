@@ -22,6 +22,7 @@ import { log, logEvent } from '@/lib/logger';
 import { getAppInsights } from '@/instrument/browser';
 import { CredentialInput } from '@auth/core/providers';
 import { AdapterUser } from '@auth/core/adapters';
+import { LoggedError } from '../react-util';
 
 /**
  * Persist token fields for an external OAuth account to the local `accounts`
@@ -60,6 +61,12 @@ const updateAccountTokens = async ({
   }
   if (account.refresh_token) {
     fields.refreshToken = String(account.refresh_token);
+  }
+  if (account.expires_at) {
+    const expiresAt = Number(account.expires_at);
+    if (!isNaN(expiresAt) && isFinite(expiresAt)) {
+      fields.expires_at = String(expiresAt);
+    }
   }
   if (Object.keys(fields).length === 0) {
     return;
@@ -151,7 +158,17 @@ export const signIn: (params: {
         // Persist tokens for Keycloak. We intentionally do not
         // await here to avoid delaying the sign-in flow; failures will
         // propagate if required but we don't want telemetry to block UX.
-        updateAccountTokens({ user, account });
+        updateAccountTokens({ user, account }).catch((err) => {
+          LoggedError.isTurtlesAllTheWayDownBaby(err, {
+            source: 'auth.signIn.updateAccountTokens',
+            log: true,
+            data: {
+              user,
+              account,
+            },
+          });
+          return false;
+        });
         break;
       default:
         log((l) =>

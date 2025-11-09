@@ -30,6 +30,7 @@ import { Branding } from './branding';
 import { NotificationsProvider } from '@toolpad/core';
 import { KeyRefreshNotifyWrapper } from '@/components/auth/key-refresh-notify/wrapper';
 import ServerSafeErrorManager from '@/components/error-boundaries/ServerSafeErrorManager';
+import { SiteRoute } from '@/lib/site-util/url-builder/_types';
 
 /**
  * Slots for the dashboard layout, such as toolbar actions.
@@ -66,7 +67,7 @@ export const EmailDashboardLayout = ({
   session: Session | null;
 }): React.JSX.Element => {
   const { emailId } = useParams<{ emailId: string }>();
-  const pathname = usePathname();
+  const pathname = usePathname() as SiteRoute;
   const { theme } = useTheme();
   const dashboardNavigation = useMemo<NavigationItem[]>(() => {
     const isChatPage = pathname?.startsWith('/messages/chat');
