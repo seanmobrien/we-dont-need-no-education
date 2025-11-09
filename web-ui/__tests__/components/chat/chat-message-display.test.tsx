@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@/__tests__/test-utils';
+import { render, screen, fireEvent, waitFor } from '@/__tests__/test-utils';
 import { ChatMessageDisplay } from '@/components/chat/chat-message-display';
 import {
   mockChatMessage,
@@ -317,5 +317,47 @@ describe('ChatMessageDisplay', () => {
 
     expect(screen.getByText('user')).toBeInTheDocument();
     // Should render without issues even with long content
+  });
+
+  it('should open tool details dialog when tool badge is clicked', () => {
+    render(<ChatMessageDisplay message={mockToolMessage} />);
+
+    const toolBadge = screen.getByText('Tool: test-tool');
+    expect(toolBadge).toBeInTheDocument();
+
+    // Click the tool badge
+    fireEvent.click(toolBadge);
+
+    // Dialog should now be visible
+    expect(screen.getByText(/Tool Details:/)).toBeInTheDocument();
+    expect(screen.getByText('Input Parameters')).toBeInTheDocument();
+    expect(screen.getByText('Return Value')).toBeInTheDocument();
+  });
+
+  it('should close tool details dialog when close button is clicked', async () => {
+    render(<ChatMessageDisplay message={mockToolMessage} />);
+
+    // Click the tool badge to open dialog
+    const toolBadge = screen.getByText('Tool: test-tool');
+    fireEvent.click(toolBadge);
+
+    // Dialog should be visible
+    expect(screen.getByText(/Tool Details:/)).toBeInTheDocument();
+
+    // Click the close button
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(closeButton);
+
+    // Dialog should be closed (not in document) - wait for it to close
+    await waitFor(() => {
+      expect(screen.queryByText(/Tool Details:/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('should not render tool details dialog for messages without tool name', () => {
+    render(<ChatMessageDisplay message={mockChatMessage} />);
+
+    // Should not render dialog container for non-tool messages
+    expect(screen.queryByText(/Tool Details:/)).not.toBeInTheDocument();
   });
 });

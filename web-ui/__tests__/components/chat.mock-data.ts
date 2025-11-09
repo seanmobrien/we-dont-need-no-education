@@ -63,6 +63,7 @@ export const mockToolMessage = {
   messageOrder: 3,
   toolName: 'test-tool',
   functionCall: { function: 'test', args: { param: 'value' } },
+  toolResult: { status: 'success', data: { result: 'test result' }, count: 42 },
   statusId: 1,
   providerId: 'test-provider',
   metadata: null,
