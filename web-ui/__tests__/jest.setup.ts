@@ -27,6 +27,23 @@ jest.mock('@/instrument/browser', () => ({
   instrument: jest.fn(),
 }));
 
+// Mock window.matchMedia for @textea/json-viewer compatibility (only in jsdom environment)
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(), // Deprecated
+      removeListener: jest.fn(), // Deprecated
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  });
+}
+
 import dotenv from 'dotenv';
 import { mockDeep } from 'jest-mock-extended';
 

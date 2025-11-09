@@ -22,6 +22,7 @@ import {
   Info as InfoIcon,
 } from '@mui/icons-material';
 import { ChatMessage } from '@/lib/ai/chat/types';
+import { ToolDetailsDialog } from './tool-details-dialog';
 
 interface ChatMessageDisplayProps {
   message: ChatMessage;
@@ -43,6 +44,7 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
   const [metadataExpanded, setMetadataExpanded] = useState(false);
   const [optimizedContentExpanded, setOptimizedContentExpanded] =
     useState(false);
+  const [toolDetailsOpen, setToolDetailsOpen] = useState(false);
 
   // Store the latest onHeightChange callback in a ref to avoid unnecessary effect triggers
   const onHeightChangeRef = React.useRef(onHeightChange);
@@ -105,6 +107,8 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
             size="small"
             variant="outlined"
             icon={<CodeIcon fontSize="small" />}
+            onClick={() => setToolDetailsOpen(true)}
+            sx={{ cursor: 'pointer' }}
           />
         )}
         {showMetadata && (
@@ -271,6 +275,15 @@ export const ChatMessageDisplay: React.FC<ChatMessageDisplayProps> = ({
             </Grid>
           </Paper>
         </Collapse>
+      )}
+
+      {/* Tool Details Dialog */}
+      {message.toolName && (
+        <ToolDetailsDialog
+          open={toolDetailsOpen}
+          onClose={() => setToolDetailsOpen(false)}
+          message={message}
+        />
       )}
     </Box>
   );
