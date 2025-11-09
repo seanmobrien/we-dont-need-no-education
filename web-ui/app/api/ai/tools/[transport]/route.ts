@@ -1,6 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300; // 5 minutes for SSE connections
-
+import type { Session } from '@auth/core/types';
 import { log, safeSerialize } from '@/lib/logger';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -259,7 +259,7 @@ const checkAccess = async (req: NextRequest) => {
     return true;
   };
   const checkSession = async () => {
-    const session = await auth();
+    const session: Session | null = await auth();
     if (!session) {
       console.log('No session found');
       return false;
