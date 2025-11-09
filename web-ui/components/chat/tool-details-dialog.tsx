@@ -89,7 +89,6 @@ const ValueDisplay: React.FC<{ value: unknown; label: string }> = ({
             defaultInspectDepth={3}
             theme="light"
             displayDataTypes={false}
-            displayObjectSize={true}
             enableClipboard={true}
             style={{
               fontSize: '0.875rem',
