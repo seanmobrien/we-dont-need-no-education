@@ -203,12 +203,12 @@ jobs:
           echo "::notice::  Triggered by: ${{ github.event_name }}"
           
           # Extract deploy tag from metadata
-          DEPLOY_TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep "${{ github.ref_name }}-${{ github.sha }}" | head -n1 || true)
+          DEPLOY_TAG=$(echo "${{ steps.meta.outputs.tags }}" | grep "${{ github.ref_name }}-${{ steps.sha.outputs.short }}" | head -n1 || true)
           
           # Validate tag was extracted
           if [ -z "$DEPLOY_TAG" ]; then
             echo "::error::Failed to extract deploy tag"
-            echo "::error::Pattern: ${{ github.ref_name }}-${{ github.sha }}"
+            echo "::error::Pattern: ${{ github.ref_name }}-${{ steps.sha.outputs.short }}"
             echo "::error::Available tags:"
             echo "${{ steps.meta.outputs.tags }}" | while IFS= read -r line; do
               echo "::error::  - $line"
@@ -233,13 +233,13 @@ jobs:
           acrName: schoollawregistry
           containerAppName: full-ui
           resourceGroup: SchoolLawyer
-        env:
-          # Deployment metadata for audit trail
-          DEPLOY_TIMESTAMP: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          DEPLOY_ACTOR: ${{ github.actor }}
-          DEPLOY_RUN_ID: ${{ github.run_id }}
-          DEPLOY_COMMIT: ${{ github.sha }}
-          DEPLOY_BRANCH: ${{ github.ref_name }}
+        #env:
+        #  # Deployment metadata for audit trail
+        #  DEPLOY_TIMESTAMP: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        #  DEPLOY_ACTOR: ${{ github.actor }}
+        #  DEPLOY_RUN_ID: ${{ github.run_id }}
+        #  DEPLOY_COMMIT: ${{ github.sha }}
+        #  DEPLOY_BRANCH: ${{ github.ref_name }}
 
       # Post-deployment verification and audit logging
       - name: Verify deployment and create audit log
@@ -268,7 +268,7 @@ jobs:
           Source Control:
             - Repository: ${{ github.repository }}
             - Branch: ${{ github.ref_name }}
-            - Commit: ${{ github.sha }}
+            - Commit: ${{ steps.sha.outputs.short }} ( ${{ github.sha }} )
           
           Workflow:
             - Triggered by: ${{ github.event_name }}
