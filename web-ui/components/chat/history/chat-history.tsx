@@ -107,7 +107,7 @@ const calculateStats = (chatDetails: ChatDetails) => {
   const toolUsage = turns.reduce(
     (acc, turn) => {
       turn.messages.forEach((msg) => {
-        if (msg.toolName) {
+        if (msg.toolName && msg.toolResult) {
           acc[msg.toolName] = (acc[msg.toolName] || 0) + 1;
         }
       });
