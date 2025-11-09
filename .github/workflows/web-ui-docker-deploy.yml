@@ -175,6 +175,43 @@ jobs:
             BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
             VCS_REF=${{ github.sha }}
             VERSION=${{ github.ref_name }}
+            NEXT_PUBLIC_HOSTNAME=${{ vars.NEXT_PUBLIC_HOSTNAME }}
+            NEXT_PUBLIC_LOG_LEVEL_CLIENT=${{ vars.NEXT_PUBLIC_LOG_LEVEL_CLIENT }}
+            NEXT_PUBLIC_DEFAULT_AI_MODEL=${{ vars.NEXT_PUBLIC_DEFAULT_AI_MODEL }}
+            NEXT_PUBLIC_DATAGRID_CLIENT_CACHE_TIMEOUT=15
+            NEXT_PUBLIC_FLAGSMITH_API_URL=${{ vars.NEXT_PUBLIC_FLAGSMITH_API_URL }}
+            NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID=${{ vars.NEXT_PUBLIC_FLAGSMITH_ENVIRONMENT_ID }}
+            OTEL_SERVICE_NAME=${{ vars.OTEL_SERVICE_NAME }}
+            OTEL_RESOURCE_ATTRIBUTES=${{ vars.OTEL_RESOURCE_ATTRIBUTES }}
+            RATE_RETRY_INTERVAL_MINUTES=${{ vars.RATE_RETRY_INTERVAL_MINUTES }}
+            AZURE_OPENAI_ENDPOINT=${{ vars.AZURE_OPENAI_ENDPOINT }}
+            AZURE_AISEARCH_ENDPOINT=${{ vars.AZURE_AISEARCH_ENDPOINT }}
+            AZURE_AISEARCH_DOCUMENTS_INDEX_NAME=${{ vars.AZURE_AISEARCH_DOCUMENTS_INDEX_NAME }}
+            AZURE_AISEARCH_POLICY_INDEX_NAME=${{ vars.AZURE_AISEARCH_POLICY_INDEX_NAME }}
+            AZURE_STORAGE_ACCOUNT_NAME=${{ vars.AZURE_STORAGE_ACCOUNT_NAME }}
+            AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+            MEM0_API_HOST=${{ vars.MEM0_API_HOST }}
+            MEM0_UI_HOST=${{ vars.MEM0_UI_HOST }}
+            MEM0_USERNAME=${{ vars.MEM0_USERNAME }}
+          secrets: |
+            AZURE_API_KEY=${{ secrets.AZURE_API_KEY }}
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+            AZURE_AISEARCH_KEY=${{ secrets.AZURE_AISEARCH_KEY }}
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            FLAGSMITH_SDK_KEY=${{ secrets.FLAGSMITH_SDK_KEY }}
+            OPENID_KEY_TEXT=${{ secrets.OPENID_KEY_TEXT }}
+            NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
+            NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
+            REDIS_URL=${{ secrets.REDIS_URL }}
+            REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}
+            AUTH_GOOGLE_APIKEY=${{ secrets.AUTH_GOOGLE_APIKEY }}
+            AUTH_GOOGLE_SECRET=${{ secrets.AUTH_GOOGLE_SECRET }}
+            AUTH_GOOGLE_ID=${{ secrets.AUTH_GOOGLE_ID }}
+            AZURE_STORAGE_ACCOUNT_KEY=${{ secrets.AZURE_STORAGE_ACCOUNT_KEY }}
+            AZURE_STORAGE_CONNECTION_STRING=${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}
+            OPENID_KEY_TEXT=${{ secrets.OPENID_KEY_TEXT }}
+            FLAGSMITH_SDK_KEY=${{ secrets.FLAGSMITH_SDK_KEY }}
           secret-files: |
             "env_file=./web-ui/.env.production.local"
 
