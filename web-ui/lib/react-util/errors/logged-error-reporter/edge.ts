@@ -1,4 +1,4 @@
-import { errorReporter } from '@/lib/error-monitoring';
+import { errorReporter } from '@/lib/error-monitoring/error-reporter';
 import type {
   ErrorContext,
   ErrorReporterInterface,

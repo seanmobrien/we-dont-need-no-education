@@ -20,13 +20,15 @@ export class MemoryHealthCache extends InMemoryCache<MemoryHealthCheckResponse> 
   private errorTtlFlag?: AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
   private warningTtlFlag?: AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
 
-  constructor(
-    config?: {
-      ttlMs?: number | AutoRefreshFeatureFlag<'health_memory_cache_ttl'>;
-      errorTtlMs?: number | AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
-      warningTtlMs?: number | AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
-    },
-  ) {
+  constructor(config?: {
+    ttlMs?: number | AutoRefreshFeatureFlag<'health_memory_cache_ttl'>;
+    errorTtlMs?:
+      | number
+      | AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
+    warningTtlMs?:
+      | number
+      | AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
+  }) {
     // Handle both number and AutoRefreshFeatureFlag for each TTL
     const getTtlValue = (
       value: number | AutoRefreshFeatureFlag<KnownFeatureType> | undefined,
@@ -36,17 +38,6 @@ export class MemoryHealthCache extends InMemoryCache<MemoryHealthCheckResponse> 
       if (typeof value === 'number') return value;
       return (value.value as number) * 1000; // Convert seconds to milliseconds
     };
-
-    // Store flag references if provided
-    if (config?.ttlMs && typeof config.ttlMs !== 'number') {
-      this.ttlFlag = config.ttlMs as AutoRefreshFeatureFlag<'health_memory_cache_ttl'>;
-    }
-    if (config?.errorTtlMs && typeof config.errorTtlMs !== 'number') {
-      this.errorTtlFlag = config.errorTtlMs as AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
-    }
-    if (config?.warningTtlMs && typeof config.warningTtlMs !== 'number') {
-      this.warningTtlFlag = config.warningTtlMs as AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
-    }
 
     const defaultErrorTtlMs = 10 * 1000; // 10 seconds for errors
     const defaultWarningTtlMs = 30 * 1000; // 30 seconds for warnings
@@ -74,6 +65,19 @@ export class MemoryHealthCache extends InMemoryCache<MemoryHealthCheckResponse> 
         return this.ttlFlag ? (this.ttlFlag.value as number) * 1000 : okTtlMs;
       },
     });
+    // Store flag references if provided
+    if (config?.ttlMs && typeof config.ttlMs !== 'number') {
+      this.ttlFlag =
+        config.ttlMs as AutoRefreshFeatureFlag<'health_memory_cache_ttl'>;
+    }
+    if (config?.errorTtlMs && typeof config.errorTtlMs !== 'number') {
+      this.errorTtlFlag =
+        config.errorTtlMs as AutoRefreshFeatureFlag<'health_memory_cache_error_ttl'>;
+    }
+    if (config?.warningTtlMs && typeof config.warningTtlMs !== 'number') {
+      this.warningTtlFlag =
+        config.warningTtlMs as AutoRefreshFeatureFlag<'health_memory_cache_warning_ttl'>;
+    }
   }
 }
 
