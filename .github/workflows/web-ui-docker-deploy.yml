@@ -87,8 +87,8 @@ jobs:
           
           echo "::group::Creating build environment file"
           
-          # Create .env.production with all build-time variables
-          cat << 'ENV_EOF' > ./.env.production
+          # Create .env.production.local with all build-time variables
+          cat << 'ENV_EOF' > ./web-ui/.env.production.local
           # Public variables (safe to embed in client bundle)
           NEXT_PUBLIC_MUI_LICENSE=${{ secrets.NEXT_PUBLIC_MUI_LICENSE }}
           NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING=${{ secrets.NEXT_PUBLIC_AZURE_MONITOR_CONNECTION_STRING }}
@@ -132,12 +132,12 @@ jobs:
           ENV_EOF
           
           # Validate the file was created
-          if [ ! -f ./.env.production ]; then
-            echo "::error::Failed to create .env.production file"
+          if [ ! -f ./web-ui/.env.production.local ]; then
+            echo "::error::Failed to create .env.production.local file"
             exit 1
           fi
           
-          echo "✅ Build environment file created with $(wc -l < ./.env.production) variables"
+          echo "✅ Build environment file created with $(wc -l < ./web-ui/.env.production.local) variables"
           echo "::endgroup::"
 
       - name: Extract Docker metadata
@@ -167,13 +167,13 @@ jobs:
             VCS_REF=${{ github.sha }}
             VERSION=${{ github.ref_name }}
           secret-files: |
-            "env_file=./.env.production"
+            "env_file=./web-ui/.env.production.local"
 
       # Clean up sensitive files immediately after build
       - name: Cleanup sensitive files
         if: always()
         run: |
-          rm -f ./.env.production
+          rm -f ./web-ui/.env.production.local
           echo "✅ Sensitive files removed"
 
       # Extract and validate deploy tag with audit logging

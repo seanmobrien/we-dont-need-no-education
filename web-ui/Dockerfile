@@ -129,7 +129,7 @@ COPY --link=true ./types ./types
 COPY --link=true ./instrument ./instrument
 COPY --link=true ./scripts ./scripts
 COPY --link=true ./public ./public
-COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./
+COPY --link=true ./*.ts ./*.mjs ./*.json ./*.lock ./ ./env.production.local
 
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV AZURE_OPENAI_ENDPOINT=$AZURE_OPENAI_ENDPOINT
@@ -174,6 +174,8 @@ RUN \
   elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
   else echo "Lockfile not found." && exit 1; \
   fi
+
+RUN  rm -f .env.production.local
 
 # Production image, copy all the files and run next
 FROM base AS runner
