@@ -92,6 +92,11 @@ declare module '@auth/core/types' {
      * Essential for database queries and user-specific operations.
      */
     id: number;
+
+    /**
+     * Resource access claims associated with the token.
+     */
+    resource_access?: { [key: string]: string[] };
   }
   export type AuthConfig = BaseAuthConfig & {
     callbacks: BaseAuthConfig['callbacks'] & {

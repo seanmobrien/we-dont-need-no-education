@@ -152,13 +152,7 @@ export const ChatList = ({
       if (!event.isPropagationStopped()) {
         const chatId = params.row.id;
         if (chatId) {
-          push(
-            String(
-              siteBuilder.messages.chat
-                .detail(encodeURIComponent(chatId))
-                .toString(),
-            ),
-          );
+          push(siteBuilder.messages.chat.detail(encodeURIComponent(chatId)));
         }
       }
     },

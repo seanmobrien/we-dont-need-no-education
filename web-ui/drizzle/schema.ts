@@ -461,8 +461,9 @@ export const accounts = pgTable(
 export const sessions = pgTable(
   'sessions',
   {
-    id: serial().primaryKey().notNull(),
-    sessionToken: varchar('session_token', { length: 255 }).notNull(),
+    sessionToken: varchar('session_token', { length: 255 })
+      .primaryKey()
+      .notNull(),
     userId: integer('user_id').notNull(),
     expires: timestamp({ withTimezone: true, mode: 'string' }).notNull(),
   },
@@ -472,28 +473,11 @@ export const sessions = pgTable(
       foreignColumns: [accounts.userId],
       name: 'FK_account',
     }),
-  ],
-);
-
-export const sessionsExt = pgTable(
-  'sessions_ext',
-  {
-    sessionId: integer('session_id').primaryKey().generatedByDefaultAsIdentity({
-      name: 'sessions_ext_session_id_seq',
-      startWith: 1,
-      increment: 1,
-      minValue: 1,
-      maxValue: 2147483647,
-      cache: 1,
-    }),
-    tokenGmail: varchar('token_gmail', { length: 255 }),
-  },
-  (table) => [
     foreignKey({
-      columns: [table.sessionId],
-      foreignColumns: [sessions.id],
-      name: 'FK_sessions_ext_sessions',
-    }).onDelete('cascade'),
+      columns: [table.userId],
+      foreignColumns: [users.id],
+      name: 'FK_users',
+    }),
   ],
 );
 

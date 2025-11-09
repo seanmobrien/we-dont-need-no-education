@@ -14,8 +14,9 @@ export const DEFAULT_SUPPRESSION_RULES: ErrorSuppressionRule[] = [
     id: 'ai-content-track-metric-undefined',
     pattern: /.*undefined \(reading .trackMetric.\)/i,
     suppressCompletely: true,
+    reload: true,
     reason:
-      'Known App Insights service issue that does not affect functionality',
+      'Known App Insights service issue that occurs during soft-push navigation.  Reloading the page resolves it without loss of state.',
   },
   {
     id: 'script-load-errors',

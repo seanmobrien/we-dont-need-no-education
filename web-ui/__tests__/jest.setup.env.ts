@@ -1,30 +1,32 @@
-/*
- Ensure WHATWG web standard globals exist before any test modules are loaded.
- This runs earlier than setupFilesAfterEnv, preventing ReferenceError when
- modules define classes that extend Response at module-evaluation time.
-*/
+jest.mock('@/lib/error-monitoring/error-reporter', () => {
+  const originalModule = jest.requireActual(
+    '@/lib/error-monitoring/error-reporter',
+  );
 
-/*
-(() => {
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const undici: any = require('undici');
-    if (undici) {
-      if (!globalThis.Response && undici.Response) {
-        (globalThis as any).Response = undici.Response;
+  const mockReporterInstance = jest.fn(() => ({
+    createErrorReport: jest.fn(),
+    generateFingerprint: jest.fn(),
+    reportError: jest.fn(),
+    reportBoundaryError: jest.fn(),
+    reportUnhandledRejection: jest.fn(),
+    setupGlobalHandlers: jest.fn(),
+    getStoredErrors: jest.fn(),
+    clearStoredErrors: jest.fn(),
+  }))();
+
+  const mockErrorReporter = jest.fn(
+    (cb?: (r: typeof mockReporterInstance) => any) => {
+      if (cb) {
+        return cb(mockReporterInstance);
       }
-      if (!globalThis.Request && undici.Request) {
-        (globalThis as any).Request = undici.Request;
-      }
-      if (!globalThis.Headers && undici.Headers) {
-        (globalThis as any).Headers = undici.Headers;
-      }
-      if (!globalThis.fetch && undici.fetch) {
-        (globalThis as any).fetch = undici.fetch;
-      }
-    }
-  } catch {
-    // undici may be unavailable in some environments; ignore silently
-  }
-})();
-*/
+      return mockReporterInstance;
+    },
+  );
+  return {
+    ...originalModule,
+    __esModule: true,
+    errorReporter: mockErrorReporter,
+  };
+});
+
+import { errorReporter } from '@/lib/error-monitoring/error-reporter';

@@ -1,5 +1,6 @@
 import type { IUrlBuilder, MappedPageOverloads } from './_types';
 import { UrlBuilder } from './_impl';
+import { Route } from 'next';
 
 /**
  * Factory function to create a MappedPageOverloads function.
@@ -8,20 +9,24 @@ import { UrlBuilder } from './_impl';
  * @param page - The page name.
  * @returns A function that generates URLs based on the provided slug and params.
  */
-const mappedPageOverloadFactory = (
+export const mappedPageOverloadFactory = (
   builder: IUrlBuilder,
   page: string,
 ): MappedPageOverloads => {
-  const ret: MappedPageOverloads = (
+  const ret: MappedPageOverloads = <
+    T extends
+      | __next_route_internal_types__.DynamicRoutes
+      | __next_route_internal_types__.StaticRoutes,
+  >(
     slug?: string | number | object,
     params?: object,
-  ) => {
+  ): __next_route_internal_types__.RouteImpl<T> => {
     if (typeof slug === 'object') {
-      return builder.page(page, slug);
+      return builder.page(page, slug).pathname as Route<T>;
     } else if (typeof slug === 'string' || typeof slug === 'number') {
-      return builder.page(page, slug, params);
+      return builder.page(page, slug, params).pathname as Route<T>;
     } else {
-      return builder.page(page, params);
+      return builder.page(page, params).pathname as Route<T>;
     }
   };
   return ret;
@@ -387,19 +392,20 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
       MappedUrlBuilder['api']['email']['properties']
     >;
   };
-  
+
   // Add AI chat builders
   ret.api.ai = ret.api.child('ai') as MappedUrlBuilder['api']['ai'];
-  ret.api.ai.chat = ret.api.ai.child('chat') as MappedUrlBuilder['api']['ai']['chat'];
+  ret.api.ai.chat = ret.api.ai.child(
+    'chat',
+  ) as MappedUrlBuilder['api']['ai']['chat'];
   ret.api.ai.chat.history = mappedPageOverloadFactory(
     ret.api.ai.chat,
     'history',
   );
-  ret.api.ai.chat.stats = mappedPageOverloadFactory(
-    ret.api.ai.chat,
-    'stats',
-  );
-  ret.api.ai.chat.rateRetry = ret.api.ai.chat.child('rate-retry') as MappedUrlBuilder['api']['ai']['chat']['rateRetry'];
+  ret.api.ai.chat.stats = mappedPageOverloadFactory(ret.api.ai.chat, 'stats');
+  ret.api.ai.chat.rateRetry = ret.api.ai.chat.child(
+    'rate-retry',
+  ) as MappedUrlBuilder['api']['ai']['chat']['rateRetry'];
   ret.api.ai.chat.rateRetry.response = mappedPageOverloadFactory(
     ret.api.ai.chat.rateRetry,
     'response',
@@ -411,11 +417,16 @@ export const mappedUrlBuilderFactory = (): MappedUrlBuilder => {
   ret.messages = ret.child('messages') as MappedUrlBuilder['messages'];
   ret.messages.import = mappedPageOverloadFactory(ret.messages, 'import');
   ret.messages.email = mappedPageOverloadFactory(ret.messages, 'email');
-  ret.messages.chat = ret.child('messages').child('chat') as MappedUrlBuilder['messages']['chat'];
-  ret.messages.chat.stats = mappedPageOverloadFactory(ret.messages.chat, 'stats');
+  ret.messages.chat = ret
+    .child('messages')
+    .child('chat') as MappedUrlBuilder['messages']['chat'];
+  ret.messages.chat.stats = mappedPageOverloadFactory(
+    ret.messages.chat,
+    'stats',
+  );
   ret.messages.chat.detail = mappedPageOverloadFactory(ret.messages.chat, '');
 
   ret.chat = ret.messages.chat;
-    
+
   return ret as MappedUrlBuilder;
 };

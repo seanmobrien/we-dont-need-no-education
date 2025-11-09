@@ -97,6 +97,9 @@ const buildRawInstance = () => {
     AZURE_STORAGE_ACCOUNT_NAME: process.env.AZURE_STORAGE_ACCOUNT_NAME,
     /*** Flagsmith server-side SDK key, supporting update and privledged server-side reads */
     FLAGSMITH_SDK_KEY: process.env.FLAGSMITH_SDK_KEY,
+    /** Google Chrome DevTools workspace ID for app-specific integration. Example: 'a7c3f8e2-4b9d-4f1a-8c6e-5d2a3b7e9f4c' */
+    GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID:
+      process.env.GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID,
     /** Google Generative AI API key for Gemini models. Example: 'AIzaSyA1234567890abcdef...' */
     GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     /** Google Generative AI service base URL. Example: 'https://generativelanguage.googleapis.com/v1beta' */
@@ -355,6 +358,12 @@ const serverEnvSchema = z
       .min(1)
       .describe(
         'Flagsmith server-side SDK key for feature flag management and privileged reads.',
+      ),
+    GOOGLE_CHROME_DEVTOOLS_WORKSPACE_ID: z
+      .string()
+      .default('a7c3f8e2-4b9d-4f1a-8c6e-5d2a3b7e9f4c')
+      .describe(
+        'Google Chrome DevTools workspace ID for app-specific integration. See {@link https://stackoverflow.com/questions/79629915/well-known-appspecific-com-chrome-devtools-json-request/79631068#79631068}',
       ),
     GOOGLE_GENERATIVE_AI_API_KEY: z
       .string()

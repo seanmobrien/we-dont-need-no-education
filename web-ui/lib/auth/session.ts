@@ -3,6 +3,8 @@ import { JWT } from '@auth/core/jwt';
 import { SessionWithAccountId } from './types';
 import { log } from '../logger/core';
 import { Session } from '@auth/core/types';
+import { decodeToken } from './utilities';
+import { LoggedError } from '../react-util';
 
 const hashFromServer = async (input: string): Promise<string> => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -44,7 +46,7 @@ export const session = async ({
   token: JWT;
 }): Promise<Session> => {
   const session = sessionFromProps as SessionWithAccountId;
-  if (!session.user && token && token.email) {
+  if (session && !session.user && token && (token.id || token.email)) {
     // support loading session user from token if not present
     session.user = {} as SessionWithAccountId['user'];
   }
@@ -66,12 +68,34 @@ export const session = async ({
       session.user.account_id = token.account_id;
     }
 
-    // Generate SHA256 hash of user email
     if (session.user.email) {
+      // Generate SHA256 hash of user email
       const hashedEmail = await hash(session.user.email);
       if (hashedEmail) {
         session.user.hash = hashedEmail;
       }
+    }
+  }
+  if (token.resource_access) {
+    session.resource_access = {
+      ...token.resource_access,
+    };
+  } else if (token.access_token) {
+    try {
+      const accessToken = await decodeToken({
+        token: String(token.access_token),
+        verify: false,
+      });
+      if (accessToken.resource_access) {
+        session.resource_access = {
+          ...accessToken.resource_access,
+        };
+      }
+    } catch (e) {
+      LoggedError.isTurtlesAllTheWayDownBaby(e, {
+        log: true,
+        source: 'authjs:session.decode-access-token',
+      });
     }
   }
   return session;
