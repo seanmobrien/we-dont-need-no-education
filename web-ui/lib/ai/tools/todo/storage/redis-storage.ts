@@ -273,10 +273,8 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         return false;
       }
 
-      // Delete all todos in this list
-      for (const todo of list.todos) {
-        await this.deleteTodo(todo.id, userId);
-      }
+      // Delete all todos in this list in parallel
+      await Promise.all(list.todos.map((todo) => this.deleteTodo(todo.id, userId)));
 
       // Delete the list itself
       const listKey = this.getListKey(listId, userId);
