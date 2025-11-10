@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { log } from '@/lib/logger';
-import { auth } from '@/auth';
-import { TodoService } from '@/lib/api/todo/todo-service';
+import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import {
   validateCreateTodoItem,
   validateUpdateTodoItem,
@@ -24,20 +23,6 @@ export const POST = wrapRouteRequest(
     req: NextRequest,
     withParams: { params: Promise<{ listId: string }> },
   ): Promise<NextResponse> => {
-    const session = await auth();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = (session.user as { id?: number }).id;
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID not found in session' },
-        { status: 401 },
-      );
-    }
-
     const { listId } = await extractParams<{ listId: string }>(withParams);
 
     if (!listId) {
@@ -58,24 +43,30 @@ export const POST = wrapRouteRequest(
         );
       }
 
-      const todoService = new TodoService();
-      const createdItem = await todoService.createTodoItem(
-        listId,
-        validated.data,
-        userId,
-      );
+      const todoManager = getTodoManager();
+      const list = todoManager.getTodoList(listId);
 
-      if (!createdItem) {
+      if (!list) {
         return NextResponse.json(
           { error: 'Todo list not found' },
           { status: 404 },
         );
       }
 
+      // Create the new todo using TodoManager's createTodo, then add it to the list
+      const newTodo = todoManager.createTodo(
+        validated.data.title,
+        validated.data.description,
+        {
+          status: validated.data.status,
+          priority: validated.data.priority,
+        },
+      );
+
       return NextResponse.json(
         {
           message: 'Todo item created successfully',
-          data: createdItem,
+          data: newTodo,
         },
         { status: 201 },
       );
@@ -88,7 +79,6 @@ export const POST = wrapRouteRequest(
           source: 'POST /api/todo-lists/[listId]/items',
           error,
           listId,
-          userId,
         }),
       );
       return NextResponse.json(
@@ -111,20 +101,6 @@ export const PUT = wrapRouteRequest(
     req: NextRequest,
     withParams: { params: Promise<{ listId: string }> },
   ): Promise<NextResponse> => {
-    const session = await auth();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = (session.user as { id?: number }).id;
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID not found in session' },
-        { status: 401 },
-      );
-    }
-
     const { listId } = await extractParams<{ listId: string }>(withParams);
 
     if (!listId) {
@@ -145,14 +121,25 @@ export const PUT = wrapRouteRequest(
         );
       }
 
-      const todoService = new TodoService();
-      const updatedItem = await todoService.updateTodoItem(
-        listId,
-        validated.data,
-        userId,
-      );
+      const todoManager = getTodoManager();
+      const list = todoManager.getTodoList(listId);
 
-      if (!updatedItem) {
+      if (!list) {
+        return NextResponse.json(
+          { error: 'Todo list not found' },
+          { status: 404 },
+        );
+      }
+
+      const updatedTodo = todoManager.updateTodo(validated.data.itemId, {
+        title: validated.data.title,
+        description: validated.data.description,
+        completed: validated.data.completed,
+        status: validated.data.status,
+        priority: validated.data.priority,
+      });
+
+      if (!updatedTodo) {
         return NextResponse.json(
           { error: 'Todo item not found' },
           { status: 404 },
@@ -160,7 +147,7 @@ export const PUT = wrapRouteRequest(
       }
 
       return NextResponse.json(
-        { message: 'Todo item updated successfully', data: updatedItem },
+        { message: 'Todo item updated successfully', data: updatedTodo },
         { status: 200 },
       );
     } catch (error) {
@@ -172,7 +159,6 @@ export const PUT = wrapRouteRequest(
           source: 'PUT /api/todo-lists/[listId]/items',
           error,
           listId,
-          userId,
         }),
       );
       return NextResponse.json(
@@ -195,20 +181,6 @@ export const DELETE = wrapRouteRequest(
     req: NextRequest,
     withParams: { params: Promise<{ listId: string }> },
   ): Promise<NextResponse> => {
-    const session = await auth();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = (session.user as { id?: number }).id;
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID not found in session' },
-        { status: 401 },
-      );
-    }
-
     const { listId } = await extractParams<{ listId: string }>(withParams);
 
     if (!listId) {
@@ -228,8 +200,17 @@ export const DELETE = wrapRouteRequest(
         );
       }
 
-      const todoService = new TodoService();
-      const deleted = await todoService.deleteTodoItem(listId, itemId, userId);
+      const todoManager = getTodoManager();
+      const list = todoManager.getTodoList(listId);
+
+      if (!list) {
+        return NextResponse.json(
+          { error: 'Todo list not found' },
+          { status: 404 },
+        );
+      }
+
+      const deleted = todoManager.deleteTodo(itemId);
 
       if (!deleted) {
         return NextResponse.json(
@@ -248,7 +229,6 @@ export const DELETE = wrapRouteRequest(
           source: 'DELETE /api/todo-lists/[listId]/items',
           error,
           listId,
-          userId,
         }),
       );
       return NextResponse.json(

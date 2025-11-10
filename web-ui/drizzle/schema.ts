@@ -39,8 +39,6 @@ export const importStageType = pgEnum('import_stage_type', [
   'complete',
 ]);
 export const recipientType = pgEnum('recipient_type', ['to', 'cc', 'bcc']);
-export const todoStatus = pgEnum('todo_status', ['pending', 'active', 'complete']);
-export const todoPriority = pgEnum('todo_priority', ['high', 'medium', 'low']);
 
 export const chatMessages = pgTable(
   'chat_messages',
@@ -1590,83 +1588,4 @@ export const documentPropertyRelatedDocument = pgMaterializedView(
   },
 ).as(
   sql`SELECT du.document_property_id AS related_property_id, dpr.target_document_id AS document_id, dpr.relationship_reason_id AS relationship_type, dpr."timestamp" FROM document_relationship dpr JOIN document_units du ON dpr.source_document_id = du.unit_id`,
-);
-
-export const todoLists = pgTable(
-  'todo_lists',
-  {
-    listId: uuid('list_id').defaultRandom().primaryKey().notNull(),
-    userId: integer('user_id').notNull(),
-    title: varchar({ length: 255 }).notNull(),
-    description: text(),
-    status: todoStatus().default('active').notNull(),
-    priority: todoPriority().default('medium').notNull(),
-    createdAt: timestamp('created_at', {
-      withTimezone: true,
-      mode: 'string',
-    })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', {
-      withTimezone: true,
-      mode: 'string',
-    })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index('idx_todo_lists_user_id').using(
-      'btree',
-      table.userId.asc().nullsLast().op('int4_ops'),
-    ),
-    foreignKey({
-      columns: [table.userId],
-      foreignColumns: [users.id],
-      name: 'fk_todo_lists_user_id',
-    }).onDelete('cascade'),
-  ],
-);
-
-export const todoItems = pgTable(
-  'todo_items',
-  {
-    itemId: uuid('item_id').defaultRandom().primaryKey().notNull(),
-    listId: uuid('list_id').notNull(),
-    title: varchar({ length: 255 }).notNull(),
-    description: text(),
-    completed: boolean().default(false).notNull(),
-    status: todoStatus().default('pending').notNull(),
-    priority: todoPriority().default('medium').notNull(),
-    createdAt: timestamp('created_at', {
-      withTimezone: true,
-      mode: 'string',
-    })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', {
-      withTimezone: true,
-      mode: 'string',
-    })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    index('idx_todo_items_list_id').using(
-      'btree',
-      table.listId.asc().nullsLast().op('uuid_ops'),
-    ),
-    index('idx_todo_items_status').using(
-      'btree',
-      table.status.asc().nullsLast(),
-    ),
-    index('idx_todo_items_completed').using(
-      'btree',
-      table.completed.asc().nullsLast().op('bool_ops'),
-    ),
-    foreignKey({
-      columns: [table.listId],
-      foreignColumns: [todoLists.listId],
-      name: 'fk_todo_items_list_id',
-    }).onDelete('cascade'),
-  ],
 );

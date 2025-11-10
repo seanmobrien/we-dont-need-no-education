@@ -46,8 +46,6 @@ import {
   chatTool,
   mcpSessions,
   mcpEvents,
-  todoLists,
-  todoItems,
 } from './schema';
 
 export const callToActionExpectedResponseRelations = relations(
@@ -601,19 +599,4 @@ export const chatToolCallsRelations = relations(chatToolCalls, ({ one }) => ({
 
 export const chatToolRelations = relations(chatTool, ({ many }) => ({
   chatToolCalls: many(chatToolCalls),
-}));
-
-export const todoListsRelations = relations(todoLists, ({ one, many }) => ({
-  user: one(users, {
-    fields: [todoLists.userId],
-    references: [users.id],
-  }),
-  items: many(todoItems),
-}));
-
-export const todoItemsRelations = relations(todoItems, ({ one }) => ({
-  list: one(todoLists, {
-    fields: [todoItems.listId],
-    references: [todoLists.listId],
-  }),
 }));

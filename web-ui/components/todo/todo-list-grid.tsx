@@ -129,7 +129,7 @@ export default function TodoListGrid() {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               NextLink<any>
             }
-            href={`/messages/todo-lists/${params.row.listId}`}
+            href={`/messages/todo-lists/${params.row.id}`}
             title="View todo list"
             aria-label={`Open todo list: ${params.value}`}
             sx={stableSx.titleLink}
@@ -193,7 +193,7 @@ export default function TodoListGrid() {
           <IconButton
             color="error"
             size="small"
-            onClick={() => handleDelete(params.row.listId)}
+            onClick={() => handleDelete(params.row.id)}
             aria-label="Delete todo list"
           >
             <DeleteIcon />
@@ -206,7 +206,7 @@ export default function TodoListGrid() {
 
   const handleRowClick = useCallback(
     (params: GridRowParams<TodoListSummary>) => {
-      router.push(`/messages/todo-lists/${params.row.listId}`);
+      router.push(`/messages/todo-lists/${params.row.id}`);
     },
     [router],
   );
@@ -227,7 +227,7 @@ export default function TodoListGrid() {
         rows={lists}
         columns={columns}
         loading={isLoading}
-        getRowId={(row) => row.listId}
+        getRowId={(row) => row.id}
         onRowClick={handleRowClick}
         initialState={{
           pagination: {

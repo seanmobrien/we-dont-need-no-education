@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
 import { log } from '@/lib/logger';
-import { auth } from '@/auth';
-import { TodoService } from '@/lib/api/todo/todo-service';
+import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import { extractParams } from '@/lib/nextjs-util/utils';
 
 export const dynamic = 'force-dynamic';
@@ -19,20 +18,6 @@ export const GET = wrapRouteRequest(
     req: NextRequest,
     withParams: { params: Promise<{ listId: string }> },
   ) => {
-    const session = await auth();
-
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = (session.user as { id?: number }).id;
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'User ID not found in session' },
-        { status: 401 },
-      );
-    }
-
     const { listId } = await extractParams<{ listId: string }>(withParams);
 
     if (!listId) {
@@ -43,8 +28,8 @@ export const GET = wrapRouteRequest(
     }
 
     try {
-      const todoService = new TodoService();
-      const list = await todoService.getTodoListById(listId, userId);
+      const todoManager = getTodoManager();
+      const list = todoManager.getTodoList(listId);
 
       if (!list) {
         return NextResponse.json(
@@ -60,7 +45,6 @@ export const GET = wrapRouteRequest(
           source: 'GET /api/todo-lists/[listId]',
           error,
           listId,
-          userId,
         }),
       );
       return NextResponse.json(

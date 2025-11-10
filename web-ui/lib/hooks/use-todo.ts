@@ -175,7 +175,7 @@ export const useUpdateTodoList = (options?: {
     },
     onSuccess: (data) => {
       // Update the specific list cache
-      queryClient.setQueryData(todoKeys.list(data.listId), data);
+      queryClient.setQueryData(todoKeys.list(data.id), data);
       // Invalidate lists query to refresh the list
       queryClient.invalidateQueries({ queryKey: todoKeys.lists() });
       options?.onSuccess?.(data);

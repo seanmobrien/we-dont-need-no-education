@@ -1,51 +1,30 @@
 /**
  * Data models for Todo List and Todo Item API responses
+ * Re-exports from TodoManager for consistency
  */
 
-export type TodoStatus = 'pending' | 'active' | 'complete';
-export type TodoPriority = 'high' | 'medium' | 'low';
-
-/**
- * Todo Item data model for API responses
- */
-export interface TodoItem {
-  itemId: string;
-  listId: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  status: TodoStatus;
-  priority: TodoPriority;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * Todo List data model for API responses
- */
-export interface TodoList {
-  listId: string;
-  userId: number;
-  title: string;
-  description?: string;
-  status: TodoStatus;
-  priority: TodoPriority;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type {
+  TodoStatus,
+  TodoPriority,
+  Todo,
+  TodoList,
+} from '@/lib/ai/tools/todo/todo-manager';
 
 /**
  * Todo List Summary with item counts
  */
-export interface TodoListSummary extends TodoList {
+export interface TodoListSummary {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'pending' | 'active' | 'complete';
+  priority: 'high' | 'medium' | 'low';
+  createdAt: Date;
+  updatedAt: Date;
   totalItems?: number;
   completedItems?: number;
   pendingItems?: number;
 }
 
-/**
- * Todo List with Items
- */
-export interface TodoListWithItems extends TodoList {
-  items: TodoItem[];
-}
+// Alias for TodoList for compatibility - TodoList already has todos array
+export type { TodoList as TodoListWithItems } from '@/lib/ai/tools/todo/todo-manager';

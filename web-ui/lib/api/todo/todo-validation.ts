@@ -17,7 +17,7 @@ export const createTodoItemRequestSchema = z.object({
 
 export const updateTodoItemRequestSchema = z
   .object({
-    itemId: z.string().uuid('Invalid item ID'),
+    itemId: z.string().min(1, 'Invalid item ID'),
     title: z.string().min(1).optional(),
     description: z.string().optional(),
     completed: z.boolean().optional(),
@@ -46,7 +46,7 @@ export const createTodoListRequestSchema = z.object({
 
 export const updateTodoListRequestSchema = z
   .object({
-    listId: z.string().uuid('Invalid list ID'),
+    listId: z.string().min(1, 'Invalid list ID'),
     title: z.string().min(1).optional(),
     description: z.string().optional(),
     status: todoStatusEnum.optional(),

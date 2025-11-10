@@ -24,7 +24,7 @@ import {
   useUpdateTodoItem,
   useDeleteTodoItem,
 } from '@/lib/hooks/use-todo';
-import type { TodoItem } from '@/data-models/api/todo';
+import type { Todo } from '@/data-models/api/todo';
 import type { SxProps, Theme } from '@mui/material/styles';
 
 const stableSx = {
@@ -100,9 +100,9 @@ export default function TodoItemsGrid({
   );
 
   const handleToggleComplete = useCallback(
-    (item: TodoItem) => {
+    (item: Todo) => {
       updateTodoItem.mutate({
-        itemId: item.itemId,
+        itemId: item.id,
         completed: !item.completed,
         status: !item.completed ? 'complete' : 'active',
       });
@@ -118,11 +118,11 @@ export default function TodoItemsGrid({
   }, [createTodoItem]);
 
   const handleEditItem = useCallback(
-    (item: TodoItem) => {
+    (item: Todo) => {
       const title = prompt('Edit todo item title:', item.title);
       if (title && title !== item.title) {
         updateTodoItem.mutate({
-          itemId: item.itemId,
+          itemId: item.id,
           title,
         });
       }
@@ -130,7 +130,7 @@ export default function TodoItemsGrid({
     [updateTodoItem],
   );
 
-  const columns: GridColDef<TodoItem>[] = useMemo(
+  const columns: GridColDef<Todo>[] = useMemo(
     () => [
       {
         field: 'completed',
@@ -217,7 +217,7 @@ export default function TodoItemsGrid({
               size="small"
               onClick={(e) => {
                 e.stopPropagation();
-                handleDelete(params.row.itemId);
+                handleDelete(params.row.id);
               }}
               aria-label="Delete item"
             >
@@ -272,10 +272,10 @@ export default function TodoItemsGrid({
         </Box>
       </Box>
       <DataGrid
-        rows={list.items}
+        rows={list.todos}
         columns={columns}
         loading={isLoading}
-        getRowId={(row) => row.itemId}
+        getRowId={(row) => row.id}
         initialState={{
           pagination: {
             paginationModel: { pageSize: 25, page: 0 },
