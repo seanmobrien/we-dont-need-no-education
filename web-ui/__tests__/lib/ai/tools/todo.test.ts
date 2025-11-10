@@ -335,7 +335,7 @@ describe('TodoManager', () => {
     });
 
     it('should support separate default lists per user', () => {
-      const aliceTodo = manager.createTodo('Alice Default Task', undefined, {
+      manager.createTodo('Alice Default Task', undefined, {
         userId: 'user-alice',
       });
       const bobTodo = manager.createTodo('Bob Default Task', undefined, {
