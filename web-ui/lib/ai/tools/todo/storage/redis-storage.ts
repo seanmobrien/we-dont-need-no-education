@@ -169,10 +169,10 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         EX: this.config.ttl,
       });
 
-      // Store individual todos and mappings
-      for (const todo of list.todos) {
-        await this.upsertTodo(todo, list.id, userId);
-      }
+      // Store individual todos and mappings in parallel
+      await Promise.all(
+        list.todos.map((todo) => this.upsertTodo(todo, list.id, userId)),
+      );
 
       log((l) =>
         l.debug('Todo list upserted to Redis', {
