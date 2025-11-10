@@ -21,6 +21,7 @@ import DockIcon from '@mui/icons-material/Dock';
 import ViewSidebarIcon from '@mui/icons-material/ViewSidebar';
 import CloudIcon from '@mui/icons-material/Cloud';
 import { DockPosition, AiProvider, ModelType, ModelSelection, ProviderConfig } from './types';
+import { TodoListFlyout, FloatingTodoDialog } from '@/components/todo';
 
 export const ChatMenu = ({
   onResetSession,
@@ -39,6 +40,10 @@ export const ChatMenu = ({
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
+  
+  // Todo list dialog state
+  const [selectedTodoListId, setSelectedTodoListId] = useState<string | null>(null);
+  const [todoDialogOpen, setTodoDialogOpen] = useState(false);
   
   // Provider configurations with available models
   const availableProviders: ProviderConfig[] = useMemo(() => [
@@ -125,6 +130,17 @@ export const ChatMenu = ({
     handleClose();
   }, [activeModelSelection, setActiveModelSelection, handleClose]);
 
+  // Todo list handlers
+  const handleSelectTodoList = useCallback((listId: string) => {
+    setSelectedTodoListId(listId);
+    setTodoDialogOpen(true);
+    handleClose();
+  }, [handleClose]);
+
+  const handleCloseTodoDialog = useCallback(() => {
+    setTodoDialogOpen(false);
+  }, []);
+
   // Docking options configuration
   const dockingOptions = [
     { position: 'left' as DockPosition, label: 'Dock Left', icon: <ViewSidebarIcon /> },
@@ -151,6 +167,8 @@ export const ChatMenu = ({
         }}
       >
         <MenuItem onClick={onResetSessionClick} data-testid='menu-item-reset'>Reset chat session</MenuItem>
+        <Divider />
+        <TodoListFlyout onSelectList={handleSelectTodoList} />
         <Divider />
         <MenuItem onClick={onFloatClick} data-testid='menu-item-float'>
           <ListItemIcon>
@@ -224,6 +242,11 @@ export const ChatMenu = ({
           </MenuItem>
         )}
       </Menu>
+      <FloatingTodoDialog
+        listId={selectedTodoListId}
+        open={todoDialogOpen}
+        onClose={handleCloseTodoDialog}
+      />
     </>
   );
 };
