@@ -243,7 +243,7 @@ describe('TodoManager', () => {
     });
 
     it('should not allow one user to access another users todo list', () => {
-      const aliceList = manager.upsertTodoList({
+      manager.upsertTodoList({
         id: 'alice-list',
         title: 'Alice List',
         userId: 'user-alice',
