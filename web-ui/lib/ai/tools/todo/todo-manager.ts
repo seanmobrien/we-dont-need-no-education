@@ -1,4 +1,6 @@
 import { log } from '@/lib/logger';
+import type { TodoStorageStrategy } from './storage';
+import { InMemoryStorageStrategy } from './storage';
 
 export type TodoStatus = 'pending' | 'active' | 'complete';
 
@@ -55,45 +57,47 @@ const DEFAULT_LIST_STATUS: TodoStatus = 'active';
 const DEFAULT_LIST_PRIORITY: TodoPriority = 'medium';
 
 /**
- * TodoManager - Manages in-memory todo lists and items.
+ * TodoManager - Manages todo lists and items with pluggable storage strategies.
  *
- * This class provides CRUD operations for managing todos and their lists. It's
- * designed as a singleton to maintain state across multiple tool invocations
- * within the same process.
+ * This class provides CRUD operations for managing todos and their lists. It uses
+ * dependency injection to support different storage backends (in-memory, Redis, etc.)
+ * while maintaining a consistent API.
+ *
+ * @param storage - Storage strategy implementation (defaults to in-memory)
+ * @param userId - Optional user ID for user-specific data segmentation
  */
 export class TodoManager {
-  private todos: Map<string, Todo> = new Map();
-  private todoLists: Map<string, TodoList> = new Map();
-  private todoToList: Map<string, string> = new Map();
+  private storage: TodoStorageStrategy;
+  private userId?: string;
 
-  constructor() {
-    log((l) => l.debug('TodoManager instance created'));
+  constructor(storage?: TodoStorageStrategy, userId?: string) {
+    this.storage = storage ?? new InMemoryStorageStrategy();
+    this.userId = userId;
+    log((l) => l.debug('TodoManager instance created', { userId }));
   }
 
   /**
    * Create a new todo item inside the default list. This is primarily used by
    * legacy flows that still operate at the item level.
    */
-  createTodo(
+  async createTodo(
     title: string,
     description?: string,
     options?: { status?: TodoStatus; priority?: TodoPriority },
-  ): Todo {
-    const list = this.ensureDefaultList();
-    const todo = this.createTodoRecord(
-      {
-        title,
-        description,
-        status: options?.status,
-        priority: options?.priority,
-      },
-      list.id,
-    );
+  ): Promise<Todo> {
+    const list = await this.ensureDefaultList();
+    const todo = this.createTodoRecord({
+      title,
+      description,
+      status: options?.status,
+      priority: options?.priority,
+    });
 
     list.todos.push(todo);
     list.updatedAt = todo.updatedAt;
-    this.todos.set(todo.id, todo);
-    this.todoToList.set(todo.id, list.id);
+
+    await this.storage.upsertTodo(todo, list.id, this.userId);
+    await this.storage.upsertTodoList(list, this.userId);
 
     log((l) => l.debug('Todo created', { id: todo.id, title }));
 
@@ -103,21 +107,15 @@ export class TodoManager {
   /**
    * Upsert (create or replace) a todo list.
    */
-  upsertTodoList(input: TodoListUpsertInput): TodoList {
+  async upsertTodoList(input: TodoListUpsertInput): Promise<TodoList> {
     const listId = input.id ?? this.generateListId();
     const now = new Date();
 
-    const existingList = this.todoLists.get(listId);
-    if (existingList) {
-      existingList.todos.forEach((todo) => {
-        this.todos.delete(todo.id);
-        this.todoToList.delete(todo.id);
-      });
-    }
+    const existingList = await this.storage.getTodoList(listId, this.userId);
 
     const createdAt = input.createdAt ?? existingList?.createdAt ?? now;
     const todos = (input.todos ?? []).map((todoInput) =>
-      this.createTodoRecord(todoInput, listId),
+      this.createTodoRecord(todoInput),
     );
 
     const list: TodoList = {
@@ -131,11 +129,7 @@ export class TodoManager {
       updatedAt: input.updatedAt ?? now,
     };
 
-    this.todoLists.set(listId, list);
-    todos.forEach((todo) => {
-      this.todos.set(todo.id, todo);
-      this.todoToList.set(todo.id, listId);
-    });
+    await this.storage.upsertTodoList(list, this.userId);
 
     log((l) =>
       l.debug('Todo list upserted', {
@@ -152,49 +146,38 @@ export class TodoManager {
   /**
    * Retrieve all todo lists, optionally filtering todos by completion state.
    */
-  getTodoLists(options?: { completed?: boolean }): TodoList[] {
-    const completed = options?.completed;
-    return Array.from(this.todoLists.values()).map((list) =>
-      this.cloneListWithFilter(list, completed),
-    );
+  async getTodoLists(options?: { completed?: boolean }): Promise<TodoList[]> {
+    return await this.storage.getTodoLists(this.userId, options);
   }
 
   /**
    * Retrieve a single todo list by ID.
    */
-  getTodoList(
+  async getTodoList(
     id: string,
     options?: { completed?: boolean },
-  ): TodoList | undefined {
-    const list = this.todoLists.get(id);
-    if (!list) {
-      return undefined;
-    }
-    return this.cloneListWithFilter(list, options?.completed);
+  ): Promise<TodoList | undefined> {
+    return await this.storage.getTodoList(id, this.userId, options);
   }
 
   /**
    * Get all todos, optionally filtered by completion status.
    */
-  getTodos(completed?: boolean): Todo[] {
-    const todos = Array.from(this.todos.values());
-    if (completed === undefined) {
-      return todos;
-    }
-    return todos.filter((todo) => todo.completed === completed);
+  async getTodos(completed?: boolean): Promise<Todo[]> {
+    return await this.storage.getTodos(this.userId, completed);
   }
 
   /**
    * Get a specific todo by ID.
    */
-  getTodo(id: string): Todo | undefined {
-    return this.todos.get(id);
+  async getTodo(id: string): Promise<Todo | undefined> {
+    return await this.storage.getTodo(id, this.userId);
   }
 
   /**
    * Update an existing todo.
    */
-  updateTodo(
+  async updateTodo(
     id: string,
     updates: {
       title?: string;
@@ -203,17 +186,19 @@ export class TodoManager {
       status?: TodoStatus;
       priority?: TodoPriority;
     },
-  ): Todo | undefined {
-    const todo = this.todos.get(id);
+  ): Promise<Todo | undefined> {
+    const todo = await this.storage.getTodo(id, this.userId);
     if (!todo) {
       return undefined;
     }
 
-    const listId = this.todoToList.get(id);
-    const list = listId ? this.todoLists.get(listId) : undefined;
+    const listId = await this.storage.getTodoToListMapping(id, this.userId);
+    const list = listId
+      ? await this.storage.getTodoList(listId, this.userId)
+      : undefined;
+
     if (!list) {
-      this.todos.delete(id);
-      this.todoToList.delete(id);
+      await this.storage.deleteTodo(id, this.userId);
       return undefined;
     }
 
@@ -231,7 +216,7 @@ export class TodoManager {
       updatedAt: new Date(),
     };
 
-    this.todos.set(id, updatedTodo);
+    await this.storage.upsertTodo(updatedTodo, listId, this.userId);
 
     const idx = list.todos.findIndex((t) => t.id === id);
     if (idx !== -1) {
@@ -242,6 +227,8 @@ export class TodoManager {
     list.updatedAt = updatedTodo.updatedAt;
     this.updateListStatus(list);
 
+    await this.storage.upsertTodoList(list, this.userId);
+
     log((l) => l.debug('Todo updated', { id, updates }));
 
     return updatedTodo;
@@ -250,12 +237,13 @@ export class TodoManager {
   /**
    * Delete a todo by ID.
    */
-  deleteTodo(id: string): boolean {
-    const listId = this.todoToList.get(id);
-    const list = listId ? this.todoLists.get(listId) : undefined;
+  async deleteTodo(id: string): Promise<boolean> {
+    const listId = await this.storage.getTodoToListMapping(id, this.userId);
+    const list = listId
+      ? await this.storage.getTodoList(listId, this.userId)
+      : undefined;
 
-    const result = this.todos.delete(id);
-    this.todoToList.delete(id);
+    const result = await this.storage.deleteTodo(id, this.userId);
 
     if (list) {
       const nextTodos = list.todos.filter((todo) => todo.id !== id);
@@ -263,6 +251,7 @@ export class TodoManager {
         list.todos = nextTodos;
         list.updatedAt = new Date();
         this.updateListStatus(list);
+        await this.storage.upsertTodoList(list, this.userId);
       }
     }
 
@@ -276,23 +265,21 @@ export class TodoManager {
   /**
    * Toggle the completed status of a todo.
    */
-  toggleTodo(id: string): TodoList | undefined {
-    const todo = this.todos.get(id);
+  async toggleTodo(id: string): Promise<TodoList | undefined> {
+    const todo = await this.storage.getTodo(id, this.userId);
     if (!todo) {
       return undefined;
     }
 
-    const listId = this.todoToList.get(id);
+    const listId = await this.storage.getTodoToListMapping(id, this.userId);
     if (!listId) {
-      this.todos.delete(id);
-      this.todoToList.delete(id);
+      await this.storage.deleteTodo(id, this.userId);
       return undefined;
     }
 
-    const list = this.todoLists.get(listId);
+    const list = await this.storage.getTodoList(listId, this.userId);
     if (!list) {
-      this.todos.delete(id);
-      this.todoToList.delete(id);
+      await this.storage.deleteTodo(id, this.userId);
       return undefined;
     }
 
@@ -306,7 +293,7 @@ export class TodoManager {
       updatedAt: new Date(),
     };
 
-    this.todos.set(id, updatedTodo);
+    await this.storage.upsertTodo(updatedTodo, listId, this.userId);
 
     const idx = list.todos.findIndex((item) => item.id === id);
     if (idx !== -1) {
@@ -317,6 +304,8 @@ export class TodoManager {
 
     list.updatedAt = updatedTodo.updatedAt;
     this.updateListStatus(list);
+
+    await this.storage.upsertTodoList(list, this.userId);
 
     log((l) =>
       l.debug('Todo toggled', {
@@ -333,18 +322,16 @@ export class TodoManager {
   /**
    * Clear all todos and lists.
    */
-  clearAll(): void {
-    this.todos.clear();
-    this.todoLists.clear();
-    this.todoToList.clear();
+  async clearAll(): Promise<void> {
+    await this.storage.clearAll(this.userId);
     log((l) => l.debug('All todos and lists cleared'));
   }
 
   /**
    * Get the total count of todos across all lists.
    */
-  getCount(): number {
-    return this.todos.size;
+  async getCount(): Promise<number> {
+    return await this.storage.getCount(this.userId);
   }
 
   private createTodoRecord(
@@ -358,7 +345,6 @@ export class TodoManager {
       createdAt?: Date;
       updatedAt?: Date;
     },
-    listId: string,
   ): Todo {
     const id =
       input.id ??
@@ -382,8 +368,6 @@ export class TodoManager {
       createdAt,
       updatedAt,
     };
-
-    this.todoToList.set(id, listId);
 
     return todo;
   }
@@ -482,8 +466,11 @@ export class TodoManager {
     list.status = 'pending';
   }
 
-  private ensureDefaultList(): TodoList {
-    const existing = this.todoLists.get(DEFAULT_LIST_ID);
+  private async ensureDefaultList(): Promise<TodoList> {
+    const existing = await this.storage.getTodoList(
+      DEFAULT_LIST_ID,
+      this.userId,
+    );
     if (existing) {
       return existing;
     }
@@ -500,7 +487,7 @@ export class TodoManager {
       updatedAt: now,
     };
 
-    this.todoLists.set(DEFAULT_LIST_ID, list);
+    await this.storage.upsertTodoList(list, this.userId);
     return list;
   }
 
@@ -529,6 +516,9 @@ type GlobalWithTodoManager = typeof globalThis & {
 
 /**
  * Get the singleton TodoManager instance.
+ * This uses in-memory storage by default for backward compatibility.
+ * For feature-flag-based storage strategy selection, use createTodoManager.
+ *
  * @returns The TodoManager singleton
  */
 export const getTodoManager = (): TodoManager => {
@@ -542,10 +532,28 @@ export const getTodoManager = (): TodoManager => {
   return todoManagerInstance;
 };
 
+/**
+ * Reset the TodoManager singleton.
+ * Useful for testing or when changing storage strategies.
+ */
 export const resetTodoManager = (): void => {
   const globalWithTodoManager = globalThis as GlobalWithTodoManager;
   if (globalWithTodoManager[TODO_MANAGER]) {
     delete globalWithTodoManager[TODO_MANAGER];
     log((l) => l.debug('TodoManager singleton reset'));
   }
+};
+
+/**
+ * Create a TodoManager instance with a specific storage strategy.
+ *
+ * @param storage - Storage strategy implementation
+ * @param userId - Optional user ID for user-specific data segmentation
+ * @returns A new TodoManager instance
+ */
+export const createTodoManager = (
+  storage?: TodoStorageStrategy,
+  userId?: string,
+): TodoManager => {
+  return new TodoManager(storage, userId);
 };
