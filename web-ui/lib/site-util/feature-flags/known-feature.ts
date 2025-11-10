@@ -21,6 +21,7 @@ export const KnownFeatureValues = [
   'health_memory_cache_error_ttl',
   'health_memory_cache_warning_ttl',
   'health_startup_failure_threshold',
+  'todo_storage_strategy',
 ] as const;
 export type KnownFeatureType = (typeof KnownFeatureValues)[number];
 
@@ -84,6 +85,7 @@ export const AllFeatureFlagsDefault = {
   health_memory_cache_error_ttl: 10 as number,
   health_memory_cache_warning_ttl: 30 as number,
   health_startup_failure_threshold: 10 as number,
+  todo_storage_strategy: 'in-memory' as string,
 } as const satisfies AllFeatureFlagStatus;
 
 export type AllFeatureFlagDefaultType = typeof AllFeatureFlagsDefault;

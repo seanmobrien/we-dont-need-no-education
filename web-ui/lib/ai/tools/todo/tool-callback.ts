@@ -66,7 +66,7 @@ function serializeTodoList(list: TodoListLike) {
 }
 
 // Create Todo Tool
-export const createTodoCallback = ({
+export const createTodoCallback = async ({
   listId,
   title,
   description,
@@ -100,7 +100,7 @@ export const createTodoCallback = ({
     );
 
     const manager = getTodoManager();
-    const list = manager.upsertTodoList({
+    const list = await manager.upsertTodoList({
       id: listId,
       title,
       description,
@@ -216,7 +216,7 @@ Create or replace a Title IX / FERPA compliance task list. Provide the full set 
 } as const;
 
 // Get Todos Tool
-export const getTodosCallback = ({
+export const getTodosCallback = async ({
   completed,
   listId,
 }: {
@@ -230,8 +230,8 @@ export const getTodosCallback = ({
 
     if (listId) {
       const list =
-        manager.getTodoList(listId, { completed }) ??
-        manager.getTodoList(listId);
+        (await manager.getTodoList(listId, { completed })) ??
+        (await manager.getTodoList(listId));
 
       if (!list) {
         const message = `Todo list with id ${listId} not found`;
@@ -241,7 +241,7 @@ export const getTodosCallback = ({
       return toolCallbackResultFactory(serializeTodoList(list));
     }
 
-    const lists = manager.getTodoLists({ completed });
+    const lists = await manager.getTodoLists({ completed });
 
     return toolCallbackResultFactory(
       lists.map((list) => serializeTodoList(list)),
@@ -346,7 +346,7 @@ Each todo list contains metadata plus a \`todos\` collection, and every todo inc
 } as const;
 
 // Update Todo Tool
-export const updateTodoCallback = ({
+export const updateTodoCallback = async ({
   id,
   title,
   description,
@@ -374,7 +374,7 @@ export const updateTodoCallback = ({
     );
 
     const manager = getTodoManager();
-    const todo = manager.updateTodo(id, {
+    const todo = await manager.updateTodo(id, {
       title,
       description,
       completed,
@@ -465,12 +465,12 @@ Use this tool to update an existing task so the session stays aligned with Title
 } as const;
 
 // Delete Todo Tool
-export const deleteTodoCallback = ({ id }: { id: string }) => {
+export const deleteTodoCallback = async ({ id }: { id: string }) => {
   try {
     log((l) => l.info('deleteTodo tool called', { id }));
 
     const manager = getTodoManager();
-    const result = manager.deleteTodo(id);
+    const result = await manager.deleteTodo(id);
 
     if (!result) {
       return toolCallbackResultFactory(
@@ -511,12 +511,12 @@ export const deleteTodoConfig = {
 } as const;
 
 // Toggle Todo Completion Tool
-export const toggleTodoCallback = ({ id }: { id: string }) => {
+export const toggleTodoCallback = async ({ id }: { id: string }) => {
   try {
     log((l) => l.info('toggleTodo tool called', { id }));
 
     const manager = getTodoManager();
-    const list = manager.toggleTodo(id);
+    const list = await manager.toggleTodo(id);
 
     if (!list) {
       return toolCallbackResultFactory(
