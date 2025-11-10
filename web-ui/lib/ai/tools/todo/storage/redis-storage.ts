@@ -164,6 +164,20 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       const redis = await this.ensureConnected();
       const listKey = this.getListKey(list.id, userId);
 
+      // Before storing new todos, clean up old ones
+      const existingList = await this.getTodoList(list.id, userId);
+      if (existingList) {
+        const newTodoIds = new Set(list.todos.map((t) => t.id));
+        const todosToDelete = existingList.todos.filter(
+          (oldTodo) => !newTodoIds.has(oldTodo.id),
+        );
+        if (todosToDelete.length > 0) {
+          await Promise.all(
+            todosToDelete.map((todo) => this.deleteTodo(todo.id, userId)),
+          );
+        }
+      }
+
       // Store the list
       await redis.set(listKey, this.serializeTodoList(list), {
         EX: this.config.ttl,
@@ -232,8 +246,14 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       const redis = await this.ensureConnected();
       const pattern = this.getListPattern(userId);
 
-      // Get all list keys
-      const keys = await redis.keys(pattern);
+      // Get all list keys using non-blocking scanIterator
+      const keys: string[] = [];
+      for await (const key of redis.scanIterator({
+        MATCH: pattern,
+        COUNT: 100,
+      })) {
+        keys.push(key);
+      }
       if (keys.length === 0) {
         return [];
       }
@@ -359,8 +379,14 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       const redis = await this.ensureConnected();
       const pattern = this.getTodoPattern(userId);
 
-      // Get all todo keys
-      const keys = await redis.keys(pattern);
+      // Get all todo keys using scanIterator (non-blocking)
+      const keys: string[] = [];
+      for await (const key of redis.scanIterator({
+        MATCH: pattern,
+        COUNT: 100,
+      })) {
+        keys.push(key);
+      }
       if (keys.length === 0) {
         return [];
       }
@@ -440,8 +466,16 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       const redis = await this.ensureConnected();
       const pattern = this.getTodoPattern(userId);
 
-      const keys = await redis.keys(pattern);
-      return keys.length;
+      // Count keys using scanIterator (non-blocking)
+      let count = 0;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      for await (const key of redis.scanIterator({
+        MATCH: pattern,
+        COUNT: 100,
+      })) {
+        count++;
+      }
+      return count;
     } catch (error) {
       LoggedError.isTurtlesAllTheWayDown(error, {
         log: true,
@@ -455,19 +489,23 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     try {
       const redis = await this.ensureConnected();
 
-      // Get all keys for this user (or all if no userId)
+      // Get all keys for this user (or all if no userId) using scanIterator
       const listPattern = this.getListPattern(userId);
       const todoPattern = this.getTodoPattern(userId);
       const userSegment = userId ? `:user:${userId}` : '';
       const mappingPattern = `${this.config.keyPrefix}:mapping${userSegment}:*`;
 
-      const [listKeys, todoKeys, mappingKeys] = await Promise.all([
-        redis.keys(listPattern),
-        redis.keys(todoPattern),
-        redis.keys(mappingPattern),
-      ]);
-
-      const allKeys = [...listKeys, ...todoKeys, ...mappingKeys];
+      const allKeys: string[] = [];
+      
+      // Scan for all matching keys using non-blocking scanIterator
+      for (const pattern of [listPattern, todoPattern, mappingPattern]) {
+        for await (const key of redis.scanIterator({
+          MATCH: pattern,
+          COUNT: 100,
+        })) {
+          allKeys.push(key);
+        }
+      }
 
       if (allKeys.length > 0) {
         await redis.del(allKeys);
