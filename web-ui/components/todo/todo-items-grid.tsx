@@ -72,7 +72,7 @@ type TodoItemsGridProps = {
 
 export default function TodoItemsGrid({
   listId,
-}: TodoItemsGridProps): JSX.Element {
+}: TodoItemsGridProps) {
   const { data: list, isLoading, refetch } = useTodoList(listId);
   const createTodoItem = useCreateTodoItem(listId, {
     onSuccess: () => {

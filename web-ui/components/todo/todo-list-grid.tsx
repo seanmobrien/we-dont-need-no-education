@@ -67,7 +67,7 @@ const getPriorityColor = (
   }
 };
 
-export default function TodoListGrid(): JSX.Element {
+export default function TodoListGrid() {
   const router = useRouter();
   const { data: lists = [], isLoading, refetch } = useTodoLists();
   const deleteTodoList = useDeleteTodoList({
