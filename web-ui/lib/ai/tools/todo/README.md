@@ -6,7 +6,7 @@ This directory contains the implementation of a Todo List management system expo
 
 The Todo List MCP provides a simple, in-memory task management system that can be accessed by AI agents through MCP tools. It enables AI assistants to help users create, manage, and track todo items during conversations.
 
-**NEW:** The todo system now supports user segmentation, allowing each signed-in user to have their own isolated todo lists and items.
+**User Segmentation:** The todo system automatically segments todos by signed-in user. Each user sees only their own isolated todo lists and items, with userId automatically extracted from the authenticated session.
 
 ## Architecture
 
@@ -33,37 +33,48 @@ The Todo List MCP provides a simple, in-memory task management system that can b
 
 ### Overview
 
-All todo lists and items can now be scoped to specific users via an optional `userId` field. When a `userId` is provided:
-- Lists and items are filtered to show only those belonging to that user
-- Users cannot view, update, or delete items/lists belonging to other users
-- Each user gets their own default list (e.g., `default-user-alice`)
+All todo lists and items are automatically scoped to the signed-in user via session authentication:
+- **Automatic UserId**: The userId is automatically extracted from the authenticated session using `auth()` 
+- **Isolation**: Users see only their own todos and lists
+- **Authorization**: Users cannot view, update, or delete items/lists belonging to other users
+- **Per-User Default Lists**: Each user gets their own default list (e.g., `default-user-alice`)
+
+### Implementation Details
+
+The system uses Next.js authentication (`auth()` from `@/auth`) to automatically:
+1. Extract the current user's ID from the session
+2. Apply userId filtering to all list and item queries
+3. Enforce authorization on all mutation operations (create, update, delete, toggle)
+
+No userId parameter needs to be provided by callers - it's handled transparently by the authentication system.
 
 ### Backward Compatibility
 
-The `userId` field is **optional** throughout the API. Legacy usage without `userId` will continue to work:
-- Todos without a userId can still be created and managed
-- Methods without userId parameters return all todos/lists (legacy behavior)
-- Existing code continues to function without modification
+The underlying TodoManager accepts an optional `userId` parameter for direct API usage:
+- When userId is provided, lists/items are filtered to that user
+- When userId is omitted, all todos/lists are returned (legacy behavior)
+- Tool callbacks automatically use session-based userId
 
 ### Usage Examples
 
 ```typescript
-// Create a user-specific todo list
-const list = manager.upsertTodoList({
-  title: 'Alice\'s Tasks',
-  userId: 'user-alice',
+// User-specific operations (userId automatically from session)
+const list = await createTodoCallback({
+  title: 'My Tasks',
   todos: [{ title: 'Review documents' }]
 });
 
-// Get todos for a specific user
+const myTodos = await getTodosCallback({});
+const updated = await updateTodoCallback({ id: todoId, title: 'Updated' });
+
+// Direct TodoManager usage with explicit userId (advanced)
+const manager = getTodoManager();
+const list = manager.upsertTodoList({
+  title: 'Alice Tasks',
+  userId: 'user-alice',
+  todos: [{ title: 'Review documents' }]
+});
 const aliceTodos = manager.getTodos({ userId: 'user-alice' });
-const aliceLists = manager.getTodoLists({ userId: 'user-alice' });
-
-// Update with authorization check
-manager.updateTodo(todoId, { title: 'Updated' }, { userId: 'user-alice' });
-
-// Delete with authorization check
-manager.deleteTodo(todoId, { userId: 'user-alice' });
 ```
 
 ## Available Tools
@@ -77,11 +88,12 @@ Creates a new todo item or list.
 - `listId` (string, optional): Specific list ID to create/replace
 - `status` (TodoStatus, optional): pending | active | complete
 - `priority` (TodoPriority, optional): high | medium | low
-- **`userId` (string, optional): User identifier to scope the list**
 - `todos` (array, optional): Array of todo items to include in the list
 
 **Output:**
 - Complete todo list object with generated ID and timestamps
+
+**Note:** userId is automatically extracted from the authenticated session.
 
 ### getTodos
 Retrieves all todos, optionally filtered by completion status and/or user.
@@ -92,10 +104,11 @@ Retrieves all todos, optionally filtered by completion status and/or user.
   - `false`: Only incomplete todos
   - omitted: All todos
 - `listId` (string, optional): Return only the specified list
-- **`userId` (string, optional): Filter to only this user's todos/lists**
 
 **Output:**
 - Array of todo list objects (or single list if listId provided)
+
+**Note:** Results are automatically filtered to the authenticated user's todos.
 
 ### updateTodo
 Updates an existing todo item.
@@ -107,30 +120,33 @@ Updates an existing todo item.
 - `completed` (boolean, optional): New completion status
 - `status` (TodoStatus, optional): New status
 - `priority` (TodoPriority, optional): New priority
-- **`userId` (string, optional): Verify ownership before updating**
 
 **Output:**
-- Updated todo object (or error if userId doesn't match owner)
+- Updated todo object (or error if user doesn't own the todo)
+
+**Note:** Authorization is automatically enforced using the authenticated user's ID.
 
 ### deleteTodo
 Permanently deletes a todo item.
 
 **Input:**
 - `id` (string, required): The todo ID
-- **`userId` (string, optional): Verify ownership before deleting**
 
 **Output:**
-- Success confirmation with the deleted ID (or error if userId doesn't match)
+- Success confirmation with the deleted ID (or error if user doesn't own the todo)
+
+**Note:** Authorization is automatically enforced using the authenticated user's ID.
 
 ### toggleTodo
 Toggles the completion status (complete ↔ incomplete).
 
 **Input:**
 - `id` (string, required): The todo ID
-- **`userId` (string, optional): Verify ownership before toggling**
 
 **Output:**
 - Updated todo list object with toggled status
+
+**Note:** Authorization is automatically enforced using the authenticated user's ID.
 
 ## Usage Example
 
@@ -138,15 +154,15 @@ When an AI assistant connects to the MCP endpoint at `/api/ai/tools/todo/[transp
 
 ```
 User: "Create a todo to review the quarterly report"
-Assistant: [calls createTodo with title="Review quarterly report", userId="user-123"]
+Assistant: [calls createTodo - userId auto-extracted from session]
           "I've created a todo for reviewing the quarterly report."
 
 User: "What todos do I have?"
-Assistant: [calls getTodos with userId="user-123"]
+Assistant: [calls getTodos - automatically filtered to user's todos]
           "You have 1 todo: Review quarterly report (incomplete)"
 
 User: "Mark it as done"
-Assistant: [calls toggleTodo with the todo's id, userId="user-123"]
+Assistant: [calls toggleTodo - authorization auto-enforced]
           "Great! I've marked 'Review quarterly report' as complete."
 ```
 
@@ -184,9 +200,10 @@ The todo tools are automatically registered with the MCP server when the route i
 
 ## Security Considerations
 
-- **User Isolation**: When userId is provided, the system enforces strict isolation - users cannot access, modify, or delete each other's todos
-- **Authorization**: Update, delete, and toggle operations verify userId matches the todo owner before proceeding
-- **Privacy**: User-specific default lists use unique IDs (e.g., `default-user-alice`) to prevent conflicts
+- **Automatic User Isolation**: UserId is automatically extracted from authenticated session via `auth()` 
+- **Authorization**: Update/delete/toggle operations automatically verify userId matches owner
+- **Session-Based Security**: All tool callbacks use session authentication - no manual userId handling required
+- **Privacy Protection**: Users cannot access other users' todos even if they know the IDs
 
 ## Future Enhancements
 

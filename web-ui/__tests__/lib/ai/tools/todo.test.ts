@@ -399,8 +399,8 @@ describe('Todo Tool Callbacks', () => {
     manager.clearAll();
   });
 
-  it('createTodoCallback should create a todo list and return success', () => {
-    const result = createTodoCallback({
+  it('createTodoCallback should create a todo list and return success', async () => {
+    const result = await createTodoCallback({
       listId: 'case-001-plan',
       title: 'Case 001 Plan',
       description: 'Intake and interim measures',
@@ -439,8 +439,8 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('createTodoCallback should replace an existing list when ids match', () => {
-    const firstResult = createTodoCallback({
+  it('createTodoCallback should replace an existing list when ids match', async () => {
+    const firstResult = await createTodoCallback({
       listId: 'case-002-plan',
       title: 'Case 002 Plan',
       todos: [
@@ -454,7 +454,7 @@ describe('Todo Tool Callbacks', () => {
 
     expect(firstResult.structuredContent.result.isError).toBeFalsy();
 
-    const replacementResult = createTodoCallback({
+    const replacementResult = await createTodoCallback({
       listId: 'case-002-plan',
       title: 'Case 002 Plan (Revised)',
       todos: [
@@ -478,20 +478,20 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('getTodosCallback should return all todo lists', () => {
-    createTodoCallback({
+  it('getTodosCallback should return all todo lists', async () => {
+    await createTodoCallback({
       listId: 'case-003-plan',
       title: 'Case 003 Plan',
       todos: [{ id: 'case-003-intake', title: 'Collect intake statement' }],
     });
 
-    createTodoCallback({
+    await createTodoCallback({
       listId: 'case-003-followup',
       title: 'Case 003 Follow Up',
       todos: [{ id: 'case-003-wellness', title: 'Schedule wellness check-in' }],
     });
 
-    const result = getTodosCallback({});
+    const result = await getTodosCallback({});
 
     expect(result.structuredContent.result.isError).toBeFalsy();
 
@@ -507,14 +507,14 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('getTodosCallback should return a specific list when listId provided', () => {
-    createTodoCallback({
+  it('getTodosCallback should return a specific list when listId provided', async () => {
+    await createTodoCallback({
       listId: 'case-004-plan',
       title: 'Case 004 Plan',
       todos: [{ id: 'case-004-document', title: 'Document evidence timeline' }],
     });
 
-    const result = getTodosCallback({ listId: 'case-004-plan' });
+    const result = await getTodosCallback({ listId: 'case-004-plan' });
 
     expect(result.structuredContent.result.isError).toBeFalsy();
 
@@ -529,8 +529,8 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('updateTodoCallback should update a todo', () => {
-    const createResult = createTodoCallback({
+  it('updateTodoCallback should update a todo', async () => {
+    const createResult = await createTodoCallback({
       listId: 'case-005-plan',
       title: 'Case 005 Plan',
       todos: [
@@ -551,7 +551,7 @@ describe('Todo Tool Callbacks', () => {
       | undefined;
     const todoId = list?.todos?.[0].id;
 
-    const updateResult = updateTodoCallback({
+    const updateResult = await updateTodoCallback({
       id: todoId!,
       title: 'Updated',
       completed: true,
@@ -571,8 +571,8 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('deleteTodoCallback should delete a todo', () => {
-    const createResult = createTodoCallback({
+  it('deleteTodoCallback should delete a todo', async () => {
+    const createResult = await createTodoCallback({
       listId: 'case-006-plan',
       title: 'Case 006 Plan',
       todos: [{ id: 'case-006-delete', title: 'To Delete' }],
@@ -587,7 +587,7 @@ describe('Todo Tool Callbacks', () => {
       | undefined;
     const todoId = list?.todos?.[0].id;
 
-    const deleteResult = deleteTodoCallback({ id: todoId! });
+    const deleteResult = await deleteTodoCallback({ id: todoId! });
 
     expect(deleteResult.structuredContent.result.isError).toBeFalsy();
 
@@ -599,8 +599,8 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('toggleTodoCallback should advance todo and list states', () => {
-    const createResult = createTodoCallback({
+  it('toggleTodoCallback should advance todo and list states', async () => {
+    const createResult = await createTodoCallback({
       listId: 'case-007-plan',
       title: 'Case 007 Plan',
       todos: [{ id: 'case-007-toggle', title: 'Toggle Me' }],
@@ -615,7 +615,7 @@ describe('Todo Tool Callbacks', () => {
       | undefined;
     const todoId = list?.todos?.[0].id;
 
-    const toggleResult1 = toggleTodoCallback({ id: todoId! });
+    const toggleResult1 = await toggleTodoCallback({ id: todoId! });
     expect(toggleResult1.structuredContent.result.isError).toBeFalsy();
 
     if (!toggleResult1.structuredContent.result.isError) {
@@ -628,7 +628,7 @@ describe('Todo Tool Callbacks', () => {
       expect(toggledTodo?.completed).toBe(false);
     }
 
-    const toggleResult2 = toggleTodoCallback({ id: todoId! });
+    const toggleResult2 = await toggleTodoCallback({ id: todoId! });
     expect(toggleResult2.structuredContent.result.isError).toBeFalsy();
 
     if (!toggleResult2.structuredContent.result.isError) {
@@ -641,7 +641,7 @@ describe('Todo Tool Callbacks', () => {
       expect(toggledTodo?.completed).toBe(true);
     }
 
-    const toggleResult3 = toggleTodoCallback({ id: todoId! });
+    const toggleResult3 = await toggleTodoCallback({ id: todoId! });
     expect(toggleResult3.structuredContent.result.isError).toBeFalsy();
 
     if (!toggleResult3.structuredContent.result.isError) {
@@ -655,8 +655,8 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('should return error for non-existent todo', () => {
-    const result = updateTodoCallback({
+  it('should return error for non-existent todo', async () => {
+    const result = await updateTodoCallback({
       id: 'non-existent',
       title: 'Should Fail',
     });
