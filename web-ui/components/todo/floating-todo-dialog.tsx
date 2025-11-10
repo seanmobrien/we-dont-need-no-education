@@ -58,6 +58,111 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
 
   if (!open) return null;
 
+  const dialogContent = (
+    <Paper
+      elevation={8}
+      sx={{
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <DialogTitle
+        className="drag-handle"
+        sx={{
+          cursor: 'move',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          pb: 1,
+          borderBottom: 1,
+          borderColor: 'divider',
+        }}
+      >
+        <Typography variant="h6" component="div" noWrap>
+          {list?.title || 'Loading...'}
+        </Typography>
+        <IconButton
+          size="small"
+          onClick={onClose}
+          aria-label="Close dialog"
+          sx={{ ml: 1 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <Box sx={{ flex: 1, overflow: 'auto', p: 0 }}>
+        {isLoading && (
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
+              p: 3,
+            }}
+          >
+            <CircularProgress />
+          </Box>
+        )}
+
+        {error && (
+          <Box sx={{ p: 2 }}>
+            <Alert severity="error">Failed to load todo list</Alert>
+          </Box>
+        )}
+
+        {list && list.todos.length === 0 && (
+          <Box sx={{ p: 2 }}>
+            <Typography color="text.secondary">No items in this list</Typography>
+          </Box>
+        )}
+
+        {list && list.todos.length > 0 && (
+          <List sx={{ py: 0 }}>
+            {list.todos.map((todo) => (
+              <ListItem
+                key={todo.id}
+                dense
+                sx={{
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  '&:last-child': {
+                    borderBottom: 'none',
+                  },
+                }}
+              >
+                <Checkbox
+                  edge="start"
+                  checked={todo.completed}
+                  onChange={() => handleToggle(todo)}
+                  tabIndex={-1}
+                  disableRipple
+                  inputProps={{
+                    'aria-labelledby': `todo-${todo.id}-label`,
+                  }}
+                />
+                <ListItemText
+                  id={`todo-${todo.id}-label`}
+                  primary={todo.title}
+                  secondary={todo.description}
+                  sx={{
+                    '& .MuiListItemText-primary': {
+                      textDecoration: todo.completed ? 'line-through' : 'none',
+                      color: todo.completed ? 'text.disabled' : 'text.primary',
+                    },
+                  }}
+                />
+              </ListItem>
+            ))}
+          </List>
+        )}
+      </Box>
+    </Paper>
+  );
+
   return (
     <Draggable handle=".drag-handle" bounds="body">
       <Box
@@ -76,108 +181,7 @@ export const FloatingTodoDialog: React.FC<FloatingTodoDialogProps> = ({
           maxConstraints={[800, 800]}
           resizeHandles={['se']}
         >
-          <Paper
-            elevation={8}
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-            }}
-          >
-            <DialogTitle
-              className="drag-handle"
-              sx={{
-                cursor: 'move',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                pb: 1,
-                borderBottom: 1,
-                borderColor: 'divider',
-              }}
-            >
-              <Typography variant="h6" component="div" noWrap>
-                {list?.title || 'Loading...'}
-              </Typography>
-              <IconButton
-                size="small"
-                onClick={onClose}
-                aria-label="Close dialog"
-                sx={{ ml: 1 }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <Box sx={{ flex: 1, overflow: 'auto', p: 0 }}>
-              {isLoading && (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    height: '100%',
-                    p: 3,
-                  }}
-                >
-                  <CircularProgress />
-                </Box>
-              )}
-
-              {error && (
-                <Box sx={{ p: 2 }}>
-                  <Alert severity="error">Failed to load todo list</Alert>
-                </Box>
-              )}
-
-              {list && list.todos.length === 0 && (
-                <Box sx={{ p: 2 }}>
-                  <Typography color="text.secondary">No items in this list</Typography>
-                </Box>
-              )}
-
-              {list && list.todos.length > 0 && (
-                <List sx={{ py: 0 }}>
-                  {list.todos.map((todo) => (
-                    <ListItem
-                      key={todo.id}
-                      dense
-                      sx={{
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        '&:last-child': {
-                          borderBottom: 'none',
-                        },
-                      }}
-                    >
-                      <Checkbox
-                        edge="start"
-                        checked={todo.completed}
-                        onChange={() => handleToggle(todo)}
-                        tabIndex={-1}
-                        disableRipple
-                        inputProps={{
-                          'aria-labelledby': `todo-${todo.id}-label`,
-                        }}
-                      />
-                      <ListItemText
-                        id={`todo-${todo.id}-label`}
-                        primary={todo.title}
-                        secondary={todo.description}
-                        sx={{
-                          '& .MuiListItemText-primary': {
-                            textDecoration: todo.completed ? 'line-through' : 'none',
-                            color: todo.completed ? 'text.disabled' : 'text.primary',
-                          },
-                        }}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-            </Box>
-          </Paper>
+          {dialogContent}
         </ResizableBox>
       </Box>
     </Draggable>
