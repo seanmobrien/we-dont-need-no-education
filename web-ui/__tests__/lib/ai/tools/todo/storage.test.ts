@@ -3,7 +3,6 @@
  */
 
 import { InMemoryStorageStrategy } from '@/lib/ai/tools/todo/storage/in-memory-storage';
-import { RedisStorageStrategy } from '@/lib/ai/tools/todo/storage/redis-storage';
 import { createStorageStrategy, createFallbackStrategy } from '@/lib/ai/tools/todo/storage/factory';
 import type { Todo, TodoList } from '@/lib/ai/tools/todo/todo-manager';
 
