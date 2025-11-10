@@ -11,6 +11,7 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import DraftsIcon from '@mui/icons-material/Drafts';
 import ChatIcon from '@mui/icons-material/Chat';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import { NavigationItem, NavigationPageItem } from '@toolpad/core/AppProvider';
 import KeyIcon from '@mui/icons-material/Key';
 import TextSnippetIcon from '@mui/icons-material/TextSnippet';
@@ -121,6 +122,11 @@ export const EmailDashboardLayout = ({
               },
             ]
           : [],
+      },
+      {
+        title: 'Todo Lists',
+        icon: <ChecklistIcon key="todo-lists-icon" />,
+        segment: 'messages/todo-lists',
       },
     ];
 
