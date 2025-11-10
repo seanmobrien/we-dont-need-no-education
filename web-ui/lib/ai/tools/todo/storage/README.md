@@ -76,13 +76,14 @@ interface TodoStorageStrategy {
 
 ## User Segmentation
 
-Both storage strategies support optional `userId` parameter for multi-tenant deployments:
+Only the Redis storage strategy supports true user segmentation via the optional `userId` parameter for multi-tenant deployments. The in-memory strategy does **not** segment data by user and should only be used for single-user or local development scenarios.
 
 ```typescript
+// With Redis strategy, all operations are scoped to the provided userId
 const manager = await createTodoManagerFromFeatureFlag('user-123');
-
-// All operations are scoped to user-123
 await manager.createTodo('User-specific task');
+
+// ⚠️ With in-memory strategy, all data is shared across users. Do not use for multi-tenant deployments.
 ```
 
 ## Graceful Fallback
