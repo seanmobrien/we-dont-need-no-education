@@ -338,7 +338,7 @@ describe('TodoManager', () => {
       manager.createTodo('Alice Default Task', undefined, {
         userId: 'user-alice',
       });
-      const bobTodo = manager.createTodo('Bob Default Task', undefined, {
+      manager.createTodo('Bob Default Task', undefined, {
         userId: 'user-bob',
       });
 
