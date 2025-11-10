@@ -306,7 +306,7 @@ describe('TodoManager', () => {
     });
 
     it('should not allow one user to toggle another users todo', () => {
-      const aliceList = manager.upsertTodoList({
+      manager.upsertTodoList({
         title: 'Alice List',
         userId: 'user-alice',
         todos: [
