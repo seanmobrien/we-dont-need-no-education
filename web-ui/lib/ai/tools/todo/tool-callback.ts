@@ -106,22 +106,24 @@ export const createTodoCallback = async ({
     );
 
     const manager = getTodoManager();
-    const list = manager.upsertTodoList({
-      id: listId,
-      title,
-      description,
-      status,
-      priority,
-      userId,
-      todos: todos?.map((todo) => ({
-        id: todo.id,
-        title: todo.title,
-        description: todo.description,
-        status: todo.status,
-        completed: todo.completed,
-        priority: todo.priority,
-      })),
-    });
+    const list = await manager.upsertTodoList(
+      {
+        id: listId,
+        title,
+        description,
+        status,
+        priority,
+        todos: todos?.map((todo) => ({
+          id: todo.id,
+          title: todo.title,
+          description: todo.description,
+          status: todo.status,
+          completed: todo.completed,
+          priority: todo.priority,
+        })),
+      },
+      { session },
+    );
 
     return toolCallbackResultFactory(serializeTodoList(list));
   } catch (error) {
@@ -240,7 +242,7 @@ export const getTodosCallback = async ({
     const manager = getTodoManager();
 
     if (listId) {
-      const list = manager.getTodoList(listId, { completed, userId });
+      const list = await manager.getTodoList(listId, { completed, session });
 
       if (!list) {
         const message = `Todo list with id ${listId} not found`;
@@ -250,7 +252,7 @@ export const getTodosCallback = async ({
       return toolCallbackResultFactory(serializeTodoList(list));
     }
 
-    const lists = manager.getTodoLists({ completed, userId });
+    const lists = await manager.getTodoLists({ completed, session });
 
     return toolCallbackResultFactory(
       lists.map((list) => serializeTodoList(list)),
@@ -388,13 +390,17 @@ export const updateTodoCallback = async ({
     );
 
     const manager = getTodoManager();
-    const todo = manager.updateTodo(id, {
-      title,
-      description,
-      completed,
-      status,
-      priority,
-    }, { userId });
+    const todo = await manager.updateTodo(
+      id,
+      {
+        title,
+        description,
+        completed,
+        status,
+        priority,
+      },
+      { session },
+    );
 
     if (!todo) {
       return toolCallbackResultFactory(
@@ -488,7 +494,7 @@ export const deleteTodoCallback = async ({ id }: { id: string }) => {
     log((l) => l.info('deleteTodo tool called', { id, userId }));
 
     const manager = getTodoManager();
-    const result = manager.deleteTodo(id, { userId });
+    const result = await manager.deleteTodo(id, { session });
 
     if (!result) {
       return toolCallbackResultFactory(
@@ -538,7 +544,7 @@ export const toggleTodoCallback = async ({ id }: { id: string }) => {
     log((l) => l.info('toggleTodo tool called', { id, userId }));
 
     const manager = getTodoManager();
-    const list = manager.toggleTodo(id, { userId });
+    const list = await manager.toggleTodo(id, { session });
 
     if (!list) {
       return toolCallbackResultFactory(
