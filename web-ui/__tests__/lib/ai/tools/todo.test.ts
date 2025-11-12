@@ -94,11 +94,11 @@ describe('TodoManager', () => {
     expect(todos).toHaveLength(2);
   });
 
-  it('should filter todos by completion status', async () => {
-    const todo1 = await manager.createTodo('Todo 1', undefined, {
+  it('should filter todos by completion status', async async () => {
+    const todo1 = await await manager.createTodo('Todo 1', undefined, {
       session: mockSession,
     });
-    await manager.createTodo('Todo 2', undefined, { session: mockSession });
+    await await manager.createTodo('Todo 2', undefined, { session: mockSession });
 
     await manager.updateTodo(
       todo1.id,
@@ -181,328 +181,76 @@ describe('TodoManager', () => {
     expect(firstTodo?.completed).toBe(false);
     expect(firstToggle?.status).toBe('active');
 
-    const secondToggle = await manager.toggleTodo(initialTodoId, {
-      session: mockSession,
-    });
-    const secondTodo = secondToggle?.todos.find((t) => t.id === initialTodoId);
+    const secondToggle = manager.toggleTodo('case-toggle-task');
+    const secondTodo = secondToggle?.todos.find(
+      (t) => t.id === 'case-toggle-task',
+    );
     expect(secondTodo?.status).toBe('complete');
     expect(secondTodo?.completed).toBe(true);
     expect(secondToggle?.status).toBe('complete');
 
-    const thirdToggle = await manager.toggleTodo(initialTodoId, {
-      session: mockSession,
-    });
-    const thirdTodo = thirdToggle?.todos.find((t) => t.id === initialTodoId);
+    const thirdToggle = manager.toggleTodo('case-toggle-task');
+    const thirdTodo = thirdToggle?.todos.find(
+      (t) => t.id === 'case-toggle-task',
+    );
     expect(thirdTodo?.status).toBe('active');
     expect(thirdTodo?.completed).toBe(false);
     expect(thirdToggle?.status).toBe('active');
   });
 
-  it('should thow on cross-user access', async () => {
-    await expect(
-      manager.getTodo('non-existent-id', { session: mockSession }),
-    ).rejects.toThrow('User does not have access to this todo item');
+  it('should return undefined for non-existent todo', () => {
+    const result = manager.getTodo('non-existent-id');
+    expect(result).toBeUndefined();
   });
-  it('should return undefined for non-existent todo', async () => {
-    await expect(
-      manager.getTodo(idPrefix + 'non-existent-id', { session: mockSession }),
-    ).resolves.toBeUndefined();
-  });
-  it('should upsert and replace todo lists', async () => {
-    const initial = await manager.upsertTodoList(
-      {
-        title: 'Case 123 Plan',
-        todos: [
-          {
-            title: 'Capture intake notes',
-            status: 'pending',
-            priority: 'high',
-          },
-        ],
-      },
-      { session: mockSession },
-    );
+
+  it('should upsert and replace todo lists', () => {
+    const initial = manager.upsertTodoList({
+      id: 'case-123-plan',
+      title: 'Case 123 Plan',
+      todos: [
+        {
+          id: 'case-123-intake',
+          title: 'Capture intake notes',
+          status: 'pending',
+          priority: 'high',
+        },
+      ],
+    });
 
     expect(initial.todos).toHaveLength(1);
-    expect(await manager.getTodos({ session: mockSession })).toHaveLength(1);
+    expect(manager.getTodos()).toHaveLength(1);
 
-    const replaced = await manager.upsertTodoList(
-      {
-        id: initial.id,
-        title: 'Case 123 Plan (Updated)',
-        todos: [
-          {
-            title: 'Publish summary report',
-            status: 'active',
-            priority: 'medium',
-          },
-        ],
-      },
-      { session: mockSession },
-    );
+    const replaced = manager.upsertTodoList({
+      id: 'case-123-plan',
+      title: 'Case 123 Plan (Updated)',
+      todos: [
+        {
+          id: 'case-123-summary',
+          title: 'Publish summary report',
+          status: 'active',
+          priority: 'medium',
+        },
+      ],
+    });
 
     expect(replaced.todos).toHaveLength(1);
-    expect(replaced.todos[0].title).toBe('Publish summary report');
-    expect(await manager.getTodos({ session: mockSession })).toHaveLength(1);
-  });
-
-  describe('User Segmentation', () => {
-    let aliceSession: Session;
-    let bobSession: Session;
-
-    beforeEach(() => {
-      aliceSession = {
-        id: 1,
-        user: {
-          id: 'user-alice',
-          name: 'Alice',
-          email: 'alice@example.com',
-          image: '',
-          subject: 'alice-subject',
-        },
-        expires: new Date(Date.now() + 3600000).toISOString(),
-      };
-      bobSession = {
-        id: 2,
-        user: {
-          id: 'user-bob',
-          name: 'Bob',
-          email: 'bob@example.com',
-          image: '',
-          subject: 'bob-subject',
-        },
-        expires: new Date(Date.now() + 3600000).toISOString(),
-      };
-    });
-
-    it('should create todos with session-based userId', async () => {
-      const todo = await manager.createTodo('Alice Task', undefined, {
-        session: aliceSession,
-      });
-
-      expect(todo.id).toContain('user-alice');
-    });
-
-    it('should filter todos by session', async () => {
-      await manager.createTodo('Alice Task 1', undefined, {
-        session: aliceSession,
-      });
-      await manager.createTodo('Alice Task 2', undefined, {
-        session: aliceSession,
-      });
-      await manager.createTodo('Bob Task 1', undefined, {
-        session: bobSession,
-      });
-
-      const aliceTodos = await manager.getTodos({ session: aliceSession });
-      const bobTodos = await manager.getTodos({ session: bobSession });
-
-      expect(aliceTodos).toHaveLength(2);
-      expect(bobTodos).toHaveLength(1);
-      expect(aliceTodos.every((t) => t.id.includes('user-alice'))).toBe(true);
-      expect(bobTodos.every((t) => t.id.includes('user-bob'))).toBe(true);
-    });
-
-    it('should create todo lists with session-based userId', async () => {
-      const list = await manager.upsertTodoList(
-        {
-          title: 'Alice List',
-          todos: [{ title: 'Alice Task' }],
-        },
-        { session: aliceSession },
-      );
-
-      expect(list.id).toContain('user-alice');
-      expect(list.todos[0].id).toContain('user-alice');
-    });
-
-    it('should filter todo lists by session', async () => {
-      await manager.upsertTodoList(
-        {
-          title: 'Alice List',
-        },
-        { session: aliceSession },
-      );
-      await manager.upsertTodoList(
-        {
-          title: 'Bob List',
-        },
-        { session: bobSession },
-      );
-
-      const aliceLists = await manager.getTodoLists({ session: aliceSession });
-      const bobLists = await manager.getTodoLists({ session: bobSession });
-
-      expect(aliceLists).toHaveLength(1);
-      expect(bobLists).toHaveLength(1);
-      expect(aliceLists[0].id).toContain('user-alice');
-      expect(bobLists[0].id).toContain('user-bob');
-    });
-
-    it('should not allow one user to access another users todo list', async () => {
-      const aliceList = await manager.upsertTodoList(
-        {
-          title: 'Alice List',
-        },
-        { session: aliceSession },
-      );
-
-      await expect(
-        manager.getTodoList(aliceList.id, { session: bobSession }),
-      ).rejects.toThrow('User does not have access to this todo item');
-
-      const aliceAccess = await manager.getTodoList(aliceList.id, {
-        session: aliceSession,
-      });
-      expect(aliceAccess).toBeDefined();
-      expect(aliceAccess?.id).toBe(aliceList.id);
-    });
-
-    it('should not allow one user to update another users todo', async () => {
-      const aliceTodo = await manager.createTodo('Alice Task', undefined, {
-        session: aliceSession,
-      });
-
-      await expect(
-        manager.updateTodo(
-          aliceTodo.id,
-          { title: 'Bob Modified' },
-          { session: bobSession },
-        ),
-      ).rejects.toThrow('User does not have access to this todo item');
-
-      const aliceUpdate = await manager.updateTodo(
-        aliceTodo.id,
-        { title: 'Alice Modified' },
-        { session: aliceSession },
-      );
-
-      expect(aliceUpdate).toBeDefined();
-      expect(aliceUpdate?.title).toBe('Alice Modified');
-    });
-
-    it('should not allow one user to delete another users todo', async () => {
-      const aliceTodo = await manager.createTodo('Alice Task', undefined, {
-        session: aliceSession,
-      });
-
-      await expect(
-        manager.deleteTodo(aliceTodo.id, { session: bobSession }),
-      ).rejects.toThrow('User does not have access to this todo item');
-
-      const aliceDelete = await manager.deleteTodo(aliceTodo.id, {
-        session: aliceSession,
-      });
-
-      expect(aliceDelete).toBe(true);
-      await expect(
-        manager.getTodo(aliceTodo.id, { session: aliceSession }),
-      ).resolves.toBeUndefined();
-    });
-
-    it('should not allow one user to toggle another users todo', async () => {
-      const aliceList = await manager.upsertTodoList(
-        {
-          title: 'Alice List',
-          todos: [
-            {
-              title: 'Alice Task',
-              status: 'pending',
-            },
-          ],
-        },
-        { session: aliceSession },
-      );
-
-      const aliceTaskId = aliceList.todos[0].id;
-
-      await expect(
-        manager.toggleTodo(aliceTaskId, { session: bobSession }),
-      ).rejects.toThrow('User does not have access to this todo item');
-
-      const aliceToggle = await manager.toggleTodo(aliceTaskId, {
-        session: aliceSession,
-      });
-
-      expect(aliceToggle).toBeDefined();
-      expect(aliceToggle?.todos.find((t) => t.id === aliceTaskId)?.status).toBe(
-        'active',
-      );
-    });
-
-    it('should support separate default lists per user', async () => {
-      await manager.createTodo('Alice Default Task', undefined, {
-        session: aliceSession,
-      });
-      await manager.createTodo('Bob Default Task', undefined, {
-        session: bobSession,
-      });
-
-      // Each user should have their own default list
-      const aliceLists = await manager.getTodoLists({ session: aliceSession });
-      const bobLists = await manager.getTodoLists({ session: bobSession });
-
-      expect(aliceLists).toHaveLength(1);
-      expect(bobLists).toHaveLength(1);
-      expect(aliceLists[0].todos).toHaveLength(1);
-      expect(bobLists[0].todos).toHaveLength(1);
-      expect(aliceLists[0].todos[0].title).toBe('Alice Default Task');
-      expect(bobLists[0].todos[0].title).toBe('Bob Default Task');
-    });
-
-    it('should filter by both session and completed status', async () => {
-      const alice1 = await manager.createTodo('Alice Task 1', undefined, {
-        session: aliceSession,
-      });
-      await manager.createTodo('Alice Task 2', undefined, {
-        session: aliceSession,
-      });
-      await manager.createTodo('Bob Task 1', undefined, {
-        session: bobSession,
-      });
-
-      await manager.updateTodo(
-        alice1.id,
-        { completed: true },
-        { session: aliceSession },
-      );
-
-      const aliceCompleted = await manager.getTodos({
-        session: aliceSession,
-        completed: true,
-      });
-      const aliceIncomplete = await manager.getTodos({
-        session: aliceSession,
-        completed: false,
-      });
-
-      expect(aliceCompleted).toHaveLength(1);
-      expect(aliceIncomplete).toHaveLength(1);
-    });
+    expect(replaced.todos[0].id).toBe('case-123-summary');
+    expect(manager.getTodos()).toHaveLength(1);
+    expect(manager.getTodo('case-123-intake')).toBeUndefined();
   });
 });
 const mockConsole = hideConsoleOutput();
 
 describe('Todo Tool Callbacks', () => {
-  const todoIdPrefix = `todo::user-123::`;
-  beforeEach(async () => {
-    // Tool callbacks use await auth() internally,
-    // which is mocked by jest.mock-auth.ts
-    // Clear the singleton instance for this user
+  beforeEach(() => {
+    // Clear the singleton instance
     const manager = getTodoManager();
-    const session = await auth();
-    if (session) {
-      await manager.clearAll({ session });
-    }
+    manager.clearAll();
   });
 
-  afterEach(() => {
-    // jest.clearAllMocks();
-  });
-
-  it('createTodoCallback should create a todo list and return success', async () => {
-    const result = await createTodoCallback({
-      listId: todoIdPrefix + 'case-001-plan',
+  it('createTodoCallback should create a todo list and return success', () => {
+    const result = createTodoCallback({
+      listId: 'case-001-plan',
       title: 'Case 001 Plan',
       description: 'Intake and interim measures',
       status: 'active',
@@ -540,9 +288,9 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('createTodoCallback should replace an existing list when ids match', async () => {
-    const firstResult = await createTodoCallback({
-      listId: todoIdPrefix + 'case-002-plan',
+  it('createTodoCallback should replace an existing list when ids match', () => {
+    const firstResult = createTodoCallback({
+      listId: 'case-002-plan',
       title: 'Case 002 Plan',
       todos: [
         {
@@ -555,8 +303,8 @@ describe('Todo Tool Callbacks', () => {
 
     expect(firstResult.structuredContent.result.isError).toBeFalsy();
 
-    const replacementResult = await createTodoCallback({
-      listId: todoIdPrefix + 'case-002-plan',
+    const replacementResult = createTodoCallback({
+      listId: 'case-002-plan',
       title: 'Case 002 Plan (Revised)',
       todos: [
         {
@@ -579,9 +327,9 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('getTodosCallback should return all todo lists', async () => {
-    await createTodoCallback({
-      listId: todoIdPrefix + 'case-003-plan',
+  it('getTodosCallback should return all todo lists', () => {
+    createTodoCallback({
+      listId: 'case-003-plan',
       title: 'Case 003 Plan',
       todos: [
         {
@@ -591,8 +339,8 @@ describe('Todo Tool Callbacks', () => {
       ],
     });
 
-    await createTodoCallback({
-      listId: todoIdPrefix + 'case-003-followup',
+    createTodoCallback({
+      listId: 'case-003-followup',
       title: 'Case 003 Follow Up',
       todos: [
         {
@@ -618,9 +366,9 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('getTodosCallback should return a specific list when listId provided', async () => {
-    await createTodoCallback({
-      listId: todoIdPrefix + 'case-004-plan',
+  it('getTodosCallback should return a specific list when listId provided', () => {
+    createTodoCallback({
+      listId: 'case-004-plan',
       title: 'Case 004 Plan',
       todos: [
         {
@@ -630,9 +378,7 @@ describe('Todo Tool Callbacks', () => {
       ],
     });
 
-    const result = await getTodosCallback({
-      listId: todoIdPrefix + 'case-004-plan',
-    });
+    const result = getTodosCallback({ listId: 'case-004-plan' });
 
     expect(result.structuredContent.result.isError).toBeFalsy();
 
@@ -647,9 +393,9 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('updateTodoCallback should update a todo', async () => {
-    const createResult = await createTodoCallback({
-      listId: todoIdPrefix + 'case-005-plan',
+  it('updateTodoCallback should update a todo', () => {
+    const createResult = createTodoCallback({
+      listId: 'case-005-plan',
       title: 'Case 005 Plan',
       todos: [
         {
@@ -689,9 +435,9 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('deleteTodoCallback should delete a todo', async () => {
-    const createResult = await createTodoCallback({
-      listId: todoIdPrefix + 'case-006-plan',
+  it('deleteTodoCallback should delete a todo', () => {
+    const createResult = createTodoCallback({
+      listId: 'case-006-plan',
       title: 'Case 006 Plan',
       todos: [{ id: todoIdPrefix + 'case-006-delete', title: 'To Delete' }],
     });
@@ -717,9 +463,9 @@ describe('Todo Tool Callbacks', () => {
     }
   });
 
-  it('toggleTodoCallback should advance todo and list states', async () => {
-    const createResult = await createTodoCallback({
-      listId: todoIdPrefix + 'case-007-plan',
+  it('toggleTodoCallback should advance todo and list states', () => {
+    const createResult = createTodoCallback({
+      listId: 'case-007-plan',
       title: 'Case 007 Plan',
       todos: [{ id: todoIdPrefix + 'case-007-toggle', title: 'Toggle Me' }],
     });
@@ -774,7 +520,6 @@ describe('Todo Tool Callbacks', () => {
   });
 
   it('should return error for non-existent todo', async () => {
-    mockConsole.setup();
     const result = await updateTodoCallback({
       id: 'non-existent',
       title: 'Should Fail',

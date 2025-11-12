@@ -62,17 +62,23 @@ export type TodoListUpsertInput = {
 
 const DEFAULT_LIST_ID = 'default';
 const DEFAULT_LIST_TITLE = 'Default Todo List';
+const DEFAULT_LIST_DESCRIPTION = 'This is the default todo list.';
 const DEFAULT_LIST_STATUS: TodoStatus = 'active';
 const DEFAULT_LIST_PRIORITY: TodoPriority = 'medium';
 
 const RAW_LIST: unique symbol = Symbol('RAW_LIST');
 
+const RAW_LIST: unique symbol = Symbol('RAW_LIST');
+
 /**
- * TodoManager - Manages in-memory todo lists and items.
+ * TodoManager - Manages todo lists and items with pluggable storage strategies.
  *
- * This class provides CRUD operations for managing todos and their lists. It's
- * designed as a singleton to maintain state across multiple tool invocations
- * within the same process.
+ * This class provides CRUD operations for managing todos and their lists. It uses
+ * dependency injection to support different storage backends (in-memory, Redis, etc.)
+ * while maintaining a consistent API.
+ *
+ * @param storage - Storage strategy implementation (defaults to in-memory)
+ * @param userId - Optional user ID for user-specific data segmentation
  */
 export class TodoManager {
   private todos: Map<string, Todo> = new Map();
@@ -87,6 +93,7 @@ export class TodoManager {
    * Create a new todo item inside the default list. This is primarily used by
    * legacy flows that still operate at the item level.
    */
+  async createTodo(
   async createTodo(
     title: string,
     description?: string,
@@ -136,6 +143,41 @@ export class TodoManager {
     });
 
     return todo;
+  }
+
+  static async #todoItemUpsertInsertFactory(
+    todo: Partial<Todo>,
+    { activeSession: Session,
+    now: Date,
+  ): Promise<Todo> {
+
+    const { status: nextStatus, completed: nextCompleted } =
+      this.#resolveStatusAndCompletion(
+        todo ?? {
+          status: updates.status ?? 'pending',
+          completed: updates.completed || updates.status === 'complete',
+        },
+        updates,
+      );
+    const nextPriority = updates.priority ?? 'medium';
+
+    const now = new Date();
+
+    const updatedTodo: Todo = {
+      ...(todo ?? {
+        id,
+        createdAt: now,
+      }),
+      title: updates.title ?? todo?.title ?? 'New TODO',
+      description:
+        updates.description ?? todo?.description ?? 'TODO Description',
+      priority: nextPriority,
+      status: nextStatus,
+      completed: nextCompleted,
+      updatedAt: now,
+    };
+
+    
   }
 
   /**
@@ -227,6 +269,7 @@ export class TodoManager {
    * Retrieve a single todo list by ID, optionally filtering by userId.
    */
   async getTodoList(
+  async getTodoList(
     id: string,
     {
       completed,
@@ -300,7 +343,7 @@ export class TodoManager {
 
   /**
    * Update an existing todo. Optionally verify userId for authorization.
-   */
+   */  
   async updateTodo(
     id: string,
     updates: {
@@ -400,6 +443,17 @@ export class TodoManager {
     });
 
     return updatedTodo;
+  }
+
+  async getListIdFromTodoId(
+    id: string,
+    { session }: { session?: Session | null } = {},
+  ): Promise<string | undefined> {
+    const ret = await this.storage.getTodoToListMapping(id);
+    if (ret) {
+      await TodoManager.validateTodoId({ check: id, session });
+    }
+    return ret;
   }
 
   async getListIdFromTodoId(
@@ -853,6 +907,10 @@ export const getTodoManager = (): TodoManager => {
   });
 };
 
+/**
+ * Reset the TodoManager singleton.
+ * Useful for testing or when changing storage strategies.
+ */
 export const resetTodoManager = (): void => {
   SingletonProvider.Instance.delete('@noeducation/ai/TodoManager');
   log((l) => l.debug('TodoManager singleton reset'));
