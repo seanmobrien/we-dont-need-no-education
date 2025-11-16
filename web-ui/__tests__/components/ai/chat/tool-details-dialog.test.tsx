@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@/__tests__/test-utils';
-import { ToolDetailsDialog } from '@/components/chat/tool-details-dialog';
+import { ToolDetailsDialog } from '@/components/ai/chat/tool-details-dialog';
 import { mockToolMessage } from '../chat.mock-data';
 
 describe('ToolDetailsDialog', () => {
@@ -117,7 +117,9 @@ describe('ToolDetailsDialog', () => {
       />,
     );
 
-    expect(screen.getByText(/no input parameters recorded/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/no input parameters recorded/i),
+    ).toBeInTheDocument();
   });
 
   it('should handle message with no toolResult', () => {

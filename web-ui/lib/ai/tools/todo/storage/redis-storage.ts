@@ -1,6 +1,6 @@
 import type { RedisClientType } from '@/lib/redis-client';
 import { getRedisClient } from '@/lib/redis-client';
-import type { Todo, TodoList } from '../todo-manager';
+import type { Todo, TodoList } from '../types';
 import type { TodoStorageStrategy, StorageStrategyConfig } from './types';
 import { log } from '@/lib/logger';
 import { LoggedError } from '@/lib/react-util/errors/logged-error';
@@ -55,7 +55,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       this.redisClient = await getRedisClient();
       log((l) => l.info('Redis storage strategy initialized'));
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::initializeRedis',
       });
@@ -64,43 +64,31 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
   }
 
   /**
-   * Generate Redis key for a todo list
+   * Generate Redis key for a todo list metadata entry
    */
-  private getListKey(listId: string, userId?: string): string {
-    const userSegment = userId ? `:user:${userId}` : '';
-    return `${this.config.keyPrefix}:list${userSegment}:${listId}`;
+  private getListKey(listId: string): string {
+    return `${this.config.keyPrefix}:list:${listId}`;
+  }
+
+  /**
+   * Generate Redis key for the sorted set of todo IDs for a list
+   */
+  private getListTodosKey(listId: string): string {
+    return `${this.config.keyPrefix}:list:${listId}:todos`;
   }
 
   /**
    * Generate Redis key for a todo item
    */
-  private getTodoKey(todoId: string, userId?: string): string {
-    const userSegment = userId ? `:user:${userId}` : '';
-    return `${this.config.keyPrefix}:todo${userSegment}:${todoId}`;
+  private getTodoKey(todoId: string): string {
+    return `${this.config.keyPrefix}:todo:${todoId}`;
   }
 
   /**
    * Generate Redis key for todo-to-list mapping
    */
-  private getTodoToListKey(todoId: string, userId?: string): string {
-    const userSegment = userId ? `:user:${userId}` : '';
-    return `${this.config.keyPrefix}:mapping${userSegment}:${todoId}`;
-  }
-
-  /**
-   * Generate Redis key pattern for listing all lists
-   */
-  private getListPattern(userId?: string): string {
-    const userSegment = userId ? `:user:${userId}` : '';
-    return `${this.config.keyPrefix}:list${userSegment}:*`;
-  }
-
-  /**
-   * Generate Redis key pattern for listing all todos
-   */
-  private getTodoPattern(userId?: string): string {
-    const userSegment = userId ? `:user:${userId}` : '';
-    return `${this.config.keyPrefix}:todo${userSegment}:*`;
+  private getTodoToListKey(todoId: string): string {
+    return `${this.config.keyPrefix}:mapping:${todoId}`;
   }
 
   /**
@@ -127,76 +115,104 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
   }
 
   /**
-   * Serialize todo list for JSON storage
+   * Serialize todo list metadata for JSON storage
    */
-  private serializeTodoList(list: TodoList): string {
+  private serializeTodoListMetadata(list: TodoList): string {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { todos, ...metadata } = list;
     return JSON.stringify({
-      ...list,
-      createdAt: list.createdAt.toISOString(),
-      updatedAt: list.updatedAt.toISOString(),
-      todos: list.todos.map((todo) => ({
-        ...todo,
-        createdAt: todo.createdAt.toISOString(),
-        updatedAt: todo.updatedAt.toISOString(),
-      })),
+      ...metadata,
+      createdAt: metadata.createdAt.toISOString(),
+      updatedAt: metadata.updatedAt.toISOString(),
     });
   }
 
   /**
-   * Deserialize todo list from JSON storage
+   * Deserialize todo list metadata from JSON storage
    */
-  private deserializeTodoList(data: string): TodoList {
+  private deserializeTodoListMetadata(data: string): Omit<TodoList, 'todos'> {
     const parsed = JSON.parse(data);
     return {
       ...parsed,
       createdAt: new Date(parsed.createdAt),
       updatedAt: new Date(parsed.updatedAt),
-      todos: parsed.todos.map((todo: Todo & { createdAt: string; updatedAt: string }) => ({
-        ...todo,
-        createdAt: new Date(todo.createdAt),
-        updatedAt: new Date(todo.updatedAt),
-      })),
     };
   }
 
-  async upsertTodoList(list: TodoList, userId?: string): Promise<void> {
+  private async getTodoIdsForList(
+    redis: RedisClientType,
+    listId: string,
+  ): Promise<string[]> {
+    const listTodosKey = this.getListTodosKey(listId);
+    return redis.zRange(listTodosKey, 0, -1);
+  }
+
+  private async hydrateTodos(
+    redis: RedisClientType,
+    listId: string,
+    options?: { completed?: boolean },
+  ): Promise<Todo[]> {
+    const todoIds = await this.getTodoIdsForList(redis, listId);
+    if (todoIds.length === 0) {
+      return [];
+    }
+
+    const todoKeys = todoIds.map((id) => this.getTodoKey(id));
+    const values = await redis.mGet(todoKeys);
+    const todos = values
+      .map((value) => (value ? this.deserializeTodo(value) : undefined))
+      .filter((value): value is Todo => Boolean(value));
+
+    if (options?.completed !== undefined) {
+      return todos.filter((todo) => todo.completed === options.completed);
+    }
+
+    return todos;
+  }
+
+  async upsertTodoList(list: TodoList): Promise<TodoList> {
     try {
       const redis = await this.ensureConnected();
-      const listKey = this.getListKey(list.id, userId);
+      const listKey = this.getListKey(list.id);
+      const listTodosKey = this.getListTodosKey(list.id);
 
       // Before storing new todos, clean up old ones
-      const existingList = await this.getTodoList(list.id, userId);
-      if (existingList) {
-        const newTodoIds = new Set(list.todos.map((t) => t.id));
-        const todosToDelete = existingList.todos.filter(
-          (oldTodo) => !newTodoIds.has(oldTodo.id),
+      const existingTodoIds = await this.getTodoIdsForList(redis, list.id);
+      if (existingTodoIds.length > 0) {
+        const incomingIds = new Set(list.todos.map((todo) => todo.id));
+        const removedIds = existingTodoIds.filter(
+          (todoId) => !incomingIds.has(todoId),
         );
-        if (todosToDelete.length > 0) {
+        if (removedIds.length > 0) {
           await Promise.all(
-            todosToDelete.map((todo) => this.deleteTodo(todo.id, userId)),
+            removedIds.map((todoId) => this.deleteTodo(todoId)),
           );
         }
       }
 
       // Store the list
-      await redis.set(listKey, this.serializeTodoList(list), {
+      await redis.set(listKey, this.serializeTodoListMetadata(list), {
         EX: this.config.ttl,
       });
 
       // Store individual todos and mappings in parallel
       await Promise.all(
-        list.todos.map((todo) => this.upsertTodo(todo, list.id, userId)),
+        list.todos.map((todo) => this.upsertTodo(todo, { list: list.id })),
       );
+
+      // Refresh TTL on membership set to align with metadata
+      await redis.expire(listTodosKey, this.config.ttl);
 
       log((l) =>
         l.debug('Todo list upserted to Redis', {
           listId: list.id,
-          userId,
           todoCount: list.todos.length,
         }),
       );
+
+      return list;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::upsertTodoList',
       });
@@ -206,31 +222,26 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
   async getTodoList(
     listId: string,
-    userId?: string,
     options?: { completed?: boolean },
   ): Promise<TodoList | undefined> {
     try {
       const redis = await this.ensureConnected();
-      const listKey = this.getListKey(listId, userId);
+      const listKey = this.getListKey(listId);
 
       const data = await redis.get(listKey);
       if (!data) {
         return undefined;
       }
 
-      const list = this.deserializeTodoList(data);
+      const metadata = this.deserializeTodoListMetadata(data);
+      const todos = await this.hydrateTodos(redis, listId, options);
 
-      // Filter by completion status if requested
-      if (options?.completed !== undefined) {
-        const filteredTodos = list.todos.filter(
-          (todo) => todo.completed === options.completed,
-        );
-        return { ...list, todos: filteredTodos };
-      }
-
-      return list;
+      return {
+        ...metadata,
+        todos,
+      };
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::getTodoList',
       });
@@ -238,13 +249,13 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     }
   }
 
-  async getTodoLists(
-    userId?: string,
-    options?: { completed?: boolean },
-  ): Promise<TodoList[]> {
+  async getTodoLists(options: {
+    prefix: string;
+    completed?: boolean;
+  }): Promise<TodoList[]> {
     try {
       const redis = await this.ensureConnected();
-      const pattern = this.getListPattern(userId);
+      const pattern = `${this.config.keyPrefix}:list:${options.prefix}*`;
 
       // Get all list keys using non-blocking scanIterator
       const keys: string[] = [];
@@ -254,29 +265,38 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       })) {
         keys.push(key);
       }
-      if (keys.length === 0) {
+      const metadataKeys = keys.filter((key) => !key.endsWith(':todos'));
+      if (metadataKeys.length === 0) {
         return [];
       }
 
       // Fetch all lists
-      const values = await redis.mGet(keys);
-      const lists = values
-        .filter((value): value is string => value !== null)
-        .map((value) => this.deserializeTodoList(value));
+      const values = await redis.mGet(metadataKeys);
+      const entries = metadataKeys
+        .map((key, index) => ({ key, value: values[index] }))
+        .filter(
+          (entry): entry is { key: string; value: string } =>
+            entry.value !== null,
+        );
 
-      // Filter by completion status if requested
-      if (options?.completed !== undefined) {
-        return lists.map((list) => ({
-          ...list,
-          todos: list.todos.filter(
-            (todo) => todo.completed === options.completed,
-          ),
-        }));
-      }
+      const hydratedLists = await Promise.all(
+        entries.map(async ({ key, value }) => {
+          const listMetadata = this.deserializeTodoListMetadata(value);
+          const listId = listMetadata.id ?? key.split(':').pop() ?? key;
+          const todos = await this.hydrateTodos(redis, listId, {
+            completed: options.completed,
+          });
+          return {
+            ...listMetadata,
+            id: listId,
+            todos,
+          } satisfies TodoList;
+        }),
+      );
 
-      return lists;
+      return hydratedLists;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::getTodoLists',
       });
@@ -284,33 +304,35 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     }
   }
 
-  async deleteTodoList(listId: string, userId?: string): Promise<boolean> {
+  async deleteTodoList(listId: string): Promise<boolean> {
     try {
       const redis = await this.ensureConnected();
-      const list = await this.getTodoList(listId, userId);
-
-      if (!list) {
+      const metadata = await redis.get(this.getListKey(listId));
+      if (!metadata) {
         return false;
       }
 
-      // Delete all todos in this list in parallel
-      await Promise.all(list.todos.map((todo) => this.deleteTodo(todo.id, userId)));
+      const todoIds = await this.getTodoIdsForList(redis, listId);
+      if (todoIds.length > 0) {
+        await Promise.all(todoIds.map((todoId) => this.deleteTodo(todoId)));
+      }
 
-      // Delete the list itself
-      const listKey = this.getListKey(listId, userId);
-      const result = await redis.del(listKey);
+      // Delete the list metadata and membership set (if still present)
+      const deletedKeys = await redis.del([
+        this.getListKey(listId),
+        this.getListTodosKey(listId),
+      ]);
 
       log((l) =>
         l.debug('Todo list deleted from Redis', {
           listId,
-          userId,
-          deleted: result > 0,
+          deleted: deletedKeys > 0,
         }),
       );
 
-      return result > 0;
+      return true;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::deleteTodoList',
       });
@@ -320,13 +342,15 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
   async upsertTodo(
     todo: Todo,
-    listId: string,
-    userId?: string,
-  ): Promise<void> {
+    options: { list: TodoList | string },
+  ): Promise<Todo> {
     try {
       const redis = await this.ensureConnected();
-      const todoKey = this.getTodoKey(todo.id, userId);
-      const mappingKey = this.getTodoToListKey(todo.id, userId);
+      const listId =
+        typeof options.list === 'string' ? options.list : options.list.id;
+      const todoKey = this.getTodoKey(todo.id);
+      const mappingKey = this.getTodoToListKey(todo.id);
+      const listTodosKey = this.getListTodosKey(listId);
 
       // Store the todo
       await redis.set(todoKey, this.serializeTodo(todo), {
@@ -338,15 +362,23 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         EX: this.config.ttl,
       });
 
+      // Ensure membership set is updated to include this todo
+      await redis.zAdd(listTodosKey, {
+        score: todo.createdAt.getTime(),
+        value: todo.id,
+      });
+      await redis.expire(listTodosKey, this.config.ttl);
+
       log((l) =>
         l.debug('Todo upserted to Redis', {
           todoId: todo.id,
           listId,
-          userId,
         }),
       );
+
+      return todo;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::upsertTodo',
       });
@@ -354,10 +386,10 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     }
   }
 
-  async getTodo(todoId: string, userId?: string): Promise<Todo | undefined> {
+  async getTodo(todoId: string): Promise<Todo | undefined> {
     try {
       const redis = await this.ensureConnected();
-      const todoKey = this.getTodoKey(todoId, userId);
+      const todoKey = this.getTodoKey(todoId);
 
       const data = await redis.get(todoKey);
       if (!data) {
@@ -366,7 +398,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
 
       return this.deserializeTodo(data);
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::getTodo',
       });
@@ -374,10 +406,15 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     }
   }
 
-  async getTodos(userId?: string, completed?: boolean): Promise<Todo[]> {
+  async getTodos(options?: {
+    prefix?: string;
+    completed?: boolean;
+  }): Promise<Todo[]> {
     try {
       const redis = await this.ensureConnected();
-      const pattern = this.getTodoPattern(userId);
+      const pattern = options?.prefix
+        ? `${this.config.keyPrefix}:todo:${options.prefix}*`
+        : `${this.config.keyPrefix}:todo:*`;
 
       // Get all todo keys using scanIterator (non-blocking)
       const keys: string[] = [];
@@ -398,13 +435,13 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         .map((value) => this.deserializeTodo(value));
 
       // Filter by completion status if requested
-      if (completed !== undefined) {
-        return todos.filter((todo) => todo.completed === completed);
+      if (options?.completed !== undefined) {
+        return todos.filter((todo) => todo.completed === options.completed);
       }
 
       return todos;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::getTodos',
       });
@@ -412,11 +449,12 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     }
   }
 
-  async deleteTodo(todoId: string, userId?: string): Promise<boolean> {
+  async deleteTodo(todoId: string): Promise<boolean> {
     try {
       const redis = await this.ensureConnected();
-      const todoKey = this.getTodoKey(todoId, userId);
-      const mappingKey = this.getTodoToListKey(todoId, userId);
+      const todoKey = this.getTodoKey(todoId);
+      const mappingKey = this.getTodoToListKey(todoId);
+      const listId = await redis.get(mappingKey);
 
       // Delete both the todo and its mapping
       const results = await Promise.all([
@@ -424,17 +462,21 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
         redis.del(mappingKey),
       ]);
 
+      if (listId) {
+        const listTodosKey = this.getListTodosKey(listId);
+        await redis.zRem(listTodosKey, todoId);
+      }
+
       log((l) =>
         l.debug('Todo deleted from Redis', {
           todoId,
-          userId,
           deleted: results[0] > 0,
         }),
       );
 
       return results[0] > 0;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::deleteTodo',
       });
@@ -442,18 +484,15 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     }
   }
 
-  async getTodoToListMapping(
-    todoId: string,
-    userId?: string,
-  ): Promise<string | undefined> {
+  async getTodoToListMapping(todoId: string): Promise<string | undefined> {
     try {
       const redis = await this.ensureConnected();
-      const mappingKey = this.getTodoToListKey(todoId, userId);
+      const mappingKey = this.getTodoToListKey(todoId);
 
       const listId = await redis.get(mappingKey);
       return listId ?? undefined;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::getTodoToListMapping',
       });
@@ -461,10 +500,12 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     }
   }
 
-  async getCount(userId?: string): Promise<number> {
+  async getCount(options?: { prefix: string }): Promise<number> {
     try {
       const redis = await this.ensureConnected();
-      const pattern = this.getTodoPattern(userId);
+      const pattern = options?.prefix
+        ? `${this.config.keyPrefix}:todo:${options.prefix}*`
+        : `${this.config.keyPrefix}:todo:*`;
 
       // Count keys using scanIterator (non-blocking)
       let count = 0;
@@ -477,7 +518,7 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
       }
       return count;
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::getCount',
       });
@@ -485,44 +526,105 @@ export class RedisStorageStrategy implements TodoStorageStrategy {
     }
   }
 
-  async clearAll(userId?: string): Promise<void> {
+  async clearAll(options?: { prefix: string }): Promise<{
+    todosCleared: number;
+    listsCleared: number;
+    matchesCleared: number;
+  }> {
     try {
       const redis = await this.ensureConnected();
 
-      // Get all keys for this user (or all if no userId) using scanIterator
-      const listPattern = this.getListPattern(userId);
-      const todoPattern = this.getTodoPattern(userId);
-      const userSegment = userId ? `:user:${userId}` : '';
-      const mappingPattern = `${this.config.keyPrefix}:mapping${userSegment}:*`;
+      const prefix = options?.prefix || '';
+      const listPattern = prefix
+        ? `${this.config.keyPrefix}:list:${prefix}*`
+        : `${this.config.keyPrefix}:list:*`;
+      const todoPattern = prefix
+        ? `${this.config.keyPrefix}:todo:${prefix}*`
+        : `${this.config.keyPrefix}:todo:*`;
+      const mappingPattern = prefix
+        ? `${this.config.keyPrefix}:mapping:${prefix}*`
+        : `${this.config.keyPrefix}:mapping:*`;
+      const membershipPattern = prefix
+        ? `${this.config.keyPrefix}:list:${prefix}*:todos`
+        : `${this.config.keyPrefix}:list:*:todos`;
 
-      const allKeys: string[] = [];
-      
+      const listKeys: string[] = [];
+      const todoKeys: string[] = [];
+      const mappingKeys: string[] = [];
+      const membershipKeys: string[] = [];
+
       // Scan for all matching keys using non-blocking scanIterator
-      for (const pattern of [listPattern, todoPattern, mappingPattern]) {
-        for await (const key of redis.scanIterator({
-          MATCH: pattern,
-          COUNT: 100,
-        })) {
-          allKeys.push(key);
-        }
+      for await (const key of redis.scanIterator({
+        MATCH: listPattern,
+        COUNT: 100,
+      })) {
+        listKeys.push(key);
       }
 
+      for await (const key of redis.scanIterator({
+        MATCH: todoPattern,
+        COUNT: 100,
+      })) {
+        todoKeys.push(key);
+      }
+
+      for await (const key of redis.scanIterator({
+        MATCH: mappingPattern,
+        COUNT: 100,
+      })) {
+        mappingKeys.push(key);
+      }
+
+      for await (const key of redis.scanIterator({
+        MATCH: membershipPattern,
+        COUNT: 100,
+      })) {
+        membershipKeys.push(key);
+      }
+
+      const allKeys = [
+        ...listKeys,
+        ...todoKeys,
+        ...mappingKeys,
+        ...membershipKeys,
+      ];
       if (allKeys.length > 0) {
         await redis.del(allKeys);
       }
 
       log((l) =>
         l.debug('Cleared all todos from Redis', {
-          userId,
+          prefix,
           keysDeleted: allKeys.length,
+          listsCleared: listKeys.length,
+          todosCleared: todoKeys.length,
+          matchesCleared: mappingKeys.length,
+          membershipsCleared: membershipKeys.length,
         }),
       );
+
+      return {
+        todosCleared: todoKeys.length,
+        listsCleared: listKeys.length,
+        matchesCleared: mappingKeys.length,
+      };
     } catch (error) {
-      LoggedError.isTurtlesAllTheWayDown(error, {
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
         log: true,
         source: 'RedisStorageStrategy::clearAll',
       });
       throw error;
     }
+  }
+
+  equals(other: TodoStorageStrategy): boolean {
+    if (!(other instanceof RedisStorageStrategy)) {
+      return false;
+    }
+    return (
+      this.config.ttl === other.config.ttl &&
+      this.config.keyPrefix === other.config.keyPrefix &&
+      this.config.enableFallback === other.config.enableFallback
+    );
   }
 }

@@ -61,7 +61,7 @@ import {
   estimateMarkdownHeight,
 } from '@/lib/components/ai/height-estimators';
 import { ChatTurn } from '@/lib/ai/chat/types';
-import type { SelectedChatItem } from '../../lib/ai/chat/export';
+import type { SelectedChatItem } from '@/lib/ai/chat/export';
 import { type MessageType, searchMessageContent } from './chat-message-filters';
 
 /**

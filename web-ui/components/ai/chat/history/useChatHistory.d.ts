@@ -5,7 +5,7 @@
 import { type ChatDetails } from '../../../lib/ai/chat/types';
 import { UseQueryResult } from '@tanstack/react-query';
 
-declare module '@/components/chat/history/useChatHistory' {
+declare module '@/components/ai/chat/history/useChatHistory' {
   /**
    * Chat History Data Hook Module
    * ==================================
