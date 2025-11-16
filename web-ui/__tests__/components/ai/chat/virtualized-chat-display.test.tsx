@@ -1,7 +1,6 @@
- 
 import { render, screen, fireEvent } from '@/__tests__/test-utils';
-import { VirtualizedChatDisplay } from '@/components/chat/virtualized-chat-display';
-import { mockChatTurn, mockChatTurnWithTool } from '../chat.mock-data';
+import { VirtualizedChatDisplay } from '@/components/ai/chat/virtualized-chat-display';
+import { mockChatTurn, mockChatTurnWithTool } from './../chat.mock-data';
 
 // Mock the @tanstack/react-virtual library
 jest.mock('@tanstack/react-virtual', () => ({
@@ -9,7 +8,7 @@ jest.mock('@tanstack/react-virtual', () => ({
 }));
 
 // Mock ChatTurnDisplay component
-jest.mock('@/components/chat/chat-turn-display', () => ({
+jest.mock('@/components/ai/chat/chat-turn-display', () => ({
   ChatTurnDisplay: ({ turn, showTurnProperties, showMessageMetadata }: any) => {
     if (!turn) return null;
     return (

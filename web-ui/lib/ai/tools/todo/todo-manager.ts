@@ -1,74 +1,34 @@
 import { auth } from '@/auth';
 import { Session } from '@auth/core/types';
-import { log, logEvent, EventSeverity } from '@/lib/logger';
+import { log, logEvent } from '@/lib/logger';
 import { unauthorizedServiceResponse } from '@/lib/nextjs-util/server';
 import { ApiRequestError } from '@/lib/send-api-request';
 import {
-  globalSingleton,
+  globalSingletonAsync,
   SingletonProvider,
 } from '@/lib/typescript/singleton-provider';
 import { NextResponse } from 'next/server';
-
-export type TodoStatus = 'pending' | 'active' | 'complete';
-
-export type TodoPriority = 'high' | 'medium' | 'low';
-
-/**
- * Represents a single todo item in the system.
- */
-export interface Todo {
-  id: string;
-  title: string;
-  description?: string;
-  completed: boolean;
-  status: TodoStatus;
-  priority: TodoPriority;
-  createdAt: Date;
-  updatedAt: Date;
-  userId?: string;
-}
-
-export interface TodoList {
-  id: string;
-  title: string;
-  description?: string;
-  status: TodoStatus;
-  priority: TodoPriority;
-  todos: Todo[];
-  createdAt: Date;
-  updatedAt: Date;
-  userId?: string;
-}
-
-export type TodoListUpsertInput = {
-  id?: string;
-  title: string;
-  description?: string;
-  status?: TodoStatus;
-  priority?: TodoPriority;
-  createdAt?: Date;
-  updatedAt?: Date;
-  todos?: Array<{
-    id?: string;
-    title: string;
-    description?: string;
-    completed?: boolean;
-    status?: TodoStatus;
-    priority?: TodoPriority;
-    createdAt?: Date;
-    updatedAt?: Date;
-  }>;
-};
+import type { TodoStorageStrategy } from './storage';
+import { InMemoryStorageStrategy } from './storage';
+import { isError, LoggedError } from '@/lib/react-util';
+import type {
+  Todo,
+  TodoList,
+  TodoStatus,
+  TodoPriority,
+  TodoListUpsertInput,
+  TodoUpsertInsert,
+} from './types';
+import { createStorageStrategyFromFlags } from './todo-manager-factory';
+import { createStorageStrategy } from './storage/factory';
 
 const DEFAULT_LIST_ID = 'default';
 const DEFAULT_LIST_TITLE = 'Default Todo List';
 const DEFAULT_LIST_DESCRIPTION = 'This is the default todo list.';
 const DEFAULT_LIST_STATUS: TodoStatus = 'active';
-const DEFAULT_LIST_PRIORITY: TodoPriority = 'medium';
-
-const RAW_LIST: unique symbol = Symbol('RAW_LIST');
-
-const RAW_LIST: unique symbol = Symbol('RAW_LIST');
+const DEFAULT_PRIORITY: TodoPriority = 'medium';
+const DEFAULT_ITEM_TITLE = 'New Task';
+const DEFAULT_ITEM_DESCRIPTION = '';
 
 /**
  * TodoManager - Manages todo lists and items with pluggable storage strategies.
@@ -81,11 +41,10 @@ const RAW_LIST: unique symbol = Symbol('RAW_LIST');
  * @param userId - Optional user ID for user-specific data segmentation
  */
 export class TodoManager {
-  private todos: Map<string, Todo> = new Map();
-  private todoLists: Map<string, TodoList> = new Map();
-  private todoToList: Map<string, string> = new Map();
+  private storage: TodoStorageStrategy;
 
-  constructor() {
+  constructor(storage?: TodoStorageStrategy) {
+    this.storage = storage ?? new InMemoryStorageStrategy();
     log((l) => l.debug('TodoManager instance created'));
   }
 
@@ -93,7 +52,6 @@ export class TodoManager {
    * Create a new todo item inside the default list. This is primarily used by
    * legacy flows that still operate at the item level.
    */
-  async createTodo(
   async createTodo(
     title: string,
     description?: string,
@@ -107,7 +65,6 @@ export class TodoManager {
     const list = await (options?.listId
       ? this.getTodoList(options.listId, {
           session: options?.session,
-          [RAW_LIST]: true,
         })
       : this.ensureDefaultList({ session: options?.session }));
     if (!list) {
@@ -130,13 +87,6 @@ export class TodoManager {
       options?.session,
     );
 
-    /*
-    list.todos.push(todo);
-    list.updatedAt = todo.updatedAt;
-    this.todos.set(todo.id, todo);
-    this.todoToList.set(todo.id, list.id);
-    */
-
     logEvent('info', 'TODO Item created', {
       itemId: todo.id,
       listId: list.id,
@@ -146,38 +96,48 @@ export class TodoManager {
   }
 
   static async #todoItemUpsertInsertFactory(
-    todo: Partial<Todo>,
-    { activeSession: Session,
-    now: Date,
+    todo: TodoUpsertInsert,
+    {
+      session,
+      now: nowFromProps,
+      existing,
+    }: { session: Session | null; now?: Date; existing: Todo | undefined },
   ): Promise<Todo> {
+    const now = nowFromProps ?? new Date();
+    let toolId: string;
+    let activeSession: Session;
+    if (todo.id) {
+      const [validSession] = await TodoManager.validateTodoId({
+        check: todo.id,
+        session,
+      });
+      activeSession = validSession;
+      toolId = todo.id;
+    } else {
+      const [id, validSession] = await TodoManager.generateTodoId({ session });
+      activeSession = validSession;
+      toolId = id;
+    }
 
-    const { status: nextStatus, completed: nextCompleted } =
-      this.#resolveStatusAndCompletion(
-        todo ?? {
-          status: updates.status ?? 'pending',
-          completed: updates.completed || updates.status === 'complete',
-        },
-        updates,
-      );
-    const nextPriority = updates.priority ?? 'medium';
-
-    const now = new Date();
-
-    const updatedTodo: Todo = {
-      ...(todo ?? {
-        id,
-        createdAt: now,
-      }),
-      title: updates.title ?? todo?.title ?? 'New TODO',
+    const { status, completed } = TodoManager.#resolveStatusAndCompletion(
+      existing ?? {
+        status: todo.status || 'pending',
+        completed: false,
+      },
+      todo,
+    );
+    return {
+      title: todo.title ?? existing?.title ?? DEFAULT_ITEM_TITLE,
       description:
-        updates.description ?? todo?.description ?? 'TODO Description',
-      priority: nextPriority,
-      status: nextStatus,
-      completed: nextCompleted,
+        todo.description ?? existing?.description ?? DEFAULT_ITEM_DESCRIPTION,
+      priority: todo.priority ?? existing?.priority ?? 'medium',
+      createdAt: now,
       updatedAt: now,
-    };
-
-    
+      id: toolId,
+      status,
+      completed,
+      userId: activeSession.user!.id!,
+    } satisfies Todo;
   }
 
   /**
@@ -186,66 +146,55 @@ export class TodoManager {
   async upsertTodoList(
     input: TodoListUpsertInput,
     { session }: { session?: Session | null } = {},
-  ): Promise<TodoList> {
+  ): Promise<TodoList | LoggedError> {
+    if (!input) {
+      throw new TypeError('TodoListUpsertInput is required');
+    }
+    const now = new Date();
     let activeSession: Session;
     let listId: string;
+    let existingList: TodoList | undefined;
     if (input.id) {
-      const [s1] = await TodoManager.validateTodoId({
+      // Then validate current session has access to it
+      const sessionAndId = await TodoManager.validateTodoId({
         check: input.id,
         session,
       });
-      activeSession = s1;
-      listId = input.id;
+      activeSession = sessionAndId[0];
+      listId = sessionAndId[1];
+      // Load existing list for todo item processing
+      existingList = await this.storage.getTodoList(input.id);
     } else {
-      const [id, s2] = await TodoManager.generateTodoId({
+      const sessionAndId = await TodoManager.generateTodoId({
         session,
         salt: 'list',
       });
-      activeSession = s2;
-      listId = id;
+      activeSession = sessionAndId[1];
+      listId = sessionAndId[0];
     }
-    const now = new Date();
-
-    const existingList = this.todoLists.get(listId);
-    const createdAt = input.createdAt ?? existingList?.createdAt ?? now;
-    const userId = activeSession.user!.id;
-
-    const list: TodoList = {
-      id: listId,
-      title: input.title,
-      description: input.description,
-      status: input.status ?? 'active',
-      priority: input.priority ?? 'medium',
-      todos: [],
-      createdAt,
-      updatedAt: input.updatedAt ?? now,
-      userId,
-    };
-
-    if (existingList) {
-      // Remove any tools that are in the currently saved item but not the new data
-      existingList.todos
-        .filter((todo) => !input.todos?.some((t) => t.id === todo.id))
-        .forEach((todo) => {
-          this.todos.delete(todo.id);
-          this.todoToList.delete(todo.id);
-        });
-    }
-    this.todoLists.set(listId, list);
-
     const todos = await Promise.all(
-      (input.todos ?? []).map((todoInput) =>
-        this.createTodoRecord(todoInput, list, activeSession),
+      (input.todos ?? []).map((t1) =>
+        TodoManager.#todoItemUpsertInsertFactory(t1, {
+          session: activeSession,
+          now,
+          existing: existingList?.todos.find((et: Todo) => et.id === t1.id),
+        }),
       ),
     );
-    list.todos = todos;
-    logEvent('info', 'TODO List Upserted', {
-      userId: activeSession?.user?.id!,
-      listId: listId,
-      itemCount: todos.length,
+    return await this.storage.upsertTodoList({
+      id: listId,
+      title: input.title ?? existingList?.title ?? DEFAULT_LIST_TITLE,
+      description:
+        input.description ??
+        existingList?.description ??
+        DEFAULT_LIST_DESCRIPTION,
+      status: input.status ?? existingList?.status ?? 'active',
+      priority: input.priority ?? existingList?.priority ?? 'medium',
+      todos: todos,
+      createdAt: input.createdAt ?? existingList?.createdAt ?? now,
+      updatedAt: input.updatedAt ?? now,
+      userId: activeSession.user!.id,
     });
-
-    return list;
   }
 
   /**
@@ -257,39 +206,27 @@ export class TodoManager {
   }: { completed?: boolean; session?: Session | null } = {}): Promise<
     TodoList[]
   > {
-    const [prefix, activeSession] = await TodoManager.generateTodoPrefix({
+    const [prefix] = await TodoManager.generateTodoPrefix({
       session,
     });
-    return Array.from(this.todoLists.entries())
-      .filter(([k]) => k.startsWith(prefix))
-      .map(([_k, v]) => this.cloneListWithFilter(v, completed));
+    return await this.storage.getTodoLists({ completed: completed, prefix });
   }
 
   /**
-   * Retrieve a single todo list by ID, optionally filtering by userId.
+   * Retrieve a single todo list by ID
    */
-  async getTodoList(
   async getTodoList(
     id: string,
     {
-      completed,
       session,
-      ...options
-    }: { completed?: boolean; session?: Session | null; [RAW_LIST]?: boolean },
+    }: { completed?: boolean; session?: Session | null },
   ): Promise<TodoList | undefined> {
     await TodoManager.validateTodoId({ check: id, session });
-    const list = this.todoLists.get(id);
-    if (!list) {
-      return undefined;
-    }
-    return options[RAW_LIST] === true
-      ? list
-      : this.cloneListWithFilter(list, completed);
+    return this.storage.getTodoList(id).then((x) => x ?? undefined);
   }
 
   /**
-   * Get all todos, optionally filtered by completion status and/or userId.
-   * Supports both legacy boolean parameter and new options object for backward compatibility.
+   * Get all todos, optionally filtered by completion status.
    */
   async getTodos(
     completedOrOptions?:
@@ -320,14 +257,7 @@ export class TodoManager {
       session: activeSession,
     });
 
-    let todos = Array.from(this.todos.entries())
-      .filter(
-        ([k, v]) =>
-          k.startsWith(prefix) && v.completed === (completed ?? v.completed),
-      )
-      .map(([_k, v]) => v);
-
-    return todos;
+    return this.storage.getTodos({ completed, prefix });
   }
 
   /**
@@ -338,12 +268,12 @@ export class TodoManager {
     { session }: { session?: Session | null } = {},
   ): Promise<Todo | undefined> {
     await TodoManager.validateTodoId({ check: id, session });
-    return this.todos.get(id);
+    return this.storage.getTodo(id).then((x) => x ?? undefined);
   }
 
   /**
-   * Update an existing todo. Optionally verify userId for authorization.
-   */  
+   * Update an existing todo.
+   */
   async updateTodo(
     id: string,
     updates: {
@@ -369,9 +299,11 @@ export class TodoManager {
       id = tempId;
       activeSession = ses;
     }
+    // If we get here, activeSession and id are valid
+    const todo = await this.storage.getTodo(id);
 
-    const todo = await this.getTodo(id, { session: activeSession });
     let actualListId: string;
+
     let list: TodoList;
     if (options?.list) {
       list = options.list;
@@ -384,7 +316,6 @@ export class TodoManager {
         actualListId = tryListId;
         const tryList = await this.getTodoList(actualListId, {
           session: activeSession,
-          [RAW_LIST]: true,
         });
         if (tryList) {
           list = tryList;
@@ -399,7 +330,7 @@ export class TodoManager {
     TodoManager.validateTodoId({ check: list.id, session: activeSession });
 
     const { status: nextStatus, completed: nextCompleted } =
-      this.resolveStatusAndCompletion(
+      TodoManager.#resolveStatusAndCompletion(
         todo ?? {
           status: updates.status ?? 'pending',
           completed: updates.completed || updates.status === 'complete',
@@ -423,8 +354,6 @@ export class TodoManager {
       completed: nextCompleted,
       updatedAt: now,
     };
-    // update in list
-    this.todos.set(id, updatedTodo);
     const idx = list.todos.findIndex((t) => t.id === id);
     if (idx !== -1) {
       list.todos[idx] = updatedTodo;
@@ -433,11 +362,17 @@ export class TodoManager {
     }
     list.updatedAt = updatedTodo.updatedAt;
     this.updateListStatus(list);
+
+    // update in list
+    await this.storage.upsertTodo(updatedTodo, { list });
+    /*
+
     this.todoLists.set(list.id, list);
     this.todoToList.set(id, list.id);
+    */
 
     logEvent('info', 'TODO Item Updated', {
-      userId: activeSession?.user?.id!,
+      userId: activeSession?.user?.id ?? 'anonymous',
       itemId: id,
       listId: list.id,
     });
@@ -456,56 +391,61 @@ export class TodoManager {
     return ret;
   }
 
-  async getListIdFromTodoId(
-    id: string,
-    { session }: { session?: Session | null } = {},
-  ): Promise<string | undefined> {
-    const ret = this.todoToList.get(id);
-    if (ret) {
-      await TodoManager.validateTodoId({ check: id, session });
-    }
-    return ret;
-  }
-
   /**
-   * Delete a todo by ID. Optionally verify userId for authorization.
+   * Delete a todo by ID.
    */
   async deleteTodo(
     id: string,
     { session }: { session?: Session | null } = {},
   ): Promise<boolean> {
-    // Validate we own this id
-    const [activeSession] = await TodoManager.validateTodoId({
-      check: id,
-      session,
-    });
-    const listId = await this.getListIdFromTodoId(id, {
-      session: activeSession,
-    });
-    const list = listId ? this.todoLists.get(listId) : undefined;
-
-    const result = this.todos.delete(id);
-    this.todoToList.delete(id);
-
-    if (list) {
-      const nextTodos = list.todos.filter((todo) => todo.id !== id);
-      if (nextTodos.length !== list.todos.length) {
-        list.todos = nextTodos;
-        list.updatedAt = new Date();
-        this.updateListStatus(list);
-        this.todoLists.set(list.id, list);
-      }
-    }
-
-    if (result) {
-      logEvent('info', 'TODO Item deleted', {
-        userId: activeSession?.user?.id!,
-        itemId: id,
-        listId: listId ?? '[none]',
+    try {
+      // First validate we have access to this item
+      const [activeSession] = await TodoManager.validateTodoId({
+        check: id,
+        session,
       });
-    }
 
-    return result;
+      // Then, use the validated session to load the list and delete the todo item
+      const listId = await this.getListIdFromTodoId(id, {
+        session: activeSession,
+      });
+      const list = listId
+        ? await this.getTodoList(listId, { session: activeSession })
+        : undefined;
+      const result = await this.storage.deleteTodo(id);
+
+      // Create an audit log if deletion was successful,
+      // then update the associated list to remove the todo item
+      // and make any necessary status updates.
+      // IMPORTANT: We do not require transactional support from
+      // the storage layer, so it's possible for the todo to be deleted
+      // but the list to fail to update. We accept this risk for v1.
+      if (result) {
+        logEvent('info', 'TODO Item deleted', {
+          userId: activeSession.user?.id ?? 'anonymous',
+          itemId: id,
+          listId: list?.id ?? '[none]',
+        });
+
+        if (list) {
+          const nextTodos = list.todos.filter((todo) => todo.id !== id);
+          if (nextTodos.length !== list.todos.length) {
+            list.todos = nextTodos;
+            list.updatedAt = new Date();
+            this.updateListStatus(list);
+            await this.storage.upsertTodoList(list);
+          }
+        }
+        return true;
+      }
+      return false;
+    } catch (err) {
+      LoggedError.isTurtlesAllTheWayDownBaby(err, {
+        log: true,
+        source: 'TodoManager.deleteTodo',
+      });
+      return false;
+    }
   }
 
   /**
@@ -515,65 +455,75 @@ export class TodoManager {
     id: string,
     { session }: { session?: Session | null } = {},
   ): Promise<TodoList | undefined> {
-    const [activeSession] = await TodoManager.validateTodoId({
-      check: id,
-      session,
-    });
+    try {
+      const [activeSession] = await TodoManager.validateTodoId({
+        check: id,
+        session,
+      });
 
-    const todo = await this.getTodo(id, { session: activeSession });
-    if (!todo) {
+      const listId = await this.storage.getTodoToListMapping(id);
+      const list = listId
+        ? await this.getTodoList(listId, { session: activeSession })
+        : undefined;
+      const todo = await this.getTodo(id, { session: activeSession });
+
+      // If no list exists it's an orphaned todo, just delete it
+      if (!list) {
+        if (todo) {
+          await this.storage.deleteTodo(id);
+        }
+        return undefined;
+      }
+
+      // If no todo exists, just return the list as-is
+      if (!todo) {
+        log((l) => l.warn('Toggle requested for missing todo item', { id }));
+        return list;
+      }
+
+      // Ok, we have both a list and a todo, proceed with toggling
+      const { status: nextStatus, completed: nextCompleted } =
+        this.advanceTodoState(todo);
+      const updatedTodo: Todo = {
+        ...todo,
+        status: nextStatus,
+        completed: nextCompleted,
+        updatedAt: new Date(),
+      };
+
+      // Update our list with the updated todo, processing any status changes
+      // on the way
+      const idx = list.todos.findIndex((item) => item.id === id);
+      if (idx !== -1) {
+        list.todos[idx] = updatedTodo;
+      } else {
+        list.todos.push(updatedTodo);
+      }
+      list.updatedAt = updatedTodo.updatedAt;
+      this.updateListStatus(list);
+
+      // So my theory is that while these complicated status updates
+      // are a manager concern, persisting the child todo items with
+      // the list is more a storage thing, so we're going to try just
+      // saving the list and see if that works out.
+      await this.storage.upsertTodoList(list);
+
+      logEvent('info', 'TODO Item toggled', {
+        userId: activeSession.user?.id ?? 'anonymous',
+        itemId: id,
+        listId: list.id,
+        status: updatedTodo.status,
+        completed: updatedTodo.completed ? 'true' : 'false',
+      });
+
+      return list;
+    } catch (err) {
+      LoggedError.isTurtlesAllTheWayDownBaby(err, {
+        log: true,
+        source: 'TodoManager.toggleTodo',
+      });
       return undefined;
     }
-
-    const listId = await this.getListIdFromTodoId(id, {
-      session: activeSession,
-    });
-    if (!listId) {
-      await this.deleteTodo(id, { session: activeSession });
-      return undefined;
-    }
-
-    const list = await this.getTodoList(listId, {
-      session: activeSession,
-      [RAW_LIST]: true,
-    });
-    if (!list) {
-      await this.deleteTodo(id, { session: activeSession });
-      return undefined;
-    }
-
-    const { status: nextStatus, completed: nextCompleted } =
-      this.advanceTodoState(todo);
-
-    const updatedTodo: Todo = {
-      ...todo,
-      status: nextStatus,
-      completed: nextCompleted,
-      updatedAt: new Date(),
-    };
-
-    const idx = list.todos.findIndex((item) => item.id === id);
-    if (idx !== -1) {
-      list.todos[idx] = updatedTodo;
-    } else {
-      list.todos.push(updatedTodo);
-    }
-
-    list.updatedAt = updatedTodo.updatedAt;
-    this.updateListStatus(list);
-
-    this.todos.set(id, updatedTodo);
-    this.todoLists.set(list.id, list);
-
-    logEvent('info', 'TODO Item toggled', {
-      userId: activeSession.user?.id!,
-      itemId: id,
-      listId,
-      status: updatedTodo.status,
-      completed: updatedTodo.completed ? 'true' : 'false',
-    });
-
-    return this.cloneListWithFilter(list);
   }
 
   /**
@@ -583,46 +533,48 @@ export class TodoManager {
     session,
   }: {
     session?: Session | null;
-  } = {}): Promise<void> {
-    const [prefix, activeSession] = await TodoManager.generateTodoPrefix({
-      session,
-    });
+  } = {}): Promise<boolean> {
+    try {
+      const [prefix, activeSession] = await TodoManager.generateTodoPrefix({
+        session,
+      });
+      const { todosCleared, listsCleared } = await this.storage.clearAll({
+        prefix,
+      });
 
-    // Delete all todos and lists that match the user's prefix
-    const todoIdsToDelete = Array.from(this.todos.keys()).filter((id) =>
-      id.startsWith(prefix),
-    );
-    const listIdsToDelete = Array.from(this.todoLists.keys()).filter((id) =>
-      id.startsWith(prefix),
-    );
-
-    todoIdsToDelete.forEach((id) => {
-      this.todos.delete(id);
-      this.todoToList.delete(id);
-    });
-
-    listIdsToDelete.forEach((id) => {
-      this.todoLists.delete(id);
-    });
-
-    logEvent('info', 'TODO items and lists cleared for user', {
-      userId: activeSession?.user?.id!,
-      todosCleared: todoIdsToDelete.length,
-      listsCleared: listIdsToDelete.length,
-    });
+      logEvent('info', 'TODO items and lists cleared for user', {
+        userId: activeSession.user?.id ?? 'anonymous',
+        todosCleared,
+        listsCleared,
+      });
+      return true;
+    } catch (err) {
+      LoggedError.isTurtlesAllTheWayDownBaby(err, {
+        log: true,
+        source: 'TodoManager.clearAll',
+      });
+      return false;
+    }
   }
 
   /**
-   * Get the total count of todos across all lists for a specific user.
+   * Get the total count of todos across all lists.
    */
   async getCount({
     session,
   }: {
     session?: Session | null;
   } = {}): Promise<number> {
-    const [prefix] = await TodoManager.generateTodoPrefix({ session });
-    return Array.from(this.todos.keys()).filter((id) => id.startsWith(prefix))
-      .length;
+    try {
+      const [prefix] = await TodoManager.generateTodoPrefix({ session });
+      return await this.storage.getCount({ prefix });
+    } catch (err) {
+      LoggedError.isTurtlesAllTheWayDownBaby(err, {
+        log: true,
+        source: 'TodoManager.getCount',
+      });
+      return -1;
+    }
   }
 
   private async createTodoRecord(
@@ -652,7 +604,7 @@ export class TodoManager {
       inputId = input.id;
       activeSession = active;
     } else {
-      let [id, active] = await TodoManager.generateTodoId({
+      const [id, active] = await TodoManager.generateTodoId({
         suffix: undefined,
         session,
         salt: 'todo',
@@ -696,7 +648,7 @@ export class TodoManager {
     return result;
   }
 
-  private resolveStatusAndCompletion(
+  static #resolveStatusAndCompletion(
     todo: { status: TodoStatus; completed: boolean },
     updates: {
       completed?: boolean;
@@ -715,7 +667,7 @@ export class TodoManager {
       nextCompleted = updates.completed;
       nextStatus = updates.completed
         ? 'complete'
-        : this.inferIncompleteStatus(nextStatus);
+        : TodoManager.inferIncompleteStatus(nextStatus);
     }
 
     return { status: nextStatus, completed: nextCompleted };
@@ -797,7 +749,7 @@ export class TodoManager {
   private static async validateTodoId(options: {
     check: string;
     session?: Session | null;
-  }): Promise<[Session]> {
+  }): Promise<[Session, string]> {
     const [prefix, activeSession] = await this.generateTodoPrefix({
       session: options.session,
     });
@@ -808,7 +760,15 @@ export class TodoManager {
         unauthorizedServiceResponse(),
       );
     }
-    return [activeSession];
+    return [activeSession, options.check];
+  }
+
+  private static inferIncompleteStatus(previousStatus: TodoStatus): TodoStatus {
+    if (previousStatus === 'complete') {
+      return 'active';
+    }
+
+    return previousStatus;
   }
 
   private advanceTodoState(todo: Todo): {
@@ -863,10 +823,7 @@ export class TodoManager {
     });
     const listId = `${prefix}${DEFAULT_LIST_ID}`;
 
-    const existing = await this.getTodoList(listId, {
-      session: activeSession,
-      [RAW_LIST]: true,
-    });
+    const existing = await this.storage.getTodoList(listId);
     if (existing) {
       return existing;
     }
@@ -878,32 +835,43 @@ export class TodoManager {
         title: DEFAULT_LIST_TITLE,
         description: undefined,
         status: DEFAULT_LIST_STATUS,
-        priority: DEFAULT_LIST_PRIORITY,
+        priority: DEFAULT_PRIORITY,
         todos: [],
         createdAt: now,
         updatedAt: now,
       },
       { session: activeSession },
     );
+    // No default list is a fatal error
+    if (isError(list)) {
+      throw list;
+    }
     return list;
-  }
-
-  private cloneListWithFilter(list: TodoList, completed?: boolean): TodoList {
-    const todos =
-      completed === undefined
-        ? [...list.todos]
-        : list.todos.filter((todo) => todo.completed === completed);
-    return {
-      ...list,
-      todos,
-    };
   }
 }
 
-export const getTodoManager = (): TodoManager => {
-  return globalSingleton('@noeducation/ai/TodoManager', () => {
-    log((l) => l.debug('TodoManager singleton instance created'));
-    return new TodoManager();
+export const getTodoManager = async (
+  strategy?: TodoStorageStrategy,
+): Promise<TodoManager> => {
+  const provider = SingletonProvider.Instance;
+  const managerKey = Symbol.for('@noeducation/ai/TodoManager');
+
+  const status = await createStorageStrategyFromFlags();
+  if (status.stale) {
+    provider.delete(managerKey);
+  }
+
+  return await globalSingletonAsync('@noeducation/ai/TodoManager', async () => {
+    if (strategy) {
+      log((l) => l.debug('TodoManager singleton instance created'));
+      return new TodoManager(strategy);
+    }
+    const storageStrategy = await createStorageStrategy(
+      status.strategy,
+      status.config,
+      InMemoryStorageStrategy.Instance,
+    );
+    return new TodoManager(storageStrategy);
   });
 };
 

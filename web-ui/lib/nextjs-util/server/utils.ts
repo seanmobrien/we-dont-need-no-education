@@ -18,7 +18,6 @@ import {
 import { AnyValueMap } from '@opentelemetry/api-logs';
 import { WrappedResponseContext } from './types';
 import { makeJsonResponse } from './response';
-import { Session } from 'inspector';
 import { SessionTokenKey } from '@/lib/auth/utilities';
 
 export const EnableOnBuild: unique symbol = Symbol('ServiceEnabledOnBuild');

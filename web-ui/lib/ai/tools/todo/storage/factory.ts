@@ -42,7 +42,7 @@ export const createStorageStrategy = async (
         throw new Error(`Unknown storage strategy type: ${strategyType}`);
     }
   } catch (error) {
-    LoggedError.isTurtlesAllTheWayDown(error, {
+    LoggedError.isTurtlesAllTheWayDownBaby(error, {
       log: true,
       source: 'createStorageStrategy',
     });
@@ -72,39 +72,152 @@ export const createFallbackStrategy = (
   primary: TodoStorageStrategy,
   fallback: TodoStorageStrategy,
 ): TodoStorageStrategy => {
-  const wrapMethod = <T extends unknown[]>(
-    methodName: keyof TodoStorageStrategy,
-  ) => {
-    return async (...args: T) => {
-      try {
-        const method = primary[methodName] as (...args: T) => Promise<unknown>;
-        return await method.apply(primary, args);
-      } catch (error) {
-        LoggedError.isTurtlesAllTheWayDown(error, {
-          log: true,
-          source: `FallbackStrategy::${String(methodName)}`,
-          message: `Primary strategy failed, using fallback`,
-        });
-
-        const fallbackMethod = fallback[methodName] as (
-          ...args: T
-        ) => Promise<unknown>;
-        return await fallbackMethod.apply(fallback, args);
-      }
-    };
-  };
-
   return {
-    upsertTodoList: wrapMethod('upsertTodoList'),
-    getTodoList: wrapMethod('getTodoList'),
-    getTodoLists: wrapMethod('getTodoLists'),
-    deleteTodoList: wrapMethod('deleteTodoList'),
-    upsertTodo: wrapMethod('upsertTodo'),
-    getTodo: wrapMethod('getTodo'),
-    getTodos: wrapMethod('getTodos'),
-    deleteTodo: wrapMethod('deleteTodo'),
-    getTodoToListMapping: wrapMethod('getTodoToListMapping'),
-    getCount: wrapMethod('getCount'),
-    clearAll: wrapMethod('clearAll'),
-  } as TodoStorageStrategy;
+    async upsertTodoList(list) {
+      try {
+        return await primary.upsertTodoList(list);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::upsertTodoList',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.upsertTodoList(list);
+      }
+    },
+
+    async getTodoList(listId, options) {
+      try {
+        return await primary.getTodoList(listId, options);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::getTodoList',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.getTodoList(listId, options);
+      }
+    },
+
+    async getTodoLists(options) {
+      try {
+        return await primary.getTodoLists(options);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::getTodoLists',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.getTodoLists(options);
+      }
+    },
+
+    async deleteTodoList(listId) {
+      try {
+        return await primary.deleteTodoList(listId);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::deleteTodoList',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.deleteTodoList(listId);
+      }
+    },
+
+    async upsertTodo(todo, options) {
+      try {
+        return await primary.upsertTodo(todo, options);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::upsertTodo',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.upsertTodo(todo, options);
+      }
+    },
+
+    async getTodo(todoId) {
+      try {
+        return await primary.getTodo(todoId);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::getTodo',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.getTodo(todoId);
+      }
+    },
+
+    async getTodos(options) {
+      try {
+        return await primary.getTodos(options);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::getTodos',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.getTodos(options);
+      }
+    },
+
+    async deleteTodo(todoId) {
+      try {
+        return await primary.deleteTodo(todoId);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::deleteTodo',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.deleteTodo(todoId);
+      }
+    },
+
+    async getTodoToListMapping(todoId) {
+      try {
+        return await primary.getTodoToListMapping(todoId);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::getTodoToListMapping',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.getTodoToListMapping(todoId);
+      }
+    },
+
+    async getCount(options) {
+      try {
+        return await primary.getCount(options);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::getCount',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.getCount(options);
+      }
+    },
+
+    async clearAll(options) {
+      try {
+        return await primary.clearAll(options);
+      } catch (error) {
+        LoggedError.isTurtlesAllTheWayDownBaby(error, {
+          log: true,
+          source: 'FallbackStrategy::clearAll',
+          message: 'Primary strategy failed, using fallback',
+        });
+        return await fallback.clearAll(options);
+      }
+    },
+
+    equals(other) {
+      return primary.equals(other);
+    },
+  };
 };
