@@ -45,6 +45,9 @@ declare module '@/lib/site-util/feature-flags/known-feature' {
    * - `models_defaults`: Configure default models per provider (complex object)
    * - `mcp_cache_tools`: Enable/disable Model Context Protocol cache tooling
    * - `mcp_cache_client`: Enable/disable MCP cache client features
+   * - `todo_storage_strategy`: Configure storage backend for todo-lists ('in-memory' | 'redis')
+   * - `todo_storage_in_memory_config`: JSON configuration applied when using the in-memory storage backend
+   * - `todo_storage_redis_config`: JSON configuration applied when using the Redis storage backend
    *
    * @example
    * ```typescript

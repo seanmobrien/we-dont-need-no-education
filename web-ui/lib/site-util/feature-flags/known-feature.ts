@@ -1,4 +1,5 @@
 import { AiProvider, ModelType } from '@/components/ai/chat-panel/types';
+import type { StorageStrategyConfig } from '@/lib/ai/tools/todo/storage';
 
 export const KnownFeatureValues = [
   'mem0_mcp_tools_enabled',
@@ -21,6 +22,9 @@ export const KnownFeatureValues = [
   'health_memory_cache_error_ttl',
   'health_memory_cache_warning_ttl',
   'health_startup_failure_threshold',
+  'todo_storage_strategy',
+  'todo_storage_in_memory_config',
+  'todo_storage_redis_config',
 ] as const;
 export type KnownFeatureType = (typeof KnownFeatureValues)[number];
 
@@ -49,6 +53,15 @@ export type FeatureFlagStatus =
       detect: number;
     };
 export type AllFeatureFlagStatus = Record<KnownFeatureType, FeatureFlagStatus>;
+
+const DEFAULT_IN_MEMORY_STORAGE_CONFIG =
+  {} as const satisfies StorageStrategyConfig;
+
+const DEFAULT_REDIS_STORAGE_CONFIG = {
+  ttl: 86400,
+  keyPrefix: 'todo',
+  enableFallback: true,
+} as const satisfies StorageStrategyConfig;
 
 export const AllFeatureFlagsDefault = {
   mem0_mcp_tools_enabled: true as boolean,
@@ -84,6 +97,15 @@ export const AllFeatureFlagsDefault = {
   health_memory_cache_error_ttl: 10 as number,
   health_memory_cache_warning_ttl: 30 as number,
   health_startup_failure_threshold: 10 as number,
+  todo_storage_strategy: 'in-memory' as string,
+  todo_storage_in_memory_config: {
+    enabled: true,
+    value: DEFAULT_IN_MEMORY_STORAGE_CONFIG,
+  },
+  todo_storage_redis_config: {
+    enabled: true,
+    value: DEFAULT_REDIS_STORAGE_CONFIG,
+  },
 } as const satisfies AllFeatureFlagStatus;
 
 export type AllFeatureFlagDefaultType = typeof AllFeatureFlagsDefault;
