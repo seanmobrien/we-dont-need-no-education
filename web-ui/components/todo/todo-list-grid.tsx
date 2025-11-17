@@ -17,6 +17,8 @@ import {
 } from '@/lib/hooks/use-todo';
 import type { TodoListSummary } from '@/data-models/api/todo';
 import type { SxProps, Theme } from '@mui/material/styles';
+import { useConfirmDialog } from '@/components/general/dialogs/confirm';
+import { usePromptDialog } from '@/components/general/dialogs/prompt';
 
 const stableSx = {
   containerBase: {
@@ -70,6 +72,9 @@ const getPriorityColor = (
 export default function TodoListGrid() {
   const router = useRouter();
   const { data: lists = [], isLoading, refetch } = useTodoLists();
+  const confirm = useConfirmDialog();
+  const prompt = usePromptDialog();
+  
   const deleteTodoList = useDeleteTodoList({
     onSuccess: () => {
       refetch();
@@ -83,20 +88,35 @@ export default function TodoListGrid() {
   });
 
   const handleDelete = useCallback(
-    (listId: string) => {
-      if (confirm('Are you sure you want to delete this todo list?')) {
+    async (listId: string) => {
+      const confirmed = await confirm.show({
+        title: 'Delete Todo List',
+        message: 'Are you sure you want to delete this todo list? This action cannot be undone.',
+        confirmText: 'Delete',
+        confirmColor: 'error',
+        cancelText: 'Cancel',
+      });
+      
+      if (confirmed) {
         deleteTodoList.mutate(listId);
       }
     },
-    [deleteTodoList],
+    [deleteTodoList, confirm],
   );
 
-  const handleCreateList = useCallback(() => {
-    const title = prompt('Enter todo list title:');
+  const handleCreateList = useCallback(async () => {
+    const title = await prompt.show({
+      title: 'Create Todo List',
+      label: 'List Title',
+      confirmText: 'Create',
+      cancelText: 'Cancel',
+      required: true,
+    });
+    
     if (title) {
       createTodoList.mutate({ title });
     }
-  }, [createTodoList]);
+  }, [createTodoList, prompt]);
 
   const columns: GridColDef<TodoListSummary>[] = useMemo(
     () => [
@@ -212,39 +232,43 @@ export default function TodoListGrid() {
   );
 
   return (
-    <Box sx={stableSx.containerBase}>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
-        <h2>Todo Lists</h2>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateList}
-        >
-          New List
-        </Button>
+    <>
+      <Box sx={stableSx.containerBase}>
+        <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between' }}>
+          <h2>Todo Lists</h2>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={handleCreateList}
+          >
+            New List
+          </Button>
+        </Box>
+        <DataGrid
+          rows={lists}
+          columns={columns}
+          loading={isLoading}
+          getRowId={(row) => row.id}
+          onRowClick={handleRowClick}
+          initialState={{
+            pagination: {
+              paginationModel: { pageSize: 25, page: 0 },
+            },
+            sorting: {
+              sortModel: [{ field: 'updatedAt', sort: 'desc' }],
+            },
+          }}
+          pageSizeOptions={[10, 25, 50, 100]}
+          disableRowSelectionOnClick
+          sx={{
+            '& .MuiDataGrid-row': {
+              cursor: 'pointer',
+            },
+          }}
+        />
       </Box>
-      <DataGrid
-        rows={lists}
-        columns={columns}
-        loading={isLoading}
-        getRowId={(row) => row.id}
-        onRowClick={handleRowClick}
-        initialState={{
-          pagination: {
-            paginationModel: { pageSize: 25, page: 0 },
-          },
-          sorting: {
-            sortModel: [{ field: 'updatedAt', sort: 'desc' }],
-          },
-        }}
-        pageSizeOptions={[10, 25, 50, 100]}
-        disableRowSelectionOnClick
-        sx={{
-          '& .MuiDataGrid-row': {
-            cursor: 'pointer',
-          },
-        }}
-      />
-    </Box>
+      <confirm.Dialog />
+      <prompt.Dialog />
+    </>
   );
 }
