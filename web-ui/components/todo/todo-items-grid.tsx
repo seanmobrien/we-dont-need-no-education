@@ -26,7 +26,8 @@ import {
 } from '@/lib/hooks/use-todo';
 import type { Todo } from '@/data-models/api/todo';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { useConfirmationDialog } from '@/components/general/confirmation-dialog';
+import { useConfirmDialog } from '@/components/general/dialogs/confirm';
+import { usePromptDialog } from '@/components/general/dialogs/prompt';
 
 const stableSx = {
   containerBase: {
@@ -75,7 +76,8 @@ export default function TodoItemsGrid({
   listId,
 }: TodoItemsGridProps) {
   const { data: list, isLoading, refetch } = useTodoList(listId);
-  const confirm = useConfirmationDialog();
+  const confirm = useConfirmDialog();
+  const prompt = usePromptDialog();
   
   const createTodoItem = useCreateTodoItem(listId, {
     onSuccess: () => {
@@ -99,6 +101,7 @@ export default function TodoItemsGrid({
         title: 'Delete Todo Item',
         message: 'Are you sure you want to delete this item?',
         confirmText: 'Delete',
+        confirmColor: 'error',
         cancelText: 'Cancel',
       });
       
@@ -121,38 +124,38 @@ export default function TodoItemsGrid({
   );
 
   const handleCreateItem = useCallback(async () => {
-    const title = await confirm.show({
+    const title = await prompt.show({
       title: 'Create Todo Item',
-      showInput: true,
-      inputLabel: 'Item Title',
+      label: 'Item Title',
       confirmText: 'Create',
       cancelText: 'Cancel',
+      required: true,
     });
     
-    if (title && typeof title === 'string') {
+    if (title) {
       createTodoItem.mutate({ title });
     }
-  }, [createTodoItem, confirm]);
+  }, [createTodoItem, prompt]);
 
   const handleEditItem = useCallback(
     async (item: Todo) => {
-      const title = await confirm.show({
+      const title = await prompt.show({
         title: 'Edit Todo Item',
-        showInput: true,
-        inputLabel: 'Item Title',
-        inputDefaultValue: item.title,
+        label: 'Item Title',
+        defaultValue: item.title,
         confirmText: 'Save',
         cancelText: 'Cancel',
+        required: true,
       });
       
-      if (title && typeof title === 'string' && title !== item.title) {
+      if (title && title !== item.title) {
         updateTodoItem.mutate({
           itemId: item.id,
           title,
         });
       }
     },
-    [updateTodoItem, confirm],
+    [updateTodoItem, prompt],
   );
 
   const columns: GridColDef<Todo>[] = useMemo(
@@ -320,6 +323,7 @@ export default function TodoItemsGrid({
         />
       </Box>
       <confirm.Dialog />
+      <prompt.Dialog />
     </>
   );
 }

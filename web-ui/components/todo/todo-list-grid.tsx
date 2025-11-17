@@ -17,7 +17,8 @@ import {
 } from '@/lib/hooks/use-todo';
 import type { TodoListSummary } from '@/data-models/api/todo';
 import type { SxProps, Theme } from '@mui/material/styles';
-import { useConfirmationDialog } from '@/components/general/confirmation-dialog';
+import { useConfirmDialog } from '@/components/general/dialogs/confirm';
+import { usePromptDialog } from '@/components/general/dialogs/prompt';
 
 const stableSx = {
   containerBase: {
@@ -71,7 +72,8 @@ const getPriorityColor = (
 export default function TodoListGrid() {
   const router = useRouter();
   const { data: lists = [], isLoading, refetch } = useTodoLists();
-  const confirm = useConfirmationDialog();
+  const confirm = useConfirmDialog();
+  const prompt = usePromptDialog();
   
   const deleteTodoList = useDeleteTodoList({
     onSuccess: () => {
@@ -91,6 +93,7 @@ export default function TodoListGrid() {
         title: 'Delete Todo List',
         message: 'Are you sure you want to delete this todo list? This action cannot be undone.',
         confirmText: 'Delete',
+        confirmColor: 'error',
         cancelText: 'Cancel',
       });
       
@@ -102,18 +105,18 @@ export default function TodoListGrid() {
   );
 
   const handleCreateList = useCallback(async () => {
-    const title = await confirm.show({
+    const title = await prompt.show({
       title: 'Create Todo List',
-      showInput: true,
-      inputLabel: 'List Title',
+      label: 'List Title',
       confirmText: 'Create',
       cancelText: 'Cancel',
+      required: true,
     });
     
-    if (title && typeof title === 'string') {
+    if (title) {
       createTodoList.mutate({ title });
     }
-  }, [createTodoList, confirm]);
+  }, [createTodoList, prompt]);
 
   const columns: GridColDef<TodoListSummary>[] = useMemo(
     () => [
@@ -265,6 +268,7 @@ export default function TodoListGrid() {
         />
       </Box>
       <confirm.Dialog />
+      <prompt.Dialog />
     </>
   );
 }
