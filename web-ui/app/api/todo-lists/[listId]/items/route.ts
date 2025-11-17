@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { log } from '@/lib/logger';
 import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import {
   validateCreateTodoItem,
@@ -8,6 +7,7 @@ import {
 } from '@/lib/api/todo/todo-validation';
 import { ValidationError } from '@/lib/react-util/errors/validation-error';
 import { extractParams } from '@/lib/nextjs-util/utils';
+import { LoggedError } from '@/lib/react-util';
 
 export const dynamic = 'force-dynamic';
 
@@ -75,13 +75,11 @@ export const POST = wrapRouteRequest(
       if (ValidationError.isValidationError(error)) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      log((l) =>
-        l.error({
-          source: 'POST /api/todo-lists/[listId]/items',
-          error,
-          listId,
-        }),
-      );
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'POST /api/todo-lists/[listId]/items',
+        data: { listId },
+      });
       return NextResponse.json(
         { error: 'Internal Server Error' },
         { status: 500 },
@@ -123,6 +121,7 @@ export const PUT = wrapRouteRequest(
       }
 
       const todoManager = await getTodoManager();
+      /* let the updateTodo api handle verifying the item and its list
       const list = await todoManager.getTodoList(listId, {});
 
       if (!list) {
@@ -131,14 +130,18 @@ export const PUT = wrapRouteRequest(
           { status: 404 },
         );
       }
-
-      const updatedTodo = await todoManager.updateTodo(validated.data.itemId, {
-        title: validated.data.title,
-        description: validated.data.description,
-        completed: validated.data.completed,
-        status: validated.data.status,
-        priority: validated.data.priority,
-      });
+      */
+      const updatedTodo = await todoManager.updateTodo(
+        validated.data.itemId,
+        {
+          title: validated.data.title,
+          description: validated.data.description,
+          completed: validated.data.completed,
+          status: validated.data.status,
+          priority: validated.data.priority,
+        },
+        { listId },
+      );
 
       if (!updatedTodo) {
         return NextResponse.json(
@@ -155,13 +158,11 @@ export const PUT = wrapRouteRequest(
       if (ValidationError.isValidationError(error)) {
         return NextResponse.json({ error: error.message }, { status: 400 });
       }
-      log((l) =>
-        l.error({
-          source: 'PUT /api/todo-lists/[listId]/items',
-          error,
-          listId,
-        }),
-      );
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'PUT /api/todo-lists/[listId]/items',
+        data: { listId },
+      });
       return NextResponse.json(
         { error: 'Internal Server Error' },
         { status: 500 },
@@ -184,12 +185,14 @@ export const DELETE = wrapRouteRequest(
   ): Promise<NextResponse> => {
     const { listId } = await extractParams<{ listId: string }>(withParams);
 
+    /*
     if (!listId) {
       return NextResponse.json(
         { error: 'List ID is required' },
         { status: 400 },
       );
     }
+    */
 
     try {
       const { itemId } = await req.json();
@@ -202,6 +205,7 @@ export const DELETE = wrapRouteRequest(
       }
 
       const todoManager = await getTodoManager();
+      /* Let the deleteTodo api handle verifying the item and its list
       const list = await todoManager.getTodoList(listId, {});
 
       if (!list) {
@@ -210,8 +214,8 @@ export const DELETE = wrapRouteRequest(
           { status: 404 },
         );
       }
-
-      const deleted = await todoManager.deleteTodo(itemId, {});
+      */
+      const deleted = await todoManager.deleteTodo(itemId);
 
       if (!deleted) {
         return NextResponse.json(
@@ -225,13 +229,11 @@ export const DELETE = wrapRouteRequest(
         { status: 200 },
       );
     } catch (error) {
-      log((l) =>
-        l.error({
-          source: 'DELETE /api/todo-lists/[listId]/items',
-          error,
-          listId,
-        }),
-      );
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'DELETE /api/todo-lists/[listId]/items',
+        data: { listId },
+      });
       return NextResponse.json(
         { error: 'Internal Server Error' },
         { status: 500 },

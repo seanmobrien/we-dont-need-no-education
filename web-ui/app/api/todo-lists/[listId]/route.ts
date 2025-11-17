@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { wrapRouteRequest } from '@/lib/nextjs-util/server/utils';
-import { log } from '@/lib/logger';
 import { getTodoManager } from '@/lib/ai/tools/todo/todo-manager';
 import { extractParams } from '@/lib/nextjs-util/utils';
+import { LoggedError } from '@/lib/react-util';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic';
  */
 export const GET = wrapRouteRequest(
   async (
-    req: NextRequest,
+    _req: NextRequest,
     withParams: { params: Promise<{ listId: string }> },
   ) => {
     const { listId } = await extractParams<{ listId: string }>(withParams);
@@ -40,13 +40,10 @@ export const GET = wrapRouteRequest(
 
       return NextResponse.json({ data: list }, { status: 200 });
     } catch (error) {
-      log((l) =>
-        l.error({
-          source: 'GET /api/todo-lists/[listId]',
-          error,
-          listId,
-        }),
-      );
+      LoggedError.isTurtlesAllTheWayDownBaby(error, {
+        log: true,
+        source: 'GET /api/todo-lists/[listId]',
+      });
       return NextResponse.json(
         { error: 'Internal Server Error' },
         { status: 500 },
