@@ -28,8 +28,8 @@ export const GET = wrapRouteRequest(
     }
 
     try {
-      const todoManager = getTodoManager();
-      const list = todoManager.getTodoList(listId);
+      const todoManager = await getTodoManager();
+      const list = await todoManager.getTodoList(listId, {});
 
       if (!list) {
         return NextResponse.json(

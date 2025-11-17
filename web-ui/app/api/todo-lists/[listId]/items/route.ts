@@ -43,8 +43,8 @@ export const POST = wrapRouteRequest(
         );
       }
 
-      const todoManager = getTodoManager();
-      const list = todoManager.getTodoList(listId);
+      const todoManager = await getTodoManager();
+      const list = await todoManager.getTodoList(listId, {});
 
       if (!list) {
         return NextResponse.json(
@@ -53,13 +53,14 @@ export const POST = wrapRouteRequest(
         );
       }
 
-      // Create the new todo using TodoManager's createTodo, then add it to the list
-      const newTodo = todoManager.createTodo(
+      // Create the new todo using TodoManager's createTodo with the listId option
+      const newTodo = await todoManager.createTodo(
         validated.data.title,
         validated.data.description,
         {
           status: validated.data.status,
           priority: validated.data.priority,
+          listId: listId,
         },
       );
 
@@ -121,8 +122,8 @@ export const PUT = wrapRouteRequest(
         );
       }
 
-      const todoManager = getTodoManager();
-      const list = todoManager.getTodoList(listId);
+      const todoManager = await getTodoManager();
+      const list = await todoManager.getTodoList(listId, {});
 
       if (!list) {
         return NextResponse.json(
@@ -131,7 +132,7 @@ export const PUT = wrapRouteRequest(
         );
       }
 
-      const updatedTodo = todoManager.updateTodo(validated.data.itemId, {
+      const updatedTodo = await todoManager.updateTodo(validated.data.itemId, {
         title: validated.data.title,
         description: validated.data.description,
         completed: validated.data.completed,
@@ -200,8 +201,8 @@ export const DELETE = wrapRouteRequest(
         );
       }
 
-      const todoManager = getTodoManager();
-      const list = todoManager.getTodoList(listId);
+      const todoManager = await getTodoManager();
+      const list = await todoManager.getTodoList(listId, {});
 
       if (!list) {
         return NextResponse.json(
@@ -210,7 +211,7 @@ export const DELETE = wrapRouteRequest(
         );
       }
 
-      const deleted = todoManager.deleteTodo(itemId);
+      const deleted = await todoManager.deleteTodo(itemId, {});
 
       if (!deleted) {
         return NextResponse.json(

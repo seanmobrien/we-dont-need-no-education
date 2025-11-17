@@ -17,8 +17,8 @@ export const dynamic = 'force-dynamic';
  */
 export const GET = wrapRouteRequest(async () => {
   try {
-    const todoManager = getTodoManager();
-    const lists = todoManager.getTodoLists();
+    const todoManager = await getTodoManager();
+    const lists = await todoManager.getTodoLists({});
 
     // Add computed fields
     const listsWithCounts = lists.map((list) => ({
@@ -62,8 +62,8 @@ export const POST = wrapRouteRequest(
         );
       }
 
-      const todoManager = getTodoManager();
-      const createdList = todoManager.upsertTodoList({
+      const todoManager = await getTodoManager();
+      const createdList = await todoManager.upsertTodoList({
         title: validated.data.title,
         description: validated.data.description,
         status: validated.data.status,
@@ -114,8 +114,8 @@ export const PUT = wrapRouteRequest(
         );
       }
 
-      const todoManager = getTodoManager();
-      const existingList = todoManager.getTodoList(validated.data.listId);
+      const todoManager = await getTodoManager();
+      const existingList = await todoManager.getTodoList(validated.data.listId, {});
 
       if (!existingList) {
         return NextResponse.json(
@@ -125,7 +125,7 @@ export const PUT = wrapRouteRequest(
       }
 
       // Upsert with existing data merged with updates
-      const updatedList = todoManager.upsertTodoList({
+      const updatedList = await todoManager.upsertTodoList({
         id: validated.data.listId,
         title: validated.data.title ?? existingList.title,
         description: validated.data.description ?? existingList.description,
@@ -175,8 +175,8 @@ export const DELETE = wrapRouteRequest(
         );
       }
 
-      const todoManager = getTodoManager();
-      const list = todoManager.getTodoList(listId);
+      const todoManager = await getTodoManager();
+      const list = await todoManager.getTodoList(listId, {});
 
       if (!list) {
         return NextResponse.json(
@@ -186,13 +186,13 @@ export const DELETE = wrapRouteRequest(
       }
 
       // Delete all todos in the list first
-      list.todos.forEach((todo) => {
-        todoManager.deleteTodo(todo.id);
-      });
+      for (const todo of list.todos) {
+        await todoManager.deleteTodo(todo.id, {});
+      }
 
       // Since TodoManager doesn't have a deleteList method, we need to clear the list
       // by upserting with empty todos array (effectively removing it from active lists)
-      todoManager.upsertTodoList({
+      await todoManager.upsertTodoList({
         id: listId,
         title: list.title,
         description: list.description,

@@ -8,7 +8,7 @@ export type {
   TodoPriority,
   Todo,
   TodoList,
-} from '@/lib/ai/tools/todo/todo-manager';
+} from '@/lib/ai/tools/todo/types';
 
 /**
  * Todo List Summary with item counts
@@ -27,4 +27,4 @@ export interface TodoListSummary {
 }
 
 // Alias for TodoList for compatibility - TodoList already has todos array
-export type { TodoList as TodoListWithItems } from '@/lib/ai/tools/todo/todo-manager';
+export type { TodoList as TodoListWithItems } from '@/lib/ai/tools/todo/types';
