@@ -1,7 +1,6 @@
 /**
  * @jest-environment jsdom
  */
- 
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -10,7 +9,7 @@ import {
   ChatMessageFilters,
   searchMessageContent,
   type MessageType,
-} from '@/components/chat/chat-message-filters';
+} from '@/components/ai/chat/chat-message-filters';
 import type { ChatMessage } from '@/lib/ai/chat/types';
 import { hideConsoleOutput } from '@/__tests__/test-utils';
 

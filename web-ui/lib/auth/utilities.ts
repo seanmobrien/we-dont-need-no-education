@@ -23,14 +23,19 @@ type RequestWithToken = Request & {
   [REQUEST_DECODED_TOKEN]?: JWT;
 };
 
+export const SessionTokenKey = (): string => {
+  const url = new URL(env('NEXT_PUBLIC_HOSTNAME'));
+  return (
+    (url.protocol === 'https:' ? '__Secure-' : '') + 'authjs.session-token'
+  );
+};
+
 export const extractToken = async (req: Request): Promise<JWT | null> => {
   const check = (req as RequestWithToken)?.[REQUEST_DECODED_TOKEN];
   if (check) {
     return check;
   }
-  const url = new URL(env('NEXT_PUBLIC_HOSTNAME'));
-  const sessionTokenKey =
-    (url.protocol === 'https:' ? '__Secure-' : '') + 'authjs.session-token';
+  const sessionTokenKey = SessionTokenKey();
   try {
     const shh = env('AUTH_SECRET');
     const ret =

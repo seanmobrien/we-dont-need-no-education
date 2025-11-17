@@ -70,7 +70,7 @@ interface MockChatHistoryProps {
   chatId: string;
   title?: string;
 }
-jest.mock('@/components/chat/history', () => {
+jest.mock('@/components/ai/chat/history', () => {
   const ChatHistory = (props: MockChatHistoryProps) => {
     return <div data-testid="chat-history" {...props} />;
   };

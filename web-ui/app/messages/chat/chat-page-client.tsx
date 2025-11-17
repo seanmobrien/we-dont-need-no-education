@@ -4,7 +4,7 @@ import * as React from 'react';
 import { useState } from 'react';
 import Box from '@mui/material/Box';
 import { FormControlLabel, Switch, Typography } from '@mui/material';
-import ChatList from '@/components/chat/list';
+import ChatList from '@/components/ai/chat/list';
 import { EmailDashboardLayout } from '@/components/email-message/dashboard-layout/email-dashboard-layout';
 
 interface ChatPageClientProps {
