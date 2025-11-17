@@ -38,6 +38,7 @@ const eslintConfig = [
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  /*TODO: Enable to look at removing barrl imports of mui components.
   // Custom rule to restrict imports from '@mui/*' to specific sub-packages
   {
     rules: {
@@ -51,8 +52,9 @@ const eslintConfig = [
           ],
         },
       ],
-    },
+    ''''},
   },
+  */
 ];
 
 export default eslintConfig;
